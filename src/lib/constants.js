@@ -23,6 +23,7 @@ export const AD_CATS = [
   { id:'documentos', emoji:'📋', label:'Docs & Admin',sub:['Cartas','Trámites','Traducción','Asesoría'] },
   { id:'venta',      emoji:'🛒', label:'Venta',       sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
   { id:'servicios',  emoji:'💼', label:'Servicios',   sub:['Clases','Peluquería','Mecánico','Informática','Otro'] },
+  { id:'empleo',     emoji:'💼', label:'Empleo',      sub:['Full-time','Part-time','Freelance','Prácticas'] },
   { id:'regalo',     emoji:'🎁', label:'Se regala',   sub:['Ropa','Muebles','Libros','Juguetes','Otro'] },
 ]
 
@@ -141,6 +142,128 @@ export const MOCK_JOBS = [
   { id:'j2', emoji:'👶', title:'Cuidadora de niños',           company:'Familia particular', city:'BS', type:'Part-time',  salary:'CHF 25/hora',         lang:'Español' },
   { id:'j3', emoji:'💻', title:'Técnico/a IT soporte usuario', company:'Tech Company',       city:'ZH', type:'Full-time',  salary:'CHF 6.000–7.500/mes', lang:'Inglés + alemán' },
   { id:'j4', emoji:'💇', title:'Peluquera especialista',       company:'Salón AfroLatino',   city:'BE', type:'Full-time',  salary:'CHF 3.500 + comisión', lang:'Español' },
+]
+
+export const NEGOCIO_TYPES = [
+  { id:'',            label:'Todos' },
+  { id:'restaurante', label:'🍽️ Restaurante' },
+  { id:'barberia',    label:'✂️ Barbería' },
+  { id:'tienda',      label:'🛒 Tienda' },
+  { id:'pasteleria',  label:'🍰 Pastelería' },
+  { id:'belleza',     label:'💇 Belleza' },
+  { id:'servicios',   label:'🔧 Servicios' },
+]
+
+export const MOCK_NEGOCIOS = [
+  { id:'n1', emoji:'🍽️', name:'El Rincón Colombiano',  type:'restaurante', city:'Zürich',  canton:'ZH', desc:'Bandeja paisa, arepas y sancocho auténtico. Cocina casera colombiana de lunes a domingo.', phone:'+41791234567', instagram:'@rinconcolombiano_zh', verified:true,  featured:true  },
+  { id:'n2', emoji:'✂️', name:'Barber Latino ZH',        type:'barberia',    city:'Zürich',  canton:'ZH', desc:'Cortes al estilo caribeño. Fades, diseños y barba. Solo con cita previa vía WhatsApp.',     phone:'+41792345678', instagram:'@barberlatino_zh',     verified:true,  featured:false },
+  { id:'n3', emoji:'🛒', name:'Tienda Latina Bern',       type:'tienda',      city:'Berna',   canton:'BE', desc:'Productos latinoamericanos importados: frijoles, masa, chiles, bebidas típicas y más.',      phone:'+41793456789', instagram:'@tiendalatina_bern',   verified:true,  featured:true  },
+  { id:'n4', emoji:'🍰', name:'Dulces de mi Tierra',      type:'pasteleria',  city:'Basilea', canton:'BS', desc:'Pasteles artesanales: tres leches, torta de queso, buñuelos. Pedidos con anticipación.',      phone:'+41794567890', instagram:'@dulcesmitierra_bs',   verified:false, featured:false },
+  { id:'n5', emoji:'💇', name:'Afro & Latino Hair',        type:'belleza',     city:'Ginebra', canton:'GE', desc:'Especialistas en cabello afro y latino. Trenzas, extensiones y relaxado permanente.',         phone:'+41795678901', instagram:'@afrolatinohair_ge',   verified:true,  featured:false },
+  { id:'n6', emoji:'🌮', name:'Tacos & Más',               type:'restaurante', city:'Lausana', canton:'VD', desc:'Tacos, burritos y enchiladas mexicanas auténticas. Para llevar o comer en local.',             phone:'+41796789012', instagram:'@tacosymas_lsn',       verified:false, featured:false },
+  { id:'n7', emoji:'💸', name:'Latino Transfer ZH',        type:'servicios',   city:'Zürich',  canton:'ZH', desc:'Envío de dinero a Latinoamérica. Mejores tasas, sin comisiones ocultas. Atención en español.', phone:'+41797890123', instagram:'@latinotransfer_zh',   verified:true,  featured:false },
+  { id:'n8', emoji:'🥩', name:'Carnicería El Gaucho',      type:'tienda',      city:'Ginebra', canton:'GE', desc:'Cortes de carne al estilo latinoamericano. Chorizos, morcillas y especias importadas.',         phone:'+41798901234', instagram:'@elgaucho_ge',         verified:false, featured:false },
+]
+
+export const MOCK_NEGOCIO_SERVICES = {
+  n1:['Arepas', 'Menú casero', 'Delivery'],
+  n2:['Fade', 'Barba', 'Diseños'],
+  n3:['Abarrotes', 'Harinas', 'Bebidas latinas'],
+  n4:['Tres leches', 'Tortas', 'Pedidos por encargo'],
+  n5:['Trenzas', 'Extensiones', 'Cabello afro'],
+  n6:['Tacos', 'Burritos', 'Take away'],
+  n7:['Envíos', 'Cambio', 'Asesoría'],
+  n8:['Cortes premium', 'Chorizos', 'Parrilla'],
+}
+
+export const MOCK_NEGOCIO_REVIEWS = {
+  n1: [
+    { id:'nr1', author:'Paula M.', canton:'ZH', stars:5, date:'Hace 4 días', text:'Las arepas y el sancocho saben a casa. Atención súper cercana y local muy limpio.' },
+    { id:'nr2', author:'Andrés C.', canton:'AG', stars:4, date:'Hace 2 semanas', text:'Muy rico todo. El menú del día sale bien de precio para Zürich.' },
+    { id:'nr3', author:'Lucía R.', canton:'ZH', stars:5, date:'Hace 1 mes', text:'Perfecto para llevar a amigos suizos a probar comida colombiana auténtica.' },
+  ],
+  n2: [
+    { id:'nr4', author:'Kevin S.', canton:'ZH', stars:5, date:'Hace 6 días', text:'Fade limpio y rápido. Muy buen ambiente y hablan español, que se agradece.' },
+    { id:'nr5', author:'Jhon P.', canton:'ZH', stars:5, date:'Hace 2 semanas', text:'La mejor barbería latina que he probado en Zürich. Reservé por WhatsApp sin problema.' },
+  ],
+  n3: [
+    { id:'nr6', author:'María G.', canton:'BE', stars:5, date:'Hace 1 semana', text:'Encontré harina PAN, ají amarillo y galletas que no veía desde hace años.' },
+    { id:'nr7', author:'César D.', canton:'FR', stars:4, date:'Hace 3 semanas', text:'Muy surtida y la dueña te ayuda a encontrar productos parecidos si no hay stock.' },
+  ],
+  n4: [
+    { id:'nr8', author:'Sofía T.', canton:'BS', stars:5, date:'Hace 5 días', text:'Le encargamos una torta tres leches y quedó espectacular. Muy recomendable.' },
+  ],
+  n5: [
+    { id:'nr9', author:'Laura V.', canton:'GE', stars:5, date:'Hace 1 semana', text:'Por fin un salón que entiende cabello afro y latino de verdad. Trenzas impecables.' },
+    { id:'nr10', author:'Nadia F.', canton:'GE', stars:4, date:'Hace 3 semanas', text:'Muy buen trato y consejos honestos para cuidar el pelo en invierno.' },
+  ],
+  n6: [
+    { id:'nr11', author:'Miguel R.', canton:'VD', stars:4, date:'Hace 4 días', text:'Los tacos al pastor están buenísimos y el local tiene ambiente muy agradable.' },
+  ],
+  n7: [
+    { id:'nr12', author:'Carolina P.', canton:'ZH', stars:5, date:'Hace 2 semanas', text:'Me explicaron todo en español y el envío llegó rápido. Transparencia total.' },
+  ],
+  n8: [
+    { id:'nr13', author:'Esteban L.', canton:'GE', stars:5, date:'Hace 1 semana', text:'La carne para asado estaba excelente. También tienen chorizo muy bueno.' },
+  ],
+}
+
+export const MOCK_NEGOCIO_PHOTOS = {
+  n1: [
+    'https://images.unsplash.com/photo-1544025162-d76694265947?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?w=900&h=600&fit=crop',
+  ],
+  n2: [
+    'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1517832606299-7ae9b720a186?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=900&h=600&fit=crop',
+  ],
+  n3: [
+    'https://images.unsplash.com/photo-1542838132-92c53300491e?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1579113800032-c38bd7635818?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1516594798947-e65505dbb29d?w=900&h=600&fit=crop',
+  ],
+  n4: [
+    'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=900&h=600&fit=crop',
+  ],
+  n5: [
+    'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=900&h=600&fit=crop',
+  ],
+  n6: [
+    'https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=900&h=600&fit=crop',
+  ],
+  n7: [
+    'https://images.unsplash.com/photo-1556740749-887f6717d7e4?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=900&h=600&fit=crop',
+  ],
+  n8: [
+    'https://images.unsplash.com/photo-1603048297172-c92544798d5a?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1529692236671-f1dc31c4a87d?w=900&h=600&fit=crop',
+  ],
+}
+
+export const EVENTO_TYPES = [
+  { id:'', label:'Todos' },
+  { id:'concierto', label:'🎵 Concierto' },
+  { id:'festival', label:'🎪 Festival' },
+  { id:'quedada', label:'🤝 Quedada' },
+  { id:'fiesta', label:'💃 Fiesta' },
+  { id:'networking', label:'💼 Networking' },
+  { id:'familia', label:'👨‍👩‍👧 Familiar' },
+]
+
+export const MOCK_EVENTOS_LATINOS = [
+  { id:'e1', type:'festival', emoji:'🎪', title:'Festival Latino de Primavera', city:'Zürich', canton:'ZH', venue:'Rote Fabrik', day:'18', month:'MAY', time:'14:00', price:'Desde CHF 12', host:'Asociación Latina Zürich', featured:true, desc:'Comida, música en vivo, talleres y zona familiar para toda la comunidad.', img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900&h=600&fit=crop', link:'https://latido.ch/eventos/festival-primavera' },
+  { id:'e2', type:'quedada', emoji:'🤝', title:'Quedada de nuevos en Suiza', city:'Berna', canton:'BE', venue:'Rosengarten Café', day:'24', month:'MAY', time:'17:30', price:'Gratis', host:'Latido Comunidad', featured:false, desc:'Encuentro informal para hacer contactos, resolver dudas y conocer gente latina en tu ciudad.', img:'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=900&h=600&fit=crop', link:'https://latido.ch/eventos/quedada-berna' },
+  { id:'e3', type:'concierto', emoji:'🎵', title:'Noche de salsa en Lausanne', city:'Lausana', canton:'VD', venue:'Le Romandie', day:'31', month:'MAY', time:'21:00', price:'CHF 18', host:'Salsa Vaud', featured:true, desc:'Banda en vivo, DJ invitado y clases cortas antes del concierto para todos los niveles.', img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=900&h=600&fit=crop', link:'https://latido.ch/eventos/salsa-lausanne' },
+  { id:'e4', type:'networking', emoji:'💼', title:'Networking latino profesional', city:'Ginebra', canton:'GE', venue:'Impact Hub', day:'06', month:'JUN', time:'19:00', price:'CHF 10', host:'Profesionales Latinos CH', featured:false, desc:'Afterwork para emprendedores, recién llegados y profesionales que quieren ampliar su red en Suiza.', img:'https://images.unsplash.com/photo-1511578314322-379afb476865?w=900&h=600&fit=crop', link:'https://latido.ch/eventos/networking-geneva' },
+  { id:'e5', type:'familia', emoji:'👨‍👩‍👧', title:'Picnic familiar latino', city:'Basilea', canton:'BS', venue:'Kannenfeldpark', day:'09', month:'JUN', time:'12:00', price:'Gratis', host:'Mamás Latinas Suiza', featured:false, desc:'Planes con niños, comida compartida y actividades al aire libre para familias latinas.', img:'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=900&h=600&fit=crop', link:'https://latido.ch/eventos/picnic-familiar' },
+  { id:'e6', type:'fiesta', emoji:'💃', title:'Fiesta reggaetón & perreo old school', city:'Zürich', canton:'ZH', venue:'Club Zukunft', day:'14', month:'JUN', time:'23:00', price:'CHF 20', host:'Latido Nights', featured:true, desc:'Sesión larga con hits clásicos, trap latino y ambientazo para bailar hasta tarde.', img:'https://images.unsplash.com/photo-1521334884684-d80222895322?w=900&h=600&fit=crop', link:'https://latido.ch/eventos/perreo-zurich' },
 ]
 
 export const MOCK_HOUSING = [

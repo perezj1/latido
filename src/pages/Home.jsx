@@ -3,112 +3,167 @@ import { useAuth } from '../hooks/useAuth'
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
-import { MOCK_ADS, MOCK_COMMUNITIES, MOCK_POSTS, AD_CATS } from '../lib/constants'
+// Tag kept for ad category chips below
+import { MOCK_ADS, MOCK_COMMUNITIES, AD_CATS } from '../lib/constants'
+
+const ACTIONS = [
+  { href:'/tablon', icon:'📌', title:'Tablón activo', desc:'Pisos, trabajo, cuidados y ventas cerca de ti.', bg:'#DBEAFE', color:'#1D4ED8' },
+  { href:'/publicar', icon:'✍️', title:'Publica en minutos', desc:'Crea un anuncio público o privado y listo.', bg:'#E0F2FE', color:'#0369A1' },
+  { href:'/comunidades', icon:'🤝', title:'Conecta con gente', desc:'Encuentra tu país, ciudad o grupo afín.', bg:'#D1FAE5', color:'#065F46' },
+  { href:'/guias', icon:'📚', title:'Resuelve trámites', desc:'Guías claras para vivir y moverte en Suiza.', bg:'#EDE9FE', color:'#6D28D9' },
+]
+
+const CAT_COLORS = {
+  vivienda:{ bg:'#DBEAFE', tc:'#1D4ED8' },
+  hogar:{ bg:'#D1FAE5', tc:'#065F46' },
+  cuidados:{ bg:'#FCE7F3', tc:'#9D174D' },
+  documentos:{ bg:'#EDE9FE', tc:'#6D28D9' },
+  venta:{ bg:'#FEF3C7', tc:'#92400E' },
+  servicios:{ bg:'#CCFBF1', tc:'#0F766E' },
+  regalo:{ bg:'#FEE2E2', tc:'#B91C1C' },
+}
 
 export default function Home() {
-  const { isLoggedIn, displayName, userCanton } = useAuth()
+  const { displayName, userCanton, isLoggedIn } = useAuth()
+  const firstName = displayName.split(' ')[0]
   const recentAds = MOCK_ADS.slice(0, 4)
-
-  const QUICK = [
-    { icon:'📌', label:'Tablón\nde anuncios', href:'/tablon',      bg:'#1D4ED8', sub:'Vivienda · cuidados · ventas' },
-    { icon:'🤝', label:'Comunidades',        href:'/comunidades',  bg:'#059669', sub:'Grupos latinos en Suiza' },
-    { icon:'📚', label:'Guías &\nTrámites',  href:'/documentos',   bg:'#7C3AED', sub:'Suiza en español' },
-    { icon:'🎉', label:'Directorio\nEventos',href:'/directorio',   bg:'#B45309', sub:'DJs · catering · foto' },
-  ]
+  const communityHighlights = MOCK_COMMUNITIES.slice(0, 3)
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'16px 16px 100px' }}>
-      {/* Greeting */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
-        <div>
-          <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginBottom:1 }}>Buenas 👋</p>
-          <p style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, letterSpacing:-0.5 }}>
-            {isLoggedIn ? displayName.split(' ')[0] : '¡Bienvenido/a!'}
-          </p>
-          {userCanton && <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:1 }}>📍 Cantón {userCanton}</p>}
+    <div style={{ background:'#fff' }}>
+      <section style={{ background:'linear-gradient(160deg, #1E40AF 0%, #2563EB 58%, #60A5FA 100%)', position:'relative', overflow:'hidden', padding:'26px 16px 34px' }}>
+        <div style={{ position:'absolute', top:-70, right:-60, width:220, height:220, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
+        <div style={{ position:'absolute', bottom:-60, left:-20, width:180, height:180, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
+        <div style={{ maxWidth:980, margin:'0 auto', position:'relative' }}>
+          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:10 }}>
+            {isLoggedIn && (
+              <Link to="/perfil" style={{ textDecoration:'none' }}>
+                <Avatar name={displayName} size={46} />
+              </Link>
+            )}
+          </div>
+
+          <div style={{ maxWidth:620 }}>
+            <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>Tu espacio dentro de Latido</p>
+            <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(30px,6vw,48px)', lineHeight:1.12, letterSpacing:-1, color:'#fff', margin:'0 0 14px' }}>
+              Hola, {firstName}.<br />
+              La app ya es tuya.
+            </h1>
+            <p style={{ fontFamily:PP, fontSize:14, color:'rgba(255,255,255,0.82)', lineHeight:1.7, maxWidth:520, margin:'0 0 24px' }}>
+              Publica, busca, conecta y resuelve trámites desde un inicio pensado para usuarios que ya forman parte de la comunidad.
+            </p>
+            <div style={{ marginBottom:22 }}>
+              <GlobalSearch
+                size="lg"
+                placeholder="Busca pisos, cuidadoras, DJs, comunidades o trámites..."
+              />
+            </div>
+            <Link to="/tablon" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#fff', color:C.primary, textDecoration:'none', padding:'13px 20px', borderRadius:14, display:'inline-flex', alignItems:'center', gap:6 }}>
+              Buscar en la comunidad
+            </Link>
+          </div>
         </div>
-        {isLoggedIn
-          ? <Link to="/perfil"><Avatar name={displayName} size={44} /></Link>
-          : <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:11, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'9px 15px' }}>Entrar</Link>
-        }
-      </div>
+      </section>
 
-      {/* Global search */}
-      <div style={{ marginBottom:18 }}>
-        <GlobalSearch size="sm" />
-      </div>
+      <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 8px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:14, marginBottom:18 }}>
+          <div>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>Tu inicio, como una landing privada</h2>
+            <p style={{ fontFamily:PP, fontSize:13, color:C.mid, margin:0, lineHeight:1.7 }}>
+              Lo más importante de la plataforma, pero ordenado para alguien que ya entró y quiere actuar rápido.
+            </p>
+          </div>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:12 }}>
+          {ACTIONS.map(action => (
+            <Link key={action.href} to={action.href} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:'18px 18px 17px', textDecoration:'none', boxShadow:'0 10px 24px rgba(15,23,42,0.04)' }}>
+              <div style={{ width:50, height:50, borderRadius:16, background:action.bg, display:'grid', placeItems:'center', fontSize:24, marginBottom:14 }}>{action.icon}</div>
+              <p style={{ fontFamily:PP, fontWeight:800, fontSize:16, color:C.text, margin:'0 0 6px' }}>{action.title}</p>
+              <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, margin:'0 0 12px' }}>{action.desc}</p>
+              <span style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:action.color }}>Abrir →</span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
-      {/* 2×2 quick actions */}
-      <div className="grid-2" style={{ gap:10, marginBottom:22 }}>
-        {QUICK.map(a => (
-          <Link key={a.href} to={a.href} style={{ background:a.bg, borderRadius:18, padding:'16px 14px', display:'flex', flexDirection:'column', gap:6, textDecoration:'none', position:'relative', overflow:'hidden', transition:'transform .15s' }}
-            onMouseEnter={e => e.currentTarget.style.transform='scale(0.98)'}
-            onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}>
-            <div style={{ position:'absolute', right:-8, top:-8, width:52, height:52, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }}/>
-            <span style={{ fontSize:24 }}>{a.icon}</span>
-            <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#fff', lineHeight:1.3, whiteSpace:'pre-line' }}>{a.label}</span>
-            <span style={{ fontFamily:PP, fontSize:9, color:'rgba(255,255,255,0.65)' }}>{a.sub}</span>
-          </Link>
-        ))}
-      </div>
+      <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 0' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, gap:12 }}>
+          <div>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>📌 Anuncios recientes</h2>
+            <p style={{ fontFamily:PP, fontSize:13, color:C.mid, margin:0, lineHeight:1.7 }}>
+              Ahora sí estás dentro: ya no hace falta enseñarte una muestra, te llevamos directo al movimiento real de la comunidad.
+            </p>
+          </div>
+          <Link to="/tablon" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todos →</Link>
+        </div>
 
-      {/* Recent ads */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-        <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text }}>📌 Anuncios recientes</p>
-        <Link to="/tablon" style={{ fontFamily:PP, fontSize:11, fontWeight:600, color:C.primary, textDecoration:'none' }}>Ver todos →</Link>
-      </div>
-      <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:22 }}>
-        {recentAds.map(ad => {
-          const cat = AD_CATS.find(c => c.id === ad.cat)
-          const CC = { vivienda:{bg:'#DBEAFE',tc:'#1D4ED8'}, hogar:{bg:'#D1FAE5',tc:'#065F46'}, cuidados:{bg:'#FCE7F3',tc:'#9D174D'}, documentos:{bg:'#EDE9FE',tc:'#6D28D9'}, venta:{bg:'#FEF3C7',tc:'#92400E'}, servicios:{bg:'#CCFBF1',tc:'#0F766E'}, regalo:{bg:'#FEE2E2',tc:'#B91C1C'} }
-          const cc = CC[ad.cat] || {bg:C.primaryLight,tc:C.primary}
-          return (
-            <Link key={ad.id} to="/tablon" style={{ textDecoration:'none' }}>
-              <div style={{ background:'#fff', borderRadius:13, border:`1px solid ${C.border}`, padding:'10px 13px', display:'flex', gap:10, alignItems:'flex-start' }}>
-                <div style={{ width:36, height:36, background:cc.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>{cat?.emoji}</div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, lineHeight:1.3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:4 }}>{ad.title}</p>
-                  <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
-                    <PrivacyTag privacy={ad.privacy}/>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:14 }}>
+          {recentAds.map(ad => {
+            const cat = AD_CATS.find(c => c.id === ad.cat)
+            const cc = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
+            return (
+              <Link key={ad.id} to="/tablon" style={{ textDecoration:'none' }}>
+                <div style={{ background:C.bg, borderRadius:18, border:`1px solid ${C.border}`, padding:'15px 15px 14px', height:'100%' }}>
+                  <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
+                    <PrivacyTag privacy={ad.privacy} />
                     <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-                    <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>· {ad.canton} · {ad.ts}</span>
+                    <Tag bg="#fff" color={C.light}>{ad.canton}</Tag>
+                  </div>
+                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.4, margin:'0 0 7px' }}>{ad.title}</p>
+                  <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, margin:'0 0 14px', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10 }}>
+                    <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user} · {ad.ts}</span>
+                    <span style={{ fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary }}>{ad.price}</span>
                   </div>
                 </div>
-                <span style={{ fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, flexShrink:0 }}>{ad.price}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
+
+      <section style={{ maxWidth:980, margin:'0 auto', padding:'40px 16px 0' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <div>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>🤝 Comunidades para ti</h2>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Tus próximos puntos de conexión en Suiza.</p>
+          </div>
+          <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>Ver más →</Link>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:10 }}>
+          {communityHighlights.map(group => (
+            <Link key={group.id} to="/comunidades" style={{ textDecoration:'none', background:'#fff', border:`1px solid ${C.border}`, borderRadius:18, padding:'14px 15px', display:'flex', gap:12, alignItems:'center' }}>
+              <span style={{ fontSize:30 }}>{group.emoji}</span>
+              <div style={{ minWidth:0 }}>
+                <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.name}</p>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{group.city} · 👥 {group.members} miembros</p>
               </div>
             </Link>
-          )
-        })}
-      </div>
-
-      {/* Communities */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-        <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text }}>🤝 Comunidades activas</p>
-        <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:600, color:C.primary, textDecoration:'none' }}>Ver todas →</Link>
-      </div>
-      <div className="grid-2" style={{ gap:8, marginBottom:22 }}>
-        {MOCK_COMMUNITIES.slice(0,4).map(c => (
-          <Link key={c.id} to="/comunidades" style={{ textDecoration:'none', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 12px', display:'flex', gap:8, alignItems:'center' }}>
-            <span style={{ fontSize:22 }}>{c.emoji}</span>
-            <div style={{ minWidth:0 }}>
-              <p style={{ fontFamily:PP, fontWeight:600, fontSize:10, color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:1, lineHeight:1.3 }}>{c.name}</p>
-              <p style={{ fontFamily:PP, fontSize:9, color:C.light }}>👥 {c.members}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* Publish CTA */}
-      <div style={{ background:'linear-gradient(135deg,#1E40AF,#2563EB)', borderRadius:18, padding:'16px 18px', display:'flex', alignItems:'center', gap:14 }}>
-        <span style={{ fontSize:28 }}>✏️</span>
-        <div style={{ flex:1 }}>
-          <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#fff', marginBottom:2 }}>Publica tu anuncio gratis</p>
-          <p style={{ fontFamily:PP, fontSize:10, color:'rgba(255,255,255,0.7)' }}>Público o privado — tú decides quién ve tu contacto</p>
+          ))}
         </div>
-        <Link to="/publicar" style={{ fontFamily:PP, fontWeight:700, fontSize:11, background:'#fff', color:C.primary, textDecoration:'none', borderRadius:10, padding:'9px 13px', flexShrink:0 }}>
-          Publicar
-        </Link>
-      </div>
+      </section>
+
+      <section style={{ maxWidth:980, margin:'0 auto', padding:'42px 16px 110px' }}>
+        <div style={{ background:'linear-gradient(135deg,#1E3A8A,#2563EB)', borderRadius:28, padding:'24px 22px', position:'relative', overflow:'hidden' }}>
+          <div style={{ position:'absolute', right:-28, top:-28, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }} />
+          <div style={{ position:'relative', display:'flex', justifyContent:'space-between', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+            <div style={{ maxWidth:520 }}>
+              <p style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:'#fff', margin:'0 0 8px', letterSpacing:-0.5 }}>Tu sesión se mantendrá activa hasta que cierres manualmente.</p>
+              <p style={{ fontFamily:PP, fontSize:13, color:'rgba(255,255,255,0.76)', lineHeight:1.7, margin:0 }}>
+                Ya no necesitas volver a entrar cada vez. Desde aquí puedes seguir explorando o publicar algo ahora mismo.
+              </p>
+            </div>
+            <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+              <Link to="/publicar" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#fff', color:C.primary, textDecoration:'none', padding:'13px 20px', borderRadius:14 }}>
+                Publicar anuncio
+              </Link>
+              <Link to="/perfil" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'rgba(255,255,255,0.14)', color:'#fff', textDecoration:'none', padding:'13px 20px', borderRadius:14, border:'1px solid rgba(255,255,255,0.22)' }}>
+                Ir a mi perfil
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

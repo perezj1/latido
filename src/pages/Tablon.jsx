@@ -3,9 +3,30 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP, CAT_COLORS } from '../lib/theme'
-import { MOCK_ADS, AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
+import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters } from '../components/UI'
 import toast from 'react-hot-toast'
+
+function JobCard({ job }) {
+  return (
+    <div style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14 }}>
+      <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>{job.emoji || '💼'}</div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
+          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0 }}>{job.title}</h3>
+          <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>
+        </div>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>{job.company} · 📍 {job.city || job.canton}</p>
+        {job.lang && <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>🗣️ {job.lang}</p>}
+        <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', margin:'4px 0 0' }}>{job.salary}</p>
+      </div>
+      {job.contact
+        ? <a href={`mailto:${job.contact}`} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:11, padding:'9px 14px', flexShrink:0 }}>Aplicar →</a>
+        : <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, flexShrink:0 }}>Ver →</span>
+      }
+    </div>
+  )
+}
 
 function AdFull({ ad, user, onReveal, revealed }) {
   const cat = AD_CATS.find(c => c.id === ad.cat)
@@ -32,7 +53,6 @@ function AdFull({ ad, user, onReveal, revealed }) {
           </div>
           <span style={{ fontFamily:PP, fontSize:13, fontWeight:800, color:C.primary }}>{ad.price}</span>
         </div>
-        {/* Contact block */}
         {isPrivate && !canSee ? (
           <div style={{ background:C.warnLight, border:`1px solid ${C.warnMid}`, borderRadius:12, padding:'11px 13px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
@@ -69,10 +89,10 @@ export default function Tablon() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { isLoggedIn, user } = useAuth()
   const [ads, setAds] = useState([])
+  const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [selected, setSelected] = useState(null)
   const [revealed, setRevealed] = useState({})
 
   const cat     = searchParams.get('cat') || ''
@@ -80,6 +100,9 @@ export default function Tablon() {
   const canton  = searchParams.get('canton') || ''
   const plz     = searchParams.get('plz') || ''
   const privacy = searchParams.get('privacy') || ''
+  const jobType = searchParams.get('jobType') || ''
+
+  const isEmpleos = cat === 'empleo'
 
   const setFilter = (k, v) => {
     const p = new URLSearchParams(searchParams)
@@ -98,21 +121,29 @@ export default function Tablon() {
   }, [user?.id])
 
   useEffect(() => {
-    async function load() {
-      try {
-        let q = supabase.from('ads').select('*').eq('active', true).order('created_at', { ascending:false })
-        if (cat)    q = q.eq('cat', cat)
-        if (type)   q = q.eq('type', type)
-        if (canton) q = q.eq('canton', canton)
-        if (plz)    q = q.ilike('plz', `${plz}%`)
-        const { data, error } = await q
-        if (error) throw error
-        setAds(data?.length ? data : filterMock())
-      } catch { setAds(filterMock()) }
-      finally { setLoading(false) }
+    setLoading(true)
+    if (isEmpleos) {
+      supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false })
+        .then(({ data, error }) => { setJobs(error || !data?.length ? MOCK_JOBS : data) })
+        .catch(() => setJobs(MOCK_JOBS))
+        .finally(() => setLoading(false))
+    } else {
+      async function load() {
+        try {
+          let q = supabase.from('ads').select('*').eq('active', true).order('created_at', { ascending:false })
+          if (cat)    q = q.eq('cat', cat)
+          if (type)   q = q.eq('type', type)
+          if (canton) q = q.eq('canton', canton)
+          if (plz)    q = q.ilike('plz', `${plz}%`)
+          const { data, error } = await q
+          if (error) throw error
+          setAds(data?.length ? data : filterMock())
+        } catch { setAds(filterMock()) }
+        finally { setLoading(false) }
+      }
+      load()
     }
-    load()
-  }, [cat, type, canton, plz])
+  }, [cat, type, canton, plz, isEmpleos])
 
   function filterMock() {
     return MOCK_ADS.filter(a =>
@@ -122,9 +153,14 @@ export default function Tablon() {
     )
   }
 
-  const filtered = ads.filter(a =>
+  const filteredAds = ads.filter(a =>
     (!privacy || a.privacy===privacy) &&
-    (!search || a.title.toLowerCase().includes(search.toLowerCase()) || a.desc.toLowerCase().includes(search.toLowerCase()))
+    (!search || a.title.toLowerCase().includes(search.toLowerCase()) || a.desc?.toLowerCase().includes(search.toLowerCase()))
+  )
+
+  const filteredJobs = jobs.filter(j =>
+    (!jobType || j.type===jobType) &&
+    (!search || j.title.toLowerCase().includes(search.toLowerCase()) || j.company?.toLowerCase().includes(search.toLowerCase()))
   )
 
   const handleReveal = async (adId) => {
@@ -136,37 +172,42 @@ export default function Tablon() {
     toast.success('Contacto desbloqueado')
   }
 
-  const catOptions   = [{ id:'', label:'Todos' }, ...AD_CATS.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
-  const typeOptions  = [{ id:'', label:'Todos' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
-  const privOptions  = [{ id:'', label:'Todos' }, { id:'public', label:'🌐 Públicos' }, { id:'private', label:'🔒 Privados' }]
+  const catOptions  = [{ id:'', label:'Todos' }, ...AD_CATS.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
+  const typeOptions = [{ id:'', label:'Todos' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
+  const privOptions = [{ id:'', label:'Todos' }, { id:'public', label:'🌐 Públicos' }, { id:'private', label:'🔒 Privados' }]
+  const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Full-time' }, { id:'Part-time', label:'Part-time' }]
 
   return (
     <div style={{ maxWidth:800, margin:'0 auto', padding:'24px 20px 100px' }}>
-      {/* Header */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
         <div>
-          <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, letterSpacing:-0.5, marginBottom:4 }}>📌 Tablón de anuncios</h1>
+          <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, letterSpacing:-0.5, marginBottom:4 }}>
+            {isEmpleos ? '💼 Empleos para latinos' : '📌 Tablón de anuncios'}
+          </h1>
           <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>
-            {loading ? 'Cargando...' : `${filtered.length} anuncios encontrados`}
+            {loading ? 'Cargando...' : isEmpleos ? `${filteredJobs.length} ofertas encontradas` : `${filteredAds.length} anuncios encontrados`}
             {canton && ` · 📍 Cantón ${canton}`}
           </p>
         </div>
         <a href="/publicar" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'10px 16px', flexShrink:0 }}>+ Publicar</a>
       </div>
 
-      {/* Search + filters */}
+      {/* Search */}
       <div style={{ display:'flex', gap:8, marginBottom:12 }}>
         <div style={{ flex:1, position:'relative' }}>
           <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:14, color:C.light }}>🔍</span>
           <input
             style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:13, padding:'10px 12px 10px 34px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', color:C.text, boxSizing:'border-box' }}
-            placeholder="Buscar en el tablón..." value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder={isEmpleos ? 'Buscar empleo o empresa...' : 'Buscar en el tablón...'}
+            value={search} onChange={e=>setSearch(e.target.value)}
           />
         </div>
-        <button onClick={()=>setShowFilters(true)} style={{ position:'relative', background: activeCount>0?C.primary:C.bg, border:`1.5px solid ${activeCount>0?C.primary:C.border}`, borderRadius:13, padding:'0 16px', cursor:'pointer', fontFamily:PP, fontSize:11, fontWeight:700, color: activeCount>0?'#fff':C.mid, display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-          ⚙️ Filtros
-          {activeCount > 0 && <span style={{ background:'#fff', color:C.primary, borderRadius:'50%', width:16, height:16, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800 }}>{activeCount}</span>}
-        </button>
+        {!isEmpleos && (
+          <button onClick={()=>setShowFilters(true)} style={{ position:'relative', background: activeCount>0?C.primary:C.bg, border:`1.5px solid ${activeCount>0?C.primary:C.border}`, borderRadius:13, padding:'0 16px', cursor:'pointer', fontFamily:PP, fontSize:11, fontWeight:700, color: activeCount>0?'#fff':C.mid, display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+            ⚙️ Filtros
+            {activeCount > 0 && <span style={{ background:'#fff', color:C.primary, borderRadius:'50%', width:16, height:16, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800 }}>{activeCount}</span>}
+          </button>
+        )}
       </div>
 
       {/* Category pills */}
@@ -178,8 +219,15 @@ export default function Tablon() {
         ))}
       </div>
 
+      {/* Job type pills (only when empleo selected) */}
+      {isEmpleos && (
+        <div style={{ marginBottom:16 }}>
+          <PillFilters options={jobTypeOpts} value={jobType} onChange={v=>setFilter('jobType',v)} />
+        </div>
+      )}
+
       {/* Active filter strip */}
-      {activeCount > 0 && (
+      {activeCount > 0 && !isEmpleos && (
         <div style={{ background:C.primaryLight, borderRadius:10, padding:'6px 12px', display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:14 }}>
           {canton  && <Tag bg={C.primaryMid} color={C.primaryDark}>📍 Cantón {canton}</Tag>}
           {plz     && <Tag bg={C.primaryMid} color={C.primaryDark}>📮 PLZ {plz}</Tag>}
@@ -192,9 +240,26 @@ export default function Tablon() {
       {/* Results */}
       {loading ? (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:160, borderRadius:16 }}/>)}
+          {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:isEmpleos?90:160, borderRadius:16 }}/>)}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : isEmpleos ? (
+        filteredJobs.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'60px 20px' }}>
+            <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
+            <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin ofertas ahora</h3>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>Vuelve pronto — se actualizan frecuentemente</p>
+          </div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {filteredJobs.map(j => <JobCard key={j.id} job={j} />)}
+            <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
+              <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Tienes una oferta de trabajo?</h3>
+              <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>Publica gratis y llega a miles de latinos en Suiza.</p>
+              <a href="mailto:hola@latido.ch?subject=Publicar oferta de empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 22px', borderRadius:13, display:'inline-flex' }}>Publicar empleo gratis</a>
+            </div>
+          </div>
+        )
+      ) : filteredAds.length === 0 ? (
         <div style={{ textAlign:'center', padding:'60px 20px' }}>
           <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
           <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin resultados</h3>
@@ -203,13 +268,13 @@ export default function Tablon() {
         </div>
       ) : (
         <div>
-          {filtered.map(ad => (
+          {filteredAds.map(ad => (
             <AdFull key={ad.id} ad={ad} user={isLoggedIn} revealed={!!revealed[ad.id]} onReveal={() => handleReveal(ad.id)} />
           ))}
         </div>
       )}
 
-      {/* Filters sheet */}
+      {/* Filters sheet (ads only) */}
       <Sheet show={showFilters} onClose={()=>setShowFilters(false)} title="⚙️ Filtros">
         <div style={{ marginBottom:14 }}>
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>TIPO DE ANUNCIO</p>

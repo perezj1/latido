@@ -23,19 +23,24 @@ export function AuthProvider({ children }) {
 
   const signUp = async ({ email, password, name, canton }) => {
     // The database trigger creates the profile row after auth signup.
-    return await supabase.auth.signUp({
+    const result = await supabase.auth.signUp({
       email,
       password,
       options: { data: { name, canton } },
     })
+    setUser(result.data?.session?.user ?? result.data?.user ?? null)
+    return result
   }
 
   const signIn = async ({ email, password }) => {
-    return await supabase.auth.signInWithPassword({ email, password })
+    const result = await supabase.auth.signInWithPassword({ email, password })
+    setUser(result.data?.session?.user ?? null)
+    return result
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
+    setUser(null)
   }
 
   const value = {

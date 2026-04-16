@@ -231,9 +231,9 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
       {id:'vivienda',emoji:'🏠',label:'Vivienda'},{id:'hogar',emoji:'🧹',label:'Hogar'},
       {id:'cuidados',emoji:'👶',label:'Cuidados'},{id:'documentos',emoji:'📋',label:'Docs'},
       {id:'venta',emoji:'🛒',label:'Venta'},{id:'servicios',emoji:'💼',label:'Servicios'},
-      {id:'regalo',emoji:'🎁',label:'Regalo'},
+      {id:'empleo',emoji:'💼',label:'Empleo'},{id:'regalo',emoji:'🎁',label:'Regalo'},
     ]
-    const map = {vivienda:{bg:'#DBEAFE',tc:'#1D4ED8'},hogar:{bg:'#D1FAE5',tc:'#065F46'},cuidados:{bg:'#FCE7F3',tc:'#9D174D'},documentos:{bg:'#EDE9FE',tc:'#6D28D9'},venta:{bg:'#FEF3C7',tc:'#92400E'},servicios:{bg:'#CCFBF1',tc:'#0F766E'},regalo:{bg:'#FEE2E2',tc:'#B91C1C'}}
+    const map = {vivienda:{bg:'#DBEAFE',tc:'#1D4ED8'},hogar:{bg:'#D1FAE5',tc:'#065F46'},cuidados:{bg:'#FCE7F3',tc:'#9D174D'},documentos:{bg:'#EDE9FE',tc:'#6D28D9'},venta:{bg:'#FEF3C7',tc:'#92400E'},servicios:{bg:'#CCFBF1',tc:'#0F766E'},empleo:{bg:'#DBEAFE',tc:'#1D4ED8'},regalo:{bg:'#FEE2E2',tc:'#B91C1C'}}
     return { AD_CATS: cats, CAT_COLORS_MAP: map }
   })()
   const cat = AD_CATS.find(c => c.id === ad.cat)

@@ -9,7 +9,7 @@ const FEATURES = [
   { icon:'🔒', title:'Privacidad a tu control',desc:'Cada anuncio puede ser público (visible para todos) o privado (solo usuarios con cuenta pueden ver el contacto).', color:'#FEF3C7' },
   { icon:'🤝', title:'Comunidades reales',     desc:'Grupos de colombianos, venezolanos, mamás latinas. Conecta con gente de tu país en tu ciudad de Suiza.', color:'#D1FAE5' },
   { icon:'📚', title:'Guías de trámites',      desc:'Krankenkasse, Quellensteuer, permisos B/C/L. La burocracia suiza explicada en español, paso a paso.', color:'#EDE9FE' },
-  { icon:'🎉', title:'Directorio de eventos',  desc:'DJs, catering, fotógrafos, decoradores para tu quinceañera, boda o fiesta latina en Suiza.', color:'#FCE7F3' },
+  { icon:'💼', title:'Empleos para latinos',    desc:'Ofertas en empresas y familias que valoran tu idioma y cultura. Trabajo en Suiza desde la comunidad.', color:'#FCE7F3' },
   { icon:'📱', title:'Instala como app',       desc:'Añade Latido a tu pantalla de inicio. Sin App Store. Sin Google Play. Solo toca "Instalar".', color:'#CCFBF1' },
 ]
 
@@ -32,7 +32,7 @@ export default function Landing({ onInstall }) {
             <span style={{ color:'#BAE6FD', fontStyle:'italic' }}>En tu idioma.</span>
           </h1>
           <p style={{ fontFamily:PP, fontSize:15, color:'rgba(255,255,255,0.8)', lineHeight:1.7, marginBottom:28, maxWidth:480 }}>
-            Tablón de anuncios con privacidad real, comunidades latinas, guías de trámites suizos y directorio de eventos. Sin comisiones. Siempre gratis.
+            Tablón de anuncios, comunidades latinas, guías de trámites suizos y empleos — todo en español. Sin comisiones. Siempre gratis.
           </p>
           <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
             <Link to="/tablon" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#fff', color:C.primary, textDecoration:'none', padding:'13px 24px', borderRadius:14, display:'inline-flex', alignItems:'center', gap:6 }}>

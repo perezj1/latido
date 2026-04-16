@@ -3,23 +3,31 @@ import { MOCK_DOCS } from '../lib/constants'
 import { C, PP } from '../lib/theme'
 import { Card, Tag, Modal, Btn, InfoBanner, PillFilters } from '../components/UI'
 
-export default function Documentos() {
+export default function Guias() {
   const [cat, setCat] = useState('')
   const [selected, setSelected] = useState(null)
-  const cats = [{id:'',label:'Todos'},{id:'permisos',label:'📄 Permisos'},{id:'impuestos',label:'🧾 Impuestos'},{id:'salud',label:'🏥 Salud'},{id:'banco',label:'🏦 Banco'},{id:'educacion',label:'🎓 Educación'}]
+  const cats = [
+    { id:'', label:'Todos' },
+    { id:'permisos', label:'📄 Permisos' },
+    { id:'impuestos', label:'🧾 Impuestos' },
+    { id:'salud', label:'🏥 Salud' },
+    { id:'banco', label:'🏦 Banco' },
+    { id:'educacion', label:'🎓 Educación' },
+  ]
   const filtered = MOCK_DOCS.filter(d => !cat || d.cat === cat)
+
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 24px 100px' }}>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>📚 Guías de trámites</h1>
-      <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:18 }}>La burocracia suiza explicada en español, paso a paso</p>
-      <InfoBanner emoji="⚡" title="¿Tienes una carta suiza que no entiendes?" text="Fotografíala y pregunta en el foro — la comunidad te ayuda en minutos." />
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>📚 Guías para vivir en Suiza</h1>
+      <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:18 }}>Trámites, seguros, bancos y derechos — en español</p>
+      <InfoBanner emoji="⚡" title="¿Tienes una carta suiza que no entiendes?" text="Escríbenos a hola@latido.ch — la comunidad te ayuda en minutos." />
       <PillFilters options={cats} value={cat} onChange={setCat} className="mb-4" />
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
         {filtered.map(doc => (
           <Card key={doc.id} onClick={() => setSelected(doc)}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
               <span style={{ fontSize:32 }}>{doc.emoji}</span>
-              <Tag bg={doc.level==='Básico'?'#D1FAE5':'#FEF3C7'} color={doc.level==='Básico'?'#065F46':'#92400E'}>{doc.level}</Tag>
+              <Tag bg={doc.level === 'Básico' ? '#D1FAE5' : '#FEF3C7'} color={doc.level === 'Básico' ? '#065F46' : '#92400E'}>{doc.level}</Tag>
             </div>
             <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, marginBottom:6, lineHeight:1.4 }}>{doc.title}</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:12 }}>{doc.summary}</p>
@@ -40,12 +48,12 @@ export default function Documentos() {
         {selected && (
           <>
             <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:14 }}>
-              <Tag bg={selected.level==='Básico'?'#D1FAE5':'#FEF3C7'} color={selected.level==='Básico'?'#065F46':'#92400E'}>{selected.level}</Tag>
+              <Tag bg={selected.level === 'Básico' ? '#D1FAE5' : '#FEF3C7'} color={selected.level === 'Básico' ? '#065F46' : '#92400E'}>{selected.level}</Tag>
               <Tag bg={C.primaryLight} color={C.primary}>⏱ {selected.time}</Tag>
             </div>
             <div style={{ fontFamily:PP, fontSize:13, lineHeight:1.9, color:C.mid, whiteSpace:'pre-line', marginBottom:16 }}>{selected.content}</div>
             <InfoBanner emoji="⚠️" title="Aviso" text="Esta guía es orientativa. Para casos específicos consulta la administración cantonal o un asesor certificado." />
-            <Btn onClick={() => setSelected(null)}>💬 Preguntar en el foro</Btn>
+            <Btn onClick={() => setSelected(null)}>Entendido</Btn>
           </>
         )}
       </Modal>

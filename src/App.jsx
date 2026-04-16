@@ -1,28 +1,21 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useEffect } from 'react'
-import { AuthProvider } from './hooks/useAuth'
+import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { C, PP } from './lib/theme'
 
-// Layout
-import Header from './components/Header'
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
 
-// Pages
-import Landing   from './pages/Landing'
-import Home      from './pages/Home'
-import Tablon    from './pages/Tablon'
-import Publicar  from './pages/Publicar'
+import Landing from './pages/Landing'
+import Home from './pages/Home'
+import Tablon from './pages/Tablon'
+import Publicar from './pages/Publicar'
 import Comunidades from './pages/Comunidades'
-import Documentos  from './pages/Documentos'
-import Familias    from './pages/Familias'
-import Foro        from './pages/Foro'
-import Empleos     from './pages/Empleos'
-import Directorio  from './pages/Directorio'
-import Perfil      from './pages/Perfil'
-import Auth        from './pages/Auth'
+import Guias from './pages/Guias'
+import Perfil from './pages/Perfil'
+import Auth from './pages/Auth'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -30,18 +23,41 @@ function ScrollToTop() {
   return null
 }
 
+function AppLoading() {
+  return (
+    <div style={{ minHeight:'100vh', display:'grid', placeItems:'center', background:`linear-gradient(180deg, ${C.bg} 0%, #fff 100%)`, padding:'24px' }}>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ width:68, height:68, margin:'0 auto 16px', borderRadius:20, background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color:'#fff', display:'grid', placeItems:'center', fontSize:30, boxShadow:'0 12px 30px rgba(37,99,235,0.22)' }}>
+          🌎
+        </div>
+        <p style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>Cargando tu espacio</p>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>Restaurando sesión y preparando la app.</p>
+      </div>
+    </div>
+  )
+}
+
+function AuthRoute() {
+  const { isLoggedIn, loading } = useAuth()
+
+  if (loading) return <AppLoading />
+  if (isLoggedIn) return <Navigate to="/" replace />
+
+  return <Auth />
+}
+
 function AppShell() {
   const { pathname } = useLocation()
   const { isPWA, canInstall, promptInstall } = usePWA()
+  const { isLoggedIn, loading } = useAuth()
 
-  // Landing page: shown when visiting "/" without PWA AND not logged in
-  // If isPWA=true, always show the Home app view
+  if (loading) return <AppLoading />
+
   const isRoot = pathname === '/'
-  const showLanding = isRoot && !isPWA
+  const showLanding = isRoot && !isPWA && !isLoggedIn
 
   if (showLanding) return (
     <>
-      {/* Minimal header for landing */}
       <nav style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,255,255,0.95)', backdropFilter:'blur(10px)', borderBottom:`1px solid ${C.border}`, padding:'12px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:18 }}>🌎</span>
@@ -68,24 +84,20 @@ function AppShell() {
     </>
   )
 
-  // App shell: for installed PWA or any inner page
   return (
     <>
-      <Header transparent={false} />
-      <main style={{ minHeight:'100vh', paddingBottom: 80 }}>
+      <main style={{ minHeight:'100vh', paddingBottom:80 }}>
         <Routes>
-          <Route path="/"            element={<Home />} />
-          <Route path="/tablon"      element={<Tablon />} />
-          <Route path="/publicar"    element={<Publicar />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/tablon" element={<Tablon />} />
+          <Route path="/publicar" element={<Publicar />} />
           <Route path="/comunidades" element={<Comunidades />} />
-          <Route path="/documentos"  element={<Documentos />} />
-          <Route path="/familias"    element={<Familias />} />
-          <Route path="/foro"        element={<Foro />} />
-          <Route path="/empleos"     element={<Empleos />} />
-          <Route path="/directorio"  element={<Directorio />} />
-          <Route path="/perfil"      element={<Perfil />} />
-          <Route path="/auth"        element={<Auth />} />
-          <Route path="*"            element={
+          <Route path="/guias" element={<Guias />} />
+          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/auth" element={<AuthRoute />} />
+          <Route path="/documentos" element={<Navigate to="/guias" replace />} />
+          <Route path="/empleos" element={<Navigate to="/tablon?cat=empleo" replace />} />
+          <Route path="*" element={
             <div style={{ textAlign:'center', padding:'100px 24px' }}>
               <div style={{ fontSize:64, marginBottom:16 }}>🌎</div>
               <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>Página no encontrada</h1>
@@ -94,7 +106,6 @@ function AppShell() {
           } />
         </Routes>
       </main>
-      <Footer />
       <BottomNav />
     </>
   )
@@ -112,7 +123,6 @@ export default function App() {
             success: { iconTheme: { primary:C.primary, secondary:'#fff' } },
           }}
         />
-        {/* Route-level split: landing "/" vs app shell */}
         <Routes>
           <Route path="/*" element={<AppShell />} />
         </Routes>

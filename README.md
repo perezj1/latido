@@ -1,6 +1,6 @@
 # 🌎 LatinoSuiza.ch — Plataforma integral para latinos en Suiza
 
-PWA + Web con landing page, tablón de anuncios con privacidad configurable, comunidades, trámites, directorio de eventos y más. React + Supabase + Vercel.
+PWA + Web con landing page, tablón de anuncios con privacidad configurable, comunidades, negocios latinos y guías prácticas para vivir en Suiza. React + Supabase + Vercel.
 
 ---
 
@@ -59,11 +59,8 @@ En [vercel.com](https://vercel.com):
 /tablon          ← Tablón de anuncios con filtros
 /publicar        ← Formulario de publicación (requiere cuenta)
 /comunidades     ← Grupos de latinos en Suiza
-/documentos      ← Guías de trámites suizos
-/familias        ← Cuidadoras, grupos de mamás, recursos
-/foro            ← Preguntas y respuestas
-/empleos         ← Ofertas de trabajo
-/directorio      ← Proveedores de eventos
+/guias           ← Guías para vivir en Suiza
+/tablon?cat=empleo ← Ofertas de trabajo dentro del tablón
 /perfil          ← Perfil de usuario
 /auth            ← Login / Registro (2 pasos)
 ```
@@ -93,7 +90,7 @@ La tabla `contact_reveals` registra qué usuarios han desbloqueado qué anuncios
 src/
 ├── components/
 │   ├── Header.jsx       ← Nav desktop + hamburger mobile
-│   ├── BottomNav.jsx    ← Nav inferior PWA (5 tabs + FAB)
+│   ├── BottomNav.jsx    ← Nav inferior PWA (4 tabs + FAB)
 │   ├── Footer.jsx       ← Footer completo
 │   └── UI.jsx           ← Librería: Btn, Card, Tag, Avatar, Modal, Sheet,
 │                           Input, Select, ProgressBar, PillFilters,
@@ -112,11 +109,7 @@ src/
 │   ├── Publicar.jsx     ← Formulario 4 pasos + selector privacidad
 │   ├── Auth.jsx         ← Login + registro 2 pasos
 │   ├── Comunidades.jsx
-│   ├── Documentos.jsx
-│   ├── Familias.jsx
-│   ├── Foro.jsx
-│   ├── Empleos.jsx
-│   ├── Directorio.jsx   ← Con modal de registro de proveedores
+│   ├── Guias.jsx
 │   └── Perfil.jsx
 ├── App.jsx              ← Router dual: Landing vs AppShell
 └── main.jsx
