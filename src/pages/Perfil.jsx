@@ -126,6 +126,8 @@ function buildEditorForm(item) {
       canton: row.canton || '',
       plz: row.plz || '',
       privacy: row.privacy || 'public',
+      contactPhone: row.contact_phone || '',
+      contactEmail: row.contact_email || '',
     }
   }
 
@@ -326,6 +328,8 @@ export default function Perfil() {
         canton: editorForm.canton || null,
         plz: editorForm.plz?.trim() || null,
         privacy: editorForm.privacy || 'public',
+        contact_phone: editorForm.contactPhone?.trim() || null,
+        contact_email: editorForm.contactEmail?.trim() || null,
         updated_at: new Date().toISOString(),
       }
       if (!payload.title || !payload.type) {
@@ -543,9 +547,15 @@ export default function Perfil() {
             return (
               <div key={deleteKey} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'14px 15px', marginBottom:10 }}>
                 <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
-                  <div style={{ width:42, height:42, borderRadius:12, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
-                    {item.icon}
-                  </div>
+                  {item.raw?.img_url ? (
+                    <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0 }}>
+                      <img src={item.raw.img_url} alt={item.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    </div>
+                  ) : (
+                    <div style={{ width:42, height:42, borderRadius:12, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                      {item.icon}
+                    </div>
+                  )}
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:6 }}>
                       <Tag bg="#DBEAFE" color={C.primaryDark}>{KIND_META[item.kind].label}</Tag>
@@ -588,28 +598,11 @@ export default function Perfil() {
                     ⋯
                   </button>
                 </div>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:12, paddingTop:10, borderTop:`1px solid ${C.border}` }}>
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-                    {deletingKey === deleteKey ? 'Borrando publicación...' : 'Gestiona esta publicación desde el menú'}
+                {deletingKey === deleteKey && (
+                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'10px 0 0', paddingTop:10, borderTop:`1px solid ${C.border}` }}>
+                    Borrando publicación...
                   </p>
-                  <button
-                    onClick={() => setActionItem(item)}
-                    disabled={deletingKey === deleteKey}
-                    style={{
-                      fontFamily:PP,
-                      fontWeight:700,
-                      fontSize:11,
-                      color:C.primary,
-                      background:'transparent',
-                      border:'none',
-                      cursor:deletingKey === deleteKey ? 'not-allowed' : 'pointer',
-                      padding:0,
-                      opacity:deletingKey === deleteKey ? 0.6 : 1,
-                    }}
-                  >
-                    Ver acciones
-                  </button>
-                </div>
+                )}
               </div>
             )
           })
@@ -692,6 +685,8 @@ export default function Perfil() {
               </Select>
               <Input label="PLZ" value={editorForm.plz || ''} onChange={event => updateEditorField('plz', event.target.value)} />
             </div>
+            <Input label="WhatsApp o teléfono" value={editorForm.contactPhone || ''} onChange={event => updateEditorField('contactPhone', event.target.value)} />
+            <Input label="Email de contacto" value={editorForm.contactEmail || ''} onChange={event => updateEditorField('contactEmail', event.target.value)} />
             <Select label="Privacidad" value={editorForm.privacy || 'public'} onChange={event => updateEditorField('privacy', event.target.value)}>
               <option value="public">Público</option>
               <option value="private">Privado</option>

@@ -1,10 +1,10 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
-import { Avatar, Tag, PrivacyTag } from '../components/UI'
-// Tag kept for ad category chips below
-import { MOCK_ADS, MOCK_COMMUNITIES, AD_CATS } from '../lib/constants'
+import { Avatar, Tag, PrivacyTag, Sheet } from '../components/UI'
+import { MOCK_ADS, MOCK_COMMUNITIES, MOCK_JOBS, MOCK_EVENTOS_LATINOS, AD_CATS } from '../lib/constants'
 
 const ACTIONS = [
   { href:'/tablon', icon:'📌', title:'Tablón activo', desc:'Pisos, trabajo, cuidados y ventas cerca de ti.', bg:'#DBEAFE', color:'#1D4ED8' },
@@ -28,6 +28,10 @@ export default function Home() {
   const firstName = displayName.split(' ')[0]
   const recentAds = MOCK_ADS.slice(0, 4)
   const communityHighlights = MOCK_COMMUNITIES.slice(0, 3)
+  const recentJobs = MOCK_JOBS.slice(0, 3)
+  const recentEvents = MOCK_EVENTOS_LATINOS.slice(0, 3)
+  const [selectedAd, setSelectedAd] = useState(null)
+  const [selectedCommunity, setSelectedCommunity] = useState(null)
 
   return (
     <div style={{ background:'#fff' }}>
@@ -104,7 +108,7 @@ export default function Home() {
             const cat = AD_CATS.find(c => c.id === ad.cat)
             const cc = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
             return (
-              <Link key={ad.id} to="/tablon" style={{ textDecoration:'none' }}>
+              <button key={ad.id} onClick={() => setSelectedAd(ad)} style={{ background:'none', border:'none', padding:0, textAlign:'left', cursor:'pointer', display:'block', width:'100%' }}>
                 <div style={{ background:C.bg, borderRadius:18, border:`1px solid ${C.border}`, padding:'15px 15px 14px', height:'100%' }}>
                   <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
                     <PrivacyTag privacy={ad.privacy} />
@@ -118,7 +122,7 @@ export default function Home() {
                     <span style={{ fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary }}>{ad.price}</span>
                   </div>
                 </div>
-              </Link>
+              </button>
             )
           })}
         </div>
@@ -134,11 +138,62 @@ export default function Home() {
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:10 }}>
           {communityHighlights.map(group => (
-            <Link key={group.id} to="/comunidades" style={{ textDecoration:'none', background:'#fff', border:`1px solid ${C.border}`, borderRadius:18, padding:'14px 15px', display:'flex', gap:12, alignItems:'center' }}>
-              <span style={{ fontSize:30 }}>{group.emoji}</span>
-              <div style={{ minWidth:0 }}>
-                <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.name}</p>
-                <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{group.city} · 👥 {group.members} miembros</p>
+            <button key={group.id} onClick={() => setSelectedCommunity(group)} style={{ background:'none', border:'none', padding:0, textAlign:'left', cursor:'pointer', width:'100%' }}>
+              <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:18, padding:'14px 15px', display:'flex', gap:12, alignItems:'center' }}>
+                <span style={{ fontSize:30 }}>{group.emoji}</span>
+                <div style={{ minWidth:0 }}>
+                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.name}</p>
+                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{group.city} · 👥 {group.members} miembros</p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ maxWidth:980, margin:'0 auto', padding:'40px 16px 0' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <div>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>💼 Empleos recientes</h2>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Ofertas publicadas por la comunidad.</p>
+          </div>
+          <Link to="/tablon?cat=empleo" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>Ver todos →</Link>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {recentJobs.map(job => (
+            <Link key={job.id} to="/tablon?cat=empleo" style={{ textDecoration:'none', background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'14px 15px', display:'flex', gap:12, alignItems:'center' }}>
+              <div style={{ width:44, height:44, background:'#EFF6FF', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>{job.emoji}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{job.title}</p>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 4px' }}>{job.company} · {job.city}</p>
+                <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 7px', borderRadius:10, background:'#D1FAE5', color:'#065F46' }}>{job.type}</span>
+              </div>
+              <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.primary, flexShrink:0, textAlign:'right', maxWidth:110 }}>{job.salary}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ maxWidth:980, margin:'0 auto', padding:'40px 16px 0' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <div>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>🎉 Eventos próximos</h2>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Próximos eventos de la comunidad latina.</p>
+          </div>
+          <Link to="/comunidades?view=eventos" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>Ver todos →</Link>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:12 }}>
+          {recentEvents.map(ev => (
+            <Link key={ev.id} to="/comunidades?view=eventos" style={{ textDecoration:'none', background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, overflow:'hidden', display:'block' }}>
+              {ev.img && <div style={{ height:130, overflow:'hidden' }}><img src={ev.img} alt={ev.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} /></div>}
+              <div style={{ padding:'12px 14px' }}>
+                <div style={{ display:'flex', gap:5, marginBottom:8 }}>
+                  <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 7px', borderRadius:10, background:'#FEF3C7', color:'#92400E' }}>📅 {ev.day} {ev.month}</span>
+                  <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 7px', borderRadius:10, background:C.primaryLight, color:C.primary }}>📍 {ev.city}</span>
+                </div>
+                <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 3px', lineHeight:1.35, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ev.title}</p>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 6px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ev.venue}</p>
+                <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary }}>{ev.price}</span>
               </div>
             </Link>
           ))}
@@ -166,6 +221,53 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* Ad detail sheet */}
+      <Sheet show={!!selectedAd} onClose={() => setSelectedAd(null)} title={selectedAd?.title || ''}>
+        {selectedAd && (() => {
+          const cat = AD_CATS.find(c => c.id === selectedAd.cat)
+          const cc = CAT_COLORS[selectedAd.cat] || { bg:C.primaryLight, tc:C.primary }
+          return (
+            <>
+              {selectedAd.img && (
+                <div style={{ borderRadius:12, overflow:'hidden', marginBottom:14 }}>
+                  <img src={selectedAd.img} alt={selectedAd.title} style={{ width:'100%', maxHeight:200, objectFit:'cover' }} />
+                </div>
+              )}
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+                <PrivacyTag privacy={selectedAd.privacy} />
+                <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
+                <Tag bg="#fff" color={C.light}>{selectedAd.canton} {selectedAd.plz}</Tag>
+              </div>
+              <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, margin:'0 0 16px' }}>{selectedAd.desc}</p>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+                <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>{selectedAd.user} · {selectedAd.ts}</span>
+                <span style={{ fontFamily:PP, fontWeight:800, fontSize:16, color:C.primary }}>{selectedAd.price}</span>
+              </div>
+              <Link to="/tablon" onClick={() => setSelectedAd(null)} style={{ display:'block', textAlign:'center', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 0', borderRadius:14 }}>
+                Ver todos los anuncios →
+              </Link>
+            </>
+          )
+        })()}
+      </Sheet>
+
+      {/* Community detail sheet */}
+      <Sheet show={!!selectedCommunity} onClose={() => setSelectedCommunity(null)} title={selectedCommunity?.name || ''}>
+        {selectedCommunity && (
+          <>
+            <div style={{ textAlign:'center', marginBottom:16 }}>
+              <span style={{ fontSize:52 }}>{selectedCommunity.emoji}</span>
+            </div>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 12px', textAlign:'center' }}>{selectedCommunity.city} · 👥 {selectedCommunity.members} miembros</p>
+            <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, margin:'0 0 20px' }}>{selectedCommunity.desc}</p>
+            {selectedCommunity.contact && (
+              <a href={selectedCommunity.contact} target="_blank" rel="noopener noreferrer" style={{ display:'block', textAlign:'center', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 0', borderRadius:14 }}>
+                Unirse a la comunidad →
+              </a>
+            )}
+          </>
+        )}
+      </Sheet>
     </div>
   )
 }

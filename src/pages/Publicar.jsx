@@ -12,7 +12,7 @@ const STEPS = [
   { title:'¿Qué quieres publicar?',     sub:'Elige la categoría de tu anuncio' },
   { title:'¿Buscas o ofreces?',          sub:'Cuéntanos cuál es tu rol' },
   { title:'Título y descripción',        sub:'Cuanto más detallado, mejor' },
-  { title:'Precio, zona y privacidad',   sub:'Último paso — tú decides la visibilidad' },
+  { title:'Precio, zona y contacto',     sub:'Último paso — cómo ubicarte y cómo contactarte' },
 ]
 
 export default function Publicar() {
@@ -22,7 +22,7 @@ export default function Publicar() {
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [done, setDone] = useState(false)
-  const [form, setForm] = useState({ cat:'', sub:'', type:'', title:'', desc:'', img_url:'', price:'', canton:'', plz:'', privacy:'public' })
+  const [form, setForm] = useState({ cat:'', sub:'', type:'', title:'', desc:'', img_url:'', price:'', canton:'', plz:'', privacy:'public', contactPhone:'', contactEmail:'' })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
 
   if (!isLoggedIn) return (
@@ -54,7 +54,7 @@ export default function Publicar() {
         </p>
       </div>
       <Btn onClick={() => navigate('/tablon')}>Ver en el tablón →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({cat:'',sub:'',type:'',title:'',desc:'',img_url:'',price:'',canton:'',plz:'',privacy:'public'}); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({cat:'',sub:'',type:'',title:'',desc:'',img_url:'',price:'',canton:'',plz:'',privacy:'public',contactPhone:'',contactEmail:''}); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otro anuncio
       </button>
     </div>
@@ -62,10 +62,17 @@ export default function Publicar() {
 
   const handleSubmit = async () => {
     if (!form.canton) { toast.error('Selecciona tu cantón'); return }
+    if (!form.contactPhone.trim() && !form.contactEmail.trim()) { toast.error('Añade al menos un método de contacto'); return }
     setLoading(true)
     try {
       const { error } = await supabase.from('ads').insert({
-        ...form, user_id: user?.id, active: true,
+        cat: form.cat, sub: form.sub, type: form.type,
+        title: form.title, desc: form.desc, img_url: form.img_url || null,
+        price: form.price || null, canton: form.canton, plz: form.plz || null,
+        privacy: form.privacy,
+        contact_phone: form.contactPhone.trim() || null,
+        contact_email: form.contactEmail.trim() || null,
+        user_id: user?.id, active: true,
         user_name: user?.user_metadata?.name || 'Usuario',
       })
       if (error) throw error
@@ -169,6 +176,11 @@ export default function Publicar() {
             </Select>
             <Input label="PLZ (código postal)" placeholder="8001" value={form.plz} onChange={e=>s('plz',e.target.value)} style={{ maxLength:4 }} />
           </div>
+
+          {/* Contact */}
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>CONTACTO <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0 }}>— al menos uno obligatorio</span></p>
+          <Input label="WhatsApp o teléfono" placeholder="+41 79 123 45 67" value={form.contactPhone} onChange={e=>s('contactPhone',e.target.value)} />
+          <Input label="Email de contacto" placeholder="tuemail@ejemplo.com" value={form.contactEmail} onChange={e=>s('contactEmail',e.target.value)} />
 
           {/* Privacy selector */}
           <div style={{ marginBottom:10 }}>
