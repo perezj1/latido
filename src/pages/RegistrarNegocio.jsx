@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { NEGOCIO_TYPES, CANTONS } from '../lib/constants'
-import { Btn, ProgressBar, Input, Select } from '../components/UI'
+import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -21,9 +22,11 @@ export default function RegistrarNegocio() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const [uploadingGallery, setUploadingGallery] = useState(false)
   const [done, setDone] = useState(false)
   const [form, setForm] = useState({
-    type:'', name:'', city:'', canton:'', desc:'', phone:'', instagram:'', services:'',
+    type:'', name:'', city:'', canton:'', desc:'', phone:'', instagram:'', services:'', photo_url:'', gallery:[],
   })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
 
@@ -49,7 +52,7 @@ export default function RegistrarNegocio() {
         Tu negocio ya está visible para la comunidad latina en Suiza.
       </p>
       <Btn onClick={() => navigate('/comunidades?view=negocios')}>Ver negocios →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', instagram:'', services:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', instagram:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro negocio
       </button>
     </div>
@@ -59,8 +62,9 @@ export default function RegistrarNegocio() {
     if (!form.name || !form.canton) { toast.error('Completa el nombre y el cantón'); return }
     setLoading(true)
     const servicesList = form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6)
+    const galleryPhotos = form.gallery.filter(url => url && url !== form.photo_url)
     try {
-      const { error } = await supabase.from('providers').insert({
+      const { data, error } = await supabase.from('providers').insert({
         user_id: user?.id,
         category: form.type,
         name: form.name.trim(),
@@ -69,13 +73,28 @@ export default function RegistrarNegocio() {
         description: form.desc.trim() || null,
         whatsapp: form.phone.trim() || null,
         instagram: form.instagram.trim() || null,
+        photo_url: form.photo_url.trim() || null,
         services: servicesList.length ? servicesList : null,
         languages: ['Español'],
         verified: false,
         featured: false,
         active: true,
-      })
+      }).select('id').single()
       if (error) throw error
+
+      if (galleryPhotos.length && data?.id) {
+        const { error: photosError } = await supabase.from('provider_photos').insert(
+          galleryPhotos.map((url, index) => ({
+            provider_id: data.id,
+            url,
+            sort_order: index + 1,
+          }))
+        )
+        if (photosError) {
+          toast.error('El negocio se publicó, pero algunas fotos extra no se pudieron guardar')
+        }
+      }
+
       setDone(true)
     } catch (error) {
       toast.error(error?.message || 'No se pudo registrar el negocio')
@@ -85,6 +104,35 @@ export default function RegistrarNegocio() {
   }
 
   const selectedType = NEGOCIO_TYPES_FORM.find(t => t.id === form.type)
+
+  const handleCoverUpload = async files => {
+    const file = files?.[0]
+    if (!file) return
+    setUploadingCover(true)
+    try {
+      const publicUrl = await uploadPublicationImage({ file, userId: user?.id, folder:'providers' })
+      s('photo_url', publicUrl)
+      toast.success('Portada subida')
+    } catch (error) {
+      toast.error(getStorageErrorMessage(error))
+    } finally {
+      setUploadingCover(false)
+    }
+  }
+
+  const handleGalleryUpload = async files => {
+    if (!files?.length) return
+    setUploadingGallery(true)
+    try {
+      const uploadedUrls = await uploadPublicationImages({ files, userId: user?.id, folder:'providers' })
+      setForm(prev => ({ ...prev, gallery:[...prev.gallery, ...uploadedUrls] }))
+      toast.success(`${uploadedUrls.length} foto(s) añadida(s)`)
+    } catch (error) {
+      toast.error(getStorageErrorMessage(error))
+    } finally {
+      setUploadingGallery(false)
+    }
+  }
 
   return (
     <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
@@ -98,7 +146,7 @@ export default function RegistrarNegocio() {
           {NEGOCIO_TYPES_FORM.map(t => {
             const [emoji, ...words] = t.label.split(' ')
             return (
-              <button key={t.id} onClick={() => { s('type', t.id); setStep(1); }}
+              <button key={t.id} onClick={() => s('type', t.id)}
                 style={{ background:form.type===t.id?C.primary:C.surface, borderRadius:16, padding:'18px 14px', display:'flex', flexDirection:'column', gap:7, border:`2px solid ${form.type===t.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
                 <span style={{ fontSize:26 }}>{emoji}</span>
                 <span style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:form.type===t.id?'#fff':C.text }}>{words.join(' ')}</span>
@@ -132,6 +180,23 @@ export default function RegistrarNegocio() {
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-8, marginBottom:12, lineHeight:1.6 }}>
             Lista tus servicios o productos principales separados por coma. Máximo 6.
           </p>
+          <ImageUploadField
+            label="Foto de portada (opcional)"
+            previewUrl={form.photo_url}
+            uploading={uploadingCover}
+            onFilesSelected={handleCoverUpload}
+            onRemove={() => s('photo_url', '')}
+            hint="Esta será la imagen principal del negocio dentro de comunidad."
+          />
+          <ImageUploadField
+            label="Más fotos (opcional)"
+            previewUrls={form.gallery}
+            uploading={uploadingGallery}
+            multiple
+            onFilesSelected={handleGalleryUpload}
+            onRemoveAt={index => setForm(prev => ({ ...prev, gallery:prev.gallery.filter((_, itemIndex) => itemIndex !== index) }))}
+            hint="Puedes añadir varias fotos del local, platos, productos o ambiente."
+          />
         </>
       )}
 
@@ -140,6 +205,11 @@ export default function RegistrarNegocio() {
         <>
         <div style={{ background:C.bg, borderRadius:16, padding:'16px 18px' }}>
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:12, letterSpacing:0.5 }}>RESUMEN DE TU NEGOCIO</p>
+          {form.photo_url && (
+            <div style={{ borderRadius:14, overflow:'hidden', marginBottom:12 }}>
+              <img src={form.photo_url} alt={form.name || 'Vista previa del negocio'} style={{ width:'100%', maxHeight:190, objectFit:'cover' }} />
+            </div>
+          )}
           <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
             {selectedType && (
               <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#DBEAFE', color:C.primaryDark }}>{selectedType.label}</span>
@@ -160,6 +230,7 @@ export default function RegistrarNegocio() {
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             {form.phone && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>💬 {form.phone}</span>}
             {form.instagram && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📸 {form.instagram}</span>}
+            {form.gallery.length > 0 && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📷 {form.gallery.length} foto(s) extra</span>}
           </div>
         </div>
         <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginTop:14 }}>
@@ -177,7 +248,11 @@ export default function RegistrarNegocio() {
           <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>
         )}
         {step < STEPS.length - 1 ? (
-          <Btn onClick={() => { if (step === 0 && !form.type) return; if (step === 1 && !form.name) { toast.error('Añade el nombre del negocio'); return; } setStep(s => s + 1); }} style={{ flex:1 }}>
+          <Btn onClick={() => {
+            if (step === 0 && !form.type) { toast.error('Selecciona el tipo de negocio'); return }
+            if (step === 1 && !form.name) { toast.error('Añade el nombre del negocio'); return }
+            setStep(s => s + 1)
+          }} style={{ flex:1 }}>
             Continuar →
           </Btn>
         ) : (

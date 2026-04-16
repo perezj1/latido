@@ -179,3 +179,57 @@ VALUES
   ('quedada',   'Quedada de nuevos en Suiza',   '24', 'MAY', '2026', '17:30', 'Gratis',        'Berna',   'BE', 'Rosengarten Café', 'Encuentro informal para hacer contactos, resolver dudas y conocer gente latina en tu ciudad.', 'Latido Comunidad', 'https://latido.ch/eventos/quedada-berna', '🤝', FALSE, TRUE),
   ('concierto', 'Noche de salsa en Lausanne',   '31', 'MAY', '2026', '21:00', 'CHF 18',        'Lausana', 'VD', 'Le Romandie', 'Banda en vivo, DJ invitado y clases cortas antes del concierto para todos los niveles.', 'Salsa Vaud', 'https://latido.ch/eventos/salsa-lausanne', '🎵', TRUE, TRUE)
 ON CONFLICT DO NOTHING;
+
+-- ================================================================
+-- STORAGE: PUBLICATION IMAGES
+-- Bucket pÃºblico para anuncios, eventos y negocios
+-- ================================================================
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'publication-images',
+  'publication-images',
+  TRUE,
+  5242880,
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+)
+ON CONFLICT (id) DO UPDATE
+SET public = EXCLUDED.public,
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "publication_images_read" ON storage.objects;
+CREATE POLICY "publication_images_read"
+  ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'publication-images');
+
+DROP POLICY IF EXISTS "publication_images_insert_own" ON storage.objects;
+CREATE POLICY "publication_images_insert_own"
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'publication-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+DROP POLICY IF EXISTS "publication_images_update_own" ON storage.objects;
+CREATE POLICY "publication_images_update_own"
+  ON storage.objects
+  FOR UPDATE
+  USING (
+    bucket_id = 'publication-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  )
+  WITH CHECK (
+    bucket_id = 'publication-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+DROP POLICY IF EXISTS "publication_images_delete_own" ON storage.objects;
+CREATE POLICY "publication_images_delete_own"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'publication-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );

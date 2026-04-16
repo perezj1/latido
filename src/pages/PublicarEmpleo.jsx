@@ -132,10 +132,10 @@ export default function PublicarEmpleo() {
       {step === 0 && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))', gap:10 }}>
           {JOB_SECTORS.map(sector => (
-            <button key={sector.id} onClick={() => { s('sector', sector.id); setStep(1); }}
+            <button key={sector.id} onClick={() => s('sector', sector.id)}
               style={{ background:form.sector===sector.id?C.primary:C.surface, borderRadius:16, padding:'16px 14px', display:'flex', flexDirection:'column', gap:7, border:`2px solid ${form.sector===sector.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
-              <span style={{ fontSize:24 }}>{sector.emoji}</span>
-              <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:form.sector===sector.id?'#fff':C.text, lineHeight:1.3 }}>{sector.label}</span>
+                <span style={{ fontSize:24 }}>{sector.emoji}</span>
+                <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:form.sector===sector.id?'#fff':C.text, lineHeight:1.3 }}>{sector.label}</span>
             </button>
           ))}
         </div>
@@ -230,7 +230,7 @@ export default function PublicarEmpleo() {
         )}
         {step < STEPS.length - 1 ? (
           <Btn onClick={() => {
-            if (step === 0 && !form.sector) return
+            if (step === 0 && !form.sector) { toast.error('Selecciona el sector'); return }
             if (step === 1 && !form.title) { toast.error('Añade el título del puesto'); return }
             if (step === 1 && !form.jobType) { toast.error('Selecciona el tipo de contrato'); return }
             if (step === 2 && !form.canton) { toast.error('Selecciona el cantón'); return }

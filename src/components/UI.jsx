@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { C, PP } from '../lib/theme'
 
 // ── Button ─────────────────────────────────────────────────────
@@ -129,6 +129,74 @@ export function Select({ label, value, onChange, children, required }) {
 }
 
 // ── Bottom Sheet ───────────────────────────────────────────────
+export function ImageUploadField({
+  label,
+  hint,
+  previewUrl='',
+  previewUrls=[],
+  uploading=false,
+  multiple=false,
+  onFilesSelected,
+  onRemove,
+  onRemoveAt,
+}) {
+  const deviceId = useId()
+  const cameraId = useId()
+  const previews = previewUrls.length ? previewUrls : (previewUrl ? [previewUrl] : [])
+
+  const handleFiles = event => {
+    const files = Array.from(event.target.files || [])
+    if (files.length) onFilesSelected?.(files)
+    event.target.value = ''
+  }
+
+  return (
+    <div style={{ marginBottom:12 }}>
+      {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}</label>}
+
+      {previews.length > 0 && (
+        <div style={{ display:'grid', gridTemplateColumns: multiple ? 'repeat(auto-fill,minmax(88px,1fr))' : '1fr', gap:8, marginBottom:10 }}>
+          {previews.map((url, index) => (
+            <div key={`${url}-${index}`} style={{ position:'relative', borderRadius:14, overflow:'hidden', border:`1px solid ${C.border}`, background:C.bg, minHeight: multiple ? 88 : 180 }}>
+              <img src={url} alt="Vista previa" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+              {(multiple ? onRemoveAt : onRemove) && (
+                <button
+                  type="button"
+                  onClick={() => multiple ? onRemoveAt?.(index) : onRemove?.()}
+                  style={{ position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(15,23,42,0.72)', color:'#fff', cursor:'pointer', fontSize:13 }}
+                >
+                  X
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ border:`1.5px dashed ${uploading ? C.primary : C.border}`, borderRadius:16, padding:'14px 14px 12px', background:uploading ? C.primaryLight : '#fff' }}>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 4px' }}>
+          {uploading ? 'Subiendo imagen...' : multiple ? 'Añade fotos desde tu dispositivo o la cámara' : 'Añade una imagen desde tu dispositivo o la cámara'}
+        </p>
+        <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 0 12px', lineHeight:1.6 }}>
+          {hint || (multiple ? 'En móvil puedes abrir la cámara o seleccionar varias fotos de la galería.' : 'En móvil puedes tomar una foto al momento o elegir una desde la galería.')}
+        </p>
+
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', gap:8 }}>
+          <label htmlFor={deviceId} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', borderRadius:12, padding:'11px 12px', textAlign:'center', cursor:uploading ? 'not-allowed' : 'pointer', opacity:uploading ? 0.6 : 1 }}>
+            🖼 Desde dispositivo
+          </label>
+          <label htmlFor={cameraId} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.bg, color:C.primary, border:`1.5px solid ${C.primaryMid}`, borderRadius:12, padding:'11px 12px', textAlign:'center', cursor:uploading ? 'not-allowed' : 'pointer', opacity:uploading ? 0.6 : 1 }}>
+            📷 Usar cámara
+          </label>
+        </div>
+
+        <input id={deviceId} type="file" accept="image/*" multiple={multiple} onChange={handleFiles} disabled={uploading} style={{ display:'none' }} />
+        <input id={cameraId} type="file" accept="image/*" capture="environment" onChange={handleFiles} disabled={uploading} style={{ display:'none' }} />
+      </div>
+    </div>
+  )
+}
+
 export function Sheet({ show, onClose, title, children }) {
   if (!show) return null
   return (

@@ -35,23 +35,25 @@ export default function Home() {
         <div style={{ position:'absolute', top:-70, right:-60, width:220, height:220, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
         <div style={{ position:'absolute', bottom:-60, left:-20, width:180, height:180, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
         <div style={{ maxWidth:980, margin:'0 auto', position:'relative' }}>
-          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:10 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:24 }}>
+            <div style={{ maxWidth:620, flex:1, minWidth:0 }}>
+              <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>Tu espacio dentro de Latido</p>
+              <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(30px,6vw,48px)', lineHeight:1.12, letterSpacing:-1, color:'#fff', margin:'0 0 14px' }}>
+                Hola, {firstName}.<br />
+                La app ya es tuya.
+              </h1>
+              <p style={{ fontFamily:PP, fontSize:14, color:'rgba(255,255,255,0.82)', lineHeight:1.7, maxWidth:520, margin:0 }}>
+                Publica, busca, conecta y resuelve trámites desde un inicio pensado para usuarios que ya forman parte de la comunidad.
+              </p>
+            </div>
             {isLoggedIn && (
-              <Link to="/perfil" style={{ textDecoration:'none' }}>
+              <Link to="/perfil" style={{ textDecoration:'none', flexShrink:0, marginTop:6 }}>
                 <Avatar name={displayName} size={46} />
               </Link>
             )}
           </div>
 
           <div style={{ maxWidth:620 }}>
-            <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>Tu espacio dentro de Latido</p>
-            <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(30px,6vw,48px)', lineHeight:1.12, letterSpacing:-1, color:'#fff', margin:'0 0 14px' }}>
-              Hola, {firstName}.<br />
-              La app ya es tuya.
-            </h1>
-            <p style={{ fontFamily:PP, fontSize:14, color:'rgba(255,255,255,0.82)', lineHeight:1.7, maxWidth:520, margin:'0 0 24px' }}>
-              Publica, busca, conecta y resuelve trámites desde un inicio pensado para usuarios que ya forman parte de la comunidad.
-            </p>
             <div style={{ marginBottom:22 }}>
               <GlobalSearch
                 size="lg"

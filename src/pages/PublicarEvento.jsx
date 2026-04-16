@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { EVENTO_TYPES, CANTONS } from '../lib/constants'
-import { Btn, ProgressBar, Input, Select } from '../components/UI'
+import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -21,10 +22,11 @@ export default function PublicarEvento() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [done, setDone] = useState(false)
   const [form, setForm] = useState({
     type:'', title:'', day:'', month:'', year:'', time:'', price:'',
-    city:'', canton:'', venue:'', desc:'', host:'', link:'',
+    city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'',
   })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
 
@@ -50,7 +52,7 @@ export default function PublicarEvento() {
         Tu evento ya está visible para la comunidad latina en Suiza.
       </p>
       <Btn onClick={() => navigate('/comunidades?view=eventos')}>Ver en eventos →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', title:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', title:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otro evento
       </button>
     </div>
@@ -72,6 +74,7 @@ export default function PublicarEvento() {
         canton: form.canton,
         venue: form.venue,
         desc: form.desc,
+        img_url: form.img_url || null,
         host: form.host || user?.user_metadata?.name || 'Organizador',
         link: form.link,
         user_id: user?.id,
@@ -91,6 +94,21 @@ export default function PublicarEvento() {
 
   const selectedType = EVENT_TYPES_FORM.find(t => t.id === form.type)
 
+  const handleImageUpload = async files => {
+    const file = files?.[0]
+    if (!file) return
+    setUploadingImage(true)
+    try {
+      const publicUrl = await uploadPublicationImage({ file, userId: user?.id, folder:'events' })
+      s('img_url', publicUrl)
+      toast.success('Imagen subida')
+    } catch (error) {
+      toast.error(getStorageErrorMessage(error))
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   return (
     <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
       <ProgressBar step={step} total={STEPS.length} />
@@ -103,7 +121,7 @@ export default function PublicarEvento() {
           {EVENT_TYPES_FORM.map(t => {
             const [emoji, ...words] = t.label.split(' ')
             return (
-              <button key={t.id} onClick={() => { s('type', t.id); setStep(1); }}
+              <button key={t.id} onClick={() => s('type', t.id)}
                 style={{ background:form.type===t.id?C.primary:C.surface, borderRadius:16, padding:'18px 14px', display:'flex', flexDirection:'column', gap:7, border:`2px solid ${form.type===t.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
                 <span style={{ fontSize:26 }}>{emoji}</span>
                 <span style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:form.type===t.id?'#fff':C.text }}>{words.join(' ')}</span>
@@ -139,6 +157,14 @@ export default function PublicarEvento() {
           </div>
           <Input label="Lugar / Venue" placeholder="Ej: Rote Fabrik, Club Zukunft, Rosengarten Café" value={form.venue} onChange={e=>s('venue',e.target.value)} />
           <Input label="Descripción del evento" placeholder="Cuéntanos qué habrá, qué pueden esperar los asistentes..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
+          <ImageUploadField
+            label="Imagen del evento (opcional)"
+            previewUrl={form.img_url}
+            uploading={uploadingImage}
+            onFilesSelected={handleImageUpload}
+            onRemove={() => s('img_url', '')}
+            hint="Puedes subir un cartel, flyer o foto del local. En móvil se abrirá también la cámara."
+          />
         </>
       )}
 
@@ -151,6 +177,11 @@ export default function PublicarEvento() {
           {form.title && (
             <div style={{ background:C.bg, borderRadius:14, padding:'14px 16px', marginTop:10 }}>
               <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:10, letterSpacing:0.5 }}>VISTA PREVIA</p>
+              {form.img_url && (
+                <div style={{ borderRadius:12, overflow:'hidden', marginBottom:10 }}>
+                  <img src={form.img_url} alt={form.title || 'Vista previa del evento'} style={{ width:'100%', maxHeight:180, objectFit:'cover' }} />
+                </div>
+              )}
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
                 {selectedType && (
                   <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#DBEAFE', color:C.primaryDark }}>{selectedType.label}</span>
@@ -183,7 +214,11 @@ export default function PublicarEvento() {
           <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>
         )}
         {step < STEPS.length - 1 ? (
-          <Btn onClick={() => { if (step === 0 && !form.type) return; if (step === 1 && !form.title) { toast.error('Añade un título'); return; } setStep(s => s + 1); }} style={{ flex:1 }}>
+          <Btn onClick={() => {
+            if (step === 0 && !form.type) { toast.error('Selecciona el tipo de evento'); return }
+            if (step === 1 && !form.title) { toast.error('Añade un título'); return }
+            setStep(s => s + 1)
+          }} style={{ flex:1 }}>
             Continuar →
           </Btn>
         ) : (

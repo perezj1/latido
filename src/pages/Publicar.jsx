@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
-import { Btn, ProgressBar, Input, Select } from '../components/UI'
+import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -19,8 +20,9 @@ export default function Publicar() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [done, setDone] = useState(false)
-  const [form, setForm] = useState({ cat:'', sub:'', type:'', title:'', desc:'', price:'', canton:'', plz:'', privacy:'public' })
+  const [form, setForm] = useState({ cat:'', sub:'', type:'', title:'', desc:'', img_url:'', price:'', canton:'', plz:'', privacy:'public' })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
 
   if (!isLoggedIn) return (
@@ -52,7 +54,7 @@ export default function Publicar() {
         </p>
       </div>
       <Btn onClick={() => navigate('/tablon')}>Ver en el tablón →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({cat:'',sub:'',type:'',title:'',desc:'',price:'',canton:'',plz:'',privacy:'public'}); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({cat:'',sub:'',type:'',title:'',desc:'',img_url:'',price:'',canton:'',plz:'',privacy:'public'}); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otro anuncio
       </button>
     </div>
@@ -77,6 +79,21 @@ export default function Publicar() {
 
   const selectedCat = AD_CATS.find(c => c.id === form.cat)
 
+  const handleImageUpload = async files => {
+    const file = files?.[0]
+    if (!file) return
+    setUploadingImage(true)
+    try {
+      const publicUrl = await uploadPublicationImage({ file, userId: user?.id, folder:'ads' })
+      s('img_url', publicUrl)
+      toast.success('Imagen subida')
+    } catch (error) {
+      toast.error(getStorageErrorMessage(error))
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   return (
     <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
       <ProgressBar step={step} total={STEPS.length} />
@@ -87,7 +104,7 @@ export default function Publicar() {
       {step === 0 && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
           {AD_CATS.map(cat => (
-            <button key={cat.id} onClick={() => { s('cat', cat.id); setStep(1); }}
+            <button key={cat.id} onClick={() => s('cat', cat.id)}
               style={{ background:form.cat===cat.id?C.primary:C.surface, borderRadius:16, padding:'18px 14px', display:'flex', flexDirection:'column', gap:7, border:`2px solid ${form.cat===cat.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
               <span style={{ fontSize:26 }}>{cat.emoji}</span>
               <span style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:form.cat===cat.id?'#fff':C.text }}>{cat.label}</span>
@@ -100,7 +117,7 @@ export default function Publicar() {
       {step === 1 && (
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           {AD_TYPES.map(t => (
-            <button key={t.id} onClick={() => { s('type', t.id); setStep(2); }}
+            <button key={t.id} onClick={() => s('type', t.id)}
               style={{ background:form.type===t.id?C.primaryLight:'#fff', border:`1.5px solid ${form.type===t.id?C.primary:C.border}`, borderRadius:14, padding:'14px 16px', cursor:'pointer', display:'flex', gap:12, alignItems:'center', textAlign:'left', transition:'all .15s' }}>
               <span style={{ fontSize:26 }}>{t.emoji}</span>
               <div>
@@ -130,6 +147,14 @@ export default function Publicar() {
         <>
           <Input label="Título del anuncio" placeholder="Ej: Busco habitación en Zürich / Ofrezco limpieza de pisos" required value={form.title} onChange={e=>s('title',e.target.value)} />
           <Input label="Descripción" placeholder="Cuéntanos con detalle qué buscas u ofreces. Cuánta más info, mejor respuesta recibirás." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
+          <ImageUploadField
+            label="Imagen del anuncio (opcional)"
+            previewUrl={form.img_url}
+            uploading={uploadingImage}
+            onFilesSelected={handleImageUpload}
+            onRemove={() => s('img_url', '')}
+            hint="Ideal para pisos, productos o servicios. En móvil puedes tomar la foto al momento."
+          />
         </>
       )}
 
@@ -174,6 +199,11 @@ export default function Publicar() {
           {form.title && (
             <div style={{ background:C.bg, borderRadius:14, padding:'12px 14px', marginBottom:10 }}>
               <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:8, letterSpacing:0.5 }}>VISTA PREVIA</p>
+              {form.img_url && (
+                <div style={{ borderRadius:12, overflow:'hidden', marginBottom:10 }}>
+                  <img src={form.img_url} alt={form.title || 'Vista previa'} style={{ width:'100%', maxHeight:180, objectFit:'cover' }} />
+                </div>
+              )}
               <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:6 }}>
                 {selectedCat && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:form.privacy==='private'?C.warnLight:C.successLight, color:form.privacy==='private'?'#92400E':'#065F46' }}>{form.privacy==='private'?'🔒 Privado':'🌐 Público'}</span>}
                 {form.canton && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>📍 {form.canton} {form.plz}</span>}
@@ -191,7 +221,11 @@ export default function Publicar() {
           <Btn onClick={() => setStep(s => s-1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>
         )}
         {step < STEPS.length - 1 ? (
-          <Btn onClick={() => { if(step===0&&!form.cat)return; if(step===1&&!form.type)return; setStep(s=>s+1); }} style={{ flex:1 }}>
+          <Btn onClick={() => {
+            if (step === 0 && !form.cat) { toast.error('Selecciona una categoría'); return }
+            if (step === 1 && !form.type) { toast.error('Selecciona tu rol'); return }
+            setStep(s=>s+1)
+          }} style={{ flex:1 }}>
             Continuar →
           </Btn>
         ) : (
