@@ -1,4 +1,4 @@
-const CACHE = 'latinosuiza-v1'
+const CACHE = 'latido-v1'
 const STATIC = ['/', '/index.html', '/manifest.json']
 
 self.addEventListener('install', e => {

@@ -46,7 +46,7 @@ function AppShell() {
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:18 }}>🌎</span>
           <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>
-            Latino<span style={{ color:C.text }}>Suiza</span>
+            Lati<span style={{ color:C.text }}>do</span>
             <span style={{ fontSize:9, background:C.primary, color:'#fff', padding:'2px 5px', borderRadius:5, marginLeft:4 }}>.ch</span>
           </span>
         </div>

@@ -327,7 +327,7 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
   return (
     <div style={{ marginBottom:16 }}>
       {/* Main image */}
-      <div style={{ position:'relative', borderRadius:16, overflow:'hidden', marginBottom:8, height:220 }}>
+      <div className="photo-main" style={{ position:'relative', borderRadius:16, overflow:'hidden', marginBottom:8 }}>
         <img src={all[active]} alt="foto" style={{ width:'100%', height:'100%', objectFit:'cover', transition:'opacity .2s' }} />
         {all.length > 1 && (
           <>
@@ -383,7 +383,7 @@ export function ReviewForm({ onSubmit, onCancel }) {
       </div>
 
       {/* Name + canton */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
+      <div className="grid-2" style={{ gap:8, marginBottom:8 }}>
         <div>
           <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>TU NOMBRE *</p>
           <input style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', boxSizing:'border-box' }}

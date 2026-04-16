@@ -42,7 +42,7 @@ export default function Familias() {
                   </div>
                 </div>
                 <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:12 }}>{c.desc}</p>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
+                <div className="grid-2" style={{ gap:8, marginBottom:12 }}>
                   {[['Edades',c.ages,'#DBEAFE','#1D4ED8'],['Precio',c.price,'#D1FAE5','#065F46']].map(([k,v,bg,tc])=>(
                     <div key={k} style={{ background:bg, borderRadius:12, padding:'8px 10px' }}>
                       <div style={{ fontFamily:PP, fontSize:9, color:C.mid, marginBottom:2 }}>{k}</div>

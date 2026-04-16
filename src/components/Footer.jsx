@@ -14,7 +14,7 @@ export default function Footer() {
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
               <span style={{ fontSize:22 }}>🌎</span>
-              <span style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.primary }}>Latino<span style={{ color:'#fff' }}>Suiza</span></span>
+              <span style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.primary }}>Lati<span style={{ color:'#fff' }}>do</span></span>
             </div>
             <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.7, marginBottom:16 }}>
               La plataforma integral para latinos en Suiza. Tablón de anuncios, comunidades, trámites y directorio de eventos — todo en español.
@@ -36,7 +36,7 @@ export default function Footer() {
           <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Instalar app</h4>
             <p style={{ fontFamily:PP, fontSize:11, lineHeight:1.7, marginBottom:10 }}>
-              Añade LatinoSuiza a tu pantalla de inicio como app nativa.
+              Añade Latido a tu pantalla de inicio como app nativa.
             </p>
             {['🍎 iPhone: Compartir → Añadir a inicio','🤖 Android: Menú → Instalar app','💻 PC: Icono en la barra de URL'].map(t => (
               <p key={t} style={{ fontFamily:PP, fontSize:10, color:'#475569', marginBottom:4 }}>{t}</p>
@@ -44,18 +44,18 @@ export default function Footer() {
           </div>
           <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Contacto</h4>
-            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📧 hola@latinosuiza.ch</p>
+            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📧 hola@latido.ch</p>
             <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📍 Zürich, Suiza</p>
             <div style={{ marginTop:14, background:'#1E293B', borderRadius:12, padding:'12px 14px' }}>
               <p style={{ fontFamily:PP, fontSize:11, color:'#64748B', margin:0 }}>
                 ¿Proveedor de eventos?{' '}
-                <Link to="/directorio/registro" style={{ color:C.primary, fontWeight:700 }}>Únete gratis →</Link>
+                <Link to="/directorio" style={{ color:C.primary, fontWeight:700 }}>Únete gratis →</Link>
               </p>
             </div>
           </div>
         </div>
         <div style={{ borderTop:'1px solid #1E293B', paddingTop:20, paddingBottom:24, display:'flex', flexWrap:'wrap', justifyContent:'space-between', alignItems:'center', gap:10 }}>
-          <p style={{ fontFamily:PP, fontSize:11, margin:0 }}>© 2025 LatinoSuiza.ch — Hecho con 💙 para la comunidad latina</p>
+          <p style={{ fontFamily:PP, fontSize:11, margin:0 }}>© 2025 Latido.ch — Hecho con 💙 para la comunidad latina</p>
           <div style={{ display:'flex', gap:16 }}>
             {['Privacidad','Términos'].map(l => (
               <Link key={l} to={`/${l.toLowerCase()}`} style={{ fontFamily:PP, fontSize:11, color:'#475569', textDecoration:'none' }}>{l}</Link>

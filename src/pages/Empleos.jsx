@@ -22,7 +22,7 @@ export default function Empleos() {
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, letterSpacing:-0.5, marginBottom:4 }}>💼 Empleos para latinos</h1>
           <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Trabajo en empresas y familias que valoran tu idioma y cultura</p>
         </div>
-        <a href="mailto:hola@latinosuiza.ch?subject=Quiero publicar empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 16px', flexShrink:0 }}>+ Publicar oferta</a>
+        <a href="mailto:hola@latido.ch?subject=Quiero publicar empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 16px', flexShrink:0 }}>+ Publicar oferta</a>
       </div>
       <PillFilters options={typeOpts} value={type} onChange={setType} className="mb-4" />
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
@@ -46,7 +46,7 @@ export default function Empleos() {
       </div>
       <Modal show={!!selected} onClose={()=>setSelected(null)} title={selected?.title||''}>
         {selected && <>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16 }}>
+          <div className="grid-2" style={{ gap:10, marginBottom:16 }}>
             {[['📍 Ciudad',selected.city],['💰 Salario',selected.salary],['⏰ Tipo',selected.type],['🗣️ Idioma',selected.lang]].map(([k,v])=>v&&(
               <div key={k} style={{ background:C.bg, borderRadius:12, padding:'10px 12px' }}>
                 <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 2px' }}>{k}</p>

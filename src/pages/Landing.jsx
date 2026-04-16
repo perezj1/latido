@@ -10,7 +10,7 @@ const FEATURES = [
   { icon:'🤝', title:'Comunidades reales',     desc:'Grupos de colombianos, venezolanos, mamás latinas. Conecta con gente de tu país en tu ciudad de Suiza.', color:'#D1FAE5' },
   { icon:'📚', title:'Guías de trámites',      desc:'Krankenkasse, Quellensteuer, permisos B/C/L. La burocracia suiza explicada en español, paso a paso.', color:'#EDE9FE' },
   { icon:'🎉', title:'Directorio de eventos',  desc:'DJs, catering, fotógrafos, decoradores para tu quinceañera, boda o fiesta latina en Suiza.', color:'#FCE7F3' },
-  { icon:'📱', title:'Instala como app',       desc:'Añade LatinoSuiza a tu pantalla de inicio. Sin App Store. Sin Google Play. Solo toca "Instalar".', color:'#CCFBF1' },
+  { icon:'📱', title:'Instala como app',       desc:'Añade Latido a tu pantalla de inicio. Sin App Store. Sin Google Play. Solo toca "Instalar".', color:'#CCFBF1' },
 ]
 
 export default function Landing({ onInstall }) {
@@ -42,7 +42,7 @@ export default function Landing({ onInstall }) {
               Crear cuenta gratis
             </Link>
           </div>
-          <div style={{ display:'flex', gap:32, marginTop:48, paddingTop:36, borderTop:'1px solid rgba(255,255,255,0.15)', flexWrap:'wrap' }}>
+          <div className="hero-stats" style={{ marginTop:48, paddingTop:36, borderTop:'1px solid rgba(255,255,255,0.15)' }}>
             {[['400k+','Latinos en Suiza'],['100%','Gratis siempre'],['🔒','Privacidad real'],['8','Secciones']].map(([v,l]) => (
               <div key={l}>
                 <p style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:'#fff', margin:'0 0 2px' }}>{v}</p>
@@ -149,8 +149,8 @@ export default function Landing({ onInstall }) {
       {/* ── PRIVACY EXPLAINER ── */}
       <section style={{ maxWidth:900, margin:'0 auto', padding:'52px 24px' }}>
         <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>🔒 Tu privacidad, tu decisión</h2>
-        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:28, lineHeight:1.7 }}>Al publicar un anuncio en LatinoSuiza, tú eliges quién puede ver tu contacto.</p>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:28, lineHeight:1.7 }}>Al publicar un anuncio en Latido.ch, tú eliges quién puede ver tu contacto.</p>
+        <div className="grid-2" style={{ gap:16 }}>
           <div style={{ background:C.successLight, border:`2px solid ${C.successMid}`, borderRadius:20, padding:'22px 20px' }}>
             <p style={{ fontSize:32, marginBottom:10 }}>🌐</p>
             <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:'#065F46', marginBottom:8 }}>Anuncio Público</h3>
@@ -170,7 +170,7 @@ export default function Landing({ onInstall }) {
       <section style={{ background:'linear-gradient(135deg,#1E3A8A,#1D4ED8)', padding:'52px 24px', margin:'0 0 0' }}>
         <div style={{ maxWidth:700, margin:'0 auto', textAlign:'center' }}>
           <p style={{ fontSize:48, marginBottom:12 }}>📱</p>
-          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:'#fff', marginBottom:10, letterSpacing:-0.5 }}>Instala LatinoSuiza como app</h2>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:'#fff', marginBottom:10, letterSpacing:-0.5 }}>Instala Latido como app</h2>
           <p style={{ fontFamily:PP, fontSize:13, color:'rgba(255,255,255,0.75)', lineHeight:1.7, marginBottom:28 }}>
             Sin pasar por la App Store. Sin Google Play. Añádela a tu pantalla de inicio directamente desde el navegador y tendrás la experiencia completa de app.
           </p>

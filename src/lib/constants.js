@@ -90,7 +90,7 @@ export const MOCK_COMMUNITIES = [
   { id:'c5', name:'Profesionales Latinos CH',   cat:'profesional',city:'Toda Suiza', members:267, emoji:'💼', verified:true,  desc:'Red de profesionales latinoamericanos. Networking y mentoring.', contact:'https://chat.whatsapp.com/ejemplo' },
   { id:'c6', name:'Aprende Alemán con Latinos', cat:'idioma',     city:'Zürich',     members:198, emoji:'🇩🇪', verified:false, desc:'Práctica de alemán para hispanohablantes. Clases peer-to-peer.', contact:'https://t.me/alemanlatinoch' },
   { id:'c7', name:'Fe Latina Suiza',            cat:'fe',         city:'Toda Suiza', members:445, emoji:'🙏', verified:true,  desc:'Comunidad cristiana latina. Cultos y grupos de estudio.', contact:'https://chat.whatsapp.com/ejemplo' },
-  { id:'c8', name:'Gastronomía Latina CH',      cat:'gastronomia',city:'Toda Suiza', members:334, emoji:'🍳', verified:false, desc:'Recetas, ingredientes latinos y cenas comunitarias.', contact:'https://t.me/gastrolatinosuiza' },
+  { id:'c8', name:'Gastronomía Latina CH',      cat:'gastronomia',city:'Toda Suiza', members:334, emoji:'🍳', verified:false, desc:'Recetas, ingredientes latinos y cenas comunitarias.', contact:'https://t.me/gastrolatinoch' },
 ]
 
 export const MOCK_DOCS = [

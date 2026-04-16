@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
 import { Btn, ProgressBar, Input, Select } from '../components/UI'
 import { CANTONS } from '../lib/constants'
@@ -28,9 +29,31 @@ export default function Auth() {
   const handleRegister = async () => {
     if (!form.canton) { toast.error('Selecciona tu cantón'); return }
     setLoading(true)
-    const { error } = await signUp({ email:form.email, password:form.password, name:form.name, canton:form.canton })
-    if (error) toast.error(error.message)
-    else { toast.success('¡Cuenta creada! Bienvenido/a 🎉'); navigate('/') }
+    const { data, error } = await signUp({ email:form.email, password:form.password, name:form.name, canton:form.canton })
+    if (error) {
+      const msg = error.message?.toLowerCase() || ''
+      if (msg.includes('database') || msg.includes('saving')) {
+        toast.error('Error interno. Intenta de nuevo en unos segundos.')
+      } else if (msg.includes('already registered') || msg.includes('already exists')) {
+        toast.error('Este email ya está registrado. Inicia sesión.')
+      } else if (msg.includes('password')) {
+        toast.error('La contraseña debe tener al menos 6 caracteres.')
+      } else {
+        toast.error('Error al crear la cuenta. Inténtalo de nuevo.')
+      }
+    } else {
+      // Manually create profile as fallback in case the trigger failed
+      if (data?.user) {
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          name: form.name,
+          email: form.email,
+          canton: form.canton,
+        }, { onConflict: 'id' }).catch(() => {})
+      }
+      toast.success('¡Cuenta creada! Bienvenido/a 🎉')
+      navigate('/')
+    }
     setLoading(false)
   }
 
@@ -39,27 +62,13 @@ export default function Auth() {
       <div style={{ textAlign:'center', marginBottom:28 }}>
         <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🌎</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Bienvenido/a</h1>
-        <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Inicia sesión en LatinoSuiza</p>
+        <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Inicia sesión en Latido.ch</p>
       </div>
 
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e=>s('email',e.target.value)} required />
       <Input label="Contraseña" type="password" placeholder="Tu contraseña" value={form.password} onChange={e=>s('password',e.target.value)} required />
 
       <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
-
-      <div style={{ display:'flex', alignItems:'center', gap:10, margin:'16px 0' }}>
-        <div style={{ flex:1, height:1, background:C.border }}/>
-        <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>o continúa con</span>
-        <div style={{ flex:1, height:1, background:C.border }}/>
-      </div>
-
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:20 }}>
-        {[['🇬 Google','#fff',C.mid],['📘 Facebook','#1877F2','#fff']].map(([l,bg,tc]) => (
-          <button key={l} style={{ fontFamily:PP, fontWeight:600, fontSize:12, background:bg, color:tc, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 0', cursor:'pointer' }}>
-            {l}
-          </button>
-        ))}
-      </div>
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center' }}>
         ¿Sin cuenta?{' '}

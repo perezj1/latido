@@ -30,13 +30,13 @@ export default function Header({ transparent }) {
         <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
           <div style={{ width:34, height:34, background:C.primaryLight, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🌎</div>
           <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>
-            Latino<span style={{ color:C.text }}>Suiza</span>
+            Lati<span style={{ color:C.text }}>do</span>
             <span style={{ fontSize:9, background:C.primary, color:'#fff', padding:'2px 5px', borderRadius:5, marginLeft:4, fontWeight:700 }}>.ch</span>
           </span>
         </Link>
 
         {/* Desktop nav */}
-        <nav style={{ display:'flex', gap:2, alignItems:'center' }} className="hidden lg:flex">
+        <nav className="show-lg" style={{ gap:2, alignItems:'center' }}>
           {NAV.map(l => {
             const active = pathname.startsWith(l.href)
             return (
@@ -62,7 +62,7 @@ export default function Header({ transparent }) {
             </Link>
           )}
           {/* Hamburger */}
-          <button onClick={() => setOpen(!open)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'8px 10px', cursor:'pointer', display:'flex', flexDirection:'column', gap:4 }} className="lg:hidden">
+          <button onClick={() => setOpen(!open)} className="hide-lg" style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'8px 10px', cursor:'pointer', flexDirection:'column', gap:4 }}>
             {[0,1,2].map(i => <span key={i} style={{ width:18, height:2, background:C.mid, borderRadius:2, display:'block' }} />)}
           </button>
         </div>

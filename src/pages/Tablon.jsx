@@ -15,7 +15,7 @@ function AdFull({ ad, user, onReveal, revealed }) {
 
   return (
     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', marginBottom:10 }}>
-      {ad.img && <img src={ad.img} alt={ad.title} style={{ width:'100%', height:180, objectFit:'cover' }}/>}
+      {(ad.img_url || ad.img) && <img src={ad.img_url || ad.img} alt={ad.title} style={{ width:'100%', height:180, objectFit:'cover' }}/>}
       <div style={{ padding:'13px 15px' }}>
         <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:8 }}>
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
@@ -27,8 +27,8 @@ function AdFull({ ad, user, onReveal, revealed }) {
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:10 }}>{ad.desc}</p>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
           <div style={{ display:'flex', gap:7, alignItems:'center' }}>
-            <Avatar name={ad.user} size={22}/>
-            <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user} · 📍 {ad.canton} {ad.plz} · {ad.ts}</span>
+            <Avatar name={ad.user_name || ad.user} size={22}/>
+            <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user_name || ad.user || 'Usuario'} · 📍 {ad.canton} {ad.plz} · {ad.ts || (ad.created_at ? new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')}</span>
           </div>
           <span style={{ fontFamily:PP, fontSize:13, fontWeight:800, color:C.primary }}>{ad.price}</span>
         </div>
@@ -49,13 +49,15 @@ function AdFull({ ad, user, onReveal, revealed }) {
         ) : isPrivate && canSee ? (
           <div style={{ background:C.successLight, border:`1px solid ${C.successMid}`, borderRadius:12, padding:'11px 13px' }}>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.success, marginBottom:6 }}>✅ Contacto desbloqueado</p>
-            <p style={{ fontFamily:PP, fontSize:12, color:'#065F46', marginBottom:3 }}>📱 WhatsApp: +41 79 000 11 22</p>
-            <p style={{ fontFamily:PP, fontSize:12, color:'#065F46' }}>📧 {ad.user?.toLowerCase().replace(' ','.')}@email.com</p>
+            {ad.whatsapp && <a href={`https://wa.me/${ad.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontSize:12, color:'#065F46', marginBottom:4, textDecoration:'none', display:'block', fontWeight:600 }}>📱 {ad.whatsapp}</a>}
+            {ad.email_contact && <a href={`mailto:${ad.email_contact}`} style={{ fontFamily:PP, fontSize:12, color:'#065F46', textDecoration:'none', display:'block', fontWeight:600 }}>📧 {ad.email_contact}</a>}
+            {!ad.whatsapp && !ad.email_contact && <p style={{ fontFamily:PP, fontSize:12, color:'#065F46', margin:0 }}>Sin datos de contacto indicados</p>}
           </div>
         ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-            <button style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:'#25D366', color:'#fff', border:'none', borderRadius:12, padding:'11px 0', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>💬 WhatsApp</button>
-            <button style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', border:'none', borderRadius:12, padding:'11px 0', cursor:'pointer' }}>✉️ Mensaje</button>
+          <div style={{ display:'flex', gap:8 }}>
+            {ad.whatsapp && <a href={`https://wa.me/${ad.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ flex:1, fontFamily:PP, fontWeight:700, fontSize:12, background:'#25D366', color:'#fff', textDecoration:'none', borderRadius:12, padding:'11px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>💬 WhatsApp</a>}
+            {ad.email_contact && <a href={`mailto:${ad.email_contact}`} style={{ flex:1, fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'11px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>✉️ Email</a>}
+            {!ad.whatsapp && !ad.email_contact && <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Sin contacto público</p>}
           </div>
         )}
       </div>
@@ -88,6 +90,14 @@ export default function Tablon() {
   const activeCount = [cat,type,canton,plz,privacy].filter(Boolean).length
 
   useEffect(() => {
+    if (!user?.id) return
+    supabase.from('contact_reveals').select('ad_id').eq('user_id', user.id)
+      .then(({ data }) => {
+        if (data?.length) setRevealed(data.reduce((acc, r) => ({ ...acc, [r.ad_id]: true }), {}))
+      }).catch(() => {})
+  }, [user?.id])
+
+  useEffect(() => {
     async function load() {
       try {
         let q = supabase.from('ads').select('*').eq('active', true).order('created_at', { ascending:false })
@@ -117,8 +127,11 @@ export default function Tablon() {
     (!search || a.title.toLowerCase().includes(search.toLowerCase()) || a.desc.toLowerCase().includes(search.toLowerCase()))
   )
 
-  const handleReveal = (adId) => {
+  const handleReveal = async (adId) => {
     if (!isLoggedIn) { window.location.href = '/auth'; return }
+    try {
+      await supabase.from('contact_reveals').upsert({ user_id: user.id, ad_id: adId }, { onConflict: 'user_id,ad_id' })
+    } catch {}
     setRevealed(r => ({ ...r, [adId]: true }))
     toast.success('Contacto desbloqueado')
   }

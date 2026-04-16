@@ -130,7 +130,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
 
       {/* Dropdown */}
       {showDropdown && (
-        <div className="fade-up" style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, background: '#fff', borderRadius: 16, boxShadow: '0 12px 40px rgba(0,0,0,0.15)', border: `1px solid ${C.border}`, zIndex: 200, overflow: 'hidden', maxHeight: 400, overflowY: 'auto' }}>
+        <div className="fade-up" style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, background: '#fff', borderRadius: 16, boxShadow: '0 12px 40px rgba(0,0,0,0.15)', border: `1px solid ${C.border}`, zIndex: 200, overflow: 'hidden', maxHeight: 'min(400px, 60vh)', overflowY: 'auto' }}>
           {results.length === 0 ? (
             <div style={{ padding: '20px 18px', textAlign: 'center' }}>
               <p style={{ fontFamily: PP, fontSize: 13, color: C.light, margin: 0 }}>Sin resultados para "<strong style={{ color: C.text }}>{q}</strong>"</p>

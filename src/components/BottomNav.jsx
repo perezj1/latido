@@ -12,7 +12,7 @@ const TABS = [
 export default function BottomNav() {
   const { pathname } = useLocation()
   return (
-    <nav className="safe-bottom md:hidden" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center' }}>
+    <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'#fff', borderTop:`1px solid ${C.border}`, alignItems:'center' }}>
       {TABS.map((tab, i) => {
         if (tab.isFab) return (
           <div key="fab" style={{ flex:1, display:'flex', justifyContent:'center', alignItems:'center' }}>

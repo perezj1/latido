@@ -1,5 +1,5 @@
 -- ================================================================
--- LATINOSUIZA.CH — Supabase SQL Schema v3
+-- LATIDO.CH — Supabase SQL Schema v3
 -- Ejecuta en: Supabase → SQL Editor → New Query → RUN
 -- ================================================================
 
@@ -167,7 +167,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_cat    ON forum_posts(category);
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, name, email, canton)
+  INSERT INTO public.profiles (id, name, email, canton)
   VALUES (
     NEW.id,
     NEW.raw_user_meta_data->>'name',
@@ -176,8 +176,11 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  -- Never block signup even if profile insert fails
+  RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created

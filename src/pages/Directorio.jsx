@@ -23,7 +23,7 @@ function ProvCard({ p, onClick }) {
       onMouseEnter={e=>{ e.currentTarget.style.boxShadow=`0 8px 28px rgba(37,99,235,0.12)`; e.currentTarget.style.transform='translateY(-3px)' }}
       onMouseLeave={e=>{ e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='translateY(0)' }}>
       {/* Cover photo */}
-      <div style={{ position:'relative', height:160, overflow:'hidden', background:C.primaryLight }}>
+      <div className="provider-cover" style={{ position:'relative', overflow:'hidden', background:C.primaryLight }}>
         {p.photo_url
           ? <img src={p.photo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
           : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:48 }}>{cat?.emoji}</div>
@@ -133,7 +133,7 @@ function ProviderDetail({ p, onClose }) {
             <>
               {/* Cover photo small */}
               {p.photo_url && (
-                <div style={{ borderRadius:16, overflow:'hidden', height:180, marginBottom:14 }}>
+                <div className="provider-detail-img" style={{ borderRadius:16, overflow:'hidden', marginBottom:14 }}>
                   <img src={p.photo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                 </div>
               )}
@@ -160,7 +160,7 @@ function ProviderDetail({ p, onClose }) {
               )}
 
               {/* Contact */}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:14 }}>
+              <div className="grid-2" style={{ gap:8, marginBottom:14 }}>
                 {p.whatsapp && (
                   <a href={`https://wa.me/${p.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
                     style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#25D366', color:'#fff', textDecoration:'none', padding:'13px 0', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
@@ -339,7 +339,7 @@ export default function Directorio() {
           <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>NOMBRE DEL NEGOCIO *</label>
           <input style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 13px', fontSize:13, fontFamily:PP, outline:'none', background:'#fff', boxSizing:'border-box', marginBottom:10 }} placeholder="DJ Sebastián / Foto & Film Latino..." value={regForm.name} onChange={e=>setRegForm({...regForm,name:e.target.value})}/>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:10 }}>
+        <div className="grid-2" style={{ gap:8, marginBottom:10 }}>
           <div>
             <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>CATEGORÍA</label>
             <select style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 13px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff' }} value={regForm.cat} onChange={e=>setRegForm({...regForm,cat:e.target.value})}>
@@ -356,7 +356,7 @@ export default function Directorio() {
           <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>DESCRIPCIÓN</label>
           <textarea style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 13px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', resize:'none', minHeight:80, boxSizing:'border-box', marginBottom:10 }} placeholder="Qué ofreces, especialidades, experiencia..." value={regForm.desc} onChange={e=>setRegForm({...regForm,desc:e.target.value})}/>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:14 }}>
+        <div className="grid-2" style={{ gap:8, marginBottom:14 }}>
           {[['💬 WhatsApp','whatsapp','+41 XX XXX XX XX'],['📧 Email','email','tu@negocio.ch']].map(([l,k,ph]) => (
             <div key={k}>
               <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{l}</label>

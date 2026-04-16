@@ -137,7 +137,7 @@ export default function Publicar() {
       {step === 3 && (
         <>
           <Input label="Precio" placeholder="Ej: CHF 500/mes · Gratis · A convenir · CHF 30/hora" value={form.price} onChange={e=>s('price',e.target.value)} />
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          <div className="grid-2" style={{ gap:10 }}>
             <Select label="Cantón" required value={form.canton} onChange={e=>s('canton',e.target.value)}>
               <option value="">Seleccionar...</option>
               {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
@@ -148,7 +148,7 @@ export default function Publicar() {
           {/* Privacy selector */}
           <div style={{ marginBottom:10 }}>
             <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>VISIBILIDAD DEL CONTACTO *</p>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            <div className="grid-2" style={{ gap:10 }}>
               {[
                 { id:'public',  ico:'🌐', title:'Público',  desc:'Tu contacto es visible para cualquier visitante, sin cuenta.', bg:C.successLight, border:C.successMid, tc:'#065F46' },
                 { id:'private', ico:'🔒', title:'Privado',  desc:'Solo usuarios registrados pueden ver tu contacto.', bg:C.warnLight, border:C.warnMid, tc:'#92400E' },

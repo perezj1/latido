@@ -30,3 +30,57 @@
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-thumb { background: #2563EB; border-radius: 4px; }
 html { scroll-behavior: smooth; }
+
+/* ── Responsive 2-column grid → 1 column on mobile ── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 560px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ── Responsive photo heights ── */
+.photo-main { height: 220px; }
+@media (max-width: 500px) { .photo-main { height: 52vw; min-height: 160px; } }
+
+.provider-cover { height: 160px; }
+@media (max-width: 500px) { .provider-cover { height: 44vw; min-height: 120px; } }
+
+.provider-detail-img { height: 180px; }
+@media (max-width: 500px) { .provider-detail-img { height: 48vw; min-height: 140px; } }
+
+/* ── Mobile padding ── */
+@media (max-width: 480px) {
+  .page-wrap { padding-left: 16px !important; padding-right: 16px !important; }
+}
+
+/* ── Prevent horizontal overflow ── */
+img { max-width: 100%; }
+
+/* ── Header responsive visibility (override inline styles with !important) ── */
+.show-lg { display: none !important; }
+@media (min-width: 1024px) { .show-lg { display: flex !important; } }
+
+.hide-lg { display: flex !important; }
+@media (min-width: 1024px) { .hide-lg { display: none !important; } }
+
+.hide-md { display: flex !important; }
+@media (min-width: 768px) { .hide-md { display: none !important; } }
+
+/* ── iPhone notch / safe area ── */
+.safe-bottom {
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+/* ── Hero stats: flex row → 2×2 grid on mobile ── */
+.hero-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+@media (max-width: 500px) {
+  .hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+}
+
+/* ── Segmented tabs: avoid overflow on narrow screens ── */
+@media (max-width: 360px) {
+  .segmented-tab { font-size: 9px !important; padding: 6px 2px !important; }
+}

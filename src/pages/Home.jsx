@@ -39,7 +39,7 @@ export default function Home() {
       </div>
 
       {/* 2×2 quick actions */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:22 }}>
+      <div className="grid-2" style={{ gap:10, marginBottom:22 }}>
         {QUICK.map(a => (
           <Link key={a.href} to={a.href} style={{ background:a.bg, borderRadius:18, padding:'16px 14px', display:'flex', flexDirection:'column', gap:6, textDecoration:'none', position:'relative', overflow:'hidden', transition:'transform .15s' }}
             onMouseEnter={e => e.currentTarget.style.transform='scale(0.98)'}
@@ -86,7 +86,7 @@ export default function Home() {
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text }}>🤝 Comunidades activas</p>
         <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:600, color:C.primary, textDecoration:'none' }}>Ver todas →</Link>
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:22 }}>
+      <div className="grid-2" style={{ gap:8, marginBottom:22 }}>
         {MOCK_COMMUNITIES.slice(0,4).map(c => (
           <Link key={c.id} to="/comunidades" style={{ textDecoration:'none', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 12px', display:'flex', gap:8, alignItems:'center' }}>
             <span style={{ fontSize:22 }}>{c.emoji}</span>

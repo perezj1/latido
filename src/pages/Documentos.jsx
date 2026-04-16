@@ -33,7 +33,7 @@ export default function Documentos() {
           <span style={{ fontSize:36 }}>🖊️</span>
           <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text }}>¿Sabes de algún trámite?</h3>
           <p style={{ fontFamily:PP, fontSize:12, color:C.mid }}>Contribuye con una guía para ayudar a otros latinos</p>
-          <a href="mailto:hola@latinosuiza.ch?subject=Contribuir guía" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 20px', borderRadius:12, display:'inline-flex' }}>Contribuir</a>
+          <a href="mailto:hola@latido.ch?subject=Contribuir guía" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 20px', borderRadius:12, display:'inline-flex' }}>Contribuir</a>
         </div>
       </div>
       <Modal show={!!selected} onClose={() => setSelected(null)} title={selected?.title || ''}>
