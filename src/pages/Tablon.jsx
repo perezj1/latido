@@ -7,6 +7,12 @@ import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS } from '../lib/constant
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters } from '../components/UI'
 import toast from 'react-hot-toast'
 
+/* Move "CHF" to after the first number: "CHF 25/mes" → "25 CHF/mes" */
+function fmtPrice(price) {
+  if (!price) return ''
+  return price.replace(/^CHF\s*([\d.,]+)(\s*.*)/, '$1 CHF$2').trim()
+}
+
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick }) {
   const cat = AD_CATS.find(c => c.id === ad.cat)
@@ -28,7 +34,7 @@ function AdCard({ ad, onClick }) {
             <Avatar name={ad.user_name || ad.user} size={20}/>
             <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user_name || ad.user || 'Usuario'} · 📍 {ad.canton} {ad.plz}{dateStr ? ` · ${dateStr}` : ''}</span>
           </div>
-          {ad.price && <span style={{ fontFamily:PP, fontSize:13, fontWeight:800, color:C.primary }}>{ad.price}</span>}
+          {ad.price && <span style={{ fontFamily:PP, fontSize:13, fontWeight:800, color:C.primary }}>{fmtPrice(ad.price)}</span>}
         </div>
       </div>
     </button>
@@ -67,7 +73,7 @@ function AdDetail({ ad, user, onReveal, revealed }) {
             {(ad.ts || ad.created_at) ? ` · ${ad.ts || new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}` : ''}
           </span>
         </div>
-        {ad.price && <span style={{ fontFamily:PP, fontSize:15, fontWeight:800, color:C.primary }}>{ad.price}</span>}
+        {ad.price && <span style={{ fontFamily:PP, fontSize:15, fontWeight:800, color:C.primary }}>{fmtPrice(ad.price)}</span>}
       </div>
 
       {/* Contact */}
@@ -220,6 +226,8 @@ export default function Tablon() {
   const plz     = searchParams.get('plz') || ''
   const privacy = searchParams.get('privacy') || ''
   const jobType = searchParams.get('jobType') || ''
+  const openAdId = searchParams.get('openAd') || ''
+  const openJobId = searchParams.get('openJob') || ''
 
   const isEmpleos = cat === 'empleo'
 
@@ -229,6 +237,33 @@ export default function Tablon() {
     setSearchParams(p)
   }
   const clearFilters = () => setSearchParams({})
+  const openAdDetails = (ad) => {
+    setSelectedAd(ad)
+    const p = new URLSearchParams(searchParams)
+    p.set('openAd', ad.id)
+    p.delete('openJob')
+    setSearchParams(p, { replace:true })
+  }
+  const closeAdDetails = () => {
+    setSelectedAd(null)
+    const p = new URLSearchParams(searchParams)
+    p.delete('openAd')
+    setSearchParams(p, { replace:true })
+  }
+  const openJobDetails = (job) => {
+    setSelectedJob(job)
+    const p = new URLSearchParams(searchParams)
+    p.set('openJob', job.id)
+    p.delete('openAd')
+    if (!p.get('cat')) p.set('cat', 'empleo')
+    setSearchParams(p, { replace:true })
+  }
+  const closeJobDetails = () => {
+    setSelectedJob(null)
+    const p = new URLSearchParams(searchParams)
+    p.delete('openJob')
+    setSearchParams(p, { replace:true })
+  }
   const activeCount = [cat,type,canton,plz,privacy].filter(Boolean).length
 
   useEffect(() => {
@@ -250,6 +285,7 @@ export default function Tablon() {
       async function load() {
         try {
           let q = supabase.from('ads').select('*').eq('active', true).order('created_at', { ascending:false })
+          if (!isLoggedIn) q = q.eq('privacy', 'public')
           if (cat)    q = q.eq('cat', cat)
           if (type)   q = q.eq('type', type)
           if (canton) q = q.eq('canton', canton)
@@ -262,10 +298,11 @@ export default function Tablon() {
       }
       load()
     }
-  }, [cat, type, canton, plz, isEmpleos])
+  }, [cat, type, canton, plz, isEmpleos, isLoggedIn])
 
   function filterMock() {
     return MOCK_ADS.filter(a =>
+      (isLoggedIn || a.privacy === 'public') &&
       (!cat || a.cat===cat) && (!type || a.type===type) &&
       (!canton || a.canton===canton) && (!plz || a.plz.startsWith(plz)) &&
       (!privacy || a.privacy===privacy)
@@ -273,6 +310,7 @@ export default function Tablon() {
   }
 
   const filteredAds = ads.filter(a =>
+    (isLoggedIn || a.privacy === 'public') &&
     (!privacy || a.privacy===privacy) &&
     (!search || a.title.toLowerCase().includes(search.toLowerCase()) || a.desc?.toLowerCase().includes(search.toLowerCase()))
   )
@@ -281,6 +319,29 @@ export default function Tablon() {
     (!jobType || j.type===jobType) &&
     (!search || j.title.toLowerCase().includes(search.toLowerCase()) || j.company?.toLowerCase().includes(search.toLowerCase()))
   )
+
+  useEffect(() => {
+    if (loading) return
+
+    if (isEmpleos) {
+      if (!openJobId) {
+        setSelectedJob(null)
+        return
+      }
+
+      const job = jobs.find(entry => String(entry.id) === openJobId)
+      if (job) setSelectedJob(job)
+      return
+    }
+
+    if (!openAdId) {
+      setSelectedAd(null)
+      return
+    }
+
+    const ad = ads.find(entry => String(entry.id) === openAdId)
+    if (ad) setSelectedAd(ad)
+  }, [ads, jobs, isEmpleos, loading, openAdId, openJobId])
 
   const handleReveal = async (adId) => {
     if (!isLoggedIn) { window.location.href = '/auth'; return }
@@ -360,6 +421,22 @@ export default function Tablon() {
         </div>
       )}
 
+      {!isLoggedIn && (
+        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+          <div>
+            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
+              EstÃ¡s viendo contenido pÃºblico
+            </p>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.6 }}>
+              Crea una cuenta gratuita para ver anuncios privados, desbloquear contactos y publicar en la comunidad.
+            </p>
+          </div>
+          <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'11px 16px', whiteSpace:'nowrap' }}>
+            Crear cuenta gratis
+          </Link>
+        </div>
+      )}
+
       {/* Results */}
       {loading ? (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -375,7 +452,7 @@ export default function Tablon() {
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {filteredJobs.map(j => (
-              <JobCard key={j.id} job={j} onClick={() => setSelectedJob(j)} />
+              <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} />
             ))}
             <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
               <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Tienes una oferta de trabajo?</h3>
@@ -394,7 +471,7 @@ export default function Tablon() {
       ) : (
         <div>
           {filteredAds.map(ad => (
-            <AdCard key={ad.id} ad={ad} onClick={() => setSelectedAd(ad)} />
+            <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} />
           ))}
         </div>
       )}
@@ -405,10 +482,12 @@ export default function Tablon() {
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>TIPO DE ANUNCIO</p>
           <PillFilters options={typeOptions} value={type} onChange={v=>setFilter('type',v)} />
         </div>
-        <div style={{ marginBottom:14 }}>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>VISIBILIDAD</p>
-          <PillFilters options={privOptions} value={privacy} onChange={v=>setFilter('privacy',v)} />
-        </div>
+        {isLoggedIn && (
+          <div style={{ marginBottom:14 }}>
+            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>VISIBILIDAD</p>
+            <PillFilters options={privOptions} value={privacy} onChange={v=>setFilter('privacy',v)} />
+          </div>
+        )}
         <div style={{ marginBottom:14 }}>
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>CANTÓN</p>
           <div className="no-scroll" style={{ display:'flex', gap:5, flexWrap:'wrap', maxHeight:120, overflowY:'auto' }}>
@@ -435,7 +514,7 @@ export default function Tablon() {
       </Sheet>
 
       {/* Ad detail sheet */}
-      <Sheet show={!!selectedAd} onClose={() => setSelectedAd(null)} title={selectedAd?.title || ''}>
+      <Sheet show={!!selectedAd} onClose={closeAdDetails} title={selectedAd?.title || ''}>
         {selectedAd && (
           <AdDetail
             ad={selectedAd}
@@ -447,7 +526,7 @@ export default function Tablon() {
       </Sheet>
 
       {/* Job detail sheet */}
-      <Sheet show={!!selectedJob} onClose={() => setSelectedJob(null)} title={selectedJob?.title || ''}>
+      <Sheet show={!!selectedJob} onClose={closeJobDetails} title={selectedJob?.title || ''}>
         {selectedJob && <JobDetail job={selectedJob} />}
       </Sheet>
     </div>

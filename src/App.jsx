@@ -50,6 +50,15 @@ function AuthRoute() {
   return <Auth />
 }
 
+function ProtectedRoute({ children }) {
+  const { isLoggedIn, loading } = useAuth()
+
+  if (loading) return <AppLoading />
+  if (!isLoggedIn) return <Navigate to="/auth" replace />
+
+  return children
+}
+
 function AppShell() {
   const { pathname } = useLocation()
   const { isPWA, canInstall, promptInstall } = usePWA()
@@ -94,15 +103,15 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/tablon" element={<Tablon />} />
-          <Route path="/publicar" element={<Publicar />} />
+          <Route path="/publicar" element={<ProtectedRoute><Publicar /></ProtectedRoute>} />
           <Route path="/comunidades" element={<Comunidades />} />
           <Route path="/guias" element={<Guias />} />
-          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
           <Route path="/auth" element={<AuthRoute />} />
-          <Route path="/publicar-evento" element={<PublicarEvento />} />
-          <Route path="/registrar-negocio" element={<RegistrarNegocio />} />
-          <Route path="/registrar-comunidad" element={<RegistrarComunidad />} />
-          <Route path="/publicar-empleo" element={<PublicarEmpleo />} />
+          <Route path="/publicar-evento" element={<ProtectedRoute><PublicarEvento /></ProtectedRoute>} />
+          <Route path="/registrar-negocio" element={<ProtectedRoute><RegistrarNegocio /></ProtectedRoute>} />
+          <Route path="/registrar-comunidad" element={<ProtectedRoute><RegistrarComunidad /></ProtectedRoute>} />
+          <Route path="/publicar-empleo" element={<ProtectedRoute><PublicarEmpleo /></ProtectedRoute>} />
           <Route path="/documentos" element={<Navigate to="/guias" replace />} />
           <Route path="/empleos" element={<Navigate to="/tablon?cat=empleo" replace />} />
           <Route path="*" element={

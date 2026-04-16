@@ -7,7 +7,7 @@ import { MOCK_ADS, AD_CATS } from '../lib/constants'
 const FEATURES = [
   { icon:'📌', title:'Tablón de anuncios',     desc:'Vivienda, cuidados, ventas, regalos. Filtros por cantón y PLZ como el tablón de Migros, pero digital.', color:'#DBEAFE' },
   { icon:'🔒', title:'Privacidad a tu control',desc:'Cada anuncio puede ser público (visible para todos) o privado (solo usuarios con cuenta pueden ver el contacto).', color:'#FEF3C7' },
-  { icon:'🤝', title:'Comunidades reales',     desc:'Grupos de colombianos, venezolanos, mamás latinas. Conecta con gente de tu país en tu ciudad de Suiza.', color:'#D1FAE5' },
+  { icon:'🤝', title:'Comunidades reales',     desc:'Grupos de colombianos, venezolanos y familias latinas. Conecta con gente de tu país en tu ciudad de Suiza.', color:'#D1FAE5' },
   { icon:'📚', title:'Guías de trámites',      desc:'Krankenkasse, Quellensteuer, permisos B/C/L. La burocracia suiza explicada en español, paso a paso.', color:'#EDE9FE' },
   { icon:'💼', title:'Empleos para latinos',    desc:'Ofertas en empresas y familias que valoran tu idioma y cultura. Trabajo en Suiza desde la comunidad.', color:'#FCE7F3' },
   { icon:'📱', title:'Instala como app',       desc:'Añade Latido a tu pantalla de inicio. Sin App Store. Sin Google Play. Solo toca "Instalar".', color:'#CCFBF1' },
@@ -75,7 +75,7 @@ export default function Landing({ onInstall }) {
           {publicAds.map(ad => {
             const cat = AD_CATS.find(c => c.id === ad.cat)
             return (
-              <Link key={ad.id} to="/tablon" style={{ textDecoration:'none' }}>
+              <Link key={ad.id} to={`/tablon?openAd=${encodeURIComponent(ad.id)}`} style={{ textDecoration:'none' }}>
                 <div style={{ background:C.bg, borderRadius:16, border:`1px solid ${C.border}`, padding:'13px 14px', transition:'all .2s' }}
                   onMouseEnter={e => { e.currentTarget.style.boxShadow='0 6px 20px rgba(37,99,235,0.1)'; e.currentTarget.style.transform='translateY(-2px)' }}
                   onMouseLeave={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='translateY(0)' }}>

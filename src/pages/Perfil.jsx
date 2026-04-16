@@ -18,6 +18,18 @@ const PUBLICATION_TABS = [
 
 const JOB_TYPES = ['Full-time', 'Part-time', 'Freelance', 'Prácticas']
 
+const COMMUNITY_OPTIONS = COMMUNITY_CATS
+  .filter(item => item.id !== 'fe')
+  .map(item => item.id === 'mamas'
+    ? { ...item, id:'familia', emoji:'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§', label:'Familia' }
+    : item)
+
+function normalizeCommunityCategory(value='') {
+  if (value === 'mamas') return 'familia'
+  if (value === 'fe') return ''
+  return value
+}
+
 const KIND_META = {
   ad: { label:'Anuncio', icon:'📌', table:'ads' },
   job: { label:'Empleo', icon:'💼', table:'jobs' },
@@ -98,12 +110,12 @@ function normalizePublication(kind, row) {
     }
   }
 
-  const category = COMMUNITY_CATS.find(item => item.id === row.cat)
+  const category = COMMUNITY_OPTIONS.find(item => item.id === normalizeCommunityCategory(row.cat))
   return {
     id: row.id,
     kind,
     icon: row.emoji || category?.emoji || KIND_META[kind].icon,
-    title: row.name,
+    title: (row.name || '').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
     summary: [category?.label, row.city].filter(Boolean).join(' · ') || 'Comunidad',
     meta: row.contact || '',
     active: !!row.active,
@@ -117,7 +129,7 @@ function buildEditorForm(item) {
 
   if (item.kind === 'ad') {
     return {
-      cat: row.cat || '',
+      cat: normalizeCommunityCategory(row.cat) || '',
       sub: row.sub || '',
       type: row.type || '',
       title: row.title || '',
@@ -407,7 +419,7 @@ export default function Perfil() {
     }
 
     if (item.kind === 'community') {
-      const category = COMMUNITY_CATS.find(entry => entry.id === editorForm.cat)
+      const category = COMMUNITY_OPTIONS.find(entry => entry.id === normalizeCommunityCategory(editorForm.cat))
       payload = {
         cat: editorForm.cat || null,
         name: editorForm.name?.trim(),
@@ -774,7 +786,7 @@ export default function Perfil() {
           <>
             <Select label="Categoría" value={editorForm.cat || ''} onChange={event => updateEditorField('cat', event.target.value)}>
               <option value="">Seleccionar...</option>
-              {COMMUNITY_CATS.map(item => <option key={item.id} value={item.id}>{item.emoji} {item.label}</option>)}
+              {COMMUNITY_OPTIONS.map(item => <option key={item.id} value={item.id}>{item.emoji} {item.label}</option>)}
             </Select>
             <Input label="Nombre" value={editorForm.name || ''} onChange={event => updateEditorField('name', event.target.value)} />
             <Input label="Ciudad / zona" value={editorForm.city || ''} onChange={event => updateEditorField('city', event.target.value)} />

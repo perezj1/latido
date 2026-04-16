@@ -41,6 +41,41 @@ const EVENT_EMOJI = {
   familia:'👨‍👩‍👧',
 }
 
+const COMMUNITY_OPTIONS = COMMUNITY_CATS
+  .filter(item => item.id !== 'fe')
+  .map(item => item.id === 'mamas'
+    ? { ...item, id:'familia', emoji:'👨‍👩‍👧', label:'Familia' }
+    : item)
+
+function normalizeCommunityCategory(value='') {
+  if (value === 'mamas') return 'familia'
+  if (value === 'fe') return ''
+  return value
+}
+
+function getCommunityMeta(value='') {
+  return COMMUNITY_OPTIONS.find(item => item.id === normalizeCommunityCategory(value)) || null
+}
+
+function normalizeCommunity(group) {
+  if (!group || group.cat === 'fe') return null
+
+  const normalizedCat = normalizeCommunityCategory(group.cat)
+  const category = getCommunityMeta(normalizedCat)
+
+  return {
+    id: group.id,
+    cat: normalizedCat || '',
+    name: (group.name || 'Comunidad').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
+    city: group.city || 'Suiza',
+    members: group.members || 0,
+    emoji: group.emoji || category?.emoji || '🤝',
+    verified: !!group.verified,
+    desc: group.desc || group.description || '',
+    contact: group.contact || '',
+  }
+}
+
 function formatRelativeDate(value) {
   if (!value) return 'Hace poco'
   const date = new Date(value)
@@ -322,6 +357,56 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
   )
 }
 
+function CommunityDetail({ community, onClose, isLoggedIn }) {
+  if (!community) return null
+
+  const category = getCommunityMeta(community.cat)
+
+  return (
+    <Modal show={!!community} onClose={onClose} title={community.name}>
+      <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+        {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.emoji} {category.label}</Tag>}
+        <Tag bg={C.bg} color={C.mid}>📍 {community.city}</Tag>
+        <Tag bg={C.bg} color={C.mid}>👥 {community.members} miembros</Tag>
+        {community.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
+      </div>
+
+      <InfoBanner
+        emoji={community.emoji}
+        title="Comunidad latina en Suiza"
+        text="Descubre de qué va el grupo y entra cuando te encaje."
+        bg={C.primaryLight}
+        border={C.primaryMid}
+        color={C.primaryDark}
+      />
+
+      <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18 }}>
+        {community.desc || 'Comunidad latina en Suiza.'}
+      </p>
+
+      {community.contact && (
+        <a href={community.contact} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'inline-flex', marginBottom:16 }}>
+          {community.contact.includes('t.me') ? 'Unirme por Telegram' : 'Unirme por WhatsApp'}
+        </a>
+      )}
+
+      {!isLoggedIn && (
+        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px' }}>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
+            Estás en la versión pública
+          </p>
+          <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 10px', lineHeight:1.6 }}>
+            Para publicar tu propia comunidad y acceder a más herramientas, crea una cuenta gratuita.
+          </p>
+          <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'10px 14px', display:'inline-flex' }}>
+            Crear cuenta gratis
+          </Link>
+        </div>
+      )}
+    </Modal>
+  )
+}
+
 function EventCard({ event, onClick }) {
   return (
     <div
@@ -385,6 +470,7 @@ function EventDetail({ event, onClose }) {
 }
 
 export default function Comunidades() {
+  const { isLoggedIn } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [communities, setCommunities] = useState([])
   const [businesses, setBusinesses] = useState(MOCK_NEGOCIOS)
@@ -397,10 +483,14 @@ export default function Comunidades() {
   const [cat, setCat] = useState('')
   const [negType, setNegType] = useState('')
   const [eventType, setEventType] = useState('')
+  const [selectedCommunity, setSelectedCommunity] = useState(null)
   const [selectedBusiness, setSelectedBusiness] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
 
   const view = searchParams.get('view')
+  const openCommunityId = searchParams.get('openCommunity') || ''
+  const openBusinessId = searchParams.get('openBusiness') || ''
+  const openEventId = searchParams.get('openEvent') || ''
   const tab = MAIN_TABS.some(item => item.id === view) ? view : 'comunidades'
 
   useEffect(() => {
@@ -418,7 +508,10 @@ export default function Comunidades() {
 
         if (cancelled) return
 
-        setCommunities(communitiesRes.error || !communitiesRes.data?.length ? MOCK_COMMUNITIES : communitiesRes.data)
+        const nextCommunities = (communitiesRes.error || !communitiesRes.data?.length ? MOCK_COMMUNITIES : communitiesRes.data)
+          .map(normalizeCommunity)
+          .filter(Boolean)
+        setCommunities(nextCommunities)
 
         const nextBusinesses = providersRes.error || !providersRes.data?.length
           ? MOCK_NEGOCIOS
@@ -478,7 +571,7 @@ export default function Comunidades() {
         setBusinessReviews(nextReviews)
       } catch {
         if (cancelled) return
-        setCommunities(MOCK_COMMUNITIES)
+        setCommunities(MOCK_COMMUNITIES.map(normalizeCommunity).filter(Boolean))
         setBusinesses(MOCK_NEGOCIOS)
         setBusinessServices(MOCK_NEGOCIO_SERVICES)
         setBusinessPhotos(MOCK_NEGOCIO_PHOTOS)
@@ -500,6 +593,9 @@ export default function Comunidades() {
     const params = new URLSearchParams(searchParams)
     if (nextTab === 'comunidades') params.delete('view')
     else params.set('view', nextTab)
+    params.delete('openCommunity')
+    params.delete('openBusiness')
+    params.delete('openEvent')
     setSearchParams(params, { replace:true })
     setSearch('')
     setCat('')
@@ -507,7 +603,50 @@ export default function Comunidades() {
     setEventType('')
   }
 
-  const catOptions = useMemo(() => [{ id:'', label:'Todas' }, ...COMMUNITY_CATS.map(item => ({ id:item.id, label:`${item.emoji} ${item.label}` }))], [])
+  const updateOpenState = (key, value, nextView='comunidades') => {
+    const params = new URLSearchParams(searchParams)
+    params.delete('openCommunity')
+    params.delete('openBusiness')
+    params.delete('openEvent')
+
+    if (nextView === 'comunidades') params.delete('view')
+    else params.set('view', nextView)
+
+    if (value) params.set(key, value)
+    setSearchParams(params, { replace:true })
+  }
+
+  const openCommunityDetails = (community) => {
+    setSelectedCommunity(community)
+    updateOpenState('openCommunity', community.id, 'comunidades')
+  }
+
+  const closeCommunityDetails = () => {
+    setSelectedCommunity(null)
+    updateOpenState('openCommunity', '', 'comunidades')
+  }
+
+  const openBusinessDetails = (business) => {
+    setSelectedBusiness(business)
+    updateOpenState('openBusiness', business.id, 'negocios')
+  }
+
+  const closeBusinessDetails = () => {
+    setSelectedBusiness(null)
+    updateOpenState('openBusiness', '', 'negocios')
+  }
+
+  const openEventDetails = (event) => {
+    setSelectedEvent(event)
+    updateOpenState('openEvent', event.id, 'eventos')
+  }
+
+  const closeEventDetails = () => {
+    setSelectedEvent(null)
+    updateOpenState('openEvent', '', 'eventos')
+  }
+
+  const catOptions = useMemo(() => [{ id:'', label:'Todas' }, ...COMMUNITY_OPTIONS.map(item => ({ id:item.id, label:`${item.emoji} ${item.label}` }))], [])
 
   const filteredComm = communities.filter(group =>
     (!cat || group.cat === cat) &&
@@ -537,12 +676,50 @@ export default function Comunidades() {
         event.host.toLowerCase().includes(search.toLowerCase()))
     )
 
+  useEffect(() => {
+    if (loading) return
+
+    if (!openCommunityId) setSelectedCommunity(null)
+    else {
+      const community = communities.find(entry => String(entry.id) === openCommunityId)
+      if (community) setSelectedCommunity(community)
+    }
+
+    if (!openBusinessId) setSelectedBusiness(null)
+    else {
+      const business = businesses.find(entry => String(entry.id) === openBusinessId)
+      if (business) setSelectedBusiness(business)
+    }
+
+    if (!openEventId) setSelectedEvent(null)
+    else {
+      const event = events.find(entry => String(entry.id) === openEventId)
+      if (event) setSelectedEvent(event)
+    }
+  }, [businesses, communities, events, loading, openBusinessId, openCommunityId, openEventId])
+
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 24px 100px' }}>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>🤝 Comunidad latina</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:20 }}>Grupos, negocios y eventos para latinos en Suiza</p>
 
       <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />
+
+      {!isLoggedIn && (
+        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+          <div>
+            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
+              Estás viendo la versión pública
+            </p>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.6 }}>
+              Explora comunidades, negocios y eventos públicos. Para publicar y acceder a más herramientas, crea una cuenta gratuita.
+            </p>
+          </div>
+          <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'11px 16px', whiteSpace:'nowrap' }}>
+            Crear cuenta gratis
+          </Link>
+        </div>
+      )}
 
       <div style={{ position:'relative', marginBottom:12 }}>
         <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:C.light }}>🔍</span>
@@ -570,7 +747,7 @@ export default function Comunidades() {
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
               {filteredComm.map(group => (
-                <Card key={group.id}>
+                <Card key={group.id} onClick={() => openCommunityDetails(group)}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
                     <span style={{ fontSize:36 }}>{group.emoji}</span>
                     <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
@@ -581,9 +758,9 @@ export default function Comunidades() {
                   <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:5, lineHeight:1.3 }}>{group.name}</h3>
                   <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginBottom:8 }}>👥 {group.members} miembros</p>
                   <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:14 }}>{group.desc}</p>
-                  <a href={group.contact} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                    {group.contact?.includes('t.me') ? '📲 Telegram' : '💬 WhatsApp'}
-                  </a>
+                  <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                    Ver comunidad →
+                  </div>
                 </Card>
               ))}
             </div>
@@ -610,7 +787,7 @@ export default function Comunidades() {
                 <BusinessCard
                   key={business.id}
                   business={business}
-                  onClick={() => setSelectedBusiness(business)}
+                  onClick={() => openBusinessDetails(business)}
                   servicesMap={businessServices}
                   photosMap={businessPhotos}
                   reviewsMap={businessReviews}
@@ -634,7 +811,7 @@ export default function Comunidades() {
             <EmptyState emoji="🎟️" title="Sin eventos ahora mismo" action="Ver todos" onAction={() => { setEventType(''); setSearch('') }} />
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
-              {filteredEvents.map(event => <EventCard key={event.id} event={event} onClick={() => setSelectedEvent(event)} />)}
+              {filteredEvents.map(event => <EventCard key={event.id} event={event} onClick={() => openEventDetails(event)} />)}
             </div>
           )}
 
@@ -646,17 +823,19 @@ export default function Comunidades() {
         </>
       )}
 
+      <CommunityDetail community={selectedCommunity} onClose={closeCommunityDetails} isLoggedIn={isLoggedIn} />
+
       {selectedBusiness && (
         <BusinessDetail
           key={selectedBusiness.id}
           business={selectedBusiness}
-          onClose={() => setSelectedBusiness(null)}
+          onClose={closeBusinessDetails}
           servicesMap={businessServices}
           photosMap={businessPhotos}
           reviewsMap={businessReviews}
         />
       )}
-      <EventDetail event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      <EventDetail event={selectedEvent} onClose={closeEventDetails} />
     </div>
   )
 }

@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { MOCK_DOCS } from '../lib/constants'
 import { C, PP } from '../lib/theme'
 import { Card, Tag, Modal, Btn, InfoBanner, PillFilters } from '../components/UI'
 
 export default function Guias() {
+  const { isLoggedIn } = useAuth()
   const [cat, setCat] = useState('')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
@@ -64,6 +67,22 @@ export default function Guias() {
       </div>
 
       <PillFilters options={cats} value={cat} onChange={setCat} className="mb-4" />
+
+      {!isLoggedIn && (
+        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', margin:'0 0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+          <div>
+            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
+              GuÃ­as pÃºblicas para empezar
+            </p>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.6 }}>
+              Crea una cuenta gratuita para guardar contenido, publicar y acceder a toda la experiencia de la app.
+            </p>
+          </div>
+          <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'11px 16px', whiteSpace:'nowrap' }}>
+            Crear cuenta gratis
+          </Link>
+        </div>
+      )}
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
         {filtered.map((doc) => (

@@ -14,6 +14,12 @@ const STEPS = [
   { title:'Confirma y publica',           sub:'Revisa el resumen antes de enviar' },
 ]
 
+const COMMUNITY_OPTIONS = COMMUNITY_CATS
+  .filter(item => item.id !== 'fe')
+  .map(item => item.id === 'mamas'
+    ? { ...item, id:'familia', emoji:'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§', label:'Familia' }
+    : item)
+
 const PLATFORMS = [
   { id:'whatsapp',  emoji:'💬', label:'WhatsApp' },
   { id:'telegram',  emoji:'📲', label:'Telegram' },
@@ -96,7 +102,7 @@ export default function RegistrarComunidad() {
     }
   }
 
-  const selectedCat = COMMUNITY_CATS.find(c => c.id === form.cat)
+  const selectedCat = COMMUNITY_OPTIONS.find(c => c.id === form.cat)
   const selectedPlat = PLATFORMS.find(p => p.id === form.platform)
 
   return (
@@ -108,7 +114,7 @@ export default function RegistrarComunidad() {
       {/* Step 0 — Category */}
       {step === 0 && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
-          {COMMUNITY_CATS.map(cat => (
+          {COMMUNITY_OPTIONS.map(cat => (
             <button key={cat.id} onClick={() => { s('cat', cat.id); setStep(1); }}
               style={{ background:form.cat===cat.id?C.primary:C.surface, borderRadius:16, padding:'18px 14px', display:'flex', flexDirection:'column', gap:7, border:`2px solid ${form.cat===cat.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
               <span style={{ fontSize:26 }}>{cat.emoji}</span>

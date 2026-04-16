@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 
 const TABS = [
@@ -11,6 +12,7 @@ const TABS = [
 
 export default function BottomNav() {
   const { pathname } = useLocation()
+  const { isLoggedIn } = useAuth()
 
   return (
     <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'#fff', borderTop:`1px solid ${C.border}`, alignItems:'center' }}>
@@ -18,8 +20,8 @@ export default function BottomNav() {
         if (tab.isFab) {
           return (
             <div key="fab" style={{ flex:1, display:'flex', justifyContent:'center', alignItems:'center' }}>
-              <Link to="/publicar" style={{ width:52, height:52, borderRadius:'50%', background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, marginTop:-20, boxShadow:`0 4px 18px rgba(37,99,235,0.45)`, fontWeight:700, textDecoration:'none' }}>
-                +
+              <Link to={isLoggedIn ? '/publicar' : '/auth'} style={{ width:52, height:52, borderRadius:'50%', background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:isLoggedIn ? 26 : 20, marginTop:-20, boxShadow:`0 4px 18px rgba(37,99,235,0.45)`, fontWeight:700, textDecoration:'none' }} aria-label={isLoggedIn ? 'Publicar' : 'Crear cuenta gratis'}>
+                {isLoggedIn ? '+' : 'ðŸ”“'}
               </Link>
             </div>
           )

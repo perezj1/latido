@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { MOCK_ADS, MOCK_COMMUNITIES, MOCK_JOBS, MOCK_NEGOCIOS, MOCK_EVENTOS_LATINOS, AD_CATS, NEGOCIO_TYPES, EVENTO_TYPES } from '../lib/constants'
 
-function searchAll(query) {
+function searchAll(query, isLoggedIn) {
   const q = query.toLowerCase().trim()
   if (!q || q.length < 2) return []
 
   const results = []
 
   MOCK_ADS.filter(ad =>
-    ad.title.toLowerCase().includes(q) ||
-    ad.desc?.toLowerCase().includes(q) ||
-    ad.canton?.toLowerCase().includes(q)
+    (isLoggedIn || ad.privacy === 'public') && (
+      ad.title.toLowerCase().includes(q) ||
+      ad.desc?.toLowerCase().includes(q) ||
+      ad.canton?.toLowerCase().includes(q)
+    )
   ).slice(0, 3).forEach(ad => {
     const cat = AD_CATS.find(item => item.id === ad.cat)
     results.push({
@@ -21,7 +24,7 @@ function searchAll(query) {
       icon:cat?.emoji || '📌',
       label:ad.title,
       sub:`${cat?.label} · ${ad.canton} · ${ad.price}`,
-      href:'/tablon',
+      href:`/tablon?openAd=${encodeURIComponent(ad.id)}`,
       privacy:ad.privacy,
     })
   })
@@ -37,21 +40,23 @@ function searchAll(query) {
       icon:job.emoji || '💼',
       label:job.title,
       sub:`${job.company} · ${job.city} · ${job.type}`,
-      href:'/tablon?cat=empleo',
+      href:`/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`,
     })
   })
 
   MOCK_COMMUNITIES.filter(group =>
-    group.name.toLowerCase().includes(q) ||
-    group.desc?.toLowerCase().includes(q)
+    group.cat !== 'fe' && (
+      group.name.toLowerCase().includes(q) ||
+      group.desc?.toLowerCase().includes(q)
+    )
   ).slice(0, 2).forEach(group => {
     results.push({
       type:'community',
       id:group.id,
       icon:group.emoji,
-      label:group.name,
+      label:group.name.replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
       sub:`Comunidad · ${group.city} · ${group.members} miembros`,
-      href:'/comunidades',
+      href:`/comunidades?openCommunity=${encodeURIComponent(group.id)}`,
     })
   })
 
@@ -66,7 +71,7 @@ function searchAll(query) {
       icon:business.emoji,
       label:business.name,
       sub:`${NEGOCIO_TYPES.find(type => type.id === business.type)?.label || 'Negocio'} · ${business.city}`,
-      href:'/comunidades?view=negocios',
+      href:`/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`,
     })
   })
 
@@ -82,7 +87,7 @@ function searchAll(query) {
       icon:event.emoji,
       label:event.title,
       sub:`${EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'} · ${event.city}`,
-      href:'/comunidades?view=eventos',
+      href:`/comunidades?view=eventos&openEvent=${encodeURIComponent(event.id)}`,
     })
   })
 
@@ -98,6 +103,7 @@ const TYPE_COLORS = {
 }
 
 export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
+  const { isLoggedIn } = useAuth()
   const [q, setQ] = useState('')
   const [results, setResults] = useState([])
   const [focused, setFocused] = useState(false)
@@ -110,9 +116,9 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     : 'Buscar anuncios, empleos o comunidad...')
 
   useEffect(() => {
-    setResults(searchAll(q))
+    setResults(searchAll(q, isLoggedIn))
     setActiveIdx(-1)
-  }, [q])
+  }, [isLoggedIn, q])
 
   const goTo = href => {
     navigate(href)
