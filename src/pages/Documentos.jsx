@@ -1,0 +1,54 @@
+import { useState } from 'react'
+import { MOCK_DOCS } from '../lib/constants'
+import { C, PP } from '../lib/theme'
+import { Card, Tag, Modal, Btn, InfoBanner, PillFilters } from '../components/UI'
+
+export default function Documentos() {
+  const [cat, setCat] = useState('')
+  const [selected, setSelected] = useState(null)
+  const cats = [{id:'',label:'Todos'},{id:'permisos',label:'📄 Permisos'},{id:'impuestos',label:'🧾 Impuestos'},{id:'salud',label:'🏥 Salud'},{id:'banco',label:'🏦 Banco'},{id:'educacion',label:'🎓 Educación'}]
+  const filtered = MOCK_DOCS.filter(d => !cat || d.cat === cat)
+  return (
+    <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 24px 100px' }}>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>📚 Guías de trámites</h1>
+      <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:18 }}>La burocracia suiza explicada en español, paso a paso</p>
+      <InfoBanner emoji="⚡" title="¿Tienes una carta suiza que no entiendes?" text="Fotografíala y pregunta en el foro — la comunidad te ayuda en minutos." />
+      <PillFilters options={cats} value={cat} onChange={setCat} className="mb-4" />
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
+        {filtered.map(doc => (
+          <Card key={doc.id} onClick={() => setSelected(doc)}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
+              <span style={{ fontSize:32 }}>{doc.emoji}</span>
+              <Tag bg={doc.level==='Básico'?'#D1FAE5':'#FEF3C7'} color={doc.level==='Básico'?'#065F46':'#92400E'}>{doc.level}</Tag>
+            </div>
+            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, marginBottom:6, lineHeight:1.4 }}>{doc.title}</h3>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:12 }}>{doc.summary}</p>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
+              <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>⏱ {doc.time}</span>
+              <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary }}>Leer →</span>
+            </div>
+          </Card>
+        ))}
+        <div style={{ border:`2px dashed ${C.border}`, borderRadius:20, padding:24, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', gap:10, background:C.primaryLight }}>
+          <span style={{ fontSize:36 }}>🖊️</span>
+          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text }}>¿Sabes de algún trámite?</h3>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.mid }}>Contribuye con una guía para ayudar a otros latinos</p>
+          <a href="mailto:hola@latinosuiza.ch?subject=Contribuir guía" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 20px', borderRadius:12, display:'inline-flex' }}>Contribuir</a>
+        </div>
+      </div>
+      <Modal show={!!selected} onClose={() => setSelected(null)} title={selected?.title || ''}>
+        {selected && (
+          <>
+            <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:14 }}>
+              <Tag bg={selected.level==='Básico'?'#D1FAE5':'#FEF3C7'} color={selected.level==='Básico'?'#065F46':'#92400E'}>{selected.level}</Tag>
+              <Tag bg={C.primaryLight} color={C.primary}>⏱ {selected.time}</Tag>
+            </div>
+            <div style={{ fontFamily:PP, fontSize:13, lineHeight:1.9, color:C.mid, whiteSpace:'pre-line', marginBottom:16 }}>{selected.content}</div>
+            <InfoBanner emoji="⚠️" title="Aviso" text="Esta guía es orientativa. Para casos específicos consulta la administración cantonal o un asesor certificado." />
+            <Btn onClick={() => setSelected(null)}>💬 Preguntar en el foro</Btn>
+          </>
+        )}
+      </Modal>
+    </div>
+  )
+}
