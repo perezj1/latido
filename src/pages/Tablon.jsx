@@ -7,10 +7,12 @@ import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS } from '../lib/constant
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters } from '../components/UI'
 import toast from 'react-hot-toast'
 
-/* Move "CHF" to after the first number: "CHF 25/mes" → "25 CHF/mes" */
 function fmtPrice(price) {
   if (!price) return ''
-  return price.replace(/^CHF\s*([\d.,]+)(\s*.*)/, '$1 CHF$2').trim()
+  let s = price.trim()
+  s = s.replace(/^([\d.,]+)\s+CHF\b(.*)/, 'CHF $1$2')
+  s = s.replace(/^(CHF\s*[\d.,]+)\s+([^\s/].*)$/, '$1/$2')
+  return s
 }
 
 /* ── Compact ad card (list view) ────────────────────────── */
@@ -425,7 +427,7 @@ export default function Tablon() {
         <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
           <div>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
-              EstÃ¡s viendo contenido pÃºblico
+              Estás viendo contenido público
             </p>
             <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.6 }}>
               Crea una cuenta gratuita para ver anuncios privados, desbloquear contactos y publicar en la comunidad.

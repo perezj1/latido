@@ -7,6 +7,14 @@ import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import { AD_CATS } from '../lib/constants'
 
+const fmtPrice = p => {
+  if (!p) return ''
+  let s = p.trim()
+  s = s.replace(/^([\d.,]+)\s+CHF\b(.*)/, 'CHF $1$2')          // "25 CHF x" → "CHF 25 x"
+  s = s.replace(/^(CHF\s*[\d.,]+)\s+([^\s/].*)$/, '$1/$2')     // "CHF 25 total" → "CHF 25/total"
+  return s
+}
+
 const CAT_COLORS = {
   vivienda:{ bg:'#DBEAFE', tc:'#1D4ED8' },
   hogar:{ bg:'#D1FAE5', tc:'#065F46' },
@@ -311,7 +319,7 @@ export default function Home() {
                         {ad.user} · {ad.ts}
                       </span>
                       <span style={{ fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary }}>
-                        {ad.price}
+                        {fmtPrice(ad.price)}
                       </span>
                     </div>
                   </div>
@@ -428,7 +436,7 @@ export default function Home() {
                 </div>
 
                 <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.primary, flexShrink:0, textAlign:'right', maxWidth:110 }}>
-                  {job.salary}
+                  {fmtPrice(job.salary)}
                 </span>
               </Link>
             ))}
@@ -489,7 +497,7 @@ export default function Home() {
                   </p>
 
                   <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary }}>
-                    {ev.price}
+                    {fmtPrice(ev.price)}
                   </span>
                 </div>
               </Link>

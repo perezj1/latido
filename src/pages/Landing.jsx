@@ -1,4 +1,13 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+
+const fmtPrice = p => {
+  if (!p) return ''
+  let s = p.trim()
+  s = s.replace(/^([\d.,]+)\s+CHF\b(.*)/, 'CHF $1$2')
+  s = s.replace(/^(CHF\s*[\d.,]+)\s+([^\s/].*)$/, '$1/$2')
+  return s
+}
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Tag, PrivacyTag, AdCard } from '../components/UI'
@@ -14,8 +23,8 @@ const FEATURES = [
 ]
 
 export default function Landing({ onInstall }) {
-  const publicAds = MOCK_ADS.filter(a => a.privacy === 'public').slice(0, 4)
-  const privateAds = MOCK_ADS.filter(a => a.privacy === 'private').slice(0, 2)
+  const previewAds = MOCK_ADS.slice(0, 6)
+  const [revealed, setRevealed] = useState({})
 
   return (
     <div style={{ background:'#fff' }}>
@@ -72,57 +81,65 @@ export default function Landing({ onInstall }) {
           Los <span style={{ color:'#92400E', fontWeight:600 }}>🔒 privados</span> muestran el contacto solo a usuarios registrados.
         </p>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:14, marginBottom:20 }}>
-          {publicAds.map(ad => {
+          {previewAds.map(ad => {
             const cat = AD_CATS.find(c => c.id === ad.cat)
+            const isPrivate = ad.privacy === 'private'
+            const isRevealed = !!revealed[ad.id]
             return (
-              <Link key={ad.id} to={`/tablon?openAd=${encodeURIComponent(ad.id)}`} style={{ textDecoration:'none' }}>
-                <div style={{ background:C.bg, borderRadius:16, border:`1px solid ${C.border}`, padding:'13px 14px', transition:'all .2s' }}
-                  onMouseEnter={e => { e.currentTarget.style.boxShadow='0 6px 20px rgba(37,99,235,0.1)'; e.currentTarget.style.transform='translateY(-2px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='translateY(0)' }}>
-                  <div style={{ display:'flex', gap:5, marginBottom:8, flexWrap:'wrap' }}>
-                    <Tag bg="#D1FAE5" color="#065F46">🌐 Público</Tag>
-                    <Tag bg={AD_CATS.find(c=>c.id===ad.cat) ? '#DBEAFE' : C.primaryLight} color={C.primary}>{cat?.emoji} {cat?.label}</Tag>
-                    <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>📍 {ad.canton}</span>
-                  </div>
-                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, marginBottom:4, lineHeight:1.35 }}>{ad.title}</p>
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.5, marginBottom:8, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                    <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user} · {ad.ts}</span>
-                    <span style={{ fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary }}>{ad.price}</span>
-                  </div>
-                  <div style={{ marginTop:10, background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:10, padding:'8px 12px' }}>
-                    <p style={{ fontFamily:PP, fontSize:10, fontWeight:600, color:'#065F46', margin:0 }}>🌐 Contacto visible para todos: wa.me/4179•••••••</p>
-                  </div>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-
-        {/* Private ads teaser */}
-        <div style={{ position:'relative', marginBottom:12 }}>
-          {privateAds.map(ad => {
-            const cat = AD_CATS.find(c => c.id === ad.cat)
-            return (
-              <div key={ad.id} style={{ background:C.bg, borderRadius:14, border:`1px solid ${C.border}`, padding:'12px 14px', marginBottom:10, opacity:.35, filter:'blur(1.5px)', userSelect:'none', pointerEvents:'none' }}>
-                <div style={{ display:'flex', gap:5, marginBottom:6 }}>
-                  <Tag bg="#FEF3C7" color="#92400E">🔒 Privado</Tag>
+              <div key={ad.id} style={{ background:C.bg, borderRadius:16, border:`1px solid ${C.border}`, padding:'13px 14px' }}>
+                <div style={{ display:'flex', gap:5, marginBottom:8, flexWrap:'wrap' }}>
+                  {isPrivate
+                    ? <Tag bg="#FEF3C7" color="#92400E">🔒 Privado</Tag>
+                    : <Tag bg="#D1FAE5" color="#065F46">🌐 Público</Tag>}
                   <Tag bg="#DBEAFE" color={C.primary}>{cat?.emoji} {cat?.label}</Tag>
+                  <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>📍 {ad.canton}</span>
                 </div>
-                <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text }}>{ad.title}</p>
-                <div style={{ marginTop:8, background:C.warnLight, border:`1px solid ${C.warnMid}`, borderRadius:10, padding:'8px 12px' }}>
-                  <p style={{ fontFamily:PP, fontSize:10, fontWeight:600, color:'#92400E', margin:0 }}>🔒 Contacto oculto — solo usuarios registrados</p>
+                <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, marginBottom:4, lineHeight:1.35 }}>{ad.title}</p>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.5, marginBottom:8, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                  <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user} · {ad.ts}</span>
+                  <span style={{ fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary }}>{fmtPrice(ad.price)}</span>
                 </div>
+
+                {/* Contact area */}
+                {isRevealed && !isPrivate ? (
+                  <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:10, padding:'10px 12px', display:'flex', flexDirection:'column', gap:6 }}>
+                    {ad.contact_phone && (
+                      <a href={`https://wa.me/${ad.contact_phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
+                        style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:'#065F46', textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
+                        💬 {ad.contact_phone}
+                      </a>
+                    )}
+                    {ad.contact_email && (
+                      <a href={`mailto:${ad.contact_email}`}
+                        style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:'#065F46', textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
+                        ✉️ {ad.contact_email}
+                      </a>
+                    )}
+                    {!ad.contact_phone && !ad.contact_email && (
+                      <p style={{ fontFamily:PP, fontSize:11, color:'#065F46', margin:0 }}>Sin datos de contacto</p>
+                    )}
+                  </div>
+                ) : isRevealed && isPrivate ? (
+                  <div style={{ background:C.warnLight, border:`1px solid ${C.warnMid}`, borderRadius:10, padding:'12px 14px' }}>
+                    <p style={{ fontFamily:PP, fontSize:12, fontWeight:600, color:'#92400E', margin:'0 0 8px' }}>
+                      🔒 Para ver contactos privados crea una cuenta gratuita
+                    </p>
+                    <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:10, padding:'9px 14px', display:'inline-flex', alignItems:'center', gap:5 }}>
+                      Registrarse gratis →
+                    </Link>
+                  </div>
+                ) : (
+                  <button onClick={() => setRevealed(r => ({ ...r, [ad.id]: true }))}
+                    style={{ width:'100%', background: isPrivate ? C.warnLight : '#F0FDF4', border:`1px solid ${isPrivate ? C.warnMid : '#BBF7D0'}`, borderRadius:10, padding:'9px 12px', fontFamily:PP, fontSize:11, fontWeight:700, color: isPrivate ? '#92400E' : '#065F46', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+                    {isPrivate ? '🔒 Ver contacto →' : '🌐 Ver contacto →'}
+                  </button>
+                )}
               </div>
             )
           })}
-          <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,transparent 0%,rgba(255,255,255,0.98) 55%)', display:'flex', alignItems:'flex-end', justifyContent:'center', padding:'0 0 12px' }}>
-            <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex', alignItems:'center', gap:6, boxShadow:`0 4px 16px rgba(37,99,235,0.3)` }}>
-              🔓 Crear cuenta gratis para ver todos los anuncios →
-            </Link>
-          </div>
         </div>
-        <div style={{ textAlign:'center', paddingTop:8 }}>
+        <div style={{ textAlign:'center', paddingTop:4, paddingBottom:8 }}>
           <Link to="/tablon" style={{ fontFamily:PP, fontSize:12, fontWeight:600, color:C.primary, textDecoration:'none' }}>Ver todos los anuncios →</Link>
         </div>
       </section>

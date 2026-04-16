@@ -21,7 +21,7 @@ const JOB_TYPES = ['Full-time', 'Part-time', 'Freelance', 'Prácticas']
 const COMMUNITY_OPTIONS = COMMUNITY_CATS
   .filter(item => item.id !== 'fe')
   .map(item => item.id === 'mamas'
-    ? { ...item, id:'familia', emoji:'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§', label:'Familia' }
+    ? { ...item, id:'familia', emoji:'👨‍👩‍👧', label:'Familia' }
     : item)
 
 function normalizeCommunityCategory(value='') {

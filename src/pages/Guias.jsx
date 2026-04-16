@@ -72,7 +72,7 @@ export default function Guias() {
         <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', margin:'0 0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
           <div>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
-              GuÃ­as pÃºblicas para empezar
+              Guías públicas para empezar
             </p>
             <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.6 }}>
               Crea una cuenta gratuita para guardar contenido, publicar y acceder a toda la experiencia de la app.

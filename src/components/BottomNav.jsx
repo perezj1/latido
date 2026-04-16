@@ -21,7 +21,7 @@ export default function BottomNav() {
           return (
             <div key="fab" style={{ flex:1, display:'flex', justifyContent:'center', alignItems:'center' }}>
               <Link to={isLoggedIn ? '/publicar' : '/auth'} style={{ width:52, height:52, borderRadius:'50%', background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:isLoggedIn ? 26 : 20, marginTop:-20, boxShadow:`0 4px 18px rgba(37,99,235,0.45)`, fontWeight:700, textDecoration:'none' }} aria-label={isLoggedIn ? 'Publicar' : 'Crear cuenta gratis'}>
-                {isLoggedIn ? '+' : 'ðŸ”“'}
+                {isLoggedIn ? '+' : '🔓'}
               </Link>
             </div>
           )
