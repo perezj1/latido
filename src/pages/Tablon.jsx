@@ -189,7 +189,6 @@ export default function Tablon() {
             {canton && ` · 📍 Cantón ${canton}`}
           </p>
         </div>
-        <a href="/publicar" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'10px 16px', flexShrink:0 }}>+ Publicar</a>
       </div>
 
       {/* Search */}

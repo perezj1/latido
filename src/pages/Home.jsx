@@ -65,7 +65,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 8px' }}>
+     {/*  <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 8px' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:14, marginBottom:18 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>Tu inicio, como una landing privada</h2>
@@ -84,14 +84,14 @@ export default function Home() {
             </Link>
           ))}
         </div>
-      </section>
+      </section> */}
 
       <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 0' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, gap:12 }}>
           <div>
-            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>📌 Anuncios recientes</h2>
-            <p style={{ fontFamily:PP, fontSize:13, color:C.mid, margin:0, lineHeight:1.7 }}>
-              Ahora sí estás dentro: ya no hace falta enseñarte una muestra, te llevamos directo al movimiento real de la comunidad.
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>📌 Anuncios recientes</h2>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, lineHeight:1.7 }}>
+              Los últimos anuncios de la comunidad.
             </p>
           </div>
           <Link to="/tablon" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todos →</Link>
