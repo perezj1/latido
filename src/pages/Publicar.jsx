@@ -68,11 +68,11 @@ export default function Publicar() {
       })
       if (error) throw error
       setDone(true)
-    } catch {
-      toast.success('Anuncio publicado (modo demo)')
-      setDone(true)
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo publicar el anuncio')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const selectedCat = AD_CATS.find(c => c.id === form.cat)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP, CAT_COLORS } from '../lib/theme'
@@ -8,6 +8,17 @@ import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters } from '../components/
 import toast from 'react-hot-toast'
 
 function JobCard({ job }) {
+  const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : '')
+  const contactHref = job.contact_email
+    ? `mailto:${job.contact_email}`
+    : job.contact_link
+      ? job.contact_link
+      : job.contact
+        ? (job.contact.includes('@') && !job.contact.startsWith('http') ? `mailto:${job.contact}` : job.contact)
+        : job.contact_phone
+          ? `https://wa.me/${job.contact_phone.replace(/\D/g, '')}`
+          : null
+
   return (
     <div style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14 }}>
       <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>{job.emoji || '💼'}</div>
@@ -17,11 +28,11 @@ function JobCard({ job }) {
           <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>
         </div>
         <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>{job.company} · 📍 {job.city || job.canton}</p>
-        {job.lang && <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>🗣️ {job.lang}</p>}
+        {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>🗣️ {languages}</p>}
         <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', margin:'4px 0 0' }}>{job.salary}</p>
       </div>
-      {job.contact
-        ? <a href={`mailto:${job.contact}`} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:11, padding:'9px 14px', flexShrink:0 }}>Aplicar →</a>
+      {contactHref
+        ? <a href={contactHref} target={contactHref.startsWith('http') ? '_blank' : undefined} rel={contactHref.startsWith('http') ? 'noreferrer' : undefined} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:11, padding:'9px 14px', flexShrink:0 }}>Aplicar →</a>
         : <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, flexShrink:0 }}>Ver →</span>
       }
     </div>
@@ -172,7 +183,12 @@ export default function Tablon() {
     toast.success('Contacto desbloqueado')
   }
 
-  const catOptions  = [{ id:'', label:'Todos' }, ...AD_CATS.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
+  const orderedCats = [...AD_CATS].sort((a, b) => {
+    const priority = { vivienda:0, empleo:1, servicios:2 }
+    return (priority[a.id] ?? 99) - (priority[b.id] ?? 99)
+  })
+
+  const catOptions  = [{ id:'', label:'Todos' }, ...orderedCats.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
   const typeOptions = [{ id:'', label:'Todos' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
   const privOptions = [{ id:'', label:'Todos' }, { id:'public', label:'🌐 Públicos' }, { id:'private', label:'🔒 Privados' }]
   const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Full-time' }, { id:'Part-time', label:'Part-time' }]
@@ -254,7 +270,7 @@ export default function Tablon() {
             <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
               <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Tienes una oferta de trabajo?</h3>
               <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>Publica gratis y llega a miles de latinos en Suiza.</p>
-              <a href="mailto:hola@latido.ch?subject=Publicar oferta de empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 22px', borderRadius:13, display:'inline-flex' }}>Publicar empleo gratis</a>
+              <Link to="/publicar-empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 22px', borderRadius:13, display:'inline-flex' }}>Publicar empleo gratis</Link>
             </div>
           </div>
         )

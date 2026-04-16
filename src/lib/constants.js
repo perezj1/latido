@@ -22,7 +22,7 @@ export const AD_CATS = [
   { id:'cuidados',   emoji:'👶', label:'Cuidados',    sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
   { id:'documentos', emoji:'📋', label:'Docs & Admin',sub:['Cartas','Trámites','Traducción','Asesoría'] },
   { id:'venta',      emoji:'🛒', label:'Venta',       sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
-  { id:'servicios',  emoji:'💼', label:'Servicios',   sub:['Clases','Peluquería','Mecánico','Informática','Otro'] },
+  { id:'servicios',  emoji:'🔧', label:'Servicios',   sub:['Clases','Peluquería','Mecánico','Informática','Otro'] },
   { id:'empleo',     emoji:'💼', label:'Empleo',      sub:['Full-time','Part-time','Freelance','Prácticas'] },
   { id:'regalo',     emoji:'🎁', label:'Se regala',   sub:['Ropa','Muebles','Libros','Juguetes','Otro'] },
 ]

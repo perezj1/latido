@@ -103,12 +103,27 @@ export function Select({ label, value, onChange, children, required }) {
   return (
     <div style={{ marginBottom:10 }}>
       {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
-      <select
-        value={value} onChange={onChange}
-        style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 13px', fontSize:13, fontFamily:PP, outline:'none', background:C.surface, color:C.text, appearance:'none', cursor:'pointer' }}
-      >
-        {children}
-      </select>
+      <div style={{ position:'relative' }}>
+        <select
+          value={value} onChange={onChange}
+          style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 40px 11px 13px', fontSize:13, fontFamily:PP, outline:'none', background:C.surface, color:C.text, appearance:'none', WebkitAppearance:'none', MozAppearance:'none', cursor:'pointer' }}
+        >
+          {children}
+        </select>
+        <span
+          style={{
+            position:'absolute',
+            right:14,
+            top:'50%',
+            transform:'translateY(-50%)',
+            color:C.light,
+            fontSize:14,
+            pointerEvents:'none',
+          }}
+        >
+          ▾
+        </span>
+      </div>
     </div>
   )
 }
@@ -230,7 +245,7 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
     const cats = [
       {id:'vivienda',emoji:'🏠',label:'Vivienda'},{id:'hogar',emoji:'🧹',label:'Hogar'},
       {id:'cuidados',emoji:'👶',label:'Cuidados'},{id:'documentos',emoji:'📋',label:'Docs'},
-      {id:'venta',emoji:'🛒',label:'Venta'},{id:'servicios',emoji:'💼',label:'Servicios'},
+      {id:'venta',emoji:'🛒',label:'Venta'},{id:'servicios',emoji:'🔧',label:'Servicios'},
       {id:'empleo',emoji:'💼',label:'Empleo'},{id:'regalo',emoji:'🎁',label:'Regalo'},
     ]
     const map = {vivienda:{bg:'#DBEAFE',tc:'#1D4ED8'},hogar:{bg:'#D1FAE5',tc:'#065F46'},cuidados:{bg:'#FCE7F3',tc:'#9D174D'},documentos:{bg:'#EDE9FE',tc:'#6D28D9'},venta:{bg:'#FEF3C7',tc:'#92400E'},servicios:{bg:'#CCFBF1',tc:'#0F766E'},empleo:{bg:'#DBEAFE',tc:'#1D4ED8'},regalo:{bg:'#FEE2E2',tc:'#B91C1C'}}

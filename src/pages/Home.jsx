@@ -55,7 +55,7 @@ export default function Home() {
             <div style={{ marginBottom:22 }}>
               <GlobalSearch
                 size="lg"
-                placeholder="Busca pisos, cuidadoras, DJs, comunidades o trámites..."
+                placeholder="Busca comunidades, empleos, anuncios, documentos..."
               />
             </div>
             <Link to="/tablon" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#fff', color:C.primary, textDecoration:'none', padding:'13px 20px', borderRadius:14, display:'inline-flex', alignItems:'center', gap:6 }}>

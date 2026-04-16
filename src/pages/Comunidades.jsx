@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import {
@@ -23,18 +23,89 @@ const MAIN_TABS = [
   { id:'eventos', label:'🎉 Eventos' },
 ]
 
+const BUSINESS_EMOJI = {
+  restaurante:'🍽️',
+  barberia:'✂️',
+  tienda:'🛒',
+  pasteleria:'🍰',
+  belleza:'💇',
+  servicios:'🔧',
+}
+
+const EVENT_EMOJI = {
+  concierto:'🎵',
+  festival:'🎪',
+  quedada:'🤝',
+  fiesta:'💃',
+  networking:'💼',
+  familia:'👨‍👩‍👧',
+}
+
+function formatRelativeDate(value) {
+  if (!value) return 'Hace poco'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Hace poco'
+  const diff = Date.now() - date.getTime()
+  const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
+  if (days === 0) return 'Hoy'
+  if (days === 1) return 'Hace 1 día'
+  if (days < 30) return `Hace ${days} días`
+  const months = Math.floor(days / 30)
+  if (months <= 1) return 'Hace 1 mes'
+  return `Hace ${months} meses`
+}
+
+function normalizeProvider(provider) {
+  return {
+    id: provider.id,
+    emoji: BUSINESS_EMOJI[provider.category] || '🏪',
+    name: provider.name,
+    type: provider.category,
+    city: provider.city || provider.canton || 'Suiza',
+    canton: provider.canton || '',
+    desc: provider.description || 'Negocio latino en Suiza.',
+    phone: provider.whatsapp || '',
+    instagram: provider.instagram || '',
+    verified: !!provider.verified,
+    featured: !!provider.featured,
+    services: Array.isArray(provider.services) ? provider.services : [],
+    photo_url: provider.photo_url || '',
+  }
+}
+
+function normalizeEvent(event) {
+  return {
+    id: event.id,
+    type: event.type,
+    emoji: event.emoji || EVENT_EMOJI[event.type] || '🎉',
+    title: event.title,
+    city: event.city || event.canton || 'Suiza',
+    canton: event.canton || '',
+    venue: event.venue || 'Lugar por confirmar',
+    day: event.day || '',
+    month: event.month || '',
+    time: event.time || '',
+    price: event.price || 'Consultar',
+    host: event.host || 'Organizador',
+    featured: !!event.featured,
+    desc: event.desc || 'Evento latino en Suiza.',
+    img: event.img_url || '',
+    link: event.link || '#',
+  }
+}
+
 function averageRating(reviews) {
   if (!reviews?.length) return null
   return +(reviews.reduce((sum, review) => sum + review.stars, 0) / reviews.length).toFixed(1)
 }
 
-function BusinessCard({ business, onClick }) {
+function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap }) {
   const category = NEGOCIO_TYPES.find(type => type.id === business.type)
-  const services = MOCK_NEGOCIO_SERVICES[business.id] || []
-  const photos = MOCK_NEGOCIO_PHOTOS[business.id] || []
-  const reviews = MOCK_NEGOCIO_REVIEWS[business.id] || []
+  const services = servicesMap[business.id] || business.services || []
+  const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
+  const reviews = reviewsMap[business.id] || []
   const rating = averageRating(reviews)
-  const cover = photos[0]
+  const cover = photos[0] || business.photo_url
 
   return (
     <div
@@ -98,15 +169,19 @@ function BusinessCard({ business, onClick }) {
   )
 }
 
-function BusinessDetail({ business, onClose }) {
+function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap }) {
   const { isLoggedIn, displayName } = useAuth()
   const category = NEGOCIO_TYPES.find(type => type.id === business.type)
-  const services = MOCK_NEGOCIO_SERVICES[business.id] || []
-  const photos = MOCK_NEGOCIO_PHOTOS[business.id] || []
-  const [reviews, setReviews] = useState(MOCK_NEGOCIO_REVIEWS[business.id] || [])
+  const services = servicesMap[business.id] || business.services || []
+  const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
+  const [reviews, setReviews] = useState(reviewsMap[business.id] || [])
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [tab, setTab] = useState('info')
   const rating = averageRating(reviews)
+
+  useEffect(() => {
+    setReviews(reviewsMap[business.id] || [])
+  }, [business.id, reviewsMap])
 
   const handleAddReview = review => {
     setReviews(prev => [{ id:`new-${Date.now()}`, ...review, author:isLoggedIn ? displayName : review.name }, ...prev])
@@ -312,6 +387,11 @@ function EventDetail({ event, onClose }) {
 export default function Comunidades() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [communities, setCommunities] = useState([])
+  const [businesses, setBusinesses] = useState(MOCK_NEGOCIOS)
+  const [businessServices, setBusinessServices] = useState(MOCK_NEGOCIO_SERVICES)
+  const [businessPhotos, setBusinessPhotos] = useState(MOCK_NEGOCIO_PHOTOS)
+  const [businessReviews, setBusinessReviews] = useState(MOCK_NEGOCIO_REVIEWS)
+  const [events, setEvents] = useState(MOCK_EVENTOS_LATINOS)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [cat, setCat] = useState('')
@@ -324,15 +404,96 @@ export default function Comunidades() {
   const tab = MAIN_TABS.some(item => item.id === view) ? view : 'comunidades'
 
   useEffect(() => {
-    supabase.from('communities').select('*').eq('active', true).order('members', { ascending:false })
-      .then(({ data, error }) => {
-        setCommunities(error || !data?.length ? MOCK_COMMUNITIES : data)
-        setLoading(false)
-      })
-      .catch(() => {
+    let cancelled = false
+
+    async function loadData() {
+      try {
+        const [communitiesRes, providersRes, photosRes, reviewsRes, eventsRes] = await Promise.all([
+          supabase.from('communities').select('*').eq('active', true).order('members', { ascending:false }),
+          supabase.from('providers').select('*').eq('active', true).order('featured', { ascending:false }).order('verified', { ascending:false }).order('created_at', { ascending:false }),
+          supabase.from('provider_photos').select('*').order('is_main', { ascending:false }).order('sort_order', { ascending:true }),
+          supabase.from('reviews').select('*').eq('active', true).order('created_at', { ascending:false }),
+          supabase.from('events').select('*').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }),
+        ])
+
+        if (cancelled) return
+
+        setCommunities(communitiesRes.error || !communitiesRes.data?.length ? MOCK_COMMUNITIES : communitiesRes.data)
+
+        const nextBusinesses = providersRes.error || !providersRes.data?.length
+          ? MOCK_NEGOCIOS
+          : providersRes.data.map(normalizeProvider)
+        setBusinesses(nextBusinesses)
+
+        const nextEvents = eventsRes.error || !eventsRes.data?.length
+          ? MOCK_EVENTOS_LATINOS
+          : eventsRes.data.map(normalizeEvent)
+        setEvents(nextEvents)
+
+        const nextServices = { ...MOCK_NEGOCIO_SERVICES }
+        const nextPhotos = { ...MOCK_NEGOCIO_PHOTOS }
+        const nextReviews = { ...MOCK_NEGOCIO_REVIEWS }
+
+        if (!providersRes.error && providersRes.data?.length) {
+          providersRes.data.forEach(provider => {
+            const normalized = normalizeProvider(provider)
+            if (normalized.services.length) nextServices[normalized.id] = normalized.services
+            if (normalized.photo_url) {
+              nextPhotos[normalized.id] = [normalized.photo_url, ...(nextPhotos[normalized.id] || [])]
+            }
+            if (!nextReviews[normalized.id]) nextReviews[normalized.id] = []
+          })
+        }
+
+        if (!photosRes.error && photosRes.data?.length) {
+          photosRes.data.forEach(photo => {
+            if (!photo?.provider_id || !photo?.url) return
+            nextPhotos[photo.provider_id] = [...(nextPhotos[photo.provider_id] || []), photo.url]
+          })
+        }
+
+        Object.keys(nextPhotos).forEach(providerId => {
+          nextPhotos[providerId] = [...new Set((nextPhotos[providerId] || []).filter(Boolean))]
+        })
+
+        if (!reviewsRes.error && reviewsRes.data?.length) {
+          reviewsRes.data.forEach(review => {
+            if (!review?.provider_id) return
+            nextReviews[review.provider_id] = [
+              ...(nextReviews[review.provider_id] || []),
+              {
+                id: review.id,
+                author: review.author_name || 'Usuario',
+                canton: review.canton || '',
+                stars: review.stars,
+                date: formatRelativeDate(review.created_at),
+                text: review.text,
+              },
+            ]
+          })
+        }
+
+        setBusinessServices(nextServices)
+        setBusinessPhotos(nextPhotos)
+        setBusinessReviews(nextReviews)
+      } catch {
+        if (cancelled) return
         setCommunities(MOCK_COMMUNITIES)
-        setLoading(false)
-      })
+        setBusinesses(MOCK_NEGOCIOS)
+        setBusinessServices(MOCK_NEGOCIO_SERVICES)
+        setBusinessPhotos(MOCK_NEGOCIO_PHOTOS)
+        setBusinessReviews(MOCK_NEGOCIO_REVIEWS)
+        setEvents(MOCK_EVENTOS_LATINOS)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadData()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const handleTabChange = nextTab => {
@@ -353,7 +514,7 @@ export default function Comunidades() {
     (!search || group.name.toLowerCase().includes(search.toLowerCase()) || group.desc.toLowerCase().includes(search.toLowerCase()))
   )
 
-  const filteredNeg = [...MOCK_NEGOCIOS]
+  const filteredNeg = [...businesses]
     .sort((a, b) => Number(b.featured) - Number(a.featured) || Number(b.verified) - Number(a.verified))
     .filter(business =>
       (!negType || business.type === negType) &&
@@ -361,10 +522,10 @@ export default function Comunidades() {
         business.name.toLowerCase().includes(search.toLowerCase()) ||
         business.desc.toLowerCase().includes(search.toLowerCase()) ||
         business.city.toLowerCase().includes(search.toLowerCase()) ||
-        (MOCK_NEGOCIO_SERVICES[business.id] || []).some(service => service.toLowerCase().includes(search.toLowerCase())))
+        (businessServices[business.id] || business.services || []).some(service => service.toLowerCase().includes(search.toLowerCase())))
     )
 
-  const filteredEvents = [...MOCK_EVENTOS_LATINOS]
+  const filteredEvents = [...events]
     .sort((a, b) => Number(b.featured) - Number(a.featured))
     .filter(event =>
       (!eventType || event.type === eventType) &&
@@ -431,7 +592,7 @@ export default function Comunidades() {
           <div style={{ marginTop:28, border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
             <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>➕ ¿Tienes una comunidad latina?</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Regístrala aquí y llega a más latinos en Suiza. Gratis.</p>
-            <a href="mailto:hola@latido.ch?subject=Registrar comunidad" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Registrar comunidad</a>
+            <Link to="/registrar-comunidad" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Registrar comunidad</Link>
           </div>
         </>
       )}
@@ -439,18 +600,29 @@ export default function Comunidades() {
       {tab === 'negocios' && (
         <>
           <PillFilters options={NEGOCIO_TYPES} value={negType} onChange={setNegType} className="mb-4" />
-          {filteredNeg.length === 0 ? (
+          {loading ? (
+            <div className="skeleton" style={{ height:260, borderRadius:20 }} />
+          ) : filteredNeg.length === 0 ? (
             <EmptyState emoji="😕" title="Sin resultados" action="Ver todos" onAction={() => { setNegType(''); setSearch('') }} />
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
-              {filteredNeg.map(business => <BusinessCard key={business.id} business={business} onClick={() => setSelectedBusiness(business)} />)}
+              {filteredNeg.map(business => (
+                <BusinessCard
+                  key={business.id}
+                  business={business}
+                  onClick={() => setSelectedBusiness(business)}
+                  servicesMap={businessServices}
+                  photosMap={businessPhotos}
+                  reviewsMap={businessReviews}
+                />
+              ))}
             </div>
           )}
 
           <div style={{ marginTop:28, border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
             <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>🏪 ¿Tienes un negocio latino?</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Regístralo gratis, sube fotos y recibe reseñas de la comunidad.</p>
-            <a href="mailto:hola@latido.ch?subject=Registrar negocio latino" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Registrar negocio</a>
+            <Link to="/registrar-negocio" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Registrar negocio</Link>
           </div>
         </>
       )}
@@ -469,12 +641,21 @@ export default function Comunidades() {
           <div style={{ marginTop:28, border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
             <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>🎉 ¿Organizas un evento latino?</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Conciertos, fiestas, networking, festivales o quedadas: publícalo aquí para la comunidad.</p>
-            <a href="mailto:hola@latido.ch?subject=Publicar evento latino" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Publicar evento</a>
+            <Link to="/publicar-evento" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Publicar evento</Link>
           </div>
         </>
       )}
 
-      {selectedBusiness && <BusinessDetail business={selectedBusiness} onClose={() => setSelectedBusiness(null)} />}
+      {selectedBusiness && (
+        <BusinessDetail
+          key={selectedBusiness.id}
+          business={selectedBusiness}
+          onClose={() => setSelectedBusiness(null)}
+          servicesMap={businessServices}
+          photosMap={businessPhotos}
+          reviewsMap={businessReviews}
+        />
+      )}
       <EventDetail event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>
   )

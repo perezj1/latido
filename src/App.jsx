@@ -16,6 +16,10 @@ import Comunidades from './pages/Comunidades'
 import Guias from './pages/Guias'
 import Perfil from './pages/Perfil'
 import Auth from './pages/Auth'
+import PublicarEvento from './pages/PublicarEvento'
+import RegistrarNegocio from './pages/RegistrarNegocio'
+import RegistrarComunidad from './pages/RegistrarComunidad'
+import PublicarEmpleo from './pages/PublicarEmpleo'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -95,6 +99,10 @@ function AppShell() {
           <Route path="/guias" element={<Guias />} />
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/auth" element={<AuthRoute />} />
+          <Route path="/publicar-evento" element={<PublicarEvento />} />
+          <Route path="/registrar-negocio" element={<RegistrarNegocio />} />
+          <Route path="/registrar-comunidad" element={<RegistrarComunidad />} />
+          <Route path="/publicar-empleo" element={<PublicarEmpleo />} />
           <Route path="/documentos" element={<Navigate to="/guias" replace />} />
           <Route path="/empleos" element={<Navigate to="/tablon?cat=empleo" replace />} />
           <Route path="*" element={
