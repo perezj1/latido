@@ -129,6 +129,13 @@ export const MOCK_CAREGIVERS = [
   { id:'cg3', name:'Sofia Torres',   type:'Niñera / Tutora',  city:'BS', price:'CHF 20/h', ages:'2–12 años',   langs:['Español','Inglés'],   verified:false, emoji:'👩🏼‍🦰', desc:'Maestra de primaria. Ayudo también con tareas.' },
 ]
 
+export const MOCK_FAMILY_GROUPS = [
+  { id:'fg1', name:'Mamás Latinas Zürich',     city:'Zürich',  members:184, emoji:'👩‍👧',     desc:'Grupo de apoyo para madres latinas con quedadas, recomendaciones y ayuda mutua.', contact:'https://chat.whatsapp.com/ejemplo-mamas-zh' },
+  { id:'fg2', name:'Familias Latinas Ginebra', city:'Ginebra', members:126, emoji:'👨‍👩‍👧', desc:'Planes familiares, actividades de fin de semana y orientación para recién llegados.', contact:'https://t.me/familiaslatinasge' },
+  { id:'fg3', name:'Papás y Mamás Basel',      city:'Basilea', members:93,  emoji:'🧸',          desc:'Red cercana para compartir guarderías, escuelas y contactos de confianza.', contact:'https://chat.whatsapp.com/ejemplo-familias-bs' },
+  { id:'fg4', name:'Crianza Latina Lausanne',  city:'Lausana', members:77,  emoji:'🍀',          desc:'Comunidad para acompañarse en crianza bilingüe, lactancia y reagrupación familiar.', contact:'https://t.me/crianzalatina-vd' },
+]
+
 export const MOCK_JOBS = [
   { id:'j1', emoji:'👨‍🍳', title:'Cocinero/a latino/a',         company:'El Rincón Latino',  city:'ZH', type:'Full-time',  salary:'CHF 4.200–4.800/mes', lang:'Español + alemán básico' },
   { id:'j2', emoji:'👶', title:'Cuidadora de niños',           company:'Familia particular', city:'BS', type:'Part-time',  salary:'CHF 25/hora',         lang:'Español' },

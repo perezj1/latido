@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { MOCK_COMMUNITIES, COMMUNITY_CATS } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Card, Tag, SearchInput, PillFilters, EmptyState } from '../components/UI'
+import { Card, Tag, PillFilters, EmptyState } from '../components/UI'
 
 export default function Comunidades() {
   const [communities, setCommunities] = useState([])

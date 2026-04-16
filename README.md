@@ -12,7 +12,7 @@ PWA + Web con landing page, tablón de anuncios con privacidad configurable, com
 cd latinosuiza2
 npm install
 code .            # abre VS Code
-npm run dev       # → http://localhost:5173
+npm run dev       # → http://localhost:8080
 ```
 
 ### 2. Crear proyecto en Supabase (gratis)
@@ -99,7 +99,7 @@ src/
 │                           Input, Select, ProgressBar, PillFilters,
 │                           SegmentedTabs, InfoBanner, EmptyState, AdCard, PrivacyTag
 ├── hooks/
-│   ├── useAuth.js       ← Contexto de autenticación Supabase
+│   ├── useAuth.jsx      ← Contexto de autenticación Supabase
 │   └── usePWA.js        ← Detección PWA + prompt de instalación
 ├── lib/
 │   ├── supabase.js      ← Cliente Supabase
@@ -181,7 +181,7 @@ Al instalar, el `manifest.json` configura `start_url: "/?pwa=1"` para que la app
 ## ⚙️ Comandos
 
 ```bash
-npm run dev      # Servidor local en localhost:5173
+npm run dev      # Servidor local en localhost:8080
 npm run build    # Build optimizado para producción
 npm run preview  # Preview del build
 ```
