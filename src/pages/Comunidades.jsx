@@ -818,21 +818,22 @@ export default function Comunidades() {
         </div>
       )}
 
-      <div style={{ position:'relative', marginBottom:12 }}>
-        <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:C.light }}>🔍</span>
-        <input
-          style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:13, padding:'11px 13px 11px 36px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', boxSizing:'border-box' }}
-          placeholder={
-            tab === 'comunidades'
-              ? 'Buscar comunidad...'
-              : tab === 'negocios'
-                ? 'Buscar negocio latino...'
-                : 'Buscar evento latino...'
-          }
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-      </div>
+      {/* Search bar — hidden in eventos tab */}
+      {tab !== 'eventos' && (
+        <div style={{ position:'relative', marginBottom:12 }}>
+          <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:C.light }}>🔍</span>
+          <input
+            style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:13, padding:'11px 13px 11px 36px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', boxSizing:'border-box' }}
+            placeholder={
+              tab === 'comunidades'
+                ? 'Buscar comunidad...'
+                : 'Buscar negocio latino...'
+            }
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+      )}
 
       {tab === 'comunidades' && (
         <>
