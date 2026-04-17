@@ -915,6 +915,18 @@ export default function Comunidades() {
             />
           </div>
 
+          <div style={{ borderRadius:20, overflow:'hidden', border:`1px solid ${C.border}`, marginBottom:24 }}>
+            <iframe
+              title="Eventos en español en Suiza"
+              width="100%"
+              height="680"
+              style={{ border:'none', display:'block' }}
+              src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=spanish&geoRadius=60"
+              loading="lazy"
+              allow="fullscreen"
+            />
+          </div>
+
           <div style={{ border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
             <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>🎉 ¿Organizas un evento latino?</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Conciertos, fiestas, networking, festivales o quedadas: publícalo aquí para la comunidad.</p>

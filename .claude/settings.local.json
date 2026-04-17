@@ -3,7 +3,27 @@
     "allow": [
       "Bash(python3 -c ' *)",
       "Bash(cat vite.config.js)",
-      "Bash(cat vite.config.ts)"
+      "Bash(cat vite.config.ts)",
+      "Bash(node -e ' *)",
+      "WebSearch",
+      "Bash(node scripts/insert_reviews.mjs)",
+      "Bash(node --input-type=module)",
+      "WebFetch(domain:www.dematos-luzern.ch)",
+      "WebFetch(domain:guide.michelin.com)",
+      "WebFetch(domain:eventfrog.ch)",
+      "WebFetch(domain:embed.eventfrog.ch)",
+      "WebFetch(domain:docs.api.eventfrog.net)",
+      "Bash(curl -s \"https://api.eventfrog.net/v1/events?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&searchTerm=latino&geoRadius=60&limit=5\")",
+      "Bash(curl -s \"https://docs.api.eventfrog.net/\")",
+      "Bash(curl -s \"https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&searchTerm=latino&geoRadius=60&format=json\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/main/README.md\")",
+      "Bash(curl -s \"https://api.github.com/repos/poljpocket/eventfrog-api\")",
+      "Bash(curl -s \"https://api.github.com/repos/poljpocket/eventfrog-api/contents/src\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/src/request/EventfrogEventRequest.ts\")",
+      "Bash(curl -s \"https://api.github.com/repos/poljpocket/eventfrog-api/contents/src/request\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/src/service/EventfrogService.ts\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/src/request/EventfrogRequest.ts\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/types/api.d.ts\" echo \"---\" curl -s \"https://api.github.com/repos/poljpocket/eventfrog-api/contents/types\")"
     ]
   }
 }
