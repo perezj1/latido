@@ -15,6 +15,53 @@ function fmtPrice(price) {
   return s
 }
 
+function normalizePhoneForTel(value='') {
+  return value.replace(/[^\d+]/g, '')
+}
+
+function normalizePhoneForWhatsapp(value='') {
+  return value.replace(/\D/g, '')
+}
+
+function getAdContactMethods(ad) {
+  const phone = (ad.contact_phone || ad.whatsapp || '').trim()
+  const email = (ad.contact_email || ad.email_contact || '').trim()
+  const methods = []
+
+  if (phone) {
+    methods.push({
+      id:'phone',
+      icon:'📞',
+      label:'Teléfono',
+      value:phone,
+      href:`tel:${normalizePhoneForTel(phone)}`,
+      external:false,
+    })
+
+    methods.push({
+      id:'whatsapp',
+      icon:'💬',
+      label:'WhatsApp',
+      value:phone,
+      href:`https://wa.me/${normalizePhoneForWhatsapp(phone)}`,
+      external:true,
+    })
+  }
+
+  if (email) {
+    methods.push({
+      id:'email',
+      icon:'✉️',
+      label:'Email',
+      value:email,
+      href:`mailto:${email}`,
+      external:false,
+    })
+  }
+
+  return methods
+}
+
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick }) {
   const cat = AD_CATS.find(c => c.id === ad.cat)
@@ -49,8 +96,12 @@ function AdDetail({ ad, user, onReveal, revealed }) {
   const cc  = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
   const isPrivate = ad.privacy === 'private'
   const canSee = !isPrivate || revealed
-  const phone = ad.contact_phone || ad.whatsapp
-  const email = ad.contact_email || ad.email_contact
+  const [showContacts, setShowContacts] = useState(false)
+  const contactMethods = getAdContactMethods(ad)
+
+  useEffect(() => {
+    setShowContacts(false)
+  }, [ad.id])
 
   return (
     <div>
@@ -92,39 +143,47 @@ function AdDetail({ ad, user, onReveal, revealed }) {
             {user ? '👁️ Ver contacto' : '🔐 Crear cuenta para ver'}
           </Btn>
         </div>
-      ) : isPrivate && canSee ? (
-        <div style={{ background:C.successLight, border:`1px solid ${C.successMid}`, borderRadius:14, padding:'14px 16px' }}>
-          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.success, marginBottom:10 }}>✅ Contacto desbloqueado</p>
-          {phone && (
-            <a href={`https://wa.me/${phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
-              style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#25D366', color:'#fff', textDecoration:'none', borderRadius:13, padding:'12px 16px', display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-              💬 {phone}
-            </a>
-          )}
-          {email && (
-            <a href={`mailto:${email}`}
-              style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'12px 16px', display:'flex', alignItems:'center', gap:8 }}>
-              ✉️ {email}
-            </a>
-          )}
-          {!phone && !email && <p style={{ fontFamily:PP, fontSize:12, color:'#065F46', margin:0 }}>Sin datos de contacto indicados</p>}
-        </div>
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-          {phone && (
-            <a href={`https://wa.me/${phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
-              style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#25D366', color:'#fff', textDecoration:'none', borderRadius:13, padding:'13px 16px', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-              💬 WhatsApp · {phone}
-            </a>
-          )}
-          {email && (
-            <a href={`mailto:${email}`}
-              style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'13px 16px', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-              ✉️ Email · {email}
-            </a>
-          )}
-          {!phone && !email && (
-            <p style={{ fontFamily:PP, fontSize:12, color:C.light, textAlign:'center', padding:'10px 0' }}>Sin contacto público disponible</p>
+        <div style={isPrivate && canSee ? { background:C.successLight, border:`1px solid ${C.successMid}`, borderRadius:14, padding:'14px 16px' } : undefined}>
+          {isPrivate && canSee && <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.success, marginBottom:10 }}>✅ Contacto desbloqueado</p>}
+          {contactMethods.length > 0 ? (
+            <div>
+              <button
+                onClick={() => setShowContacts(current => !current)}
+                style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', padding:'13px 16px', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer' }}
+              >
+                <span>📬 Contacto</span>
+                <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : 'Ver opciones'}</span>
+              </button>
+              {showContacts && (
+                <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:10, marginTop:10, display:'flex', flexDirection:'column', gap:8 }}>
+                  {contactMethods.map(method => (
+                    <a
+                      key={method.id}
+                      href={method.href}
+                      target={method.external ? '_blank' : undefined}
+                      rel={method.external ? 'noreferrer' : undefined}
+                      style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
+                    >
+                      <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                        <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
+                        <div style={{ minWidth:0 }}>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
+                          <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
+                        </div>
+                      </div>
+                      <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
+                        {method.external ? 'Abrir ↗' : 'Abrir →'}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p style={{ fontFamily:PP, fontSize:12, color:isPrivate && canSee ? '#065F46' : C.light, textAlign:'center', padding:'10px 0', margin:0 }}>
+              {isPrivate && canSee ? 'Sin datos de contacto indicados' : 'Sin contacto público disponible'}
+            </p>
           )}
         </div>
       )}

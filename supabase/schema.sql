@@ -1,6 +1,7 @@
 -- ================================================================
 -- LATIDO.CH — Supabase SQL Schema v3
--- Ejecuta en: Supabase → SQL Editor → New Query → RUN
+-- Para instalaciones nuevas: ejecuta este archivo primero.
+-- Para proyectos existentes: ejecuta despues supabase/publications_schema_v4.sql.
 -- ================================================================
 
 -- ── 1. PROFILES (extends Supabase Auth) ────────────────────────
@@ -75,6 +76,7 @@ CREATE TABLE IF NOT EXISTS providers (
   whatsapp    TEXT,
   instagram   TEXT,
   email       TEXT,
+  website     TEXT,
   photo_url   TEXT,
   languages   TEXT[],
   verified    BOOLEAN DEFAULT FALSE,
@@ -126,21 +128,38 @@ ALTER TABLE forum_posts    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE jobs           ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: users can read/write their own
+DROP POLICY IF EXISTS "profile_select_own" ON profiles;
+DROP POLICY IF EXISTS "profile_insert_own" ON profiles;
+DROP POLICY IF EXISTS "profile_update_own" ON profiles;
 CREATE POLICY "profile_select_own" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "profile_insert_own" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "profile_update_own" ON profiles FOR UPDATE USING (auth.uid() = id);
 
 -- Ads: public ads readable by all; private contact visible only to auth users
+DROP POLICY IF EXISTS "ads_select_public" ON ads;
+DROP POLICY IF EXISTS "ads_insert_auth" ON ads;
+DROP POLICY IF EXISTS "ads_update_own" ON ads;
+DROP POLICY IF EXISTS "ads_delete_own" ON ads;
 CREATE POLICY "ads_select_public" ON ads FOR SELECT USING (active = TRUE);
 CREATE POLICY "ads_insert_auth"   ON ads FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 CREATE POLICY "ads_update_own"    ON ads FOR UPDATE USING (user_id = auth.uid());
 CREATE POLICY "ads_delete_own"    ON ads FOR DELETE USING (user_id = auth.uid());
 
 -- Contact reveals
+DROP POLICY IF EXISTS "reveals_select_own" ON contact_reveals;
+DROP POLICY IF EXISTS "reveals_insert_auth" ON contact_reveals;
 CREATE POLICY "reveals_select_own" ON contact_reveals FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "reveals_insert_auth" ON contact_reveals FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
 -- Communities, providers, jobs, forum: public read, auth insert
+DROP POLICY IF EXISTS "communities_read" ON communities;
+DROP POLICY IF EXISTS "communities_insert" ON communities;
+DROP POLICY IF EXISTS "providers_read" ON providers;
+DROP POLICY IF EXISTS "providers_insert" ON providers;
+DROP POLICY IF EXISTS "forum_read" ON forum_posts;
+DROP POLICY IF EXISTS "forum_insert" ON forum_posts;
+DROP POLICY IF EXISTS "jobs_read" ON jobs;
+DROP POLICY IF EXISTS "jobs_insert" ON jobs;
 CREATE POLICY "communities_read"   ON communities  FOR SELECT USING (active = TRUE);
 CREATE POLICY "communities_insert" ON communities  FOR INSERT WITH CHECK (TRUE);
 CREATE POLICY "providers_read"     ON providers    FOR SELECT USING (active = TRUE);
@@ -188,16 +207,35 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
 -- ── 11. SAMPLE DATA ────────────────────────────────────────────
-INSERT INTO communities (name,cat,city,emoji,"desc",members,contact,verified,active) VALUES
-('Colombianos en Zürich','pais','Zürich','🇨🇴','La comunidad más grande de colombianos en Suiza.',342,'https://chat.whatsapp.com/ejemplo',TRUE,TRUE),
-('Mamás Latinas Suiza','mamas','Toda Suiza','👩‍👧','Red de madres latinoamericanas. Crianza y apoyo mutuo.',891,'https://t.me/mamaslatinasch',TRUE,TRUE),
-('Venezolanos en Suiza','pais','Toda Suiza','🇻🇪','Comunidad venezolana unida. Asesoría, trabajo y vivienda.',523,'https://t.me/venezusuiza',TRUE,TRUE)
-ON CONFLICT DO NOTHING;
+INSERT INTO communities (name,cat,city,emoji,"desc",members,contact,verified,active)
+SELECT 'Colombianos en Zürich','pais','Zürich','🇨🇴','La comunidad más grande de colombianos en Suiza.',342,'https://chat.whatsapp.com/ejemplo',TRUE,TRUE
+WHERE NOT EXISTS (
+  SELECT 1 FROM communities WHERE name = 'Colombianos en Zürich' AND city = 'Zürich'
+);
 
-INSERT INTO providers (name,category,city,description,services,price_range,whatsapp,photo_url,verified,featured,active) VALUES
-('DJ Sebastián Vega','dj','Zürich','DJ especializado en salsa, reggaetón y cumbia. 10 años en Suiza.',ARRAY['Salsa','Reggaetón','Cumbia'],'medio','+41791234567','https://images.unsplash.com/photo-1571266028243-3716f02d2d50?w=400&h=300&fit=crop',TRUE,TRUE,TRUE),
-('Sabor Latino Catering','catering','Zürich','Cocina latinoamericana auténtica. Ceviche, tamales, lechón.',ARRAY['Colombiana','Peruana','Mexicana'],'medio','+41791122334','https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&h=300&fit=crop',TRUE,TRUE,TRUE)
-ON CONFLICT DO NOTHING;
+INSERT INTO communities (name,cat,city,emoji,"desc",members,contact,verified,active)
+SELECT 'Mamás Latinas Suiza','mamas','Toda Suiza','👩‍👧','Red de madres latinoamericanas. Crianza y apoyo mutuo.',891,'https://t.me/mamaslatinasch',TRUE,TRUE
+WHERE NOT EXISTS (
+  SELECT 1 FROM communities WHERE name = 'Mamás Latinas Suiza' AND city = 'Toda Suiza'
+);
+
+INSERT INTO communities (name,cat,city,emoji,"desc",members,contact,verified,active)
+SELECT 'Venezolanos en Suiza','pais','Toda Suiza','🇻🇪','Comunidad venezolana unida. Asesoría, trabajo y vivienda.',523,'https://t.me/venezusuiza',TRUE,TRUE
+WHERE NOT EXISTS (
+  SELECT 1 FROM communities WHERE name = 'Venezolanos en Suiza' AND city = 'Toda Suiza'
+);
+
+INSERT INTO providers (name,category,city,description,services,price_range,whatsapp,instagram,email,website,photo_url,verified,featured,active)
+SELECT 'DJ Sebastián Vega','dj','Zürich','DJ especializado en salsa, reggaetón y cumbia. 10 años en Suiza.',ARRAY['Salsa','Reggaetón','Cumbia'],'medio','+41791234567','@djsebastianvega','hola@djsebastianvega.ch','djsebastianvega.ch','https://images.unsplash.com/photo-1571266028243-3716f02d2d50?w=400&h=300&fit=crop',TRUE,TRUE,TRUE
+WHERE NOT EXISTS (
+  SELECT 1 FROM providers WHERE name = 'DJ Sebastián Vega' AND category = 'dj' AND city = 'Zürich'
+);
+
+INSERT INTO providers (name,category,city,description,services,price_range,whatsapp,instagram,email,website,photo_url,verified,featured,active)
+SELECT 'Sabor Latino Catering','catering','Zürich','Cocina latinoamericana auténtica. Ceviche, tamales, lechón.',ARRAY['Colombiana','Peruana','Mexicana'],'medio','+41791122334','@saborlatino_ch','hola@saborlatinocatering.ch','saborlatinocatering.ch','https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&h=300&fit=crop',TRUE,TRUE,TRUE
+WHERE NOT EXISTS (
+  SELECT 1 FROM providers WHERE name = 'Sabor Latino Catering' AND category = 'catering' AND city = 'Zürich'
+);
 
 -- ── CONSULTAS ADMIN ─────────────────────────────────────────────
 -- Aprobar proveedor:  UPDATE providers SET active=TRUE, verified=TRUE WHERE id='UUID';
@@ -235,6 +273,10 @@ ALTER TABLE reviews         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE provider_photos ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can read reviews/photos of active providers
+DROP POLICY IF EXISTS "reviews_read" ON reviews;
+DROP POLICY IF EXISTS "reviews_insert" ON reviews;
+DROP POLICY IF EXISTS "photos_read" ON provider_photos;
+DROP POLICY IF EXISTS "photos_insert_own" ON provider_photos;
 CREATE POLICY "reviews_read"      ON reviews         FOR SELECT USING (active = TRUE);
 CREATE POLICY "reviews_insert"    ON reviews         FOR INSERT WITH CHECK (TRUE);
 CREATE POLICY "photos_read"       ON provider_photos FOR SELECT USING (TRUE);

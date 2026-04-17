@@ -90,6 +90,28 @@ function formatRelativeDate(value) {
   return `Hace ${months} meses`
 }
 
+function ensureUrl(value='') {
+  if (!value) return ''
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`
+}
+
+function formatUrlLabel(value='') {
+  return value.replace(/^https?:\/\//i, '').replace(/\/$/, '')
+}
+
+function normalizePhoneForTel(value='') {
+  return value.replace(/[^\d+]/g, '')
+}
+
+function normalizePhoneForWhatsapp(value='') {
+  return value.replace(/\D/g, '')
+}
+
+function formatInstagramHandle(value='') {
+  if (!value) return ''
+  return value.startsWith('@') ? value : `@${value}`
+}
+
 function normalizeProvider(provider) {
   return {
     id: provider.id,
@@ -99,8 +121,11 @@ function normalizeProvider(provider) {
     city: provider.city || provider.canton || 'Suiza',
     canton: provider.canton || '',
     desc: provider.description || 'Negocio latino en Suiza.',
-    phone: provider.whatsapp || '',
+    phone: provider.phone || provider.whatsapp || '',
+    whatsapp: provider.whatsapp || provider.phone || '',
     instagram: provider.instagram || '',
+    email: provider.email || '',
+    website: provider.website || '',
     verified: !!provider.verified,
     featured: !!provider.featured,
     services: Array.isArray(provider.services) ? provider.services : [],
@@ -134,6 +159,61 @@ function averageRating(reviews) {
   return +(reviews.reduce((sum, review) => sum + review.stars, 0) / reviews.length).toFixed(1)
 }
 
+function getBusinessContactMethods(business) {
+  const phone = (business.phone || business.whatsapp || '').trim()
+  const whatsapp = (business.whatsapp || business.phone || '').trim()
+  const email = (business.email || '').trim()
+  const instagram = formatInstagramHandle((business.instagram || '').trim())
+
+  const methods = []
+
+  if (phone) {
+    methods.push({
+      id:'phone',
+      icon:'📞',
+      label:'Teléfono',
+      value:phone,
+      href:`tel:${normalizePhoneForTel(phone)}`,
+      external:false,
+    })
+  }
+
+  if (whatsapp) {
+    methods.push({
+      id:'whatsapp',
+      icon:'💬',
+      label:'WhatsApp',
+      value:whatsapp,
+      href:`https://wa.me/${normalizePhoneForWhatsapp(whatsapp)}`,
+      external:true,
+    })
+  }
+
+  if (email) {
+    methods.push({
+      id:'email',
+      icon:'✉️',
+      label:'Email',
+      value:email,
+      href:`mailto:${email}`,
+      external:false,
+    })
+  }
+
+  if (instagram) {
+    methods.push({
+      id:'instagram',
+      icon:'📸',
+      label:'Instagram',
+      value:instagram,
+      href:`https://instagram.com/${instagram.replace('@', '')}`,
+      external:true,
+    })
+  }
+
+  return methods
+}
+
 function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap }) {
   const category = NEGOCIO_TYPES.find(type => type.id === business.type)
   const services = servicesMap[business.id] || business.services || []
@@ -141,6 +221,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
   const reviews = reviewsMap[business.id] || []
   const rating = averageRating(reviews)
   const cover = photos[0] || business.photo_url
+  const whatsappNumber = business.whatsapp || business.phone || ''
 
   return (
     <div
@@ -187,9 +268,9 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
         )}
         <div style={{ display:'flex', gap:8 }}>
           <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flex:1 }}>Ver perfil →</div>
-          {business.phone && (
+          {whatsappNumber && (
             <a
-              href={`https://wa.me/${business.phone.replace(/\D/g, '')}`}
+              href={`https://wa.me/${normalizePhoneForWhatsapp(whatsappNumber)}`}
               target="_blank"
               rel="noreferrer"
               onClick={e => e.stopPropagation()}
@@ -211,11 +292,16 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
   const [reviews, setReviews] = useState(reviewsMap[business.id] || [])
   const [showReviewForm, setShowReviewForm] = useState(false)
+  const [showContacts, setShowContacts] = useState(false)
   const [tab, setTab] = useState('info')
   const rating = averageRating(reviews)
+  const contactMethods = getBusinessContactMethods(business)
+  const websiteLabel = business.website ? formatUrlLabel(business.website) : ''
+  const websiteHref = business.website ? ensureUrl(business.website) : ''
 
   useEffect(() => {
     setReviews(reviewsMap[business.id] || [])
+    setShowContacts(false)
   }, [business.id, reviewsMap])
 
   const handleAddReview = review => {
@@ -262,7 +348,17 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
                 {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
                 <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
               </div>
-              <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:14 }}>{business.desc}</p>
+              <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:business.website ? 8 : 14 }}>{business.desc}</p>
+              {business.website && (
+                <a
+                  href={websiteHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.primary, textDecoration:'none', display:'inline-flex', alignItems:'center', gap:6, marginBottom:16 }}
+                >
+                  🌐 {websiteLabel}
+                </a>
+              )}
               {services.length > 0 && (
                 <div style={{ marginBottom:16 }}>
                   <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>SERVICIOS</p>
@@ -271,18 +367,41 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
                   </div>
                 </div>
               )}
-              <div className="grid-2" style={{ gap:8, marginBottom:14 }}>
-                {business.phone && (
-                  <a href={`https://wa.me/${business.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#25D366', color:'#fff', textDecoration:'none', padding:'13px 0', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                    💬 WhatsApp
-                  </a>
-                )}
-                {business.instagram && (
-                  <a href={`https://instagram.com/${business.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#E1306C', color:'#fff', textDecoration:'none', padding:'13px 0', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                    📸 Instagram
-                  </a>
-                )}
-              </div>
+              {contactMethods.length > 0 && (
+                <div style={{ marginBottom:14 }}>
+                  <button
+                    onClick={() => setShowContacts(current => !current)}
+                    style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', textDecoration:'none', padding:'13px 16px', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer' }}
+                  >
+                    <span>📬 Contacto</span>
+                    <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : 'Ver opciones'}</span>
+                  </button>
+                  {showContacts && (
+                    <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:10, marginTop:10, display:'flex', flexDirection:'column', gap:8 }}>
+                      {contactMethods.map(method => (
+                        <a
+                          key={method.id}
+                          href={method.href}
+                          target={method.external ? '_blank' : undefined}
+                          rel={method.external ? 'noreferrer' : undefined}
+                          style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
+                        >
+                          <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                            <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
+                            <div style={{ minWidth:0 }}>
+                              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
+                              <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
+                            </div>
+                          </div>
+                          <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
+                            {method.external ? 'Abrir ↗' : 'Abrir →'}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {reviews.length > 0 && (
                 <button onClick={() => setTab('resenas')} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:13, padding:'11px 14px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>

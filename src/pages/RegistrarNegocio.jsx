@@ -26,7 +26,7 @@ export default function RegistrarNegocio() {
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [done, setDone] = useState(false)
   const [form, setForm] = useState({
-    type:'', name:'', city:'', canton:'', desc:'', phone:'', instagram:'', services:'', photo_url:'', gallery:[],
+    type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[],
   })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
 
@@ -52,7 +52,7 @@ export default function RegistrarNegocio() {
         Tu negocio ya está visible para la comunidad latina en Suiza.
       </p>
       <Btn onClick={() => navigate('/comunidades?view=negocios')}>Ver negocios →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', instagram:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro negocio
       </button>
     </div>
@@ -60,6 +60,8 @@ export default function RegistrarNegocio() {
 
   const handleSubmit = async () => {
     if (!form.name || !form.canton) { toast.error('Completa el nombre y el cantón'); return }
+    const hasContact = [form.phone, form.email, form.instagram].some(value => value.trim())
+    if (!hasContact) { toast.error('Añade al menos un método de contacto'); return }
     setLoading(true)
     const servicesList = form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6)
     const galleryPhotos = form.gallery.filter(url => url && url !== form.photo_url)
@@ -72,7 +74,9 @@ export default function RegistrarNegocio() {
         canton: form.canton,
         description: form.desc.trim() || null,
         whatsapp: form.phone.trim() || null,
+        email: form.email.trim() || null,
         instagram: form.instagram.trim() || null,
+        website: form.website.trim() || null,
         photo_url: form.photo_url.trim() || null,
         services: servicesList.length ? servicesList : null,
         languages: ['Español'],
@@ -97,7 +101,12 @@ export default function RegistrarNegocio() {
 
       setDone(true)
     } catch (error) {
-      toast.error(error?.message || 'No se pudo registrar el negocio')
+      const message = String(error?.message || '')
+      if (message.toLowerCase().includes('website')) {
+        toast.error('Falta actualizar Supabase para negocios. Ejecuta publications_schema_v4.sql.')
+      } else {
+        toast.error(message || 'No se pudo registrar el negocio')
+      }
     } finally {
       setLoading(false)
     }
@@ -174,8 +183,13 @@ export default function RegistrarNegocio() {
       {/* Step 2 — Contact and services */}
       {step === 2 && (
         <>
-          <Input label="Teléfono WhatsApp" placeholder="+41 79 123 45 67" value={form.phone} onChange={e=>s('phone',e.target.value)} />
+          <Input label="Teléfono / WhatsApp" placeholder="+41 79 123 45 67" value={form.phone} onChange={e=>s('phone',e.target.value)} />
+          <Input label="Email" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={e=>s('email',e.target.value)} />
           <Input label="Instagram" placeholder="@minegocio_zh" value={form.instagram} onChange={e=>s('instagram',e.target.value)} />
+          <Input label="Web (opcional)" type="url" placeholder="minegocio.ch" value={form.website} onChange={e=>s('website',e.target.value)} />
+          <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-4, marginBottom:12, lineHeight:1.6 }}>
+            Añade al menos un contacto: teléfono, email o Instagram. La web es opcional y se mostrará en tu perfil.
+          </p>
           <Input label="Servicios principales" placeholder="Ej: Arepas, Menú casero, Delivery (separados por coma)" value={form.services} onChange={e=>s('services',e.target.value)} />
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-8, marginBottom:12, lineHeight:1.6 }}>
             Lista tus servicios o productos principales separados por coma. Máximo 6.
@@ -219,7 +233,8 @@ export default function RegistrarNegocio() {
             )}
           </div>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:6 }}>{form.name || '—'}</p>
-          {form.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:10 }}>{form.desc}</p>}
+          {form.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:form.website ? 8 : 10 }}>{form.desc}</p>}
+          {form.website && <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'0 0 10px' }}>🌐 {form.website}</p>}
           {form.services && (
             <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>
               {form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0,6).map(sv => (
@@ -229,7 +244,9 @@ export default function RegistrarNegocio() {
           )}
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             {form.phone && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>💬 {form.phone}</span>}
+            {form.email && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>✉️ {form.email}</span>}
             {form.instagram && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📸 {form.instagram}</span>}
+            {form.website && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>🌐 {form.website}</span>}
             {form.gallery.length > 0 && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📷 {form.gallery.length} foto(s) extra</span>}
           </div>
         </div>

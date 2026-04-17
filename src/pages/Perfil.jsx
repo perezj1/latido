@@ -186,7 +186,9 @@ function buildEditorForm(item) {
       canton: row.canton || '',
       description: row.description || '',
       whatsapp: row.whatsapp || '',
+      email: row.email || '',
       instagram: row.instagram || '',
+      website: row.website || '',
       services: Array.isArray(row.services) ? row.services.join(', ') : '',
     }
   }
@@ -408,12 +410,18 @@ export default function Perfil() {
         canton: editorForm.canton || null,
         description: editorForm.description?.trim() || null,
         whatsapp: editorForm.whatsapp?.trim() || null,
+        email: editorForm.email?.trim() || null,
         instagram: editorForm.instagram?.trim() || null,
+        website: editorForm.website?.trim() || null,
         services: services.length ? services : null,
         updated_at: new Date().toISOString(),
       }
       if (!payload.name || !payload.canton) {
         toast.error('Completa al menos el nombre y el cantón del negocio')
+        return
+      }
+      if (![payload.whatsapp, payload.email, payload.instagram].some(Boolean)) {
+        toast.error('Añade al menos un método de contacto para el negocio')
         return
       }
     }
@@ -443,7 +451,12 @@ export default function Perfil() {
       toast.success('Cambios guardados')
       closeEditor()
     } catch (error) {
-      toast.error(error?.message || 'No se pudieron guardar los cambios')
+      const message = String(error?.message || '')
+      if (message.toLowerCase().includes('website')) {
+        toast.error('Falta actualizar Supabase para negocios. Ejecuta publications_schema_v4.sql.')
+      } else {
+        toast.error(message || 'No se pudieron guardar los cambios')
+      }
       setSaving(false)
     }
   }
@@ -776,8 +789,10 @@ export default function Perfil() {
               </Select>
             </div>
             <Input label="Descripción" rows={4} value={editorForm.description || ''} onChange={event => updateEditorField('description', event.target.value)} />
-            <Input label="WhatsApp" value={editorForm.whatsapp || ''} onChange={event => updateEditorField('whatsapp', event.target.value)} />
+            <Input label="Teléfono / WhatsApp" value={editorForm.whatsapp || ''} onChange={event => updateEditorField('whatsapp', event.target.value)} />
+            <Input label="Email" type="email" value={editorForm.email || ''} onChange={event => updateEditorField('email', event.target.value)} />
             <Input label="Instagram" value={editorForm.instagram || ''} onChange={event => updateEditorField('instagram', event.target.value)} />
+            <Input label="Web (opcional)" type="url" value={editorForm.website || ''} onChange={event => updateEditorField('website', event.target.value)} />
             <Input label="Servicios (coma)" value={editorForm.services || ''} onChange={event => updateEditorField('services', event.target.value)} />
           </>
         )}

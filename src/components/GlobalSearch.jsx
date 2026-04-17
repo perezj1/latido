@@ -1,101 +1,215 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { MOCK_ADS, MOCK_COMMUNITIES, MOCK_JOBS, MOCK_NEGOCIOS, MOCK_EVENTOS_LATINOS, AD_CATS, NEGOCIO_TYPES, EVENTO_TYPES } from '../lib/constants'
+import {
+  MOCK_ADS,
+  MOCK_COMMUNITIES,
+  MOCK_JOBS,
+  MOCK_NEGOCIOS,
+  MOCK_EVENTOS_LATINOS,
+  AD_CATS,
+  NEGOCIO_TYPES,
+  EVENTO_TYPES,
+} from '../lib/constants'
 
-function searchAll(query, isLoggedIn) {
+const BUSINESS_EMOJI = {
+  restaurante:'🍽️',
+  barberia:'✂️',
+  tienda:'🛒',
+  pasteleria:'🍰',
+  belleza:'💇',
+  servicios:'🔧',
+}
+
+const EVENT_EMOJI = {
+  concierto:'🎵',
+  festival:'🎪',
+  quedada:'🤝',
+  fiesta:'💃',
+  networking:'💼',
+  familia:'👨‍👩‍👧',
+}
+
+function normalizeCommunity(group) {
+  if (!group || group.cat === 'fe') return null
+
+  return {
+    id: group.id,
+    name: (group.name || 'Comunidad').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
+    city: group.city || 'Suiza',
+    members: group.members || 0,
+    emoji: group.emoji || '🤝',
+    desc: group.desc || group.description || '',
+  }
+}
+
+function normalizeBusiness(provider) {
+  return {
+    id: provider.id,
+    name: provider.name || 'Negocio',
+    type: provider.type || provider.category || '',
+    city: provider.city || provider.canton || 'Suiza',
+    desc: provider.desc || provider.description || '',
+    emoji: provider.emoji || BUSINESS_EMOJI[provider.category] || '🏪',
+    services: Array.isArray(provider.services) ? provider.services : [],
+  }
+}
+
+function normalizeEvent(event) {
+  return {
+    id: event.id,
+    type: event.type || '',
+    title: event.title || 'Evento',
+    city: event.city || event.canton || 'Suiza',
+    venue: event.venue || '',
+    host: event.host || '',
+    desc: event.desc || event.description || '',
+    emoji: event.emoji || EVENT_EMOJI[event.type] || '🎉',
+  }
+}
+
+function normalizeAd(ad) {
+  return {
+    id: ad.id,
+    cat: ad.cat || '',
+    title: ad.title || '',
+    desc: ad.desc || ad.description || '',
+    canton: ad.canton || 'Suiza',
+    price: ad.price || '',
+    privacy: ad.privacy || 'public',
+  }
+}
+
+function normalizeJob(job) {
+  return {
+    id: job.id,
+    title: job.title || '',
+    company: job.company || 'Empresa',
+    city: job.city || job.canton || 'Suiza',
+    type: job.type || 'Trabajo',
+    emoji: job.emoji || '💼',
+  }
+}
+
+function buildFallbackData(isLoggedIn) {
+  return {
+    ads: (isLoggedIn ? MOCK_ADS : MOCK_ADS.filter(ad => ad.privacy === 'public')).map(normalizeAd),
+    jobs: MOCK_JOBS.map(normalizeJob),
+    communities: MOCK_COMMUNITIES.map(normalizeCommunity).filter(Boolean),
+    businesses: MOCK_NEGOCIOS.map(normalizeBusiness),
+    events: MOCK_EVENTOS_LATINOS.map(normalizeEvent),
+  }
+}
+
+function searchAll(query, datasets, isLoggedIn) {
   const q = query.toLowerCase().trim()
   if (!q || q.length < 2) return []
 
   const results = []
 
-  MOCK_ADS.filter(ad =>
-    (isLoggedIn || ad.privacy === 'public') && (
-      ad.title.toLowerCase().includes(q) ||
-      ad.desc?.toLowerCase().includes(q) ||
-      ad.canton?.toLowerCase().includes(q)
+  datasets.ads
+    .filter(ad =>
+      (isLoggedIn || ad.privacy === 'public') && (
+        ad.title.toLowerCase().includes(q) ||
+        ad.desc.toLowerCase().includes(q) ||
+        ad.canton.toLowerCase().includes(q)
+      )
     )
-  ).slice(0, 3).forEach(ad => {
-    const cat = AD_CATS.find(item => item.id === ad.cat)
-    results.push({
-      type:'ad',
-      id:ad.id,
-      icon:cat?.emoji || '📌',
-      label:ad.title,
-      sub:`${cat?.label} · ${ad.canton} · ${ad.price}`,
-      href:`/tablon?openAd=${encodeURIComponent(ad.id)}`,
-      privacy:ad.privacy,
+    .slice(0, 3)
+    .forEach(ad => {
+      const cat = AD_CATS.find(item => item.id === ad.cat)
+      results.push({
+        type:'ad',
+        id:ad.id,
+        icon:cat?.emoji || '📌',
+        label:ad.title,
+        sub:`${cat?.label || 'Tablon'} · ${ad.canton} · ${ad.price}`,
+        href:`/tablon?openAd=${encodeURIComponent(ad.id)}`,
+        privacy:ad.privacy,
+      })
     })
-  })
 
-  MOCK_JOBS.filter(job =>
-    job.title.toLowerCase().includes(q) ||
-    job.company?.toLowerCase().includes(q) ||
-    job.city?.toLowerCase().includes(q)
-  ).slice(0, 2).forEach(job => {
-    results.push({
-      type:'job',
-      id:job.id,
-      icon:job.emoji || '💼',
-      label:job.title,
-      sub:`${job.company} · ${job.city} · ${job.type}`,
-      href:`/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`,
+  datasets.jobs
+    .filter(job =>
+      job.title.toLowerCase().includes(q) ||
+      job.company.toLowerCase().includes(q) ||
+      job.city.toLowerCase().includes(q)
+    )
+    .slice(0, 2)
+    .forEach(job => {
+      results.push({
+        type:'job',
+        id:job.id,
+        icon:job.emoji || '💼',
+        label:job.title,
+        sub:`${job.company} · ${job.city} · ${job.type}`,
+        href:`/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`,
+      })
     })
-  })
 
-  MOCK_COMMUNITIES.filter(group =>
-    group.cat !== 'fe' && (
+  datasets.communities
+    .filter(group =>
       group.name.toLowerCase().includes(q) ||
-      group.desc?.toLowerCase().includes(q)
+      group.desc.toLowerCase().includes(q)
     )
-  ).slice(0, 2).forEach(group => {
-    results.push({
-      type:'community',
-      id:group.id,
-      icon:group.emoji,
-      label:group.name.replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
-      sub:`Comunidad · ${group.city} · ${group.members} miembros`,
-      href:`/comunidades?openCommunity=${encodeURIComponent(group.id)}`,
+    .slice(0, 2)
+    .forEach(group => {
+      results.push({
+        type:'community',
+        id:group.id,
+        icon:group.emoji || '🤝',
+        label:group.name,
+        sub:`Comunidad · ${group.city} · ${group.members} miembros`,
+        href:`/comunidades?openCommunity=${encodeURIComponent(group.id)}`,
+      })
     })
-  })
 
-  MOCK_NEGOCIOS.filter(business =>
-    business.name.toLowerCase().includes(q) ||
-    business.desc?.toLowerCase().includes(q) ||
-    business.city?.toLowerCase().includes(q)
-  ).slice(0, 2).forEach(business => {
-    results.push({
-      type:'business',
-      id:business.id,
-      icon:business.emoji,
-      label:business.name,
-      sub:`${NEGOCIO_TYPES.find(type => type.id === business.type)?.label || 'Negocio'} · ${business.city}`,
-      href:`/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`,
+  datasets.businesses
+    .filter(business =>
+      business.name.toLowerCase().includes(q) ||
+      business.desc.toLowerCase().includes(q) ||
+      business.city.toLowerCase().includes(q) ||
+      business.services.some(service => service.toLowerCase().includes(q))
+    )
+    .slice(0, 2)
+    .forEach(business => {
+      results.push({
+        type:'business',
+        id:business.id,
+        icon:business.emoji || '🏪',
+        label:business.name,
+        sub:`${NEGOCIO_TYPES.find(type => type.id === business.type)?.label || 'Negocio'} · ${business.city}`,
+        href:`/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`,
+      })
     })
-  })
 
-  MOCK_EVENTOS_LATINOS.filter(event =>
-    event.title.toLowerCase().includes(q) ||
-    event.desc?.toLowerCase().includes(q) ||
-    event.city?.toLowerCase().includes(q) ||
-    event.venue?.toLowerCase().includes(q)
-  ).slice(0, 2).forEach(event => {
-    results.push({
-      type:'event',
-      id:event.id,
-      icon:event.emoji,
-      label:event.title,
-      sub:`${EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'} · ${event.city}`,
-      href:`/comunidades?view=eventos&openEvent=${encodeURIComponent(event.id)}`,
+  datasets.events
+    .filter(event =>
+      event.title.toLowerCase().includes(q) ||
+      event.desc.toLowerCase().includes(q) ||
+      event.city.toLowerCase().includes(q) ||
+      event.venue.toLowerCase().includes(q) ||
+      event.host.toLowerCase().includes(q)
+    )
+    .slice(0, 2)
+    .forEach(event => {
+      results.push({
+        type:'event',
+        id:event.id,
+        icon:event.emoji || '🎉',
+        label:event.title,
+        sub:`${EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'} · ${event.city}`,
+        href:`/comunidades?view=eventos&openEvent=${encodeURIComponent(event.id)}`,
+      })
     })
-  })
 
   return results
 }
 
 const TYPE_COLORS = {
-  ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Tablón' },
+  ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Tablon' },
   job:{ bg:'#E0F2FE', color:'#0369A1', label:'Empleo' },
   community:{ bg:'#D1FAE5', color:'#065F46', label:'Comunidad' },
   business:{ bg:'#FEF3C7', color:'#92400E', label:'Negocio' },
@@ -104,6 +218,13 @@ const TYPE_COLORS = {
 
 export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   const { isLoggedIn } = useAuth()
+  const [datasets, setDatasets] = useState(() => ({
+    ads:[],
+    jobs:[],
+    communities:[],
+    businesses:[],
+    events:[],
+  }))
   const [q, setQ] = useState('')
   const [results, setResults] = useState([])
   const [focused, setFocused] = useState(false)
@@ -116,18 +237,79 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     : 'Buscar anuncios, empleos o comunidad...')
 
   useEffect(() => {
-    setResults(searchAll(q, isLoggedIn))
-    setActiveIdx(-1)
-  }, [isLoggedIn, q])
+    let cancelled = false
 
-  const goTo = href => {
+    async function loadSearchData() {
+      try {
+        let adsQuery = supabase
+          .from('ads')
+          .select('*')
+          .eq('active', true)
+          .order('created_at', { ascending:false })
+
+        if (!isLoggedIn) adsQuery = adsQuery.eq('privacy', 'public')
+
+        const [adsRes, jobsRes, communitiesRes, providersRes, eventsRes] = await Promise.all([
+          adsQuery,
+          supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false }),
+          supabase.from('communities').select('*').eq('active', true).order('members', { ascending:false }),
+          supabase
+            .from('providers')
+            .select('*')
+            .eq('active', true)
+            .order('featured', { ascending:false })
+            .order('verified', { ascending:false })
+            .order('created_at', { ascending:false }),
+          supabase
+            .from('events')
+            .select('*')
+            .eq('active', true)
+            .order('featured', { ascending:false })
+            .order('created_at', { ascending:false }),
+        ])
+
+        if (cancelled) return
+
+        const fallback = buildFallbackData(isLoggedIn)
+
+        setDatasets({
+          ads: adsRes.error || !adsRes.data?.length ? fallback.ads : adsRes.data.map(normalizeAd),
+          jobs: jobsRes.error || !jobsRes.data?.length ? fallback.jobs : jobsRes.data.map(normalizeJob),
+          communities: communitiesRes.error || !communitiesRes.data?.length
+            ? fallback.communities
+            : communitiesRes.data.map(normalizeCommunity).filter(Boolean),
+          businesses: providersRes.error || !providersRes.data?.length
+            ? fallback.businesses
+            : providersRes.data.map(normalizeBusiness),
+          events: eventsRes.error || !eventsRes.data?.length
+            ? fallback.events
+            : eventsRes.data.map(normalizeEvent),
+        })
+      } catch {
+        if (!cancelled) setDatasets(buildFallbackData(isLoggedIn))
+      }
+    }
+
+    loadSearchData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isLoggedIn])
+
+  useEffect(() => {
+    setResults(searchAll(q, datasets, isLoggedIn))
+    setActiveIdx(-1)
+  }, [datasets, isLoggedIn, q])
+
+  const goTo = (href) => {
     navigate(href)
     setQ('')
     setFocused(false)
     onClose?.()
   }
 
-  const handleKey = e => {
+  const handleKey = (e) => {
     if (!results.length) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -208,7 +390,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'6px 0 0' }}>
                 Prueba con otras palabras o{' '}
                 <button onClick={() => goTo('/tablon')} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                  explora el tablón
+                  explora el tablon
                 </button>
               </p>
             </div>
@@ -221,8 +403,8 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                     key={`${result.type}-${result.id}`}
                     onClick={() => goTo(result.href)}
                     style={{ padding:'11px 16px', display:'flex', alignItems:'center', gap:12, cursor:'pointer', background: idx === activeIdx ? C.primaryLight : 'transparent', borderBottom: idx < results.length - 1 ? `1px solid ${C.borderLight}` : 'none', transition:'background .1s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = C.primaryLight }}
-                    onMouseLeave={e => { e.currentTarget.style.background = idx === activeIdx ? C.primaryLight : 'transparent' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = C.primaryLight }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = idx === activeIdx ? C.primaryLight : 'transparent' }}
                   >
                     <span style={{ fontSize:20, flexShrink:0 }}>{result.icon}</span>
                     <div style={{ flex:1, minWidth:0 }}>
@@ -237,7 +419,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
               <div style={{ padding:'10px 16px', borderTop:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between' }}>
                 <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{results.length} resultado{results.length !== 1 ? 's' : ''}</span>
                 <button onClick={() => goTo('/tablon')} style={{ fontFamily:PP, fontWeight:600, fontSize:10, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                  Ver todo en el tablón →
+                  Ver todo en el tablon →
                 </button>
               </div>
             </>
