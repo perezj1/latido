@@ -67,10 +67,10 @@ export default function Landing({ onInstall }) {
           {/* <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.15)', color:'#BAE6FD', fontSize:11, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:24, fontFamily:PP, border:'1px solid rgba(255,255,255,0.25)', letterSpacing:0.3 }}>
             🇨🇭 La primera plataforma exclusiva para hispanohablantes en Suiza
           </div> */}
-          <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(32px,6.5vw,56px)', color:'#fff', lineHeight:1.1, margin:'0 0 20px', letterSpacing:-1.5 }}>
-            Lejos de casa.<br/>
-            Pero nunca
-            <span style={{ color:'#BAE6FD', fontStyle:'italic' }}> solos.</span>
+          <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(32px,6.5vw,56px)', color:'#fff', lineHeight:1.1, margin:'0 0 20px', letterSpacing:-0.5 }}>
+            Nuestra fuerza.<br/>
+            en un solo
+            <span style={{ color:'#BAE6FD', fontStyle:'italic' }}> latido.</span>
           </h1>
           <p style={{ fontFamily:PP, fontSize:16, color:'rgba(255,255,255,0.85)', lineHeight:1.75, marginBottom:32, maxWidth:500 }}>
             Latido es la <strong style={{ color:'#fff' }}>primera plataforma creada exclusivamente para la comunidad hispanohablante en Suiza</strong>. Anuncios, comunidades, empleos y guías de trámites — todo en español, entre nosotros. <strong style={{ color:'#fff' }}></strong>
@@ -87,13 +87,13 @@ export default function Landing({ onInstall }) {
     textAlign: 'center',
   }}
 >
-  "La fuerza de nuestra gente en un solo latido"
+  
 </div>
          <div
   style={{
     display: 'flex',
     justifyContent: 'center',
-    gap: 10,
+    gap: 35,
     flexWrap: 'wrap',
     width: '100%',
   }}
@@ -255,9 +255,9 @@ export default function Landing({ onInstall }) {
           <p style={{ fontFamily:PP, fontSize:13, fontWeight:600, color:'rgba(255,255,255,0.5)', letterSpacing:2, textTransform:'uppercase', marginBottom:18 }}>
             Por qué existimos
           </p>
-          <h2 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(26px,5vw,44px)', color:'#fff', lineHeight:1.2, letterSpacing:-1, marginBottom:20 }}>
-            "La fuerza de nuestra gente<br/>
-            <span style={{ color:'#60A5FA' }}>en un mismo latido."</span>
+          <h2 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(26px,5vw,44px)', color:'#fff', lineHeight:1.2, letterSpacing:-0.5, marginBottom:20 }}>
+            "Lejos de casa,<br/>
+            <span style={{ color:'#60A5FA' }}>pero nunca solos."</span>
           </h2>
           <p style={{ fontFamily:PP, fontSize:15, color:'rgba(255,255,255,0.75)', lineHeight:1.8, maxWidth:540, margin:'0 auto 32px' }}>
             En Suiza somos 400.000. Hablamos español, extrañamos el sol y sabemos lo que cuesta construir una vida aquí.
@@ -332,22 +332,34 @@ export default function Landing({ onInstall }) {
             Instálala en tu móvil como app. Sin pasar por ninguna tienda. Siempre a mano, siempre con tu comunidad.
           </p>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))', gap:10, marginBottom:36, maxWidth:600, margin:'0 auto 36px' }}>
-            {[
-              ['🍎 iPhone / iPad', 'Safari → Compartir → "Añadir a inicio"'],
-              ['🤖 Android',       'Chrome → Menú → "Instalar app"'],
-              ['💻 PC / Mac',      'Chrome o Edge → Icono en la barra de URL'],
-            ].map(([d, i]) => (
-              <div key={d} style={{ background:'rgba(255,255,255,0.1)', borderRadius:14, padding:'16px 14px', textAlign:'center', border:'1px solid rgba(255,255,255,0.15)' }}>
-                <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#BAE6FD', marginBottom:6 }}>{d}</p>
-                <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', lineHeight:1.55 }}>{i}</p>
-              </div>
-            ))}
+            <div style={{ background:'rgba(255,255,255,0.1)', borderRadius:14, padding:'16px 14px', textAlign:'center', border:'1px solid rgba(255,255,255,0.15)' }}>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#BAE6FD', marginBottom:6 }}>🍎 iPhone / iPad</p>
+              <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', lineHeight:1.55 }}>Safari → Compartir → "Añadir a inicio"</p>
+            </div>
+            <button
+              onClick={onInstall}
+              style={{ background:'rgba(255,255,255,0.15)', borderRadius:14, padding:'16px 14px', textAlign:'center', border:'1.5px solid rgba(255,255,255,0.4)', cursor:'pointer', transition:'background .2s' }}
+              onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.22)'}
+              onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,0.15)'}
+            >
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#BAE6FD', marginBottom:6 }}>🤖 Android</p>
+              <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.85)', lineHeight:1.55 }}>📲 Toca aquí para instalar</p>
+            </button>
+            <button
+              onClick={onInstall}
+              style={{ background:'rgba(255,255,255,0.15)', borderRadius:14, padding:'16px 14px', textAlign:'center', border:'1.5px solid rgba(255,255,255,0.4)', cursor:'pointer', transition:'background .2s' }}
+              onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.22)'}
+              onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,0.15)'}
+            >
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#BAE6FD', marginBottom:6 }}>💻 PC / Mac</p>
+              <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.85)', lineHeight:1.55 }}>📲 Toca aquí para instalar</p>
+            </button>
           </div>
-          <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
-            <Link to="/tablon" style={{ fontFamily:PP, fontWeight:800, fontSize:14, background:'#fff', color:C.primary, textDecoration:'none', padding:'14px 26px', borderRadius:14, display:'inline-flex', alignItems:'center', gap:7 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:10, alignItems:'center', maxWidth:320, margin:'0 auto' }}>
+            <Link to="/tablon" style={{ fontFamily:PP, fontWeight:800, fontSize:14, background:'#fff', color:C.primary, textDecoration:'none', padding:'14px 26px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', gap:7, width:'100%', boxSizing:'border-box' }}>
               Entrar a la comunidad →
             </Link>
-            <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:14, background:'rgba(255,255,255,0.15)', color:'#fff', textDecoration:'none', padding:'14px 22px', borderRadius:14, display:'inline-flex', alignItems:'center', gap:6, border:'1px solid rgba(255,255,255,0.35)' }}>
+            <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:14, background:'rgba(255,255,255,0.15)', color:'#fff', textDecoration:'none', padding:'14px 22px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', gap:6, border:'1px solid rgba(255,255,255,0.35)', width:'100%', boxSizing:'border-box' }}>
               Crear cuenta gratis
             </Link>
           </div>
