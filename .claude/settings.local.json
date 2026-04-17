@@ -25,7 +25,9 @@
       "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/src/request/EventfrogRequest.ts\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/types/api.d.ts\" echo \"---\" curl -s \"https://api.github.com/repos/poljpocket/eventfrog-api/contents/types\")",
       "WebFetch(domain:www.ch.ch)",
-      "WebFetch(domain:relocation-genevoise.ch)"
+      "WebFetch(domain:relocation-genevoise.ch)",
+      "Bash(node scripts/insert_job_adecco.mjs)",
+      "Bash(node scripts/update_adecco.mjs)"
     ]
   }
 }
