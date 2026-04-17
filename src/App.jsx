@@ -20,6 +20,7 @@ const PublicarEvento = lazy(() => import('./pages/PublicarEvento'))
 const RegistrarNegocio = lazy(() => import('./pages/RegistrarNegocio'))
 const RegistrarComunidad = lazy(() => import('./pages/RegistrarComunidad'))
 const PublicarEmpleo = lazy(() => import('./pages/PublicarEmpleo'))
+const Legal = lazy(() => import('./pages/Legal'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -116,6 +117,10 @@ function AppShell() {
             <Route path="/registrar-negocio" element={<ProtectedRoute><RegistrarNegocio /></ProtectedRoute>} />
             <Route path="/registrar-comunidad" element={<ProtectedRoute><RegistrarComunidad /></ProtectedRoute>} />
             <Route path="/publicar-empleo" element={<ProtectedRoute><PublicarEmpleo /></ProtectedRoute>} />
+            <Route path="/impressum"  element={<Legal />} />
+            <Route path="/privacidad" element={<Legal />} />
+            <Route path="/terminos"   element={<Legal />} />
+            <Route path="/descargo"   element={<Legal />} />
             <Route path="/documentos" element={<Navigate to="/guias" replace />} />
             <Route path="/empleos" element={<Navigate to="/tablon?cat=empleo" replace />} />
             <Route path="*" element={

@@ -63,9 +63,14 @@ export default function Footer() {
 
         <div style={{ borderTop:'1px solid #1E293B', paddingTop:20, paddingBottom:24, display:'flex', flexWrap:'wrap', justifyContent:'space-between', alignItems:'center', gap:10 }}>
           <p style={{ fontFamily:PP, fontSize:11, margin:0 }}>© 2026 Latido.ch — Hecho con 💙 para la comunidad hispanohablante</p>
-          <div style={{ display:'flex', gap:16 }}>
-            {['Privacidad', 'Términos'].map(label => (
-              <Link key={label} to={`/${label.toLowerCase()}`} style={{ fontFamily:PP, fontSize:11, color:'#475569', textDecoration:'none' }}>{label}</Link>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:16 }}>
+            {[
+              { label:'Impressum',   to:'/impressum' },
+              { label:'Privacidad',  to:'/privacidad' },
+              { label:'Términos',    to:'/terminos' },
+              { label:'Descargo',    to:'/descargo' },
+            ].map(({ label, to }) => (
+              <Link key={to} to={to} style={{ fontFamily:PP, fontSize:11, color:'#475569', textDecoration:'none' }}>{label}</Link>
             ))}
           </div>
         </div>
