@@ -23,7 +23,9 @@
       "Bash(curl -s \"https://api.github.com/repos/poljpocket/eventfrog-api/contents/src/request\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/src/service/EventfrogService.ts\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/src/request/EventfrogRequest.ts\")",
-      "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/types/api.d.ts\" echo \"---\" curl -s \"https://api.github.com/repos/poljpocket/eventfrog-api/contents/types\")"
+      "Bash(curl -s \"https://raw.githubusercontent.com/poljpocket/eventfrog-api/master/types/api.d.ts\" echo \"---\" curl -s \"https://api.github.com/repos/poljpocket/eventfrog-api/contents/types\")",
+      "WebFetch(domain:www.ch.ch)",
+      "WebFetch(domain:relocation-genevoise.ch)"
     ]
   }
 }

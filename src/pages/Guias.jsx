@@ -18,6 +18,8 @@ export default function Guias() {
     { id:'salud', label:'🏥 Salud' },
     { id:'banco', label:'🏦 Banco' },
     { id:'educacion', label:'🎓 Educación' },
+    { id:'trabajo', label:'💼 Trabajo' },
+    { id:'vivienda', label:'🏠 Vivienda' },
   ]
 
   const filtered = MOCK_DOCS.filter((d) => {
