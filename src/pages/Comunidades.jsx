@@ -909,7 +909,7 @@ export default function Comunidades() {
               width="100%"
               height="680"
               style={{ border:'none', display:'block' }}
-              src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=60BF00&showSearch=true&disableAddEntry=true&excludeOrgs=false&searchTerm=latino&geoRadius=60"
+              src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=latino&geoRadius=60"
               loading="lazy"
               allow="fullscreen"
             />
