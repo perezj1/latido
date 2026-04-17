@@ -23,6 +23,15 @@ function normalizePhoneForWhatsapp(value='') {
   return value.replace(/\D/g, '')
 }
 
+function ensureUrl(value='') {
+  if (!value) return ''
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`
+}
+
+function formatUrlLabel(value='') {
+  return value.replace(/^https?:\/\//i, '').replace(/\/$/, '')
+}
+
 function getAdContactMethods(ad) {
   const phone = (ad.contact_phone || ad.whatsapp || '').trim()
   const email = (ad.contact_email || ad.email_contact || '').trim()
@@ -56,6 +65,57 @@ function getAdContactMethods(ad) {
       value:email,
       href:`mailto:${email}`,
       external:false,
+    })
+  }
+
+  return methods
+}
+
+function getJobContactMethods(job) {
+  const phone = (job.contact_phone || '').trim()
+  const email = (job.contact_email || (job.contact?.includes('@') && !job.contact.startsWith('http') ? job.contact : '') || '').trim()
+  const link = (job.contact_link || (job.contact?.startsWith('http') ? job.contact : '') || '').trim()
+  const methods = []
+
+  if (phone) {
+    methods.push({
+      id:'phone',
+      icon:'📞',
+      label:'Teléfono',
+      value:phone,
+      href:`tel:${normalizePhoneForTel(phone)}`,
+      external:false,
+    })
+
+    methods.push({
+      id:'whatsapp',
+      icon:'💬',
+      label:'WhatsApp',
+      value:phone,
+      href:`https://wa.me/${normalizePhoneForWhatsapp(phone)}`,
+      external:true,
+    })
+  }
+
+  if (email) {
+    methods.push({
+      id:'email',
+      icon:'✉️',
+      label:'Email',
+      value:email,
+      href:`mailto:${email}`,
+      external:false,
+    })
+  }
+
+  if (link) {
+    methods.push({
+      id:'link',
+      icon:'🔗',
+      label:'Aplicar',
+      value:formatUrlLabel(link),
+      href:ensureUrl(link),
+      external:true,
     })
   }
 
@@ -214,9 +274,12 @@ function JobCard({ job, onClick }) {
 /* ── Full job detail (inside Sheet) ─────────────────────── */
 function JobDetail({ job }) {
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
-  const phone = job.contact_phone
-  const email = job.contact_email || (job.contact?.includes('@') && !job.contact.startsWith('http') ? job.contact : null)
-  const link  = job.contact_link || (job.contact?.startsWith('http') ? job.contact : null)
+  const [showContacts, setShowContacts] = useState(false)
+  const contactMethods = getJobContactMethods(job)
+
+  useEffect(() => {
+    setShowContacts(false)
+  }, [job.id])
 
   return (
     <div>
@@ -240,30 +303,43 @@ function JobDetail({ job }) {
         </p>
       )}
 
-      <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>CONTACTO</p>
-      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-        {phone && (
-          <a href={`https://wa.me/${phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
-            style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:'#25D366', color:'#fff', textDecoration:'none', borderRadius:13, padding:'13px 16px', display:'flex', alignItems:'center', gap:8 }}>
-            💬 WhatsApp · {phone}
-          </a>
-        )}
-        {email && (
-          <a href={`mailto:${email}`}
-            style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'13px 16px', display:'flex', alignItems:'center', gap:8 }}>
-            ✉️ Email · {email}
-          </a>
-        )}
-        {link && (
-          <a href={link} target="_blank" rel="noreferrer"
-            style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.bg, color:C.primary, textDecoration:'none', borderRadius:13, padding:'13px 16px', display:'flex', alignItems:'center', gap:8, border:`1.5px solid ${C.border}` }}>
-            🔗 Más información / Aplicar
-          </a>
-        )}
-        {!phone && !email && !link && (
-          <p style={{ fontFamily:PP, fontSize:12, color:C.light, textAlign:'center', padding:'10px 0' }}>Sin contacto disponible</p>
-        )}
-      </div>
+      {contactMethods.length > 0 ? (
+        <div>
+          <button
+            onClick={() => setShowContacts(current => !current)}
+            style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', padding:'13px 16px', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer' }}
+          >
+            <span>📬 Contacto</span>
+            <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : 'Ver opciones'}</span>
+          </button>
+          {showContacts && (
+            <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:10, marginTop:10, display:'flex', flexDirection:'column', gap:8 }}>
+              {contactMethods.map(method => (
+                <a
+                  key={method.id}
+                  href={method.href}
+                  target={method.external ? '_blank' : undefined}
+                  rel={method.external ? 'noreferrer' : undefined}
+                  style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
+                >
+                  <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                    <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
+                    <div style={{ minWidth:0 }}>
+                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
+                      <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
+                    </div>
+                  </div>
+                  <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
+                    {method.external ? 'Abrir ↗' : 'Abrir →'}
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <p style={{ fontFamily:PP, fontSize:12, color:C.light, textAlign:'center', padding:'10px 0' }}>Sin contacto disponible</p>
+      )}
     </div>
   )
 }
