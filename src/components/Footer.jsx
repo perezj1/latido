@@ -16,8 +16,8 @@ export default function Footer() {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:36, marginBottom:40 }}>
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
-              <span style={{ fontSize:22 }}>🌎</span>
-              <span style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.primary }}>Lati<span style={{ color:'#fff' }}>do</span></span>
+              <img src="/favicon.svg" alt="Latido" style={{ width:32, height:32 }} />
+              <span style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.primary }}>Latido</span>
             </div>
             <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.7, marginBottom:16 }}>
               La plataforma para Hispanohablantes en Suiza. Anuncios, comunidades, guías y empleos — todo en español.
@@ -62,7 +62,7 @@ export default function Footer() {
         </div>
 
         <div style={{ borderTop:'1px solid #1E293B', paddingTop:20, paddingBottom:24, display:'flex', flexWrap:'wrap', justifyContent:'space-between', alignItems:'center', gap:10 }}>
-          <p style={{ fontFamily:PP, fontSize:11, margin:0 }}>© 2025 Latido.ch — Hecho con 💙 para la comunidad latina</p>
+          <p style={{ fontFamily:PP, fontSize:11, margin:0 }}>© 2026 Latido.ch — Hecho con 💙 para la comunidad hispanohablante</p>
           <div style={{ display:'flex', gap:16 }}>
             {['Privacidad', 'Términos'].map(label => (
               <Link key={label} to={`/${label.toLowerCase()}`} style={{ fontFamily:PP, fontSize:11, color:'#475569', textDecoration:'none' }}>{label}</Link>

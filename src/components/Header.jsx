@@ -30,11 +30,8 @@ export default function Header({ transparent }) {
     >
       <div style={{ maxWidth:1200, margin:'0 auto', padding:'12px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
         <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
-          <div style={{ width:34, height:34, background:C.primaryLight, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🌎</div>
-          <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>
-            Lati<span style={{ color:C.text }}>do</span>
-            <span style={{ fontSize:9, background:C.primary, color:'#fff', padding:'2px 5px', borderRadius:5, marginLeft:4, fontWeight:700 }}>.ch</span>
-          </span>
+          <img src="/favicon.svg" alt="Latido" style={{ width:32, height:32 }} />
+          <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>Latido</span>
         </Link>
 
         <nav className="show-lg" style={{ gap:2, alignItems:'center' }}>

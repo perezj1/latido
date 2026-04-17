@@ -194,4 +194,4 @@ npm run preview  # Preview del build
 
 ---
 
-*Hecho con 💙 para la comunidad latina en Suiza · LatinoSuiza.ch*
+*Hecho con 💙 para la comunidad hispanohablante en Suiza · LatinoSuiza.ch*

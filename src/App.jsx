@@ -76,11 +76,8 @@ function AppShell() {
       <>
         <nav style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,255,255,0.95)', backdropFilter:'blur(10px)', borderBottom:`1px solid ${C.border}`, padding:'12px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ fontSize:18 }}>🌎</span>
-            <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>
-              Lati<span style={{ color:C.text }}>do</span>
-              <span style={{ fontSize:9, background:C.primary, color:'#fff', padding:'2px 5px', borderRadius:5, marginLeft:4 }}>.ch</span>
-            </span>
+            <img src="/favicon.svg" alt="Latido" style={{ width:32, height:32 }} />
+            <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>Latido</span>
           </div>
           <div style={{ display:'flex', gap:8 }}>
             {canInstall && (
