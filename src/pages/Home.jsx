@@ -66,6 +66,10 @@ function EmptyState({ text }) {
   )
 }
 
+const HOME_CACHE_TTL = 60 * 1000
+let homeCache = null
+let homeCacheTs = 0
+
 export default function Home() {
   const { displayName, isLoggedIn } = useAuth()
 
@@ -81,6 +85,14 @@ export default function Home() {
   const getCommunityHref = (group) => `/comunidades?openCommunity=${encodeURIComponent(group.id)}`
   const getJobHref = (job) => `/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`
   const getEventHref = (ev) => `/comunidades?view=eventos&openEvent=${encodeURIComponent(ev.id)}`
+
+  const applySnapshot = useCallback((snapshot) => {
+    setRecentAds(snapshot.recentAds || [])
+    setCommunityHighlights(snapshot.communityHighlights || [])
+    setRecentJobs(snapshot.recentJobs || [])
+    setRecentEvents(snapshot.recentEvents || [])
+    setLoading(false)
+  }, [])
 
   const fetchHomeData = useCallback(async () => {
     try {
@@ -179,33 +191,35 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    fetchHomeData()
+    if (loading) return
+    homeCache = { recentAds, communityHighlights, recentJobs, recentEvents }
+    homeCacheTs = Date.now()
+  }, [communityHighlights, loading, recentAds, recentEvents, recentJobs])
 
-    const channel = supabase
-      .channel('home-live-updates')
-      .on('postgres_changes', { event:'*', schema:'public', table:'ads' }, () => {
-        fetchHomeData()
-      })
-      .on('postgres_changes', { event:'*', schema:'public', table:'communities' }, () => {
-        fetchHomeData()
-      })
-      .on('postgres_changes', { event:'*', schema:'public', table:'jobs' }, () => {
-        fetchHomeData()
-      })
-      .on('postgres_changes', { event:'*', schema:'public', table:'events' }, () => {
-        fetchHomeData()
-      })
-      .subscribe()
+  useEffect(() => {
+    if (homeCache) {
+      applySnapshot(homeCache)
+    }
 
-    const intervalId = window.setInterval(() => {
+    if (!homeCache || Date.now() - homeCacheTs > HOME_CACHE_TTL) {
       fetchHomeData()
-    }, 20000)
+    }
+
+    const refreshIfStale = () => {
+      if (document.visibilityState === 'hidden') return
+      if (!homeCache || Date.now() - homeCacheTs > HOME_CACHE_TTL) {
+        fetchHomeData()
+      }
+    }
+
+    window.addEventListener('focus', refreshIfStale)
+    document.addEventListener('visibilitychange', refreshIfStale)
 
     return () => {
-      window.clearInterval(intervalId)
-      supabase.removeChannel(channel)
+      window.removeEventListener('focus', refreshIfStale)
+      document.removeEventListener('visibilitychange', refreshIfStale)
     }
-  }, [fetchHomeData])
+  }, [applySnapshot, fetchHomeData])
 
   return (
     <div style={{ background:'#fff' }}>

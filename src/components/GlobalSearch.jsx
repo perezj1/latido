@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -30,6 +30,39 @@ const EVENT_EMOJI = {
   fiesta:'💃',
   networking:'💼',
   familia:'👨‍👩‍👧',
+}
+
+const EMPTY_DATASETS = Object.freeze({
+  ads:[],
+  jobs:[],
+  communities:[],
+  businesses:[],
+  events:[],
+})
+
+const SEARCH_CACHE = {
+  public:null,
+  private:null,
+}
+
+const TYPE_COLORS = {
+  ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Tablón' },
+  job:{ bg:'#E0F2FE', color:'#0369A1', label:'Empleo' },
+  community:{ bg:'#D1FAE5', color:'#065F46', label:'Comunidad' },
+  business:{ bg:'#FEF3C7', color:'#92400E', label:'Negocio' },
+  event:{ bg:'#FCE7F3', color:'#9D174D', label:'Evento' },
+}
+
+function getCacheKey(isLoggedIn) {
+  return isLoggedIn ? 'private' : 'public'
+}
+
+function getCachedSearchData(isLoggedIn) {
+  return SEARCH_CACHE[getCacheKey(isLoggedIn)]
+}
+
+function setCachedSearchData(isLoggedIn, datasets) {
+  SEARCH_CACHE[getCacheKey(isLoggedIn)] = datasets
 }
 
 function normalizeCommunity(group) {
@@ -125,7 +158,7 @@ function searchAll(query, datasets, isLoggedIn) {
         id:ad.id,
         icon:cat?.emoji || '📌',
         label:ad.title,
-        sub:`${cat?.label || 'Tablon'} · ${ad.canton} · ${ad.price}`,
+        sub:`${cat?.label || 'Tablón'} · ${ad.canton} · ${ad.price}`,
         href:`/tablon?openAd=${encodeURIComponent(ad.id)}`,
         privacy:ad.privacy,
       })
@@ -208,38 +241,62 @@ function searchAll(query, datasets, isLoggedIn) {
   return results
 }
 
-const TYPE_COLORS = {
-  ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Tablon' },
-  job:{ bg:'#E0F2FE', color:'#0369A1', label:'Empleo' },
-  community:{ bg:'#D1FAE5', color:'#065F46', label:'Comunidad' },
-  business:{ bg:'#FEF3C7', color:'#92400E', label:'Negocio' },
-  event:{ bg:'#FCE7F3', color:'#9D174D', label:'Evento' },
-}
-
 export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   const { isLoggedIn } = useAuth()
-  const [datasets, setDatasets] = useState(() => ({
-    ads:[],
-    jobs:[],
-    communities:[],
-    businesses:[],
-    events:[],
-  }))
+  const navigate = useNavigate()
+  const inputRef = useRef(null)
+  const loadPromiseRef = useRef(null)
+  const mountedRef = useRef(true)
+  const accessLevelRef = useRef(getCacheKey(isLoggedIn))
+
+  const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
+  const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
+  const [loadingData, setLoadingData] = useState(false)
   const [q, setQ] = useState('')
   const [results, setResults] = useState([])
   const [focused, setFocused] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
-  const inputRef = useRef(null)
-  const navigate = useNavigate()
+
+  const deferredQuery = useDeferredValue(q)
+  const fallbackDatasets = useMemo(() => buildFallbackData(isLoggedIn), [isLoggedIn])
+  const accessLevel = getCacheKey(isLoggedIn)
 
   const ph = placeholder || (size === 'lg'
     ? 'Busca pisos, empleos, negocios, eventos o comunidades...'
     : 'Buscar anuncios, empleos o comunidad...')
 
   useEffect(() => {
-    let cancelled = false
+    accessLevelRef.current = accessLevel
+  }, [accessLevel])
 
-    async function loadSearchData() {
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const cached = getCachedSearchData(isLoggedIn)
+    setDatasets(cached || EMPTY_DATASETS)
+    setDataReady(!!cached)
+    setLoadingData(false)
+    loadPromiseRef.current = null
+  }, [isLoggedIn])
+
+  const ensureDataLoaded = useCallback(async () => {
+    const cached = getCachedSearchData(isLoggedIn)
+    if (cached) {
+      setDatasets(cached)
+      setDataReady(true)
+      return cached
+    }
+
+    if (loadPromiseRef.current) return loadPromiseRef.current
+
+    setLoadingData(true)
+
+    const request = (async () => {
       try {
         let adsQuery = supabase
           .from('ads')
@@ -268,58 +325,85 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
             .order('created_at', { ascending:false }),
         ])
 
-        if (cancelled) return
-
-        const fallback = buildFallbackData(isLoggedIn)
-
-        setDatasets({
-          ads: adsRes.error || !adsRes.data?.length ? fallback.ads : adsRes.data.map(normalizeAd),
-          jobs: jobsRes.error || !jobsRes.data?.length ? fallback.jobs : jobsRes.data.map(normalizeJob),
+        const nextDatasets = {
+          ads: adsRes.error || !adsRes.data?.length ? fallbackDatasets.ads : adsRes.data.map(normalizeAd),
+          jobs: jobsRes.error || !jobsRes.data?.length ? fallbackDatasets.jobs : jobsRes.data.map(normalizeJob),
           communities: communitiesRes.error || !communitiesRes.data?.length
-            ? fallback.communities
+            ? fallbackDatasets.communities
             : communitiesRes.data.map(normalizeCommunity).filter(Boolean),
           businesses: providersRes.error || !providersRes.data?.length
-            ? fallback.businesses
+            ? fallbackDatasets.businesses
             : providersRes.data.map(normalizeBusiness),
           events: eventsRes.error || !eventsRes.data?.length
-            ? fallback.events
+            ? fallbackDatasets.events
             : eventsRes.data.map(normalizeEvent),
-        })
+        }
+
+        setCachedSearchData(isLoggedIn, nextDatasets)
+
+        if (mountedRef.current && accessLevelRef.current === accessLevel) {
+          setDatasets(nextDatasets)
+          setDataReady(true)
+        }
+
+        return nextDatasets
       } catch {
-        if (!cancelled) setDatasets(buildFallbackData(isLoggedIn))
+        setCachedSearchData(isLoggedIn, fallbackDatasets)
+
+        if (mountedRef.current && accessLevelRef.current === accessLevel) {
+          setDatasets(fallbackDatasets)
+          setDataReady(true)
+        }
+
+        return fallbackDatasets
+      } finally {
+        if (mountedRef.current && accessLevelRef.current === accessLevel) {
+          setLoadingData(false)
+        }
+        if (accessLevelRef.current === accessLevel) {
+          loadPromiseRef.current = null
+        }
       }
-    }
+    })()
 
-    loadSearchData()
-
-    return () => {
-      cancelled = true
-    }
-  }, [isLoggedIn])
+    loadPromiseRef.current = request
+    return request
+  }, [accessLevel, fallbackDatasets, isLoggedIn])
 
   useEffect(() => {
-    setResults(searchAll(q, datasets, isLoggedIn))
-    setActiveIdx(-1)
-  }, [datasets, isLoggedIn, q])
+    if (focused || deferredQuery.trim().length >= 2) {
+      ensureDataLoaded()
+    }
+  }, [deferredQuery, ensureDataLoaded, focused])
 
-  const goTo = (href) => {
+  useEffect(() => {
+    const baseDatasets = dataReady ? datasets : fallbackDatasets
+    setResults(searchAll(deferredQuery, baseDatasets, isLoggedIn))
+    setActiveIdx(-1)
+  }, [dataReady, datasets, deferredQuery, fallbackDatasets, isLoggedIn])
+
+  const goTo = href => {
     navigate(href)
     setQ('')
     setFocused(false)
     onClose?.()
   }
 
-  const handleKey = (e) => {
+  const handleKey = e => {
     if (!results.length) return
+
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setActiveIdx(idx => Math.min(idx + 1, results.length - 1))
     }
+
     if (e.key === 'ArrowUp') {
       e.preventDefault()
       setActiveIdx(idx => Math.max(idx - 1, 0))
     }
+
     if (e.key === 'Enter' && activeIdx >= 0) goTo(results[activeIdx].href)
+
     if (e.key === 'Escape') {
       setQ('')
       setFocused(false)
@@ -370,7 +454,10 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
           placeholder={ph}
           value={q}
           onChange={e => setQ(e.target.value)}
-          onFocus={() => setFocused(true)}
+          onFocus={() => {
+            setFocused(true)
+            ensureDataLoaded()
+          }}
           onBlur={() => setTimeout(() => setFocused(false), 160)}
           onKeyDown={handleKey}
           autoComplete="off"
@@ -386,13 +473,22 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
         <div className="fade-up" style={{ position:'absolute', top:'100%', left:0, right:0, marginTop:10, background:'#fff', borderRadius:20, boxShadow:'0 18px 48px rgba(15,23,42,0.18)', border:`1px solid ${C.border}`, zIndex:200, overflow:'hidden', maxHeight:'min(420px, 62vh)', overflowY:'auto' }}>
           {results.length === 0 ? (
             <div style={{ padding:'20px 18px', textAlign:'center' }}>
-              <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>Sin resultados para <strong style={{ color:C.text }}>{q}</strong></p>
-              <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'6px 0 0' }}>
-                Prueba con otras palabras o{' '}
-                <button onClick={() => goTo('/tablon')} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                  explora el tablon
-                </button>
-              </p>
+              {loadingData && !dataReady ? (
+                <>
+                  <p style={{ fontFamily:PP, fontSize:13, color:C.text, fontWeight:700, margin:'0 0 6px' }}>Buscando en la comunidad...</p>
+                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Estamos cargando los resultados más recientes.</p>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>Sin resultados para <strong style={{ color:C.text }}>{q}</strong></p>
+                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'6px 0 0' }}>
+                    Prueba con otras palabras o{' '}
+                    <button onClick={() => goTo('/tablon')} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                      explora el tablón
+                    </button>
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <>
@@ -403,8 +499,8 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                     key={`${result.type}-${result.id}`}
                     onClick={() => goTo(result.href)}
                     style={{ padding:'13px 16px', display:'flex', alignItems:'flex-start', gap:12, cursor:'pointer', background: idx === activeIdx ? C.primaryLight : '#fff', borderBottom: idx < results.length - 1 ? `1px solid ${C.borderLight}` : 'none', transition:'background .1s' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = C.primaryLight }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = idx === activeIdx ? C.primaryLight : '#fff' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = C.primaryLight }}
+                    onMouseLeave={e => { e.currentTarget.style.background = idx === activeIdx ? C.primaryLight : '#fff' }}
                   >
                     <span style={{ width:size === 'lg' ? 42 : 34, height:size === 'lg' ? 42 : 34, borderRadius:14, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:size === 'lg' ? 22 : 18, flexShrink:0 }}>
                       {result.icon}
@@ -423,9 +519,14 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
               <div style={{ padding:'12px 16px', borderTop:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, background:'#FCFDFF' }}>
                 <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{results.length} resultado{results.length !== 1 ? 's' : ''}</span>
                 <button onClick={() => goTo('/tablon')} style={{ fontFamily:PP, fontWeight:600, fontSize:10, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                  Ver todo en el tablon →
+                  Ver todo en el tablón →
                 </button>
               </div>
+              {loadingData && (
+                <div style={{ padding:'10px 16px', borderTop:`1px solid ${C.borderLight}`, background:'#fff' }}>
+                  <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>Actualizando resultados...</span>
+                </div>
+              )}
             </>
           )}
         </div>

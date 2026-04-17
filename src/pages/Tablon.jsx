@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -69,6 +69,18 @@ function getAdContactMethods(ad) {
   }
 
   return methods
+}
+
+const TABLON_CACHE_TTL = 60 * 1000
+const TABLON_CACHE = {
+  publicAds:null,
+  publicAdsTs:0,
+  privateAds:null,
+  privateAdsTs:0,
+  jobs:null,
+  jobsTs:0,
+  revealsByUser:new Map(),
+  revealsTsByUser:new Map(),
 }
 
 function getJobContactMethods(job) {
@@ -356,6 +368,7 @@ export default function Tablon() {
   const [revealed, setRevealed] = useState({})
   const [selectedAd, setSelectedAd] = useState(null)
   const [selectedJob, setSelectedJob] = useState(null)
+  const deferredSearch = useDeferredValue(search.trim().toLowerCase())
 
   const cat     = searchParams.get('cat') || ''
   const type    = searchParams.get('type') || ''
@@ -404,58 +417,105 @@ export default function Tablon() {
   const activeCount = [cat,type,canton,plz,privacy].filter(Boolean).length
 
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id) {
+      setRevealed({})
+      return
+    }
+    const cached = TABLON_CACHE.revealsByUser.get(user.id)
+    const cachedTs = TABLON_CACHE.revealsTsByUser.get(user.id) || 0
+
+    if (cached) {
+      setRevealed(cached)
+      if (Date.now() - cachedTs <= TABLON_CACHE_TTL) return
+    }
+
     supabase.from('contact_reveals').select('ad_id').eq('user_id', user.id)
       .then(({ data }) => {
-        if (data?.length) setRevealed(data.reduce((acc, r) => ({ ...acc, [r.ad_id]: true }), {}))
+        if (!data?.length) return
+        const nextRevealed = data.reduce((acc, r) => ({ ...acc, [r.ad_id]: true }), {})
+        TABLON_CACHE.revealsByUser.set(user.id, nextRevealed)
+        TABLON_CACHE.revealsTsByUser.set(user.id, Date.now())
+        setRevealed(nextRevealed)
       }).catch(() => {})
   }, [user?.id])
 
   useEffect(() => {
     setLoading(true)
-    if (isEmpleos) {
-      supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false })
-        .then(({ data, error }) => { setJobs(error || !data?.length ? MOCK_JOBS : data) })
-        .catch(() => setJobs(MOCK_JOBS))
-        .finally(() => setLoading(false))
-    } else {
-      async function load() {
-        try {
-          let q = supabase.from('ads').select('*').eq('active', true).order('created_at', { ascending:false })
-          if (!isLoggedIn) q = q.eq('privacy', 'public')
-          if (cat)    q = q.eq('cat', cat)
-          if (type)   q = q.eq('type', type)
-          if (canton) q = q.eq('canton', canton)
-          if (plz)    q = q.ilike('plz', `${plz}%`)
-          const { data, error } = await q
-          if (error) throw error
-          setAds(data?.length ? data : filterMock())
-        } catch { setAds(filterMock()) }
-        finally { setLoading(false) }
+    let cancelled = false
+
+    async function loadJobs() {
+      if (TABLON_CACHE.jobs) {
+        setJobs(TABLON_CACHE.jobs)
+        setLoading(false)
+        if (Date.now() - TABLON_CACHE.jobsTs <= TABLON_CACHE_TTL) return
       }
-      load()
+
+      try {
+        const { data, error } = await supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false })
+        const nextJobs = error || !data?.length ? MOCK_JOBS : data
+        TABLON_CACHE.jobs = nextJobs
+        TABLON_CACHE.jobsTs = Date.now()
+        if (!cancelled) setJobs(nextJobs)
+      } catch {
+        if (!cancelled) setJobs(TABLON_CACHE.jobs || MOCK_JOBS)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-  }, [cat, type, canton, plz, isEmpleos, isLoggedIn])
 
-  function filterMock() {
-    return MOCK_ADS.filter(a =>
-      (isLoggedIn || a.privacy === 'public') &&
-      (!cat || a.cat===cat) && (!type || a.type===type) &&
-      (!canton || a.canton===canton) && (!plz || a.plz.startsWith(plz)) &&
-      (!privacy || a.privacy===privacy)
-    )
-  }
+    async function loadAds() {
+      const cacheKey = isLoggedIn ? 'privateAds' : 'publicAds'
+      const cacheTsKey = isLoggedIn ? 'privateAdsTs' : 'publicAdsTs'
+      const cachedAds = TABLON_CACHE[cacheKey]
 
-  const filteredAds = ads.filter(a =>
+      if (cachedAds) {
+        setAds(cachedAds)
+        setLoading(false)
+        if (Date.now() - TABLON_CACHE[cacheTsKey] <= TABLON_CACHE_TTL) return
+      }
+
+      try {
+        let query = supabase.from('ads').select('*').eq('active', true).order('created_at', { ascending:false })
+        if (!isLoggedIn) query = query.eq('privacy', 'public')
+        const { data, error } = await query
+        const nextAds = error || !data?.length
+          ? MOCK_ADS.filter(ad => isLoggedIn || ad.privacy === 'public')
+          : data
+
+        TABLON_CACHE[cacheKey] = nextAds
+        TABLON_CACHE[cacheTsKey] = Date.now()
+        if (!cancelled) setAds(nextAds)
+      } catch {
+        if (!cancelled) {
+          setAds(TABLON_CACHE[cacheKey] || MOCK_ADS.filter(ad => isLoggedIn || ad.privacy === 'public'))
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    if (isEmpleos) loadJobs()
+    else loadAds()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isEmpleos, isLoggedIn])
+
+  const filteredAds = useMemo(() => ads.filter(a =>
     (isLoggedIn || a.privacy === 'public') &&
-    (!privacy || a.privacy===privacy) &&
-    (!search || a.title.toLowerCase().includes(search.toLowerCase()) || a.desc?.toLowerCase().includes(search.toLowerCase()))
-  )
+    (!cat || a.cat === cat) &&
+    (!type || a.type === type) &&
+    (!canton || a.canton === canton) &&
+    (!plz || a.plz?.startsWith(plz)) &&
+    (!privacy || a.privacy === privacy) &&
+    (!deferredSearch || a.title.toLowerCase().includes(deferredSearch) || a.desc?.toLowerCase().includes(deferredSearch))
+  ), [ads, canton, cat, deferredSearch, isLoggedIn, plz, privacy, type])
 
-  const filteredJobs = jobs.filter(j =>
-    (!jobType || j.type===jobType) &&
-    (!search || j.title.toLowerCase().includes(search.toLowerCase()) || j.company?.toLowerCase().includes(search.toLowerCase()))
-  )
+  const filteredJobs = useMemo(() => jobs.filter(j =>
+    (!jobType || j.type === jobType) &&
+    (!deferredSearch || j.title.toLowerCase().includes(deferredSearch) || j.company?.toLowerCase().includes(deferredSearch))
+  ), [deferredSearch, jobType, jobs])
 
   useEffect(() => {
     if (loading) return
@@ -485,7 +545,14 @@ export default function Tablon() {
     try {
       await supabase.from('contact_reveals').upsert({ user_id: user.id, ad_id: adId }, { onConflict: 'user_id,ad_id' })
     } catch {}
-    setRevealed(r => ({ ...r, [adId]: true }))
+    setRevealed(r => {
+      const nextRevealed = { ...r, [adId]: true }
+      if (user?.id) {
+        TABLON_CACHE.revealsByUser.set(user.id, nextRevealed)
+        TABLON_CACHE.revealsTsByUser.set(user.id, Date.now())
+      }
+      return nextRevealed
+    })
     toast.success('Contacto desbloqueado')
   }
 
