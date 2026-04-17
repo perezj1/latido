@@ -87,6 +87,8 @@ CREATE INDEX IF NOT EXISTS idx_events_created_at   ON public.events(created_at D
 ALTER TABLE public.jobs
   ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS sector TEXT,
+  ADD COLUMN IF NOT EXISTS salary_amount NUMERIC,
+  ADD COLUMN IF NOT EXISTS salary_unit TEXT,
   ADD COLUMN IF NOT EXISTS languages TEXT[],
   ADD COLUMN IF NOT EXISTS contact_phone TEXT,
   ADD COLUMN IF NOT EXISTS contact_email TEXT,

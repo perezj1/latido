@@ -359,7 +359,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
       }
 
   return (
-    <div style={{ position:'relative', width:'100%' }}>
+    <div style={{ position:'relative', width:'100%', zIndex:showDropdown ? 80 : 1 }}>
       <div style={{ position:'relative' }}>
         <span style={{ position:'absolute', left:size === 'lg' ? 16 : 12, top:'50%', transform:'translateY(-50%)', fontSize:size === 'lg' ? 20 : 15, color:focused ? C.primary : C.light, transition:'color .15s', pointerEvents:'none' }}>
           🔍
@@ -383,7 +383,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
       </div>
 
       {showDropdown && (
-        <div className="fade-up" style={{ position:'absolute', top:'100%', left:0, right:0, marginTop:8, background:'#fff', borderRadius:16, boxShadow:'0 12px 40px rgba(0,0,0,0.15)', border:`1px solid ${C.border}`, zIndex:200, overflow:'hidden', maxHeight:'min(400px, 60vh)', overflowY:'auto' }}>
+        <div className="fade-up" style={{ position:'absolute', top:'100%', left:0, right:0, marginTop:10, background:'#fff', borderRadius:20, boxShadow:'0 18px 48px rgba(15,23,42,0.18)', border:`1px solid ${C.border}`, zIndex:200, overflow:'hidden', maxHeight:'min(420px, 62vh)', overflowY:'auto' }}>
           {results.length === 0 ? (
             <div style={{ padding:'20px 18px', textAlign:'center' }}>
               <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>Sin resultados para <strong style={{ color:C.text }}>{q}</strong></p>
@@ -402,21 +402,25 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                   <div
                     key={`${result.type}-${result.id}`}
                     onClick={() => goTo(result.href)}
-                    style={{ padding:'11px 16px', display:'flex', alignItems:'center', gap:12, cursor:'pointer', background: idx === activeIdx ? C.primaryLight : 'transparent', borderBottom: idx < results.length - 1 ? `1px solid ${C.borderLight}` : 'none', transition:'background .1s' }}
+                    style={{ padding:'13px 16px', display:'flex', alignItems:'flex-start', gap:12, cursor:'pointer', background: idx === activeIdx ? C.primaryLight : '#fff', borderBottom: idx < results.length - 1 ? `1px solid ${C.borderLight}` : 'none', transition:'background .1s' }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = C.primaryLight }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = idx === activeIdx ? C.primaryLight : 'transparent' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = idx === activeIdx ? C.primaryLight : '#fff' }}
                   >
-                    <span style={{ fontSize:20, flexShrink:0 }}>{result.icon}</span>
+                    <span style={{ width:size === 'lg' ? 42 : 34, height:size === 'lg' ? 42 : 34, borderRadius:14, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:size === 'lg' ? 22 : 18, flexShrink:0 }}>
+                      {result.icon}
+                    </span>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{result.label}</p>
-                      <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'2px 0 0' }}>{result.sub}</p>
+                      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10, marginBottom:3 }}>
+                        <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:0, lineHeight:1.3, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{result.label}</p>
+                        <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, background:color.bg, color:color.color, padding:'4px 8px', borderRadius:999, flexShrink:0, whiteSpace:'nowrap' }}>{color.label}</span>
+                      </div>
+                      <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0, lineHeight:1.45, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{result.sub}</p>
                     </div>
-                    <span style={{ fontFamily:PP, fontSize:9, fontWeight:700, background:color.bg, color:color.color, padding:'3px 7px', borderRadius:10, flexShrink:0 }}>{color.label}</span>
-                    {result.privacy === 'private' && <span style={{ fontSize:12 }}>🔒</span>}
+                    {result.privacy === 'private' && <span style={{ fontSize:12, marginTop:6, flexShrink:0 }}>🔒</span>}
                   </div>
                 )
               })}
-              <div style={{ padding:'10px 16px', borderTop:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between' }}>
+              <div style={{ padding:'12px 16px', borderTop:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, background:'#FCFDFF' }}>
                 <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{results.length} resultado{results.length !== 1 ? 's' : ''}</span>
                 <button onClick={() => goTo('/tablon')} style={{ fontFamily:PP, fontWeight:600, fontSize:10, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
                   Ver todo en el tablon →

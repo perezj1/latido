@@ -37,6 +37,14 @@ const JOB_TYPES = [
 ]
 
 const LANG_OPTIONS = ['Español', 'Alemán', 'Francés', 'Italiano', 'Inglés']
+const SALARY_UNITS = [
+  { id:'hora', label:'Por hora' },
+  { id:'dia', label:'Por día' },
+  { id:'semana', label:'Por semana' },
+  { id:'mes', label:'Por mes' },
+  { id:'ano', label:'Por año' },
+  { id:'once', label:'Pago único' },
+]
 
 export default function PublicarEmpleo() {
   const { isLoggedIn, user } = useAuth()
@@ -46,7 +54,7 @@ export default function PublicarEmpleo() {
   const [done, setDone] = useState(false)
   const [form, setForm] = useState({
     sector:'', title:'', company:'', jobType:'',
-    city:'', canton:'', salary:'', langs:[], desc:'',
+    city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'',
     contactPhone:'', contactEmail:'', contactLink:'',
   })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
@@ -54,6 +62,20 @@ export default function PublicarEmpleo() {
     ...f,
     langs: f.langs.includes(lang) ? f.langs.filter(l => l !== lang) : [...f.langs, lang],
   }))
+
+  const getFormattedSalary = () => {
+    const value = String(form.salaryValue || '').trim()
+    if (!value) return ''
+
+    if (form.salaryUnit === 'once') return `CHF ${value} total`
+    if (form.salaryUnit === 'hora') return `CHF ${value} / hora`
+    if (form.salaryUnit === 'dia') return `CHF ${value} / día`
+    if (form.salaryUnit === 'semana') return `CHF ${value} / semana`
+    if (form.salaryUnit === 'mes') return `CHF ${value} / mes`
+    if (form.salaryUnit === 'ano') return `CHF ${value} / año`
+
+    return `CHF ${value}`
+  }
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
@@ -77,7 +99,7 @@ export default function PublicarEmpleo() {
         Tu oferta ya está visible para miles de latinos en Suiza.
       </p>
       <Btn onClick={() => navigate('/tablon?cat=empleo')}>Ver empleos →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ sector:'', title:'', company:'', jobType:'', city:'', canton:'', salary:'', langs:[], desc:'', contactPhone:'', contactEmail:'', contactLink:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({ sector:'', title:'', company:'', jobType:'', city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', contactPhone:'', contactEmail:'', contactLink:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otra oferta
       </button>
     </div>
@@ -90,6 +112,10 @@ export default function PublicarEmpleo() {
     }
     setLoading(true)
     try {
+      const finalSalary = getFormattedSalary() || null
+      const salaryAmount = form.salaryValue
+        ? Number(String(form.salaryValue).replace(',', '.'))
+        : null
       const { error } = await supabase.from('jobs').insert({
         user_id: user?.id,
         sector: form.sector,
@@ -98,7 +124,9 @@ export default function PublicarEmpleo() {
         type: form.jobType,
         city: form.city.trim() || form.canton,
         canton: form.canton,
-        salary: form.salary.trim() || null,
+        salary: finalSalary,
+        salary_amount: Number.isNaN(salaryAmount) ? null : salaryAmount,
+        salary_unit: form.salaryValue ? form.salaryUnit : null,
         lang: form.langs.length ? form.langs.join(' · ') : null,
         languages: form.langs.length ? form.langs : null,
         category: form.sector || null,
@@ -173,7 +201,44 @@ export default function PublicarEmpleo() {
               {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
             </Select>
           </div>
-          <Input label="Salario o remuneración" placeholder="Ej: CHF 4.200/mes · CHF 25/hora · A convenir" value={form.salary} onChange={e=>s('salary',e.target.value)} />
+
+          <div style={{ marginBottom:16 }}>
+            <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>
+              Salario o remuneración
+            </label>
+
+            <div style={{ display:'flex', border:`1.5px solid ${C.border}`, borderRadius:12, overflow:'hidden', background:'#fff' }}>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="Ej: 4200"
+                value={form.salaryValue}
+                onChange={e => s('salaryValue', e.target.value)}
+                style={{ flex:1, border:'none', outline:'none', background:'transparent', padding:'13px 14px', fontFamily:PP, fontSize:13, color:C.text }}
+              />
+              <div style={{ padding:'13px 14px', borderLeft:`1px solid ${C.border}`, fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary, background:C.primaryLight, whiteSpace:'nowrap' }}>
+                CHF
+              </div>
+            </div>
+
+            <div style={{ marginTop:10 }}>
+              <Select label="Frecuencia del salario" value={form.salaryUnit} onChange={e => s('salaryUnit', e.target.value)}>
+                {SALARY_UNITS.map(unit => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {form.salaryValue && (
+              <div style={{ marginTop:10, background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:12, padding:'10px 12px' }}>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:0 }}>
+                  Se mostrará como: <strong>{getFormattedSalary()}</strong>
+                </p>
+              </div>
+            )}
+          </div>
 
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>IDIOMAS REQUERIDOS</p>
           <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:16 }}>
@@ -203,16 +268,16 @@ export default function PublicarEmpleo() {
             <div style={{ background:C.bg, borderRadius:14, padding:'14px 16px', marginTop:6, marginBottom:14 }}>
               <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:10, letterSpacing:0.5 }}>VISTA PREVIA</p>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
-                {selectedSector && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#DBEAFE', color:C.primaryDark }}>{selectedSector.emoji} {selectedSector.label}</span>}
-                {selectedType && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#D1FAE5', color:'#065F46' }}>{selectedType.label}</span>}
-                {form.canton && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>📍 {form.city || form.canton}</span>}
+                  {selectedSector && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#DBEAFE', color:C.primaryDark }}>{selectedSector.emoji} {selectedSector.label}</span>}
+                  {selectedType && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#D1FAE5', color:'#065F46' }}>{selectedType.label}</span>}
+                  {form.canton && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>📍 {form.city || form.canton}</span>}
+                </div>
+                <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, marginBottom:4 }}>{form.title}</p>
+                {form.company && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:4 }}>🏢 {form.company}</p>}
+                {form.salaryValue && <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary }}>💰 {getFormattedSalary()}</p>}
+                {form.langs.length > 0 && <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:4 }}>🗣 {form.langs.join(' · ')}</p>}
               </div>
-              <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, marginBottom:4 }}>{form.title}</p>
-              {form.company && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:4 }}>🏢 {form.company}</p>}
-              {form.salary && <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary }}>💰 {form.salary}</p>}
-              {form.langs.length > 0 && <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:4 }}>🗣 {form.langs.join(' · ')}</p>}
-            </div>
-          )}
+            )}
 
           <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px' }}>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>

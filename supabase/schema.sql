@@ -109,6 +109,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   canton     TEXT,
   type       TEXT,
   salary     TEXT,
+  salary_amount NUMERIC,
+  salary_unit TEXT,
   lang       TEXT,
   category   TEXT,
   emoji      TEXT,

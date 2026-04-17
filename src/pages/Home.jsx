@@ -209,11 +209,13 @@ export default function Home() {
 
   return (
     <div style={{ background:'#fff' }}>
-      <section style={{ background:'linear-gradient(160deg, #1E40AF 0%, #2563EB 58%, #60A5FA 100%)', position:'relative', overflow:'hidden', padding:'26px 16px 34px' }}>
-        <div style={{ position:'absolute', top:-70, right:-60, width:220, height:220, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
-        <div style={{ position:'absolute', bottom:-60, left:-20, width:180, height:180, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
+      <section style={{ background:'linear-gradient(160deg, #1E40AF 0%, #2563EB 58%, #60A5FA 100%)', position:'relative', overflow:'visible', padding:'26px 16px 34px', zIndex:2 }}>
+        <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
+          <div style={{ position:'absolute', top:-70, right:-60, width:220, height:220, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
+          <div style={{ position:'absolute', bottom:-60, left:-20, width:180, height:180, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
+        </div>
 
-        <div style={{ maxWidth:980, margin:'0 auto', position:'relative' }}>
+        <div style={{ maxWidth:980, margin:'0 auto', position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:24 }}>
             <div style={{ maxWidth:620, flex:1, minWidth:0 }}>
               <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>
@@ -238,31 +240,12 @@ export default function Home() {
           </div>
 
           <div style={{ maxWidth:620 }}>
-            <div style={{ marginBottom:22 }}>
+            <div>
               <GlobalSearch
                 size="lg"
                 placeholder="Busca comunidades, empleos, anuncios, documentos..."
               />
             </div>
-
-            <Link
-              to="/tablon"
-              style={{
-                fontFamily:PP,
-                fontWeight:700,
-                fontSize:13,
-                background:'#fff',
-                color:C.primary,
-                textDecoration:'none',
-                padding:'13px 20px',
-                borderRadius:14,
-                display:'inline-flex',
-                alignItems:'center',
-                gap:6
-              }}
-            >
-              Buscar en la comunidad
-            </Link>
           </div>
         </div>
       </section>
