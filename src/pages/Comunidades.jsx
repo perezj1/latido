@@ -526,42 +526,6 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
   )
 }
 
-function EventCard({ event, onClick }) {
-  return (
-    <div
-      onClick={onClick}
-      style={{ background:'#fff', borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden', cursor:'pointer', transition:'all .2s' }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(37,99,235,0.12)'; e.currentTarget.style.transform = 'translateY(-3px)' }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
-    >
-      <div style={{ position:'relative', height:180, overflow:'hidden', background:C.primaryLight }}>
-        {event.img ? (
-          <img src={event.img} alt={event.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-        ) : (
-          <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:48 }}>{event.emoji}</div>
-        )}
-        {event.featured && <span style={{ position:'absolute', top:12, left:12, fontFamily:PP, fontSize:10, fontWeight:700, background:C.primary, color:'#fff', padding:'4px 10px', borderRadius:12 }}>Destacado</span>}
-        <div style={{ position:'absolute', right:12, top:12, background:'rgba(255,255,255,0.96)', borderRadius:16, padding:'10px 10px 8px', minWidth:58, textAlign:'center', boxShadow:'0 8px 20px rgba(15,23,42,0.12)' }}>
-          <p style={{ fontFamily:PP, fontWeight:900, fontSize:20, color:C.text, margin:'0 0 1px', lineHeight:1 }}>{event.day}</p>
-          <p style={{ fontFamily:PP, fontWeight:700, fontSize:10, color:C.primary, margin:0 }}>{event.month}</p>
-        </div>
-      </div>
-      <div style={{ padding:'16px 16px 18px' }}>
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
-          <Tag bg="#DBEAFE" color={C.primaryDark}>{EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'}</Tag>
-          <Tag bg={C.bg} color={C.mid}>📍 {event.city}</Tag>
-        </div>
-        <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:16, color:C.text, margin:'0 0 6px', lineHeight:1.3 }}>{event.title}</h3>
-        <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 0 9px' }}>{event.venue} · {event.time} · {event.price}</p>
-        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, margin:'0 0 14px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{event.desc}</p>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
-          <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>Organiza {event.host}</span>
-          <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary }}>Ver evento →</span>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function EventDetail({ event, onClose }) {
   if (!event) return null
@@ -613,7 +577,6 @@ export default function Comunidades() {
   const [search, setSearch] = useState('')
   const [cat, setCat] = useState('')
   const [negType, setNegType] = useState('')
-  const [eventType, setEventType] = useState('')
   const [selectedCommunity, setSelectedCommunity] = useState(null)
   const [selectedBusiness, setSelectedBusiness] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -751,7 +714,6 @@ export default function Comunidades() {
     setSearch('')
     setCat('')
     setNegType('')
-    setEventType('')
   }
 
   const updateOpenState = (key, value, nextView='comunidades') => {
@@ -787,11 +749,6 @@ export default function Comunidades() {
     updateOpenState('openBusiness', '', 'negocios')
   }
 
-  const openEventDetails = (event) => {
-    setSelectedEvent(event)
-    updateOpenState('openEvent', event.id, 'eventos')
-  }
-
   const closeEventDetails = () => {
     setSelectedEvent(null)
     updateOpenState('openEvent', '', 'eventos')
@@ -815,17 +772,6 @@ export default function Comunidades() {
         (businessServices[business.id] || business.services || []).some(service => service.toLowerCase().includes(search.toLowerCase())))
     )
 
-  const filteredEvents = [...events]
-    .sort((a, b) => Number(b.featured) - Number(a.featured))
-    .filter(event =>
-      (!eventType || event.type === eventType) &&
-      (!search ||
-        event.title.toLowerCase().includes(search.toLowerCase()) ||
-        event.desc.toLowerCase().includes(search.toLowerCase()) ||
-        event.city.toLowerCase().includes(search.toLowerCase()) ||
-        event.venue.toLowerCase().includes(search.toLowerCase()) ||
-        event.host.toLowerCase().includes(search.toLowerCase()))
-    )
 
   useEffect(() => {
     if (loading) return
@@ -957,16 +903,19 @@ export default function Comunidades() {
 
       {tab === 'eventos' && (
         <>
-          <PillFilters options={EVENTO_TYPES} value={eventType} onChange={setEventType} className="mb-4" />
-          {filteredEvents.length === 0 ? (
-            <EmptyState emoji="🎟️" title="Sin eventos ahora mismo" action="Ver todos" onAction={() => { setEventType(''); setSearch('') }} />
-          ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
-              {filteredEvents.map(event => <EventCard key={event.id} event={event} onClick={() => openEventDetails(event)} />)}
-            </div>
-          )}
+          <div style={{ borderRadius:20, overflow:'hidden', border:`1px solid ${C.border}`, marginBottom:24 }}>
+            <iframe
+              title="Eventos latinos en Suiza"
+              width="100%"
+              height="680"
+              style={{ border:'none', display:'block' }}
+              src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=60BF00&showSearch=true&disableAddEntry=true&excludeOrgs=false&searchTerm=latino&geoRadius=60"
+              loading="lazy"
+              allow="fullscreen"
+            />
+          </div>
 
-          <div style={{ marginTop:28, border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
+          <div style={{ border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
             <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>🎉 ¿Organizas un evento latino?</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Conciertos, fiestas, networking, festivales o quedadas: publícalo aquí para la comunidad.</p>
             <Link to="/publicar-evento" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Publicar evento</Link>

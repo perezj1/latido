@@ -28,7 +28,7 @@ const FEATURES = [
   },
   {
     icon:'📚',
-    title:'Suiza sin laberintos',
+    title:'Guias para Suiza',
     desc:'Krankenkasse, Quellensteuer, permisos B/C/L. La burocracia suiza explicada en español, paso a paso, sin tecnicismos ni sorpresas.',
     color:'#EDE9FE',
   },
@@ -69,29 +69,80 @@ export default function Landing({ onInstall }) {
           </div> */}
           <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(32px,6.5vw,56px)', color:'#fff', lineHeight:1.1, margin:'0 0 20px', letterSpacing:-1.5 }}>
             Lejos de casa.<br/>
-            Pero nunca<br/>
-            <span style={{ color:'#BAE6FD', fontStyle:'italic' }}>solos.</span>
+            Pero nunca
+            <span style={{ color:'#BAE6FD', fontStyle:'italic' }}> solos.</span>
           </h1>
           <p style={{ fontFamily:PP, fontSize:16, color:'rgba(255,255,255,0.85)', lineHeight:1.75, marginBottom:32, maxWidth:500 }}>
-            Latido es la <strong style={{ color:'#fff' }}>primera plataforma creada exclusivamente para la comunidad hispanohablante en Suiza</strong>. Anuncios, comunidades, empleos y guías de trámites — todo en español, entre nosotros. <strong style={{ color:'#fff' }}>Sin comisiones. Gratis para siempre.</strong>
+            Latido es la <strong style={{ color:'#fff' }}>primera plataforma creada exclusivamente para la comunidad hispanohablante en Suiza</strong>. Anuncios, comunidades, empleos y guías de trámites — todo en español, entre nosotros. <strong style={{ color:'#fff' }}></strong>
           </p>
-           <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.15)', color:'#FFFFFF', fontSize:11, fontWeight:500, padding:'7px 16px', borderRadius:20, marginBottom:24, fontFamily:PP, border:'1px solid rgba(255,255,255,0.25)', letterSpacing:0.3 }}>
-            La fuerza de nuestra gente en un solo LATIDO
-          </div> 
-          <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-            <Link to="/tablon" style={{ fontFamily:PP, fontWeight:800, fontSize:14, background:'#fff', color:C.primary, textDecoration:'none', padding:'14px 26px', borderRadius:14, display:'inline-flex', alignItems:'center', gap:7 }}>
-              Explorar la comunidad →
-            </Link>
-            <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:14, background:'rgba(255,255,255,0.15)', color:'#fff', textDecoration:'none', padding:'14px 22px', borderRadius:14, display:'inline-flex', alignItems:'center', gap:6, border:'1px solid rgba(255,255,255,0.35)' }}>
-              Unirme gratis
-            </Link>
-          </div>
+           <div
+  style={{
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 500,
+    marginBottom: 24,
+    fontFamily: PP,
+    fontStyle: 'italic',
+    letterSpacing: 0.3,
+    textAlign: 'center',
+  }}
+>
+  "La fuerza de nuestra gente en un solo latido"
+</div>
+         <div
+  style={{
+    display: 'flex',
+    justifyContent: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+    width: '100%',
+  }}
+>
+  <Link
+    to="/tablon"
+    style={{
+      fontFamily: PP,
+      fontWeight: 800,
+      fontSize: 14,
+      background: '#fff',
+      color: C.primary,
+      textDecoration: 'none',
+      padding: '14px 26px',
+      borderRadius: 14,
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 7,
+    }}
+  >
+    Explorar →
+  </Link>
+
+  <Link
+    to="/auth"
+    style={{
+      fontFamily: PP,
+      fontWeight: 700,
+      fontSize: 14,
+      background: 'rgba(255,255,255,0.15)',
+      color: '#fff',
+      textDecoration: 'none',
+      padding: '14px 22px',
+      borderRadius: 14,
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      border: '1px solid rgba(255,255,255,0.35)',
+    }}
+  >
+    Unirme gratis
+  </Link>
+</div>
           
           <div className="hero-stats" style={{ marginTop:52, paddingTop:36, borderTop:'1px solid rgba(255,255,255,0.15)' }}>
             {[
               ['400k+', 'Hispanohablantes en Suiza'],
               ['26',    'Cantones cubiertos'],
-              ['0 CHF', 'Siempre gratis'],
+              ['0 CHF', 'Gratis'],
               ['🤝',    'Entre nosotros'],
             ].map(([v, l]) => (
               <div key={l}>
