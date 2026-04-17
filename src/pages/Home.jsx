@@ -281,7 +281,9 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <EmptyState text="Cargando anuncios..." />
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:14 }}>
+            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height:160, borderRadius:18 }}/>)}
+          </div>
         ) : recentAds.length === 0 ? (
           <EmptyState text="Todavía no hay anuncios publicados." />
         ) : (
@@ -344,7 +346,9 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <EmptyState text="Cargando comunidades..." />
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:16 }}/>)}
+          </div>
         ) : communityHighlights.length === 0 ? (
           <EmptyState text="Todavía no hay comunidades publicadas." />
         ) : (
@@ -396,7 +400,9 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <EmptyState text="Cargando empleos..." />
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:16 }}/>)}
+          </div>
         ) : recentJobs.length === 0 ? (
           <EmptyState text="Todavía no hay empleos publicados." />
         ) : (
@@ -458,7 +464,9 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <EmptyState text="Cargando eventos..." />
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:16 }}/>)}
+          </div>
         ) : recentEvents.length === 0 ? (
           <EmptyState text="Todavía no hay eventos publicados." />
         ) : (

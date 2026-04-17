@@ -66,9 +66,7 @@ function ProtectedRoute({ children }) {
 function AppShell() {
   const { pathname } = useLocation()
   const { isPWA, canInstall, promptInstall } = usePWA()
-  const { isLoggedIn, loading } = useAuth()
-
-  if (loading) return <AppLoading />
+  const { isLoggedIn } = useAuth()
 
   const isRoot = pathname === '/'
   const showLanding = isRoot && !isPWA && !isLoggedIn

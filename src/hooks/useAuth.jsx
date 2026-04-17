@@ -3,16 +3,33 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
+// Read cached session from localStorage synchronously — avoids blocking the UI
+// on a network round-trip before rendering anything.
+function getLocalUser() {
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        const parsed = JSON.parse(localStorage.getItem(key) || '{}')
+        const user = parsed?.user ?? null
+        const expiresAt = parsed?.expires_at
+        if (!user) continue
+        if (expiresAt && expiresAt < Date.now() / 1000) continue
+        return user
+      }
+    }
+  } catch {}
+  return null
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(getLocalUser)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // Get initial session
+    // Verify / refresh the session in the background — does not block rendering
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-      setLoading(false)
-    }).catch(() => setLoading(false))
+    }).catch(() => {})
 
     // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
