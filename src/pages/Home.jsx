@@ -66,7 +66,7 @@ function EmptyState({ text }) {
   )
 }
 
-const HOME_CACHE_TTL = 60 * 1000
+const HOME_CACHE_TTL = 5 * 60 * 1000
 let homeCache = null
 let homeCacheTs = 0
 

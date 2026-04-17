@@ -588,6 +588,18 @@ function EventDetail({ event, onClose }) {
   )
 }
 
+const COMUNIDADES_CACHE_TTL = 5 * 60 * 1000
+const comunidadesCache = { data: null, ts: 0 }
+
+function applyCachedData(snapshot, setters) {
+  setters.setCommunities(snapshot.communities)
+  setters.setBusinesses(snapshot.businesses)
+  setters.setBusinessServices(snapshot.businessServices)
+  setters.setBusinessPhotos(snapshot.businessPhotos)
+  setters.setBusinessReviews(snapshot.businessReviews)
+  setters.setEvents(snapshot.events)
+}
+
 export default function Comunidades() {
   const { isLoggedIn } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -615,14 +627,22 @@ export default function Comunidades() {
   useEffect(() => {
     let cancelled = false
 
+    const setters = { setCommunities, setBusinesses, setBusinessServices, setBusinessPhotos, setBusinessReviews, setEvents }
+
     async function loadData() {
+      if (comunidadesCache.data) {
+        applyCachedData(comunidadesCache.data, setters)
+        setLoading(false)
+        if (Date.now() - comunidadesCache.ts <= COMUNIDADES_CACHE_TTL) return
+      }
+
       try {
         const [communitiesRes, providersRes, photosRes, reviewsRes, eventsRes] = await Promise.all([
-          supabase.from('communities').select('*').eq('active', true).order('members', { ascending:false }),
-          supabase.from('providers').select('*').eq('active', true).order('featured', { ascending:false }).order('verified', { ascending:false }).order('created_at', { ascending:false }),
-          supabase.from('provider_photos').select('*').order('is_main', { ascending:false }).order('sort_order', { ascending:true }),
-          supabase.from('reviews').select('*').eq('active', true).order('created_at', { ascending:false }),
-          supabase.from('events').select('*').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }),
+          supabase.from('communities').select('*').eq('active', true).order('members', { ascending:false }).limit(100),
+          supabase.from('providers').select('*').eq('active', true).order('featured', { ascending:false }).order('verified', { ascending:false }).order('created_at', { ascending:false }).limit(100),
+          supabase.from('provider_photos').select('*').order('is_main', { ascending:false }).order('sort_order', { ascending:true }).limit(500),
+          supabase.from('reviews').select('*').eq('active', true).order('created_at', { ascending:false }).limit(300),
+          supabase.from('events').select('*').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(100),
         ])
 
         if (cancelled) return
@@ -688,6 +708,18 @@ export default function Comunidades() {
         setBusinessServices(nextServices)
         setBusinessPhotos(nextPhotos)
         setBusinessReviews(nextReviews)
+
+        if (!cancelled) {
+          comunidadesCache.data = {
+            communities: nextCommunities,
+            businesses: nextBusinesses,
+            businessServices: nextServices,
+            businessPhotos: nextPhotos,
+            businessReviews: nextReviews,
+            events: nextEvents,
+          }
+          comunidadesCache.ts = Date.now()
+        }
       } catch {
         if (cancelled) return
         setCommunities(MOCK_COMMUNITIES.map(normalizeCommunity).filter(Boolean))

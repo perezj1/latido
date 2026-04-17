@@ -71,7 +71,7 @@ function getAdContactMethods(ad) {
   return methods
 }
 
-const TABLON_CACHE_TTL = 60 * 1000
+const TABLON_CACHE_TTL = 5 * 60 * 1000
 const TABLON_CACHE = {
   publicAds:null,
   publicAdsTs:0,
@@ -451,7 +451,7 @@ export default function Tablon() {
       }
 
       try {
-        const { data, error } = await supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false })
+        const { data, error } = await supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false }).limit(150)
         const nextJobs = error || !data?.length ? MOCK_JOBS : data
         TABLON_CACHE.jobs = nextJobs
         TABLON_CACHE.jobsTs = Date.now()
@@ -475,7 +475,7 @@ export default function Tablon() {
       }
 
       try {
-        let query = supabase.from('ads').select('*').eq('active', true).order('created_at', { ascending:false })
+        let query = supabase.from('ads').select('*').eq('active', true).order('created_at', { ascending:false }).limit(150)
         if (!isLoggedIn) query = query.eq('privacy', 'public')
         const { data, error } = await query
         const nextAds = error || !data?.length
