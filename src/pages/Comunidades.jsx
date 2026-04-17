@@ -504,7 +504,7 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
       </p>
 
       {community.contact && (
-        <a href={community.contact} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'inline-flex', marginBottom:16 }}>
+        <a href={community.contact} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', width:'100%', boxSizing:'border-box', marginBottom:16 }}>
           {community.contact.includes('t.me') ? 'Unirme por Telegram' : 'Unirme por WhatsApp'}
         </a>
       )}
@@ -517,7 +517,7 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
           <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 10px', lineHeight:1.6 }}>
             Para publicar tu propia comunidad y acceder a más herramientas, crea una cuenta gratuita.
           </p>
-          <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'10px 14px', display:'inline-flex' }}>
+          <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'center', width:'100%', boxSizing:'border-box' }}>
             Crear cuenta gratis
           </Link>
         </div>
