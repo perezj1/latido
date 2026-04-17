@@ -120,7 +120,7 @@ export default function Publicar() {
         </h1>
 
         <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:8 }}>
-          Tu anuncio ya está visible en el tablón para todos los latinos en Suiza.
+          Tu anuncio ya está visible en el tablón para todos.
         </p>
 
         <div

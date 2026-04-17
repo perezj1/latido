@@ -20,7 +20,7 @@ export default function Footer() {
               <span style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.primary }}>Lati<span style={{ color:'#fff' }}>do</span></span>
             </div>
             <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.7, marginBottom:16 }}>
-              La plataforma para latinos en Suiza. Anuncios, comunidades, guías y empleos — todo en español.
+              La plataforma para Hispanohablantes en Suiza. Anuncios, comunidades, guías y empleos — todo en español.
             </p>
             <div style={{ display:'flex', gap:8 }}>
               {['📸 Instagram', '💬 WhatsApp'].map(label => (
