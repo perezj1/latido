@@ -233,16 +233,18 @@ export default function Home() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:24 }}>
             <div style={{ maxWidth:620, flex:1, minWidth:0 }}>
               <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>
-                Tu espacio dentro de Latido
+                Más cerca de tu gente
               </p>
-
-              <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(30px,6vw,48px)', lineHeight:1.12, letterSpacing:-1, color:'#fff', margin:'0 0 14px' }}>
-                Hola, {firstName}.<br />
-                La app ya es tuya.
+              <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(30px,6vw,48px)', lineHeight:1.2, letterSpacing:-0.5, color:'#fff', margin:'0 0 14px' }}>
+                Hola&nbsp;  {firstName}.<br />                
+              </h1>
+              
+              <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(20px,6vw,48px)', lineHeight:1.2, letterSpacing:-0.5, color:'#fff', margin:'0 0 14px' }}>
+                 Aquí está tu comunidad.
               </h1>
 
               <p style={{ fontFamily:PP, fontSize:14, color:'rgba(255,255,255,0.82)', lineHeight:1.7, maxWidth:520, margin:0 }}>
-                Publica, busca, conecta y resuelve trámites desde un inicio pensado para usuarios que ya forman parte de la comunidad.
+                Encuentra información, servicios, empleos y apoyo real en una plataforma creada para ti y para los tuyos.
               </p>
             </div>
 

@@ -22,11 +22,11 @@ export default function Footer() {
             <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.7, marginBottom:16 }}>
               La plataforma para Hispanohablantes en Suiza. Anuncios, comunidades, guías y empleos — todo en español.
             </p>
-            <div style={{ display:'flex', gap:8 }}>
+            {/* <div style={{ display:'flex', gap:8 }}>
               {['📸 Instagram', '💬 WhatsApp'].map(label => (
                 <span key={label} style={{ fontFamily:PP, fontSize:10, fontWeight:600, background:'#1E293B', color:'#94A3B8', padding:'5px 10px', borderRadius:8, cursor:'pointer' }}>{label}</span>
               ))}
-            </div>
+            </div> */}
           </div>
 
           <div>
@@ -38,7 +38,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div>
+          {/* <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Instalar app</h4>
             <p style={{ fontFamily:PP, fontSize:11, lineHeight:1.7, marginBottom:10 }}>
               Añade Latido a tu pantalla de inicio como app nativa.
@@ -46,7 +46,7 @@ export default function Footer() {
             {['🍎 iPhone: Compartir → Añadir a inicio', '🤖 Android: Menú → Instalar app', '💻 PC: Icono en la barra de URL'].map(text => (
               <p key={text} style={{ fontFamily:PP, fontSize:10, color:'#475569', marginBottom:4 }}>{text}</p>
             ))}
-          </div>
+          </div> */}
 
           <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Contacto</h4>
