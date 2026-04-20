@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { C, PP } from '../lib/theme'
 
 // ── Button ─────────────────────────────────────────────────────
@@ -198,11 +198,20 @@ export function ImageUploadField({
 }
 
 export function Sheet({ show, onClose, title, children }) {
+  useEffect(() => {
+    if (!show) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [show])
+
   if (!show) return null
   return (
-    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
+    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.4)' }} onClick={onClose} />
-      <div className="fade-up" style={{ position:'relative', background:C.surface, borderRadius:'24px 24px 0 0', padding:'4px 20px 28px', maxHeight:'88vh', overflowY:'auto' }}>
+      <div className="fade-up" onClick={e => e.stopPropagation()}
+        style={{ position:'relative', background:C.surface, borderRadius:'24px 24px 0 0', padding:'4px 20px 40px', maxHeight:'88vh', overflowY:'auto' }}>
         <div style={{ width:36, height:4, background:C.border, borderRadius:4, margin:'12px auto 16px' }} />
         {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:14 }}>{title}</p>}
         {children}

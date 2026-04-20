@@ -773,6 +773,7 @@ export default function Comunidades() {
   const filteredNeg = [...businesses]
     .sort((a, b) => Number(b.featured) - Number(a.featured) || Number(b.verified) - Number(a.verified))
     .filter(business =>
+      business.type !== 'empleo' && business.type !== 'vivienda' &&
       (!negType || business.type === negType) &&
       (!search ||
         business.name.toLowerCase().includes(search.toLowerCase()) ||

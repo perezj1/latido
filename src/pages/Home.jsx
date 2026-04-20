@@ -421,63 +421,11 @@ export default function Home() {
         )}
       </section>
 
+      {/* Empleos recientes — oculto temporalmente
       <section style={{ maxWidth:980, margin:'0 auto', padding:'40px 16px 0' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <div>
-            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
-              💼 Empleos recientes
-            </h2>
-            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
-              Ofertas publicadas por la comunidad.
-            </p>
-          </div>
-
-          <Link to="/tablon?cat=empleo" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>
-            Ver todos →
-          </Link>
-        </div>
-
-        {loading ? (
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:16 }}/>)}
-          </div>
-        ) : recentJobs.length === 0 ? (
-          <EmptyState text="Todavía no hay empleos publicados." />
-        ) : (
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {recentJobs.map(job => (
-              <Link
-                key={job.id}
-                to={getJobHref(job)}
-                style={{ textDecoration:'none', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'15px 17px', display:'flex', alignItems:'center', gap:14 }}
-              >
-                <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
-                  {job.logo_url
-                    ? <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                    : (job.emoji || '💼')}
-                </div>
-
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
-                    <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {job.company || job.title}
-                    </p>
-                    {job.type && (
-                      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 7px', borderRadius:10, background:'#D1FAE5', color:'#065F46', flexShrink:0 }}>
-                        {job.type}
-                      </span>
-                    )}
-                  </div>
-                  <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>📍 {job.city}</p>
-                  {job.salary && <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', margin:'4px 0 0' }}>{fmtPrice(job.salary)}</p>}
-                </div>
-
-                <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, flexShrink:0 }}>Ver →</span>
-              </Link>
-            ))}
-          </div>
-        )}
+        ...
       </section>
+      */}
 
       <section style={{ maxWidth:980, margin:'0 auto', padding:'40px 16px 0' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>

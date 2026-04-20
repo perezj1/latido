@@ -375,14 +375,14 @@ export default function Mensajes() {
   const showChatPanel = !!selectedConv && (!isMobile || !showList)
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0 100px', height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0 0', height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '0 16px 16px' }}>
         <h1 style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, color: C.text, margin: 0, letterSpacing: -0.5 }}>
           💬 Mensajes
         </h1>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', border: `1px solid ${C.border}`, borderRadius: 18, margin: '0 16px', background: '#fff' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', border: `1px solid ${C.border}`, borderRadius: 18, margin: '0 16px 16px', background: '#fff' }}>
 
         {/* Conversation list */}
         {(showListPanel || !isMobile) && (
