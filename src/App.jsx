@@ -7,6 +7,7 @@ import { C, PP } from './lib/theme'
 
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
+import Header from './components/Header'
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Home = lazy(() => import('./pages/Home'))
@@ -103,6 +104,7 @@ function AppShell() {
 
   return (
     <>
+      <div className="show-md" style={{ flexDirection:'column' }}><Header /></div>
       <main style={{ minHeight:'100vh', paddingBottom:80 }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>

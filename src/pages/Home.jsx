@@ -266,6 +266,31 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── ACCESO RÁPIDO ── */}
+      <section style={{ maxWidth:980, margin:'0 auto', padding:'24px 16px 0' }}>
+        <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 14px', letterSpacing:-0.5 }}>🔍 Lo más buscado</h2>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
+          {[
+            { emoji:'🏠', label:'Vivienda',  sub:'Pisos y habitaciones', to:'/tablon?cat=vivienda',          bg:'#DBEAFE', tc:'#1D4ED8' },
+            { emoji:'💼', label:'Trabajo',   sub:'Ofertas de empleo',     to:'/tablon?cat=empleo',            bg:'#D1FAE5', tc:'#065F46' },
+            { emoji:'🎉', label:'Eventos',   sub:'Planes y quedadas',     to:'/comunidades?view=eventos',     bg:'#EDE9FE', tc:'#6D28D9' },
+            { emoji:'🏪', label:'Negocios',  sub:'Tiendas y restaurantes',to:'/comunidades?view=negocios',   bg:'#FEF3C7', tc:'#92400E' },
+          ].map(item => (
+            <Link key={item.label} to={item.to} style={{ textDecoration:'none' }}>
+              <div
+                style={{ background:item.bg, borderRadius:16, padding:'20px 16px', textAlign:'center', border:`1.5px solid transparent`, transition:'all .18s', cursor:'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow=`0 8px 20px ${item.bg}` }}
+                onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none' }}
+              >
+                <div style={{ fontSize:32, marginBottom:8 }}>{item.emoji}</div>
+                <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:item.tc, margin:'0 0 4px', lineHeight:1.2 }}>{item.label}</p>
+                <p style={{ fontFamily:PP, fontSize:11, color:item.tc, opacity:.7, margin:0, lineHeight:1.3 }}>{item.sub}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 0' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, gap:12 }}>
           <div>
