@@ -503,11 +503,20 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
         {community.desc || 'Comunidad latina en Suiza.'}
       </p>
 
-      {community.contact && (
-        <a href={community.contact} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', width:'100%', boxSizing:'border-box', marginBottom:16 }}>
-          {community.contact.includes('t.me') ? 'Unirme por Telegram' : 'Unirme por WhatsApp'}
-        </a>
-      )}
+      {community.contact && (() => {
+        const url = community.contact
+        let icon = '🔗', label = 'Unirme a la comunidad', bg = C.primary
+        if (url.includes('chat.whatsapp.com') || url.includes('wa.me')) { icon = '💬'; label = 'Unirme por WhatsApp'; bg = '#25D366' }
+        else if (url.includes('t.me') || url.includes('telegram')) { icon = '✈️'; label = 'Unirme por Telegram'; bg = '#229ED9' }
+        else if (url.includes('meetup.com')) { icon = '📅'; label = 'Unirme en Meetup'; bg = '#E0393E' }
+        else if (url.includes('facebook.com')) { icon = '👥'; label = 'Ver en Facebook'; bg = '#1877F2' }
+        else if (url.includes('instagram.com')) { icon = '📸'; label = 'Seguir en Instagram'; bg = '#E1306C' }
+        return (
+          <a href={url} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:bg, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', boxSizing:'border-box', marginBottom:16 }}>
+            <span>{icon}</span>{label}
+          </a>
+        )
+      })()}
 
       {!isLoggedIn && (
         <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px' }}>

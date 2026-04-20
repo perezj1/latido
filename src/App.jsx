@@ -104,7 +104,7 @@ function AppShell() {
 
   return (
     <>
-      <div className="show-md" style={{ flexDirection:'column' }}><Header /></div>
+      <Header />
       <main style={{ minHeight:'100vh', paddingBottom:80 }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>

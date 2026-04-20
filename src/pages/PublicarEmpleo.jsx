@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { CANTONS } from '../lib/constants'
-import { Btn, ProgressBar, Input, Select } from '../components/UI'
+import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -51,11 +52,12 @@ export default function PublicarEmpleo() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [done, setDone] = useState(false)
   const [form, setForm] = useState({
     sector:'', title:'', company:'', jobType:'',
     city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'',
-    contactPhone:'', contactEmail:'', contactLink:'',
+    contactPhone:'', contactEmail:'', contactLink:'', logoUrl:'',
   })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
   const toggleLang = lang => setForm(f => ({
@@ -99,7 +101,7 @@ export default function PublicarEmpleo() {
         Tu oferta ya está visible para miles de latinos en Suiza.
       </p>
       <Btn onClick={() => navigate('/tablon?cat=empleo')}>Ver empleos →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ sector:'', title:'', company:'', jobType:'', city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', contactPhone:'', contactEmail:'', contactLink:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({ sector:'', title:'', company:'', jobType:'', city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', contactPhone:'', contactEmail:'', contactLink:'', logoUrl:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otra oferta
       </button>
     </div>
@@ -136,6 +138,7 @@ export default function PublicarEmpleo() {
         contact_phone: form.contactPhone.trim() || null,
         contact_email: form.contactEmail.trim() || null,
         contact_link: form.contactLink.trim() || null,
+        logo_url: form.logoUrl.trim() || null,
         active: true,
       })
       if (error) throw error
@@ -144,6 +147,21 @@ export default function PublicarEmpleo() {
       toast.error(error?.message || 'No se pudo publicar la oferta de empleo')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleLogoUpload = async (files) => {
+    const file = files[0]
+    if (!file) return
+    setUploadingLogo(true)
+    try {
+      const publicUrl = await uploadPublicationImage({ file, userId: user?.id, folder:'jobs' })
+      s('logoUrl', publicUrl)
+      toast.success('Imagen subida')
+    } catch (error) {
+      toast.error(getStorageErrorMessage(error))
+    } finally {
+      setUploadingLogo(false)
     }
   }
 
@@ -174,6 +192,14 @@ export default function PublicarEmpleo() {
         <>
           <Input label="Título del puesto *" placeholder="Ej: Cocinero/a, Cuidadora, Técnico IT" required value={form.title} onChange={e=>s('title',e.target.value)} />
           <Input label="Empresa o nombre del empleador" placeholder="Ej: Restaurante El Rincón, Familia particular" value={form.company} onChange={e=>s('company',e.target.value)} />
+          <ImageUploadField
+            label="Logo o imagen de la empresa (opcional)"
+            previewUrl={form.logoUrl}
+            uploading={uploadingLogo}
+            onFilesSelected={handleLogoUpload}
+            onRemove={() => s('logoUrl', '')}
+            hint="Se mostrará en la tarjeta y detalle de la oferta."
+          />
 
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE CONTRATO</p>
           <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>

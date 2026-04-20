@@ -84,7 +84,6 @@ export default function Home() {
   const getAdHref = (ad) => `/tablon?openAd=${encodeURIComponent(ad.id)}`
   const getCommunityHref = (group) => `/comunidades?openCommunity=${encodeURIComponent(group.id)}`
   const getJobHref = (job) => `/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`
-  const getEventHref = (ev) => `/comunidades?view=eventos&openEvent=${encodeURIComponent(ev.id)}`
 
   const applySnapshot = useCallback((snapshot) => {
     setRecentAds(snapshot.recentAds || [])
@@ -113,17 +112,16 @@ export default function Home() {
 
         supabase
           .from('jobs')
-          .select('id, title, company, city, type, salary, emoji, created_at, active')
+          .select('id, title, company, city, type, salary, emoji, logo_url, created_at, active')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
           .limit(3),
 
         supabase
           .from('events')
-          .select('id, title, day, month, city, venue, price, img_url, created_at, active')
+          .select('id, title, day, month, year, city, venue, price, img_url, created_at, active')
           .or('active.is.null,active.eq.true')
-          .order('created_at', { ascending:false })
-          .limit(3),
+          .limit(50),
       ])
 
       if (adsRes.error) console.error('Error loading recent ads:', adsRes.error)
@@ -168,20 +166,33 @@ export default function Home() {
           type: row.type || 'Trabajo',
           salary: row.salary || '',
           emoji: row.emoji || '💼',
+          logo_url: row.logo_url || '',
         }))
       )
 
+      const MONTH_IDX = { ENE:0,FEB:1,MAR:2,ABR:3,MAY:4,JUN:5,JUL:6,AGO:7,SEP:8,OCT:9,NOV:10,DIC:11,JAN:0,APR:3,AUG:7,DEC:11 }
+      const toEventDate = (row) => {
+        const y = parseInt(row.year || new Date().getFullYear(), 10)
+        const m = MONTH_IDX[String(row.month).toUpperCase()] ?? 0
+        const d = parseInt(row.day || 1, 10)
+        return new Date(y, m, d)
+      }
+      const today = new Date(); today.setHours(0,0,0,0)
       setRecentEvents(
-        ((eventsRes.error ? [] : eventsRes.data) || []).map((row) => ({
-          id: row.id,
-          title: row.title || '',
-          day: row.day || '',
-          month: row.month || '',
-          city: row.city || 'Suiza',
-          venue: row.venue || '',
-          price: row.price || '',
-          img: row.img_url || '',
-        }))
+        ((eventsRes.error ? [] : eventsRes.data) || [])
+          .filter(row => toEventDate(row) >= today)
+          .sort((a, b) => toEventDate(a) - toEventDate(b))
+          .slice(0, 3)
+          .map((row) => ({
+            id: row.id,
+            title: row.title || '',
+            day: row.day || '',
+            month: row.month || '',
+            city: row.city || 'Suiza',
+            venue: row.venue || '',
+            price: row.price || '',
+            img: row.img_url || '',
+          }))
       )
     } catch (error) {
       console.error('Error loading home data:', error)
@@ -259,7 +270,7 @@ export default function Home() {
             <div>
               <GlobalSearch
                 size="lg"
-                placeholder="Busca comunidades, empleos, anuncios, documentos..."
+                placeholder="Encuentra lo que buscas"
               />
             </div>
           </div>
@@ -272,9 +283,9 @@ export default function Home() {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
           {[
             { emoji:'🏠', label:'Vivienda',  sub:'Pisos y habitaciones', to:'/tablon?cat=vivienda',          bg:'#DBEAFE', tc:'#1D4ED8' },
-            { emoji:'💼', label:'Trabajo',   sub:'Ofertas de empleo',     to:'/tablon?cat=empleo',            bg:'#D1FAE5', tc:'#065F46' },
+            { emoji:'💼', label:'Empleo',   sub:'Ofertas de empleo',     to:'/tablon?cat=empleo',            bg:'#D1FAE5', tc:'#065F46' },
             { emoji:'🎉', label:'Eventos',   sub:'Planes y quedadas',     to:'/comunidades?view=eventos',     bg:'#EDE9FE', tc:'#6D28D9' },
-            { emoji:'🏪', label:'Negocios',  sub:'Tiendas y restaurantes',to:'/comunidades?view=negocios',   bg:'#FEF3C7', tc:'#92400E' },
+            { emoji:'🏪', label:'Negocios',  sub:'Productos y servicios',to:'/comunidades?view=negocios',   bg:'#FEF3C7', tc:'#92400E' },
           ].map(item => (
             <Link key={item.label} to={item.to} style={{ textDecoration:'none' }}>
               <div
@@ -291,7 +302,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 0' }}>
+      {/* <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 0' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, gap:12 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>
@@ -354,7 +365,7 @@ export default function Home() {
             })}
           </div>
         )}
-      </section>
+      </section> */}
 
       <section style={{ maxWidth:980, margin:'0 auto', padding:'40px 16px 0' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
@@ -438,36 +449,30 @@ export default function Home() {
               <Link
                 key={job.id}
                 to={getJobHref(job)}
-                style={{
-                  textDecoration:'none',
-                  background:'#fff',
-                  border:`1px solid ${C.border}`,
-                  borderRadius:16,
-                  padding:'14px 15px',
-                  display:'flex',
-                  gap:12,
-                  alignItems:'center'
-                }}
+                style={{ textDecoration:'none', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'15px 17px', display:'flex', alignItems:'center', gap:14 }}
               >
-                <div style={{ width:44, height:44, background:'#EFF6FF', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
-                  {job.emoji}
+                <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
+                  {job.logo_url
+                    ? <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    : (job.emoji || '💼')}
                 </div>
 
                 <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                    {job.title}
-                  </p>
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 4px' }}>
-                    {job.company} · {job.city}
-                  </p>
-                  <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 7px', borderRadius:10, background:'#D1FAE5', color:'#065F46' }}>
-                    {job.type}
-                  </span>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
+                    <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {job.company || job.title}
+                    </p>
+                    {job.type && (
+                      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 7px', borderRadius:10, background:'#D1FAE5', color:'#065F46', flexShrink:0 }}>
+                        {job.type}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>📍 {job.city}</p>
+                  {job.salary && <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', margin:'4px 0 0' }}>{fmtPrice(job.salary)}</p>}
                 </div>
 
-                <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.primary, flexShrink:0, textAlign:'right', maxWidth:110 }}>
-                  {fmtPrice(job.salary)}
-                </span>
+                <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, flexShrink:0 }}>Ver →</span>
               </Link>
             ))}
           </div>
@@ -484,58 +489,22 @@ export default function Home() {
               Próximos eventos de la comunidad latina.
             </p>
           </div>
-
           <Link to="/comunidades?view=eventos" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>
             Ver todos →
           </Link>
         </div>
 
-        {loading ? (
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:16 }}/>)}
-          </div>
-        ) : recentEvents.length === 0 ? (
-          <EmptyState text="Todavía no hay eventos publicados." />
-        ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:12 }}>
-            {recentEvents.map(ev => (
-              <Link
-                key={ev.id}
-                to={getEventHref(ev)}
-                style={{ textDecoration:'none', background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, overflow:'hidden', display:'block' }}
-              >
-                {ev.img && (
-                  <div style={{ height:130, overflow:'hidden' }}>
-                    <img src={ev.img} alt={ev.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                  </div>
-                )}
-
-                <div style={{ padding:'12px 14px' }}>
-                  <div style={{ display:'flex', gap:5, marginBottom:8 }}>
-                    <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 7px', borderRadius:10, background:'#FEF3C7', color:'#92400E' }}>
-                      📅 {ev.day} {ev.month}
-                    </span>
-                    <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 7px', borderRadius:10, background:C.primaryLight, color:C.primary }}>
-                      📍 {ev.city}
-                    </span>
-                  </div>
-
-                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 3px', lineHeight:1.35, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                    {ev.title}
-                  </p>
-
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 6px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                    {ev.venue}
-                  </p>
-
-                  <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary }}>
-                    {fmtPrice(ev.price)}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+        <div style={{ borderRadius:20, overflow:'hidden', border:`1px solid ${C.border}` }}>
+          <iframe
+            title="Próximos eventos latinos"
+            width="100%"
+            height="320"
+            style={{ border:'none', display:'block' }}
+            src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=latino&geoRadius=60"
+            loading="lazy"
+            allow="fullscreen"
+          />
+        </div>
       </section>
 
       <section style={{ maxWidth:980, margin:'0 auto', padding:'42px 16px 110px' }}>

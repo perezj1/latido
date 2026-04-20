@@ -27,7 +27,28 @@
       "WebFetch(domain:www.ch.ch)",
       "WebFetch(domain:relocation-genevoise.ch)",
       "Bash(node scripts/insert_job_adecco.mjs)",
-      "Bash(node scripts/update_adecco.mjs)"
+      "Bash(node scripts/update_adecco.mjs)",
+      "WebFetch(domain:mevoyalmundo.com)",
+      "WebFetch(domain:www.forosuiza.com)",
+      "WebFetch(domain:trabajarporelmundo.org)",
+      "WebFetch(domain:trabajarensuiza.es)",
+      "WebFetch(domain:www.okjob.ch)",
+      "WebFetch(domain:www.hotelis.ch)",
+      "WebFetch(domain:www.gi-group.ch)",
+      "WebFetch(domain:jobsch.gigroup.com)",
+      "WebFetch(domain:ch.gigroup.com)",
+      "WebFetch(domain:www.randstad.ch)",
+      "WebFetch(domain:www.manpower.ch)",
+      "WebFetch(domain:www.flexsis.ch)",
+      "WebFetch(domain:www.synergiesuisse.ch)",
+      "WebFetch(domain:www.hays.ch)",
+      "WebFetch(domain:www.tempaxis.ch)",
+      "WebFetch(domain:www.unique.ch)",
+      "WebFetch(domain:www.interiman.ch)",
+      "WebFetch(domain:www.kelly.ch)",
+      "WebFetch(domain:www.samsic-emploi.ch)",
+      "WebFetch(domain:www.suizajob.ch)",
+      "WebFetch(domain:alpsstaffing.ch)"
     ]
   }
 }

@@ -18,6 +18,7 @@ export default function Header({ transparent }) {
 
   return (
     <header
+      className="show-md"
       style={{
         position:'sticky',
         top:0,

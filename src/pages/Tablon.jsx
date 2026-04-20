@@ -268,15 +268,19 @@ function JobCard({ job, onClick }) {
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
   return (
     <button onClick={onClick} style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14, width:'100%', textAlign:'left', cursor:'pointer' }}>
-      <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>{job.emoji || '💼'}</div>
+      <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
+        {job.logo_url
+          ? <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          : (job.emoji || '💼')}
+      </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
-          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0 }}>{job.title}</h3>
+          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0 }}>{job.company || job.title}</h3>
           <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>
         </div>
-        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>{job.company} · 📍 {job.city || job.canton}</p>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>📍 {job.city || job.canton}</p>
         {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>🗣️ {languages}</p>}
-        <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', margin:'4px 0 0' }}>{fmtPrice(job.salary)}</p>
+        {job.salary && <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', margin:'4px 0 0' }}>{fmtPrice(job.salary)}</p>}
       </div>
       <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, flexShrink:0 }}>Ver →</span>
     </button>
@@ -295,11 +299,21 @@ function JobDetail({ job }) {
 
   return (
     <div>
+      {job.logo_url && (
+        <div style={{ width:'100%', height:160, borderRadius:16, overflow:'hidden', marginBottom:16, background:C.primaryLight }}>
+          <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        </div>
+      )}
       <div style={{ display:'flex', gap:14, alignItems:'flex-start', marginBottom:16 }}>
-        <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:18, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>{job.emoji || '💼'}</div>
+        {!job.logo_url && (
+          <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:18, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>{job.emoji || '💼'}</div>
+        )}
         <div style={{ flex:1 }}>
-          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 4px', lineHeight:1.3 }}>{job.title}</h2>
-          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 8px' }}>{job.company} · 📍 {job.city || job.canton}</p>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 2px', lineHeight:1.3 }}>{job.company || job.title}</h2>
+          {job.company && job.title !== job.company && (
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:'0 0 6px', lineHeight:1.4 }}>{job.title}</p>
+          )}
+          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 8px' }}>📍 {job.city || job.canton}</p>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
             {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
             {job.sector && <Tag bg={C.bg} color={C.mid}>{job.sector}</Tag>}
@@ -564,7 +578,7 @@ export default function Tablon() {
   const catOptions  = [{ id:'', label:'Todos' }, ...orderedCats.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
   const typeOptions = [{ id:'', label:'Todos' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
   const privOptions = [{ id:'', label:'Todos' }, { id:'public', label:'🌐 Públicos' }, { id:'private', label:'🔒 Privados' }]
-  const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Full-time' }, { id:'Part-time', label:'Part-time' }]
+  const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Fijo' }, { id:'Part-time', label:'Temporal' }]
 
   return (
     <div style={{ maxWidth:800, margin:'0 auto', padding:'24px 20px 100px' }}>
