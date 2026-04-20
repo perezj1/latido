@@ -464,7 +464,7 @@ export default function Perfil() {
   const menu = [
     { icon:'📌', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
     { icon:'🔖', label:'Guardados', sub:'Anuncios que has marcado para luego', disabled:true },
-    { icon:'💬', label:'Mensajes', sub:'Conversaciones con otros usuarios', disabled:true },
+    { icon:'💬', label:'Mensajes', sub:'Conversaciones con otros usuarios', action:() => navigate('/mensajes') },
     { icon:'🔔', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', disabled:true },
     { icon:'⚙️', label:'Configuración', sub:'Cantón, idiomas, contraseña, privacidad', disabled:true },
   ]

@@ -22,6 +22,7 @@ const RegistrarNegocio = lazy(() => import('./pages/RegistrarNegocio'))
 const RegistrarComunidad = lazy(() => import('./pages/RegistrarComunidad'))
 const PublicarEmpleo = lazy(() => import('./pages/PublicarEmpleo'))
 const Legal = lazy(() => import('./pages/Legal'))
+const Mensajes = lazy(() => import('./pages/Mensajes'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -119,6 +120,7 @@ function AppShell() {
             <Route path="/registrar-negocio" element={<ProtectedRoute><RegistrarNegocio /></ProtectedRoute>} />
             <Route path="/registrar-comunidad" element={<ProtectedRoute><RegistrarComunidad /></ProtectedRoute>} />
             <Route path="/publicar-empleo" element={<ProtectedRoute><PublicarEmpleo /></ProtectedRoute>} />
+            <Route path="/mensajes" element={<ProtectedRoute><Mensajes /></ProtectedRoute>} />
             <Route path="/impressum"  element={<Legal />} />
             <Route path="/privacidad" element={<Legal />} />
             <Route path="/terminos"   element={<Legal />} />

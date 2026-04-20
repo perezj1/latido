@@ -12,7 +12,7 @@ const STEPS = [
   { title:'¿Qué quieres publicar?', sub:'Elige la categoría de tu anuncio' },
   { title:'¿Buscas o ofreces?', sub:'Cuéntanos cuál es tu rol' },
   { title:'Título y descripción', sub:'Cuanto más detallado, mejor' },
-  { title:'Precio, zona y contacto', sub:'Último paso — cómo ubicarte y cómo contactarte' },
+  { title:'Precio, zona y publicación', sub:'Último paso — ubicación, visibilidad y mensajes dentro de Latido' },
 ]
 
 const PRICE_UNITS = [
@@ -43,8 +43,6 @@ export default function Publicar() {
     canton:'',
     plz:'',
     privacy:'public',
-    contactPhone:'',
-    contactEmail:'',
   })
 
   const s = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -120,7 +118,7 @@ export default function Publicar() {
         </h1>
 
         <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:8 }}>
-          Tu anuncio ya está visible en el tablón para todos.
+          Tu anuncio ya está visible en el tablón.
         </p>
 
         <div
@@ -142,8 +140,8 @@ export default function Publicar() {
             }}
           >
             {form.privacy === 'private'
-              ? '🔒 Tu contacto solo es visible para usuarios registrados'
-              : '🌐 Tu contacto es visible para todo el mundo'}
+              ? '🔒 Solo usuarios con cuenta pueden ver tu anuncio y escribirte dentro de Latido'
+              : '🌐 Tu anuncio es público, pero el contacto sigue dentro de Latido'}
           </p>
         </div>
 
@@ -165,8 +163,6 @@ export default function Publicar() {
               canton:'',
               plz:'',
               privacy:'public',
-              contactPhone:'',
-              contactEmail:'',
             })
           }}
           style={{
@@ -194,40 +190,34 @@ export default function Publicar() {
       return
     }
 
-    if (!form.contactPhone.trim() && !form.contactEmail.trim()) {
-      toast.error('Añade al menos un método de contacto')
-      return
-    }
-
     setLoading(true)
 
     try {
-    const finalPrice = getFormattedPrice() || null
-const priceAmount = form.priceValue
-  ? Number(String(form.priceValue).replace(',', '.'))
-  : null
+      const finalPrice = getFormattedPrice() || null
+      const priceAmount = form.priceValue
+        ? Number(String(form.priceValue).replace(',', '.'))
+        : null
 
-const { error } = await supabase.from('ads').insert({
-  cat: form.cat,
-  sub: form.sub,
-  type: form.type,
-  title: form.title,
-  desc: form.desc,
-  img_url: form.img_url || null,
-
-  price: finalPrice,
-  price_amount: Number.isNaN(priceAmount) ? null : priceAmount,
-  price_unit: form.priceValue ? form.priceUnit : null,
-
-  canton: form.canton,
-  plz: form.plz || null,
-  privacy: form.privacy,
-  contact_phone: form.contactPhone.trim() || null,
-  contact_email: form.contactEmail.trim() || null,
-  user_id: user?.id,
-  active: true,
-  user_name: user?.user_metadata?.name || 'Usuario',
-})
+      const { error } = await supabase.from('ads').insert({
+        cat: form.cat,
+        sub: form.sub,
+        type: form.type,
+        title: form.title,
+        desc: form.desc,
+        img_url: form.img_url || null,
+        price: finalPrice,
+        price_amount: Number.isNaN(priceAmount) ? null : priceAmount,
+        price_unit: form.priceValue ? form.priceUnit : null,
+        canton: form.canton,
+        plz: form.plz || null,
+        privacy: form.privacy,
+        contact_via_app: true,
+        contact_phone: null,
+        contact_email: null,
+        user_id: user?.id,
+        active: true,
+        user_name: user?.user_metadata?.name || 'Usuario',
+      })
 
       if (error) throw error
 
@@ -286,7 +276,13 @@ const { error } = await supabase.from('ads').insert({
           {AD_CATS.map(cat => (
             <button
               key={cat.id}
-              onClick={() => s('cat', cat.id)}
+              onClick={() => {
+                if (cat.id === 'empleo') {
+                  navigate('/publicar-empleo')
+                  return
+                }
+                s('cat', cat.id)
+              }}
               style={{
                 background:form.cat === cat.id ? C.primary : C.surface,
                 borderRadius:16,
@@ -535,32 +531,12 @@ const { error } = await supabase.from('ads').insert({
             />
           </div>
 
-          <p
-            style={{
-              fontFamily:PP,
-              fontSize:10,
-              fontWeight:700,
-              color:C.light,
-              letterSpacing:1,
-              marginBottom:10
-            }}
-          >
-            CONTACTO <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0 }}>— al menos uno obligatorio</span>
-          </p>
-
-          <Input
-            label="WhatsApp o teléfono"
-            placeholder="+41 79 123 45 67"
-            value={form.contactPhone}
-            onChange={e => s('contactPhone', e.target.value)}
-          />
-
-          <Input
-            label="Email de contacto"
-            placeholder="tuemail@ejemplo.com"
-            value={form.contactEmail}
-            onChange={e => s('contactEmail', e.target.value)}
-          />
+          <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:14, padding:'14px 16px', marginBottom:14 }}>
+            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 6px' }}>💬 Contacto dentro de Latido</p>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.6, margin:0 }}>
+              Los interesados te escribirán por mensajes dentro de la plataforma. No mostramos teléfono ni email en el anuncio.
+            </p>
+          </div>
 
           <div style={{ marginBottom:10 }}>
             <p
@@ -573,7 +549,7 @@ const { error } = await supabase.from('ads').insert({
                 marginBottom:10
               }}
             >
-              VISIBILIDAD DEL CONTACTO *
+              VISIBILIDAD DEL ANUNCIO *
             </p>
 
             <div className="grid-2" style={{ gap:10 }}>
@@ -582,7 +558,7 @@ const { error } = await supabase.from('ads').insert({
                   id:'public',
                   ico:'🌐',
                   title:'Público',
-                  desc:'Tu contacto es visible para cualquier visitante, sin cuenta.',
+                  desc:'Tu anuncio es visible para cualquier visitante, sin cuenta.',
                   bg:C.successLight,
                   border:C.successMid,
                   tc:'#065F46'
@@ -591,7 +567,7 @@ const { error } = await supabase.from('ads').insert({
                   id:'private',
                   ico:'🔒',
                   title:'Privado',
-                  desc:'Solo usuarios registrados pueden ver tu contacto.',
+                  desc:'Solo usuarios registrados pueden ver tu anuncio.',
                   bg:C.warnLight,
                   border:C.warnMid,
                   tc:'#92400E'
@@ -648,8 +624,8 @@ const { error } = await supabase.from('ads').insert({
                 }}
               >
                 {form.privacy === 'private'
-                  ? '🔒 Tu WhatsApp/email solo se muestra a usuarios con cuenta. Más seguridad, mejor calidad de contactos.'
-                  : '🌐 Tu contacto es visible para todos, incluso sin cuenta. Máximo alcance y más respuestas.'}
+                  ? '🔒 Solo usuarios con cuenta pueden ver tu anuncio y escribirte dentro de Latido.'
+                  : '🌐 Tu anuncio es público para todos, pero las conversaciones pasan por Latido.'}
               </p>
             </div>
           </div>

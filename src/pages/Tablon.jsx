@@ -1,11 +1,10 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters } from '../components/UI'
-import toast from 'react-hot-toast'
 
 function fmtPrice(price) {
   if (!price) return ''
@@ -13,62 +12,6 @@ function fmtPrice(price) {
   s = s.replace(/^([\d.,]+)\s+CHF\b(.*)/, 'CHF $1$2')
   s = s.replace(/^(CHF\s*[\d.,]+)\s+([^\s/].*)$/, '$1/$2')
   return s
-}
-
-function normalizePhoneForTel(value='') {
-  return value.replace(/[^\d+]/g, '')
-}
-
-function normalizePhoneForWhatsapp(value='') {
-  return value.replace(/\D/g, '')
-}
-
-function ensureUrl(value='') {
-  if (!value) return ''
-  return /^https?:\/\//i.test(value) ? value : `https://${value}`
-}
-
-function formatUrlLabel(value='') {
-  return value.replace(/^https?:\/\//i, '').replace(/\/$/, '')
-}
-
-function getAdContactMethods(ad) {
-  const phone = (ad.contact_phone || ad.whatsapp || '').trim()
-  const email = (ad.contact_email || ad.email_contact || '').trim()
-  const methods = []
-
-  if (phone) {
-    methods.push({
-      id:'phone',
-      icon:'📞',
-      label:'Teléfono',
-      value:phone,
-      href:`tel:${normalizePhoneForTel(phone)}`,
-      external:false,
-    })
-
-    methods.push({
-      id:'whatsapp',
-      icon:'💬',
-      label:'WhatsApp',
-      value:phone,
-      href:`https://wa.me/${normalizePhoneForWhatsapp(phone)}`,
-      external:true,
-    })
-  }
-
-  if (email) {
-    methods.push({
-      id:'email',
-      icon:'✉️',
-      label:'Email',
-      value:email,
-      href:`mailto:${email}`,
-      external:false,
-    })
-  }
-
-  return methods
 }
 
 const TABLON_CACHE_TTL = 5 * 60 * 1000
@@ -79,59 +22,6 @@ const TABLON_CACHE = {
   privateAdsTs:0,
   jobs:null,
   jobsTs:0,
-  revealsByUser:new Map(),
-  revealsTsByUser:new Map(),
-}
-
-function getJobContactMethods(job) {
-  const phone = (job.contact_phone || '').trim()
-  const email = (job.contact_email || (job.contact?.includes('@') && !job.contact.startsWith('http') ? job.contact : '') || '').trim()
-  const link = (job.contact_link || (job.contact?.startsWith('http') ? job.contact : '') || '').trim()
-  const methods = []
-
-  if (phone) {
-    methods.push({
-      id:'phone',
-      icon:'📞',
-      label:'Teléfono',
-      value:phone,
-      href:`tel:${normalizePhoneForTel(phone)}`,
-      external:false,
-    })
-
-    methods.push({
-      id:'whatsapp',
-      icon:'💬',
-      label:'WhatsApp',
-      value:phone,
-      href:`https://wa.me/${normalizePhoneForWhatsapp(phone)}`,
-      external:true,
-    })
-  }
-
-  if (email) {
-    methods.push({
-      id:'email',
-      icon:'✉️',
-      label:'Email',
-      value:email,
-      href:`mailto:${email}`,
-      external:false,
-    })
-  }
-
-  if (link) {
-    methods.push({
-      id:'link',
-      icon:'🔗',
-      label:'Aplicar',
-      value:formatUrlLabel(link),
-      href:ensureUrl(link),
-      external:true,
-    })
-  }
-
-  return methods
 }
 
 /* ── Compact ad card (list view) ────────────────────────── */
@@ -163,17 +53,11 @@ function AdCard({ ad, onClick }) {
 }
 
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
-function AdDetail({ ad, user, onReveal, revealed }) {
+function AdDetail({ ad, user }) {
+  const navigate = useNavigate()
   const cat = AD_CATS.find(c => c.id === ad.cat)
   const cc  = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
-  const isPrivate = ad.privacy === 'private'
-  const canSee = !isPrivate || revealed
-  const [showContacts, setShowContacts] = useState(false)
-  const contactMethods = getAdContactMethods(ad)
-
-  useEffect(() => {
-    setShowContacts(false)
-  }, [ad.id])
+  const isOwnAd = user && ad.user_id === user.id
 
   return (
     <div>
@@ -201,64 +85,17 @@ function AdDetail({ ad, user, onReveal, revealed }) {
         {ad.price && <span style={{ fontFamily:PP, fontSize:15, fontWeight:800, color:C.primary }}>{fmtPrice(ad.price)}</span>}
       </div>
 
-      {/* Contact */}
-      {isPrivate && !canSee ? (
-        <div style={{ background:C.warnLight, border:`1px solid ${C.warnMid}`, borderRadius:14, padding:'14px 16px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-            <span style={{ fontSize:20 }}>🔒</span>
-            <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#92400E', margin:0 }}>Contacto privado</p>
-          </div>
-          <p style={{ fontFamily:PP, fontSize:12, color:'#A16207', lineHeight:1.6, marginBottom:12 }}>
-            {user ? 'Haz click para desbloquear el contacto de este anuncio.' : 'Solo los usuarios registrados pueden ver los contactos privados. Crea una cuenta gratis.'}
-          </p>
-          <Btn onClick={onReveal} variant={user ? 'primary' : 'dark'} size="sm">
-            {user ? '👁️ Ver contacto' : '🔐 Crear cuenta para ver'}
-          </Btn>
+      {!isOwnAd && user ? (
+        <button onClick={() => navigate(`/mensajes?adId=${ad.id}`)}
+          style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:'#F0FDF4', color:'#16A34A', border:'1.5px solid #86EFAC', borderRadius:13, padding:'13px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+          💬 Enviar mensaje
+        </button>
+      ) : !user ? (
+        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:13, padding:'13px 16px', textAlign:'center' }}>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.primaryDark, margin:'0 0 8px' }}>Inicia sesión para contactar</p>
+          <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:10, padding:'8px 16px', display:'inline-block' }}>Entrar →</a>
         </div>
-      ) : (
-        <div style={isPrivate && canSee ? { background:C.successLight, border:`1px solid ${C.successMid}`, borderRadius:14, padding:'14px 16px' } : undefined}>
-          {isPrivate && canSee && <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.success, marginBottom:10 }}>✅ Contacto desbloqueado</p>}
-          {contactMethods.length > 0 ? (
-            <div>
-              <button
-                onClick={() => setShowContacts(current => !current)}
-                style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', padding:'13px 16px', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer' }}
-              >
-                <span>📬 Contacto</span>
-                <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : 'Ver opciones'}</span>
-              </button>
-              {showContacts && (
-                <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:10, marginTop:10, display:'flex', flexDirection:'column', gap:8 }}>
-                  {contactMethods.map(method => (
-                    <a
-                      key={method.id}
-                      href={method.href}
-                      target={method.external ? '_blank' : undefined}
-                      rel={method.external ? 'noreferrer' : undefined}
-                      style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
-                    >
-                      <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                        <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
-                        <div style={{ minWidth:0 }}>
-                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
-                          <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
-                        </div>
-                      </div>
-                      <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
-                        {method.external ? 'Abrir ↗' : 'Abrir →'}
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <p style={{ fontFamily:PP, fontSize:12, color:isPrivate && canSee ? '#065F46' : C.light, textAlign:'center', padding:'10px 0', margin:0 }}>
-              {isPrivate && canSee ? 'Sin datos de contacto indicados' : 'Sin contacto público disponible'}
-            </p>
-          )}
-        </div>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -288,14 +125,10 @@ function JobCard({ job, onClick }) {
 }
 
 /* ── Full job detail (inside Sheet) ─────────────────────── */
-function JobDetail({ job }) {
+function JobDetail({ job, user }) {
+  const navigate = useNavigate()
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
-  const [showContacts, setShowContacts] = useState(false)
-  const contactMethods = getJobContactMethods(job)
-
-  useEffect(() => {
-    setShowContacts(false)
-  }, [job.id])
+  const isOwnJob = user && job.user_id === user.id
 
   return (
     <div>
@@ -329,42 +162,70 @@ function JobDetail({ job }) {
         </p>
       )}
 
-      {contactMethods.length > 0 ? (
-        <div>
-          <button
-            onClick={() => setShowContacts(current => !current)}
-            style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', padding:'13px 16px', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer' }}
-          >
-            <span>📬 Contacto</span>
-            <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : 'Ver opciones'}</span>
-          </button>
-          {showContacts && (
-            <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:10, marginTop:10, display:'flex', flexDirection:'column', gap:8 }}>
-              {contactMethods.map(method => (
-                <a
-                  key={method.id}
-                  href={method.href}
-                  target={method.external ? '_blank' : undefined}
-                  rel={method.external ? 'noreferrer' : undefined}
-                  style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
-                >
-                  <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                    <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
-                    <div style={{ minWidth:0 }}>
-                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
-                      <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
-                    </div>
-                  </div>
-                  <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
-                    {method.external ? 'Abrir ↗' : 'Abrir →'}
-                  </span>
-                </a>
-              ))}
-            </div>
-          )}
+      {!isOwnJob && user ? (
+        <button onClick={() => navigate(`/mensajes?jobId=${job.id}`)}
+          style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:'#F0FDF4', color:'#16A34A', border:'1.5px solid #86EFAC', borderRadius:13, padding:'13px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+          💬 Enviar mensaje
+        </button>
+      ) : !user ? (
+        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:13, padding:'13px 16px', textAlign:'center' }}>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.primaryDark, margin:'0 0 8px' }}>Inicia sesión para contactar</p>
+          <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:10, padding:'8px 16px', display:'inline-block' }}>Entrar →</a>
         </div>
-      ) : (
-        <p style={{ fontFamily:PP, fontSize:12, color:C.light, textAlign:'center', padding:'10px 0' }}>Sin contacto disponible</p>
+      ) : null}
+    </div>
+  )
+}
+
+/* ── Portal card ─────────────────────────────────────────── */
+function PortalCard({ portal, defaultEmoji = '🏠', onClick }) {
+  return (
+    <button onClick={onClick} style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14, width:'100%', textAlign:'left', cursor:'pointer' }}>
+      <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
+        {portal.photo_url
+          ? <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          : <span>{defaultEmoji}</span>}
+      </div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
+          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{portal.name}</h3>
+        </div>
+        {portal.city && <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>📍 {portal.city}</p>}
+        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{portal.description}</p>
+      </div>
+      <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, flexShrink:0 }}>Ver →</span>
+    </button>
+  )
+}
+
+/* ── Portal detail (inside Sheet) ───────────────────────── */
+function PortalDetail({ portal, defaultEmoji = '🏠' }) {
+  return (
+    <div>
+      {portal.photo_url && (
+        <div style={{ width:'100%', height:160, borderRadius:16, overflow:'hidden', marginBottom:16, background:C.primaryLight }}>
+          <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        </div>
+      )}
+      <div style={{ display:'flex', gap:14, alignItems:'flex-start', marginBottom:16 }}>
+        {!portal.photo_url && (
+          <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:18, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>{defaultEmoji}</div>
+        )}
+        <div style={{ flex:1, minWidth:0 }}>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px', lineHeight:1.2 }}>{portal.name}</h2>
+          {portal.city && <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>📍 {portal.city}</p>}
+        </div>
+      </div>
+      {portal.description && (
+        <div style={{ background:C.bg, borderRadius:14, padding:'14px 16px', marginBottom:16 }}>
+          <p style={{ fontFamily:PP, fontSize:13, color:C.mid, margin:0, lineHeight:1.7 }}>{portal.description}</p>
+        </div>
+      )}
+      {portal.website && (
+        <a href={portal.website} target="_blank" rel="noreferrer"
+          style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+          🌐 Visitar sitio web ↗
+        </a>
       )}
     </div>
   )
@@ -376,12 +237,14 @@ export default function Tablon() {
   const { isLoggedIn, user } = useAuth()
   const [ads, setAds] = useState([])
   const [jobs, setJobs] = useState([])
+  const [housingPortals, setHousingPortals] = useState([])
+  const [employmentPortals, setEmploymentPortals] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [revealed, setRevealed] = useState({})
   const [selectedAd, setSelectedAd] = useState(null)
   const [selectedJob, setSelectedJob] = useState(null)
+  const [selectedPortal, setSelectedPortal] = useState(null)
   const deferredSearch = useDeferredValue(search.trim().toLowerCase())
 
   const cat     = searchParams.get('cat') || ''
@@ -430,28 +293,6 @@ export default function Tablon() {
   }
   const activeCount = [cat,type,canton,plz,privacy].filter(Boolean).length
 
-  useEffect(() => {
-    if (!user?.id) {
-      setRevealed({})
-      return
-    }
-    const cached = TABLON_CACHE.revealsByUser.get(user.id)
-    const cachedTs = TABLON_CACHE.revealsTsByUser.get(user.id) || 0
-
-    if (cached) {
-      setRevealed(cached)
-      if (Date.now() - cachedTs <= TABLON_CACHE_TTL) return
-    }
-
-    supabase.from('contact_reveals').select('ad_id').eq('user_id', user.id)
-      .then(({ data }) => {
-        if (!data?.length) return
-        const nextRevealed = data.reduce((acc, r) => ({ ...acc, [r.ad_id]: true }), {})
-        TABLON_CACHE.revealsByUser.set(user.id, nextRevealed)
-        TABLON_CACHE.revealsTsByUser.set(user.id, Date.now())
-        setRevealed(nextRevealed)
-      }).catch(() => {})
-  }, [user?.id])
 
   useEffect(() => {
     setLoading(true)
@@ -508,13 +349,20 @@ export default function Tablon() {
       }
     }
 
-    if (isEmpleos) loadJobs()
-    else loadAds()
+    loadJobs()
+    loadAds()
 
     return () => {
       cancelled = true
     }
-  }, [isEmpleos, isLoggedIn])
+  }, [isLoggedIn])
+
+  useEffect(() => {
+    supabase.from('providers').select('id,name,description,website,photo_url,city,canton').eq('category','vivienda').eq('active',true).order('featured',{ascending:false}).order('name',{ascending:true})
+      .then(({ data }) => { if (data?.length) setHousingPortals(data) })
+    supabase.from('providers').select('id,name,description,website,photo_url,city,canton').eq('category','empleo').eq('active',true).order('featured',{ascending:false}).order('name',{ascending:true})
+      .then(({ data }) => { if (data?.length) setEmploymentPortals(data) })
+  }, [])
 
   const filteredAds = useMemo(() => ads.filter(a =>
     (isLoggedIn || a.privacy === 'public') &&
@@ -526,10 +374,26 @@ export default function Tablon() {
     (!deferredSearch || a.title.toLowerCase().includes(deferredSearch) || a.desc?.toLowerCase().includes(deferredSearch))
   ), [ads, canton, cat, deferredSearch, isLoggedIn, plz, privacy, type])
 
-  const filteredJobs = useMemo(() => jobs.filter(j =>
-    (!jobType || j.type === jobType) &&
-    (!deferredSearch || j.title.toLowerCase().includes(deferredSearch) || j.company?.toLowerCase().includes(deferredSearch))
-  ), [deferredSearch, jobType, jobs])
+  const communityJobs = useMemo(() => {
+    const fromJobs = jobs.filter(j =>
+      (!jobType || j.type === jobType) &&
+      (!deferredSearch || j.title?.toLowerCase().includes(deferredSearch) || j.company?.toLowerCase().includes(deferredSearch))
+    )
+    const fromAds = ads.filter(a =>
+      a.cat === 'empleo' &&
+      (isLoggedIn || a.privacy === 'public') &&
+      (!jobType || a.type === jobType) &&
+      (!deferredSearch || a.title?.toLowerCase().includes(deferredSearch) || a.desc?.toLowerCase().includes(deferredSearch))
+    ).map(a => ({
+      id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
+      canton: a.canton, type: a.type, salary: a.salary, emoji: a.emoji || '💼',
+      logo_url: a.img_url || '', lang: a.lang, languages: a.languages,
+      desc: a.desc, user_id: a.user_id,
+    }))
+    return [...fromJobs, ...fromAds]
+  }, [ads, deferredSearch, isLoggedIn, jobType, jobs])
+
+  const filteredJobs = communityJobs
 
   useEffect(() => {
     if (loading) return
@@ -554,21 +418,6 @@ export default function Tablon() {
     if (ad) setSelectedAd(ad)
   }, [ads, jobs, isEmpleos, loading, openAdId, openJobId])
 
-  const handleReveal = async (adId) => {
-    if (!isLoggedIn) { window.location.href = '/auth'; return }
-    try {
-      await supabase.from('contact_reveals').upsert({ user_id: user.id, ad_id: adId }, { onConflict: 'user_id,ad_id' })
-    } catch {}
-    setRevealed(r => {
-      const nextRevealed = { ...r, [adId]: true }
-      if (user?.id) {
-        TABLON_CACHE.revealsByUser.set(user.id, nextRevealed)
-        TABLON_CACHE.revealsTsByUser.set(user.id, Date.now())
-      }
-      return nextRevealed
-    })
-    toast.success('Contacto desbloqueado')
-  }
 
   const orderedCats = [...AD_CATS].sort((a, b) => {
     const priority = { vivienda:0, empleo:1, servicios:2 }
@@ -588,7 +437,7 @@ export default function Tablon() {
             {isEmpleos ? '💼 Empleos para latinos' : '📌 Tablón de anuncios'}
           </h1>
           <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>
-            {loading ? 'Cargando...' : isEmpleos ? `${filteredJobs.length} ofertas encontradas` : `${filteredAds.length} anuncios encontrados`}
+            {loading ? 'Cargando...' : isEmpleos ? `${filteredJobs.length} ofertas encontradas` : `${filteredAds.length + (!cat ? filteredJobs.length : 0)} anuncios encontrados`}
             {canton && ` · 📍 Cantón ${canton}`}
           </p>
         </div>
@@ -646,7 +495,7 @@ export default function Tablon() {
               Estás viendo contenido público
             </p>
             <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.6 }}>
-              Crea una cuenta gratuita para ver anuncios privados, desbloquear contactos y publicar en la comunidad.
+              Crea una cuenta gratuita para ver anuncios privados, escribir por mensaje y publicar en la comunidad.
             </p>
           </div>
           <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'11px 16px', whiteSpace:'nowrap' }}>
@@ -661,25 +510,57 @@ export default function Tablon() {
           {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:isEmpleos?90:160, borderRadius:16 }}/>)}
         </div>
       ) : isEmpleos ? (
-        filteredJobs.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'60px 20px' }}>
-            <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
-            <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin ofertas ahora</h3>
-            <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>Vuelve pronto — se actualizan frecuentemente</p>
-          </div>
-        ) : (
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {filteredJobs.map(j => (
-              <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} />
-            ))}
-            <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
-              <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Tienes una oferta de trabajo?</h3>
-              <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>Publica gratis y llega a miles de latinos en Suiza.</p>
-              <Link to="/publicar-empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 22px', borderRadius:13, display:'inline-flex' }}>Publicar empleo gratis</Link>
+        <>
+          {employmentPortals.length > 0 && !deferredSearch && (
+            <div style={{ marginBottom:16 }}>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>PORTALES Y AGENCIAS DE EMPLEO</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {employmentPortals.map(p => (
+                  <PortalCard key={p.id} portal={p} defaultEmoji="💼" onClick={() => setSelectedPortal({ ...p, defaultEmoji:'💼' })} />
+                ))}
+              </div>
+            </div>
+          )}
+          {filteredJobs.length === 0 ? (
+            <div style={{ textAlign:'center', padding:'60px 20px' }}>
+              <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
+              <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin ofertas ahora</h3>
+              <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>Vuelve pronto — se actualizan frecuentemente</p>
+            </div>
+          ) : (
+            <>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>EMPLEOS DE LA COMUNIDAD</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {filteredJobs.map(j => (
+                  <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} />
+                ))}
+                <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
+                  <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Tienes una oferta de trabajo?</h3>
+                  <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>Publica gratis y llega a miles de latinos en Suiza.</p>
+                  <Link to="/publicar-empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 22px', borderRadius:13, display:'inline-flex' }}>Publicar empleo gratis</Link>
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      ) : cat === 'vivienda' && housingPortals.length > 0 && !deferredSearch ? (
+        <>
+          <div style={{ marginBottom:16 }}>
+            <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>PORTALES Y AGENCIAS DE VIVIENDA</p>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {housingPortals.map(p => (
+                <PortalCard key={p.id} portal={p} defaultEmoji="🏠" onClick={() => setSelectedPortal({ ...p, defaultEmoji:'🏠' })} />
+              ))}
             </div>
           </div>
-        )
-      ) : filteredAds.length === 0 ? (
+          {filteredAds.length > 0 && (
+            <>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>ANUNCIOS DE LA COMUNIDAD</p>
+              <div>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} />)}</div>
+            </>
+          )}
+        </>
+      ) : filteredAds.length === 0 && (!cat ? filteredJobs.length === 0 : true) ? (
         <div style={{ textAlign:'center', padding:'60px 20px' }}>
           <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
           <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin resultados</h3>
@@ -690,6 +571,9 @@ export default function Tablon() {
         <div>
           {filteredAds.map(ad => (
             <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} />
+          ))}
+          {!cat && filteredJobs.map(j => (
+            <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} />
           ))}
         </div>
       )}
@@ -736,16 +620,19 @@ export default function Tablon() {
         {selectedAd && (
           <AdDetail
             ad={selectedAd}
-            user={isLoggedIn}
-            revealed={!!revealed[selectedAd.id]}
-            onReveal={() => handleReveal(selectedAd.id)}
+            user={user}
           />
         )}
       </Sheet>
 
       {/* Job detail sheet */}
       <Sheet show={!!selectedJob} onClose={closeJobDetails} title={selectedJob?.title || ''}>
-        {selectedJob && <JobDetail job={selectedJob} />}
+        {selectedJob && <JobDetail job={selectedJob} user={user} />}
+      </Sheet>
+
+      {/* Portal detail sheet */}
+      <Sheet show={!!selectedPortal} onClose={() => setSelectedPortal(null)} title={selectedPortal?.name || ''}>
+        {selectedPortal && <PortalDetail portal={selectedPortal} defaultEmoji={selectedPortal.defaultEmoji || '🏠'} />}
       </Sheet>
     </div>
   )

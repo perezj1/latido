@@ -17,7 +17,7 @@ export const CANTONS = [
 
 // ── AD CATEGORIES ──────────────────────────────────────────────
 export const AD_CATS = [
-  { id:'vivienda',   emoji:'🏠', label:'Vivienda',   sub:['Se busca piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
+  { id:'vivienda',   emoji:'🏠', label:'Vivienda',   sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
   { id:'hogar',      emoji:'🧹', label:'Hogar',       sub:['Limpieza','Cocina','Reparaciones','Mudanza'] },
   { id:'cuidados',   emoji:'👶', label:'Cuidados',    sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
   { id:'documentos', emoji:'📋', label:'Docs & Admin',sub:['Cartas','Trámites','Traducción','Asesoría'] },

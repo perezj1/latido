@@ -12,7 +12,7 @@ const STEPS = [
   { title:'¿Qué tipo de trabajo es?',     sub:'Elige el sector de la oferta' },
   { title:'Título y tipo de contrato',    sub:'¿Cómo se llama el puesto y qué jornada ofreces?' },
   { title:'Ubicación, salario y detalle', sub:'Dónde es, cuánto paga y qué buscas en un candidato' },
-  { title:'Contacto y publicación',       sub:'Cómo deben aplicar — último paso' },
+  { title:'Publicación',                  sub:'Último paso — revisa la oferta y recibirás candidatos por mensaje' },
 ]
 
 const JOB_SECTORS = [
@@ -56,8 +56,7 @@ export default function PublicarEmpleo() {
   const [done, setDone] = useState(false)
   const [form, setForm] = useState({
     sector:'', title:'', company:'', jobType:'',
-    city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'',
-    contactPhone:'', contactEmail:'', contactLink:'', logoUrl:'',
+    city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', logoUrl:'',
   })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
   const toggleLang = lang => setForm(f => ({
@@ -98,10 +97,10 @@ export default function PublicarEmpleo() {
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>💼</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>¡Empleo publicado!</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
-        Tu oferta ya está visible para miles de latinos en Suiza.
+        Tu oferta ya está visible para miles de latinos en Suiza. Los candidatos te escribirán por mensaje dentro de Latido.
       </p>
       <Btn onClick={() => navigate('/tablon?cat=empleo')}>Ver empleos →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ sector:'', title:'', company:'', jobType:'', city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', contactPhone:'', contactEmail:'', contactLink:'', logoUrl:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({ sector:'', title:'', company:'', jobType:'', city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', logoUrl:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otra oferta
       </button>
     </div>
@@ -109,9 +108,6 @@ export default function PublicarEmpleo() {
 
   const handleSubmit = async () => {
     if (!form.title || !form.canton) { toast.error('Completa el título y el cantón'); return }
-    if (!form.contactPhone && !form.contactEmail && !form.contactLink) {
-      toast.error('Añade al menos un método de contacto'); return
-    }
     setLoading(true)
     try {
       const finalSalary = getFormattedSalary() || null
@@ -134,10 +130,11 @@ export default function PublicarEmpleo() {
         category: form.sector || null,
         emoji: selectedSector?.emoji || '💼',
         desc: form.desc.trim() || null,
-        contact: form.contactEmail.trim() || form.contactLink.trim() || null,
-        contact_phone: form.contactPhone.trim() || null,
-        contact_email: form.contactEmail.trim() || null,
-        contact_link: form.contactLink.trim() || null,
+        contact_via_app: true,
+        contact: null,
+        contact_phone: null,
+        contact_email: null,
+        contact_link: null,
         logo_url: form.logoUrl.trim() || null,
         active: true,
       })
@@ -280,15 +277,15 @@ export default function PublicarEmpleo() {
         </>
       )}
 
-      {/* Step 3 — Contact + disclaimer */}
+      {/* Step 3 — Publication + disclaimer */}
       {step === 3 && (
         <>
-          <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.7 }}>
-            Añade al menos un método de contacto para que los candidatos puedan aplicar.
-          </p>
-          <Input label="WhatsApp" placeholder="+41 79 123 45 67" value={form.contactPhone} onChange={e=>s('contactPhone',e.target.value)} />
-          <Input label="Email de contacto" placeholder="trabajo@miempresa.ch" value={form.contactEmail} onChange={e=>s('contactEmail',e.target.value)} />
-          <Input label="Link de aplicación" placeholder="Ej: linkedin.com/jobs/... o formulario propio" value={form.contactLink} onChange={e=>s('contactLink',e.target.value)} />
+          <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:14, padding:'14px 16px', marginBottom:14 }}>
+            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 6px' }}>💬 Candidaturas dentro de Latido</p>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.6, margin:0 }}>
+              Los candidatos te contactarán por mensajes dentro de la plataforma. No mostramos WhatsApp, email ni links externos en la oferta.
+            </p>
+          </div>
 
           {form.title && (
             <div style={{ background:C.bg, borderRadius:14, padding:'14px 16px', marginTop:6, marginBottom:14 }}>
