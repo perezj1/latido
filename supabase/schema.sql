@@ -16,6 +16,13 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE OR REPLACE VIEW public.profile_names AS
+SELECT id, name
+FROM public.profiles
+WHERE COALESCE(name, '') <> '';
+
+GRANT SELECT ON public.profile_names TO anon, authenticated;
+
 -- ── 2. ADS (tablón de anuncios) ────────────────────────────────
 CREATE TABLE IF NOT EXISTS ads (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

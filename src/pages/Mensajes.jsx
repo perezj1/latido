@@ -21,12 +21,62 @@ function convTitle(conv) {
   return conv.title || 'Anuncio'
 }
 
+function cleanParticipantName(value) {
+  const name = String(value || '').trim()
+  if (!name) return ''
+
+  const genericNames = new Set(['propietario', 'usuario', 'user', 'owner'])
+  return genericNames.has(name.toLowerCase()) ? '' : name
+}
+
+function pickParticipantName(...values) {
+  for (const value of values) {
+    const name = cleanParticipantName(value)
+    if (name) return name
+  }
+  return ''
+}
+
+function getConversationParticipantName(value, conv) {
+  const name = cleanParticipantName(value)
+  const title = cleanParticipantName(conv?.title)
+  if (!name) return ''
+  if (title && name.toLowerCase() === title.toLowerCase()) return ''
+  return name
+}
+
+async function fetchProfileNamesByIds(ids) {
+  const uniqueIds = [...new Set((ids || []).filter(Boolean))]
+  if (!uniqueIds.length) return new Map()
+
+  let response = await supabase
+    .from('profile_names')
+    .select('id, name')
+    .in('id', uniqueIds)
+
+  if (response.error) {
+    response = await supabase
+      .from('profiles')
+      .select('id, name')
+      .in('id', uniqueIds)
+  }
+
+  const names = new Map()
+  response.data?.forEach(profile => {
+    const resolvedName = cleanParticipantName(profile.name)
+    if (resolvedName) names.set(profile.id, resolvedName)
+  })
+
+  return names
+}
+
 export default function Mensajes() {
   const { user, isLoggedIn, displayName } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const adId  = searchParams.get('adId')
   const jobId = searchParams.get('jobId')
+  const recipientName = cleanParticipantName(searchParams.get('recipientName'))
 
   const [conversations, setConversations] = useState([])
   const [selectedConv, setSelectedConv] = useState(null)
@@ -39,11 +89,15 @@ export default function Mensajes() {
   const channelRef = useRef(null)
   const inputRef = useRef(null)
   const creatingRef = useRef(false)
+  const participantNameCacheRef = useRef(new Map())
+  const selfNameRef = useRef(pickParticipantName(displayName, user?.email?.split('@')[0]) || 'Usuario')
+  const selfNameLoadedRef = useRef(false)
+  const [selfName, setSelfName] = useState(selfNameRef.current)
 
   useEffect(() => {
     if (!isLoggedIn) { navigate('/auth'); return }
     loadConversations()
-  }, [isLoggedIn])
+  }, [adId, isLoggedIn, jobId, recipientName, user?.id])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -53,8 +107,80 @@ export default function Mensajes() {
     return () => { if (channelRef.current) supabase.removeChannel(channelRef.current) }
   }, [])
 
+  async function resolveOwnDisplayName() {
+    if (selfNameLoadedRef.current) return selfNameRef.current
+
+    const fallbackName = pickParticipantName(displayName, user?.email?.split('@')[0]) || 'Usuario'
+    let resolvedName = fallbackName
+
+    if (user?.id) {
+      const ownNames = await fetchProfileNamesByIds([user.id])
+      resolvedName = pickParticipantName(ownNames.get(user.id), fallbackName) || 'Usuario'
+    }
+
+    selfNameLoadedRef.current = true
+    selfNameRef.current = resolvedName
+    setSelfName(prev => prev === resolvedName ? prev : resolvedName)
+    return resolvedName
+  }
+
+  async function hydrateConversationNames(convList, ownName = selfName) {
+    if (!convList?.length) return convList || []
+
+    const targetId = adId || jobId
+    const participantIdsToFetch = [...new Set(
+      convList.flatMap(conv => ([
+        conv.sender_id && conv.sender_id !== user.id && !participantNameCacheRef.current.has(conv.sender_id) ? conv.sender_id : null,
+        conv.owner_id && conv.owner_id !== user.id && !participantNameCacheRef.current.has(conv.owner_id) ? conv.owner_id : null,
+      ])).filter(Boolean)
+    )]
+    const ownerItemIdsToFetch = [...new Set(
+      convList
+        .filter(conv => !cleanParticipantName(conv.owner_name) && conv.ad_id && conv.owner_id !== user.id)
+        .map(conv => conv.ad_id)
+    )]
+
+    const adNameById = new Map()
+
+    if (participantIdsToFetch.length) {
+      const participantNames = await fetchProfileNamesByIds(participantIdsToFetch)
+      participantNames.forEach((name, id) => {
+        if (name) participantNameCacheRef.current.set(id, name)
+      })
+    }
+
+    if (ownerItemIdsToFetch.length) {
+      const { data: adsData } = await supabase
+        .from('ads')
+        .select('id, user_name')
+        .in('id', ownerItemIdsToFetch)
+
+      adsData?.forEach(ad => {
+        const resolvedName = cleanParticipantName(ad.user_name)
+        if (resolvedName) adNameById.set(ad.id, resolvedName)
+      })
+    }
+
+    return convList.map(conv => ({
+      ...conv,
+      sender_name: pickParticipantName(
+        conv.sender_id === user.id ? ownName : participantNameCacheRef.current.get(conv.sender_id),
+        getConversationParticipantName(conv.sender_name, conv)
+      )
+        || 'Usuario',
+      owner_name: pickParticipantName(
+        conv.owner_id === user.id ? ownName : participantNameCacheRef.current.get(conv.owner_id),
+        recipientName && String(conv.ad_id) === String(targetId) ? getConversationParticipantName(recipientName, conv) : null,
+        getConversationParticipantName(conv.owner_name, conv),
+        adNameById.get(conv.ad_id),
+      )
+        || 'Usuario',
+    }))
+  }
+
   async function loadConversations() {
     setLoading(true)
+    const ownName = await resolveOwnDisplayName()
 
     let res = await supabase
       .from('conversations')
@@ -80,7 +206,7 @@ export default function Mensajes() {
         .order('created_at', { ascending: false })
     }
 
-    const data = res.data || []
+    const data = await hydrateConversationNames(res.data || [], ownName)
     setConversations(data)
 
     const targetId = adId || jobId
@@ -106,29 +232,29 @@ export default function Mensajes() {
     if (creatingRef.current) return
     creatingRef.current = true
     let item = null
-    let insertData = { sender_id: user.id, sender_name: displayName || 'Usuario' }
+    const ownName = await resolveOwnDisplayName()
+    let insertData = { sender_id: user.id, sender_name: ownName }
 
     if (jId) {
       const { data } = await supabase.from('jobs').select('id, title, company, user_id').eq('id', jId).maybeSingle()
       if (!data) { toast.error('Oferta no encontrada'); setLoading(false); creatingRef.current = false; return }
       if (data.user_id === user.id) { toast.error('Es tu propia oferta'); setLoading(false); creatingRef.current = false; return }
+      const ownerNames = await fetchProfileNamesByIds([data.user_id])
       item = data
       insertData.ad_id = jId
       insertData.owner_id = data.user_id
       insertData.title = data.company || data.title
-      // Try to get owner's display name from profiles
-      const { data: prof } = await supabase.from('profiles').select('name').eq('id', data.user_id).maybeSingle()
-      insertData.owner_name = prof?.name || 'Propietario'
+      insertData.owner_name = pickParticipantName(ownerNames.get(data.user_id), recipientName) || 'Usuario'
     } else if (aId) {
       const { data } = await supabase.from('ads').select('id, title, user_id, user_name').eq('id', aId).maybeSingle()
       if (!data) { toast.error('Anuncio no encontrado'); setLoading(false); creatingRef.current = false; return }
       if (data.user_id === user.id) { toast.error('Es tu propio anuncio'); setLoading(false); creatingRef.current = false; return }
+      const ownerNames = await fetchProfileNamesByIds([data.user_id])
       item = data
       insertData.ad_id = aId
       insertData.owner_id = data.user_id
       insertData.title = data.title
-      const { data: prof2 } = await supabase.from('profiles').select('name').eq('id', data.user_id).maybeSingle()
-      insertData.owner_name = prof2?.name || data.user_name || 'Propietario'
+      insertData.owner_name = pickParticipantName(ownerNames.get(data.user_id), recipientName, data.user_name) || 'Usuario'
     }
 
     if (!item) { creatingRef.current = false; return }
@@ -137,7 +263,7 @@ export default function Mensajes() {
     let convRes = await supabase
       .from('conversations')
       .insert(insertData)
-      .select('id, ad_id, sender_id, owner_id, sender_name, title, created_at')
+      .select('id, ad_id, sender_id, owner_id, sender_name, owner_name, title, created_at')
       .single()
 
     if (convRes.error && convRes.error.message?.includes('column')) {
@@ -152,10 +278,17 @@ export default function Mensajes() {
     const { data: conv, error } = convRes
 
     if (error) { toast.error('No se pudo iniciar la conversación: ' + error.message); setLoading(false); creatingRef.current = false; return }
-    setConversations(prev => [conv, ...prev])
-    setSelectedConv(conv)
+    const nextConv = (await hydrateConversationNames([{
+      ...conv,
+      sender_name: conv?.sender_name || insertData.sender_name,
+      owner_name: conv?.owner_name || insertData.owner_name,
+      title: conv?.title || insertData.title,
+    }], ownName))[0]
+
+    setConversations(prev => [nextConv, ...prev])
+    setSelectedConv(nextConv)
     setShowList(false)
-    loadMessages(conv)
+    loadMessages(nextConv)
     setLoading(false)
     creatingRef.current = false
   }
@@ -231,8 +364,8 @@ export default function Mensajes() {
 
   function otherName(conv) {
     if (!conv) return 'Usuario'
-    if (conv.sender_id === user.id) return conv.owner_name || 'Propietario'
-    return conv.sender_name || 'Usuario'
+    if (conv.sender_id === user.id) return cleanParticipantName(conv.owner_name) || 'Usuario'
+    return cleanParticipantName(conv.sender_name) || 'Usuario'
   }
 
   if (!isLoggedIn) return null

@@ -6,6 +6,13 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+CREATE OR REPLACE VIEW public.profile_names AS
+SELECT id, name
+FROM public.profiles
+WHERE COALESCE(name, '') <> '';
+
+GRANT SELECT ON public.profile_names TO anon, authenticated;
+
 -- ================================================================
 -- OWNERSHIP PATCH FOR COMMUNITIES / PROVIDERS
 -- ================================================================

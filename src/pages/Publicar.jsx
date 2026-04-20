@@ -197,6 +197,11 @@ export default function Publicar() {
       const priceAmount = form.priceValue
         ? Number(String(form.priceValue).replace(',', '.'))
         : null
+      const { data: ownProfile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', user?.id)
+        .maybeSingle()
 
       const { error } = await supabase.from('ads').insert({
         cat: form.cat,
@@ -216,7 +221,7 @@ export default function Publicar() {
         contact_email: null,
         user_id: user?.id,
         active: true,
-        user_name: user?.user_metadata?.name || 'Usuario',
+        user_name: ownProfile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
       })
 
       if (error) throw error

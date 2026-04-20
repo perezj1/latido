@@ -58,6 +58,7 @@ function AdDetail({ ad, user }) {
   const cat = AD_CATS.find(c => c.id === ad.cat)
   const cc  = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
   const isOwnAd = user && ad.user_id === user.id
+  const recipientName = encodeURIComponent((ad.user_name || ad.user || '').trim())
 
   return (
     <div>
@@ -86,7 +87,7 @@ function AdDetail({ ad, user }) {
       </div>
 
       {!isOwnAd && user ? (
-        <button onClick={() => navigate(`/mensajes?adId=${ad.id}`)}
+        <button onClick={() => navigate(`/mensajes?adId=${ad.id}${recipientName ? `&recipientName=${recipientName}` : ''}`)}
           style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:'#F0FDF4', color:'#16A34A', border:'1.5px solid #86EFAC', borderRadius:13, padding:'13px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
           💬 Enviar mensaje
         </button>
