@@ -266,16 +266,18 @@ export default function Tablon() {
   const [selectedPortal, setSelectedPortal] = useState(null)
   const deferredSearch = useDeferredValue(search.trim().toLowerCase())
 
-  const cat     = searchParams.get('cat') || ''
-  const type    = searchParams.get('type') || ''
-  const canton  = searchParams.get('canton') || ''
-  const plz     = searchParams.get('plz') || ''
-  const privacy = searchParams.get('privacy') || ''
-  const jobType = searchParams.get('jobType') || ''
-  const openAdId = searchParams.get('openAd') || ''
+  const cat      = searchParams.get('cat') || ''
+  const type     = searchParams.get('type') || ''
+  const canton   = searchParams.get('canton') || ''
+  const plz      = searchParams.get('plz') || ''
+  const privacy  = searchParams.get('privacy') || ''
+  const jobType  = searchParams.get('jobType') || ''
+  const maxPrice = searchParams.get('maxPrice') || ''
+  const openAdId  = searchParams.get('openAd') || ''
   const openJobId = searchParams.get('openJob') || ''
 
-  const isEmpleos = cat === 'empleo'
+  const isEmpleos  = cat === 'empleo'
+  const isMercado  = cat === 'venta'
 
   const setFilter = (k, v) => {
     const p = new URLSearchParams(searchParams)
@@ -312,7 +314,7 @@ export default function Tablon() {
   }
   const activeCount = isEmpleos
     ? [jobType, canton, plz].filter(Boolean).length
-    : [type, canton, plz, privacy].filter(Boolean).length
+    : [type, canton, plz, privacy, maxPrice].filter(Boolean).length
 
 
   useEffect(() => {
@@ -394,15 +396,20 @@ export default function Tablon() {
       .then(({ data }) => { if (data?.length) setEmploymentPortals(data) })
   }, [])
 
-  const filteredAds = useMemo(() => ads.filter(a =>
-    (isLoggedIn || a.privacy === 'public') &&
-    (!cat || a.cat === cat) &&
-    (!type || a.type === type) &&
-    (!canton || a.canton === canton) &&
-    (!plz || a.plz?.startsWith(plz)) &&
-    (!privacy || a.privacy === privacy) &&
-    (!deferredSearch || a.title.toLowerCase().includes(deferredSearch) || a.desc?.toLowerCase().includes(deferredSearch))
-  ), [ads, canton, cat, deferredSearch, isLoggedIn, plz, privacy, type])
+  const filteredAds = useMemo(() => ads.filter(a => {
+    if (!(isLoggedIn || a.privacy === 'public')) return false
+    if (cat && a.cat !== cat) return false
+    if (type && a.type !== type) return false
+    if (canton && a.canton !== canton) return false
+    if (plz && !a.plz?.startsWith(plz)) return false
+    if (privacy && a.privacy !== privacy) return false
+    if (maxPrice && a.price) {
+      const num = parseFloat(a.price.replace(/[^0-9.]/g, ''))
+      if (!isNaN(num) && num > parseFloat(maxPrice)) return false
+    }
+    if (deferredSearch && !a.title.toLowerCase().includes(deferredSearch) && !a.desc?.toLowerCase().includes(deferredSearch)) return false
+    return true
+  }), [ads, canton, cat, deferredSearch, isLoggedIn, maxPrice, plz, privacy, type])
 
   const communityJobs = useMemo(() => {
     const fromJobs = jobs.filter(j =>
@@ -454,7 +461,7 @@ export default function Tablon() {
 
 
   const orderedCats = [...AD_CATS].sort((a, b) => {
-    const priority = { vivienda:0, empleo:1, servicios:2 }
+    const priority = { vivienda:0, empleo:1, venta:2, servicios:3 }
     return (priority[a.id] ?? 99) - (priority[b.id] ?? 99)
   })
 
@@ -508,11 +515,12 @@ export default function Tablon() {
       {/* Active filter strip */}
       {activeCount > 0 && (
         <div style={{ background:C.primaryLight, borderRadius:10, padding:'6px 12px', display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:14 }}>
-          {canton  && <Tag bg={C.primaryMid} color={C.primaryDark}>📍 Cantón {canton}</Tag>}
-          {plz     && <Tag bg={C.primaryMid} color={C.primaryDark}>📮 PLZ {plz}</Tag>}
-          {jobType && <Tag bg={C.primaryMid} color={C.primaryDark}>💼 {jobType === 'Full-time' ? 'Fijo' : 'Temporal'}</Tag>}
-          {type    && <Tag bg={C.primaryMid} color={C.primaryDark}>{AD_TYPES.find(t=>t.id===type)?.emoji} {AD_TYPES.find(t=>t.id===type)?.label}</Tag>}
-          {privacy && <Tag bg={C.primaryMid} color={C.primaryDark}>{privacy==='public'?'🌐 Público':'🔒 Privado'}</Tag>}
+          {canton   && <Tag bg={C.primaryMid} color={C.primaryDark}>📍 Cantón {canton}</Tag>}
+          {plz      && <Tag bg={C.primaryMid} color={C.primaryDark}>📮 PLZ {plz}</Tag>}
+          {jobType  && <Tag bg={C.primaryMid} color={C.primaryDark}>💼 {jobType === 'Full-time' ? 'Fijo' : 'Temporal'}</Tag>}
+          {type     && <Tag bg={C.primaryMid} color={C.primaryDark}>{AD_TYPES.find(t=>t.id===type)?.emoji} {AD_TYPES.find(t=>t.id===type)?.label}</Tag>}
+          {maxPrice && <Tag bg={C.primaryMid} color={C.primaryDark}>💰 Máx. CHF {maxPrice}</Tag>}
+          {privacy  && <Tag bg={C.primaryMid} color={C.primaryDark}>{privacy==='public'?'🌐 Público':'🔒 Privado'}</Tag>}
           <button onClick={clearFilters} style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.primary, background:'none', border:'none', cursor:'pointer', marginLeft:'auto' }}>✕ Limpiar</button>
         </div>
       )}
@@ -633,6 +641,35 @@ export default function Tablon() {
               })}
             </div>
           </div>
+        ) : isMercado ? (
+          <>
+            <div style={{ marginBottom:18 }}>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>QUÉ BUSCAS</p>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {[{ id:'', label:'Todo' }, { id:'vende', label:'🏷️ Se vende' }, { id:'busca', label:'🔍 Se busca' }, { id:'regala', label:'🎁 Se regala' }].map(o => {
+                  const active = type === o.id
+                  return (
+                    <button key={o.id} onClick={()=>setFilter('type', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                      {o.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div style={{ marginBottom:18 }}>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>PRECIO MÁXIMO (CHF)</p>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                {[{ id:'', label:'Cualquier precio' }, { id:'50', label:'Hasta 50' }, { id:'150', label:'Hasta 150' }, { id:'500', label:'Hasta 500' }, { id:'1000', label:'Hasta 1000' }].map(o => {
+                  const active = maxPrice === o.id
+                  return (
+                    <button key={o.id} onClick={()=>setFilter('maxPrice', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                      {o.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </>
         ) : (
           <div style={{ marginBottom:18 }}>
             <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE ANUNCIO</p>

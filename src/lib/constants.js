@@ -17,12 +17,12 @@ export const CANTONS = [
 
 // ── AD CATEGORIES ──────────────────────────────────────────────
 export const AD_CATS = [
-  { id:'vivienda',   emoji:'🏠', label:'Vivienda',   sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
-  { id:'hogar',      emoji:'🧹', label:'Hogar',       sub:['Limpieza','Cocina','Reparaciones','Mudanza'] },
-  { id:'cuidados',   emoji:'👶', label:'Cuidados',    sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
-  { id:'documentos', emoji:'📋', label:'Docs & Admin',sub:['Cartas','Trámites','Traducción','Asesoría'] },
-  { id:'venta',      emoji:'🛒', label:'Venta',       sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
-  { id:'servicios',  emoji:'🔧', label:'Servicios',   sub:['Clases','Peluquería','Mecánico','Informática','Otro'] },
+  { id:'vivienda',   emoji:'🏠', label:'Vivienda',        sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
+  { id:'hogar',      emoji:'🧹', label:'Hogar',            sub:['Limpieza','Cocina','Reparaciones','Mudanza'] },
+  { id:'venta',      emoji:'🛍️', label:'Mercado',           sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
+  { id:'cuidados',   emoji:'👶', label:'Cuidados',         sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
+  { id:'documentos', emoji:'📋', label:'Legal',     sub:['Cartas','Trámites','Traducción','Asesoría'] },
+  { id:'servicios',  emoji:'🔧', label:'Servicios',        sub:['Clases','Peluquería','Mecánico','Informática','Otro'] },
   { id:'empleo',     emoji:'💼', label:'Empleo',      sub:['Full-time','Part-time','Freelance','Prácticas'] },
   { id:'regalo',     emoji:'🎁', label:'Se regala',   sub:['Ropa','Muebles','Libros','Juguetes','Otro'] },
 ]

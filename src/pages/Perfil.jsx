@@ -33,7 +33,7 @@ const ALERT_CATS = [
   { id:'vivienda', emoji:'🏠', label:'Vivienda' },
   { id:'servicios', emoji:'🔧', label:'Servicios' },
   { id:'empleo', emoji:'💼', label:'Empleo' },
-  { id:'venta', emoji:'🛒', label:'Venta' },
+  { id:'venta', emoji:'🛍️', label:'Mercado' },
   { id:'cuidados', emoji:'❤️', label:'Cuidados' },
   { id:'hogar', emoji:'🛋️', label:'Hogar' },
   { id:'documentos', emoji:'📄', label:'Documentos' },
