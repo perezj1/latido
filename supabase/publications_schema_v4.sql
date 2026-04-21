@@ -6,12 +6,21 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
 CREATE OR REPLACE VIEW public.profile_names AS
 SELECT id, name
 FROM public.profiles
 WHERE COALESCE(name, '') <> '';
 
 GRANT SELECT ON public.profile_names TO anon, authenticated;
+
+CREATE OR REPLACE VIEW public.profile_public AS
+SELECT id, name, avatar_url
+FROM public.profiles;
+
+GRANT SELECT ON public.profile_public TO anon, authenticated;
 
 -- ================================================================
 -- OWNERSHIP PATCH FOR COMMUNITIES / PROVIDERS
@@ -243,5 +252,59 @@ CREATE POLICY "publication_images_delete_own"
   FOR DELETE
   USING (
     bucket_id = 'publication-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- ================================================================
+-- STORAGE: AVATARS
+-- Bucket público para fotos de perfil
+-- ================================================================
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'avatars',
+  'avatars',
+  TRUE,
+  3145728,
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+)
+ON CONFLICT (id) DO UPDATE
+SET public = EXCLUDED.public,
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "avatars_read" ON storage.objects;
+CREATE POLICY "avatars_read"
+  ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'avatars');
+
+DROP POLICY IF EXISTS "avatars_insert_own" ON storage.objects;
+CREATE POLICY "avatars_insert_own"
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'avatars'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+DROP POLICY IF EXISTS "avatars_update_own" ON storage.objects;
+CREATE POLICY "avatars_update_own"
+  ON storage.objects
+  FOR UPDATE
+  USING (
+    bucket_id = 'avatars'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  )
+  WITH CHECK (
+    bucket_id = 'avatars'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+DROP POLICY IF EXISTS "avatars_delete_own" ON storage.objects;
+CREATE POLICY "avatars_delete_own"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'avatars'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );

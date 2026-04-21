@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useFavorites } from '../hooks/useFavorites'
+import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
+import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
 import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, NEGOCIO_TYPES } from '../lib/constants'
@@ -23,6 +26,19 @@ const COMMUNITY_OPTIONS = COMMUNITY_CATS
   .map(item => item.id === 'mamas'
     ? { ...item, id:'familia', emoji:'👨‍👩‍👧', label:'Familia' }
     : item)
+
+const ALERT_CATS = [
+  { id:'vivienda', emoji:'🏠', label:'Vivienda' },
+  { id:'servicios', emoji:'🔧', label:'Servicios' },
+  { id:'empleo', emoji:'💼', label:'Empleo' },
+  { id:'venta', emoji:'🛒', label:'Venta' },
+  { id:'cuidados', emoji:'❤️', label:'Cuidados' },
+  { id:'hogar', emoji:'🛋️', label:'Hogar' },
+  { id:'documentos', emoji:'📄', label:'Documentos' },
+  { id:'regalo', emoji:'🎁', label:'Regalos' },
+]
+
+const LANGS = ['Español', 'Alemán', 'Francés', 'Italiano', 'Inglés', 'Portugués']
 
 function normalizeCommunityCategory(value='') {
   if (value === 'mamas') return 'familia'
@@ -202,9 +218,15 @@ function buildEditorForm(item) {
   }
 }
 
+function loadAlertSettings() {
+  try { return JSON.parse(localStorage.getItem('latido_alerts') || '{}') } catch { return {} }
+}
+
 export default function Perfil() {
-  const { isLoggedIn, displayName, userCanton, user, signOut } = useAuth()
+  const { isLoggedIn, displayName, userCanton, user, signOut, avatarUrl, updateAvatar } = useAuth()
   const navigate = useNavigate()
+
+  // publications
   const [manageOpen, setManageOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
   const [publications, setPublications] = useState([])
@@ -216,11 +238,29 @@ export default function Perfil() {
   const [saving, setSaving] = useState(false)
   const [actionItem, setActionItem] = useState(null)
 
+  // avatar
+  const avatarInputRef = useRef(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  // alerts
+  const [alertsOpen, setAlertsOpen] = useState(false)
+  const [alertSettings, setAlertSettings] = useState(loadAlertSettings)
+
+  // config
+  const [configOpen, setConfigOpen] = useState(false)
+  const [configForm, setConfigForm] = useState({})
+  const [savingConfig, setSavingConfig] = useState(false)
+
+  // favorites
+  const { favorites, toggleFavorite, isFavorite } = useFavorites()
+  const [favOpen, setFavOpen] = useState(false)
+  const [favItems, setFavItems] = useState([])
+  const [loadingFavs, setLoadingFavs] = useState(false)
+
+
   const loadPublications = async () => {
     if (!user?.id) return
-
     setLoadingPublications(true)
-
     try {
       const results = await Promise.allSettled([
         supabase.from('ads').select('*').eq('user_id', user.id).order('created_at', { ascending:false }),
@@ -229,7 +269,6 @@ export default function Perfil() {
         supabase.from('providers').select('*').eq('user_id', user.id).order('created_at', { ascending:false }),
         supabase.from('communities').select('*').eq('user_id', user.id).order('created_at', { ascending:false }),
       ])
-
       const nextIssues = []
       const nextPublications = []
       const mapping = [
@@ -239,21 +278,11 @@ export default function Perfil() {
         { kind:'business', result:results[3], issue:'negocios' },
         { kind:'community', result:results[4], issue:'comunidades' },
       ]
-
       mapping.forEach(({ kind, result, issue }) => {
-        if (result.status === 'rejected') {
-          nextIssues.push(`No se pudieron cargar tus ${issue}.`)
-          return
-        }
-
-        if (result.value.error) {
-          nextIssues.push(`Falta ajustar Supabase para ${issue}. Ejecuta publications_schema_v4.sql.`)
-          return
-        }
-
+        if (result.status === 'rejected') { nextIssues.push(`No se pudieron cargar tus ${issue}.`); return }
+        if (result.value.error) { nextIssues.push(`Falta ajustar Supabase para ${issue}. Ejecuta publications_schema_v4.sql.`); return }
         ;(result.value.data || []).forEach(row => nextPublications.push(normalizePublication(kind, row)))
       })
-
       nextPublications.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
       setPublications(nextPublications)
       setIssues(nextIssues)
@@ -267,11 +296,35 @@ export default function Perfil() {
     loadPublications()
   }, [isLoggedIn, user?.id])
 
+  const loadFavorites = async () => {
+    setLoadingFavs(true)
+    const adIds = favorites.ads || []
+    const jobIds = favorites.jobs || []
+    const results = []
+    if (adIds.length) {
+      const { data } = await supabase.from('ads').select('*').in('id', adIds)
+      const foundIds = new Set((data || []).map(a => a.id))
+      if (data) results.push(...data.map(a => ({ ...a, _kind:'ad' })))
+      adIds.filter(id => !foundIds.has(id)).forEach(id =>
+        results.push({ id, _kind:'ad', _unavailable:true })
+      )
+    }
+    if (jobIds.length) {
+      const { data } = await supabase.from('jobs').select('*').in('id', jobIds)
+      const foundIds = new Set((data || []).map(j => j.id))
+      if (data) results.push(...data.map(j => ({ ...j, _kind:'job' })))
+      jobIds.filter(id => !foundIds.has(id)).forEach(id =>
+        results.push({ id, _kind:'job', _unavailable:true })
+      )
+    }
+    setFavItems(results)
+    setLoadingFavs(false)
+  }
+
   const counts = useMemo(() => {
     const total = publications.length
     const active = publications.filter(item => item.active).length
-    const inactive = total - active
-    return { total, active, inactive }
+    return { total, active, inactive: total - active }
   }, [publications])
 
   const filteredPublications = useMemo(() => {
@@ -287,29 +340,88 @@ export default function Perfil() {
     navigate('/')
   }
 
-  const openEditor = item => {
-    setEditorItem(item)
-    setEditorForm(buildEditorForm(item))
+  const handleAvatarUpload = async e => {
+    const file = e.target.files?.[0]
+    if (!file || !user?.id) return
+    setUploadingAvatar(true)
+    try {
+      const publicUrl = await uploadAvatar({ file, userId: user.id })
+      const { error: profileErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id)
+      if (profileErr) {
+        // Column probably missing — tell the user exactly what to run
+        toast.error('Falta la columna avatar_url en profiles. Ejecuta en Supabase SQL Editor: ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;')
+        return
+      }
+      invalidateAvatarCache(user.id)
+      updateAvatar(publicUrl)
+      toast.success('Foto actualizada')
+    } catch (err) {
+      toast.error(getStorageErrorMessage(err))
+    } finally {
+      setUploadingAvatar(false)
+      e.target.value = ''
+    }
   }
 
-  const closeEditor = () => {
-    setEditorItem(null)
-    setEditorForm({})
-    setSaving(false)
+  const saveAlerts = next => {
+    setAlertSettings(next)
+    localStorage.setItem('latido_alerts', JSON.stringify(next))
   }
 
-  const updateEditorField = (key, value) => {
-    setEditorForm(prev => ({ ...prev, [key]: value }))
+  const toggleAlertCat = cat => {
+    const cats = alertSettings.categories || []
+    const next = cats.includes(cat) ? cats.filter(c => c !== cat) : [...cats, cat]
+    saveAlerts({ ...alertSettings, categories: next })
   }
+
+  const openConfig = () => {
+    setConfigForm({ name: displayName, canton: userCanton, newPassword:'', confirmPassword:'' })
+    setConfigOpen(true)
+  }
+
+  const handleSaveConfig = async () => {
+    setSavingConfig(true)
+    try {
+      const meta = {}
+      if (configForm.name?.trim() && configForm.name.trim() !== displayName) meta.name = configForm.name.trim()
+      if (configForm.canton && configForm.canton !== userCanton) meta.canton = configForm.canton
+      if (Object.keys(meta).length) {
+        const { error } = await supabase.auth.updateUser({ data: meta })
+        if (error) throw error
+      }
+      if (configForm.newPassword) {
+        if (configForm.newPassword !== configForm.confirmPassword) {
+          toast.error('Las contraseñas no coinciden')
+          setSavingConfig(false)
+          return
+        }
+        if (configForm.newPassword.length < 6) {
+          toast.error('La contraseña debe tener al menos 6 caracteres')
+          setSavingConfig(false)
+          return
+        }
+        const { error } = await supabase.auth.updateUser({ password: configForm.newPassword })
+        if (error) throw error
+      }
+      toast.success('Configuración guardada')
+      setConfigOpen(false)
+    } catch (err) {
+      toast.error(err?.message || 'Error al guardar')
+    } finally {
+      setSavingConfig(false)
+    }
+  }
+
+  const openEditor = item => { setEditorItem(item); setEditorForm(buildEditorForm(item)) }
+  const closeEditor = () => { setEditorItem(null); setEditorForm({}); setSaving(false) }
+  const updateEditorField = (key, value) => setEditorForm(prev => ({ ...prev, [key]: value }))
 
   const handleDeletePublication = async item => {
     const confirmed = window.confirm(`¿Seguro que quieres borrar esta publicación?\n\n${item.title}`)
     if (!confirmed) return
-
     const table = KIND_META[item.kind].table
     const deleteKey = `${item.kind}-${item.id}`
     setDeletingKey(deleteKey)
-
     try {
       const { error } = await supabase.from(table).delete().eq('id', item.id).eq('user_id', user.id)
       if (error) throw error
@@ -326,43 +438,31 @@ export default function Perfil() {
 
   const handleSavePublication = async () => {
     if (!editorItem) return
-
     const item = editorItem
     const table = KIND_META[item.kind].table
     let payload = {}
 
     if (item.kind === 'ad') {
       payload = {
-        cat: editorForm.cat || null,
-        sub: editorForm.sub?.trim() || null,
-        type: editorForm.type || null,
-        title: editorForm.title?.trim(),
-        desc: editorForm.desc?.trim() || null,
-        price: editorForm.price?.trim() || null,
-        canton: editorForm.canton || null,
-        plz: editorForm.plz?.trim() || null,
+        cat: editorForm.cat || null, sub: editorForm.sub?.trim() || null,
+        type: editorForm.type || null, title: editorForm.title?.trim(),
+        desc: editorForm.desc?.trim() || null, price: editorForm.price?.trim() || null,
+        canton: editorForm.canton || null, plz: editorForm.plz?.trim() || null,
         privacy: editorForm.privacy || 'public',
         contact_phone: editorForm.contactPhone?.trim() || null,
         contact_email: editorForm.contactEmail?.trim() || null,
         updated_at: new Date().toISOString(),
       }
-      if (!payload.title || !payload.type) {
-        toast.error('Completa al menos el título y el tipo del anuncio')
-        return
-      }
+      if (!payload.title || !payload.type) { toast.error('Completa al menos el título y el tipo del anuncio'); return }
     }
 
     if (item.kind === 'job') {
       const languages = splitList(editorForm.langs || '')
       payload = {
-        sector: editorForm.sector?.trim() || null,
-        category: editorForm.sector?.trim() || null,
-        title: editorForm.title?.trim(),
-        company: editorForm.company?.trim() || null,
-        type: editorForm.type || null,
-        city: editorForm.city?.trim() || null,
-        canton: editorForm.canton || null,
-        salary: editorForm.salary?.trim() || null,
+        sector: editorForm.sector?.trim() || null, category: editorForm.sector?.trim() || null,
+        title: editorForm.title?.trim(), company: editorForm.company?.trim() || null,
+        type: editorForm.type || null, city: editorForm.city?.trim() || null,
+        canton: editorForm.canton || null, salary: editorForm.salary?.trim() || null,
         lang: languages.length ? languages.join(' · ') : null,
         languages: languages.length ? languages : null,
         desc: editorForm.desc?.trim() || null,
@@ -372,75 +472,46 @@ export default function Perfil() {
         contact: editorForm.contactEmail?.trim() || editorForm.contactLink?.trim() || null,
         updated_at: new Date().toISOString(),
       }
-      if (!payload.title || !payload.canton) {
-        toast.error('Completa al menos el título y el cantón del empleo')
-        return
-      }
+      if (!payload.title || !payload.canton) { toast.error('Completa al menos el título y el cantón del empleo'); return }
     }
 
     if (item.kind === 'event') {
       payload = {
-        type: editorForm.type || null,
-        title: editorForm.title?.trim(),
-        day: editorForm.day?.trim() || null,
-        month: editorForm.month?.trim() || null,
-        year: editorForm.year?.trim() || null,
-        time: editorForm.time?.trim() || null,
-        price: editorForm.price?.trim() || null,
-        city: editorForm.city?.trim() || null,
-        canton: editorForm.canton || null,
-        venue: editorForm.venue?.trim() || null,
-        desc: editorForm.desc?.trim() || null,
-        host: editorForm.host?.trim() || null,
-        link: editorForm.link?.trim() || null,
-        updated_at: new Date().toISOString(),
+        type: editorForm.type || null, title: editorForm.title?.trim(),
+        day: editorForm.day?.trim() || null, month: editorForm.month?.trim() || null,
+        year: editorForm.year?.trim() || null, time: editorForm.time?.trim() || null,
+        price: editorForm.price?.trim() || null, city: editorForm.city?.trim() || null,
+        canton: editorForm.canton || null, venue: editorForm.venue?.trim() || null,
+        desc: editorForm.desc?.trim() || null, host: editorForm.host?.trim() || null,
+        link: editorForm.link?.trim() || null, updated_at: new Date().toISOString(),
       }
-      if (!payload.title || !payload.canton) {
-        toast.error('Completa al menos el título y el cantón del evento')
-        return
-      }
+      if (!payload.title || !payload.canton) { toast.error('Completa al menos el título y el cantón del evento'); return }
     }
 
     if (item.kind === 'business') {
       const services = splitList(editorForm.services || '')
       payload = {
-        category: editorForm.category || null,
-        name: editorForm.name?.trim(),
-        city: editorForm.city?.trim() || null,
-        canton: editorForm.canton || null,
+        category: editorForm.category || null, name: editorForm.name?.trim(),
+        city: editorForm.city?.trim() || null, canton: editorForm.canton || null,
         description: editorForm.description?.trim() || null,
-        whatsapp: editorForm.whatsapp?.trim() || null,
-        email: editorForm.email?.trim() || null,
-        instagram: editorForm.instagram?.trim() || null,
-        website: editorForm.website?.trim() || null,
-        services: services.length ? services : null,
-        updated_at: new Date().toISOString(),
+        whatsapp: editorForm.whatsapp?.trim() || null, email: editorForm.email?.trim() || null,
+        instagram: editorForm.instagram?.trim() || null, website: editorForm.website?.trim() || null,
+        services: services.length ? services : null, updated_at: new Date().toISOString(),
       }
-      if (!payload.name || !payload.canton) {
-        toast.error('Completa al menos el nombre y el cantón del negocio')
-        return
-      }
-      if (![payload.whatsapp, payload.email, payload.instagram].some(Boolean)) {
-        toast.error('Añade al menos un método de contacto para el negocio')
-        return
-      }
+      if (!payload.name || !payload.canton) { toast.error('Completa al menos el nombre y el cantón del negocio'); return }
+      if (![payload.whatsapp, payload.email, payload.instagram].some(Boolean)) { toast.error('Añade al menos un método de contacto para el negocio'); return }
     }
 
     if (item.kind === 'community') {
       const category = COMMUNITY_OPTIONS.find(entry => entry.id === normalizeCommunityCategory(editorForm.cat))
       payload = {
-        cat: editorForm.cat || null,
-        name: editorForm.name?.trim(),
-        city: editorForm.city?.trim() || null,
-        desc: editorForm.desc?.trim() || null,
+        cat: editorForm.cat || null, name: editorForm.name?.trim(),
+        city: editorForm.city?.trim() || null, desc: editorForm.desc?.trim() || null,
         contact: editorForm.contact?.trim() || null,
         emoji: category?.emoji || item.raw.emoji || '🤝',
         updated_at: new Date().toISOString(),
       }
-      if (!payload.name || !payload.contact) {
-        toast.error('Completa al menos el nombre y el enlace de la comunidad')
-        return
-      }
+      if (!payload.name || !payload.contact) { toast.error('Completa al menos el nombre y el enlace de la comunidad'); return }
     }
 
     setSaving(true)
@@ -463,10 +534,11 @@ export default function Perfil() {
 
   const menu = [
     { icon:'📌', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
-    { icon:'🔖', label:'Guardados', sub:'Anuncios que has marcado para luego', disabled:true },
+    { icon:'❤️', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
     { icon:'💬', label:'Mensajes', sub:'Conversaciones con otros usuarios', action:() => navigate('/mensajes') },
-    { icon:'🔔', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', disabled:true },
-    { icon:'⚙️', label:'Configuración', sub:'Cantón, idiomas, contraseña, privacidad', disabled:true },
+    { icon:'📚', label:'Guías', sub:'Documentos y recursos útiles para vivir aquí', action:() => navigate('/guias') },
+    { icon:'🔔', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', action:() => setAlertsOpen(true) },
+    { icon:'⚙️', label:'Configuración', sub:'Nombre, cantón, idiomas, contraseña', action:openConfig },
   ]
 
   if (!isLoggedIn) return (
@@ -485,10 +557,23 @@ export default function Perfil() {
 
   return (
     <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
+
+      {/* Avatar + header card */}
       <div style={{ background:'linear-gradient(135deg,#1D4ED8,#2563EB)', borderRadius:24, padding:'24px 20px 28px', marginBottom:20, position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', top:-20, right:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
         <div style={{ display:'flex', gap:16, alignItems:'center', marginBottom:18 }}>
-          <Avatar name={displayName} size={64} />
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:0, position:'relative' }}>
+            <Avatar name={displayName} size={64} src={avatarUrl} />
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              style={{ marginTop:6, background:'rgba(255,255,255,0.2)', border:'1.5px solid rgba(255,255,255,0.5)', borderRadius:20, padding:'3px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:4, color:'#fff', fontFamily:PP, fontSize:10, fontWeight:600 }}
+              aria-label="Cambiar foto"
+            >
+              {uploadingAvatar ? '⏳' : '📷'} <span>{uploadingAvatar ? 'Subiendo...' : 'Foto'}</span>
+            </button>
+            <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display:'none' }} />
+          </div>
           <div>
             <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:'#fff', marginBottom:4, letterSpacing:-0.3 }}>{displayName}</h1>
             <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.7)', margin:0 }}>{user?.email}</p>
@@ -505,30 +590,35 @@ export default function Perfil() {
         </div>
       </div>
 
-      <div style={{ background:C.primaryLight, border:`1.5px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      {/* Twint promo banner */}
+      <div style={{ background:'linear-gradient(135deg,#f0fdf4,#dcfce7)', border:'1.5px solid #86efac', borderRadius:16, padding:'14px 16px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
         <div>
-          <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primaryDark, marginBottom:2 }}>Plan gratuito</p>
-          <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:0 }}>{counts.active} publicaciones activas · Gestión desde tu perfil</p>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#15803d', marginBottom:3 }}>💚 Apoya a Latido</p>
+          <p style={{ fontFamily:PP, fontSize:11, color:'#166534', margin:0, lineHeight:1.5 }}>
+            Publica tu anuncio, da a conocer tu negocio o apoya a tu comunidad.<br/>
+            ¿No encuentras lo que buscas? ¡Publícalo y deja que la comunidad te ayude!
+          </p>
         </div>
-        <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.primary, background:'#fff', padding:'5px 10px', borderRadius:10, border:`1px solid ${C.primaryMid}` }}>
-          Ver Premium
-        </span>
+        <a
+          href="twint://send?phone=%2B41786543234"
+          style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:'#fff', background:'#16a34a', padding:'7px 12px', borderRadius:10, textDecoration:'none', flexShrink:0, textAlign:'center', lineHeight:1.4 }}
+        >
+          Pagar<br/>Twint
+        </a>
       </div>
 
       {menu.map(item => {
         const content = (
-          <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'13px 15px', display:'flex', gap:12, alignItems:'center', marginBottom:8, cursor:item.disabled ? 'not-allowed' : 'pointer', transition:'all .15s', opacity:item.disabled ? 0.7 : 1 }}>
+          <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'13px 15px', display:'flex', gap:12, alignItems:'center', marginBottom:8, cursor:item.disabled ? 'not-allowed' : 'pointer', transition:'all .15s', opacity:item.disabled ? 0.6 : 1 }}>
             <div style={{ width:42, height:42, background:C.bg, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{item.icon}</div>
             <div style={{ flex:1 }}>
               <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, marginBottom:1 }}>{item.label}</p>
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{item.sub}</p>
             </div>
-            <span style={{ color:C.light, fontSize:16 }}>›</span>
+            <span style={{ color:C.light, fontSize:16 }}>{item.disabled ? '🔒' : '›'}</span>
           </div>
         )
-
         if (item.disabled) return <div key={item.label}>{content}</div>
-
         return (
           <button key={item.label} onClick={item.action} style={{ width:'100%', background:'none', border:'none', padding:0, textAlign:'left' }}>
             {content}
@@ -540,6 +630,171 @@ export default function Perfil() {
         Cerrar sesión
       </button>
 
+      {/* ── Favoritos ── */}
+      <Sheet show={favOpen} onClose={() => setFavOpen(false)} title="❤️ Favoritos">
+        {loadingFavs ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {[1,2].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:14 }} />)}
+          </div>
+        ) : favItems.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'40px 20px' }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>🤍</div>
+            <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>Sin favoritos todavía</p>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.6 }}>
+              Toca el corazón 🤍 en cualquier anuncio o empleo para guardarlo aquí.
+            </p>
+          </div>
+        ) : (
+          favItems.map(item => {
+            const isJob = item._kind === 'job'
+            const favType = isJob ? 'jobs' : 'ads'
+            const href = isJob ? `/tablon?cat=empleo&openJob=${item.id}` : `/tablon?openAd=${item.id}`
+
+            if (item._unavailable) return (
+              <div key={item.id} style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:14, padding:'13px 15px', marginBottom:10, display:'flex', gap:12, alignItems:'center' }}>
+                <div style={{ width:44, height:44, borderRadius:12, background:'#FEE2E2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>🗑️</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:'#B91C1C', margin:'0 0 2px' }}>Anuncio no disponible</p>
+                  <p style={{ fontFamily:PP, fontSize:11, color:'#EF4444', margin:0 }}>Este anuncio fue eliminado o ya no está activo</p>
+                </div>
+                <button
+                  onClick={() => { toggleFavorite(favType, item.id); setFavItems(prev => prev.filter(x => x.id !== item.id)) }}
+                  style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, padding:'4px', flexShrink:0, color:'#EF4444' }}
+                  aria-label="Eliminar de favoritos"
+                >✕</button>
+              </div>
+            )
+
+            return (
+              <div key={item.id} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'13px 15px', marginBottom:10, display:'flex', gap:12, alignItems:'center' }}>
+                <button
+                  onClick={() => navigate(href)}
+                  style={{ display:'flex', gap:12, alignItems:'center', flex:1, minWidth:0, background:'none', border:'none', cursor:'pointer', padding:0, textAlign:'left' }}
+                >
+                  <div style={{ width:44, height:44, borderRadius:12, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
+                    {isJob ? (item.emoji || '💼') : '📌'}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.title || item.company}</p>
+                    <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
+                      {isJob ? `💼 ${item.company || ''} · ${item.city || item.canton || ''}` : `📍 ${item.canton || ''} ${item.plz || ''}`}
+                    </p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => { toggleFavorite(favType, item.id); setFavItems(prev => prev.filter(x => x.id !== item.id)) }}
+                  style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, padding:'4px', flexShrink:0 }}
+                  aria-label="Quitar de favoritos"
+                >
+                  ❤️
+                </button>
+              </div>
+            )
+          })
+        )}
+      </Sheet>
+
+      {/* ── Alertas de zona ── */}
+      <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Alertas de zona">
+        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.6 }}>
+          Recibe una notificación cuando se publiquen nuevos anuncios en tu zona. Las alertas se guardan en este dispositivo.
+        </p>
+
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px', marginBottom:14 }}>
+          <div>
+            <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, margin:'0 0 2px' }}>Activar alertas</p>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Notificaciones cuando haya anuncios nuevos</p>
+          </div>
+          <button
+            onClick={() => saveAlerts({ ...alertSettings, enabled: !alertSettings.enabled })}
+            style={{ width:44, height:24, borderRadius:12, border:'none', cursor:'pointer', background: alertSettings.enabled ? C.primary : '#D1D5DB', transition:'background .2s', position:'relative', flexShrink:0 }}
+            aria-label="Toggle alertas"
+          >
+            <span style={{ position:'absolute', top:2, left: alertSettings.enabled ? 22 : 2, width:20, height:20, borderRadius:'50%', background:'#fff', transition:'left .2s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }} />
+          </button>
+        </div>
+
+        {alertSettings.enabled && (
+          <>
+            <Select
+              label="Cantón de alertas"
+              value={alertSettings.canton || userCanton || ''}
+              onChange={e => saveAlerts({ ...alertSettings, canton: e.target.value })}
+            >
+              <option value="">Todos los cantones</option>
+              {CANTONS.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}
+            </Select>
+
+            <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, margin:'14px 0 8px' }}>Categorías</p>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
+              {ALERT_CATS.map(cat => {
+                const active = (alertSettings.categories || []).includes(cat.id)
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => toggleAlertCat(cat.id)}
+                    style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'6px 12px', borderRadius:20, border:`1.5px solid ${active ? C.primary : C.border}`, background: active ? C.primaryLight : '#fff', color: active ? C.primaryDark : C.mid, cursor:'pointer', transition:'all .15s' }}
+                  >
+                    {cat.emoji} {cat.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div style={{ background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, padding:'10px 12px' }}>
+              <p style={{ fontFamily:PP, fontSize:11, color:'#92400E', margin:0, lineHeight:1.5 }}>
+                ⚠️ Las notificaciones push llegarán en una próxima actualización. Tus preferencias ya están guardadas.
+              </p>
+            </div>
+          </>
+        )}
+      </Sheet>
+
+      {/* ── Configuración ── */}
+      <Sheet show={configOpen} onClose={() => setConfigOpen(false)} title="⚙️ Configuración">
+        <Input
+          label="Nombre visible"
+          value={configForm.name || ''}
+          onChange={e => setConfigForm(prev => ({ ...prev, name: e.target.value }))}
+        />
+        <Select
+          label="Tu cantón"
+          value={configForm.canton || ''}
+          onChange={e => setConfigForm(prev => ({ ...prev, canton: e.target.value }))}
+        >
+          <option value="">Seleccionar cantón...</option>
+          {CANTONS.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}
+        </Select>
+
+        <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, margin:'16px 0 6px' }}>Cambiar contraseña</p>
+        <Input
+          label="Nueva contraseña"
+          type="password"
+          value={configForm.newPassword || ''}
+          onChange={e => setConfigForm(prev => ({ ...prev, newPassword: e.target.value }))}
+        />
+        <Input
+          label="Confirmar contraseña"
+          type="password"
+          value={configForm.confirmPassword || ''}
+          onChange={e => setConfigForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+        />
+
+        <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginBottom:16, lineHeight:1.5 }}>
+          Deja la contraseña en blanco si no quieres cambiarla.
+        </p>
+
+        <div style={{ display:'flex', gap:10 }}>
+          <button onClick={() => setConfigOpen(false)} style={{ flex:1, fontFamily:PP, fontWeight:700, fontSize:12, background:'#fff', color:C.mid, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 0', cursor:'pointer' }}>
+            Cancelar
+          </button>
+          <Btn onClick={handleSaveConfig} disabled={savingConfig} style={{ flex:1 }}>
+            {savingConfig ? 'Guardando...' : 'Guardar'}
+          </Btn>
+        </div>
+      </Sheet>
+
+      {/* ── Mis publicaciones modal ── */}
       <Modal show={manageOpen} onClose={() => setManageOpen(false)} title="Mis publicaciones">
         {issues.length > 0 && (
           <InfoBanner emoji="🧩" title="Falta completar Supabase" text={issues[0]} bg={C.warnLight} border={C.warnMid} color="#92400E" />
@@ -595,29 +850,13 @@ export default function Perfil() {
                       </p>
                     )}
                     <div style={{ display:'flex', alignItems:'center', gap:4, minWidth:0 }}>
-                      {item.meta && (
-                        <span style={{ fontFamily:PP, fontSize:10, color:C.light, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                          {item.meta}
-                        </span>
-                      )}
-                      <span style={{ fontFamily:PP, fontSize:10, color:C.light, flexShrink:0 }}>
-                        {item.meta ? '· ' : ''}{formatDate(item.createdAt)}
-                      </span>
+                      {item.meta && <span style={{ fontFamily:PP, fontSize:10, color:C.light, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.meta}</span>}
+                      <span style={{ fontFamily:PP, fontSize:10, color:C.light, flexShrink:0 }}>{item.meta ? '· ' : ''}{formatDate(item.createdAt)}</span>
                     </div>
                   </div>
                   <button
                     onClick={() => setActionItem(item)}
-                    style={{
-                      width:36,
-                      height:36,
-                      borderRadius:12,
-                      border:`1px solid ${C.border}`,
-                      background:C.bg,
-                      color:C.mid,
-                      fontSize:18,
-                      cursor:'pointer',
-                      flexShrink:0,
-                    }}
+                    style={{ width:36, height:36, borderRadius:12, border:`1px solid ${C.border}`, background:C.bg, color:C.mid, fontSize:18, cursor:'pointer', flexShrink:0 }}
                     aria-label={`Gestionar ${item.title}`}
                   >
                     ⋯
@@ -647,41 +886,16 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.35 }}>{actionItem.title}</p>
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
             </div>
-            <Btn onClick={() => { openEditor(actionItem); setActionItem(null) }} style={{ marginBottom:10 }}>
-              ✏️ Editar publicación
-            </Btn>
+            <Btn onClick={() => { openEditor(actionItem); setActionItem(null) }} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
             <button
               onClick={() => handleDeletePublication(actionItem)}
-              style={{
-                width:'100%',
-                fontFamily:PP,
-                fontWeight:700,
-                fontSize:13,
-                background:'#FEF2F2',
-                color:'#DC2626',
-                border:'none',
-                borderRadius:14,
-                padding:'12px 16px',
-                cursor:'pointer',
-                marginBottom:8,
-              }}
+              style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:'#FEF2F2', color:'#DC2626', border:'none', borderRadius:14, padding:'12px 16px', cursor:'pointer', marginBottom:8 }}
             >
               🗑️ Borrar publicación
             </button>
             <button
               onClick={() => setActionItem(null)}
-              style={{
-                width:'100%',
-                fontFamily:PP,
-                fontWeight:600,
-                fontSize:12,
-                color:C.mid,
-                background:'transparent',
-                border:`1.5px solid ${C.border}`,
-                borderRadius:14,
-                padding:'11px 16px',
-                cursor:'pointer',
-              }}
+              style={{ width:'100%', fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'transparent', border:`1.5px solid ${C.border}`, borderRadius:14, padding:'11px 16px', cursor:'pointer' }}
             >
               Cancelar
             </button>
@@ -710,8 +924,6 @@ export default function Perfil() {
               </Select>
               <Input label="PLZ" value={editorForm.plz || ''} onChange={event => updateEditorField('plz', event.target.value)} />
             </div>
-            <Input label="WhatsApp o teléfono" value={editorForm.contactPhone || ''} onChange={event => updateEditorField('contactPhone', event.target.value)} />
-            <Input label="Email de contacto" value={editorForm.contactEmail || ''} onChange={event => updateEditorField('contactEmail', event.target.value)} />
             <Select label="Privacidad" value={editorForm.privacy || 'public'} onChange={event => updateEditorField('privacy', event.target.value)}>
               <option value="public">Público</option>
               <option value="private">Privado</option>
@@ -738,9 +950,6 @@ export default function Perfil() {
             <Input label="Salario" value={editorForm.salary || ''} onChange={event => updateEditorField('salary', event.target.value)} />
             <Input label="Idiomas (separados por coma)" value={editorForm.langs || ''} onChange={event => updateEditorField('langs', event.target.value)} />
             <Input label="Descripción" rows={4} value={editorForm.desc || ''} onChange={event => updateEditorField('desc', event.target.value)} />
-            <Input label="WhatsApp" value={editorForm.contactPhone || ''} onChange={event => updateEditorField('contactPhone', event.target.value)} />
-            <Input label="Email" value={editorForm.contactEmail || ''} onChange={event => updateEditorField('contactEmail', event.target.value)} />
-            <Input label="Link de aplicación" value={editorForm.contactLink || ''} onChange={event => updateEditorField('contactLink', event.target.value)} />
           </>
         )}
 

@@ -5,16 +5,16 @@ import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
 
 const NAV = [
-  { href:'/tablon', label:'📌 Tablón' },
+  { href:'/tablon', label:'📋 Anuncios' },
   { href:'/comunidades', label:'🤝 Comunidades' },
-  { href:'/guias', label:'📚 Guías' },
   { href:'/tablon?cat=empleo', label:'💼 Empleos' },
+  { href:'/mensajes', label:'💬 Mensajes' },
 ]
 
 export default function Header({ transparent }) {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
-  const { isLoggedIn, displayName, signOut } = useAuth()
+  const { isLoggedIn, displayName, signOut, avatarUrl } = useAuth()
 
   return (
     <header
@@ -52,7 +52,7 @@ export default function Header({ transparent }) {
           </Link>
           {isLoggedIn ? (
             <Link to="/perfil" style={{ textDecoration:'none' }}>
-              <Avatar name={displayName} size={36} />
+              <Avatar name={displayName} size={36} src={avatarUrl} />
             </Link>
           ) : (
             <Link to="/auth" style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.primary, textDecoration:'none', padding:'9px 14px', borderRadius:12, border:`1.5px solid ${C.primaryMid}`, flexShrink:0 }}>

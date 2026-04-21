@@ -1,10 +1,8 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
-// Read cached session from localStorage synchronously — avoids blocking the UI
-// on a network round-trip before rendering anything.
 function getLocalUser() {
   try {
     for (const key of Object.keys(localStorage)) {
@@ -24,14 +22,20 @@ function getLocalUser() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(getLocalUser)
   const [loading, setLoading] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState(null)
+
+  // Load avatar from profiles whenever user changes
+  useEffect(() => {
+    if (!user?.id) { setAvatarUrl(null); return }
+    supabase.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle()
+      .then(({ data }) => { if (data?.avatar_url) setAvatarUrl(data.avatar_url) })
+  }, [user?.id])
 
   useEffect(() => {
-    // Verify / refresh the session in the background — does not block rendering
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
     }).catch(() => {})
 
-    // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
@@ -39,7 +43,6 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signUp = async ({ email, password, name, canton }) => {
-    // The database trigger creates the profile row after auth signup.
     const result = await supabase.auth.signUp({
       email,
       password,
@@ -58,7 +61,11 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     await supabase.auth.signOut()
     setUser(null)
+    setAvatarUrl(null)
   }
+
+  // Called after a successful avatar upload so all consumers update instantly
+  const updateAvatar = useCallback((url) => setAvatarUrl(url), [])
 
   const value = {
     user,
@@ -66,6 +73,8 @@ export function AuthProvider({ children }) {
     isLoggedIn: !!user,
     displayName: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
     userCanton: user?.user_metadata?.canton || '',
+    avatarUrl,
+    updateAvatar,
     signUp, signIn, signOut,
   }
 

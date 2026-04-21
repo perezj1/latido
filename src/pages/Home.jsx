@@ -260,9 +260,9 @@ export default function Home() {
             </div>
 
             {isLoggedIn && (
-              <Link to="/perfil" style={{ textDecoration:'none', flexShrink:0, marginTop:6 }}>
-                <Avatar name={displayName} size={46} />
-              </Link>
+              <button style={{ background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:46, height:46, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, cursor:'pointer', flexShrink:0, marginTop:6 }} aria-label="Notificaciones">
+                🔔
+              </button>
             )}
           </div>
 

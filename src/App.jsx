@@ -106,7 +106,7 @@ function AppShell() {
   return (
     <>
       <Header />
-      <main style={{ minHeight:'100vh', paddingBottom:80 }}>
+<main style={{ minHeight:'100vh', paddingBottom:80 }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />

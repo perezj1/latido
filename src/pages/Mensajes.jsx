@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { Avatar } from '../components/UI'
+import { fetchAvatarsByIds } from '../lib/profiles'
 import toast from 'react-hot-toast'
 
 function formatTime(ts) {
@@ -79,6 +80,7 @@ export default function Mensajes() {
   const recipientName = cleanParticipantName(searchParams.get('recipientName'))
 
   const [conversations, setConversations] = useState([])
+  const [convAvatars, setConvAvatars] = useState(new Map())
   const [selectedConv, setSelectedConv] = useState(null)
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
@@ -208,6 +210,10 @@ export default function Mensajes() {
 
     const data = await hydrateConversationNames(res.data || [], ownName)
     setConversations(data)
+
+    // Fetch avatars for all other participants
+    const otherIds = data.map(c => c.sender_id === user.id ? c.owner_id : c.sender_id).filter(Boolean)
+    fetchAvatarsByIds(otherIds).then(setConvAvatars)
 
     const targetId = adId || jobId
     if (targetId) {
@@ -413,7 +419,7 @@ export default function Mensajes() {
                   <div key={conv.id} style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${C.border}`, background: selectedConv?.id === conv.id ? C.primaryLight : 'transparent' }}>
                     <button onClick={() => openConversation(conv)}
                       style={{ flex: 1, background: 'transparent', border: 'none', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', cursor: 'pointer', minWidth: 0 }}>
-                      <Avatar name={otherName(conv)} size={40} />
+                      <Avatar name={otherName(conv)} size={40} src={convAvatars.get(conv.sender_id === user.id ? conv.owner_id : conv.sender_id)} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: selectedConv?.id === conv.id ? C.primary : C.text, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {convTitle(conv)}
@@ -442,7 +448,7 @@ export default function Mensajes() {
                 {isMobile && (
                   <button onClick={() => setShowList(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px 4px 0', fontSize: 18, color: C.mid }}>←</button>
                 )}
-                <Avatar name={otherName(selectedConv)} size={36} />
+                <Avatar name={otherName(selectedConv)} size={36} src={convAvatars.get(selectedConv.sender_id === user.id ? selectedConv.owner_id : selectedConv.sender_id)} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: 0 }}>{otherName(selectedConv)}</p>
                   <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

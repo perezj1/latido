@@ -2,6 +2,8 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useFavorites } from '../hooks/useFavorites'
+import { fetchAvatarsByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters } from '../components/UI'
@@ -25,13 +27,20 @@ const TABLON_CACHE = {
 }
 
 /* ── Compact ad card (list view) ────────────────────────── */
-function AdCard({ ad, onClick }) {
+function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
   const cat = AD_CATS.find(c => c.id === ad.cat)
   const cc  = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
   const dateStr = ad.ts || (ad.created_at ? new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
   return (
-    <button onClick={onClick} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', marginBottom:10, width:'100%', textAlign:'left', cursor:'pointer', padding:0, display:'block' }}>
+    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', marginBottom:10, width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
       {(ad.img_url || ad.img) && <img src={ad.img_url || ad.img} alt={ad.title} style={{ width:'100%', height:160, objectFit:'cover' }}/>}
+      <button
+        onClick={e => { e.stopPropagation(); onToggleFav?.() }}
+        style={{ position:'absolute', top:10, right:10, zIndex:2, background:'rgba(255,255,255,0.92)', border:'none', borderRadius:'50%', width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:17, boxShadow:'0 1px 6px rgba(0,0,0,0.12)' }}
+        aria-label={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+      >
+        {isFav ? '❤️' : '🤍'}
+      </button>
       <div style={{ padding:'13px 15px' }}>
         <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:8 }}>
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
@@ -42,18 +51,18 @@ function AdCard({ ad, onClick }) {
         {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.5, marginBottom:8, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-            <Avatar name={ad.user_name || ad.user} size={20}/>
+            <Avatar name={ad.user_name || ad.user} size={20} src={avatarSrc}/>
             <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user_name || ad.user || 'Usuario'} · 📍 {ad.canton} {ad.plz}{dateStr ? ` · ${dateStr}` : ''}</span>
           </div>
           {ad.price && <span style={{ fontFamily:PP, fontSize:13, fontWeight:800, color:C.primary }}>{fmtPrice(ad.price)}</span>}
         </div>
       </div>
-    </button>
+    </div>
   )
 }
 
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
-function AdDetail({ ad, user }) {
+function AdDetail({ ad, user, avatarSrc }) {
   const navigate = useNavigate()
   const cat = AD_CATS.find(c => c.id === ad.cat)
   const cc  = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
@@ -77,7 +86,7 @@ function AdDetail({ ad, user }) {
       {ad.desc && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:14 }}>{ad.desc}</p>}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
         <div style={{ display:'flex', gap:7, alignItems:'center' }}>
-          <Avatar name={ad.user_name || ad.user} size={22}/>
+          <Avatar name={ad.user_name || ad.user} size={22} src={avatarSrc}/>
           <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>
             {ad.user_name || ad.user || 'Usuario'} · 📍 {ad.canton} {ad.plz}
             {(ad.ts || ad.created_at) ? ` · ${ad.ts || new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}` : ''}
@@ -102,10 +111,10 @@ function AdDetail({ ad, user }) {
 }
 
 /* ── Compact job card (list view) ───────────────────────── */
-function JobCard({ job, onClick }) {
+function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc }) {
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
   return (
-    <button onClick={onClick} style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14, width:'100%', textAlign:'left', cursor:'pointer' }}>
+    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14, width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
       <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
         {job.logo_url
           ? <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -120,8 +129,14 @@ function JobCard({ job, onClick }) {
         {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>🗣️ {languages}</p>}
         {job.salary && <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', margin:'4px 0 0' }}>{fmtPrice(job.salary)}</p>}
       </div>
-      <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, flexShrink:0 }}>Ver →</span>
-    </button>
+      <button
+        onClick={e => { e.stopPropagation(); onToggleFav?.() }}
+        style={{ background:'none', border:'none', cursor:'pointer', fontSize:18, padding:'4px', flexShrink:0 }}
+        aria-label={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+      >
+        {isFav ? '❤️' : '🤍'}
+      </button>
+    </div>
   )
 }
 
@@ -236,6 +251,8 @@ function PortalDetail({ portal, defaultEmoji = '🏠' }) {
 export default function Tablon() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { isLoggedIn, user } = useAuth()
+  const { isFavorite, toggleFavorite } = useFavorites()
+  const [userAvatars, setUserAvatars] = useState(new Map())
   const [ads, setAds] = useState([])
   const [jobs, setJobs] = useState([])
   const [housingPortals, setHousingPortals] = useState([])
@@ -357,6 +374,15 @@ export default function Tablon() {
       cancelled = true
     }
   }, [isLoggedIn])
+
+  useEffect(() => {
+    const ids = [
+      ...ads.map(a => a.user_id),
+      ...jobs.map(j => j.user_id),
+    ]
+    if (!ids.length) return
+    fetchAvatarsByIds(ids).then(setUserAvatars)
+  }, [ads, jobs])
 
   useEffect(() => {
     supabase.from('providers').select('id,name,description,website,photo_url,city,canton').eq('category','vivienda').eq('active',true).order('featured',{ascending:false}).order('name',{ascending:true})
@@ -533,7 +559,7 @@ export default function Tablon() {
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>EMPLEOS DE LA COMUNIDAD</p>
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                 {filteredJobs.map(j => (
-                  <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} />
+                  <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userAvatars.get(j.user_id)} />
                 ))}
                 <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
                   <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Tienes una oferta de trabajo?</h3>
@@ -557,7 +583,7 @@ export default function Tablon() {
           {filteredAds.length > 0 && (
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>ANUNCIOS DE LA COMUNIDAD</p>
-              <div>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} />)}</div>
+              <div>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userAvatars.get(ad.user_id)} />)}</div>
             </>
           )}
         </>
@@ -571,10 +597,10 @@ export default function Tablon() {
       ) : (
         <div>
           {filteredAds.map(ad => (
-            <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} />
+            <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userAvatars.get(ad.user_id)} />
           ))}
           {!cat && filteredJobs.map(j => (
-            <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} />
+            <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userAvatars.get(j.user_id)} />
           ))}
         </div>
       )}
@@ -622,6 +648,7 @@ export default function Tablon() {
           <AdDetail
             ad={selectedAd}
             user={user}
+            avatarSrc={userAvatars.get(selectedAd.user_id)}
           />
         )}
       </Sheet>
