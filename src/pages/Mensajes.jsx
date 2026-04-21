@@ -399,6 +399,7 @@ export default function Mensajes() {
     const isSender = conv.sender_id === user.id
     const updateField = isSender ? { deleted_by_sender: true } : { deleted_by_owner: true }
     await supabase.from('conversations').update(updateField).eq('id', conv.id)
+    unreadStore.remove(conv.id)
     setConversations(prev => prev.filter(c => c.id !== conv.id))
     if (selectedConv?.id === conv.id) { setSelectedConv(null); setMessages([]); setShowList(true) }
   }

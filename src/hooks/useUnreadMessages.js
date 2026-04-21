@@ -5,6 +5,22 @@ import { useAuth } from './useAuth'
 
 const STORAGE_KEY = 'latido_msgs_last_visit'
 
+async function fetchVisibleConversations(userId) {
+  let response = await supabase
+    .from('conversations')
+    .select('id')
+    .or(`and(sender_id.eq.${userId},deleted_by_sender.eq.false),and(owner_id.eq.${userId},deleted_by_owner.eq.false)`)
+
+  if (response.error) {
+    response = await supabase
+      .from('conversations')
+      .select('id')
+      .or(`sender_id.eq.${userId},owner_id.eq.${userId}`)
+  }
+
+  return response
+}
+
 export function markConvRead(convId) {
   unreadStore.remove(convId)
   if (unreadStore.get().size === 0) {
@@ -35,17 +51,18 @@ export function useUnreadMessages() {
     async function init() {
       const lastVisit = localStorage.getItem(STORAGE_KEY)
 
-      const { data: convs } = await supabase
-        .from('conversations')
-        .select('id')
-        .or(`sender_id.eq.${user.id},owner_id.eq.${user.id}`)
+      const { data: convs } = await fetchVisibleConversations(user.id)
 
       if (cancelled) return
       const convIds = (convs || []).map(c => c.id)
       convIdsRef.current = new Set(convIds)
-      if (!convIds.length) return
+      if (!convIds.length) {
+        unreadStore.replace([])
+        return
+      }
 
-      // Seed the store with initially unread convs
+      // Rebuild from visible conversations only so deleted/hidden threads
+      // cannot keep stale unread badges alive.
       let q = supabase
         .from('messages')
         .select('conversation_id')
@@ -57,7 +74,9 @@ export function useUnreadMessages() {
       const { data: unreadMsgs } = await q
       if (cancelled) return
 
-      ;(unreadMsgs || []).forEach(m => unreadStore.add(m.conversation_id))
+      unreadStore.replace(
+        [...new Set((unreadMsgs || []).map(m => m.conversation_id))]
+      )
 
       // Real-time: new messages from others → add to store
       if (channelRef.current) supabase.removeChannel(channelRef.current)
