@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { usePWA } from '../hooks/usePWA'
 import { useFavorites } from '../hooks/useFavorites'
 import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
 import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
@@ -225,6 +226,7 @@ function loadAlertSettings() {
 
 export default function Perfil() {
   const { isLoggedIn, displayName, userCanton, user, signOut, avatarUrl, updateAvatar } = useAuth()
+  const { isPWA, canInstall, promptInstall } = usePWA()
   const navigate = useNavigate()
 
   // publications
@@ -649,6 +651,45 @@ export default function Perfil() {
           </button>
         )
       })}
+
+      {/* Install app card */}
+      {!isPWA && (
+        <div style={{ background:'linear-gradient(135deg,#1e293b,#0f172a)', borderRadius:16, padding:'16px 18px', marginTop:8, marginBottom:8 }}>
+          <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
+            <div style={{ fontSize:28, flexShrink:0 }}>📲</div>
+            <div style={{ flex:1 }}>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:'#fff', margin:'0 0 4px', letterSpacing:-0.3 }}>Tu gente más cerca que nunca</p>
+              {/iPad|iPhone|iPod/.test(navigator.userAgent) ? (
+                <>
+                  <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.55 }}>
+                    Añade Latido a tu pantalla de inicio gratis y accede a tu comunidad en segundos estés donde estés.
+                  </p>
+                  <div style={{ background:'rgba(255,255,255,0.08)', borderRadius:10, padding:'8px 12px' }}>
+                    {['1. Abre Safari (no Chrome)', '2. Toca el icono 📤 de la barra inferior', '3. Selecciona "Añadir a pantalla de inicio"'].map(s => (
+                      <p key={s} style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'2px 0', lineHeight:1.4 }}>{s}</p>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.55 }}>
+                    Añade Latido a tu pantalla de inicio gratis y accede a tu comunidad en segundos estés donde estés.
+                  </p>
+                  {canInstall ? (
+                    <button onClick={promptInstall} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', border:'none', borderRadius:10, padding:'9px 18px', cursor:'pointer' }}>
+                      Añadir a inicio
+                    </button>
+                  ) : (
+                    <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.5)', margin:0 }}>
+                      En el menú del navegador busca "Instalar app" o "Añadir a pantalla de inicio".
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <button onClick={handleSignOut} style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:'#EF4444', background:'#FEF2F2', border:'none', borderRadius:14, padding:'13px 0', width:'100%', cursor:'pointer', marginTop:8 }}>
         Cerrar sesión

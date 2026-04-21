@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { C, PP } from './lib/theme'
@@ -23,6 +23,59 @@ const RegistrarComunidad = lazy(() => import('./pages/RegistrarComunidad'))
 const PublicarEmpleo = lazy(() => import('./pages/PublicarEmpleo'))
 const Legal = lazy(() => import('./pages/Legal'))
 const Mensajes = lazy(() => import('./pages/Mensajes'))
+
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+const isAndroid = /Android/.test(navigator.userAgent)
+
+function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
+  const { isLoggedIn } = useAuth()
+  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('latido_pwa_dismissed') === '1')
+  const [installed, setInstalled] = useState(false)
+
+  const dismiss = () => {
+    sessionStorage.setItem('latido_pwa_dismissed', '1')
+    setDismissed(true)
+  }
+
+  const handleInstall = async () => {
+    const accepted = await promptInstall()
+    if (accepted) setInstalled(true)
+  }
+
+  if (!isLoggedIn || isPWA || dismissed || installed) return null
+  if (!canInstall && !isIOS) return null
+
+  return (
+    <div style={{ position:'fixed', bottom:72, left:0, right:0, zIndex:200, padding:'0 12px', pointerEvents:'none' }}>
+      <div style={{ background:'#1e293b', borderRadius:18, padding:'14px 16px', boxShadow:'0 8px 32px rgba(0,0,0,0.28)', display:'flex', gap:12, alignItems:'flex-start', pointerEvents:'all', maxWidth:480, margin:'0 auto' }}>
+        <div style={{ fontSize:28, flexShrink:0, marginTop:2 }}>📲</div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#fff', margin:'0 0 2px' }}>Instala Latido en tu móvil</p>
+          {isIOS ? (
+            <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.5 }}>
+              Toca <strong style={{ color:'#fff' }}>Compartir 📤</strong> y luego <strong style={{ color:'#fff' }}>"Añadir a pantalla de inicio"</strong> para instalar la app.
+            </p>
+          ) : (
+            <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.5 }}>
+              Accede más rápido sin abrir el navegador.
+            </p>
+          )}
+          <div style={{ display:'flex', gap:8 }}>
+            {!isIOS && canInstall && (
+              <button onClick={handleInstall} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', border:'none', borderRadius:10, padding:'8px 16px', cursor:'pointer' }}>
+                Instalar
+              </button>
+            )}
+            <button onClick={dismiss} style={{ fontFamily:PP, fontWeight:600, fontSize:12, background:'rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.7)', border:'none', borderRadius:10, padding:'8px 14px', cursor:'pointer' }}>
+              Ahora no
+            </button>
+          </div>
+        </div>
+        <button onClick={dismiss} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.4)', fontSize:18, padding:0, flexShrink:0, lineHeight:1 }}>✕</button>
+      </div>
+    </div>
+  )
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -140,6 +193,7 @@ function AppShell() {
         </Suspense>
       </main>
       <BottomNav />
+      <PWAInstallBanner canInstall={canInstall} promptInstall={promptInstall} isPWA={isPWA} />
     </>
   )
 }
