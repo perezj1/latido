@@ -550,7 +550,7 @@ export default function Perfil() {
   const menu = [
     { icon:'📌', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
     { icon:'❤️', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
-    { icon:'💬', label:'Mensajes', sub:'Conversaciones con otros usuarios', action:() => navigate('/mensajes') },
+    // { icon:'💬', label:'Mensajes', sub:'Conversaciones con otros usuarios', action:() => navigate('/mensajes') },
     { icon:'📚', label:'Guías', sub:'Documentos y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
     { icon:'🔔', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', action:() => setAlertsOpen(true) },
     { icon:'⚙️', label:'Configuración', sub:'Nombre, cantón, idiomas, contraseña', action:openConfig },
@@ -574,39 +574,48 @@ export default function Perfil() {
     <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
 
       {/* Avatar + header card */}
-      <div style={{ background:'linear-gradient(135deg,#1D4ED8,#2563EB)', borderRadius:24, padding:'24px 20px 28px', marginBottom:20, position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', top:-20, right:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
-        <div style={{ display:'flex', gap:16, alignItems:'center', marginBottom:18 }}>
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:0, position:'relative' }}>
-            <Avatar name={displayName} size={64} src={avatarUrl} />
-            <button
-              onClick={() => avatarInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              style={{ marginTop:6, background:'rgba(255,255,255,0.2)', border:'1.5px solid rgba(255,255,255,0.5)', borderRadius:20, padding:'3px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:4, color:'#fff', fontFamily:PP, fontSize:10, fontWeight:600 }}
-              aria-label="Cambiar foto"
-            >
-              {uploadingAvatar ? '⏳' : '📷'} <span>{uploadingAvatar ? 'Subiendo...' : 'Foto'}</span>
-            </button>
-            <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display:'none' }} />
+      <div style={{ background:'linear-gradient(135deg,#1D4ED8,#2563EB)', borderRadius:24, padding:'28px 20px 24px', marginBottom:20, position:'relative', overflow:'hidden', textAlign:'center' }}>
+        <div style={{ position:'absolute', top:-30, right:-30, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
+        <div style={{ position:'absolute', bottom:-20, left:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
+
+        {/* Avatar with camera overlay */}
+        <div
+          style={{ position:'relative', display:'inline-block', marginBottom:12, cursor:'pointer' }}
+          onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+        >
+          <Avatar name={displayName} size={80} src={avatarUrl} />
+          <div style={{ position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:'50%', background:'#fff', border:'2px solid #2563EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13 }}>
+            {uploadingAvatar ? '⏳' : '📷'}
           </div>
-          <div>
-            <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:'#fff', marginBottom:4, letterSpacing:-0.3 }}>{displayName}</h1>
-            <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.7)', margin:0 }}>{user?.email}</p>
-            {userCanton && <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.7)', margin:'2px 0 0' }}>📍 Cantón {userCanton}</p>}
-          </div>
+          <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display:'none' }} />
         </div>
-        <div style={{ display:'flex', gap:20, padding:'14px 0 0', borderTop:'1px solid rgba(255,255,255,0.15)' }}>
-          {[['Publicaciones', counts.total], ['Activas', counts.active], ['Ocultas', counts.inactive]].map(([label, value]) => (
-            <div key={label} style={{ textAlign:'center' }}>
-              <p style={{ fontFamily:PP, fontWeight:700, fontSize:18, color:'#fff', margin:'0 0 2px' }}>{value}</p>
-              <p style={{ fontFamily:PP, fontSize:10, color:'rgba(255,255,255,0.65)', margin:0 }}>{label}</p>
+
+        {/* Name & info */}
+        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:'#fff', margin:'0 0 4px', letterSpacing:-0.3 }}>{displayName}</h1>
+        <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.65)', margin:'0 0 8px' }}>{user?.email}</p>
+        {userCanton && (
+          <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(255,255,255,0.15)', borderRadius:20, padding:'4px 12px', fontFamily:PP, fontSize:11, fontWeight:600, color:'#fff' }}>
+            📍 Cantón {userCanton}
+          </span>
+        )}
+
+        {/* Stats */}
+        <div style={{ display:'flex', justifyContent:'center', gap:0, marginTop:20, borderTop:'1px solid rgba(255,255,255,0.15)', paddingTop:16 }}>
+          {[
+            { icon:'📌', value: counts.total, label:'Publicaciones' },
+            { icon: alertSettings.enabled ? '🔔' : '🔕', value: alertSettings.enabled ? '✅' : '❌', label:'Alertas', isText: true },
+            { icon:'❤️', value: (favorites.ads?.length||0)+(favorites.jobs?.length||0), label:'Favoritos' },
+          ].map(({ icon, value, label, isText }, i, arr) => (
+            <div key={label} style={{ flex:1, textAlign:'center', borderRight: i < arr.length-1 ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
+              <p style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:'#fff', margin:'0 0 2px', letterSpacing:-0.5 }}>{value}</p>
+              <p style={{ fontFamily:PP, fontSize:10, color:'rgba(255,255,255,0.6)', margin:0 }}>{icon} {label}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Twint promo banner */}
-      <div style={{ background:'linear-gradient(135deg,#f0fdf4,#dcfce7)', border:'1.5px solid #86efac', borderRadius:16, padding:'14px 16px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
+      {/* <div style={{ background:'linear-gradient(135deg,#f0fdf4,#dcfce7)', border:'1.5px solid #86efac', borderRadius:16, padding:'14px 16px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
         <div>
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#15803d', marginBottom:3 }}>💚 Apoya a Latido</p>
           <p style={{ fontFamily:PP, fontSize:11, color:'#166534', margin:0, lineHeight:1.5 }}>
@@ -621,7 +630,7 @@ export default function Perfil() {
           Pagar<br/>Twint
         </a>
       </div>
-
+ */}
       {menu.map(item => {
         const content = (
           <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'13px 15px', display:'flex', gap:12, alignItems:'center', marginBottom:8, cursor:item.disabled ? 'not-allowed' : 'pointer', transition:'all .15s', opacity:item.disabled ? 0.6 : 1 }}>
@@ -756,11 +765,11 @@ export default function Perfil() {
               })}
             </div>
 
-            <div style={{ background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, padding:'10px 12px' }}>
+           {/*  <div style={{ background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, padding:'10px 12px' }}>
               <p style={{ fontFamily:PP, fontSize:11, color:'#92400E', margin:0, lineHeight:1.5 }}>
                 ⚠️ Las notificaciones push llegarán en una próxima actualización. Tus preferencias ya están guardadas.
               </p>
-            </div>
+            </div> */}
           </>
         )}
       </Sheet>

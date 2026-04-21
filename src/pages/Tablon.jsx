@@ -260,6 +260,7 @@ export default function Tablon() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [portalsOpen, setPortalsOpen] = useState(true)
   const [selectedAd, setSelectedAd] = useState(null)
   const [selectedJob, setSelectedJob] = useState(null)
   const [selectedPortal, setSelectedPortal] = useState(null)
@@ -309,7 +310,9 @@ export default function Tablon() {
     p.delete('openJob')
     setSearchParams(p, { replace:true })
   }
-  const activeCount = [cat,type,canton,plz,privacy].filter(Boolean).length
+  const activeCount = isEmpleos
+    ? [jobType, canton, plz].filter(Boolean).length
+    : [type, canton, plz, privacy].filter(Boolean).length
 
 
   useEffect(() => {
@@ -404,12 +407,16 @@ export default function Tablon() {
   const communityJobs = useMemo(() => {
     const fromJobs = jobs.filter(j =>
       (!jobType || j.type === jobType) &&
+      (!canton || j.canton === canton) &&
+      (!plz || j.plz?.startsWith(plz)) &&
       (!deferredSearch || j.title?.toLowerCase().includes(deferredSearch) || j.company?.toLowerCase().includes(deferredSearch))
     )
     const fromAds = ads.filter(a =>
       a.cat === 'empleo' &&
       (isLoggedIn || a.privacy === 'public') &&
       (!jobType || a.type === jobType) &&
+      (!canton || a.canton === canton) &&
+      (!plz || a.plz?.startsWith(plz)) &&
       (!deferredSearch || a.title?.toLowerCase().includes(deferredSearch) || a.desc?.toLowerCase().includes(deferredSearch))
     ).map(a => ({
       id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
@@ -418,7 +425,7 @@ export default function Tablon() {
       desc: a.desc, user_id: a.user_id,
     }))
     return [...fromJobs, ...fromAds]
-  }, [ads, deferredSearch, isLoggedIn, jobType, jobs])
+  }, [ads, canton, deferredSearch, isLoggedIn, jobType, jobs, plz])
 
   const filteredJobs = communityJobs
 
@@ -453,7 +460,6 @@ export default function Tablon() {
 
   const catOptions  = [{ id:'', label:'Todos' }, ...orderedCats.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
   const typeOptions = [{ id:'', label:'Todos' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
-  const privOptions = [{ id:'', label:'Todos' }, { id:'public', label:'🌐 Públicos' }, { id:'private', label:'🔒 Privados' }]
   const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Fijo' }, { id:'Part-time', label:'Temporal' }]
 
   return (
@@ -461,10 +467,10 @@ export default function Tablon() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
         <div>
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, letterSpacing:-0.5, marginBottom:4 }}>
-            {isEmpleos ? '💼 Empleos para latinos' : '📌 Tablón de anuncios'}
+            📌 Tablón de anuncios
           </h1>
           <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>
-            {loading ? 'Cargando...' : isEmpleos ? `${filteredJobs.length} ofertas encontradas` : `${filteredAds.length + (!cat ? filteredJobs.length : 0)} anuncios encontrados`}
+            {loading ? 'Cargando...' : isEmpleos ? `${filteredJobs.length} anuncios encontrados` : `${filteredAds.length + (!cat ? filteredJobs.length : 0)} anuncios encontrados`}
             {canton && ` · 📍 Cantón ${canton}`}
           </p>
         </div>
@@ -480,35 +486,31 @@ export default function Tablon() {
             value={search} onChange={e=>setSearch(e.target.value)}
           />
         </div>
-        {!isEmpleos && (
-          <button onClick={()=>setShowFilters(true)} style={{ position:'relative', background: activeCount>0?C.primary:C.bg, border:`1.5px solid ${activeCount>0?C.primary:C.border}`, borderRadius:13, padding:'0 16px', cursor:'pointer', fontFamily:PP, fontSize:11, fontWeight:700, color: activeCount>0?'#fff':C.mid, display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-            ⚙️ Filtros
-            {activeCount > 0 && <span style={{ background:'#fff', color:C.primary, borderRadius:'50%', width:16, height:16, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800 }}>{activeCount}</span>}
-          </button>
-        )}
+        <button onClick={()=>setShowFilters(true)} style={{ position:'relative', background: activeCount>0?C.primary:C.bg, border:`1.5px solid ${activeCount>0?C.primary:C.border}`, borderRadius:13, padding:'0 16px', cursor:'pointer', fontFamily:PP, fontSize:11, fontWeight:700, color: activeCount>0?'#fff':C.mid, display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+          ⚙️ Filtros
+          {activeCount > 0 && <span style={{ background:'#fff', color:C.primary, borderRadius:'50%', width:16, height:16, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800 }}>{activeCount}</span>}
+        </button>
       </div>
 
       {/* Category pills */}
       <div className="no-scroll" style={{ display:'flex', gap:6, overflowX:'auto', marginBottom: activeCount>0?8:16, paddingBottom:2 }}>
-        {catOptions.map(o => (
-          <button key={o.id} onClick={()=>setFilter('cat', cat===o.id?'':o.id)} style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'5px 12px', borderRadius:20, border:`1.5px solid ${cat===o.id?C.primary:C.border}`, background:cat===o.id?C.primary:'#fff', color:cat===o.id?'#fff':C.mid, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-            {o.label}
-          </button>
-        ))}
+        {catOptions.map(o => {
+          const active = cat === o.id
+          return (
+            <button key={o.id} onClick={()=>setFilter('cat', active?'':o.id)} style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'5px 12px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:'#fff', color:active?'#fff':C.mid, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
+              {o.label}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Job type pills (only when empleo selected) */}
-      {isEmpleos && (
-        <div style={{ marginBottom:16 }}>
-          <PillFilters options={jobTypeOpts} value={jobType} onChange={v=>setFilter('jobType',v)} />
-        </div>
-      )}
 
       {/* Active filter strip */}
-      {activeCount > 0 && !isEmpleos && (
+      {activeCount > 0 && (
         <div style={{ background:C.primaryLight, borderRadius:10, padding:'6px 12px', display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:14 }}>
           {canton  && <Tag bg={C.primaryMid} color={C.primaryDark}>📍 Cantón {canton}</Tag>}
           {plz     && <Tag bg={C.primaryMid} color={C.primaryDark}>📮 PLZ {plz}</Tag>}
+          {jobType && <Tag bg={C.primaryMid} color={C.primaryDark}>💼 {jobType === 'Full-time' ? 'Fijo' : 'Temporal'}</Tag>}
           {type    && <Tag bg={C.primaryMid} color={C.primaryDark}>{AD_TYPES.find(t=>t.id===type)?.emoji} {AD_TYPES.find(t=>t.id===type)?.label}</Tag>}
           {privacy && <Tag bg={C.primaryMid} color={C.primaryDark}>{privacy==='public'?'🌐 Público':'🔒 Privado'}</Tag>}
           <button onClick={clearFilters} style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.primary, background:'none', border:'none', cursor:'pointer', marginLeft:'auto' }}>✕ Limpiar</button>
@@ -540,12 +542,17 @@ export default function Tablon() {
         <>
           {employmentPortals.length > 0 && !deferredSearch && (
             <div style={{ marginBottom:16 }}>
-              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>PORTALES Y AGENCIAS DE EMPLEO</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                {employmentPortals.map(p => (
-                  <PortalCard key={p.id} portal={p} defaultEmoji="💼" onClick={() => setSelectedPortal({ ...p, defaultEmoji:'💼' })} />
-                ))}
-              </div>
+              <button onClick={() => setPortalsOpen(o => !o)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', padding:0, marginBottom: portalsOpen ? 10 : 0 }}>
+                <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, margin:0 }}>PORTALES Y AGENCIAS DE EMPLEO</p>
+                <span style={{ fontSize:10, color:C.light, transition:'transform .2s', display:'inline-block', transform: portalsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              </button>
+              {portalsOpen && (
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {employmentPortals.map(p => (
+                    <PortalCard key={p.id} portal={p} defaultEmoji="💼" onClick={() => setSelectedPortal({ ...p, defaultEmoji:'💼' })} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {filteredJobs.length === 0 ? (
@@ -573,12 +580,17 @@ export default function Tablon() {
       ) : cat === 'vivienda' && housingPortals.length > 0 && !deferredSearch ? (
         <>
           <div style={{ marginBottom:16 }}>
-            <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>PORTALES Y AGENCIAS DE VIVIENDA</p>
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {housingPortals.map(p => (
-                <PortalCard key={p.id} portal={p} defaultEmoji="🏠" onClick={() => setSelectedPortal({ ...p, defaultEmoji:'🏠' })} />
-              ))}
-            </div>
+            <button onClick={() => setPortalsOpen(o => !o)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', padding:0, marginBottom: portalsOpen ? 10 : 0 }}>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, margin:0 }}>PORTALES Y AGENCIAS DE VIVIENDA</p>
+              <span style={{ fontSize:10, color:C.light, transition:'transform .2s', display:'inline-block', transform: portalsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+            </button>
+            {portalsOpen && (
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {housingPortals.map(p => (
+                  <PortalCard key={p.id} portal={p} defaultEmoji="🏠" onClick={() => setSelectedPortal({ ...p, defaultEmoji:'🏠' })} />
+                ))}
+              </div>
+            )}
           </div>
           {filteredAds.length > 0 && (
             <>
@@ -607,33 +619,58 @@ export default function Tablon() {
 
       {/* Filters sheet */}
       <Sheet show={showFilters} onClose={()=>setShowFilters(false)} title="⚙️ Filtros">
-        <div style={{ marginBottom:14 }}>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>TIPO DE ANUNCIO</p>
-          <PillFilters options={typeOptions} value={type} onChange={v=>setFilter('type',v)} />
-        </div>
-        {isLoggedIn && (
-          <div style={{ marginBottom:14 }}>
-            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>VISIBILIDAD</p>
-            <PillFilters options={privOptions} value={privacy} onChange={v=>setFilter('privacy',v)} />
+        {isEmpleos ? (
+          <div style={{ marginBottom:18 }}>
+            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE EMPLEO</p>
+            <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+              {jobTypeOpts.map(o => {
+                const active = jobType === o.id
+                return (
+                  <button key={o.id} onClick={()=>setFilter('jobType', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                    {o.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          <div style={{ marginBottom:18 }}>
+            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE ANUNCIO</p>
+            <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+              {typeOptions.map(o => {
+                const active = type === o.id
+                return (
+                  <button key={o.id} onClick={()=>setFilter('type', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                    {o.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
-        <div style={{ marginBottom:14 }}>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>CANTÓN</p>
-          <div className="no-scroll" style={{ display:'flex', gap:5, flexWrap:'wrap', maxHeight:120, overflowY:'auto' }}>
+
+        <div style={{ marginBottom:18 }}>
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>CANTÓN</p>
+          <select
+            value={canton}
+            onChange={e=>setFilter('canton', e.target.value)}
+            style={{ width:'100%', fontFamily:PP, fontSize:13, fontWeight:500, color:canton?C.text:C.light, border:`1.5px solid ${canton?C.primary:C.border}`, borderRadius:12, padding:'11px 14px', background:'#fff', outline:'none', cursor:'pointer', appearance:'auto' }}
+          >
+            <option value=''>Todos los cantones</option>
             {CANTONS.map(c => (
-              <button key={c.code} onClick={()=>setFilter('canton', canton===c.code?'':c.code)} style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'4px 10px', borderRadius:16, border:`1.5px solid ${canton===c.code?C.primary:C.border}`, background:canton===c.code?C.primary:'#fff', color:canton===c.code?'#fff':C.mid, cursor:'pointer', flexShrink:0 }}>
-                {c.code}
-              </button>
+              <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
             ))}
-          </div>
+          </select>
         </div>
-        <div style={{ marginBottom:20 }}>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>PLZ (código postal)</p>
+
+        <div style={{ marginBottom:22 }}>
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>PLZ (código postal)</p>
           <input
-            style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12, padding:'10px 13px', fontSize:13, fontFamily:PP, outline:'none', background:'#fff', color:C.text, boxSizing:'border-box' }}
+            style={{ width:'100%', border:`1.5px solid ${plz?C.primary:C.border}`, borderRadius:12, padding:'11px 14px', fontSize:13, fontFamily:PP, outline:'none', background:'#fff', color:C.text, boxSizing:'border-box' }}
             placeholder="Ej: 8001, 3000, 1200..." value={plz} onChange={e=>setFilter('plz',e.target.value)} maxLength={4}
           />
         </div>
+
         <Btn onClick={()=>setShowFilters(false)}>Aplicar filtros</Btn>
         {activeCount > 0 && (
           <button onClick={()=>{clearFilters();setShowFilters(false);}} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:10, padding:'6px 0' }}>

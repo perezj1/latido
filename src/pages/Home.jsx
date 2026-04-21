@@ -268,9 +268,9 @@ export default function Home() {
         <div style={{ maxWidth:980, margin:'0 auto', position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:24 }}>
             <div style={{ maxWidth:620, flex:1, minWidth:0 }}>
-              <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>
+              {/* <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>
                 Más cerca de tu gente
-              </p>
+              </p> */}
               <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(30px,6vw,48px)', lineHeight:1.2, letterSpacing:-0.5, color:'#fff', margin:'0 0 14px' }}>
                 Hola&nbsp;  {firstName}.<br />                
               </h1>
@@ -536,7 +536,7 @@ export default function Home() {
               🎉 Eventos próximos
             </h2>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
-              Próximos eventos de la comunidad latina.
+              Próximos eventos para ti.
             </p>
           </div>
           <Link to="/comunidades?view=eventos" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>
@@ -558,56 +558,116 @@ export default function Home() {
       </section>
 
       <section style={{ maxWidth:980, margin:'0 auto', padding:'42px 16px 110px' }}>
-        <div style={{ background:'linear-gradient(135deg,#1E3A8A,#2563EB)', borderRadius:28, padding:'24px 22px', position:'relative', overflow:'hidden' }}>
-          <div style={{ position:'absolute', right:-28, top:-28, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }} />
+  <div style={{ background:'linear-gradient(135deg,#1E3A8A,#2563EB)', borderRadius:28, padding:'28px 24px', position:'relative', overflow:'hidden' }}>
+    <div style={{ position:'absolute', right:-40, top:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
+    <div style={{ position:'absolute', left:-20, bottom:-30, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
 
-          <div style={{ position:'relative', display:'flex', justifyContent:'space-between', alignItems:'center', gap:16, flexWrap:'wrap' }}>
-            <div style={{ maxWidth:520 }}>
-              <p style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:'#fff', margin:'0 0 8px', letterSpacing:-0.5 }}>
-                Tu sesión se mantendrá activa hasta que cierres manualmente.
-              </p>
-              <p style={{ fontFamily:PP, fontSize:13, color:'rgba(255,255,255,0.76)', lineHeight:1.7, margin:0 }}>
-                Ya no necesitas volver a entrar cada vez. Desde aquí puedes seguir explorando o publicar algo ahora mismo.
-              </p>
-            </div>
+    <div
+      style={{
+        position:'relative',
+        display:'flex',
+        flexDirection:'column',
+        justifyContent:'center',
+        alignItems:'center',
+        gap:20,
+        textAlign:'center'
+      }}
+    >
+      <div style={{ maxWidth:520, display:'flex', flexDirection:'column', alignItems:'center' }}>
+        <p
+          style={{
+            fontFamily: PP,
+            fontSize: 32,
+            fontWeight: 800,
+            lineHeight: 1.05,
+            letterSpacing: '-1px',
+            margin: '0 0 16px',
+            textAlign: 'center'
+          }}
+        >
+          <span style={{ color: '#fff' }}>"Lejos de casa,</span>
+          <br />
+          <span style={{ color: '#60A5FA' }}>pero nunca solos."</span>
+        </p>
 
-            <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-              <Link
-                to="/publicar"
-                style={{
-                  fontFamily:PP,
-                  fontWeight:700,
-                  fontSize:13,
-                  background:'#fff',
-                  color:C.primary,
-                  textDecoration:'none',
-                  padding:'13px 20px',
-                  borderRadius:14
-                }}
-              >
-                Publicar anuncio
-              </Link>
+        <p
+          style={{
+            fontFamily:PP,
+            fontSize:18,
+            color:'rgba(255,255,255,0.75)',
+            lineHeight:1.25,
+            margin:'0 0 12px',
+            textAlign:'center'
+          }}
+        >
+          Para todo lo que necesites o estés buscando, publica un anuncio y deja que tu comunidad te ayude.
+        </p>
 
-              <Link
-                to="/perfil"
-                style={{
-                  fontFamily:PP,
-                  fontWeight:700,
-                  fontSize:13,
-                  background:'rgba(255,255,255,0.14)',
-                  color:'#fff',
-                  textDecoration:'none',
-                  padding:'13px 20px',
-                  borderRadius:14,
-                  border:'1px solid rgba(255,255,255,0.22)'
-                }}
-              >
-                Ir a mi perfil
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+        <p
+          style={{
+            fontFamily:PP,
+            fontSize:13,
+            color:'rgba(255,255,255,0.75)',
+            lineHeight:1.7,
+            margin:0,
+            textAlign:'center'
+          }}
+        >
+          Para eso estamos aquí. Miles de hispanohablantes en Suiza dispuestos a ayudarse.
+        </p>
+      </div>
+
+      <div
+        style={{
+          display:'flex',
+          flexDirection:'column',
+          gap:10,
+          alignItems:'center',
+          justifyContent:'center'
+        }}
+      >
+        <Link
+          to="/publicar"
+          style={{
+            fontFamily:PP,
+            fontWeight:700,
+            fontSize:13,
+            background:'#fff',
+            color:C.primary,
+            textDecoration:'none',
+            padding:'13px 22px',
+            borderRadius:14,
+            textAlign:'center',
+            whiteSpace:'nowrap',
+            minWidth:220
+          }}
+        >
+          📌 Publicar anuncio
+        </Link>
+
+        <Link
+          to="/tablon"
+          style={{
+            fontFamily:PP,
+            fontWeight:600,
+            fontSize:13,
+            background:'rgba(255,255,255,0.12)',
+            color:'#fff',
+            textDecoration:'none',
+            padding:'11px 22px',
+            borderRadius:14,
+            border:'1px solid rgba(255,255,255,0.2)',
+            textAlign:'center',
+            whiteSpace:'nowrap',
+            minWidth:220
+          }}
+        >
+          Ver el tablón →
+        </Link>
+      </div>
+    </div>
+  </div>
+</section>
     </div>
   )
 }
