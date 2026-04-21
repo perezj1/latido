@@ -624,7 +624,7 @@ export default function Publicar() {
               ))}
             </div>
 
-            <div
+            {/* <div
               style={{
                 background:form.privacy === 'private' ? C.warnLight : C.successLight,
                 border:`1px solid ${form.privacy === 'private' ? C.warnMid : C.successMid}`,
@@ -646,7 +646,7 @@ export default function Publicar() {
                   ? '🔒 Solo usuarios con cuenta pueden ver tu anuncio y escribirte dentro de Latido.'
                   : '🌐 Tu anuncio es público para todos, pero las conversaciones pasan por Latido.'}
               </p>
-            </div>
+            </div> */}
           </div>
 
           {form.title && (
