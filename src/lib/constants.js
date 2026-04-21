@@ -24,7 +24,6 @@ export const AD_CATS = [
   { id:'documentos', emoji:'📋', label:'Legal',     sub:['Cartas','Trámites','Traducción','Asesoría'] },
   { id:'servicios',  emoji:'🔧', label:'Servicios',        sub:['Clases','Peluquería','Mecánico','Informática','Otro'] },
   { id:'empleo',     emoji:'💼', label:'Empleo',      sub:['Full-time','Part-time','Freelance','Prácticas'] },
-  { id:'regalo',     emoji:'🎁', label:'Se regala',   sub:['Ropa','Muebles','Libros','Juguetes','Otro'] },
 ]
 
 export const AD_TYPES = [
