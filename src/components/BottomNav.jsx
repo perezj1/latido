@@ -5,33 +5,61 @@ import { C, PP } from '../lib/theme'
 
 const TABS = [
   { path:'/',            emoji:'🏠', label:'Inicio' },
-  { path:'/tablon',      emoji:'📋', label:'Anuncios' },
+  { path:'/tablon',      emoji:'📌', label:'Anuncios' },
   { path:'/comunidades', emoji:'🤝', label:'Comunidad' },
   { path:'/mensajes',    emoji:'💬', label:'Mensajes' },
   { path:'/perfil',      emoji:'👤', label:'Perfil' },
 ]
 
+const NO_FAB = ['/mensajes', '/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
+
+function getFab(pathname, search) {
+  if (NO_FAB.includes(pathname)) return null
+
+  const params = new URLSearchParams(search)
+
+  if (pathname === '/comunidades') {
+    const view = params.get('view') || 'comunidades'
+    if (view === 'negocios')  return { label:'+ Negocio', to:'/registrar-negocio' }
+    if (view === 'eventos')   return { label:'+ Evento',  to:'/publicar-evento' }
+    return { label:'+ Comunidad', to:'/registrar-comunidad' }
+  }
+
+  if (pathname === '/tablon' && params.get('cat') === 'empleo') {
+    return { label:'+ Empleo', to:'/publicar-empleo' }
+  }
+
+  return { label:'+ Anuncio', to:'/publicar' }
+}
+
 export default function BottomNav() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const { isLoggedIn, displayName, avatarUrl } = useAuth()
+
+  const fab = getFab(pathname, search)
+  const fabTo = fab ? (isLoggedIn ? fab.to : '/auth') : null
 
   return (
     <>
-      <Link
-        to={isLoggedIn ? '/publicar' : '/auth'}
-        className="hide-md"
-        style={{
-          position:'fixed', bottom:76, right:18, zIndex:60,
-          width:54, height:54, borderRadius:'50%',
-          background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`,
-          color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
-          fontSize:28, fontWeight:700, textDecoration:'none',
-          boxShadow:`0 4px 20px rgba(37,99,235,0.45)`,
-        }}
-        aria-label="Publicar"
-      >
-        +
-      </Link>
+      {fab && (
+        <Link
+          to={fabTo}
+          className="hide-md"
+          style={{
+            position:'fixed', bottom:76, right:18, zIndex:60,
+            height:46, borderRadius:23,
+            background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`,
+            color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+            fontSize:13, fontWeight:700, textDecoration:'none',
+            boxShadow:`0 4px 20px rgba(37,99,235,0.45)`,
+            padding:'0 20px', whiteSpace:'nowrap',
+            letterSpacing:-0.2,
+          }}
+          aria-label={fab.label}
+        >
+          {fab.label}
+        </Link>
+      )}
 
       <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center' }}>
         {TABS.map(tab => {

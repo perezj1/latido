@@ -97,7 +97,7 @@ export default function PublicarEmpleo() {
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>💼</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>¡Empleo publicado!</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
-        Tu oferta ya está visible para miles de latinos en Suiza. Los candidatos te escribirán por mensaje dentro de Latido.
+        Tu oferta ya está visible para miles de personas en Suiza. Los candidatos te escribirán por mensaje dentro de Latido.
       </p>
       <Btn onClick={() => navigate('/tablon?cat=empleo')}>Ver empleos →</Btn>
       <button onClick={() => { setDone(false); setStep(0); setForm({ sector:'', title:'', company:'', jobType:'', city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', logoUrl:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
