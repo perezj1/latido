@@ -20,11 +20,12 @@ function getLocalUser() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(getLocalUser)
-  const [loading, setLoading] = useState(false)
+  const localUser = getLocalUser()
+  const [user, setUser] = useState(localUser)
+  // Only show loading spinner if we have no cached user to show immediately
+  const [loading, setLoading] = useState(!localUser)
   const [avatarUrl, setAvatarUrl] = useState(null)
 
-  // Load avatar from profiles whenever user changes
   useEffect(() => {
     if (!user?.id) { setAvatarUrl(null); return }
     supabase.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle()
@@ -32,12 +33,23 @@ export function AuthProvider({ children }) {
   }, [user?.id])
 
   useEffect(() => {
+    // Verify session in background; resolves loading if no cached user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-    }).catch(() => {})
+      setLoading(false)
+    }).catch(() => setLoading(false))
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setAvatarUrl(null)
+      } else if (session?.user) {
+        // SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED — real session
+        setUser(session.user)
+        setLoading(false)
+      }
+      // Ignore events without session (e.g. SIGNED_UP with email confirmation pending)
+      // so we don't wipe out the user set by signUp()
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -48,7 +60,9 @@ export function AuthProvider({ children }) {
       password,
       options: { data: { name, canton } },
     })
-    setUser(result.data?.session?.user ?? result.data?.user ?? null)
+    // Set user from session (immediate login) or from user object (email confirmation flow)
+    const u = result.data?.session?.user ?? result.data?.user ?? null
+    setUser(u)
     return result
   }
 
@@ -64,7 +78,6 @@ export function AuthProvider({ children }) {
     setAvatarUrl(null)
   }
 
-  // Called after a successful avatar upload so all consumers update instantly
   const updateAvatar = useCallback((url) => setAvatarUrl(url), [])
 
   const value = {

@@ -544,15 +544,16 @@ export default function Home() {
           </Link>
         </div>
 
-        <div style={{ borderRadius:20, overflow:'hidden', border:`1px solid ${C.border}` }}>
+        <div style={{ borderRadius:20, border:`1px solid ${C.border}`, height:380, overflow:'hidden', position:'relative', flexShrink:0 }}>
           <iframe
             title="Próximos eventos latinos"
             width="100%"
-            height="320"
-            style={{ border:'none', display:'block' }}
+            height="380"
+            style={{ border:'none', display:'block', height:380, maxHeight:380 }}
             src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=latino&geoRadius=60"
             loading="lazy"
             allow="fullscreen"
+            scrolling="auto"
           />
         </div>
       </section>
