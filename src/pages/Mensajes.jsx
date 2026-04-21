@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useUnreadMessages, markConvRead } from '../hooks/useUnreadMessages'
+import { unreadStore } from '../lib/unreadStore'
 import { C, PP } from '../lib/theme'
 import { Avatar } from '../components/UI'
 import { fetchAvatarsByIds } from '../lib/profiles'
@@ -79,7 +81,9 @@ export default function Mensajes() {
   const jobId = searchParams.get('jobId')
   const recipientName = cleanParticipantName(searchParams.get('recipientName'))
 
+  const { unreadConvIds } = useUnreadMessages()
   const [conversations, setConversations] = useState([])
+  const [lastMsgAt, setLastMsgAt] = useState(new Map()) // convId → ISO string
   const [convAvatars, setConvAvatars] = useState(new Map())
   const [selectedConv, setSelectedConv] = useState(null)
   const [messages, setMessages] = useState([])
@@ -89,8 +93,11 @@ export default function Mensajes() {
   const [showList, setShowList] = useState(true)
   const messagesEndRef = useRef(null)
   const channelRef = useRef(null)
+  const inboxChannelRef = useRef(null)
   const inputRef = useRef(null)
   const creatingRef = useRef(false)
+  const selectedConvRef = useRef(null)
+  const channelScopeRef = useRef(Math.random().toString(36).slice(2, 10))
   const participantNameCacheRef = useRef(new Map())
   const selfNameRef = useRef(pickParticipantName(displayName, user?.email?.split('@')[0]) || 'Usuario')
   const selfNameLoadedRef = useRef(false)
@@ -106,7 +113,10 @@ export default function Mensajes() {
   }, [messages])
 
   useEffect(() => {
-    return () => { if (channelRef.current) supabase.removeChannel(channelRef.current) }
+    return () => {
+      if (channelRef.current) supabase.removeChannel(channelRef.current)
+      if (inboxChannelRef.current) supabase.removeChannel(inboxChannelRef.current)
+    }
   }, [])
 
   async function resolveOwnDisplayName() {
@@ -209,17 +219,39 @@ export default function Mensajes() {
     }
 
     const data = await hydrateConversationNames(res.data || [], ownName)
+
+    // Seed lastMsgAt from conversation created_at (best available without last_message_at column)
+    const initLastMsg = new Map(data.map(c => [c.id, c.created_at]))
+    setLastMsgAt(initLastMsg)
     setConversations(data)
 
     // Fetch avatars for all other participants
     const otherIds = data.map(c => c.sender_id === user.id ? c.owner_id : c.sender_id).filter(Boolean)
     fetchAvatarsByIds(otherIds).then(setConvAvatars)
 
+    // Subscribe to all incoming messages in this inbox for sorting + per-conv unread
+    if (inboxChannelRef.current) supabase.removeChannel(inboxChannelRef.current)
+    const convIdSet = new Set(data.map(c => c.id))
+    inboxChannelRef.current = supabase
+      .channel(`inbox-${user.id}-${channelScopeRef.current}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+        const msg = payload.new
+        if (!convIdSet.has(msg.conversation_id)) return
+        // Update last message time and bubble conv to top
+        setLastMsgAt(prev => new Map(prev).set(msg.conversation_id, msg.created_at))
+        // If not from self and not currently open → mark unread
+        if (msg.sender_id !== user.id && selectedConvRef.current?.id !== msg.conversation_id) {
+          unreadStore.add(msg.conversation_id)
+        }
+      })
+      .subscribe()
+
     const targetId = adId || jobId
     if (targetId) {
       const existing = data.find(c => c.ad_id === targetId)
       if (existing) {
         setSelectedConv(existing)
+        selectedConvRef.current = existing
         setShowList(false)
         loadMessages(existing)
         setLoading(false)
@@ -292,6 +324,7 @@ export default function Mensajes() {
     }], ownName))[0]
 
     setConversations(prev => [nextConv, ...prev])
+    selectedConvRef.current = nextConv
     setSelectedConv(nextConv)
     setShowList(false)
     loadMessages(nextConv)
@@ -300,8 +333,10 @@ export default function Mensajes() {
   }
 
   function openConversation(conv) {
+    markConvRead(conv.id)
+    selectedConvRef.current = conv
     setSelectedConv(conv)
-    setShowList(false)  // hides list on mobile, chat takes full width
+    setShowList(false)
     loadMessages(conv)
   }
 
@@ -318,7 +353,7 @@ export default function Mensajes() {
 
     if (channelRef.current) supabase.removeChannel(channelRef.current)
     channelRef.current = supabase
-      .channel(`conv-${conv.id}`)
+      .channel(`conv-${conv.id}-${channelScopeRef.current}`)
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'messages',
         filter: `conversation_id=eq.${conv.id}`
@@ -415,18 +450,29 @@ export default function Mensajes() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {conversations.map(conv => (
-                  <div key={conv.id} style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${C.border}`, background: selectedConv?.id === conv.id ? C.primaryLight : 'transparent' }}>
+                {[...conversations].sort((a, b) => {
+                  const ta = lastMsgAt.get(a.id) || a.created_at || ''
+                  const tb = lastMsgAt.get(b.id) || b.created_at || ''
+                  return tb.localeCompare(ta)
+                }).map(conv => {
+                  const isUnread = unreadConvIds.has(conv.id)
+                  return (
+                  <div key={conv.id} style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${C.border}`, background: selectedConv?.id === conv.id ? C.primaryLight : isUnread ? 'rgba(37,99,235,0.04)' : 'transparent' }}>
                     <button onClick={() => openConversation(conv)}
                       style={{ flex: 1, background: 'transparent', border: 'none', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', cursor: 'pointer', minWidth: 0 }}>
-                      <Avatar name={otherName(conv)} size={40} src={convAvatars.get(conv.sender_id === user.id ? conv.owner_id : conv.sender_id)} />
+                      <span style={{ position: 'relative', flexShrink: 0 }}>
+                        <Avatar name={otherName(conv)} size={40} src={convAvatars.get(conv.sender_id === user.id ? conv.owner_id : conv.sender_id)} />
+                        {isUnread && (
+                          <span style={{ position: 'absolute', top: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: '#EF4444', border: '2px solid #fff' }} />
+                        )}
+                      </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: selectedConv?.id === conv.id ? C.primary : C.text, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p style={{ fontFamily: PP, fontWeight: isUnread ? 800 : 700, fontSize: 13, color: selectedConv?.id === conv.id ? C.primary : C.text, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {convTitle(conv)}
                         </p>
-                        <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>{otherName(conv)}</p>
+                        <p style={{ fontFamily: PP, fontSize: 11, color: isUnread ? C.text : C.light, fontWeight: isUnread ? 600 : 400, margin: 0 }}>{otherName(conv)}</p>
                       </div>
-                      <span style={{ fontFamily: PP, fontSize: 10, color: C.light, flexShrink: 0 }}>{formatTime(conv.created_at)}</span>
+                      <span style={{ fontFamily: PP, fontSize: 10, color: isUnread ? C.primary : C.light, fontWeight: isUnread ? 700 : 400, flexShrink: 0 }}>{formatTime(lastMsgAt.get(conv.id) || conv.created_at)}</span>
                     </button>
                     <button onClick={e => deleteConversation(e, conv)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 14px 0 4px', color: '#EF4444', fontSize: 16, flexShrink: 0, opacity: 0.6 }}
@@ -434,7 +480,8 @@ export default function Mensajes() {
                       🗑
                     </button>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

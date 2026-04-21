@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useZoneAlerts, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
@@ -72,6 +73,7 @@ let homeCacheTs = 0
 
 export default function Home() {
   const { displayName, isLoggedIn } = useAuth()
+  const { alertCount } = useZoneAlerts()
 
   const [recentAds, setRecentAds] = useState([])
   const [communityHighlights, setCommunityHighlights] = useState([])
@@ -260,8 +262,15 @@ export default function Home() {
             </div>
 
             {isLoggedIn && (
-              <button style={{ background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:46, height:46, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, cursor:'pointer', flexShrink:0, marginTop:6 }} aria-label="Notificaciones">
+              <button
+                onClick={dismissZoneAlerts}
+                style={{ position:'relative', background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:46, height:46, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, cursor:'pointer', flexShrink:0, marginTop:6 }}
+                aria-label="Notificaciones"
+              >
                 🔔
+                {alertCount > 0 && (
+                  <span style={{ position:'absolute', top:6, right:6, minWidth:8, height:8, borderRadius:4, background:'#EF4444', border:'1.5px solid rgba(255,255,255,0.3)' }} />
+                )}
               </button>
             )}
           </div>

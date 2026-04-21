@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { Avatar } from './UI'
 import { C, PP } from '../lib/theme'
 
@@ -35,6 +36,7 @@ function getFab(pathname, search) {
 export default function BottomNav() {
   const { pathname, search } = useLocation()
   const { isLoggedIn, displayName, avatarUrl } = useAuth()
+  const { hasUnread } = useUnreadMessages()
 
   const fab = getFab(pathname, search)
   const fabTo = fab ? (isLoggedIn ? fab.to : '/auth') : null
@@ -72,10 +74,15 @@ export default function BottomNav() {
               to={to}
               style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'8px 0 10px', gap:2, textDecoration:'none', color: active ? C.primary : C.light, transition:'color .15s' }}
             >
-              {tab.path === '/perfil' && isLoggedIn
-                ? <Avatar name={displayName} size={24} src={avatarUrl} />
-                : <span style={{ fontSize:20, lineHeight:1 }}>{tab.emoji}</span>
-              }
+              <span style={{ position:'relative', display:'inline-flex' }}>
+                {tab.path === '/perfil' && isLoggedIn
+                  ? <Avatar name={displayName} size={24} src={avatarUrl} />
+                  : <span style={{ fontSize:20, lineHeight:1 }}>{tab.emoji}</span>
+                }
+                {tab.path === '/mensajes' && hasUnread && (
+                  <span style={{ position:'absolute', top:-2, right:-4, minWidth:8, height:8, borderRadius:4, background:'#EF4444', border:'1.5px solid #fff' }} />
+                )}
+              </span>
               <span style={{ fontFamily:PP, fontSize:9, fontWeight: active ? 700 : 500 }}>{tab.label}</span>
               {active && <span style={{ width:20, height:3, background:C.primary, borderRadius:2 }} />}
             </Link>
