@@ -57,21 +57,20 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
             </p>
           ) : (
             <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.5 }}>
-              Accede más rápido sin abrir el navegador.
+                    Añade Latido a tu pantalla de inicio gratis y accede a tu comunidad en segundos estés donde estés.
             </p>
           )}
-          <div style={{ display:'flex', gap:8 }}>
+          <div style={{ display:'flex', gap:8, justifyContent:'center', marginTop:4 }}>
             {!isIOS && canInstall && (
-              <button onClick={handleInstall} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', border:'none', borderRadius:10, padding:'8px 16px', cursor:'pointer' }}>
+              <button onClick={handleInstall} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', border:'none', borderRadius:10, padding:'9px 20px', cursor:'pointer', flex:1 }}>
                 Instalar
               </button>
             )}
-            <button onClick={dismiss} style={{ fontFamily:PP, fontWeight:600, fontSize:12, background:'rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.7)', border:'none', borderRadius:10, padding:'8px 14px', cursor:'pointer' }}>
+            <button onClick={dismiss} style={{ fontFamily:PP, fontWeight:600, fontSize:12, background:'rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.7)', border:'none', borderRadius:10, padding:'9px 20px', cursor:'pointer', flex:1 }}>
               Ahora no
             </button>
           </div>
         </div>
-        <button onClick={dismiss} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.4)', fontSize:18, padding:0, flexShrink:0, lineHeight:1 }}>✕</button>
       </div>
     </div>
   )

@@ -1,49 +1,47 @@
 import { useState, useEffect } from 'react'
 
-/**
- * Detects if the app is running as an installed PWA.
- * Returns { isPWA, canInstall, promptInstall }
- */
+// Module-level store so all usePWA instances share the same prompt
+let _prompt = null
+let _canInstall = false
+let _isPWA =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone === true ||
+  new URLSearchParams(window.location.search).get('pwa') === '1'
+const _subs = new Set()
+
+function notify() { _subs.forEach(fn => fn()) }
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  _prompt = e
+  _canInstall = true
+  notify()
+})
+
+window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
+  _isPWA = e.matches
+  notify()
+})
+
 export function usePWA() {
-  const [isPWA, setIsPWA] = useState(false)
-  const [canInstall, setCanInstall] = useState(false)
-  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [, tick] = useState(0)
 
   useEffect(() => {
-    // Check if running as installed PWA
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true ||
-      new URLSearchParams(window.location.search).get('pwa') === '1'
-    setIsPWA(standalone)
-
-    // Listen for install prompt (Chrome/Android)
-    const handler = (e) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-      setCanInstall(true)
-    }
-    window.addEventListener('beforeinstallprompt', handler)
-
-    // Listen for display mode change
-    const mq = window.matchMedia('(display-mode: standalone)')
-    const mqHandler = (e) => setIsPWA(e.matches)
-    mq.addEventListener('change', mqHandler)
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler)
-      mq.removeEventListener('change', mqHandler)
-    }
+    const unsub = () => { _subs.add(rerender); return () => _subs.delete(rerender) }
+    function rerender() { tick(n => n + 1) }
+    _subs.add(rerender)
+    return () => _subs.delete(rerender)
   }, [])
 
   const promptInstall = async () => {
-    if (!deferredPrompt) return false
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    setDeferredPrompt(null)
-    setCanInstall(false)
+    if (!_prompt) return false
+    _prompt.prompt()
+    const { outcome } = await _prompt.userChoice
+    _prompt = null
+    _canInstall = false
+    notify()
     return outcome === 'accepted'
   }
 
-  return { isPWA, canInstall, promptInstall }
+  return { isPWA: _isPWA, canInstall: _canInstall, promptInstall }
 }

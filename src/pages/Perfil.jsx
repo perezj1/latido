@@ -675,15 +675,9 @@ export default function Perfil() {
                   <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.55 }}>
                     Añade Latido a tu pantalla de inicio gratis y accede a tu comunidad en segundos estés donde estés.
                   </p>
-                  {canInstall ? (
-                    <button onClick={promptInstall} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', border:'none', borderRadius:10, padding:'9px 18px', cursor:'pointer' }}>
-                      Añadir a inicio
-                    </button>
-                  ) : (
-                    <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.5)', margin:0 }}>
-                      En el menú del navegador busca "Instalar app" o "Añadir a pantalla de inicio".
-                    </p>
-                  )}
+                  <button onClick={promptInstall} disabled={!canInstall} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', borderRadius:12, padding:'11px 0', cursor: canInstall ? 'pointer' : 'default', opacity: canInstall ? 1 : 0.5, width:'100%', display:'block' }}>
+                    Instalar app
+                  </button>
                 </>
               )}
             </div>
