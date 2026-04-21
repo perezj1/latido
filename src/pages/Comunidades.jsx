@@ -589,6 +589,7 @@ export default function Comunidades() {
   const [selectedCommunity, setSelectedCommunity] = useState(null)
   const [selectedBusiness, setSelectedBusiness] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
+  const [eventfrogOpen, setEventfrogOpen] = useState(true)
 
   const view = searchParams.get('view')
   const openCommunityId = searchParams.get('openCommunity') || ''
@@ -914,28 +915,87 @@ export default function Comunidades() {
 
       {tab === 'eventos' && (
         <>
-          <div style={{ borderRadius:20, overflow:'hidden', border:`1px solid ${C.border}`, marginBottom:24 }}>
-            <iframe
-              title="Eventos latinos en Suiza"
-              width="100%"
-              height="680"
-              style={{ border:'none', display:'block' }}
-              src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=latino&geoRadius=60"
-              loading="lazy"
-              allow="fullscreen"
-            />
+          {/* Eventos en Suiza — collapsible eventfrog */}
+          <div style={{ marginBottom:24 }}>
+            <button
+              onClick={() => setEventfrogOpen(o => !o)}
+              style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', padding:'0 0 10px', width:'100%', textAlign:'left' }}
+            >
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, margin:0 }}>EVENTOS EN SUIZA</p>
+              <span style={{ fontSize:10, color:C.light, display:'inline-block', transition:'transform .2s', transform: eventfrogOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+            </button>
+            {eventfrogOpen && (
+              <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                <div style={{ borderRadius:20, border:`1px solid ${C.border}`, height:420, overflow:'hidden' }}>
+                  <iframe
+                    title="Eventos latinos en Suiza"
+                    width="100%"
+                    height="420"
+                    style={{ border:'none', display:'block', height:420 }}
+                    src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=latino&geoRadius=60"
+                    loading="lazy"
+                    allow="fullscreen"
+                    scrolling="auto"
+                  />
+                </div>
+                <div style={{ borderRadius:20, border:`1px solid ${C.border}`, height:420, overflow:'hidden' }}>
+                  <iframe
+                    title="Eventos en español en Suiza"
+                    width="100%"
+                    height="420"
+                    style={{ border:'none', display:'block', height:420 }}
+                    src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=spanish&geoRadius=60"
+                    loading="lazy"
+                    allow="fullscreen"
+                    scrolling="auto"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          <div style={{ borderRadius:20, overflow:'hidden', border:`1px solid ${C.border}`, marginBottom:24 }}>
-            <iframe
-              title="Eventos en español en Suiza"
-              width="100%"
-              height="680"
-              style={{ border:'none', display:'block' }}
-              src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=spanish&geoRadius=60"
-              loading="lazy"
-              allow="fullscreen"
-            />
+          {/* Eventos de la comunidad */}
+          <div style={{ marginBottom:24 }}>
+            <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:12 }}>EVENTOS DE LA COMUNIDAD</p>
+            {loading ? (
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {[1,2].map(i => <div key={i} className="skeleton" style={{ height:120, borderRadius:16 }} />)}
+              </div>
+            ) : events.length === 0 ? (
+              <div style={{ textAlign:'center', padding:'40px 20px', background:C.bg, borderRadius:20 }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>🎉</div>
+                <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>Sin eventos de la comunidad aún</p>
+                <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>¡Sé el primero en publicar un evento!</p>
+              </div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {events.map(event => (
+                  <div
+                    key={event.id}
+                    onClick={() => setSelectedEvent(event)}
+                    style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, overflow:'hidden', cursor:'pointer', display:'flex', gap:0 }}
+                  >
+                    {event.img ? (
+                      <div style={{ width:90, flexShrink:0 }}>
+                        <img src={event.img} alt={event.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      </div>
+                    ) : (
+                      <div style={{ width:90, flexShrink:0, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:32 }}>
+                        {event.emoji}
+                      </div>
+                    )}
+                    <div style={{ padding:'12px 14px', flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', gap:6, marginBottom:5, flexWrap:'wrap' }}>
+                        <Tag bg={C.primaryLight} color={C.primary}>{event.emoji} {event.type}</Tag>
+                        <Tag bg={C.bg} color={C.mid}>📍 {event.city}</Tag>
+                      </div>
+                      <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, marginBottom:3, lineHeight:1.3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{event.title}</h3>
+                      <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{event.day} {event.month} · {event.time} · 🎟 {event.price}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
