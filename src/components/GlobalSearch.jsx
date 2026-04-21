@@ -299,7 +299,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     const request = (async () => {
       try {
         let adsQuery = supabase
-          .from('ads')
+          .from('listings')
           .select('*')
           .eq('active', true)
           .order('created_at', { ascending:false })

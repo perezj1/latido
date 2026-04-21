@@ -163,7 +163,7 @@ export default function Mensajes() {
 
     if (ownerItemIdsToFetch.length) {
       const { data: adsData } = await supabase
-        .from('ads')
+        .from('listings')
         .select('id, user_name')
         .in('id', ownerItemIdsToFetch)
 
@@ -284,7 +284,7 @@ export default function Mensajes() {
       insertData.title = data.company || data.title
       insertData.owner_name = pickParticipantName(ownerNames.get(data.user_id), recipientName) || 'Usuario'
     } else if (aId) {
-      const { data } = await supabase.from('ads').select('id, title, user_id, user_name').eq('id', aId).maybeSingle()
+      const { data } = await supabase.from('listings').select('id, title, user_id, user_name').eq('id', aId).maybeSingle()
       if (!data) { toast.error('Anuncio no encontrado'); setLoading(false); creatingRef.current = false; return }
       if (data.user_id === user.id) { toast.error('Es tu propio anuncio'); setLoading(false); creatingRef.current = false; return }
       const ownerNames = await fetchProfileNamesByIds([data.user_id])

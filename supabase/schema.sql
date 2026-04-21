@@ -40,12 +40,17 @@ CREATE TABLE IF NOT EXISTS ads (
   title       TEXT NOT NULL,
   "desc"      TEXT,
   price       TEXT,
+  price_amount NUMERIC,
+  price_unit  TEXT,
   canton      TEXT,                    -- code: ZH, BE, GE...
   plz         TEXT,                    -- código postal 4 dígitos
   privacy     TEXT DEFAULT 'public',   -- 'public' | 'private'
   img_url     TEXT,
   whatsapp    TEXT,                    -- solo visible si public o usuario autenticado
   email_contact TEXT,
+  contact_phone TEXT,
+  contact_email TEXT,
+  contact_via_app BOOLEAN DEFAULT TRUE,
   verified    BOOLEAN DEFAULT FALSE,
   active      BOOLEAN DEFAULT TRUE,
   created_at  TIMESTAMPTZ DEFAULT NOW(),
@@ -116,6 +121,8 @@ CREATE TABLE IF NOT EXISTS forum_posts (
 -- ── 7. JOBS ────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS jobs (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  sector     TEXT,
   title      TEXT NOT NULL,
   company    TEXT,
   city       TEXT,
@@ -129,8 +136,15 @@ CREATE TABLE IF NOT EXISTS jobs (
   emoji      TEXT,
   "desc"     TEXT,
   contact    TEXT,
+  contact_via_app BOOLEAN DEFAULT TRUE,
+  contact_phone TEXT,
+  contact_email TEXT,
+  contact_link TEXT,
+  logo_url   TEXT,
+  languages  TEXT[],
   active     BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ── 8. ROW LEVEL SECURITY ──────────────────────────────────────

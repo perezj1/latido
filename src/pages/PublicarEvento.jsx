@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -21,6 +21,7 @@ export default function PublicarEvento() {
   const { isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [done, setDone] = useState(false)

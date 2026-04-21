@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { CANTONS } from '../lib/constants'
 import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
+import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -47,10 +47,13 @@ const SALARY_UNITS = [
   { id:'once', label:'Pago único' },
 ]
 
+const OPTIONAL_JOB_INSERT_COLUMNS = ['sector', 'languages', 'contact_via_app', 'contact_phone', 'contact_email', 'contact_link', 'logo_url']
+
 export default function PublicarEmpleo() {
   const { isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [done, setDone] = useState(false)
@@ -114,7 +117,7 @@ export default function PublicarEmpleo() {
       const salaryAmount = form.salaryValue
         ? Number(String(form.salaryValue).replace(',', '.'))
         : null
-      const { error } = await supabase.from('jobs').insert({
+      const payload = {
         user_id: user?.id,
         sector: form.sector,
         title: form.title.trim(),
@@ -137,11 +140,21 @@ export default function PublicarEmpleo() {
         contact_link: null,
         logo_url: form.logoUrl.trim() || null,
         active: true,
+      }
+
+      const { error } = await insertWithOptionalColumnsFallback({
+        table: 'jobs',
+        payload,
+        optionalColumns: OPTIONAL_JOB_INSERT_COLUMNS,
       })
       if (error) throw error
       setDone(true)
     } catch (error) {
-      toast.error(error?.message || 'No se pudo publicar la oferta de empleo')
+      if (isLikelySchemaMismatchError(error, 'jobs')) {
+        toast.error('Falta actualizar Supabase para empleos. Ejecuta publications_schema_v4.sql.')
+      } else {
+        toast.error(error?.message || 'No se pudo publicar la oferta de empleo')
+      }
     } finally {
       setLoading(false)
     }

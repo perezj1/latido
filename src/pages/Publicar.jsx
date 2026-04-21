@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -6,6 +6,7 @@ import { C, PP } from '../lib/theme'
 import { AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
 import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
+import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -22,11 +23,14 @@ const PRICE_UNITS = [
   { id:'once', label:'Total' },
 ]
 
+const OPTIONAL_AD_INSERT_COLUMNS = ['price_amount', 'price_unit', 'contact_via_app', 'contact_phone', 'contact_email']
+
 export default function Publicar() {
   const { isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
 
   const [step, setStep] = useState(0)
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [done, setDone] = useState(false)
@@ -203,7 +207,7 @@ export default function Publicar() {
         .eq('id', user?.id)
         .maybeSingle()
 
-      const { error } = await supabase.from('ads').insert({
+      const payload = {
         cat: form.cat,
         sub: form.sub,
         type: form.type,
@@ -222,13 +226,23 @@ export default function Publicar() {
         user_id: user?.id,
         active: true,
         user_name: ownProfile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
+      }
+
+      const { error } = await insertWithOptionalColumnsFallback({
+        table: 'listings',
+        payload,
+        optionalColumns: OPTIONAL_AD_INSERT_COLUMNS,
       })
 
       if (error) throw error
 
       setDone(true)
     } catch (error) {
-      toast.error(error?.message || 'No se pudo publicar el anuncio')
+      if (isLikelySchemaMismatchError(error, 'ads')) {
+        toast.error('Falta actualizar Supabase para anuncios. Ejecuta publications_schema_v4.sql.')
+      } else {
+        toast.error(error?.message || 'No se pudo publicar el anuncio')
+      }
     } finally {
       setLoading(false)
     }

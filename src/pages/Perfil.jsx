@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
+import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
 import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
@@ -47,7 +48,7 @@ function normalizeCommunityCategory(value='') {
 }
 
 const KIND_META = {
-  ad: { label:'Anuncio', icon:'📌', table:'ads' },
+  ad: { label:'Anuncio', icon:'📌', table:'listings' },
   job: { label:'Empleo', icon:'💼', table:'jobs' },
   event: { label:'Evento', icon:'🎉', table:'events' },
   business: { label:'Negocio', icon:'🏪', table:'providers' },
@@ -263,7 +264,7 @@ export default function Perfil() {
     setLoadingPublications(true)
     try {
       const results = await Promise.allSettled([
-        supabase.from('ads').select('*').eq('user_id', user.id).order('created_at', { ascending:false }),
+        supabase.from('listings').select('*').eq('user_id', user.id).order('created_at', { ascending:false }),
         supabase.from('jobs').select('*').eq('user_id', user.id).order('created_at', { ascending:false }),
         supabase.from('events').select('*').eq('user_id', user.id).order('created_at', { ascending:false }),
         supabase.from('providers').select('*').eq('user_id', user.id).order('created_at', { ascending:false }),
@@ -302,7 +303,7 @@ export default function Perfil() {
     const jobIds = favorites.jobs || []
     const results = []
     if (adIds.length) {
-      const { data } = await supabase.from('ads').select('*').in('id', adIds)
+      const { data } = await supabase.from('listings').select('*').in('id', adIds)
       const foundIds = new Set((data || []).map(a => a.id))
       if (data) results.push(...data.map(a => ({ ...a, _kind:'ad' })))
       adIds.filter(id => !foundIds.has(id)).forEach(id =>
@@ -364,8 +365,22 @@ export default function Perfil() {
   }
 
   const saveAlerts = next => {
-    setAlertSettings(next)
-    localStorage.setItem('latido_alerts', JSON.stringify(next))
+    const normalizedNext = {
+      ...next,
+      canton: next.canton ?? alertSettings.canton ?? userCanton ?? '',
+    }
+
+    const prevCats = [...(alertSettings.categories || [])].sort().join('|')
+    const nextCats = [...(normalizedNext.categories || [])].sort().join('|')
+    const filtersChanged = normalizedNext.canton !== (alertSettings.canton ?? userCanton ?? '') || nextCats !== prevCats
+
+    // Anchor lastCheck whenever alerts are enabled or filters change, so only future publications notify.
+    if (normalizedNext.enabled && (!alertSettings.enabled || filtersChanged || !localStorage.getItem('latido_alerts_last_check'))) {
+      localStorage.setItem('latido_alerts_last_check', new Date().toISOString())
+    }
+    setAlertSettings(normalizedNext)
+    localStorage.setItem('latido_alerts', JSON.stringify(normalizedNext))
+    notifyZoneAlertsUpdated()
   }
 
   const toggleAlertCat = cat => {
@@ -536,7 +551,7 @@ export default function Perfil() {
     { icon:'📌', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
     { icon:'❤️', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
     { icon:'💬', label:'Mensajes', sub:'Conversaciones con otros usuarios', action:() => navigate('/mensajes') },
-    { icon:'📚', label:'Guías', sub:'Documentos y recursos útiles para vivir aquí', action:() => navigate('/guias') },
+    { icon:'📚', label:'Guías', sub:'Documentos y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
     { icon:'🔔', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', action:() => setAlertsOpen(true) },
     { icon:'⚙️', label:'Configuración', sub:'Nombre, cantón, idiomas, contraseña', action:openConfig },
   ]

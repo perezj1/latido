@@ -37,6 +37,17 @@ ALTER TABLE public.providers
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- ================================================================
+-- ADS PATCH
+-- Alinea la tabla ads con Publicar + Perfil
+-- ================================================================
+ALTER TABLE public.ads
+  ADD COLUMN IF NOT EXISTS price_amount NUMERIC,
+  ADD COLUMN IF NOT EXISTS price_unit TEXT,
+  ADD COLUMN IF NOT EXISTS contact_phone TEXT,
+  ADD COLUMN IF NOT EXISTS contact_email TEXT,
+  ADD COLUMN IF NOT EXISTS contact_via_app BOOLEAN DEFAULT TRUE;
+
+-- ================================================================
 -- EVENTS
 -- ================================================================
 CREATE TABLE IF NOT EXISTS public.events (
@@ -106,9 +117,11 @@ ALTER TABLE public.jobs
   ADD COLUMN IF NOT EXISTS salary_amount NUMERIC,
   ADD COLUMN IF NOT EXISTS salary_unit TEXT,
   ADD COLUMN IF NOT EXISTS languages TEXT[],
+  ADD COLUMN IF NOT EXISTS contact_via_app BOOLEAN DEFAULT TRUE,
   ADD COLUMN IF NOT EXISTS contact_phone TEXT,
   ADD COLUMN IF NOT EXISTS contact_email TEXT,
   ADD COLUMN IF NOT EXISTS contact_link TEXT,
+  ADD COLUMN IF NOT EXISTS logo_url TEXT,
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 DROP POLICY IF EXISTS "jobs_insert" ON public.jobs;

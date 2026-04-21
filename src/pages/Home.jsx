@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useZoneAlerts, dismissZoneAlerts } from '../hooks/useZoneAlerts'
+import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
@@ -73,13 +74,35 @@ let homeCacheTs = 0
 
 export default function Home() {
   const { displayName, isLoggedIn } = useAuth()
-  const { alertCount } = useZoneAlerts()
+  const navigate = useNavigate()
+  const { alertItems, alertCount } = useZoneAlerts()
+  const { unreadConvIds, hasUnread } = useUnreadMessages()
+
+  const [notifOpen, setNotifOpen] = useState(false)
+  const notifRef = useRef(null)
 
   const [recentAds, setRecentAds] = useState([])
   const [communityHighlights, setCommunityHighlights] = useState([])
   const [recentJobs, setRecentJobs] = useState([])
   const [recentEvents, setRecentEvents] = useState([])
   const [loading, setLoading] = useState(true)
+
+  const hasNotif = alertCount > 0 || hasUnread
+
+  // Close panel on outside click
+  function closeNotifPanel() {
+    dismissZoneAlerts() // mark zone alerts as seen on close
+    setNotifOpen(false)
+  }
+
+  useEffect(() => {
+    if (!notifOpen) return
+    function onClickOut(e) {
+      if (notifRef.current && !notifRef.current.contains(e.target)) closeNotifPanel()
+    }
+    document.addEventListener('mousedown', onClickOut)
+    return () => document.removeEventListener('mousedown', onClickOut)
+  }, [notifOpen])
 
   const firstName = (displayName || 'amigo').split(' ')[0]
 
@@ -99,7 +122,7 @@ export default function Home() {
     try {
       const [adsRes, communitiesRes, jobsRes, eventsRes] = await Promise.all([
         supabase
-          .from('ads')
+          .from('listings')
           .select('id, cat, title, desc, img_url, price, canton, plz, privacy, user_name, created_at, active')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
@@ -262,16 +285,86 @@ export default function Home() {
             </div>
 
             {isLoggedIn && (
-              <button
-                onClick={dismissZoneAlerts}
-                style={{ position:'relative', background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:46, height:46, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, cursor:'pointer', flexShrink:0, marginTop:6 }}
-                aria-label="Notificaciones"
-              >
-                🔔
-                {alertCount > 0 && (
-                  <span style={{ position:'absolute', top:6, right:6, minWidth:8, height:8, borderRadius:4, background:'#EF4444', border:'1.5px solid rgba(255,255,255,0.3)' }} />
+              <div ref={notifRef} style={{ position:'relative', flexShrink:0 }}>
+                <button
+                  onClick={() => {
+                    if (notifOpen) closeNotifPanel()
+                    else setNotifOpen(true)
+                  }}
+                  style={{ position:'relative', background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:46, height:46, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, cursor:'pointer', marginTop:6 }}
+                  aria-label="Notificaciones"
+                >
+                  🔔
+                  {hasNotif && (
+                    <span style={{ position:'absolute', top:7, right:7, width:9, height:9, borderRadius:'50%', background:'#EF4444', border:'2px solid rgba(255,255,255,0.4)' }} />
+                  )}
+                </button>
+
+                {notifOpen && (
+                  <div style={{
+                    position:'absolute', top:56, right:0, width:320, maxHeight:'70vh',
+                    background:'#fff', borderRadius:18, boxShadow:'0 8px 40px rgba(0,0,0,0.18)',
+                    zIndex:200, overflow:'hidden', display:'flex', flexDirection:'column',
+                  }}>
+                    <div style={{ padding:'14px 16px 10px', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <span style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text }}>Notificaciones</span>
+                      {!hasNotif && <span style={{ fontFamily:PP, fontSize:12, color:C.light }}>Todo al día ✓</span>}
+                    </div>
+
+                    <div style={{ overflowY:'auto', flex:1 }}>
+                      {/* Messages section */}
+                      {hasUnread && (
+                        <div style={{ padding:'10px 14px 6px' }}>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>MENSAJES</p>
+                          <button
+                            onClick={() => { closeNotifPanel(); navigate('/mensajes') }}
+                            style={{ width:'100%', background:C.primaryLight, border:'none', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'center', gap:10, cursor:'pointer', textAlign:'left' }}
+                          >
+                            <span style={{ fontSize:20 }}>💬</span>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, margin:0 }}>
+                                {unreadConvIds.size === 1 ? '1 conversación nueva' : `${unreadConvIds.size} conversaciones nuevas`}
+                              </p>
+                              <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0 }}>Toca para ver los mensajes</p>
+                            </div>
+                            <span style={{ color:C.primary, fontSize:16 }}>›</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Zone alerts section */}
+                      {alertItems.length > 0 && (
+                        <div style={{ padding:'10px 14px 10px' }}>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>ALERTAS DE ZONA</p>
+                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                            {alertItems.map(item => (
+                              <button
+                                key={item.key}
+                                onClick={() => { closeNotifPanel(); navigate(item.href) }}
+                                style={{ width:'100%', background:`${C.bg}`, border:`1px solid ${C.border}`, borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
+                              >
+                                <span style={{ fontSize:18, marginTop:1 }}>{item.icon}</span>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.title}</p>
+                                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{item.kindLabel} · {item.canton}</p>
+                                </div>
+                                <span style={{ color:C.light, fontSize:16 }}>›</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {!hasNotif && (
+                        <div style={{ padding:'30px 16px', textAlign:'center' }}>
+                          <div style={{ fontSize:36, marginBottom:8 }}>🔔</div>
+                          <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>No hay notificaciones nuevas</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
-              </button>
+              </div>
             )}
           </div>
 

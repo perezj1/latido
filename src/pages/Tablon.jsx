@@ -348,7 +348,7 @@ export default function Tablon() {
       }
 
       try {
-        let query = supabase.from('ads').select('*').eq('active', true).order('created_at', { ascending:false }).limit(150)
+        let query = supabase.from('listings').select('*').eq('active', true).order('created_at', { ascending:false }).limit(150)
         if (!isLoggedIn) query = query.eq('privacy', 'public')
         const { data, error } = await query
         const nextAds = error || !data?.length
