@@ -106,7 +106,9 @@ export default function Home() {
 
   const firstName = (displayName || 'amigo').split(' ')[0]
 
-  const getAdHref = (ad) => `/tablon?openAd=${encodeURIComponent(ad.id)}`
+  const getAdHref = (ad) => ad.id.startsWith('job_')
+    ? `/tablon?cat=empleo&openJob=${encodeURIComponent(ad.id.replace('job_', ''))}`
+    : `/tablon?openAd=${encodeURIComponent(ad.id)}`
   const getCommunityHref = (group) => `/comunidades?openCommunity=${encodeURIComponent(group.id)}`
   const getJobHref = (job) => `/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`
 
@@ -154,20 +156,40 @@ export default function Home() {
       if (jobsRes.error) console.error('Error loading jobs:', jobsRes.error)
       if (eventsRes.error) console.error('Error loading events:', eventsRes.error)
 
+      const adsNorm = ((adsRes.error ? [] : adsRes.data) || []).map((row) => ({
+        id: row.id,
+        cat: row.cat || 'servicios',
+        title: row.title || '',
+        desc: row.desc || '',
+        img: row.img_url || '',
+        price: row.price || '',
+        canton: row.canton || '',
+        plz: row.plz || '',
+        privacy: row.privacy || 'public',
+        user: row.user_name || 'Usuario',
+        ts: formatTimeAgo(row.created_at),
+        _sort: row.created_at || '',
+      }))
+
+      const jobsNorm = ((jobsRes.error ? [] : jobsRes.data) || []).map((row) => ({
+        id: `job_${row.id}`,
+        cat: 'empleo',
+        title: row.title || '',
+        desc: row.company || '',
+        img: row.logo_url || '',
+        price: row.salary || '',
+        canton: row.city || '',
+        plz: '',
+        privacy: 'public',
+        user: row.company || '',
+        ts: formatTimeAgo(row.created_at),
+        _sort: row.created_at || '',
+      }))
+
       setRecentAds(
-        ((adsRes.error ? [] : adsRes.data) || []).map((row) => ({
-          id: row.id,
-          cat: row.cat || 'servicios',
-          title: row.title || '',
-          desc: row.desc || '',
-          img: row.img_url || '',
-          price: row.price || '',
-          canton: row.canton || '',
-          plz: row.plz || '',
-          privacy: row.privacy || 'public',
-          user: row.user_name || 'Usuario',
-          ts: formatTimeAgo(row.created_at),
-        }))
+        [...adsNorm, ...jobsNorm]
+          .sort((a, b) => (b._sort > a._sort ? 1 : -1))
+          .map(({ _sort, ...rest }) => rest)
       )
 
       setCommunityHighlights(
