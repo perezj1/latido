@@ -26,7 +26,7 @@ const FEATURES = [
   {
     icon: '🏪',
     color: '#FCE7F3',
-    title: 'Negocios latinos',
+    title: 'Negocios',
     desc: 'Restaurantes, peluquerías, tiendas y servicios de nuestra comunidad. Apoya a quien habla tu idioma.',
   },
   {

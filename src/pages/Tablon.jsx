@@ -483,13 +483,13 @@ export default function Tablon() {
   return (
     <div style={{ maxWidth:800, margin:'0 auto', padding:'0 20px 100px' }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
-        <div style={{ width:'100%', maxWidth:840, margin:'0 auto', padding:'24px 20px 18px' }}>
+        <div style={{ width:'100%', maxWidth:840, margin:'0 auto', padding:'24px 20px 0px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
         <div>
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, letterSpacing:-0.5, marginBottom:4 }}>
             📌 Tablón de anuncios
           </h1>
-          <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>
+          <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>
             {loading ? 'Cargando...' : isEmpleos ? `${filteredJobs.length} anuncios encontrados` : `${filteredAds.length + (!cat ? filteredJobs.length : 0)} anuncios encontrados`}
             {canton && ` · 📍 Cantón ${canton}`}
           </p>
@@ -500,7 +500,7 @@ export default function Tablon() {
       </div>
 
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:activeCount>0 ? 10 : 18, padding:'10px 0 12px' }}>
-        <div style={{ width:'100%', maxWidth:840, margin:'0 auto', padding:'0 20px' }}>
+        <div style={{ width:'100%', maxWidth:840, margin:'0 auto', padding:'0 8px' }}>
           <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
       {/* Search */}
       <div style={{ display:'flex', gap:8, marginBottom:12 }}>

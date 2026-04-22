@@ -609,7 +609,7 @@ export default function Home() {
 
         <div style={{ borderRadius:20, border:`1px solid ${C.border}`, height:380, overflow:'hidden', position:'relative', flexShrink:0 }}>
           <iframe
-            title="Próximos eventos latinos"
+            title="Próximos eventos"
             width="100%"
             height="380"
             style={{ border:'none', display:'block', height:380, maxHeight:380 }}
