@@ -159,7 +159,7 @@ export default function Landing({ onInstall }) {
       </div> */}
 
       {/* ── SEARCH ──────────────────────────────────────────────── */}
-      <div style={{ background: '#fff', padding: '40px 24px 0', borderBottom: `1px solid ${C.border}`, paddingBottom: 40 }}>
+      <div style={{ background: '#fff', padding: '40px 24px', borderBottom: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 6 }}>¿Qué necesitas hoy?</p>
           <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, marginBottom: 16 }}>Pisos, empleo, cuidadoras, trámites, comunidades y mucho más</p>

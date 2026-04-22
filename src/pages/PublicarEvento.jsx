@@ -50,7 +50,7 @@ export default function PublicarEvento() {
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>🎉</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>¡Evento publicado!</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
-        Tu evento ya está visible para la comunidad latina en Suiza.
+        Tu evento ya está visible para la comunidad hispanohablante en Suiza.
       </p>
       <Btn onClick={() => navigate('/comunidades?view=eventos')}>Ver en eventos →</Btn>
       <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', title:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>

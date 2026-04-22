@@ -126,14 +126,14 @@ export default function Home() {
           .select('id, cat, title, desc, img_url, price, canton, plz, privacy, user_name, created_at, active')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
-          .limit(4),
+          .limit(50),
 
         supabase
           .from('communities')
           .select('id, name, city, members, emoji, cat, desc, contact, created_at, active')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
-          .limit(3),
+          .limit(50),
 
         supabase
           .from('jobs')
@@ -171,7 +171,7 @@ export default function Home() {
       )
 
       setCommunityHighlights(
-        ((communitiesRes.error ? [] : communitiesRes.data) || []).filter((row) => row.cat !== 'fe').map((row) => ({
+        ((communitiesRes.error ? [] : communitiesRes.data) || []).map((row) => ({
           id: row.id,
           name: (row.name || 'Comunidad').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
           city: row.city || 'Suiza',
@@ -369,39 +369,75 @@ export default function Home() {
           </div>
 
           <div style={{ maxWidth:620 }}>
-            <div>
-              <GlobalSearch
-                size="lg"
-                placeholder="Encuentra lo que buscas"
-              />
+            <GlobalSearch size="lg" placeholder="Encuentra lo que buscas" />
+            <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:12 }}>
+              <div style={{ display:'flex', gap:6, width:'max-content' }}>
+                {[
+                  { emoji:'🏠', label:'Vivienda',    to:'/tablon?cat=vivienda' },
+                  { emoji:'💼', label:'Empleo',       to:'/tablon?cat=empleo' },
+                  { emoji:'🛍️', label:'Mercado',      to:'/tablon?cat=venta' },
+                  { emoji:'🎉', label:'Eventos',      to:'/comunidades?view=eventos' },
+                  { emoji:'🤝', label:'Comunidades',  to:'/comunidades' },
+                  { emoji:'🔧', label:'Servicios',    to:'/tablon?cat=servicios' },
+                  { emoji:'📚', label:'Guías',        to:'/guias' },
+                ].map(cat => (
+                  <Link
+                    key={cat.label}
+                    to={cat.to}
+                    style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(255,255,255,0.15)', border:'1.5px solid rgba(255,255,255,0.25)', borderRadius:999, padding:'7px 14px', fontFamily:PP, fontWeight:600, fontSize:12, color:'#fff', textDecoration:'none', whiteSpace:'nowrap' }}
+                  >
+                    <span style={{ fontSize:14 }}>{cat.emoji}</span>
+                    {cat.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── ACCESO RÁPIDO ── */}
-      <section style={{ maxWidth:980, margin:'0 auto', padding:'24px 16px 0' }}>
-        <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 14px', letterSpacing:-0.5 }}>🔍 Lo más buscado</h2>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
-          {[
-            { emoji:'🏠', label:'Vivienda',  sub:'Pisos y habitaciones', to:'/tablon?cat=vivienda',          bg:'#DBEAFE', tc:'#1D4ED8' },
-            { emoji:'💼', label:'Empleo',   sub:'Ofertas de empleo',     to:'/tablon?cat=empleo',            bg:'#D1FAE5', tc:'#065F46' },
-            { emoji:'🎉', label:'Eventos',   sub:'Planes y quedadas',     to:'/comunidades?view=eventos',     bg:'#EDE9FE', tc:'#6D28D9' },
-            { emoji:'🏪', label:'Negocios',  sub:'Productos y servicios',to:'/comunidades?view=negocios',   bg:'#FEF3C7', tc:'#92400E' },
-          ].map(item => (
-            <Link key={item.label} to={item.to} style={{ textDecoration:'none' }}>
-              <div
-                style={{ background:item.bg, borderRadius:16, padding:'20px 16px', textAlign:'center', border:`1.5px solid transparent`, transition:'all .18s', cursor:'pointer' }}
-                onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow=`0 8px 20px ${item.bg}` }}
-                onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none' }}
-              >
-                <div style={{ fontSize:32, marginBottom:8 }}>{item.emoji}</div>
-                <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:item.tc, margin:'0 0 4px', lineHeight:1.2 }}>{item.label}</p>
-                <p style={{ fontFamily:PP, fontSize:11, color:item.tc, opacity:.7, margin:0, lineHeight:1.3 }}>{item.sub}</p>
-              </div>
-            </Link>
-          ))}
+      {/* ── ANUNCIOS RECIENTES ── */}
+      <section style={{ padding:'24px 0 0' }}>
+        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0, letterSpacing:-0.5 }}>📌 Anuncios recientes</h2>
+          <Link to="/tablon" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todos →</Link>
         </div>
+        {loading ? (
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'0 16px' }}>
+            <div style={{ display:'flex', gap:12, width:'max-content' }}>
+              {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ width:152, height:220, borderRadius:16, flexShrink:0 }} />)}
+            </div>
+          </div>
+        ) : recentAds.length === 0 ? (
+          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay anuncios publicados." /></div>
+        ) : (
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+            <div style={{ display:'flex', gap:12, width:'max-content' }}>
+              {recentAds.map(ad => {
+                const cat = AD_CATS.find(c => c.id === ad.cat)
+                const cc = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
+                return (
+                  <Link key={ad.id} to={getAdHref(ad)} style={{ textDecoration:'none', flexShrink:0, width:152, display:'block' }}>
+                    <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+                      <div style={{ height:120, background:cc.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative' }}>
+                        {ad.img
+                          ? <img src={ad.img} alt={ad.title} style={{ width:'100%', height:'100%', objectFit:'cover', position:'absolute', inset:0 }} />
+                          : <span>{cat?.emoji || '📌'}</span>
+                        }
+                        <span style={{ position:'absolute', top:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(255,255,255,0.92)', color:cc.tc, padding:'3px 7px', borderRadius:999 }}>{cat?.label}</span>
+                      </div>
+                      <div style={{ padding:'10px 10px 12px' }}>
+                        <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', lineHeight:1.35, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.7em' }}>{ad.title}</p>
+                        <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.primary, margin:'0 0 4px' }}>{fmtPrice(ad.price) || '—'}</p>
+                        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0 }}>📍 {ad.canton} · {ad.ts}</p>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 0' }}>
@@ -469,8 +505,8 @@ export default function Home() {
         )}
       </section> */}
 
-      <section style={{ maxWidth:980, margin:'0 auto', padding:'40px 16px 0' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+      <section style={{ padding:'40px 0 0' }}>
+        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
               🤝 Comunidades para ti
@@ -479,46 +515,42 @@ export default function Home() {
               Tus próximos puntos de conexión en Suiza.
             </p>
           </div>
-
-          <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>
-            Ver más →
+          <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>
+            Ver todos →
           </Link>
         </div>
 
         {loading ? (
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:16 }}/>)}
+          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
+            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
           </div>
         ) : communityHighlights.length === 0 ? (
-          <EmptyState text="Todavía no hay comunidades publicadas." />
+          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay comunidades publicadas." /></div>
         ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:10 }}>
-            {communityHighlights.map(group => (
-              <Link
-                key={group.id}
-                to={getCommunityHref(group)}
-                style={{
-                  textDecoration:'none',
-                  background:'#fff',
-                  border:`1px solid ${C.border}`,
-                  borderRadius:18,
-                  padding:'14px 15px',
-                  display:'flex',
-                  gap:12,
-                  alignItems:'center'
-                }}
-              >
-                <span style={{ fontSize:30 }}>{group.emoji}</span>
-                <div style={{ minWidth:0 }}>
-                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                    {group.name}
-                  </p>
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-                    {group.city} · 👥 {group.members} miembros
-                  </p>
-                </div>
-              </Link>
-            ))}
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+            <div style={{ display:'flex', gap:12, width:'max-content' }}>
+              {communityHighlights.map(group => (
+                <Link
+                  key={group.id}
+                  to={getCommunityHref(group)}
+                  style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
+                >
+                  <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+                    <div style={{ height:120, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
+                      <span>{group.emoji || '🤝'}</span>
+                    </div>
+                    <div style={{ padding:'10px 10px 12px' }}>
+                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
+                        {group.name}
+                      </p>
+                      <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        📍 {group.city} · 👥 {group.members}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         )}
       </section>

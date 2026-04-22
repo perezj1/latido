@@ -492,7 +492,7 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
 
       <InfoBanner
         emoji={community.emoji}
-        title="Comunidad latina en Suiza"
+        title="Comunidad hispanohablante en Suiza"
         text="Descubre de qué va el grupo y entra cuando te encaje."
         bg={C.primaryLight}
         border={C.primaryMid}
@@ -500,7 +500,7 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
       />
 
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18 }}>
-        {community.desc || 'Comunidad latina en Suiza.'}
+        {community.desc || 'Comunidad hispanohablante en Suiza.'}
       </p>
 
       {community.contact && (() => {
@@ -808,7 +808,7 @@ export default function Comunidades() {
 
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 24px 100px' }}>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>🤝 Comunidad latina</h1>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>🤝 Comunidad</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:20 }}>Grupos, negocios y eventos para latinos en Suiza</p>
 
       <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />

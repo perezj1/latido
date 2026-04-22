@@ -72,6 +72,10 @@ img { max-width: 100%; }
 .show-md { display: none !important; }
 @media (min-width: 768px) { .show-md { display: flex !important; } }
 
+/* ── Category bar sticky offset ── */
+.cat-bar { position: sticky; top: 0; z-index: 40; }
+@media (min-width: 768px) { .cat-bar { top: 57px; } }
+
 /* ── iPhone notch / safe area ── */
 .safe-bottom {
   padding-bottom: max(10px, env(safe-area-inset-bottom));

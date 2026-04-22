@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
@@ -128,6 +128,42 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+const CAT_LINKS = [
+  { emoji:'🏠', label:'Vivienda',    to:'/tablon?cat=vivienda' },
+  { emoji:'💼', label:'Empleo',      to:'/tablon?cat=empleo' },
+  { emoji:'🛍️', label:'Mercado',     to:'/tablon?cat=venta' },
+  { emoji:'🔧', label:'Servicios',   to:'/tablon?cat=servicios' },
+  { emoji:'🤝', label:'Comunidades', to:'/comunidades' },
+  { emoji:'🎉', label:'Eventos',     to:'/comunidades?view=eventos' },
+  { emoji:'📚', label:'Guías',       to:'/guias' },
+]
+
+function CategoryBar() {
+  const { pathname, search } = useLocation()
+  const full = pathname + search
+  const isLanding = pathname === '/'
+  if (isLanding) return null
+  return (
+    <div className="cat-bar no-scroll" style={{ background:'#fff', borderBottom:`1px solid ${C.border}`, overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+      <div style={{ display:'flex', gap:4, padding:'8px 16px', width:'max-content' }}>
+        {CAT_LINKS.map(cat => {
+          const active = full === cat.to || full.startsWith(cat.to + '&') || full.startsWith(cat.to.split('?')[0] + '?cat=' + cat.to.split('cat=')[1])
+          return (
+            <Link
+              key={cat.label}
+              to={cat.to}
+              style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'7px 14px', borderRadius:999, fontFamily:PP, fontWeight:600, fontSize:12, textDecoration:'none', whiteSpace:'nowrap', background: active ? C.primary : C.bg, color: active ? '#fff' : C.mid, border:`1.5px solid ${active ? C.primary : C.border}`, transition:'all .15s' }}
+            >
+              <span style={{ fontSize:14 }}>{cat.emoji}</span>
+              {cat.label}
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function AppShell() {
   const { pathname } = useLocation()
   const { isPWA, canInstall, promptInstall } = usePWA()
@@ -168,7 +204,7 @@ function AppShell() {
   return (
     <>
       <Header />
-<main style={{ minHeight:'100vh', paddingBottom:80 }}>
+      <main style={{ minHeight:'100vh', paddingBottom:80 }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
