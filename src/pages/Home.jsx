@@ -301,9 +301,9 @@ export default function Home() {
                  Aquí está tu comunidad.
               </h1>
 
-              <p style={{ fontFamily:PP, fontSize:14, color:'rgba(255,255,255,0.82)', lineHeight:1.7, maxWidth:520, margin:0 }}>
+              {/* <p style={{ fontFamily:PP, fontSize:14, color:'rgba(255,255,255,0.82)', lineHeight:1.7, maxWidth:520, margin:0 }}>
                 Encuentra información, servicios, empleos y apoyo real en una plataforma creada para ti y para los tuyos.
-              </p>
+              </p> */}
             </div>
 
             {isLoggedIn && (
