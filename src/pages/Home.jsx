@@ -587,7 +587,7 @@ export default function Home() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
-              🎉 Eventos próximos
+              🎉 Próximos eventos 
             </h2>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
               Próximos eventos para ti.
