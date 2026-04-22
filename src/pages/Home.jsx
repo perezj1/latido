@@ -297,9 +297,19 @@ export default function Home() {
                 Hola&nbsp;  {firstName}.<br />                
               </h1>
               
-              <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(20px,6vw,48px)', lineHeight:1.2, letterSpacing:-0.5, color:'#fff', margin:'0 0 14px' }}>
-                 Aquí está tu comunidad.
-              </h1>
+              <h2
+  style={{
+    fontFamily:PP,
+    fontWeight:600,
+    fontSize:'clamp(16px,4vw,28px)',
+    lineHeight:1.2,
+    letterSpacing:-0.3,
+    color:'#fff',
+    margin:'0 0 8px'
+  }}
+>
+  Aquí está tu comunidad.
+</h2>
 
               {/* <p style={{ fontFamily:PP, fontSize:14, color:'rgba(255,255,255,0.82)', lineHeight:1.7, maxWidth:520, margin:0 }}>
                 Encuentra información, servicios, empleos y apoyo real en una plataforma creada para ti y para los tuyos.
