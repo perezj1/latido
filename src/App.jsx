@@ -33,6 +33,13 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('latido_pwa_dismissed') === '1')
   const [installed, setInstalled] = useState(false)
 
+  useEffect(() => {
+    if (isLoggedIn) {
+      sessionStorage.removeItem('latido_pwa_dismissed')
+      setDismissed(false)
+    }
+  }, [isLoggedIn])
+
   const dismiss = () => {
     sessionStorage.setItem('latido_pwa_dismissed', '1')
     setDismissed(true)
