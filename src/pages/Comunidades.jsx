@@ -888,8 +888,6 @@ export default function Comunidades() {
           <PillFilters options={NEGOCIO_TYPES} value={negType} onChange={setNegType} className="mb-4" />
           {loading ? (
             <div className="skeleton" style={{ height:260, borderRadius:20 }} />
-          ) : filteredNeg.length === 0 ? (
-            <EmptyState emoji="😕" title="Sin resultados" action="Ver todos" onAction={() => { setNegType(''); setSearch('') }} />
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
               {filteredNeg.map(business => (
