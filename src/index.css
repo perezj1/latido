@@ -75,6 +75,10 @@ img { max-width: 100%; }
 /* ── Category bar sticky offset ── */
 .cat-bar { position: sticky; top: 0; z-index: 40; }
 @media (min-width: 768px) { .cat-bar { top: 57px; } }
+.sticky-toolbar-shell {
+  background: #F0F6FF;
+  backdrop-filter: none;
+}
 
 /* ── iPhone notch / safe area ── */
 .safe-bottom {

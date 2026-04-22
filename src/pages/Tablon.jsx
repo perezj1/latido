@@ -279,12 +279,23 @@ export default function Tablon() {
   const isEmpleos  = cat === 'empleo'
   const isMercado  = cat === 'venta'
 
+  const scrollPageTop = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }
+
   const setFilter = (k, v) => {
     const p = new URLSearchParams(searchParams)
     v ? p.set(k, v) : p.delete(k)
     setSearchParams(p)
   }
-  const clearFilters = () => setSearchParams({})
+  const setFilterAndScroll = (k, v) => {
+    setFilter(k, v)
+    scrollPageTop()
+  }
+  const clearFilters = () => {
+    setSearchParams({})
+    scrollPageTop()
+  }
   const openAdDetails = (ad) => {
     setSelectedAd(ad)
     const p = new URLSearchParams(searchParams)
@@ -470,7 +481,9 @@ export default function Tablon() {
   const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Fijo' }, { id:'Part-time', label:'Temporal' }]
 
   return (
-    <div style={{ maxWidth:800, margin:'0 auto', padding:'24px 20px 100px' }}>
+    <div style={{ maxWidth:800, margin:'0 auto', padding:'0 20px 100px' }}>
+      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
+        <div style={{ width:'100%', maxWidth:840, margin:'0 auto', padding:'24px 20px 18px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
         <div>
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, letterSpacing:-0.5, marginBottom:4 }}>
@@ -483,6 +496,12 @@ export default function Tablon() {
         </div>
       </div>
 
+        </div>
+      </div>
+
+      <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:activeCount>0 ? 10 : 18, padding:'10px 0 12px' }}>
+        <div style={{ width:'100%', maxWidth:840, margin:'0 auto', padding:'0 20px' }}>
+          <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
       {/* Search */}
       <div style={{ display:'flex', gap:8, marginBottom:12 }}>
         <div style={{ flex:1, position:'relative' }}>
@@ -500,15 +519,18 @@ export default function Tablon() {
       </div>
 
       {/* Category pills */}
-      <div className="no-scroll" style={{ display:'flex', gap:6, overflowX:'auto', marginBottom: activeCount>0?8:16, paddingBottom:2 }}>
+      <div className="no-scroll" style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:2 }}>
         {catOptions.map(o => {
           const active = cat === o.id
           return (
-            <button key={o.id} onClick={()=>setFilter('cat', active?'':o.id)} style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'5px 12px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:'#fff', color:active?'#fff':C.mid, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
+            <button key={o.id} onClick={()=>setFilterAndScroll('cat', active?'':o.id)} style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'5px 12px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:'#fff', color:active?'#fff':C.mid, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
               {o.label}
             </button>
           )
         })}
+      </div>
+          </div>
+        </div>
       </div>
 
 
@@ -634,7 +656,7 @@ export default function Tablon() {
               {jobTypeOpts.map(o => {
                 const active = jobType === o.id
                 return (
-                  <button key={o.id} onClick={()=>setFilter('jobType', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                  <button key={o.id} onClick={()=>setFilterAndScroll('jobType', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
                     {o.label}
                   </button>
                 )
@@ -649,7 +671,7 @@ export default function Tablon() {
                 {[{ id:'', label:'Todo' }, { id:'vende', label:'🏷️ Se vende' }, { id:'busca', label:'🔍 Se busca' }, { id:'regala', label:'🎁 Se regala' }].map(o => {
                   const active = type === o.id
                   return (
-                    <button key={o.id} onClick={()=>setFilter('type', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                    <button key={o.id} onClick={()=>setFilterAndScroll('type', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
                       {o.label}
                     </button>
                   )
@@ -662,7 +684,7 @@ export default function Tablon() {
                 {[{ id:'', label:'Cualquier precio' }, { id:'50', label:'Hasta 50' }, { id:'150', label:'Hasta 150' }, { id:'500', label:'Hasta 500' }, { id:'1000', label:'Hasta 1000' }].map(o => {
                   const active = maxPrice === o.id
                   return (
-                    <button key={o.id} onClick={()=>setFilter('maxPrice', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                    <button key={o.id} onClick={()=>setFilterAndScroll('maxPrice', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
                       {o.label}
                     </button>
                   )
@@ -677,7 +699,7 @@ export default function Tablon() {
               {typeOptions.map(o => {
                 const active = type === o.id
                 return (
-                  <button key={o.id} onClick={()=>setFilter('type', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                  <button key={o.id} onClick={()=>setFilterAndScroll('type', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
                     {o.label}
                   </button>
                 )

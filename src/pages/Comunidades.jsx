@@ -724,6 +724,7 @@ export default function Comunidades() {
     setSearch('')
     setCat('')
     setNegType('')
+    scrollPageTop()
   }
 
   const updateOpenState = (key, value, nextView='comunidades') => {
@@ -762,6 +763,20 @@ export default function Comunidades() {
   const closeEventDetails = () => {
     setSelectedEvent(null)
     updateOpenState('openEvent', '', 'eventos')
+  }
+
+  const scrollPageTop = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }
+
+  const handleCommunityCategoryChange = nextCat => {
+    setCat(nextCat)
+    scrollPageTop()
+  }
+
+  const handleBusinessTypeChange = nextType => {
+    setNegType(nextType)
+    scrollPageTop()
   }
 
   const catOptions = useMemo(() => [{ id:'', label:'Todas' }, ...COMMUNITY_OPTIONS.map(item => ({ id:item.id, label:`${item.emoji} ${item.label}` }))], [])
@@ -807,11 +822,11 @@ export default function Comunidades() {
   }, [businesses, communities, events, loading, openBusinessId, openCommunityId, openEventId])
 
   return (
-    <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 24px 100px' }}>
+    <div style={{ maxWidth:1000, margin:'0 auto', padding:'0 24px 100px' }}>
+      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
+        <div style={{ width:'100%', maxWidth:1048, margin:'0 auto', padding:'32px 24px 18px' }}>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>🤝 Comunidad</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:20 }}>Grupos, negocios y eventos para latinos en Suiza</p>
-
-      <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />
 
       {!isLoggedIn && (
         <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
@@ -830,7 +845,15 @@ export default function Comunidades() {
       )}
 
       {/* Search bar — hidden in eventos tab */}
-      {tab !== 'eventos' && (
+        </div>
+      </div>
+
+      <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:16, padding:'10px 0 12px' }}>
+        <div style={{ width:'100%', maxWidth:1048, margin:'0 auto', padding:'0 24px' }}>
+          <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
+          <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />
+          {tab !== 'eventos' && (
+            <>
         <div style={{ position:'relative', marginBottom:12 }}>
           <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:C.light }}>🔍</span>
           <input
@@ -844,15 +867,21 @@ export default function Comunidades() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-      )}
+
+          {tab === 'comunidades' && <PillFilters options={catOptions} value={cat} onChange={handleCommunityCategoryChange} />}
+          {tab === 'negocios' && <PillFilters options={NEGOCIO_TYPES} value={negType} onChange={handleBusinessTypeChange} />}
+            </>
+          )}
+          </div>
+        </div>
+      </div>
 
       {tab === 'comunidades' && (
         <>
-          <PillFilters options={catOptions} value={cat} onChange={setCat} className="mb-4" />
           {loading ? (
             <div className="skeleton" style={{ height:200, borderRadius:20 }} />
           ) : filteredComm.length === 0 ? (
-            <EmptyState emoji="😕" title="Sin resultados" action="Ver todas" onAction={() => { setCat(''); setSearch('') }} />
+            <EmptyState emoji="😕" title="Sin resultados" action="Ver todas" onAction={() => { setCat(''); setSearch(''); scrollPageTop() }} />
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
               {filteredComm.map(group => (
@@ -885,7 +914,6 @@ export default function Comunidades() {
 
       {tab === 'negocios' && (
         <>
-          <PillFilters options={NEGOCIO_TYPES} value={negType} onChange={setNegType} className="mb-4" />
           {loading ? (
             <div className="skeleton" style={{ height:260, borderRadius:20 }} />
           ) : (
