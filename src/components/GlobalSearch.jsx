@@ -262,7 +262,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   const accessLevel = getCacheKey(isLoggedIn)
 
   const ph = placeholder || (size === 'lg'
-    ? 'Busca pisos, empleos, negocios, eventos o comunidades...'
+    ? 'Encuentra lo que buscas'
     : 'Buscar anuncios, empleos o comunidad...')
 
   useEffect(() => {

@@ -20,7 +20,7 @@ export default function Footer() {
               <span style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.primary }}>Latido</span>
             </div>
             <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.7, marginBottom:16 }}>
-              La plataforma para Hispanohablantes en Suiza. Anuncios, comunidades, guías y empleos — todo en español.
+              La plataforma para Hispanohablantes en Suiza. Anuncios, comunidades, eventos, guías y empleos — todo en español.
             </p>
             {/* <div style={{ display:'flex', gap:8 }}>
               {['📸 Instagram', '💬 WhatsApp'].map(label => (
@@ -50,8 +50,8 @@ export default function Footer() {
 
           <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Contacto</h4>
-            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📧 hola@latido.ch</p>
-            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📍 Zürich, Suiza</p>
+            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📧 latidoch@gmail.com</p>
+            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📍 Luzern, Suiza</p>
             <div style={{ marginTop:14, background:'#1E293B', borderRadius:12, padding:'12px 14px' }}>
               <p style={{ fontFamily:PP, fontSize:11, color:'#64748B', margin:0 }}>
                 ¿Buscas trabajo en Suiza?{' '}
