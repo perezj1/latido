@@ -295,7 +295,7 @@ export default function Landing({ onInstall }) {
               <span className="latido-pulse-dot" style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#4ADE80' }} />
               <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#22C55E' }} />
             </span>
-            La primera plataforma pensada para hispanohablantes en Suiza
+            La primera plataforma pensada exclusivamente para hispanohablantes en Suiza
           </div>
 
           {/* H1 fixed: single clean line + italic accent */}
@@ -400,19 +400,19 @@ export default function Landing({ onInstall }) {
             </p>
           </div>
         </Reveal>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols},1fr)`, gap: 10 }}>
           {AD_CATS_PREVIEW.map((cat, i) => (
             <Reveal key={cat.label} delay={i * 60}>
               <Link
                 to={cat.to}
                 className="latido-card-hover"
-                style={{ background: cat.color, borderRadius: 20, padding: '22px 16px', textDecoration: 'none', textAlign: 'center', border: '1.5px solid transparent', display: 'block' }}
+                style={{ background: cat.color, borderRadius: 18, padding: 'clamp(14px,3vw,22px) clamp(10px,2vw,16px)', textDecoration: 'none', textAlign: 'center', border: '1.5px solid transparent', display: 'block' }}
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 14px 32px rgba(37,99,235,0.16)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
               >
-                <div style={{ fontSize: 36, marginBottom: 10 }}>{cat.emoji}</div>
-                <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: cat.tc, margin: '0 0 5px' }}>{cat.label}</p>
-                <p style={{ fontFamily: PP, fontSize: 10, color: cat.tc, opacity: 0.75, margin: 0, lineHeight: 1.4 }}>{cat.desc}</p>
+                <div style={{ fontSize: 'clamp(28px,6vw,36px)', marginBottom: 8 }}>{cat.emoji}</div>
+                <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 'clamp(11px,2.5vw,14px)', color: cat.tc, margin: '0 0 4px' }}>{cat.label}</p>
+                <p style={{ fontFamily: PP, fontSize: 'clamp(9px,1.8vw,10px)', color: cat.tc, opacity: 0.75, margin: 0, lineHeight: 1.4 }}>{cat.desc}</p>
               </Link>
             </Reveal>
           ))}
