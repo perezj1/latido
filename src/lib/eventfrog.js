@@ -1,15 +1,9 @@
-const EVENTFROG_API_URL = 'https://api.eventfrog.net/public/v1/events'
+const EVENTFROG_API_URL = import.meta.env.VITE_EVENTFROG_PROXY_URL || '/api/eventfrog'
 const EVENTFROG_EMBED_URL = 'https://embed.eventfrog.ch/en/events.html'
-
-export const EVENTFROG_PUBLIC_API_KEY =
-  import.meta.env.VITE_EVENTFROG_PUBLIC_API_KEY ||
-  import.meta.env.VITE_EVENTFROG_CALENDAR_KEY ||
-  ''
 
 export const EVENTFROG_EMBED_KEY =
   import.meta.env.VITE_EVENTFROG_EMBED_KEY ||
-  import.meta.env.VITE_EVENTFROG_CALENDAR_KEY ||
-  EVENTFROG_PUBLIC_API_KEY
+  ''
 
 const PREFERRED_LANGS = ['es', 'en', 'de', 'fr', 'it']
 
@@ -19,30 +13,49 @@ export const EVENTFROG_FILTERS = [
     label: 'Latino',
     embedTerm: 'latino',
     terms: [
-      'latino', 'latina', 'latin', 'hispano', 'hispanic', 'español', 'spanish',
+      'latino', 'latina', 'latin', 'latein', 'lateinamerika', 'latinoamerica',
+      'hispano', 'hispanic', 'español', 'espanol', 'spanish', 'spanisch',
+      'espagnol', 'fiesta latina', 'noche latina', 'latin night', 'latin party',
+      'latinos', 'latinas', 'latinoamericano', 'latinoamericana',
       'salsa', 'bachata', 'reggaeton', 'reggaetón', 'cumbia', 'merengue',
-      'flamenco', 'tango', 'colombia', 'colombiano', 'mexico', 'méxico',
-      'peru', 'perú', 'argentina', 'venezuela', 'ecuador', 'chile', 'bolivia',
-      'dominicana', 'cuba', 'costa rica',
+      'flamenco', 'tango', 'vallenato', 'mariachi', 'son cubano', 'musica latina',
+      'música latina', 'colombia', 'colombiano', 'colombiana', 'mexico',
+      'méxico', 'mexicano', 'mexicana', 'peru', 'perú', 'peruano', 'peruana',
+      'argentina', 'argentino', 'venezuela', 'venezolano', 'venezolana',
+      'ecuador', 'ecuatoriano', 'ecuatoriana', 'chile', 'chileno', 'chilena',
+      'bolivia', 'boliviano', 'boliviana', 'dominicana', 'dominicano',
+      'cuba', 'cubano', 'cubana', 'costa rica', 'costarricense', 'brasil',
+      'brasileño', 'brasileno', 'brazil', 'brazilian',
     ],
   },
   {
     id: 'espanol',
     label: 'Español',
     embedTerm: 'spanish',
-    terms: ['español', 'espanol', 'spanish', 'hispano', 'hispanic', 'castellano'],
+    terms: [
+      'español', 'espanol', 'spanish', 'spanisch', 'spanische', 'spanischer',
+      'espagnol', 'espagnole', 'espagne', 'spanien', 'hispano', 'hispanic',
+      'castellano',
+    ],
   },
   {
     id: 'musica',
     label: 'Música',
     embedTerm: 'salsa',
-    terms: ['salsa', 'bachata', 'reggaeton', 'reggaetón', 'cumbia', 'merengue', 'tango', 'flamenco', 'latin music'],
+    terms: [
+      'salsa', 'bachata', 'reggaeton', 'reggaetón', 'cumbia', 'merengue',
+      'tango', 'flamenco', 'latin music', 'musica latina', 'música latina',
+      'latin pop', 'urbano', 'dembow', 'vallenato', 'mariachi', 'bossa nova',
+    ],
   },
   {
     id: 'familia',
     label: 'Familia',
     embedTerm: 'familia latina',
-    terms: ['familia', 'family', 'niños', 'ninos', 'kinder', 'latino kids', 'familias latinas'],
+    terms: [
+      'familia', 'family', 'familien', 'niños', 'niñas', 'ninos', 'kids',
+      'children', 'kinder', 'latino kids', 'familias latinas',
+    ],
   },
 ]
 
@@ -124,6 +137,18 @@ function normalizeSearch(value = '') {
     .toLowerCase()
 }
 
+function escapeRegExp(value = '') {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function hasSearchTerm(haystack, term) {
+  const normalizedTerm = normalizeSearch(term)
+  if (!normalizedTerm) return false
+
+  const pattern = normalizedTerm.split(/\s+/).map(escapeRegExp).join('[\\s-]+')
+  return new RegExp(`(^|[^a-z0-9])${pattern}([^a-z0-9]|$)`).test(haystack)
+}
+
 function matchesLatidoTerms(event, terms) {
   const haystack = normalizeSearch([
     event.title,
@@ -132,7 +157,48 @@ function matchesLatidoTerms(event, terms) {
     event.city,
   ].join(' '))
 
-  return terms.some(term => haystack.includes(normalizeSearch(term)))
+  return terms.some(term => hasSearchTerm(haystack, term))
+}
+
+function getRangeDayCount(from, to) {
+  const fromDate = from ? new Date(`${from}T00:00:00`) : null
+  const toDate = to ? new Date(`${to}T00:00:00`) : null
+  if (!fromDate || !toDate || Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) return 1
+
+  const diff = toDate.getTime() - fromDate.getTime()
+  return Math.max(1, Math.floor(diff / 86400000) + 1)
+}
+
+function getEventDateKey(event) {
+  return event.date ? toISODate(event.date) : 'sin-fecha'
+}
+
+function countEventDays(events) {
+  return new Set(events.map(getEventDateKey)).size
+}
+
+function pickEventsAcrossDates(events, limit) {
+  const sorted = [...events].sort((a, b) => (a.date?.getTime() || 0) - (b.date?.getTime() || 0))
+  const groups = new Map()
+
+  for (const event of sorted) {
+    const key = getEventDateKey(event)
+    const group = groups.get(key) || []
+    group.push(event)
+    groups.set(key, group)
+  }
+
+  const selected = []
+  const buckets = Array.from(groups.values())
+  let bucketIndex = 0
+
+  while (selected.length < limit && buckets.some(bucket => bucket.length > 0)) {
+    const bucket = buckets[bucketIndex % buckets.length]
+    if (bucket.length > 0) selected.push(bucket.shift())
+    bucketIndex += 1
+  }
+
+  return selected.sort((a, b) => (a.date?.getTime() || 0) - (b.date?.getTime() || 0))
 }
 
 function normalizeEventfrogEvent(event) {
@@ -164,41 +230,26 @@ function normalizeEventfrogEvent(event) {
   }
 }
 
-async function requestEventfrog(url, signal) {
-  const headers = EVENTFROG_PUBLIC_API_KEY
-    ? { Authorization: `Bearer ${EVENTFROG_PUBLIC_API_KEY}` }
-    : {}
-
-  const response = await fetch(url, { headers, signal })
-  if (!EVENTFROG_PUBLIC_API_KEY || (response.status !== 401 && response.status !== 403)) {
-    return response
-  }
-
-  const fallbackUrl = new URL(url)
-  fallbackUrl.searchParams.set('apiKey', EVENTFROG_PUBLIC_API_KEY)
-  return fetch(fallbackUrl, { signal })
-}
-
 export async function fetchEventfrogEvents({ from, to, filterId = 'latino', signal, limit = 18 } = {}) {
-  if (!EVENTFROG_PUBLIC_API_KEY) {
-    throw new Error('Missing Eventfrog API key')
-  }
-
   const filter = EVENTFROG_FILTERS.find(item => item.id === filterId) || EVENTFROG_FILTERS[0]
   const perPage = 1000
-  const maxPages = 5
+  const maxPages = 20
   const matches = []
   let total = Infinity
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+  const fromDate = from ? new Date(`${from}T00:00:00`) : null
+  const fromTime = fromDate && !Number.isNaN(fromDate.getTime()) ? fromDate.getTime() : 0
+  const targetDayCount = Math.min(getRangeDayCount(from, to), limit)
 
-  for (let page = 1; page <= maxPages && matches.length < limit && (page - 1) * perPage < total; page += 1) {
-    const url = new URL(EVENTFROG_API_URL)
+  for (let page = 1; page <= maxPages && (page - 1) * perPage < total; page += 1) {
+    const url = new URL(EVENTFROG_API_URL, origin)
     url.searchParams.set('country', 'CH')
     url.searchParams.set('from', from)
     url.searchParams.set('to', to)
     url.searchParams.set('page', String(page))
     url.searchParams.set('perPage', String(perPage))
 
-    const response = await requestEventfrog(url, signal)
+    const response = await fetch(url, { signal })
     if (!response.ok) {
       throw new Error(`Eventfrog ${response.status}`)
     }
@@ -207,12 +258,15 @@ export async function fetchEventfrogEvents({ from, to, filterId = 'latino', sign
     total = Number(data.totalNumberOfResources || 0)
     const pageMatches = (data.events || [])
       .map(normalizeEventfrogEvent)
-      .filter(event => !event.cancelled && matchesLatidoTerms(event, filter.terms))
+      .filter(event => {
+        const eventTime = event.date?.getTime() || 0
+        return !event.cancelled && eventTime >= fromTime && matchesLatidoTerms(event, filter.terms)
+      })
 
     matches.push(...pageMatches)
+
+    if (matches.length >= limit && countEventDays(matches) >= targetDayCount) break
   }
 
-  return matches
-    .sort((a, b) => (a.date?.getTime() || 0) - (b.date?.getTime() || 0))
-    .slice(0, limit)
+  return pickEventsAcrossDates(matches, limit)
 }

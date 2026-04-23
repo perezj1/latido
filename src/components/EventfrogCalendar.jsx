@@ -13,8 +13,41 @@ const RANGE_OPTIONS = [
   { id:'today', label:'Hoy' },
   { id:'week', label:'7 días' },
   { id:'month', label:'30 días' },
-  { id:'custom', label:'Fecha' },
+  { id:'custom', label:'Elegir fecha' },
 ]
+
+const LIST_MAX_HEIGHT = {
+  compact: 314,
+  regular: 410,
+}
+
+function PillSelect({ value, onChange, options, ariaLabel, minWidth = 116 }) {
+  return (
+    <select
+      aria-label={ariaLabel}
+      value={value}
+      onChange={event => onChange(event.target.value)}
+      style={{
+        minWidth,
+        fontFamily:PP,
+        fontSize:11,
+        fontWeight:700,
+        color:C.primary,
+        border:`1.5px solid ${C.primaryMid}`,
+        borderRadius:999,
+        background:C.primaryLight,
+        padding:'9px 12px',
+        outline:'none',
+        cursor:'pointer',
+        flexShrink:0,
+      }}
+    >
+      {options.map(option => (
+        <option key={option.id} value={option.id}>{option.label}</option>
+      ))}
+    </select>
+  )
+}
 
 function formatRangeLabel(from, to) {
   const fmt = new Intl.DateTimeFormat('es-CH', { day:'2-digit', month:'short' })
@@ -124,7 +157,55 @@ function EventCard({ event, compact }) {
   )
 }
 
-export default function EventfrogCalendar({ compact = false, maxEvents = 18, showEmbedFallback = true }) {
+function CarouselEventCard({ event }) {
+  return (
+    <a
+      href={event.link}
+      target="_blank"
+      rel="noreferrer"
+      style={{ textDecoration:'none', flexShrink:0, width:168, display:'block' }}
+    >
+      <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+        <div style={{ height:120, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, position:'relative' }}>
+          {event.img ? (
+            <img
+              src={event.img}
+              alt={event.title}
+              loading="lazy"
+              style={{ width:'100%', height:'100%', objectFit:'cover', position:'absolute', inset:0 }}
+            />
+          ) : (
+            <span>🎉</span>
+          )}
+          <span style={{ position:'absolute', top:8, left:8, fontFamily:PP, fontSize:9, fontWeight:800, background:'rgba(255,255,255,0.94)', color:C.primary, padding:'3px 7px', borderRadius:999 }}>
+            {event.day} {event.month}
+          </span>
+          {event.soldOut && (
+            <span style={{ position:'absolute', top:8, right:8, fontFamily:PP, fontSize:9, fontWeight:800, background:'#FEE2E2', color:'#991B1B', padding:'3px 7px', borderRadius:999 }}>
+              Agotado
+            </span>
+          )}
+        </div>
+        <div style={{ padding:'10px 10px 12px' }}>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', lineHeight:1.35, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.7em' }}>
+            {event.title}
+          </p>
+          <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            📍 {event.city}
+          </p>
+          <p style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.primary, margin:'0 0 4px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            {event.price}
+          </p>
+          <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            {event.time || 'Eventfrog'} · {event.organizer}
+          </p>
+        </div>
+      </div>
+    </a>
+  )
+}
+
+export default function EventfrogCalendar({ compact = false, maxEvents = 60, showEmbedFallback = true, layout = 'list' }) {
   const [rangeKey, setRangeKey] = useState(compact ? 'week' : 'month')
   const [customDate, setCustomDate] = useState(() => toISODate(new Date()))
   const [filterId, setFilterId] = useState('latino')
@@ -134,6 +215,8 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 18, sho
 
   const range = useMemo(() => getEventfrogRange(rangeKey, customDate), [customDate, rangeKey])
   const grouped = useMemo(() => Array.from(groupByDate(events).values()), [events])
+  const hasEmbedFallback = showEmbedFallback && EVENTFROG_EMBED_KEY
+  const listMaxHeight = compact ? LIST_MAX_HEIGHT.compact : LIST_MAX_HEIGHT.regular
   const embedUrl = useMemo(
     () => buildEventfrogEmbedUrl({ term:filterId, from:range.from, to:range.to }),
     [filterId, range.from, range.to]
@@ -168,6 +251,97 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 18, sho
     return () => controller.abort()
   }, [filterId, maxEvents, range.from, range.to])
 
+  if (layout === 'carousel') {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div style={{ maxWidth:980, margin:'0 auto', width:'100%', padding:'16px 16px 0' }}>
+          <div className="no-scroll" style={{ display:'flex', gap:10, alignItems:'center', overflowX:'auto', WebkitOverflowScrolling:'touch', paddingBottom:8 }}>
+            <PillSelect
+              ariaLabel="Rango de fechas"
+              value={rangeKey}
+              onChange={setRangeKey}
+              options={RANGE_OPTIONS}
+              minWidth={132}
+            />
+            <PillSelect
+              ariaLabel="Filtro de eventos"
+              value={filterId}
+              onChange={setFilterId}
+              options={EVENTFROG_FILTERS}
+              minWidth={118}
+            />
+          </div>
+
+          {rangeKey === 'custom' && (
+            <input
+              type="date"
+              value={customDate}
+              onChange={event => setCustomDate(event.target.value)}
+              style={{
+                width:'100%',
+                maxWidth:220,
+                fontFamily:PP,
+                fontSize:12,
+                color:C.text,
+                border:`1.5px solid ${C.border}`,
+                borderRadius:13,
+                padding:'10px 12px',
+                outline:'none',
+                margin:'0 0 8px',
+              }}
+            />
+          )}
+
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, marginTop:4 }}>
+            <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:0 }}>
+              {formatRangeLabel(range.from, range.to)}
+            </p>
+            <span style={{ fontFamily:PP, fontSize:10, color:C.light, whiteSpace:'nowrap' }}>
+              Eventfrog
+            </span>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+            <div style={{ display:'flex', gap:12, width:'max-content' }}>
+              {[1, 2, 3, 4].map(item => (
+                <div key={item} className="skeleton" style={{ flexShrink:0, width:168, height:226, borderRadius:16 }} />
+              ))}
+            </div>
+          </div>
+        ) : events.length > 0 ? (
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+            <div style={{ display:'flex', gap:12, width:'max-content' }}>
+              {events.map(event => (
+                <CarouselEventCard key={event.id} event={event} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ maxWidth:980, margin:'0 auto', width:'100%', padding:'0 16px' }}>
+            <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'18px 14px', textAlign:'center' }}>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 4px' }}>
+                No encontramos eventos para este filtro.
+              </p>
+              <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
+                Prueba otro rango o cambia el filtro.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div style={{ maxWidth:980, margin:'0 auto', width:'100%', padding:'0 16px' }}>
+            <p style={{ fontFamily:PP, fontSize:11, color:'#991B1B', margin:0 }}>
+              {error}
+            </p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
       <div
@@ -179,52 +353,20 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 18, sho
         }}
       >
         <div style={{ display:'flex', gap:8, alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', marginBottom:12 }}>
-          <div className="no-scroll" style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:2 }}>
-            {RANGE_OPTIONS.map(option => {
-              const active = rangeKey === option.id
-              return (
-                <button
-                  key={option.id}
-                  onClick={() => setRangeKey(option.id)}
-                  style={{
-                    fontFamily:PP,
-                    fontSize:10,
-                    fontWeight:700,
-                    borderRadius:999,
-                    border:`1.5px solid ${active ? C.primary : C.border}`,
-                    background:active ? C.primary : '#fff',
-                    color:active ? '#fff' : C.mid,
-                    padding:'7px 12px',
-                    cursor:'pointer',
-                    whiteSpace:'nowrap',
-                  }}
-                >
-                  {option.label}
-                </button>
-              )
-            })}
-          </div>
-
-          <select
+          <PillSelect
+            ariaLabel="Rango de fechas"
+            value={rangeKey}
+            onChange={setRangeKey}
+            options={RANGE_OPTIONS}
+            minWidth={132}
+          />
+          <PillSelect
+            ariaLabel="Filtro de eventos"
             value={filterId}
-            onChange={event => setFilterId(event.target.value)}
-            style={{
-              fontFamily:PP,
-              fontSize:11,
-              fontWeight:700,
-              color:C.primary,
-              border:`1.5px solid ${C.primaryMid}`,
-              borderRadius:12,
-              background:C.primaryLight,
-              padding:'8px 10px',
-              outline:'none',
-              cursor:'pointer',
-            }}
-          >
-            {EVENTFROG_FILTERS.map(option => (
-              <option key={option.id} value={option.id}>{option.label}</option>
-            ))}
-          </select>
+            onChange={setFilterId}
+            options={EVENTFROG_FILTERS}
+            minWidth={118}
+          />
         </div>
 
         {rangeKey === 'custom' && (
@@ -256,27 +398,47 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 18, sho
         </div>
 
         {loading ? (
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:listMaxHeight, overflow:'hidden' }}>
             {[1, 2, 3].map(item => (
               <div key={item} className="skeleton" style={{ height:compact ? 96 : 116, borderRadius:16 }} />
             ))}
           </div>
         ) : events.length > 0 ? (
-          <div style={{ display:'flex', flexDirection:'column', gap:compact ? 10 : 14 }}>
-            {grouped.map(group => (
-              <div key={group.key}>
-                {!compact && (
-                  <p style={{ fontFamily:PP, fontSize:11, fontWeight:800, color:C.light, letterSpacing:1, textTransform:'uppercase', margin:'0 0 8px' }}>
+          <div
+            style={{
+              maxHeight:listMaxHeight,
+              overflowY:'auto',
+              overflowX:'hidden',
+              paddingRight:4,
+              marginRight:-4,
+              overscrollBehavior:'contain',
+              WebkitOverflowScrolling:'touch',
+            }}
+          >
+            <div style={{ display:'flex', flexDirection:'column', gap:compact ? 10 : 14 }}>
+              {grouped.map(group => (
+                <div key={group.key}>
+                  <p
+                    style={{
+                      fontFamily:PP,
+                      fontSize:compact ? 10 : 11,
+                      fontWeight:800,
+                      color:C.light,
+                      letterSpacing:1,
+                      textTransform:'uppercase',
+                      margin:compact ? '0 0 7px 2px' : '0 0 8px',
+                    }}
+                  >
                     {group.label}
                   </p>
-                )}
-                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  {group.events.map(event => (
-                    <EventCard key={event.id} event={event} compact={compact} />
-                  ))}
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    {group.events.map(event => (
+                      <EventCard key={event.id} event={event} compact={compact} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
           <div style={{ background:C.bg, borderRadius:16, padding:'18px 14px', textAlign:'center' }}>
@@ -284,13 +446,15 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 18, sho
               No encontramos eventos para este filtro.
             </p>
             <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-              Prueba otro rango o mira el calendario completo abajo.
+              {hasEmbedFallback
+                ? 'Prueba otro rango o mira el calendario completo abajo.'
+                : 'Prueba otro rango o cambia el filtro.'}
             </p>
           </div>
         )}
       </div>
 
-      {showEmbedFallback && EVENTFROG_EMBED_KEY && (error || events.length === 0 || !compact) && (
+      {hasEmbedFallback && (error || events.length === 0 || !compact) && (
         <div style={{ borderRadius:20, border:`1px solid ${C.border}`, height:compact ? 360 : 420, overflow:'hidden', background:'#fff' }}>
           <iframe
             title="Calendario Eventfrog"
@@ -305,7 +469,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 18, sho
         </div>
       )}
 
-      {error && !EVENTFROG_EMBED_KEY && (
+      {error && !hasEmbedFallback && (
         <p style={{ fontFamily:PP, fontSize:11, color:'#991B1B', margin:0 }}>
           {error}
         </p>

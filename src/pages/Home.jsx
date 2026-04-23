@@ -594,8 +594,8 @@ export default function Home() {
       </section>
       */}
 
-      <section style={{ maxWidth:980, margin:'0 auto', padding:'40px 16px 0' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+      <section style={{ padding:'40px 0 0' }}>
+        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
               🎉 Próximos eventos 
@@ -609,7 +609,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <EventfrogCalendar compact maxEvents={4} />
+        <EventfrogCalendar compact layout="carousel" maxEvents={60} />
       </section>
 
       {/* ── GUÍAS ── */}
