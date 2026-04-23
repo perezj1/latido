@@ -88,36 +88,49 @@ export default function Guias() {
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
         {filtered.map((doc) => (
-          <Card key={doc.id} onClick={() => setSelected(doc)}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
-              <span style={{ fontSize:32 }}>{doc.emoji}</span>
-              <Tag
-                bg={doc.level === 'Básico' ? '#D1FAE5' : '#FEF3C7'}
-                color={doc.level === 'Básico' ? '#065F46' : '#92400E'}
-              >
-                {doc.level}
-              </Tag>
+          <Card key={doc.id} onClick={() => setSelected(doc)} style={{ padding:0, overflow:'hidden' }}>
+            <div style={{ position:'relative', height:150, background:C.bg }}>
+              {doc.img ? (
+                <img src={doc.img} alt={doc.title} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+              ) : (
+                <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
+                  {doc.emoji}
+                </div>
+              )}
+              <span style={{ position:'absolute', left:12, bottom:12, width:38, height:38, borderRadius:13, background:'rgba(255,255,255,0.92)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, boxShadow:'0 8px 22px rgba(15,23,42,0.18)' }}>
+                {doc.emoji}
+              </span>
+              <div style={{ position:'absolute', right:12, top:12 }}>
+                <Tag
+                  bg={doc.level === 'Básico' ? '#D1FAE5' : '#FEF3C7'}
+                  color={doc.level === 'Básico' ? '#065F46' : '#92400E'}
+                >
+                  {doc.level}
+                </Tag>
+              </div>
             </div>
 
-            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, marginBottom:6, lineHeight:1.4 }}>
-              {doc.title}
-            </h3>
+            <div style={{ padding:16 }}>
+              <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, marginBottom:6, lineHeight:1.4 }}>
+                {doc.title}
+              </h3>
 
-            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:12 }}>
-              {doc.summary}
-            </p>
+              <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:12 }}>
+                {doc.summary}
+              </p>
 
-            <div
-              style={{
-                display:'flex',
-                justifyContent:'space-between',
-                alignItems:'center',
-                borderTop:`1px solid ${C.border}`,
-                paddingTop:10
-              }}
-            >
-              <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>⏱ {doc.time}</span>
-              <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary }}>Leer →</span>
+              <div
+                style={{
+                  display:'flex',
+                  justifyContent:'space-between',
+                  alignItems:'center',
+                  borderTop:`1px solid ${C.border}`,
+                  paddingTop:10
+                }}
+              >
+                <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>⏱ {doc.time}</span>
+                <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary }}>Leer →</span>
+              </div>
             </div>
           </Card>
         ))}
@@ -143,6 +156,14 @@ export default function Guias() {
       <Modal show={!!selected} onClose={() => setSelected(null)} title={selected?.title || ''}>
         {selected && (
           <>
+            {selected.img && (
+              <img
+                src={selected.img}
+                alt={selected.title}
+                style={{ width:'100%', height:210, objectFit:'cover', borderRadius:18, marginBottom:14, display:'block' }}
+              />
+            )}
+
             <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:14 }}>
               <Tag
                 bg={selected.level === 'Básico' ? '#D1FAE5' : '#FEF3C7'}

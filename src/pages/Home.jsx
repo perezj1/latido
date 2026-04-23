@@ -649,8 +649,17 @@ export default function Home() {
                   return (
                     <div key={doc.id} onClick={() => setSelectedGuide(doc)} style={{ flexShrink:0, width:152, cursor:'pointer' }}>
                       <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-                        <div style={{ height:120, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
-                          {doc.emoji}
+                        <div style={{ position:'relative', height:120, background:gc.bg, overflow:'hidden' }}>
+                          {doc.img ? (
+                            <img src={doc.img} alt={doc.title} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                          ) : (
+                            <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
+                              {doc.emoji}
+                            </div>
+                          )}
+                          <span style={{ position:'absolute', left:10, bottom:10, width:34, height:34, borderRadius:12, background:'rgba(255,255,255,0.92)', color:gc.tc, display:'flex', alignItems:'center', justifyContent:'center', fontSize:19, boxShadow:'0 8px 20px rgba(15,23,42,0.18)' }}>
+                            {doc.emoji}
+                          </span>
                         </div>
                         <div style={{ padding:'10px 10px 12px' }}>
                           <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 6px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
@@ -686,6 +695,13 @@ export default function Home() {
               <button onClick={() => setSelectedGuide(null)} style={{ background:C.bg, border:'none', borderRadius:10, width:32, height:32, fontSize:16, cursor:'pointer', flexShrink:0 }}>✕</button>
             </div>
             <div style={{ padding:'18px 20px 32px', overflowY:'auto', flex:1 }}>
+              {selectedGuide.img && (
+                <img
+                  src={selectedGuide.img}
+                  alt={selectedGuide.title}
+                  style={{ width:'100%', height:210, objectFit:'cover', borderRadius:18, marginBottom:16, display:'block' }}
+                />
+              )}
               {selectedGuide.content.split('\n').map((line, i) => (
                 <p key={i} style={{ fontFamily:PP, fontSize:13, color: line.startsWith('**') ? C.text : C.mid, fontWeight: line.startsWith('**') ? 700 : 400, lineHeight:1.7, margin:'0 0 5px' }}>
                   {line.replace(/\*\*/g, '')}
