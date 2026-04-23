@@ -7,6 +7,7 @@ import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
+import EventfrogCalendar from '../components/EventfrogCalendar'
 import { AD_CATS, MOCK_DOCS } from '../lib/constants'
 
 const fmtPrice = p => {
@@ -608,18 +609,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <div style={{ borderRadius:20, border:`1px solid ${C.border}`, height:380, overflow:'hidden', position:'relative', flexShrink:0 }}>
-          <iframe
-            title="Próximos eventos"
-            width="100%"
-            height="380"
-            style={{ border:'none', display:'block', height:380, maxHeight:380 }}
-            src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=latino&geoRadius=60"
-            loading="lazy"
-            allow="fullscreen"
-            scrolling="auto"
-          />
-        </div>
+        <EventfrogCalendar compact maxEvents={4} />
       </section>
 
       {/* ── GUÍAS ── */}

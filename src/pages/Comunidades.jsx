@@ -15,6 +15,7 @@ import {
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
 import { Card, Tag, PillFilters, EmptyState, SegmentedTabs, Modal, InfoBanner, Stars, ReviewCard, ReviewForm, PhotoGallery } from '../components/UI'
+import EventfrogCalendar from '../components/EventfrogCalendar'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
@@ -950,34 +951,7 @@ export default function Comunidades() {
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, margin:0 }}>EVENTOS EN SUIZA</p>
               <span style={{ fontSize:10, color:C.light, display:'inline-block', transition:'transform .2s', transform: eventfrogOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
             </button>
-            {eventfrogOpen && (
-              <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-                <div style={{ borderRadius:20, border:`1px solid ${C.border}`, height:420, overflow:'hidden' }}>
-                  <iframe
-                    title="Eventos latinos en Suiza"
-                    width="100%"
-                    height="420"
-                    style={{ border:'none', display:'block', height:420 }}
-                    src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=latino&geoRadius=60"
-                    loading="lazy"
-                    allow="fullscreen"
-                    scrolling="auto"
-                  />
-                </div>
-                <div style={{ borderRadius:20, border:`1px solid ${C.border}`, height:420, overflow:'hidden' }}>
-                  <iframe
-                    title="Eventos en español en Suiza"
-                    width="100%"
-                    height="420"
-                    style={{ border:'none', display:'block', height:420 }}
-                    src="https://embed.eventfrog.ch/en/events.html?key=77224CCC-2A95-41B2-A934-4DA743FC30CA&color=2563eb&showSearch=false&disableAddEntry=true&excludeOrgs=false&searchTerm=spanish&geoRadius=60"
-                    loading="lazy"
-                    allow="fullscreen"
-                    scrolling="auto"
-                  />
-                </div>
-              </div>
-            )}
+            {eventfrogOpen && <EventfrogCalendar />}
           </div>
 
           {/* Eventos de la comunidad */}
