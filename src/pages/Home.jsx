@@ -7,7 +7,7 @@ import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
-import { AD_CATS } from '../lib/constants'
+import { AD_CATS, MOCK_DOCS } from '../lib/constants'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -86,6 +86,7 @@ export default function Home() {
   const [recentJobs, setRecentJobs] = useState([])
   const [recentEvents, setRecentEvents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedGuide, setSelectedGuide] = useState(null)
 
   const hasNotif = alertCount > 0 || hasUnread
 
@@ -620,6 +621,83 @@ export default function Home() {
           />
         </div>
       </section>
+
+      {/* ── GUÍAS ── */}
+      {(() => {
+        const GUIDE_COLORS = {
+          permisos:  { bg:'#DBEAFE', tc:'#1D4ED8' },
+          impuestos: { bg:'#FEF3C7', tc:'#92400E' },
+          salud:     { bg:'#FCE7F3', tc:'#9D174D' },
+          banco:     { bg:'#D1FAE5', tc:'#065F46' },
+          educacion: { bg:'#EDE9FE', tc:'#6D28D9' },
+          trabajo:   { bg:'#CCFBF1', tc:'#0F766E' },
+          vivienda:  { bg:'#DBEAFE', tc:'#1D4ED8' },
+        }
+        return (
+          <section style={{ padding:'40px 0 0' }}>
+            <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+              <div>
+                <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>📚 Guías</h2>
+                <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Trámites y burocracia suiza en español.</p>
+              </div>
+              <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>Ver todas →</Link>
+            </div>
+            <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+              <div style={{ display:'flex', gap:12, width:'max-content' }}>
+                {MOCK_DOCS.map(doc => {
+                  const gc = GUIDE_COLORS[doc.cat] || { bg:C.bg, tc:C.primary }
+                  return (
+                    <div key={doc.id} onClick={() => setSelectedGuide(doc)} style={{ flexShrink:0, width:152, cursor:'pointer' }}>
+                      <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+                        <div style={{ height:120, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
+                          {doc.emoji}
+                        </div>
+                        <div style={{ padding:'10px 10px 12px' }}>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 6px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
+                            {doc.title}
+                          </p>
+                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                            <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>⏱ {doc.time}</span>
+                            <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, color: doc.level === 'Básico' ? '#065F46' : '#92400E' }}>{doc.level}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+        )
+      })()}
+
+      {/* Guide modal */}
+      {selectedGuide && (
+        <div onClick={() => setSelectedGuide(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:680, maxHeight:'85vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <div style={{ padding:'20px 20px 16px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
+              <div>
+                <span style={{ fontFamily:PP, fontWeight:700, fontSize:10, padding:'3px 10px', borderRadius:999, background: selectedGuide.level === 'Básico' ? '#D1FAE5' : '#FEF3C7', color: selectedGuide.level === 'Básico' ? '#065F46' : '#92400E', display:'inline-block', marginBottom:8 }}>
+                  {selectedGuide.level}
+                </span>
+                <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:'0 0 4px', lineHeight:1.3 }}>{selectedGuide.title}</h2>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0 }}>⏱ {selectedGuide.time}</p>
+              </div>
+              <button onClick={() => setSelectedGuide(null)} style={{ background:C.bg, border:'none', borderRadius:10, width:32, height:32, fontSize:16, cursor:'pointer', flexShrink:0 }}>✕</button>
+            </div>
+            <div style={{ padding:'18px 20px 32px', overflowY:'auto', flex:1 }}>
+              {selectedGuide.content.split('\n').map((line, i) => (
+                <p key={i} style={{ fontFamily:PP, fontSize:13, color: line.startsWith('**') ? C.text : C.mid, fontWeight: line.startsWith('**') ? 700 : 400, lineHeight:1.7, margin:'0 0 5px' }}>
+                  {line.replace(/\*\*/g, '')}
+                </p>
+              ))}
+              <Link to="/guias" onClick={() => setSelectedGuide(null)} style={{ display:'inline-flex', marginTop:18, fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'12px 22px' }}>
+                Ver todas las guías →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section style={{ maxWidth:980, margin:'0 auto', padding:'42px 16px 110px' }}>
   <div style={{ background:'linear-gradient(135deg,#1E3A8A,#2563EB)', borderRadius:28, padding:'28px 24px', position:'relative', overflow:'hidden' }}>
