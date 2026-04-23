@@ -254,7 +254,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
   if (layout === 'carousel') {
     return (
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-        <div style={{ maxWidth:980, margin:'0 auto', width:'100%', padding:'16px 16px 0' }}>
+        <div style={{ maxWidth:980, margin:'0 auto', width:'100%', padding:'10px 16px 0' }}>
           <div className="no-scroll" style={{ display:'flex', gap:10, alignItems:'center', overflowX:'auto', WebkitOverflowScrolling:'touch', paddingBottom:8 }}>
             <PillSelect
               ariaLabel="Rango de fechas"

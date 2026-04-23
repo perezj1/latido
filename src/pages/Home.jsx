@@ -539,6 +539,24 @@ export default function Home() {
       </section> */}
 
       <section style={{ padding:'40px 0 0' }}>
+        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:0 }}>
+          <div>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
+              🎉 Próximos eventos 
+            </h2>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
+              Próximos eventos para ti.
+            </p>
+          </div>
+          <Link to="/comunidades?view=eventos" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>
+            Ver todos →
+          </Link>
+        </div>
+
+        <EventfrogCalendar compact layout="carousel" maxEvents={60} />
+      </section>
+
+      <section style={{ padding:'40px 0 0' }}>
         <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
@@ -593,24 +611,6 @@ export default function Home() {
         ...
       </section>
       */}
-
-      <section style={{ padding:'40px 0 0' }}>
-        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <div>
-            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
-              🎉 Próximos eventos 
-            </h2>
-            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
-              Próximos eventos para ti.
-            </p>
-          </div>
-          <Link to="/comunidades?view=eventos" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>
-            Ver todos →
-          </Link>
-        </div>
-
-        <EventfrogCalendar compact layout="carousel" maxEvents={60} />
-      </section>
 
       {/* ── GUÍAS ── */}
       {(() => {
