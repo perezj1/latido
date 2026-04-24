@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useZoneAlerts, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
+import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
@@ -88,6 +89,7 @@ export default function Home() {
   const [recentEvents, setRecentEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedGuide, setSelectedGuide] = useState(null)
+  useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
 
   const hasNotif = alertCount > 0 || hasUnread
 

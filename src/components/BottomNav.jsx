@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { Avatar } from './UI'
 import { C, PP } from '../lib/theme'
+import { getPublishTarget } from '../lib/publishTargets'
 
 const TABS = [
   { path:'/',            emoji:'🏠', label:'Inicio' },
@@ -14,38 +15,18 @@ const TABS = [
 
 const NO_FAB = ['/mensajes', '/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
 
-function getFab(pathname, search) {
-  if (NO_FAB.includes(pathname)) return null
-
-  const params = new URLSearchParams(search)
-
-  if (pathname === '/comunidades') {
-    const view = params.get('view') || 'comunidades'
-    if (view === 'negocios')  return { label:'+ Negocio', to:'/registrar-negocio' }
-    if (view === 'eventos')   return { label:'+ Evento',  to:'/publicar-evento' }
-    return { label:'+ Comunidad', to:'/registrar-comunidad' }
-  }
-
-  if (pathname === '/tablon' && params.get('cat') === 'empleo') {
-    return { label:'+ Empleo', to:'/publicar-empleo' }
-  }
-
-  return { label:'+ Anuncio', to:'/publicar' }
-}
-
 export default function BottomNav() {
   const { pathname, search } = useLocation()
   const { isLoggedIn, displayName, avatarUrl } = useAuth()
   const { hasUnread } = useUnreadMessages()
 
-  const fab = getFab(pathname, search)
-  const fabTo = fab ? (isLoggedIn ? fab.to : '/auth') : null
+  const fab = NO_FAB.includes(pathname) ? null : getPublishTarget(pathname, search)
 
   return (
     <>
       {fab && (
         <Link
-          to={fabTo}
+          to={fab.to}
           className="hide-md"
           style={{
             position:'fixed', bottom:76, right:18, zIndex:60,

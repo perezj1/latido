@@ -7,6 +7,7 @@ import { fetchAvatarsByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters } from '../components/UI'
+import { getPublishTarget } from '../lib/publishTargets'
 
 function fmtPrice(price) {
   if (!price) return ''
@@ -286,14 +287,14 @@ export default function Tablon() {
   const setFilter = (k, v) => {
     const p = new URLSearchParams(searchParams)
     v ? p.set(k, v) : p.delete(k)
-    setSearchParams(p)
+    setSearchParams(p, showFilters ? { replace:true } : undefined)
   }
   const setFilterAndScroll = (k, v) => {
     setFilter(k, v)
     scrollPageTop()
   }
   const clearFilters = () => {
-    setSearchParams({})
+    setSearchParams({}, showFilters ? { replace:true } : undefined)
     scrollPageTop()
   }
   const openAdDetails = (ad) => {
@@ -301,7 +302,7 @@ export default function Tablon() {
     const p = new URLSearchParams(searchParams)
     p.set('openAd', ad.id)
     p.delete('openJob')
-    setSearchParams(p, { replace:true })
+    setSearchParams(p)
   }
   const closeAdDetails = () => {
     setSelectedAd(null)
@@ -315,7 +316,7 @@ export default function Tablon() {
     p.set('openJob', job.id)
     p.delete('openAd')
     if (!p.get('cat')) p.set('cat', 'empleo')
-    setSearchParams(p, { replace:true })
+    setSearchParams(p)
   }
   const closeJobDetails = () => {
     setSelectedJob(null)
@@ -326,6 +327,7 @@ export default function Tablon() {
   const activeCount = isEmpleos
     ? [jobType, canton, plz].filter(Boolean).length
     : [type, canton, plz, privacy, maxPrice].filter(Boolean).length
+  const publishTarget = getPublishTarget('/tablon', searchParams.toString() ? `?${searchParams.toString()}` : '')
 
 
   useEffect(() => {
@@ -634,7 +636,7 @@ export default function Tablon() {
           <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
           <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin resultados</h3>
           <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:16 }}>Prueba otros filtros o sé el primero en publicar</p>
-          <a href="/publicar" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>Publicar anuncio</a>
+          <Link to={publishTarget.to} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishTarget.label}</Link>
         </div>
       ) : (
         <div>
@@ -739,7 +741,7 @@ export default function Tablon() {
       </Sheet>
 
       {/* Ad detail sheet */}
-      <Sheet show={!!selectedAd} onClose={closeAdDetails} title={selectedAd?.title || ''}>
+      <Sheet show={!!selectedAd} onClose={closeAdDetails} title={selectedAd?.title || ''} syncHistory={false}>
         {selectedAd && (
           <AdDetail
             ad={selectedAd}
@@ -750,7 +752,7 @@ export default function Tablon() {
       </Sheet>
 
       {/* Job detail sheet */}
-      <Sheet show={!!selectedJob} onClose={closeJobDetails} title={selectedJob?.title || ''}>
+      <Sheet show={!!selectedJob} onClose={closeJobDetails} title={selectedJob?.title || ''} syncHistory={false}>
         {selectedJob && <JobDetail job={selectedJob} user={user} />}
       </Sheet>
 

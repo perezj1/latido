@@ -483,7 +483,7 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
   const category = getCommunityMeta(community.cat)
 
   return (
-    <Modal show={!!community} onClose={onClose} title={community.name}>
+    <Modal show={!!community} onClose={onClose} title={community.name} syncHistory={false}>
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
         {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.emoji} {category.label}</Tag>}
         <Tag bg={C.bg} color={C.mid}>📍 {community.city}</Tag>
@@ -541,7 +541,7 @@ function EventDetail({ event, onClose }) {
   if (!event) return null
 
   return (
-    <Modal show={!!event} onClose={onClose} title={event.title}>
+    <Modal show={!!event} onClose={onClose} title={event.title} syncHistory={false}>
       {event.img && (
         <div style={{ borderRadius:18, overflow:'hidden', marginBottom:16 }}>
           <img src={event.img} alt={event.title} style={{ width:'100%', height:220, objectFit:'cover' }} />
@@ -728,7 +728,7 @@ export default function Comunidades() {
     scrollPageTop()
   }
 
-  const updateOpenState = (key, value, nextView='comunidades') => {
+  const updateOpenState = (key, value, nextView='comunidades', replace=true) => {
     const params = new URLSearchParams(searchParams)
     params.delete('openCommunity')
     params.delete('openBusiness')
@@ -738,12 +738,12 @@ export default function Comunidades() {
     else params.set('view', nextView)
 
     if (value) params.set(key, value)
-    setSearchParams(params, { replace:true })
+    setSearchParams(params, { replace })
   }
 
   const openCommunityDetails = (community) => {
     setSelectedCommunity(community)
-    updateOpenState('openCommunity', community.id, 'comunidades')
+    updateOpenState('openCommunity', community.id, 'comunidades', false)
   }
 
   const closeCommunityDetails = () => {
@@ -753,12 +753,17 @@ export default function Comunidades() {
 
   const openBusinessDetails = (business) => {
     setSelectedBusiness(business)
-    updateOpenState('openBusiness', business.id, 'negocios')
+    updateOpenState('openBusiness', business.id, 'negocios', false)
   }
 
   const closeBusinessDetails = () => {
     setSelectedBusiness(null)
     updateOpenState('openBusiness', '', 'negocios')
+  }
+
+  const openEventDetails = (event) => {
+    setSelectedEvent(event)
+    updateOpenState('openEvent', event.id, 'eventos', false)
   }
 
   const closeEventDetails = () => {
@@ -972,7 +977,7 @@ export default function Comunidades() {
                 {events.map(event => (
                   <div
                     key={event.id}
-                    onClick={() => setSelectedEvent(event)}
+                    onClick={() => openEventDetails(event)}
                     style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, overflow:'hidden', cursor:'pointer', display:'flex', gap:0 }}
                   >
                     {event.img ? (

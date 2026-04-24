@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
@@ -28,6 +28,9 @@ const OPTIONAL_AD_INSERT_COLUMNS = ['price_amount', 'price_unit', 'contact_via_a
 export default function Publicar() {
   const { isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const presetCat = searchParams.get('cat') || ''
+  const presetHandledRef = useRef(false)
 
   const [step, setStep] = useState(0)
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
@@ -52,6 +55,24 @@ export default function Publicar() {
   const s = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const selectedCat = AD_CATS.find(c => c.id === form.cat)
+
+  useEffect(() => {
+    if (presetHandledRef.current) return
+
+    presetHandledRef.current = true
+
+    if (!presetCat) return
+
+    if (presetCat === 'empleo') {
+      navigate('/publicar-empleo', { replace:true })
+      return
+    }
+
+    if (!AD_CATS.some(cat => cat.id === presetCat)) return
+
+    setForm(prev => ({ ...prev, cat:presetCat }))
+    setStep(current => (current === 0 ? 1 : current))
+  }, [navigate, presetCat])
 
   const getFormattedPrice = () => {
     const value = String(form.priceValue || '').trim()
@@ -149,7 +170,7 @@ export default function Publicar() {
           </p>
         </div>
 
-        <Btn onClick={() => navigate('/tablon')}>Ver en el tablón →</Btn>
+        <Btn onClick={() => navigate(form.cat ? `/tablon?cat=${encodeURIComponent(form.cat)}` : '/tablon')}>Ver en el tablón →</Btn>
 
         <button
           onClick={() => {

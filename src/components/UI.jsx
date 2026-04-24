@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { C, PP } from '../lib/theme'
+import { useOverlayHistory } from '../hooks/useOverlayHistory'
 
 // ── Button ─────────────────────────────────────────────────────
 export function Btn({ children, onClick, variant='primary', size='md', disabled=false, style={}, className='' }) {
@@ -197,7 +198,9 @@ export function ImageUploadField({
   )
 }
 
-export function Sheet({ show, onClose, title, children }) {
+export function Sheet({ show, onClose, title, children, syncHistory=true }) {
+  useOverlayHistory(show, onClose, syncHistory)
+
   useEffect(() => {
     if (!show) return
     const prev = document.body.style.overflow
@@ -221,7 +224,16 @@ export function Sheet({ show, onClose, title, children }) {
 }
 
 // ── Modal (centered) ───────────────────────────────────────────
-export function Modal({ show, onClose, title, children }) {
+export function Modal({ show, onClose, title, children, syncHistory=true }) {
+  useOverlayHistory(show, onClose, syncHistory)
+
+  useEffect(() => {
+    if (!show) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [show])
+
   if (!show) return null
   return (
     <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>

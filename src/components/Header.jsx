@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
+import { getPublishTarget } from '../lib/publishTargets'
 
 const NAV = [
   { href:'/tablon', label:'📋 Anuncios' },
@@ -13,8 +14,9 @@ const NAV = [
 
 export default function Header({ transparent }) {
   const [open, setOpen] = useState(false)
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const { isLoggedIn, displayName, signOut, avatarUrl } = useAuth()
+  const publishTarget = getPublishTarget(pathname, search)
 
   return (
     <header
@@ -47,8 +49,8 @@ export default function Header({ transparent }) {
         </nav>
 
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <Link to="/publicar" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'9px 16px', borderRadius:12, display:'flex', alignItems:'center', gap:5, flexShrink:0 }}>
-            + Publicar
+          <Link to={publishTarget.to} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'9px 16px', borderRadius:12, display:'flex', alignItems:'center', gap:5, flexShrink:0 }}>
+            {publishTarget.label}
           </Link>
           {isLoggedIn ? (
             <Link to="/perfil" style={{ textDecoration:'none' }}>
