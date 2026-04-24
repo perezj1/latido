@@ -654,7 +654,7 @@ export default function Perfil() {
 
       {/* Install app card */}
       {!isPWA && (
-        <div style={{ background:'linear-gradient(135deg,#1e293b,#0f172a)', borderRadius:16, padding:'16px 18px', marginTop:8, marginBottom:8 }}>
+        <div style={{ background:`linear-gradient(135deg,${C.primaryDark},${C.primary})`, borderRadius:16, padding:'16px 18px', marginTop:8, marginBottom:8, boxShadow:'0 8px 24px rgba(37,99,235,0.3)' }}>
           <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
             <div style={{ fontSize:28, flexShrink:0 }}>📲</div>
             <div style={{ flex:1 }}>
@@ -664,7 +664,7 @@ export default function Perfil() {
                   <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.55 }}>
                     Añade Latido a tu pantalla de inicio gratis y accede a tu comunidad en segundos estés donde estés.
                   </p>
-                  <div style={{ background:'rgba(255,255,255,0.08)', borderRadius:10, padding:'8px 12px' }}>
+                  <div style={{ background:'rgba(255,255,255,0.15)', borderRadius:10, padding:'8px 12px' }}>
                     {['1. Abre Safari (no Chrome)', '2. Toca el icono 📤 de la barra inferior', '3. Selecciona "Añadir a pantalla de inicio"'].map(s => (
                       <p key={s} style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'2px 0', lineHeight:1.4 }}>{s}</p>
                     ))}

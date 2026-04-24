@@ -8,6 +8,7 @@ import { C, PP } from './lib/theme'
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
 import Header from './components/Header'
+import GlobalSearch from './components/GlobalSearch'
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Home = lazy(() => import('./pages/Home'))
@@ -55,7 +56,7 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
 
   return (
     <div style={{ position:'fixed', bottom:72, left:0, right:0, zIndex:200, padding:'0 12px', pointerEvents:'none' }}>
-      <div style={{ background:'#1e293b', borderRadius:18, padding:'14px 16px', boxShadow:'0 8px 32px rgba(0,0,0,0.28)', display:'flex', gap:12, alignItems:'flex-start', pointerEvents:'all', maxWidth:480, margin:'0 auto' }}>
+      <div style={{ background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius:18, padding:'14px 16px', boxShadow:'0 8px 32px rgba(37,99,235,0.35)', display:'flex', gap:12, alignItems:'flex-start', pointerEvents:'all', maxWidth:480, margin:'0 auto' }}>
         <div style={{ fontSize:28, flexShrink:0, marginTop:2 }}>📲</div>
         <div style={{ flex:1, minWidth:0 }}>
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#fff', margin:'0 0 2px' }}>Instala Latido en tu móvil</p>
@@ -74,7 +75,7 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
                 Instalar
               </button>
             )}
-            <button onClick={dismiss} style={{ fontFamily:PP, fontWeight:600, fontSize:12, background:'rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.7)', border:'none', borderRadius:10, padding:'9px 20px', cursor:'pointer', flex:1 }}>
+            <button onClick={dismiss} style={{ fontFamily:PP, fontWeight:600, fontSize:12, background:'rgba(255,255,255,0.18)', color:'#fff', border:'1px solid rgba(255,255,255,0.25)', borderRadius:10, padding:'9px 20px', cursor:'pointer', flex:1 }}>
               Ahora no
             </button>
           </div>
@@ -168,32 +169,83 @@ function AppShell() {
   const { pathname } = useLocation()
   const { isPWA, canInstall, promptInstall } = usePWA()
   const { isLoggedIn } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuPage, setMenuPage] = useState(null)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const isRoot = pathname === '/'
   const showLanding = isRoot && !isPWA && !isLoggedIn
 
   if (showLanding) {
+    const MENU_ITEMS = [
+      { id:'sobre',    label:'Sobre Latido' },
+      { id:'faq',      label:'Preguntas frecuentes' },
+      { id:'partners', label:'Para empresas y partners' },
+      { id:'contacto', label:'Contacto' },
+    ]
+    const openPage = (id) => { setMenuPage(id); setMenuOpen(false) }
     return (
       <>
-        <nav style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,255,255,0.95)', backdropFilter:'blur(10px)', borderBottom:`1px solid ${C.border}`, padding:'12px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <nav style={{ position:'sticky', top:0, zIndex:100, background:'rgba(255,255,255,0.97)', backdropFilter:'blur(10px)', borderBottom:`1px solid ${C.border}`, padding:'10px 20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          {/* Logo */}
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <img src="/favicon.svg" alt="Latido" style={{ width:32, height:32 }} />
+            <img src="/favicon.svg" alt="Latido" style={{ width:30, height:30 }} />
             <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>Latido</span>
           </div>
-          <div style={{ display:'flex', gap:8 }}>
-            {canInstall && (
-              <button onClick={promptInstall} style={{ fontFamily:PP, fontWeight:600, fontSize:11, background:C.bg, color:C.primary, border:`1.5px solid ${C.primaryMid}`, borderRadius:10, padding:'7px 12px', cursor:'pointer' }}>
-                📲 Instalar
-              </button>
-            )}
-            <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:11, padding:'8px 14px' }}>
-              Entrar →
-            </a>
+          {/* Right side */}
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <button
+              onClick={() => { setSearchOpen(o => !o); setMenuOpen(false) }}
+              style={{ display:'flex', alignItems:'center', justifyContent:'center', width:36, height:36, borderRadius:10, background: searchOpen ? C.primary : C.bg, border:'none', cursor:'pointer', fontSize:16, transition:'background .15s' }}
+              aria-label="Buscar"
+            >
+              {searchOpen ? <span style={{ color:'#fff', fontSize:14, fontWeight:700 }}>✕</span> : '🔍'}
+            </button>
+            <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:11, padding:'8px 14px' }}>Entrar →</a>
+            <button
+              onClick={() => { setMenuOpen(o => !o); setSearchOpen(false); if (menuPage) setMenuPage(null) }}
+              style={{ display:'flex', flexDirection:'column', gap:4, background:'none', border:'none', cursor:'pointer', padding:'6px', borderRadius:8 }}
+              aria-label="Menú"
+            >
+              <span style={{ display:'block', width:20, height:2, background:C.text, borderRadius:2, transition:'all .2s', transform: menuOpen ? 'rotate(45deg) translate(4px,4px)' : 'none' }} />
+              <span style={{ display:'block', width:20, height:2, background:C.text, borderRadius:2, opacity: menuOpen ? 0 : 1, transition:'all .2s' }} />
+              <span style={{ display:'block', width:20, height:2, background:C.text, borderRadius:2, transition:'all .2s', transform: menuOpen ? 'rotate(-45deg) translate(4px,-4px)' : 'none' }} />
+            </button>
           </div>
         </nav>
+        {/* Search overlay */}
+        {searchOpen && (
+          <>
+            <div
+              onClick={() => setSearchOpen(false)}
+              style={{ position:'fixed', inset:0, top:57, zIndex:96, background:'rgba(15,23,42,0.35)', backdropFilter:'blur(2px)' }}
+            />
+            <div style={{ position:'fixed', top:57, left:0, right:0, zIndex:97, background:'#fff', borderBottom:`1px solid ${C.border}`, padding:'14px 16px', boxShadow:'0 8px 32px rgba(15,23,42,0.12)' }}>
+              <GlobalSearch size="lg" onClose={() => setSearchOpen(false)} />
+            </div>
+          </>
+        )}
+        {/* Hamburger dropdown */}
+        {menuOpen && (
+          <div style={{ position:'fixed', top:57, left:0, right:0, zIndex:99, background:'#fff', borderBottom:`1px solid ${C.border}`, boxShadow:'0 8px 24px rgba(0,0,0,0.08)', padding:'8px 0' }}>
+            {MENU_ITEMS.map(item => (
+              <button
+                key={item.id}
+                onClick={() => openPage(item.id)}
+                style={{ display:'block', width:'100%', background:'none', border:'none', borderBottom:`1px solid ${C.borderLight}`, fontFamily:PP, fontWeight:600, fontSize:14, color:C.text, padding:'13px 24px', textAlign:'left', cursor:'pointer' }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
         <main>
           <Suspense fallback={<AppLoading />}>
-            <Landing onInstall={promptInstall || (() => alert('Para instalar: en el menú de tu navegador busca "Instalar app" o "Añadir a pantalla de inicio"'))} />
+            <Landing
+              onInstall={promptInstall || (() => alert('Para instalar: en el menú de tu navegador busca "Instalar app" o "Añadir a pantalla de inicio"'))}
+              menuPage={menuPage}
+              setMenuPage={setMenuPage}
+            />
           </Suspense>
         </main>
         <Footer />
