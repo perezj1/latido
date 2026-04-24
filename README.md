@@ -46,7 +46,7 @@ git push -u origin main
 
 En [vercel.com](https://vercel.com):
 1. **New Project → Import** tu repo
-2. **Environment Variables** → añade `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`
+2. **Environment Variables** → añade `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y `EVENTFROG_API_KEY`
 3. **Deploy** → URL pública en ~60 segundos
 
 ---

@@ -240,7 +240,11 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
       } catch (err) {
         if (err.name !== 'AbortError') {
           setEvents([])
-          setError('No se pudo cargar la API de Eventfrog.')
+          setError(
+            err.message === 'Missing Eventfrog API key'
+              ? 'Falta configurar EVENTFROG_API_KEY en Vercel.'
+              : 'No se pudo cargar la API de Eventfrog.'
+          )
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false)

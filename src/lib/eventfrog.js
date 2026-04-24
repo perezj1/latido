@@ -251,7 +251,14 @@ export async function fetchEventfrogEvents({ from, to, filterId = 'latino', sign
 
     const response = await fetch(url, { signal })
     if (!response.ok) {
-      throw new Error(`Eventfrog ${response.status}`)
+      let message = `Eventfrog ${response.status}`
+      try {
+        const errorData = await response.json()
+        if (errorData?.error) message = errorData.error
+      } catch {
+        // Ignore non-JSON error bodies and keep the status-based message.
+      }
+      throw new Error(message)
     }
 
     const data = await response.json()
