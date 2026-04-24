@@ -50,7 +50,7 @@ export default function Footer() {
 
           <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Contacto</h4>
-            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📧 latidoch@gmail.com</p>
+            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📧 hola@latido.ch</p>
             <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📍 Luzern, Suiza</p>
             <div style={{ marginTop:14, background:'#1E293B', borderRadius:12, padding:'12px 14px' }}>
               <p style={{ fontFamily:PP, fontSize:11, color:'#64748B', margin:0 }}>
