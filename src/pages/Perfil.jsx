@@ -396,7 +396,7 @@ export default function Perfil() {
   }
 
   const SHARE_URL  = window.location.origin
-  const SHARE_TEXT = '¡Únete a Latido! La app de los latinos en Suiza: anuncios, empleos, comunidades y más. 🇨🇭❤️'
+  const SHARE_TEXT = '¡Únete a Latido! La app de los hispanohablantes en Suiza: anuncios, empleos, comunidades y más. ❤️'
 
   const handleShare = async () => {
     if (navigator.share) {
