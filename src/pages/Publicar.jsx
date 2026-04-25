@@ -11,10 +11,47 @@ import toast from 'react-hot-toast'
 
 const STEPS = [
   { title:'¿Qué quieres publicar?', sub:'Elige la categoría de tu anuncio' },
-  { title:'¿Buscas o ofreces?', sub:'Cuéntanos cuál es tu rol' },
+  { title:'¿Buscas u ofreces?', sub:'Cuéntanos cuál es tu rol' },
   { title:'Título y descripción', sub:'Cuanto más detallado, mejor' },
   { title:'Precio, zona y publicación', sub:'Último paso — ubicación, visibilidad y mensajes dentro de Latido' },
 ]
+
+const STEP1_BY_CAT = {
+  vivienda:   { title:'¿Buscas u ofreces vivienda?',    sub:'Dinos si buscas o pones a disposición un piso o habitación' },
+  hogar:      { title:'¿Qué necesitas o puedes hacer?', sub:'Dinos si buscas ayuda en el hogar o si ofreces tus servicios' },
+  venta:      { title:'¿Qué quieres hacer?',            sub:'Busca artículos, vende lo que no usas o dalo gratis' },
+  cuidados:   { title:'¿Buscas u ofreces cuidados?',    sub:'Dinos si necesitas un cuidador o si ofreces tus servicios' },
+  documentos: { title:'¿Necesitas u ofreces ayuda?',    sub:'Dinos si buscas asesoría o si puedes ayudar con trámites' },
+  servicios:  { title:'¿Buscas u ofreces un servicio?', sub:'Dinos si necesitas o puedes ofrecer clases, peluquería u otros servicios' },
+}
+
+const TYPE_DESC_BY_CAT = {
+  vivienda: {
+    busca:  'Buscas piso, habitación o compañero de piso',
+    ofrece: 'Ofreces un piso, habitación o sublet',
+  },
+  hogar: {
+    busca:  'Necesitas ayuda con limpieza, cocina o reparaciones',
+    ofrece: 'Ofreces tus servicios para el hogar',
+  },
+  venta: {
+    busca:  'Buscas algún artículo de segunda mano',
+    ofrece: 'Tienes algo que vender o intercambiar',
+    regala: 'Das algo gratis sin pedir nada a cambio',
+  },
+  cuidados: {
+    busca:  'Necesitas un cuidador, niñera o asistente',
+    ofrece: 'Ofreces servicios de cuidado o asistencia',
+  },
+  documentos: {
+    busca:  'Necesitas ayuda con trámites, cartas o traducciones',
+    ofrece: 'Puedes ayudar con gestiones y asesoría',
+  },
+  servicios: {
+    busca:  'Buscas clases, peluquería, mecánico u otro servicio',
+    ofrece: 'Ofreces tus servicios o habilidades profesionales',
+  },
+}
 
 const PRICE_UNITS = [
   { id:'hora', label:'Por hora' },
@@ -290,6 +327,10 @@ export default function Publicar() {
     }
   }
 
+  const stepInfo = step === 1 && STEP1_BY_CAT[form.cat]
+    ? STEP1_BY_CAT[form.cat]
+    : STEPS[step]
+
   return (
     <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
       <ProgressBar step={step} total={STEPS.length} />
@@ -304,11 +345,11 @@ export default function Publicar() {
           letterSpacing:-0.3
         }}
       >
-        {STEPS[step].title}
+        {stepInfo.title}
       </h1>
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:24 }}>
-        {STEPS[step].sub}
+        {stepInfo.sub}
       </p>
 
       {step === 0 && (
@@ -321,7 +362,7 @@ export default function Publicar() {
                   navigate('/publicar-empleo')
                   return
                 }
-                s('cat', cat.id)
+                setForm(f => ({ ...f, cat: cat.id, type: '', sub: '' }))
               }}
               style={{
                 background:form.cat === cat.id ? C.primary : C.surface,
@@ -354,7 +395,7 @@ export default function Publicar() {
 
       {step === 1 && (
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-          {AD_TYPES.map(t => (
+          {AD_TYPES.filter(t => !selectedCat?.types || selectedCat.types.includes(t.id)).map(t => (
             <button
               key={t.id}
               onClick={() => s('type', t.id)}
@@ -384,7 +425,7 @@ export default function Publicar() {
                 >
                   {t.label}
                 </p>
-                <p style={{ fontFamily:PP, fontSize:11, color:C.light }}>{t.desc}</p>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.light }}>{TYPE_DESC_BY_CAT[form.cat]?.[t.id] ?? t.desc}</p>
               </div>
             </button>
           ))}

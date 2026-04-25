@@ -17,13 +17,13 @@ export const CANTONS = [
 
 // ── AD CATEGORIES ──────────────────────────────────────────────
 export const AD_CATS = [
-  { id:'vivienda',   emoji:'🏠', label:'Vivienda',        sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
-  { id:'hogar',      emoji:'🧹', label:'Hogar',            sub:['Limpieza','Cocina','Reparaciones','Mudanza'] },
-  { id:'venta',      emoji:'🛍️', label:'Mercado',           sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
-  { id:'cuidados',   emoji:'👶', label:'Cuidados',         sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
-  { id:'documentos', emoji:'📋', label:'Legal',     sub:['Cartas','Trámites','Traducción','Asesoría'] },
-  { id:'servicios',  emoji:'🔧', label:'Servicios',        sub:['Clases','Peluquería','Mecánico','Informática','Otro'] },
-  { id:'empleo',     emoji:'💼', label:'Empleo',      sub:['Full-time','Part-time','Freelance','Prácticas'] },
+  { id:'vivienda',   emoji:'🏠', label:'Vivienda',   types:['busca','ofrece'],           sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
+  { id:'hogar',      emoji:'🧹', label:'Hogar',       types:['busca','ofrece'],           sub:['Limpieza','Cocina','Reparaciones','Mudanza'] },
+  { id:'venta',      emoji:'🛍️', label:'Mercado',     types:['busca','ofrece','regala'],  sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
+  { id:'cuidados',   emoji:'👶', label:'Cuidados',    types:['busca','ofrece'],           sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
+  { id:'documentos', emoji:'📋', label:'Legal',       types:['busca','ofrece'],           sub:['Cartas','Trámites','Traducción','Asesoría'] },
+  { id:'servicios',  emoji:'🔧', label:'Servicios',   types:['busca','ofrece'],           sub:['Clases','Peluquería','Mecánico','Informática','Otro'] },
+  { id:'empleo',     emoji:'💼', label:'Empleo',      types:['busca','ofrece'],           sub:['Full-time','Part-time','Freelance','Prácticas'] },
 ]
 
 export const AD_TYPES = [
