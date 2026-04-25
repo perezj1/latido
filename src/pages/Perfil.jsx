@@ -260,6 +260,10 @@ export default function Perfil() {
   const [favItems, setFavItems] = useState([])
   const [loadingFavs, setLoadingFavs] = useState(false)
 
+  // share
+  const [shareOpen, setShareOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+
 
   const loadPublications = async () => {
     if (!user?.id) return
@@ -389,6 +393,26 @@ export default function Perfil() {
     const cats = alertSettings.categories || []
     const next = cats.includes(cat) ? cats.filter(c => c !== cat) : [...cats, cat]
     saveAlerts({ ...alertSettings, categories: next })
+  }
+
+  const SHARE_URL  = window.location.origin
+  const SHARE_TEXT = '¡Únete a Latido! La app de los latinos en Suiza: anuncios, empleos, comunidades y más. 🇨🇭❤️'
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title:'Latido', text: SHARE_TEXT, url: SHARE_URL })
+      } catch {}
+    } else {
+      setShareOpen(true)
+    }
+  }
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(SHARE_URL).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
   }
 
   const openConfig = () => {
@@ -556,6 +580,7 @@ export default function Perfil() {
     { icon:'📚', label:'Guías', sub:'Documentos y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
     { icon:'🔔', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', action:() => setAlertsOpen(true) },
     { icon:'⚙️', label:'Configuración', sub:'Nombre, cantón, idiomas, contraseña', action:openConfig },
+    { icon:'🔗', label:'Compartir Latido', sub:'Invita a amigos y familiares a unirse', action:handleShare },
   ]
 
   if (!isLoggedIn) return (
@@ -960,6 +985,62 @@ export default function Perfil() {
             </button>
           </>
         )}
+      </Sheet>
+
+      {/* ── Compartir Latido ── */}
+      <Sheet show={shareOpen} onClose={() => setShareOpen(false)} title="🔗 Compartir Latido">
+        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:20, lineHeight:1.6 }}>
+          Invita a tus amigos y familiares a unirse a la comunidad latina en Suiza.
+        </p>
+
+        {[
+          {
+            icon:'💬',
+            label:'WhatsApp',
+            color:'#25D366',
+            bg:'#F0FDF4',
+            border:'#86EFAC',
+            href:`https://wa.me/?text=${encodeURIComponent(SHARE_TEXT + '\n' + SHARE_URL)}`,
+          },
+          {
+            icon:'✉️',
+            label:'Email',
+            color:'#2563EB',
+            bg:C.primaryLight,
+            border:C.primaryMid,
+            href:`mailto:?subject=${encodeURIComponent('Te invito a Latido')}&body=${encodeURIComponent(SHARE_TEXT + '\n\n' + SHARE_URL)}`,
+          },
+          {
+            icon:'📱',
+            label:'Telegram',
+            color:'#0088CC',
+            bg:'#EFF6FF',
+            border:'#BFDBFE',
+            href:`https://t.me/share/url?url=${encodeURIComponent(SHARE_URL)}&text=${encodeURIComponent(SHARE_TEXT)}`,
+          },
+        ].map(opt => (
+          <a
+            key={opt.label}
+            href={opt.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display:'flex', alignItems:'center', gap:14, background:opt.bg, border:`1.5px solid ${opt.border}`, borderRadius:14, padding:'13px 16px', marginBottom:10, textDecoration:'none' }}
+          >
+            <span style={{ fontSize:26 }}>{opt.icon}</span>
+            <span style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:opt.color }}>{opt.label}</span>
+            <span style={{ marginLeft:'auto', fontFamily:PP, fontSize:12, color:opt.color }}>›</span>
+          </a>
+        ))}
+
+        <button
+          onClick={copyLink}
+          style={{ width:'100%', display:'flex', alignItems:'center', gap:14, background: copied ? '#F0FDF4' : C.bg, border:`1.5px solid ${copied ? '#86EFAC' : C.border}`, borderRadius:14, padding:'13px 16px', cursor:'pointer', marginTop:4 }}
+        >
+          <span style={{ fontSize:26 }}>{copied ? '✅' : '🔗'}</span>
+          <span style={{ fontFamily:PP, fontWeight:700, fontSize:14, color: copied ? '#15803D' : C.text }}>
+            {copied ? '¡Enlace copiado!' : 'Copiar enlace'}
+          </span>
+        </button>
       </Sheet>
 
       <Modal show={!!editorItem} onClose={closeEditor} title={editorItem ? `Editar ${KIND_META[editorItem.kind].label.toLowerCase()}` : 'Editar'}>
