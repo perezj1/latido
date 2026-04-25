@@ -503,57 +503,70 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
       <MenuPanel menuPage={menuPage} setMenuPage={setMenuPage} />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section
-        className="latido-hero-bg"
-        style={{ background: 'linear-gradient(160deg, #0F1F5C 0%, #1E40AF 45%, #2563EB 100%)', position: 'relative', overflow: 'hidden', padding: '80px 24px 104px' }}
-      >
-        <div className="latido-float" style={{ position: 'absolute', top: -100, right: -80, width: 360, height: 360, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(2px)' }} />
-        <div className="latido-float-slow" style={{ position: 'absolute', bottom: -60, left: -40, width: 260, height: 260, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', filter: 'blur(2px)' }} />
-        <div className="latido-float" style={{ position: 'absolute', top: 140, left: '55%', width: 180, height: 180, borderRadius: '50%', background: 'rgba(96,165,250,0.16)', filter: 'blur(4px)' }} />
+      {/* ── HERO ─────────────────────────────────────────────────── */}
+<section
+  className="latido-hero-bg"
+  style={{
+    background: 'linear-gradient(160deg, #0F1F5C 0%, #1E40AF 45%, #2563EB 100%)',
+    position: 'relative',
+    overflow: 'hidden',
+    padding: '80px 24px 104px',
+  }}
+>
+  <div className="latido-float" style={{ position: 'absolute', top: -100, right: -80, width: 360, height: 360, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(2px)' }} />
+  <div className="latido-float-slow" style={{ position: 'absolute', bottom: -60, left: -40, width: 260, height: 260, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', filter: 'blur(2px)' }} />
+  <div className="latido-float" style={{ position: 'absolute', top: 140, left: '55%', width: 180, height: 180, borderRadius: '50%', background: 'rgba(96,165,250,0.16)', filter: 'blur(4px)' }} />
 
-        <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', textAlign: 'center' }}>
-          <div className="latido-enter-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.12)', color: '#BAE6FD', fontSize: 11, fontWeight: 700, padding: '8px 18px', borderRadius: 24, marginBottom: 28, fontFamily: PP, border: '1px solid rgba(255,255,255,0.22)', letterSpacing: 0.4, backdropFilter: 'blur(8px)' }}>
-            <span style={{ fontSize: 14 }}>🏆</span>
-            La primera plataforma pensada exclusivamente para hispanohablantes en Suiza
-          </div>
+  <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', textAlign: 'center' }}>
+    <div className="latido-enter-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.12)', color: '#BAE6FD', fontSize: 11, fontWeight: 700, padding: '8px 18px', borderRadius: 24, marginBottom: 28, fontFamily: PP, border: '1px solid rgba(255,255,255,0.22)', letterSpacing: 0.4, backdropFilter: 'blur(8px)' }}>
+      <span style={{ fontSize: 14 }}>🏆</span>
+      La primera plataforma para hispanohablantes en Suiza
+    </div>
 
-          <h1 className="latido-enter-2" style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(36px, 7.2vw, 64px)', color: '#fff', lineHeight: 1.05, margin: '0 0 22px', letterSpacing: -1.2 }}>
-            Nuestra fuerza,
-            <br />
-            en un solo{' '}
-            <span style={{ color: '#60A5FA', fontStyle: 'italic', position: 'relative' }}>latido.</span>
-          </h1>
+    <h1 className="latido-enter-2" style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(36px, 7.2vw, 64px)', color: '#fff', lineHeight: 1.05, margin: '0 0 22px', letterSpacing: -1.2 }}>
+      Todo lo que necesitas en Suiza,
+      <br />
+      <span style={{ color: '#60A5FA', fontStyle: 'italic' }}>
+        en tu idioma.
+      </span>
+    </h1>
 
-          <p className="latido-enter-3" style={{ fontFamily: PP, fontSize: 17, color: 'rgba(255,255,255,0.85)', lineHeight: 1.75, maxWidth: 560, margin: '0 auto 32px' }}>
-            Únete a los <strong style={{ color: '#fff' }}>+400.000 hispanohablantes</strong> que ya están construyendo su vida en Suiza.
-            Pisos, empleo, trámites, comunidad y eventos — todo en español, entre los nuestros.
+    <p className="latido-enter-3" style={{ fontFamily: PP, fontSize: 17, color: 'rgba(255,255,255,0.86)', lineHeight: 1.75, maxWidth: 580, margin: '0 auto 18px' }}>
+      Pisos, trabajo, ayuda, servicios, comunidad y eventos — todo en español, en un solo lugar.
+    </p>
+
+   <p className="latido-enter-3" style={{ fontFamily: PP, fontSize: 18, color: '#fff', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.35, maxWidth: 560, margin: '0 auto 26px' }}>
+  “Lejos de casa, pero nunca solos”
+</p>
+
+    <div className="latido-enter-4" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
+      <Link to="/auth" className="latido-cta-primary" style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, background: '#fff', color: C.primaryDark, textDecoration: 'none', padding: '15px 30px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 10px 28px rgba(0,0,0,0.22)' }}>
+        Crear cuenta gratis →
+      </Link>
+
+      <Link to="/tablon" className="latido-cta-ghost" style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, background: 'rgba(255,255,255,0.14)', color: '#fff', textDecoration: 'none', padding: '15px 28px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 7, border: '1.5px solid rgba(255,255,255,0.32)', backdropFilter: 'blur(6px)' }}>
+        Explorar ahora
+      </Link>
+    </div>
+
+    <p className="latido-enter-5" style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.65)', marginBottom: 56 }}>
+      ✨ Gratis para siempre · Registro en 30 segundos
+    </p>
+
+    <div className="latido-enter-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, borderTop: '1px solid rgba(255,255,255,0.18)', paddingTop: 32, maxWidth: 620, margin: '0 auto' }}>
+      {STATS.map(({ value, label }) => (
+        <div key={label} style={{ padding: '0 8px' }}>
+          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(18px,3vw,26px)', color: '#fff', margin: '0 0 5px', letterSpacing: -0.5 }}>
+            <AnimatedStat value={value} />
           </p>
-
-          <div className="latido-enter-4" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
-            <Link to="/auth" className="latido-cta-primary" style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, background: '#fff', color: C.primaryDark, textDecoration: 'none', padding: '15px 30px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 10px 28px rgba(0,0,0,0.22)' }}>
-              Unirme gratis →
-            </Link>
-            <Link to="/tablon" className="latido-cta-ghost" style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, background: 'rgba(255,255,255,0.14)', color: '#fff', textDecoration: 'none', padding: '15px 28px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 7, border: '1.5px solid rgba(255,255,255,0.32)', backdropFilter: 'blur(6px)' }}>
-              Explorar sin cuenta
-            </Link>
-          </div>
-
-          <p className="latido-enter-5" style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.65)', marginBottom: 56 }}>
-            ✨ Gratis para siempre · 30 segundos para registrarte
+          <p style={{ fontFamily: PP, fontSize: 10, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.4 }}>
+            {label}
           </p>
-
-          <div className="latido-enter-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, borderTop: '1px solid rgba(255,255,255,0.18)', paddingTop: 32, maxWidth: 620, margin: '0 auto' }}>
-            {STATS.map(({ value, label }) => (
-              <div key={label} style={{ padding: '0 8px' }}>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(18px,3vw,26px)', color: '#fff', margin: '0 0 5px', letterSpacing: -0.5 }}>
-                  <AnimatedStat value={value} />
-                </p>
-                <p style={{ fontFamily: PP, fontSize: 10, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.4 }}>{label}</p>
-              </div>
-            ))}
-          </div>
         </div>
-      </section>
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* ── COUNTRY MARQUEE ──────────────────────────────────────── */}
       <div style={{ background: '#F0F6FF', borderBottom: `1px solid ${C.border}`, padding: '14px 0', overflow: 'hidden', position: 'relative' }}>
