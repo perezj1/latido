@@ -10,8 +10,8 @@ import { C, PP } from '../lib/theme'
 const STATS = [
   { value: '400.000+', label: 'Hispanohablantes en Suiza' },
   { value: '26',       label: 'Cantones cubiertos' },
-  { value: '100%',     label: 'Gratuito para usuarios' },
-  { value: '1 min',    label: 'Para publicar tu primer anuncio' },
+  { value: '100%',     label: 'Gratis' },
+  { value: '1 min',    label: 'Publica en 1 minuto' },
 ]
 
 const FEATURES = [
