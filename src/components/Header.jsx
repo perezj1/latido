@@ -3,17 +3,34 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
-const NAV = [
+const NAV_GUEST = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/comunidades', label:'🤝 Comunidades' },
-  { href:'/tablon?cat=empleo', label:'💼 Empleos' },
+  { href:'/mensajes', label:'💬 Mensajes' },
+]
+
+const NAV_USER = [
+  { href:'/', label:'🏠 Inicio' },
+  { href:'/tablon', label:'📌 Anuncios' },
+  { href:'/comunidades', label:'🤝 Comunidades' },
   { href:'/mensajes', label:'💬 Mensajes' },
 ]
 
 export default function Header({ transparent }) {
   const [open, setOpen] = useState(false)
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const { isLoggedIn, displayName, signOut, avatarUrl } = useAuth()
+  const NAV = isLoggedIn ? NAV_USER : NAV_GUEST
+
+  const isActive = (href) => {
+    if (href === '/') return pathname === '/'
+    const [base, query] = href.split('?')
+    if (query) return pathname.startsWith(base) && search.includes(query)
+    return pathname.startsWith(base) && !NAV.some(l => {
+      const [b, q] = l.href.split('?')
+      return q && pathname.startsWith(b) && search.includes(q)
+    })
+  }
 
   return (
     <header
@@ -29,14 +46,16 @@ export default function Header({ transparent }) {
       }}
     >
       <div style={{ maxWidth:1200, margin:'0 auto', padding:'12px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
-        <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
-          <img src="/favicon.svg" alt="Latido" style={{ width:32, height:32 }} />
-          <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>Latido</span>
-        </Link>
+        {!isLoggedIn && (
+          <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
+            <img src="/favicon.svg" alt="Latido" style={{ width:32, height:32 }} />
+            <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>Latido</span>
+          </Link>
+        )}
 
-        <nav className="show-lg" style={{ gap:2, alignItems:'center' }}>
+        <nav className="show-lg" style={{ gap:2, alignItems:'center', flex: isLoggedIn ? 1 : undefined }}>
           {NAV.map(link => {
-            const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href.split('?')[0])
+            const active = isActive(link.href)
             return (
               <Link key={link.href} to={link.href} style={{ fontFamily:PP, fontWeight:600, fontSize:12, textDecoration:'none', padding:'7px 12px', borderRadius:10, background: active ? C.primaryMid : 'transparent', color: active ? C.primaryDark : C.mid, transition:'all .15s' }}>
                 {link.label}
@@ -64,7 +83,7 @@ export default function Header({ transparent }) {
       {open && (
         <div className="fade-up lg:hidden" style={{ background:C.surface, borderTop:`1px solid ${C.border}`, padding:'12px 20px 16px' }}>
           {NAV.map(link => (
-            <Link key={link.href} to={link.href} onClick={() => setOpen(false)} style={{ fontFamily:PP, fontWeight:600, fontSize:13, textDecoration:'none', display:'flex', alignItems:'center', gap:8, padding:'11px 12px', borderRadius:12, color: pathname.startsWith(link.href.split('?')[0]) ? C.primary : C.mid, background: pathname.startsWith(link.href.split('?')[0]) ? C.primaryLight : 'transparent', marginBottom:4 }}>
+            <Link key={link.href} to={link.href} onClick={() => setOpen(false)} style={{ fontFamily:PP, fontWeight:600, fontSize:13, textDecoration:'none', display:'flex', alignItems:'center', gap:8, padding:'11px 12px', borderRadius:12, color: isActive(link.href) ? C.primary : C.mid, background: isActive(link.href) ? C.primaryLight : 'transparent', marginBottom:4 }}>
               {link.label}
             </Link>
           ))}
