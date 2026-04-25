@@ -3,10 +3,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
-import { getPublishTarget } from '../lib/publishTargets'
-
 const NAV = [
-  { href:'/tablon', label:'📋 Anuncios' },
+  { href:'/tablon', label:'📌 Anuncios' },
   { href:'/comunidades', label:'🤝 Comunidades' },
   { href:'/tablon?cat=empleo', label:'💼 Empleos' },
   { href:'/mensajes', label:'💬 Mensajes' },
@@ -14,9 +12,8 @@ const NAV = [
 
 export default function Header({ transparent }) {
   const [open, setOpen] = useState(false)
-  const { pathname, search } = useLocation()
+  const { pathname } = useLocation()
   const { isLoggedIn, displayName, signOut, avatarUrl } = useAuth()
-  const publishTarget = getPublishTarget(pathname, search)
 
   return (
     <header
@@ -49,9 +46,6 @@ export default function Header({ transparent }) {
         </nav>
 
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <Link to={publishTarget.to} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'9px 16px', borderRadius:12, display:'flex', alignItems:'center', gap:5, flexShrink:0 }}>
-            {publishTarget.label}
-          </Link>
           {isLoggedIn ? (
             <Link to="/perfil" style={{ textDecoration:'none' }}>
               <Avatar name={displayName} size={36} src={avatarUrl} />

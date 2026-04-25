@@ -27,7 +27,6 @@ export default function BottomNav() {
       {fab && (
         <Link
           to={fab.to}
-          className="hide-md"
           style={{
             position:'fixed', bottom:76, right:18, zIndex:60,
             height:46, borderRadius:23,

@@ -161,9 +161,10 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc }) {
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
-          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0 }}>{job.company || job.title}</h3>
+          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0 }}>{job.title || job.company}</h3>
           <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>
         </div>
+        {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 2px' }}>🏢 {job.company}</p>}
         <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>📍 {job.city || job.canton}</p>
         {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>🗣️ {languages}</p>}
         {job.salary && <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', margin:'4px 0 0' }}>{fmtPrice(job.salary)}</p>}
@@ -197,9 +198,8 @@ function JobDetail({ job, user }) {
           <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:18, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>{job.emoji || '💼'}</div>
         )}
         <div style={{ flex:1 }}>
-          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 2px', lineHeight:1.3 }}>{job.company || job.title}</h2>
-          {job.company && job.title !== job.company && (
-            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:'0 0 6px', lineHeight:1.4 }}>{job.title}</p>
+          {job.company && (
+            <p style={{ fontFamily:PP, fontSize:13, fontWeight:600, color:C.mid, margin:'0 0 6px', lineHeight:1.4 }}>🏢 {job.company}</p>
           )}
           <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 8px' }}>📍 {job.city || job.canton}</p>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
