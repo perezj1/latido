@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
 import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
-import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
+import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
 import toast from 'react-hot-toast'
 
@@ -60,7 +60,16 @@ const PRICE_UNITS = [
   { id:'once', label:'Total' },
 ]
 
-const OPTIONAL_AD_INSERT_COLUMNS = ['price_amount', 'price_unit', 'contact_via_app', 'contact_phone', 'contact_email']
+const OPTIONAL_AD_INSERT_COLUMNS = ['price_amount', 'price_unit', 'contact_via_app', 'contact_phone', 'contact_email', 'photo_urls']
+const MULTI_PHOTO_CATS = new Set(['vivienda', 'venta'])
+
+function supportsMultiplePhotos(cat) {
+  return MULTI_PHOTO_CATS.has(cat)
+}
+
+function uniqueUrls(urls) {
+  return Array.from(new Set((urls || []).filter(Boolean)))
+}
 
 export default function Publicar() {
   const { isLoggedIn, user } = useAuth()
@@ -82,6 +91,7 @@ export default function Publicar() {
     title:'',
     desc:'',
     img_url:'',
+    photo_urls:[],
     priceValue:'',
     priceUnit:'hora',
     canton:'',
@@ -220,6 +230,7 @@ export default function Publicar() {
               title:'',
               desc:'',
               img_url:'',
+              photo_urls:[],
               priceValue:'',
               priceUnit:'hora',
               canton:'',
@@ -265,13 +276,19 @@ export default function Publicar() {
         .eq('id', user?.id)
         .maybeSingle()
 
+      const photoUrls = uniqueUrls([
+        form.img_url,
+        ...(supportsMultiplePhotos(form.cat) ? form.photo_urls : []),
+      ])
+
       const payload = {
         cat: form.cat,
         sub: form.sub,
         type: form.type,
         title: form.title,
         desc: form.desc,
-        img_url: form.img_url || null,
+        img_url: photoUrls[0] || null,
+        photo_urls: supportsMultiplePhotos(form.cat) && photoUrls.length > 0 ? photoUrls : null,
         price: finalPrice,
         price_amount: Number.isNaN(priceAmount) ? null : priceAmount,
         price_unit: form.priceValue ? form.priceUnit : null,
@@ -286,13 +303,16 @@ export default function Publicar() {
         user_name: ownProfile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
       }
 
-      const { error } = await insertWithOptionalColumnsFallback({
+      const { error, strippedColumns } = await insertWithOptionalColumnsFallback({
         table: 'listings',
         payload,
         optionalColumns: OPTIONAL_AD_INSERT_COLUMNS,
       })
 
       if (error) throw error
+      if (strippedColumns?.includes('photo_urls') && photoUrls.length > 1) {
+        toast.error('El anuncio se publicó solo con la primera foto. Ejecuta publications_schema_v4.sql para guardar galerías.')
+      }
 
       setDone(true)
     } catch (error) {
@@ -307,19 +327,36 @@ export default function Publicar() {
   }
 
   const handleImageUpload = async files => {
-    const file = files?.[0]
-    if (!file) return
+    if (!files?.length) return
 
     setUploadingImage(true)
 
     try {
-      const publicUrl = await uploadPublicationImage({
-        file,
-        userId: user?.id,
-        folder:'ads'
-      })
-      s('img_url', publicUrl)
-      toast.success('Imagen subida')
+      if (supportsMultiplePhotos(form.cat)) {
+        const uploadedUrls = await uploadPublicationImages({
+          files,
+          userId: user?.id,
+          folder:'ads'
+        })
+
+        setForm(prev => {
+          const nextUrls = uniqueUrls([...prev.photo_urls, ...uploadedUrls])
+          return {
+            ...prev,
+            img_url: prev.img_url || nextUrls[0] || '',
+            photo_urls: nextUrls,
+          }
+        })
+        toast.success(`${uploadedUrls.length} foto(s) añadida(s)`)
+      } else {
+        const publicUrl = await uploadPublicationImage({
+          file:files[0],
+          userId: user?.id,
+          folder:'ads'
+        })
+        setForm(prev => ({ ...prev, img_url:publicUrl, photo_urls:[publicUrl] }))
+        toast.success('Imagen subida')
+      }
     } catch (error) {
       toast.error(getStorageErrorMessage(error))
     } finally {
@@ -492,10 +529,23 @@ export default function Publicar() {
           <ImageUploadField
             label="Imagen del anuncio (opcional)"
             previewUrl={form.img_url}
+            previewUrls={supportsMultiplePhotos(form.cat) ? form.photo_urls : []}
             uploading={uploadingImage}
+            multiple={supportsMultiplePhotos(form.cat)}
             onFilesSelected={handleImageUpload}
-            onRemove={() => s('img_url', '')}
-            hint="Ideal para pisos, productos o servicios. En móvil puedes tomar la foto al momento."
+            onRemove={() => setForm(prev => ({ ...prev, img_url:'', photo_urls:[] }))}
+            onRemoveAt={index => setForm(prev => {
+              const removedUrl = prev.photo_urls[index]
+              const nextUrls = prev.photo_urls.filter((_, itemIndex) => itemIndex !== index)
+              return {
+                ...prev,
+                img_url: prev.img_url === removedUrl ? nextUrls[0] || '' : prev.img_url,
+                photo_urls: nextUrls,
+              }
+            })}
+            hint={supportsMultiplePhotos(form.cat)
+              ? 'Puedes añadir varias fotos para mostrar mejor el piso, habitación o producto.'
+              : 'Ideal para pisos, productos o servicios. En móvil puedes tomar la foto al momento.'}
           />
         </>
       )}
@@ -726,13 +776,18 @@ export default function Publicar() {
                 VISTA PREVIA
               </p>
 
-              {form.img_url && (
+              {(form.img_url || form.photo_urls.length > 0) && (
                 <div style={{ borderRadius:12, overflow:'hidden', marginBottom:10 }}>
                   <img
-                    src={form.img_url}
+                    src={form.img_url || form.photo_urls[0]}
                     alt={form.title || 'Vista previa'}
                     style={{ width:'100%', maxHeight:180, objectFit:'cover' }}
                   />
+                  {supportsMultiplePhotos(form.cat) && form.photo_urls.length > 1 && (
+                    <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.primary, background:C.primaryLight, margin:0, padding:'7px 10px' }}>
+                      {form.photo_urls.length} fotos añadidas
+                    </p>
+                  )}
                 </div>
               )}
 

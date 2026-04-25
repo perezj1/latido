@@ -45,7 +45,16 @@ ALTER TABLE public.ads
   ADD COLUMN IF NOT EXISTS price_unit TEXT,
   ADD COLUMN IF NOT EXISTS contact_phone TEXT,
   ADD COLUMN IF NOT EXISTS contact_email TEXT,
-  ADD COLUMN IF NOT EXISTS contact_via_app BOOLEAN DEFAULT TRUE;
+  ADD COLUMN IF NOT EXISTS contact_via_app BOOLEAN DEFAULT TRUE,
+  ADD COLUMN IF NOT EXISTS photo_urls JSONB DEFAULT '[]'::jsonb;
+
+DO $$
+BEGIN
+  IF to_regclass('public.listings') IS NOT NULL THEN
+    ALTER TABLE public.listings
+      ADD COLUMN IF NOT EXISTS photo_urls JSONB DEFAULT '[]'::jsonb;
+  END IF;
+END $$;
 
 -- ================================================================
 -- EVENTS

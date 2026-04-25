@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS ads (
   plz         TEXT,                    -- código postal 4 dígitos
   privacy     TEXT DEFAULT 'public',   -- 'public' | 'private'
   img_url     TEXT,
+  photo_urls  JSONB DEFAULT '[]'::jsonb,
   whatsapp    TEXT,                    -- solo visible si public o usuario autenticado
   email_contact TEXT,
   contact_phone TEXT,

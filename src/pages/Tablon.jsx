@@ -6,7 +6,7 @@ import { useFavorites } from '../hooks/useFavorites'
 import { fetchAvatarsByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
-import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters } from '../components/UI'
+import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters, PhotoGallery } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 
 function fmtPrice(price) {
@@ -15,6 +15,29 @@ function fmtPrice(price) {
   s = s.replace(/^([\d.,]+)\s+CHF\b(.*)/, 'CHF $1$2')
   s = s.replace(/^(CHF\s*[\d.,]+)\s+([^\s/].*)$/, '$1/$2')
   return s
+}
+
+function normalizePhotoUrls(value) {
+  if (Array.isArray(value)) return value.filter(Boolean)
+
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed)) return parsed.filter(Boolean)
+    } catch {
+      return value.split(',').map(url => url.trim()).filter(Boolean)
+    }
+  }
+
+  return []
+}
+
+function getAdPhotos(ad) {
+  return Array.from(new Set([
+    ...normalizePhotoUrls(ad.photo_urls),
+    ad.img_url,
+    ad.img,
+  ].filter(Boolean)))
 }
 
 const TABLON_CACHE_TTL = 5 * 60 * 1000
@@ -32,9 +55,20 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
   const cat = AD_CATS.find(c => c.id === ad.cat)
   const cc  = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
   const dateStr = ad.ts || (ad.created_at ? new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
+  const photos = getAdPhotos(ad)
+  const coverPhoto = photos[0]
   return (
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', marginBottom:10, width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
-      {(ad.img_url || ad.img) && <img src={ad.img_url || ad.img} alt={ad.title} style={{ width:'100%', height:160, objectFit:'cover' }}/>}
+      {coverPhoto && (
+        <div style={{ position:'relative' }}>
+          <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:160, objectFit:'cover' }}/>
+          {photos.length > 1 && (
+            <span style={{ position:'absolute', left:10, bottom:10, fontFamily:PP, fontSize:10, fontWeight:800, color:'#fff', background:'rgba(15,23,42,0.72)', borderRadius:999, padding:'4px 8px' }}>
+              📷 {photos.length}
+            </span>
+          )}
+        </div>
+      )}
       <button
         onClick={e => { e.stopPropagation(); onToggleFav?.() }}
         style={{ position:'absolute', top:10, right:10, zIndex:2, background:'rgba(255,255,255,0.92)', border:'none', borderRadius:'50%', width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:17, boxShadow:'0 1px 6px rgba(0,0,0,0.12)' }}
@@ -69,12 +103,16 @@ function AdDetail({ ad, user, avatarSrc }) {
   const cc  = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
   const isOwnAd = user && ad.user_id === user.id
   const recipientName = encodeURIComponent((ad.user_name || ad.user || '').trim())
+  const photos = getAdPhotos(ad)
+  const coverPhoto = photos[0]
 
   return (
     <div>
-      {(ad.img_url || ad.img) && (
+      {photos.length > 1 ? (
+        <PhotoGallery photos={photos.slice(1)} mainPhoto={coverPhoto} />
+      ) : coverPhoto && (
         <div style={{ borderRadius:12, overflow:'hidden', marginBottom:14 }}>
-          <img src={ad.img_url || ad.img} alt={ad.title} style={{ width:'100%', maxHeight:200, objectFit:'cover' }}/>
+          <img src={coverPhoto} alt={ad.title} style={{ width:'100%', maxHeight:200, objectFit:'cover' }}/>
         </div>
       )}
       <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
