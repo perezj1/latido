@@ -536,7 +536,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
     </p>
 
    <p className="latido-enter-3" style={{ fontFamily: PP, fontSize: 18, color: '#fff', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.35, maxWidth: 560, margin: '0 auto 26px' }}>
-  “Lejos de casa, pero nunca solos”
+  “Lejos de casa, pero nunca solos.”
 </p>
 
     <div className="latido-enter-4" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
