@@ -19,7 +19,7 @@ export default function Footer() {
               <img src="/favicon.svg" alt="Latido" style={{ width:32, height:32 }} />
               <span style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.primary }}>Latido</span>
             </div>
-            <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.7, marginBottom:16 }}>
+            <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.7, marginBottom:0 }}>
               La plataforma para Hispanohablantes en Suiza. Anuncios, comunidades, eventos, guías y empleos — todo en español.
             </p>
             {/* <div style={{ display:'flex', gap:8 }}>
@@ -29,14 +29,14 @@ export default function Footer() {
             </div> */}
           </div>
 
-          <div>
+          {/* <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Plataforma</h4>
             <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
               {links.map(link => (
                 <Link key={link.href} to={link.href} style={{ fontFamily:PP, fontSize:12, color:'#64748B', textDecoration:'none' }}>{link.label}</Link>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Instalar app</h4>
