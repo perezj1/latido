@@ -357,8 +357,8 @@ function PanelPartners() {
       <div style={{ background: C.primaryLight, borderRadius: 18, padding: '24px', textAlign: 'center' }}>
         <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.primaryDark, margin: '0 0 6px' }}>¿Hablamos?</p>
         <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, margin: '0 0 16px', lineHeight: 1.6 }}>Cuéntanos tu caso y exploramos cómo Latido puede ayudarte a llegar a la comunidad hispanohablante en Suiza.</p>
-        <a href="mailto:hola@latido.ch" style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, background: C.primary, color: '#fff', textDecoration: 'none', padding: '12px 24px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          📧 hola@latido.ch
+        <a href="mailto:latidoch@gmail.com" style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, background: C.primary, color: '#fff', textDecoration: 'none', padding: '12px 24px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          📧 latidoch@gmail.com
         </a>
       </div>
     </div>
@@ -373,11 +373,11 @@ function PanelContacto() {
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 32 }}>
-        <a href="mailto:hola@latido.ch" style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 18, padding: '20px 22px', textDecoration: 'none' }}>
+        <a href="mailto:latidoch@gmail.com" style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 18, padding: '20px 22px', textDecoration: 'none' }}>
           <div style={{ width: 48, height: 48, background: C.primaryLight, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>📧</div>
           <div>
             <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: '0 0 3px' }}>Email</p>
-            <p style={{ fontFamily: PP, fontSize: 13, color: C.primary, margin: 0 }}>hola@latido.ch</p>
+            <p style={{ fontFamily: PP, fontSize: 13, color: C.primary, margin: 0 }}>latidoch@gmail.com</p>
           </div>
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 18, padding: '20px 22px' }}>
@@ -390,7 +390,7 @@ function PanelContacto() {
       </div>
 
       <a
-        href="mailto:hola@latido.ch?subject=Pregunta%20sobre%20Latido"
+        href="mailto:latidoch@gmail.com?subject=Pregunta%20sobre%20Latido"
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%', background: C.primary, border: 'none', borderRadius: 16, padding: '16px 24px', cursor: 'pointer', textDecoration: 'none', marginBottom: 16, boxSizing: 'border-box' }}
       >
         <span style={{ fontSize: 20 }}>✉️</span>

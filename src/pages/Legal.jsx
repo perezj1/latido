@@ -42,7 +42,7 @@ function Impressum() {
       <Section title="1. Responsable del sitio web">
         <P><strong>Denominación:</strong> Latido.ch</P>
         <P><strong>Domicilio:</strong> Zürich, Suiza</P>
-        <P><strong>Email:</strong> hola@latido.ch</P>
+        <P><strong>Email:</strong> latidoch@gmail.com</P>
         <P><strong>Web:</strong> https://latido.ch</P>
       </Section>
 
@@ -91,7 +91,7 @@ function Impressum() {
       <Section title="6. Contacto para avisos legales">
         <P>
           Para cualquier aviso legal, reclamación sobre contenidos o ejercicio de derechos,
-          escriba a: <strong>hola@latido.ch</strong>
+          escriba a: <strong>latidoch@gmail.com</strong>
         </P>
       </Section>
     </>
@@ -109,7 +109,7 @@ function Privacidad() {
       <Section title="1. Responsable del tratamiento">
         <P>
           El responsable del tratamiento de sus datos personales es el operador de Latido.ch,
-          con domicilio en Zürich, Suiza. Contacto: hola@latido.ch
+          con domicilio en Zürich, Suiza. Contacto: latidoch@gmail.com
         </P>
       </Section>
 
@@ -186,7 +186,7 @@ function Privacidad() {
           'Revocación del consentimiento: sin efecto retroactivo.',
         ]} />
         <P>
-          Para ejercer cualquier derecho escribe a <strong>hola@latido.ch</strong>. Responderemos
+          Para ejercer cualquier derecho escribe a <strong>latidoch@gmail.com</strong>. Responderemos
           en un plazo máximo de 30 días. Si consideras que tratamos tus datos de forma incorrecta,
           puedes reclamar ante el <strong>Comisionado Federal de Protección de Datos e Información
           (PFPDT / EDÖB)</strong>: edoeb.admin.ch
@@ -253,7 +253,7 @@ function Terminos() {
           'La información que proporcionas debe ser veraz, completa y actualizada.',
           'Eres responsable de la confidencialidad de tu contraseña y de toda actividad realizada desde tu cuenta.',
           'Está prohibido crear cuentas falsas, suplantar identidades o crear múltiples cuentas.',
-          'Notifica inmediatamente a hola@latido.ch si detectas un uso no autorizado de tu cuenta.',
+          'Notifica inmediatamente a latidoch@gmail.com si detectas un uso no autorizado de tu cuenta.',
         ]} />
       </Section>
 
@@ -385,7 +385,7 @@ function Descargo() {
         <P>
           Latido.ch eliminará los contenidos manifiestamente ilegales cuando tenga conocimiento
           efectivo de los mismos, conforme al principio de "notice and takedown". Para notificar
-          un contenido ilícito: hola@latido.ch
+          un contenido ilícito: latidoch@gmail.com
         </P>
       </Section>
 
@@ -450,7 +450,7 @@ function Descargo() {
       <Section title="8. Notificación de contenidos ilegales">
         <P>
           Si encuentras en Latido.ch contenidos que consideres ilegales, fraudulentos o que
-          vulneren derechos de terceros, notifícalo a <strong>hola@latido.ch</strong> indicando
+          vulneren derechos de terceros, notifícalo a <strong>latidoch@gmail.com</strong> indicando
           la URL del contenido y el motivo de la denuncia. El operador actuará con la mayor
           diligencia posible.
         </P>
@@ -517,7 +517,7 @@ export default function Legal() {
       </div>
 
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:24 }}>
-        ¿Preguntas legales? Escríbenos a hola@latido.ch
+        ¿Preguntas legales? Escríbenos a latidoch@gmail.com
       </p>
     </div>
   )
