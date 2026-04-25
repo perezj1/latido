@@ -21,6 +21,16 @@ const LIST_MAX_HEIGHT = {
   regular: 410,
 }
 
+function getInitialVisibleCount(layout, compact) {
+  if (layout === 'carousel') return 12
+  return compact ? 6 : 8
+}
+
+function getVisibleStep(layout, compact) {
+  if (layout === 'carousel') return 8
+  return compact ? 6 : 8
+}
+
 function PillSelect({ value, onChange, options, ariaLabel, minWidth = 116 }) {
   return (
     <select
@@ -206,15 +216,19 @@ function CarouselEventCard({ event }) {
 }
 
 export default function EventfrogCalendar({ compact = false, maxEvents = 60, showEmbedFallback = true, layout = 'list' }) {
+  const initialVisibleCount = getInitialVisibleCount(layout, compact)
+  const visibleStep = getVisibleStep(layout, compact)
   const [rangeKey, setRangeKey] = useState(compact ? 'week' : 'month')
   const [customDate, setCustomDate] = useState(() => toISODate(new Date()))
   const [filterId, setFilterId] = useState('latino')
   const [events, setEvents] = useState([])
+  const [visibleCount, setVisibleCount] = useState(initialVisibleCount)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const range = useMemo(() => getEventfrogRange(rangeKey, customDate), [customDate, rangeKey])
-  const grouped = useMemo(() => Array.from(groupByDate(events).values()), [events])
+  const visibleEvents = useMemo(() => events.slice(0, visibleCount), [events, visibleCount])
+  const grouped = useMemo(() => Array.from(groupByDate(visibleEvents).values()), [visibleEvents])
   const hasEmbedFallback = showEmbedFallback && EVENTFROG_EMBED_KEY
   const listMaxHeight = compact ? LIST_MAX_HEIGHT.compact : LIST_MAX_HEIGHT.regular
   const embedUrl = useMemo(
@@ -222,12 +236,37 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
     [filterId, range.from, range.to]
   )
 
+  function showNextVisibleBlock() {
+    setVisibleCount(count => Math.min(events.length, count + visibleStep))
+  }
+
+  function handleListScroll(event) {
+    if (visibleCount >= events.length) return
+
+    const { scrollTop, scrollHeight, clientHeight } = event.currentTarget
+    if (scrollHeight - scrollTop - clientHeight < 120) {
+      showNextVisibleBlock()
+    }
+  }
+
+  function handleCarouselScroll(event) {
+    if (visibleCount >= events.length) return
+
+    const { scrollLeft, scrollWidth, clientWidth } = event.currentTarget
+    if (scrollWidth - scrollLeft - clientWidth < 180) {
+      showNextVisibleBlock()
+    }
+  }
+
   useEffect(() => {
     const controller = new AbortController()
+    let active = true
 
     async function loadEvents() {
       setLoading(true)
       setError('')
+      setEvents([])
+      setVisibleCount(initialVisibleCount)
       try {
         const nextEvents = await fetchEventfrogEvents({
           from:range.from,
@@ -235,8 +274,12 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
           filterId,
           signal:controller.signal,
           limit:maxEvents,
+          onProgress: partialEvents => {
+            if (!active || controller.signal.aborted) return
+            setEvents(partialEvents)
+          },
         })
-        setEvents(nextEvents)
+        if (active && !controller.signal.aborted) setEvents(nextEvents)
       } catch (err) {
         if (err.name !== 'AbortError') {
           setEvents([])
@@ -247,13 +290,16 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
           )
         }
       } finally {
-        if (!controller.signal.aborted) setLoading(false)
+        if (active && !controller.signal.aborted) setLoading(false)
       }
     }
 
     loadEvents()
-    return () => controller.abort()
-  }, [filterId, maxEvents, range.from, range.to])
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [filterId, initialVisibleCount, maxEvents, range.from, range.to])
 
   if (layout === 'carousel') {
     return (
@@ -306,19 +352,22 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
           </div>
         </div>
 
-        {loading ? (
+        {events.length > 0 ? (
+          <div className="no-scroll" onScroll={handleCarouselScroll} style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+            <div style={{ display:'flex', gap:12, width:'max-content' }}>
+              {visibleEvents.map(event => (
+                <CarouselEventCard key={event.id} event={event} />
+              ))}
+              {loading && [1, 2].map(item => (
+                <div key={`loading-${item}`} className="skeleton" style={{ flexShrink:0, width:168, height:226, borderRadius:16 }} />
+              ))}
+            </div>
+          </div>
+        ) : loading ? (
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {[1, 2, 3, 4].map(item => (
                 <div key={item} className="skeleton" style={{ flexShrink:0, width:168, height:226, borderRadius:16 }} />
-              ))}
-            </div>
-          </div>
-        ) : events.length > 0 ? (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
-            <div style={{ display:'flex', gap:12, width:'max-content' }}>
-              {events.map(event => (
-                <CarouselEventCard key={event.id} event={event} />
               ))}
             </div>
           </div>
@@ -401,14 +450,9 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
           </span>
         </div>
 
-        {loading ? (
-          <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:listMaxHeight, overflow:'hidden' }}>
-            {[1, 2, 3].map(item => (
-              <div key={item} className="skeleton" style={{ height:compact ? 96 : 116, borderRadius:16 }} />
-            ))}
-          </div>
-        ) : events.length > 0 ? (
+        {events.length > 0 ? (
           <div
+            onScroll={handleListScroll}
             style={{
               maxHeight:listMaxHeight,
               overflowY:'auto',
@@ -442,7 +486,21 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
                   </div>
                 </div>
               ))}
+
+              {loading && (
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {[1, 2].map(item => (
+                    <div key={item} className="skeleton" style={{ height:compact ? 96 : 116, borderRadius:16 }} />
+                  ))}
+                </div>
+              )}
             </div>
+          </div>
+        ) : loading ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:listMaxHeight, overflow:'hidden' }}>
+            {[1, 2, 3].map(item => (
+              <div key={item} className="skeleton" style={{ height:compact ? 96 : 116, borderRadius:16 }} />
+            ))}
           </div>
         ) : (
           <div style={{ background:C.bg, borderRadius:16, padding:'18px 14px', textAlign:'center' }}>

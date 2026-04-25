@@ -1,11 +1,15 @@
 const EVENTFROG_API_URL = import.meta.env.VITE_EVENTFROG_PROXY_URL || '/api/eventfrog'
 const EVENTFROG_EMBED_URL = 'https://embed.eventfrog.ch/en/events.html'
+const EVENTFROG_CACHE_TTL = 5 * 60 * 1000
+const EVENTFROG_CACHE_MAX_ITEMS = 80
 
 export const EVENTFROG_EMBED_KEY =
   import.meta.env.VITE_EVENTFROG_EMBED_KEY ||
   ''
 
 const PREFERRED_LANGS = ['es', 'en', 'de', 'fr', 'it']
+const rawPageCache = new Map()
+const filteredEventsCache = new Map()
 
 export const EVENTFROG_FILTERS = [
   {
@@ -160,6 +164,26 @@ function matchesLatidoTerms(event, terms) {
   return terms.some(term => hasSearchTerm(haystack, term))
 }
 
+function getCachedValue(cache, key) {
+  const cached = cache.get(key)
+  if (!cached) return null
+
+  if (Date.now() - cached.createdAt > EVENTFROG_CACHE_TTL) {
+    cache.delete(key)
+    return null
+  }
+
+  return cached.value
+}
+
+function setCachedValue(cache, key, value) {
+  cache.set(key, { value, createdAt:Date.now() })
+
+  if (cache.size > EVENTFROG_CACHE_MAX_ITEMS) {
+    cache.delete(cache.keys().next().value)
+  }
+}
+
 function getRangeDayCount(from, to) {
   const fromDate = from ? new Date(`${from}T00:00:00`) : null
   const toDate = to ? new Date(`${to}T00:00:00`) : null
@@ -230,7 +254,36 @@ function normalizeEventfrogEvent(event) {
   }
 }
 
-export async function fetchEventfrogEvents({ from, to, filterId = 'latino', signal, limit = 18 } = {}) {
+async function fetchEventfrogPage({ from, to, page, perPage, origin, signal }) {
+  const cacheKey = `${EVENTFROG_API_URL}|${origin}|${from}|${to}|${page}|${perPage}`
+  const cached = getCachedValue(rawPageCache, cacheKey)
+  if (cached) return cached
+
+  const url = new URL(EVENTFROG_API_URL, origin)
+  url.searchParams.set('country', 'CH')
+  url.searchParams.set('from', from)
+  url.searchParams.set('to', to)
+  url.searchParams.set('page', String(page))
+  url.searchParams.set('perPage', String(perPage))
+
+  const response = await fetch(url, { signal })
+  if (!response.ok) {
+    let message = `Eventfrog ${response.status}`
+    try {
+      const errorData = await response.json()
+      if (errorData?.error) message = errorData.error
+    } catch {
+      // Ignore non-JSON error bodies and keep the status-based message.
+    }
+    throw new Error(message)
+  }
+
+  const data = await response.json()
+  setCachedValue(rawPageCache, cacheKey, data)
+  return data
+}
+
+export async function fetchEventfrogEvents({ from, to, filterId = 'latino', signal, limit = 18, onProgress } = {}) {
   const filter = EVENTFROG_FILTERS.find(item => item.id === filterId) || EVENTFROG_FILTERS[0]
   const perPage = 1000
   const maxPages = 20
@@ -240,28 +293,18 @@ export async function fetchEventfrogEvents({ from, to, filterId = 'latino', sign
   const fromDate = from ? new Date(`${from}T00:00:00`) : null
   const fromTime = fromDate && !Number.isNaN(fromDate.getTime()) ? fromDate.getTime() : 0
   const targetDayCount = Math.min(getRangeDayCount(from, to), limit)
+  const filteredCacheKey = `${EVENTFROG_API_URL}|${origin}|${from}|${to}|${filterId}|${limit}`
+  const cachedEvents = getCachedValue(filteredEventsCache, filteredCacheKey)
+
+  if (cachedEvents) return [...cachedEvents]
+
+  function emitProgress() {
+    if (typeof onProgress !== 'function' || matches.length === 0 || signal?.aborted) return
+    onProgress(pickEventsAcrossDates(matches, limit))
+  }
 
   for (let page = 1; page <= maxPages && (page - 1) * perPage < total; page += 1) {
-    const url = new URL(EVENTFROG_API_URL, origin)
-    url.searchParams.set('country', 'CH')
-    url.searchParams.set('from', from)
-    url.searchParams.set('to', to)
-    url.searchParams.set('page', String(page))
-    url.searchParams.set('perPage', String(perPage))
-
-    const response = await fetch(url, { signal })
-    if (!response.ok) {
-      let message = `Eventfrog ${response.status}`
-      try {
-        const errorData = await response.json()
-        if (errorData?.error) message = errorData.error
-      } catch {
-        // Ignore non-JSON error bodies and keep the status-based message.
-      }
-      throw new Error(message)
-    }
-
-    const data = await response.json()
+    const data = await fetchEventfrogPage({ from, to, page, perPage, origin, signal })
     total = Number(data.totalNumberOfResources || 0)
     const pageMatches = (data.events || [])
       .map(normalizeEventfrogEvent)
@@ -271,9 +314,12 @@ export async function fetchEventfrogEvents({ from, to, filterId = 'latino', sign
       })
 
     matches.push(...pageMatches)
+    emitProgress()
 
     if (matches.length >= limit && countEventDays(matches) >= targetDayCount) break
   }
 
-  return pickEventsAcrossDates(matches, limit)
+  const finalEvents = pickEventsAcrossDates(matches, limit)
+  setCachedValue(filteredEventsCache, filteredCacheKey, finalEvents)
+  return finalEvents
 }
