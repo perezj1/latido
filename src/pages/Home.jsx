@@ -285,7 +285,7 @@ export default function Home() {
 
   return (
     <div style={{ background:'#fff' }}>
-      <section style={{ background:'linear-gradient(160deg, #1E40AF 0%, #2563EB 58%, #60A5FA 100%)', position:'relative', overflow:'visible', padding:'26px 16px 34px', zIndex:2 }}>
+      <section className="hero-section" style={{ background:'linear-gradient(160deg, #1E40AF 0%, #2563EB 58%, #60A5FA 100%)', position:'relative', overflow:'visible', zIndex:2 }}>
         <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
           <div style={{ position:'absolute', top:-70, right:-60, width:220, height:220, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
           <div style={{ position:'absolute', bottom:-60, left:-20, width:180, height:180, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
@@ -293,7 +293,7 @@ export default function Home() {
 
         <div style={{ maxWidth:980, margin:'0 auto', position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:24 }}>
-            <div style={{ maxWidth:620, flex:1, minWidth:0 }}>
+            <div style={{ flex:1, minWidth:0 }}>
               {/* <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>
                 Más cerca de tu gente
               </p> */}
@@ -403,10 +403,10 @@ export default function Home() {
             )}
           </div>
 
-          <div style={{ maxWidth:620 }}>
+          <div className="hero-search-wrap">
             <GlobalSearch size="lg" placeholder="Encuentra lo que buscas" />
             <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:12 }}>
-              <div style={{ display:'flex', gap:6, width:'max-content' }}>
+              <div className="hero-pills">
                 {[
                   { emoji:'🏠', label:'Vivienda',    to:'/tablon?cat=vivienda' },
                   { emoji:'💼', label:'Empleo',       to:'/tablon?cat=empleo' },

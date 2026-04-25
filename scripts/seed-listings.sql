@@ -57,7 +57,7 @@ VALUES
   ( 'hogar', 'Mudanza', 'ofrece',
     'Ayudo con mudanzas — furgoneta propia, zona Zürich y alrededores',
     'Ofrezco servicio de mudanza con furgoneta de 20 m³. Puedo ir solo o con un ayudante según el volumen. Precios honestos y sin sorpresas. Experiencia en mudanzas dentro de Suiza, especialmente en el cantón de Zürich. Reserva con 48 h de antelación.',
-    'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=900&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&h=600&fit=crop',
     'CHF 60/h', 60, 'hora',
     'ZH', '8050', 'public', true,
     '1d752ef7-27d9-4883-b9ba-7aaa4f51f25a', true, 'José M.' ),

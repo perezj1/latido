@@ -61,10 +61,10 @@ img { max-width: 100%; }
 
 /* ── Header responsive visibility (override inline styles with !important) ── */
 .show-lg { display: none !important; }
-@media (min-width: 1024px) { .show-lg { display: flex !important; } }
+@media (min-width: 768px) { .show-lg { display: flex !important; } }
 
 .hide-lg { display: flex !important; }
-@media (min-width: 1024px) { .hide-lg { display: none !important; } }
+@media (min-width: 768px) { .hide-lg { display: none !important; } }
 
 .hide-md { display: flex !important; }
 @media (min-width: 768px) { .hide-md { display: none !important; } }
@@ -95,3 +95,14 @@ img { max-width: 100%; }
 @media (max-width: 360px) {
   .segmented-tab { font-size: 9px !important; padding: 6px 2px !important; }
 }
+
+/* ── Hero section responsive ── */
+.hero-section { padding: 26px 16px 34px !important; }
+@media (min-width: 768px)  { .hero-section { padding: 52px 32px 60px !important; } }
+@media (min-width: 1024px) { .hero-section { padding: 64px 40px 72px !important; } }
+
+.hero-search-wrap { max-width: 620px; }
+@media (min-width: 768px) { .hero-search-wrap { max-width: 100%; } }
+
+.hero-pills { display: flex; gap: 6px; width: max-content; }
+@media (min-width: 768px) { .hero-pills { width: auto; flex-wrap: wrap; } }
