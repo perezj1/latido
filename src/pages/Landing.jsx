@@ -160,14 +160,25 @@ function PanelSobre() {
       {/* WHY */}
       <section style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)', borderRadius: 24, padding: '48px 28px', marginBottom: 40, textAlign: 'center' }}>
         <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 }}>Por qué existimos</p>
-        <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(24px,5vw,40px)', color: '#fff', lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 18 }}>
-          "Lejos de casa,<br />
-          <span style={{ color: '#60A5FA' }}>pero nunca solos."</span>
+        <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(24px,5vw,40px)', color: '#fff', lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 24 }}>
+          “Lejos de casa,<br />
+          <span style={{ color: '#60A5FA' }}>pero nunca solos.”</span>
         </h2>
-        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, maxWidth: 520, margin: '0 auto 28px' }}>
-          El primer invierno en Suiza es oscuro. El idioma se siente un muro. El banco pide papeles que nadie te explicó.
-          Y esa sensación de que <em>nadie entiende de dónde vienes</em>. Eso cambia cuando encuentras a los tuyos — y Latido nació para eso.
-        </p>
+        <div style={{ maxWidth: 620, margin: '0 auto 28px' }}>
+          <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
+            Llegar a Suiza puede sentirse como empezar desde cero: idioma nuevo, trámites complejos, cartas que no se entienden y la sensación de estar lejos de todo.
+          </p>
+          <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
+            Pero todo cambia cuando encuentras a los tuyos.
+          </p>
+          <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
+            Latido nace para unir a la comunidad hispanohablante en Suiza, ofreciendo en un solo lugar ayuda, oportunidades, servicios, pisos, eventos y conexiones reales.
+          </p>
+          <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
+            Porque estar lejos de casa no debería significar estar solo. 
+         </p>
+          
+        </div>
         <Link to="/auth" style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, background: '#fff', color: '#1E3A8A', textDecoration: 'none', padding: '14px 30px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           Quiero ser parte de esto →
         </Link>
