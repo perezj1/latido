@@ -19,7 +19,7 @@ export const CANTONS = [
 export const AD_CATS = [
   { id:'vivienda',   emoji:'🏠', label:'Vivienda',   desc:'Pisos, habitaciones y compañeros',  types:['busca','ofrece'],           sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
   { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Limpieza, clases, mudanzas y más',  types:['busca','ofrece'],           sub:['Limpieza','Cocina','Reparaciones','Mudanza','Clases','Peluquería','Mecánico','Informática','Otro'] },
-  { id:'cuidados',   emoji:'👶', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia', types:['busca','ofrece'],        sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
+  { id:'cuidados',   emoji:'❤️', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia', types:['busca','ofrece'],        sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
   { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Compra, vende o regala artículos',  types:['busca','ofrece','regala'],  sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
   { id:'documentos', emoji:'📋', label:'Legal',       desc:'Trámites, traducción y asesoría',   types:['busca','ofrece'],           sub:['Cartas','Trámites','Traducción','Asesoría'] },
   { id:'empleo',     emoji:'💼', label:'Empleo',      desc:'Ofertas y búsqueda de trabajo',     types:['busca','ofrece'],           sub:['Full-time','Part-time','Freelance','Prácticas'] },
