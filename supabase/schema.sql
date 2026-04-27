@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS ads (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID REFERENCES profiles(id) ON DELETE SET NULL,
   user_name   TEXT,                    -- cached display name
-  cat         TEXT NOT NULL,           -- vivienda|hogar|cuidados|documentos|venta|servicios|regalo
+  cat         TEXT NOT NULL,           -- vivienda|servicios|cuidados|documentos|venta|regalo
   sub         TEXT,                    -- subcategoría
   type        TEXT NOT NULL,           -- busca|ofrece|vende|regala
   title       TEXT NOT NULL,

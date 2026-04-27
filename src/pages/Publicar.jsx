@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
+import { AD_CATS, AD_TYPES, CANTONS, normalizeAdCat } from '../lib/constants'
 import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
 import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
@@ -18,21 +18,16 @@ const STEPS = [
 
 const STEP1_BY_CAT = {
   vivienda:   { title:'¿Buscas u ofreces vivienda?',    sub:'Dinos si buscas o pones a disposición un piso o habitación' },
-  hogar:      { title:'¿Qué necesitas o puedes hacer?', sub:'Dinos si buscas ayuda en el hogar o si ofreces tus servicios' },
   venta:      { title:'¿Qué quieres hacer?',            sub:'Busca artículos, vende lo que no usas o dalo gratis' },
   cuidados:   { title:'¿Buscas u ofreces cuidados?',    sub:'Dinos si necesitas un cuidador o si ofreces tus servicios' },
   documentos: { title:'¿Necesitas u ofreces ayuda?',    sub:'Dinos si buscas asesoría o si puedes ayudar con trámites' },
-  servicios:  { title:'¿Buscas u ofreces un servicio?', sub:'Dinos si necesitas o puedes ofrecer clases, peluquería u otros servicios' },
+  servicios:  { title:'¿Buscas u ofreces un servicio?', sub:'Limpieza, mudanzas, reparaciones, clases, peluquería y otros servicios' },
 }
 
 const TYPE_DESC_BY_CAT = {
   vivienda: {
     busca:  'Buscas piso, habitación o compañero de piso',
     ofrece: 'Ofreces un piso, habitación o sublet',
-  },
-  hogar: {
-    busca:  'Necesitas ayuda con limpieza, cocina o reparaciones',
-    ofrece: 'Ofreces tus servicios para el hogar',
   },
   venta: {
     busca:  'Buscas algún artículo de segunda mano',
@@ -48,8 +43,8 @@ const TYPE_DESC_BY_CAT = {
     ofrece: 'Puedes ayudar con gestiones y asesoría',
   },
   servicios: {
-    busca:  'Buscas clases, peluquería, mecánico u otro servicio',
-    ofrece: 'Ofreces tus servicios o habilidades profesionales',
+    busca:  'Buscas limpieza, mudanza, reparaciones, clases u otro servicio',
+    ofrece: 'Ofreces servicios para el hogar o habilidades profesionales',
   },
 }
 
@@ -75,7 +70,7 @@ export default function Publicar() {
   const { isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const presetCat = searchParams.get('cat') || ''
+  const presetCat = normalizeAdCat(searchParams.get('cat') || '')
   const presetHandledRef = useRef(false)
 
   const [step, setStep] = useState(0)
@@ -415,16 +410,14 @@ export default function Publicar() {
               }}
             >
               <span style={{ fontSize:26 }}>{cat.emoji}</span>
-              <span
-                style={{
-                  fontFamily:PP,
-                  fontWeight:700,
-                  fontSize:13,
-                  color:form.cat === cat.id ? '#fff' : C.text
-                }}
-              >
+              <span style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:form.cat === cat.id ? '#fff' : C.text }}>
                 {cat.label}
               </span>
+              {cat.desc && (
+                <span style={{ fontFamily:PP, fontSize:10, fontWeight:400, color:form.cat === cat.id ? 'rgba(255,255,255,0.75)' : C.light, lineHeight:1.4 }}>
+                  {cat.desc}
+                </span>
+              )}
             </button>
           ))}
         </div>

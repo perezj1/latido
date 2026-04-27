@@ -36,9 +36,9 @@ VALUES
     'BE', '3001', 'public', true,
     '1d752ef7-27d9-4883-b9ba-7aaa4f51f25a', true, 'José M.' ),
 
--- ── HOGAR ─────────────────────────────────────────────────────────────────────
+-- ── SERVICIOS DEL HOGAR ───────────────────────────────────────────────────────
 
-  ( 'hogar', 'Limpieza', 'ofrece',
+  ( 'servicios', 'Limpieza', 'ofrece',
     'Limpieza profesional de pisos — Zürich y alrededores',
     'Ofrezco limpieza profunda o mantenimiento semanal. Cuatro años de experiencia en Suiza con referencias comprobables. Puntual, detallista y de total confianza. Productos incluidos. Disponible de lunes a sábado en horario de mañana y tarde.',
     'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=900&h=600&fit=crop',
@@ -46,7 +46,7 @@ VALUES
     'ZH', '8004', 'public', true,
     '1d752ef7-27d9-4883-b9ba-7aaa4f51f25a', true, 'José M.' ),
 
-  ( 'hogar', 'Reparaciones', 'busca',
+  ( 'servicios', 'Reparaciones', 'busca',
     'Busco alguien para pequeñas reparaciones en el hogar — Basilea',
     'Necesito ayuda para instalar unas luminarias, cambiar una persiana y revisar un enchufe que falla en la cocina. Piso en Basilea centro. Disponible fines de semana o tardes entre semana. Pago a precio justo y sin regateos.',
     NULL,
@@ -54,7 +54,7 @@ VALUES
     'BS', '4001', 'public', true,
     '1d752ef7-27d9-4883-b9ba-7aaa4f51f25a', true, 'José M.' ),
 
-  ( 'hogar', 'Mudanza', 'ofrece',
+  ( 'servicios', 'Mudanza', 'ofrece',
     'Ayudo con mudanzas — furgoneta propia, zona Zürich y alrededores',
     'Ofrezco servicio de mudanza con furgoneta de 20 m³. Puedo ir solo o con un ayudante según el volumen. Precios honestos y sin sorpresas. Experiencia en mudanzas dentro de Suiza, especialmente en el cantón de Zürich. Reserva con 48 h de antelación.',
     'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&h=600&fit=crop',

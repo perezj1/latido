@@ -18,7 +18,7 @@ const STEPS = [
 const JOB_SECTORS = [
   { id:'hosteleria',     emoji:'👨‍🍳', label:'Hostelería & Cocina' },
   { id:'cuidados',       emoji:'👶', label:'Cuidados & Au pair' },
-  { id:'limpieza',       emoji:'🧹', label:'Limpieza & Hogar' },
+  { id:'limpieza',       emoji:'🧹', label:'Limpieza & Servicios' },
   { id:'tecnologia',     emoji:'💻', label:'Tecnología & IT' },
   { id:'estetica',       emoji:'💇', label:'Estética & Belleza' },
   { id:'construccion',   emoji:'🏗️', label:'Construcción' },

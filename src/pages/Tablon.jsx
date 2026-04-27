@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import { fetchAvatarsByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
-import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS } from '../lib/constants'
+import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, getAdCat, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters, PhotoGallery } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 
@@ -52,8 +52,9 @@ const TABLON_CACHE = {
 
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
-  const cat = AD_CATS.find(c => c.id === ad.cat)
-  const cc  = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
+  const normalizedCat = normalizeAdCat(ad.cat)
+  const cat = getAdCat(ad.cat)
+  const cc  = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
   const dateStr = ad.ts || (ad.created_at ? new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
   const photos = getAdPhotos(ad)
   const coverPhoto = photos[0]
@@ -99,8 +100,9 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
 function AdDetail({ ad, user, avatarSrc }) {
   const navigate = useNavigate()
-  const cat = AD_CATS.find(c => c.id === ad.cat)
-  const cc  = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
+  const normalizedCat = normalizeAdCat(ad.cat)
+  const cat = getAdCat(ad.cat)
+  const cc  = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
   const isOwnAd = user && ad.user_id === user.id
   const recipientName = encodeURIComponent((ad.user_name || ad.user || '').trim())
   const photos = getAdPhotos(ad)
@@ -305,7 +307,7 @@ export default function Tablon() {
   const [selectedPortal, setSelectedPortal] = useState(null)
   const deferredSearch = useDeferredValue(search.trim().toLowerCase())
 
-  const cat      = searchParams.get('cat') || ''
+  const cat      = normalizeAdCat(searchParams.get('cat') || '')
   const type     = searchParams.get('type') || ''
   const canton   = searchParams.get('canton') || ''
   const plz      = searchParams.get('plz') || ''
@@ -449,7 +451,7 @@ export default function Tablon() {
 
   const filteredAds = useMemo(() => ads.filter(a => {
     if (!(isLoggedIn || a.privacy === 'public')) return false
-    if (cat && a.cat !== cat) return false
+    if (cat && normalizeAdCat(a.cat) !== cat) return false
     if (type && a.type !== type) return false
     if (canton && a.canton !== canton) return false
     if (plz && !a.plz?.startsWith(plz)) return false
@@ -512,7 +514,7 @@ export default function Tablon() {
 
 
   const orderedCats = [...AD_CATS].sort((a, b) => {
-    const priority = { vivienda:0, empleo:1, venta:2, servicios:3 }
+    const priority = { vivienda:0, empleo:1, venta:2, servicios:3, cuidados:4, documentos:5 }
     return (priority[a.id] ?? 99) - (priority[b.id] ?? 99)
   })
 

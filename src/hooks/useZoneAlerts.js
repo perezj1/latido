@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
+import { getAdCat, normalizeAdCat } from '../lib/constants'
 
 const SETTINGS_KEY = 'latido_alerts'
 const LAST_CHECK_KEY = 'latido_alerts_last_check'
@@ -35,8 +36,21 @@ const ALERT_SOURCES = [
   },
 ]
 
+function normalizeAlertCategories(categories=[]) {
+  return Array.from(new Set((categories || []).map(normalizeAdCat).filter(Boolean)))
+}
+
+function expandAdCategoriesForQuery(categories=[]) {
+  const expanded = new Set(categories)
+  if (expanded.has('servicios')) expanded.add('hogar')
+  return [...expanded]
+}
+
 function loadSettings() {
-  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') } catch { return {} }
+  try {
+    const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
+    return { ...settings, categories: normalizeAlertCategories(settings.categories) }
+  } catch { return {} }
 }
 
 function dispatchZoneAlertEvent(name) {
@@ -63,14 +77,15 @@ function mergeAlertItems(previous, incoming) {
 
 function normalizeAlertItem(kind, row) {
   if (kind === 'ad') {
+    const cat = getAdCat(row.cat)
     return {
       key: `ad:${row.id}`,
       id: row.id,
       kind,
       title: row.title || 'Nuevo anuncio',
-      category: row.cat || 'servicios',
+      category: normalizeAdCat(row.cat) || 'servicios',
       kindLabel: 'Tablón',
-      meta: `${row.cat || 'anuncio'} · ${row.canton || ''}`.trim(),
+      meta: `${cat?.label || 'anuncio'} · ${row.canton || ''}`.trim(),
       href: `/tablon?openAd=${encodeURIComponent(row.id)}`,
       icon: '📌',
       canton: row.canton || '',
@@ -144,7 +159,7 @@ function matchesSettings(row, kind, settings, lastCheck) {
   const categories = settings.categories || []
   if (!categories.length) return true
 
-  if (kind === 'ad') return categories.includes(row.cat)
+  if (kind === 'ad') return categories.includes(normalizeAdCat(row.cat))
   if (kind === 'job') return categories.includes('empleo')
   if (kind === 'business') return categories.includes('servicios')
   if (kind === 'event') return false
@@ -164,7 +179,7 @@ async function fetchAlertsForSource(source, settings, lastCheck) {
     .limit(MAX_ALERTS)
 
   if (lastCheck) query = query.gt('created_at', lastCheck)
-  if (source.kind === 'ad' && settings.categories?.length) query = query.in('cat', settings.categories)
+  if (source.kind === 'ad' && settings.categories?.length) query = query.in('cat', expandAdCategoriesForQuery(settings.categories))
 
   const { data, error } = await query
   if (error) return []

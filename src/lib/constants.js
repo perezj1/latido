@@ -17,14 +17,21 @@ export const CANTONS = [
 
 // ── AD CATEGORIES ──────────────────────────────────────────────
 export const AD_CATS = [
-  { id:'vivienda',   emoji:'🏠', label:'Vivienda',   types:['busca','ofrece'],           sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
-  { id:'hogar',      emoji:'🧹', label:'Hogar',       types:['busca','ofrece'],           sub:['Limpieza','Cocina','Reparaciones','Mudanza'] },
-  { id:'venta',      emoji:'🛍️', label:'Mercado',     types:['busca','ofrece','regala'],  sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
-  { id:'cuidados',   emoji:'👶', label:'Cuidados',    types:['busca','ofrece'],           sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
-  { id:'documentos', emoji:'📋', label:'Legal',       types:['busca','ofrece'],           sub:['Cartas','Trámites','Traducción','Asesoría'] },
-  { id:'servicios',  emoji:'🔧', label:'Servicios',   types:['busca','ofrece'],           sub:['Clases','Peluquería','Mecánico','Informática','Otro'] },
-  { id:'empleo',     emoji:'💼', label:'Empleo',      types:['busca','ofrece'],           sub:['Full-time','Part-time','Freelance','Prácticas'] },
+  { id:'vivienda',   emoji:'🏠', label:'Vivienda',   desc:'Pisos, habitaciones y compañeros',  types:['busca','ofrece'],           sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
+  { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Limpieza, clases, mudanzas y más',  types:['busca','ofrece'],           sub:['Limpieza','Cocina','Reparaciones','Mudanza','Clases','Peluquería','Mecánico','Informática','Otro'] },
+  { id:'cuidados',   emoji:'👶', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia', types:['busca','ofrece'],        sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
+  { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Compra, vende o regala artículos',  types:['busca','ofrece','regala'],  sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
+  { id:'documentos', emoji:'📋', label:'Legal',       desc:'Trámites, traducción y asesoría',   types:['busca','ofrece'],           sub:['Cartas','Trámites','Traducción','Asesoría'] },
+  { id:'empleo',     emoji:'💼', label:'Empleo',      desc:'Ofertas y búsqueda de trabajo',     types:['busca','ofrece'],           sub:['Full-time','Part-time','Freelance','Prácticas'] },
 ]
+
+export function normalizeAdCat(cat='') {
+  return cat === 'hogar' ? 'servicios' : cat
+}
+
+export function getAdCat(cat='') {
+  return AD_CATS.find(item => item.id === normalizeAdCat(cat))
+}
 
 export const AD_TYPES = [
   { id:'busca',  emoji:'🔍', label:'Busco / Necesito',  desc:'Estás buscando algo o a alguien' },
@@ -73,13 +80,13 @@ export const MOCK_ADS = [
   { id:'a1', cat:'vivienda',   sub:'Se busca piso',         title:'Busco habitación en Zürich',              desc:'Mujer 32 años, trabajo estable, no fumo. Zona Zürich o alrededores. Máximo CHF 950.',              user:'María C.',   canton:'ZH', plz:'8001', price:'hasta CHF 950/mes', type:'busca',  privacy:'private', verified:true,  ts:'Hace 2h',   img:null },
   { id:'a2', cat:'cuidados',   sub:'Cuidado niños',         title:'Ofrezco cuidado de niños tardes',          desc:'Maestra con 8 años de exp. Lunes a viernes 15:00–19:00. Referencias disponibles.',               user:'Ana R.',     canton:'BE', plz:'3001', price:'CHF 22/h',         type:'ofrece', privacy:'public',  verified:true,  ts:'Hace 4h',   img:null,  contact_phone:'+41 79 234 56 78' },
   { id:'a3', cat:'venta',      sub:'Electrónica',           title:'iPhone 13 128GB — perfecto estado',        desc:'Caja original, cargador incluido. Sin golpes ni rayones. Precio negociable.',                    user:'Carlos M.',  canton:'GE', plz:'1201', price:'CHF 450',           type:'vende',  privacy:'public',  verified:false, ts:'Hace 5h',   img:'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400&h=260&fit=crop', contact_phone:'+41 78 345 67 89' },
-  { id:'a4', cat:'hogar',      sub:'Limpieza',              title:'Limpieza profesional de pisos',             desc:'Servicio de limpieza profunda o mantenimiento semanal. Productos incluidos.',                    user:'Rosa P.',    canton:'BS', plz:'4001', price:'CHF 30/h',         type:'ofrece', privacy:'private', verified:true,  ts:'Hace 6h',   img:null },
+  { id:'a4', cat:'servicios',  sub:'Limpieza',              title:'Limpieza profesional de pisos',             desc:'Servicio de limpieza profunda o mantenimiento semanal. Productos incluidos.',                    user:'Rosa P.',    canton:'BS', plz:'4001', price:'CHF 30/h',         type:'ofrece', privacy:'private', verified:true,  ts:'Hace 6h',   img:null },
   { id:'a5', cat:'documentos', sub:'Cartas',                title:'Ayudo con cartas en alemán suizo',          desc:'Traduzco y explico cartas oficiales suizas. 6 años viviendo aquí. Respondo en 24h.',             user:'Diego F.',   canton:'ZH', plz:'8050', price:'CHF 15/carta',     type:'ofrece', privacy:'public',  verified:false, ts:'Ayer',      img:null,  contact_email:'tramites.diego@gmail.com' },
   { id:'a6', cat:'regalo',     sub:'Muebles',               title:'Regalo sofá 3 plazas — Bern',               desc:'Sofá gris en buen estado. Solo para recoger esta semana. Primera persona que responda.',          user:'Lucia T.',   canton:'BE', plz:'3011', price:'Gratis',           type:'regala', privacy:'public',  verified:true,  ts:'Ayer',      img:'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=260&fit=crop', contact_phone:'+41 76 456 78 90' },
   { id:'a7', cat:'servicios',  sub:'Clases',                title:'Clases de español para suizos',             desc:'Profesora nativa. Principiantes y avanzados. Online o presencial en Lausana.',                  user:'Valentina B.',canton:'VD',plz:'1000', price:'CHF 40/h',         type:'ofrece', privacy:'private', verified:true,  ts:'Hace 2d',   img:null },
   { id:'a8', cat:'vivienda',   sub:'Se ofrece habitación',  title:'Habitación en piso compartido Ginebra',    desc:'2 latinos, ambiente tranquilo. Incluye wifi y acceso a cocina. Disponible 1 de mayo.',            user:'Pablo G.',   canton:'GE', plz:'1204', price:'CHF 800/mes',      type:'ofrece', privacy:'public',  verified:false, ts:'Hace 2d',   img:null },
   { id:'a9', cat:'cuidados',   sub:'Cuidado mayores',       title:'Busco cuidadora para mi madre (73)',        desc:'Mi madre necesita compañía y ayuda diaria. Español esencial. Zona Zug.',                         user:'Roberto L.', canton:'ZG', plz:'6300', price:'CHF 25/h',         type:'busca',  privacy:'private', verified:true,  ts:'Hace 3d',   img:null },
-  { id:'a10',cat:'hogar',      sub:'Reparaciones',          title:'Hago reparaciones del hogar',               desc:'Plomería, electricidad básica, pintura. 10 años de experiencia en Suiza.',                      user:'Jorge S.',   canton:'AG', plz:'5001', price:'CHF 50/h',         type:'ofrece', privacy:'public',  verified:false, ts:'Hace 3d',   img:null },
+  { id:'a10',cat:'servicios',  sub:'Reparaciones',          title:'Hago reparaciones del hogar',               desc:'Plomería, electricidad básica, pintura. 10 años de experiencia en Suiza.',                      user:'Jorge S.',   canton:'AG', plz:'5001', price:'CHF 50/h',         type:'ofrece', privacy:'public',  verified:false, ts:'Hace 3d',   img:null },
 ]
 
 export const MOCK_COMMUNITIES = [

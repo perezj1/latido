@@ -9,7 +9,6 @@ export const C = {
 }
 export const CAT_COLORS = {
   vivienda:   { bg:'#DBEAFE', tc:'#1D4ED8' },
-  hogar:      { bg:'#D1FAE5', tc:'#065F46' },
   cuidados:   { bg:'#FCE7F3', tc:'#9D174D' },
   documentos: { bg:'#EDE9FE', tc:'#6D28D9' },
   venta:      { bg:'#FEF3C7', tc:'#92400E' },

@@ -9,7 +9,7 @@ import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
-import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, NEGOCIO_TYPES } from '../lib/constants'
+import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, NEGOCIO_TYPES, getAdCat, normalizeAdCat } from '../lib/constants'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -35,7 +35,6 @@ const ALERT_CATS = [
   { id:'empleo', emoji:'💼', label:'Empleo' },
   { id:'venta', emoji:'🛍️', label:'Mercado' },
   { id:'cuidados', emoji:'❤️', label:'Cuidados' },
-  { id:'hogar', emoji:'🛋️', label:'Hogar' },
   { id:'documentos', emoji:'📄', label:'Documentos' },
   { id:'regalo', emoji:'🎁', label:'Regalos' },
 ]
@@ -46,6 +45,10 @@ function normalizeCommunityCategory(value='') {
   if (value === 'mamas') return 'familia'
   if (value === 'fe') return ''
   return value
+}
+
+function normalizeAlertCategories(categories=[]) {
+  return Array.from(new Set((categories || []).map(normalizeAdCat).filter(Boolean)))
 }
 
 const KIND_META = {
@@ -69,7 +72,7 @@ function formatDate(value) {
 
 function normalizePublication(kind, row) {
   if (kind === 'ad') {
-    const cat = AD_CATS.find(item => item.id === row.cat)
+    const cat = getAdCat(row.cat)
     const type = AD_TYPES.find(item => item.id === row.type)
     return {
       id: row.id,
@@ -147,7 +150,7 @@ function buildEditorForm(item) {
 
   if (item.kind === 'ad') {
     return {
-      cat: normalizeCommunityCategory(row.cat) || '',
+      cat: normalizeAdCat(row.cat) || '',
       sub: row.sub || '',
       type: row.type || '',
       title: row.title || '',
@@ -221,7 +224,10 @@ function buildEditorForm(item) {
 }
 
 function loadAlertSettings() {
-  try { return JSON.parse(localStorage.getItem('latido_alerts') || '{}') } catch { return {} }
+  try {
+    const settings = JSON.parse(localStorage.getItem('latido_alerts') || '{}')
+    return { ...settings, categories: normalizeAlertCategories(settings.categories) }
+  } catch { return {} }
 }
 
 export default function Perfil() {
@@ -373,6 +379,7 @@ export default function Perfil() {
   const saveAlerts = next => {
     const normalizedNext = {
       ...next,
+      categories: normalizeAlertCategories(next.categories),
       canton: next.canton ?? alertSettings.canton ?? userCanton ?? '',
     }
 
@@ -424,7 +431,9 @@ export default function Perfil() {
     setSavingConfig(true)
     try {
       const meta = {}
-      if (configForm.name?.trim() && configForm.name.trim() !== displayName) meta.name = configForm.name.trim()
+      const newName = configForm.name?.trim()
+      const nameChanged = newName && newName !== displayName
+      if (nameChanged) meta.name = newName
       if (configForm.canton && configForm.canton !== userCanton) meta.canton = configForm.canton
       if (Object.keys(meta).length) {
         const { error } = await supabase.auth.updateUser({ data: meta })
@@ -443,6 +452,14 @@ export default function Perfil() {
         }
         const { error } = await supabase.auth.updateUser({ password: configForm.newPassword })
         if (error) throw error
+      }
+      if (nameChanged) {
+        await Promise.all([
+          supabase.from('profiles').update({ name: newName }).eq('id', user.id),
+          supabase.from('listings').update({ user_name: newName }).eq('user_id', user.id),
+          supabase.from('conversations').update({ sender_name: newName }).eq('sender_id', user.id),
+          supabase.from('conversations').update({ owner_name: newName }).eq('owner_id', user.id),
+        ])
       }
       toast.success('Configuración guardada')
       setConfigOpen(false)
@@ -485,7 +502,7 @@ export default function Perfil() {
 
     if (item.kind === 'ad') {
       payload = {
-        cat: editorForm.cat || null, sub: editorForm.sub?.trim() || null,
+        cat: normalizeAdCat(editorForm.cat) || null, sub: editorForm.sub?.trim() || null,
         type: editorForm.type || null, title: editorForm.title?.trim(),
         desc: editorForm.desc?.trim() || null, price: editorForm.price?.trim() || null,
         canton: editorForm.canton || null, plz: editorForm.plz?.trim() || null,

@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { C, PP } from '../lib/theme'
+import { AD_CATS as BASE_AD_CATS, normalizeAdCat } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 
 // ── Button ─────────────────────────────────────────────────────
@@ -75,9 +76,7 @@ export function Avatar({ name='?', size=32, src }) {
 
 // ── Privacy badge ──────────────────────────────────────────────
 export function PrivacyTag({ privacy }) {
-  return privacy === 'public'
-    ? <Tag bg="#D1FAE5" color="#065F46">🌐 Público</Tag>
-    : <Tag bg="#FEF3C7" color="#92400E">🔒 Privado</Tag>
+  return null
 }
 
 // ── Input ──────────────────────────────────────────────────────
@@ -331,17 +330,13 @@ export function EmptyState({ emoji='😕', title, sub, action, onAction }) {
 // ── Ad Card ────────────────────────────────────────────────────
 export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
   const { AD_CATS, CAT_COLORS_MAP } = (() => {
-    const cats = [
-      {id:'vivienda',emoji:'🏠',label:'Vivienda'},{id:'hogar',emoji:'🧹',label:'Hogar'},
-      {id:'cuidados',emoji:'👶',label:'Cuidados'},{id:'documentos',emoji:'📋',label:'Docs'},
-      {id:'venta',emoji:'🛒',label:'Venta'},{id:'servicios',emoji:'🔧',label:'Servicios'},
-      {id:'empleo',emoji:'💼',label:'Empleo'},{id:'regalo',emoji:'🎁',label:'Regalo'},
-    ]
-    const map = {vivienda:{bg:'#DBEAFE',tc:'#1D4ED8'},hogar:{bg:'#D1FAE5',tc:'#065F46'},cuidados:{bg:'#FCE7F3',tc:'#9D174D'},documentos:{bg:'#EDE9FE',tc:'#6D28D9'},venta:{bg:'#FEF3C7',tc:'#92400E'},servicios:{bg:'#CCFBF1',tc:'#0F766E'},empleo:{bg:'#DBEAFE',tc:'#1D4ED8'},regalo:{bg:'#FEE2E2',tc:'#B91C1C'}}
+    const cats = [...BASE_AD_CATS, {id:'regalo',emoji:'🎁',label:'Regalo'}]
+    const map = {vivienda:{bg:'#DBEAFE',tc:'#1D4ED8'},cuidados:{bg:'#FCE7F3',tc:'#9D174D'},documentos:{bg:'#EDE9FE',tc:'#6D28D9'},venta:{bg:'#FEF3C7',tc:'#92400E'},servicios:{bg:'#CCFBF1',tc:'#0F766E'},empleo:{bg:'#DBEAFE',tc:'#1D4ED8'},regalo:{bg:'#FEE2E2',tc:'#B91C1C'}}
     return { AD_CATS: cats, CAT_COLORS_MAP: map }
   })()
-  const cat = AD_CATS.find(c => c.id === ad.cat)
-  const cc  = CAT_COLORS_MAP[ad.cat] || { bg:C.primaryLight, tc:C.primary }
+  const normalizedCat = normalizeAdCat(ad.cat)
+  const cat = AD_CATS.find(c => c.id === normalizedCat)
+  const cc  = CAT_COLORS_MAP[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
   const typeMap = { busca:['🔍 Busca','#FEF3C7','#92400E'], ofrece:['✨ Ofrece','#D1FAE5','#065F46'], vende:['🏷️ Vende','#DBEAFE','#1D4ED8'], regala:['🎁 Regala','#FCE7F3','#9D174D'] }
   const [tl, tbg, ttc] = typeMap[ad.type] || ['•', C.bg, C.mid]
 

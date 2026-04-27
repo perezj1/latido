@@ -9,7 +9,7 @@ import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { AD_CATS, MOCK_DOCS } from '../lib/constants'
+import { MOCK_DOCS, getAdCat, normalizeAdCat } from '../lib/constants'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -21,7 +21,6 @@ const fmtPrice = p => {
 
 const CAT_COLORS = {
   vivienda:{ bg:'#DBEAFE', tc:'#1D4ED8' },
-  hogar:{ bg:'#D1FAE5', tc:'#065F46' },
   cuidados:{ bg:'#FCE7F3', tc:'#9D174D' },
   documentos:{ bg:'#EDE9FE', tc:'#6D28D9' },
   venta:{ bg:'#FEF3C7', tc:'#92400E' },
@@ -162,7 +161,7 @@ export default function Home() {
 
       const adsNorm = ((adsRes.error ? [] : adsRes.data) || []).map((row) => ({
         id: row.id,
-        cat: row.cat || 'servicios',
+        cat: normalizeAdCat(row.cat) || 'servicios',
         title: row.title || '',
         desc: row.desc || '',
         img: row.img_url || '',
@@ -411,9 +410,10 @@ export default function Home() {
                   { emoji:'🏠', label:'Vivienda',    to:'/tablon?cat=vivienda' },
                   { emoji:'💼', label:'Empleo',       to:'/tablon?cat=empleo' },
                   { emoji:'🛍️', label:'Mercado',      to:'/tablon?cat=venta' },
+                  { emoji:'🔧', label:'Servicios',    to:'/tablon?cat=servicios' },
+                  { emoji:'❤️', label:'Cuidados',     to:'/tablon?cat=cuidados' },
                   { emoji:'🎉', label:'Eventos',      to:'/comunidades?view=eventos' },
                   { emoji:'🤝', label:'Comunidades',  to:'/comunidades' },
-                  { emoji:'🔧', label:'Servicios',    to:'/tablon?cat=servicios' },
                   { emoji:'📚', label:'Guías',        to:'/guias' },
                 ].map(cat => (
                   <Link
@@ -449,8 +449,9 @@ export default function Home() {
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {recentAds.map(ad => {
-                const cat = AD_CATS.find(c => c.id === ad.cat)
-                const cc = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
+                const normalizedCat = normalizeAdCat(ad.cat)
+                const cat = getAdCat(ad.cat)
+                const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
                 return (
                   <Link key={ad.id} to={getAdHref(ad)} style={{ textDecoration:'none', flexShrink:0, width:152, display:'block' }}>
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
@@ -500,8 +501,9 @@ export default function Home() {
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:14 }}>
             {recentAds.map(ad => {
-              const cat = AD_CATS.find(c => c.id === ad.cat)
-              const cc = CAT_COLORS[ad.cat] || { bg:C.primaryLight, tc:C.primary }
+              const normalizedCat = normalizeAdCat(ad.cat)
+              const cat = getAdCat(ad.cat)
+              const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
 
               return (
                 <Link

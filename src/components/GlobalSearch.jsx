@@ -9,7 +9,8 @@ import {
   MOCK_JOBS,
   MOCK_NEGOCIOS,
   MOCK_EVENTOS_LATINOS,
-  AD_CATS,
+  getAdCat,
+  normalizeAdCat,
   NEGOCIO_TYPES,
   EVENTO_TYPES,
 } from '../lib/constants'
@@ -106,7 +107,7 @@ function normalizeEvent(event) {
 function normalizeAd(ad) {
   return {
     id: ad.id,
-    cat: ad.cat || '',
+    cat: normalizeAdCat(ad.cat) || '',
     title: ad.title || '',
     desc: ad.desc || ad.description || '',
     canton: ad.canton || 'Suiza',
@@ -152,7 +153,7 @@ function searchAll(query, datasets, isLoggedIn) {
     )
     .slice(0, 3)
     .forEach(ad => {
-      const cat = AD_CATS.find(item => item.id === ad.cat)
+      const cat = getAdCat(ad.cat)
       results.push({
         type:'ad',
         id:ad.id,

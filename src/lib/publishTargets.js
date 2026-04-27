@@ -1,10 +1,11 @@
-import { AD_CATS } from './constants'
+import { AD_CATS, normalizeAdCat } from './constants'
 
 function getListingPublishTarget(catId = '') {
-  if (!catId) return { label:'+ Anuncio', to:'/publicar' }
-  if (catId === 'empleo') return { label:'+ Empleo', to:'/publicar-empleo' }
+  const normalizedCat = normalizeAdCat(catId)
+  if (!normalizedCat) return { label:'+ Anuncio', to:'/publicar' }
+  if (normalizedCat === 'empleo') return { label:'+ Empleo', to:'/publicar-empleo' }
 
-  const category = AD_CATS.find(item => item.id === catId)
+  const category = AD_CATS.find(item => item.id === normalizedCat)
   if (!category) return { label:'+ Anuncio', to:'/publicar' }
 
   return {
