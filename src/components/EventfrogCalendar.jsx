@@ -21,6 +21,36 @@ const LIST_MAX_HEIGHT = {
   regular: 410,
 }
 
+const ALL_CANTONS = 'all'
+const CANTON_NAMES = {
+  AG: 'Aargau',
+  AI: 'Appenzell Innerrhoden',
+  AR: 'Appenzell Ausserrhoden',
+  BE: 'Bern',
+  BL: 'Basel-Landschaft',
+  BS: 'Basel-Stadt',
+  FR: 'Fribourg',
+  GE: 'Ginebra',
+  GL: 'Glarus',
+  GR: 'Graubünden',
+  JU: 'Jura',
+  LU: 'Luzern',
+  NE: 'Neuchâtel',
+  NW: 'Nidwalden',
+  OW: 'Obwalden',
+  SG: 'St. Gallen',
+  SH: 'Schaffhausen',
+  SO: 'Solothurn',
+  SZ: 'Schwyz',
+  TG: 'Thurgau',
+  TI: 'Ticino',
+  UR: 'Uri',
+  VD: 'Vaud',
+  VS: 'Valais',
+  ZG: 'Zug',
+  ZH: 'Zürich',
+}
+
 function getInitialVisibleCount(layout, compact) {
   if (layout === 'carousel') return 12
   return compact ? 6 : 8
@@ -31,14 +61,34 @@ function getVisibleStep(layout, compact) {
   return compact ? 6 : 8
 }
 
-function PillSelect({ value, onChange, options, ariaLabel, minWidth = 116 }) {
+function FilterRow({ children }) {
+  return (
+    <div
+      style={{
+        display:'grid',
+        gridTemplateColumns:'repeat(3, minmax(0, 1fr))',
+        gap:8,
+        width:'100%',
+        maxWidth:456,
+        alignItems:'center',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function PillSelect({ value, onChange, options, ariaLabel, disabled = false }) {
   return (
     <select
       aria-label={ariaLabel}
       value={value}
       onChange={event => onChange(event.target.value)}
+      disabled={disabled}
       style={{
-        minWidth,
+        width:'100%',
+        minWidth:0,
+        boxSizing:'border-box',
         fontFamily:PP,
         fontSize:11,
         fontWeight:700,
@@ -48,8 +98,8 @@ function PillSelect({ value, onChange, options, ariaLabel, minWidth = 116 }) {
         background:C.primaryLight,
         padding:'9px 12px',
         outline:'none',
-        cursor:'pointer',
-        flexShrink:0,
+        cursor:disabled ? 'not-allowed' : 'pointer',
+        opacity:disabled ? 0.58 : 1,
       }}
     >
       {options.map(option => (
@@ -84,6 +134,34 @@ function groupByDate(events) {
     groups.set(key, current)
     return groups
   }, new Map())
+}
+
+function normalizeCanton(value = '') {
+  return String(value || '').trim().toUpperCase()
+}
+
+function dedupeEvents(events) {
+  const seen = new Set()
+
+  return events.filter((event, index) => {
+    const key = event?.id || event?.sourceId || `${event?.title || 'event'}-${index}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function getCantonOptions(events) {
+  const cantons = [...new Set(events.map(event => normalizeCanton(event.canton)).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'es'))
+
+  return [
+    { id:ALL_CANTONS, label:'Cantón' },
+    ...cantons.map(canton => ({
+      id:canton,
+      label:CANTON_NAMES[canton] ? `${CANTON_NAMES[canton]} (${canton})` : canton,
+    })),
+  ]
 }
 
 function EventCard({ event, compact }) {
@@ -218,13 +296,20 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
   const [rangeKey, setRangeKey] = useState(compact ? 'week' : 'month')
   const [customDate, setCustomDate] = useState(() => toISODate(new Date()))
   const [filterId, setFilterId] = useState('latino')
+  const [cantonFilter, setCantonFilter] = useState(ALL_CANTONS)
   const [events, setEvents] = useState([])
   const [visibleCount, setVisibleCount] = useState(initialVisibleCount)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const range = useMemo(() => getEventfrogRange(rangeKey, customDate), [customDate, rangeKey])
-  const visibleEvents = useMemo(() => events.slice(0, visibleCount), [events, visibleCount])
+  const uniqueEvents = useMemo(() => dedupeEvents(events), [events])
+  const cantonOptions = useMemo(() => getCantonOptions(uniqueEvents), [uniqueEvents])
+  const filteredEvents = useMemo(() => {
+    if (cantonFilter === ALL_CANTONS) return uniqueEvents
+    return uniqueEvents.filter(event => normalizeCanton(event.canton) === cantonFilter)
+  }, [cantonFilter, uniqueEvents])
+  const visibleEvents = useMemo(() => filteredEvents.slice(0, visibleCount), [filteredEvents, visibleCount])
   const grouped = useMemo(() => Array.from(groupByDate(visibleEvents).values()), [visibleEvents])
   const hasEmbedFallback = showEmbedFallback && EVENTFROG_EMBED_KEY
   const listMaxHeight = compact ? LIST_MAX_HEIGHT.compact : LIST_MAX_HEIGHT.regular
@@ -234,11 +319,11 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
   )
 
   function showNextVisibleBlock() {
-    setVisibleCount(count => Math.min(events.length, count + visibleStep))
+    setVisibleCount(count => Math.min(filteredEvents.length, count + visibleStep))
   }
 
   function handleListScroll(event) {
-    if (visibleCount >= events.length) return
+    if (visibleCount >= filteredEvents.length) return
 
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget
     if (scrollHeight - scrollTop - clientHeight < 120) {
@@ -247,13 +332,24 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
   }
 
   function handleCarouselScroll(event) {
-    if (visibleCount >= events.length) return
+    if (visibleCount >= filteredEvents.length) return
 
     const { scrollLeft, scrollWidth, clientWidth } = event.currentTarget
     if (scrollWidth - scrollLeft - clientWidth < 180) {
       showNextVisibleBlock()
     }
   }
+
+  function handleCantonFilterChange(value) {
+    setCantonFilter(value)
+    setVisibleCount(initialVisibleCount)
+  }
+
+  useEffect(() => {
+    if (cantonFilter === ALL_CANTONS) return
+    if (cantonOptions.some(option => option.id === cantonFilter)) return
+    setCantonFilter(ALL_CANTONS)
+  }, [cantonFilter, cantonOptions])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -305,21 +401,28 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
     return (
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
         <div style={{ maxWidth:980, margin:'0 auto', width:'100%', padding:'10px 16px 0' }}>
-          <div className="no-scroll" style={{ display:'flex', gap:10, alignItems:'center', overflowX:'auto', WebkitOverflowScrolling:'touch', paddingBottom:8 }}>
+          <div style={{ paddingBottom:8 }}>
+            <FilterRow>
             <PillSelect
               ariaLabel="Rango de fechas"
               value={rangeKey}
               onChange={setRangeKey}
               options={RANGE_OPTIONS}
-              minWidth={132}
             />
             <PillSelect
               ariaLabel="Filtro de eventos"
               value={filterId}
               onChange={setFilterId}
               options={EVENTFROG_FILTERS}
-              minWidth={118}
             />
+            <PillSelect
+              ariaLabel="Filtrar por cantón"
+              value={cantonFilter}
+              onChange={handleCantonFilterChange}
+              options={cantonOptions}
+              disabled={cantonOptions.length <= 1}
+            />
+            </FilterRow>
           </div>
 
           {rangeKey === 'custom' && (
@@ -349,7 +452,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
           </div>
         </div>
 
-        {events.length > 0 ? (
+        {filteredEvents.length > 0 ? (
           <div className="no-scroll" onScroll={handleCarouselScroll} style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {visibleEvents.map(event => (
@@ -360,7 +463,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
               ))}
             </div>
           </div>
-        ) : loading ? (
+        ) : loading && events.length === 0 ? (
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {[1, 2, 3, 4].map(item => (
@@ -375,7 +478,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
                 No encontramos eventos para este filtro.
               </p>
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-                Prueba otro rango o cambia el filtro.
+                Prueba otro rango, cambia el filtro o el cantón.
               </p>
             </div>
           </div>
@@ -402,21 +505,28 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
           padding:compact ? 12 : 14,
         }}
       >
-        <div style={{ display:'flex', gap:8, alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', marginBottom:12 }}>
+        <div style={{ marginBottom:12 }}>
+          <FilterRow>
           <PillSelect
             ariaLabel="Rango de fechas"
             value={rangeKey}
             onChange={setRangeKey}
             options={RANGE_OPTIONS}
-            minWidth={132}
           />
           <PillSelect
             ariaLabel="Filtro de eventos"
             value={filterId}
             onChange={setFilterId}
             options={EVENTFROG_FILTERS}
-            minWidth={118}
           />
+          <PillSelect
+            ariaLabel="Filtrar por cantón"
+            value={cantonFilter}
+            onChange={handleCantonFilterChange}
+            options={cantonOptions}
+            disabled={cantonOptions.length <= 1}
+          />
+          </FilterRow>
         </div>
 
         {rangeKey === 'custom' && (
@@ -444,7 +554,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
           </p>
         </div>
 
-        {events.length > 0 ? (
+        {filteredEvents.length > 0 ? (
           <div
             onScroll={handleListScroll}
             style={{
@@ -490,7 +600,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
               )}
             </div>
           </div>
-        ) : loading ? (
+        ) : loading && events.length === 0 ? (
           <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:listMaxHeight, overflow:'hidden' }}>
             {[1, 2, 3].map(item => (
               <div key={item} className="skeleton" style={{ height:compact ? 96 : 116, borderRadius:16 }} />
@@ -504,7 +614,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
             <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
               {hasEmbedFallback
                 ? 'Prueba otro rango o mira el calendario completo abajo.'
-                : 'Prueba otro rango o cambia el filtro.'}
+                : 'Prueba otro rango, cambia el filtro o el cantón.'}
             </p>
           </div>
         )}

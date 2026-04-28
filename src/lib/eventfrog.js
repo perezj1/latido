@@ -721,7 +721,7 @@ function getStoredEvents(key, { allowStale = false } = {}) {
     if (!cached?.createdAt || Date.now() - cached.createdAt > ttl) return null
     if (!Array.isArray(cached.events)) return null
 
-    return cached.events.map(hydrateStoredEvent)
+    return dedupeEventsById(cached.events.map(hydrateStoredEvent))
   } catch {
     return null
   }
@@ -900,7 +900,7 @@ export async function fetchEventfrogEvents({ from, to, filterId = 'latino', sign
   const filteredCacheKey = `${EVENTFROG_API_URL}|${origin}|${from}|${to}|${filterId}|${limit}`
   const cachedEvents = getCachedValue(filteredEventsCache, filteredCacheKey)
 
-  if (cachedEvents) return [...cachedEvents]
+  if (cachedEvents) return [...dedupeEventsById(cachedEvents)]
   const storedEvents = getStoredEvents(filteredCacheKey)
   if (storedEvents) {
     setCachedValue(filteredEventsCache, filteredCacheKey, storedEvents)
