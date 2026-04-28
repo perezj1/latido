@@ -456,6 +456,10 @@ function MenuPanel({ menuPage, setMenuPage }) {
    MAIN
    ───────────────────────────────────────────────────────────── */
 
+const isIOS = typeof navigator !== 'undefined' &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
+
 export default function Landing({ onInstall, menuPage, setMenuPage }) {
   const [cols, setCols] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 500 ? 2 : 3))
 
@@ -622,19 +626,40 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
 
       {/* ── PWA INSTALL BANNER ───────────────────────────────────── */}
       <section style={{ maxWidth: 760, margin: '72px auto 0', padding: '0 24px' }}>
-        <button
-          onClick={onInstall}
-          style={{ width: '100%', background: `linear-gradient(90deg, ${C.primary}, ${C.primaryDark})`, border: 'none', borderRadius: 16, padding: '16px 24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 24 }}>📲</span>
-            <div style={{ textAlign: 'left' }}>
-              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: '#fff', margin: 0 }}>Instala Latido app — GRATIS</p>
-              <p style={{ fontFamily: PP, fontSize: 11, color: 'rgba(255,255,255,0.75)', margin: 0 }}>Sin App Store ni Google Play. Directo desde el navegador.</p>
+        {isIOS ? (
+          <div style={{ width: '100%', background: `linear-gradient(90deg, ${C.primary}, ${C.primaryDark})`, borderRadius: 16, padding: '16px 20px', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <span style={{ fontSize: 22 }}>📲</span>
+              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: '#fff', margin: 0 }}>Instala Latido en tu iPhone</p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                { icon: '① ', text: 'Toca el botón compartir 📤 en Safari' },
+                { icon: '② ', text: 'Selecciona "Añadir a la pantalla de inicio"' },
+                { icon: '③ ', text: 'Toca "Añadir" — ¡listo!' },
+              ].map(step => (
+                <div key={step.icon} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: 'rgba(255,255,255,0.6)', flexShrink: 0 }}>{step.icon}</span>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.9)', margin: 0 }}>{step.text}</p>
+                </div>
+              ))}
             </div>
           </div>
-          <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: 10, padding: '7px 14px', flexShrink: 0 }}>Instalar →</span>
-        </button>
+        ) : (
+          <button
+            onClick={onInstall}
+            style={{ width: '100%', background: `linear-gradient(90deg, ${C.primary}, ${C.primaryDark})`, border: 'none', borderRadius: 16, padding: '16px 24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 24 }}>📲</span>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: '#fff', margin: 0 }}>Instala Latido app — GRATIS</p>
+                <p style={{ fontFamily: PP, fontSize: 11, color: 'rgba(255,255,255,0.75)', margin: 0 }}>Sin App Store ni Google Play. Directo desde el navegador.</p>
+              </div>
+            </div>
+            <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: 10, padding: '7px 14px', flexShrink: 0 }}>Instalar →</span>
+          </button>
+        )}
       </section>
 
       {/* ── FINAL CTA ────────────────────────────────────────────── */}
