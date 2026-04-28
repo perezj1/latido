@@ -8,6 +8,20 @@ export default defineConfig(({ mode }) => {
     env.VITE_EVENTFROG_PUBLIC_API_KEY ||
     env.VITE_EVENTFROG_CALENDAR_KEY
 
+  function rewriteEventfrogPath(path) {
+    const [pathname, search = ''] = path.split('?')
+    const params = new URLSearchParams(search)
+    const resource = params.get('resource')
+    params.delete('resource')
+
+    const endpoint = resource === 'locations'
+      ? '/public/v1/locations'
+      : '/public/v1/events'
+    const query = params.toString()
+
+    return `${pathname.replace(/^\/api\/eventfrog/, endpoint)}${query ? `?${query}` : ''}`
+  }
+
   return {
     plugins: [react()],
     server: {
@@ -17,7 +31,7 @@ export default defineConfig(({ mode }) => {
           target: 'https://api.eventfrog.net',
           changeOrigin: true,
           secure: true,
-          rewrite: path => path.replace(/^\/api\/eventfrog/, '/public/v1/events'),
+          rewrite: rewriteEventfrogPath,
           headers: eventfrogKey ? { Authorization: `Bearer ${eventfrogKey}` } : {},
         },
       },

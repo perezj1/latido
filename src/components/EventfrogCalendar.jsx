@@ -157,7 +157,7 @@ function EventCard({ event, compact }) {
           {event.title}
         </p>
         <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-          📍 {event.city} · {event.organizer}
+          📍 {event.locationShortLabel || event.locationLabel || event.city}
         </p>
         <p style={{ fontFamily:PP, fontSize:11, color:C.primary, fontWeight:700, margin:0 }}>
           {event.price}
@@ -201,13 +201,10 @@ function CarouselEventCard({ event }) {
             {event.title}
           </p>
           <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-            📍 {event.city}
+            📍 {event.locationShortLabel || event.locationLabel || event.city}
           </p>
-          <p style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.primary, margin:'0 0 4px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+          <p style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.primary, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             {event.price}
-          </p>
-          <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-            {event.time || 'Eventfrog'} · {event.organizer}
           </p>
         </div>
       </div>
@@ -283,9 +280,12 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
       } catch (err) {
         if (err.name !== 'AbortError') {
           setEvents([])
+          const isRateLimited = /429|too many requests/i.test(err.message || '')
           setError(
             err.message === 'Missing Eventfrog API key'
               ? 'Falta configurar EVENTFROG_API_KEY en Vercel.'
+              : isRateLimited
+                ? 'Eventfrog está limitando las peticiones. Vuelve a probar en unos minutos.'
               : 'No se pudo cargar la API de Eventfrog.'
           )
         }

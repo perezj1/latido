@@ -1,4 +1,7 @@
-const EVENTFROG_API_URL = 'https://api.eventfrog.net/public/v1/events'
+const EVENTFROG_ENDPOINTS = {
+  events: 'https://api.eventfrog.net/public/v1/events',
+  locations: 'https://api.eventfrog.net/public/v1/locations',
+}
 
 const ALLOWED_QUERY_PARAMS = [
   'id',
@@ -49,7 +52,16 @@ export default async function handler(req, res) {
     return
   }
 
-  const url = new URL(EVENTFROG_API_URL)
+  const requestedResource = Array.isArray(req.query.resource) ? req.query.resource[0] : req.query.resource
+  const resource = requestedResource || 'events'
+  const endpoint = EVENTFROG_ENDPOINTS[resource]
+
+  if (!endpoint) {
+    res.status(400).json({ error: 'Invalid Eventfrog resource' })
+    return
+  }
+
+  const url = new URL(endpoint)
 
   for (const param of ALLOWED_QUERY_PARAMS) {
     const value = req.query[param]
