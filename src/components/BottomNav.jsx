@@ -28,7 +28,7 @@ export default function BottomNav() {
         <Link
           to={fab.to}
           style={{
-            position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', right:18, zIndex:60,
+            position:'fixed', bottom:'calc(75px + env(safe-area-inset-bottom))', right:18, zIndex:60,
             height:46, borderRadius:23,
             background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`,
             color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
