@@ -589,21 +589,6 @@ export default function Tablon() {
         </div>
       )}
 
-      {!isLoggedIn && (
-        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-          <div>
-            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
-              Estás viendo contenido público
-            </p>
-            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.6 }}>
-              Crea una cuenta gratuita para ver anuncios privados, escribir por mensaje y publicar en la comunidad.
-            </p>
-          </div>
-          <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'11px 16px', whiteSpace:'nowrap' }}>
-            Crear cuenta gratis
-          </Link>
-        </div>
-      )}
 
       {/* Results */}
       {loading ? (

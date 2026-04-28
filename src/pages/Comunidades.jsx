@@ -519,19 +519,6 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
         )
       })()}
 
-      {!isLoggedIn && (
-        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px' }}>
-          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
-            Estás en la versión pública
-          </p>
-          <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 10px', lineHeight:1.6 }}>
-            Para publicar tu propia comunidad y acceder a más herramientas, crea una cuenta gratuita.
-          </p>
-          <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'center', width:'100%', boxSizing:'border-box' }}>
-            Crear cuenta gratis
-          </Link>
-        </div>
-      )}
     </Modal>
   )
 }
@@ -834,21 +821,6 @@ export default function Comunidades() {
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>🤝 Comunidad</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:isLoggedIn ? 14 : 20 }}>Grupos, negocios y eventos para hispanohablantes en Suiza</p>
 
-      {!isLoggedIn && (
-        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-          <div>
-            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
-              Estás viendo la versión pública
-            </p>
-            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.6 }}>
-              Explora comunidades, negocios y eventos públicos. Para publicar y acceder a más herramientas, crea una cuenta gratuita.
-            </p>
-          </div>
-          <Link to="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'11px 16px', whiteSpace:'nowrap' }}>
-            Crear cuenta gratis
-          </Link>
-        </div>
-      )}
 
       {/* Search bar — hidden in eventos tab */}
         </div>
