@@ -708,7 +708,7 @@ export default function Perfil() {
                   </p>
                   <div style={{ background:'rgba(255,255,255,0.15)', borderRadius:10, padding:'8px 12px' }}>
                     {[
-                      '1. Pulsa ⋮ en el navegador',
+                      '1. Pulsa ••• en el navegador',
                       '2. Toca "Compartir" 📤 ',
                       '3. Selecciona "Añadir a pantalla de inicio"',
                     ].map(s => (

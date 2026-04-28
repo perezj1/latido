@@ -636,7 +636,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
              {[
-  { icon: '①', text: 'Pulsa ⋮ en el navegador' },
+  { icon: '①', text: 'Pulsa ••• en el navegador' },
   { icon: '②', text: 'Toca "Compartir" 📤' },
   { icon: '③', text: 'Selecciona "Añadir a pantalla de inicio"' },
   { icon: '✓', text: '¡listo!' },
