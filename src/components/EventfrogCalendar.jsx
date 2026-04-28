@@ -346,9 +346,6 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
             <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:0 }}>
               {formatRangeLabel(range.from, range.to)}
             </p>
-            <span style={{ fontFamily:PP, fontSize:10, color:C.light, whiteSpace:'nowrap' }}>
-              Eventfrog
-            </span>
           </div>
         </div>
 
@@ -445,9 +442,6 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:compact ? 13 : 15, color:C.text, margin:0 }}>
             {formatRangeLabel(range.from, range.to)}
           </p>
-          <span style={{ fontFamily:PP, fontSize:10, color:C.light, whiteSpace:'nowrap' }}>
-            Eventfrog
-          </span>
         </div>
 
         {events.length > 0 ? (
