@@ -28,7 +28,7 @@ export default function BottomNav() {
         <div style={{
           position:'fixed', bottom:'calc(75px + env(safe-area-inset-bottom))', right:18, zIndex:60,
           padding:2.5, borderRadius:26,
-          background:'conic-gradient(#E8403A, #F5A623, #1DBD8A, #00BCD4, #2563EB, #E8403A)',
+          background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)',
           boxShadow:'0 4px 20px rgba(37,99,235,0.45)',
         }}>
           <Link
