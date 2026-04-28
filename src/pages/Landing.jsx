@@ -696,6 +696,45 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         </Reveal>
       </section>
 
+      {/* ── REDES SOCIALES ───────────────────────────────────────── */}
+      <section style={{ maxWidth: 720, margin: '0 auto 72px', padding: '0 24px', textAlign: 'center' }}>
+        <p style={{ fontFamily: PP, fontSize: 12, color: C.light, marginBottom: 14 }}>Síguenos en redes</p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <a
+            href="https://www.instagram.com/latido_ch"
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '10px 18px' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="url(#ig)" strokeWidth="2"/>
+              <circle cx="12" cy="12" r="4.5" stroke="url(#ig)" strokeWidth="2"/>
+              <circle cx="17.5" cy="6.5" r="1" fill="#E1306C"/>
+              <defs>
+                <linearGradient id="ig" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#F58529"/>
+                  <stop offset="0.5" stopColor="#E1306C"/>
+                  <stop offset="1" stopColor="#833AB4"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, color: C.text }}>@latido_ch</span>
+          </a>
+
+          <a
+            href="https://www.tiktok.com/@latido_ch"
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '10px 18px' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07Z" fill="#000"/>
+            </svg>
+            <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, color: C.text }}>@latido_ch</span>
+          </a>
+        </div>
+      </section>
+
     </div>
   )
 }

@@ -239,7 +239,7 @@ function AppShell() {
             ))}
           </div>
         )}
-        <main>
+        <main style={{ background:'#fff' }}>
           <Suspense fallback={<AppLoading />}>
             <Landing
               onInstall={promptInstall || (() => alert('Para instalar: en el menú de tu navegador busca "Instalar app" o "Añadir a pantalla de inicio"'))}
