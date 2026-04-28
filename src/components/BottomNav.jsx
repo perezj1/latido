@@ -25,22 +25,27 @@ export default function BottomNav() {
   return (
     <>
       {fab && (
-        <Link
-          to={fab.to}
-          style={{
-            position:'fixed', bottom:'calc(75px + env(safe-area-inset-bottom))', right:18, zIndex:60,
-            height:46, borderRadius:23,
-            background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`,
-            color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
-            fontSize:13, fontWeight:700, textDecoration:'none',
-            boxShadow:`0 4px 20px rgba(37,99,235,0.45)`,
-            padding:'0 20px', whiteSpace:'nowrap',
-            letterSpacing:-0.2,
-          }}
-          aria-label={fab.label}
-        >
-          {fab.label}
-        </Link>
+        <div style={{
+          position:'fixed', bottom:'calc(75px + env(safe-area-inset-bottom))', right:18, zIndex:60,
+          padding:2.5, borderRadius:26,
+          background:'conic-gradient(#E8403A, #F5A623, #1DBD8A, #00BCD4, #2563EB, #E8403A)',
+          boxShadow:'0 4px 20px rgba(37,99,235,0.45)',
+        }}>
+          <Link
+            to={fab.to}
+            style={{
+              height:46, borderRadius:23,
+              background:'#fff',
+              color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:13, fontWeight:700, textDecoration:'none',
+              padding:'0 20px', whiteSpace:'nowrap',
+              letterSpacing:-0.2,
+            }}
+            aria-label={fab.label}
+          >
+            {fab.label}
+          </Link>
+        </div>
       )}
 
       <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center' }}>

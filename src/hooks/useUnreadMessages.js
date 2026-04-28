@@ -98,5 +98,14 @@ export function useUnreadMessages() {
     }
   }, [user?.id, isLoggedIn])
 
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return
+    if (unreadConvIds.size > 0) {
+      navigator.setAppBadge(unreadConvIds.size).catch(() => {})
+    } else {
+      navigator.clearAppBadge().catch(() => {})
+    }
+  }, [unreadConvIds])
+
   return { unreadConvIds, hasUnread: unreadConvIds.size > 0 }
 }
