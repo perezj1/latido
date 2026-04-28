@@ -61,6 +61,28 @@ function getVisibleStep(layout, compact) {
   return compact ? 6 : 8
 }
 
+function PillSpinner() {
+  return (
+    <div style={{
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      width:'100%', boxSizing:'border-box',
+      border:`1.5px solid ${C.primaryMid}`,
+      borderRadius:999,
+      background:C.primaryLight,
+      padding:'9px 12px',
+      gap:6,
+      opacity:0.5,
+    }}>
+      <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary }}>Cantón</span>
+      <svg width="13" height="13" viewBox="0 0 14 14" style={{ flexShrink:0 }}>
+        <circle cx="7" cy="7" r="5" fill="none" stroke={C.primary} strokeWidth="2" strokeDasharray="20 12">
+          <animateTransform attributeName="transform" type="rotate" from="0 7 7" to="360 7 7" dur="0.7s" repeatCount="indefinite" />
+        </circle>
+      </svg>
+    </div>
+  )
+}
+
 function FilterRow({ children }) {
   return (
     <div
@@ -415,13 +437,15 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
               onChange={setFilterId}
               options={EVENTFROG_FILTERS}
             />
-            <PillSelect
-              ariaLabel="Filtrar por cantón"
-              value={cantonFilter}
-              onChange={handleCantonFilterChange}
-              options={cantonOptions}
-              disabled={cantonOptions.length <= 1}
-            />
+            {loading ? <PillSpinner /> : (
+              <PillSelect
+                ariaLabel="Filtrar por cantón"
+                value={cantonFilter}
+                onChange={handleCantonFilterChange}
+                options={cantonOptions}
+                disabled={cantonOptions.length <= 1}
+              />
+            )}
             </FilterRow>
           </div>
 
@@ -519,13 +543,15 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
             onChange={setFilterId}
             options={EVENTFROG_FILTERS}
           />
-          <PillSelect
-            ariaLabel="Filtrar por cantón"
-            value={cantonFilter}
-            onChange={handleCantonFilterChange}
-            options={cantonOptions}
-            disabled={cantonOptions.length <= 1}
-          />
+          {loading ? <PillSpinner /> : (
+            <PillSelect
+              ariaLabel="Filtrar por cantón"
+              value={cantonFilter}
+              onChange={handleCantonFilterChange}
+              options={cantonOptions}
+              disabled={cantonOptions.length <= 1}
+            />
+          )}
           </FilterRow>
         </div>
 
