@@ -842,13 +842,12 @@ export default function Perfil() {
               })}
             </div>
 
-           {/*  <div style={{ background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, padding:'10px 12px' }}>
-              <p style={{ fontFamily:PP, fontSize:11, color:'#92400E', margin:0, lineHeight:1.5 }}>
-                ⚠️ Las notificaciones push llegarán en una próxima actualización. Tus preferencias ya están guardadas.
-              </p>
-            </div> */}
           </>
         )}
+
+        <Btn onClick={() => { toast.success('Alertas guardadas'); setAlertsOpen(false) }} style={{ marginTop:8 }}>
+          Guardar
+        </Btn>
       </Sheet>
 
       {/* ── Configuración ── */}
