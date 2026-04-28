@@ -460,6 +460,8 @@ const isIOS = typeof navigator !== 'undefined' &&
   (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
 
+const isAndroid = typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent)
+
 export default function Landing({ onInstall, menuPage, setMenuPage }) {
   const [cols, setCols] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 500 ? 2 : 3))
 
@@ -633,16 +635,21 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
               <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: '#fff', margin: 0 }}>Instala Latido en tu iPhone</p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[
-                { icon: '① ', text: 'Toca el botón compartir 📤 en Safari' },
-                { icon: '② ', text: 'Selecciona "Añadir a la pantalla de inicio"' },
-                { icon: '③ ', text: 'Toca "Añadir" — ¡listo!' },
-              ].map(step => (
-                <div key={step.icon} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: 'rgba(255,255,255,0.6)', flexShrink: 0 }}>{step.icon}</span>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.9)', margin: 0 }}>{step.text}</p>
-                </div>
-              ))}
+             {[
+  { icon: '①', text: 'Pulsa ⋮ en el navegador' },
+  { icon: '②', text: 'Toca "Compartir" 📤' },
+  { icon: '③', text: 'Selecciona "Añadir a pantalla de inicio"' },
+  { icon: '✓', text: '¡listo!' },
+].map((step) => (
+  <div key={step.icon} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: 'rgba(255,255,255,0.6)', flexShrink: 0 }}>
+      {step.icon}
+    </span>
+    <p style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.9)', margin: 0 }}>
+      {step.text}
+    </p>
+  </div>
+))}
             </div>
           </div>
         ) : (

@@ -707,7 +707,11 @@ export default function Perfil() {
                     Añade Latido a tu pantalla de inicio gratis y accede a tu comunidad en segundos estés donde estés.
                   </p>
                   <div style={{ background:'rgba(255,255,255,0.15)', borderRadius:10, padding:'8px 12px' }}>
-                    {['1. Abre Safari (no Chrome)', '2. Toca el icono compartir 📤 de la barra inferior', '3. Selecciona "Añadir a pantalla de inicio"'].map(s => (
+                    {[
+                      '1. Pulsa ⋮ en el navegador',
+                      '2. Toca "Compartir" 📤 ',
+                      '3. Selecciona "Añadir a pantalla de inicio"',
+                    ].map(s => (
                       <p key={s} style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'2px 0', lineHeight:1.4 }}>{s}</p>
                     ))}
                   </div>
