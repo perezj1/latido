@@ -599,15 +599,31 @@ export default function Perfil() {
     }
   }
 
-  const menu = [
-    { icon:'📌', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
-    { icon:'❤️', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
-    // { icon:'💬', label:'Mensajes', sub:'Conversaciones con otros usuarios', action:() => navigate('/mensajes') },
-    { icon:'📚', label:'Guías', sub:'Trámites y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
-    { icon:'🔔', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', action:() => setAlertsOpen(true) },
-    { icon:'⚙️', label:'Configuración', sub:'Nombre, cantón, idiomas, contraseña', action:openConfig },
-    { icon:'🔗', label:'Compartir Latido', sub:'Invita a amigos y familiares a unirse', action:handleShare },
+  const menuSections = [
+    {
+      title: 'Mi actividad',
+      items: [
+        { icon:'📌', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
+        { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
+      ],
+    },
+    {
+      title: 'Descubrir',
+      items: [
+        { icon:'📚', color:'#F1F5F9', label:'Guías', sub:'Trámites y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
+        { icon:'🔔', color:'#F1F5F9', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', action:() => setAlertsOpen(true) },
+      ],
+    },
+    {
+      title: 'Ajustes',
+      items: [
+        { icon:'⚙️', color:'#F1F5F9', label:'Configuración', sub:'Nombre, cantón, idiomas, contraseña', action:openConfig },
+        { icon:'🔗', color:'#F1F5F9', label:'Compartir Latido', sub:'Invita a amigos y familiares a unirse', action:handleShare },
+        { icon:'✉️', color:'#F1F5F9', label:'Contactar con Latido', sub:'Preguntas, sugerencias o feedback', action:() => window.location.href = `mailto:latidoch@gmail.com?subject=${encodeURIComponent('Mensaje desde Latido')}` },
+      ],
+    },
   ]
+  const menu = menuSections.flatMap(s => s.items)
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:440, margin:'80px auto', padding:'0 24px', textAlign:'center' }}>
@@ -684,24 +700,31 @@ export default function Perfil() {
         </a>
       </div>
  */}
-      {menu.map(item => {
-        const content = (
-          <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'13px 15px', display:'flex', gap:12, alignItems:'center', marginBottom:8, cursor:item.disabled ? 'not-allowed' : 'pointer', transition:'all .15s', opacity:item.disabled ? 0.6 : 1 }}>
-            <div style={{ width:42, height:42, background:C.bg, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{item.icon}</div>
-            <div style={{ flex:1 }}>
-              <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, marginBottom:1 }}>{item.label}</p>
-              <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{item.sub}</p>
-            </div>
-            <span style={{ color:C.light, fontSize:16 }}>{item.disabled ? '🔒' : '›'}</span>
+      {menuSections.map(section => (
+        <div key={section.title} style={{ marginBottom:20 }}>
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1.2, marginBottom:8, paddingLeft:4 }}>{section.title.toUpperCase()}</p>
+          <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+            {section.items.map((item, i) => {
+              const content = (
+                <div style={{ padding:'14px 16px', display:'flex', gap:14, alignItems:'center', cursor:item.disabled ? 'not-allowed' : 'pointer', borderBottom: i < section.items.length - 1 ? `1px solid ${C.border}` : 'none', opacity:item.disabled ? 0.6 : 1 }}>
+                  <div style={{ width:40, height:40, background:item.color || C.bg, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:19, flexShrink:0 }}>{item.icon}</div>
+                  <div style={{ flex:1 }}>
+                    <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, marginBottom:1 }}>{item.label}</p>
+                    <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{item.sub}</p>
+                  </div>
+                  <span style={{ color:C.light, fontSize:18, fontWeight:300 }}>{item.disabled ? '🔒' : '›'}</span>
+                </div>
+              )
+              if (item.disabled) return <div key={item.label}>{content}</div>
+              return (
+                <button key={item.label} onClick={item.action} style={{ width:'100%', background:'none', border:'none', padding:0, textAlign:'left', display:'block' }}>
+                  {content}
+                </button>
+              )
+            })}
           </div>
-        )
-        if (item.disabled) return <div key={item.label}>{content}</div>
-        return (
-          <button key={item.label} onClick={item.action} style={{ width:'100%', background:'none', border:'none', padding:0, textAlign:'left' }}>
-            {content}
-          </button>
-        )
-      })}
+        </div>
+      ))}
 
       {/* Install app card */}
       {!isPWA && (
@@ -766,7 +789,7 @@ export default function Perfil() {
 
             if (item._unavailable) return (
               <div key={item.id} style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:14, padding:'13px 15px', marginBottom:10, display:'flex', gap:12, alignItems:'center' }}>
-                <div style={{ width:44, height:44, borderRadius:12, background:'#FEE2E2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>🗑️</div>
+                <div style={{ width:44, height:44, borderRadius:12, background:'#F1F5F9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>🗑️</div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:'#B91C1C', margin:'0 0 2px' }}>Anuncio no disponible</p>
                   <p style={{ fontFamily:PP, fontSize:11, color:'#EF4444', margin:0 }}>Este anuncio fue eliminado o ya no está activo</p>
