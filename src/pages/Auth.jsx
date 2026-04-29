@@ -119,14 +119,14 @@ export default function Auth() {
       <Input label="Contraseña" type="password" placeholder="Tu contraseña" value={form.password} onChange={e => s('password', e.target.value)} required />
 
       <div style={{ textAlign:'right', marginBottom:16, marginTop:-8 }}>
-        <button onClick={() => setMode('forgot')} style={{ fontFamily:PP, fontSize:11, color:C.light, background:'none', border:'none', cursor:'pointer' }}>
+        <button onClick={() => setMode('forgot')} style={{ fontFamily:PP, fontSize:11, fontWeight:600, color:C.primary, background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
           ¿Olvidaste tu contraseña?
         </button>
       </div>
 
       <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
 
-      <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center' }}>
+      <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:24 }}>
         ¿Sin cuenta?{' '}
         <button onClick={() => setMode('register')} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
           Regístrate gratis
@@ -218,7 +218,7 @@ export default function Auth() {
         )}
       </div>
 
-      <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:14 }}>
+      <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:24 }}>
         ¿Ya tienes cuenta?{' '}
         <button onClick={() => setMode('login')} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
           Iniciar sesión
