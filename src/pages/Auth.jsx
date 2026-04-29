@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 export default function Auth() {
   const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
-  const [mode, setMode] = useState('login')
+  const [mode, setMode] = useState('register')
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[] })

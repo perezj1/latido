@@ -11,7 +11,7 @@ const STATS = [
   { value: '400.000+', label: 'Hispanohablantes en Suiza' },
   { value: '26',       label: 'Cantones cubiertos' },
   { value: '100%',     label: 'Gratis' },
-  { value: '1 min',    label: 'Publica en 1 minuto' },
+  { value: 'Fácil',    label: 'Publica en 1 minuto' },
 ]
 
 const FEATURES = [
@@ -481,16 +481,16 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
 
     <div className="latido-enter-4" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
       <Link to="/auth" className="latido-cta-primary" style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, background: '#fff', color: C.primaryDark, textDecoration: 'none', padding: '15px 30px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 10px 28px rgba(0,0,0,0.22)' }}>
-        Crear cuenta gratis →
+        Unirme a Latido
       </Link>
 
       <Link to="/tablon" className="latido-cta-ghost" style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, background: 'rgba(255,255,255,0.14)', color: '#fff', textDecoration: 'none', padding: '15px 28px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 7, border: '1.5px solid rgba(255,255,255,0.32)', backdropFilter: 'blur(6px)' }}>
-        Explorar ahora
+        Echar un vistazo
       </Link>
     </div>
 
     <p className="latido-enter-5" style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.65)', marginBottom: 56 }}>
-      ✨ Gratis para siempre · Registro en 30 segundos
+      ✨ Aquí está tu gente
     </p>
 
     <div className="latido-enter-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, borderTop: '1px solid rgba(255,255,255,0.18)', paddingTop: 32, maxWidth: 620, margin: '0 auto' }}>
@@ -613,18 +613,18 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             </h2>
             <p style={{ fontFamily: PP, fontSize: 15, color: C.mid, lineHeight: 1.8, marginBottom: 36, maxWidth: 460, margin: '0 auto 36px' }}>
               Únete a miles de hispanohablantes que ya encontraron piso, trabajo, comunidad y mucho más en Latido.
-              Gratis. En tu idioma. Entre los tuyos.
+              
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link to="/auth" className="latido-cta-primary" style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, background: C.primary, color: '#fff', textDecoration: 'none', padding: '16px 36px', borderRadius: 16, display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 12px 32px rgba(37,99,235,0.38)' }}>
-                Unirme gratis →
+                Unirme ahora →
               </Link>
               <Link to="/tablon" className="latido-cta-ghost" style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, background: '#fff', color: C.primary, textDecoration: 'none', padding: '16px 28px', borderRadius: 16, display: 'inline-flex', alignItems: 'center', gap: 7, border: `1.5px solid ${C.primaryMid}` }}>
                 Ver anuncios
               </Link>
             </div>
             <p style={{ fontFamily: PP, fontSize: 11, color: C.light, marginTop: 18 }}>
-              ✨ Gratis · 30 segundos · En español
+              ✨ Gratis. En tu idioma. Entre los tuyos.
             </p>
           </div>
         </Reveal>
