@@ -426,8 +426,8 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
   return (
     <div style={{ marginBottom:16 }}>
       {/* Main image */}
-      <div className="photo-main" style={{ position:'relative', borderRadius:16, overflow:'hidden', marginBottom:8 }}>
-        <img src={all[active]} alt="foto" style={{ width:'100%', height:'100%', objectFit:'cover', transition:'opacity .2s' }} />
+      <div className="photo-main" style={{ position:'relative', borderRadius:16, overflow:'hidden', marginBottom:8, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <img src={all[active]} alt="foto" style={{ width:'100%', height:'auto', maxHeight:'100%', objectFit:'contain', display:'block', transition:'opacity .2s' }} />
         {all.length > 1 && (
           <>
             <button onClick={() => setActive(a => (a-1+all.length)%all.length)}
@@ -445,7 +445,7 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
         <div style={{ display:'flex', gap:6, overflowX:'auto' }} className="no-scroll">
           {all.map((src, i) => (
             <img key={i} src={src} alt="" onClick={() => setActive(i)}
-              style={{ width:60, height:44, objectFit:'cover', borderRadius:9, flexShrink:0, cursor:'pointer', border:`2px solid ${i===active?'#2563EB':'transparent'}`, opacity: i===active?1:0.65, transition:'all .15s' }} />
+              style={{ width:60, height:44, objectFit:'contain', background:'#fff', borderRadius:9, flexShrink:0, cursor:'pointer', border:`2px solid ${i===active?'#2563EB':'transparent'}`, opacity: i===active?1:0.65, transition:'all .15s' }} />
           ))}
         </div>
       )}
