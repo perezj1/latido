@@ -148,29 +148,48 @@ function AnimatedStat({ value, duration = 1400 }) {
 
 function PanelSobre() {
   return (
-    <section style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)', borderRadius: 24, padding: '48px 28px', textAlign: 'center' }}>
-      <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 }}>Por qué existimos</p>
-      <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(24px,5vw,40px)', color: '#fff', lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 24 }}>
-        "Lejos de casa,<br />
-        <span style={{ color: '#60A5FA' }}>pero nunca solos."</span>
+    <section style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)', borderRadius: 24, padding: '48px 28px' }}>
+      <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 20 }}>La historia detrás de Latido</p>
+      <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(22px,4.5vw,36px)', color: '#fff', lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 32 }}>
+        {'Llegué a Suiza desde España en 2017.'}<br />
+        <span style={{ color: '#60A5FA' }}>{'El comienzo no fue fácil.'}</span>
       </h2>
-      <div style={{ maxWidth: 620, margin: '0 auto 28px' }}>
-        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
-          Llegar a Suiza puede sentirse como empezar desde cero: idioma nuevo, trámites complejos, cartas que no se entienden y la sensación de estar lejos de todo.
+      <div style={{ maxWidth: 680, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.82)', lineHeight: 1.85, margin: 0 }}>
+          {'No hablaba el idioma, apenas me defendía con el inglés, no conocía a nadie y no sabía bien por dónde empezar.'}
         </p>
-        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
-          Pero todo cambia cuando encuentras a los tuyos.
+        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.82)', lineHeight: 1.85, margin: 0 }}>
+          {'Pero con el tiempo entendí algo: la dificultad no era el país — era no tener cerca a gente con la que compartía mi forma de ver la vida.'}
         </p>
-        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
-          Latido nace para unir a la comunidad hispanohablante en Suiza, ofreciendo en un solo lugar ayuda, oportunidades, servicios, pisos, eventos y conexiones reales.
+        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.82)', lineHeight: 1.85, margin: 0 }}>
+          {'Todo cambiaba cada vez que conocía a alguien que hablaba español. La cercanía, el humor, la forma de expresarnos… el idioma nos unía. Porque el idioma no son solo palabras — es cultura, es identidad, es hogar.'}
         </p>
-        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
-          Porque estar lejos de casa no debería significar estar solo.
+        <p style={{ fontFamily: PP, fontSize: 'clamp(16px,2.4vw,19px)', color: '#fff', lineHeight: 1.6, margin: 0, fontWeight: 800, letterSpacing: -0.2 }}>
+          {'Por eso creé Latido.'}
         </p>
+        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.82)', lineHeight: 1.85, margin: 0 }}>
+          {'Para que nadie tenga que pasar años buscando a los suyos. Para que desde el primer día tengas un lugar donde encontrar ayuda, trabajo, piso, eventos y personas que hablan tu idioma.'}
+        </p>
+        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.82)', lineHeight: 1.85, margin: 0 }}>
+          {'Un lugar donde sentirte acompañado.'}
+        </p>
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <p style={{ fontFamily: PP, fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4, margin: 0, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase' }}>Latido</p>
+          <p style={{ fontFamily: PP, fontSize: 'clamp(16px,2.5vw,20px)', color: '#93C5FD', lineHeight: 1.5, margin: 0, fontWeight: 700, fontStyle: 'italic' }}>
+            {'Lejos de casa, pero nunca solos.'}
+          </p>
+        </div>
       </div>
-      <Link to="/auth" style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, background: '#fff', color: '#1E3A8A', textDecoration: 'none', padding: '14px 30px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        Quiero ser parte de esto
-      </Link>
+      <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #3B82F6, #1E3A8A)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>👤</div>
+        <div>
+          <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: '#fff', margin: '0 0 2px' }}>Fundador de Latido</p>
+          <p style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Español en Suiza desde 2017 · Luzern</p>
+        </div>
+        <Link to="/auth" style={{ marginLeft: 'auto', fontFamily: PP, fontWeight: 800, fontSize: 13, background: '#fff', color: '#1E3A8A', textDecoration: 'none', padding: '12px 22px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          Quiero ser parte de esto
+        </Link>
+      </div>
     </section>
   )
 }

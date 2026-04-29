@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { COMMUNITY_CATS, CANTONS } from '../lib/constants'
-import { Btn, ProgressBar, Input, Select } from '../components/UI'
+import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import { uploadPublicationImage } from '../lib/storage'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -26,6 +27,7 @@ const PLATFORMS = [
   { id:'facebook',  emoji:'👥', label:'Facebook' },
   { id:'discord',   emoji:'🎮', label:'Discord' },
   { id:'instagram', emoji:'📸', label:'Instagram' },
+  { id:'web',       emoji:'🌐', label:'Web' },
   { id:'otro',      emoji:'🔗', label:'Otro' },
 ]
 
@@ -37,9 +39,10 @@ export default function RegistrarComunidad() {
   const [step, setStep] = useState(0)
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [done, setDone] = useState(false)
   const [form, setForm] = useState({
-    cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español',
+    cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español', photo_url:'',
   })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
 
@@ -65,7 +68,7 @@ export default function RegistrarComunidad() {
         Tu comunidad ya está visible para la comunidad hispanohablante en Suiza.
       </p>
       <Btn onClick={() => navigate('/comunidades')}>Ver comunidades →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({ cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español', photo_url:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otra comunidad
       </button>
     </div>
@@ -90,6 +93,7 @@ export default function RegistrarComunidad() {
         emoji: selectedCat?.emoji || '🤝',
         desc: description || null,
         contact: form.contact.trim(),
+        photo_url: form.photo_url || null,
         verified: false,
         members: 0,
         active: true,
@@ -100,6 +104,19 @@ export default function RegistrarComunidad() {
       toast.error(error?.message || 'No se pudo registrar la comunidad')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePhotoUpload = async (file) => {
+    setUploadingPhoto(true)
+    try {
+      const publicUrl = await uploadPublicationImage({ file, userId: user?.id, folder:'communities' })
+      s('photo_url', publicUrl)
+      toast.success('Foto subida')
+    } catch {
+      toast.error('No se pudo subir la foto')
+    } finally {
+      setUploadingPhoto(false)
     }
   }
 
@@ -154,16 +171,24 @@ export default function RegistrarComunidad() {
       {/* Step 2 — Description and link */}
       {step === 2 && (
         <>
+          <ImageUploadField
+            label="Foto de portada (opcional)"
+            value={form.photo_url}
+            uploading={uploadingPhoto}
+            onUpload={handlePhotoUpload}
+            onRemove={() => s('photo_url', '')}
+          />
           <Input label="Descripción de la comunidad" placeholder="¿A quién está dirigida? ¿Qué hacéis juntos? ¿Cuándo os reunís?" rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
-          <Input label="Enlace de invitación *" placeholder={
+          <Input label={form.platform === 'web' ? 'URL de la web *' : 'Enlace de invitación *'} placeholder={
             form.platform === 'whatsapp'  ? 'https://chat.whatsapp.com/...' :
             form.platform === 'telegram'  ? 'https://t.me/...' :
             form.platform === 'facebook'  ? 'https://facebook.com/groups/...' :
             form.platform === 'discord'   ? 'https://discord.gg/...' :
             form.platform === 'instagram' ? 'https://instagram.com/...' :
+            form.platform === 'web'       ? 'https://www.tuweb.ch' :
             'https://...'
           } required value={form.contact} onChange={e=>s('contact',e.target.value)} />
-          {form.platform && (
+          {form.platform && form.platform !== 'web' && (
             <div style={{ background:'#FFFBEB', border:'1px solid #FCD34D', borderRadius:12, padding:'12px 14px', marginTop:-8, marginBottom:16 }}>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#92400E', margin:'0 0 6px' }}>
                 {form.platform === 'whatsapp'  && '💬 ¿Cómo conseguir el enlace de WhatsApp?'}

@@ -48,6 +48,12 @@ const COMMUNITY_OPTIONS = COMMUNITY_CATS
     ? { ...item, id:'familia', emoji:'👨‍👩‍👧', label:'Familia' }
     : item)
 
+const CHAT_HOSTS = ['chat.whatsapp.com','wa.me','t.me','telegram.me','facebook.com','discord.gg','instagram.com','meetup.com']
+function isWebCommunity(contact='') {
+  if (!contact || !/^https?:\/\//i.test(contact)) return false
+  return !CHAT_HOSTS.some(h => contact.includes(h))
+}
+
 function normalizeCommunityCategory(value='') {
   if (value === 'mamas') return 'familia'
   if (value === 'fe') return ''
@@ -74,6 +80,7 @@ function normalizeCommunity(group) {
     verified: !!group.verified,
     desc: group.desc || group.description || '',
     contact: group.contact || '',
+    photo_url: group.photo_url || '',
   }
 }
 
@@ -509,21 +516,17 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
 
   return (
     <Modal show={!!community} onClose={onClose} title={community.name} syncHistory={false}>
+      {community.photo_url && (
+        <div style={{ borderRadius:16, overflow:'hidden', marginBottom:16 }}>
+          <img src={community.photo_url} alt={community.name} style={{ width:'100%', height:200, objectFit:'cover' }} />
+        </div>
+      )}
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
         {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.emoji} {category.label}</Tag>}
         <Tag bg={C.bg} color={C.mid}>📍 {community.city}</Tag>
-        <Tag bg={C.bg} color={C.mid}>👥 {community.members} miembros</Tag>
+        {!isWebCommunity(community.contact) && <Tag bg={C.bg} color={C.mid}>👥 {community.members} miembros</Tag>}
         {community.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
       </div>
-
-      <InfoBanner
-        emoji={community.emoji}
-        title="Comunidad hispanohablante en Suiza"
-        text="Descubre de qué va el grupo y entra cuando te encaje."
-        bg={C.primaryLight}
-        border={C.primaryMid}
-        color={C.primaryDark}
-      />
 
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18 }}>
         {community.desc || 'Comunidad hispanohablante en Suiza.'}
@@ -531,12 +534,15 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
 
       {community.contact && (() => {
         const url = community.contact
+        const isWeb = /^https?:\/\//i.test(url) && !url.includes('chat.whatsapp.com') && !url.includes('wa.me') && !url.includes('t.me') && !url.includes('telegram') && !url.includes('meetup.com') && !url.includes('facebook.com') && !url.includes('instagram.com') && !url.includes('discord.gg')
         let icon = '🔗', label = 'Unirme a la comunidad', bg = C.primary
-        if (url.includes('chat.whatsapp.com') || url.includes('wa.me')) { icon = '💬'; label = 'Unirme por WhatsApp'; bg = '#25D366' }
-        else if (url.includes('t.me') || url.includes('telegram')) { icon = '✈️'; label = 'Unirme por Telegram'; bg = '#229ED9' }
-        else if (url.includes('meetup.com')) { icon = '📅'; label = 'Unirme en Meetup'; bg = '#E0393E' }
-        else if (url.includes('facebook.com')) { icon = '👥'; label = 'Ver en Facebook'; bg = '#1877F2' }
-        else if (url.includes('instagram.com')) { icon = '📸'; label = 'Seguir en Instagram'; bg = '#E1306C' }
+        if (isWeb)                                                                    { icon = '🌐'; label = 'Acceder a la web'; bg = C.primary }
+        else if (url.includes('chat.whatsapp.com') || url.includes('wa.me'))         { icon = '💬'; label = 'Unirme por WhatsApp'; bg = '#25D366' }
+        else if (url.includes('t.me') || url.includes('telegram'))                   { icon = '✈️'; label = 'Unirme por Telegram'; bg = '#229ED9' }
+        else if (url.includes('meetup.com'))                                          { icon = '📅'; label = 'Unirme en Meetup'; bg = '#E0393E' }
+        else if (url.includes('facebook.com'))                                        { icon = '👥'; label = 'Ver en Facebook'; bg = '#1877F2' }
+        else if (url.includes('instagram.com'))                                       { icon = '📸'; label = 'Seguir en Instagram'; bg = '#E1306C' }
+        else if (url.includes('discord.gg'))                                          { icon = '🎮'; label = 'Unirme por Discord'; bg = '#5865F2' }
         return (
           <a href={url} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:bg, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', boxSizing:'border-box', marginBottom:16 }}>
             <span>{icon}</span>{label}
@@ -597,7 +603,7 @@ export default function Comunidades() {
   const [events, setEvents] = useState(() => comunidadesCache.data?.events ?? MOCK_EVENTOS_LATINOS)
   const [loading, setLoading] = useState(!comunidadesCache.data)
   const [search, setSearch] = useState('')
-  const [cat, setCat] = useState('')
+  const [cat, setCat] = useState(() => searchParams.get('cat') || '')
   const [negType, setNegType] = useState('')
   const [selectedCommunity, setSelectedCommunity] = useState(null)
   const [selectedBusiness, setSelectedBusiness] = useState(null)
@@ -624,7 +630,7 @@ export default function Comunidades() {
 
       try {
         const [communitiesRes, providersRes, photosRes, reviewsRes, eventsRes] = await Promise.all([
-          supabase.from('communities').select('*').eq('active', true).order('members', { ascending:false }).limit(100),
+          supabase.from('communities').select('*').eq('active', true).order('created_at', { ascending:false }).limit(100),
           supabase.from('providers').select('*').eq('active', true).order('featured', { ascending:false }).order('verified', { ascending:false }).order('created_at', { ascending:false }).limit(100),
           supabase.from('provider_photos').select('*').order('is_main', { ascending:false }).order('sort_order', { ascending:true }).limit(500),
           supabase.from('reviews').select('*').eq('active', true).order('created_at', { ascending:false }).limit(300),
@@ -888,19 +894,28 @@ export default function Comunidades() {
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
               {filteredComm.map(group => (
-                <Card key={group.id} onClick={() => openCommunityDetails(group)}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
-                    <span style={{ fontSize:36 }}>{group.emoji}</span>
-                    <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-                      {group.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+                <Card key={group.id} onClick={() => openCommunityDetails(group)} style={{ padding:0, overflow:'hidden' }}>
+                  {group.photo_url ? (
+                    <div style={{ position:'relative', height:140, overflow:'hidden', background:C.primaryLight }}>
+                      <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    </div>
+                  ) : null}
+                  <div style={{ padding:'14px 16px 16px' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        {group.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+                      </div>
                       <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>📍 {group.city}</span>
                     </div>
-                  </div>
-                  <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:5, lineHeight:1.3 }}>{group.name}</h3>
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginBottom:8 }}>👥 {group.members} miembros</p>
-                  <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:14 }}>{group.desc}</p>
-                  <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                    Ver comunidad →
+                    {!group.photo_url && (
+                      <span style={{ fontSize:36, display:'block', marginBottom:10 }}>{group.emoji}</span>
+                    )}
+                    <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:5, lineHeight:1.3 }}>{group.name}</h3>
+                    {!isWebCommunity(group.contact) && <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginBottom:8 }}>👥 {group.members} miembros</p>}
+                    <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:14, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{group.desc}</p>
+                    <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                      Ver comunidad →
+                    </div>
                   </div>
                 </Card>
               ))}

@@ -135,7 +135,7 @@ export default function Home() {
 
         supabase
           .from('communities')
-          .select('id, name, city, members, emoji, cat, desc, contact, created_at, active')
+          .select('id, name, city, members, emoji, cat, desc, contact, photo_url, created_at, active')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
           .limit(50),
@@ -204,6 +204,7 @@ export default function Home() {
           emoji: row.emoji || '🤝',
           desc: row.desc || '',
           contact: row.contact || '',
+          photo_url: row.photo_url || '',
         }))
       )
 
@@ -409,6 +410,7 @@ export default function Home() {
                 {[
                   { emoji:'🏠', label:'Vivienda',    to:'/tablon?cat=vivienda' },
                   { emoji:'💼', label:'Empleo',       to:'/tablon?cat=empleo' },
+                  { emoji:'👨‍👩‍👧', label:'Familia',     to:'/comunidades?cat=familia' },
                   { emoji:'🛍️', label:'Mercado',      to:'/tablon?cat=venta' },
                   { emoji:'🔧', label:'Servicios',    to:'/tablon?cat=servicios' },
                   { emoji:'❤️', label:'Cuidados',     to:'/tablon?cat=cuidados' },
@@ -591,15 +593,18 @@ export default function Home() {
                   style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
                 >
                   <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-                    <div style={{ height:120, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
-                      <span>{group.emoji || '🤝'}</span>
+                    <div style={{ height:120, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
+                      {group.photo_url
+                        ? <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        : <span>{group.emoji || '🤝'}</span>
+                      }
                     </div>
                     <div style={{ padding:'10px 10px 12px' }}>
                       <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
                         {group.name}
                       </p>
                       <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        📍 {group.city} · 👥 {group.members}
+                        📍 {group.city}{!group.photo_url ? ` · 👥 ${group.members}` : ''}
                       </p>
                     </div>
                   </div>
