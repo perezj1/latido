@@ -273,6 +273,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
         {services.length > 0 && (
           <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:12 }}>
             {services.slice(0, 3).map(service => <Tag key={service} bg={C.primaryLight} color={C.primary}>{service}</Tag>)}
+            {services.length > 3 && <Tag bg={C.primaryLight} color={C.primary}>+{services.length - 3} más</Tag>}
           </div>
         )}
         <div style={{ display:'flex', gap:8 }}>
