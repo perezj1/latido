@@ -196,6 +196,16 @@ function PanelSobre() {
 
 function PanelFaq() {
   const [openFaq, setOpenFaq] = useState(0)
+  const [question, setQuestion] = useState('')
+  const [emptyMsg, setEmptyMsg] = useState(false)
+
+  const handleSend = () => {
+    const q = question.trim()
+    if (!q) { setEmptyMsg(true); setTimeout(() => setEmptyMsg(false), 2500); return }
+    setEmptyMsg(false)
+    window.location.href = `mailto:latidoch@gmail.com?subject=${encodeURIComponent('Pregunta desde Latido')}&body=${encodeURIComponent(q)}`
+  }
+
   return (
     <div>
       <p style={{ fontFamily: PP, fontSize: 14, color: C.mid, marginBottom: 28, lineHeight: 1.7 }}>
@@ -219,6 +229,25 @@ function PanelFaq() {
             </div>
           )
         })}
+      </div>
+
+      <div style={{ marginTop: 32, background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: '22px 20px' }}>
+        <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: '0 0 6px' }}>¿No encuentras tu respuesta?</p>
+        <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.6 }}>{'Escríbenos tu pregunta y responderemos lo antes posible.'}</p>
+        <textarea
+          value={question}
+          onChange={e => { setQuestion(e.target.value); setEmptyMsg(false) }}
+          placeholder="Escribe tu pregunta aquí..."
+          rows={3}
+          style={{ width: '100%', boxSizing: 'border-box', fontFamily: PP, fontSize: 13, color: C.text, border: `1.5px solid ${emptyMsg ? '#e53935' : C.border}`, borderRadius: 12, padding: '12px 14px', resize: 'none', outline: 'none', background: '#fff', lineHeight: 1.6, marginBottom: emptyMsg ? 6 : 10, transition: 'border-color .2s' }}
+        />
+        {emptyMsg && <p style={{ fontFamily: PP, fontSize: 12, color: '#e53935', margin: '0 0 10px', fontWeight: 600 }}>{'Escribe tu pregunta antes de enviar.'}</p>}
+        <button
+          onClick={handleSend}
+          style={{ width: '100%', fontFamily: PP, fontWeight: 700, fontSize: 13, background: C.primary, color: '#fff', border: 'none', borderRadius: 12, padding: '13px 0', cursor: 'pointer' }}
+        >
+          {'📬 Enviar pregunta'}
+        </button>
       </div>
     </div>
   )
