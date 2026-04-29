@@ -871,7 +871,7 @@ export default function Comunidades() {
             placeholder={
               tab === 'comunidades'
                 ? 'Buscar comunidad...'
-                : 'Buscar negocio latino...'
+                : 'Buscar negocio...'
             }
             value={search}
             onChange={e => setSearch(e.target.value)}

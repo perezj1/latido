@@ -1,6 +1,6 @@
-# 🌎 LatinoSuiza.ch — Plataforma integral para latinos en Suiza
+# 🌎 Latido.ch — Plataforma integral para hispanohablantes en Suiza
 
-PWA + Web con landing page, tablón de anuncios con privacidad configurable, comunidades, negocios latinos y guías prácticas para vivir en Suiza. React + Supabase + Vercel.
+PWA + Web con landing page, tablón de anuncios con privacidad configurable, comunidades, negocios hispanohablantes y guías prácticas para vivir en Suiza. React + Supabase + Vercel.
 
 ---
 

@@ -46,7 +46,7 @@ const AD_CATS_PREVIEW = [
   { emoji: '🏠', label: 'Vivienda',  color: '#DBEAFE', tc: '#1D4ED8', desc: 'Pisos, habitaciones, alquileres', to: '/tablon?cat=vivienda' },
   { emoji: '💼', label: 'Empleo',    color: '#D1FAE5', tc: '#065F46', desc: 'Ofertas para hispanohablantes',  to: '/tablon?cat=empleo'  },
   { emoji: '🛍️', label: 'Mercado',   color: '#FEF3C7', tc: '#92400E', desc: 'Compra, venta y regalos',        to: '/tablon?cat=venta'   },
-  { emoji: '🏪', label: 'Negocios',  color: '#CCFBF1', tc: '#0F766E', desc: 'Directorio de negocios latinos', to: '/comunidades' },
+  { emoji: '🏪', label: 'Negocios',  color: '#CCFBF1', tc: '#0F766E', desc: 'Directorio de negocios', to: '/comunidades' },
   { emoji: '🎉', label: 'Eventos',   color: '#FCE7F3', tc: '#9D174D', desc: 'Lo que pasa en Suiza',           to: '/comunidades?view=eventos' },
   { emoji: '✨', label: 'Y más...',  color: '#F1F5F9', tc: '#475569', desc: 'Servicios, guías y mucho más',    to: '/' },
 ]
