@@ -147,145 +147,31 @@ function AnimatedStat({ value, duration = 1400 }) {
    ───────────────────────────────────────────────────────────── */
 
 function PanelSobre() {
-  const [activeTestimonial, setActiveTestimonial] = useState(0)
-  const [paused, setPaused] = useState(false)
-  useEffect(() => {
-    if (paused) return
-    const id = setInterval(() => setActiveTestimonial(i => (i + 1) % TESTIMONIALS.length), 6000)
-    return () => clearInterval(id)
-  }, [paused])
-
   return (
-    <div>
-      {/* WHY */}
-      <section style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)', borderRadius: 24, padding: '48px 28px', marginBottom: 40, textAlign: 'center' }}>
-        <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 }}>Por qué existimos</p>
-        <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(24px,5vw,40px)', color: '#fff', lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 24 }}>
-          “Lejos de casa,<br />
-          <span style={{ color: '#60A5FA' }}>pero nunca solos.”</span>
-        </h2>
-        <div style={{ maxWidth: 620, margin: '0 auto 28px' }}>
-          <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
-            Llegar a Suiza puede sentirse como empezar desde cero: idioma nuevo, trámites complejos, cartas que no se entienden y la sensación de estar lejos de todo.
-          </p>
-          <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
-            Pero todo cambia cuando encuentras a los tuyos.
-          </p>
-          <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
-            Latido nace para unir a la comunidad hispanohablante en Suiza, ofreciendo en un solo lugar ayuda, oportunidades, servicios, pisos, eventos y conexiones reales.
-          </p>
-          <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
-            Porque estar lejos de casa no debería significar estar solo. 
-         </p>
-          
-        </div>
-        <Link to="/auth" style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, background: '#fff', color: '#1E3A8A', textDecoration: 'none', padding: '14px 30px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          Quiero ser parte de esto →
-        </Link>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section style={{ marginBottom: 40 }}>
-        <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: C.primary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Sencillo desde el primer día</p>
-        <h2 style={{ fontFamily: PP, fontWeight: 800, fontSize: 'clamp(20px,4vw,28px)', color: C.text, margin: '0 0 24px', letterSpacing: -0.5 }}>En 3 pasos, ya estás conectado</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
-          {STEPS.map((step) => (
-            <div key={step.n} style={{ position: 'relative', background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 20, padding: '28px 20px 24px', textAlign: 'center' }}>
-              <div style={{ width: 48, height: 48, background: `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: 22, boxShadow: '0 6px 18px rgba(37,99,235,0.25)' }}>{step.emoji}</div>
-              <div style={{ position: 'absolute', top: 16, left: 16, width: 22, height: 22, background: C.primaryLight, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 11, color: C.primary }}>{step.n}</span>
-              </div>
-              <h3 style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 6 }}>{step.title}</h3>
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.65, margin: 0 }}>{step.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section style={{ marginBottom: 40 }}>
-        <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: C.primary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Funcionalidades</p>
-        <h2 style={{ fontFamily: PP, fontWeight: 800, fontSize: 'clamp(20px,4vw,28px)', color: C.text, margin: '0 0 8px', letterSpacing: -0.5 }}>Construido para nuestra realidad en Suiza</h2>
-        <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, marginBottom: 20, lineHeight: 1.7 }}>
-          Cada función fue diseñada pensando en la vida real de los hispanohablantes aquí: la burocracia, el idioma, la distancia.
+    <section style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)', borderRadius: 24, padding: '48px 28px', textAlign: 'center' }}>
+      <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 }}>Por qué existimos</p>
+      <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(24px,5vw,40px)', color: '#fff', lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 24 }}>
+        "Lejos de casa,<br />
+        <span style={{ color: '#60A5FA' }}>pero nunca solos."</span>
+      </h2>
+      <div style={{ maxWidth: 620, margin: '0 auto 28px' }}>
+        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
+          Llegar a Suiza puede sentirse como empezar desde cero: idioma nuevo, trámites complejos, cartas que no se entienden y la sensación de estar lejos de todo.
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: 12 }}>
-          {FEATURES.map((f) => (
-            <div key={f.title} style={{ background: '#fff', borderRadius: 20, padding: '24px 20px', border: `1px solid ${C.border}` }}>
-              <div style={{ width: 48, height: 48, background: f.color, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, marginBottom: 14 }}>{f.icon}</div>
-              <h3 style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, marginBottom: 6 }}>{f.title}</h3>
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.7, margin: 0 }}>{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* PEEK INSIDE */}
-      <section style={{ marginBottom: 40 }}>
-        <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: C.primary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Mira por dentro</p>
-        <h2 style={{ fontFamily: PP, fontWeight: 800, fontSize: 'clamp(20px,4vw,28px)', color: C.text, margin: '0 0 20px', letterSpacing: -0.5 }}>Así se ve la comunidad cada día</h2>
-        <div style={{ background: 'linear-gradient(180deg, #F0F6FF 0%, #fff 100%)', borderRadius: 24, padding: '22px', border: `1px solid ${C.border}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
-            <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#EF4444' }} />
-            <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#F59E0B' }} />
-            <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#10B981' }} />
-            <div style={{ flex: 1, textAlign: 'center', fontFamily: PP, fontSize: 11, color: C.mid }}>latido.ch · feed en vivo</div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10 }}>
-            {APP_PEEK_FEED.map((item, i) => (
-              <div key={i} style={{ background: '#fff', borderRadius: 14, padding: '14px', border: `1px solid ${C.border}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 700, color: item.tc, background: item.color, padding: '3px 9px', borderRadius: 100 }}>{item.tag}</span>
-                  <span style={{ fontFamily: PP, fontSize: 10, color: C.light }}>{item.time}</span>
-                </div>
-                <p style={{ fontFamily: PP, fontSize: 12, color: C.text, lineHeight: 1.55, margin: '0 0 8px', fontWeight: 500 }}>{item.text}</p>
-                <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, margin: 0 }}>{item.who}</p>
-              </div>
-            ))}
-          </div>
-          <div style={{ textAlign: 'center', marginTop: 18 }}>
-            <Link to="/tablon" style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: C.primary, background: 'rgba(37,99,235,0.08)', textDecoration: 'none', padding: '10px 20px', borderRadius: 11, display: 'inline-flex', alignItems: 'center', gap: 6, border: `1.5px solid ${C.primaryLight}` }}>
-              Ver el feed completo →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section>
-        <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: C.primary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Comunidad real</p>
-        <h2 style={{ fontFamily: PP, fontWeight: 800, fontSize: 'clamp(20px,4vw,28px)', color: C.text, margin: '0 0 24px', letterSpacing: -0.5 }}>Lo dicen los que ya están dentro</h2>
-        <div
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-          style={{ background: '#fff', borderRadius: 22, padding: '32px 28px', border: `1px solid ${C.border}`, boxShadow: '0 12px 36px rgba(37,99,235,0.07)', marginBottom: 16, position: 'relative', minHeight: 220 }}
-        >
-          <div style={{ fontSize: 40, color: C.primaryMid, lineHeight: 1, marginBottom: 12, fontFamily: 'Georgia, serif' }}>"</div>
-          <div style={{ position: 'relative' }}>
-            {TESTIMONIALS.map((t, i) => (
-              <div key={i} style={{ position: i === activeTestimonial ? 'relative' : 'absolute', inset: 0, opacity: i === activeTestimonial ? 1 : 0, transform: i === activeTestimonial ? 'translateY(0)' : 'translateY(8px)', transition: 'opacity .5s ease, transform .5s ease', pointerEvents: i === activeTestimonial ? 'auto' : 'none' }}>
-                <p style={{ fontFamily: PP, fontSize: 15, color: C.text, lineHeight: 1.8, marginBottom: 20, fontWeight: 500 }}>{t.text}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <img src={t.avatar} alt={t.name} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                  <div>
-                    <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: C.text, margin: '0 0 2px' }}>{t.name}</p>
-                    <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, margin: 0 }}>{t.origin}</p>
-                  </div>
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 2 }}>
-                    {[1,2,3,4,5].map(s => <span key={s} style={{ color: '#F59E0B', fontSize: 13 }}>★</span>)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          {TESTIMONIALS.map((_, i) => (
-            <button key={i} onClick={() => setActiveTestimonial(i)} style={{ width: i === activeTestimonial ? 26 : 9, height: 9, borderRadius: 5, background: i === activeTestimonial ? C.primary : C.border, border: 'none', cursor: 'pointer', padding: 0, transition: 'all .25s' }} />
-          ))}
-        </div>
-      </section>
-    </div>
+        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
+          Pero todo cambia cuando encuentras a los tuyos.
+        </p>
+        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
+          Latido nace para unir a la comunidad hispanohablante en Suiza, ofreciendo en un solo lugar ayuda, oportunidades, servicios, pisos, eventos y conexiones reales.
+        </p>
+        <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.78)', lineHeight: 1.85, margin: '0 0 16px' }}>
+          Porque estar lejos de casa no debería significar estar solo.
+        </p>
+      </div>
+      <Link to="/auth" style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, background: '#fff', color: '#1E3A8A', textDecoration: 'none', padding: '14px 30px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        Quiero ser parte de esto
+      </Link>
+    </section>
   )
 }
 
@@ -430,7 +316,7 @@ function MenuPanel({ menuPage, setMenuPage }) {
   const title = PANEL_TITLES[menuPage] || ''
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: '#fff', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <div className="no-scroll" style={{ position: 'fixed', inset: 0, zIndex: 150, background: '#fff', overflowY: 'auto', display: 'flex', flexDirection: 'column', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
       {/* Panel header */}
       <div style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${C.border}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 14, zIndex: 1, flexShrink: 0 }}>
         <button
@@ -542,7 +428,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
     </p>
 
    <p className="latido-enter-3" style={{ fontFamily: PP, fontSize: 18, color: '#fff', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.35, maxWidth: 560, margin: '0 auto 26px' }}>
-  “Lejos de casa, pero nunca solos.”
+  "Lejos de casa, pero nunca solos."
 </p>
 
     <div className="latido-enter-4" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>

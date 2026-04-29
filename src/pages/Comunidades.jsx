@@ -222,7 +222,8 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
   const reviews = reviewsMap[business.id] || []
   const rating = averageRating(reviews)
   const cover = photos[0] || business.photo_url
-  const whatsappNumber = business.whatsapp || business.phone || ''
+  const contactMethods = getBusinessContactMethods(business)
+  const [showContacts, setShowContacts] = useState(false)
 
   return (
     <div
@@ -269,18 +270,42 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
         )}
         <div style={{ display:'flex', gap:8 }}>
           <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flex:1 }}>Ver perfil →</div>
-          {whatsappNumber && (
-            <a
-              href={`https://wa.me/${normalizePhoneForWhatsapp(whatsappNumber)}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={e => e.stopPropagation()}
-              style={{ width:40, height:40, background:'#D1FAE5', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, textDecoration:'none' }}
+          {contactMethods.length > 0 && (
+            <button
+              onClick={e => { e.stopPropagation(); setShowContacts(v => !v) }}
+              style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:showContacts ? C.primaryDark : C.primaryLight, color:showContacts ? '#fff' : C.primary, border:'none', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flex:1, cursor:'pointer' }}
             >
-              💬
-            </a>
+              📬 Contacto
+            </button>
           )}
         </div>
+        {showContacts && (
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:8, marginTop:8, display:'flex', flexDirection:'column', gap:6 }}
+          >
+            {contactMethods.map(method => (
+              <a
+                key={method.id}
+                href={method.href}
+                target={method.external ? '_blank' : undefined}
+                rel={method.external ? 'noreferrer' : undefined}
+                style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, textDecoration:'none' }}
+              >
+                <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
+                  <span style={{ fontSize:15, flexShrink:0 }}>{method.icon}</span>
+                  <div style={{ minWidth:0 }}>
+                    <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 1px' }}>{method.label}</p>
+                    <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
+                  </div>
+                </div>
+                <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, flexShrink:0 }}>
+                  {method.external ? 'Abrir ↗' : 'Abrir →'}
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
