@@ -84,8 +84,9 @@ export default function PublicarEvento() {
       if (error) throw error
       setDone(true)
     } catch (error) {
+      console.error('Publish event failed:', error)
       const message = error?.message?.toLowerCase().includes('events')
-        ? 'Tu proyecto de Supabase todavía no tiene la tabla events. Antes de publicar eventos hay que crearla.'
+        ? 'No pudimos publicar el evento ahora. Inténtalo de nuevo más tarde.'
         : (error?.message || 'No se pudo publicar el evento')
       toast.error(message)
     } finally {

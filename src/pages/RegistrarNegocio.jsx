@@ -96,15 +96,17 @@ export default function RegistrarNegocio() {
           }))
         )
         if (photosError) {
-          toast.error('El negocio se publicó, pero algunas fotos extra no se pudieron guardar')
+          console.error('Business extra photos failed:', photosError)
+          toast.error('El negocio se publicó, pero algunas fotos extra no se pudieron guardar.')
         }
       }
 
       setDone(true)
     } catch (error) {
+      console.error('Register business failed:', error)
       const message = String(error?.message || '')
       if (message.toLowerCase().includes('website')) {
-        toast.error('Falta actualizar Supabase para negocios. Ejecuta publications_schema_v4.sql.')
+        toast.error('No pudimos registrar el negocio ahora. Inténtalo de nuevo más tarde.')
       } else {
         toast.error(message || 'No se pudo registrar el negocio')
       }

@@ -79,7 +79,7 @@ export default function Auth() {
         const status = error.status || 0
 
         if (status === 429 || msg.includes('rate limit') || msg.includes('too many') || msg.includes('over_email')) {
-          toast.error('Supabase ha bloqueado temporalmente el registro por demasiados intentos. Espera 1-2 minutos e inténtalo de nuevo.', { duration: 7000 })
+          toast.error('Demasiados intentos de registro. Espera 1-2 minutos e inténtalo de nuevo.', { duration: 7000 })
         } else if (msg.includes('database') || msg.includes('saving')) {
           toast.error('Error interno. Intenta de nuevo en unos segundos.')
         } else if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user_already_exists')) {

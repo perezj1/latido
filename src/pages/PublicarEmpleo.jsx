@@ -150,8 +150,9 @@ export default function PublicarEmpleo() {
       if (error) throw error
       setDone(true)
     } catch (error) {
+      console.error('Publish job failed:', error)
       if (isLikelySchemaMismatchError(error, 'jobs')) {
-        toast.error('Falta actualizar Supabase para empleos. Ejecuta publications_schema_v4.sql.')
+        toast.error('No pudimos publicar la oferta ahora. Inténtalo de nuevo más tarde.')
       } else {
         toast.error(error?.message || 'No se pudo publicar la oferta de empleo')
       }

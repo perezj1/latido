@@ -13,7 +13,8 @@ function inferExtension(file) {
 export function getStorageErrorMessage(error) {
   const message = error?.message || ''
   if (/bucket.*not.*found|not found|Bucket not found/i.test(message)) {
-    return 'Bucket de imágenes no encontrado. Ve a Supabase → Storage → New bucket, crea "publication-images" y "avatars" con acceso público.'
+    console.error('Storage bucket missing or unavailable:', error)
+    return 'No pudimos preparar la subida de imágenes. Inténtalo de nuevo más tarde.'
   }
   if (/exceeded|too large|size/i.test(message)) {
     return 'La imagen es demasiado grande. Máximo 5 MB.'
@@ -21,6 +22,7 @@ export function getStorageErrorMessage(error) {
   if (/mime|type/i.test(message)) {
     return 'Formato no válido. Usa JPG, PNG o WebP.'
   }
+  if (message) console.error('Storage upload error:', error)
   return message || 'No se pudo subir la imagen'
 }
 

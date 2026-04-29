@@ -292,8 +292,16 @@ export default function Perfil() {
         { kind:'community', result:results[4], issue:'comunidades' },
       ]
       mapping.forEach(({ kind, result, issue }) => {
-        if (result.status === 'rejected') { nextIssues.push(`No se pudieron cargar tus ${issue}.`); return }
-        if (result.value.error) { nextIssues.push(`Falta ajustar Supabase para ${issue}. Ejecuta publications_schema_v4.sql.`); return }
+        if (result.status === 'rejected') {
+          console.error(`Could not load ${issue}:`, result.reason)
+          nextIssues.push(`No se pudieron cargar tus ${issue}.`)
+          return
+        }
+        if (result.value.error) {
+          console.error(`Could not load ${issue}:`, result.value.error)
+          nextIssues.push(`No se pudieron cargar tus ${issue}. Inténtalo de nuevo más tarde.`)
+          return
+        }
         ;(result.value.data || []).forEach(row => nextPublications.push(normalizePublication(kind, row)))
       })
       nextPublications.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
@@ -361,8 +369,8 @@ export default function Perfil() {
       const publicUrl = await uploadAvatar({ file, userId: user.id })
       const { error: profileErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id)
       if (profileErr) {
-        // Column probably missing — tell the user exactly what to run
-        toast.error('Falta la columna avatar_url en profiles. Ejecuta en Supabase SQL Editor: ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;')
+        console.error('Avatar profile update failed:', profileErr)
+        toast.error('No pudimos guardar tu foto de perfil. Inténtalo de nuevo más tarde.')
         return
       }
       invalidateAvatarCache(user.id)
@@ -580,9 +588,10 @@ export default function Perfil() {
       toast.success('Cambios guardados')
       closeEditor()
     } catch (error) {
+      console.error('Save publication changes failed:', error)
       const message = String(error?.message || '')
       if (message.toLowerCase().includes('website')) {
-        toast.error('Falta actualizar Supabase para negocios. Ejecuta publications_schema_v4.sql.')
+        toast.error('No pudimos guardar los cambios ahora. Inténtalo de nuevo más tarde.')
       } else {
         toast.error(message || 'No se pudieron guardar los cambios')
       }
@@ -901,7 +910,7 @@ export default function Perfil() {
       {/* ── Mis publicaciones modal ── */}
       <Modal show={manageOpen} onClose={() => setManageOpen(false)} title="Mis publicaciones">
         {issues.length > 0 && (
-          <InfoBanner emoji="🧩" title="Falta completar Supabase" text={issues[0]} bg={C.warnLight} border={C.warnMid} color="#92400E" />
+          <InfoBanner emoji="⚠️" title="No pudimos cargar todo" text={issues[0]} bg={C.warnLight} border={C.warnMid} color="#92400E" />
         )}
         <div style={{ display:'flex', gap:12, alignItems:'flex-end', marginBottom:16 }}>
           <div style={{ flex:1 }}>

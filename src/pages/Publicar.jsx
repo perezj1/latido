@@ -306,13 +306,14 @@ export default function Publicar() {
 
       if (error) throw error
       if (strippedColumns?.includes('photo_urls') && photoUrls.length > 1) {
-        toast.error('El anuncio se publicó solo con la primera foto. Ejecuta publications_schema_v4.sql para guardar galerías.')
+        toast.error('El anuncio se publicó, pero algunas fotos extra no se pudieron guardar.')
       }
 
       setDone(true)
     } catch (error) {
+      console.error('Publish ad failed:', error)
       if (isLikelySchemaMismatchError(error, 'ads')) {
-        toast.error('Falta actualizar Supabase para anuncios. Ejecuta publications_schema_v4.sql.')
+        toast.error('No pudimos publicar el anuncio ahora. Inténtalo de nuevo más tarde.')
       } else {
         toast.error(error?.message || 'No se pudo publicar el anuncio')
       }
