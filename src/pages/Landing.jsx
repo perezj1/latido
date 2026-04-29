@@ -460,7 +460,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
   <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', textAlign: 'center' }}>
     <div className="latido-enter-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.12)', color: '#BAE6FD', fontSize: 11, fontWeight: 700, padding: '8px 18px', borderRadius: 24, marginBottom: 28, fontFamily: PP, border: '1px solid rgba(255,255,255,0.22)', letterSpacing: 0.4, backdropFilter: 'blur(8px)' }}>
       <span style={{ fontSize: 14 }}>🏆</span>
-      La primera plataforma para hispanohablantes en Suiza
+      La primera plataforma pensada exclusivamente para hispanohablantes en Suiza
     </div>
 
     <h1 className="latido-enter-2" style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(36px, 7.2vw, 64px)', color: '#fff', lineHeight: 1.05, margin: '0 0 22px', letterSpacing: -1.2 }}>
