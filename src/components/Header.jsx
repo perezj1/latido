@@ -5,14 +5,13 @@ import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
 const NAV_GUEST = [
   { href:'/tablon', label:'📌 Anuncios' },
-  { href:'/comunidades', label:'🤝 Comunidades' },
-  { href:'/mensajes', label:'💬 Mensajes' },
+  { href:'/comunidades', label:'🤝 Comunidad' },
 ]
 
 const NAV_USER = [
   { href:'/', label:'🏠 Inicio' },
   { href:'/tablon', label:'📌 Anuncios' },
-  { href:'/comunidades', label:'🤝 Comunidades' },
+  { href:'/comunidades', label:'🤝 Comunidad' },
   { href:'/mensajes', label:'💬 Mensajes' },
 ]
 
@@ -74,7 +73,7 @@ export default function Header({ transparent }) {
               Entrar
             </Link>
           )}
-          <button onClick={() => setOpen(!open)} className="hide-lg" style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'8px 10px', cursor:'pointer', flexDirection:'column', gap:4 }}>
+          <button onClick={() => setOpen(!open)} className="hide-lg" aria-label={open ? 'Cerrar menú' : 'Abrir menú'} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'8px 10px', cursor:'pointer', flexDirection:'column', gap:4 }}>
             {[0, 1, 2].map(i => <span key={i} style={{ width:18, height:2, background:C.mid, borderRadius:2, display:'block' }} />)}
           </button>
         </div>

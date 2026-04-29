@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 
 const STEPS = [
   { title:'¿Qué quieres publicar?', sub:'Elige la categoría de tu anuncio' },
-  { title:'¿Buscas u ofreces?', sub:'Cuéntanos cuál es tu rol' },
+  { title:'¿Qué quieres hacer?', sub:'Elige si buscas, ofreces, vendes o regalas' },
   { title:'Título y descripción', sub:'Cuanto más detallado, mejor' },
   { title:'Precio, zona y publicación', sub:'Último paso — ubicación, visibilidad y mensajes dentro de Latido' },
 ]
@@ -20,7 +20,7 @@ const STEP1_BY_CAT = {
   vivienda:   { title:'¿Buscas u ofreces vivienda?',    sub:'Dinos si buscas o pones a disposición un piso o habitación' },
   venta:      { title:'¿Qué quieres hacer?',            sub:'Busca artículos, vende lo que no usas o dalo gratis' },
   cuidados:   { title:'¿Buscas u ofreces cuidados?',    sub:'Dinos si necesitas un cuidador o si ofreces tus servicios' },
-  documentos: { title:'¿Necesitas u ofreces ayuda?',    sub:'Dinos si buscas asesoría o si puedes ayudar con trámites' },
+  documentos: { title:'¿Necesitas ayuda con un trámite?', sub:'Cartas, traducciones, formularios y gestiones del día a día' },
   servicios:  { title:'¿Buscas u ofreces un servicio?', sub:'Limpieza, mudanzas, reparaciones, clases, peluquería y otros servicios' },
 }
 
@@ -31,7 +31,7 @@ const TYPE_DESC_BY_CAT = {
   },
   venta: {
     busca:  'Buscas algún artículo de segunda mano',
-    ofrece: 'Tienes algo que vender o intercambiar',
+    vende:  'Quieres vender algo que ya no usas',
     regala: 'Das algo gratis sin pedir nada a cambio',
   },
   cuidados: {
@@ -514,7 +514,7 @@ export default function Publicar() {
 
           <Input
             label="Descripción"
-            placeholder="Cuéntanos con detalle qué buscas u ofreces. Cuánta más info, mejor respuesta recibirás."
+            placeholder="Cuéntanos con detalle qué buscas, vendes u ofreces. Cuánta más info, mejor respuesta recibirás."
             rows={5}
             value={form.desc}
             onChange={e => s('desc', e.target.value)}

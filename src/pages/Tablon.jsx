@@ -452,7 +452,12 @@ export default function Tablon() {
   const filteredAds = useMemo(() => ads.filter(a => {
     if (!(isLoggedIn || a.privacy === 'public')) return false
     if (cat && normalizeAdCat(a.cat) !== cat) return false
-    if (type && a.type !== type) return false
+    if (type) {
+      const typeMatches = cat === 'venta' && type === 'vende'
+        ? a.type === 'vende' || a.type === 'ofrece'
+        : a.type === type
+      if (!typeMatches) return false
+    }
     if (canton && a.canton !== canton) return false
     if (plz && !a.plz?.startsWith(plz)) return false
     if (privacy && a.privacy !== privacy) return false

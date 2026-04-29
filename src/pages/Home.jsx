@@ -413,7 +413,7 @@ export default function Home() {
                   { emoji:'🔧', label:'Servicios',    to:'/tablon?cat=servicios' },
                   { emoji:'❤️', label:'Cuidados',     to:'/tablon?cat=cuidados' },
                   { emoji:'🎉', label:'Eventos',      to:'/comunidades?view=eventos' },
-                  { emoji:'🤝', label:'Comunidades',  to:'/comunidades' },
+                  { emoji:'🤝', label:'Comunidad',    to:'/comunidades' },
                   { emoji:'📚', label:'Guías',        to:'/guias' },
                 ].map(cat => (
                   <Link

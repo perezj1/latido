@@ -134,7 +134,7 @@ const CAT_LINKS = [
   { emoji:'💼', label:'Empleo',      to:'/tablon?cat=empleo' },
   { emoji:'🛍️', label:'Mercado',     to:'/tablon?cat=venta' },
   { emoji:'🔧', label:'Servicios',   to:'/tablon?cat=servicios' },
-  { emoji:'🤝', label:'Comunidades', to:'/comunidades' },
+  { emoji:'🤝', label:'Comunidad',   to:'/comunidades' },
   { emoji:'🎉', label:'Eventos',     to:'/comunidades?view=eventos' },
   { emoji:'📚', label:'Guías',       to:'/guias' },
 ]
@@ -145,7 +145,7 @@ function CategoryBar() {
   const isLanding = pathname === '/'
   if (isLanding) return null
   return (
-    <div className="cat-bar no-scroll" style={{ background:'#fff', borderBottom:`1px solid ${C.border}`, overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+    <div className="cat-bar no-scroll show-md" style={{ background:'#fff', borderBottom:`1px solid ${C.border}`, overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
       <div style={{ display:'flex', gap:4, padding:'8px 16px', width:'max-content' }}>
         {CAT_LINKS.map(cat => {
           const active = full === cat.to || full.startsWith(cat.to + '&') || full.startsWith(cat.to.split('?')[0] + '?cat=' + cat.to.split('cat=')[1])

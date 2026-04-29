@@ -35,7 +35,7 @@ const ALERT_CATS = [
   { id:'empleo', emoji:'💼', label:'Empleo' },
   { id:'venta', emoji:'🛍️', label:'Mercado' },
   { id:'cuidados', emoji:'❤️', label:'Cuidados' },
-  { id:'documentos', emoji:'📄', label:'Documentos' },
+  { id:'documentos', emoji:'📄', label:'Trámites' },
   { id:'regalo', emoji:'🎁', label:'Regalos' },
 ]
 
@@ -603,7 +603,7 @@ export default function Perfil() {
     { icon:'📌', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
     { icon:'❤️', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
     // { icon:'💬', label:'Mensajes', sub:'Conversaciones con otros usuarios', action:() => navigate('/mensajes') },
-    { icon:'📚', label:'Guías', sub:'Documentos y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
+    { icon:'📚', label:'Guías', sub:'Trámites y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
     { icon:'🔔', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', action:() => setAlertsOpen(true) },
     { icon:'⚙️', label:'Configuración', sub:'Nombre, cantón, idiomas, contraseña', action:openConfig },
     { icon:'🔗', label:'Compartir Latido', sub:'Invita a amigos y familiares a unirse', action:handleShare },
