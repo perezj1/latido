@@ -62,7 +62,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', marginBottom:10, width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
       {coverPhoto && (
         <div style={{ position:'relative' }}>
-          <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:160, objectFit:'cover' }}/>
+          <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:220, objectFit:'contain', background:'#fff', display:'block' }}/>
           {photos.length > 1 && (
             <span style={{ position:'absolute', left:10, bottom:10, fontFamily:PP, fontSize:10, fontWeight:800, color:'#fff', background:'rgba(15,23,42,0.72)', borderRadius:999, padding:'4px 8px' }}>
               📷 {photos.length}
@@ -113,8 +113,8 @@ function AdDetail({ ad, user, avatarSrc }) {
       {photos.length > 1 ? (
         <PhotoGallery photos={photos.slice(1)} mainPhoto={coverPhoto} />
       ) : coverPhoto && (
-        <div style={{ borderRadius:12, overflow:'hidden', marginBottom:14 }}>
-          <img src={coverPhoto} alt={ad.title} style={{ width:'100%', maxHeight:200, objectFit:'cover' }}/>
+        <div style={{ borderRadius:12, overflow:'hidden', marginBottom:14, background:'#fff' }}>
+          <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:280, objectFit:'contain', display:'block' }}/>
         </div>
       )}
       <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
@@ -158,7 +158,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc }) {
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14, width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
       <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
         {job.logo_url
-          ? <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          ? <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
           : (job.emoji || '💼')}
       </div>
       <div style={{ flex:1, minWidth:0 }}>
@@ -191,8 +191,8 @@ function JobDetail({ job, user }) {
   return (
     <div>
       {job.logo_url && (
-        <div style={{ width:'100%', height:160, borderRadius:16, overflow:'hidden', marginBottom:16, background:C.primaryLight }}>
-          <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        <div style={{ width:'100%', borderRadius:16, overflow:'hidden', marginBottom:16, background:'#fff' }}>
+          <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'auto', maxHeight:200, objectFit:'contain', display:'block' }} />
         </div>
       )}
       <div style={{ display:'flex', gap:14, alignItems:'flex-start', marginBottom:16 }}>
@@ -240,7 +240,7 @@ function PortalCard({ portal, defaultEmoji = '🏠', onClick }) {
     <button onClick={onClick} style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14, width:'100%', textAlign:'left', cursor:'pointer' }}>
       <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
         {portal.photo_url
-          ? <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          ? <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
           : <span>{defaultEmoji}</span>}
       </div>
       <div style={{ flex:1, minWidth:0 }}>
@@ -260,8 +260,8 @@ function PortalDetail({ portal, defaultEmoji = '🏠' }) {
   return (
     <div>
       {portal.photo_url && (
-        <div style={{ width:'100%', height:160, borderRadius:16, overflow:'hidden', marginBottom:16, background:C.primaryLight }}>
-          <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        <div style={{ width:'100%', borderRadius:16, overflow:'hidden', marginBottom:16, background:'#fff' }}>
+          <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'auto', maxHeight:200, objectFit:'contain', display:'block' }} />
         </div>
       )}
       <div style={{ display:'flex', gap:14, alignItems:'flex-start', marginBottom:16 }}>

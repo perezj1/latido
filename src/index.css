@@ -45,11 +45,11 @@ html { scroll-behavior: smooth; }
 .photo-main { height: 220px; }
 @media (max-width: 500px) { .photo-main { height: 52vw; min-height: 160px; } }
 
-.provider-cover { height: 160px; }
-@media (max-width: 500px) { .provider-cover { height: 44vw; min-height: 120px; } }
+.provider-cover { height: 220px; background: #fff; }
+@media (max-width: 500px) { .provider-cover { height: 56vw; min-height: 160px; } }
 
-.provider-detail-img { height: 180px; }
-@media (max-width: 500px) { .provider-detail-img { height: 48vw; min-height: 140px; } }
+.provider-detail-img { height: auto; max-height: 340px; background: #fff; }
+@media (max-width: 500px) { .provider-detail-img { max-height: 72vw; } }
 
 /* ── Mobile padding ── */
 @media (max-width: 480px) {

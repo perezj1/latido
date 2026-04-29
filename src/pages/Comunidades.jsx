@@ -241,7 +241,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
     >
       <div className="provider-cover" style={{ position:'relative', overflow:'hidden', background:C.primaryLight }}>
         {cover ? (
-          <img src={cover} alt={business.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          <img src={cover} alt={business.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
         ) : (
           <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:48 }}>{business.emoji}</div>
         )}
@@ -371,8 +371,8 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
           {tab === 'info' && (
             <>
               {photos[0] && (
-                <div className="provider-detail-img" style={{ borderRadius:16, overflow:'hidden', marginBottom:14 }}>
-                  <img src={photos[0]} alt={business.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                <div className="provider-detail-img" style={{ borderRadius:16, overflow:'hidden', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <img src={photos[0]} alt={business.name} style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
                 </div>
               )}
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
@@ -517,8 +517,8 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
   return (
     <Modal show={!!community} onClose={onClose} title={community.name} syncHistory={false}>
       {community.photo_url && (
-        <div style={{ borderRadius:16, overflow:'hidden', marginBottom:16 }}>
-          <img src={community.photo_url} alt={community.name} style={{ width:'100%', height:200, objectFit:'cover' }} />
+        <div style={{ borderRadius:16, overflow:'hidden', marginBottom:16, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <img src={community.photo_url} alt={community.name} style={{ width:'100%', height:'auto', maxHeight:260, objectFit:'contain', display:'block' }} />
         </div>
       )}
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
@@ -896,8 +896,8 @@ export default function Comunidades() {
               {filteredComm.map(group => (
                 <Card key={group.id} onClick={() => openCommunityDetails(group)} style={{ padding:0, overflow:'hidden' }}>
                   {group.photo_url ? (
-                    <div style={{ position:'relative', height:140, overflow:'hidden', background:C.primaryLight }}>
-                      <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    <div style={{ position:'relative', height:180, overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                     </div>
                   ) : null}
                   <div style={{ padding:'14px 16px 16px' }}>

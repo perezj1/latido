@@ -457,9 +457,9 @@ export default function Home() {
                 return (
                   <Link key={ad.id} to={getAdHref(ad)} style={{ textDecoration:'none', flexShrink:0, width:152, display:'block' }}>
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-                      <div style={{ height:120, background:cc.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative' }}>
+                      <div style={{ height:120, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative' }}>
                         {ad.img
-                          ? <img src={ad.img} alt={ad.title} style={{ width:'100%', height:'100%', objectFit:'cover', position:'absolute', inset:0 }} />
+                          ? <img src={ad.img} alt={ad.title} style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
                           : <span>{cat?.emoji || '📌'}</span>
                         }
                         <span style={{ position:'absolute', top:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(255,255,255,0.92)', color:cc.tc, padding:'3px 7px', borderRadius:999 }}>{cat?.label}</span>
@@ -593,9 +593,9 @@ export default function Home() {
                   style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
                 >
                   <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-                    <div style={{ height:120, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
+                    <div style={{ height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
                       {group.photo_url
-                        ? <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        ? <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{group.emoji || '🤝'}</span>
                       }
                     </div>
