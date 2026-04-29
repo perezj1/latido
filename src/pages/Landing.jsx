@@ -162,13 +162,13 @@ function PanelSobre() {
           {'Pero con el tiempo entendí algo: la dificultad no era el país — era no tener cerca a gente con la que compartía mi forma de ver la vida.'}
         </p>
         <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.82)', lineHeight: 1.85, margin: 0 }}>
-          {'Todo cambiaba cada vez que conocía a alguien que hablaba español. La cercanía, el humor, la forma de expresarnos… el idioma nos unía. Porque el idioma no son solo palabras — es cultura, es identidad, es hogar.'}
+          {'Todo mejoraba cada vez que conocía a alguien nuevo que hablaba español, sin importar la parte del mundo de la que viniera. Y lo que más nos unía, siempre, era el idioma. Porque el idioma no son solo palabras — Es la forma en que te ríes, en que te quejas, en que celebras. El idioma es cultura, es memoria, es hogar.'}
         </p>
         <p style={{ fontFamily: PP, fontSize: 'clamp(16px,2.4vw,19px)', color: '#fff', lineHeight: 1.6, margin: 0, fontWeight: 800, letterSpacing: -0.2 }}>
           {'Por eso creé Latido.'}
         </p>
         <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.82)', lineHeight: 1.85, margin: 0 }}>
-          {'Para que nadie tenga que pasar años buscando a los suyos. Para que desde el primer día tengas un lugar donde encontrar ayuda, trabajo, piso, eventos y personas que hablan tu idioma.'}
+          {'Para que nadie tenga que pasar años buscando a los suyos. Para que desde el primer día tengamos un lugar donde encontrar ayuda, trabajo, piso, eventos y personas que hablan nuestro idioma.'}
         </p>
         <p style={{ fontFamily: PP, fontSize: 15, color: 'rgba(255,255,255,0.82)', lineHeight: 1.85, margin: 0 }}>
           {'Un lugar donde sentirte acompañado.'}
