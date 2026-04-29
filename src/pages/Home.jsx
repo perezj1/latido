@@ -404,7 +404,7 @@ export default function Home() {
           </div>
 
           <div className="hero-search-wrap">
-            <GlobalSearch size="lg" placeholder="Encuentra lo que buscas" />
+            <GlobalSearch size="lg" placeholder="¿Qué necesitas hoy?" />
             <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:12 }}>
               <div className="hero-pills">
                 {[

@@ -181,10 +181,10 @@ function PanelSobre() {
         </div>
       </div>
       <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #3B82F6, #1E3A8A)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>👤</div>
+        <img src="/founder.jpg" alt="José Pérez González" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid rgba(255,255,255,0.2)' }} />
         <div>
-          <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: '#fff', margin: '0 0 2px' }}>Fundador de Latido</p>
-          <p style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Español en Suiza desde 2017 · Luzern</p>
+          <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: '#fff', margin: '0 0 2px' }}>{'José Pérez González'}</p>
+          <p style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Fundador · Español en Suiza desde 2017 · Luzern</p>
         </div>
         <Link to="/auth" style={{ marginLeft: 'auto', fontFamily: PP, fontWeight: 800, fontSize: 13, background: '#fff', color: '#1E3A8A', textDecoration: 'none', padding: '12px 22px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           Quiero ser parte de esto
