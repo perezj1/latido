@@ -190,25 +190,15 @@ export default function Publicar() {
 
         <div
           style={{
-            background:form.privacy === 'private' ? C.warnLight : C.successLight,
-            border:`1px solid ${form.privacy === 'private' ? C.warnMid : C.successMid}`,
+            background:C.successLight,
+            border:`1px solid ${C.successMid}`,
             borderRadius:14,
             padding:'12px 16px',
             marginBottom:24
           }}
         >
-          <p
-            style={{
-              fontFamily:PP,
-              fontSize:12,
-              fontWeight:600,
-              color:form.privacy === 'private' ? '#92400E' : '#065F46',
-              margin:0
-            }}
-          >
-            {form.privacy === 'private'
-              ? '🔒 Solo usuarios con cuenta pueden ver tu anuncio y escribirte dentro de Latido'
-              : '🌐 Tu anuncio es público, pero el contacto sigue dentro de Latido'}
+          <p style={{ fontFamily:PP, fontSize:12, fontWeight:600, color:'#065F46', margin:0 }}>
+            🌐 Tu anuncio es público. El contacto con los interesados es siempre dentro de Latido.
           </p>
         </div>
 
@@ -663,97 +653,6 @@ export default function Publicar() {
             </p>
           </div>
 
-          <div style={{ marginBottom:10 }}>
-            <p
-              style={{
-                fontFamily:PP,
-                fontSize:10,
-                fontWeight:700,
-                color:C.light,
-                letterSpacing:1,
-                marginBottom:10
-              }}
-            >
-              VISIBILIDAD DEL ANUNCIO *
-            </p>
-
-            <div className="grid-2" style={{ gap:10 }}>
-              {[
-                {
-                  id:'public',
-                  ico:'🌐',
-                  title:'Público',
-                  desc:'Tu anuncio es visible para cualquier visitante, sin cuenta.',
-                  bg:C.successLight,
-                  border:C.successMid,
-                  tc:'#065F46'
-                },
-                {
-                  id:'private',
-                  ico:'🔒',
-                  title:'Privado',
-                  desc:'Solo usuarios registrados pueden ver tu anuncio.',
-                  bg:C.warnLight,
-                  border:C.warnMid,
-                  tc:'#92400E'
-                },
-              ].map(o => (
-                <button
-                  key={o.id}
-                  onClick={() => s('privacy', o.id)}
-                  style={{
-                    background:form.privacy === o.id ? o.bg : '#fff',
-                    border:`2px solid ${form.privacy === o.id ? o.border : C.border}`,
-                    borderRadius:16,
-                    padding:'14px 12px',
-                    cursor:'pointer',
-                    textAlign:'center',
-                    transition:'all .15s'
-                  }}
-                >
-                  <p style={{ fontSize:26, marginBottom:6 }}>{o.ico}</p>
-                  <p
-                    style={{
-                      fontFamily:PP,
-                      fontWeight:700,
-                      fontSize:13,
-                      color:form.privacy === o.id ? o.tc : C.text,
-                      marginBottom:5
-                    }}
-                  >
-                    {o.title}
-                  </p>
-                  <p style={{ fontFamily:PP, fontSize:10, color:C.light, lineHeight:1.4 }}>
-                    {o.desc}
-                  </p>
-                </button>
-              ))}
-            </div>
-
-            {/* <div
-              style={{
-                background:form.privacy === 'private' ? C.warnLight : C.successLight,
-                border:`1px solid ${form.privacy === 'private' ? C.warnMid : C.successMid}`,
-                borderRadius:12,
-                padding:'10px 13px',
-                marginTop:10
-              }}
-            >
-              <p
-                style={{
-                  fontFamily:PP,
-                  fontSize:11,
-                  color:form.privacy === 'private' ? '#92400E' : '#065F46',
-                  margin:0,
-                  lineHeight:1.5
-                }}
-              >
-                {form.privacy === 'private'
-                  ? '🔒 Solo usuarios con cuenta pueden ver tu anuncio y escribirte dentro de Latido.'
-                  : '🌐 Tu anuncio es público para todos, pero las conversaciones pasan por Latido.'}
-              </p>
-            </div> */}
-          </div>
 
           {form.title && (
             <div style={{ background:C.bg, borderRadius:14, padding:'12px 14px', marginBottom:10 }}>
@@ -786,21 +685,6 @@ export default function Publicar() {
               )}
 
               <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:6 }}>
-                {selectedCat && (
-                  <span
-                    style={{
-                      fontFamily:PP,
-                      fontSize:10,
-                      fontWeight:600,
-                      padding:'3px 8px',
-                      borderRadius:20,
-                      background:form.privacy === 'private' ? C.warnLight : C.successLight,
-                      color:form.privacy === 'private' ? '#92400E' : '#065F46'
-                    }}
-                  >
-                    {form.privacy === 'private' ? '🔒 Privado' : '🌐 Público'}
-                  </span>
-                )}
 
                 {form.canton && (
                   <span
