@@ -154,14 +154,17 @@ export default function RegistrarNegocio() {
 
       {/* Step 0 — Business type */}
       {step === 0 && (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {NEGOCIO_TYPES_FORM.map(t => {
             const [emoji, ...words] = t.label.split(' ')
             return (
-              <button key={t.id} onClick={() => s('type', t.id)}
-                style={{ background:form.type===t.id?C.primary:C.surface, borderRadius:16, padding:'18px 14px', display:'flex', flexDirection:'column', gap:7, border:`2px solid ${form.type===t.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
-                <span style={{ fontSize:26 }}>{emoji}</span>
-                <span style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:form.type===t.id?'#fff':C.text }}>{words.join(' ')}</span>
+              <button key={t.id} onClick={() => { s('type', t.id); setStep(1) }}
+                style={{ background:form.type===t.id?C.primary:C.surface, borderRadius:16, padding:'15px 16px', display:'flex', alignItems:'center', gap:14, border:`2px solid ${form.type===t.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
+                <span style={{ fontSize:28, width:36, flex:'0 0 36px', textAlign:'center' }}>{emoji}</span>
+                <span style={{ display:'flex', flexDirection:'column', minWidth:0 }}>
+                  <span style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:form.type===t.id?'#fff':C.text, marginBottom:3 }}>{words.join(' ')}</span>
+                  <span style={{ fontFamily:PP, fontSize:11, color:form.type===t.id?'rgba(255,255,255,0.78)':C.light, lineHeight:1.45 }}>{t.desc}</span>
+                </span>
               </button>
             )
           })}
@@ -263,24 +266,23 @@ export default function RegistrarNegocio() {
       )}
 
       {/* Navigation */}
-      <div style={{ display:'flex', gap:10, marginTop:24 }}>
-        {step > 0 && (
+      {step > 0 && (
+        <div style={{ display:'flex', gap:10, marginTop:24 }}>
           <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>
-        )}
-        {step < STEPS.length - 1 ? (
-          <Btn onClick={() => {
-            if (step === 0 && !form.type) { toast.error('Selecciona el tipo de negocio'); return }
-            if (step === 1 && !form.name) { toast.error('Añade el nombre del negocio'); return }
-            setStep(s => s + 1)
-          }} style={{ flex:1 }}>
-            Continuar →
-          </Btn>
-        ) : (
-          <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Registrando...' : '🏪 Registrar negocio'}
-          </Btn>
-        )}
-      </div>
+          {step < STEPS.length - 1 ? (
+            <Btn onClick={() => {
+              if (step === 1 && !form.name) { toast.error('Añade el nombre del negocio'); return }
+              setStep(s => s + 1)
+            }} style={{ flex:1 }}>
+              Continuar →
+            </Btn>
+          ) : (
+            <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
+              {loading ? '⏳ Registrando...' : '🏪 Registrar negocio'}
+            </Btn>
+          )}
+        </div>
+      )}
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
         Gratuito · Se publica al instante · Puedes eliminarlo desde tu perfil
       </p>

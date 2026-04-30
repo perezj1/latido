@@ -9,25 +9,24 @@ import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '
 import toast from 'react-hot-toast'
 
 const STEPS = [
-  { title:'¿Qué tipo de trabajo es?',     sub:'Elige el sector de la oferta' },
-  { title:'Título y tipo de contrato',    sub:'¿Cómo se llama el puesto y qué jornada ofreces?' },
-  { title:'Ubicación, salario y detalle', sub:'Dónde es, cuánto paga y qué buscas en un candidato' },
-  { title:'Publicación',                  sub:'Último paso — revisa la oferta y recibirás candidatos por mensaje' },
+  { title:'¿En qué sector?',    sub:'Elige el área de trabajo para adaptar la oferta' },
+  { title:'Datos del puesto',   sub:'Título, jornada, ubicación y salario' },
+  { title:'Detalles y publicar', sub:'Último paso — idiomas, descripción y revisión final' },
 ]
 
 const JOB_SECTORS = [
-  { id:'hosteleria',     emoji:'👨‍🍳', label:'Hostelería & Cocina' },
-  { id:'cuidados',       emoji:'❤️', label:'Cuidados & Au pair' },
-  { id:'limpieza',       emoji:'🧹', label:'Limpieza & Servicios' },
-  { id:'tecnologia',     emoji:'💻', label:'Tecnología & IT' },
-  { id:'estetica',       emoji:'💇', label:'Estética & Belleza' },
-  { id:'construccion',   emoji:'🏗️', label:'Construcción' },
-  { id:'transporte',     emoji:'🚚', label:'Transporte & Logística' },
-  { id:'administracion', emoji:'📋', label:'Administración' },
-  { id:'educacion',      emoji:'🎓', label:'Educación & Clases' },
-  { id:'servicios',      emoji:'🔧', label:'Servicios & Técnico' },
-  { id:'salud',          emoji:'🏥', label:'Salud & Enfermería' },
-  { id:'ventas',         emoji:'🛒', label:'Comercio & Ventas' },
+  { id:'hosteleria',     emoji:'👨‍🍳', label:'Hostelería & Cocina',      sub:'Camarero/a, cocinero/a, barista, ayudante de cocina…' },
+  { id:'cuidados',       emoji:'❤️',  label:'Cuidados & Au pair',        sub:'Niñero/a, au pair, cuidador/a de personas mayores…' },
+  { id:'limpieza',       emoji:'🧹',  label:'Limpieza & Servicios',      sub:'Limpieza doméstica, oficinas, hoteles, conserje…' },
+  { id:'tecnologia',     emoji:'💻',  label:'Tecnología & IT',           sub:'Desarrollo, soporte técnico, sistemas, diseño digital…' },
+  { id:'estetica',       emoji:'💇',  label:'Estética & Belleza',        sub:'Peluquería, barbería, uñas, maquillaje, estética…' },
+  { id:'construccion',   emoji:'🏗️', label:'Construcción',              sub:'Albañil, electricista, fontanero, pintor, carpintero…' },
+  { id:'transporte',     emoji:'🚚',  label:'Transporte & Logística',    sub:'Conductor/a, repartidor/a, almacén, mensajería…' },
+  { id:'administracion', emoji:'📋',  label:'Administración',            sub:'Recepcionista, asistente, contabilidad, oficina…' },
+  { id:'educacion',      emoji:'🎓',  label:'Educación & Clases',        sub:'Profesor/a, tutor/a, clases particulares, monitor/a…' },
+  { id:'servicios',      emoji:'🔧',  label:'Servicios & Técnico',       sub:'Reparaciones, mantenimiento, instalaciones, jardinería…' },
+  { id:'salud',          emoji:'🏥',  label:'Salud & Enfermería',        sub:'Enfermero/a, auxiliar, farmacia, fisioterapia…' },
+  { id:'ventas',         emoji:'🛒',  label:'Comercio & Ventas',         sub:'Dependiente/a, cajero/a, atención al cliente, tienda…' },
 ]
 
 const JOB_TYPES = [
@@ -187,33 +186,28 @@ export default function PublicarEmpleo() {
 
       {/* Step 0 — Sector */}
       {step === 0 && (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))', gap:10 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:10 }}>
           {JOB_SECTORS.map(sector => (
-            <button key={sector.id} onClick={() => s('sector', sector.id)}
-              style={{ background:form.sector===sector.id?C.primary:C.surface, borderRadius:16, padding:'16px 14px', display:'flex', flexDirection:'column', gap:7, border:`2px solid ${form.sector===sector.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
-                <span style={{ fontSize:24 }}>{sector.emoji}</span>
-                <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:form.sector===sector.id?'#fff':C.text, lineHeight:1.3 }}>{sector.label}</span>
+            <button key={sector.id} onClick={() => { s('sector', sector.id); setStep(1) }}
+              style={{ background:form.sector===sector.id?C.primaryLight:'#fff', borderRadius:16, padding:'16px 14px', minHeight:150, display:'flex', flexDirection:'column', alignItems:'flex-start', gap:8, border:`2px solid ${form.sector===sector.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
+              <span style={{ fontSize:28, lineHeight:1 }}>{sector.emoji}</span>
+              <div>
+                <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:form.sector===sector.id?C.primary:C.text, margin:'0 0 4px', lineHeight:1.25 }}>{sector.label}</p>
+                <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, margin:0, lineHeight:1.45 }}>{sector.sub}</p>
+              </div>
             </button>
           ))}
         </div>
       )}
 
-      {/* Step 1 — Title, company, job type */}
+      {/* Step 1 — Título, tipo de contrato, ubicación y salario */}
       {step === 1 && (
         <>
           <Input label="Título del puesto *" placeholder="Ej: Cocinero/a, Cuidadora, Técnico IT" required value={form.title} onChange={e=>s('title',e.target.value)} />
-          <Input label="Empresa o nombre del empleador" placeholder="Ej: Restaurante El Rincón, Familia particular" value={form.company} onChange={e=>s('company',e.target.value)} />
-          <ImageUploadField
-            label="Logo o imagen de la empresa (opcional)"
-            previewUrl={form.logoUrl}
-            uploading={uploadingLogo}
-            onFilesSelected={handleLogoUpload}
-            onRemove={() => s('logoUrl', '')}
-            hint="Se mostrará en la tarjeta y detalle de la oferta."
-          />
+          <Input label="Empresa o nombre del empleador (opcional)" placeholder="Ej: Restaurante El Rincón, Familia particular" value={form.company} onChange={e=>s('company',e.target.value)} />
 
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE CONTRATO</p>
-          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
             {JOB_TYPES.map(t => (
               <button key={t.id} onClick={() => s('jobType', t.id)}
                 style={{ background:form.jobType===t.id?C.primaryLight:'#fff', border:`1.5px solid ${form.jobType===t.id?C.primary:C.border}`, borderRadius:14, padding:'13px 16px', cursor:'pointer', display:'flex', gap:12, alignItems:'center', textAlign:'left', transition:'all .15s' }}>
@@ -225,13 +219,8 @@ export default function PublicarEmpleo() {
               </button>
             ))}
           </div>
-        </>
-      )}
 
-      {/* Step 2 — Location, salary, languages, description */}
-      {step === 2 && (
-        <>
-          <div className="grid-2" style={{ gap:10 }}>
+          <div className="grid-2" style={{ gap:10, marginBottom:4 }}>
             <Input label="Ciudad" placeholder="Zürich" value={form.city} onChange={e=>s('city',e.target.value)} />
             <Select label="Cantón *" required value={form.canton} onChange={e=>s('canton',e.target.value)}>
               <option value="">Seleccionar...</option>
@@ -239,46 +228,55 @@ export default function PublicarEmpleo() {
             </Select>
           </div>
 
-          <div style={{ marginBottom:16 }}>
-            <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>
-              Salario o remuneración
+          <div style={{ marginBottom:4 }}>
+            <label style={{ display:'block', fontFamily:PP, fontSize:12, fontWeight:700, color:C.text, marginBottom:8 }}>
+              Salario o remuneración (opcional)
             </label>
-
-            <div style={{ display:'flex', border:`1.5px solid ${C.border}`, borderRadius:12, overflow:'hidden', background:'#fff' }}>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="Ej: 4200"
-                value={form.salaryValue}
-                onChange={e => s('salaryValue', e.target.value)}
-                style={{ flex:1, border:'none', outline:'none', background:'transparent', padding:'13px 14px', fontFamily:PP, fontSize:13, color:C.text }}
-              />
-              <div style={{ padding:'13px 14px', borderLeft:`1px solid ${C.border}`, fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary, background:C.primaryLight, whiteSpace:'nowrap' }}>
-                CHF
+            <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
+              <div style={{ display:'flex', border:`1.5px solid ${C.border}`, borderRadius:14, overflow:'hidden', flex:1, background:'#fff' }}>
+                <div style={{ padding:'13px 14px', background:C.primaryLight, color:C.primary, fontWeight:800, fontSize:12, whiteSpace:'nowrap', display:'flex', alignItems:'center' }}>
+                  CHF
+                </div>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Ej: 4200"
+                  value={form.salaryValue}
+                  onChange={e => s('salaryValue', e.target.value.replace(/[^0-9.,]/g, ''))}
+                  style={{ flex:1, border:'none', outline:'none', background:'transparent', padding:'13px 14px', fontFamily:PP, fontSize:13, color:C.text }}
+                />
               </div>
+              <select
+                value={form.salaryUnit}
+                onChange={e => s('salaryUnit', e.target.value)}
+                style={{ border:`1.5px solid ${C.border}`, borderRadius:14, padding:'0 12px', fontFamily:PP, fontSize:12, color:C.text, background:'#fff', cursor:'pointer', minWidth:100 }}
+              >
+                {SALARY_UNITS.map(unit => <option key={unit.id} value={unit.id}>{unit.label}</option>)}
+              </select>
             </div>
-
-            <div style={{ marginTop:10 }}>
-              <Select label="Frecuencia del salario" value={form.salaryUnit} onChange={e => s('salaryUnit', e.target.value)}>
-                {SALARY_UNITS.map(unit => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
             {form.salaryValue && (
-              <div style={{ marginTop:10, background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:12, padding:'10px 12px' }}>
-                <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:0 }}>
-                  Se mostrará como: <strong>{getFormattedSalary()}</strong>
-                </p>
-              </div>
+              <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'8px 0 0', background:C.primaryLight, padding:'8px 12px', borderRadius:10 }}>
+                Se mostrará como: <strong>{getFormattedSalary()}</strong>
+              </p>
             )}
           </div>
+        </>
+      )}
 
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>IDIOMAS REQUERIDOS</p>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:16 }}>
+      {/* Step 2 — Logo, idiomas, descripción, resumen y publicar */}
+      {step === 2 && (
+        <>
+          <ImageUploadField
+            label="Logo o imagen de la empresa (opcional)"
+            previewUrl={form.logoUrl}
+            uploading={uploadingLogo}
+            onFilesSelected={handleLogoUpload}
+            onRemove={() => s('logoUrl', '')}
+            hint="Se mostrará en la tarjeta y detalle de la oferta."
+          />
+
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>IDIOMAS REQUERIDOS (OPCIONAL)</p>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:20 }}>
             {LANG_OPTIONS.map(lang => (
               <button key={lang} onClick={() => toggleLang(lang)}
                 style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${form.langs.includes(lang)?C.primary:C.border}`, background:form.langs.includes(lang)?C.primary:'#fff', color:form.langs.includes(lang)?'#fff':C.mid, cursor:'pointer', transition:'all .12s' }}>
@@ -287,39 +285,30 @@ export default function PublicarEmpleo() {
             ))}
           </div>
 
-          <Input label="Descripción del puesto" placeholder="Qué hará el candidato, requisitos, experiencia necesaria, condiciones..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
-        </>
-      )}
+          <Input label="Descripción del puesto (opcional)" placeholder="Qué hará el candidato, requisitos, experiencia necesaria, condiciones..." rows={4} value={form.desc} onChange={e=>s('desc',e.target.value)} />
 
-      {/* Step 3 — Publication + disclaimer */}
-      {step === 3 && (
-        <>
-          <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:14, padding:'14px 16px', marginBottom:14 }}>
-            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 6px' }}>💬 Candidaturas dentro de Latido</p>
-            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.6, margin:0 }}>
-              Los candidatos te contactarán por mensajes dentro de la plataforma. No mostramos WhatsApp, email ni links externos en la oferta.
-            </p>
+          {/* Resumen antes de publicar */}
+          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'16px', marginBottom:4 }}>
+            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:0.5, marginBottom:12 }}>RESUMEN DE LA OFERTA</p>
+            <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
+              <span style={{ fontSize:30, flexShrink:0 }}>{selectedSector?.emoji || '💼'}</span>
+              <div style={{ flex:1, minWidth:0 }}>
+                <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, margin:'0 0 6px' }}>{form.title}</p>
+                <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:4 }}>
+                  {selectedSector && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'#DBEAFE', color:C.primaryDark }}>{selectedSector.label}</span>}
+                  {selectedType && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'#D1FAE5', color:'#065F46' }}>{selectedType.label}</span>}
+                  {form.canton && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>📍 {form.city || form.canton}</span>}
+                </div>
+                {form.company && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:'0 0 2px' }}>🏢 {form.company}</p>}
+                {form.salaryValue && <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, margin:0 }}>{getFormattedSalary()}</p>}
+              </div>
+            </div>
           </div>
 
-          {form.title && (
-            <div style={{ background:C.bg, borderRadius:14, padding:'14px 16px', marginTop:6, marginBottom:14 }}>
-              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:10, letterSpacing:0.5 }}>VISTA PREVIA</p>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
-                  {selectedSector && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#DBEAFE', color:C.primaryDark }}>{selectedSector.emoji} {selectedSector.label}</span>}
-                  {selectedType && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#D1FAE5', color:'#065F46' }}>{selectedType.label}</span>}
-                  {form.canton && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>📍 {form.city || form.canton}</span>}
-                </div>
-                <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, marginBottom:4 }}>{form.title}</p>
-                {form.company && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:4 }}>🏢 {form.company}</p>}
-                {form.salaryValue && <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary }}>💰 {getFormattedSalary()}</p>}
-                {form.langs.length > 0 && <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:4 }}>🗣 {form.langs.join(' · ')}</p>}
-              </div>
-            )}
-
-          <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px' }}>
+          <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginBottom:4 }}>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>
             <p style={{ fontFamily:PP, fontSize:11, color:'#7C2D12', lineHeight:1.7, margin:0 }}>
-              Al publicar esta oferta confirmas que es real, que tienes autorización para contratar y que eres responsable del proceso de selección. Latido no se hace responsable de la veracidad de los datos ni de las condiciones laborales ofrecidas.
+              Al publicar confirmas que la oferta es real y que tienes autorización para contratar. Latido no se hace responsable de las condiciones laborales ofrecidas.
             </p>
           </div>
         </>
@@ -330,21 +319,22 @@ export default function PublicarEmpleo() {
         {step > 0 && (
           <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>
         )}
-        {step < STEPS.length - 1 ? (
-          <Btn onClick={() => {
-            if (step === 0 && !form.sector) { toast.error('Selecciona el sector'); return }
-            if (step === 1 && !form.title) { toast.error('Añade el título del puesto'); return }
-            if (step === 1 && !form.jobType) { toast.error('Selecciona el tipo de contrato'); return }
-            if (step === 2 && !form.canton) { toast.error('Selecciona el cantón'); return }
-            setStep(s => s + 1)
-          }} style={{ flex:1 }}>
-            Continuar →
-          </Btn>
-        ) : (
-          <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Publicando...' : '💼 Publicar empleo'}
-          </Btn>
-        )}
+        {step === 0 ? null
+          : step === 1 ? (
+            <Btn onClick={() => {
+              if (!form.title) { toast.error('Añade el título del puesto'); return }
+              if (!form.jobType) { toast.error('Selecciona el tipo de contrato'); return }
+              if (!form.canton) { toast.error('Selecciona el cantón'); return }
+              setStep(2)
+            }} style={{ flex:1 }}>
+              Continuar →
+            </Btn>
+          ) : (
+            <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
+              {loading ? '⏳ Publicando...' : '💼 Publicar empleo'}
+            </Btn>
+          )
+        }
       </div>
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
         Gratuito · Se publica al instante · Puedes eliminarlo desde tu perfil

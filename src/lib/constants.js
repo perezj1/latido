@@ -42,14 +42,14 @@ export const AD_TYPES = [
 
 // ── COMMUNITY CATEGORIES ───────────────────────────────────────
 export const COMMUNITY_CATS = [
-  { id:'pais',         emoji:'🌎', label:'Por país de origen' },
-  { id:'mamas',        emoji:'👩‍👧', label:'Mamás latinas' },
-  { id:'deporte',      emoji:'⚽', label:'Deportes' },
-  { id:'profesional',  emoji:'💼', label:'Profesionales' },
-  { id:'idioma',       emoji:'🗣️', label:'Idiomas' },
-  { id:'fe',           emoji:'🙏', label:'Fe & Espiritualidad' },
-  { id:'gastronomia',  emoji:'🍳', label:'Gastronomía' },
-  { id:'voluntariado', emoji:'❤️', label:'Voluntariado' },
+  { id:'pais',         emoji:'🌎', label:'País de origen', desc:'Grupos de personas del mismo país o región' },
+  { id:'mamas',        emoji:'👩‍👧', label:'Mamás latinas', desc:'Familias, crianza, apoyo y planes con niños' },
+  { id:'deporte',      emoji:'⚽', label:'Deportes', desc:'Equipos, partidos, entrenos y actividades físicas' },
+  { id:'profesional',  emoji:'💼', label:'Profesionales', desc:'Networking, empleo, emprendimiento y contactos' },
+  { id:'idioma',       emoji:'🗣️', label:'Idiomas', desc:'Intercambio, práctica y aprendizaje de idiomas' },
+  { id:'fe',           emoji:'🙏', label:'Fe & Espiritualidad', desc:'Grupos religiosos, espirituales o de reflexión' },
+  { id:'gastronomia',  emoji:'🍳', label:'Gastronomía', desc:'Comida, recetas, restaurantes y productos latinos' },
+  { id:'voluntariado', emoji:'❤️', label:'Voluntariado', desc:'Ayuda comunitaria, iniciativas sociales y apoyo' },
 ]
 
 // ── EVENT CATEGORIES ───────────────────────────────────────────
@@ -178,12 +178,12 @@ export const MOCK_JOBS = [
 
 export const NEGOCIO_TYPES = [
   { id:'',            label:'Todos' },
-  { id:'restaurante', label:'🍽️ Restaurante' },
-  { id:'barberia',    label:'✂️ Barbería' },
-  { id:'tienda',      label:'🛒 Tienda' },
-  { id:'pasteleria',  label:'🍰 Pastelería' },
-  { id:'belleza',     label:'💇 Belleza' },
-  { id:'servicios',   label:'🔧 Servicios' },
+  { id:'restaurante', label:'🍽️ Restaurante', desc:'Comida, bebidas, take away o delivery' },
+  { id:'barberia',    label:'✂️ Barbería', desc:'Cortes, barba, fades y peluquería masculina' },
+  { id:'tienda',      label:'🛒 Tienda', desc:'Productos latinos, alimentación, ropa o artículos' },
+  { id:'pasteleria',  label:'🍰 Pastelería', desc:'Tortas, postres, panadería y pedidos especiales' },
+  { id:'belleza',     label:'💇 Belleza', desc:'Peluquería, uñas, maquillaje y estética' },
+  { id:'servicios',   label:'🔧 Servicios', desc:'Trámites, envíos, reparaciones u otros servicios' },
 ]
 
 export const MOCK_NEGOCIOS = [
@@ -281,12 +281,12 @@ export const MOCK_NEGOCIO_PHOTOS = {
 
 export const EVENTO_TYPES = [
   { id:'', label:'Todos' },
-  { id:'concierto', label:'🎵 Concierto' },
-  { id:'festival', label:'🎪 Festival' },
-  { id:'quedada', label:'🤝 Quedada' },
-  { id:'fiesta', label:'💃 Fiesta' },
-  { id:'networking', label:'💼 Networking' },
-  { id:'familia', label:'👨‍👩‍👧 Familiar' },
+  { id:'concierto', label:'🎵 Concierto', desc:'Música en vivo, artistas, bandas o shows' },
+  { id:'festival', label:'🎪 Festival', desc:'Eventos grandes con música, comida o cultura' },
+  { id:'quedada', label:'🤝 Quedada', desc:'Encuentros informales, planes y actividades' },
+  { id:'fiesta', label:'💃 Fiesta', desc:'Baile, DJ, celebración o noche latina' },
+  { id:'networking', label:'💼 Networking', desc:'Contactos profesionales, negocio y comunidad' },
+  { id:'familia', label:'👨‍👩‍👧 Familiar', desc:'Planes para niños, familias o todos los públicos' },
 ]
 
 export const MOCK_EVENTOS_LATINOS = [
