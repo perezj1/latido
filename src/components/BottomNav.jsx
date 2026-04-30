@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
@@ -30,6 +30,14 @@ export default function BottomNav() {
   const { hasUnread } = useUnreadMessages()
   const navigate = useNavigate()
   const [pickerOpen, setPickerOpen] = useState(false)
+
+  useEffect(() => {
+    if (!pickerOpen) return
+    window.history.pushState({ picker: true }, '')
+    const handlePop = () => setPickerOpen(false)
+    window.addEventListener('popstate', handlePop)
+    return () => window.removeEventListener('popstate', handlePop)
+  }, [pickerOpen])
 
   const fab = NO_FAB.includes(pathname) ? null : getPublishTarget()
 
@@ -74,7 +82,7 @@ export default function BottomNav() {
       {/* Publish picker sheet */}
       {pickerOpen && (
         <div
-          onClick={() => setPickerOpen(false)}
+          onClick={() => window.history.back()}
           style={{ position:'fixed', inset:0, zIndex:90, background:'rgba(0,0,0,0.45)', display:'flex', flexDirection:'column', justifyContent:'flex-end' }}
         >
           <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:'24px 24px 0 0', padding:'16px 20px 40px' }}>
