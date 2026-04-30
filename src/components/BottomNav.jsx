@@ -1,9 +1,18 @@
-import { Link, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { Avatar } from './UI'
 import { C, PP } from '../lib/theme'
 import { getPublishTarget } from '../lib/publishTargets'
+
+const PUBLISH_OPTIONS = [
+  { emoji:'📌', label:'Anuncio',   sub:'Publica lo que ofreces o buscas en la comunidad', to:'/publicar' },
+  { emoji:'💼', label:'Empleo',    sub:'Publica una oferta de trabajo',          to:'/publicar-empleo' },
+  { emoji:'🏪', label:'Negocio',   sub:'Registra tu negocio o empresa',          to:'/registrar-negocio' },
+  { emoji:'🤝', label:'Comunidad', sub:'Crea o añade un grupo de la comunidad',  to:'/registrar-comunidad' },
+  { emoji:'🎉', label:'Evento',    sub:'Comparte un evento con la comunidad',    to:'/publicar-evento' },
+]
 
 const TABS = [
   { path:'/',            emoji:'🏠', label:'Inicio' },
@@ -13,14 +22,16 @@ const TABS = [
   { path:'/perfil',      emoji:'👤', label:'Perfil' },
 ]
 
-const NO_FAB = ['/mensajes', '/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
+const NO_FAB = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
 
 export default function BottomNav() {
   const { pathname, search } = useLocation()
   const { isLoggedIn, displayName, avatarUrl } = useAuth()
   const { hasUnread } = useUnreadMessages()
+  const navigate = useNavigate()
+  const [pickerOpen, setPickerOpen] = useState(false)
 
-  const fab = NO_FAB.includes(pathname) ? null : getPublishTarget(pathname, search)
+  const fab = NO_FAB.includes(pathname) ? null : getPublishTarget()
 
   return (
     <>
@@ -31,20 +42,62 @@ export default function BottomNav() {
           background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)',
           boxShadow:'0 4px 20px rgba(37,99,235,0.45)',
         }}>
-          <Link
-            to={fab.to}
-            style={{
-              height:46, borderRadius:23,
-              background:'#fff',
-              color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center',
-              fontSize:13, fontWeight:700, textDecoration:'none',
-              padding:'0 20px', whiteSpace:'nowrap',
-              letterSpacing:-0.2,
-            }}
-            aria-label={fab.label}
-          >
-            {fab.label}
-          </Link>
+          {fab.showPicker ? (
+            <button
+              onClick={() => setPickerOpen(true)}
+              style={{
+                height:46, borderRadius:23, background:'#fff',
+                color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:13, fontWeight:700, border:'none', cursor:'pointer',
+                padding:'0 20px', whiteSpace:'nowrap', letterSpacing:-0.2,
+              }}
+            >
+              ✏️ {fab.label}
+            </button>
+          ) : (
+            <Link
+              to={fab.to}
+              style={{
+                height:46, borderRadius:23, background:'#fff',
+                color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:13, fontWeight:700, textDecoration:'none',
+                padding:'0 20px', whiteSpace:'nowrap', letterSpacing:-0.2,
+              }}
+              aria-label={fab.label}
+            >
+              {fab.label}
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Publish picker sheet */}
+      {pickerOpen && (
+        <div
+          onClick={() => setPickerOpen(false)}
+          style={{ position:'fixed', inset:0, zIndex:90, background:'rgba(0,0,0,0.45)', display:'flex', flexDirection:'column', justifyContent:'flex-end' }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:'24px 24px 0 0', padding:'16px 20px 40px' }}>
+            <div style={{ width:36, height:4, background:'#E2EAF4', borderRadius:4, margin:'0 auto 20px' }} />
+            <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:'#0F172A', marginBottom:6 }}>¿Qué quieres publicar?</p>
+            <p style={{ fontFamily:PP, fontSize:12, color:'#64748B', marginBottom:20 }}>Elige el tipo de publicación</p>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {PUBLISH_OPTIONS.map(opt => (
+                <button
+                  key={opt.to}
+                  onClick={() => { setPickerOpen(false); navigate(opt.to) }}
+                  style={{ display:'flex', alignItems:'center', gap:14, background:'#F8FAFF', border:'1px solid #E2EAF4', borderRadius:16, padding:'14px 16px', cursor:'pointer', textAlign:'left' }}
+                >
+                  <div style={{ width:44, height:44, background:'#EFF6FF', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>{opt.emoji}</div>
+                  <div>
+                    <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:'#0F172A', margin:'0 0 2px' }}>{opt.label}</p>
+                    <p style={{ fontFamily:PP, fontSize:11, color:'#64748B', margin:0 }}>{opt.sub}</p>
+                  </div>
+                  <span style={{ marginLeft:'auto', color:'#94A3B8', fontSize:18 }}>›</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
