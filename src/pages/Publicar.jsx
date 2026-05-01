@@ -24,7 +24,7 @@ const PUBLISH_INTENTS = [
   },
   {
     id:'ofrece_vende',
-    emoji:'✨',
+    emoji:'🏷️',
     title:'Ofrezco / vendo',
     desc:'Ofreces servicios, vivienda, cuidados, ayuda con trámites o vendes algo',
   },
