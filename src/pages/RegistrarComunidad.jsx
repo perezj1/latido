@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { COMMUNITY_CATS, CANTONS } from '../lib/constants'
-import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import { COMMUNITY_CATS } from '../lib/constants'
+import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
+import LocationFields from '../components/LocationFields'
 import { uploadPublicationImage } from '../lib/storage'
 import toast from 'react-hot-toast'
 
 const STEPS = [
   { title:'¿De qué trata tu comunidad?',  sub:'Elige la categoría que mejor la describe' },
-  { title:'Nombre, plataforma y ciudad',  sub:'Los datos básicos de tu comunidad' },
+  { title:'Nombre, plataforma y ubicación', sub:'Indica si es para toda Suiza o una ciudad concreta' },
   { title:'Descripción y enlace',         sub:'Cuéntanos más y añade el link de invitación' },
   { title:'Confirma y publica',           sub:'Revisa el resumen antes de enviar' },
 ]
@@ -161,13 +162,14 @@ export default function RegistrarComunidad() {
             ))}
           </div>
 
-          <div className="grid-2" style={{ gap:10 }}>
-            <Input label="Ciudad" placeholder="Zürich" value={form.city} onChange={e=>s('city',e.target.value)} />
-            <Select label="Cantón" value={form.canton} onChange={e=>s('canton',e.target.value)}>
-              <option value="">Todo Suiza</option>
-              {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
-            </Select>
-          </div>
+          <LocationFields
+            canton={form.canton}
+            city={form.city}
+            onCantonChange={value => s('canton', value)}
+            onCityChange={value => s('city', value)}
+            allowAllSwitzerland
+            hint="Deja “Toda Suiza” si la comunidad no depende de una ciudad concreta."
+          />
         </>
       )}
 
@@ -176,9 +178,9 @@ export default function RegistrarComunidad() {
         <>
           <ImageUploadField
             label="Foto de portada (opcional)"
-            value={form.photo_url}
+            previewUrl={form.photo_url}
             uploading={uploadingPhoto}
-            onUpload={handlePhotoUpload}
+            onFilesSelected={files => handlePhotoUpload(files?.[0])}
             onRemove={() => s('photo_url', '')}
           />
           <Input label="Descripción de la comunidad" placeholder="¿A quién está dirigida? ¿Qué hacéis juntos? ¿Cuándo os reunís?" rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />

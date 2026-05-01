@@ -9,7 +9,7 @@ import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
-import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, NEGOCIO_TYPES, getAdCat, normalizeAdCat } from '../lib/constants'
+import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, NEGOCIO_TYPES, formatAdLocation, getAdCat, normalizeAdCat } from '../lib/constants'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -80,7 +80,7 @@ function normalizePublication(kind, row) {
       icon: cat?.emoji || KIND_META[kind].icon,
       title: row.title,
       summary: `${type?.label || 'Anuncio'}${row.price ? ` · ${row.price}` : ''}`,
-      meta: [row.canton, row.plz, row.privacy === 'private' ? 'Privado' : 'Público'].filter(Boolean).join(' · '),
+      meta: [formatAdLocation(row), row.privacy === 'private' ? 'Privado' : 'Público'].filter(Boolean).join(' · '),
       active: !!row.active,
       createdAt: row.created_at,
       raw: row,
@@ -814,7 +814,7 @@ export default function Perfil() {
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.title || item.company}</p>
                     <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-                      {isJob ? `💼 ${item.company || ''} · ${item.city || item.canton || ''}` : `📍 ${item.canton || ''} ${item.plz || ''}`}
+                      {isJob ? `💼 ${item.company || ''} · ${item.city || item.canton || ''}` : `📍 ${formatAdLocation(item)}`}
                     </p>
                   </div>
                 </button>

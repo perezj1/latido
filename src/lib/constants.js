@@ -15,7 +15,121 @@ export const CANTONS = [
   { code:'ZG', name:'Zug' },          { code:'ZH', name:'Zürich' },
 ]
 
+export const CITIES_BY_CANTON = {
+  AG: ['Aarau', 'Baden', 'Wettingen', 'Wohlen', 'Zofingen', 'Brugg', 'Rheinfelden', 'Lenzburg'],
+  AI: ['Appenzell', 'Gonten', 'Oberegg', 'Schwende-Rüte'],
+  AR: ['Herisau', 'Teufen', 'Heiden', 'Speicher', 'Trogen', 'Walzenhausen'],
+  BE: ['Bern', 'Biel/Bienne', 'Thun', 'Köniz', 'Burgdorf', 'Langenthal', 'Interlaken', 'Münsingen'],
+  BL: ['Liestal', 'Allschwil', 'Muttenz', 'Pratteln', 'Binningen', 'Reinach', 'Münchenstein'],
+  BS: ['Basel', 'Riehen', 'Bettingen'],
+  FR: ['Fribourg', 'Bulle', 'Villars-sur-Glâne', 'Marly', 'Düdingen', 'Murten', 'Estavayer'],
+  GE: ['Genève', 'Vernier', 'Lancy', 'Meyrin', 'Carouge', 'Onex', 'Thônex', 'Versoix'],
+  GL: ['Glarus', 'Näfels', 'Netstal', 'Mollis', 'Ennenda'],
+  GR: ['Chur', 'Davos', 'St. Moritz', 'Arosa', 'Landquart', 'Ilanz', 'Thusis', 'Samedan'],
+  JU: ['Delémont', 'Porrentruy', 'Saignelégier', 'Courroux', 'Bassecourt'],
+  LU: ['Luzern', 'Emmen', 'Kriens', 'Horw', 'Sursee', 'Ebikon', 'Willisau'],
+  NE: ['Neuchâtel', 'La Chaux-de-Fonds', 'Le Locle', 'Val-de-Travers', 'Peseux', 'Boudry'],
+  NW: ['Stans', 'Hergiswil', 'Buochs', 'Ennetbürgen', 'Oberdorf'],
+  OW: ['Sarnen', 'Kerns', 'Alpnach', 'Sachseln', 'Engelberg'],
+  SG: ['St. Gallen', 'Rapperswil-Jona', 'Wil', 'Gossau', 'Uzwil', 'Buchs', 'Wattwil'],
+  SH: ['Schaffhausen', 'Neuhausen am Rheinfall', 'Thayngen', 'Beringen', 'Stein am Rhein'],
+  SO: ['Solothurn', 'Olten', 'Grenchen', 'Zuchwil', 'Biberist', 'Dornach', 'Balsthal'],
+  SZ: ['Schwyz', 'Freienbach', 'Küssnacht', 'Einsiedeln', 'Wollerau', 'Lachen', 'Arth'],
+  TG: ['Frauenfeld', 'Kreuzlingen', 'Arbon', 'Weinfelden', 'Amriswil', 'Romanshorn'],
+  TI: ['Lugano', 'Bellinzona', 'Locarno', 'Mendrisio', 'Chiasso', 'Minusio', 'Biasca'],
+  UR: ['Altdorf', 'Schattdorf', 'Erstfeld', 'Bürglen', 'Andermatt'],
+  VD: ['Lausanne', 'Yverdon-les-Bains', 'Montreux', 'Nyon', 'Renens', 'Vevey', 'Morges', 'Payerne'],
+  VS: ['Sion', 'Martigny', 'Monthey', 'Sierre', 'Brig-Glis', 'Visp', 'Crans-Montana'],
+  ZG: ['Zug', 'Baar', 'Cham', 'Risch-Rotkreuz', 'Steinhausen', 'Unterägeri', 'Menzingen'],
+  ZH: ['Zürich', 'Winterthur', 'Uster', 'Dübendorf', 'Dietikon', 'Wetzikon', 'Horgen', 'Kloten', 'Bülach', 'Opfikon'],
+}
+
+export const POPULAR_SWISS_CITIES = [
+  'Zürich', 'Genève', 'Basel', 'Bern', 'Lausanne', 'Winterthur', 'Luzern',
+  'St. Gallen', 'Lugano', 'Biel/Bienne', 'Thun', 'Köniz', 'La Chaux-de-Fonds',
+  'Fribourg', 'Schaffhausen', 'Chur', 'Neuchâtel', 'Vernier', 'Sion', 'Zug',
+]
+
+const CITY_RECORDS = Object.entries(CITIES_BY_CANTON).flatMap(([canton, cities]) =>
+  cities.map(city => ({ city, canton }))
+)
+
+const normalizeCitySearch = value =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+
+export function getCitySuggestionItems(canton='', query='', limit=8) {
+  const normalizedQuery = normalizeCitySearch(query)
+  const source = canton
+    ? CITY_RECORDS.filter(item => item.canton === canton)
+    : CITY_RECORDS
+
+  const filtered = normalizedQuery
+    ? source
+        .filter(item => normalizeCitySearch(item.city).includes(normalizedQuery))
+        .sort((a, b) => {
+          const aStarts = normalizeCitySearch(a.city).startsWith(normalizedQuery) ? 0 : 1
+          const bStarts = normalizeCitySearch(b.city).startsWith(normalizedQuery) ? 0 : 1
+          return aStarts - bStarts || a.city.localeCompare(b.city)
+        })
+    : POPULAR_SWISS_CITIES
+        .map(city => CITY_RECORDS.find(item => item.city === city))
+        .filter(Boolean)
+
+  return filtered.slice(0, limit)
+}
+
+export function getCitySuggestions(canton='', query='', limit=8) {
+  return getCitySuggestionItems(canton, query, limit).map(item => item.city)
+}
+
+export function getCantonForCity(city='') {
+  const normalizedCity = normalizeCitySearch(city)
+  return CITY_RECORDS.find(item => normalizeCitySearch(item.city) === normalizedCity)?.canton || ''
+}
+
 // ── AD CATEGORIES ──────────────────────────────────────────────
+const CITY_BY_PLZ = {
+  '1000':'Lausanne',
+  '1201':'Gen\u00e8ve',
+  '1204':'Gen\u00e8ve',
+  '1227':'Carouge',
+  '1200':'Gen\u00e8ve',
+  '3001':'Bern',
+  '3000':'Bern',
+  '3011':'Bern',
+  '3012':'Bern',
+  '4001':'Basel',
+  '4051':'Basel',
+  '5001':'Aarau',
+  '6004':'Luzern',
+  '6300':'Zug',
+  '8001':'Z\u00fcrich',
+  '8002':'Z\u00fcrich',
+  '8003':'Z\u00fcrich',
+  '8004':'Z\u00fcrich',
+  '8005':'Z\u00fcrich',
+  '8006':'Z\u00fcrich',
+  '8050':'Z\u00fcrich',
+}
+
+function cleanLocationPart(value='') {
+  return String(value || '').trim()
+}
+
+export function formatAdLocation(ad={}) {
+  const rawCanton = cleanLocationPart(ad.canton)
+  const canton = rawCanton.length <= 2 ? rawCanton.toUpperCase() : rawCanton
+  const rawCity = cleanLocationPart(ad.city)
+  const cityFromPlz = CITY_BY_PLZ[cleanLocationPart(ad.plz).slice(0, 4)] || ''
+  const city = rawCity && rawCity.toUpperCase() !== canton ? rawCity : cityFromPlz
+
+  if (city && canton) return `${city} ${canton}`
+  return city || canton || cleanLocationPart(ad.plz)
+}
+
 export const AD_CATS = [
   { id:'vivienda',   emoji:'🏠', label:'Vivienda',   desc:'Pisos, habitaciones y compañeros',  types:['busca','ofrece'],           sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
   { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Limpieza, clases, mudanzas y más',  types:['busca','ofrece'],           sub:['Limpieza','Cocina','Reparaciones','Mudanza','Clases','Peluquería','Mecánico','Informática','Otro'] },

@@ -3,8 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { AD_CATS, CANTONS, normalizeAdCat } from '../lib/constants'
-import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import { AD_CATS, formatAdLocation, normalizeAdCat } from '../lib/constants'
+import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
+import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
 import toast from 'react-hot-toast'
@@ -67,7 +68,7 @@ const PRICE_UNITS = [
   { id:'once', label:'Total' },
 ]
 
-const OPTIONAL_AD_INSERT_COLUMNS = ['price_amount', 'price_unit', 'contact_via_app', 'contact_phone', 'contact_email', 'photo_urls']
+const OPTIONAL_AD_INSERT_COLUMNS = ['city', 'price_amount', 'price_unit', 'contact_via_app', 'contact_phone', 'contact_email', 'photo_urls']
 const MULTI_PHOTO_CATS = new Set(['vivienda', 'venta'])
 
 function resolveTypeForCategory(intent, catId) {
@@ -128,6 +129,7 @@ export default function Publicar() {
     photo_urls:[],
     priceValue:'',
     priceUnit:'hora',
+    city:'',
     canton:'',
     plz:'',
     privacy:'public',
@@ -285,6 +287,7 @@ export default function Publicar() {
               photo_urls:[],
               priceValue:'',
               priceUnit:'hora',
+              city:'',
               canton:'',
               plz:'',
               privacy:'public',
@@ -350,6 +353,7 @@ export default function Publicar() {
         price: finalPrice,
         price_amount: Number.isNaN(priceAmount) ? null : priceAmount,
         price_unit: form.priceValue ? form.priceUnit : null,
+        city: form.city.trim() || null,
         canton: form.canton,
         plz: form.plz || null,
         privacy: form.privacy,
@@ -599,11 +603,16 @@ export default function Publicar() {
             )}
           </div>
 
-          <div className="grid-2" style={{ gap:10 }}>
-            <Select label="Cantón *" required value={form.canton} onChange={e => s('canton', e.target.value)}>
-              <option value="">Seleccionar...</option>
-              {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
-            </Select>
+          <LocationFields
+            canton={form.canton}
+            city={form.city}
+            onCantonChange={value => s('canton', value)}
+            onCityChange={value => s('city', value)}
+            cantonRequired
+            hint="Empieza por la ciudad; al elegir una sugerencia completamos el cantón."
+          />
+
+          <div style={{ marginBottom:10 }}>
             <Input
               label="Código postal (PLZ)"
               placeholder="8001"
@@ -635,7 +644,7 @@ export default function Publicar() {
                   )}
                   {form.canton && (
                     <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>
-                      📍 {form.canton}{form.plz ? ` ${form.plz}` : ''}
+                      📍 {formatAdLocation(form)}
                     </span>
                   )}
                 </div>

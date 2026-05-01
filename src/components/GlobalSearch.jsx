@@ -9,6 +9,7 @@ import {
   MOCK_JOBS,
   MOCK_NEGOCIOS,
   MOCK_EVENTOS_LATINOS,
+  formatAdLocation,
   getAdCat,
   normalizeAdCat,
   NEGOCIO_TYPES,
@@ -110,7 +111,9 @@ function normalizeAd(ad) {
     cat: normalizeAdCat(ad.cat) || '',
     title: ad.title || '',
     desc: ad.desc || ad.description || '',
+    city: ad.city || '',
     canton: ad.canton || 'Suiza',
+    plz: ad.plz || '',
     price: ad.price || '',
     privacy: ad.privacy || 'public',
   }
@@ -148,18 +151,20 @@ function searchAll(query, datasets, isLoggedIn) {
       (isLoggedIn || ad.privacy === 'public') && (
         ad.title.toLowerCase().includes(q) ||
         ad.desc.toLowerCase().includes(q) ||
-        ad.canton.toLowerCase().includes(q)
+        ad.canton.toLowerCase().includes(q) ||
+        formatAdLocation(ad).toLowerCase().includes(q)
       )
     )
     .slice(0, 3)
     .forEach(ad => {
       const cat = getAdCat(ad.cat)
+      const location = formatAdLocation(ad)
       results.push({
         type:'ad',
         id:ad.id,
         icon:cat?.emoji || '📌',
         label:ad.title,
-        sub:`${cat?.label || 'Tablón'} · ${ad.canton} · ${ad.price}`,
+        sub:[cat?.label || 'Tablón', location, ad.price].filter(Boolean).join(' · '),
         href:`/tablon?openAd=${encodeURIComponent(ad.id)}`,
         privacy:ad.privacy,
       })

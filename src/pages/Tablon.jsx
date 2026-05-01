@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import { fetchAvatarsByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
-import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, getAdCat, normalizeAdCat } from '../lib/constants'
+import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, formatAdLocation, getAdCat, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters, PhotoGallery } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 
@@ -58,6 +58,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
   const dateStr = ad.ts || (ad.created_at ? new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
   const photos = getAdPhotos(ad)
   const coverPhoto = photos[0]
+  const location = formatAdLocation(ad)
   return (
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', marginBottom:10, width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
       {coverPhoto && (
@@ -88,7 +89,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ display:'flex', gap:6, alignItems:'center' }}>
             <Avatar name={ad.user_name || ad.user} size={20} src={avatarSrc}/>
-            <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user_name || ad.user || 'Usuario'} · 📍 {ad.canton} {ad.plz}{dateStr ? ` · ${dateStr}` : ''}</span>
+            <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user_name || ad.user || 'Usuario'} · 📍 {location || ad.canton}{dateStr ? ` · ${dateStr}` : ''}</span>
           </div>
           {ad.price && <span style={{ fontFamily:PP, fontSize:13, fontWeight:800, color:C.primary }}>{fmtPrice(ad.price)}</span>}
         </div>
@@ -107,6 +108,7 @@ function AdDetail({ ad, user, avatarSrc }) {
   const recipientName = encodeURIComponent((ad.user_name || ad.user || '').trim())
   const photos = getAdPhotos(ad)
   const coverPhoto = photos[0]
+  const location = formatAdLocation(ad)
 
   return (
     <div>
@@ -129,7 +131,7 @@ function AdDetail({ ad, user, avatarSrc }) {
         <div style={{ display:'flex', gap:7, alignItems:'center' }}>
           <Avatar name={ad.user_name || ad.user} size={22} src={avatarSrc}/>
           <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>
-            {ad.user_name || ad.user || 'Usuario'} · 📍 {ad.canton} {ad.plz}
+            {ad.user_name || ad.user || 'Usuario'} · 📍 {location || ad.canton}
             {(ad.ts || ad.created_at) ? ` · ${ad.ts || new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}` : ''}
           </span>
         </div>

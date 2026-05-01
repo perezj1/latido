@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { EVENTO_TYPES, CANTONS } from '../lib/constants'
-import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import { EVENTO_TYPES } from '../lib/constants'
+import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
+import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import toast from 'react-hot-toast'
 
@@ -16,6 +17,7 @@ const STEPS = [
 ]
 
 const EVENT_TYPES_FORM = EVENTO_TYPES.filter(t => t.id !== '')
+const EVENT_MONTHS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
 
 export default function PublicarEvento() {
   const { isLoggedIn, user } = useAuth()
@@ -26,10 +28,20 @@ export default function PublicarEvento() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [done, setDone] = useState(false)
   const [form, setForm] = useState({
-    type:'', title:'', day:'', month:'', year:'', time:'', price:'',
+    type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'',
     city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'',
   })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
+  const setEventDate = value => {
+    const [, month, day] = value ? value.split('-') : []
+    setForm(f => ({
+      ...f,
+      date:value,
+      day:day || '',
+      month:month ? EVENT_MONTHS[Number(month) - 1] || '' : '',
+      year:value ? value.slice(0, 4) : '',
+    }))
+  }
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
@@ -53,14 +65,14 @@ export default function PublicarEvento() {
         Tu evento ya está visible para la comunidad hispanohablante en Suiza.
       </p>
       <Btn onClick={() => navigate('/comunidades?view=eventos')}>Ver en eventos →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', title:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otro evento
       </button>
     </div>
   )
 
   const handleSubmit = async () => {
-    if (!form.title || !form.canton) { toast.error('Completa el título y el cantón'); return }
+    if (!form.title || !form.date || !form.canton) { toast.error('Completa título, fecha y cantón'); return }
     setLoading(true)
     try {
       const { error } = await supabase.from('events').insert({
@@ -141,11 +153,9 @@ export default function PublicarEvento() {
         <>
           <Input label="Título del evento *" placeholder="Ej: Noche de salsa en Zürich" required value={form.title} onChange={e=>s('title',e.target.value)} />
           <div className="grid-2" style={{ gap:10 }}>
-            <Input label="Día" placeholder="18" value={form.day} onChange={e=>s('day',e.target.value)} />
-            <Input label="Mes" placeholder="MAY" value={form.month} onChange={e=>s('month',e.target.value.toUpperCase())} />
+            <Input label="Fecha del evento *" type="date" required value={form.date} onChange={e=>setEventDate(e.target.value)} />
+            <Input label="Hora de inicio" type="time" placeholder="21:00" value={form.time} onChange={e=>s('time',e.target.value)} />
           </div>
-          <Input label="Año" placeholder="2025" value={form.year} onChange={e=>s('year',e.target.value)} />
-          <Input label="Hora de inicio" placeholder="21:00" value={form.time} onChange={e=>s('time',e.target.value)} />
           <Input label="Precio de entrada" placeholder="Ej: Gratis · CHF 15 · CHF 10–20" value={form.price} onChange={e=>s('price',e.target.value)} />
         </>
       )}
@@ -153,13 +163,13 @@ export default function PublicarEvento() {
       {/* Step 2 — Location and description */}
       {step === 2 && (
         <>
-          <div className="grid-2" style={{ gap:10 }}>
-            <Input label="Ciudad" placeholder="Zürich" value={form.city} onChange={e=>s('city',e.target.value)} />
-            <Select label="Cantón *" required value={form.canton} onChange={e=>s('canton',e.target.value)}>
-              <option value="">Seleccionar...</option>
-              {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
-            </Select>
-          </div>
+          <LocationFields
+            canton={form.canton}
+            city={form.city}
+            onCantonChange={value => s('canton', value)}
+            onCityChange={value => s('city', value)}
+            cantonRequired
+          />
           <Input label="Lugar / Venue" placeholder="Ej: Rote Fabrik, Club Zukunft, Rosengarten Café" value={form.venue} onChange={e=>s('venue',e.target.value)} />
           <Input label="Descripción del evento" placeholder="Cuéntanos qué habrá, qué pueden esperar los asistentes..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
           <ImageUploadField
@@ -220,6 +230,7 @@ export default function PublicarEvento() {
           {step < STEPS.length - 1 ? (
             <Btn onClick={() => {
               if (step === 1 && !form.title) { toast.error('Añade un título'); return }
+              if (step === 1 && !form.date) { toast.error('Selecciona la fecha del evento'); return }
               setStep(s => s + 1)
             }} style={{ flex:1 }}>
               Continuar →

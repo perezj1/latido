@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { CANTONS } from '../lib/constants'
 import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
 import toast from 'react-hot-toast'
 
 const STEPS = [
   { title:'¿En qué sector?',    sub:'Elige el área de trabajo para adaptar la oferta' },
-  { title:'Datos del puesto',   sub:'Título, jornada, ubicación y salario' },
+  { title:'Datos del puesto',   sub:'Título, jornada, cantón, ciudad y salario' },
   { title:'Detalles y publicar', sub:'Último paso — idiomas, descripción y revisión final' },
 ]
 
@@ -220,13 +220,13 @@ export default function PublicarEmpleo() {
             ))}
           </div>
 
-          <div className="grid-2" style={{ gap:10, marginBottom:4 }}>
-            <Input label="Ciudad" placeholder="Zürich" value={form.city} onChange={e=>s('city',e.target.value)} />
-            <Select label="Cantón *" required value={form.canton} onChange={e=>s('canton',e.target.value)}>
-              <option value="">Seleccionar...</option>
-              {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
-            </Select>
-          </div>
+          <LocationFields
+            canton={form.canton}
+            city={form.city}
+            onCantonChange={value => s('canton', value)}
+            onCityChange={value => s('city', value)}
+            cantonRequired
+          />
 
           <div style={{ marginBottom:4 }}>
             <label style={{ display:'block', fontFamily:PP, fontSize:12, fontWeight:700, color:C.text, marginBottom:8 }}>

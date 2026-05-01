@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { C, PP } from '../lib/theme'
-import { AD_CATS as BASE_AD_CATS, normalizeAdCat } from '../lib/constants'
+import { AD_CATS as BASE_AD_CATS, formatAdLocation, normalizeAdCat } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 
 // ── Button ─────────────────────────────────────────────────────
@@ -339,6 +339,7 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
   const cc  = CAT_COLORS_MAP[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
   const typeMap = { busca:['🔍 Busca','#FEF3C7','#92400E'], ofrece:['✨ Ofrece','#D1FAE5','#065F46'], vende:['🏷️ Vende','#DBEAFE','#1D4ED8'], regala:['🎁 Regala','#FCE7F3','#9D174D'] }
   const [tl, tbg, ttc] = typeMap[ad.type] || ['•', C.bg, C.mid]
+  const location = formatAdLocation(ad)
 
   if (compact) return (
     <div onClick={onClick} style={{ background:C.surface, borderRadius:13, border:`1px solid ${C.border}`, padding:'10px 12px', display:'flex', gap:10, alignItems:'flex-start', cursor:'pointer', transition:'all .15s' }}>
@@ -348,7 +349,7 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
         <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
           <PrivacyTag privacy={ad.privacy}/>
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-          <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>📍 {ad.canton} · {ad.ts}</span>
+          <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>📍 {location || ad.canton} · {ad.ts}</span>
         </div>
       </div>
       <span style={{ fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, flexShrink:0 }}>{ad.price}</span>
@@ -369,7 +370,7 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ display:'flex', gap:5, alignItems:'center' }}>
             <Avatar name={ad.user} size={20} />
-            <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>{ad.user} · {ad.ts} · {ad.canton} {ad.plz}</span>
+            <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>{ad.user} · {ad.ts} · {location || ad.canton}</span>
           </div>
           <span style={{ fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary }}>{ad.price}</span>
         </div>

@@ -9,7 +9,7 @@ import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { MOCK_DOCS, getAdCat, normalizeAdCat } from '../lib/constants'
+import { MOCK_DOCS, formatAdLocation, getAdCat, normalizeAdCat } from '../lib/constants'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -128,7 +128,7 @@ export default function Home() {
       const [adsRes, communitiesRes, jobsRes, eventsRes] = await Promise.all([
         supabase
           .from('listings')
-          .select('id, cat, title, desc, img_url, price, canton, plz, privacy, user_name, created_at, active')
+          .select('*')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
           .limit(50),
@@ -166,6 +166,7 @@ export default function Home() {
         desc: row.desc || '',
         img: row.img_url || '',
         price: row.price || '',
+        city: row.city || '',
         canton: row.canton || '',
         plz: row.plz || '',
         privacy: row.privacy || 'public',
@@ -454,6 +455,7 @@ export default function Home() {
                 const normalizedCat = normalizeAdCat(ad.cat)
                 const cat = getAdCat(ad.cat)
                 const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
+                const location = formatAdLocation(ad)
                 return (
                   <Link key={ad.id} to={getAdHref(ad)} style={{ textDecoration:'none', flexShrink:0, width:152, display:'block' }}>
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
@@ -467,7 +469,7 @@ export default function Home() {
                       <div style={{ padding:'10px 10px 12px' }}>
                         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', lineHeight:1.35, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.7em' }}>{ad.title}</p>
                         <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.primary, margin:'0 0 4px' }}>{fmtPrice(ad.price) || '—'}</p>
-                        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0 }}>📍 {ad.canton} · {ad.ts}</p>
+                        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0 }}>📍 {location || ad.canton} · {ad.ts}</p>
                       </div>
                     </div>
                   </Link>

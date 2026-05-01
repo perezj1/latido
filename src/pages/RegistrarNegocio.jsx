@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { NEGOCIO_TYPES, CANTONS } from '../lib/constants'
-import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components/UI'
+import { NEGOCIO_TYPES } from '../lib/constants'
+import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
+import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import toast from 'react-hot-toast'
 
 const STEPS = [
-  { title:'¿Qué tipo de negocio es?',    sub:'Elige la categoría que mejor lo describe' },
-  { title:'Nombre, ciudad y descripción', sub:'La información básica de tu negocio' },
+  { title:'¿Qué tipo de negocio es?',     sub:'Elige la categoría que mejor lo describe' },
+  { title:'Nombre y ubicación',           sub:'Primero el cantón; después te sugerimos ciudades' },
   { title:'Contacto y servicios',         sub:'Cómo pueden contactarte y qué ofreces' },
   { title:'Confirma y publica',           sub:'Revisa el resumen antes de enviar' },
 ]
@@ -175,13 +176,13 @@ export default function RegistrarNegocio() {
       {step === 1 && (
         <>
           <Input label="Nombre del negocio *" placeholder="Ej: El Rincón Colombiano" required value={form.name} onChange={e=>s('name',e.target.value)} />
-          <div className="grid-2" style={{ gap:10 }}>
-            <Input label="Ciudad" placeholder="Zürich" value={form.city} onChange={e=>s('city',e.target.value)} />
-            <Select label="Cantón *" required value={form.canton} onChange={e=>s('canton',e.target.value)}>
-              <option value="">Seleccionar...</option>
-              {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
-            </Select>
-          </div>
+          <LocationFields
+            canton={form.canton}
+            city={form.city}
+            onCantonChange={value => s('canton', value)}
+            onCityChange={value => s('city', value)}
+            cantonRequired
+          />
           <Input label="Descripción" placeholder="Cuéntanos qué ofrece tu negocio, qué os hace especiales..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
         </>
       )}
