@@ -22,7 +22,7 @@ const TABS = [
   { path:'/perfil',      emoji:'👤', label:'Perfil' },
 ]
 
-const NO_FAB = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
+const NO_FAB = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad', '/mensajes']
 
 export default function BottomNav() {
   const { pathname, search } = useLocation()
@@ -39,7 +39,8 @@ export default function BottomNav() {
     return () => window.removeEventListener('popstate', handlePop)
   }, [pickerOpen])
 
-  const fab = NO_FAB.includes(pathname) ? null : getPublishTarget()
+  const hideFab = NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
+  const fab = hideFab ? null : getPublishTarget()
 
   return (
     <>
