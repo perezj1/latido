@@ -1,4 +1,4 @@
-const CACHE = 'latido-v2'
+const CACHE = 'latido-v3'
 const STATIC = ['/', '/index.html', '/manifest.json']
 
 self.addEventListener('install', e => {
@@ -20,4 +20,48 @@ self.addEventListener('fetch', e => {
     caches.open(CACHE).then(c => c.put(e.request, clone))
     return res
   }).catch(() => caches.match(e.request)))
+})
+
+self.addEventListener('push', e => {
+  let payload = {}
+  try {
+    payload = e.data ? e.data.json() : {}
+  } catch {
+    payload = { body: e.data?.text() || '' }
+  }
+
+  const title = payload.title || 'Latido'
+  const options = {
+    body: payload.body || 'Tienes una nueva notificacion.',
+    icon: payload.icon || '/icon-192.png',
+    badge: payload.badge || '/icon-192.png',
+    tag: payload.tag || 'latido-notification',
+    renotify: true,
+    silent: false,
+    timestamp: Date.now(),
+    data: {
+      url: payload.url || '/',
+      ...(payload.data || {}),
+    },
+  }
+
+  e.waitUntil(self.registration.showNotification(title, options))
+})
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  const targetUrl = new URL(e.notification.data?.url || '/', self.location.origin).href
+
+  e.waitUntil((async () => {
+    const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true })
+
+    for (const client of windowClients) {
+      if (!client.url.startsWith(self.location.origin)) continue
+      await client.focus()
+      if ('navigate' in client) return client.navigate(targetUrl)
+      return
+    }
+
+    if (clients.openWindow) return clients.openWindow(targetUrl)
+  })())
 })

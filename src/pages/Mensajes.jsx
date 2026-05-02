@@ -79,6 +79,7 @@ export default function Mensajes() {
   const [searchParams] = useSearchParams()
   const adId  = searchParams.get('adId')
   const jobId = searchParams.get('jobId')
+  const convId = searchParams.get('conv')
   const recipientName = cleanParticipantName(searchParams.get('recipientName'))
 
   const { unreadConvIds } = useUnreadMessages()
@@ -106,7 +107,7 @@ export default function Mensajes() {
   useEffect(() => {
     if (!isLoggedIn) { navigate('/auth'); return }
     loadConversations()
-  }, [adId, isLoggedIn, jobId, recipientName, user?.id])
+  }, [adId, convId, isLoggedIn, jobId, recipientName, user?.id])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -247,6 +248,19 @@ export default function Mensajes() {
       .subscribe()
 
     const targetId = adId || jobId
+    if (convId) {
+      const existing = data.find(c => String(c.id) === String(convId))
+      if (existing) {
+        setSelectedConv(existing)
+        selectedConvRef.current = existing
+        setShowList(false)
+        markConvRead(existing.id)
+        loadMessages(existing)
+        setLoading(false)
+        return
+      }
+    }
+
     if (targetId) {
       const existing = data.find(c => c.ad_id === targetId)
       if (existing) {

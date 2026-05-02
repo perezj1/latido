@@ -1,0 +1,2 @@
+[functions.latido_push_notification]
+verify_jwt = false

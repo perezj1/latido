@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { usePWA } from '../hooks/usePWA'
 import { useFavorites } from '../hooks/useFavorites'
 import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
+import { getPushStatus, subscribeToPushNotifications, syncPushPreferences, unsubscribeFromPushNotifications } from '../lib/pushNotifications'
 import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
@@ -30,6 +31,7 @@ const COMMUNITY_OPTIONS = COMMUNITY_CATS
     : item)
 
 const ALERT_CATS = [
+  { id:'eventos', emoji:'🎉', label:'Eventos' },
   { id:'vivienda', emoji:'🏠', label:'Vivienda' },
   { id:'servicios', emoji:'🔧', label:'Servicios' },
   { id:'empleo', emoji:'💼', label:'Empleo' },
@@ -226,8 +228,12 @@ function buildEditorForm(item) {
 function loadAlertSettings() {
   try {
     const settings = JSON.parse(localStorage.getItem('latido_alerts') || '{}')
-    return { ...settings, categories: normalizeAlertCategories(settings.categories) }
-  } catch { return {} }
+    return {
+      messagesEnabled: settings.messagesEnabled !== false,
+      ...settings,
+      categories: normalizeAlertCategories(settings.categories),
+    }
+  } catch { return { messagesEnabled: true, categories: [] } }
 }
 
 export default function Perfil() {
@@ -254,6 +260,8 @@ export default function Perfil() {
   // alerts
   const [alertsOpen, setAlertsOpen] = useState(false)
   const [alertSettings, setAlertSettings] = useState(loadAlertSettings)
+  const [pushStatus, setPushStatus] = useState({ supported: false, permission: 'default', subscribed: false })
+  const [savingPush, setSavingPush] = useState(false)
 
   // config
   const [configOpen, setConfigOpen] = useState(false)
@@ -384,8 +392,22 @@ export default function Perfil() {
     }
   }
 
-  const saveAlerts = next => {
+  const refreshPushStatus = async () => {
+    try {
+      setPushStatus(await getPushStatus())
+    } catch {
+      setPushStatus({ supported: false, permission: 'unsupported', subscribed: false })
+    }
+  }
+
+  useEffect(() => {
+    if (!alertsOpen) return
+    refreshPushStatus()
+  }, [alertsOpen])
+
+  const saveAlerts = async next => {
     const normalizedNext = {
+      messagesEnabled: next.messagesEnabled !== false,
       ...next,
       categories: normalizeAlertCategories(next.categories),
       canton: next.canton ?? alertSettings.canton ?? userCanton ?? '',
@@ -402,6 +424,59 @@ export default function Perfil() {
     setAlertSettings(normalizedNext)
     localStorage.setItem('latido_alerts', JSON.stringify(normalizedNext))
     notifyZoneAlertsUpdated()
+
+    if (user?.id && pushStatus.subscribed) {
+      try {
+        await syncPushPreferences({
+          user,
+          settings: normalizedNext,
+          userCanton,
+          messagesEnabled: normalizedNext.messagesEnabled !== false,
+        })
+      } catch (err) {
+        console.warn('Could not sync push preferences:', err)
+      }
+    }
+  }
+
+  const enablePush = async (settings = alertSettings) => {
+    if (!user?.id) {
+      toast.error('Inicia sesión para activar las notificaciones')
+      return
+    }
+
+    setSavingPush(true)
+    try {
+      const nextSettings = { ...settings, messagesEnabled: true }
+      const status = await subscribeToPushNotifications({ user, settings: nextSettings, userCanton })
+      setPushStatus(status)
+      await saveAlerts(nextSettings)
+      toast.success('Notificaciones push activadas')
+    } catch (err) {
+      toast.error(err?.message || 'No se pudieron activar las notificaciones')
+    } finally {
+      setSavingPush(false)
+    }
+  }
+
+  const disablePush = async () => {
+    setSavingPush(true)
+    try {
+      const status = await unsubscribeFromPushNotifications({ user })
+      setPushStatus(status)
+      await saveAlerts({ ...alertSettings, messagesEnabled: false })
+      toast.success('Notificaciones push desactivadas')
+    } catch (err) {
+      toast.error(err?.message || 'No se pudieron desactivar')
+    } finally {
+      setSavingPush(false)
+    }
+  }
+
+  const toggleZoneAlerts = async () => {
+    const next = { ...alertSettings, enabled: !alertSettings.enabled, messagesEnabled: true }
+    await saveAlerts(next)
+    if (next.enabled && !pushStatus.subscribed) await enablePush(next)
   }
 
   const toggleAlertCat = cat => {
@@ -611,7 +686,7 @@ export default function Perfil() {
       title: 'Descubrir',
       items: [
         { icon:'📚', color:'#F1F5F9', label:'Guías', sub:'Trámites y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
-        { icon:'🔔', color:'#F1F5F9', label:'Alertas de zona', sub:'Nuevos anuncios en tu cantón y PLZ', action:() => setAlertsOpen(true) },
+        { icon:'🔔', color:'#F1F5F9', label:'Notificaciones push', sub:'Mensajes y avisos por zona', action:() => setAlertsOpen(true) },
       ],
     },
     {
@@ -831,19 +906,42 @@ export default function Perfil() {
         )}
       </Sheet>
 
-      {/* ── Alertas de zona ── */}
-      <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Alertas de zona">
+      {/* ── Push notifications ── */}
+      <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones push">
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.6 }}>
-          Recibe una notificación cuando se publiquen nuevos anuncios en tu zona. Las alertas se guardan en este dispositivo.
+          Recibe avisos de mensajes directos y alertas cuando se publique algo nuevo en la zona que elijas.
         </p>
+
+        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px', marginBottom:14 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
+            <div style={{ minWidth:0 }}>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px' }}>Push del dispositivo</p>
+              <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
+                {pushStatus.subscribed ? 'Mensajes directos activos en este dispositivo.' : 'Activa el permiso del navegador para recibir mensajes.'}
+              </p>
+            </div>
+            <button
+              onClick={() => pushStatus.subscribed ? disablePush() : enablePush()}
+              disabled={savingPush}
+              style={{ fontFamily:PP, fontWeight:700, fontSize:11, border:'none', borderRadius:12, padding:'9px 12px', cursor:savingPush ? 'default' : 'pointer', background: pushStatus.subscribed ? '#E5E7EB' : C.primary, color: pushStatus.subscribed ? C.mid : '#fff', flexShrink:0 }}
+            >
+              {savingPush ? '...' : pushStatus.subscribed ? 'Desactivar' : 'Activar'}
+            </button>
+          </div>
+          {!pushStatus.supported && (
+            <p style={{ fontFamily:PP, fontSize:11, color:'#B45309', margin:'10px 0 0', lineHeight:1.5 }}>
+              Este navegador solo permite push en HTTPS o localhost compatible.
+            </p>
+          )}
+        </div>
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px', marginBottom:14 }}>
           <div>
-            <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, margin:'0 0 2px' }}>Activar alertas</p>
-            <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Notificaciones cuando haya anuncios nuevos</p>
+            <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, margin:'0 0 2px' }}>Alertas de zona</p>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Anuncios, trabajos y eventos segun tus filtros</p>
           </div>
           <button
-            onClick={() => saveAlerts({ ...alertSettings, enabled: !alertSettings.enabled })}
+            onClick={toggleZoneAlerts}
             style={{ width:44, height:24, borderRadius:12, border:'none', cursor:'pointer', background: alertSettings.enabled ? C.primary : '#D1D5DB', transition:'background .2s', position:'relative', flexShrink:0 }}
             aria-label="Toggle alertas"
           >

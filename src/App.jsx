@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
+import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
 import { C, PP } from './lib/theme'
 
 import Footer from './components/Footer'
@@ -83,6 +84,21 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
       </div>
     </div>
   )
+}
+
+function PushRegistrationSync() {
+  const { user, isLoggedIn, userCanton } = useAuth()
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) return
+    syncExistingPushRegistration({
+      user,
+      settings: loadPushSettings(),
+      userCanton,
+    }).catch(err => console.warn('Could not sync push registration:', err))
+  }, [isLoggedIn, user?.id, userCanton])
+
+  return null
 }
 
 function ScrollToTop() {
@@ -256,6 +272,7 @@ function AppShell() {
   return (
     <>
       <Header />
+      <PushRegistrationSync />
       <main style={{ minHeight:'100vh', paddingBottom:80 }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>

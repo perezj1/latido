@@ -146,7 +146,7 @@ function shouldTrackKind(settings, kind) {
   if (kind === 'ad') return true
   if (kind === 'job') return categories.includes('empleo')
   if (kind === 'business') return categories.includes('servicios')
-  if (kind === 'event') return false
+  if (kind === 'event') return categories.includes('eventos')
   return false
 }
 
@@ -162,7 +162,7 @@ function matchesSettings(row, kind, settings, lastCheck) {
   if (kind === 'ad') return categories.includes(normalizeAdCat(row.cat))
   if (kind === 'job') return categories.includes('empleo')
   if (kind === 'business') return categories.includes('servicios')
-  if (kind === 'event') return false
+  if (kind === 'event') return categories.includes('eventos')
 
   return false
 }
