@@ -240,7 +240,7 @@ export default function RegistrarNegocio() {
             )}
           </div>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:6 }}>{form.name || '—'}</p>
-          {form.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:form.website ? 8 : 10 }}>{form.desc}</p>}
+          {form.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:form.website ? 8 : 10, whiteSpace:'pre-line' }}>{form.desc}</p>}
           {form.website && <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'0 0 10px' }}>🌐 {form.website}</p>}
           {form.services && (
             <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>

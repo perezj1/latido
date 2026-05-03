@@ -9,7 +9,7 @@ import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { MOCK_DOCS, formatAdLocation, getAdCat, normalizeAdCat } from '../lib/constants'
+import { MOCK_DOCS, NEGOCIO_TYPES, formatAdLocation, getAdCat, normalizeAdCat } from '../lib/constants'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -84,6 +84,7 @@ export default function Home() {
 
   const [recentAds, setRecentAds] = useState([])
   const [communityHighlights, setCommunityHighlights] = useState([])
+  const [businessHighlights, setBusinessHighlights] = useState([])
   const [recentJobs, setRecentJobs] = useState([])
   const [recentEvents, setRecentEvents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -113,11 +114,13 @@ export default function Home() {
     ? `/tablon?cat=empleo&openJob=${encodeURIComponent(ad.id.replace('job_', ''))}`
     : `/tablon?openAd=${encodeURIComponent(ad.id)}`
   const getCommunityHref = (group) => `/comunidades?openCommunity=${encodeURIComponent(group.id)}`
+  const getBusinessHref = (business) => `/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`
   const getJobHref = (job) => `/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`
 
   const applySnapshot = useCallback((snapshot) => {
     setRecentAds(snapshot.recentAds || [])
     setCommunityHighlights(snapshot.communityHighlights || [])
+    setBusinessHighlights(snapshot.businessHighlights || [])
     setRecentJobs(snapshot.recentJobs || [])
     setRecentEvents(snapshot.recentEvents || [])
     setLoading(false)
@@ -125,7 +128,7 @@ export default function Home() {
 
   const fetchHomeData = useCallback(async () => {
     try {
-      const [adsRes, communitiesRes, jobsRes, eventsRes] = await Promise.all([
+      const [adsRes, communitiesRes, providersRes, jobsRes, eventsRes] = await Promise.all([
         supabase
           .from('listings')
           .select('*')
@@ -139,6 +142,15 @@ export default function Home() {
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
           .limit(50),
+
+        supabase
+          .from('providers')
+          .select('id, name, category, city, canton, description, services, photo_url, verified, featured, created_at, active')
+          .or('active.is.null,active.eq.true')
+          .order('featured', { ascending:false })
+          .order('verified', { ascending:false })
+          .order('created_at', { ascending:false })
+          .limit(1000),
 
         supabase
           .from('jobs')
@@ -156,6 +168,7 @@ export default function Home() {
 
       if (adsRes.error) console.error('Error loading recent ads:', adsRes.error)
       if (communitiesRes.error) console.error('Error loading communities:', communitiesRes.error)
+      if (providersRes.error) console.error('Error loading providers:', providersRes.error)
       if (jobsRes.error) console.error('Error loading jobs:', jobsRes.error)
       if (eventsRes.error) console.error('Error loading events:', eventsRes.error)
 
@@ -209,6 +222,29 @@ export default function Home() {
         }))
       )
 
+      setBusinessHighlights(
+        ((providersRes.error ? [] : providersRes.data) || [])
+          .filter(row => row.category !== 'empleo' && row.category !== 'vivienda')
+          .map((row) => {
+            const type = NEGOCIO_TYPES.find(item => item.id === row.category)
+            const typeLabel = type?.label?.replace(/^[^\s]+\s/, '') || 'Negocio'
+            const typeEmoji = type?.label?.split(' ')[0] || '🏪'
+            return {
+              id: row.id,
+              name: row.name || 'Negocio',
+              type: row.category || '',
+              typeLabel,
+              emoji: typeEmoji,
+              city: row.city || row.canton || 'Suiza',
+              desc: row.description || '',
+              services: Array.isArray(row.services) ? row.services : [],
+              photo_url: row.photo_url || '',
+              verified: !!row.verified,
+              featured: !!row.featured,
+            }
+          })
+      )
+
       setRecentJobs(
         ((jobsRes.error ? [] : jobsRes.data) || []).map((row) => ({
           id: row.id,
@@ -255,9 +291,9 @@ export default function Home() {
 
   useEffect(() => {
     if (loading) return
-    homeCache = { recentAds, communityHighlights, recentJobs, recentEvents }
+    homeCache = { recentAds, communityHighlights, businessHighlights, recentJobs, recentEvents }
     homeCacheTs = Date.now()
-  }, [communityHighlights, loading, recentAds, recentEvents, recentJobs])
+  }, [businessHighlights, communityHighlights, loading, recentAds, recentEvents, recentJobs])
 
   useEffect(() => {
     if (homeCache) {
@@ -526,7 +562,7 @@ export default function Home() {
                       {ad.title}
                     </p>
 
-                    <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, margin:'0 0 14px', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                    <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, margin:'0 0 14px', whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                       {ad.desc}
                     </p>
 
@@ -607,6 +643,66 @@ export default function Home() {
                       </p>
                       <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         📍 {group.city}{!group.photo_url ? ` · 👥 ${group.members}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section style={{ padding:'40px 0 0' }}>
+        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <div>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
+              🏪 Negocios
+            </h2>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
+              Servicios y comercios hispanohablantes cerca de ti.
+            </p>
+          </div>
+          <Link to="/comunidades?view=negocios" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>
+            Ver todos →
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
+            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
+          </div>
+        ) : businessHighlights.length === 0 ? (
+          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay negocios publicados." /></div>
+        ) : (
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+            <div style={{ display:'flex', gap:12, width:'max-content' }}>
+              {businessHighlights.map(business => (
+                <Link
+                  key={business.id}
+                  to={getBusinessHref(business)}
+                  style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
+                >
+                  <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+                    <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
+                      {business.photo_url
+                        ? <img src={business.photo_url} alt={business.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        : <span>{business.emoji || '🏪'}</span>
+                      }
+                      <span style={{ position:'absolute', top:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(255,255,255,0.92)', color:'#0F766E', padding:'3px 7px', borderRadius:999 }}>
+                        {business.emoji} {business.typeLabel}
+                      </span>
+                      <div style={{ position:'absolute', top:8, right:8, display:'flex', gap:4 }}>
+                        {business.featured && <span style={{ width:24, height:24, borderRadius:12, background:'rgba(255,255,255,0.94)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, boxShadow:'0 6px 16px rgba(15,23,42,0.12)' }}>⭐</span>}
+                        {business.verified && <span style={{ width:24, height:24, borderRadius:12, background:'rgba(255,255,255,0.94)', color:'#065F46', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, boxShadow:'0 6px 16px rgba(15,23,42,0.12)' }}>✓</span>}
+                      </div>
+                    </div>
+                    <div style={{ padding:'10px 10px 12px' }}>
+                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
+                        {business.name}
+                      </p>
+                      <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        📍 {business.city}{business.services.length ? ` · ${business.services[0]}` : ''}
                       </p>
                     </div>
                   </div>

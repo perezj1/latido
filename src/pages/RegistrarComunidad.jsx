@@ -245,7 +245,7 @@ export default function RegistrarComunidad() {
             )}
           </div>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:6 }}>{form.name || '—'}</p>
-          {form.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:10 }}>{form.desc}</p>}
+          {form.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:10, whiteSpace:'pre-line' }}>{form.desc}</p>}
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
             {form.lang && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>🗣 {form.lang}</span>}
             {form.contact && (

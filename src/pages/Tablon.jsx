@@ -86,7 +86,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
           <PrivacyTag privacy={ad.privacy}/>
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.35, marginBottom:4 }}>{ad.title}</h3>
-        {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.5, marginBottom:8, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>}
+        {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.5, marginBottom:8, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ display:'flex', gap:6, alignItems:'center' }}>
             <Avatar name={ad.user_name || ad.user} size={20} src={avatarSrc}/>
@@ -127,7 +127,7 @@ function AdDetail({ ad, user, avatarSrc }) {
         {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
       </div>
       <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:16, color:C.text, lineHeight:1.35, marginBottom:8 }}>{ad.title}</h3>
-      {ad.desc && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:14 }}>{ad.desc}</p>}
+      {ad.desc && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:14, whiteSpace:'pre-line' }}>{ad.desc}</p>}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
         <div style={{ display:'flex', gap:7, alignItems:'center' }}>
           <Avatar name={ad.user_name || ad.user} size={22} src={avatarSrc}/>
@@ -219,7 +219,7 @@ function JobDetail({ job, user }) {
       {job.salary && <p style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:'#059669', marginBottom:14 }}>{fmtPrice(job.salary)}</p>}
       {languages && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>🗣️ Idiomas requeridos: {languages}</p>}
       {(job.desc || job.description) && (
-        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
+        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}`, whiteSpace:'pre-line' }}>
           {job.desc || job.description}
         </p>
       )}
@@ -280,7 +280,7 @@ function PortalDetail({ portal, defaultEmoji = '🏠' }) {
       </div>
       {portal.description && (
         <div style={{ background:C.bg, borderRadius:14, padding:'14px 16px', marginBottom:16 }}>
-          <p style={{ fontFamily:PP, fontSize:13, color:C.mid, margin:0, lineHeight:1.7 }}>{portal.description}</p>
+          <p style={{ fontFamily:PP, fontSize:13, color:C.mid, margin:0, lineHeight:1.7, whiteSpace:'pre-line' }}>{portal.description}</p>
         </div>
       )}
       {portal.website && (

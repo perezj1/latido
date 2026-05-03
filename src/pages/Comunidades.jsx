@@ -269,7 +269,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
           )}
           <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>· 📍 {business.city}</span>
         </div>
-        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.55, marginBottom:12, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{business.desc}</p>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.55, marginBottom:12, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{business.desc}</p>
         {services.length > 0 && (
           <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:12 }}>
             {services.slice(0, 3).map(service => <Tag key={service} bg={C.primaryLight} color={C.primary}>{service}</Tag>)}
@@ -382,7 +382,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
                 {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
                 <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
               </div>
-              <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:business.website ? 8 : 14 }}>{business.desc}</p>
+              <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:business.website ? 8 : 14, whiteSpace:'pre-line' }}>{business.desc}</p>
               {business.website && (
                 <a
                   href={websiteHref}
@@ -529,7 +529,7 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
         {community.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
       </div>
 
-      <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18 }}>
+      <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>
         {community.desc || 'Grupo hispanohablante en Suiza.'}
       </p>
 
@@ -573,7 +573,7 @@ function EventDetail({ event, onClose }) {
         <Tag bg={C.bg} color={C.mid}>🎟 {event.price}</Tag>
       </div>
       <InfoBanner emoji={event.emoji} title={`${event.day} ${event.month} · ${event.venue}`} text={`Organiza ${event.host}`} bg={C.primaryLight} border={C.primaryMid} color={C.primaryDark} />
-      <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18 }}>{event.desc}</p>
+      <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>{event.desc}</p>
       <a href={event.link} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'inline-flex' }}>
         Ver detalles / reservar
       </a>
@@ -913,7 +913,7 @@ export default function Comunidades() {
                     )}
                     <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:5, lineHeight:1.3 }}>{group.name}</h3>
                     {!isWebCommunity(group.contact) && <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginBottom:8 }}>👥 {group.members} miembros</p>}
-                    <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:14, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{group.desc}</p>
+                    <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:14, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{group.desc}</p>
                     <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
                       Ver grupo →
                     </div>

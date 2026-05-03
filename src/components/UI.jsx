@@ -366,7 +366,7 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
           {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓</Tag>}
         </div>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, lineHeight:1.35, marginBottom:4 }}>{ad.title}</p>
-        <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.5, marginBottom:8, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>
+        <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.5, marginBottom:8, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ display:'flex', gap:5, alignItems:'center' }}>
             <Avatar name={ad.user} size={20} />
