@@ -1,4 +1,4 @@
-const CACHE = 'latido-v3'
+const CACHE = 'latido-v5'
 const STATIC = ['/', '/index.html', '/manifest.json']
 
 self.addEventListener('install', e => {
@@ -34,7 +34,6 @@ self.addEventListener('push', e => {
   const options = {
     body: payload.body || 'Tienes una nueva notificacion.',
     icon: payload.icon || '/icon-192.png',
-    badge: payload.badge || '/icon-192.png',
     tag: payload.tag || 'latido-notification',
     renotify: true,
     silent: false,

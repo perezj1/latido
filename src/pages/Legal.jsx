@@ -238,7 +238,7 @@ function Terminos() {
         <P>
           Latido.ch es una <strong>plataforma de intermediación y contacto</strong> para
           hispanohablantes residentes en Suiza. Facilita la publicación y consulta de anuncios,
-          la conexión con comunidades, la búsqueda de empleo y el acceso a guías de trámites.
+          la conexión con grupos, la búsqueda de empleo y el acceso a guías de trámites.
         </P>
         <P>
           <strong>Latido.ch actúa exclusivamente como intermediario técnico.</strong> No es parte

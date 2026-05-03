@@ -10,7 +10,7 @@ import { uploadPublicationImage } from '../lib/storage'
 import toast from 'react-hot-toast'
 
 const STEPS = [
-  { title:'¿De qué trata tu comunidad?',  sub:'Elige la categoría que mejor la describe' },
+  { title:'¿De qué trata tu grupo?',  sub:'Elige la categoría que mejor lo describe' },
   { title:'Nombre, plataforma y ubicación', sub:'Indica si es para toda Suiza o una ciudad concreta' },
   { title:'Descripción y enlace',         sub:'Cuéntanos más y añade el link de invitación' },
   { title:'Confirma y publica',           sub:'Revisa el resumen antes de enviar' },
@@ -52,7 +52,7 @@ export default function RegistrarComunidad() {
       <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
-        Para registrar tu comunidad necesitas una cuenta. Es gratis y sin spam.
+        Para registrar tu grupo necesitas una cuenta. Es gratis y sin spam.
       </p>
       <Btn onClick={() => navigate('/auth')}>Crear cuenta gratis</Btn>
       <button onClick={() => navigate('/auth')} style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.primary, background:'none', border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 0', width:'100%', cursor:'pointer', marginTop:10 }}>
@@ -63,14 +63,14 @@ export default function RegistrarComunidad() {
 
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>🤝</div>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>¡Comunidad publicada!</h1>
+      <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>👥</div>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>¡Grupo publicado!</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
-        Tu comunidad ya está visible para la comunidad hispanohablante en Suiza.
+        Tu grupo ya está visible para la comunidad hispanohablante en Suiza.
       </p>
-      <Btn onClick={() => navigate('/comunidades')}>Ver comunidades →</Btn>
+      <Btn onClick={() => navigate('/comunidades')}>Ver grupos →</Btn>
       <button onClick={() => { setDone(false); setStep(0); setForm({ cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español', photo_url:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
-        Registrar otra comunidad
+        Registrar otro grupo
       </button>
     </div>
   )
@@ -91,7 +91,7 @@ export default function RegistrarComunidad() {
         cat: form.cat || null,
         name: form.name.trim(),
         city: location,
-        emoji: selectedCat?.emoji || '🤝',
+        emoji: selectedCat?.emoji || '👥',
         desc: description || null,
         contact: form.contact.trim(),
         photo_url: form.photo_url || null,
@@ -102,7 +102,7 @@ export default function RegistrarComunidad() {
       if (error) throw error
       setDone(true)
     } catch (error) {
-      toast.error(error?.message || 'No se pudo registrar la comunidad')
+      toast.error(error?.message || 'No se pudo registrar el grupo')
     } finally {
       setLoading(false)
     }
@@ -149,7 +149,7 @@ export default function RegistrarComunidad() {
       {/* Step 1 — Name, platform, city */}
       {step === 1 && (
         <>
-          <Input label="Nombre de la comunidad *" placeholder="Ej: Venezolanos en Zürich" required value={form.name} onChange={e=>s('name',e.target.value)} />
+          <Input label="Nombre del grupo *" placeholder="Ej: Venezolanos en Zürich" required value={form.name} onChange={e=>s('name',e.target.value)} />
 
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>PLATAFORMA</p>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:8, marginBottom:16 }}>
@@ -168,7 +168,7 @@ export default function RegistrarComunidad() {
             onCantonChange={value => s('canton', value)}
             onCityChange={value => s('city', value)}
             allowAllSwitzerland
-            hint="Deja “Toda Suiza” si la comunidad no depende de una ciudad concreta."
+            hint="Deja “Toda Suiza” si el grupo no depende de una ciudad concreta."
           />
         </>
       )}
@@ -183,7 +183,7 @@ export default function RegistrarComunidad() {
             onFilesSelected={files => handlePhotoUpload(files?.[0])}
             onRemove={() => s('photo_url', '')}
           />
-          <Input label="Descripción de la comunidad" placeholder="¿A quién está dirigida? ¿Qué hacéis juntos? ¿Cuándo os reunís?" rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
+          <Input label="Descripción del grupo" placeholder="¿A quién está dirigido? ¿Qué hacéis juntos? ¿Cuándo os reunís?" rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
           <Input label={form.platform === 'web' ? 'URL de la web *' : 'Enlace de invitación *'} placeholder={
             form.platform === 'whatsapp'  ? 'https://chat.whatsapp.com/...' :
             form.platform === 'telegram'  ? 'https://t.me/...' :
@@ -201,14 +201,14 @@ export default function RegistrarComunidad() {
                 {form.platform === 'facebook'  && '👥 ¿Cómo conseguir el enlace del grupo de Facebook?'}
                 {form.platform === 'discord'   && '🎮 ¿Cómo conseguir el enlace de Discord?'}
                 {form.platform === 'instagram' && '📸 ¿Cómo conseguir el enlace de Instagram?'}
-                {form.platform === 'otro'      && '🔗 Añade el enlace directo a tu comunidad'}
+                {form.platform === 'otro'      && '🔗 Añade el enlace directo a tu grupo'}
               </p>
               <p style={{ fontFamily:PP, fontSize:11, color:'#78350F', margin:0, lineHeight:1.7 }}>
                 {form.platform === 'whatsapp'  && 'Abre el grupo → toca el icono de agregar miembros → "Invitar con enlace o QR" → "Copiar enlace".'}
                 {form.platform === 'telegram'  && 'Abre el grupo o canal → toca el nombre → "Añadir miembros" → "Invitar con enlace" → copia el enlace.'}
                 {form.platform === 'facebook'  && 'Entra al grupo → toca los 3 puntos → "Compartir grupo" → copia el enlace de la URL.'}
                 {form.platform === 'discord'   && 'Abre el servidor → haz clic derecho en un canal → "Invitar personas" → "Copia enlace".'}
-                {form.platform === 'instagram' && 'Añade el enlace directo a tu perfil o cuenta de Instagram (ej: instagram.com/micomunidad).'}
+                {form.platform === 'instagram' && 'Añade el enlace directo a tu perfil o cuenta de Instagram (ej: instagram.com/migrupo).'}
                 {form.platform === 'otro'      && 'Copia y pega el enlace directo donde la gente pueda unirse o contactaros.'}
               </p>
             </div>
@@ -232,7 +232,7 @@ export default function RegistrarComunidad() {
       {step === 3 && (
         <>
         <div style={{ background:C.bg, borderRadius:16, padding:'16px 18px' }}>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:12, letterSpacing:0.5 }}>RESUMEN DE TU COMUNIDAD</p>
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:12, letterSpacing:0.5 }}>RESUMEN DE TU GRUPO</p>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
             {selectedCat && (
               <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#D1FAE5', color:'#065F46' }}>{selectedCat.emoji} {selectedCat.label}</span>
@@ -256,7 +256,7 @@ export default function RegistrarComunidad() {
         <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginTop:14 }}>
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>
           <p style={{ fontFamily:PP, fontSize:11, color:'#7C2D12', lineHeight:1.7, margin:0 }}>
-            Al registrar esta comunidad confirmas que la información es verídica y que eres responsable del buen uso, contenido y gestión del grupo. Latido no se hace responsable de lo que ocurra dentro de la comunidad ni de la veracidad de los datos publicados.
+            Al registrar este grupo confirmas que la información es verídica y que eres responsable del buen uso, contenido y gestión del grupo. Latido no se hace responsable de lo que ocurra dentro del grupo ni de la veracidad de los datos publicados.
           </p>
         </div>
         </>
@@ -268,7 +268,7 @@ export default function RegistrarComunidad() {
           <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>
           {step < STEPS.length - 1 ? (
             <Btn onClick={() => {
-              if (step === 1 && !form.name) { toast.error('Añade el nombre de la comunidad'); return }
+              if (step === 1 && !form.name) { toast.error('Añade el nombre del grupo'); return }
               if (step === 2 && !form.contact) { toast.error('Añade el enlace de invitación'); return }
               setStep(s => s + 1)
             }} style={{ flex:1 }}>
@@ -276,7 +276,7 @@ export default function RegistrarComunidad() {
             </Btn>
           ) : (
             <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
-              {loading ? '⏳ Registrando...' : '🤝 Registrar comunidad'}
+              {loading ? '⏳ Registrando...' : '👥 Registrar grupo'}
             </Btn>
           )}
         </div>

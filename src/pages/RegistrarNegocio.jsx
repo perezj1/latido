@@ -207,7 +207,7 @@ export default function RegistrarNegocio() {
             uploading={uploadingCover}
             onFilesSelected={handleCoverUpload}
             onRemove={() => s('photo_url', '')}
-            hint="Esta será la imagen principal del negocio dentro de comunidad."
+            hint="Esta será la imagen principal del negocio dentro de la página Comunidad."
           />
           <ImageUploadField
             label="Más fotos (opcional)"

@@ -354,7 +354,6 @@ async function fetchActiveSubscriptions(userIds: string[]) {
 async function notifySubscriptions(subscriptions: PushSubscriptionRow[], payload: PushPayload) {
   const fullPayload = {
     icon: '/icon-192.png',
-    badge: '/icon-192.png',
     ...payload,
   }
 

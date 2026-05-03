@@ -4,7 +4,7 @@ import { C, PP } from '../lib/theme'
 export default function Footer() {
   const links = [
     { label:'Tablón', href:'/tablon' },
-    { label:'Comunidades', href:'/comunidades' },
+    { label:'Comunidad', href:'/comunidades' },
     { label:'Guías', href:'/guias' },
     { label:'Empleos', href:'/tablon?cat=empleo' },
     { label:'Publicar', href:'/publicar' },
@@ -20,7 +20,7 @@ export default function Footer() {
               <span style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.primary }}>Latido</span>
             </div>
             <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.7, marginBottom:0 }}>
-              La plataforma para Hispanohablantes en Suiza. Anuncios, comunidades, eventos, guías y empleos — todo en español.
+              La plataforma para Hispanohablantes en Suiza. Anuncios, grupos, eventos, guías y empleos — todo en español.
             </p>
             {/* <div style={{ display:'flex', gap:8 }}>
               {['📸 Instagram', '💬 WhatsApp'].map(label => (

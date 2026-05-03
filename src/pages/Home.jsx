@@ -199,10 +199,10 @@ export default function Home() {
       setCommunityHighlights(
         ((communitiesRes.error ? [] : communitiesRes.data) || []).map((row) => ({
           id: row.id,
-          name: (row.name || 'Comunidad').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
+          name: (row.name || 'Grupo').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
           city: row.city || 'Suiza',
           members: row.members || 0,
-          emoji: row.emoji || '🤝',
+          emoji: row.emoji || '👥',
           desc: row.desc || '',
           contact: row.contact || '',
           photo_url: row.photo_url || '',
@@ -568,7 +568,7 @@ export default function Home() {
         <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
-              🤝 Comunidades para ti
+              👥 Grupos para ti
             </h2>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
               Tus próximos puntos de conexión en Suiza.
@@ -584,7 +584,7 @@ export default function Home() {
             {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
           </div>
         ) : communityHighlights.length === 0 ? (
-          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay comunidades publicadas." /></div>
+          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay grupos publicados." /></div>
         ) : (
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
@@ -598,7 +598,7 @@ export default function Home() {
                     <div style={{ height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
                       {group.photo_url
                         ? <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
-                        : <span>{group.emoji || '🤝'}</span>
+                        : <span>{group.emoji || '👥'}</span>
                       }
                     </div>
                     <div style={{ padding:'10px 10px 12px' }}>

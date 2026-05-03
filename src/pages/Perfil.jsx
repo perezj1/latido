@@ -19,7 +19,7 @@ const PUBLICATION_TABS = [
   { id:'job', label:'💼 Empleos' },
   { id:'event', label:'🎉 Eventos' },
   { id:'business', label:'🏪 Negocios' },
-  { id:'community', label:'🤝 Comunidades' },
+  { id:'community', label:'👥 Grupos' },
 ]
 
 const JOB_TYPES = ['Full-time', 'Part-time', 'Freelance', 'Prácticas']
@@ -58,7 +58,7 @@ const KIND_META = {
   job: { label:'Empleo', icon:'💼', table:'jobs' },
   event: { label:'Evento', icon:'🎉', table:'events' },
   business: { label:'Negocio', icon:'🏪', table:'providers' },
-  community: { label:'Comunidad', icon:'🤝', table:'communities' },
+  community: { label:'Grupo', icon:'👥', table:'communities' },
 }
 
 function splitList(value) {
@@ -139,7 +139,7 @@ function normalizePublication(kind, row) {
     kind,
     icon: row.emoji || category?.emoji || KIND_META[kind].icon,
     title: (row.name || '').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
-    summary: [category?.label, row.city].filter(Boolean).join(' · ') || 'Comunidad',
+    summary: [category?.label, row.city].filter(Boolean).join(' · ') || 'Grupo',
     meta: row.contact || '',
     active: !!row.active,
     createdAt: row.created_at,
@@ -299,7 +299,7 @@ export default function Perfil() {
         { kind:'job', result:results[1], issue:'empleos' },
         { kind:'event', result:results[2], issue:'eventos' },
         { kind:'business', result:results[3], issue:'negocios' },
-        { kind:'community', result:results[4], issue:'comunidades' },
+        { kind:'community', result:results[4], issue:'grupos' },
       ]
       mapping.forEach(({ kind, result, issue }) => {
         if (result.status === 'rejected') {
@@ -511,7 +511,7 @@ export default function Perfil() {
   }
 
   const SHARE_URL  = window.location.origin
-  const SHARE_TEXT = '¡Únete a Latido! La app de los hispanohablantes en Suiza: anuncios, empleos, comunidades y más. ❤️'
+  const SHARE_TEXT = '¡Únete a Latido! La app de los hispanohablantes en Suiza: anuncios, empleos, grupos y más. ❤️'
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -674,10 +674,10 @@ export default function Perfil() {
         cat: editorForm.cat || null, name: editorForm.name?.trim(),
         city: editorForm.city?.trim() || null, desc: editorForm.desc?.trim() || null,
         contact: editorForm.contact?.trim() || null,
-        emoji: category?.emoji || item.raw.emoji || '🤝',
+        emoji: category?.emoji || item.raw.emoji || '👥',
         updated_at: new Date().toISOString(),
       }
-      if (!payload.name || !payload.contact) { toast.error('Completa al menos el nombre y el enlace de la comunidad'); return }
+      if (!payload.name || !payload.contact) { toast.error('Completa al menos el nombre y el enlace del grupo'); return }
     }
 
     setSaving(true)
@@ -1111,7 +1111,7 @@ export default function Perfil() {
             {[1,2,3].map(index => <div key={index} className="skeleton" style={{ height:92, borderRadius:16 }} />)}
           </div>
         ) : filteredPublications.length === 0 ? (
-          <EmptyState emoji="🗂️" title="Todavía no tienes publicaciones aquí" sub="Cuando publiques anuncios, empleos, eventos, negocios o comunidades, podrás gestionarlos desde este panel." />
+          <EmptyState emoji="🗂️" title="Todavía no tienes publicaciones aquí" sub="Cuando publiques anuncios, empleos, eventos, negocios o grupos, podrás gestionarlos desde este panel." />
         ) : (
           filteredPublications.map(item => {
             const deleteKey = `${item.kind}-${item.id}`

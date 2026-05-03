@@ -50,7 +50,7 @@ const SEARCH_CACHE = {
 const TYPE_COLORS = {
   ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Tablón' },
   job:{ bg:'#E0F2FE', color:'#0369A1', label:'Empleo' },
-  community:{ bg:'#D1FAE5', color:'#065F46', label:'Comunidad' },
+  community:{ bg:'#D1FAE5', color:'#065F46', label:'Grupo' },
   business:{ bg:'#FEF3C7', color:'#92400E', label:'Negocio' },
   event:{ bg:'#FCE7F3', color:'#9D174D', label:'Evento' },
 }
@@ -72,10 +72,10 @@ function normalizeCommunity(group) {
 
   return {
     id: group.id,
-    name: (group.name || 'Comunidad').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
+    name: (group.name || 'Grupo').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
     city: group.city || 'Suiza',
     members: group.members || 0,
-    emoji: group.emoji || '🤝',
+    emoji: group.emoji || '👥',
     desc: group.desc || group.description || '',
   }
 }
@@ -198,9 +198,9 @@ function searchAll(query, datasets, isLoggedIn) {
       results.push({
         type:'community',
         id:group.id,
-        icon:group.emoji || '🤝',
+        icon:group.emoji || '👥',
         label:group.name,
-        sub:`Comunidad · ${group.city} · ${group.members} miembros`,
+        sub:`Grupo · ${group.city} · ${group.members} miembros`,
         href:`/comunidades?openCommunity=${encodeURIComponent(group.id)}`,
       })
     })
@@ -269,7 +269,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
 
   const ph = placeholder || (size === 'lg'
     ? 'Encuentra lo que buscas'
-    : 'Buscar anuncios, empleos o comunidad...')
+    : 'Buscar anuncios, empleos o grupos...')
 
   useEffect(() => {
     accessLevelRef.current = accessLevel

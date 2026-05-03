@@ -16,7 +16,7 @@ const STATS = [
 
 const FEATURES = [
   { icon: '📌', color: '#DBEAFE', title: 'Tablón de anuncios',  desc: 'Pisos, empleo, cuidados, servicios y mercado de segunda mano. Todo en tu cantón, en tu idioma. Filtra por ciudad o código postal.' },
-  { icon: '🤝', color: '#D1FAE5', title: 'Comunidades',         desc: 'Grupos de venezolanos en Zúrich, colombianos en Ginebra, familias en Berna. Encuentra a los tuyos donde vives.' },
+  { icon: '👥', color: '#D1FAE5', title: 'Grupos',              desc: 'Grupos de venezolanos en Zúrich, colombianos en Ginebra, familias en Berna. Encuentra a los tuyos donde vives.' },
   { icon: '🏪', color: '#FCE7F3', title: 'Negocios',            desc: 'Restaurantes, peluquerías, tiendas y servicios de nuestra comunidad. Apoya a quien habla tu idioma.' },
   { icon: '📚', color: '#EDE9FE', title: 'Guías de trámites',   desc: 'Krankenkasse, Quellensteuer, permiso B/C/L, buscador de trabajo. La burocracia suiza explicada paso a paso en español.' },
   { icon: '🎉', color: '#FEF3C7', title: 'Eventos',             desc: 'Fiestas, conciertos, quedadas y networking. Sabe siempre qué pasa en tu ciudad y publica los tuyos.' },
@@ -37,7 +37,7 @@ const TESTIMONIALS = [
 
 const PARTNER_BENEFITS = [
   { icon: '🎯', title: 'Audiencia cualificada', desc: 'La mayor comunidad hispanohablante de Suiza. Llegas exactamente a quien necesitas.' },
-  { icon: '🌐', title: 'Visibilidad real',      desc: 'Tu negocio, comunidad o empresa aparece donde nuestra gente busca cada día.' },
+  { icon: '🌐', title: 'Visibilidad real',      desc: 'Tu negocio, grupo o empresa aparece donde nuestra gente busca cada día.' },
   { icon: '💬', title: 'Contacto directo',      desc: 'Sin intermediarios. Los usuarios te contactan por WhatsApp, email o teléfono.' },
   { icon: '⭐', title: 'Reseñas y confianza',   desc: 'Construye reputación con reseñas reales de la comunidad que te elige.' },
 ]
@@ -66,11 +66,11 @@ const APP_PEEK_FEED = [
 ]
 
 const FAQ = [
-  { q: '¿Latido es realmente gratis?',                       a: 'Sí. Registrarte, publicar anuncios, unirte a comunidades y asistir a eventos es 100% gratis para usuarios. Las empresas y partners tienen opciones de visibilidad premium opcionales.' },
+  { q: '¿Latido es realmente gratis?',                       a: 'Sí. Registrarte, publicar anuncios, unirte a grupos y asistir a eventos es 100% gratis para usuarios. Las empresas y partners tienen opciones de visibilidad premium opcionales.' },
   { q: '¿Necesito hablar alemán, francés o italiano?',       a: 'No. Latido está 100% en español. Es precisamente para eso: un espacio donde no tengas que lidiar con el idioma del cantón mientras buscas piso, trabajo o comunidad.' },
   { q: '¿Es seguro? ¿Qué pasa con mis datos?',               a: 'Cumplimos la Ley Federal de Protección de Datos de Suiza (nFADP) y el GDPR europeo. Nunca vendemos tus datos. Los anuncios y perfiles se moderan para evitar fraudes y contenido inapropiado.' },
   { q: '¿Tengo que vivir en Suiza para registrarme?',        a: 'Está pensado para quienes ya viven en Suiza o están a punto de mudarse. Si estás preparando tu llegada, puedes registrarte para ir conectando y encontrar piso o empleo antes de aterrizar.' },
-  { q: '¿Funciona en toda Suiza o solo en ciudades grandes?', a: 'Cubrimos los 26 cantones. Hay más actividad en Zúrich, Ginebra, Basilea, Lausana y Berna, pero cada semana crecen las comunidades en el resto — y tú puedes ser quien empiece la tuya.' },
+  { q: '¿Funciona en toda Suiza o solo en ciudades grandes?', a: 'Cubrimos los 26 cantones. Hay más actividad en Zúrich, Ginebra, Basilea, Lausana y Berna, pero cada semana crecen los grupos en el resto — y tú puedes ser quien empiece el tuyo.' },
   { q: '¿Necesito descargar algo desde App Store o Google Play?', a: 'No. Latido es una app web instalable (PWA). La añades a la pantalla de inicio de tu móvil en un toque desde Safari o Chrome. Ocupa casi nada y se comporta como una app nativa.' },
 ]
 
@@ -524,7 +524,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         <div style={{ background: '#fff', padding: '48px 24px', borderBottom: `1px solid ${C.border}` }}>
           <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
             <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 6 }}>¿Qué necesitas hoy?</p>
-            <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, marginBottom: 18 }}>Pisos, empleo, cuidadoras, trámites, comunidades y mucho más</p>
+            <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, marginBottom: 18 }}>Pisos, empleo, cuidadoras, trámites, grupos y mucho más</p>
             <GlobalSearch size="lg" />
           </div>
         </div>

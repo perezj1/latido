@@ -19,7 +19,7 @@ import EventfrogCalendar from '../components/EventfrogCalendar'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
-  { id:'comunidades', label:'🤝 Comunidades' },
+  { id:'comunidades', label:'👥 Grupos' },
   { id:'negocios', label:'🏪 Negocios' },
   { id:'eventos', label:'🎉 Eventos' },
 ]
@@ -73,10 +73,10 @@ function normalizeCommunity(group) {
   return {
     id: group.id,
     cat: normalizedCat || '',
-    name: (group.name || 'Comunidad').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
+    name: (group.name || 'Grupo').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
     city: group.city || 'Suiza',
     members: group.members || 0,
-    emoji: group.emoji || category?.emoji || '🤝',
+    emoji: group.emoji || category?.emoji || '👥',
     verified: !!group.verified,
     desc: group.desc || group.description || '',
     contact: group.contact || '',
@@ -530,13 +530,13 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
       </div>
 
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18 }}>
-        {community.desc || 'Comunidad hispanohablante en Suiza.'}
+        {community.desc || 'Grupo hispanohablante en Suiza.'}
       </p>
 
       {community.contact && (() => {
         const url = community.contact
         const isWeb = /^https?:\/\//i.test(url) && !url.includes('chat.whatsapp.com') && !url.includes('wa.me') && !url.includes('t.me') && !url.includes('telegram') && !url.includes('meetup.com') && !url.includes('facebook.com') && !url.includes('instagram.com') && !url.includes('discord.gg')
-        let icon = '🔗', label = 'Unirme a la comunidad', bg = C.primary
+        let icon = '🔗', label = 'Unirme al grupo', bg = C.primary
         if (isWeb)                                                                    { icon = '🌐'; label = 'Acceder a la web'; bg = C.primary }
         else if (url.includes('chat.whatsapp.com') || url.includes('wa.me'))         { icon = '💬'; label = 'Unirme por WhatsApp'; bg = '#25D366' }
         else if (url.includes('t.me') || url.includes('telegram'))                   { icon = '✈️'; label = 'Unirme por Telegram'; bg = '#229ED9' }
@@ -870,7 +870,7 @@ export default function Comunidades() {
             style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:13, padding:'11px 13px 11px 36px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', boxSizing:'border-box' }}
             placeholder={
               tab === 'comunidades'
-                ? 'Buscar comunidad...'
+                ? 'Buscar grupo...'
                 : 'Buscar negocio...'
             }
             value={search}
@@ -915,7 +915,7 @@ export default function Comunidades() {
                     {!isWebCommunity(group.contact) && <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginBottom:8 }}>👥 {group.members} miembros</p>}
                     <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:14, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{group.desc}</p>
                     <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                      Ver comunidad →
+                      Ver grupo →
                     </div>
                   </div>
                 </Card>
@@ -924,9 +924,9 @@ export default function Comunidades() {
           )}
 
           <div style={{ marginTop:28, border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
-            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>➕ ¿Tienes una comunidad hispanohablante?</h3>
-            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Regístrala aquí y llega a más personas en Suiza. Gratis.</p>
-            <Link to="/registrar-comunidad" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Registrar comunidad</Link>
+            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>➕ ¿Tienes un grupo hispanohablante?</h3>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Regístralo aquí y llega a más personas en Suiza. Gratis.</p>
+            <Link to="/registrar-comunidad" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Registrar grupo</Link>
           </div>
         </>
       )}
