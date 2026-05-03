@@ -49,7 +49,9 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
 
   const handleInstall = async () => {
     const accepted = await promptInstall()
-    if (accepted) setInstalled(true)
+    if (!accepted) return
+
+    setInstalled(true)
   }
 
   if (!isLoggedIn || isPWA || dismissed || installed) return null

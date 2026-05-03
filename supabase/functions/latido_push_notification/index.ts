@@ -381,7 +381,7 @@ async function handleTest(req: Request, record: Record<string, unknown>) {
   console.log('push_test', { userId, subscriptions: subscriptions.length })
   const result = await notifySubscriptions(subscriptions, {
     title: text(record.title, 'Prueba Latido'),
-    body: text(record.body, 'Las notificaciones push estan funcionando.'),
+    body: text(record.body, 'Las notificaciones están funcionando.'),
     url: text(record.url, '/'),
     tag: `test:${Date.now()}`,
     data: { kind: 'test' },

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
+import { usePushActivation } from '../hooks/usePushActivation'
 import { Avatar } from './UI'
 import { C, PP } from '../lib/theme'
 import { getPublishTarget } from '../lib/publishTargets'
@@ -26,8 +27,9 @@ const NO_FAB = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar
 
 export default function BottomNav() {
   const { pathname, search } = useLocation()
-  const { isLoggedIn, displayName, avatarUrl } = useAuth()
+  const { isLoggedIn, user, displayName, avatarUrl } = useAuth()
   const { hasUnread } = useUnreadMessages()
+  const { needsActivation: needsPushActivation } = usePushActivation(user?.id)
   const navigate = useNavigate()
   const [pickerOpen, setPickerOpen] = useState(false)
 
@@ -113,6 +115,7 @@ export default function BottomNav() {
       <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center' }}>
         {TABS.map(tab => {
           const active = tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
+          const needsNotificationDot = tab.path === '/perfil' && needsPushActivation
           const to = (!isLoggedIn && (tab.path === '/mensajes' || tab.path === '/perfil')) ? '/auth' : tab.path
 
           return (
@@ -128,6 +131,9 @@ export default function BottomNav() {
                 }
                 {tab.path === '/mensajes' && hasUnread && (
                   <span style={{ position:'absolute', top:-2, right:-4, minWidth:8, height:8, borderRadius:4, background:'#EF4444', border:'1.5px solid #fff' }} />
+                )}
+                {needsNotificationDot && (
+                  <span style={{ position:'absolute', top:-4, right:-5, minWidth:9, height:9, borderRadius:5, background:'#EF4444', border:'1.5px solid #fff', boxShadow:'0 0 0 2px rgba(239,68,68,0.14)' }} />
                 )}
               </span>
               <span style={{ fontFamily:PP, fontSize:9, fontWeight: active ? 700 : 500 }}>{tab.label}</span>

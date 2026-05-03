@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { usePWA } from '../hooks/usePWA'
 import { useFavorites } from '../hooks/useFavorites'
 import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
-import { getPushStatus, subscribeToPushNotifications, syncPushPreferences, unsubscribeFromPushNotifications } from '../lib/pushNotifications'
+import { PUSH_STATUS_EVENT, getPushStatus, subscribeToPushNotifications, syncPushPreferences, unsubscribeFromPushNotifications } from '../lib/pushNotifications'
 import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
@@ -240,6 +240,7 @@ export default function Perfil() {
   const { isLoggedIn, displayName, userCanton, user, signOut, avatarUrl, updateAvatar } = useAuth()
   const { isPWA, canInstall, promptInstall } = usePWA()
   const navigate = useNavigate()
+  const location = useLocation()
 
   // publications
   const [manageOpen, setManageOpen] = useState(false)
@@ -262,6 +263,7 @@ export default function Perfil() {
   const [alertSettings, setAlertSettings] = useState(loadAlertSettings)
   const [pushStatus, setPushStatus] = useState({ supported: false, permission: 'default', subscribed: false })
   const [savingPush, setSavingPush] = useState(false)
+  const needsPushActivation = pushStatus.supported && !pushStatus.subscribed
 
   // config
   const [configOpen, setConfigOpen] = useState(false)
@@ -392,18 +394,42 @@ export default function Perfil() {
     }
   }
 
-  const refreshPushStatus = async () => {
+  const refreshPushStatus = useCallback(async () => {
     try {
       setPushStatus(await getPushStatus())
     } catch {
       setPushStatus({ supported: false, permission: 'unsupported', subscribed: false })
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (!alertsOpen) return
     refreshPushStatus()
-  }, [alertsOpen])
+  }, [alertsOpen, refreshPushStatus])
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+    refreshPushStatus()
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') refreshPushStatus()
+    }
+
+    window.addEventListener(PUSH_STATUS_EVENT, refreshPushStatus)
+    window.addEventListener('focus', refreshPushStatus)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      window.removeEventListener(PUSH_STATUS_EVENT, refreshPushStatus)
+      window.removeEventListener('focus', refreshPushStatus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [isLoggedIn, refreshPushStatus])
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('notificaciones') === '1') setAlertsOpen(true)
+  }, [location.search])
 
   const saveAlerts = async next => {
     const normalizedNext = {
@@ -451,7 +477,7 @@ export default function Perfil() {
       const status = await subscribeToPushNotifications({ user, settings: nextSettings, userCanton })
       setPushStatus(status)
       await saveAlerts(nextSettings)
-      toast.success('Notificaciones push activadas')
+      toast.success('Notificaciones activadas')
     } catch (err) {
       toast.error(err?.message || 'No se pudieron activar las notificaciones')
     } finally {
@@ -465,7 +491,7 @@ export default function Perfil() {
       const status = await unsubscribeFromPushNotifications({ user })
       setPushStatus(status)
       await saveAlerts({ ...alertSettings, messagesEnabled: false })
-      toast.success('Notificaciones push desactivadas')
+      toast.success('Notificaciones desactivadas')
     } catch (err) {
       toast.error(err?.message || 'No se pudieron desactivar')
     } finally {
@@ -476,7 +502,6 @@ export default function Perfil() {
   const toggleZoneAlerts = async () => {
     const next = { ...alertSettings, enabled: !alertSettings.enabled, messagesEnabled: true }
     await saveAlerts(next)
-    if (next.enabled && !pushStatus.subscribed) await enablePush(next)
   }
 
   const toggleAlertCat = cat => {
@@ -686,7 +711,16 @@ export default function Perfil() {
       title: 'Descubrir',
       items: [
         { icon:'📚', color:'#F1F5F9', label:'Guías', sub:'Trámites y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
-        { icon:'🔔', color:'#F1F5F9', label:'Notificaciones push', sub:'Mensajes y avisos por zona', action:() => setAlertsOpen(true) },
+        {
+          icon:'🔔',
+          color:'#F1F5F9',
+          label:'Notificaciones',
+          sub: needsPushActivation
+            ? 'Actívalas para recibir mensajes, nuevos anuncios y alertas de tu zona'
+            : 'Mensajes, anuncios y alertas de zona',
+          attention: needsPushActivation,
+          action:() => setAlertsOpen(true),
+        },
       ],
     },
     {
@@ -782,9 +816,15 @@ export default function Perfil() {
             {section.items.map((item, i) => {
               const content = (
                 <div style={{ padding:'14px 16px', display:'flex', gap:14, alignItems:'center', cursor:item.disabled ? 'not-allowed' : 'pointer', borderBottom: i < section.items.length - 1 ? `1px solid ${C.border}` : 'none', opacity:item.disabled ? 0.6 : 1 }}>
-                  <div style={{ width:40, height:40, background:item.color || C.bg, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:19, flexShrink:0 }}>{item.icon}</div>
-                  <div style={{ flex:1 }}>
-                    <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, marginBottom:1 }}>{item.label}</p>
+                  <div style={{ width:40, height:40, background:item.color || C.bg, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:19, flexShrink:0, position:'relative' }}>
+                    {item.icon}
+                    {item.attention && <span style={{ position:'absolute', top:5, right:5, width:9, height:9, borderRadius:5, background:'#EF4444', border:'1.5px solid #fff' }} />}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, marginBottom:1, display:'flex', alignItems:'center', gap:6 }}>
+                      {item.label}
+                      {item.attention && <span style={{ width:7, height:7, borderRadius:4, background:'#EF4444', flexShrink:0 }} />}
+                    </p>
                     <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{item.sub}</p>
                   </div>
                   <span style={{ color:C.light, fontSize:18, fontWeight:300 }}>{item.disabled ? '🔒' : '›'}</span>
@@ -906,18 +946,30 @@ export default function Perfil() {
         )}
       </Sheet>
 
-      {/* ── Push notifications ── */}
-      <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones push">
+      {/* ── Notifications ── */}
+      <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones">
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.6 }}>
-          Recibe avisos de mensajes directos y alertas cuando se publique algo nuevo en la zona que elijas.
+          Recibe una alerta cuando te escriban o cuando aparezca un anuncio de tu interés en la zona que elijas.
         </p>
 
-        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px', marginBottom:14 }}>
+        {needsPushActivation && (
+          <div style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:14, padding:'11px 13px', marginBottom:14, display:'flex', gap:10, alignItems:'flex-start' }}>
+            <span style={{ width:9, height:9, borderRadius:5, background:'#EF4444', marginTop:5, flexShrink:0 }} />
+            <p style={{ fontFamily:PP, fontSize:11, color:'#991B1B', margin:0, lineHeight:1.5 }}>
+              Activa las notificaciones para recibir alertas de mensajes, nuevos anuncios, empleos y eventos.
+            </p>
+          </div>
+        )}
+
+        <div style={{ background:C.bg, border:`1px solid ${needsPushActivation ? '#FCA5A5' : C.border}`, borderRadius:14, padding:'12px 14px', marginBottom:14 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
             <div style={{ minWidth:0 }}>
-              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px' }}>Push del dispositivo</p>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px', display:'flex', alignItems:'center', gap:6 }}>
+                Mensajes y avisos
+                {needsPushActivation && <span style={{ width:7, height:7, borderRadius:4, background:'#EF4444', flexShrink:0 }} />}
+              </p>
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-                {pushStatus.subscribed ? 'Mensajes directos activos en este dispositivo.' : 'Activa el permiso del navegador para recibir mensajes.'}
+                {pushStatus.subscribed ? 'Activas en este dispositivo.' : 'Actívalas para recibir mensajes, nuevos anuncios, empleos y eventos.'}
               </p>
             </div>
             <button
@@ -930,7 +982,12 @@ export default function Perfil() {
           </div>
           {!pushStatus.supported && (
             <p style={{ fontFamily:PP, fontSize:11, color:'#B45309', margin:'10px 0 0', lineHeight:1.5 }}>
-              Este navegador solo permite push en HTTPS o localhost compatible.
+              Este navegador solo permite notificaciones en HTTPS o localhost compatible.
+            </p>
+          )}
+          {pushStatus.permission === 'denied' && (
+            <p style={{ fontFamily:PP, fontSize:11, color:'#B45309', margin:'10px 0 0', lineHeight:1.5 }}>
+              El navegador tiene las notificaciones bloqueadas. Actívalas en los ajustes del sitio y vuelve a intentarlo.
             </p>
           )}
         </div>
@@ -938,7 +995,7 @@ export default function Perfil() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px', marginBottom:14 }}>
           <div>
             <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, margin:'0 0 2px' }}>Alertas de zona</p>
-            <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Anuncios, trabajos y eventos segun tus filtros</p>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Actívalo para recibir avisos de anuncios de tu interés en tu zona.</p>
           </div>
           <button
             onClick={toggleZoneAlerts}

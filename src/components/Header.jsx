@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { usePushActivation } from '../hooks/usePushActivation'
 import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
 const NAV_GUEST = [
@@ -18,7 +19,8 @@ const NAV_USER = [
 export default function Header({ transparent }) {
   const [open, setOpen] = useState(false)
   const { pathname, search } = useLocation()
-  const { isLoggedIn, displayName, signOut, avatarUrl } = useAuth()
+  const { isLoggedIn, user, displayName, signOut, avatarUrl } = useAuth()
+  const { needsActivation: needsPushActivation } = usePushActivation(user?.id)
   const NAV = isLoggedIn ? NAV_USER : NAV_GUEST
 
   const isActive = (href) => {
@@ -65,8 +67,11 @@ export default function Header({ transparent }) {
 
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           {isLoggedIn ? (
-            <Link to="/perfil" style={{ textDecoration:'none' }}>
+            <Link to="/perfil" style={{ textDecoration:'none', position:'relative', display:'inline-flex' }}>
               <Avatar name={displayName} size={36} src={avatarUrl} />
+              {needsPushActivation && (
+                <span style={{ position:'absolute', top:-2, right:-2, width:10, height:10, borderRadius:5, background:'#EF4444', border:'2px solid #fff', boxShadow:'0 0 0 2px rgba(239,68,68,0.14)' }} />
+              )}
             </Link>
           ) : (
             <Link to="/auth" style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.primary, textDecoration:'none', padding:'9px 14px', borderRadius:12, border:`1.5px solid ${C.primaryMid}`, flexShrink:0 }}>

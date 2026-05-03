@@ -45,7 +45,12 @@ self.addEventListener('push', e => {
     },
   }
 
-  e.waitUntil(self.registration.showNotification(title, options))
+  e.waitUntil((async () => {
+    if ('setAppBadge' in self.registration) {
+      await self.registration.setAppBadge(1).catch(() => {})
+    }
+    await self.registration.showNotification(title, options)
+  })())
 })
 
 self.addEventListener('notificationclick', e => {

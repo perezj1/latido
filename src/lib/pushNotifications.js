@@ -2,9 +2,21 @@ import { supabase } from './supabase'
 import { normalizeAdCat } from './constants'
 
 export const PUSH_SETTINGS_KEY = 'latido_alerts'
+export const PUSH_STATUS_EVENT = 'latido_push_status_changed'
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 const VAPID_KEY_STORAGE_KEY = 'latido_vapid_public_key'
+const PUSH_MANUAL_DISABLED_KEY = 'latido_push_manual_disabled'
+
+export function notifyPushStatusChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(PUSH_STATUS_EVENT))
+  }
+}
+
+function isManuallyDisabled() {
+  return localStorage.getItem(PUSH_MANUAL_DISABLED_KEY) === '1'
+}
 
 export function normalizePushCategories(categories = []) {
   return Array.from(new Set((categories || []).map(normalizeAdCat).filter(Boolean)))
@@ -138,17 +150,17 @@ export async function getPushStatus() {
   return {
     supported: true,
     permission: Notification.permission,
-    subscribed: Boolean(subscription),
+    subscribed: Boolean(subscription) && !isManuallyDisabled(),
   }
 }
 
 export async function subscribeToPushNotifications({ user, settings, userCanton }) {
-  if (!user?.id) throw new Error('Inicia sesion para activar las notificaciones.')
+  if (!user?.id) throw new Error('Inicia sesión para activar las notificaciones.')
   if (!VAPID_PUBLIC_KEY) throw new Error('Falta VITE_VAPID_PUBLIC_KEY en el entorno de la app.')
   if (!isPushSupported()) throw new Error('Este navegador no soporta push web en este contexto.')
 
   const permission = await Notification.requestPermission()
-  if (permission !== 'granted') throw new Error('Permiso de notificaciones denegado.')
+  if (permission !== 'granted') throw new Error('Activa las notificaciones desde los ajustes del navegador para recibir alertas.')
 
   const registration = await ensureServiceWorkerRegistration()
   let subscription = await getCurrentVapidSubscription(registration, user)
@@ -171,24 +183,22 @@ export async function subscribeToPushNotifications({ user, settings, userCanton 
 
   if (error) throw error
 
+  localStorage.removeItem(PUSH_MANUAL_DISABLED_KEY)
   localStorage.setItem(VAPID_KEY_STORAGE_KEY, VAPID_PUBLIC_KEY)
   await syncPushPreferences({ user, settings, userCanton, messagesEnabled: true })
+  notifyPushStatusChanged()
 
   return { supported: true, permission, subscribed: true }
 }
 
 export async function syncExistingPushRegistration({ user, settings, userCanton }) {
   if (!user?.id || !isPushSupported() || Notification.permission !== 'granted' || !VAPID_PUBLIC_KEY) return
+  if (isManuallyDisabled()) return
 
   const registration = await ensureServiceWorkerRegistration()
-  let subscription = await getCurrentVapidSubscription(registration, user)
+  const subscription = await getCurrentVapidSubscription(registration, user)
 
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    })
-  }
+  if (!subscription) return
 
   await supabase
     .from('push_subscriptions')
@@ -196,6 +206,7 @@ export async function syncExistingPushRegistration({ user, settings, userCanton 
 
   localStorage.setItem(VAPID_KEY_STORAGE_KEY, VAPID_PUBLIC_KEY)
   await syncPushPreferences({ user, settings, userCanton, messagesEnabled: true })
+  notifyPushStatusChanged()
 }
 
 export async function unsubscribeFromPushNotifications({ user }) {
@@ -211,12 +222,13 @@ export async function unsubscribeFromPushNotifications({ user }) {
       .eq('endpoint', subscription.endpoint)
       .eq('user_id', user.id)
 
-    await subscription.unsubscribe()
+    await subscription.unsubscribe().catch(() => {})
   } else if (subscription) {
-    await subscription.unsubscribe()
+    await subscription.unsubscribe().catch(() => {})
   }
 
   localStorage.removeItem(VAPID_KEY_STORAGE_KEY)
+  localStorage.setItem(PUSH_MANUAL_DISABLED_KEY, '1')
 
   if (user?.id) {
     await supabase
@@ -228,5 +240,6 @@ export async function unsubscribeFromPushNotifications({ user }) {
       }, { onConflict: 'user_id' })
   }
 
+  notifyPushStatusChanged()
   return { supported: true, permission: Notification.permission, subscribed: false }
 }

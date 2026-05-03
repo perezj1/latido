@@ -18,6 +18,13 @@ window.addEventListener('beforeinstallprompt', (e) => {
   notify()
 })
 
+window.addEventListener('appinstalled', () => {
+  _prompt = null
+  _canInstall = false
+  _isPWA = true
+  notify()
+})
+
 window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
   _isPWA = e.matches
   notify()

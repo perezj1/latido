@@ -49,6 +49,7 @@ const TABLON_CACHE = {
   jobs:null,
   jobsTs:0,
 }
+const CARD_STACK_GAP = 10
 
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
@@ -60,7 +61,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
   const coverPhoto = photos[0]
   const location = formatAdLocation(ad)
   return (
-    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', marginBottom:10, width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
+    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
       {coverPhoto && (
         <div style={{ position:'relative' }}>
           <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:220, objectFit:'contain', background:'#fff', display:'block' }}/>
@@ -165,8 +166,9 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc }) {
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
+          <Tag bg="#E0F2FE" color="#0369A1">💼 Empleo</Tag>
           <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0 }}>{job.title || job.company}</h3>
-          <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>
+          {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
         </div>
         {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 2px' }}>🏢 {job.company}</p>}
         <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>📍 {job.city || job.canton}</p>
@@ -207,6 +209,7 @@ function JobDetail({ job, user }) {
           )}
           <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 8px' }}>📍 {job.city || job.canton}</p>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+            <Tag bg="#E0F2FE" color="#0369A1">💼 Empleo</Tag>
             {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
             {job.sector && <Tag bg={C.bg} color={C.mid}>{job.sector}</Tag>}
           </div>
@@ -357,7 +360,6 @@ export default function Tablon() {
     const p = new URLSearchParams(searchParams)
     p.set('openJob', job.id)
     p.delete('openAd')
-    if (!p.get('cat')) p.set('cat', 'empleo')
     setSearchParams(p)
   }
   const closeJobDetails = () => {
@@ -489,26 +491,35 @@ export default function Tablon() {
       id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
       canton: a.canton, type: a.type, salary: a.salary, emoji: a.emoji || '💼',
       logo_url: a.img_url || '', lang: a.lang, languages: a.languages,
-      desc: a.desc, user_id: a.user_id,
+      desc: a.desc, user_id: a.user_id, created_at: a.created_at,
     }))
     return [...fromJobs, ...fromAds]
   }, [ads, canton, deferredSearch, isLoggedIn, jobType, jobs, plz])
 
   const filteredJobs = communityJobs
+  const tablonItems = useMemo(() => {
+    if (cat) return filteredAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' }))
+
+    return [
+      ...filteredAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' })),
+      ...filteredJobs.map(job => ({ kind:'job', item:job, sortDate:job.created_at || '' })),
+    ].sort((a, b) => String(b.sortDate).localeCompare(String(a.sortDate)))
+  }, [cat, filteredAds, filteredJobs])
 
   useEffect(() => {
     if (loading) return
 
-    if (isEmpleos) {
-      if (!openJobId) {
-        setSelectedJob(null)
-        return
+    if (openJobId) {
+      const job = filteredJobs.find(entry => String(entry.id) === openJobId)
+        || jobs.find(entry => String(entry.id) === openJobId)
+      if (job) {
+        setSelectedJob(job)
+        setSelectedAd(null)
       }
-
-      const job = jobs.find(entry => String(entry.id) === openJobId)
-      if (job) setSelectedJob(job)
       return
     }
+
+    setSelectedJob(null)
 
     if (!openAdId) {
       setSelectedAd(null)
@@ -517,7 +528,7 @@ export default function Tablon() {
 
     const ad = ads.find(entry => String(entry.id) === openAdId)
     if (ad) setSelectedAd(ad)
-  }, [ads, jobs, isEmpleos, loading, openAdId, openJobId])
+  }, [ads, filteredJobs, jobs, loading, openAdId, openJobId])
 
 
   const orderedCats = [...AD_CATS].sort((a, b) => {
@@ -628,7 +639,7 @@ export default function Tablon() {
           ) : (
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>EMPLEOS DE LA COMUNIDAD</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
                 {filteredJobs.map(j => (
                   <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userAvatars.get(j.user_id)} />
                 ))}
@@ -659,11 +670,11 @@ export default function Tablon() {
           {filteredAds.length > 0 && (
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>ANUNCIOS DE LA COMUNIDAD</p>
-              <div>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userAvatars.get(ad.user_id)} />)}</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userAvatars.get(ad.user_id)} />)}</div>
             </>
           )}
         </>
-      ) : filteredAds.length === 0 && (!cat ? filteredJobs.length === 0 : true) ? (
+      ) : tablonItems.length === 0 ? (
         <div style={{ textAlign:'center', padding:'60px 20px' }}>
           <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
           <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin resultados</h3>
@@ -671,12 +682,11 @@ export default function Tablon() {
           <Link to={publishTarget.to} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishTarget.label}</Link>
         </div>
       ) : (
-        <div>
-          {filteredAds.map(ad => (
-            <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userAvatars.get(ad.user_id)} />
-          ))}
-          {!cat && filteredJobs.map(j => (
-            <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userAvatars.get(j.user_id)} />
+        <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
+          {tablonItems.map(({ kind, item }) => kind === 'job' ? (
+            <JobCard key={`job-${item.id}`} job={item} onClick={() => openJobDetails(item)} isFav={isFavorite('jobs', item.id)} onToggleFav={() => toggleFavorite('jobs', item.id)} avatarSrc={userAvatars.get(item.user_id)} />
+          ) : (
+            <AdCard key={`ad-${item.id}`} ad={item} onClick={() => openAdDetails(item)} isFav={isFavorite('ads', item.id)} onToggleFav={() => toggleFavorite('ads', item.id)} avatarSrc={userAvatars.get(item.user_id)} />
           ))}
         </div>
       )}
