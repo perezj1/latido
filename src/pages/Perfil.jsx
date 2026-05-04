@@ -728,7 +728,7 @@ export default function Perfil() {
       items: [
         { icon:'⚙️', color:'#F1F5F9', label:'Configuración', sub:'Nombre, cantón, idiomas, contraseña', action:openConfig },
         { icon:'🔗', color:'#F1F5F9', label:'Compartir Latido', sub:'Invita a amigos y familiares a unirse', action:handleShare },
-        { icon:'✉️', color:'#F1F5F9', label:'Contactar con Latido', sub:'Preguntas, sugerencias o feedback', action:() => window.location.href = `mailto:latidoch@gmail.com?subject=${encodeURIComponent('Mensaje desde Latido')}` },
+        { icon:'✉️', color:'#F1F5F9', label:'Contactar con Latido', sub:'Preguntas, sugerencias o feedback', action:() => window.location.href = `mailto:info@latido.ch?subject=${encodeURIComponent('Mensaje desde Latido')}` },
       ],
     },
   ]
