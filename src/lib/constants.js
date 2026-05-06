@@ -130,9 +130,24 @@ export function formatAdLocation(ad={}) {
   return city || canton || cleanLocationPart(ad.plz)
 }
 
+export const SERVICE_SUBCATS = [
+  { label:'Limpieza', emoji:'🧹' },
+  { label:'Cocina', emoji:'🍳' },
+  { label:'Reparaciones', emoji:'🔧' },
+  { label:'Mudanza', emoji:'🚚' },
+  { label:'Clases', emoji:'🎓' },
+  { label:'Peluquería', emoji:'💇' },
+  { label:'Estética', emoji:'💅' },
+  { label:'Cuidado de niños', emoji:'🧸' },
+  { label:'Cuidado de mayores', emoji:'👵' },
+  { label:'Mecánico', emoji:'🚗' },
+  { label:'Informática', emoji:'💻' },
+  { label:'Otro', emoji:'✨' },
+]
+
 export const AD_CATS = [
   { id:'vivienda',   emoji:'🏠', label:'Vivienda',   desc:'Pisos, habitaciones y compañeros',  types:['busca','ofrece'],           sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
-  { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Limpieza, clases, mudanzas y más',  types:['busca','ofrece'],           sub:['Limpieza','Cocina','Reparaciones','Mudanza','Clases','Peluquería','Mecánico','Informática','Otro'] },
+  { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Limpieza, clases, mudanzas y más',  types:['busca','ofrece'],           sub:SERVICE_SUBCATS },
   { id:'cuidados',   emoji:'❤️', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia', types:['busca','ofrece'],        sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
   { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Compra, vende o regala artículos',  types:['busca','vende','regala'],   sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
   { id:'documentos', emoji:'📄', label:'Trámites',    desc:'Cartas, traducciones y gestiones',  types:['busca','ofrece'],           sub:['Cartas','Trámites','Traducción','Asesoría'] },
@@ -145,6 +160,29 @@ export function normalizeAdCat(cat='') {
 
 export function getAdCat(cat='') {
   return AD_CATS.find(item => item.id === normalizeAdCat(cat))
+}
+
+export function getAdSubLabel(sub) {
+  return typeof sub === 'string' ? sub : sub?.label || ''
+}
+
+function normalizeSubLabel(value='') {
+  return String(value)
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+export function getAdSubOption(cat='', sub='') {
+  const normalizedSub = normalizeSubLabel(sub)
+  if (!normalizedSub) return null
+
+  return getAdCat(cat)?.sub?.find(item => normalizeSubLabel(getAdSubLabel(item)) === normalizedSub) || null
+}
+
+export function getAdDisplayEmoji(ad={}) {
+  return ad.emoji || getAdSubOption(ad.cat, ad.sub)?.emoji || getAdCat(ad.cat)?.emoji || '📌'
 }
 
 export const AD_TYPES = [

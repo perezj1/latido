@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { C, PP } from '../lib/theme'
-import { AD_CATS as BASE_AD_CATS, formatAdLocation, normalizeAdCat } from '../lib/constants'
+import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubOption, normalizeAdCat } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 
 // ── Button ─────────────────────────────────────────────────────
@@ -337,18 +337,20 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
   const normalizedCat = normalizeAdCat(ad.cat)
   const cat = AD_CATS.find(c => c.id === normalizedCat)
   const cc  = CAT_COLORS_MAP[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
+  const displayEmoji = getAdDisplayEmoji(ad)
+  const subOption = getAdSubOption(ad.cat, ad.sub)
   const typeMap = { busca:['🔍 Busca','#FEF3C7','#92400E'], ofrece:['✨ Ofrece','#D1FAE5','#065F46'], vende:['🏷️ Vende','#DBEAFE','#1D4ED8'], regala:['🎁 Regala','#FCE7F3','#9D174D'] }
   const [tl, tbg, ttc] = typeMap[ad.type] || ['•', C.bg, C.mid]
   const location = formatAdLocation(ad)
 
   if (compact) return (
     <div onClick={onClick} style={{ background:C.surface, borderRadius:13, border:`1px solid ${C.border}`, padding:'10px 12px', display:'flex', gap:10, alignItems:'flex-start', cursor:'pointer', transition:'all .15s' }}>
-      <div style={{ width:36, height:36, background:cc.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>{cat?.emoji}</div>
+      <div style={{ width:36, height:36, background:cc.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>{displayEmoji}</div>
       <div style={{ flex:1, minWidth:0 }}>
         <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, lineHeight:1.3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:3 }}>{ad.title}</p>
         <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
           <PrivacyTag privacy={ad.privacy}/>
-          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
+          <Tag bg={cc.bg} color={cc.tc}>{displayEmoji} {cat?.label}</Tag>
           <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>📍 {location || ad.canton} · {ad.ts}</span>
         </div>
       </div>
@@ -361,7 +363,8 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
       {ad.img && <img src={ad.img} alt={ad.title} style={{ width:'100%', height:160, objectFit:'cover' }} />}
       <div style={{ padding:'12px 14px 14px' }}>
         <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:7 }}>
-          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
+          <Tag bg={cc.bg} color={cc.tc}>{displayEmoji} {cat?.label}</Tag>
+          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
           <PrivacyTag privacy={ad.privacy}/>
           {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓</Tag>}
         </div>

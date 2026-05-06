@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { AD_CATS, formatAdLocation, normalizeAdCat } from '../lib/constants'
+import { AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, normalizeAdCat } from '../lib/constants'
 import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
@@ -68,7 +68,7 @@ const PRICE_UNITS = [
   { id:'once', label:'Total' },
 ]
 
-const OPTIONAL_AD_INSERT_COLUMNS = ['city', 'price_amount', 'price_unit', 'contact_via_app', 'contact_phone', 'contact_email', 'photo_urls']
+const OPTIONAL_AD_INSERT_COLUMNS = ['city', 'price_amount', 'price_unit', 'contact_via_app', 'contact_phone', 'contact_email', 'photo_urls', 'emoji']
 const MULTI_PHOTO_CATS = new Set(['vivienda', 'venta'])
 
 function resolveTypeForCategory(intent, catId) {
@@ -138,6 +138,8 @@ export default function Publicar() {
   const s = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const selectedCat = AD_CATS.find(c => c.id === form.cat)
+  const selectedSubOption = getAdSubOption(form.cat, form.sub)
+  const selectedAdEmoji = getAdDisplayEmoji({ cat:form.cat, sub:form.sub })
   const selectedIntent = PUBLISH_INTENTS.find(intent => intent.id === form.intent)
   const compatibleCats = getCompatibleCategories(form.intent)
 
@@ -345,6 +347,7 @@ export default function Publicar() {
       const payload = {
         cat: form.cat,
         sub: form.sub,
+        emoji: selectedAdEmoji,
         type: resolvedType,
         title: form.title,
         desc: form.desc,
@@ -514,21 +517,28 @@ export default function Publicar() {
                 SUBCATEGORÍA (OPCIONAL)
               </p>
               <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                {selectedCat.sub.map(sb => (
+                {selectedCat.sub.map(option => {
+                  const label = getAdSubLabel(option)
+                  const emoji = option?.emoji
+                  const active = form.sub === label
+                  return (
                   <button
-                    key={sb}
-                    onClick={() => s('sub', form.sub === sb ? '' : sb)}
+                    key={label}
+                    onClick={() => s('sub', active ? '' : label)}
                     style={{
                       fontFamily:PP, fontSize:11, fontWeight:600,
-                      padding:'6px 14px', borderRadius:20, cursor:'pointer',
-                      border:`1.5px solid ${form.sub === sb ? C.primary : C.border}`,
-                      background:form.sub === sb ? C.primary : '#fff',
-                      color:form.sub === sb ? '#fff' : C.mid,
+                      padding:'6px 13px', borderRadius:20, cursor:'pointer',
+                      border:`1.5px solid ${active ? C.primary : C.border}`,
+                      background:active ? C.primary : '#fff',
+                      color:active ? '#fff' : C.mid,
+                      display:'inline-flex', alignItems:'center', gap:5,
                     }}
                   >
-                    {sb}
+                    {emoji && <span style={{ fontSize:13, lineHeight:1 }}>{emoji}</span>}
+                    {label}
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
@@ -628,7 +638,7 @@ export default function Publicar() {
               RESUMEN DEL ANUNCIO
             </p>
             <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
-              {selectedCat && <span style={{ fontSize:32, flexShrink:0 }}>{selectedCat.emoji}</span>}
+              {selectedCat && <span style={{ fontSize:32, flexShrink:0 }}>{selectedAdEmoji}</span>}
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, margin:'0 0 6px' }}>{form.title}</p>
                 <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:4 }}>
@@ -639,7 +649,7 @@ export default function Publicar() {
                   )}
                   {form.sub && (
                     <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>
-                      {form.sub}
+                      {selectedSubOption?.emoji ? `${selectedSubOption.emoji} ` : ''}{form.sub}
                     </span>
                   )}
                   {form.canton && (

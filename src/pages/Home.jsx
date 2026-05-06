@@ -9,7 +9,7 @@ import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { MOCK_DOCS, NEGOCIO_TYPES, formatAdLocation, getAdCat, normalizeAdCat } from '../lib/constants'
+import { MOCK_DOCS, NEGOCIO_TYPES, formatAdLocation, getAdCat, getAdDisplayEmoji, normalizeAdCat } from '../lib/constants'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -175,6 +175,8 @@ export default function Home() {
       const adsNorm = ((adsRes.error ? [] : adsRes.data) || []).map((row) => ({
         id: row.id,
         cat: normalizeAdCat(row.cat) || 'servicios',
+        sub: row.sub || '',
+        emoji: row.emoji || '',
         title: row.title || '',
         desc: row.desc || '',
         img: row.img_url || '',
@@ -492,13 +494,14 @@ export default function Home() {
                 const cat = getAdCat(ad.cat)
                 const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
                 const location = formatAdLocation(ad)
+                const displayEmoji = getAdDisplayEmoji(ad)
                 return (
                   <Link key={ad.id} to={getAdHref(ad)} style={{ textDecoration:'none', flexShrink:0, width:152, display:'block' }}>
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                       <div style={{ height:120, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative' }}>
                         {ad.img
                           ? <img src={ad.img} alt={ad.title} style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
-                          : <span>{cat?.emoji || '📌'}</span>
+                          : <span>{displayEmoji}</span>
                         }
                         <span style={{ position:'absolute', top:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(255,255,255,0.92)', color:cc.tc, padding:'3px 7px', borderRadius:999 }}>{cat?.label}</span>
                       </div>

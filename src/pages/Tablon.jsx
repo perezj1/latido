@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import { fetchAvatarsByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
-import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, formatAdLocation, getAdCat, normalizeAdCat } from '../lib/constants'
+import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, formatAdLocation, getAdCat, getAdDisplayEmoji, getAdSubOption, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters, PhotoGallery } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 
@@ -63,6 +63,8 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
   const photos = getAdPhotos(ad)
   const coverPhoto = photos[0]
   const location = formatAdLocation(ad)
+  const displayEmoji = getAdDisplayEmoji(ad)
+  const subOption = getAdSubOption(ad.cat, ad.sub)
   return (
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
       {coverPhoto && (
@@ -84,8 +86,8 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
       </button>
       <div style={{ padding:'13px 15px' }}>
         <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:8 }}>
-          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-          {ad.sub && <Tag bg={C.bg} color={C.mid}>{ad.sub}</Tag>}
+          <Tag bg={cc.bg} color={cc.tc}>{displayEmoji} {cat?.label}</Tag>
+          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
           <PrivacyTag privacy={ad.privacy}/>
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.35, marginBottom:4, ...WRAPPING_TEXT }}>{ad.title}</h3>
@@ -116,6 +118,8 @@ function AdDetail({ ad, user, avatarSrc }) {
   const photos = getAdPhotos(ad)
   const coverPhoto = photos[0]
   const location = formatAdLocation(ad)
+  const displayEmoji = getAdDisplayEmoji(ad)
+  const subOption = getAdSubOption(ad.cat, ad.sub)
 
   return (
     <div>
@@ -127,8 +131,8 @@ function AdDetail({ ad, user, avatarSrc }) {
         </div>
       )}
       <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
-        <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-        {ad.sub && <Tag bg={C.bg} color={C.mid}>{ad.sub}</Tag>}
+        <Tag bg={cc.bg} color={cc.tc}>{displayEmoji} {cat?.label}</Tag>
+        {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
         <PrivacyTag privacy={ad.privacy}/>
         {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
       </div>

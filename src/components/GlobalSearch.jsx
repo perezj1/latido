@@ -11,6 +11,7 @@ import {
   MOCK_EVENTOS_LATINOS,
   formatAdLocation,
   getAdCat,
+  getAdDisplayEmoji,
   normalizeAdCat,
   NEGOCIO_TYPES,
   EVENTO_TYPES,
@@ -162,7 +163,7 @@ function searchAll(query, datasets, isLoggedIn) {
       results.push({
         type:'ad',
         id:ad.id,
-        icon:cat?.emoji || '📌',
+        icon:getAdDisplayEmoji(ad),
         label:ad.title,
         sub:[cat?.label || 'Tablón', location, ad.price].filter(Boolean).join(' · '),
         href:`/tablon?openAd=${encodeURIComponent(ad.id)}`,
