@@ -138,6 +138,7 @@ function normalizeProvider(provider) {
     featured: !!provider.featured,
     services: Array.isArray(provider.services) ? provider.services : [],
     photo_url: provider.photo_url || '',
+    contacts: Array.isArray(provider.contacts) ? provider.contacts : null,
   }
 }
 
@@ -222,6 +223,55 @@ function getBusinessContactMethods(business) {
   return methods
 }
 
+function getLocationContacts(business) {
+  if (!Array.isArray(business.contacts) || !business.contacts.length) return null
+  return business.contacts
+    .map(loc => ({ city: loc.city || '', address: loc.address || '', phone: loc.phone || '', email: loc.email || '' }))
+    .filter(loc => loc.phone || loc.email)
+}
+
+function LocationContactsPanel({ locations }) {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+      {locations.map((loc, i) => (
+        <div key={i} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, overflow:'hidden' }}>
+          <div style={{ background:C.primaryLight, padding:'7px 12px', display:'flex', alignItems:'center', gap:6 }}>
+            <span style={{ fontSize:12 }}>📍</span>
+            <span style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primaryDark }}>{loc.city}</span>
+            {loc.address && <span style={{ fontFamily:PP, fontSize:10, color:C.mid }}>— {loc.address}</span>}
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
+            {loc.phone && (
+              <a
+                href={`tel:${loc.phone.replace(/\s/g,'')}`}
+                style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', textDecoration:'none', borderBottom: loc.email ? `1px solid ${C.border}` : 'none' }}
+              >
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:14 }}>📞</span>
+                  <span style={{ fontFamily:PP, fontSize:12, color:C.mid }}>{loc.phone}</span>
+                </div>
+                <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary }}>Llamar →</span>
+              </a>
+            )}
+            {loc.email && (
+              <a
+                href={`mailto:${loc.email}`}
+                style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', textDecoration:'none' }}
+              >
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:14 }}>✉️</span>
+                  <span style={{ fontFamily:PP, fontSize:12, color:C.mid, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:180 }}>{loc.email}</span>
+                </div>
+                <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary }}>Email →</span>
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap }) {
   const category = NEGOCIO_TYPES.find(type => type.id === business.type)
   const services = servicesMap[business.id] || business.services || []
@@ -230,6 +280,8 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
   const rating = averageRating(reviews)
   const cover = photos[0] || business.photo_url
   const contactMethods = getBusinessContactMethods(business)
+  const locationContacts = getLocationContacts(business)
+  const hasContact = locationContacts ? locationContacts.length > 0 : contactMethods.length > 0
   const [showContacts, setShowContacts] = useState(false)
 
   return (
@@ -278,7 +330,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
         )}
         <div style={{ display:'flex', gap:8 }}>
           <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flex:1 }}>Ver perfil →</div>
-          {contactMethods.length > 0 && (
+          {hasContact && (
             <button
               onClick={e => { e.stopPropagation(); setShowContacts(v => !v) }}
               style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:showContacts ? C.primaryDark : C.primaryLight, color:showContacts ? '#fff' : C.primary, border:'none', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flex:1, cursor:'pointer' }}
@@ -288,30 +340,33 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
           )}
         </div>
         {showContacts && (
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:8, marginTop:8, display:'flex', flexDirection:'column', gap:6 }}
-          >
-            {contactMethods.map(method => (
-              <a
-                key={method.id}
-                href={method.href}
-                target={method.external ? '_blank' : undefined}
-                rel={method.external ? 'noreferrer' : undefined}
-                style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, textDecoration:'none' }}
-              >
-                <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
-                  <span style={{ fontSize:15, flexShrink:0 }}>{method.icon}</span>
-                  <div style={{ minWidth:0 }}>
-                    <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 1px' }}>{method.label}</p>
-                    <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
-                  </div>
-                </div>
-                <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, flexShrink:0 }}>
-                  {method.external ? 'Abrir ↗' : 'Abrir →'}
-                </span>
-              </a>
-            ))}
+          <div onClick={e => e.stopPropagation()} style={{ marginTop:8 }}>
+            {locationContacts ? (
+              <LocationContactsPanel locations={locationContacts} />
+            ) : (
+              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:8, display:'flex', flexDirection:'column', gap:6 }}>
+                {contactMethods.map(method => (
+                  <a
+                    key={method.id}
+                    href={method.href}
+                    target={method.external ? '_blank' : undefined}
+                    rel={method.external ? 'noreferrer' : undefined}
+                    style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, textDecoration:'none' }}
+                  >
+                    <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
+                      <span style={{ fontSize:15, flexShrink:0 }}>{method.icon}</span>
+                      <div style={{ minWidth:0 }}>
+                        <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 1px' }}>{method.label}</p>
+                        <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
+                      </div>
+                    </div>
+                    <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, flexShrink:0 }}>
+                      {method.external ? 'Abrir ↗' : 'Abrir →'}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -330,6 +385,8 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
   const [tab, setTab] = useState('info')
   const rating = averageRating(reviews)
   const contactMethods = getBusinessContactMethods(business)
+  const locationContacts = getLocationContacts(business)
+  const hasContact = locationContacts ? locationContacts.length > 0 : contactMethods.length > 0
   const websiteLabel = business.website ? formatUrlLabel(business.website) : ''
   const websiteHref = business.website ? ensureUrl(business.website) : ''
 
@@ -401,37 +458,43 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
                   </div>
                 </div>
               )}
-              {contactMethods.length > 0 && (
+              {hasContact && (
                 <div style={{ marginBottom:14 }}>
                   <button
                     onClick={() => setShowContacts(current => !current)}
                     style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', textDecoration:'none', padding:'13px 16px', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer' }}
                   >
                     <span>📬 Contacto</span>
-                    <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : 'Ver opciones'}</span>
+                    <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : locationContacts ? `${locationContacts.length} sedes` : 'Ver opciones'}</span>
                   </button>
                   {showContacts && (
-                    <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:10, marginTop:10, display:'flex', flexDirection:'column', gap:8 }}>
-                      {contactMethods.map(method => (
-                        <a
-                          key={method.id}
-                          href={method.href}
-                          target={method.external ? '_blank' : undefined}
-                          rel={method.external ? 'noreferrer' : undefined}
-                          style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
-                        >
-                          <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                            <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
-                            <div style={{ minWidth:0 }}>
-                              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
-                              <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
-                            </div>
-                          </div>
-                          <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
-                            {method.external ? 'Abrir ↗' : 'Abrir →'}
-                          </span>
-                        </a>
-                      ))}
+                    <div style={{ marginTop:10 }}>
+                      {locationContacts ? (
+                        <LocationContactsPanel locations={locationContacts} />
+                      ) : (
+                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:10, display:'flex', flexDirection:'column', gap:8 }}>
+                          {contactMethods.map(method => (
+                            <a
+                              key={method.id}
+                              href={method.href}
+                              target={method.external ? '_blank' : undefined}
+                              rel={method.external ? 'noreferrer' : undefined}
+                              style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
+                            >
+                              <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                                <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
+                                <div style={{ minWidth:0 }}>
+                                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
+                                  <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
+                                </div>
+                              </div>
+                              <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
+                                {method.external ? 'Abrir ↗' : 'Abrir →'}
+                              </span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

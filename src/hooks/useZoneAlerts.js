@@ -152,7 +152,7 @@ function shouldTrackKind(settings, kind) {
 
 function matchesSettings(row, kind, settings, lastCheck) {
   if (!settings.enabled || !settings.canton) return false
-  if ((row.canton || '') !== settings.canton) return false
+  if (row.canton && row.canton !== settings.canton) return false
   if (row.active === false) return false
   if (lastCheck && row.created_at && row.created_at <= lastCheck) return false
 
@@ -173,7 +173,7 @@ async function fetchAlertsForSource(source, settings, lastCheck) {
   let query = supabase
     .from(source.table)
     .select(source.select)
-    .eq('canton', settings.canton)
+    .or(`canton.eq.${settings.canton},canton.is.null`)
     .or('active.is.null,active.eq.true')
     .order('created_at', { ascending: false })
     .limit(MAX_ALERTS)

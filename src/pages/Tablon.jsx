@@ -12,6 +12,8 @@ import { getPublishTarget } from '../lib/publishTargets'
 function fmtPrice(price) {
   if (!price) return ''
   let s = price.trim()
+  s = s.replace(/\s*\/\s*/g, '/')
+  s = s.replace(/(\d)\s*[-–]\s*(\d)/g, '$1-$2')
   s = s.replace(/^([\d.,]+)\s+CHF\b(.*)/, 'CHF $1$2')
   s = s.replace(/^(CHF\s*[\d.,]+)\s+([^\s/].*)$/, '$1/$2')
   return s
@@ -50,6 +52,7 @@ const TABLON_CACHE = {
   jobsTs:0,
 }
 const CARD_STACK_GAP = 10
+const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
 
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
@@ -85,14 +88,17 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
           {ad.sub && <Tag bg={C.bg} color={C.mid}>{ad.sub}</Tag>}
           <PrivacyTag privacy={ad.privacy}/>
         </div>
-        <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.35, marginBottom:4 }}>{ad.title}</h3>
-        {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.5, marginBottom:8, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+        <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.35, marginBottom:4, ...WRAPPING_TEXT }}>{ad.title}</h3>
+        {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.5, marginBottom:8, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{ad.desc}</p>}
+        <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+          <div style={{ display:'flex', gap:7, alignItems:'flex-start', minWidth:0 }}>
             <Avatar name={ad.user_name || ad.user} size={20} src={avatarSrc}/>
-            <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{ad.user_name || ad.user || 'Usuario'} · 📍 {location || ad.canton}{dateStr ? ` · ${dateStr}` : ''}</span>
+            <span style={{ display:'flex', flexDirection:'column', gap:1, minWidth:0 }}>
+              <span style={{ fontFamily:PP, fontSize:11, fontWeight:600, color:C.light, lineHeight:1.25, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{ad.user_name || ad.user || 'Usuario'}</span>
+              <span style={{ fontFamily:PP, fontSize:10, color:C.light, lineHeight:1.25, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', minWidth:0 }}>📍 {location || ad.canton}{dateStr ? ` · ${dateStr}` : ''}</span>
+            </span>
           </div>
-          {ad.price && <span style={{ fontFamily:PP, fontSize:13, fontWeight:800, color:C.primary }}>{fmtPrice(ad.price)}</span>}
+          {ad.price && <span style={{ display:'block', alignSelf:'flex-end', maxWidth:'100%', fontFamily:PP, fontSize:13, fontWeight:800, color:C.primary, lineHeight:1.15, textAlign:'right', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtPrice(ad.price)}</span>}
         </div>
       </div>
     </div>
@@ -126,17 +132,20 @@ function AdDetail({ ad, user, avatarSrc }) {
         <PrivacyTag privacy={ad.privacy}/>
         {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
       </div>
-      <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:16, color:C.text, lineHeight:1.35, marginBottom:8 }}>{ad.title}</h3>
-      {ad.desc && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:14, whiteSpace:'pre-line' }}>{ad.desc}</p>}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
-        <div style={{ display:'flex', gap:7, alignItems:'center' }}>
+      <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:16, color:C.text, lineHeight:1.35, marginBottom:8, ...WRAPPING_TEXT }}>{ad.title}</h3>
+      {ad.desc && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:14, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>{ad.desc}</p>}
+      <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:18 }}>
+        <div style={{ display:'flex', gap:8, alignItems:'flex-start', minWidth:0 }}>
           <Avatar name={ad.user_name || ad.user} size={22} src={avatarSrc}/>
-          <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>
-            {ad.user_name || ad.user || 'Usuario'} · 📍 {location || ad.canton}
-            {(ad.ts || ad.created_at) ? ` · ${ad.ts || new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}` : ''}
+          <span style={{ display:'flex', flexDirection:'column', gap:2, minWidth:0 }}>
+            <span style={{ fontFamily:PP, fontSize:12, fontWeight:600, color:C.light, lineHeight:1.3, ...WRAPPING_TEXT }}>{ad.user_name || ad.user || 'Usuario'}</span>
+            <span style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, ...WRAPPING_TEXT }}>
+              📍 {location || ad.canton}
+              {(ad.ts || ad.created_at) ? ` · ${ad.ts || new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}` : ''}
+            </span>
           </span>
         </div>
-        {ad.price && <span style={{ fontFamily:PP, fontSize:15, fontWeight:800, color:C.primary }}>{fmtPrice(ad.price)}</span>}
+        {ad.price && <span style={{ display:'block', alignSelf:'flex-start', maxWidth:'100%', fontFamily:PP, fontSize:16, fontWeight:800, color:C.primary, lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtPrice(ad.price)}</span>}
       </div>
 
       {!isOwnAd && user ? (
@@ -167,13 +176,13 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc }) {
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
           <Tag bg="#E0F2FE" color="#0369A1">💼 Empleo</Tag>
-          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0 }}>{job.title || job.company}</h3>
+          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, lineHeight:1.3, margin:0, flex:'1 1 180px', ...WRAPPING_TEXT }}>{job.title || job.company}</h3>
           {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
         </div>
-        {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 2px' }}>🏢 {job.company}</p>}
-        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>📍 {job.city || job.canton}</p>
-        {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>🗣️ {languages}</p>}
-        {job.salary && <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', margin:'4px 0 0' }}>{fmtPrice(job.salary)}</p>}
+        {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.35, margin:'0 0 2px', ...WRAPPING_TEXT }}>🏢 {job.company}</p>}
+        <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.35, margin:'0 0 2px', ...WRAPPING_TEXT }}>📍 {job.city || job.canton}</p>
+        {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, margin:0, ...WRAPPING_TEXT }}>🗣️ {languages}</p>}
+        {job.salary && <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', lineHeight:1.2, margin:'4px 0 0', ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>}
       </div>
       <button
         onClick={e => { e.stopPropagation(); onToggleFav?.() }}
@@ -203,11 +212,11 @@ function JobDetail({ job, user }) {
         {!job.logo_url && (
           <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:18, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>{job.emoji || '💼'}</div>
         )}
-        <div style={{ flex:1 }}>
+        <div style={{ flex:1, minWidth:0 }}>
           {job.company && (
-            <p style={{ fontFamily:PP, fontSize:13, fontWeight:600, color:C.mid, margin:'0 0 6px', lineHeight:1.4 }}>🏢 {job.company}</p>
+            <p style={{ fontFamily:PP, fontSize:13, fontWeight:600, color:C.mid, margin:'0 0 6px', lineHeight:1.4, ...WRAPPING_TEXT }}>🏢 {job.company}</p>
           )}
-          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 8px' }}>📍 {job.city || job.canton}</p>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.4, margin:'0 0 8px', ...WRAPPING_TEXT }}>📍 {job.city || job.canton}</p>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
             <Tag bg="#E0F2FE" color="#0369A1">💼 Empleo</Tag>
             {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
@@ -216,10 +225,10 @@ function JobDetail({ job, user }) {
         </div>
       </div>
 
-      {job.salary && <p style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:'#059669', marginBottom:14 }}>{fmtPrice(job.salary)}</p>}
-      {languages && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>🗣️ Idiomas requeridos: {languages}</p>}
+      {job.salary && <p style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:'#059669', lineHeight:1.2, marginBottom:14, ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>}
+      {languages && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.5, marginBottom:12, ...WRAPPING_TEXT }}>🗣️ Idiomas requeridos: {languages}</p>}
       {(job.desc || job.description) && (
-        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}`, whiteSpace:'pre-line' }}>
+        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}`, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>
           {job.desc || job.description}
         </p>
       )}
