@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import { fetchAvatarsByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
-import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, formatAdLocation, getAdCat, getAdDisplayEmoji, getAdSubOption, normalizeAdCat } from '../lib/constants'
+import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters, PhotoGallery } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 
@@ -56,18 +56,18 @@ const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-wo
 
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
-  const normalizedCat = normalizeAdCat(ad.cat)
-  const cat = getAdCat(ad.cat)
+  const normalizedCat = getAdCategoryId(ad)
+  const cat = getAdDisplayCat(ad)
   const cc  = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
   const dateStr = ad.ts || (ad.created_at ? new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
   const photos = getAdPhotos(ad)
   const coverPhoto = photos[0]
   const location = formatAdLocation(ad)
   const displayEmoji = getAdDisplayEmoji(ad)
-  const subOption = getAdSubOption(ad.cat, ad.sub)
+  const subOption = getAdSubOption(normalizedCat, ad.sub)
   return (
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
-      {coverPhoto && (
+      {coverPhoto ? (
         <div style={{ position:'relative' }}>
           <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:220, objectFit:'contain', background:'#fff', display:'block' }}/>
           {photos.length > 1 && (
@@ -75,6 +75,10 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
               📷 {photos.length}
             </span>
           )}
+        </div>
+      ) : (
+        <div style={{ height:132, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:54 }}>
+          {displayEmoji}
         </div>
       )}
       <button
@@ -86,7 +90,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
       </button>
       <div style={{ padding:'13px 15px' }}>
         <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:8 }}>
-          <Tag bg={cc.bg} color={cc.tc}>{displayEmoji} {cat?.label}</Tag>
+          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
           {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
           <PrivacyTag privacy={ad.privacy}/>
         </div>
@@ -110,16 +114,15 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
 function AdDetail({ ad, user, avatarSrc }) {
   const navigate = useNavigate()
-  const normalizedCat = normalizeAdCat(ad.cat)
-  const cat = getAdCat(ad.cat)
+  const normalizedCat = getAdCategoryId(ad)
+  const cat = getAdDisplayCat(ad)
   const cc  = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
   const isOwnAd = user && ad.user_id === user.id
   const recipientName = encodeURIComponent((ad.user_name || ad.user || '').trim())
   const photos = getAdPhotos(ad)
   const coverPhoto = photos[0]
   const location = formatAdLocation(ad)
-  const displayEmoji = getAdDisplayEmoji(ad)
-  const subOption = getAdSubOption(ad.cat, ad.sub)
+  const subOption = getAdSubOption(normalizedCat, ad.sub)
 
   return (
     <div>
@@ -131,7 +134,7 @@ function AdDetail({ ad, user, avatarSrc }) {
         </div>
       )}
       <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
-        <Tag bg={cc.bg} color={cc.tc}>{displayEmoji} {cat?.label}</Tag>
+        <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
         {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
         <PrivacyTag privacy={ad.privacy}/>
         {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
@@ -468,7 +471,7 @@ export default function Tablon() {
 
   const filteredAds = useMemo(() => ads.filter(a => {
     if (!(isLoggedIn || a.privacy === 'public')) return false
-    if (cat && normalizeAdCat(a.cat) !== cat) return false
+    if (cat && getAdCategoryId(a) !== cat) return false
     if (type) {
       const typeMatches = cat === 'venta' && type === 'vende'
         ? a.type === 'vende' || a.type === 'ofrece'

@@ -10,7 +10,7 @@ import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
-import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, NEGOCIO_TYPES, formatAdLocation, getAdCat, getAdDisplayEmoji, normalizeAdCat } from '../lib/constants'
+import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, NEGOCIO_TYPES, formatAdLocation, getAdDisplayCat, getAdDisplayEmoji, normalizeAdCat } from '../lib/constants'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -74,7 +74,7 @@ function formatDate(value) {
 
 function normalizePublication(kind, row) {
   if (kind === 'ad') {
-    const cat = getAdCat(row.cat)
+    const cat = getAdDisplayCat(row)
     const type = AD_TYPES.find(item => item.id === row.type)
     return {
       id: row.id,

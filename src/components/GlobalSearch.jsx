@@ -10,9 +10,9 @@ import {
   MOCK_NEGOCIOS,
   MOCK_EVENTOS_LATINOS,
   formatAdLocation,
-  getAdCat,
+  getAdCategoryId,
+  getAdDisplayCat,
   getAdDisplayEmoji,
-  normalizeAdCat,
   NEGOCIO_TYPES,
   EVENTO_TYPES,
 } from '../lib/constants'
@@ -109,7 +109,7 @@ function normalizeEvent(event) {
 function normalizeAd(ad) {
   return {
     id: ad.id,
-    cat: normalizeAdCat(ad.cat) || '',
+    cat: getAdCategoryId(ad) || '',
     title: ad.title || '',
     desc: ad.desc || ad.description || '',
     city: ad.city || '',
@@ -158,7 +158,7 @@ function searchAll(query, datasets, isLoggedIn) {
     )
     .slice(0, 3)
     .forEach(ad => {
-      const cat = getAdCat(ad.cat)
+      const cat = getAdDisplayCat(ad)
       const location = formatAdLocation(ad)
       results.push({
         type:'ad',

@@ -138,17 +138,22 @@ export const SERVICE_SUBCATS = [
   { label:'Clases', emoji:'🎓' },
   { label:'Peluquería', emoji:'💇' },
   { label:'Estética', emoji:'💅' },
-  { label:'Cuidado de niños', emoji:'🧸' },
-  { label:'Cuidado de mayores', emoji:'👵' },
   { label:'Mecánico', emoji:'🚗' },
   { label:'Informática', emoji:'💻' },
   { label:'Otro', emoji:'✨' },
 ]
 
+export const CARE_SUBCATS = [
+  { label:'Cuidado de niños', emoji:'🧸', aliases:['Cuidado niños'] },
+  { label:'Cuidado de mayores', emoji:'👵', aliases:['Cuidado mayores'] },
+  { label:'Au pair', emoji:'👶' },
+  { label:'Otro', emoji:'✨', aliases:['Asistencia'] },
+]
+
 export const AD_CATS = [
   { id:'vivienda',   emoji:'🏠', label:'Vivienda',   desc:'Pisos, habitaciones y compañeros',  types:['busca','ofrece'],           sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
   { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Limpieza, clases, mudanzas y más',  types:['busca','ofrece'],           sub:SERVICE_SUBCATS },
-  { id:'cuidados',   emoji:'❤️', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia', types:['busca','ofrece'],        sub:['Cuidado niños','Cuidado mayores','Au pair','Asistencia'] },
+  { id:'cuidados',   emoji:'❤️', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia', types:['busca','ofrece'],        sub:CARE_SUBCATS },
   { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Compra, vende o regala artículos',  types:['busca','vende','regala'],   sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
   { id:'documentos', emoji:'📄', label:'Trámites',    desc:'Cartas, traducciones y gestiones',  types:['busca','ofrece'],           sub:['Cartas','Trámites','Traducción','Asesoría'] },
   { id:'empleo',     emoji:'💼', label:'Empleo',      desc:'Ofertas y búsqueda de trabajo',     types:['busca','ofrece'],           sub:['Full-time','Part-time','Freelance','Prácticas'] },
@@ -178,11 +183,26 @@ export function getAdSubOption(cat='', sub='') {
   const normalizedSub = normalizeSubLabel(sub)
   if (!normalizedSub) return null
 
-  return getAdCat(cat)?.sub?.find(item => normalizeSubLabel(getAdSubLabel(item)) === normalizedSub) || null
+  return getAdCat(cat)?.sub?.find(item => {
+    const labels = [getAdSubLabel(item), ...(item?.aliases || [])]
+    return labels.some(label => normalizeSubLabel(label) === normalizedSub)
+  }) || null
+}
+
+export function getAdCategoryId(ad={}) {
+  return normalizeAdCat(ad.cat || '')
+}
+
+export function getAdDisplayCat(ad={}) {
+  return getAdCat(getAdCategoryId(ad))
 }
 
 export function getAdDisplayEmoji(ad={}) {
-  return ad.emoji || getAdSubOption(ad.cat, ad.sub)?.emoji || getAdCat(ad.cat)?.emoji || '📌'
+  const categoryId = getAdCategoryId(ad)
+  const subEmoji = getAdSubOption(categoryId, ad.sub)?.emoji
+  const categoryEmoji = getAdCat(categoryId)?.emoji
+
+  return subEmoji || ad.emoji || categoryEmoji || '📌'
 }
 
 export const AD_TYPES = [

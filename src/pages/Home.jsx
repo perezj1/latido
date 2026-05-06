@@ -9,7 +9,7 @@ import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { MOCK_DOCS, NEGOCIO_TYPES, formatAdLocation, getAdCat, getAdDisplayEmoji, normalizeAdCat } from '../lib/constants'
+import { MOCK_DOCS, NEGOCIO_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji } from '../lib/constants'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -174,7 +174,7 @@ export default function Home() {
 
       const adsNorm = ((adsRes.error ? [] : adsRes.data) || []).map((row) => ({
         id: row.id,
-        cat: normalizeAdCat(row.cat) || 'servicios',
+        cat: getAdCategoryId(row) || 'servicios',
         sub: row.sub || '',
         emoji: row.emoji || '',
         title: row.title || '',
@@ -490,8 +490,8 @@ export default function Home() {
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {recentAds.map(ad => {
-                const normalizedCat = normalizeAdCat(ad.cat)
-                const cat = getAdCat(ad.cat)
+                const normalizedCat = getAdCategoryId(ad)
+                const cat = getAdDisplayCat(ad)
                 const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
                 const location = formatAdLocation(ad)
                 const displayEmoji = getAdDisplayEmoji(ad)
@@ -544,8 +544,8 @@ export default function Home() {
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:14 }}>
             {recentAds.map(ad => {
-              const normalizedCat = normalizeAdCat(ad.cat)
-              const cat = getAdCat(ad.cat)
+              const normalizedCat = getAdCategoryId(ad)
+              const cat = getAdDisplayCat(ad)
               const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
 
               return (
