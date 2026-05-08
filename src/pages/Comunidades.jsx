@@ -123,6 +123,7 @@ function formatInstagramHandle(value='') {
 function normalizeProvider(provider) {
   return {
     id: provider.id,
+    created_at: provider.created_at || '',
     emoji: BUSINESS_EMOJI[provider.category] || '🏪',
     name: provider.name,
     type: provider.category,
@@ -695,7 +696,7 @@ export default function Comunidades() {
       try {
         const [communitiesRes, providersRes, photosRes, reviewsRes, eventsRes] = await Promise.all([
           supabase.from('communities').select('*').eq('active', true).order('created_at', { ascending:false }).limit(100),
-          supabase.from('providers').select('*').eq('active', true).order('featured', { ascending:false }).order('verified', { ascending:false }).order('created_at', { ascending:false }).limit(100),
+          supabase.from('providers').select('*').eq('active', true).order('created_at', { ascending:false }).limit(100),
           supabase.from('provider_photos').select('*').order('is_main', { ascending:false }).order('sort_order', { ascending:true }).limit(500),
           supabase.from('reviews').select('*').eq('active', true).order('created_at', { ascending:false }).limit(300),
           supabase.from('events').select('*').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(100),
@@ -875,7 +876,7 @@ export default function Comunidades() {
   )
 
   const filteredNeg = [...businesses]
-    .sort((a, b) => Number(b.featured) - Number(a.featured) || Number(b.verified) - Number(a.verified))
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
     .filter(business =>
       business.type !== 'empleo' && business.type !== 'vivienda' &&
       (!negType || business.type === negType) &&

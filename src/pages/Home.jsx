@@ -147,8 +147,6 @@ export default function Home() {
           .from('providers')
           .select('id, name, category, city, canton, description, services, photo_url, verified, featured, created_at, active')
           .or('active.is.null,active.eq.true')
-          .order('featured', { ascending:false })
-          .order('verified', { ascending:false })
           .order('created_at', { ascending:false })
           .limit(1000),
 
@@ -243,6 +241,7 @@ export default function Home() {
               photo_url: row.photo_url || '',
               verified: !!row.verified,
               featured: !!row.featured,
+              created_at: row.created_at || '',
             }
           })
       )
