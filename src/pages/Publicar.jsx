@@ -8,6 +8,8 @@ import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
+import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { addModerationQueueItem } from '../lib/reports'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -106,7 +108,7 @@ function uniqueUrls(urls) {
 }
 
 export default function Publicar() {
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, isBanned, bannedReason } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const presetCat = normalizeAdCat(searchParams.get('cat') || '')
@@ -117,6 +119,7 @@ export default function Publicar() {
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [done, setDone] = useState(false)
+  const [publishedForReview, setPublishedForReview] = useState(false)
 
   const [form, setForm] = useState({
     intent:'',
@@ -240,6 +243,21 @@ export default function Publicar() {
     )
   }
 
+  if (isBanned) {
+    return (
+      <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+        <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
+        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>
+          Cuenta suspendida
+        </h1>
+        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
+          No puedes publicar anuncios ahora.{bannedReason ? ` Motivo: ${bannedReason}` : ''}
+        </p>
+        <Btn variant="secondary" onClick={() => navigate('/')}>Volver al inicio</Btn>
+      </div>
+    )
+  }
+
   if (done) {
     return (
       <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
@@ -260,11 +278,13 @@ export default function Publicar() {
         </div>
 
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>
-          ¡Anuncio publicado!
+          {publishedForReview ? 'Anuncio enviado a revision' : '¡Anuncio publicado!'}
         </h1>
 
         <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:8 }}>
-          Tu anuncio ya está visible en el tablón.
+          {publishedForReview
+            ? 'Tu anuncio quedo pendiente para aprobarlo desde administracion antes de mostrarse.'
+            : 'Tu anuncio ya está visible en el tablón.'}
         </p>
 
         <div
@@ -286,6 +306,7 @@ export default function Publicar() {
         <button
           onClick={() => {
             setDone(false)
+            setPublishedForReview(false)
             setStep(0)
             setForm({
               intent:'',
@@ -329,9 +350,17 @@ export default function Publicar() {
       return
     }
 
+    const moderation = analyzeContent(form.title, form.desc)
+    if (moderation.action === 'block') {
+      toast.error(getContentFilterMessage(moderation))
+      return
+    }
+
     setLoading(true)
 
     try {
+      const listingId = globalThis.crypto?.randomUUID?.()
+      const needsReview = moderation.action === 'review'
       const publishAllSwitzerland = !form.canton
       const finalPrice = getFormattedPrice() || null
       const resolvedType = form.type || resolveTypeForCategory(form.intent, form.cat)
@@ -350,6 +379,7 @@ export default function Publicar() {
       ])
 
       const payload = {
+        ...(listingId ? { id: listingId } : {}),
         cat: form.cat,
         sub: form.sub,
         emoji: selectedAdEmoji,
@@ -369,7 +399,7 @@ export default function Publicar() {
         contact_phone: null,
         contact_email: null,
         user_id: user?.id,
-        active: true,
+        active: !needsReview,
         user_name: ownProfile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
       }
 
@@ -384,6 +414,19 @@ export default function Publicar() {
         toast.error('El anuncio se publicó, pero algunas fotos extra no se pudieron guardar.')
       }
 
+      if (needsReview && listingId) {
+        await addModerationQueueItem({
+          contentType: 'listing',
+          contentId: listingId,
+          authorId: user?.id,
+          reason: 'Filtro automatico',
+          excerpt: [form.title, form.desc].filter(Boolean).join('\n\n').slice(0, 700),
+          matchedTerm: moderation.matchedTerm,
+          metadata: { cat: form.cat, sub: form.sub, type: resolvedType },
+        })
+      }
+
+      setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {
       console.error('Publish ad failed:', error)

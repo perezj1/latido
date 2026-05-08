@@ -26,6 +26,7 @@ const PublicarEmpleo = lazy(() => import('./pages/PublicarEmpleo'))
 const Legal = lazy(() => import('./pages/Legal'))
 const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const Admin = lazy(() => import('./pages/Admin'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
@@ -143,6 +144,16 @@ function ProtectedRoute({ children }) {
 
   if (loading) return <AppLoading />
   if (!isLoggedIn) return <Navigate to="/auth" replace />
+
+  return children
+}
+
+function AdminRoute({ children }) {
+  const { isLoggedIn, loading, isAdmin } = useAuth()
+
+  if (loading) return <AppLoading />
+  if (!isLoggedIn) return <Navigate to="/auth" replace />
+  if (!isAdmin) return <Navigate to="/" replace />
 
   return children
 }
@@ -290,6 +301,7 @@ function AppShell() {
             <Route path="/registrar-comunidad" element={<ProtectedRoute><RegistrarComunidad /></ProtectedRoute>} />
             <Route path="/publicar-empleo" element={<ProtectedRoute><PublicarEmpleo /></ProtectedRoute>} />
             <Route path="/mensajes" element={<ProtectedRoute><Mensajes /></ProtectedRoute>} />
+            <Route path="/admin-latido" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/impressum"  element={<Legal />} />
             <Route path="/privacidad" element={<Legal />} />

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import { supabase } from '../lib/supabase'
+import { isAdminUser } from '../lib/admin'
 
 const AuthContext = createContext(null)
 
@@ -25,11 +26,44 @@ export function AuthProvider({ children }) {
   // Only show loading spinner if we have no cached user to show immediately
   const [loading, setLoading] = useState(!localUser)
   const [avatarUrl, setAvatarUrl] = useState(null)
+  const [profileMeta, setProfileMeta] = useState({ banned: false, bannedReason: '', bannedAt: null })
 
   useEffect(() => {
-    if (!user?.id) { setAvatarUrl(null); return }
-    supabase.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle()
-      .then(({ data }) => { if (data?.avatar_url) setAvatarUrl(data.avatar_url) })
+    if (!user?.id) {
+      setAvatarUrl(null)
+      setProfileMeta({ banned: false, bannedReason: '', bannedAt: null })
+      return
+    }
+
+    let cancelled = false
+
+    async function loadProfileMeta() {
+      let response = await supabase
+        .from('profiles')
+        .select('avatar_url, banned, banned_reason, banned_at')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (response.error) {
+        response = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .maybeSingle()
+      }
+
+      if (cancelled) return
+      const profile = response.data || {}
+      setAvatarUrl(profile.avatar_url || null)
+      setProfileMeta({
+        banned: profile.banned === true,
+        bannedReason: profile.banned_reason || '',
+        bannedAt: profile.banned_at || null,
+      })
+    }
+
+    loadProfileMeta()
+    return () => { cancelled = true }
   }, [user?.id])
 
   useEffect(() => {
@@ -43,6 +77,7 @@ export function AuthProvider({ children }) {
       if (event === 'SIGNED_OUT') {
         setUser(null)
         setAvatarUrl(null)
+        setProfileMeta({ banned: false, bannedReason: '', bannedAt: null })
       } else if (session?.user) {
         // SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED — real session
         setUser(session.user)
@@ -76,6 +111,7 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
     setUser(null)
     setAvatarUrl(null)
+    setProfileMeta({ banned: false, bannedReason: '', bannedAt: null })
   }
 
   const updateAvatar = useCallback((url) => setAvatarUrl(url), [])
@@ -87,6 +123,10 @@ export function AuthProvider({ children }) {
     displayName: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
     userCanton: user?.user_metadata?.canton || '',
     avatarUrl,
+    isBanned: profileMeta.banned,
+    bannedReason: profileMeta.bannedReason,
+    bannedAt: profileMeta.bannedAt,
+    isAdmin: isAdminUser(user),
     updateAvatar,
     signUp, signIn, signOut,
   }

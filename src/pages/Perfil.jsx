@@ -237,7 +237,7 @@ function loadAlertSettings() {
 }
 
 export default function Perfil() {
-  const { isLoggedIn, displayName, userCanton, user, signOut, avatarUrl, updateAvatar } = useAuth()
+  const { isLoggedIn, displayName, userCanton, user, signOut, avatarUrl, updateAvatar, isAdmin } = useAuth()
   const { isPWA, canInstall, promptInstall } = usePWA()
   const navigate = useNavigate()
   const location = useLocation()
@@ -707,6 +707,12 @@ export default function Perfil() {
         { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
       ],
     },
+    ...(isAdmin ? [{
+      title: 'Administrador',
+      items: [
+        { icon:'🛡️', color:'#FEF2F2', label:'Administrar', sub:'Reportes, usuarios, moderacion y contenido pendiente', action:() => navigate('/admin-latido') },
+      ],
+    }] : []),
     {
       title: 'Descubrir',
       items: [

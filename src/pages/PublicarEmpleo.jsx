@@ -6,6 +6,8 @@ import { Btn, ProgressBar, Input, Select, ImageUploadField } from '../components
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
+import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { addModerationQueueItem } from '../lib/reports'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -49,13 +51,14 @@ const SALARY_UNITS = [
 const OPTIONAL_JOB_INSERT_COLUMNS = ['sector', 'languages', 'contact_via_app', 'contact_phone', 'contact_email', 'contact_link', 'logo_url']
 
 export default function PublicarEmpleo() {
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, isBanned, bannedReason } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [done, setDone] = useState(false)
+  const [publishedForReview, setPublishedForReview] = useState(false)
   const [form, setForm] = useState({
     sector:'', title:'', company:'', jobType:'',
     city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', logoUrl:'',
@@ -94,15 +97,28 @@ export default function PublicarEmpleo() {
     </div>
   )
 
+  if (isBanned) return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Cuenta suspendida</h1>
+      <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
+        No puedes publicar ofertas ahora.{bannedReason ? ` Motivo: ${bannedReason}` : ''}
+      </p>
+      <Btn variant="secondary" onClick={() => navigate('/')}>Volver al inicio</Btn>
+    </div>
+  )
+
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>💼</div>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>¡Empleo publicado!</h1>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Oferta enviada a revision' : '¡Empleo publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
-        Tu oferta ya está visible para miles de personas en Suiza. Los candidatos te escribirán por mensaje dentro de Latido.
+        {publishedForReview
+          ? 'Tu oferta quedo pendiente para aprobarla desde administracion antes de mostrarse.'
+          : 'Tu oferta ya está visible para miles de personas en Suiza. Los candidatos te escribirán por mensaje dentro de Latido.'}
       </p>
       <Btn onClick={() => navigate('/tablon?cat=empleo')}>Ver empleos →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ sector:'', title:'', company:'', jobType:'', city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', logoUrl:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setStep(0); setForm({ sector:'', title:'', company:'', jobType:'', city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', logoUrl:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otra oferta
       </button>
     </div>
@@ -110,13 +126,22 @@ export default function PublicarEmpleo() {
 
   const handleSubmit = async () => {
     if (!form.title || !form.canton) { toast.error('Completa el título y el cantón'); return }
+    const moderation = analyzeContent(form.title, form.company, form.desc)
+    if (moderation.action === 'block') {
+      toast.error(getContentFilterMessage(moderation))
+      return
+    }
+
     setLoading(true)
     try {
+      const jobId = globalThis.crypto?.randomUUID?.()
+      const needsReview = moderation.action === 'review'
       const finalSalary = getFormattedSalary() || null
       const salaryAmount = form.salaryValue
         ? Number(String(form.salaryValue).replace(',', '.'))
         : null
       const payload = {
+        ...(jobId ? { id: jobId } : {}),
         user_id: user?.id,
         sector: form.sector,
         title: form.title.trim(),
@@ -138,7 +163,7 @@ export default function PublicarEmpleo() {
         contact_email: null,
         contact_link: null,
         logo_url: form.logoUrl.trim() || null,
-        active: true,
+        active: !needsReview,
       }
 
       const { error } = await insertWithOptionalColumnsFallback({
@@ -147,6 +172,18 @@ export default function PublicarEmpleo() {
         optionalColumns: OPTIONAL_JOB_INSERT_COLUMNS,
       })
       if (error) throw error
+      if (needsReview && jobId) {
+        await addModerationQueueItem({
+          contentType: 'job',
+          contentId: jobId,
+          authorId: user?.id,
+          reason: 'Filtro automatico',
+          excerpt: [form.title, form.company, form.desc].filter(Boolean).join('\n\n').slice(0, 700),
+          matchedTerm: moderation.matchedTerm,
+          metadata: { sector: form.sector, type: form.jobType },
+        })
+      }
+      setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {
       console.error('Publish job failed:', error)

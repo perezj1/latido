@@ -6,7 +6,9 @@ import { useUnreadMessages, markConvRead } from '../hooks/useUnreadMessages'
 import { unreadStore } from '../lib/unreadStore'
 import { C, PP } from '../lib/theme'
 import { Avatar } from '../components/UI'
+import ReportButton from '../components/ReportButton'
 import { fetchAvatarsByIds } from '../lib/profiles'
+import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import toast from 'react-hot-toast'
 
 function formatTime(ts) {
@@ -74,7 +76,7 @@ async function fetchProfileNamesByIds(ids) {
 }
 
 export default function Mensajes() {
-  const { user, isLoggedIn, displayName } = useAuth()
+  const { user, isLoggedIn, displayName, isBanned, bannedReason } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const adId  = searchParams.get('adId')
@@ -469,6 +471,16 @@ export default function Mensajes() {
   async function sendMessage() {
     const body = newMessage.trim()
     if (!body || sending) return
+    if (isBanned) {
+      toast.error(`Tu cuenta esta suspendida y no puede enviar mensajes${bannedReason ? `: ${bannedReason}` : ''}`)
+      return
+    }
+    const moderation = analyzeContent(body)
+    if (moderation.action !== 'allow') {
+      toast.error(getContentFilterMessage(moderation))
+      return
+    }
+
     let conv = selectedConv
     setSending(true)
     setNewMessage('')
@@ -633,11 +645,22 @@ export default function Mensajes() {
                 {messages.map(msg => {
                   const mine = msg.sender_id === user.id
                   return (
-                    <div key={msg.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                    <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
                       <div style={{ maxWidth: '78%', background: mine ? C.primary : '#fff', color: mine ? '#fff' : C.text, borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: '10px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
                         <p style={{ fontFamily: PP, fontSize: 13, margin: 0, lineHeight: 1.55 }}>{msg.body}</p>
                         <p style={{ fontFamily: PP, fontSize: 10, color: mine ? 'rgba(255,255,255,0.6)' : C.light, margin: '4px 0 0', textAlign: 'right' }}>{formatTime(msg.created_at)}</p>
                       </div>
+                      {!mine && activeThread.id && (
+                        <ReportButton
+                          compact
+                          contentType="message"
+                          contentId={msg.id}
+                          ownerId={msg.sender_id}
+                          title="Reportar mensaje"
+                          metadata={{ conversation_id: activeThread.id, title: convTitle(activeThread) }}
+                          style={{ marginTop: 4 }}
+                        />
+                      )}
                     </div>
                   )
                 })}
@@ -650,12 +673,13 @@ export default function Mensajes() {
                   value={newMessage}
                   onChange={e => setNewMessage(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                  placeholder="Escribe un mensaje..."
+                  placeholder={isBanned ? 'Cuenta suspendida: no puedes enviar mensajes' : 'Escribe un mensaje...'}
+                  disabled={isBanned}
                   rows={1}
-                  style={{ flex: 1, fontFamily: PP, fontSize: 13, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '10px 14px', resize: 'none', outline: 'none', maxHeight: 120, lineHeight: 1.5, background: C.bg }}
+                  style={{ flex: 1, fontFamily: PP, fontSize: 13, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '10px 14px', resize: 'none', outline: 'none', maxHeight: 120, lineHeight: 1.5, background: isBanned ? '#F8FAFC' : C.bg }}
                 />
-                <button onClick={sendMessage} disabled={sending || !newMessage.trim()}
-                  style={{ background: newMessage.trim() ? C.primary : C.border, color: '#fff', border: 'none', borderRadius: 14, width: 44, height: 44, cursor: newMessage.trim() ? 'pointer' : 'default', fontSize: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}>
+                <button onClick={sendMessage} disabled={isBanned || sending || !newMessage.trim()}
+                  style={{ background: !isBanned && newMessage.trim() ? C.primary : C.border, color: '#fff', border: 'none', borderRadius: 14, width: 44, height: 44, cursor: !isBanned && newMessage.trim() ? 'pointer' : 'default', fontSize: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}>
                   ↑
                 </button>
               </div>

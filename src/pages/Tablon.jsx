@@ -8,6 +8,7 @@ import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters, PhotoGallery } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
+import ReportButton from '../components/ReportButton'
 
 function fmtPrice(price) {
   if (!price) return ''
@@ -166,6 +167,16 @@ function AdDetail({ ad, user, avatarSrc }) {
           <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:10, padding:'8px 16px', display:'inline-block' }}>Entrar →</a>
         </div>
       ) : null}
+      {user && !isOwnAd && (
+        <ReportButton
+          contentType="listing"
+          contentId={ad.id}
+          ownerId={ad.user_id}
+          title="Reportar anuncio"
+          metadata={{ title: ad.title, cat: normalizedCat, sub: ad.sub }}
+          style={{ width:'100%', marginTop:8 }}
+        />
+      )}
     </div>
   )
 }
@@ -251,6 +262,16 @@ function JobDetail({ job, user }) {
           <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:10, padding:'8px 16px', display:'inline-block' }}>Entrar →</a>
         </div>
       ) : null}
+      {user && !isOwnJob && (
+        <ReportButton
+          contentType="job"
+          contentId={job.id}
+          ownerId={job.user_id}
+          title="Reportar empleo"
+          metadata={{ title: job.title, company: job.company, sector: job.sector }}
+          style={{ width:'100%', marginTop:8 }}
+        />
+      )}
     </div>
   )
 }
