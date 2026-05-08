@@ -13,7 +13,7 @@ const ALERT_SOURCES = [
   {
     kind: 'ad',
     table: 'listings',
-    select: 'id, title, cat, canton, created_at, active',
+    select: 'id, title, cat, type, canton, created_at, active',
     channelPrefix: 'zone-alert-ads',
   },
   {
@@ -43,6 +43,7 @@ function normalizeAlertCategories(categories=[]) {
 function expandAdCategoriesForQuery(categories=[]) {
   const expanded = new Set(categories)
   if (expanded.has('servicios')) expanded.add('hogar')
+  if (expanded.has('regalo')) expanded.add('venta')
   return [...expanded]
 }
 
@@ -159,7 +160,10 @@ function matchesSettings(row, kind, settings, lastCheck) {
   const categories = settings.categories || []
   if (!categories.length) return true
 
-  if (kind === 'ad') return categories.includes(normalizeAdCat(row.cat))
+  if (kind === 'ad') {
+    if (row.type === 'regala' && categories.includes('regalo')) return true
+    return categories.includes(normalizeAdCat(row.cat))
+  }
   if (kind === 'job') return categories.includes('empleo')
   if (kind === 'business') return categories.includes('servicios')
   if (kind === 'event') return categories.includes('eventos')

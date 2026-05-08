@@ -271,16 +271,31 @@ function normalizeCategory(value: unknown) {
     documentacion: 'documentos',
     tramite: 'documentos',
     tramites: 'documentos',
+    regalos: 'regalo',
+    regala: 'regalo',
+    gratis: 'regalo',
   }
   return map[raw] || raw
 }
 
 function categoryMatches(table: string, record: Record<string, unknown>, categories: string[] = []) {
-  if (!categories.length) return true
-  if (table === 'jobs') return categories.includes('empleo')
-  if (table === 'providers') return categories.includes('servicios')
-  if (table === 'events') return categories.includes('eventos')
-  return categories.includes(normalizeCategory(record.cat))
+  const normalizedCategories = [...new Set(categories.map(normalizeCategory).filter(Boolean))]
+  if (!normalizedCategories.length) return true
+  if (table === 'jobs') return normalizedCategories.includes('empleo')
+  if (table === 'providers') return normalizedCategories.includes('servicios')
+  if (table === 'events') return normalizedCategories.includes('eventos')
+
+  const publicationCategory = normalizeCategory(record.cat || record.category)
+  const publicationType = normalizeCategory(record.type)
+
+  if (publicationType === 'regalo' && normalizedCategories.includes('regalo')) return true
+  return normalizedCategories.includes(publicationCategory)
+}
+
+function cantonMatches(preferredCanton: string, publicationCanton: string) {
+  if (!preferredCanton) return true
+  if (!publicationCanton) return true
+  return preferredCanton === publicationCanton
 }
 
 function zonePushPayload(table: string, record: Record<string, unknown>): PushPayload | null {
@@ -475,17 +490,19 @@ async function handlePublication(req: Request, table: string, payload: WebhookPa
 
   if (error) throw error
 
-  const recipients = (preferences || [])
+  const activePreferences = preferences || []
+  const cantonMatched = activePreferences.filter((preference: Record<string, unknown>) => (
+    text(preference.user_id) !== authorId
+    && cantonMatches(text(preference.canton), publicationCanton)
+  ))
+  const categoryMatched = cantonMatched.filter((preference: Record<string, unknown>) => categoryMatches(
+    table,
+    record,
+    Array.isArray(preference.categories) ? preference.categories.map(String) : [],
+  ))
+
+  const recipients = categoryMatched
     .filter((preference: Record<string, unknown>) => text(preference.user_id) !== authorId)
-    .filter((preference: Record<string, unknown>) => {
-      const preferredCanton = text(preference.canton)
-      return !preferredCanton || preferredCanton === publicationCanton
-    })
-    .filter((preference: Record<string, unknown>) => categoryMatches(
-      table,
-      record,
-      Array.isArray(preference.categories) ? preference.categories.map(String) : [],
-    ))
     .map((preference: Record<string, unknown>) => text(preference.user_id))
 
   const subscriptions = await fetchActiveSubscriptions(recipients)
@@ -493,6 +510,11 @@ async function handlePublication(req: Request, table: string, payload: WebhookPa
     table,
     id: text(record.id),
     canton: publicationCanton,
+    category: normalizeCategory(record.cat || record.category),
+    type: normalizeCategory(record.type),
+    activePreferences: activePreferences.length,
+    cantonMatched: cantonMatched.length,
+    categoryMatched: categoryMatched.length,
     recipients: recipients.length,
     subscriptions: subscriptions.length,
   })
