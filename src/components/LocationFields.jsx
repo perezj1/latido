@@ -127,7 +127,7 @@ export default function LocationFields({
                 cursor:'pointer',
               }}
             >
-              <option value="">{allowAllSwitzerland ? 'Toda Suiza' : 'Seleccionar...'}</option>
+              <option value="">{allowAllSwitzerland ? 'Todos los cantones' : 'Seleccionar...'}</option>
               {CANTONS.map(item => (
                 <option key={item.code} value={item.code}>
                   {item.code} — {item.name}

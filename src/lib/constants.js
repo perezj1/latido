@@ -127,7 +127,7 @@ export function formatAdLocation(ad={}) {
   const city = rawCity && rawCity.toUpperCase() !== canton ? rawCity : cityFromPlz
 
   if (city && canton) return `${city} ${canton}`
-  return city || canton || cleanLocationPart(ad.plz)
+  return city || canton || cleanLocationPart(ad.plz) || 'Toda Suiza'
 }
 
 export const SERVICE_SUBCATS = [

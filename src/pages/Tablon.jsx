@@ -478,8 +478,8 @@ export default function Tablon() {
         : a.type === type
       if (!typeMatches) return false
     }
-    if (canton && a.canton !== canton) return false
-    if (plz && !a.plz?.startsWith(plz)) return false
+    if (canton && a.canton && a.canton !== canton) return false
+    if (plz && a.plz && !a.plz.startsWith(plz)) return false
     if (privacy && a.privacy !== privacy) return false
     if (maxPrice && a.price) {
       const num = parseFloat(a.price.replace(/[^0-9.]/g, ''))
@@ -492,16 +492,16 @@ export default function Tablon() {
   const communityJobs = useMemo(() => {
     const fromJobs = jobs.filter(j =>
       (!jobType || j.type === jobType) &&
-      (!canton || j.canton === canton) &&
-      (!plz || j.plz?.startsWith(plz)) &&
+      (!canton || !j.canton || j.canton === canton) &&
+      (!plz || !j.plz || j.plz?.startsWith(plz)) &&
       (!deferredSearch || j.title?.toLowerCase().includes(deferredSearch) || j.company?.toLowerCase().includes(deferredSearch))
     )
     const fromAds = ads.filter(a =>
       a.cat === 'empleo' &&
       (isLoggedIn || a.privacy === 'public') &&
       (!jobType || a.type === jobType) &&
-      (!canton || a.canton === canton) &&
-      (!plz || a.plz?.startsWith(plz)) &&
+      (!canton || !a.canton || a.canton === canton) &&
+      (!plz || !a.plz || a.plz?.startsWith(plz)) &&
       (!deferredSearch || a.title?.toLowerCase().includes(deferredSearch) || a.desc?.toLowerCase().includes(deferredSearch))
     ).map(a => ({
       id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,

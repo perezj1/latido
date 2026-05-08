@@ -142,6 +142,15 @@ export default function Publicar() {
   const selectedAdEmoji = getAdDisplayEmoji({ cat:form.cat, sub:form.sub })
   const selectedIntent = PUBLISH_INTENTS.find(intent => intent.id === form.intent)
   const compatibleCats = getCompatibleCategories(form.intent)
+  const allSwitzerland = !form.canton
+
+  const handleCantonChange = value => {
+    setForm(prev => ({
+      ...prev,
+      canton:value,
+      ...(value ? {} : { city:'', plz:'' }),
+    }))
+  }
 
   const selectIntent = (intent) => {
     const nextCats = getCompatibleCategories(intent)
@@ -320,14 +329,10 @@ export default function Publicar() {
       return
     }
 
-    if (!form.canton) {
-      toast.error('Selecciona tu cantón')
-      return
-    }
-
     setLoading(true)
 
     try {
+      const publishAllSwitzerland = !form.canton
       const finalPrice = getFormattedPrice() || null
       const resolvedType = form.type || resolveTypeForCategory(form.intent, form.cat)
       const priceAmount = form.priceValue
@@ -356,9 +361,9 @@ export default function Publicar() {
         price: finalPrice,
         price_amount: Number.isNaN(priceAmount) ? null : priceAmount,
         price_unit: form.priceValue ? form.priceUnit : null,
-        city: form.city.trim() || null,
-        canton: form.canton,
-        plz: form.plz || null,
+        city: publishAllSwitzerland ? null : form.city.trim() || null,
+        canton: publishAllSwitzerland ? null : form.canton,
+        plz: publishAllSwitzerland ? null : form.plz || null,
         privacy: form.privacy,
         contact_via_app: true,
         contact_phone: null,
@@ -616,13 +621,14 @@ export default function Publicar() {
           <LocationFields
             canton={form.canton}
             city={form.city}
-            onCantonChange={value => s('canton', value)}
+            onCantonChange={handleCantonChange}
             onCityChange={value => s('city', value)}
-            cantonRequired
-            hint="Empieza por la ciudad; al elegir una sugerencia completamos el cantón."
+            allowAllSwitzerland
+            cantonLabel="Alcance"
+            hint="Elige un cantón o deja “Todos los cantones” para que el anuncio aparezca en toda Suiza."
           />
 
-          <div style={{ marginBottom:10 }}>
+          {!allSwitzerland && <div style={{ marginBottom:10 }}>
             <Input
               label="Código postal (PLZ)"
               placeholder="8001"
@@ -630,7 +636,7 @@ export default function Publicar() {
               onChange={e => s('plz', e.target.value)}
               style={{ maxLength:4 }}
             />
-          </div>
+          </div>}
 
           {/* Resumen antes de publicar */}
           <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'16px', marginBottom:4 }}>
@@ -652,11 +658,9 @@ export default function Publicar() {
                       {selectedSubOption?.emoji ? `${selectedSubOption.emoji} ` : ''}{form.sub}
                     </span>
                   )}
-                  {form.canton && (
-                    <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>
-                      📍 {formatAdLocation(form)}
-                    </span>
-                  )}
+                  <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>
+                    {allSwitzerland ? '🌐 Toda Suiza' : `📍 ${formatAdLocation(form)}`}
+                  </span>
                 </div>
                 {getFormattedPrice() && (
                   <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, margin:0 }}>{getFormattedPrice()}</p>

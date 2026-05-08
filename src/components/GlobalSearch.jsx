@@ -113,7 +113,7 @@ function normalizeAd(ad) {
     title: ad.title || '',
     desc: ad.desc || ad.description || '',
     city: ad.city || '',
-    canton: ad.canton || 'Suiza',
+    canton: ad.canton || 'Toda Suiza',
     plz: ad.plz || '',
     price: ad.price || '',
     privacy: ad.privacy || 'public',

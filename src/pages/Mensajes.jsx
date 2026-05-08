@@ -87,6 +87,7 @@ export default function Mensajes() {
   const [lastMsgAt, setLastMsgAt] = useState(new Map()) // convId → ISO string
   const [convAvatars, setConvAvatars] = useState(new Map())
   const [selectedConv, setSelectedConv] = useState(null)
+  const [pendingTarget, setPendingTarget] = useState(null)
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -98,6 +99,7 @@ export default function Mensajes() {
   const inputRef = useRef(null)
   const creatingRef = useRef(false)
   const selectedConvRef = useRef(null)
+  const inboxConvIdsRef = useRef(new Set())
   const channelScopeRef = useRef(Math.random().toString(36).slice(2, 10))
   const participantNameCacheRef = useRef(new Map())
   const selfNameRef = useRef(pickParticipantName(displayName, user?.email?.split('@')[0]) || 'Usuario')
@@ -220,24 +222,44 @@ export default function Mensajes() {
     }
 
     const data = await hydrateConversationNames(res.data || [], ownName)
+    let visibleData = data
+    let initLastMsg = new Map(data.map(c => [c.id, c.created_at]))
 
-    // Seed lastMsgAt from conversation created_at (best available without last_message_at column)
-    const initLastMsg = new Map(data.map(c => [c.id, c.created_at]))
+    // Empty conversations are drafts from old clicks; keep them out of the inbox.
+    const conversationIds = data.map(c => c.id).filter(Boolean)
+    if (conversationIds.length) {
+      const { data: messageRows, error: messagesError } = await supabase
+        .from('messages')
+        .select('conversation_id, created_at')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false })
+
+      if (!messagesError) {
+        const latestByConv = new Map()
+        messageRows?.forEach(msg => {
+          if (!latestByConv.has(msg.conversation_id)) latestByConv.set(msg.conversation_id, msg.created_at)
+        })
+        visibleData = data.filter(c => latestByConv.has(c.id))
+        initLastMsg = new Map(visibleData.map(c => [c.id, latestByConv.get(c.id) || c.created_at]))
+      }
+    }
+
     setLastMsgAt(initLastMsg)
-    setConversations(data)
+    setConversations(visibleData)
 
     // Fetch avatars for all other participants
-    const otherIds = data.map(c => c.sender_id === user.id ? c.owner_id : c.sender_id).filter(Boolean)
+    const otherIds = visibleData.map(c => c.sender_id === user.id ? c.owner_id : c.sender_id).filter(Boolean)
     fetchAvatarsByIds(otherIds).then(setConvAvatars)
 
     // Subscribe to all incoming messages in this inbox for sorting + per-conv unread
     if (inboxChannelRef.current) supabase.removeChannel(inboxChannelRef.current)
-    const convIdSet = new Set(data.map(c => c.id))
+    const convIdSet = new Set(visibleData.map(c => c.id))
+    inboxConvIdsRef.current = convIdSet
     inboxChannelRef.current = supabase
       .channel(`inbox-${user.id}-${channelScopeRef.current}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
         const msg = payload.new
-        if (!convIdSet.has(msg.conversation_id)) return
+        if (!inboxConvIdsRef.current.has(msg.conversation_id)) return
         // Update last message time and bubble conv to top
         setLastMsgAt(prev => new Map(prev).set(msg.conversation_id, msg.created_at))
         // If not from self and not currently open → mark unread
@@ -251,6 +273,7 @@ export default function Mensajes() {
     if (convId) {
       const existing = data.find(c => String(c.id) === String(convId))
       if (existing) {
+        setPendingTarget(null)
         setSelectedConv(existing)
         selectedConvRef.current = existing
         setShowList(false)
@@ -262,8 +285,9 @@ export default function Mensajes() {
     }
 
     if (targetId) {
-      const existing = data.find(c => c.ad_id === targetId)
+      const existing = data.find(c => String(c.ad_id) === String(targetId))
       if (existing) {
+        setPendingTarget(null)
         setSelectedConv(existing)
         selectedConvRef.current = existing
         setShowList(false)
@@ -271,83 +295,146 @@ export default function Mensajes() {
         setLoading(false)
         return
       }
-      await openOrCreate({ adId, jobId, convList: data })
-    } else if (data.length > 0) {
+      await preparePendingTarget({ adId, jobId })
+      setLoading(false)
+      return
+    }
+
+    setPendingTarget(null)
+    if (visibleData.length > 0) {
       // On desktop auto-select first; on mobile leave list visible
-      if (window.innerWidth >= 768) openConversation(data[0])
+      if (window.innerWidth >= 768) openConversation(visibleData[0])
+    } else {
+      setSelectedConv(null)
+      selectedConvRef.current = null
+      setMessages([])
     }
 
     setLoading(false)
   }
 
-  async function openOrCreate({ adId: aId, jobId: jId, convList = conversations }) {
-    if (creatingRef.current) return
-    creatingRef.current = true
-    let item = null
-    const ownName = await resolveOwnDisplayName()
-    let insertData = { sender_id: user.id, sender_name: ownName }
+  async function getTargetConversationData({ adId: aId, jobId: jId, ownName }) {
+    const resolvedOwnName = ownName || await resolveOwnDisplayName()
+    const insertData = { sender_id: user.id, sender_name: resolvedOwnName }
 
     if (jId) {
       const { data } = await supabase.from('jobs').select('id, title, company, user_id').eq('id', jId).maybeSingle()
-      if (!data) { toast.error('Oferta no encontrada'); setLoading(false); creatingRef.current = false; return }
-      if (data.user_id === user.id) { toast.error('Es tu propia oferta'); setLoading(false); creatingRef.current = false; return }
+      if (!data) { toast.error('Oferta no encontrada'); return null }
+      if (data.user_id === user.id) { toast.error('Es tu propia oferta'); return null }
       const ownerNames = await fetchProfileNamesByIds([data.user_id])
-      item = data
       insertData.ad_id = jId
       insertData.owner_id = data.user_id
       insertData.title = data.company || data.title
       insertData.owner_name = pickParticipantName(ownerNames.get(data.user_id), recipientName) || 'Usuario'
+      return { item: data, insertData }
     } else if (aId) {
       const { data } = await supabase.from('listings').select('id, title, user_id, user_name').eq('id', aId).maybeSingle()
-      if (!data) { toast.error('Anuncio no encontrado'); setLoading(false); creatingRef.current = false; return }
-      if (data.user_id === user.id) { toast.error('Es tu propio anuncio'); setLoading(false); creatingRef.current = false; return }
+      if (!data) { toast.error('Anuncio no encontrado'); return null }
+      if (data.user_id === user.id) { toast.error('Es tu propio anuncio'); return null }
       const ownerNames = await fetchProfileNamesByIds([data.user_id])
-      item = data
       insertData.ad_id = aId
       insertData.owner_id = data.user_id
       insertData.title = data.title
       insertData.owner_name = pickParticipantName(ownerNames.get(data.user_id), recipientName, data.user_name) || 'Usuario'
+      return { item: data, insertData }
     }
 
-    if (!item) { creatingRef.current = false; return }
+    return null
+  }
 
-    // Try insert with extra columns; fallback to base columns only
-    let convRes = await supabase
-      .from('conversations')
-      .insert(insertData)
-      .select('id, ad_id, sender_id, owner_id, sender_name, owner_name, title, created_at')
-      .single()
+  async function preparePendingTarget({ adId: aId, jobId: jId }) {
+    const ownName = await resolveOwnDisplayName()
+    const target = await getTargetConversationData({ adId: aId, jobId: jId, ownName })
+    if (!target) return null
 
-    if (convRes.error && convRes.error.message?.includes('column')) {
-      const { ad_id, sender_id, owner_id } = insertData
-      convRes = await supabase
-        .from('conversations')
-        .insert({ ad_id, sender_id, owner_id })
-        .select('id, ad_id, sender_id, owner_id, created_at')
-        .single()
+    const draft = {
+      ...target.insertData,
+      id: null,
+      created_at: new Date().toISOString(),
+      isDraft: true,
     }
 
-    const { data: conv, error } = convRes
-
-    if (error) { toast.error('No se pudo iniciar la conversación: ' + error.message); setLoading(false); creatingRef.current = false; return }
-    const nextConv = (await hydrateConversationNames([{
-      ...conv,
-      sender_name: conv?.sender_name || insertData.sender_name,
-      owner_name: conv?.owner_name || insertData.owner_name,
-      title: conv?.title || insertData.title,
-    }], ownName))[0]
-
-    setConversations(prev => [nextConv, ...prev])
-    selectedConvRef.current = nextConv
-    setSelectedConv(nextConv)
+    setPendingTarget(draft)
+    setSelectedConv(null)
+    selectedConvRef.current = null
+    setMessages([])
     setShowList(false)
-    loadMessages(nextConv)
-    setLoading(false)
-    creatingRef.current = false
+    setTimeout(() => inputRef.current?.focus(), 100)
+    return draft
+  }
+
+  async function openOrCreate({ adId: aId, jobId: jId, convList = conversations, addToList = true }) {
+    if (creatingRef.current) return null
+    creatingRef.current = true
+
+    try {
+      const targetId = aId || jId
+      const existing = convList.find(c => String(c.ad_id) === String(targetId))
+      if (existing) {
+        setPendingTarget(null)
+        selectedConvRef.current = existing
+        setSelectedConv(existing)
+        setShowList(false)
+        await loadMessages(existing)
+        setLoading(false)
+        return existing
+      }
+
+      const ownName = await resolveOwnDisplayName()
+      const target = await getTargetConversationData({ adId: aId, jobId: jId, ownName })
+      if (!target) return null
+
+      const { insertData } = target
+
+      // Try insert with extra columns; fallback to base columns only
+      let convRes = await supabase
+        .from('conversations')
+        .insert(insertData)
+        .select('id, ad_id, sender_id, owner_id, sender_name, owner_name, title, created_at')
+        .single()
+
+      if (convRes.error && convRes.error.message?.includes('column')) {
+        const { ad_id, sender_id, owner_id } = insertData
+        convRes = await supabase
+          .from('conversations')
+          .insert({ ad_id, sender_id, owner_id })
+          .select('id, ad_id, sender_id, owner_id, created_at')
+          .single()
+      }
+
+      const { data: conv, error } = convRes
+
+      if (error) {
+        toast.error('No se pudo iniciar la conversación: ' + error.message)
+        setLoading(false)
+        return null
+      }
+
+      const nextConv = (await hydrateConversationNames([{
+        ...conv,
+        sender_name: conv?.sender_name || insertData.sender_name,
+        owner_name: conv?.owner_name || insertData.owner_name,
+        title: conv?.title || insertData.title,
+      }], ownName))[0]
+
+      if (addToList) {
+        setConversations(prev => prev.some(c => String(c.id) === String(nextConv.id)) ? prev : [nextConv, ...prev])
+      }
+      setPendingTarget(null)
+      selectedConvRef.current = nextConv
+      setSelectedConv(nextConv)
+      setShowList(false)
+      await loadMessages(nextConv)
+      setLoading(false)
+      return nextConv
+    } finally {
+      creatingRef.current = false
+    }
   }
 
   function openConversation(conv) {
     markConvRead(conv.id)
+    setPendingTarget(null)
     selectedConvRef.current = conv
     setSelectedConv(conv)
     setShowList(false)
@@ -381,17 +468,27 @@ export default function Mensajes() {
 
   async function sendMessage() {
     const body = newMessage.trim()
-    if (!body || !selectedConv || sending) return
+    if (!body || sending) return
+    let conv = selectedConv
     setSending(true)
     setNewMessage('')
 
+    if (!conv) {
+      conv = await openOrCreate({ adId, jobId, convList: conversations, addToList: false })
+      if (!conv) {
+        setNewMessage(body)
+        setSending(false)
+        return
+      }
+    }
+
     const tempId = `temp-${Date.now()}`
-    const tempMsg = { id: tempId, conversation_id: selectedConv.id, sender_id: user.id, body, created_at: new Date().toISOString(), read: false }
+    const tempMsg = { id: tempId, conversation_id: conv.id, sender_id: user.id, body, created_at: new Date().toISOString(), read: false }
     setMessages(prev => [...prev, tempMsg])
 
     const { data, error } = await supabase
       .from('messages')
-      .insert({ conversation_id: selectedConv.id, sender_id: user.id, body })
+      .insert({ conversation_id: conv.id, sender_id: user.id, body })
       .select()
       .single()
 
@@ -401,6 +498,12 @@ export default function Mensajes() {
       setMessages(prev => prev.filter(m => m.id !== tempId))
     } else if (data) {
       setMessages(prev => prev.map(m => m.id === tempId ? data : m))
+      setLastMsgAt(prev => new Map(prev).set(conv.id, data.created_at))
+      inboxConvIdsRef.current = new Set(inboxConvIdsRef.current).add(conv.id)
+      setConversations(prev => {
+        const withoutCurrent = prev.filter(c => String(c.id) !== String(conv.id))
+        return [conv, ...withoutCurrent]
+      })
     }
 
     setSending(false)
@@ -414,8 +517,9 @@ export default function Mensajes() {
     const updateField = isSender ? { deleted_by_sender: true } : { deleted_by_owner: true }
     await supabase.from('conversations').update(updateField).eq('id', conv.id)
     unreadStore.remove(conv.id)
+    inboxConvIdsRef.current.delete(conv.id)
     setConversations(prev => prev.filter(c => c.id !== conv.id))
-    if (selectedConv?.id === conv.id) { setSelectedConv(null); setMessages([]); setShowList(true) }
+    if (selectedConv?.id === conv.id) { setSelectedConv(null); setPendingTarget(null); selectedConvRef.current = null; setMessages([]); setShowList(true) }
   }
 
   function otherName(conv) {
@@ -427,8 +531,9 @@ export default function Mensajes() {
   if (!isLoggedIn) return null
 
   const isMobile = window.innerWidth < 700
-  const showListPanel = !selectedConv || showList
-  const showChatPanel = !!selectedConv && (!isMobile || !showList)
+  const activeThread = selectedConv || pendingTarget
+  const showListPanel = !activeThread || showList
+  const showChatPanel = !!activeThread && (!isMobile || !showList)
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0 0', height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column' }}>
@@ -504,17 +609,17 @@ export default function Mensajes() {
 
         {/* Chat panel */}
         {(showChatPanel || (!isMobile && !showListPanel)) && (
-          selectedConv ? (
+          activeThread ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 12 }}>
                 {isMobile && (
                   <button onClick={() => setShowList(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px 4px 0', fontSize: 18, color: C.mid }}>←</button>
                 )}
-                <Avatar name={otherName(selectedConv)} size={36} src={convAvatars.get(selectedConv.sender_id === user.id ? selectedConv.owner_id : selectedConv.sender_id)} />
+                <Avatar name={otherName(activeThread)} size={36} src={activeThread.id ? convAvatars.get(activeThread.sender_id === user.id ? activeThread.owner_id : activeThread.sender_id) : undefined} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: 0 }}>{otherName(selectedConv)}</p>
+                  <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: 0 }}>{otherName(activeThread)}</p>
                   <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    Re: {convTitle(selectedConv)}
+                    Re: {convTitle(activeThread)}
                   </p>
                 </div>
               </div>
