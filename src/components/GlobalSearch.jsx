@@ -13,6 +13,7 @@ import {
   getAdCategoryId,
   getAdDisplayCat,
   getAdDisplayEmoji,
+  getJobIntentMeta,
   NEGOCIO_TYPES,
   EVENTO_TYPES,
 } from '../lib/constants'
@@ -121,12 +122,14 @@ function normalizeAd(ad) {
 }
 
 function normalizeJob(job) {
+  const intent = getJobIntentMeta(job)
   return {
     id: job.id,
     title: job.title || '',
-    company: job.company || 'Empresa',
+    company: job.company || (intent.id === 'busca' ? 'Perfil profesional' : 'Empresa'),
     city: job.city || job.canton || 'Suiza',
     type: job.type || 'Trabajo',
+    intentLabel: intent.label,
     emoji: job.emoji || '💼',
   }
 }
@@ -175,7 +178,8 @@ function searchAll(query, datasets, isLoggedIn) {
     .filter(job =>
       job.title.toLowerCase().includes(q) ||
       job.company.toLowerCase().includes(q) ||
-      job.city.toLowerCase().includes(q)
+      job.city.toLowerCase().includes(q) ||
+      job.intentLabel.toLowerCase().includes(q)
     )
     .slice(0, 2)
     .forEach(job => {
@@ -184,7 +188,7 @@ function searchAll(query, datasets, isLoggedIn) {
         id:job.id,
         icon:job.emoji || '💼',
         label:job.title,
-        sub:`${job.company} · ${job.city} · ${job.type}`,
+        sub:[job.intentLabel, job.company, job.city, job.type].filter(Boolean).join(' · '),
         href:`/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`,
       })
     })

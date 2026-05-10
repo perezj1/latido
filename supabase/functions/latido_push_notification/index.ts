@@ -303,10 +303,11 @@ function zonePushPayload(table: string, record: Record<string, unknown>): PushPa
   const canton = text(record.canton || record.city)
 
   if (table === 'jobs') {
+    const intent = text(record.job_intent) === 'busca' ? 'búsqueda de empleo' : 'oferta de empleo'
     const body = truncate([record.title, record.company, canton].map(value => text(value)).filter(Boolean).join(' - '))
     return {
-      title: 'Nuevo trabajo en tu zona',
-      body: body || 'Hay una nueva oferta de empleo cerca de ti.',
+      title: `Nueva ${intent} en tu zona`,
+      body: body || `Hay una nueva ${intent} cerca de ti.`,
       url: `/tablon?cat=empleo&openJob=${encodeURIComponent(id)}`,
       tag: `job:${id}`,
       data: { kind: 'job', id },

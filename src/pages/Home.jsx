@@ -9,7 +9,7 @@ import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { MOCK_DOCS, NEGOCIO_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji } from '../lib/constants'
+import { MOCK_DOCS, NEGOCIO_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta } from '../lib/constants'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -152,7 +152,7 @@ export default function Home() {
 
         supabase
           .from('jobs')
-          .select('id, title, company, city, type, salary, emoji, logo_url, created_at, active')
+          .select('*')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
           .limit(3),
@@ -188,20 +188,23 @@ export default function Home() {
         _sort: row.created_at || '',
       }))
 
-      const jobsNorm = ((jobsRes.error ? [] : jobsRes.data) || []).map((row) => ({
-        id: `job_${row.id}`,
-        cat: 'empleo',
-        title: row.title || '',
-        desc: row.company || '',
-        img: row.logo_url || '',
-        price: row.salary || '',
-        canton: row.city || '',
-        plz: '',
-        privacy: 'public',
-        user: row.company || '',
-        ts: formatTimeAgo(row.created_at),
-        _sort: row.created_at || '',
-      }))
+      const jobsNorm = ((jobsRes.error ? [] : jobsRes.data) || []).map((row) => {
+        const intent = getJobIntentMeta(row)
+        return {
+          id: `job_${row.id}`,
+          cat: 'empleo',
+          title: row.title || '',
+          desc: [intent.label, row.company].filter(Boolean).join(' · '),
+          img: row.logo_url || '',
+          price: row.salary || '',
+          canton: row.city || '',
+          plz: '',
+          privacy: 'public',
+          user: row.company || intent.label,
+          ts: formatTimeAgo(row.created_at),
+          _sort: row.created_at || '',
+        }
+      })
 
       setRecentAds(
         [...adsNorm, ...jobsNorm]
@@ -247,16 +250,21 @@ export default function Home() {
       )
 
       setRecentJobs(
-        ((jobsRes.error ? [] : jobsRes.data) || []).map((row) => ({
-          id: row.id,
-          title: row.title || '',
-          company: row.company || 'Empresa',
-          city: row.city || 'Suiza',
-          type: row.type || 'Trabajo',
-          salary: row.salary || '',
-          emoji: row.emoji || '💼',
-          logo_url: row.logo_url || '',
-        }))
+        ((jobsRes.error ? [] : jobsRes.data) || []).map((row) => {
+          const intent = getJobIntentMeta(row)
+          return {
+            id: row.id,
+            title: row.title || '',
+            company: row.company || (intent.id === 'busca' ? 'Perfil profesional' : 'Empresa'),
+            city: row.city || 'Suiza',
+            type: row.type || 'Trabajo',
+            job_intent: intent.id,
+            intentLabel: intent.label,
+            salary: row.salary || '',
+            emoji: row.emoji || '💼',
+            logo_url: row.logo_url || '',
+          }
+        })
       )
 
       const MONTH_IDX = { ENE:0,FEB:1,MAR:2,ABR:3,MAY:4,JUN:5,JUL:6,AGO:7,SEP:8,OCT:9,NOV:10,DIC:11,JAN:0,APR:3,AUG:7,DEC:11 }

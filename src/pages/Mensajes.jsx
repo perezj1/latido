@@ -156,8 +156,11 @@ export default function Mensajes() {
         .filter(conv => !cleanParticipantName(conv.owner_name) && conv.ad_id && conv.owner_id !== user.id)
         .map(conv => conv.ad_id)
     )]
+    const itemIdsToFetch = [...new Set(convList.map(conv => conv.ad_id).filter(Boolean))]
 
     const adNameById = new Map()
+    const listingTitleById = new Map()
+    const jobById = new Map()
 
     if (participantIdsToFetch.length) {
       const participantNames = await fetchProfileNamesByIds(participantIdsToFetch)
@@ -169,30 +172,50 @@ export default function Mensajes() {
     if (ownerItemIdsToFetch.length) {
       const { data: adsData } = await supabase
         .from('listings')
-        .select('id, user_name')
+        .select('id, title, user_name')
         .in('id', ownerItemIdsToFetch)
 
       adsData?.forEach(ad => {
+        if (ad.title) listingTitleById.set(ad.id, ad.title)
         const resolvedName = cleanParticipantName(ad.user_name)
         if (resolvedName) adNameById.set(ad.id, resolvedName)
       })
     }
 
-    return convList.map(conv => ({
-      ...conv,
-      sender_name: pickParticipantName(
-        conv.sender_id === user.id ? ownName : participantNameCacheRef.current.get(conv.sender_id),
-        getConversationParticipantName(conv.sender_name, conv)
-      )
-        || 'Usuario',
-      owner_name: pickParticipantName(
-        conv.owner_id === user.id ? ownName : participantNameCacheRef.current.get(conv.owner_id),
-        recipientName && String(conv.ad_id) === String(targetId) ? getConversationParticipantName(recipientName, conv) : null,
-        getConversationParticipantName(conv.owner_name, conv),
-        adNameById.get(conv.ad_id),
-      )
-        || 'Usuario',
-    }))
+    if (itemIdsToFetch.length) {
+      const { data: jobsData } = await supabase
+        .from('jobs')
+        .select('id, title, company')
+        .in('id', itemIdsToFetch)
+
+      jobsData?.forEach(job => {
+        jobById.set(job.id, job)
+      })
+    }
+
+    return convList.map(conv => {
+      const job = jobById.get(conv.ad_id)
+      const resolvedTitle = job && (!conv.title || conv.title === job.company)
+        ? job.title
+        : conv.title || listingTitleById.get(conv.ad_id)
+
+      return {
+        ...conv,
+        title: resolvedTitle,
+        sender_name: pickParticipantName(
+          conv.sender_id === user.id ? ownName : participantNameCacheRef.current.get(conv.sender_id),
+          getConversationParticipantName(conv.sender_name, { ...conv, title: resolvedTitle })
+        )
+          || 'Usuario',
+        owner_name: pickParticipantName(
+          conv.owner_id === user.id ? ownName : participantNameCacheRef.current.get(conv.owner_id),
+          recipientName && String(conv.ad_id) === String(targetId) ? getConversationParticipantName(recipientName, { ...conv, title: resolvedTitle }) : null,
+          getConversationParticipantName(conv.owner_name, { ...conv, title: resolvedTitle }),
+          adNameById.get(conv.ad_id),
+        )
+          || 'Usuario',
+      }
+    })
   }
 
   async function loadConversations() {
@@ -326,7 +349,7 @@ export default function Mensajes() {
       const ownerNames = await fetchProfileNamesByIds([data.user_id])
       insertData.ad_id = jId
       insertData.owner_id = data.user_id
-      insertData.title = data.company || data.title
+      insertData.title = data.title || data.company
       insertData.owner_name = pickParticipantName(ownerNames.get(data.user_id), recipientName) || 'Usuario'
       return { item: data, insertData }
     } else if (aId) {

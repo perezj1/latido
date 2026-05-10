@@ -9,7 +9,7 @@ import { getPublishTarget } from '../lib/publishTargets'
 
 const PUBLISH_OPTIONS = [
   { emoji:'📌', label:'Anuncio',   sub:'Publica lo que ofreces o buscas en la comunidad', to:'/publicar' },
-  { emoji:'💼', label:'Empleo',    sub:'Publica una oferta de trabajo',          to:'/publicar-empleo' },
+  { emoji:'💼', label:'Empleo',    sub:'Publica si buscas u ofreces trabajo',    to:'/publicar-empleo' },
   { emoji:'🏪', label:'Negocio',   sub:'Registra tu negocio o empresa',          to:'/registrar-negocio' },
   { emoji:'👥', label:'Grupo', sub:'Crea o añade un grupo',  to:'/registrar-comunidad' },
   { emoji:'🎉', label:'Evento',    sub:'Comparte un evento con la comunidad',    to:'/publicar-evento' },

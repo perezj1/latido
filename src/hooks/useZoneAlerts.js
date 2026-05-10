@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
-import { getAdCat, normalizeAdCat } from '../lib/constants'
+import { getAdCat, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
 
 const SETTINGS_KEY = 'latido_alerts'
 const LAST_CHECK_KEY = 'latido_alerts_last_check'
@@ -19,7 +19,7 @@ const ALERT_SOURCES = [
   {
     kind: 'job',
     table: 'jobs',
-    select: 'id, title, company, canton, created_at, active',
+    select: 'id, title, company, job_intent, canton, created_at, active',
     channelPrefix: 'zone-alert-jobs',
   },
   {
@@ -95,14 +95,15 @@ function normalizeAlertItem(kind, row) {
   }
 
   if (kind === 'job') {
+    const intent = getJobIntentMeta(row)
     return {
       key: `job:${row.id}`,
       id: row.id,
       kind,
       title: row.title || row.company || 'Nuevo empleo',
       category: 'empleo',
-      kindLabel: 'Empleo',
-      meta: `empleo · ${row.canton || ''}`.trim(),
+      kindLabel: intent.label,
+      meta: `${intent.label.toLowerCase()} · ${row.canton || ''}`.trim(),
       href: `/tablon?cat=empleo&openJob=${encodeURIComponent(row.id)}`,
       icon: '💼',
       canton: row.canton || '',

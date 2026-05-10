@@ -212,6 +212,20 @@ export const AD_TYPES = [
   { id:'regala', emoji:'🎁', label:'Regalo',             desc:'Das algo gratis' },
 ]
 
+export const JOB_INTENTS = [
+  { id:'ofrece', emoji:'💼', label:'Ofrezco empleo', desc:'Publicas una vacante, puesto o encargo de trabajo' },
+  { id:'busca',  emoji:'🔎', label:'Busco empleo',   desc:'Publicas tu perfil o disponibilidad para trabajar' },
+]
+
+export function getJobIntentId(job={}) {
+  const raw = job.job_intent || job.intent || (job.cat === 'empleo' ? job.type : '')
+  return JOB_INTENTS.some(item => item.id === raw) ? raw : 'ofrece'
+}
+
+export function getJobIntentMeta(job={}) {
+  return JOB_INTENTS.find(item => item.id === getJobIntentId(job)) || JOB_INTENTS[0]
+}
+
 // ── COMMUNITY CATEGORIES ───────────────────────────────────────
 export const COMMUNITY_CATS = [
   { id:'pais',         emoji:'🌎', label:'País de origen', desc:'Grupos de personas del mismo país o región' },
@@ -342,10 +356,10 @@ export const MOCK_FAMILY_GROUPS = [
 ]
 
 export const MOCK_JOBS = [
-  { id:'j1', emoji:'👨‍🍳', title:'Cocinero/a latino/a',         company:'El Rincón Latino',  city:'ZH', type:'Full-time',  salary:'CHF 4.200–4.800/mes', lang:'Español + alemán básico' },
-  { id:'j2', emoji:'👶', title:'Cuidadora de niños',           company:'Familia particular', city:'BS', type:'Part-time',  salary:'CHF 25/hora',         lang:'Español' },
-  { id:'j3', emoji:'💻', title:'Técnico/a IT soporte usuario', company:'Tech Company',       city:'ZH', type:'Full-time',  salary:'CHF 6.000–7.500/mes', lang:'Inglés + alemán' },
-  { id:'j4', emoji:'💇', title:'Peluquera especialista',       company:'Salón AfroLatino',   city:'BE', type:'Full-time',  salary:'CHF 3.500 + comisión', lang:'Español' },
+  { id:'j1', job_intent:'ofrece', emoji:'👨‍🍳', title:'Cocinero/a latino/a',         company:'El Rincón Latino',  city:'ZH', type:'Full-time',  salary:'CHF 4.200–4.800/mes', lang:'Español + alemán básico' },
+  { id:'j2', job_intent:'ofrece', emoji:'👶', title:'Cuidadora de niños',           company:'Familia particular', city:'BS', type:'Part-time',  salary:'CHF 25/hora',         lang:'Español' },
+  { id:'j3', job_intent:'ofrece', emoji:'💻', title:'Técnico/a IT soporte usuario', company:'Tech Company',       city:'ZH', type:'Full-time',  salary:'CHF 6.000–7.500/mes', lang:'Inglés + alemán' },
+  { id:'j4', job_intent:'busca',  emoji:'💇', title:'Peluquera busca empleo',       company:'Perfil profesional', city:'BE', type:'Full-time',  salary:'CHF 3.500 + comisión', lang:'Español' },
 ]
 
 export const NEGOCIO_TYPES = [

@@ -10,7 +10,7 @@ import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
-import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, NEGOCIO_TYPES, formatAdLocation, getAdDisplayCat, getAdDisplayEmoji, normalizeAdCat } from '../lib/constants'
+import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, NEGOCIO_TYPES, formatAdLocation, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -90,12 +90,13 @@ function normalizePublication(kind, row) {
   }
 
   if (kind === 'job') {
+    const intent = getJobIntentMeta(row)
     return {
       id: row.id,
       kind,
       icon: row.emoji || KIND_META[kind].icon,
       title: row.title,
-      summary: [row.company, row.type].filter(Boolean).join(' · ') || 'Oferta de empleo',
+      summary: [intent.label, row.company, row.type].filter(Boolean).join(' · ') || 'Empleo',
       meta: [row.city || row.canton, row.salary].filter(Boolean).join(' · '),
       active: !!row.active,
       createdAt: row.created_at,
@@ -168,6 +169,7 @@ function buildEditorForm(item) {
 
   if (item.kind === 'job') {
     return {
+      jobIntent: row.job_intent || 'ofrece',
       sector: row.sector || row.category || '',
       title: row.title || '',
       company: row.company || '',
@@ -625,6 +627,7 @@ export default function Perfil() {
     if (item.kind === 'job') {
       const languages = splitList(editorForm.langs || '')
       payload = {
+        job_intent: editorForm.jobIntent || 'ofrece',
         sector: editorForm.sector?.trim() || null, category: editorForm.sector?.trim() || null,
         title: editorForm.title?.trim(), company: editorForm.company?.trim() || null,
         type: editorForm.type || null, city: editorForm.city?.trim() || null,
@@ -905,6 +908,7 @@ export default function Perfil() {
         ) : (
           favItems.map(item => {
             const isJob = item._kind === 'job'
+            const jobIntent = isJob ? getJobIntentMeta(item) : null
             const favType = isJob ? 'jobs' : 'ads'
             const href = isJob ? `/tablon?cat=empleo&openJob=${item.id}` : `/tablon?openAd=${item.id}`
 
@@ -935,7 +939,7 @@ export default function Perfil() {
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.title || item.company}</p>
                     <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-                      {isJob ? `💼 ${item.company || ''} · ${item.city || item.canton || ''}` : `📍 ${formatAdLocation(item)}`}
+                      {isJob ? `${jobIntent.emoji} ${jobIntent.label} · ${item.company || item.city || item.canton || ''}` : `📍 ${formatAdLocation(item)}`}
                     </p>
                   </div>
                 </button>
@@ -1286,6 +1290,9 @@ export default function Perfil() {
 
         {editorItem?.kind === 'job' && (
           <>
+            <Select label="Busco / ofrezco" value={editorForm.jobIntent || 'ofrece'} onChange={event => updateEditorField('jobIntent', event.target.value)}>
+              {JOB_INTENTS.map(intent => <option key={intent.id} value={intent.id}>{intent.label}</option>)}
+            </Select>
             <Input label="Sector" value={editorForm.sector || ''} onChange={event => updateEditorField('sector', event.target.value)} />
             <Input label="Título del puesto" value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
             <Input label="Empresa" value={editorForm.company || ''} onChange={event => updateEditorField('company', event.target.value)} />

@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import { fetchAvatarsByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
-import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, normalizeAdCat } from '../lib/constants'
+import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters, PhotoGallery } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 import ReportButton from '../components/ReportButton'
@@ -54,6 +54,15 @@ const TABLON_CACHE = {
 }
 const CARD_STACK_GAP = 10
 const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
+const JOB_INTENT_TAG_STYLE = {
+  ofrece:{ bg:'#E0F2FE', color:'#0369A1' },
+  busca:{ bg:'#FEF3C7', color:'#92400E' },
+}
+
+function getJobIntentTag(job) {
+  const intent = getJobIntentMeta(job)
+  return { ...intent, ...(JOB_INTENT_TAG_STYLE[intent.id] || JOB_INTENT_TAG_STYLE.ofrece) }
+}
 
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
@@ -184,6 +193,8 @@ function AdDetail({ ad, user, avatarSrc }) {
 /* ── Compact job card (list view) ───────────────────────── */
 function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc }) {
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
+  const intent = getJobIntentTag(job)
+  const isSeekingJob = intent.id === 'busca'
   return (
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14, width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
       <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
@@ -193,11 +204,11 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc }) {
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
-          <Tag bg="#E0F2FE" color="#0369A1">💼 Empleo</Tag>
+          <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
           <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, lineHeight:1.3, margin:0, flex:'1 1 180px', ...WRAPPING_TEXT }}>{job.title || job.company}</h3>
           {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
         </div>
-        {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.35, margin:'0 0 2px', ...WRAPPING_TEXT }}>🏢 {job.company}</p>}
+        {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.35, margin:'0 0 2px', ...WRAPPING_TEXT }}>{isSeekingJob ? '👤' : '🏢'} {job.company}</p>}
         <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.35, margin:'0 0 2px', ...WRAPPING_TEXT }}>📍 {job.city || job.canton}</p>
         {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, margin:0, ...WRAPPING_TEXT }}>🗣️ {languages}</p>}
         {job.salary && <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', lineHeight:1.2, margin:'4px 0 0', ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>}
@@ -218,6 +229,8 @@ function JobDetail({ job, user }) {
   const navigate = useNavigate()
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
   const isOwnJob = user && job.user_id === user.id
+  const intent = getJobIntentTag(job)
+  const isSeekingJob = intent.id === 'busca'
 
   return (
     <div>
@@ -232,11 +245,11 @@ function JobDetail({ job, user }) {
         )}
         <div style={{ flex:1, minWidth:0 }}>
           {job.company && (
-            <p style={{ fontFamily:PP, fontSize:13, fontWeight:600, color:C.mid, margin:'0 0 6px', lineHeight:1.4, ...WRAPPING_TEXT }}>🏢 {job.company}</p>
+            <p style={{ fontFamily:PP, fontSize:13, fontWeight:600, color:C.mid, margin:'0 0 6px', lineHeight:1.4, ...WRAPPING_TEXT }}>{isSeekingJob ? '👤' : '🏢'} {job.company}</p>
           )}
           <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.4, margin:'0 0 8px', ...WRAPPING_TEXT }}>📍 {job.city || job.canton}</p>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-            <Tag bg="#E0F2FE" color="#0369A1">💼 Empleo</Tag>
+            <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
             {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
             {job.sector && <Tag bg={C.bg} color={C.mid}>{job.sector}</Tag>}
           </div>
@@ -268,7 +281,7 @@ function JobDetail({ job, user }) {
           contentId={job.id}
           ownerId={job.user_id}
           title="Reportar empleo"
-          metadata={{ title: job.title, company: job.company, sector: job.sector }}
+          metadata={{ title: job.title, company: job.company, job_intent: getJobIntentId(job), sector: job.sector }}
           style={{ width:'100%', marginTop:8 }}
         />
       )}
@@ -355,6 +368,7 @@ export default function Tablon() {
   const plz      = searchParams.get('plz') || ''
   const privacy  = searchParams.get('privacy') || ''
   const jobType  = searchParams.get('jobType') || ''
+  const jobIntent = searchParams.get('jobIntent') || ''
   const maxPrice = searchParams.get('maxPrice') || ''
   const openAdId  = searchParams.get('openAd') || ''
   const openJobId = searchParams.get('openJob') || ''
@@ -406,7 +420,7 @@ export default function Tablon() {
     setSearchParams(p, { replace:true })
   }
   const activeCount = isEmpleos
-    ? [jobType, canton, plz].filter(Boolean).length
+    ? [jobIntent, jobType, canton, plz].filter(Boolean).length
     : [type, canton, plz, privacy, maxPrice].filter(Boolean).length
   const publishTarget = getPublishTarget('/tablon', searchParams.toString() ? `?${searchParams.toString()}` : '')
 
@@ -512,26 +526,28 @@ export default function Tablon() {
 
   const communityJobs = useMemo(() => {
     const fromJobs = jobs.filter(j =>
+      (!jobIntent || getJobIntentId(j) === jobIntent) &&
       (!jobType || j.type === jobType) &&
       (!canton || !j.canton || j.canton === canton) &&
       (!plz || !j.plz || j.plz?.startsWith(plz)) &&
-      (!deferredSearch || j.title?.toLowerCase().includes(deferredSearch) || j.company?.toLowerCase().includes(deferredSearch))
+      (!deferredSearch || j.title?.toLowerCase().includes(deferredSearch) || j.company?.toLowerCase().includes(deferredSearch) || getJobIntentMeta(j).label.toLowerCase().includes(deferredSearch))
     )
     const fromAds = ads.filter(a =>
       a.cat === 'empleo' &&
       (isLoggedIn || a.privacy === 'public') &&
-      (!jobType || a.type === jobType) &&
+      (!jobIntent || getJobIntentId(a) === jobIntent) &&
+      (!jobType || a.type === jobType || a.sub === jobType) &&
       (!canton || !a.canton || a.canton === canton) &&
       (!plz || !a.plz || a.plz?.startsWith(plz)) &&
-      (!deferredSearch || a.title?.toLowerCase().includes(deferredSearch) || a.desc?.toLowerCase().includes(deferredSearch))
+      (!deferredSearch || a.title?.toLowerCase().includes(deferredSearch) || a.desc?.toLowerCase().includes(deferredSearch) || getJobIntentMeta(a).label.toLowerCase().includes(deferredSearch))
     ).map(a => ({
       id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
-      canton: a.canton, type: a.type, salary: a.salary, emoji: a.emoji || '💼',
+      canton: a.canton, type: ['busca','ofrece'].includes(a.type) ? (a.sub || '') : a.type, job_intent: getJobIntentId(a), salary: a.salary, emoji: a.emoji || '💼',
       logo_url: a.img_url || '', lang: a.lang, languages: a.languages,
       desc: a.desc, user_id: a.user_id, created_at: a.created_at,
     }))
     return [...fromJobs, ...fromAds]
-  }, [ads, canton, deferredSearch, isLoggedIn, jobType, jobs, plz])
+  }, [ads, canton, deferredSearch, isLoggedIn, jobIntent, jobType, jobs, plz])
 
   const filteredJobs = communityJobs
   const tablonItems = useMemo(() => {
@@ -575,7 +591,7 @@ export default function Tablon() {
 
   const catOptions  = [{ id:'', label:'Todos' }, ...orderedCats.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
   const typeOptions = [{ id:'', label:'Todos' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
-  const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Fijo' }, { id:'Part-time', label:'Temporal' }]
+  const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Full-time' }, { id:'Part-time', label:'Part-time' }, { id:'Freelance', label:'Freelance' }, { id:'Prácticas', label:'Prácticas' }]
 
   return (
     <div style={{ maxWidth:800, margin:'0 auto', padding:'0 20px 100px' }}>
@@ -605,7 +621,7 @@ export default function Tablon() {
           <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:14, color:C.light }}>🔍</span>
           <input
             style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:13, padding:'10px 12px 10px 34px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', color:C.text, boxSizing:'border-box' }}
-            placeholder={isEmpleos ? 'Buscar empleo o empresa...' : 'Buscar en el tablón...'}
+            placeholder={isEmpleos ? 'Buscar empleo, perfil o empresa...' : 'Buscar en el tablón...'}
             value={search} onChange={e=>setSearch(e.target.value)}
           />
         </div>
@@ -636,7 +652,8 @@ export default function Tablon() {
         <div style={{ background:C.primaryLight, borderRadius:10, padding:'6px 12px', display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:14 }}>
           {canton   && <Tag bg={C.primaryMid} color={C.primaryDark}>📍 Cantón {canton}</Tag>}
           {plz      && <Tag bg={C.primaryMid} color={C.primaryDark}>📮 PLZ {plz}</Tag>}
-          {jobType  && <Tag bg={C.primaryMid} color={C.primaryDark}>💼 {jobType === 'Full-time' ? 'Fijo' : 'Temporal'}</Tag>}
+          {jobIntent && <Tag bg={C.primaryMid} color={C.primaryDark}>{JOB_INTENTS.find(intent=>intent.id===jobIntent)?.emoji} {JOB_INTENTS.find(intent=>intent.id===jobIntent)?.label}</Tag>}
+          {jobType  && <Tag bg={C.primaryMid} color={C.primaryDark}>💼 {jobType}</Tag>}
           {type     && <Tag bg={C.primaryMid} color={C.primaryDark}>{AD_TYPES.find(t=>t.id===type)?.emoji} {AD_TYPES.find(t=>t.id===type)?.label}</Tag>}
           {maxPrice && <Tag bg={C.primaryMid} color={C.primaryDark}>💰 Máx. CHF {maxPrice}</Tag>}
           {privacy  && <Tag bg={C.primaryMid} color={C.primaryDark}>{privacy==='public'?'🌐 Público':'🔒 Privado'}</Tag>}
@@ -670,7 +687,7 @@ export default function Tablon() {
           {filteredJobs.length === 0 ? (
             <div style={{ textAlign:'center', padding:'60px 20px' }}>
               <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
-              <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin ofertas ahora</h3>
+              <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin empleos ahora</h3>
               <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>Vuelve pronto — se actualizan frecuentemente</p>
             </div>
           ) : (
@@ -681,8 +698,8 @@ export default function Tablon() {
                   <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userAvatars.get(j.user_id)} />
                 ))}
                 <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
-                  <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Tienes una oferta de trabajo?</h3>
-                  <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>Publica gratis y llega a miles de personas en Suiza.</p>
+                  <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Buscas u ofreces trabajo?</h3>
+                  <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>Publica gratis y llega a la comunidad hispanohablante en Suiza.</p>
                   <Link to="/publicar-empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 22px', borderRadius:13, display:'inline-flex' }}>Publicar empleo gratis</Link>
                 </div>
               </div>
@@ -731,19 +748,34 @@ export default function Tablon() {
       {/* Filters sheet */}
       <Sheet show={showFilters} onClose={()=>setShowFilters(false)} title="⚙️ Filtros">
         {isEmpleos ? (
-          <div style={{ marginBottom:18 }}>
-            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE EMPLEO</p>
-            <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-              {jobTypeOpts.map(o => {
-                const active = jobType === o.id
-                return (
-                  <button key={o.id} onClick={()=>setFilterAndScroll('jobType', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
-                    {o.label}
-                  </button>
-                )
-              })}
+          <>
+            <div style={{ marginBottom:18 }}>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>BUSCO / OFREZCO</p>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {[{ id:'', label:'Todo' }, ...JOB_INTENTS.map(intent => ({ id:intent.id, label:`${intent.emoji} ${intent.label}` }))].map(o => {
+                  const active = jobIntent === o.id
+                  return (
+                    <button key={o.id || 'all'} onClick={()=>setFilterAndScroll('jobIntent', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                      {o.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+            <div style={{ marginBottom:18 }}>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE EMPLEO</p>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {jobTypeOpts.map(o => {
+                  const active = jobType === o.id
+                  return (
+                    <button key={o.id} onClick={()=>setFilterAndScroll('jobType', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
+                      {o.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </>
         ) : isMercado ? (
           <>
             <div style={{ marginBottom:18 }}>
