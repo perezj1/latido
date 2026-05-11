@@ -64,6 +64,22 @@ function getJobIntentTag(job) {
   return { ...intent, ...(JOB_INTENT_TAG_STYLE[intent.id] || JOB_INTENT_TAG_STYLE.ofrece) }
 }
 
+function FavoriteButton({ isFav, onClick, style={} }) {
+  return (
+    <button
+      type="button"
+      onClick={event => {
+        event.stopPropagation()
+        onClick?.()
+      }}
+      style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.96)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, cursor:'pointer', boxShadow:'0 8px 18px rgba(15,23,42,0.14)', lineHeight:1, ...style }}
+      aria-label={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+    >
+      {isFav ? '\u2764\uFE0F' : '\uD83E\uDD0D'}
+    </button>
+  )
+}
+
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
   const normalizedCat = getAdCategoryId(ad)
@@ -122,7 +138,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
 }
 
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
-function AdDetail({ ad, user, avatarSrc }) {
+function AdDetail({ ad, user, avatarSrc, isFav, onToggleFav }) {
   const navigate = useNavigate()
   const normalizedCat = getAdCategoryId(ad)
   const cat = getAdDisplayCat(ad)
@@ -143,11 +159,14 @@ function AdDetail({ ad, user, avatarSrc }) {
           <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:280, objectFit:'contain', display:'block' }}/>
         </div>
       )}
-      <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:10 }}>
+        <div style={{ display:'flex', gap:5, flexWrap:'wrap', minWidth:0 }}>
         <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
         {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
         <PrivacyTag privacy={ad.privacy}/>
         {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+        </div>
+        <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ flexShrink:0 }} />
       </div>
       <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:16, color:C.text, lineHeight:1.35, marginBottom:8, ...WRAPPING_TEXT }}>{ad.title}</h3>
       {ad.desc && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:14, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>{ad.desc}</p>}
@@ -225,7 +244,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc }) {
 }
 
 /* ── Full job detail (inside Sheet) ─────────────────────── */
-function JobDetail({ job, user }) {
+function JobDetail({ job, user, isFav, onToggleFav }) {
   const navigate = useNavigate()
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
   const isOwnJob = user && job.user_id === user.id
@@ -234,6 +253,9 @@ function JobDetail({ job, user }) {
 
   return (
     <div>
+      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:8 }}>
+        <FavoriteButton isFav={isFav} onClick={onToggleFav} />
+      </div>
       {job.logo_url && (
         <div style={{ width:'100%', borderRadius:16, overflow:'hidden', marginBottom:16, background:'#fff' }}>
           <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'auto', maxHeight:200, objectFit:'contain', display:'block' }} />
@@ -858,13 +880,22 @@ export default function Tablon() {
             ad={selectedAd}
             user={user}
             avatarSrc={userAvatars.get(selectedAd.user_id)}
+            isFav={isFavorite('ads', selectedAd.id)}
+            onToggleFav={() => toggleFavorite('ads', selectedAd.id)}
           />
         )}
       </Sheet>
 
       {/* Job detail sheet */}
       <Sheet show={!!selectedJob} onClose={closeJobDetails} title={selectedJob?.title || ''} syncHistory={false}>
-        {selectedJob && <JobDetail job={selectedJob} user={user} />}
+        {selectedJob && (
+          <JobDetail
+            job={selectedJob}
+            user={user}
+            isFav={isFavorite('jobs', selectedJob.id)}
+            onToggleFav={() => toggleFavorite('jobs', selectedJob.id)}
+          />
+        )}
       </Sheet>
 
       {/* Portal detail sheet */}

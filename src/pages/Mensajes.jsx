@@ -151,11 +151,6 @@ export default function Mensajes() {
         conv.owner_id && conv.owner_id !== user.id && !participantNameCacheRef.current.has(conv.owner_id) ? conv.owner_id : null,
       ])).filter(Boolean)
     )]
-    const ownerItemIdsToFetch = [...new Set(
-      convList
-        .filter(conv => !cleanParticipantName(conv.owner_name) && conv.ad_id && conv.owner_id !== user.id)
-        .map(conv => conv.ad_id)
-    )]
     const itemIdsToFetch = [...new Set(convList.map(conv => conv.ad_id).filter(Boolean))]
 
     const adNameById = new Map()
@@ -169,11 +164,11 @@ export default function Mensajes() {
       })
     }
 
-    if (ownerItemIdsToFetch.length) {
+    if (itemIdsToFetch.length) {
       const { data: adsData } = await supabase
         .from('listings')
         .select('id, title, user_name')
-        .in('id', ownerItemIdsToFetch)
+        .in('id', itemIdsToFetch)
 
       adsData?.forEach(ad => {
         if (ad.title) listingTitleById.set(ad.id, ad.title)
@@ -195,13 +190,16 @@ export default function Mensajes() {
 
     return convList.map(conv => {
       const job = jobById.get(conv.ad_id)
-      const resolvedTitle = job && (!conv.title || conv.title === job.company)
+      const listingTitle = listingTitleById.get(conv.ad_id)
+      const isJobReference = Boolean(job && (!listingTitle || conv.title === job.title || conv.title === job.company))
+      const resolvedTitle = isJobReference && (!conv.title || conv.title === job.company)
         ? job.title
-        : conv.title || listingTitleById.get(conv.ad_id)
+        : conv.title || listingTitle || job?.title
 
       return {
         ...conv,
         title: resolvedTitle,
+        reference_kind: isJobReference ? 'job' : 'ad',
         sender_name: pickParticipantName(
           conv.sender_id === user.id ? ownName : participantNameCacheRef.current.get(conv.sender_id),
           getConversationParticipantName(conv.sender_name, { ...conv, title: resolvedTitle })
@@ -351,7 +349,7 @@ export default function Mensajes() {
       insertData.owner_id = data.user_id
       insertData.title = data.title || data.company
       insertData.owner_name = pickParticipantName(ownerNames.get(data.user_id), recipientName) || 'Usuario'
-      return { item: data, insertData }
+      return { item: data, insertData, referenceKind: 'job' }
     } else if (aId) {
       const { data } = await supabase.from('listings').select('id, title, user_id, user_name').eq('id', aId).maybeSingle()
       if (!data) { toast.error('Anuncio no encontrado'); return null }
@@ -361,7 +359,7 @@ export default function Mensajes() {
       insertData.owner_id = data.user_id
       insertData.title = data.title
       insertData.owner_name = pickParticipantName(ownerNames.get(data.user_id), recipientName, data.user_name) || 'Usuario'
-      return { item: data, insertData }
+      return { item: data, insertData, referenceKind: 'ad' }
     }
 
     return null
@@ -374,6 +372,7 @@ export default function Mensajes() {
 
     const draft = {
       ...target.insertData,
+      reference_kind: target.referenceKind,
       id: null,
       created_at: new Date().toISOString(),
       isDraft: true,
@@ -440,6 +439,7 @@ export default function Mensajes() {
         sender_name: conv?.sender_name || insertData.sender_name,
         owner_name: conv?.owner_name || insertData.owner_name,
         title: conv?.title || insertData.title,
+        reference_kind: target.referenceKind,
       }], ownName))[0]
 
       if (addToList) {
@@ -563,6 +563,18 @@ export default function Mensajes() {
     return cleanParticipantName(conv.sender_name) || 'Usuario'
   }
 
+  function getConversationReferenceHref(conv) {
+    if (!conv?.ad_id) return ''
+    return conv.reference_kind === 'job'
+      ? `/tablon?cat=empleo&openJob=${encodeURIComponent(conv.ad_id)}`
+      : `/tablon?openAd=${encodeURIComponent(conv.ad_id)}`
+  }
+
+  function openConversationReference(conv) {
+    const href = getConversationReferenceHref(conv)
+    if (href) navigate(href)
+  }
+
   if (!isLoggedIn) return null
 
   const isMobile = window.innerWidth < 700
@@ -653,9 +665,15 @@ export default function Mensajes() {
                 <Avatar name={otherName(activeThread)} size={36} src={activeThread.id ? convAvatars.get(activeThread.sender_id === user.id ? activeThread.owner_id : activeThread.sender_id) : undefined} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: 0 }}>{otherName(activeThread)}</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => openConversationReference(activeThread)}
+                    disabled={!getConversationReferenceHref(activeThread)}
+                    style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', background:'none', border:'none', padding:0, textAlign:'left', width:'100%', cursor:getConversationReferenceHref(activeThread) ? 'pointer' : 'default' }}
+                    title={getConversationReferenceHref(activeThread) ? 'Abrir anuncio relacionado' : undefined}
+                  >
                     Re: {convTitle(activeThread)}
-                  </p>
+                  </button>
                 </div>
               </div>
 

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useZoneAlerts, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
+import { useFavorites } from '../hooks/useFavorites'
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
@@ -78,6 +79,7 @@ export default function Home() {
   const navigate = useNavigate()
   const { alertItems, alertCount } = useZoneAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
+  const { isFavorite, toggleFavorite } = useFavorites()
 
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef(null)
@@ -110,12 +112,21 @@ export default function Home() {
 
   const firstName = (displayName || 'amigo').split(' ')[0]
 
-  const getAdHref = (ad) => ad.id.startsWith('job_')
-    ? `/tablon?cat=empleo&openJob=${encodeURIComponent(ad.id.replace('job_', ''))}`
+  const getAdHref = (ad) => String(ad.id).startsWith('job_')
+    ? `/tablon?cat=empleo&openJob=${encodeURIComponent(String(ad.id).replace('job_', ''))}`
     : `/tablon?openAd=${encodeURIComponent(ad.id)}`
   const getCommunityHref = (group) => `/comunidades?openCommunity=${encodeURIComponent(group.id)}`
   const getBusinessHref = (business) => `/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`
   const getJobHref = (job) => `/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`
+  const getAdFavoriteTarget = (ad) => String(ad.id).startsWith('job_')
+    ? { type:'jobs', id:String(ad.id).replace('job_', '') }
+    : { type:'ads', id:ad.id }
+  const toggleAdFavorite = (event, ad) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const target = getAdFavoriteTarget(ad)
+    toggleFavorite(target.type, target.id)
+  }
 
   const applySnapshot = useCallback((snapshot) => {
     setRecentAds(snapshot.recentAds || [])
@@ -502,8 +513,19 @@ export default function Home() {
                 const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
                 const location = formatAdLocation(ad)
                 const displayEmoji = getAdDisplayEmoji(ad)
+                const favoriteTarget = getAdFavoriteTarget(ad)
+                const isFav = isFavorite(favoriteTarget.type, favoriteTarget.id)
                 return (
-                  <Link key={ad.id} to={getAdHref(ad)} style={{ textDecoration:'none', flexShrink:0, width:152, display:'block' }}>
+                  <div
+                    key={ad.id}
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => navigate(getAdHref(ad))}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') navigate(getAdHref(ad))
+                    }}
+                    style={{ textDecoration:'none', flexShrink:0, width:152, display:'block', cursor:'pointer' }}
+                  >
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                       <div style={{ height:120, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative' }}>
                         {ad.img
@@ -511,6 +533,14 @@ export default function Home() {
                           : <span>{displayEmoji}</span>
                         }
                         <span style={{ position:'absolute', top:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(255,255,255,0.92)', color:cc.tc, padding:'3px 7px', borderRadius:999 }}>{cat?.label}</span>
+                        <button
+                          type="button"
+                          onClick={event => toggleAdFavorite(event, ad)}
+                          aria-label={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+                          style={{ position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.94)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, cursor:'pointer', boxShadow:'0 6px 16px rgba(15,23,42,0.14)', lineHeight:1 }}
+                        >
+                          {isFav ? '\u2764\uFE0F' : '\uD83E\uDD0D'}
+                        </button>
                       </div>
                       <div style={{ padding:'10px 10px 12px' }}>
                         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', lineHeight:1.35, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.7em' }}>{ad.title}</p>
@@ -518,7 +548,7 @@ export default function Home() {
                         <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0 }}>📍 {location || ad.canton} · {ad.ts}</p>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 )
               })}
             </div>

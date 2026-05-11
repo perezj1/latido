@@ -66,7 +66,7 @@ export function Tag({ children, bg=C.primaryLight, color=C.primary, size=10 }) {
 export function Avatar({ name='?', size=32, src }) {
   const colors = ['#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444']
   const bg = colors[(name?.charCodeAt(0) || 0) % colors.length]
-  if (src) return <img src={src} style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} alt={name} />
+  if (src) return <img src={src} style={{ width:size, height:size, borderRadius:'50%', objectFit:'contain', background:'#fff', flexShrink:0 }} alt={name} />
   return (
     <div style={{ width:size, height:size, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontFamily:PP, fontWeight:700, fontSize:size*0.38, flexShrink:0 }}>
       {name?.[0]?.toUpperCase() || '?'}
