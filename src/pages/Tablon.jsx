@@ -107,18 +107,14 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
           {displayEmoji}
         </div>
       )}
-      <button
-        onClick={e => { e.stopPropagation(); onToggleFav?.() }}
-        style={{ position:'absolute', top:10, right:10, zIndex:2, background:'rgba(255,255,255,0.92)', border:'none', borderRadius:'50%', width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:17, boxShadow:'0 1px 6px rgba(0,0,0,0.12)' }}
-        aria-label={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-      >
-        {isFav ? '❤️' : '🤍'}
-      </button>
       <div style={{ padding:'13px 15px' }}>
-        <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:8 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:8 }}>
+          <div style={{ display:'flex', gap:5, flexWrap:'wrap', minWidth:0 }}>
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
           {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
           <PrivacyTag privacy={ad.privacy}/>
+          </div>
+          <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ width:34, height:34, fontSize:17, flexShrink:0 }} />
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.35, marginBottom:4, ...WRAPPING_TEXT }}>{ad.title}</h3>
         {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.5, marginBottom:8, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{ad.desc}</p>}
