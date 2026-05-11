@@ -7,6 +7,7 @@ export const PUSH_STATUS_EVENT = 'latido_push_status_changed'
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 const VAPID_KEY_STORAGE_KEY = 'latido_vapid_public_key'
 const PUSH_MANUAL_DISABLED_KEY = 'latido_push_manual_disabled'
+const PUSH_USER_STORAGE_KEY = 'latido_push_user_id'
 
 export function notifyPushStatusChanged() {
   if (typeof window !== 'undefined') {
@@ -82,6 +83,13 @@ async function disableStoredSubscription(subscription, user) {
 async function getCurrentVapidSubscription(registration, user) {
   let subscription = await registration.pushManager.getSubscription()
   const storedVapidKey = localStorage.getItem(VAPID_KEY_STORAGE_KEY)
+  const storedUserId = localStorage.getItem(PUSH_USER_STORAGE_KEY)
+
+  if (subscription && storedUserId && user?.id && storedUserId !== user.id) {
+    await subscription.unsubscribe().catch(() => {})
+    localStorage.removeItem(VAPID_KEY_STORAGE_KEY)
+    subscription = null
+  }
 
   if (subscription && storedVapidKey !== VAPID_PUBLIC_KEY) {
     await disableStoredSubscription(subscription, user)
@@ -113,6 +121,66 @@ function buildSubscriptionRecord(subscription, user) {
     last_seen_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }
+}
+
+function isRecoverableSubscriptionSaveError(error) {
+  const detail = [
+    error?.code,
+    error?.message,
+    error?.details,
+    error?.hint,
+  ].filter(Boolean).join(' ').toLowerCase()
+
+  return (
+    detail.includes('row-level security') ||
+    detail.includes('duplicate key') ||
+    detail.includes('push_subscriptions_endpoint')
+  )
+}
+
+async function createBrowserSubscription(registration) {
+  return registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+  })
+}
+
+function assertCompleteSubscriptionRecord(record) {
+  if (!record.endpoint || !record.p256dh || !record.auth) {
+    throw new Error('El navegador no entrego una suscripcion push completa.')
+  }
+}
+
+async function savePushSubscription({ registration, subscription, user, allowRenew = true }) {
+  const record = buildSubscriptionRecord(subscription, user)
+  assertCompleteSubscriptionRecord(record)
+
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .upsert(record, { onConflict: 'endpoint' })
+
+  if (!error) {
+    localStorage.setItem(PUSH_USER_STORAGE_KEY, user.id)
+    return subscription
+  }
+
+  if (!allowRenew || !registration || !isRecoverableSubscriptionSaveError(error)) {
+    throw error
+  }
+
+  await subscription.unsubscribe().catch(() => {})
+  const renewed = await createBrowserSubscription(registration)
+  const renewedRecord = buildSubscriptionRecord(renewed, user)
+  assertCompleteSubscriptionRecord(renewedRecord)
+
+  const { error: retryError } = await supabase
+    .from('push_subscriptions')
+    .upsert(renewedRecord, { onConflict: 'endpoint' })
+
+  if (retryError) throw retryError
+
+  localStorage.setItem(PUSH_USER_STORAGE_KEY, user.id)
+  return renewed
 }
 
 function buildPreferenceRecord({ user, settings = {}, userCanton = '', messagesEnabled = true }) {
@@ -166,22 +234,10 @@ export async function subscribeToPushNotifications({ user, settings, userCanton 
   let subscription = await getCurrentVapidSubscription(registration, user)
 
   if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    })
+    subscription = await createBrowserSubscription(registration)
   }
 
-  const record = buildSubscriptionRecord(subscription, user)
-  if (!record.endpoint || !record.p256dh || !record.auth) {
-    throw new Error('El navegador no entrego una suscripcion push completa.')
-  }
-
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert(record, { onConflict: 'endpoint' })
-
-  if (error) throw error
+  await savePushSubscription({ registration, subscription, user })
 
   localStorage.removeItem(PUSH_MANUAL_DISABLED_KEY)
   localStorage.setItem(VAPID_KEY_STORAGE_KEY, VAPID_PUBLIC_KEY)
@@ -200,9 +256,7 @@ export async function syncExistingPushRegistration({ user, settings, userCanton 
 
   if (!subscription) return
 
-  await supabase
-    .from('push_subscriptions')
-    .upsert(buildSubscriptionRecord(subscription, user), { onConflict: 'endpoint' })
+  await savePushSubscription({ registration, subscription, user })
 
   localStorage.setItem(VAPID_KEY_STORAGE_KEY, VAPID_PUBLIC_KEY)
   await syncPushPreferences({ user, settings, userCanton, messagesEnabled: true })
@@ -228,6 +282,7 @@ export async function unsubscribeFromPushNotifications({ user }) {
   }
 
   localStorage.removeItem(VAPID_KEY_STORAGE_KEY)
+  localStorage.removeItem(PUSH_USER_STORAGE_KEY)
   localStorage.setItem(PUSH_MANUAL_DISABLED_KEY, '1')
 
   if (user?.id) {

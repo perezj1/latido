@@ -37,7 +37,7 @@ The repo includes `supabase/config.toml` with JWT verification disabled for this
 
 ## 4. Connect database webhooks
 
-In Supabase Dashboard, create webhooks pointing to:
+In Supabase Dashboard, create webhooks as **HTTP Request** webhooks pointing to:
 
 ```text
 https://<PROJECT_REF>.supabase.co/functions/v1/latido_push_notification
@@ -49,6 +49,10 @@ Add headers:
 Content-Type: application/json
 x-latido-webhook-secret: <same PUSH_WEBHOOK_SECRET>
 ```
+
+Important: the Edge Function rejects requests without `x-latido-webhook-secret`.
+If you use the Dashboard option **Supabase Edge Functions**, make sure it sends this
+custom header. If it does not, use **HTTP Request** instead.
 
 Create these events:
 
@@ -74,6 +78,30 @@ To debug trigger deliveries:
 SELECT *
 FROM net._http_response
 ORDER BY created DESC
+LIMIT 20;
+```
+
+Expected healthy responses are HTTP 200 with JSON like:
+
+```json
+{"ok":true,"sent":1,"attempted":1,"failed":0}
+```
+
+If you see HTTP 401, the webhook is missing/wrong `x-latido-webhook-secret`.
+If you see `attempted: 0`, the phone has no active row in `push_subscriptions`
+or no matching preference row.
+
+Useful checks:
+
+```sql
+SELECT user_id, enabled, origin, updated_at
+FROM public.push_subscriptions
+ORDER BY updated_at DESC
+LIMIT 20;
+
+SELECT *
+FROM public.push_notification_preferences
+ORDER BY updated_at DESC
 LIMIT 20;
 ```
 

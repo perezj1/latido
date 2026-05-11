@@ -47,6 +47,7 @@ function corsHeaders(req: Request) {
     'http://127.0.0.1:8080',
     'https://latido.ch',
     'https://www.latido.ch',
+    'https://latidoch.vercel.app',
   ])
 
   return {
@@ -407,7 +408,9 @@ async function handleTest(req: Request, record: Record<string, unknown>) {
 async function handleMessage(req: Request, record: Record<string, unknown>) {
   const conversationId = text(record.conversation_id)
   const senderId = text(record.sender_id)
-  if (!conversationId || !senderId) return json(req, { ok: true, skipped: 'missing_message_fields' })
+  if (!conversationId || !senderId) {
+    return json(req, { ok: true, kind: 'message', skipped: 'missing_message_fields' })
+  }
 
   let conversationResult = await supabase
     .from('conversations')
@@ -434,12 +437,18 @@ async function handleMessage(req: Request, record: Record<string, unknown>) {
   const { data: conversation, error } = conversationResult
 
   if (error) throw error
-  if (!conversation) return json(req, { ok: true, skipped: 'conversation_not_found' })
+  if (!conversation) return json(req, { ok: true, kind: 'message', skipped: 'conversation_not_found', conversationId })
 
   const recipientId = senderId === conversation.sender_id ? conversation.owner_id : conversation.sender_id
-  if (!recipientId || recipientId === senderId) return json(req, { ok: true, skipped: 'no_recipient' })
-  if (recipientId === conversation.sender_id && conversation.deleted_by_sender) return json(req, { ok: true, skipped: 'recipient_deleted_thread' })
-  if (recipientId === conversation.owner_id && conversation.deleted_by_owner) return json(req, { ok: true, skipped: 'recipient_deleted_thread' })
+  if (!recipientId || recipientId === senderId) {
+    return json(req, { ok: true, kind: 'message', skipped: 'no_recipient', conversationId, senderId, recipientId })
+  }
+  if (recipientId === conversation.sender_id && conversation.deleted_by_sender) {
+    return json(req, { ok: true, kind: 'message', skipped: 'recipient_deleted_thread', conversationId, recipientId })
+  }
+  if (recipientId === conversation.owner_id && conversation.deleted_by_owner) {
+    return json(req, { ok: true, kind: 'message', skipped: 'recipient_deleted_thread', conversationId, recipientId })
+  }
 
   const { data: preference, error: preferenceError } = await supabase
     .from('push_notification_preferences')
@@ -448,7 +457,9 @@ async function handleMessage(req: Request, record: Record<string, unknown>) {
     .maybeSingle()
 
   if (preferenceError) throw preferenceError
-  if (preference?.messages_enabled === false) return json(req, { ok: true, skipped: 'messages_disabled' })
+  if (preference?.messages_enabled === false) {
+    return json(req, { ok: true, kind: 'message', skipped: 'messages_disabled', conversationId, recipientId })
+  }
 
   const senderName = senderId === conversation.sender_id
     ? text(conversation.sender_name, 'Latido')
@@ -471,7 +482,7 @@ async function handleMessage(req: Request, record: Record<string, unknown>) {
     data: { kind: 'message', conversationId },
   })
 
-  return json(req, { ok: true, ...result })
+  return json(req, { ok: true, kind: 'message', conversationId, recipientId, ...result })
 }
 
 async function handlePublication(req: Request, table: string, payload: WebhookPayload) {
@@ -520,7 +531,7 @@ async function handlePublication(req: Request, table: string, payload: WebhookPa
     subscriptions: subscriptions.length,
   })
   const result = await notifySubscriptions(subscriptions, notification)
-  return json(req, { ok: true, ...result })
+  return json(req, { ok: true, kind: 'publication', table, ...result })
 }
 
 Deno.serve(async req => {
