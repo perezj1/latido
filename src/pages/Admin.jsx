@@ -45,28 +45,19 @@ function countByDay(items, days = 30) {
   return Object.entries(counts).map(([date, count]) => ({ date, count }))
 }
 
-function weekTrend(data) {
-  const last7 = data.slice(-7).reduce((s, d) => s + d.count, 0)
-  const prev7 = data.slice(-14, -7).reduce((s, d) => s + d.count, 0)
-  if (prev7 === 0) return last7 > 0 ? 100 : 0
-  return Math.round(((last7 - prev7) / prev7) * 100)
-}
-
-function niceMax(v) {
-  if (v <= 0) return 5
-  if (v <= 5) return 5
-  if (v <= 10) return 10
-  if (v <= 20) return 20
-  if (v <= 50) return 50
-  if (v <= 100) return 100
-  return Math.ceil(v / 50) * 50
+function periodTrend(items, days) {
+  const full = countByDay(items, days * 2)
+  const cur  = full.slice(-days).reduce((s, d) => s + d.count, 0)
+  const prev = full.slice(0, days).reduce((s, d) => s + d.count, 0)
+  if (prev === 0) return cur > 0 ? 100 : 0
+  return Math.round(((cur - prev) / prev) * 100)
 }
 
 function SparkBarChart({ data, color }) {
   const rawMax = Math.max(...data.map(d => d.count), 0)
-  const axisMax = niceMax(rawMax)
+  const axisMax = rawMax > 0 ? rawMax : 1
 
-  const LW = 18   // left margin for Y-axis labels
+  const LW = 18
   const W  = 300
   const H  = 68
   const PAD_TOP = 6
@@ -77,8 +68,8 @@ function SparkBarChart({ data, color }) {
   const slot = chartW / n
   const bw   = slot * 0.65
 
-  const midTick = axisMax / 2
-  const ticks   = [0, midTick, axisMax]
+  const mid  = Math.round(axisMax / 2)
+  const ticks = [...new Set([0, mid, axisMax])]
 
   function yPos(value) {
     return PAD_TOP + chartH - (value / axisMax) * chartH
@@ -86,7 +77,6 @@ function SparkBarChart({ data, color }) {
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 68, display: 'block' }}>
-      {/* Grid lines + Y-axis labels */}
       {ticks.map(tick => {
         const y = yPos(tick)
         return (
@@ -104,13 +94,11 @@ function SparkBarChart({ data, color }) {
               fill="#94A3B8"
               fontFamily="system-ui,sans-serif"
             >
-              {tick % 1 === 0 ? tick : tick.toFixed(0)}
+              {tick}
             </text>
           </g>
         )
       })}
-
-      {/* Bars */}
       {data.map((d, i) => {
         const bh = Math.max(2, (d.count / axisMax) * chartH)
         return (
@@ -130,9 +118,11 @@ function SparkBarChart({ data, color }) {
   )
 }
 
-function ChartCard({ title, data, color }) {
+function ChartCard({ title, items, color }) {
+  const [days, setDays] = useState(30)
+  const data  = useMemo(() => countByDay(items, days), [items, days])
   const total = data.reduce((s, d) => s + d.count, 0)
-  const trend = weekTrend(data)
+  const trend = periodTrend(items, days)
   const trendColor = trend > 0 ? '#059669' : trend < 0 ? '#DC2626' : C.mid
   const trendLabel = trend > 0 ? `↑ ${trend}%` : trend < 0 ? `↓ ${Math.abs(trend)}%` : '→ sin cambio'
 
@@ -163,9 +153,30 @@ function ChartCard({ title, data, color }) {
         </span>
       </div>
       <SparkBarChart data={data} color={color} />
-      <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '4px 0 0', textAlign: 'right' }}>
-        últimos 30 días
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {[7, 30].map(d => (
+            <button
+              key={d}
+              onClick={() => setDays(d)}
+              style={{
+                fontFamily: PP, fontSize: 9, fontWeight: 700,
+                padding: '2px 7px', borderRadius: 999,
+                border: `1px solid ${days === d ? C.primary : C.border}`,
+                cursor: 'pointer',
+                background: days === d ? C.primary : 'transparent',
+                color: days === d ? '#fff' : C.light,
+                transition: 'all 0.15s',
+              }}
+            >
+              {d}d
+            </button>
+          ))}
+        </div>
+        <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: 0 }}>
+          últimos {days} días
+        </p>
+      </div>
     </div>
   )
 }
@@ -275,12 +286,6 @@ export default function Admin() {
     banned: users.filter(u => u.banned).length,
     content: recentListings.length + recentJobs.length,
   }), [queue, reports, users, recentListings, recentJobs])
-
-  const chartData = useMemo(() => ({
-    users: countByDay(users),
-    reports: countByDay(reports),
-    content: countByDay([...recentListings, ...recentJobs]),
-  }), [users, reports, recentListings, recentJobs])
 
   const filteredUsers = useMemo(() => {
     if (!userSearch.trim()) return users
@@ -568,9 +573,9 @@ export default function Admin() {
       {/* Charts row */}
       {!loading && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 24 }}>
-          <ChartCard title="Usuarios registrados" data={chartData.users} color={C.primary} />
-          <ChartCard title="Reportes recibidos"   data={chartData.reports} color="#DC2626" />
-          <ChartCard title="Publicaciones"         data={chartData.content} color="#059669" />
+          <ChartCard title="Usuarios registrados" items={users} color={C.primary} />
+          <ChartCard title="Reportes recibidos"   items={reports} color="#DC2626" />
+          <ChartCard title="Publicaciones"         items={[...recentListings, ...recentJobs]} color="#059669" />
         </div>
       )}
 
