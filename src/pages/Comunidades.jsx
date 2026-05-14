@@ -14,7 +14,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Card, Tag, PillFilters, EmptyState, SegmentedTabs, Modal, InfoBanner, Stars, ReviewCard, ReviewForm, PhotoGallery } from '../components/UI'
+import { Tag, PillFilters, EmptyState, SegmentedTabs, Modal, InfoBanner, Stars, ReviewCard, ReviewForm, PhotoGallery } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import toast from 'react-hot-toast'
 
@@ -41,6 +41,40 @@ const EVENT_EMOJI = {
   networking:'💼',
   familia:'👨‍👩‍👧',
 }
+
+const CARD_STACK_GAP = 10
+const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
+const LIST_CARD_STYLE = {
+  background:'#fff',
+  borderRadius:16,
+  border:`1px solid ${C.border}`,
+  padding:10,
+  display:'flex',
+  alignItems:'stretch',
+  gap:12,
+  width:'100%',
+  textAlign:'left',
+  cursor:'pointer',
+  position:'relative',
+}
+const LIST_THUMB_STYLE = {
+  width:96,
+  height:108,
+  minHeight:108,
+  alignSelf:'flex-start',
+  background:'#fff',
+  borderRadius:14,
+  overflow:'hidden',
+  display:'flex',
+  alignItems:'center',
+  justifyContent:'center',
+  flexShrink:0,
+  position:'relative',
+}
+const LIST_MEDIA_STYLE = { width:'100%', height:'100%', objectFit:'contain', display:'block' }
+const LIST_FALLBACK_STYLE = { width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:38 }
+const CLAMP_1 = { minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }
+const CLAMP_2 = { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }
 
 const COMMUNITY_OPTIONS = COMMUNITY_CATS
   .filter(item => item.id !== 'fe')
@@ -273,6 +307,36 @@ function LocationContactsPanel({ locations }) {
   )
 }
 
+function CommunityCard({ group, onClick }) {
+  const hasImage = !!group.photo_url
+  return (
+    <div
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => e.key === 'Enter' && onClick()}
+      style={{ ...LIST_CARD_STYLE, minHeight:126 }}
+    >
+      <div style={{ ...LIST_THUMB_STYLE, background:hasImage ? '#fff' : C.primaryLight }}>
+        {hasImage ? (
+          <img src={group.photo_url} alt={group.name} style={LIST_MEDIA_STYLE} />
+        ) : (
+          <div style={LIST_FALLBACK_STYLE}>{group.emoji}</div>
+        )}
+      </div>
+      <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:5 }}>
+          {group.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+          <Tag bg={C.bg} color={C.mid}>{group.city}</Tag>
+        </div>
+        <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{group.name}</h3>
+        {!isWebCommunity(group.contact) && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.3, margin:'0 0 5px', ...CLAMP_1 }}>{group.members} miembros</p>}
+        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', ...CLAMP_2 }}>{group.desc}</p>
+      </div>
+    </div>
+  )
+}
+
 function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap }) {
   const category = NEGOCIO_TYPES.find(type => type.id === business.type)
   const services = servicesMap[business.id] || business.services || []
@@ -288,60 +352,61 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
   return (
     <div
       onClick={onClick}
-      style={{ background:'#fff', borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden', cursor:'pointer', transition:'all .2s' }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(37,99,235,0.12)'; e.currentTarget.style.transform = 'translateY(-3px)' }}
+      style={{ ...LIST_CARD_STYLE, display:'grid', gridTemplateColumns:'96px minmax(0,1fr)', alignItems:'start', gap:'10px 12px', minHeight:132, transition:'all .2s' }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,99,235,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
       onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
     >
-      <div className="provider-cover" style={{ position:'relative', overflow:'hidden', background:C.primaryLight }}>
+      <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight }}>
         {cover ? (
-          <img src={cover} alt={business.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+          <img src={cover} alt={business.name} style={LIST_MEDIA_STYLE} />
         ) : (
-          <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:48 }}>{business.emoji}</div>
+          <div style={LIST_FALLBACK_STYLE}>{business.emoji}</div>
         )}
-        <div style={{ position:'absolute', top:10, left:10, display:'flex', gap:5 }}>
-          {business.featured && <Tag bg={C.primary} color="#fff">⭐ Destacado</Tag>}
-          {business.verified && <Tag bg="rgba(255,255,255,0.95)" color="#065F46">✓</Tag>}
-        </div>
-        {photos.length > 0 && (
-          <span style={{ position:'absolute', bottom:10, left:10, fontFamily:PP, fontSize:9, fontWeight:600, background:'rgba(0,0,0,0.5)', color:'#fff', padding:'3px 8px', borderRadius:10 }}>
-            📷 {photos.length} fotos
+        {photos.length > 1 && (
+          <span style={{ position:'absolute', bottom:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(15,23,42,0.72)', color:'#fff', padding:'3px 7px', borderRadius:999 }}>
+            Fotos {photos.length}
           </span>
         )}
-        <span style={{ position:'absolute', bottom:10, right:10, fontFamily:PP, fontSize:10, fontWeight:600, background:'rgba(255,255,255,0.92)', color:C.mid, padding:'3px 9px', borderRadius:10 }}>
-          {category?.label || 'Negocio'}
-        </span>
       </div>
 
-      <div style={{ padding:'14px 16px 16px' }}>
-        <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:4, lineHeight:1.3 }}>{business.name}</h3>
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
+      <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap', marginBottom:5 }}>
+          <Tag bg={C.primaryLight} color={C.primary}>{category?.label || 'Negocio'}</Tag>
+          {business.featured && <Tag bg={C.primary} color="#fff">⭐ Destacado</Tag>}
+          {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+        </div>
+        <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{business.name}</h3>
+        <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:6, flexWrap:'wrap' }}>
           {rating !== null ? (
             <Stars rating={rating} size={13} showNumber count={reviews.length} />
           ) : (
             <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>Sin reseñas aún</span>
           )}
-          <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>· 📍 {business.city}</span>
+          <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{business.city}</span>
         </div>
-        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.55, marginBottom:12, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{business.desc}</p>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{business.desc}</p>
+      </div>
+
+      <div style={{ gridColumn:'1 / -1', display:'flex', flexDirection:'column', gap:8, minWidth:0 }}>
         {services.length > 0 && (
-          <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:12 }}>
-            {services.slice(0, 3).map(service => <Tag key={service} bg={C.primaryLight} color={C.primary}>{service}</Tag>)}
-            {services.length > 3 && <Tag bg={C.primaryLight} color={C.primary}>+{services.length - 3} más</Tag>}
+          <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+            {services.slice(0, 4).map(service => <Tag key={service} bg={C.bg} color={C.mid}>{service}</Tag>)}
+            {services.length > 4 && <Tag bg={C.bg} color={C.mid}>+{services.length - 4}</Tag>}
           </div>
         )}
-        <div style={{ display:'flex', gap:8 }}>
-          <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flex:1 }}>Ver perfil →</div>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+          <span style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, flexShrink:0 }}>Ver perfil</span>
           {hasContact && (
             <button
               onClick={e => { e.stopPropagation(); setShowContacts(v => !v) }}
-              style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:showContacts ? C.primaryDark : C.primaryLight, color:showContacts ? '#fff' : C.primary, border:'none', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flex:1, cursor:'pointer' }}
+              style={{ fontFamily:PP, fontWeight:700, fontSize:11, background:showContacts ? C.primaryDark : C.primaryLight, color:showContacts ? '#fff' : C.primary, border:'none', padding:'7px 11px', borderRadius:999, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}
             >
-              📬 Contacto
+              Contacto
             </button>
           )}
         </div>
         {showContacts && (
-          <div onClick={e => e.stopPropagation()} style={{ marginTop:8 }}>
+          <div onClick={e => e.stopPropagation()}>
             {locationContacts ? (
               <LocationContactsPanel locations={locationContacts} />
             ) : (
@@ -626,8 +691,8 @@ function EventDetail({ event, onClose }) {
   return (
     <Modal show={!!event} onClose={onClose} title={event.title} syncHistory={false}>
       {event.img && (
-        <div style={{ borderRadius:18, overflow:'hidden', marginBottom:16 }}>
-          <img src={event.img} alt={event.title} style={{ width:'100%', height:220, objectFit:'cover' }} />
+        <div style={{ borderRadius:18, overflow:'hidden', marginBottom:16, background:'#fff' }}>
+          <img src={event.img} alt={event.title} style={{ width:'100%', height:'auto', maxHeight:260, objectFit:'contain', display:'block' }} />
         </div>
       )}
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
@@ -957,32 +1022,9 @@ export default function Comunidades() {
           ) : filteredComm.length === 0 ? (
             <EmptyState emoji="😕" title="Sin resultados" action="Ver todas" onAction={() => { setCat(''); setSearch(''); scrollPageTop() }} />
           ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
               {filteredComm.map(group => (
-                <Card key={group.id} onClick={() => openCommunityDetails(group)} style={{ padding:0, overflow:'hidden' }}>
-                  {group.photo_url ? (
-                    <div style={{ position:'relative', height:180, overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
-                    </div>
-                  ) : null}
-                  <div style={{ padding:'14px 16px 16px' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                        {group.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
-                      </div>
-                      <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>📍 {group.city}</span>
-                    </div>
-                    {!group.photo_url && (
-                      <span style={{ fontSize:36, display:'block', marginBottom:10 }}>{group.emoji}</span>
-                    )}
-                    <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:5, lineHeight:1.3 }}>{group.name}</h3>
-                    {!isWebCommunity(group.contact) && <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginBottom:8 }}>👥 {group.members} miembros</p>}
-                    <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, marginBottom:14, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{group.desc}</p>
-                    <div style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', padding:'10px 0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                      Ver grupo →
-                    </div>
-                  </div>
-                </Card>
+                <CommunityCard key={group.id} group={group} onClick={() => openCommunityDetails(group)} />
               ))}
             </div>
           )}
@@ -1000,7 +1042,7 @@ export default function Comunidades() {
           {loading ? (
             <div className="skeleton" style={{ height:260, borderRadius:20 }} />
           ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
               {filteredNeg.map(business => (
                 <BusinessCard
                   key={business.id}
@@ -1050,29 +1092,29 @@ export default function Comunidades() {
                 <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>¡Sé el primero en publicar un evento!</p>
               </div>
             ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
                 {events.map(event => (
                   <div
                     key={event.id}
                     onClick={() => openEventDetails(event)}
-                    style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, overflow:'hidden', cursor:'pointer', display:'flex', gap:0 }}
+                    style={{ ...LIST_CARD_STYLE, minHeight:118 }}
                   >
                     {event.img ? (
-                      <div style={{ width:90, flexShrink:0 }}>
-                        <img src={event.img} alt={event.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      <div style={LIST_THUMB_STYLE}>
+                        <img src={event.img} alt={event.title} style={LIST_MEDIA_STYLE} />
                       </div>
                     ) : (
-                      <div style={{ width:90, flexShrink:0, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:32 }}>
+                      <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight, fontSize:32 }}>
                         {event.emoji}
                       </div>
                     )}
-                    <div style={{ padding:'12px 14px', flex:1, minWidth:0 }}>
+                    <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
                       <div style={{ display:'flex', gap:6, marginBottom:5, flexWrap:'wrap' }}>
                         <Tag bg={C.primaryLight} color={C.primary}>{event.emoji} {event.type}</Tag>
-                        <Tag bg={C.bg} color={C.mid}>📍 {event.city}</Tag>
+                        <Tag bg={C.bg} color={C.mid}>{event.city}</Tag>
                       </div>
-                      <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, marginBottom:3, lineHeight:1.3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{event.title}</h3>
-                      <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{event.day} {event.month} · {event.time} · 🎟 {event.price}</p>
+                      <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 5px', lineHeight:1.32, ...CLAMP_2 }}>{event.title}</h3>
+                      <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, margin:'auto 0 0', ...CLAMP_1 }}>{event.day} {event.month} - {event.time} - {event.price}</p>
                     </div>
                   </div>
                 ))}

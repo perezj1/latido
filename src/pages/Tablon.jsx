@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
-import { fetchAvatarsByIds } from '../lib/profiles'
+import { fetchPublicProfilesByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters, PhotoGallery } from '../components/UI'
@@ -54,6 +54,37 @@ const TABLON_CACHE = {
 }
 const CARD_STACK_GAP = 10
 const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
+const LIST_CARD_STYLE = {
+  background:'#fff',
+  borderRadius:16,
+  border:`1px solid ${C.border}`,
+  padding:10,
+  display:'flex',
+  alignItems:'stretch',
+  gap:12,
+  width:'100%',
+  textAlign:'left',
+  cursor:'pointer',
+  position:'relative',
+}
+const LIST_THUMB_STYLE = {
+  width:96,
+  height:108,
+  minHeight:108,
+  alignSelf:'flex-start',
+  background:'#fff',
+  borderRadius:14,
+  overflow:'hidden',
+  display:'flex',
+  alignItems:'center',
+  justifyContent:'center',
+  flexShrink:0,
+  position:'relative',
+}
+const LIST_MEDIA_STYLE = { width:'100%', height:'100%', objectFit:'contain', display:'block' }
+const LIST_FALLBACK_STYLE = { width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:38 }
+const CLAMP_1 = { minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }
+const CLAMP_2 = { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }
 const JOB_INTENT_TAG_STYLE = {
   ofrece:{ bg:'#E0F2FE', color:'#0369A1' },
   busca:{ bg:'#FEF3C7', color:'#92400E' },
@@ -91,44 +122,38 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
   const location = formatAdLocation(ad)
   const displayEmoji = getAdDisplayEmoji(ad)
   const subOption = getAdSubOption(normalizedCat, ad.sub)
+  const metaBits = [ad.user_name || ad.user || 'Usuario', location || ad.canton, dateStr].filter(Boolean)
   return (
-    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
-      {coverPhoto ? (
-        <div style={{ position:'relative' }}>
-          <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:220, objectFit:'contain', background:'#fff', display:'block' }}/>
-          {photos.length > 1 && (
-            <span style={{ position:'absolute', left:10, bottom:10, fontFamily:PP, fontSize:10, fontWeight:800, color:'#fff', background:'rgba(15,23,42,0.72)', borderRadius:999, padding:'4px 8px' }}>
-              📷 {photos.length}
-            </span>
-          )}
-        </div>
-      ) : (
-        <div style={{ height:132, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:54 }}>
-          {displayEmoji}
-        </div>
-      )}
-      <div style={{ padding:'13px 15px' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:8 }}>
-          <div style={{ display:'flex', gap:5, flexWrap:'wrap', minWidth:0 }}>
+    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:136 }}>
+      <div style={LIST_THUMB_STYLE}>
+        {coverPhoto ? (
+          <img src={coverPhoto} alt={ad.title} style={LIST_MEDIA_STYLE}/>
+        ) : (
+          <div style={{ ...LIST_FALLBACK_STYLE, background:C.primaryLight }}>
+            {displayEmoji}
+          </div>
+        )}
+        {photos.length > 1 && (
+          <span style={{ position:'absolute', left:8, bottom:8, fontFamily:PP, fontSize:9, fontWeight:800, color:'#fff', background:'rgba(15,23,42,0.72)', borderRadius:999, padding:'3px 7px' }}>
+            Fotos {photos.length}
+          </span>
+        )}
+      </div>
+      <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>
+        <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.32, margin:'0 0 4px', ...CLAMP_2 }}>{ad.title}</h3>
+        {ad.price && <span style={{ display:'block', maxWidth:'100%', fontFamily:PP, fontSize:14, fontWeight:800, color:C.primary, lineHeight:1.15, marginBottom:5, ...CLAMP_1 }}>{fmtPrice(ad.price)}</span>}
+        {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:'0 0 7px', whiteSpace:'pre-line', ...CLAMP_2 }}>{ad.desc}</p>}
+        <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:7 }}>
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
           {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
           <PrivacyTag privacy={ad.privacy}/>
-          </div>
-          <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ width:34, height:34, fontSize:17, flexShrink:0 }} />
         </div>
-        <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.35, marginBottom:4, ...WRAPPING_TEXT }}>{ad.title}</h3>
-        {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.5, marginBottom:8, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{ad.desc}</p>}
-        <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
-          <div style={{ display:'flex', gap:7, alignItems:'flex-start', minWidth:0 }}>
-            <Avatar name={ad.user_name || ad.user} size={20} src={avatarSrc}/>
-            <span style={{ display:'flex', flexDirection:'column', gap:1, minWidth:0 }}>
-              <span style={{ fontFamily:PP, fontSize:11, fontWeight:600, color:C.light, lineHeight:1.25, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{ad.user_name || ad.user || 'Usuario'}</span>
-              <span style={{ fontFamily:PP, fontSize:10, color:C.light, lineHeight:1.25, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', minWidth:0 }}>📍 {location || ad.canton}{dateStr ? ` · ${dateStr}` : ''}</span>
-            </span>
-          </div>
-          {ad.price && <span style={{ display:'block', alignSelf:'flex-end', maxWidth:'100%', fontFamily:PP, fontSize:13, fontWeight:800, color:C.primary, lineHeight:1.15, textAlign:'right', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtPrice(ad.price)}</span>}
+        <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:'auto', minWidth:0 }}>
+          <Avatar name={ad.user_name || ad.user} size={18} src={avatarSrc}/>
+          <span style={{ fontFamily:PP, fontSize:10, color:C.light, lineHeight:1.3, ...CLAMP_1 }}>{metaBits.join(' - ')}</span>
         </div>
       </div>
+      <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ position:'absolute', top:10, right:10, width:34, height:34, fontSize:17 }} />
     </div>
   )
 }
@@ -206,35 +231,36 @@ function AdDetail({ ad, user, avatarSrc, isFav, onToggleFav }) {
 }
 
 /* ── Compact job card (list view) ───────────────────────── */
-function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc }) {
+function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
   const intent = getJobIntentTag(job)
   const isSeekingJob = intent.id === 'busca'
+  const mediaSrc = job.logo_url
+  const dateStr = job.ts || (job.created_at ? new Date(job.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
+  const author = authorName || job.user_name || job.user || 'Usuario'
+  const metaBits = [author, job.city || job.canton, dateStr].filter(Boolean)
   return (
-    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14, width:'100%', textAlign:'left', cursor:'pointer', position:'relative' }}>
-      <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
-        {job.logo_url
-          ? <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
-          : (job.emoji || '💼')}
+    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:122 }}>
+      <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight }}>
+        {mediaSrc
+          ? <img src={mediaSrc} alt={job.company || job.title} style={LIST_MEDIA_STYLE} />
+          : <div style={LIST_FALLBACK_STYLE}>{job.emoji || '💼'}</div>}
       </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
+      <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>
+        <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.32, margin:'0 0 4px', ...CLAMP_2 }}>{job.title || job.company}</h3>
+        {job.salary && <p style={{ fontFamily:PP, fontSize:14, fontWeight:800, color:'#059669', lineHeight:1.15, margin:'0 0 5px', ...CLAMP_1 }}>{fmtPrice(job.salary)}</p>}
+        {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.35, margin:'0 0 3px', ...CLAMP_1 }}>{isSeekingJob ? '👤' : '🏢'} {job.company}</p>}
+        {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, margin:'0 0 7px', ...CLAMP_1 }}>{languages}</p>}
+        <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:'auto' }}>
           <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
-          <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, lineHeight:1.3, margin:0, flex:'1 1 180px', ...WRAPPING_TEXT }}>{job.title || job.company}</h3>
           {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
         </div>
-        {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.35, margin:'0 0 2px', ...WRAPPING_TEXT }}>{isSeekingJob ? '👤' : '🏢'} {job.company}</p>}
-        <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.35, margin:'0 0 2px', ...WRAPPING_TEXT }}>📍 {job.city || job.canton}</p>
-        {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, margin:0, ...WRAPPING_TEXT }}>🗣️ {languages}</p>}
-        {job.salary && <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:'#059669', lineHeight:1.2, margin:'4px 0 0', ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>}
+        <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:7, minWidth:0 }}>
+          <Avatar name={author} size={18} src={avatarSrc}/>
+          <span style={{ fontFamily:PP, fontSize:10, color:C.light, lineHeight:1.3, ...CLAMP_1 }}>{metaBits.join(' - ')}</span>
+        </div>
       </div>
-      <button
-        onClick={e => { e.stopPropagation(); onToggleFav?.() }}
-        style={{ background:'none', border:'none', cursor:'pointer', fontSize:18, padding:'4px', flexShrink:0 }}
-        aria-label={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-      >
-        {isFav ? '❤️' : '🤍'}
-      </button>
+      <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ position:'absolute', top:10, right:10, width:34, height:34, fontSize:17 }} />
     </div>
   )
 }
@@ -310,10 +336,10 @@ function JobDetail({ job, user, isFav, onToggleFav }) {
 /* ── Portal card ─────────────────────────────────────────── */
 function PortalCard({ portal, defaultEmoji = '🏠', onClick }) {
   return (
-    <button onClick={onClick} style={{ background:'#fff', borderRadius:14, border:`1px solid ${C.border}`, padding:'15px 17px', display:'flex', alignItems:'center', gap:14, width:'100%', textAlign:'left', cursor:'pointer' }}>
-      <div style={{ width:52, height:52, background:C.primaryLight, borderRadius:16, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
+    <button onClick={onClick} style={{ ...LIST_CARD_STYLE, minHeight:106, borderRadius:14 }}>
+      <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight, fontSize:24 }}>
         {portal.photo_url
-          ? <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+          ? <img src={portal.photo_url} alt={portal.name} style={LIST_MEDIA_STYLE} />
           : <span>{defaultEmoji}</span>}
       </div>
       <div style={{ flex:1, minWidth:0 }}>
@@ -366,7 +392,7 @@ export default function Tablon() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { isLoggedIn, user } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
-  const [userAvatars, setUserAvatars] = useState(new Map())
+  const [userProfiles, setUserProfiles] = useState(new Map())
   const [ads, setAds] = useState([])
   const [jobs, setJobs] = useState([])
   const [housingPortals, setHousingPortals] = useState([])
@@ -512,7 +538,7 @@ export default function Tablon() {
       ...jobs.map(j => j.user_id),
     ]
     if (!ids.length) return
-    fetchAvatarsByIds(ids).then(setUserAvatars)
+    fetchPublicProfilesByIds(ids).then(setUserProfiles)
   }, [ads, jobs])
 
   useEffect(() => {
@@ -561,8 +587,8 @@ export default function Tablon() {
     ).map(a => ({
       id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
       canton: a.canton, type: ['busca','ofrece'].includes(a.type) ? (a.sub || '') : a.type, job_intent: getJobIntentId(a), salary: a.salary, emoji: a.emoji || '💼',
-      logo_url: a.img_url || '', lang: a.lang, languages: a.languages,
-      desc: a.desc, user_id: a.user_id, created_at: a.created_at,
+      logo_url: getAdPhotos(a)[0] || '', lang: a.lang, languages: a.languages,
+      desc: a.desc, user_id: a.user_id, user_name: a.user_name, user: a.user, created_at: a.created_at,
     }))
     return [...fromJobs, ...fromAds]
   }, [ads, canton, deferredSearch, isLoggedIn, jobIntent, jobType, jobs, plz])
@@ -683,7 +709,7 @@ export default function Tablon() {
       {/* Results */}
       {loading ? (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:isEmpleos?90:160, borderRadius:16 }}/>)}
+          {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:isEmpleos?122:136, borderRadius:16 }}/>)}
         </div>
       ) : isEmpleos ? (
         <>
@@ -713,7 +739,7 @@ export default function Tablon() {
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>EMPLEOS DE LA COMUNIDAD</p>
               <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
                 {filteredJobs.map(j => (
-                  <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userAvatars.get(j.user_id)} />
+                  <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userProfiles.get(j.user_id)?.avatarUrl} authorName={userProfiles.get(j.user_id)?.name} />
                 ))}
                 <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
                   <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Buscas u ofreces trabajo?</h3>
@@ -742,7 +768,7 @@ export default function Tablon() {
           {filteredAds.length > 0 && (
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>ANUNCIOS DE LA COMUNIDAD</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userAvatars.get(ad.user_id)} />)}</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userProfiles.get(ad.user_id)?.avatarUrl} />)}</div>
             </>
           )}
         </>
@@ -756,9 +782,9 @@ export default function Tablon() {
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
           {tablonItems.map(({ kind, item }) => kind === 'job' ? (
-            <JobCard key={`job-${item.id}`} job={item} onClick={() => openJobDetails(item)} isFav={isFavorite('jobs', item.id)} onToggleFav={() => toggleFavorite('jobs', item.id)} avatarSrc={userAvatars.get(item.user_id)} />
+            <JobCard key={`job-${item.id}`} job={item} onClick={() => openJobDetails(item)} isFav={isFavorite('jobs', item.id)} onToggleFav={() => toggleFavorite('jobs', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} authorName={userProfiles.get(item.user_id)?.name} />
           ) : (
-            <AdCard key={`ad-${item.id}`} ad={item} onClick={() => openAdDetails(item)} isFav={isFavorite('ads', item.id)} onToggleFav={() => toggleFavorite('ads', item.id)} avatarSrc={userAvatars.get(item.user_id)} />
+            <AdCard key={`ad-${item.id}`} ad={item} onClick={() => openAdDetails(item)} isFav={isFavorite('ads', item.id)} onToggleFav={() => toggleFavorite('ads', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} />
           ))}
         </div>
       )}
@@ -875,7 +901,7 @@ export default function Tablon() {
           <AdDetail
             ad={selectedAd}
             user={user}
-            avatarSrc={userAvatars.get(selectedAd.user_id)}
+            avatarSrc={userProfiles.get(selectedAd.user_id)?.avatarUrl}
             isFav={isFavorite('ads', selectedAd.id)}
             onToggleFav={() => toggleFavorite('ads', selectedAd.id)}
           />

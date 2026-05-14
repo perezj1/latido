@@ -16,19 +16,19 @@ export async function fetchAvatarsByIds(ids) {
   if (toFetch.length) {
     let response = await supabase
       .from('profile_public')
-      .select('id, avatar_url')
+      .select('id, name, avatar_url')
       .in('id', toFetch)
 
     if (response.error) {
       response = await supabase
         .from('profiles')
-        .select('id, avatar_url')
+        .select('id, name, avatar_url')
         .in('id', toFetch)
     }
 
     const foundIds = new Set()
     ;(response.data || []).forEach(row => {
-      cache.set(row.id, { avatarUrl: row.avatar_url || null, ts: now })
+      cache.set(row.id, { name: row.name || null, avatarUrl: row.avatar_url || null, ts: now })
       foundIds.add(row.id)
     })
     // cache misses so we don't re-fetch every render
@@ -38,6 +38,15 @@ export async function fetchAvatarsByIds(ids) {
   }
 
   return new Map(uniqueIds.map(id => [id, cache.get(id)?.avatarUrl || null]))
+}
+
+export async function fetchPublicProfilesByIds(ids) {
+  await fetchAvatarsByIds(ids)
+  const uniqueIds = [...new Set((ids || []).filter(Boolean))]
+  return new Map(uniqueIds.map(id => {
+    const hit = cache.get(id)
+    return [id, { name: hit?.name || null, avatarUrl: hit?.avatarUrl || null }]
+  }))
 }
 
 // Invalidate one entry after the user updates their own avatar
