@@ -484,9 +484,6 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         Unirme a Latido
       </Link>
 
-      <Link to="/tablon" className="latido-cta-ghost" style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, background: 'rgba(255,255,255,0.14)', color: '#fff', textDecoration: 'none', padding: '15px 28px', borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 7, border: '1.5px solid rgba(255,255,255,0.32)', backdropFilter: 'blur(6px)' }}>
-        Echar un vistazo
-      </Link>
     </div>
 
     <p className="latido-enter-5" style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.65)', marginBottom: 56 }}>
@@ -618,9 +615,6 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link to="/auth" className="latido-cta-primary" style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, background: C.primary, color: '#fff', textDecoration: 'none', padding: '16px 36px', borderRadius: 16, display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 12px 32px rgba(37,99,235,0.38)' }}>
                 Unirme ahora →
-              </Link>
-              <Link to="/tablon" className="latido-cta-ghost" style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, background: '#fff', color: C.primary, textDecoration: 'none', padding: '16px 28px', borderRadius: 16, display: 'inline-flex', alignItems: 'center', gap: 7, border: `1.5px solid ${C.primaryMid}` }}>
-                Ver anuncios
               </Link>
             </div>
             <p style={{ fontFamily: PP, fontSize: 11, color: C.light, marginTop: 18 }}>
