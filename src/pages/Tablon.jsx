@@ -6,7 +6,7 @@ import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
-import { Tag, PrivacyTag, Avatar, Sheet, Btn, PillFilters, PhotoGallery } from '../components/UI'
+import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 import ReportButton from '../components/ReportButton'
 
@@ -111,6 +111,51 @@ function FavoriteButton({ isFav, onClick, style={} }) {
   )
 }
 
+function RelatedRail({ title, children, empty=false }) {
+  if (empty) return null
+  return (
+    <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}`, background:'#fff' }}>
+      <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 12px' }}>{title}</h2>
+      <div className="no-scroll" style={{ display:'flex', gap:10, overflowX:'auto', paddingBottom:4, margin:'0 -20px', paddingLeft:20, paddingRight:20 }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function RelatedAdCard({ ad, onClick }) {
+  const photos = getAdPhotos(ad)
+  const cat = getAdDisplayCat(ad)
+  return (
+    <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
+      <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
+        {photos[0] ? <img src={photos[0]} alt={ad.title} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : getAdDisplayEmoji(ad)}
+      </div>
+      <div style={{ padding:10 }}>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{ad.title}</p>
+        {ad.price && <p style={{ fontFamily:PP, fontWeight:900, fontSize:13, color:C.primary, margin:'0 0 5px', ...CLAMP_1 }}>{fmtPrice(ad.price)}</p>}
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{cat?.label || 'Anuncio'}</p>
+      </div>
+    </button>
+  )
+}
+
+function RelatedJobCard({ job, onClick }) {
+  const intent = getJobIntentTag(job)
+  return (
+    <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
+      <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
+        {job.logo_url ? <img src={job.logo_url} alt={job.title || job.company} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : (job.emoji || '💼')}
+      </div>
+      <div style={{ padding:10 }}>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{job.title || job.company}</p>
+        {job.salary && <p style={{ fontFamily:PP, fontWeight:900, fontSize:13, color:'#059669', margin:'0 0 5px', ...CLAMP_1 }}>{fmtPrice(job.salary)}</p>}
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{intent.label}</p>
+      </div>
+    </button>
+  )
+}
+
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
   const normalizedCat = getAdCategoryId(ad)
@@ -159,7 +204,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
 }
 
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
-function AdDetail({ ad, user, avatarSrc, isFav, onToggleFav }) {
+function AdDetail({ ad, user, avatarSrc, isFav, onToggleFav, relatedAds=[], onOpenRelatedAd }) {
   const navigate = useNavigate()
   const normalizedCat = getAdCategoryId(ad)
   const cat = getAdDisplayCat(ad)
@@ -172,60 +217,86 @@ function AdDetail({ ad, user, avatarSrc, isFav, onToggleFav }) {
   const subOption = getAdSubOption(normalizedCat, ad.sub)
 
   return (
-    <div>
-      {photos.length > 1 ? (
-        <PhotoGallery photos={photos.slice(1)} mainPhoto={coverPhoto} />
-      ) : coverPhoto && (
-        <div style={{ borderRadius:12, overflow:'hidden', marginBottom:14, background:'#fff' }}>
-          <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:280, objectFit:'contain', display:'block' }}/>
-        </div>
-      )}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:10 }}>
-        <div style={{ display:'flex', gap:5, flexWrap:'wrap', minWidth:0 }}>
-        <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-        {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
-        <PrivacyTag privacy={ad.privacy}/>
-        {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
-        </div>
-        <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ flexShrink:0 }} />
-      </div>
-      <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:16, color:C.text, lineHeight:1.35, marginBottom:8, ...WRAPPING_TEXT }}>{ad.title}</h3>
-      {ad.desc && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:14, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>{ad.desc}</p>}
-      <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:18 }}>
-        <div style={{ display:'flex', gap:8, alignItems:'flex-start', minWidth:0 }}>
-          <Avatar name={ad.user_name || ad.user} size={22} src={avatarSrc}/>
-          <span style={{ display:'flex', flexDirection:'column', gap:2, minWidth:0 }}>
-            <span style={{ fontFamily:PP, fontSize:12, fontWeight:600, color:C.light, lineHeight:1.3, ...WRAPPING_TEXT }}>{ad.user_name || ad.user || 'Usuario'}</span>
-            <span style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, ...WRAPPING_TEXT }}>
-              📍 {location || ad.canton}
-              {(ad.ts || ad.created_at) ? ` · ${ad.ts || new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}` : ''}
-            </span>
-          </span>
-        </div>
-        {ad.price && <span style={{ display:'block', alignSelf:'flex-start', maxWidth:'100%', fontFamily:PP, fontSize:16, fontWeight:800, color:C.primary, lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtPrice(ad.price)}</span>}
+    <div style={{ background:'#fff' }}>
+      <div style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
+        {photos.length > 1 ? (
+          <div style={{ padding:'10px 14px 0' }}>
+            <PhotoGallery photos={photos.slice(1)} mainPhoto={coverPhoto} />
+          </div>
+        ) : coverPhoto ? (
+          <div style={{ width:'100%', minHeight:260, maxHeight:420, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+            <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:420, objectFit:'contain', display:'block' }}/>
+          </div>
+        ) : (
+          <div style={{ height:260, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:64 }}>
+            {getAdDisplayEmoji(ad)}
+          </div>
+        )}
       </div>
 
-      {!isOwnAd && user ? (
-        <button onClick={() => navigate(`/mensajes?adId=${ad.id}${recipientName ? `&recipientName=${recipientName}` : ''}`)}
-          style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:'#F0FDF4', color:'#16A34A', border:'1.5px solid #86EFAC', borderRadius:13, padding:'13px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-          💬 Enviar mensaje
-        </button>
-      ) : !user ? (
-        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:13, padding:'13px 16px', textAlign:'center' }}>
-          <p style={{ fontFamily:PP, fontSize:12, color:C.primaryDark, margin:'0 0 8px' }}>Inicia sesión para contactar</p>
-          <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:10, padding:'8px 16px', display:'inline-block' }}>Entrar →</a>
+      <div style={{ padding:'22px 20px 16px', borderBottom:`1px solid ${C.border}` }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14 }}>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', minWidth:0 }}>
+            <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
+            {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
+            <PrivacyTag privacy={ad.privacy}/>
+            {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+          </div>
+          <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ width:36, height:36, fontSize:18, flexShrink:0 }} />
         </div>
-      ) : null}
-      {user && !isOwnAd && (
-        <ReportButton
-          contentType="listing"
-          contentId={ad.id}
-          ownerId={ad.user_id}
-          title="Reportar anuncio"
-          metadata={{ title: ad.title, cat: normalizedCat, sub: ad.sub }}
-          style={{ width:'100%', marginTop:8 }}
-        />
+        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, lineHeight:1.18, margin:'0 0 12px', ...WRAPPING_TEXT }}>{ad.title}</h1>
+        <div style={{ display:'flex', gap:9, alignItems:'center', minWidth:0 }}>
+          <Avatar name={ad.user_name || ad.user} size={34} src={avatarSrc}/>
+          <div style={{ minWidth:0 }}>
+            <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:C.text, margin:'0 0 2px', ...WRAPPING_TEXT }}>{ad.user_name || ad.user || 'Usuario'}</p>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.4, margin:0, ...WRAPPING_TEXT }}>
+              {location || ad.canton}
+              {(ad.ts || ad.created_at) ? ` - ${ad.ts || new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}` : ''}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding:'18px 20px', borderBottom:`1px solid ${C.border}` }}>
+        {ad.price && (
+          <>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 4px' }}>Precio</p>
+            <p style={{ fontFamily:PP, fontWeight:900, fontSize:28, color:C.primary, lineHeight:1.1, margin:'0 0 16px', ...WRAPPING_TEXT }}>{fmtPrice(ad.price)}</p>
+          </>
+        )}
+        {!isOwnAd && user ? (
+          <button onClick={() => navigate(`/mensajes?adId=${ad.id}${recipientName ? `&recipientName=${recipientName}` : ''}`)}
+            style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:14, background:'#10B981', color:'#fff', border:'none', borderRadius:8, padding:'15px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginBottom:10 }}>
+            Enviar mensaje
+          </button>
+        ) : !user ? (
+          <a href="/auth" style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:8, padding:'15px 16px', display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box', marginBottom:10 }}>Inicia sesión para contactar</a>
+        ) : null}
+        {user && !isOwnAd && (
+          <ReportButton
+            contentType="listing"
+            contentId={ad.id}
+            ownerId={ad.user_id}
+            title="Reportar"
+            metadata={{ title: ad.title, cat: normalizedCat, sub: ad.sub }}
+            style={{ width:'100%' }}
+          />
+        )}
+      </div>
+
+      {ad.desc && (
+        <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 10px' }}>Descripción</h2>
+          <p style={{ fontFamily:PP, fontSize:14, color:C.mid, lineHeight:1.75, margin:0, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>{ad.desc}</p>
+        </div>
       )}
+
+      <RelatedRail title="Anuncios parecidos" empty={!relatedAds.length}>
+        {relatedAds.map(item => (
+          <RelatedAdCard key={item.id} ad={item} onClick={() => onOpenRelatedAd?.(item)} />
+        ))}
+      </RelatedRail>
+
     </div>
   )
 }
@@ -266,69 +337,98 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
 }
 
 /* ── Full job detail (inside Sheet) ─────────────────────── */
-function JobDetail({ job, user, isFav, onToggleFav }) {
+function JobDetail({ job, user, isFav, onToggleFav, avatarSrc, authorName, relatedJobs=[], onOpenRelatedJob }) {
   const navigate = useNavigate()
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
   const isOwnJob = user && job.user_id === user.id
   const intent = getJobIntentTag(job)
   const isSeekingJob = intent.id === 'busca'
+  const author = authorName || job.user_name || job.user || 'Usuario'
+  const dateStr = job.ts || (job.created_at ? new Date(job.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
 
   return (
-    <div>
-      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:8 }}>
-        <FavoriteButton isFav={isFav} onClick={onToggleFav} />
-      </div>
-      {job.logo_url && (
-        <div style={{ width:'100%', borderRadius:16, overflow:'hidden', marginBottom:16, background:'#fff' }}>
-          <img src={job.logo_url} alt={job.company} style={{ width:'100%', height:'auto', maxHeight:200, objectFit:'contain', display:'block' }} />
-        </div>
-      )}
-      <div style={{ display:'flex', gap:14, alignItems:'flex-start', marginBottom:16 }}>
-        {!job.logo_url && (
-          <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:18, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>{job.emoji || '💼'}</div>
+    <div style={{ background:'#fff' }}>
+      <div style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
+        {job.logo_url ? (
+          <div style={{ width:'100%', minHeight:240, maxHeight:380, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+            <img src={job.logo_url} alt={job.company || job.title} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
+          </div>
+        ) : (
+          <div style={{ height:240, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:70 }}>
+            {job.emoji || '💼'}
+          </div>
         )}
-        <div style={{ flex:1, minWidth:0 }}>
-          {job.company && (
-            <p style={{ fontFamily:PP, fontSize:13, fontWeight:600, color:C.mid, margin:'0 0 6px', lineHeight:1.4, ...WRAPPING_TEXT }}>{isSeekingJob ? '👤' : '🏢'} {job.company}</p>
-          )}
-          <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.4, margin:'0 0 8px', ...WRAPPING_TEXT }}>📍 {job.city || job.canton}</p>
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+      </div>
+
+      <div style={{ padding:'22px 20px 16px', borderBottom:`1px solid ${C.border}` }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14 }}>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', minWidth:0 }}>
             <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
             {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
             {job.sector && <Tag bg={C.bg} color={C.mid}>{job.sector}</Tag>}
           </div>
+          <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ width:36, height:36, fontSize:18, flexShrink:0 }} />
+        </div>
+        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, lineHeight:1.18, margin:'0 0 12px', ...WRAPPING_TEXT }}>{job.title || job.company}</h1>
+        {job.company && job.company !== job.title && (
+          <p style={{ fontFamily:PP, fontSize:14, fontWeight:700, color:C.mid, margin:'0 0 12px', lineHeight:1.4, ...WRAPPING_TEXT }}>{isSeekingJob ? 'Perfil' : 'Empresa'}: {job.company}</p>
+        )}
+        <div style={{ display:'flex', gap:9, alignItems:'center', minWidth:0 }}>
+          <Avatar name={author} size={34} src={avatarSrc}/>
+          <div style={{ minWidth:0 }}>
+            <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:C.text, margin:'0 0 2px', ...WRAPPING_TEXT }}>{author}</p>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.4, margin:0, ...WRAPPING_TEXT }}>
+              {job.city || job.canton}{dateStr ? ` - ${dateStr}` : ''}
+            </p>
+          </div>
         </div>
       </div>
 
-      {job.salary && <p style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:'#059669', lineHeight:1.2, marginBottom:14, ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>}
-      {languages && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.5, marginBottom:12, ...WRAPPING_TEXT }}>🗣️ Idiomas requeridos: {languages}</p>}
+      <div style={{ padding:'18px 20px', borderBottom:`1px solid ${C.border}` }}>
+        {job.salary && (
+          <>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 4px' }}>Salario</p>
+            <p style={{ fontFamily:PP, fontWeight:900, fontSize:28, color:'#059669', lineHeight:1.1, margin:'0 0 16px', ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>
+          </>
+        )}
+        {!isOwnJob && user ? (
+          <button onClick={() => navigate(`/mensajes?jobId=${job.id}`)}
+            style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:14, background:'#10B981', color:'#fff', border:'none', borderRadius:8, padding:'15px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginBottom:10 }}>
+            Enviar mensaje
+          </button>
+        ) : !user ? (
+          <a href="/auth" style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:8, padding:'15px 16px', display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box', marginBottom:10 }}>Inicia sesión para contactar</a>
+        ) : null}
+        {user && !isOwnJob && (
+          <ReportButton
+            contentType="job"
+            contentId={job.id}
+            ownerId={job.user_id}
+            title="Reportar"
+            metadata={{ title: job.title, company: job.company, job_intent: getJobIntentId(job), sector: job.sector }}
+            style={{ width:'100%' }}
+          />
+        )}
+      </div>
+
+      {(languages || job.desc || job.description) && (
+        <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 10px' }}>Detalles</h2>
+          {languages && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.6, margin:'0 0 12px', ...WRAPPING_TEXT }}>Idiomas requeridos: {languages}</p>}
       {(job.desc || job.description) && (
-        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}`, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>
+            <p style={{ fontFamily:PP, fontSize:14, color:C.mid, lineHeight:1.75, margin:0, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>
           {job.desc || job.description}
         </p>
       )}
-
-      {!isOwnJob && user ? (
-        <button onClick={() => navigate(`/mensajes?jobId=${job.id}`)}
-          style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:'#F0FDF4', color:'#16A34A', border:'1.5px solid #86EFAC', borderRadius:13, padding:'13px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-          💬 Enviar mensaje
-        </button>
-      ) : !user ? (
-        <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:13, padding:'13px 16px', textAlign:'center' }}>
-          <p style={{ fontFamily:PP, fontSize:12, color:C.primaryDark, margin:'0 0 8px' }}>Inicia sesión para contactar</p>
-          <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:10, padding:'8px 16px', display:'inline-block' }}>Entrar →</a>
         </div>
-      ) : null}
-      {user && !isOwnJob && (
-        <ReportButton
-          contentType="job"
-          contentId={job.id}
-          ownerId={job.user_id}
-          title="Reportar empleo"
-          metadata={{ title: job.title, company: job.company, job_intent: getJobIntentId(job), sector: job.sector }}
-          style={{ width:'100%', marginTop:8 }}
-        />
       )}
+
+      <RelatedRail title="Empleos parecidos" empty={!relatedJobs.length}>
+        {relatedJobs.map(item => (
+          <RelatedJobCard key={item.id} job={item} onClick={() => onOpenRelatedJob?.(item)} />
+        ))}
+      </RelatedRail>
+
     </div>
   )
 }
@@ -357,31 +457,33 @@ function PortalCard({ portal, defaultEmoji = '🏠', onClick }) {
 /* ── Portal detail (inside Sheet) ───────────────────────── */
 function PortalDetail({ portal, defaultEmoji = '🏠' }) {
   return (
-    <div>
-      {portal.photo_url && (
-        <div style={{ width:'100%', borderRadius:16, overflow:'hidden', marginBottom:16, background:'#fff' }}>
-          <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'auto', maxHeight:200, objectFit:'contain', display:'block' }} />
-        </div>
-      )}
-      <div style={{ display:'flex', gap:14, alignItems:'flex-start', marginBottom:16 }}>
-        {!portal.photo_url && (
-          <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:18, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>{defaultEmoji}</div>
+    <div style={{ background:'#fff' }}>
+      <div style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
+        {portal.photo_url ? (
+          <div style={{ width:'100%', minHeight:240, maxHeight:380, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+            <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
+          </div>
+        ) : (
+          <div style={{ height:240, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:70 }}>{defaultEmoji}</div>
         )}
-        <div style={{ flex:1, minWidth:0 }}>
-          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px', lineHeight:1.2 }}>{portal.name}</h2>
-          {portal.city && <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>📍 {portal.city}</p>}
-        </div>
+      </div>
+      <div style={{ padding:'22px 20px 16px', borderBottom:`1px solid ${C.border}` }}>
+        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, margin:'0 0 8px', lineHeight:1.18, ...WRAPPING_TEXT }}>{portal.name}</h1>
+        {portal.city && <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>{portal.city}</p>}
       </div>
       {portal.description && (
-        <div style={{ background:C.bg, borderRadius:14, padding:'14px 16px', marginBottom:16 }}>
-          <p style={{ fontFamily:PP, fontSize:13, color:C.mid, margin:0, lineHeight:1.7, whiteSpace:'pre-line' }}>{portal.description}</p>
+        <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 10px' }}>Descripción</h2>
+          <p style={{ fontFamily:PP, fontSize:14, color:C.mid, margin:0, lineHeight:1.75, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>{portal.description}</p>
         </div>
       )}
       {portal.website && (
-        <a href={portal.website} target="_blank" rel="noreferrer"
-          style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-          🌐 Visitar sitio web ↗
-        </a>
+        <div style={{ padding:'18px 20px 24px' }}>
+          <a href={portal.website} target="_blank" rel="noreferrer"
+            style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', padding:'15px 16px', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxSizing:'border-box' }}>
+            Visitar sitio web
+          </a>
+        </div>
       )}
     </div>
   )
@@ -602,6 +704,78 @@ export default function Tablon() {
       ...filteredJobs.map(job => ({ kind:'job', item:job, sortDate:job.created_at || '' })),
     ].sort((a, b) => String(b.sortDate).localeCompare(String(a.sortDate)))
   }, [cat, filteredAds, filteredJobs])
+
+  const relatedAdsForSelected = useMemo(() => {
+    if (!selectedAd) return []
+    const selectedCat = getAdCategoryId(selectedAd)
+    const selectedSub = selectedAd.sub || ''
+
+    return ads
+      .filter(ad =>
+        String(ad.id) !== String(selectedAd.id) &&
+        (isLoggedIn || ad.privacy === 'public') &&
+        getAdCategoryId(ad) === selectedCat
+      )
+      .sort((a, b) => {
+        const subScore = (selectedSub && b.sub === selectedSub ? 1 : 0) - (selectedSub && a.sub === selectedSub ? 1 : 0)
+        if (subScore) return subScore
+        return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+      })
+      .slice(0, 12)
+  }, [ads, isLoggedIn, selectedAd])
+
+  const relatedJobsForSelected = useMemo(() => {
+    if (!selectedJob) return []
+    const selectedSector = selectedJob.sector || selectedJob.category || selectedJob.sub || ''
+    const selectedIntent = getJobIntentId(selectedJob)
+    const selectedType = selectedJob.type || ''
+    const jobLikeItems = [
+      ...jobs,
+      ...ads
+        .filter(ad => ad.cat === 'empleo' && (isLoggedIn || ad.privacy === 'public'))
+        .map(ad => ({
+          id:ad.id,
+          title:ad.title,
+          company:ad.company || ad.user_name || ad.user || ad.title,
+          city:ad.city || ad.canton,
+          canton:ad.canton,
+          type:['busca', 'ofrece'].includes(ad.type) ? (ad.sub || '') : ad.type,
+          job_intent:getJobIntentId(ad),
+          salary:ad.salary || ad.price,
+          emoji:ad.emoji || getAdDisplayEmoji(ad),
+          logo_url:getAdPhotos(ad)[0] || '',
+          lang:ad.lang,
+          languages:ad.languages,
+          desc:ad.desc,
+          user_id:ad.user_id,
+          user_name:ad.user_name,
+          user:ad.user,
+          created_at:ad.created_at,
+          sector:ad.sub || '',
+        })),
+    ]
+
+    return jobLikeItems
+      .filter(job => {
+        if (String(job.id) === String(selectedJob.id)) return false
+        const sector = job.sector || job.category || job.sub || ''
+        return (
+          (selectedSector && sector === selectedSector) ||
+          getJobIntentId(job) === selectedIntent ||
+          (selectedType && job.type === selectedType)
+        )
+      })
+      .sort((a, b) => {
+        const aSector = selectedSector && (a.sector || a.category || a.sub || '') === selectedSector ? 1 : 0
+        const bSector = selectedSector && (b.sector || b.category || b.sub || '') === selectedSector ? 1 : 0
+        if (aSector !== bSector) return bSector - aSector
+        const aIntent = getJobIntentId(a) === selectedIntent ? 1 : 0
+        const bIntent = getJobIntentId(b) === selectedIntent ? 1 : 0
+        if (aIntent !== bIntent) return bIntent - aIntent
+        return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+      })
+      .slice(0, 12)
+  }, [ads, isLoggedIn, jobs, selectedJob])
 
   useEffect(() => {
     if (loading) return
@@ -895,8 +1069,8 @@ export default function Tablon() {
         )}
       </Sheet>
 
-      {/* Ad detail sheet */}
-      <Sheet show={!!selectedAd} onClose={closeAdDetails} title={selectedAd?.title || ''} syncHistory={false}>
+      {/* Ad detail page */}
+      <FullPageOverlay show={!!selectedAd} onClose={closeAdDetails} title={selectedAd?.title || ''} eyebrow="Anuncio" syncHistory={false}>
         {selectedAd && (
           <AdDetail
             ad={selectedAd}
@@ -904,26 +1078,32 @@ export default function Tablon() {
             avatarSrc={userProfiles.get(selectedAd.user_id)?.avatarUrl}
             isFav={isFavorite('ads', selectedAd.id)}
             onToggleFav={() => toggleFavorite('ads', selectedAd.id)}
+            relatedAds={relatedAdsForSelected}
+            onOpenRelatedAd={openAdDetails}
           />
         )}
-      </Sheet>
+      </FullPageOverlay>
 
-      {/* Job detail sheet */}
-      <Sheet show={!!selectedJob} onClose={closeJobDetails} title={selectedJob?.title || ''} syncHistory={false}>
+      {/* Job detail page */}
+      <FullPageOverlay show={!!selectedJob} onClose={closeJobDetails} title={selectedJob?.title || ''} eyebrow="Empleo" syncHistory={false}>
         {selectedJob && (
           <JobDetail
             job={selectedJob}
             user={user}
+            avatarSrc={userProfiles.get(selectedJob.user_id)?.avatarUrl}
+            authorName={userProfiles.get(selectedJob.user_id)?.name}
             isFav={isFavorite('jobs', selectedJob.id)}
             onToggleFav={() => toggleFavorite('jobs', selectedJob.id)}
+            relatedJobs={relatedJobsForSelected}
+            onOpenRelatedJob={openJobDetails}
           />
         )}
-      </Sheet>
+      </FullPageOverlay>
 
-      {/* Portal detail sheet */}
-      <Sheet show={!!selectedPortal} onClose={() => setSelectedPortal(null)} title={selectedPortal?.name || ''}>
+      {/* Portal detail page */}
+      <FullPageOverlay show={!!selectedPortal} onClose={() => setSelectedPortal(null)} title={selectedPortal?.name || ''} eyebrow="Portal">
         {selectedPortal && <PortalDetail portal={selectedPortal} defaultEmoji={selectedPortal.defaultEmoji || '🏠'} />}
-      </Sheet>
+      </FullPageOverlay>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { C, PP } from '../lib/theme'
 import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
@@ -223,6 +223,46 @@ export function Sheet({ show, onClose, title, children, syncHistory=true }) {
 }
 
 // ── Modal (centered) ───────────────────────────────────────────
+export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncHistory=true }) {
+  useOverlayHistory(show, onClose, syncHistory)
+  const scrollerRef = useRef(null)
+
+  useEffect(() => {
+    if (!show) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [show])
+
+  useEffect(() => {
+    if (show) scrollerRef.current?.scrollTo({ top:0, left:0, behavior:'instant' })
+  }, [show, title])
+
+  if (!show) return null
+  return (
+    <div ref={scrollerRef} className="fade-in no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', scrollbarWidth:'none', msOverflowStyle:'none' }}>
+      <div style={{ position:'sticky', top:0, zIndex:20, background:'rgba(255,255,255,0.96)', borderBottom:`1px solid ${C.border}`, backdropFilter:'blur(10px)' }}>
+        <div style={{ maxWidth:760, margin:'0 auto', padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
+          <button
+            onClick={onClose}
+            aria-label="Volver"
+            style={{ width:38, height:38, borderRadius:'50%', border:`1px solid ${C.border}`, background:'#fff', color:C.text, cursor:'pointer', fontSize:20, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
+          >
+            ←
+          </button>
+          <div style={{ minWidth:0 }}>
+            {eyebrow && <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:0.8, margin:'0 0 1px', textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eyebrow}</p>}
+            {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</p>}
+          </div>
+        </div>
+      </div>
+      <div style={{ maxWidth:760, margin:'0 auto', padding:'0 0 96px' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export function Modal({ show, onClose, title, children, syncHistory=true }) {
   useOverlayHistory(show, onClose, syncHistory)
 

@@ -14,7 +14,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Tag, PillFilters, EmptyState, SegmentedTabs, Modal, InfoBanner, Stars, ReviewCard, ReviewForm, PhotoGallery } from '../components/UI'
+import { Tag, PillFilters, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewCard, ReviewForm, PhotoGallery } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import toast from 'react-hot-toast'
 
@@ -307,6 +307,67 @@ function LocationContactsPanel({ locations }) {
   )
 }
 
+function RelatedRail({ title, children, empty=false }) {
+  if (empty) return null
+  return (
+    <div style={{ marginTop:22, paddingTop:18, borderTop:`1px solid ${C.border}` }}>
+      <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 12px' }}>{title}</h2>
+      <div className="no-scroll" style={{ display:'flex', gap:10, overflowX:'auto', margin:'0 -20px', padding:'0 20px 4px' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function RelatedCommunityCard({ group, onClick }) {
+  const category = getCommunityMeta(group.cat)
+  return (
+    <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
+      <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
+        {group.photo_url ? <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : group.emoji}
+      </div>
+      <div style={{ padding:10 }}>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{group.name}</p>
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 4px', ...CLAMP_1 }}>{category?.label || 'Grupo'}</p>
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{group.city}</p>
+      </div>
+    </button>
+  )
+}
+
+function RelatedBusinessCard({ business, photosMap={}, onClick }) {
+  const category = NEGOCIO_TYPES.find(type => type.id === business.type)
+  const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
+  return (
+    <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
+      <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
+        {photos[0] ? <img src={photos[0]} alt={business.name} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : business.emoji}
+      </div>
+      <div style={{ padding:10 }}>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{business.name}</p>
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 4px', ...CLAMP_1 }}>{category?.label || 'Negocio'}</p>
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{business.city}</p>
+      </div>
+    </button>
+  )
+}
+
+function RelatedEventCard({ event, onClick }) {
+  const category = EVENTO_TYPES.find(type => type.id === event.type)
+  return (
+    <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
+      <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
+        {event.img ? <img src={event.img} alt={event.title} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : event.emoji}
+      </div>
+      <div style={{ padding:10 }}>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{event.title}</p>
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 4px', ...CLAMP_1 }}>{category?.label || 'Evento'}</p>
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{event.city}</p>
+      </div>
+    </button>
+  )
+}
+
 function CommunityCard({ group, onClick }) {
   const hasImage = !!group.photo_url
   return (
@@ -440,7 +501,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
   )
 }
 
-function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap }) {
+function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap, relatedBusinesses=[], onOpenRelatedBusiness }) {
   const { isLoggedIn, displayName } = useAuth()
   const category = NEGOCIO_TYPES.find(type => type.id === business.type)
   const services = servicesMap[business.id] || business.services || []
@@ -468,18 +529,9 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
   }
 
   return (
-    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:90, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
-      <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(3px)' }} onClick={onClose} />
-      <div className="fade-up" style={{ position:'relative', background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:680, maxHeight:'92vh', overflowY:'auto', display:'flex', flexDirection:'column' }}>
-        <div style={{ position:'sticky', top:0, background:'#fff', borderBottom:`1px solid ${C.border}`, padding:'14px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', zIndex:10, borderRadius:'24px 24px 0 0' }}>
-          <div>
-            <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:'0 0 2px' }}>{business.name}</p>
-            {rating !== null && <Stars rating={rating} size={12} showNumber count={reviews.length} />}
-          </div>
-          <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:C.bg, border:'none', cursor:'pointer', fontSize:14, color:C.mid }}>✕</button>
-        </div>
-
-        <div style={{ display:'flex', borderBottom:`1px solid ${C.border}`, background:'#fff' }}>
+    <FullPageOverlay show={!!business} onClose={onClose} title={business.name} eyebrow="Negocio" syncHistory={false}>
+      <div style={{ background:'#fff' }}>
+        <div style={{ display:'flex', borderBottom:`1px solid ${C.border}`, background:'#fff', position:'sticky', top:59, zIndex:12 }}>
           {[
             { id:'info', label:'ℹ️ Info' },
             { id:'fotos', label:`📷 Fotos (${photos.length})` },
@@ -491,7 +543,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
           ))}
         </div>
 
-        <div style={{ padding:'16px 20px 28px', flex:1 }}>
+        <div style={{ padding:'16px 20px 28px' }}>
           {tab === 'info' && (
             <>
               {photos[0] && (
@@ -574,6 +626,16 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
                   <span style={{ fontFamily:PP, fontSize:11, color:C.primary, fontWeight:600 }}>Ver {reviews.length} reseñas →</span>
                 </button>
               )}
+              <RelatedRail title="Negocios parecidos" empty={!relatedBusinesses.length}>
+                {relatedBusinesses.map(item => (
+                  <RelatedBusinessCard
+                    key={item.id}
+                    business={item}
+                    photosMap={photosMap}
+                    onClick={() => onOpenRelatedBusiness?.(item)}
+                  />
+                ))}
+              </RelatedRail>
             </>
           )}
 
@@ -635,22 +697,24 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap 
           )}
         </div>
       </div>
-    </div>
+    </FullPageOverlay>
   )
 }
 
-function CommunityDetail({ community, onClose, isLoggedIn }) {
+function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[], onOpenRelatedCommunity }) {
   if (!community) return null
 
   const category = getCommunityMeta(community.cat)
 
   return (
-    <Modal show={!!community} onClose={onClose} title={community.name} syncHistory={false}>
+    <FullPageOverlay show={!!community} onClose={onClose} title={community.name} eyebrow="Grupo" syncHistory={false}>
+      <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {community.photo_url && (
-        <div style={{ borderRadius:16, overflow:'hidden', marginBottom:16, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <img src={community.photo_url} alt={community.name} style={{ width:'100%', height:'auto', maxHeight:260, objectFit:'contain', display:'block' }} />
+        <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+          <img src={community.photo_url} alt={community.name} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
         </div>
       )}
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, lineHeight:1.18, margin:'0 0 12px' }}>{community.name}</h1>
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
         {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.emoji} {category.label}</Tag>}
         <Tag bg={C.bg} color={C.mid}>📍 {community.city}</Tag>
@@ -680,21 +744,30 @@ function CommunityDetail({ community, onClose, isLoggedIn }) {
         )
       })()}
 
-    </Modal>
+      <RelatedRail title="Grupos parecidos" empty={!relatedCommunities.length}>
+        {relatedCommunities.map(item => (
+          <RelatedCommunityCard key={item.id} group={item} onClick={() => onOpenRelatedCommunity?.(item)} />
+        ))}
+      </RelatedRail>
+
+      </div>
+    </FullPageOverlay>
   )
 }
 
 
-function EventDetail({ event, onClose }) {
+function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
   if (!event) return null
 
   return (
-    <Modal show={!!event} onClose={onClose} title={event.title} syncHistory={false}>
+    <FullPageOverlay show={!!event} onClose={onClose} title={event.title} eyebrow="Evento" syncHistory={false}>
+      <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {event.img && (
-        <div style={{ borderRadius:18, overflow:'hidden', marginBottom:16, background:'#fff' }}>
-          <img src={event.img} alt={event.title} style={{ width:'100%', height:'auto', maxHeight:260, objectFit:'contain', display:'block' }} />
+        <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+          <img src={event.img} alt={event.title} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
         </div>
       )}
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, lineHeight:1.18, margin:'0 0 12px' }}>{event.title}</h1>
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
         <Tag bg="#DBEAFE" color={C.primaryDark}>{EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'}</Tag>
         <Tag bg={C.bg} color={C.mid}>📍 {event.city}</Tag>
@@ -706,7 +779,13 @@ function EventDetail({ event, onClose }) {
       <a href={event.link} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'inline-flex' }}>
         Ver detalles / reservar
       </a>
-    </Modal>
+      <RelatedRail title="Eventos parecidos" empty={!relatedEvents.length}>
+        {relatedEvents.map(item => (
+          <RelatedEventCard key={item.id} event={item} onClick={() => onOpenRelatedEvent?.(item)} />
+        ))}
+      </RelatedRail>
+      </div>
+    </FullPageOverlay>
   )
 }
 
@@ -952,6 +1031,55 @@ export default function Comunidades() {
         (businessServices[business.id] || business.services || []).some(service => service.toLowerCase().includes(search.toLowerCase())))
     )
 
+  const relatedCommunitiesForSelected = useMemo(() => {
+    if (!selectedCommunity) return []
+    return communities
+      .filter(group => String(group.id) !== String(selectedCommunity.id) && group.cat === selectedCommunity.cat)
+      .sort((a, b) => {
+        if (a.verified !== b.verified) return b.verified ? 1 : -1
+        return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+      })
+      .slice(0, 12)
+  }, [communities, selectedCommunity])
+
+  const relatedBusinessesForSelected = useMemo(() => {
+    if (!selectedBusiness) return []
+    const selectedServices = new Set((businessServices[selectedBusiness.id] || selectedBusiness.services || []).map(service => service.toLowerCase()))
+    const sharedServicesCount = business => (businessServices[business.id] || business.services || [])
+      .filter(service => selectedServices.has(service.toLowerCase())).length
+    const score = business => {
+      const typeScore = business.type === selectedBusiness.type ? 4 : 0
+      const serviceScore = sharedServicesCount(business)
+      const featuredScore = business.featured ? 1 : 0
+      return typeScore + serviceScore + featuredScore
+    }
+
+    return businesses
+      .filter(business =>
+        String(business.id) !== String(selectedBusiness.id) &&
+        business.type !== 'empleo' &&
+        business.type !== 'vivienda' &&
+        (business.type === selectedBusiness.type || sharedServicesCount(business) > 0)
+      )
+      .sort((a, b) => {
+        const scoreDiff = score(b) - score(a)
+        if (scoreDiff) return scoreDiff
+        return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+      })
+      .slice(0, 12)
+  }, [businessServices, businesses, selectedBusiness])
+
+  const relatedEventsForSelected = useMemo(() => {
+    if (!selectedEvent) return []
+    return events
+      .filter(event => String(event.id) !== String(selectedEvent.id) && event.type === selectedEvent.type)
+      .sort((a, b) => {
+        if (a.featured !== b.featured) return b.featured ? 1 : -1
+        return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+      })
+      .slice(0, 12)
+  }, [events, selectedEvent])
+
 
   useEffect(() => {
     if (loading) return
@@ -1130,7 +1258,13 @@ export default function Comunidades() {
         </>
       )}
 
-      <CommunityDetail community={selectedCommunity} onClose={closeCommunityDetails} isLoggedIn={isLoggedIn} />
+      <CommunityDetail
+        community={selectedCommunity}
+        onClose={closeCommunityDetails}
+        isLoggedIn={isLoggedIn}
+        relatedCommunities={relatedCommunitiesForSelected}
+        onOpenRelatedCommunity={openCommunityDetails}
+      />
 
       {selectedBusiness && (
         <BusinessDetail
@@ -1140,9 +1274,16 @@ export default function Comunidades() {
           servicesMap={businessServices}
           photosMap={businessPhotos}
           reviewsMap={businessReviews}
+          relatedBusinesses={relatedBusinessesForSelected}
+          onOpenRelatedBusiness={openBusinessDetails}
         />
       )}
-      <EventDetail event={selectedEvent} onClose={closeEventDetails} />
+      <EventDetail
+        event={selectedEvent}
+        onClose={closeEventDetails}
+        relatedEvents={relatedEventsForSelected}
+        onOpenRelatedEvent={openEventDetails}
+      />
     </div>
   )
 }
