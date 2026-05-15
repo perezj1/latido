@@ -583,6 +583,11 @@ export default function Perfil() {
   const openEditor = item => { setEditorItem(item); setEditorForm(buildEditorForm(item)) }
   const closeEditor = () => { setEditorItem(null); setEditorForm({}); setSaving(false) }
   const updateEditorField = (key, value) => setEditorForm(prev => ({ ...prev, [key]: value }))
+  const handleEditPublication = item => {
+    if (!item) return
+    setActionItem(null)
+    openEditor(item)
+  }
 
   const handleDeletePublication = async item => {
     const confirmed = window.confirm(`¿Seguro que quieres borrar esta publicación?\n\n${item.title}`)
@@ -1174,7 +1179,7 @@ export default function Perfil() {
         )}
       </Modal>
 
-      <Sheet show={!!actionItem} onClose={() => setActionItem(null)} title={actionItem ? actionItem.title : 'Acciones'}>
+      <Sheet show={!!actionItem} onClose={() => setActionItem(null)} title={actionItem ? actionItem.title : 'Acciones'} syncHistory={false}>
         {actionItem && (
           <>
             <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'12px 14px', marginBottom:14 }}>
@@ -1187,7 +1192,7 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.35 }}>{actionItem.title}</p>
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
             </div>
-            <Btn onClick={() => { openEditor(actionItem); setActionItem(null) }} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
+            <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
             <button
               onClick={() => handleDeletePublication(actionItem)}
               style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:'#FEF2F2', color:'#DC2626', border:'none', borderRadius:14, padding:'12px 16px', cursor:'pointer', marginBottom:8 }}
