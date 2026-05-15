@@ -14,7 +14,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Tag, PillFilters, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewCard, ReviewForm, PhotoGallery } from '../components/UI'
+import { Tag, PillFilters, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewCard, ReviewForm, PhotoGallery, ImageLightbox } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import toast from 'react-hot-toast'
 
@@ -408,6 +408,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
   const contactMethods = getBusinessContactMethods(business)
   const locationContacts = getLocationContacts(business)
   const hasContact = locationContacts ? locationContacts.length > 0 : contactMethods.length > 0
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
 
   return (
@@ -419,7 +420,17 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
     >
       <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight }}>
         {cover ? (
-          <img src={cover} alt={business.name} style={LIST_MEDIA_STYLE} />
+          <button
+            type="button"
+            onClick={event => {
+              event.stopPropagation()
+              setLightboxOpen(true)
+            }}
+            aria-label="Ampliar fotos del negocio"
+            style={{ width:'100%', height:'100%', padding:0, border:'none', background:'transparent', cursor:'zoom-in', display:'block' }}
+          >
+            <img src={cover} alt={business.name} style={LIST_MEDIA_STYLE} />
+          </button>
         ) : (
           <div style={LIST_FALLBACK_STYLE}>{business.emoji}</div>
         )}
@@ -429,6 +440,15 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
           </span>
         )}
       </div>
+      {cover && (
+        <ImageLightbox
+          open={lightboxOpen}
+          photos={photos}
+          initialIndex={0}
+          onClose={() => setLightboxOpen(false)}
+          title={business.name || 'Foto del negocio'}
+        />
+      )}
 
       <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
         <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap', marginBottom:5 }}>
@@ -509,6 +529,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   const [reviews, setReviews] = useState(reviewsMap[business.id] || [])
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const [tab, setTab] = useState('info')
   const rating = averageRating(reviews)
   const contactMethods = getBusinessContactMethods(business)
@@ -547,9 +568,27 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           {tab === 'info' && (
             <>
               {photos[0] && (
-                <div className="provider-detail-img" style={{ borderRadius:16, overflow:'hidden', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <button
+                  type="button"
+                  onClick={() => setLightboxOpen(true)}
+                  className="provider-detail-img"
+                  aria-label="Ampliar fotos del negocio"
+                  style={{ width:'100%', border:'none', padding:0, background:'transparent', borderRadius:16, overflow:'hidden', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative' }}
+                >
                   <img src={photos[0]} alt={business.name} style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
-                </div>
+                  <span style={{ position:'absolute', left:12, bottom:12, fontFamily:PP, fontSize:11, fontWeight:800, color:'#fff', background:'rgba(15,23,42,0.68)', borderRadius:999, padding:'5px 10px' }}>
+                    Ampliar
+                  </span>
+                </button>
+              )}
+              {photos[0] && (
+                <ImageLightbox
+                  open={lightboxOpen}
+                  photos={photos}
+                  initialIndex={0}
+                  onClose={() => setLightboxOpen(false)}
+                  title={business.name || 'Foto del negocio'}
+                />
               )}
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
                 {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
