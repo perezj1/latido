@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { C, PP } from '../lib/theme'
 import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
@@ -473,6 +474,17 @@ export function ReviewCard({ review }) {
 export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onClose, title = 'Foto' }) {
   const validPhotos = photos.filter(Boolean)
   const [active, setActive] = useState(initialIndex)
+  const touchStartRef = useRef(null)
+
+  const goPrevious = () => {
+    if (validPhotos.length < 2) return
+    setActive(index => (index - 1 + validPhotos.length) % validPhotos.length)
+  }
+
+  const goNext = () => {
+    if (validPhotos.length < 2) return
+    setActive(index => (index + 1) % validPhotos.length)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -487,12 +499,8 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
 
     const handleKeyDown = event => {
       if (event.key === 'Escape') onClose?.()
-      if (event.key === 'ArrowLeft' && validPhotos.length > 1) {
-        setActive(index => (index - 1 + validPhotos.length) % validPhotos.length)
-      }
-      if (event.key === 'ArrowRight' && validPhotos.length > 1) {
-        setActive(index => (index + 1) % validPhotos.length)
-      }
+      if (event.key === 'ArrowLeft') goPrevious()
+      if (event.key === 'ArrowRight') goNext()
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -502,18 +510,29 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
     }
   }, [open, onClose, validPhotos.length])
 
-  if (!open || !validPhotos.length) return null
+  if (!open || !validPhotos.length || typeof document === 'undefined') return null
 
-  const goPrevious = event => {
-    event?.stopPropagation()
-    setActive(index => (index - 1 + validPhotos.length) % validPhotos.length)
-  }
-  const goNext = event => {
-    event?.stopPropagation()
-    setActive(index => (index + 1) % validPhotos.length)
+  const handleTouchStart = event => {
+    const touch = event.touches?.[0]
+    if (!touch) return
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
   }
 
-  return (
+  const handleTouchEnd = event => {
+    const touch = event.changedTouches?.[0]
+    const start = touchStartRef.current
+    touchStartRef.current = null
+    if (!touch || !start || validPhotos.length < 2) return
+
+    const dx = touch.clientX - start.x
+    const dy = touch.clientY - start.y
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.2) return
+
+    if (dx < 0) goNext()
+    else goPrevious()
+  }
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -523,113 +542,112 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
         event.stopPropagation()
         onClose?.()
       }}
-      style={{ position:'fixed', inset:0, zIndex:240, background:'rgba(2,6,23,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'18px', boxSizing:'border-box' }}
+      style={{ position:'fixed', inset:0, zIndex:240, background:'#000', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'18px', boxSizing:'border-box' }}
     >
-      <div style={{ position:'absolute', top:14, left:16, right:16, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, zIndex:2 }}>
-        <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:'rgba(255,255,255,0.8)', background:'rgba(15,23,42,0.62)', border:'1px solid rgba(255,255,255,0.14)', borderRadius:999, padding:'8px 12px' }}>
-          {active + 1} / {validPhotos.length}
-        </span>
+      <div style={{ position:'absolute', top:14, left:16, right:16, display:'flex', justifyContent:'flex-end', alignItems:'center', zIndex:2 }}>
         <button
           type="button"
           onClick={event => { event.stopPropagation(); onClose?.() }}
           aria-label="Cerrar"
-          style={{ width:42, height:42, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(15,23,42,0.72)', color:'#fff', cursor:'pointer', fontSize:20, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 12px 30px rgba(0,0,0,0.28)' }}
+          style={{ width:38, height:38, borderRadius:'50%', border:'none', background:'#fff', color:'#111827', cursor:'pointer', fontSize:22, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 24px rgba(0,0,0,0.28)' }}
         >
           X
         </button>
       </div>
 
-      <div onClick={event => event.stopPropagation()} style={{ position:'relative', width:'100%', maxWidth:1120, display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div
+        onClick={event => event.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ position:'relative', width:'100%', maxWidth:1120, display:'flex', alignItems:'center', justifyContent:'center', touchAction:'pan-y' }}
+      >
         <img
           src={validPhotos[active]}
           alt={`${title} ${active + 1}`}
-          style={{ maxWidth:'100%', maxHeight:'calc(100vh - 142px)', objectFit:'contain', display:'block', borderRadius:14, boxShadow:'0 28px 70px rgba(0,0,0,0.36)', background:'#fff' }}
+          style={{ maxWidth:'100%', maxHeight:'calc(100vh - 150px)', objectFit:'contain', display:'block', background:'#000' }}
         />
-
-        {validPhotos.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={goPrevious}
-              aria-label="Foto anterior"
-              style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:44, height:44, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(15,23,42,0.68)', color:'#fff', cursor:'pointer', fontSize:26, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 12px 30px rgba(0,0,0,0.24)' }}
-            >
-              {'<'}
-            </button>
-            <button
-              type="button"
-              onClick={goNext}
-              aria-label="Foto siguiente"
-              style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', width:44, height:44, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(15,23,42,0.68)', color:'#fff', cursor:'pointer', fontSize:26, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 12px 30px rgba(0,0,0,0.24)' }}
-            >
-              {'>'}
-            </button>
-          </>
-        )}
       </div>
 
       {validPhotos.length > 1 && (
-        <div className="no-scroll" onClick={event => event.stopPropagation()} style={{ display:'flex', gap:8, maxWidth:'100%', overflowX:'auto', marginTop:14, padding:'2px 6px 8px' }}>
+        <div onClick={event => event.stopPropagation()} style={{ position:'absolute', left:0, right:0, bottom:28, display:'flex', justifyContent:'center', gap:8, padding:'0 20px' }}>
           {validPhotos.map((src, index) => (
             <button
               type="button"
               key={`${src}-${index}`}
               onClick={() => setActive(index)}
               aria-label={`Ver foto ${index + 1}`}
-              style={{ width:64, height:48, padding:0, border:`2px solid ${index === active ? '#fff' : 'rgba(255,255,255,0.18)'}`, borderRadius:10, overflow:'hidden', background:'#fff', cursor:'pointer', opacity:index === active ? 1 : 0.58, flex:'0 0 auto' }}
-            >
-              <img src={src} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
-            </button>
+              style={{ width:index === active ? 10 : 9, height:index === active ? 10 : 9, padding:0, border:'none', borderRadius:'50%', background:index === active ? '#03AA98' : 'rgba(255,255,255,0.72)', cursor:'pointer', boxShadow:index === active ? '0 0 0 3px rgba(3,170,152,0.18)' : 'none' }}
+            />
           ))}
         </div>
       )}
     </div>
+    ,
+    document.body
   )
 }
 
 export function PhotoGallery({ photos = [], mainPhoto }) {
-  const [active, setActive] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState(null)
+  const [active, setActive] = useState(0)
+  const railRef = useRef(null)
   const all = mainPhoto ? [mainPhoto, ...photos.filter(p => p !== mainPhoto)] : photos
   if (!all.length) return null
+
+  const updateActiveFromScroll = event => {
+    const rail = event.currentTarget
+    const items = Array.from(rail.querySelectorAll('[data-photo-index]'))
+    const center = rail.scrollLeft + rail.clientWidth / 2
+    let nearestIndex = 0
+    let nearestDistance = Infinity
+
+    items.forEach(item => {
+      const itemCenter = item.offsetLeft + item.offsetWidth / 2
+      const distance = Math.abs(itemCenter - center)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearestIndex = Number(item.dataset.photoIndex || 0)
+      }
+    })
+
+    setActive(nearestIndex)
+  }
+
   return (
     <div style={{ marginBottom:16 }}>
-      {/* Main image */}
       <div
-        className="photo-main"
-        role="button"
-        tabIndex={0}
-        onClick={() => setLightboxIndex(active)}
-        onKeyDown={event => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault()
-            setLightboxIndex(active)
-          }
-        }}
-        style={{ position:'relative', borderRadius:16, overflow:'hidden', marginBottom:8, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in' }}
+        style={{ position:'relative', margin:'0 -14px' }}
       >
-        <img src={all[active]} alt="foto" style={{ width:'100%', height:'auto', maxHeight:'100%', objectFit:'contain', display:'block', transition:'opacity .2s' }} />
-        <span style={{ position:'absolute', left:10, bottom:10, fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, background:'rgba(15,23,42,0.62)', color:'#fff', padding:'5px 9px', borderRadius:999 }}>
-          Ampliar
-        </span>
+        <div
+          ref={railRef}
+          className="no-scroll"
+          onScroll={updateActiveFromScroll}
+          style={{ display:'flex', gap:12, overflowX:'auto', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', scrollPadding:'0 14px', padding:'0 14px 10px', touchAction:'pan-x', overscrollBehaviorX:'contain' }}
+        >
+          {all.map((src, index) => (
+            <button
+              type="button"
+              key={`${src}-${index}`}
+              data-photo-index={index}
+              onClick={() => setLightboxIndex(index)}
+              aria-label={`Ampliar foto ${index + 1}`}
+              style={{ flex:all.length > 1 ? '0 0 clamp(250px, 78%, 420px)' : '1 1 100%', height:all.length > 1 ? 360 : 320, maxHeight:'56vh', padding:0, border:`1px solid ${C.border}`, borderRadius:18, overflow:'hidden', background:'#fff', cursor:'zoom-in', scrollSnapAlign:'start', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 26px rgba(15,23,42,0.08)', position:'relative' }}
+            >
+              <img src={src} alt={`Foto ${index + 1}`} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+            </button>
+          ))}
+        </div>
         {all.length > 1 && (
-          <>
-            <button onClick={event => { event.stopPropagation(); setActive(a => (a-1+all.length)%all.length) }}
-              style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', background:'rgba(0,0,0,0.45)', color:'#fff', border:'none', borderRadius:'50%', width:32, height:32, cursor:'pointer', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
-            <button onClick={event => { event.stopPropagation(); setActive(a => (a+1)%all.length) }}
-              style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'rgba(0,0,0,0.45)', color:'#fff', border:'none', borderRadius:'50%', width:32, height:32, cursor:'pointer', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>›</button>
-            <span style={{ position:'absolute', bottom:10, right:12, fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:600, background:'rgba(0,0,0,0.5)', color:'#fff', padding:'3px 8px', borderRadius:10 }}>
-              {active+1} / {all.length}
-            </span>
-          </>
+          <div style={{ position:'absolute', top:0, right:0, bottom:10, width:54, pointerEvents:'none', background:'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.92))' }} />
         )}
       </div>
-      {/* Thumbnails */}
       {all.length > 1 && (
-        <div style={{ display:'flex', gap:6, overflowX:'auto' }} className="no-scroll">
-          {all.map((src, i) => (
-            <img key={i} src={src} alt="" onClick={() => setActive(i)}
-              style={{ width:60, height:44, objectFit:'contain', background:'#fff', borderRadius:9, flexShrink:0, cursor:'pointer', border:`2px solid ${i===active?'#2563EB':'transparent'}`, opacity: i===active?1:0.65, transition:'all .15s' }} />
+        <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:4 }}>
+          {all.map((_, index) => (
+            <span
+              key={index}
+              style={{ width:index === active ? 8 : 7, height:index === active ? 8 : 7, borderRadius:'50%', background:index === active ? C.primary : C.border, transition:'all .15s' }}
+            />
           ))}
         </div>
       )}

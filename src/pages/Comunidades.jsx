@@ -682,7 +682,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
             <>
               <PhotoGallery photos={photos.slice(1)} mainPhoto={photos[0]} />
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center' }}>
-                {photos.length} foto{photos.length !== 1 ? 's' : ''} · Toca las miniaturas para navegar
+                {photos.length} foto{photos.length !== 1 ? 's' : ''} · Desliza para ver más
               </p>
             </>
           )}
