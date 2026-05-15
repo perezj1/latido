@@ -6,7 +6,7 @@ import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
-import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery } from '../components/UI'
+import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery, ImageLightbox } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 import ReportButton from '../components/ReportButton'
 
@@ -158,6 +158,7 @@ function RelatedJobCard({ job, onClick }) {
 
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const normalizedCat = getAdCategoryId(ad)
   const cat = getAdDisplayCat(ad)
   const cc  = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
@@ -172,7 +173,17 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:136 }}>
       <div style={LIST_THUMB_STYLE}>
         {coverPhoto ? (
-          <img src={coverPhoto} alt={ad.title} style={LIST_MEDIA_STYLE}/>
+          <button
+            type="button"
+            onClick={event => {
+              event.stopPropagation()
+              setLightboxOpen(true)
+            }}
+            aria-label="Ampliar fotos del anuncio"
+            style={{ width:'100%', height:'100%', padding:0, border:'none', background:'transparent', cursor:'zoom-in', display:'block' }}
+          >
+            <img src={coverPhoto} alt={ad.title} style={LIST_MEDIA_STYLE}/>
+          </button>
         ) : (
           <div style={{ ...LIST_FALLBACK_STYLE, background:C.primaryLight }}>
             {displayEmoji}
@@ -184,6 +195,15 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
           </span>
         )}
       </div>
+      {coverPhoto && (
+        <ImageLightbox
+          open={lightboxOpen}
+          photos={photos}
+          initialIndex={0}
+          onClose={() => setLightboxOpen(false)}
+          title={ad.title || 'Foto del anuncio'}
+        />
+      )}
       <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.32, margin:'0 0 4px', ...CLAMP_2 }}>{ad.title}</h3>
         {ad.price && <span style={{ display:'block', maxWidth:'100%', fontFamily:PP, fontSize:14, fontWeight:800, color:C.primary, lineHeight:1.15, marginBottom:5, ...CLAMP_1 }}>{fmtPrice(ad.price)}</span>}
@@ -206,6 +226,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
 function AdDetail({ ad, user, avatarSrc, isFav, onToggleFav, relatedAds=[], onOpenRelatedAd }) {
   const navigate = useNavigate()
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const normalizedCat = getAdCategoryId(ad)
   const cat = getAdDisplayCat(ad)
   const cc  = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
@@ -224,15 +245,32 @@ function AdDetail({ ad, user, avatarSrc, isFav, onToggleFav, relatedAds=[], onOp
             <PhotoGallery photos={photos.slice(1)} mainPhoto={coverPhoto} />
           </div>
         ) : coverPhoto ? (
-          <div style={{ width:'100%', minHeight:260, maxHeight:420, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            aria-label="Ampliar foto del anuncio"
+            style={{ width:'100%', minHeight:260, maxHeight:420, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', border:'none', padding:0, cursor:'zoom-in', position:'relative' }}
+          >
             <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:420, objectFit:'contain', display:'block' }}/>
-          </div>
+            <span style={{ position:'absolute', left:12, bottom:12, fontFamily:PP, fontSize:11, fontWeight:800, color:'#fff', background:'rgba(15,23,42,0.68)', borderRadius:999, padding:'5px 10px' }}>
+              Ampliar
+            </span>
+          </button>
         ) : (
           <div style={{ height:260, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:64 }}>
             {getAdDisplayEmoji(ad)}
           </div>
         )}
       </div>
+      {coverPhoto && (
+        <ImageLightbox
+          open={lightboxOpen}
+          photos={photos}
+          initialIndex={0}
+          onClose={() => setLightboxOpen(false)}
+          title={ad.title || 'Foto del anuncio'}
+        />
+      )}
 
       <div style={{ padding:'22px 20px 16px', borderBottom:`1px solid ${C.border}` }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14 }}>
