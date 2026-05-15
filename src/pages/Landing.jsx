@@ -432,6 +432,31 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         .latido-marquee-track { display: inline-flex; gap: 40px; animation: latido-marquee 40s linear infinite; }
         .latido-hero-bg { background-size: 180% 180%; animation: latido-gradient 22s ease infinite; }
         .latido-card-hover { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+        .latido-hero-logo-top {
+          width: 132px;
+          height: 132px;
+          margin: -42px auto 18px;
+          display: grid;
+          place-items: center;
+        }
+        .latido-hero-logo-top img {
+          width: 132px;
+          height: 132px;
+          object-fit: contain;
+          display: block;
+          filter: drop-shadow(0 18px 34px rgba(0,0,0,0.22));
+        }
+        @media (max-width: 640px) {
+          .latido-hero-logo-top {
+            width: 104px;
+            height: 104px;
+            margin: -30px auto 18px;
+          }
+          .latido-hero-logo-top img {
+            width: 104px;
+            height: 104px;
+          }
+        }
         @media (prefers-reduced-motion: reduce) {
           .latido-enter-1, .latido-enter-2, .latido-enter-3, .latido-enter-4, .latido-enter-5,
           .latido-float, .latido-float-slow, .latido-marquee-track, .latido-hero-bg { animation: none !important; }
@@ -458,6 +483,10 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
   <div className="latido-float" style={{ position: 'absolute', top: 140, left: '55%', width: 180, height: 180, borderRadius: '50%', background: 'rgba(96,165,250,0.16)', filter: 'blur(4px)' }} />
 
   <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', textAlign: 'center' }}>
+    <div className="latido-enter-1 latido-hero-logo-top">
+      <img src="/favicon.svg" alt="Latido" />
+    </div>
+
     <div className="latido-enter-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.12)', color: '#BAE6FD', fontSize: 11, fontWeight: 700, padding: '8px 18px', borderRadius: 24, marginBottom: 28, fontFamily: PP, border: '1px solid rgba(255,255,255,0.22)', letterSpacing: 0.4, backdropFilter: 'blur(8px)' }}>
       <span style={{ fontSize: 14 }}>🏆</span>
       La primera plataforma pensada exclusivamente para hispanohablantes en Suiza
@@ -604,7 +633,9 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
       <section style={{ maxWidth: 720, margin: '88px auto 0', padding: '0 24px 96px' }}>
         <Reveal>
           <div style={{ textAlign: 'center' }}>
-            <div className="latido-float" style={{ width: 72, height: 72, background: `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, margin: '0 auto 24px', boxShadow: '0 16px 40px rgba(37,99,235,0.32)' }}>🌎</div>
+            <div className="latido-float" style={{ width: 72, height: 72, background: `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, margin: '0 auto 24px', boxShadow: '0 16px 40px rgba(37,99,235,0.32)' }}>
+              <img src="/favicon.svg" alt="Latido" style={{ width: 54, height: 54, objectFit: 'contain', display: 'block' }} />
+            </div>
             <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(26px,5vw,42px)', color: C.text, margin: '0 0 16px', letterSpacing: -0.5, lineHeight: 1.15 }}>
               Tu comunidad te espera.
             </h2>
