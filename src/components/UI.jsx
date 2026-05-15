@@ -474,7 +474,12 @@ export function ReviewCard({ review }) {
 export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onClose, title = 'Foto' }) {
   const validPhotos = photos.filter(Boolean)
   const [active, setActive] = useState(initialIndex)
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x:0, y:0 })
   const touchStartRef = useRef(null)
+  const gestureRef = useRef(null)
+
+  const clampZoom = value => Math.min(Math.max(value, 1), 4)
 
   const goPrevious = () => {
     if (validPhotos.length < 2) return
@@ -490,7 +495,14 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
     if (!open) return
     const maxIndex = Math.max(validPhotos.length - 1, 0)
     setActive(Math.min(Math.max(initialIndex, 0), maxIndex))
+    setZoom(1)
+    setPan({ x:0, y:0 })
   }, [open, initialIndex, validPhotos.length])
+
+  useEffect(() => {
+    setZoom(1)
+    setPan({ x:0, y:0 })
+  }, [active])
 
   useEffect(() => {
     if (!open) return
@@ -513,12 +525,75 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
   if (!open || !validPhotos.length || typeof document === 'undefined') return null
 
   const handleTouchStart = event => {
+    if (event.touches?.length === 2) {
+      const [a, b] = Array.from(event.touches)
+      const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+      gestureRef.current = {
+        type:'pinch',
+        startDistance:distance,
+        startZoom:zoom,
+      }
+      touchStartRef.current = null
+      return
+    }
+
     const touch = event.touches?.[0]
     if (!touch) return
+    if (zoom > 1) {
+      gestureRef.current = {
+        type:'pan',
+        x:touch.clientX,
+        y:touch.clientY,
+        pan,
+      }
+      touchStartRef.current = null
+      return
+    }
+
+    gestureRef.current = null
     touchStartRef.current = { x: touch.clientX, y: touch.clientY }
   }
 
+  const handleTouchMove = event => {
+    const gesture = gestureRef.current
+    if (!gesture) return
+
+    if (gesture.type === 'pinch' && event.touches?.length === 2) {
+      event.preventDefault()
+      const [a, b] = Array.from(event.touches)
+      const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+      const nextZoom = clampZoom(gesture.startZoom * (distance / Math.max(gesture.startDistance, 1)))
+      setZoom(nextZoom)
+      if (nextZoom <= 1.02) setPan({ x:0, y:0 })
+      return
+    }
+
+    if (gesture.type === 'pan' && event.touches?.length === 1) {
+      event.preventDefault()
+      const touch = event.touches[0]
+      setPan({
+        x: gesture.pan.x + touch.clientX - gesture.x,
+        y: gesture.pan.y + touch.clientY - gesture.y,
+      })
+    }
+  }
+
   const handleTouchEnd = event => {
+    const gesture = gestureRef.current
+    if (gesture?.type === 'pinch') {
+      if (zoom <= 1.05) {
+        setZoom(1)
+        setPan({ x:0, y:0 })
+      }
+      if (event.touches?.length < 2) gestureRef.current = null
+      return
+    }
+
+    if (gesture?.type === 'pan') {
+      gestureRef.current = null
+      return
+    }
+
     const touch = event.changedTouches?.[0]
     const start = touchStartRef.current
     touchStartRef.current = null
@@ -558,13 +633,16 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
       <div
         onClick={event => event.stopPropagation()}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ position:'relative', width:'100%', maxWidth:1120, display:'flex', alignItems:'center', justifyContent:'center', touchAction:'pan-x pan-y' }}
+        onTouchCancel={() => { touchStartRef.current = null; gestureRef.current = null }}
+        style={{ position:'relative', width:'100%', maxWidth:1120, display:'flex', alignItems:'center', justifyContent:'center', touchAction:'none' }}
       >
         <img
           src={validPhotos[active]}
           alt={`${title} ${active + 1}`}
-          style={{ maxWidth:'100%', maxHeight:'calc(100vh - 150px)', objectFit:'contain', display:'block', background:'#000' }}
+          draggable={false}
+          style={{ maxWidth:'100%', maxHeight:'calc(100vh - 150px)', objectFit:'contain', display:'block', background:'#000', transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`, transition:gestureRef.current ? 'none' : 'transform .18s ease', touchAction:'none', userSelect:'none' }}
         />
       </div>
 
@@ -593,6 +671,12 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
   const railRef = useRef(null)
   const all = mainPhoto ? [mainPhoto, ...photos.filter(p => p !== mainPhoto)] : photos
 
+  const maxIndex = Math.max(all.length - 1, 0)
+
+  useEffect(() => {
+    if (active > maxIndex) setActive(maxIndex)
+  }, [active, maxIndex])
+
   const updateActiveFromScroll = event => {
     const rail = event.currentTarget
     const items = Array.from(rail.querySelectorAll('[data-photo-index]'))
@@ -612,6 +696,24 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
     setActive(nearestIndex)
   }
 
+  const handlePhotoClick = index => {
+    const rail = railRef.current
+    const item = rail?.querySelector(`[data-photo-index="${index}"]`)
+    if (rail && item) {
+      const itemLeft = item.offsetLeft
+      const itemRight = itemLeft + item.offsetWidth
+      const visibleLeft = rail.scrollLeft
+      const visibleRight = visibleLeft + rail.clientWidth
+      const mostlyVisible = itemLeft >= visibleLeft - 4 && itemRight <= visibleRight + 4
+      if (!mostlyVisible) {
+        rail.scrollTo({ left:itemLeft - 14, behavior:'smooth' })
+        return
+      }
+    }
+
+    setLightboxIndex(index)
+  }
+
   if (!all.length) return null
 
   return (
@@ -623,16 +725,16 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
           ref={railRef}
           className="no-scroll"
           onScroll={updateActiveFromScroll}
-          style={{ display:'flex', gap:12, overflowX:'auto', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', scrollPadding:'0 14px', padding:'0 14px 10px', touchAction:'pan-x pan-y', overscrollBehaviorX:'contain' }}
+          style={{ display:'flex', gap:12, overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'0 14px 10px', overscrollBehaviorX:'contain', scrollBehavior:'smooth' }}
         >
           {all.map((src, index) => (
             <button
               type="button"
               key={`${src}-${index}`}
               data-photo-index={index}
-              onClick={() => setLightboxIndex(index)}
+              onClick={() => handlePhotoClick(index)}
               aria-label={`Ampliar foto ${index + 1}`}
-              style={{ flex:all.length > 1 ? '0 0 clamp(250px, 78%, 420px)' : '1 1 100%', height:all.length > 1 ? 360 : 320, maxHeight:'56vh', padding:0, border:`1px solid ${C.border}`, borderRadius:18, overflow:'hidden', background:'#fff', cursor:'zoom-in', scrollSnapAlign:'start', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 26px rgba(15,23,42,0.08)', position:'relative' }}
+              style={{ flex:all.length > 1 ? '0 0 clamp(250px, 78%, 420px)' : '1 1 100%', height:all.length > 1 ? 360 : 320, maxHeight:'56vh', padding:0, border:`1px solid ${C.border}`, borderRadius:18, overflow:'hidden', background:'#fff', cursor:'zoom-in', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 26px rgba(15,23,42,0.08)', position:'relative' }}
             >
               <img src={src} alt={`Foto ${index + 1}`} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
             </button>
