@@ -559,7 +559,7 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
         onClick={event => event.stopPropagation()}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        style={{ position:'relative', width:'100%', maxWidth:1120, display:'flex', alignItems:'center', justifyContent:'center', touchAction:'pan-y' }}
+        style={{ position:'relative', width:'100%', maxWidth:1120, display:'flex', alignItems:'center', justifyContent:'center', touchAction:'pan-x pan-y' }}
       >
         <img
           src={validPhotos[active]}
@@ -592,7 +592,6 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
   const [active, setActive] = useState(0)
   const railRef = useRef(null)
   const all = mainPhoto ? [mainPhoto, ...photos.filter(p => p !== mainPhoto)] : photos
-  if (!all.length) return null
 
   const updateActiveFromScroll = event => {
     const rail = event.currentTarget
@@ -613,6 +612,8 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
     setActive(nearestIndex)
   }
 
+  if (!all.length) return null
+
   return (
     <div style={{ marginBottom:16 }}>
       <div
@@ -622,7 +623,7 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
           ref={railRef}
           className="no-scroll"
           onScroll={updateActiveFromScroll}
-          style={{ display:'flex', gap:12, overflowX:'auto', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', scrollPadding:'0 14px', padding:'0 14px 10px', touchAction:'pan-x', overscrollBehaviorX:'contain' }}
+          style={{ display:'flex', gap:12, overflowX:'auto', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', scrollPadding:'0 14px', padding:'0 14px 10px', touchAction:'pan-x pan-y', overscrollBehaviorX:'contain' }}
         >
           {all.map((src, index) => (
             <button
@@ -637,9 +638,6 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
             </button>
           ))}
         </div>
-        {all.length > 1 && (
-          <div style={{ position:'absolute', top:0, right:0, bottom:10, width:54, pointerEvents:'none', background:'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.92))' }} />
-        )}
       </div>
       {all.length > 1 && (
         <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:4 }}>
