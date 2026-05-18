@@ -59,7 +59,7 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
   if (!canInstall && !isIOS) return null
 
   return (
-    <div style={{ position:'fixed', bottom:72, left:0, right:0, zIndex:200, padding:'0 12px', pointerEvents:'none' }}>
+    <div style={{ position:'fixed', bottom:'calc(96px + env(safe-area-inset-bottom))', left:'env(safe-area-inset-left)', right:'env(safe-area-inset-right)', zIndex:200, padding:'0 12px', pointerEvents:'none' }}>
       <div style={{ background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius:18, padding:'14px 16px', boxShadow:'0 8px 32px rgba(37,99,235,0.35)', display:'flex', gap:12, alignItems:'flex-start', pointerEvents:'all', maxWidth:480, margin:'0 auto' }}>
         <div style={{ fontSize:28, flexShrink:0, marginTop:2 }}>📲</div>
         <div style={{ flex:1, minWidth:0 }}>
@@ -286,7 +286,7 @@ function AppShell() {
     <>
       <Header />
       <PushRegistrationSync />
-      <main style={{ minHeight:'100vh', paddingBottom:80 }}>
+      <main style={{ minHeight:'100vh', paddingBottom:'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden' }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />

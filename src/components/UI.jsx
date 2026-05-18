@@ -210,11 +210,11 @@ export function Sheet({ show, onClose, title, children, syncHistory=true }) {
 
   if (!show) return null
   return (
-    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}
+    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', flexDirection:'column', justifyContent:'flex-end', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.4)' }} onClick={onClose} />
       <div className="fade-up no-scroll" onClick={e => e.stopPropagation()}
-        style={{ position:'relative', background:C.surface, borderRadius:'24px 24px 0 0', padding:'4px 20px 40px', maxHeight:'88vh', overflowY:'auto', scrollbarWidth:'none', msOverflowStyle:'none' }}>
+        style={{ position:'relative', background:C.surface, borderRadius:'24px 24px 0 0', padding:'4px 20px calc(40px + env(safe-area-inset-bottom))', maxHeight:'88vh', overflowY:'auto', scrollbarWidth:'none', msOverflowStyle:'none' }}>
         <div style={{ width:36, height:4, background:C.border, borderRadius:4, margin:'12px auto 16px' }} />
         {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:14 }}>{title}</p>}
         {children}
@@ -241,7 +241,7 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
 
   if (!show) return null
   return (
-    <div ref={scrollerRef} className="fade-in no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', scrollbarWidth:'none', msOverflowStyle:'none' }}>
+    <div ref={scrollerRef} className="fade-in no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', overflowX:'hidden', scrollbarWidth:'none', msOverflowStyle:'none', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}>
       <div style={{ position:'sticky', top:0, zIndex:20, background:'rgba(255,255,255,0.96)', borderBottom:`1px solid ${C.border}`, backdropFilter:'blur(10px)' }}>
         <div style={{ maxWidth:760, margin:'0 auto', padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
           <button
@@ -257,7 +257,7 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
           </div>
         </div>
       </div>
-      <div style={{ maxWidth:760, margin:'0 auto', padding:'0 0 96px' }}>
+      <div style={{ maxWidth:760, margin:'0 auto', padding:'0 0 calc(108px + env(safe-area-inset-bottom))' }}>
         {children}
       </div>
     </div>
@@ -276,7 +276,7 @@ export function Modal({ show, onClose, title, children, syncHistory=true }) {
 
   if (!show) return null
   return (
-    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))', boxSizing:'border-box' }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)' }} onClick={onClose} />
       <div className="fade-up no-scroll" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', scrollbarWidth:'none', msOverflowStyle:'none', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
         <div style={{ position:'sticky', top:0, background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'24px 24px 0 0' }}>

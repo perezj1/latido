@@ -3,13 +3,41 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   * { box-sizing: border-box; }
+
   body {
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     font-family: 'Poppins', system-ui, sans-serif;
     background: #F0F6FF;
     color: #0F172A;
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  #root {
+    min-height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+
+@supports (overflow: clip) {
+  html,
+  body,
+  #root {
+    overflow-x: clip;
   }
 }
 
@@ -91,11 +119,15 @@ img { max-width: 100%; }
 
 /* ── iPhone notch / safe area ── */
 .safe-bottom {
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  padding-left: max(0px, env(safe-area-inset-left));
+  padding-right: max(0px, env(safe-area-inset-right));
+  padding-bottom: max(14px, calc(env(safe-area-inset-bottom) + 8px));
 }
 
 /* Prevent iOS Safari from auto-zooming focused textareas. */
 @media (max-width: 767px) {
+  input,
+  select,
   textarea {
     font-size: 16px !important;
   }

@@ -48,10 +48,11 @@ export default function BottomNav() {
     <>
       {fab && (
         <div style={{
-          position:'fixed', bottom:'calc(75px + env(safe-area-inset-bottom))', right:18, zIndex:60,
+          position:'fixed', bottom:'calc(88px + env(safe-area-inset-bottom))', right:'calc(18px + env(safe-area-inset-right))', zIndex:60,
           padding:2.5, borderRadius:26,
           background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)',
           boxShadow:'0 4px 20px rgba(37,99,235,0.45)',
+          transform:'translateZ(0)',
         }}>
           {fab.showPicker ? (
             <button
@@ -112,7 +113,7 @@ export default function BottomNav() {
         </div>
       )}
 
-      <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center' }}>
+      <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'rgba(255,255,255,0.96)', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', minHeight:68, boxShadow:'0 -8px 26px rgba(15,23,42,0.08)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', transform:'translateZ(0)' }}>
         {TABS.map(tab => {
           const active = tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
           const needsNotificationDot = tab.path === '/perfil' && needsPushActivation
