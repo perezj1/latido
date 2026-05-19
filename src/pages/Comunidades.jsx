@@ -497,8 +497,8 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
       <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
         <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap', marginBottom:5 }}>
           <Tag bg={C.primaryLight} color={C.primary}>{category?.label || 'Negocio'}</Tag>
-          {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
           {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+          {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{business.name}</h3>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:6, flexWrap:'wrap' }}>
@@ -642,15 +642,6 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                   style={{ width:'100%', border:'none', padding:0, background:'transparent', borderRadius:16, overflow:'hidden', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative' }}
                 >
                   <img src={photos[0]} alt={business.name} style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
-                  {business.verified && (
-                    <span
-                      title="Verificado"
-                      style={{ position:'absolute', top:12, right:12, height:32, borderRadius:999, background:'#D1FAE5', color:'#065F46', border:'2px solid #fff', boxShadow:'0 8px 22px rgba(15,23,42,0.16)', display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'0 10px', fontFamily:PP, fontSize:11, fontWeight:800, lineHeight:1, whiteSpace:'nowrap' }}
-                    >
-                      <span style={{ fontSize:13, fontWeight:900 }}>✓</span>
-                      Verificado
-                    </span>
-                  )}
                 </button>
               )}
               {photos[0] && (
@@ -667,8 +658,9 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
               </div>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
                 {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
-                {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
                 <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
+                {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+                {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
               </div>
               <RecommendationBox
                 count={recommendationCount}
