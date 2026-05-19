@@ -47,6 +47,18 @@
 
 .fade-up  { animation: fadeUp  .28s ease forwards; }
 .fade-in  { animation: fadeIn  .2s  ease forwards; }
+.share-button:hover {
+  background: #EFF6FF !important;
+  border-color: #BFDBFE !important;
+  color: #2563EB !important;
+}
+.share-button:focus-visible {
+  outline: 3px solid #BFDBFE;
+  outline-offset: 2px;
+}
+.share-button:active {
+  transform: scale(0.98);
+}
 .skeleton {
   background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
   background-size: 200% 100%;

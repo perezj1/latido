@@ -224,7 +224,7 @@ export function Sheet({ show, onClose, title, children, syncHistory=true }) {
 }
 
 // ── Modal (centered) ───────────────────────────────────────────
-export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncHistory=true }) {
+export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncHistory=true, actions=null }) {
   useOverlayHistory(show, onClose, syncHistory)
   const scrollerRef = useRef(null)
 
@@ -251,10 +251,11 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
           >
             ←
           </button>
-          <div style={{ minWidth:0 }}>
+          <div style={{ minWidth:0, flex:1 }}>
             {eyebrow && <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:0.8, margin:'0 0 1px', textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eyebrow}</p>}
             {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</p>}
           </div>
+          {actions && <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>{actions}</div>}
         </div>
       </div>
       <div style={{ maxWidth:760, margin:'0 auto', padding:'0 0 calc(108px + env(safe-area-inset-bottom))' }}>

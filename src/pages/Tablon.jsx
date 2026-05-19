@@ -9,6 +9,8 @@ import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdL
 import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery, ImageLightbox } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 import ReportButton from '../components/ReportButton'
+import ShareButton, { buildShareUrl } from '../components/ShareButton'
+import FavoriteButton from '../components/FavoriteButton'
 
 function fmtPrice(price) {
   if (!price) return ''
@@ -95,20 +97,14 @@ function getJobIntentTag(job) {
   return { ...intent, ...(JOB_INTENT_TAG_STYLE[intent.id] || JOB_INTENT_TAG_STYLE.ofrece) }
 }
 
-function FavoriteButton({ isFav, onClick, style={} }) {
-  return (
-    <button
-      type="button"
-      onClick={event => {
-        event.stopPropagation()
-        onClick?.()
-      }}
-      style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.96)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, cursor:'pointer', boxShadow:'0 8px 18px rgba(15,23,42,0.14)', lineHeight:1, ...style }}
-      aria-label={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-    >
-      {isFav ? '\u2764\uFE0F' : '\uD83E\uDD0D'}
-    </button>
-  )
+function getAdShareText(ad) {
+  const meta = [fmtPrice(ad.price), formatAdLocation(ad) || ad.canton].filter(Boolean).join(' - ')
+  return ['Mira este anuncio en Latido.', meta].filter(Boolean).join('\n')
+}
+
+function getJobShareText(job) {
+  const meta = [job.company && job.company !== job.title ? job.company : '', job.city || job.canton].filter(Boolean).join(' - ')
+  return ['Mira este empleo en Latido.', meta].filter(Boolean).join('\n')
 }
 
 function RelatedRail({ title, children, empty=false }) {
@@ -224,7 +220,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
 }
 
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
-function AdDetail({ ad, user, avatarSrc, isFav, onToggleFav, relatedAds=[], onOpenRelatedAd }) {
+function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd }) {
   const navigate = useNavigate()
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const normalizedCat = getAdCategoryId(ad)
@@ -273,16 +269,17 @@ function AdDetail({ ad, user, avatarSrc, isFav, onToggleFav, relatedAds=[], onOp
       )}
 
       <div style={{ padding:'22px 20px 16px', borderBottom:`1px solid ${C.border}` }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14 }}>
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap', minWidth:0 }}>
+        <div style={{ display:'flex', gap:10, borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', minWidth:0, flex:1 }}>
             <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
             {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
             <PrivacyTag privacy={ad.privacy}/>
             {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
           </div>
-          <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ width:36, height:36, fontSize:18, flexShrink:0 }} />
         </div>
-        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, lineHeight:1.18, margin:'0 0 12px', ...WRAPPING_TEXT }}>{ad.title}</h1>
+        <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+          <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{ad.title}</h1>
+        </div>
         <div style={{ display:'flex', gap:9, alignItems:'center', minWidth:0 }}>
           <Avatar name={ad.user_name || ad.user} size={34} src={avatarSrc}/>
           <div style={{ minWidth:0 }}>
@@ -375,7 +372,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
 }
 
 /* ── Full job detail (inside Sheet) ─────────────────────── */
-function JobDetail({ job, user, isFav, onToggleFav, avatarSrc, authorName, relatedJobs=[], onOpenRelatedJob }) {
+function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRelatedJob }) {
   const navigate = useNavigate()
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
   const isOwnJob = user && job.user_id === user.id
@@ -399,18 +396,19 @@ function JobDetail({ job, user, isFav, onToggleFav, avatarSrc, authorName, relat
       </div>
 
       <div style={{ padding:'22px 20px 16px', borderBottom:`1px solid ${C.border}` }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14 }}>
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap', minWidth:0 }}>
+        <div style={{ display:'flex', gap:10, borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', minWidth:0, flex:1 }}>
             <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
             {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
             {job.sector && <Tag bg={C.bg} color={C.mid}>{job.sector}</Tag>}
           </div>
-          <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ width:36, height:36, fontSize:18, flexShrink:0 }} />
         </div>
-        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, lineHeight:1.18, margin:'0 0 12px', ...WRAPPING_TEXT }}>{job.title || job.company}</h1>
-        {job.company && job.company !== job.title && (
-          <p style={{ fontFamily:PP, fontSize:14, fontWeight:700, color:C.mid, margin:'0 0 12px', lineHeight:1.4, ...WRAPPING_TEXT }}>{isSeekingJob ? 'Perfil' : 'Empresa'}: {job.company}</p>
-        )}
+        <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+          <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{job.title || job.company}</h1>
+          {job.company && job.company !== job.title && (
+            <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:C.mid, margin:'6px 0 0', lineHeight:1.4, ...WRAPPING_TEXT }}>{isSeekingJob ? 'Perfil' : 'Empresa'}: {job.company}</p>
+          )}
+        </div>
         <div style={{ display:'flex', gap:9, alignItems:'center', minWidth:0 }}>
           <Avatar name={author} size={34} src={avatarSrc}/>
           <div style={{ minWidth:0 }}>
@@ -1108,14 +1106,32 @@ export default function Tablon() {
       </Sheet>
 
       {/* Ad detail page */}
-      <FullPageOverlay show={!!selectedAd} onClose={closeAdDetails} title={selectedAd?.title || ''} eyebrow="Anuncio" syncHistory={false}>
+      <FullPageOverlay
+        show={!!selectedAd}
+        onClose={closeAdDetails}
+        title="Anuncio"
+        syncHistory={false}
+        actions={selectedAd && (
+          <>
+            <ShareButton
+              title={selectedAd.title || 'Anuncio en Latido'}
+              text={getAdShareText(selectedAd)}
+              url={buildShareUrl('/tablon', { cat:getAdCategoryId(selectedAd), openAd:selectedAd.id })}
+              ariaLabel="Compartir anuncio"
+            />
+            <FavoriteButton
+              isFav={isFavorite('ads', selectedAd.id)}
+              onClick={() => toggleFavorite('ads', selectedAd.id)}
+              style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
+            />
+          </>
+        )}
+      >
         {selectedAd && (
           <AdDetail
             ad={selectedAd}
             user={user}
             avatarSrc={userProfiles.get(selectedAd.user_id)?.avatarUrl}
-            isFav={isFavorite('ads', selectedAd.id)}
-            onToggleFav={() => toggleFavorite('ads', selectedAd.id)}
             relatedAds={relatedAdsForSelected}
             onOpenRelatedAd={openAdDetails}
           />
@@ -1123,15 +1139,33 @@ export default function Tablon() {
       </FullPageOverlay>
 
       {/* Job detail page */}
-      <FullPageOverlay show={!!selectedJob} onClose={closeJobDetails} title={selectedJob?.title || ''} eyebrow="Empleo" syncHistory={false}>
+      <FullPageOverlay
+        show={!!selectedJob}
+        onClose={closeJobDetails}
+        title="Empleo"
+        syncHistory={false}
+        actions={selectedJob && (
+          <>
+            <ShareButton
+              title={selectedJob.title || selectedJob.company || 'Empleo en Latido'}
+              text={getJobShareText(selectedJob)}
+              url={buildShareUrl('/tablon', { cat:'empleo', openJob:selectedJob.id })}
+              ariaLabel="Compartir empleo"
+            />
+            <FavoriteButton
+              isFav={isFavorite('jobs', selectedJob.id)}
+              onClick={() => toggleFavorite('jobs', selectedJob.id)}
+              style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
+            />
+          </>
+        )}
+      >
         {selectedJob && (
           <JobDetail
             job={selectedJob}
             user={user}
             avatarSrc={userProfiles.get(selectedJob.user_id)?.avatarUrl}
             authorName={userProfiles.get(selectedJob.user_id)?.name}
-            isFav={isFavorite('jobs', selectedJob.id)}
-            onToggleFav={() => toggleFavorite('jobs', selectedJob.id)}
             relatedJobs={relatedJobsForSelected}
             onOpenRelatedJob={openJobDetails}
           />

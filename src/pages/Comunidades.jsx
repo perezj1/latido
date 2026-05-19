@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useFavorites } from '../hooks/useFavorites'
 import {
   MOCK_COMMUNITIES,
   MOCK_NEGOCIOS,
@@ -16,6 +17,8 @@ import {
 import { C, PP } from '../lib/theme'
 import { Tag, PillFilters, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewCard, ReviewForm, PhotoGallery, ImageLightbox } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
+import ShareButton, { buildShareUrl } from '../components/ShareButton'
+import FavoriteButton from '../components/FavoriteButton'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
@@ -201,6 +204,11 @@ function normalizeEvent(event) {
 function averageRating(reviews) {
   if (!reviews?.length) return null
   return +(reviews.reduce((sum, review) => sum + review.stars, 0) / reviews.length).toFixed(1)
+}
+
+function getContentShareText(kind, location) {
+  const base = `Mira este ${kind} en Latido.`
+  return location ? `${base}\n${location}` : base
 }
 
 function getBusinessContactMethods(business) {
@@ -523,6 +531,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
 
 function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap, relatedBusinesses=[], onOpenRelatedBusiness }) {
   const { isLoggedIn, displayName } = useAuth()
+  const { isFavorite, toggleFavorite } = useFavorites()
   const category = NEGOCIO_TYPES.find(type => type.id === business.type)
   const services = servicesMap[business.id] || business.services || []
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
@@ -550,7 +559,27 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   }
 
   return (
-    <FullPageOverlay show={!!business} onClose={onClose} title={business.name} eyebrow="Negocio" syncHistory={false}>
+    <FullPageOverlay
+      show={!!business}
+      onClose={onClose}
+      title="Negocio"
+      syncHistory={false}
+      actions={(
+        <>
+          <ShareButton
+            title={business.name || 'Negocio en Latido'}
+            text={getContentShareText('negocio', business.city)}
+            url={buildShareUrl('/comunidades', { view:'negocios', openBusiness:business.id })}
+            ariaLabel="Compartir negocio"
+          />
+          <FavoriteButton
+            isFav={isFavorite('businesses', business.id)}
+            onClick={() => toggleFavorite('businesses', business.id)}
+            style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
+          />
+        </>
+      )}
+    >
       <div style={{ background:'#fff' }}>
         <div style={{ display:'flex', borderBottom:`1px solid ${C.border}`, background:'#fff', position:'sticky', top:59, zIndex:12 }}>
           {[
@@ -576,6 +605,15 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                   style={{ width:'100%', border:'none', padding:0, background:'transparent', borderRadius:16, overflow:'hidden', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative' }}
                 >
                   <img src={photos[0]} alt={business.name} style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
+                  {business.verified && (
+                    <span
+                      title="Verificado"
+                      style={{ position:'absolute', top:12, right:12, height:32, borderRadius:999, background:'#D1FAE5', color:'#065F46', border:'2px solid #fff', boxShadow:'0 8px 22px rgba(15,23,42,0.16)', display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'0 10px', fontFamily:PP, fontSize:11, fontWeight:800, lineHeight:1, whiteSpace:'nowrap' }}
+                    >
+                      <span style={{ fontSize:13, fontWeight:900 }}>✓</span>
+                      Verificado
+                    </span>
+                  )}
                   <span style={{ position:'absolute', left:12, bottom:12, fontFamily:PP, fontSize:11, fontWeight:800, color:'#fff', background:'rgba(15,23,42,0.68)', borderRadius:999, padding:'5px 10px' }}>
                     Ampliar
                   </span>
@@ -590,11 +628,13 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                   title={business.name || 'Foto del negocio'}
                 />
               )}
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
                 {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
-                {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
                 {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
                 <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
+              </div>
+              <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+                <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{business.name}</h1>
               </div>
               <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:business.website ? 8 : 14, whiteSpace:'pre-line' }}>{business.desc}</p>
               {business.website && (
@@ -741,24 +781,47 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
 }
 
 function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[], onOpenRelatedCommunity }) {
+  const { isFavorite, toggleFavorite } = useFavorites()
   if (!community) return null
 
   const category = getCommunityMeta(community.cat)
 
   return (
-    <FullPageOverlay show={!!community} onClose={onClose} title={community.name} eyebrow="Grupo" syncHistory={false}>
+    <FullPageOverlay
+      show={!!community}
+      onClose={onClose}
+      title="Grupo"
+      syncHistory={false}
+      actions={(
+        <>
+          <ShareButton
+            title={community.name || 'Grupo en Latido'}
+            text={getContentShareText('grupo', community.city)}
+            url={buildShareUrl('/comunidades', { openCommunity:community.id })}
+            ariaLabel="Compartir grupo"
+          />
+          <FavoriteButton
+            isFav={isFavorite('communities', community.id)}
+            onClick={() => toggleFavorite('communities', community.id)}
+            style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
+          />
+        </>
+      )}
+    >
       <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {community.photo_url && (
         <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
           <img src={community.photo_url} alt={community.name} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
         </div>
       )}
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, lineHeight:1.18, margin:'0 0 12px' }}>{community.name}</h1>
-      <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+      <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
         {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.emoji} {category.label}</Tag>}
         <Tag bg={C.bg} color={C.mid}>📍 {community.city}</Tag>
         {!isWebCommunity(community.contact) && <Tag bg={C.bg} color={C.mid}>👥 {community.members} miembros</Tag>}
         {community.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
+      </div>
+      <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{community.name}</h1>
       </div>
 
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>
@@ -796,22 +859,45 @@ function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[]
 
 
 function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
+  const { isFavorite, toggleFavorite } = useFavorites()
   if (!event) return null
 
   return (
-    <FullPageOverlay show={!!event} onClose={onClose} title={event.title} eyebrow="Evento" syncHistory={false}>
+    <FullPageOverlay
+      show={!!event}
+      onClose={onClose}
+      title="Evento"
+      syncHistory={false}
+      actions={(
+        <>
+          <ShareButton
+            title={event.title || 'Evento en Latido'}
+            text={getContentShareText('evento', [event.day, event.month, event.city].filter(Boolean).join(' - '))}
+            url={buildShareUrl('/comunidades', { view:'eventos', openEvent:event.id })}
+            ariaLabel="Compartir evento"
+          />
+          <FavoriteButton
+            isFav={isFavorite('events', event.id)}
+            onClick={() => toggleFavorite('events', event.id)}
+            style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
+          />
+        </>
+      )}
+    >
       <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {event.img && (
         <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
           <img src={event.img} alt={event.title} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
         </div>
       )}
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, lineHeight:1.18, margin:'0 0 12px' }}>{event.title}</h1>
-      <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+      <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
         <Tag bg="#DBEAFE" color={C.primaryDark}>{EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'}</Tag>
         <Tag bg={C.bg} color={C.mid}>📍 {event.city}</Tag>
         <Tag bg={C.bg} color={C.mid}>🕒 {event.time}</Tag>
         <Tag bg={C.bg} color={C.mid}>🎟 {event.price}</Tag>
+      </div>
+      <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{event.title}</h1>
       </div>
       <InfoBanner emoji={event.emoji} title={`${event.day} ${event.month} · ${event.venue}`} text={`Organiza ${event.host}`} bg={C.primaryLight} border={C.primaryMid} color={C.primaryDark} />
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>{event.desc}</p>

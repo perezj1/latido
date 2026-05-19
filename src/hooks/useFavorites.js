@@ -2,9 +2,11 @@ import { useState, useCallback } from 'react'
 
 const KEY = 'latido_favorites'
 
+const DEFAULT_FAVORITES = { ads:[], jobs:[], businesses:[], communities:[], events:[] }
+
 function load() {
-  try { return JSON.parse(localStorage.getItem(KEY) || '{"ads":[],"jobs":[]}') }
-  catch { return { ads:[], jobs:[] } }
+  try { return { ...DEFAULT_FAVORITES, ...JSON.parse(localStorage.getItem(KEY) || '{}') } }
+  catch { return DEFAULT_FAVORITES }
 }
 
 export function useFavorites() {
