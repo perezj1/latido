@@ -618,7 +618,18 @@ export default function Admin() {
     content:    { icon: '📋', label: 'Contenido reciente' },
   }
 
-  const activeSection = SECTION_TITLES[tab]
+  const activeSection = tab === 'content'
+    ? { ...SECTION_TITLES.content, label: 'Publicaciones recientes' }
+    : SECTION_TITLES[tab]
+  const activeChart =
+    tab === 'users'
+      ? <ChartCard title="Usuarios registrados" items={users} color={C.primary} />
+      : tab === 'reports'
+        ? <ChartCard title="Reportes recibidos" items={reports} color="#DC2626" />
+        : tab === 'content'
+          ? <ChartCard title="Publicaciones" items={[...recentListings, ...recentJobs]} color="#059669" />
+          : null
+  const showChartPlaceholder = ['users', 'reports', 'content'].includes(tab)
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px 100px' }}>
@@ -647,28 +658,25 @@ export default function Admin() {
           <StatCard
             key={card.id}
             {...card}
+            label={card.id === 'content' ? 'Publicaciones' : card.label}
             isActive={tab === card.id}
             onClick={() => setTab(card.id)}
           />
         ))}
       </div>
 
-      {/* Charts row */}
-      {!loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 24 }}>
-          <ChartCard title="Usuarios registrados" items={users} color={C.primary} />
-          <ChartCard title="Reportes recibidos"   items={reports} color="#DC2626" />
-          <ChartCard title="Publicaciones"         items={[...recentListings, ...recentJobs]} color="#059669" />
+      {/* Context chart */}
+      {!loading && activeChart && (
+        <div style={{ marginBottom: 24 }}>
+          {activeChart}
         </div>
       )}
 
-      {loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 24 }}>
-          {[0, 1, 2].map(i => (
-            <div key={i} style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: '16px', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Cargando...</p>
-            </div>
-          ))}
+      {loading && showChartPlaceholder && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: '16px', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Cargando...</p>
+          </div>
         </div>
       )}
 
