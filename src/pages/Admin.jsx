@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { Btn, Tag } from '../components/UI'
 import { REPORT_REASONS } from '../lib/reports'
+import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
@@ -13,6 +14,20 @@ const STATUS_LABELS = {
   approved: 'Aprobado',
   rejected: 'Eliminado',
 }
+
+const BUSINESS_VERIFICATION_FILTERS = [
+  { id: 'pending', label: 'Pendientes' },
+  { id: 'verified', label: 'Verificados' },
+  { id: 'unverified', label: 'No verificados' },
+  { id: 'rejected', label: 'Rechazados' },
+]
+
+const BUSINESS_VERIFICATION_ACTIONS = [
+  { id: 'pending', label: 'Pendiente', color: C.primary, bg: C.primaryLight },
+  { id: 'verified', label: 'Verificado', color: '#065F46', bg: '#D1FAE5' },
+  { id: 'unverified', label: 'No verificado', color: C.primary, bg: C.primaryLight },
+  { id: 'rejected', label: 'Rechazado', color: '#B91C1C', bg: '#FEE2E2' },
+]
 
 function reasonLabel(id) {
   return REPORT_REASONS.find(r => r.id === id)?.label || id || 'Sin motivo'
@@ -277,6 +292,8 @@ export default function Admin() {
   const [users, setUsers] = useState([])
   const [recentListings, setRecentListings] = useState([])
   const [recentJobs, setRecentJobs] = useState([])
+  const [businesses, setBusinesses] = useState([])
+  const [businessVerificationFilter, setBusinessVerificationFilter] = useState('pending')
   const [contentByKey, setContentByKey] = useState(new Map())
 
   const stats = useMemo(() => ({
@@ -285,7 +302,8 @@ export default function Admin() {
     users: users.length,
     banned: users.filter(u => u.banned).length,
     content: recentListings.length + recentJobs.length,
-  }), [queue, reports, users, recentListings, recentJobs])
+    businessVerification: businesses.filter(b => getBusinessVerificationDetails(b).status === 'pending').length,
+  }), [businesses, queue, reports, users, recentListings, recentJobs])
 
   const filteredUsers = useMemo(() => {
     if (!userSearch.trim()) return users
@@ -301,12 +319,13 @@ export default function Admin() {
 
   async function loadAdminData() {
     setLoading(true)
-    const [reportsRes, queueRes, usersRes, listingsRes, jobsRes] = await Promise.all([
+    const [reportsRes, queueRes, usersRes, listingsRes, jobsRes, providersRes] = await Promise.all([
       supabase.from('reports').select('*').order('created_at', { ascending: false }).limit(120),
       supabase.from('moderation_queue').select('*').order('created_at', { ascending: false }).limit(120),
       supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,banned_at,created_at').order('created_at', { ascending: false }).limit(300),
       supabase.from('listings').select('id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at').order('created_at', { ascending: false }).limit(80),
       supabase.from('jobs').select('id,title,company,desc,sector,active,user_id,canton,city,created_at').order('created_at', { ascending: false }).limit(80),
+      supabase.from('providers').select('*').order('created_at', { ascending: false }).limit(300),
     ])
 
     if (reportsRes.error || queueRes.error || usersRes.error) {
@@ -362,6 +381,7 @@ export default function Admin() {
     setUsers([...usersById.values()])
     setRecentListings(listingsRes.data || [])
     setRecentJobs(jobsRes.data || [])
+    setBusinesses(providersRes.data || [])
     setContentByKey(nextContent)
     setLoading(false)
   }
@@ -416,6 +436,60 @@ export default function Admin() {
 
   function getContentOwnerProfile(item) {
     return getUserProfileById(getContentOwnerId(item))
+  }
+
+  function getBusinessVerificationDetails(business) {
+    const computed = calculateBusinessVerification(business, { existingBusinesses: businesses })
+    const storedStatus = getBusinessVerificationStatus(business)
+    const hasStoredStatus = !!business?.verification_status && BUSINESS_VERIFICATION_STATUSES[business.verification_status]
+    return {
+      ...computed,
+      score: computed.score,
+      status: hasStoredStatus || business?.verified ? storedStatus : computed.status,
+    }
+  }
+
+  async function updateBusinessVerification(business, status) {
+    const details = getBusinessVerificationDetails(business)
+    const now = new Date().toISOString()
+    let notes = business.verification_notes || null
+
+    if (status === 'rejected') {
+      notes = window.prompt('Motivo del rechazo', notes || 'Datos insuficientes o no verificables')
+      if (notes === null) return
+    }
+
+    const patch = {
+      verification_status: status,
+      verification_score: details.score,
+      verified: status === 'verified',
+      verified_at: status === 'verified' ? now : null,
+      verified_by: status === 'verified' ? user.id : null,
+      verification_notes: status === 'rejected' ? notes : null,
+    }
+
+    const { error } = await supabase.from('providers').update(patch).eq('id', business.id)
+    if (error) {
+      toast.error(error.message?.includes('verification_')
+        ? 'Aplica primero el SQL de verificacion en Supabase.'
+        : error.message || 'No se pudo actualizar el negocio')
+      return
+    }
+
+    setBusinesses(prev => prev.map(item => String(item.id) === String(business.id) ? { ...item, ...patch } : item))
+
+    try {
+      await logAdminAction({
+        admin_id: user.id,
+        action_type: `business_verification_${status}`,
+        target_type: 'provider',
+        target_id: business.id,
+        notes: `Score ${details.score}/100${notes ? ` - ${notes}` : ''}`,
+      })
+    } catch (error) {
+      console.warn('Admin action log failed:', error)
+    }
+    toast.success(status === 'verified' ? 'Negocio verificado' : 'Estado actualizado')
   }
 
   function renderContentOwnerMeta(item) {
@@ -520,10 +594,18 @@ export default function Admin() {
 
   const pendingQueue = queue.filter(q => q.status === 'pending')
   const pendingReports = reports.filter(r => r.status === 'pending')
+  const businessVerificationCounts = BUSINESS_VERIFICATION_FILTERS.reduce((acc, item) => {
+    acc[item.id] = businesses.filter(business => getBusinessVerificationDetails(business).status === item.id).length
+    return acc
+  }, {})
+  const filteredVerificationBusinesses = businesses
+    .filter(business => getBusinessVerificationDetails(business).status === businessVerificationFilter)
+    .sort((a, b) => getBusinessVerificationDetails(b).score - getBusinessVerificationDetails(a).score)
 
   const STAT_CARDS = [
     { id: 'moderation', icon: '⏳', label: 'En revisión', value: loading ? '—' : stats.queue,   color: '#D97706', urgent: true,  sub: 'Cola de moderación' },
     { id: 'reports',    icon: '🚨', label: 'Reportes',    value: loading ? '—' : stats.reports, color: '#DC2626', urgent: true,  sub: 'Denuncias pendientes' },
+    { id: 'businessVerification', icon: '✓', label: 'Negocios', value: loading ? '—' : stats.businessVerification, color: '#059669', urgent: true, sub: 'Pendientes de verificar' },
     { id: 'users',      icon: '👥', label: 'Usuarios',    value: loading ? '—' : stats.users,   color: C.primary, urgent: false, sub: `${loading ? '—' : stats.banned} baneados` },
     { id: 'content',    icon: '📋', label: 'Contenido',   value: loading ? '—' : stats.content, color: '#059669', urgent: false, sub: 'Anuncios y empleos' },
   ]
@@ -531,6 +613,7 @@ export default function Admin() {
   const SECTION_TITLES = {
     moderation: { icon: '⏳', label: 'Cola de revisión' },
     reports:    { icon: '🚨', label: 'Reportes pendientes' },
+    businessVerification: { icon: '✓', label: 'Verificación de negocios' },
     users:      { icon: '👥', label: 'Usuarios' },
     content:    { icon: '📋', label: 'Contenido reciente' },
   }
@@ -658,6 +741,141 @@ export default function Admin() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* ── Verificación de negocios ───────────────────────────────────── */}
+      {tab === 'businessVerification' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {BUSINESS_VERIFICATION_FILTERS.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setBusinessVerificationFilter(item.id)}
+                style={{
+                  fontFamily: PP,
+                  fontWeight: 800,
+                  fontSize: 11,
+                  borderRadius: 999,
+                  border: `1.5px solid ${businessVerificationFilter === item.id ? C.primary : C.border}`,
+                  background: businessVerificationFilter === item.id ? C.primary : '#fff',
+                  color: businessVerificationFilter === item.id ? '#fff' : C.mid,
+                  padding: '8px 11px',
+                  cursor: 'pointer',
+                }}
+              >
+                {item.label} ({businessVerificationCounts[item.id] || 0})
+              </button>
+            ))}
+          </div>
+
+          {filteredVerificationBusinesses.length === 0 ? (
+            <EmptyState icon="✓" text="No hay negocios en este estado." />
+          ) : filteredVerificationBusinesses.map(business => {
+            const details = getBusinessVerificationDetails(business)
+            const statusMeta = BUSINESS_VERIFICATION_STATUSES[details.status] || BUSINESS_VERIFICATION_STATUSES.unverified
+            const description = business.description || business.desc || ''
+            const contactBits = [
+              business.whatsapp || business.phone,
+              business.email,
+              business.website,
+            ].filter(Boolean)
+
+            return (
+              <Card key={business.id}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  {business.photo_url ? (
+                    <img
+                      src={business.photo_url}
+                      alt={business.name || 'Negocio'}
+                      style={{ width: 74, height: 74, objectFit: 'contain', borderRadius: 12, background: C.bg, border: `1px solid ${C.border}`, flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div style={{ width: 74, height: 74, borderRadius: 12, background: C.bg, display: 'grid', placeItems: 'center', fontSize: 28, flexShrink: 0 }}>🏪</div>
+                  )}
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px', overflowWrap: 'anywhere' }}>
+                          {business.name || 'Negocio sin nombre'}
+                        </p>
+                        <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, overflowWrap: 'anywhere' }}>
+                          {[business.category, business.city || business.canton].filter(Boolean).join(' · ') || 'Sin categoría'}
+                        </p>
+                      </div>
+                      <Tag bg={statusMeta.bg} color={statusMeta.color}>{statusMeta.label}</Tag>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <div style={{ flex: 1, height: 8, background: C.border, borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(details.score, 100)}%`, height: '100%', background: details.score >= 80 ? '#10B981' : details.score >= 50 ? '#F59E0B' : '#EF4444' }} />
+                      </div>
+                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, whiteSpace: 'nowrap' }}>
+                        {details.score}/100
+                      </span>
+                    </div>
+
+                    {description && (
+                      <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.55, margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {description}
+                      </p>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+                      {details.criteria.map(item => (
+                        <span
+                          key={item.id}
+                          style={{
+                            fontFamily: PP,
+                            fontWeight: 700,
+                            fontSize: 10,
+                            color: item.passed ? '#065F46' : '#B91C1C',
+                            background: item.passed ? '#ECFDF5' : '#FEF2F2',
+                            borderRadius: 999,
+                            padding: '3px 8px',
+                          }}
+                        >
+                          {item.passed ? '✓' : '×'} {item.label} (+{item.points})
+                        </span>
+                      ))}
+                    </div>
+
+                    <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
+                      Contacto: {contactBits.length ? contactBits.join(' · ') : 'sin contacto'}{business.verification_notes ? ` · Nota: ${business.verification_notes}` : ''}
+                    </p>
+
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {BUSINESS_VERIFICATION_ACTIONS.map(action => {
+                        const isCurrent = details.status === action.id
+                        return (
+                          <button
+                            key={action.id}
+                            type="button"
+                            onClick={() => updateBusinessVerification(business, action.id)}
+                            style={{
+                              fontFamily: PP,
+                              fontWeight: 800,
+                              fontSize: 11,
+                              borderRadius: 10,
+                              border: `1.5px solid ${isCurrent ? action.color : action.bg}`,
+                              background: action.bg,
+                              color: action.color,
+                              padding: '9px 12px',
+                              cursor: 'pointer',
+                              boxShadow: isCurrent ? `0 0 0 3px ${action.bg}` : 'none',
+                            }}
+                          >
+                            {isCurrent ? 'Actual: ' : ''}{action.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
         </div>
       )}
 

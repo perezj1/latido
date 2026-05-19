@@ -28,13 +28,16 @@ export function isLikelySchemaMismatchError(error, table) {
   return !!getMissingColumnName(error, table)
 }
 
-export async function insertWithOptionalColumnsFallback({ table, payload, optionalColumns = [] }) {
+export async function insertWithOptionalColumnsFallback({ table, payload, optionalColumns = [], select = '', single = false }) {
   const nextPayload = { ...payload }
   const removable = new Set(optionalColumns)
   const strippedColumns = []
 
   while (true) {
-    const result = await supabase.from(table).insert(nextPayload)
+    let query = supabase.from(table).insert(nextPayload)
+    if (select) query = query.select(select)
+    if (single) query = query.single()
+    const result = await query
     if (!result.error) return { ...result, strippedColumns }
 
     const missingColumn = getMissingColumnName(result.error, table)

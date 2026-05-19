@@ -6,6 +6,8 @@ import { C, PP } from '../lib/theme'
 import { NEGOCIO_TYPES } from '../lib/constants'
 import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
 import LocationFields from '../components/LocationFields'
+import { calculateBusinessVerification } from '../lib/businessVerification'
+import { insertWithOptionalColumnsFallback } from '../lib/supabaseCompat'
 import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import toast from 'react-hot-toast'
 
@@ -65,10 +67,28 @@ export default function RegistrarNegocio() {
     const hasContact = [form.phone, form.email, form.instagram].some(value => value.trim())
     if (!hasContact) { toast.error('Añade al menos un método de contacto'); return }
     setLoading(true)
-    const servicesList = form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6)
-    const galleryPhotos = form.gallery.filter(url => url && url !== form.photo_url)
     try {
-      const { data, error } = await supabase.from('providers').insert({
+      const servicesList = form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6)
+      const galleryPhotos = form.gallery.filter(url => url && url !== form.photo_url)
+      const existingRes = await supabase
+        .from('providers')
+        .select('id,name,city,canton,whatsapp,email,website')
+        .limit(500)
+      const verification = calculateBusinessVerification({
+        category: form.type,
+        name: form.name,
+        city: form.city,
+        canton: form.canton,
+        description: form.desc,
+        phone: form.phone,
+        whatsapp: form.phone,
+        email: form.email,
+        website: form.website,
+        photo_url: form.photo_url,
+        gallery: form.gallery,
+      }, { existingBusinesses: existingRes.data || [] })
+
+      const payload = {
         user_id: user?.id,
         category: form.type,
         name: form.name.trim(),
@@ -85,7 +105,20 @@ export default function RegistrarNegocio() {
         verified: false,
         featured: false,
         active: true,
-      }).select('id').single()
+        verification_status: verification.status,
+        verification_score: verification.score,
+        verified_at: null,
+        verified_by: null,
+        verification_notes: null,
+      }
+
+      const { data, error } = await insertWithOptionalColumnsFallback({
+        table: 'providers',
+        payload,
+        optionalColumns: ['verification_status', 'verification_score', 'verified_at', 'verified_by', 'verification_notes'],
+        select: 'id',
+        single: true,
+      })
       if (error) throw error
 
       if (galleryPhotos.length && data?.id) {
