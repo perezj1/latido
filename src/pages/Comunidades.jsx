@@ -614,9 +614,6 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                       Verificado
                     </span>
                   )}
-                  <span style={{ position:'absolute', left:12, bottom:12, fontFamily:PP, fontSize:11, fontWeight:800, color:'#fff', background:'rgba(15,23,42,0.68)', borderRadius:999, padding:'5px 10px' }}>
-                    Ampliar
-                  </span>
                 </button>
               )}
               {photos[0] && (
@@ -719,12 +716,12 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           )}
 
           {tab === 'fotos' && (
-            <>
+            <div style={{ minHeight:'calc(100vh - 290px)', display:'flex', flexDirection:'column', justifyContent:'center', padding:'24px 0 48px' }}>
               <PhotoGallery photos={photos.slice(1)} mainPhoto={photos[0]} />
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center' }}>
                 {photos.length} foto{photos.length !== 1 ? 's' : ''} · Desliza para ver más
               </p>
-            </>
+            </div>
           )}
 
           {tab === 'resenas' && (

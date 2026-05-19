@@ -248,9 +248,6 @@ function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd }) {
             style={{ width:'100%', minHeight:260, maxHeight:420, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', border:'none', padding:0, cursor:'zoom-in', position:'relative' }}
           >
             <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:420, objectFit:'contain', display:'block' }}/>
-            <span style={{ position:'absolute', left:12, bottom:12, fontFamily:PP, fontSize:11, fontWeight:800, color:'#fff', background:'rgba(15,23,42,0.68)', borderRadius:999, padding:'5px 10px' }}>
-              Ampliar
-            </span>
           </button>
         ) : (
           <div style={{ height:260, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:64 }}>
