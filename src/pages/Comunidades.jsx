@@ -206,6 +206,42 @@ function averageRating(reviews) {
   return +(reviews.reduce((sum, review) => sum + review.stars, 0) / reviews.length).toFixed(1)
 }
 
+function getRecommendationCopy(count=0) {
+  if (count <= 0) {
+    return {
+      title:'Sé la primera persona en recomendarlo',
+      helper:'Tu recomendación ayuda a otros en la comunidad.',
+    }
+  }
+  if (count === 1) return { title:'1 persona lo recomienda' }
+  return { title:`${count} personas lo recomiendan.` }
+}
+
+function RecommendationBox({ count=0, recommended=false, loading=false, onToggle }) {
+  const buttonLabel = recommended ? 'Quitar recomendación' : 'Recomendar este negocio'
+  const copy = getRecommendationCopy(count)
+  return (
+    <div style={{ background:'#fff', border:`1px solid ${C.borderLight}`, borderRadius:12, padding:'8px 9px', marginBottom:14, display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
+      <div style={{ minWidth:0 }}>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.mid, lineHeight:1.35, margin:0, ...WRAPPING_TEXT }}>{copy.title}</p>
+        {copy.helper && (
+          <p style={{ fontFamily:PP, fontWeight:500, fontSize:10.5, color:C.light, lineHeight:1.35, margin:'2px 0 0', ...WRAPPING_TEXT }}>{copy.helper}</p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={loading}
+        aria-label={buttonLabel}
+        title={buttonLabel}
+        style={{ width:38, height:38, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontWeight:800, fontSize:18, color:recommended ? '#065F46' : C.primary, background:'#fff', border:`1px solid ${recommended ? '#86EFAC' : C.border}`, borderRadius:'50%', padding:0, cursor:loading ? 'wait' : 'pointer', whiteSpace:'nowrap', flexShrink:0, boxShadow:'0 4px 14px rgba(15,23,42,0.06)', opacity:loading ? 0.7 : 1 }}
+      >
+        <span aria-hidden="true">👍</span>
+      </button>
+    </div>
+  )
+}
+
 function getContentShareText(kind, location) {
   const base = `Mira este ${kind} en Latido.`
   return location ? `${base}\n${location}` : base
@@ -406,7 +442,7 @@ function CommunityCard({ group, onClick }) {
   )
 }
 
-function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap }) {
+function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, recommendationCount=0 }) {
   const category = NEGOCIO_TYPES.find(type => type.id === business.type)
   const services = servicesMap[business.id] || business.services || []
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
@@ -461,7 +497,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
       <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
         <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap', marginBottom:5 }}>
           <Tag bg={C.primaryLight} color={C.primary}>{category?.label || 'Negocio'}</Tag>
-          {business.featured && <Tag bg={C.primary} color="#fff">⭐ Destacado</Tag>}
+          {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
           {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{business.name}</h3>
@@ -471,6 +507,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
           ) : (
             <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>Sin reseñas aún</span>
           )}
+          {recommendationCount > 0 && <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.mid, display:'inline-flex', alignItems:'center', gap:3 }}>👍 {recommendationCount}</span>}
           <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{business.city}</span>
         </div>
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{business.desc}</p>
@@ -483,7 +520,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
             {services.length > 4 && <Tag bg={C.bg} color={C.mid}>+{services.length - 4}</Tag>}
           </div>
         )}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, borderTop:`1px solid ${C.borderLight}`, paddingTop:10, marginTop:2 }}>
           <span style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, flexShrink:0 }}>Ver perfil</span>
           {hasContact && (
             <button
@@ -529,7 +566,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap })
   )
 }
 
-function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap, relatedBusinesses=[], onOpenRelatedBusiness }) {
+function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap, relatedBusinesses=[], onOpenRelatedBusiness, recommendationCount=0, recommended=false, recommendationLoading=false, onToggleRecommend }) {
   const { isLoggedIn, displayName } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const category = NEGOCIO_TYPES.find(type => type.id === business.type)
@@ -625,14 +662,20 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                   title={business.name || 'Foto del negocio'}
                 />
               )}
+              <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
+                <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{business.name}</h1>
+              </div>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
                 {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
                 {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
                 <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
               </div>
-              <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
-                <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{business.name}</h1>
-              </div>
+              <RecommendationBox
+                count={recommendationCount}
+                recommended={recommended}
+                loading={recommendationLoading}
+                onToggle={onToggleRecommend}
+              />
               <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:business.website ? 8 : 14, whiteSpace:'pre-line' }}>{business.desc}</p>
               {business.website && (
                 <a
@@ -811,14 +854,14 @@ function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[]
           <img src={community.photo_url} alt={community.name} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
         </div>
       )}
+      <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
+        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{community.name}</h1>
+      </div>
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
         {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.emoji} {category.label}</Tag>}
         <Tag bg={C.bg} color={C.mid}>📍 {community.city}</Tag>
         {!isWebCommunity(community.contact) && <Tag bg={C.bg} color={C.mid}>👥 {community.members} miembros</Tag>}
         {community.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
-      </div>
-      <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
-        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{community.name}</h1>
       </div>
 
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>
@@ -887,14 +930,14 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
           <img src={event.img} alt={event.title} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
         </div>
       )}
+      <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
+        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{event.title}</h1>
+      </div>
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
         <Tag bg="#DBEAFE" color={C.primaryDark}>{EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'}</Tag>
         <Tag bg={C.bg} color={C.mid}>📍 {event.city}</Tag>
         <Tag bg={C.bg} color={C.mid}>🕒 {event.time}</Tag>
         <Tag bg={C.bg} color={C.mid}>🎟 {event.price}</Tag>
-      </div>
-      <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
-        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{event.title}</h1>
       </div>
       <InfoBanner emoji={event.emoji} title={`${event.day} ${event.month} · ${event.venue}`} text={`Organiza ${event.host}`} bg={C.primaryLight} border={C.primaryMid} color={C.primaryDark} />
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>{event.desc}</p>
@@ -924,7 +967,7 @@ function applyCachedData(snapshot, setters) {
 }
 
 export default function Comunidades() {
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [communities, setCommunities] = useState(() => comunidadesCache.data?.communities ?? [])
   const [businesses, setBusinesses] = useState(() => comunidadesCache.data?.businesses ?? MOCK_NEGOCIOS)
@@ -940,6 +983,9 @@ export default function Comunidades() {
   const [selectedBusiness, setSelectedBusiness] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [eventfrogOpen, setEventfrogOpen] = useState(true)
+  const [businessRecommendations, setBusinessRecommendations] = useState({})
+  const [recommendedBusinessIds, setRecommendedBusinessIds] = useState(() => new Set())
+  const [recommendationLoading, setRecommendationLoading] = useState({})
 
   const view = searchParams.get('view')
   const openCommunityId = searchParams.get('openCommunity') || ''
@@ -1063,6 +1109,92 @@ export default function Comunidades() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadBusinessRecommendations() {
+      try {
+        const countsRes = await supabase.rpc('get_business_recommendation_counts')
+        if (!cancelled && !countsRes.error && Array.isArray(countsRes.data)) {
+          const nextCounts = {}
+          countsRes.data.forEach(row => {
+            if (row?.business_id) nextCounts[row.business_id] = Number(row.recommendation_count || 0)
+          })
+          setBusinessRecommendations(nextCounts)
+        }
+
+        if (!user?.id) {
+          if (!cancelled) setRecommendedBusinessIds(new Set())
+          return
+        }
+
+        const mineRes = await supabase.rpc('get_my_business_recommendations')
+        if (!cancelled && !mineRes.error && Array.isArray(mineRes.data)) {
+          setRecommendedBusinessIds(new Set(mineRes.data.map(row => row.business_id).filter(Boolean)))
+        }
+      } catch {}
+    }
+
+    loadBusinessRecommendations()
+    return () => { cancelled = true }
+  }, [user?.id])
+
+  const handleToggleBusinessRecommendation = async business => {
+    const businessId = business?.id
+    if (!businessId) return
+
+    if (!isLoggedIn) {
+      toast.error('Inicia sesión para recomendar negocios')
+      return
+    }
+
+    if (recommendationLoading[businessId]) return
+
+    const wasRecommended = recommendedBusinessIds.has(businessId)
+    const previousCount = businessRecommendations[businessId] || 0
+    const optimisticRecommended = !wasRecommended
+    const optimisticCount = Math.max(0, previousCount + (optimisticRecommended ? 1 : -1))
+
+    setRecommendationLoading(prev => ({ ...prev, [businessId]: true }))
+    setRecommendedBusinessIds(prev => {
+      const next = new Set(prev)
+      optimisticRecommended ? next.add(businessId) : next.delete(businessId)
+      return next
+    })
+    setBusinessRecommendations(prev => ({ ...prev, [businessId]: optimisticCount }))
+
+    try {
+      const { data, error } = await supabase.rpc('toggle_business_recommendation', { p_business_id: businessId })
+      if (error) throw error
+
+      const result = Array.isArray(data) ? data[0] : data
+      const confirmedRecommended = !!result?.recommended
+      const confirmedCount = Number(result?.recommendation_count ?? optimisticCount)
+
+      setRecommendedBusinessIds(prev => {
+        const next = new Set(prev)
+        confirmedRecommended ? next.add(businessId) : next.delete(businessId)
+        return next
+      })
+      setBusinessRecommendations(prev => ({ ...prev, [businessId]: confirmedCount }))
+      toast.success(confirmedRecommended ? 'Gracias por recomendar este negocio' : 'Has dejado de recomendar este negocio')
+    } catch {
+      setRecommendedBusinessIds(prev => {
+        const next = new Set(prev)
+        wasRecommended ? next.add(businessId) : next.delete(businessId)
+        return next
+      })
+      setBusinessRecommendations(prev => ({ ...prev, [businessId]: previousCount }))
+      toast.error('No se pudo actualizar la recomendación')
+    } finally {
+      setRecommendationLoading(prev => {
+        const next = { ...prev }
+        delete next[businessId]
+        return next
+      })
+    }
+  }
+
   const handleTabChange = nextTab => {
     const params = new URLSearchParams(searchParams)
     if (nextTab === 'comunidades') params.delete('view')
@@ -1142,7 +1274,6 @@ export default function Comunidades() {
   )
 
   const filteredNeg = [...businesses]
-    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
     .filter(business =>
       business.type !== 'empleo' && business.type !== 'vivienda' &&
       (!negType || business.type === negType) &&
@@ -1152,6 +1283,12 @@ export default function Comunidades() {
         business.city.toLowerCase().includes(search.toLowerCase()) ||
         (businessServices[business.id] || business.services || []).some(service => service.toLowerCase().includes(search.toLowerCase())))
     )
+    .sort((a, b) => {
+      if (a.featured !== b.featured) return b.featured ? 1 : -1
+      const recommendationDiff = (businessRecommendations[b.id] || 0) - (businessRecommendations[a.id] || 0)
+      if (recommendationDiff) return recommendationDiff
+      return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+    })
 
   const relatedCommunitiesForSelected = useMemo(() => {
     if (!selectedCommunity) return []
@@ -1172,8 +1309,9 @@ export default function Comunidades() {
     const score = business => {
       const typeScore = business.type === selectedBusiness.type ? 4 : 0
       const serviceScore = sharedServicesCount(business)
-      const featuredScore = business.featured ? 1 : 0
-      return typeScore + serviceScore + featuredScore
+      const featuredScore = business.featured ? 2 : 0
+      const recommendationScore = Math.min((businessRecommendations[business.id] || 0) / 4, 4)
+      return typeScore + serviceScore + featuredScore + recommendationScore
     }
 
     return businesses
@@ -1189,7 +1327,7 @@ export default function Comunidades() {
         return String(b.created_at || '').localeCompare(String(a.created_at || ''))
       })
       .slice(0, 12)
-  }, [businessServices, businesses, selectedBusiness])
+  }, [businessRecommendations, businessServices, businesses, selectedBusiness])
 
   const relatedEventsForSelected = useMemo(() => {
     if (!selectedEvent) return []
@@ -1301,6 +1439,7 @@ export default function Comunidades() {
                   servicesMap={businessServices}
                   photosMap={businessPhotos}
                   reviewsMap={businessReviews}
+                  recommendationCount={businessRecommendations[business.id] || 0}
                 />
               ))}
             </div>
@@ -1398,6 +1537,10 @@ export default function Comunidades() {
           reviewsMap={businessReviews}
           relatedBusinesses={relatedBusinessesForSelected}
           onOpenRelatedBusiness={openBusinessDetails}
+          recommendationCount={businessRecommendations[selectedBusiness.id] || 0}
+          recommended={recommendedBusinessIds.has(selectedBusiness.id)}
+          recommendationLoading={!!recommendationLoading[selectedBusiness.id]}
+          onToggleRecommend={() => handleToggleBusinessRecommendation(selectedBusiness)}
         />
       )}
       <EventDetail

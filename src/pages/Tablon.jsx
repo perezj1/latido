@@ -266,16 +266,14 @@ function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd }) {
       )}
 
       <div style={{ padding:'22px 20px 16px', borderBottom:`1px solid ${C.border}` }}>
-        <div style={{ display:'flex', gap:10, borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap', minWidth:0, flex:1 }}>
-            <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-            {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
-            <PrivacyTag privacy={ad.privacy}/>
-            {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
-          </div>
-        </div>
-        <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+        <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{ad.title}</h1>
+        </div>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
+          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
+          <PrivacyTag privacy={ad.privacy}/>
+          {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
         </div>
         <div style={{ display:'flex', gap:9, alignItems:'center', minWidth:0 }}>
           <Avatar name={ad.user_name || ad.user} size={34} src={avatarSrc}/>
@@ -393,18 +391,16 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
       </div>
 
       <div style={{ padding:'22px 20px 16px', borderBottom:`1px solid ${C.border}` }}>
-        <div style={{ display:'flex', gap:10, borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap', minWidth:0, flex:1 }}>
-            <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
-            {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
-            {job.sector && <Tag bg={C.bg} color={C.mid}>{job.sector}</Tag>}
-          </div>
-        </div>
-        <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+        <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{job.title || job.company}</h1>
           {job.company && job.company !== job.title && (
             <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:C.mid, margin:'6px 0 0', lineHeight:1.4, ...WRAPPING_TEXT }}>{isSeekingJob ? 'Perfil' : 'Empresa'}: {job.company}</p>
           )}
+        </div>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+          <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
+          {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
+          {job.sector && <Tag bg={C.bg} color={C.mid}>{job.sector}</Tag>}
         </div>
         <div style={{ display:'flex', gap:9, alignItems:'center', minWidth:0 }}>
           <Avatar name={author} size={34} src={avatarSrc}/>

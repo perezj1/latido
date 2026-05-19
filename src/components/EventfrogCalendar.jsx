@@ -69,7 +69,8 @@ function PillSpinner() {
       border:`1.5px solid ${C.primaryMid}`,
       borderRadius:999,
       background:C.primaryLight,
-      padding:'9px 12px',
+      height:36,
+      padding:'0 12px',
       gap:6,
       opacity:0.5,
     }}>
@@ -102,32 +103,55 @@ function FilterRow({ children }) {
 
 function PillSelect({ value, onChange, options, ariaLabel, disabled = false }) {
   return (
-    <select
-      aria-label={ariaLabel}
-      value={value}
-      onChange={event => onChange(event.target.value)}
-      disabled={disabled}
-      style={{
-        width:'100%',
-        minWidth:0,
-        boxSizing:'border-box',
-        fontFamily:PP,
-        fontSize:11,
-        fontWeight:700,
-        color:C.primary,
-        border:`1.5px solid ${C.primaryMid}`,
-        borderRadius:999,
-        background:C.primaryLight,
-        padding:'9px 12px',
-        outline:'none',
-        cursor:disabled ? 'not-allowed' : 'pointer',
-        opacity:disabled ? 0.58 : 1,
-      }}
-    >
-      {options.map(option => (
-        <option key={option.id} value={option.id}>{option.label}</option>
-      ))}
-    </select>
+    <div style={{ position:'relative', width:'100%', minWidth:0 }}>
+      <select
+        className="eventfrog-pill-select"
+        aria-label={ariaLabel}
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        disabled={disabled}
+        style={{
+          width:'100%',
+          minWidth:0,
+          height:36,
+          boxSizing:'border-box',
+          fontFamily:PP,
+          fontSize:11,
+          lineHeight:1,
+          fontWeight:700,
+          color:C.primary,
+          border:`1.5px solid ${C.primaryMid}`,
+          borderRadius:999,
+          background:C.primaryLight,
+          padding:'0 30px 0 12px',
+          outline:'none',
+          cursor:disabled ? 'not-allowed' : 'pointer',
+          opacity:disabled ? 0.58 : 1,
+          appearance:'none',
+          WebkitAppearance:'none',
+          MozAppearance:'none',
+        }}
+      >
+        {options.map(option => (
+          <option key={option.id} value={option.id}>{option.label}</option>
+        ))}
+      </select>
+      <span
+        aria-hidden="true"
+        style={{
+          position:'absolute',
+          right:12,
+          top:'50%',
+          width:7,
+          height:7,
+          borderRight:`2px solid ${C.primary}`,
+          borderBottom:`2px solid ${C.primary}`,
+          transform:'translateY(-65%) rotate(45deg)',
+          pointerEvents:'none',
+          opacity:disabled ? 0.58 : 1,
+        }}
+      />
+    </div>
   )
 }
 

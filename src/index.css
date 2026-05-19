@@ -145,6 +145,11 @@ img { max-width: 100%; }
   }
 }
 
+.eventfrog-pill-select {
+  font-size: 11px !important;
+  height: 36px !important;
+}
+
 /* ── Hero stats: flex row → 2×2 grid on mobile ── */
 .hero-stats { display: flex; gap: 32px; flex-wrap: wrap; }
 @media (max-width: 500px) {
