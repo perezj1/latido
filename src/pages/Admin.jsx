@@ -17,10 +17,10 @@ const STATUS_LABELS = {
 }
 
 const BUSINESS_VERIFICATION_FILTERS = [
-  { id: 'pending', label: 'Pendientes' },
-  { id: 'verified', label: 'Verificados' },
-  { id: 'unverified', label: 'No verificados' },
-  { id: 'rejected', label: 'Rechazados' },
+  { id: 'pending', label: 'Pendientes', color: '#D97706', bg: '#FFFBEB' },
+  { id: 'unverified', label: 'No verificados', color: C.primary, bg: C.primaryLight },
+  { id: 'verified', label: 'Verificados', color: '#059669', bg: '#ECFDF5' },
+  { id: 'rejected', label: 'Rechazados', color: '#DC2626', bg: '#FEF2F2' },
 ]
 
 const BUSINESS_VERIFICATION_ACTIONS = [
@@ -53,16 +53,35 @@ function fmtDateShort(value) {
   return new Date(value).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+function isWithinRecentDays(value, days) {
+  if (!value) return false
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return false
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  if (days > 1) start.setDate(start.getDate() - (days - 1))
+  return date >= start
+}
+
+function localDateKey(value) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function countByDay(items, days = 30) {
   const counts = {}
   const now = new Date()
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now)
     d.setDate(d.getDate() - i)
-    counts[d.toISOString().slice(0, 10)] = 0
+    counts[localDateKey(d)] = 0
   }
   items.forEach(item => {
-    const key = (item.created_at || '').slice(0, 10)
+    const key = localDateKey(item.created_at)
     if (key in counts) counts[key]++
   })
   return Object.entries(counts).map(([date, count]) => ({ date, count }))
@@ -141,6 +160,7 @@ function SparkBarChart({ data, color }) {
   )
 }
 
+// eslint-disable-next-line no-unused-vars
 function ChartCard({ title, items, color }) {
   const [days, setDays] = useState(30)
   const data  = useMemo(() => countByDay(items, days), [items, days])
@@ -204,6 +224,7 @@ function ChartCard({ title, items, color }) {
   )
 }
 
+// eslint-disable-next-line no-unused-vars
 function StatCard({ id, icon, label, value, sub, color, isActive, onClick, urgent }) {
   const hasAlert = urgent && value > 0
   return (
@@ -248,14 +269,289 @@ function StatCard({ id, icon, label, value, sub, color, isActive, onClick, urgen
   )
 }
 
+// eslint-disable-next-line no-unused-vars
+function AdminStatCard({ icon, label, value, sub, color, isActive, onClick, urgent }) {
+  const hasAlert = urgent && Number(value) > 0
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        position: 'relative',
+        width: '100%',
+        minHeight: 132,
+        padding: '14px',
+        borderRadius: 20,
+        border: `1.5px solid ${isActive ? color : hasAlert ? `${color}55` : C.border}`,
+        background: '#fff',
+        boxShadow: isActive ? `0 16px 34px ${color}18` : '0 10px 26px rgba(15,23,42,0.04)',
+        cursor: 'pointer',
+        textAlign: 'left',
+        overflow: 'hidden',
+      }}
+    >
+      {isActive && (
+        <span style={{
+          position: 'absolute',
+          left: 0,
+          top: 14,
+          bottom: 14,
+          width: 4,
+          borderRadius: '0 999px 999px 0',
+          background: color,
+        }} />
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 14 }}>
+        <span style={{
+          width: 38,
+          height: 38,
+          borderRadius: 14,
+          background: `${color}14`,
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: 18,
+          flexShrink: 0,
+        }}>
+          {icon}
+        </span>
+        <span style={{
+          fontFamily: PP,
+          fontWeight: 900,
+          fontSize: 10,
+          color: hasAlert ? color : C.light,
+          background: hasAlert ? `${color}12` : C.bgAlt,
+          borderRadius: 999,
+          padding: '4px 8px',
+        }}>
+          {hasAlert ? 'Atencion' : 'Modulo'}
+        </span>
+      </div>
+      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: isActive ? color : C.mid, margin: '0 0 4px' }}>
+        {label}
+      </p>
+      <p style={{
+        fontFamily: PP,
+        fontWeight: 900,
+        fontSize: value === 'â€”' ? 24 : String(value).length > 4 ? 24 : 34,
+        color: C.text,
+        lineHeight: 1,
+        letterSpacing: -1,
+        margin: '0 0 5px',
+      }}>
+        {value}
+      </p>
+      <p style={{ fontFamily: PP, fontSize: 11, color: C.light, lineHeight: 1.35, margin: 0 }}>
+        {sub}
+      </p>
+    </button>
+  )
+}
+
+function AdminChartCard({ title, items, color }) {
+  const [days, setDays] = useState(30)
+  const data = useMemo(() => countByDay(items, days), [items, days])
+  const total = data.reduce((sum, item) => sum + item.count, 0)
+  const trend = periodTrend(items, days)
+  const trendColor = trend > 0 ? '#059669' : trend < 0 ? '#DC2626' : C.mid
+  const trendLabel = trend > 0 ? `+${trend}%` : trend < 0 ? `-${Math.abs(trend)}%` : 'sin cambio'
+
+  return (
+    <div style={{
+      background: '#fff',
+      border: `1px solid ${C.border}`,
+      borderRadius: 22,
+      padding: '18px 18px 12px',
+      boxShadow: '0 18px 44px rgba(15,23,42,0.06)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, marginBottom: 10 }}>
+        <div>
+          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '0 0 4px', fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase' }}>
+            {title}
+          </p>
+          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 32, color: C.text, margin: 0, letterSpacing: -1, lineHeight: 1 }}>
+            {total}
+          </p>
+        </div>
+        <span style={{
+          fontFamily: PP,
+          fontSize: 11,
+          fontWeight: 900,
+          color: trendColor,
+          background: `${trendColor}16`,
+          padding: '6px 10px',
+          borderRadius: 999,
+          marginTop: 2,
+          whiteSpace: 'nowrap',
+        }}>
+          {trendLabel}
+        </span>
+      </div>
+      <SparkBarChart data={data} color={color} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {[7, 30].map(d => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDays(d)}
+              style={{
+                fontFamily: PP,
+                fontSize: 10,
+                fontWeight: 900,
+                padding: '4px 9px',
+                borderRadius: 999,
+                border: `1px solid ${days === d ? C.primary : C.border}`,
+                cursor: 'pointer',
+                background: days === d ? C.primary : '#fff',
+                color: days === d ? '#fff' : C.light,
+              }}
+            >
+              {d}d
+            </button>
+          ))}
+        </div>
+        <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>
+          ultimos {days} dias
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function SummaryMetric({ label, value, hint, color = C.primary }) {
+  return (
+    <div style={{
+      minWidth: 150,
+      flex: '1 1 150px',
+      background: 'rgba(255,255,255,0.86)',
+      border: '1px solid rgba(226,234,244,0.92)',
+      borderRadius: 18,
+      padding: '13px 14px',
+      boxShadow: '0 12px 28px rgba(15,23,42,0.05)',
+    }}>
+      <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 6px' }}>
+        {label}
+      </p>
+      <p style={{ fontFamily: PP, fontSize: 24, fontWeight: 900, color, lineHeight: 1, margin: '0 0 5px' }}>
+        {value}
+      </p>
+      <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.35, margin: 0 }}>
+        {hint}
+      </p>
+    </div>
+  )
+}
+
+function TopNavButton({ item, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        border: `1.5px solid ${active ? item.color : C.border}`,
+        background: active ? item.bg : '#fff',
+        color: active ? item.color : C.mid,
+        borderRadius: 999,
+        padding: '9px 12px',
+        fontFamily: PP,
+        fontSize: 12,
+        fontWeight: 900,
+        cursor: 'pointer',
+        boxShadow: active ? `0 12px 28px ${item.color}16` : '0 8px 20px rgba(15,23,42,0.04)',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>{item.label}</span>
+      <span style={{
+        minWidth: 22,
+        height: 22,
+        padding: '0 7px',
+        borderRadius: 999,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: active ? '#fff' : item.bg,
+        color: item.color,
+        fontSize: 11,
+      }}>
+        {item.value}
+      </span>
+    </button>
+  )
+}
+
+function PeriodSwitch({ value, onChange }) {
+  const options = [
+    { value: 1, label: 'Hoy' },
+    { value: 7, label: '7 dias' },
+    { value: 30, label: '30 dias' },
+  ]
+  return (
+    <div style={{ display: 'flex', gap: 6, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 999, padding: 5, boxShadow: '0 8px 20px rgba(15,23,42,0.04)' }}>
+      {options.map(option => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          style={{
+            border: 'none',
+            borderRadius: 999,
+            background: value === option.value ? C.primary : 'transparent',
+            color: value === option.value ? '#fff' : C.mid,
+            padding: '7px 10px',
+            fontFamily: PP,
+            fontSize: 11,
+            fontWeight: 900,
+            cursor: 'pointer',
+          }}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function AdminPeriodChart({ title, items, color, days, onDaysChange }) {
+  const data = useMemo(() => countByDay(items, days), [items, days])
+  const total = data.reduce((sum, item) => sum + item.count, 0)
+  const titleSuffix = days === 1 ? 'hoy' : `${days} dias`
+
+  return (
+    <div style={{
+      background: '#fff',
+      border: `1px solid ${C.border}`,
+      borderRadius: 22,
+      padding: '18px',
+      boxShadow: '0 18px 44px rgba(15,23,42,0.06)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', marginBottom: 10 }}>
+        <div>
+          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '0 0 4px', fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase' }}>
+            {title} · {titleSuffix}
+          </p>
+          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 32, color: C.text, margin: 0, letterSpacing: -1, lineHeight: 1 }}>
+            {total}
+          </p>
+        </div>
+        <PeriodSwitch value={days} onChange={onDaysChange} />
+      </div>
+      <SparkBarChart data={data} color={color} />
+    </div>
+  )
+}
+
 function Card({ children, style = {} }) {
   return (
     <div style={{
       background: '#fff',
       border: `1px solid ${C.border}`,
-      borderRadius: 14,
-      padding: 16,
-      boxShadow: '0 2px 12px rgba(15,23,42,0.04)',
+      borderRadius: 20,
+      padding: 18,
+      boxShadow: '0 14px 34px rgba(15,23,42,0.055)',
       ...style,
     }}>
       {children}
@@ -279,9 +575,9 @@ function AdminButton({ children, onClick, variant = 'secondary', disabled = fals
 
 function EmptyState({ icon, text }) {
   return (
-    <Card style={{ textAlign: 'center', padding: '40px 24px' }}>
-      <div style={{ fontSize: 36, marginBottom: 10 }}>{icon}</div>
-      <p style={{ fontFamily: PP, color: C.light, margin: 0, fontSize: 14 }}>{text}</p>
+    <Card style={{ textAlign: 'center', padding: '48px 24px', background: 'linear-gradient(180deg,#fff,#F8FAFF)' }}>
+      <div style={{ fontSize: 34, marginBottom: 10 }}>{icon}</div>
+      <p style={{ fontFamily: PP, color: C.light, margin: 0, fontSize: 14, lineHeight: 1.5 }}>{text}</p>
     </Card>
   )
 }
@@ -292,9 +588,10 @@ async function logAdminAction(action) {
 
 export default function Admin() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('moderation')
+  const [tab, setTab] = useState('users')
   const [loading, setLoading] = useState(true)
   const [userSearch, setUserSearch] = useState('')
+  const [userDays, setUserDays] = useState(1)
   const [reports, setReports] = useState([])
   const [queue, setQueue] = useState([])
   const [users, setUsers] = useState([])
@@ -322,6 +619,11 @@ export default function Admin() {
       (u.canton || '').toLowerCase().includes(q)
     )
   }, [users, userSearch])
+  const newUsersInRange = useMemo(
+    () => users.filter(profile => isWithinRecentDays(profile.created_at, userDays)),
+    [users, userDays]
+  )
+  const userRangeLabel = userDays === 1 ? 'hoy' : `${userDays} dias`
 
   useEffect(() => { loadAdminData() }, [])
 
@@ -646,13 +948,32 @@ export default function Admin() {
   const filteredVerificationBusinesses = businesses
     .filter(business => getBusinessVerificationDetails(business).status === businessVerificationFilter)
     .sort((a, b) => getBusinessVerificationDetails(b).score - getBusinessVerificationDetails(a).score)
+  const totalPendingActions = stats.queue + stats.reports + stats.businessVerification
+  const activePublications = recentListings.filter(item => item.active !== false).length + recentJobs.filter(item => item.active !== false).length
+  const verifiedBusinessCount = businessVerificationCounts.verified || 0
+  const adminHealth = totalPendingActions > 0 ? 'Requiere atencion' : 'Todo al dia'
+  const adminHealthColor = totalPendingActions > 0 ? '#D97706' : '#059669'
+  const activeBusinesses = businesses.filter(business => business.active !== false).length
+  const featuredBusinesses = businesses.filter(business => business.featured).length
+  const businessAverageScore = businesses.length
+    ? Math.round(businesses.reduce((sum, business) => sum + getBusinessVerificationDetails(business).score, 0) / businesses.length)
+    : 0
 
+  // eslint-disable-next-line no-unused-vars
   const STAT_CARDS = [
     { id: 'moderation', icon: '⏳', label: 'En revisión', value: loading ? '—' : stats.queue,   color: '#D97706', urgent: true,  sub: 'Cola de moderación' },
     { id: 'reports',    icon: '🚨', label: 'Reportes',    value: loading ? '—' : stats.reports, color: '#DC2626', urgent: true,  sub: 'Denuncias pendientes' },
     { id: 'businessVerification', icon: '✓', label: 'Negocios', value: loading ? '—' : stats.businessVerification, color: '#059669', urgent: true, sub: 'Pendientes de verificar' },
     { id: 'users',      icon: '👥', label: 'Usuarios',    value: loading ? '—' : stats.users,   color: C.primary, urgent: false, sub: `${loading ? '—' : stats.banned} baneados` },
     { id: 'content',    icon: '📋', label: 'Contenido',   value: loading ? '—' : stats.content, color: '#059669', urgent: false, sub: 'Anuncios y empleos' },
+  ]
+
+  const NAV_ITEMS = [
+    { id: 'users', label: 'Usuarios', value: loading ? '...' : stats.users, color: C.primary, bg: C.primaryLight },
+    { id: 'businessVerification', label: 'Negocios', value: loading ? '...' : businesses.length, color: '#059669', bg: '#ECFDF5' },
+    { id: 'content', label: 'Publicaciones', value: loading ? '...' : stats.content, color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'reports', label: 'Reportes', value: loading ? '...' : stats.reports, color: '#DC2626', bg: '#FEF2F2' },
+    { id: 'moderation', label: 'Revision', value: loading ? '...' : stats.queue, color: '#D97706', bg: '#FFFBEB' },
   ]
 
   const SECTION_TITLES = {
@@ -666,46 +987,101 @@ export default function Admin() {
   const activeSection = tab === 'content'
     ? { ...SECTION_TITLES.content, label: 'Publicaciones recientes' }
     : SECTION_TITLES[tab]
+  const SECTION_DETAILS = {
+    moderation: { description: 'Contenido retenido por filtros o pendiente de una decision manual.', color: '#D97706', count: stats.queue },
+    reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports },
+    businessVerification: { description: 'Evalua datos, contacto y confianza antes de mostrar la pill verificado.', color: '#059669', count: stats.businessVerification },
+    users: { description: 'Busca cuentas, revisa actividad basica y gestiona baneos.', color: C.primary, count: users.length },
+    content: { description: 'Control rapido de anuncios y empleos publicados en Latido.', color: '#059669', count: stats.content },
+  }
+  const activeSectionDetails = SECTION_DETAILS[tab]
+  const sectionMetrics = tab === 'users'
+    ? [
+        { label: 'Nuevos usuarios', value: loading ? '...' : newUsersInRange.length, hint: `Registrados ${userRangeLabel}`, color: C.primary },
+        { label: 'Usuarios totales', value: loading ? '...' : users.length, hint: `${filteredUsers.length} visibles con el filtro`, color: C.text },
+        { label: 'Usuarios baneados', value: loading ? '...' : stats.banned, hint: stats.banned ? 'Revisar cuentas bloqueadas' : 'Sin bloqueos activos', color: stats.banned ? '#DC2626' : '#059669' },
+        { label: 'Cantones nuevos', value: loading ? '...' : new Set(newUsersInRange.map(u => u.canton).filter(Boolean)).size, hint: `Diversidad en ${userRangeLabel}`, color: '#0F766E' },
+      ]
+    : tab === 'businessVerification'
+      ? [
+          { label: 'Negocios activos', value: loading ? '...' : activeBusinesses, hint: `${businesses.length} negocios cargados`, color: '#059669' },
+          { label: 'Verificados', value: loading ? '...' : verifiedBusinessCount, hint: 'Con pill visible en ficha', color: '#0F766E' },
+          { label: 'Pendientes', value: loading ? '...' : businessVerificationCounts.pending || 0, hint: 'Esperan decision manual', color: '#D97706' },
+          { label: 'Score medio', value: loading ? '...' : `${businessAverageScore}/100`, hint: `${featuredBusinesses} destacados`, color: C.primary },
+        ]
+      : tab === 'reports'
+        ? [
+            { label: 'Reportes pendientes', value: loading ? '...' : stats.reports, hint: 'Necesitan revision', color: '#DC2626' },
+            { label: 'Reportes totales', value: loading ? '...' : reports.length, hint: 'Ultimos cargados', color: C.text },
+            { label: 'Contenido accionable', value: loading ? '...' : pendingReports.length, hint: 'Pendiente en esta vista', color: '#D97706' },
+          ]
+        : tab === 'moderation'
+          ? [
+              { label: 'En revision', value: loading ? '...' : stats.queue, hint: 'Cola pendiente', color: '#D97706' },
+              { label: 'Cola total', value: loading ? '...' : queue.length, hint: 'Ultimos elementos cargados', color: C.text },
+              { label: 'Acciones pendientes', value: loading ? '...' : totalPendingActions, hint: 'Incluye reportes y negocios', color: adminHealthColor },
+            ]
+          : [
+              { label: 'Publicaciones activas', value: loading ? '...' : activePublications, hint: `${stats.content} cargadas`, color: '#059669' },
+              { label: 'Anuncios', value: loading ? '...' : recentListings.length, hint: 'Publicaciones recientes', color: C.primary },
+              { label: 'Empleos', value: loading ? '...' : recentJobs.length, hint: 'Ofertas y busquedas', color: '#0F766E' },
+            ]
   const activeChart =
     tab === 'users'
-      ? <ChartCard title="Usuarios registrados" items={users} color={C.primary} />
+      ? <AdminPeriodChart title="Nuevos usuarios" items={users} color={C.primary} days={userDays} onDaysChange={setUserDays} />
       : tab === 'reports'
-        ? <ChartCard title="Reportes recibidos" items={reports} color="#DC2626" />
-        : tab === 'content'
-          ? <ChartCard title="Publicaciones" items={[...recentListings, ...recentJobs]} color="#059669" />
+        ? <AdminChartCard title="Reportes recibidos" items={reports} color="#DC2626" />
+        : tab === 'businessVerification'
+          ? <AdminChartCard title="Negocios registrados" items={businesses} color="#059669" />
+          : tab === 'content'
+            ? <AdminChartCard title="Publicaciones" items={[...recentListings, ...recentJobs]} color="#059669" />
           : null
-  const showChartPlaceholder = ['users', 'reports', 'content'].includes(tab)
+  const showChartPlaceholder = ['users', 'reports', 'businessVerification', 'content'].includes(tab)
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px 100px' }}>
+    <div style={{ maxWidth: 1180, margin: '0 auto', padding: '22px 14px 100px' }}>
+
+      <nav style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '4px 2px 12px', marginBottom: 6 }}>
+        {NAV_ITEMS.map(item => (
+          <TopNavButton
+            key={item.id}
+            item={item}
+            active={tab === item.id}
+            onClick={() => setTab(item.id)}
+          />
+        ))}
+      </nav>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontFamily: PP, fontWeight: 900, fontSize: 26, color: C.text, margin: '0 0 4px', letterSpacing: -0.5 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: 'linear-gradient(135deg,#FFFFFF 0%,#F8FAFF 58%,#EFF6FF 100%)', border: `1px solid ${C.border}`, borderRadius: 28, padding: 20, boxShadow: '0 22px 60px rgba(37,99,235,0.08)' }}>
+        <div style={{ minWidth: 240, flex: '1 1 420px' }}>
+          <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: C.primary, margin: '0 0 6px', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+            Latido Admin
+          </p>
+          <h1 style={{ fontFamily: PP, fontWeight: 900, fontSize: 30, color: C.text, margin: '0 0 6px', letterSpacing: -0.8, lineHeight: 1.08 }}>
             Centro de control
           </h1>
-          <p style={{ fontFamily: PP, fontSize: 13, color: C.light, margin: 0 }}>
+          <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, margin: 0, lineHeight: 1.55, maxWidth: 620 }}>
             Moderación, reportes y usuarios de Latido.
           </p>
         </div>
         <button
           onClick={loadAdminData}
-          style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, background: '#fff', color: C.mid, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '9px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+          style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: 14, padding: '11px 15px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 14px 30px rgba(37,99,235,0.22)' }}
         >
           <span style={{ fontSize: 14 }}>↻</span> Actualizar
         </button>
       </div>
 
       {/* Stat cards — double as navigation */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 16 }}>
-        {STAT_CARDS.map(card => (
-          <StatCard
-            key={card.id}
-            {...card}
-            label={card.id === 'content' ? 'Publicaciones' : card.label}
-            isActive={tab === card.id}
-            onClick={() => setTab(card.id)}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+        {sectionMetrics.map(metric => (
+          <SummaryMetric
+            key={metric.label}
+            label={metric.label}
+            value={metric.value}
+            hint={metric.hint}
+            color={metric.color}
           />
         ))}
       </div>
@@ -726,11 +1102,23 @@ export default function Admin() {
       )}
 
       {/* Section header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-        <h2 style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: 0, whiteSpace: 'nowrap' }}>
-          {activeSection.icon} {activeSection.label}
-        </h2>
-        <div style={{ flex: 1, height: 1, background: C.border }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 20, padding: '14px 16px', boxShadow: '0 10px 26px rgba(15,23,42,0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+          <span style={{ width: 40, height: 40, borderRadius: 14, background: `${activeSectionDetails.color}14`, display: 'grid', placeItems: 'center', fontSize: 18, flexShrink: 0 }}>
+            {activeSection.icon}
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 17, color: C.text, margin: '0 0 3px', lineHeight: 1.2 }}>
+              {activeSection.label}
+            </h2>
+            <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.45 }}>
+              {activeSectionDetails.description}
+            </p>
+          </div>
+        </div>
+        <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: activeSectionDetails.color, background: `${activeSectionDetails.color}12`, borderRadius: 999, padding: '7px 11px' }}>
+          {activeSectionDetails.count} items
+        </span>
       </div>
 
       {/* ── Moderación ─────────────────────────────────── */}
@@ -800,21 +1188,28 @@ export default function Admin() {
       {/* ── Verificación de negocios ───────────────────────────────────── */}
       {tab === 'businessVerification' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 18, padding: 8, boxShadow: '0 10px 26px rgba(15,23,42,0.04)' }}>
             {BUSINESS_VERIFICATION_FILTERS.map(item => (
               <button
                 key={item.id}
                 onClick={() => setBusinessVerificationFilter(item.id)}
                 style={{
                   fontFamily: PP,
-                  fontWeight: 800,
+                  fontWeight: 900,
                   fontSize: 11,
                   borderRadius: 999,
-                  border: `1.5px solid ${businessVerificationFilter === item.id ? C.primary : C.border}`,
-                  background: businessVerificationFilter === item.id ? C.primary : '#fff',
-                  color: businessVerificationFilter === item.id ? '#fff' : C.mid,
-                  padding: '8px 11px',
+                  border: `1.5px solid ${businessVerificationFilter === item.id ? item.color : C.border}`,
+                  background: item.bg,
+                  color: item.color,
+                  padding: '9px 12px',
                   cursor: 'pointer',
+                  width: '100%',
+                  minHeight: 44,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  boxShadow: businessVerificationFilter === item.id ? `0 0 0 3px ${item.color}14, 0 10px 22px ${item.color}12` : 'none',
                 }}
               >
                 {item.label} ({businessVerificationCounts[item.id] || 0})
