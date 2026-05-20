@@ -87,9 +87,24 @@ const COMMUNITY_OPTIONS = COMMUNITY_CATS
     : item)
 
 const CHAT_HOSTS = ['chat.whatsapp.com','wa.me','t.me','telegram.me','facebook.com','discord.gg','instagram.com','meetup.com']
+function normalizeCommunityContactUrl(contact='') {
+  const raw = String(contact || '').trim()
+  if (!raw) return ''
+  if (/^https?:\/\//i.test(raw)) return raw
+  if (/^(chat\.whatsapp\.com|wa\.me|t\.me|telegram\.me|facebook\.com|discord\.gg|instagram\.com|meetup\.com)\//i.test(raw)) {
+    return `https://${raw}`
+  }
+  if (/^www\./i.test(raw)) return `https://${raw}`
+  if (/^\+?\d[\d\s().-]{6,}$/.test(raw)) {
+    return `https://wa.me/${normalizePhoneForWhatsapp(raw)}`
+  }
+  return raw
+}
+
 function isWebCommunity(contact='') {
-  if (!contact || !/^https?:\/\//i.test(contact)) return false
-  return !CHAT_HOSTS.some(h => contact.includes(h))
+  const url = normalizeCommunityContactUrl(contact)
+  if (!url || !/^https?:\/\//i.test(url)) return false
+  return !CHAT_HOSTS.some(h => url.includes(h))
 }
 
 function normalizeCommunityCategory(value='') {
@@ -864,8 +879,9 @@ function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[]
       </p>
 
       {community.contact && (() => {
-        const url = community.contact
-        const isWeb = /^https?:\/\//i.test(url) && !url.includes('chat.whatsapp.com') && !url.includes('wa.me') && !url.includes('t.me') && !url.includes('telegram') && !url.includes('meetup.com') && !url.includes('facebook.com') && !url.includes('instagram.com') && !url.includes('discord.gg')
+        const url = normalizeCommunityContactUrl(community.contact)
+        const urlKey = url.toLowerCase()
+        const isWeb = /^https?:\/\//i.test(url) && !CHAT_HOSTS.some(host => urlKey.includes(host))
         let icon = '🔗', label = 'Unirme al grupo', bg = C.primary
         if (isWeb)                                                                    { icon = '🌐'; label = 'Acceder a la web'; bg = C.primary }
         else if (url.includes('chat.whatsapp.com') || url.includes('wa.me'))         { icon = '💬'; label = 'Unirme por WhatsApp'; bg = '#25D366' }
