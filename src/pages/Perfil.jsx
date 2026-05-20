@@ -10,7 +10,7 @@ import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
-import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, NEGOCIO_TYPES, formatAdLocation, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
+import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -120,7 +120,7 @@ function normalizePublication(kind, row) {
   }
 
   if (kind === 'business') {
-    const type = NEGOCIO_TYPES.find(item => item.id === row.category)
+    const type = getNegocioTypeMeta(row.category)
     return {
       id: row.id,
       kind,
@@ -1350,9 +1350,9 @@ export default function Perfil() {
 
         {editorItem?.kind === 'business' && (
           <>
-            <Select label="Categoría" value={editorForm.category || ''} onChange={event => updateEditorField('category', event.target.value)}>
+            <Select label="Categoría" value={normalizeNegocioType(editorForm.category || '')} onChange={event => updateEditorField('category', event.target.value)}>
               <option value="">Seleccionar...</option>
-              {NEGOCIO_TYPES.filter(item => item.id).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              {VISIBLE_NEGOCIO_TYPES.filter(item => item.id).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
             </Select>
             <Input label="Nombre" value={editorForm.name || ''} onChange={event => updateEditorField('name', event.target.value)} />
             <div className="grid-2" style={{ gap:10 }}>

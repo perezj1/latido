@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { NEGOCIO_TYPES } from '../lib/constants'
+import { VISIBLE_NEGOCIO_TYPES } from '../lib/constants'
 import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { calculateBusinessVerification } from '../lib/businessVerification'
@@ -18,7 +18,7 @@ const STEPS = [
   { title:'Confirma y publica',           sub:'Revisa el resumen antes de enviar' },
 ]
 
-const NEGOCIO_TYPES_FORM = NEGOCIO_TYPES.filter(t => t.id !== '')
+const NEGOCIO_TYPES_FORM = VISIBLE_NEGOCIO_TYPES.filter(t => t.id !== '')
 
 export default function RegistrarNegocio() {
   const { isLoggedIn, user } = useAuth()

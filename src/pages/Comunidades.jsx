@@ -11,7 +11,9 @@ import {
   MOCK_NEGOCIO_SERVICES,
   MOCK_EVENTOS_LATINOS,
   COMMUNITY_CATS,
-  NEGOCIO_TYPES,
+  VISIBLE_NEGOCIO_TYPES,
+  getNegocioTypeMeta,
+  normalizeNegocioType,
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
@@ -30,11 +32,16 @@ const MAIN_TABS = [
 
 const BUSINESS_EMOJI = {
   restaurante:'🍽️',
-  barberia:'✂️',
+  barberia:'💇',
   tienda:'🛒',
   pasteleria:'🍰',
   belleza:'💇',
-  servicios:'🔧',
+  servicios_hogar:'🏠',
+  salud_bienestar:'🩺',
+  asesoria_tramites:'📄',
+  servicios:'🏠',
+  servicios_profesionales:'📄',
+  otro:'✨',
 }
 
 const EVENT_EMOJI = {
@@ -398,7 +405,7 @@ function RelatedCommunityCard({ group, onClick }) {
 }
 
 function RelatedBusinessCard({ business, photosMap={}, onClick }) {
-  const category = NEGOCIO_TYPES.find(type => type.id === business.type)
+  const category = getNegocioTypeMeta(business.type)
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
@@ -461,7 +468,7 @@ function CommunityCard({ group, onClick }) {
 }
 
 function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, recommendationCount=0 }) {
-  const category = NEGOCIO_TYPES.find(type => type.id === business.type)
+  const category = getNegocioTypeMeta(business.type)
   const services = servicesMap[business.id] || business.services || []
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
   const reviews = reviewsMap[business.id] || []
@@ -587,7 +594,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
 function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap, relatedBusinesses=[], onOpenRelatedBusiness, recommendationCount=0, recommended=false, recommendationLoading=false, onToggleRecommend }) {
   const { isLoggedIn, displayName } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
-  const category = NEGOCIO_TYPES.find(type => type.id === business.type)
+  const category = getNegocioTypeMeta(business.type)
   const services = servicesMap[business.id] || business.services || []
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
   const [reviews, setReviews] = useState(reviewsMap[business.id] || [])
@@ -1286,7 +1293,7 @@ export default function Comunidades() {
   const filteredNeg = [...businesses]
     .filter(business =>
       business.type !== 'empleo' && business.type !== 'vivienda' &&
-      (!negType || business.type === negType) &&
+      (!negType || normalizeNegocioType(business.type) === negType) &&
       (!search ||
         business.name.toLowerCase().includes(search.toLowerCase()) ||
         business.desc.toLowerCase().includes(search.toLowerCase()) ||
@@ -1317,7 +1324,7 @@ export default function Comunidades() {
     const sharedServicesCount = business => (businessServices[business.id] || business.services || [])
       .filter(service => selectedServices.has(service.toLowerCase())).length
     const score = business => {
-      const typeScore = business.type === selectedBusiness.type ? 4 : 0
+      const typeScore = normalizeNegocioType(business.type) === normalizeNegocioType(selectedBusiness.type) ? 4 : 0
       const serviceScore = sharedServicesCount(business)
       const featuredScore = business.featured ? 2 : 0
       const recommendationScore = Math.min((businessRecommendations[business.id] || 0) / 4, 4)
@@ -1329,7 +1336,7 @@ export default function Comunidades() {
         String(business.id) !== String(selectedBusiness.id) &&
         business.type !== 'empleo' &&
         business.type !== 'vivienda' &&
-        (business.type === selectedBusiness.type || sharedServicesCount(business) > 0)
+        (normalizeNegocioType(business.type) === normalizeNegocioType(selectedBusiness.type) || sharedServicesCount(business) > 0)
       )
       .sort((a, b) => {
         const scoreDiff = score(b) - score(a)
@@ -1406,7 +1413,7 @@ export default function Comunidades() {
         </div>
 
           {tab === 'comunidades' && <PillFilters options={catOptions} value={cat} onChange={handleCommunityCategoryChange} />}
-          {tab === 'negocios' && <PillFilters options={NEGOCIO_TYPES} value={negType} onChange={handleBusinessTypeChange} />}
+          {tab === 'negocios' && <PillFilters options={VISIBLE_NEGOCIO_TYPES} value={negType} onChange={handleBusinessTypeChange} />}
             </>
           )}
           </div>

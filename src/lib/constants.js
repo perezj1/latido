@@ -365,12 +365,32 @@ export const MOCK_JOBS = [
 export const NEGOCIO_TYPES = [
   { id:'',            label:'Todos' },
   { id:'restaurante', label:'🍽️ Restaurante', desc:'Comida, bebidas, take away o delivery' },
-  { id:'barberia',    label:'✂️ Barbería', desc:'Cortes, barba, fades y peluquería masculina' },
   { id:'tienda',      label:'🛒 Tienda', desc:'Productos latinos, alimentación, ropa o artículos' },
   { id:'pasteleria',  label:'🍰 Pastelería', desc:'Tortas, postres, panadería y pedidos especiales' },
-  { id:'belleza',     label:'💇 Belleza', desc:'Peluquería, uñas, maquillaje y estética' },
-  { id:'servicios',   label:'🔧 Servicios', desc:'Trámites, envíos, reparaciones u otros servicios' },
+  { id:'belleza',     label:'💇 Belleza y cuidado personal', desc:'Peluquería, barbería, uñas, maquillaje y estética' },
+  { id:'servicios_hogar', label:'🏠 Servicios para el hogar', desc:'Construcción, limpieza, jardinería, mudanzas y reparaciones' },
+  { id:'salud_bienestar', label:'🩺 Salud y bienestar', desc:'Dentistas, psicólogos, fisioterapia, terapias y cuidado especializado' },
+  { id:'asesoria_tramites', label:'📄 Asesoría y trámites', desc:'Seguros, impuestos, permisos, traducciones, gestoría y orientación' },
+  { id:'otro',        label:'✨ Otro negocio', desc:'Para negocios que no encajan en las categorías anteriores' },
 ]
+
+const NEGOCIO_TYPE_ALIASES = {
+  barberia: 'belleza',
+  servicios: 'servicios_hogar',
+  servicios_profesionales: 'asesoria_tramites',
+}
+
+export const HIDDEN_NEGOCIO_TYPE_IDS = []
+export const VISIBLE_NEGOCIO_TYPES = NEGOCIO_TYPES.filter(item => !HIDDEN_NEGOCIO_TYPE_IDS.includes(item.id))
+
+export function normalizeNegocioType(type='') {
+  return NEGOCIO_TYPE_ALIASES[type] || type
+}
+
+export function getNegocioTypeMeta(type='') {
+  const normalizedType = normalizeNegocioType(type)
+  return NEGOCIO_TYPES.find(item => item.id === normalizedType) || NEGOCIO_TYPES.find(item => item.id === type)
+}
 
 export const MOCK_NEGOCIOS = [
   { id:'n1', emoji:'🍽️', name:'El Rincón Colombiano',  type:'restaurante', city:'Zürich',  canton:'ZH', desc:'Bandeja paisa, arepas y sancocho auténtico. Cocina casera colombiana de lunes a domingo.', phone:'+41791234567', email:'hola@rinconcolombiano.ch', website:'rinconcolombiano.ch', instagram:'@rinconcolombiano_zh', verified:true,  featured:true  },

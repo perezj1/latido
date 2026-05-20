@@ -10,7 +10,7 @@ import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { MOCK_DOCS, NEGOCIO_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta } from '../lib/constants'
+import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 
 const fmtPrice = p => {
@@ -241,7 +241,7 @@ export default function Home() {
         ((providersRes.error ? [] : providersRes.data) || [])
           .filter(row => row.category !== 'empleo' && row.category !== 'vivienda')
           .map((row) => {
-            const type = NEGOCIO_TYPES.find(item => item.id === row.category)
+            const type = getNegocioTypeMeta(row.category)
             const typeLabel = type?.label?.replace(/^[^\s]+\s/, '') || 'Negocio'
             const verificationStatus = getBusinessVerificationStatus(row)
             const typeEmoji = type?.label?.split(' ')[0] || '🏪'

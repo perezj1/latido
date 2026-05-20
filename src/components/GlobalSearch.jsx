@@ -14,17 +14,22 @@ import {
   getAdDisplayCat,
   getAdDisplayEmoji,
   getJobIntentMeta,
-  NEGOCIO_TYPES,
+  getNegocioTypeMeta,
   EVENTO_TYPES,
 } from '../lib/constants'
 
 const BUSINESS_EMOJI = {
   restaurante:'🍽️',
-  barberia:'✂️',
+  barberia:'💇',
   tienda:'🛒',
   pasteleria:'🍰',
   belleza:'💇',
-  servicios:'🔧',
+  servicios_hogar:'🏠',
+  salud_bienestar:'🩺',
+  asesoria_tramites:'📄',
+  servicios:'🏠',
+  servicios_profesionales:'📄',
+  otro:'✨',
 }
 
 const EVENT_EMOJI = {
@@ -224,7 +229,7 @@ function searchAll(query, datasets, isLoggedIn) {
         id:business.id,
         icon:business.emoji || '🏪',
         label:business.name,
-        sub:`${NEGOCIO_TYPES.find(type => type.id === business.type)?.label || 'Negocio'} · ${business.city}`,
+        sub:`${getNegocioTypeMeta(business.type)?.label || 'Negocio'} · ${business.city}`,
         href:`/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`,
       })
     })
