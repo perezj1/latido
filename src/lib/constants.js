@@ -367,10 +367,10 @@ export const NEGOCIO_TYPES = [
   { id:'restaurante', label:'🍽️ Restaurante', desc:'Comida, bebidas, take away o delivery' },
   { id:'tienda',      label:'🛒 Tienda', desc:'Productos latinos, alimentación, ropa o artículos' },
   { id:'pasteleria',  label:'🍰 Pastelería', desc:'Tortas, postres, panadería y pedidos especiales' },
-  { id:'belleza',     label:'💇 Belleza y cuidado personal', desc:'Peluquería, barbería, uñas, maquillaje y estética' },
-  { id:'servicios_hogar', label:'🏠 Servicios para el hogar', desc:'Construcción, limpieza, jardinería, mudanzas y reparaciones' },
-  { id:'salud_bienestar', label:'🩺 Salud y bienestar', desc:'Dentistas, psicólogos, fisioterapia, terapias y cuidado especializado' },
-  { id:'asesoria_tramites', label:'📄 Asesoría y trámites', desc:'Seguros, impuestos, permisos, traducciones, gestoría y orientación' },
+  { id:'belleza',     label:'💇 Belleza', desc:'Peluquería, barbería, uñas, maquillaje y estética' },
+  { id:'servicios_hogar', label:'🏠 Hogar', desc:'Construcción, limpieza, jardinería, mudanzas y reparaciones' },
+  { id:'salud_bienestar', label:'🩺 Salud', desc:'Dentistas, psicólogos, fisioterapia, terapias y cuidado especializado' },
+  { id:'asesoria_tramites', label:'📄 Asesoría', desc:'Seguros, impuestos, permisos, traducciones, gestoría y orientación' },
   { id:'otro',        label:'✨ Otro negocio', desc:'Para negocios que no encajan en las categorías anteriores' },
 ]
 

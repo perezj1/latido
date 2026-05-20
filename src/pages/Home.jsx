@@ -732,7 +732,27 @@ export default function Home() {
                         ? <img src={business.photo_url} alt={business.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{business.emoji || '🏪'}</span>
                       }
-                      <span style={{ position:'absolute', top:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(255,255,255,0.92)', color:'#0F766E', padding:'3px 7px', borderRadius:999 }}>
+                      <span
+                        title={business.typeLabel}
+                        style={{
+                          position:'absolute',
+                          top:8,
+                          left:8,
+                          maxWidth:(business.featured || business.verified) ? 'calc(100% - 66px)' : 'calc(100% - 16px)',
+                          fontFamily:PP,
+                          fontSize:9,
+                          fontWeight:700,
+                          lineHeight:1.2,
+                          background:'rgba(255,255,255,0.92)',
+                          color:'#0F766E',
+                          padding:'4px 7px',
+                          borderRadius:999,
+                          whiteSpace:'nowrap',
+                          overflow:'hidden',
+                          textOverflow:'ellipsis',
+                          boxSizing:'border-box',
+                        }}
+                      >
                         {business.emoji} {business.typeLabel}
                       </span>
                       <div style={{ position:'absolute', top:8, right:8, display:'flex', gap:4 }}>
@@ -741,7 +761,7 @@ export default function Home() {
                       </div>
                     </div>
                     <div style={{ padding:'10px 10px 12px' }}>
-                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
+                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em', overflowWrap:'anywhere' }}>
                         {business.name}
                       </p>
                       <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>

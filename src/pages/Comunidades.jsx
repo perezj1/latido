@@ -520,29 +520,29 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
       )}
 
       <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap', marginBottom:5 }}>
-          <Tag bg={C.primaryLight} color={C.primary}>{category?.label || 'Negocio'}</Tag>
+        <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap', marginBottom:5, minWidth:0 }}>
+          <Tag bg={C.primaryLight} color={C.primary} title={category?.label || 'Negocio'}>{category?.label || 'Negocio'}</Tag>
           {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
           {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{business.name}</h3>
-        <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:6, flexWrap:'wrap' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:6, flexWrap:'wrap', minWidth:0 }}>
           {rating !== null ? (
             <Stars rating={rating} size={13} showNumber count={reviews.length} />
           ) : (
             <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>Sin reseñas aún</span>
           )}
           {recommendationCount > 0 && <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.mid, display:'inline-flex', alignItems:'center', gap:3 }}>👍 {recommendationCount}</span>}
-          <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{business.city}</span>
+          <span style={{ fontFamily:PP, fontSize:10, color:C.light, ...CLAMP_1 }}>{business.city}</span>
         </div>
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{business.desc}</p>
       </div>
 
       <div style={{ gridColumn:'1 / -1', display:'flex', flexDirection:'column', gap:8, minWidth:0 }}>
         {services.length > 0 && (
-          <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-            {services.slice(0, 4).map(service => <Tag key={service} bg={C.bg} color={C.mid}>{service}</Tag>)}
-            {services.length > 4 && <Tag bg={C.bg} color={C.mid}>+{services.length - 4}</Tag>}
+          <div style={{ display:'flex', flexWrap:'wrap', gap:5, minWidth:0, overflow:'hidden' }}>
+            {services.slice(0, 4).map(service => <Tag key={service} bg={C.bg} color={C.mid} title={service}>{service}</Tag>)}
+            {services.length > 4 && <Tag bg={C.bg} color={C.mid} style={{ flexShrink:0 }}>+{services.length - 4}</Tag>}
           </div>
         )}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, borderTop:`1px solid ${C.borderLight}`, paddingTop:10, marginTop:2 }}>

@@ -55,9 +55,30 @@ export function Card({ children, onClick, style={} }) {
 }
 
 // ── Tag / Pill ─────────────────────────────────────────────────
-export function Tag({ children, bg=C.primaryLight, color=C.primary, size=10 }) {
+export function Tag({ children, bg=C.primaryLight, color=C.primary, size=10, style={}, title }) {
   return (
-    <span style={{ fontFamily:PP, fontSize:size, fontWeight:600, padding:'3px 8px', borderRadius:20, background:bg, color, whiteSpace:'nowrap', flexShrink:0 }}>
+    <span
+      title={title}
+      style={{
+        fontFamily:PP,
+        fontSize:size,
+        fontWeight:600,
+        padding:'3px 8px',
+        borderRadius:20,
+        background:bg,
+        color,
+        whiteSpace:'nowrap',
+        maxWidth:'100%',
+        minWidth:0,
+        overflow:'hidden',
+        textOverflow:'ellipsis',
+        flexShrink:1,
+        display:'inline-block',
+        verticalAlign:'middle',
+        boxSizing:'border-box',
+        ...style,
+      }}
+    >
       {children}
     </span>
   )
