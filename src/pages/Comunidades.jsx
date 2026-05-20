@@ -19,6 +19,7 @@ import { Tag, PillFilters, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanne
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import ShareButton, { buildShareUrl } from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
+import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
@@ -158,6 +159,7 @@ function formatInstagramHandle(value='') {
 }
 
 function normalizeProvider(provider) {
+  const verificationStatus = getBusinessVerificationStatus(provider)
   return {
     id: provider.id,
     created_at: provider.created_at || '',
@@ -172,7 +174,8 @@ function normalizeProvider(provider) {
     instagram: provider.instagram || '',
     email: provider.email || '',
     website: provider.website || '',
-    verified: !!provider.verified,
+    verified: verificationStatus === 'verified',
+    verification_status: verificationStatus,
     featured: !!provider.featured,
     services: Array.isArray(provider.services) ? provider.services : [],
     photo_url: provider.photo_url || '',
@@ -994,7 +997,6 @@ export default function Comunidades() {
       if (comunidadesCache.data) {
         applyCachedData(comunidadesCache.data, setters)
         setLoading(false)
-        if (Date.now() - comunidadesCache.ts <= COMUNIDADES_CACHE_TTL) return
       }
 
       try {

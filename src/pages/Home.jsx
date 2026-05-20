@@ -11,6 +11,7 @@ import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import { MOCK_DOCS, NEGOCIO_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta } from '../lib/constants'
+import { getBusinessVerificationStatus } from '../lib/businessVerification'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -242,6 +243,7 @@ export default function Home() {
           .map((row) => {
             const type = NEGOCIO_TYPES.find(item => item.id === row.category)
             const typeLabel = type?.label?.replace(/^[^\s]+\s/, '') || 'Negocio'
+            const verificationStatus = getBusinessVerificationStatus(row)
             const typeEmoji = type?.label?.split(' ')[0] || '🏪'
             return {
               id: row.id,
@@ -253,7 +255,8 @@ export default function Home() {
               desc: row.description || '',
               services: Array.isArray(row.services) ? row.services : [],
               photo_url: row.photo_url || '',
-              verified: !!row.verified,
+              verified: verificationStatus === 'verified',
+              verification_status: verificationStatus,
               featured: !!row.featured,
               created_at: row.created_at || '',
             }

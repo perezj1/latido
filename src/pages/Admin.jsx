@@ -6,6 +6,7 @@ import { C, PP } from '../lib/theme'
 import { Btn, Tag } from '../components/UI'
 import { REPORT_REASONS } from '../lib/reports'
 import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
+import { getMissingColumnName } from '../lib/supabaseCompat'
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
@@ -28,6 +29,13 @@ const BUSINESS_VERIFICATION_ACTIONS = [
   { id: 'unverified', label: 'No verificado', color: C.primary, bg: C.primaryLight },
   { id: 'rejected', label: 'Rechazado', color: '#B91C1C', bg: '#FEE2E2' },
 ]
+const OPTIONAL_PROVIDER_VERIFICATION_COLUMNS = new Set([
+  'verification_status',
+  'verification_score',
+  'verified_at',
+  'verified_by',
+  'verification_notes',
+])
 
 function reasonLabel(id) {
   return REPORT_REASONS.find(r => r.id === id)?.label || id || 'Sin motivo'
@@ -449,6 +457,36 @@ export default function Admin() {
     }
   }
 
+  async function persistBusinessVerification(business, patch) {
+    const nextPatch = { ...patch }
+    const strippedColumns = []
+
+    while (true) {
+      const result = await supabase
+        .from('providers')
+        .update(nextPatch)
+        .eq('id', business.id)
+        .select('*')
+        .maybeSingle()
+
+      if (!result.error) {
+        return { ...result, patch: nextPatch, strippedColumns }
+      }
+
+      const missingColumn = getMissingColumnName(result.error, 'providers')
+      if (
+        !missingColumn ||
+        !OPTIONAL_PROVIDER_VERIFICATION_COLUMNS.has(missingColumn) ||
+        !(missingColumn in nextPatch)
+      ) {
+        return { ...result, patch: nextPatch, strippedColumns }
+      }
+
+      delete nextPatch[missingColumn]
+      strippedColumns.push(missingColumn)
+    }
+  }
+
   async function updateBusinessVerification(business, status) {
     const details = getBusinessVerificationDetails(business)
     const now = new Date().toISOString()
@@ -468,7 +506,7 @@ export default function Admin() {
       verification_notes: status === 'rejected' ? notes : null,
     }
 
-    const { error } = await supabase.from('providers').update(patch).eq('id', business.id)
+    const { data: savedBusiness, error, patch: savedPatch, strippedColumns } = await persistBusinessVerification(business, patch)
     if (error) {
       toast.error(error.message?.includes('verification_')
         ? 'Aplica primero el SQL de verificacion en Supabase.'
@@ -476,7 +514,12 @@ export default function Admin() {
       return
     }
 
-    setBusinesses(prev => prev.map(item => String(item.id) === String(business.id) ? { ...item, ...patch } : item))
+    if (!savedBusiness) {
+      toast.error('No se guardó el cambio. Revisa la política RLS de providers para permitir actualizar negocios desde admin.')
+      return
+    }
+
+    setBusinesses(prev => prev.map(item => String(item.id) === String(business.id) ? { ...item, ...savedPatch, ...savedBusiness } : item))
 
     try {
       await logAdminAction({
@@ -489,7 +532,9 @@ export default function Admin() {
     } catch (error) {
       console.warn('Admin action log failed:', error)
     }
-    toast.success(status === 'verified' ? 'Negocio verificado' : 'Estado actualizado')
+    toast.success(strippedColumns.length
+      ? 'Estado guardado en la columna verified'
+      : status === 'verified' ? 'Negocio verificado' : 'Estado actualizado')
   }
 
   function renderContentOwnerMeta(item) {
