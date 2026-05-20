@@ -368,16 +368,18 @@ export const NEGOCIO_TYPES = [
   { id:'tienda',      label:'🛒 Tienda', desc:'Productos latinos, alimentación, ropa o artículos' },
   { id:'pasteleria',  label:'🍰 Pastelería', desc:'Tortas, postres, panadería y pedidos especiales' },
   { id:'belleza',     label:'💇 Belleza', desc:'Peluquería, barbería, uñas, maquillaje y estética' },
-  { id:'servicios_hogar', label:'🏠 Hogar', desc:'Construcción, limpieza, jardinería, mudanzas y reparaciones' },
-  { id:'salud_bienestar', label:'🩺 Salud', desc:'Dentistas, psicólogos, fisioterapia, terapias y cuidado especializado' },
+  { id:'hogar', label:'🏠 Hogar', desc:'Construcción, limpieza, jardinería, mudanzas y reparaciones' },
+  { id:'salud', label:'🩺 Salud', desc:'Dentistas, psicólogos, fisioterapia, terapias y cuidado especializado' },
   { id:'asesoria_tramites', label:'📄 Asesoría', desc:'Seguros, impuestos, permisos, traducciones, gestoría y orientación' },
   { id:'otro',        label:'✨ Otro negocio', desc:'Para negocios que no encajan en las categorías anteriores' },
 ]
 
 const NEGOCIO_TYPE_ALIASES = {
   barberia: 'belleza',
-  servicios: 'servicios_hogar',
+  servicios: 'hogar',
+  servicios_hogar: 'hogar',
   servicios_profesionales: 'asesoria_tramites',
+  salud_bienestar: 'salud',
 }
 
 export const HIDDEN_NEGOCIO_TYPE_IDS = []
@@ -399,7 +401,7 @@ export const MOCK_NEGOCIOS = [
   { id:'n4', emoji:'🍰', name:'Dulces de mi Tierra',      type:'pasteleria',  city:'Basilea', canton:'BS', desc:'Pasteles artesanales: tres leches, torta de queso, buñuelos. Pedidos con anticipación.',      phone:'+41794567890', email:'pedidos@dulcesmitierra.ch', instagram:'@dulcesmitierra_bs',   verified:false, featured:false },
   { id:'n5', emoji:'💇', name:'Afro & Latino Hair',        type:'belleza',     city:'Ginebra', canton:'GE', desc:'Especialistas en cabello afro y latino. Trenzas, extensiones y relaxado permanente.',         phone:'+41795678901', website:'afrolatinohair.ch', instagram:'@afrolatinohair_ge',   verified:true,  featured:false },
   { id:'n6', emoji:'🌮', name:'Tacos & Más',               type:'restaurante', city:'Lausana', canton:'VD', desc:'Tacos, burritos y enchiladas mexicanas auténticas. Para llevar o comer en local.',             phone:'+41796789012', email:'hola@tacosymas.ch', instagram:'@tacosymas_lsn',       verified:false, featured:false },
-  { id:'n7', emoji:'💸', name:'Latino Transfer ZH',        type:'servicios',   city:'Zürich',  canton:'ZH', desc:'Envío de dinero a Latinoamérica. Mejores tasas, sin comisiones ocultas. Atención en español.', phone:'+41797890123', website:'latinotransfer.ch', instagram:'@latinotransfer_zh',   verified:true,  featured:false },
+  { id:'n7', emoji:'💸', name:'Latino Transfer ZH',        type:'asesoria_tramites', city:'Zürich',  canton:'ZH', desc:'Envío de dinero a Latinoamérica. Mejores tasas, sin comisiones ocultas. Atención en español.', phone:'+41797890123', website:'latinotransfer.ch', instagram:'@latinotransfer_zh',   verified:true,  featured:false },
   { id:'n8', emoji:'🥩', name:'Carnicería El Gaucho',      type:'tienda',      city:'Ginebra', canton:'GE', desc:'Cortes de carne al estilo latinoamericano. Chorizos, morcillas y especias importadas.',         phone:'+41798901234', email:'pedidos@elgaucho.ch', instagram:'@elgaucho_ge',         verified:false, featured:false },
 ]
 
