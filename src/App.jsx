@@ -286,7 +286,7 @@ function AppShell() {
     <>
       <Header />
       <PushRegistrationSync />
-      <main style={{ minHeight:'100vh', paddingBottom:'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden' }}>
+      <main style={{ minHeight:'100vh', paddingBottom:'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:isRoot ? '#fff' : undefined }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />

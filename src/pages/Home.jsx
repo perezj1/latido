@@ -935,54 +935,6 @@ export default function Home() {
         </p>
       </div>
 
-      <div
-        style={{
-          display:'flex',
-          flexDirection:'column',
-          gap:10,
-          alignItems:'center',
-          justifyContent:'center'
-        }}
-      >
-        <Link
-          to="/publicar"
-          style={{
-            fontFamily:PP,
-            fontWeight:700,
-            fontSize:13,
-            background:'#fff',
-            color:C.primary,
-            textDecoration:'none',
-            padding:'13px 22px',
-            borderRadius:14,
-            textAlign:'center',
-            whiteSpace:'nowrap',
-            minWidth:220
-          }}
-        >
-          📌 Publicar anuncio
-        </Link>
-
-        <Link
-          to="/tablon"
-          style={{
-            fontFamily:PP,
-            fontWeight:600,
-            fontSize:13,
-            background:'rgba(255,255,255,0.12)',
-            color:'#fff',
-            textDecoration:'none',
-            padding:'11px 22px',
-            borderRadius:14,
-            border:'1px solid rgba(255,255,255,0.2)',
-            textAlign:'center',
-            whiteSpace:'nowrap',
-            minWidth:220
-          }}
-        >
-          Ver el tablón →
-        </Link>
-      </div>
     </div>
   </div>
 </section>
