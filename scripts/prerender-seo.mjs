@@ -1,7 +1,13 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { getPublicSeoPages, getStructuredData, SITE_URL } from '../src/lib/seo.js'
+import {
+  getEnhancedStructuredData,
+  getLlmsText,
+  getPublicSeoPages,
+  getSeoSnapshot,
+  SITE_URL,
+} from '../src/lib/seo.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '..')
@@ -45,6 +51,52 @@ function setJsonLd(html, data) {
   return html.replace('</head>', `    ${tag}\n  </head>`)
 }
 
+function setSnapshotAssets(html) {
+  if (html.includes('id="latido-seo-snapshot-style"')) return html
+
+  const tag = [
+    '<script>document.documentElement.classList.add("latido-js")</script>',
+    '<style id="latido-seo-snapshot-style">',
+    'html.latido-js #latido-seo-snapshot{display:none!important}',
+    '#latido-seo-snapshot{font-family:Poppins,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:860px;margin:0 auto;padding:32px 24px;color:#0f172a;background:#fff}',
+    '#latido-seo-snapshot a{color:#2563eb}',
+    '#latido-seo-snapshot h1{font-size:28px;line-height:1.2;margin:8px 0 12px}',
+    '#latido-seo-snapshot p,#latido-seo-snapshot li{font-size:14px;line-height:1.7}',
+    '</style>',
+  ].join('')
+
+  return html.replace('</head>', `    ${tag}\n  </head>`)
+}
+
+function renderSnapshot(seo) {
+  const snapshot = getSeoSnapshot(seo)
+  const facts = (snapshot.facts || [])
+    .map(item => `<li>${escapeHtml(item)}</li>`)
+    .join('')
+  const links = (snapshot.links || [])
+    .map(link => `<li><a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>${link.description ? ` - ${escapeHtml(link.description)}` : ''}</li>`)
+    .join('')
+
+  return [
+    '<main id="latido-seo-snapshot" aria-label="Contenido principal">',
+    `  <p>${escapeHtml(snapshot.eyebrow || 'Latido.ch')}</p>`,
+    `  <h1>${escapeHtml(snapshot.title || seo.title)}</h1>`,
+    `  <p>${escapeHtml(snapshot.description || seo.description)}</p>`,
+    snapshot.body ? `  <p>${escapeHtml(snapshot.body)}</p>` : '',
+    facts ? `  <ul>${facts}</ul>` : '',
+    links ? `  <nav aria-label="Enlaces relacionados"><ul>${links}</ul></nav>` : '',
+    '</main>',
+  ].filter(Boolean).join('\n')
+}
+
+function setSnapshot(html, seo) {
+  const snapshot = renderSnapshot(seo)
+  const rootTag = '<div id="root"></div>'
+
+  if (!html.includes(rootTag)) return html
+  return html.replace(rootTag, `${snapshot}\n    ${rootTag}`)
+}
+
 function renderHtml(baseHtml, seo) {
   let html = baseHtml.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(seo.title)}</title>`)
 
@@ -59,7 +111,9 @@ function renderHtml(baseHtml, seo) {
   html = setMeta(html, 'name=["\']twitter:description["\']', `<meta name="twitter:description" content="${escapeHtml(seo.description)}" />`)
   html = setMeta(html, 'name=["\']twitter:image["\']', `<meta name="twitter:image" content="${escapeHtml(seo.image)}" />`)
   html = setCanonical(html, seo.canonical)
-  html = setJsonLd(html, getStructuredData(seo))
+  html = setJsonLd(html, getEnhancedStructuredData(seo))
+  html = setSnapshotAssets(html)
+  html = setSnapshot(html, seo)
 
   return html
 }
@@ -97,5 +151,6 @@ for (const seo of pages) {
 }
 
 await writeFile(path.join(distDir, 'sitemap.xml'), getSitemapXml(pages), 'utf8')
+await writeFile(path.join(distDir, 'llms.txt'), getLlmsText(pages), 'utf8')
 
-console.log(`SEO prerender generated ${pages.filter(page => !new URL(page.canonical).search).length} HTML entry files and sitemap.xml`)
+console.log(`SEO prerender generated ${pages.filter(page => !new URL(page.canonical).search).length} HTML entry files, sitemap.xml and llms.txt`)

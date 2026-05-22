@@ -1,0 +1,16 @@
+# Latido.ch
+
+> Plataforma para hispanohablantes en Suiza: anuncios, empleo, comunidades, eventos, negocios y guias practicas.
+
+## Secciones principales
+
+- [Inicio](https://latido.ch/)
+- [Tablon de anuncios](https://latido.ch/tablon)
+- [Empleo](https://latido.ch/tablon?cat=empleo)
+- [Negocios latinos](https://latido.ch/comunidades?view=negocios)
+- [Eventos latinos](https://latido.ch/comunidades?view=eventos)
+- [Guias para vivir en Suiza](https://latido.ch/guias)
+
+## Nota
+
+El build de produccion genera una version ampliada de este archivo con todas las URLs publicas indexables.

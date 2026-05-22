@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { DEFAULT_SEO, getSeoForLocation, getStructuredData, SITE_NAME } from '../lib/seo'
+import { DEFAULT_SEO, getEnhancedStructuredData, getSeoForLocation, SITE_NAME } from '../lib/seo'
 
 function upsertMeta(selector, attrs) {
   let tag = document.head.querySelector(selector)
@@ -60,7 +60,7 @@ function applySeo(seo) {
   upsertMeta('meta[name="twitter:image"]', { name:'twitter:image', content:seo.image })
 
   upsertCanonical(seo.canonical)
-  upsertJsonLd(getStructuredData(seo))
+  upsertJsonLd(getEnhancedStructuredData(seo))
 }
 
 export default function Seo() {

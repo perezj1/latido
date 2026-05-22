@@ -173,6 +173,49 @@ function ensureUrl(value = '', fallback = SITE_URL) {
   return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`
 }
 
+function compactObject(value) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined && item !== null && item !== '')
+  )
+}
+
+function cleanText(value = '') {
+  return stripMarkdown(value).replace(/\s+/g, ' ').trim()
+}
+
+function parsePrice(value = '') {
+  const clean = String(value || '').trim()
+  if (!clean) return null
+  if (/gratis|free/i.test(clean)) return 0
+
+  const match = clean.match(/\d[\d.', ]*(?:[.,]\d+)?/)
+  if (!match) return null
+
+  let normalized = match[0].replace(/[' ]/g, '')
+  if (/^\d{1,3}(?:\.\d{3})+(?:,\d+)?$/.test(normalized)) {
+    normalized = normalized.replace(/\./g, '').replace(',', '.')
+  } else if (/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(normalized)) {
+    normalized = normalized.replace(/,/g, '')
+  } else {
+    normalized = normalized.replace(',', '.')
+  }
+
+  return Number(normalized)
+}
+
+function toIsoDate(value = '') {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().slice(0, 10)
+}
+
+function publicLinks() {
+  return SEARCHABLE_SITE_PAGES
+    .filter(page => !PRIVATE_PATHS.some(path => page.href === path || page.href.startsWith(`${path}?`)))
+    .map(page => ({ label:page.title, href:page.href, description:page.desc }))
+}
+
 export function getGuidePath(doc) {
   if (!doc?.id) return '/guias'
   const slug = slugify(doc.title || doc.id)
@@ -589,6 +632,316 @@ export function getStructuredData(seo = DEFAULT_SEO) {
     },
     breadcrumb('Guías', '/guias', seo.guide.title),
   ]
+}
+
+export function getEnhancedStructuredData(seo = DEFAULT_SEO) {
+  const organization = {
+    '@context':'https://schema.org',
+    '@type':'Organization',
+    name:SITE_NAME,
+    url:SITE_URL,
+    logo:toAbsoluteUrl('/icon-512.png'),
+  }
+
+  const website = {
+    '@context':'https://schema.org',
+    '@type':'WebSite',
+    name:SITE_NAME,
+    url:SITE_URL,
+    inLanguage:'es',
+    description:DEFAULT_DESCRIPTION,
+    publisher:{
+      '@type':'Organization',
+      name:SITE_NAME,
+      url:SITE_URL,
+      logo:toAbsoluteUrl('/icon-512.png'),
+    },
+  }
+
+  const baseData = [website, organization]
+  const breadcrumb = (sectionName, sectionPath, itemName) => ({
+    '@context':'https://schema.org',
+    '@type':'BreadcrumbList',
+    itemListElement:[
+      { '@type':'ListItem', position:1, name:'Inicio', item:SITE_URL },
+      { '@type':'ListItem', position:2, name:sectionName, item:toAbsoluteUrl(sectionPath) },
+      { '@type':'ListItem', position:3, name:itemName, item:seo.canonical },
+    ],
+  })
+
+  if (seo.ad) {
+    const category = getAdDisplayCat(seo.ad)?.label || 'Anuncio'
+    const price = parsePrice(seo.ad.price)
+
+    return [
+      ...baseData,
+      compactObject({
+        '@context':'https://schema.org',
+        '@type':'Offer',
+        name:seo.ad.title,
+        description:seo.description,
+        url:seo.canonical,
+        image:seo.image,
+        category,
+        areaServed:formatAdLocation(seo.ad),
+        availability:'https://schema.org/InStock',
+        price:price === null ? undefined : price,
+        priceCurrency:price === null ? undefined : 'CHF',
+        seller:{
+          '@type':'Organization',
+          name:SITE_NAME,
+        },
+      }),
+      breadcrumb('Tablón', '/tablon', seo.ad.title),
+    ]
+  }
+
+  if (seo.job) {
+    const datePosted = toIsoDate(seo.job.created_at)
+    const salary = parsePrice(seo.job.salary)
+
+    return [
+      ...baseData,
+      compactObject({
+        '@context':'https://schema.org',
+        '@type':'JobPosting',
+        title:seo.job.title,
+        description:seo.description,
+        datePosted:datePosted || undefined,
+        employmentType:seo.job.type,
+        hiringOrganization:{
+          '@type':'Organization',
+          name:seo.job.company || SITE_NAME,
+        },
+        jobLocation:{
+          '@type':'Place',
+          address:{
+            '@type':'PostalAddress',
+            addressLocality:seo.job.city || seo.job.canton || 'Suiza',
+            addressCountry:'CH',
+          },
+        },
+        baseSalary:salary === null ? undefined : {
+          '@type':'MonetaryAmount',
+          currency:'CHF',
+          value:{
+            '@type':'QuantitativeValue',
+            value:salary,
+            unitText:/hora|h\b/i.test(seo.job.salary || '') ? 'HOUR' : 'MONTH',
+          },
+        },
+        applicantLocationRequirements:{
+          '@type':'Country',
+          name:'CH',
+        },
+        directApply:false,
+        url:seo.canonical,
+      }),
+      breadcrumb('Empleos', '/tablon?cat=empleo', seo.job.title),
+    ]
+  }
+
+  if (seo.business) {
+    return [
+      ...baseData,
+      compactObject({
+        '@context':'https://schema.org',
+        '@type':'LocalBusiness',
+        name:seo.business.name,
+        description:seo.description,
+        image:seo.image,
+        url:ensureUrl(seo.business.website, seo.canonical),
+        telephone:seo.business.phone || seo.business.whatsapp,
+        email:seo.business.email,
+        sameAs:seo.business.instagram ? `https://instagram.com/${String(seo.business.instagram).replace('@', '')}` : undefined,
+        address:{
+          '@type':'PostalAddress',
+          addressLocality:seo.business.city || seo.business.canton || 'Suiza',
+          addressCountry:'CH',
+        },
+      }),
+      breadcrumb('Negocios', '/comunidades?view=negocios', seo.business.name),
+    ]
+  }
+
+  if (seo.event) {
+    const price = parsePrice(seo.event.price)
+
+    return [
+      ...baseData,
+      compactObject({
+        '@context':'https://schema.org',
+        '@type':'Event',
+        name:seo.event.title,
+        description:seo.description,
+        image:seo.image,
+        eventAttendanceMode:'https://schema.org/OfflineEventAttendanceMode',
+        eventStatus:'https://schema.org/EventScheduled',
+        location:{
+          '@type':'Place',
+          name:seo.event.venue || seo.event.city || 'Suiza',
+          address:{
+            '@type':'PostalAddress',
+            addressLocality:seo.event.city || seo.event.canton || 'Suiza',
+            addressCountry:'CH',
+          },
+        },
+        organizer:{
+          '@type':'Organization',
+          name:seo.event.host || SITE_NAME,
+        },
+        offers:price === null ? undefined : {
+          '@type':'Offer',
+          price,
+          priceCurrency:'CHF',
+          availability:'https://schema.org/InStock',
+          url:seo.canonical,
+        },
+        url:seo.canonical,
+      }),
+      breadcrumb('Eventos', '/comunidades?view=eventos', seo.event.title),
+    ]
+  }
+
+  if (seo.guide) {
+    return [
+      ...baseData,
+      {
+        '@context':'https://schema.org',
+        '@type':'Article',
+        headline:seo.guide.title,
+        description:seo.description,
+        image:seo.image,
+        inLanguage:'es',
+        mainEntityOfPage:seo.canonical,
+        author:{
+          '@type':'Organization',
+          name:SITE_NAME,
+        },
+        publisher:{
+          '@type':'Organization',
+          name:SITE_NAME,
+          logo:{
+            '@type':'ImageObject',
+            url:toAbsoluteUrl('/icon-512.png'),
+          },
+        },
+      },
+      breadcrumb('Guías', '/guias', seo.guide.title),
+    ]
+  }
+
+  return baseData
+}
+
+export function getSeoSnapshot(seo = DEFAULT_SEO) {
+  if (seo.ad) {
+    const cat = getAdDisplayCat(seo.ad)?.label || 'Anuncio'
+    return {
+      eyebrow:cat,
+      title:seo.ad.title || seo.title,
+      description:seo.description,
+      body:cleanText(seo.ad.desc || seo.ad.description),
+      facts:[cat, formatAdLocation(seo.ad), seo.ad.price].filter(Boolean),
+      links:[
+        { label:'Ver tablón', href:'/tablon' },
+        { label:`Más en ${cat}`, href:`/tablon?cat=${seo.ad.cat || ''}` },
+      ],
+    }
+  }
+
+  if (seo.job) {
+    const intent = getJobIntentMeta(seo.job)
+    return {
+      eyebrow:intent.label || 'Empleo',
+      title:seo.job.title || seo.title,
+      description:seo.description,
+      body:cleanText(seo.job.desc || seo.job.description),
+      facts:[intent.label, seo.job.company, seo.job.city || seo.job.canton, seo.job.type, seo.job.salary].filter(Boolean),
+      links:[
+        { label:'Ver empleos', href:'/tablon?cat=empleo' },
+        { label:'Publicar empleo', href:'/publicar-empleo' },
+      ],
+    }
+  }
+
+  if (seo.business) {
+    const type = getNegocioTypeMeta(seo.business.type || seo.business.category)?.label || 'Negocio'
+    return {
+      eyebrow:type,
+      title:seo.business.name || seo.title,
+      description:seo.description,
+      body:cleanText(seo.business.desc || seo.business.description),
+      facts:[type, seo.business.city || seo.business.canton, seo.business.phone, seo.business.website].filter(Boolean),
+      links:[
+        { label:'Ver negocios', href:'/comunidades?view=negocios' },
+        { label:'Registrar negocio', href:'/registrar-negocio' },
+      ],
+    }
+  }
+
+  if (seo.event) {
+    const eventType = EVENTO_TYPES.find(item => item.id === seo.event.type)?.label || seo.event.type || 'Evento'
+    return {
+      eyebrow:eventType,
+      title:seo.event.title || seo.title,
+      description:seo.description,
+      body:cleanText(seo.event.desc || seo.event.description),
+      facts:[eventType, seo.event.city || seo.event.canton, seo.event.venue, [seo.event.day, seo.event.month, seo.event.time].filter(Boolean).join(' '), seo.event.price].filter(Boolean),
+      links:[
+        { label:'Ver eventos', href:'/comunidades?view=eventos' },
+        { label:'Publicar evento', href:'/publicar-evento' },
+      ],
+    }
+  }
+
+  if (seo.guide) {
+    return {
+      eyebrow:'Guía',
+      title:seo.guide.title || seo.title,
+      description:seo.description,
+      body:cleanText(seo.guide.summary || seo.guide.content),
+      facts:[seo.guide.cat, seo.guide.time, seo.guide.level].filter(Boolean),
+      links:[
+        { label:'Ver todas las guías', href:'/guias' },
+      ],
+    }
+  }
+
+  return {
+    eyebrow:SITE_NAME,
+    title:seo.title,
+    description:seo.description,
+    body:seo.description,
+    facts:[],
+    links:publicLinks().slice(0, 12),
+  }
+}
+
+export function getLlmsText(pages = getPublicSeoPages()) {
+  const publicPagesForLlms = pages.filter(page => !page.robots?.includes('noindex'))
+  const lines = [
+    `# ${SITE_NAME}`,
+    '',
+    `> ${DEFAULT_DESCRIPTION}`,
+    '',
+    'Latido.ch reune anuncios, empleos, negocios, eventos, comunidades y guias practicas para hispanohablantes en Suiza.',
+    '',
+    '## Secciones principales',
+    '',
+    ...publicLinks().slice(0, 10).map(page => `- [${page.label}](${toAbsoluteUrl(page.href)}): ${page.description}`),
+    '',
+    '## Paginas publicas indexables',
+    '',
+    ...publicPagesForLlms.map(page => `- [${page.title}](${page.canonical}): ${page.description}`),
+    '',
+    '## Uso recomendado',
+    '',
+    'Usa las URLs canonicas anteriores para citar contenido publico de Latido.ch. Las areas privadas, publicacion y cuenta no forman parte de este indice publico.',
+    '',
+  ]
+
+  return `${lines.join('\n')}\n`
 }
 
 export function getPublicSeoPages() {
