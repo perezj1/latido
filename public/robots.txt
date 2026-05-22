@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+Disallow: /auth
+Disallow: /perfil
+Disallow: /mensajes
+Disallow: /admin-latido
+Disallow: /publicar
+Disallow: /publicar-empleo
+Disallow: /publicar-evento
+Disallow: /registrar-negocio
+Disallow: /registrar-comunidad
+Disallow: /reset-password
+
+Sitemap: https://latido.ch/sitemap.xml

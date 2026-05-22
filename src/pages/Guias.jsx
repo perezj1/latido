@@ -1,15 +1,21 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { MOCK_DOCS } from '../lib/constants'
+import { getGuideById, getGuideBySlug, getGuidePath } from '../lib/seo'
 import { C, PP } from '../lib/theme'
 import { Card, Tag, Modal, Btn, InfoBanner, PillFilters } from '../components/UI'
 
 export default function Guias() {
   const { isLoggedIn } = useAuth()
+  const navigate = useNavigate()
+  const { guideSlug } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [cat, setCat] = useState('')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
+  const openGuideId = searchParams.get('openGuide') || ''
+  const routeGuide = guideSlug ? getGuideBySlug(guideSlug) : null
 
   const cats = [
     { id:'', label:'Todos' },
@@ -35,6 +41,40 @@ export default function Guias() {
 
     return matchesCat && matchesSearch
   })
+
+  useEffect(() => {
+    if (routeGuide) {
+      setSelected(routeGuide)
+      return
+    }
+
+    if (!openGuideId) {
+      setSelected(null)
+      return
+    }
+
+    const doc = getGuideById(openGuideId)
+    if (doc) setSelected(doc)
+  }, [openGuideId, routeGuide])
+
+  const openGuide = doc => {
+    navigate(getGuidePath(doc))
+  }
+
+  const closeGuide = () => {
+    setSelected(null)
+
+    if (routeGuide) {
+      navigate('/guias', { replace:true })
+      return
+    }
+
+    if (!openGuideId) return
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('openGuide')
+    setSearchParams(next, { replace:true })
+  }
 
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 24px 100px' }}>
@@ -88,7 +128,7 @@ export default function Guias() {
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
         {filtered.map((doc) => (
-          <Card key={doc.id} onClick={() => setSelected(doc)} style={{ padding:0, overflow:'hidden' }}>
+          <Card key={doc.id} onClick={() => openGuide(doc)} style={{ padding:0, overflow:'hidden' }}>
             <div style={{ position:'relative', height:150, background:C.bg }}>
               {doc.img ? (
                 <img src={doc.img} alt={doc.title} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
@@ -129,7 +169,13 @@ export default function Guias() {
                 }}
               >
                 <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>⏱ {doc.time}</span>
-                <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary }}>Leer →</span>
+                <Link
+                  to={getGuidePath(doc)}
+                  onClick={e => e.stopPropagation()}
+                  style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none' }}
+                >
+                  Leer →
+                </Link>
               </div>
             </div>
           </Card>
@@ -153,7 +199,7 @@ export default function Guias() {
         )}
       </div>
 
-      <Modal show={!!selected} onClose={() => setSelected(null)} title={selected?.title || ''}>
+      <Modal show={!!selected} onClose={closeGuide} title={selected?.title || ''} syncHistory={false}>
         {selected && (
           <>
             {selected.img && (
@@ -193,7 +239,7 @@ export default function Guias() {
               text="Esta guía es orientativa. Para casos específicos consulta la administración cantonal o un asesor certificado."
             />
 
-            <Btn onClick={() => setSelected(null)}>Entendido</Btn>
+            <Btn onClick={closeGuide}>Entendido</Btn>
           </>
         )}
       </Modal>

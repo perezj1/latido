@@ -10,6 +10,7 @@ import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
 import Header from './components/Header'
 import GlobalSearch from './components/GlobalSearch'
+import Seo from './components/Seo'
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Home = lazy(() => import('./pages/Home'))
@@ -293,6 +294,7 @@ function AppShell() {
             <Route path="/tablon" element={<Tablon />} />
             <Route path="/publicar" element={<ProtectedRoute><Publicar /></ProtectedRoute>} />
             <Route path="/comunidades" element={<Comunidades />} />
+            <Route path="/guias/:guideSlug" element={<Guias />} />
             <Route path="/guias" element={<Guias />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
             <Route path="/auth" element={<AuthRoute />} />
@@ -329,6 +331,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Seo />
         <ScrollToTop />
         <Toaster
           position="top-center"

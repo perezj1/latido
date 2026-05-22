@@ -9,6 +9,7 @@ import {
   MOCK_JOBS,
   MOCK_NEGOCIOS,
   MOCK_EVENTOS_LATINOS,
+  MOCK_DOCS,
   formatAdLocation,
   getAdCategoryId,
   getAdDisplayCat,
@@ -17,6 +18,7 @@ import {
   getNegocioTypeMeta,
   EVENTO_TYPES,
 } from '../lib/constants'
+import { SEARCHABLE_SITE_PAGES, getGuidePath } from '../lib/seo'
 
 const BUSINESS_EMOJI = {
   restaurante:'🍽️',
@@ -49,6 +51,8 @@ const EMPTY_DATASETS = Object.freeze({
   communities:[],
   businesses:[],
   events:[],
+  guides:[],
+  pages:[],
 })
 
 const SEARCH_CACHE = {
@@ -62,7 +66,11 @@ const TYPE_COLORS = {
   community:{ bg:'#D1FAE5', color:'#065F46', label:'Grupo' },
   business:{ bg:'#FEF3C7', color:'#92400E', label:'Negocio' },
   event:{ bg:'#FCE7F3', color:'#9D174D', label:'Evento' },
+  guide:{ bg:'#EDE9FE', color:'#6D28D9', label:'Guía' },
+  page:{ bg:'#F1F5F9', color:'#475569', label:'Página' },
 }
+
+const SEARCH_PAGE_SIZE = 1000
 
 function getCacheKey(isLoggedIn) {
   return isLoggedIn ? 'private' : 'public'
@@ -141,6 +149,37 @@ function normalizeJob(job) {
   }
 }
 
+function normalizeGuide(doc) {
+  return {
+    id: doc.id,
+    title: doc.title || '',
+    cat: doc.cat || '',
+    summary: doc.summary || '',
+    content: doc.content || '',
+    time: doc.time || '',
+    level: doc.level || '',
+    emoji: doc.emoji || '📚',
+  }
+}
+
+async function fetchAllRows(buildQuery) {
+  const rows = []
+
+  for (let from = 0; ; from += SEARCH_PAGE_SIZE) {
+    const to = from + SEARCH_PAGE_SIZE - 1
+    const res = await buildQuery().range(from, to)
+
+    if (res.error) return res
+
+    const data = res.data || []
+    rows.push(...data)
+
+    if (data.length < SEARCH_PAGE_SIZE) {
+      return { data: rows, error:null }
+    }
+  }
+}
+
 function buildFallbackData(isLoggedIn) {
   return {
     ads: (isLoggedIn ? MOCK_ADS : MOCK_ADS.filter(ad => ad.privacy === 'public')).map(normalizeAd),
@@ -148,11 +187,25 @@ function buildFallbackData(isLoggedIn) {
     communities: MOCK_COMMUNITIES.map(normalizeCommunity).filter(Boolean),
     businesses: MOCK_NEGOCIOS.map(normalizeBusiness),
     events: MOCK_EVENTOS_LATINOS.map(normalizeEvent),
+    guides: MOCK_DOCS.map(normalizeGuide),
+    pages: SEARCHABLE_SITE_PAGES,
   }
 }
 
+function normalizeSearchValue(value = '') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+function fieldIncludesSearch(value, query) {
+  return normalizeSearchValue(value).includes(query)
+}
+
 function searchAll(query, datasets, isLoggedIn) {
-  const q = query.toLowerCase().trim()
+  const q = normalizeSearchValue(query)
   if (!q || q.length < 2) return []
 
   const results = []
@@ -160,13 +213,12 @@ function searchAll(query, datasets, isLoggedIn) {
   datasets.ads
     .filter(ad =>
       (isLoggedIn || ad.privacy === 'public') && (
-        ad.title.toLowerCase().includes(q) ||
-        ad.desc.toLowerCase().includes(q) ||
-        ad.canton.toLowerCase().includes(q) ||
-        formatAdLocation(ad).toLowerCase().includes(q)
+        fieldIncludesSearch(ad.title, q) ||
+        fieldIncludesSearch(ad.desc, q) ||
+        fieldIncludesSearch(ad.canton, q) ||
+        fieldIncludesSearch(formatAdLocation(ad), q)
       )
     )
-    .slice(0, 3)
     .forEach(ad => {
       const cat = getAdDisplayCat(ad)
       const location = formatAdLocation(ad)
@@ -183,12 +235,11 @@ function searchAll(query, datasets, isLoggedIn) {
 
   datasets.jobs
     .filter(job =>
-      job.title.toLowerCase().includes(q) ||
-      job.company.toLowerCase().includes(q) ||
-      job.city.toLowerCase().includes(q) ||
-      job.intentLabel.toLowerCase().includes(q)
+      fieldIncludesSearch(job.title, q) ||
+      fieldIncludesSearch(job.company, q) ||
+      fieldIncludesSearch(job.city, q) ||
+      fieldIncludesSearch(job.intentLabel, q)
     )
-    .slice(0, 2)
     .forEach(job => {
       results.push({
         type:'job',
@@ -202,10 +253,10 @@ function searchAll(query, datasets, isLoggedIn) {
 
   datasets.communities
     .filter(group =>
-      group.name.toLowerCase().includes(q) ||
-      group.desc.toLowerCase().includes(q)
+      fieldIncludesSearch(group.name, q) ||
+      fieldIncludesSearch(group.desc, q) ||
+      fieldIncludesSearch(group.city, q)
     )
-    .slice(0, 2)
     .forEach(group => {
       results.push({
         type:'community',
@@ -219,12 +270,11 @@ function searchAll(query, datasets, isLoggedIn) {
 
   datasets.businesses
     .filter(business =>
-      business.name.toLowerCase().includes(q) ||
-      business.desc.toLowerCase().includes(q) ||
-      business.city.toLowerCase().includes(q) ||
-      business.services.some(service => service.toLowerCase().includes(q))
+      fieldIncludesSearch(business.name, q) ||
+      fieldIncludesSearch(business.desc, q) ||
+      fieldIncludesSearch(business.city, q) ||
+      business.services.some(service => fieldIncludesSearch(service, q))
     )
-    .slice(0, 2)
     .forEach(business => {
       results.push({
         type:'business',
@@ -238,13 +288,13 @@ function searchAll(query, datasets, isLoggedIn) {
 
   datasets.events
     .filter(event =>
-      event.title.toLowerCase().includes(q) ||
-      event.desc.toLowerCase().includes(q) ||
-      event.city.toLowerCase().includes(q) ||
-      event.venue.toLowerCase().includes(q) ||
-      event.host.toLowerCase().includes(q)
+      fieldIncludesSearch(event.title, q) ||
+      fieldIncludesSearch(event.desc, q) ||
+      fieldIncludesSearch(event.city, q) ||
+      fieldIncludesSearch(event.venue, q) ||
+      fieldIncludesSearch(event.host, q) ||
+      fieldIncludesSearch(EVENTO_TYPES.find(type => type.id === event.type)?.label, q)
     )
-    .slice(0, 2)
     .forEach(event => {
       results.push({
         type:'event',
@@ -253,6 +303,43 @@ function searchAll(query, datasets, isLoggedIn) {
         label:event.title,
         sub:`${EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'} · ${event.city}`,
         href:`/comunidades?view=eventos&openEvent=${encodeURIComponent(event.id)}`,
+      })
+    })
+
+  ;(datasets.guides || [])
+    .filter(guide =>
+      fieldIncludesSearch(guide.title, q) ||
+      fieldIncludesSearch(guide.summary, q) ||
+      fieldIncludesSearch(guide.content, q) ||
+      fieldIncludesSearch(guide.cat, q) ||
+      fieldIncludesSearch(guide.time, q) ||
+      fieldIncludesSearch(guide.level, q)
+    )
+    .forEach(guide => {
+      results.push({
+        type:'guide',
+        id:guide.id,
+        icon:guide.emoji || '📚',
+        label:guide.title,
+        sub:['Guía', guide.cat, guide.time, guide.level].filter(Boolean).join(' · '),
+        href:getGuidePath(guide),
+      })
+    })
+
+  ;(datasets.pages || [])
+    .filter(page =>
+      fieldIncludesSearch(page.title, q) ||
+      fieldIncludesSearch(page.section, q) ||
+      fieldIncludesSearch(page.desc, q)
+    )
+    .forEach(page => {
+      results.push({
+        type:'page',
+        id:page.id,
+        icon:page.icon || '🔎',
+        label:page.title,
+        sub:[page.section, page.desc].filter(Boolean).join(' · '),
+        href:page.href,
       })
     })
 
@@ -281,7 +368,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
 
   const ph = placeholder || (size === 'lg'
     ? 'Encuentra lo que buscas'
-    : 'Buscar anuncios, empleos o grupos...')
+    : 'Buscar en todo Latido...')
 
   useEffect(() => {
     accessLevelRef.current = accessLevel
@@ -316,31 +403,32 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
 
     const request = (async () => {
       try {
-        let adsQuery = supabase
-          .from('listings')
-          .select('*')
-          .eq('active', true)
-          .order('created_at', { ascending:false })
-
-        if (!isLoggedIn) adsQuery = adsQuery.eq('privacy', 'public')
-
         const [adsRes, jobsRes, communitiesRes, providersRes, eventsRes] = await Promise.all([
-          adsQuery,
-          supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false }),
-          supabase.from('communities').select('*').eq('active', true).order('members', { ascending:false }),
-          supabase
+          fetchAllRows(() => {
+            let query = supabase
+              .from('listings')
+              .select('*')
+              .eq('active', true)
+              .order('created_at', { ascending:false })
+
+            if (!isLoggedIn) query = query.eq('privacy', 'public')
+            return query
+          }),
+          fetchAllRows(() => supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false })),
+          fetchAllRows(() => supabase.from('communities').select('*').eq('active', true).order('members', { ascending:false })),
+          fetchAllRows(() => supabase
             .from('providers')
             .select('*')
             .eq('active', true)
             .order('featured', { ascending:false })
             .order('verified', { ascending:false })
-            .order('created_at', { ascending:false }),
-          supabase
+            .order('created_at', { ascending:false })),
+          fetchAllRows(() => supabase
             .from('events')
             .select('*')
             .eq('active', true)
             .order('featured', { ascending:false })
-            .order('created_at', { ascending:false }),
+            .order('created_at', { ascending:false })),
         ])
 
         const nextDatasets = {
@@ -355,6 +443,8 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
           events: eventsRes.error || !eventsRes.data?.length
             ? fallbackDatasets.events
             : eventsRes.data.map(normalizeEvent),
+          guides: fallbackDatasets.guides,
+          pages: fallbackDatasets.pages,
         }
 
         setCachedSearchData(isLoggedIn, nextDatasets)
@@ -501,8 +591,8 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                   <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>Sin resultados para <strong style={{ color:C.text }}>{q}</strong></p>
                   <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'6px 0 0' }}>
                     Prueba con otras palabras o{' '}
-                    <button onClick={() => goTo('/tablon')} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                      explora el tablón
+                    <button onClick={() => goTo('/')} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                      explora Latido
                     </button>
                   </p>
                 </>
@@ -535,10 +625,8 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                 )
               })}
               <div style={{ padding:'12px 16px', borderTop:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, background:'#FCFDFF' }}>
-                <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{results.length} resultado{results.length !== 1 ? 's' : ''}</span>
-                <button onClick={() => goTo('/tablon')} style={{ fontFamily:PP, fontWeight:600, fontSize:10, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                  Ver todo en el tablón →
-                </button>
+                <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{results.length} resultado{results.length !== 1 ? 's' : ''} en Latido</span>
+                <span style={{ fontFamily:PP, fontWeight:700, fontSize:10, color:C.primary }}>Mostrando todo</span>
               </div>
               {loadingData && (
                 <div style={{ padding:'10px 16px', borderTop:`1px solid ${C.borderLight}`, background:'#fff' }}>
