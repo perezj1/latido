@@ -538,7 +538,8 @@ export default function Tablon() {
   const [selectedAd, setSelectedAd] = useState(null)
   const [selectedJob, setSelectedJob] = useState(null)
   const [selectedPortal, setSelectedPortal] = useState(null)
-  const deferredSearch = useDeferredValue(search.trim().toLowerCase())
+  const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const deferredSearch = useDeferredValue(norm(search.trim()))
 
   const cat      = normalizeAdCat(searchParams.get('cat') || '')
   const type     = searchParams.get('type') || ''
@@ -722,7 +723,7 @@ export default function Tablon() {
       const num = parseFloat(a.price.replace(/[^0-9.]/g, ''))
       if (!isNaN(num) && num > parseFloat(maxPrice)) return false
     }
-    if (deferredSearch && !a.title.toLowerCase().includes(deferredSearch) && !a.desc?.toLowerCase().includes(deferredSearch)) return false
+    if (deferredSearch && !norm(a.title).includes(deferredSearch) && !norm(a.desc).includes(deferredSearch)) return false
     return true
   }), [ads, canton, cat, deferredSearch, isLoggedIn, maxPrice, plz, privacy, type])
 
@@ -732,7 +733,7 @@ export default function Tablon() {
       (!jobType || j.type === jobType) &&
       (!canton || !j.canton || j.canton === canton) &&
       (!plz || !j.plz || j.plz?.startsWith(plz)) &&
-      (!deferredSearch || j.title?.toLowerCase().includes(deferredSearch) || j.company?.toLowerCase().includes(deferredSearch) || getJobIntentMeta(j).label.toLowerCase().includes(deferredSearch))
+      (!deferredSearch || norm(j.title).includes(deferredSearch) || norm(j.company).includes(deferredSearch) || norm(getJobIntentMeta(j).label).includes(deferredSearch))
     )
     const fromAds = ads.filter(a =>
       a.cat === 'empleo' &&
@@ -741,7 +742,7 @@ export default function Tablon() {
       (!jobType || a.type === jobType || a.sub === jobType) &&
       (!canton || !a.canton || a.canton === canton) &&
       (!plz || !a.plz || a.plz?.startsWith(plz)) &&
-      (!deferredSearch || a.title?.toLowerCase().includes(deferredSearch) || a.desc?.toLowerCase().includes(deferredSearch) || getJobIntentMeta(a).label.toLowerCase().includes(deferredSearch))
+      (!deferredSearch || norm(a.title).includes(deferredSearch) || norm(a.desc).includes(deferredSearch) || norm(getJobIntentMeta(a).label).includes(deferredSearch))
     ).map(a => ({
       id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
       canton: a.canton, type: ['busca','ofrece'].includes(a.type) ? (a.sub || '') : a.type, job_intent: getJobIntentId(a), salary: a.salary, emoji: a.emoji || '💼',

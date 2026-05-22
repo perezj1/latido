@@ -1315,20 +1315,23 @@ export default function Comunidades() {
 
   const catOptions = useMemo(() => [{ id:'', label:'Todas' }, ...COMMUNITY_OPTIONS.map(item => ({ id:item.id, label:`${item.emoji} ${item.label}` }))], [])
 
+  const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const normSearch = norm(search)
+
   const filteredComm = communities.filter(group =>
     (!cat || group.cat === cat) &&
-    (!search || group.name.toLowerCase().includes(search.toLowerCase()) || group.desc.toLowerCase().includes(search.toLowerCase()))
+    (!normSearch || norm(group.name).includes(normSearch) || norm(group.desc).includes(normSearch))
   )
 
   const filteredNeg = [...businesses]
     .filter(business =>
       business.type !== 'empleo' && business.type !== 'vivienda' &&
       (!negType || normalizeNegocioType(business.type) === negType) &&
-      (!search ||
-        business.name.toLowerCase().includes(search.toLowerCase()) ||
-        business.desc.toLowerCase().includes(search.toLowerCase()) ||
-        business.city.toLowerCase().includes(search.toLowerCase()) ||
-        (businessServices[business.id] || business.services || []).some(service => service.toLowerCase().includes(search.toLowerCase())))
+      (!normSearch ||
+        norm(business.name).includes(normSearch) ||
+        norm(business.desc).includes(normSearch) ||
+        norm(business.city).includes(normSearch) ||
+        (businessServices[business.id] || business.services || []).some(service => norm(service).includes(normSearch)))
     )
     .sort((a, b) => {
       if (a.featured !== b.featured) return b.featured ? 1 : -1
