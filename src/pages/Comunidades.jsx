@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
@@ -22,6 +22,7 @@ import EventfrogCalendar from '../components/EventfrogCalendar'
 import ShareButton, { buildShareUrl } from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
+import { getBusinessPath, getEventPath, getIdFromSlug } from '../lib/seo'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
@@ -633,7 +634,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           <ShareButton
             title={business.name || 'Negocio en Latido'}
             text={getContentShareText('negocio', business.city)}
-            url={buildShareUrl('/comunidades', { view:'negocios', openBusiness:business.id })}
+            url={getBusinessPath(business)}
             ariaLabel="Compartir negocio"
           />
           <FavoriteButton
@@ -933,7 +934,7 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
           <ShareButton
             title={event.title || 'Evento en Latido'}
             text={getContentShareText('evento', [event.day, event.month, event.city].filter(Boolean).join(' - '))}
-            url={buildShareUrl('/comunidades', { view:'eventos', openEvent:event.id })}
+            url={getEventPath(event)}
             ariaLabel="Compartir evento"
           />
           <FavoriteButton
@@ -987,6 +988,8 @@ function applyCachedData(snapshot, setters) {
 }
 
 export default function Comunidades() {
+  const navigate = useNavigate()
+  const { businessSlug, eventSlug } = useParams()
   const { isLoggedIn, user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [communities, setCommunities] = useState(() => comunidadesCache.data?.communities ?? [])
@@ -1007,11 +1010,18 @@ export default function Comunidades() {
   const [recommendedBusinessIds, setRecommendedBusinessIds] = useState(() => new Set())
   const [recommendationLoading, setRecommendationLoading] = useState({})
 
-  const view = searchParams.get('view')
   const openCommunityId = searchParams.get('openCommunity') || ''
   const openBusinessId = searchParams.get('openBusiness') || ''
   const openEventId = searchParams.get('openEvent') || ''
+  const routeBusinessId = businessSlug ? getIdFromSlug(businessSlug) : ''
+  const routeEventId = eventSlug ? getIdFromSlug(eventSlug) : ''
+  const targetOpenBusinessId = openBusinessId || routeBusinessId
+  const targetOpenEventId = openEventId || routeEventId
+  const routeView = routeBusinessId ? 'negocios' : routeEventId ? 'eventos' : ''
+  const view = searchParams.get('view') || routeView
   const tab = MAIN_TABS.some(item => item.id === view) ? view : 'comunidades'
+  const isCleanBusinessRoute = !!routeBusinessId
+  const isCleanEventRoute = !!routeEventId
 
   useEffect(() => {
     let cancelled = false
@@ -1253,21 +1263,39 @@ export default function Comunidades() {
 
   const openBusinessDetails = (business) => {
     setSelectedBusiness(business)
+    setSelectedEvent(null)
+    if (isCleanBusinessRoute || isCleanEventRoute) {
+      navigate(getBusinessPath(business))
+      return
+    }
     updateOpenState('openBusiness', business.id, 'negocios', false)
   }
 
   const closeBusinessDetails = () => {
     setSelectedBusiness(null)
+    if (isCleanBusinessRoute) {
+      navigate('/comunidades?view=negocios', { replace:true })
+      return
+    }
     updateOpenState('openBusiness', '', 'negocios')
   }
 
   const openEventDetails = (event) => {
     setSelectedEvent(event)
+    setSelectedBusiness(null)
+    if (isCleanBusinessRoute || isCleanEventRoute) {
+      navigate(getEventPath(event))
+      return
+    }
     updateOpenState('openEvent', event.id, 'eventos', false)
   }
 
   const closeEventDetails = () => {
     setSelectedEvent(null)
+    if (isCleanEventRoute) {
+      navigate('/comunidades?view=eventos', { replace:true })
+      return
+    }
     updateOpenState('openEvent', '', 'eventos')
   }
 
@@ -1369,18 +1397,18 @@ export default function Comunidades() {
       if (community) setSelectedCommunity(community)
     }
 
-    if (!openBusinessId) setSelectedBusiness(null)
+    if (!targetOpenBusinessId) setSelectedBusiness(null)
     else {
-      const business = businesses.find(entry => String(entry.id) === openBusinessId)
+      const business = businesses.find(entry => String(entry.id) === targetOpenBusinessId)
       if (business) setSelectedBusiness(business)
     }
 
-    if (!openEventId) setSelectedEvent(null)
+    if (!targetOpenEventId) setSelectedEvent(null)
     else {
-      const event = events.find(entry => String(entry.id) === openEventId)
+      const event = events.find(entry => String(entry.id) === targetOpenEventId)
       if (event) setSelectedEvent(event)
     }
-  }, [businesses, communities, events, loading, openBusinessId, openCommunityId, openEventId])
+  }, [businesses, communities, events, loading, openCommunityId, targetOpenBusinessId, targetOpenEventId])
 
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', padding:'0 24px 100px' }}>

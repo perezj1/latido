@@ -18,7 +18,7 @@ import {
   getNegocioTypeMeta,
   EVENTO_TYPES,
 } from '../lib/constants'
-import { SEARCHABLE_SITE_PAGES, getGuidePath } from '../lib/seo'
+import { SEARCHABLE_SITE_PAGES, getAdPath, getBusinessPath, getEventPath, getGuidePath, getJobPath } from '../lib/seo'
 
 const BUSINESS_EMOJI = {
   restaurante:'🍽️',
@@ -228,7 +228,7 @@ function searchAll(query, datasets, isLoggedIn) {
         icon:getAdDisplayEmoji(ad),
         label:ad.title,
         sub:[cat?.label || 'Tablón', location, ad.price].filter(Boolean).join(' · '),
-        href:`/tablon?openAd=${encodeURIComponent(ad.id)}`,
+        href:getAdPath(ad),
         privacy:ad.privacy,
       })
     })
@@ -247,7 +247,7 @@ function searchAll(query, datasets, isLoggedIn) {
         icon:job.emoji || '💼',
         label:job.title,
         sub:[job.intentLabel, job.company, job.city, job.type].filter(Boolean).join(' · '),
-        href:`/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`,
+        href:getJobPath(job),
       })
     })
 
@@ -282,7 +282,7 @@ function searchAll(query, datasets, isLoggedIn) {
         icon:business.emoji || '🏪',
         label:business.name,
         sub:`${getNegocioTypeMeta(business.type)?.label || 'Negocio'} · ${business.city}`,
-        href:`/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`,
+        href:getBusinessPath(business),
       })
     })
 
@@ -302,7 +302,7 @@ function searchAll(query, datasets, isLoggedIn) {
         icon:event.emoji || '🎉',
         label:event.title,
         sub:`${EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'} · ${event.city}`,
-        href:`/comunidades?view=eventos&openEvent=${encodeURIComponent(event.id)}`,
+        href:getEventPath(event),
       })
     })
 

@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
@@ -9,8 +9,9 @@ import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdL
 import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery, ImageLightbox } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 import ReportButton from '../components/ReportButton'
-import ShareButton, { buildShareUrl } from '../components/ShareButton'
+import ShareButton from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
+import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 
 function fmtPrice(price) {
   if (!price) return ''
@@ -520,6 +521,8 @@ function PortalDetail({ portal, defaultEmoji = '🏠' }) {
 
 /* ── Main page ──────────────────────────────────────────── */
 export default function Tablon() {
+  const navigate = useNavigate()
+  const { adSlug, jobSlug } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const { isLoggedIn, user } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
@@ -547,9 +550,15 @@ export default function Tablon() {
   const maxPrice = searchParams.get('maxPrice') || ''
   const openAdId  = searchParams.get('openAd') || ''
   const openJobId = searchParams.get('openJob') || ''
+  const routeAdId = adSlug ? getIdFromSlug(adSlug) : ''
+  const routeJobId = jobSlug ? getIdFromSlug(jobSlug) : ''
+  const targetOpenAdId = openAdId || routeAdId
+  const targetOpenJobId = openJobId || routeJobId
 
   const isEmpleos  = cat === 'empleo'
   const isMercado  = cat === 'venta'
+  const isCleanAdRoute = !!routeAdId
+  const isCleanJobRoute = !!routeJobId
 
   const scrollPageTop = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
@@ -570,6 +579,11 @@ export default function Tablon() {
   }
   const openAdDetails = (ad) => {
     setSelectedAd(ad)
+    setSelectedJob(null)
+    if (isCleanAdRoute || isCleanJobRoute) {
+      navigate(getAdPath(ad))
+      return
+    }
     const p = new URLSearchParams(searchParams)
     p.set('openAd', ad.id)
     p.delete('openJob')
@@ -577,12 +591,21 @@ export default function Tablon() {
   }
   const closeAdDetails = () => {
     setSelectedAd(null)
+    if (isCleanAdRoute) {
+      navigate('/tablon', { replace:true })
+      return
+    }
     const p = new URLSearchParams(searchParams)
     p.delete('openAd')
     setSearchParams(p, { replace:true })
   }
   const openJobDetails = (job) => {
     setSelectedJob(job)
+    setSelectedAd(null)
+    if (isCleanAdRoute || isCleanJobRoute) {
+      navigate(getJobPath(job))
+      return
+    }
     const p = new URLSearchParams(searchParams)
     p.set('openJob', job.id)
     p.delete('openAd')
@@ -590,6 +613,10 @@ export default function Tablon() {
   }
   const closeJobDetails = () => {
     setSelectedJob(null)
+    if (isCleanJobRoute) {
+      navigate('/tablon?cat=empleo', { replace:true })
+      return
+    }
     const p = new URLSearchParams(searchParams)
     p.delete('openJob')
     setSearchParams(p, { replace:true })
@@ -809,9 +836,9 @@ export default function Tablon() {
   useEffect(() => {
     if (loading) return
 
-    if (openJobId) {
-      const job = filteredJobs.find(entry => String(entry.id) === openJobId)
-        || jobs.find(entry => String(entry.id) === openJobId)
+    if (targetOpenJobId) {
+      const job = filteredJobs.find(entry => String(entry.id) === targetOpenJobId)
+        || jobs.find(entry => String(entry.id) === targetOpenJobId)
       if (job) {
         setSelectedJob(job)
         setSelectedAd(null)
@@ -821,14 +848,14 @@ export default function Tablon() {
 
     setSelectedJob(null)
 
-    if (!openAdId) {
+    if (!targetOpenAdId) {
       setSelectedAd(null)
       return
     }
 
-    const ad = ads.find(entry => String(entry.id) === openAdId)
+    const ad = ads.find(entry => String(entry.id) === targetOpenAdId)
     if (ad) setSelectedAd(ad)
-  }, [ads, filteredJobs, jobs, loading, openAdId, openJobId])
+  }, [ads, filteredJobs, jobs, loading, targetOpenAdId, targetOpenJobId])
 
 
   const orderedCats = [...AD_CATS].sort((a, b) => {
@@ -1109,7 +1136,7 @@ export default function Tablon() {
             <ShareButton
               title={selectedAd.title || 'Anuncio en Latido'}
               text={getAdShareText(selectedAd)}
-              url={buildShareUrl('/tablon', { cat:getAdCategoryId(selectedAd), openAd:selectedAd.id })}
+              url={getAdPath(selectedAd)}
               ariaLabel="Compartir anuncio"
             />
             <FavoriteButton
@@ -1142,7 +1169,7 @@ export default function Tablon() {
             <ShareButton
               title={selectedJob.title || selectedJob.company || 'Empleo en Latido'}
               text={getJobShareText(selectedJob)}
-              url={buildShareUrl('/tablon', { cat:'empleo', openJob:selectedJob.id })}
+              url={getJobPath(selectedJob)}
               ariaLabel="Compartir empleo"
             />
             <FavoriteButton

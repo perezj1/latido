@@ -1,4 +1,15 @@
-import { MOCK_DOCS } from './constants.js'
+import {
+  EVENTO_TYPES,
+  MOCK_ADS,
+  MOCK_DOCS,
+  MOCK_EVENTOS_LATINOS,
+  MOCK_JOBS,
+  MOCK_NEGOCIOS,
+  formatAdLocation,
+  getAdDisplayCat,
+  getJobIntentMeta,
+  getNegocioTypeMeta,
+} from './constants.js'
 
 export const SITE_URL = (import.meta.env?.VITE_SITE_URL || 'https://latido.ch').replace(/\/$/, '')
 export const SITE_NAME = 'Latido.ch'
@@ -156,19 +167,97 @@ function truncate(value = '', max = 156) {
   return `${clean.slice(0, max - 1).replace(/\s+\S*$/, '')}.`
 }
 
+function ensureUrl(value = '', fallback = SITE_URL) {
+  const clean = String(value || '').trim()
+  if (!clean) return fallback
+  return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`
+}
+
 export function getGuidePath(doc) {
   if (!doc?.id) return '/guias'
   const slug = slugify(doc.title || doc.id)
   return `/guias/${doc.id}${slug ? `-${slug}` : ''}`
 }
 
+export function getAdPath(ad) {
+  if (!ad?.id) return '/tablon'
+  const slug = slugify(ad.title || ad.id)
+  return `/anuncios/${ad.id}${slug ? `--${slug}` : ''}`
+}
+
+export function getJobPath(job) {
+  if (!job?.id) return '/tablon?cat=empleo'
+  const slug = slugify(job.title || job.company || job.id)
+  return `/empleos/${job.id}${slug ? `--${slug}` : ''}`
+}
+
+export function getBusinessPath(business) {
+  if (!business?.id) return '/comunidades?view=negocios'
+  const slug = slugify(business.name || business.id)
+  return `/negocios/${business.id}${slug ? `--${slug}` : ''}`
+}
+
+export function getEventPath(event) {
+  if (!event?.id) return '/comunidades?view=eventos'
+  const slug = slugify(event.title || event.id)
+  return `/eventos/${event.id}${slug ? `--${slug}` : ''}`
+}
+
+export function getIdFromSlug(slug = '') {
+  const clean = String(slug || '').replace(/^\/+|\/+$/g, '')
+  if (!clean) return ''
+  const slugSeparator = clean.indexOf('--')
+  if (slugSeparator >= 0) return clean.slice(0, slugSeparator)
+  return clean.split('-')[0] || ''
+}
+
 export function getGuideBySlug(slug = '') {
   const clean = String(slug || '').replace(/^\/+|\/+$/g, '')
   if (!clean) return null
 
-  const id = clean.split('-')[0]
+  const id = getIdFromSlug(clean)
   return MOCK_DOCS.find(doc => doc.id === id) ||
     MOCK_DOCS.find(doc => slugify(doc.title) === clean) ||
+    null
+}
+
+export function getAdBySlug(slug = '') {
+  const clean = String(slug || '').replace(/^\/+|\/+$/g, '')
+  if (!clean) return null
+
+  const id = getIdFromSlug(clean)
+  return MOCK_ADS.find(ad => String(ad.id) === id) ||
+    MOCK_ADS.find(ad => slugify(ad.title) === clean) ||
+    null
+}
+
+export function getJobBySlug(slug = '') {
+  const clean = String(slug || '').replace(/^\/+|\/+$/g, '')
+  if (!clean) return null
+
+  const id = getIdFromSlug(clean)
+  return MOCK_JOBS.find(job => String(job.id) === id) ||
+    MOCK_JOBS.find(job => slugify(job.title) === clean) ||
+    null
+}
+
+export function getBusinessBySlug(slug = '') {
+  const clean = String(slug || '').replace(/^\/+|\/+$/g, '')
+  if (!clean) return null
+
+  const id = getIdFromSlug(clean)
+  return MOCK_NEGOCIOS.find(business => String(business.id) === id) ||
+    MOCK_NEGOCIOS.find(business => slugify(business.name) === clean) ||
+    null
+}
+
+export function getEventBySlug(slug = '') {
+  const clean = String(slug || '').replace(/^\/+|\/+$/g, '')
+  if (!clean) return null
+
+  const id = getIdFromSlug(clean)
+  return MOCK_EVENTOS_LATINOS.find(event => String(event.id) === id) ||
+    MOCK_EVENTOS_LATINOS.find(event => slugify(event.title) === clean) ||
     null
 }
 
@@ -207,6 +296,62 @@ function getGuideSeo(doc) {
   })
 }
 
+function getAdSeo(ad) {
+  const cat = getAdDisplayCat(ad)
+  const location = formatAdLocation(ad)
+
+  return withDefaults({
+    path:getAdPath(ad),
+    title:`${ad.title || 'Anuncio'} | Latido.ch`,
+    description:truncate(ad.desc || ad.description || [cat?.label, location, ad.price].filter(Boolean).join(' · ')),
+    image:ad.img_url || ad.img || DEFAULT_IMAGE,
+    type:'article',
+    ad,
+  })
+}
+
+function getJobSeo(job) {
+  const intent = getJobIntentMeta(job)
+  const location = job.city || job.canton || 'Suiza'
+
+  return withDefaults({
+    path:getJobPath(job),
+    title:`${job.title || 'Empleo en Suiza'} | Latido.ch`,
+    description:truncate(job.desc || job.description || [intent.label, job.company, location, job.type, job.salary].filter(Boolean).join(' · ')),
+    image:job.logo_url || job.img || DEFAULT_IMAGE,
+    type:'article',
+    job,
+  })
+}
+
+function getBusinessSeo(business) {
+  const type = getNegocioTypeMeta(business.type || business.category)?.label || 'Negocio'
+  const city = business.city || business.canton || 'Suiza'
+
+  return withDefaults({
+    path:getBusinessPath(business),
+    title:`${business.name || 'Negocio latino'} | Latido.ch`,
+    description:truncate(business.desc || business.description || `${type} en ${city}.`),
+    image:business.photo_url || business.img || DEFAULT_IMAGE,
+    type:'business.business',
+    business,
+  })
+}
+
+function getEventSeo(event) {
+  const eventType = EVENTO_TYPES.find(item => item.id === event.type)?.label || event.type || 'Evento'
+  const city = event.city || event.canton || 'Suiza'
+
+  return withDefaults({
+    path:getEventPath(event),
+    title:`${event.title || 'Evento latino'} | Latido.ch`,
+    description:truncate(event.desc || event.description || [eventType, city, event.venue, event.price].filter(Boolean).join(' · ')),
+    image:event.img || event.photo_url || DEFAULT_IMAGE,
+    type:'event',
+    event,
+  })
+}
+
 function isPrivatePath(pathname) {
   return PRIVATE_PATHS.some(path => pathname === path || pathname.startsWith(`${path}/`))
 }
@@ -218,6 +363,26 @@ export function getSeoForLocation(location = {}) {
   if (pathname.startsWith('/guias/')) {
     const guide = getGuideBySlug(pathname.replace('/guias/', ''))
     if (guide) return getGuideSeo(guide)
+  }
+
+  if (pathname.startsWith('/anuncios/')) {
+    const ad = getAdBySlug(pathname.replace('/anuncios/', ''))
+    if (ad) return getAdSeo(ad)
+  }
+
+  if (pathname.startsWith('/empleos/')) {
+    const job = getJobBySlug(pathname.replace('/empleos/', ''))
+    if (job) return getJobSeo(job)
+  }
+
+  if (pathname.startsWith('/negocios/')) {
+    const business = getBusinessBySlug(pathname.replace('/negocios/', ''))
+    if (business) return getBusinessSeo(business)
+  }
+
+  if (pathname.startsWith('/eventos/')) {
+    const event = getEventBySlug(pathname.replace('/eventos/', ''))
+    if (event) return getEventSeo(event)
   }
 
   const openGuide = params.get('openGuide')
@@ -276,6 +441,127 @@ export function getStructuredData(seo = DEFAULT_SEO) {
     },
   }
 
+  const breadcrumb = (sectionName, sectionPath, itemName) => ({
+    '@context':'https://schema.org',
+    '@type':'BreadcrumbList',
+    itemListElement:[
+      {
+        '@type':'ListItem',
+        position:1,
+        name:'Inicio',
+        item:SITE_URL,
+      },
+      {
+        '@type':'ListItem',
+        position:2,
+        name:sectionName,
+        item:toAbsoluteUrl(sectionPath),
+      },
+      {
+        '@type':'ListItem',
+        position:3,
+        name:itemName,
+        item:seo.canonical,
+      },
+    ],
+  })
+
+  if (seo.ad) {
+    const category = getAdDisplayCat(seo.ad)?.label || 'Anuncio'
+    return [
+      website,
+      {
+        '@context':'https://schema.org',
+        '@type':'Offer',
+        name:seo.ad.title,
+        description:seo.description,
+        url:seo.canonical,
+        image:seo.image,
+        category,
+        areaServed:formatAdLocation(seo.ad),
+        availability:'https://schema.org/InStock',
+      },
+      breadcrumb('Tablón', '/tablon', seo.ad.title),
+    ]
+  }
+
+  if (seo.job) {
+    return [
+      website,
+      {
+        '@context':'https://schema.org',
+        '@type':'JobPosting',
+        title:seo.job.title,
+        description:seo.description,
+        employmentType:seo.job.type,
+        hiringOrganization:{
+          '@type':'Organization',
+          name:seo.job.company || SITE_NAME,
+        },
+        jobLocation:{
+          '@type':'Place',
+          address:{
+            '@type':'PostalAddress',
+            addressLocality:seo.job.city || seo.job.canton || 'Suiza',
+            addressCountry:'CH',
+          },
+        },
+        url:seo.canonical,
+      },
+      breadcrumb('Empleos', '/tablon?cat=empleo', seo.job.title),
+    ]
+  }
+
+  if (seo.business) {
+    return [
+      website,
+      {
+        '@context':'https://schema.org',
+        '@type':'LocalBusiness',
+        name:seo.business.name,
+        description:seo.description,
+        image:seo.image,
+        url:ensureUrl(seo.business.website, seo.canonical),
+        address:{
+          '@type':'PostalAddress',
+          addressLocality:seo.business.city || seo.business.canton || 'Suiza',
+          addressCountry:'CH',
+        },
+      },
+      breadcrumb('Negocios', '/comunidades?view=negocios', seo.business.name),
+    ]
+  }
+
+  if (seo.event) {
+    return [
+      website,
+      {
+        '@context':'https://schema.org',
+        '@type':'Event',
+        name:seo.event.title,
+        description:seo.description,
+        image:seo.image,
+        eventAttendanceMode:'https://schema.org/OfflineEventAttendanceMode',
+        eventStatus:'https://schema.org/EventScheduled',
+        location:{
+          '@type':'Place',
+          name:seo.event.venue || seo.event.city || 'Suiza',
+          address:{
+            '@type':'PostalAddress',
+            addressLocality:seo.event.city || seo.event.canton || 'Suiza',
+            addressCountry:'CH',
+          },
+        },
+        organizer:{
+          '@type':'Organization',
+          name:seo.event.host || SITE_NAME,
+        },
+        url:seo.canonical,
+      },
+      breadcrumb('Eventos', '/comunidades?view=eventos', seo.event.title),
+    ]
+  }
+
   if (!seo.guide) return website
 
   return [
@@ -301,30 +587,7 @@ export function getStructuredData(seo = DEFAULT_SEO) {
         },
       },
     },
-    {
-      '@context':'https://schema.org',
-      '@type':'BreadcrumbList',
-      itemListElement:[
-        {
-          '@type':'ListItem',
-          position:1,
-          name:'Inicio',
-          item:SITE_URL,
-        },
-        {
-          '@type':'ListItem',
-          position:2,
-          name:'Guías',
-          item:toAbsoluteUrl('/guias'),
-        },
-        {
-          '@type':'ListItem',
-          position:3,
-          name:seo.guide.title,
-          item:seo.canonical,
-        },
-      ],
-    },
+    breadcrumb('Guías', '/guias', seo.guide.title),
   ]
 }
 
@@ -349,6 +612,10 @@ export function getPublicSeoPages() {
   ].map(path => getSeoForLocation(new URL(path, SITE_URL)))
 
   const guidePages = MOCK_DOCS.map(getGuideSeo)
+  const adPages = MOCK_ADS.filter(ad => ad.privacy === 'public').map(getAdSeo)
+  const jobPages = MOCK_JOBS.map(getJobSeo)
+  const businessPages = MOCK_NEGOCIOS.map(getBusinessSeo)
+  const eventPages = MOCK_EVENTOS_LATINOS.map(getEventSeo)
 
-  return [...routePages, ...guidePages]
+  return [...routePages, ...guidePages, ...adPages, ...jobPages, ...businessPages, ...eventPages]
 }

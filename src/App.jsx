@@ -292,8 +292,12 @@ function AppShell() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/tablon" element={<Tablon />} />
+            <Route path="/anuncios/:adSlug" element={<Tablon />} />
+            <Route path="/empleos/:jobSlug" element={<Tablon />} />
             <Route path="/publicar" element={<ProtectedRoute><Publicar /></ProtectedRoute>} />
             <Route path="/comunidades" element={<Comunidades />} />
+            <Route path="/negocios/:businessSlug" element={<Comunidades />} />
+            <Route path="/eventos/:eventSlug" element={<Comunidades />} />
             <Route path="/guias/:guideSlug" element={<Guias />} />
             <Route path="/guias" element={<Guias />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
