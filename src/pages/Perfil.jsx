@@ -6,10 +6,10 @@ import { usePWA } from '../hooks/usePWA'
 import { useFavorites } from '../hooks/useFavorites'
 import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
 import { PUSH_STATUS_EVENT, getPushStatus, subscribeToPushNotifications, syncPushPreferences, unsubscribeFromPushNotifications } from '../lib/pushNotifications'
-import { uploadAvatar, getStorageErrorMessage } from '../lib/storage'
+import { uploadAvatar, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
-import { Avatar, Btn, EmptyState, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
+import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
 import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import toast from 'react-hot-toast'
 
@@ -23,6 +23,7 @@ const PUBLICATION_TABS = [
 ]
 
 const JOB_TYPES = ['Full-time', 'Part-time', 'Freelance', 'Prácticas']
+const MULTI_PHOTO_AD_CATS = new Set(['vivienda', 'venta'])
 
 const COMMUNITY_OPTIONS = COMMUNITY_CATS
   .filter(item => item.id !== 'fe')
@@ -63,6 +64,37 @@ const KIND_META = {
 
 function splitList(value) {
   return value.split(',').map(item => item.trim()).filter(Boolean)
+}
+
+function supportsMultipleAdPhotos(cat) {
+  return MULTI_PHOTO_AD_CATS.has(normalizeAdCat(cat))
+}
+
+function normalizePhotoUrls(value) {
+  if (Array.isArray(value)) return value.filter(Boolean)
+
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed)) return parsed.filter(Boolean)
+    } catch {
+      return value.split(',').map(url => url.trim()).filter(Boolean)
+    }
+  }
+
+  return []
+}
+
+function uniqueUrls(urls) {
+  return Array.from(new Set((urls || []).filter(Boolean)))
+}
+
+function getAdPhotoUrls(row={}) {
+  return uniqueUrls([
+    ...normalizePhotoUrls(row.photo_urls),
+    row.img_url,
+    row.img,
+  ])
 }
 
 function formatDate(value) {
@@ -152,12 +184,15 @@ function buildEditorForm(item) {
   const row = item.raw
 
   if (item.kind === 'ad') {
+    const photoUrls = getAdPhotoUrls(row)
     return {
       cat: normalizeAdCat(row.cat) || '',
       sub: row.sub || '',
       type: row.type || '',
       title: row.title || '',
       desc: row.desc || '',
+      img_url: photoUrls[0] || '',
+      photo_urls: photoUrls,
       price: row.price || '',
       canton: row.canton || '',
       plz: row.plz || '',
@@ -253,6 +288,7 @@ export default function Perfil() {
   const [deletingKey, setDeletingKey] = useState('')
   const [editorItem, setEditorItem] = useState(null)
   const [editorForm, setEditorForm] = useState({})
+  const [uploadingEditorImage, setUploadingEditorImage] = useState(false)
   const [saving, setSaving] = useState(false)
   const [actionItem, setActionItem] = useState(null)
 
@@ -581,12 +617,79 @@ export default function Perfil() {
   }
 
   const openEditor = item => { setEditorItem(item); setEditorForm(buildEditorForm(item)) }
-  const closeEditor = () => { setEditorItem(null); setEditorForm({}); setSaving(false) }
+  const closeEditor = () => { setEditorItem(null); setEditorForm({}); setSaving(false); setUploadingEditorImage(false) }
   const updateEditorField = (key, value) => setEditorForm(prev => ({ ...prev, [key]: value }))
   const handleEditPublication = item => {
     if (!item) return
     setActionItem(null)
     openEditor(item)
+  }
+
+  const handleEditorImageUpload = async files => {
+    if (!files?.length || editorItem?.kind !== 'ad') return
+    const allowsMultiple = supportsMultipleAdPhotos(editorForm.cat)
+    setUploadingEditorImage(true)
+
+    try {
+      if (allowsMultiple) {
+        const uploadedUrls = await uploadPublicationImages({
+          files,
+          userId: user?.id,
+          folder:'ads',
+        })
+
+        setEditorForm(prev => {
+          const nextUrls = uniqueUrls([...(prev.photo_urls || []), ...uploadedUrls])
+          return {
+            ...prev,
+            img_url: prev.img_url || nextUrls[0] || '',
+            photo_urls: nextUrls,
+          }
+        })
+        toast.success(`${uploadedUrls.length} foto(s) añadida(s)`)
+      } else {
+        const publicUrl = await uploadPublicationImage({
+          file: files[0],
+          userId: user?.id,
+          folder:'ads',
+        })
+        setEditorForm(prev => ({ ...prev, img_url: publicUrl, photo_urls: [publicUrl] }))
+        toast.success('Imagen actualizada')
+      }
+    } catch (error) {
+      toast.error(getStorageErrorMessage(error))
+    } finally {
+      setUploadingEditorImage(false)
+    }
+  }
+
+  const handleEditorImageReplace = async (index, files) => {
+    if (!files?.length || editorItem?.kind !== 'ad') return
+    setUploadingEditorImage(true)
+
+    try {
+      const publicUrl = await uploadPublicationImage({
+        file: files[0],
+        userId: user?.id,
+        folder:'ads',
+      })
+
+      setEditorForm(prev => {
+        const currentUrls = prev.photo_urls?.length ? prev.photo_urls : (prev.img_url ? [prev.img_url] : [])
+        const oldUrl = currentUrls[index]
+        const nextUrls = uniqueUrls(currentUrls.map((url, currentIndex) => currentIndex === index ? publicUrl : url))
+        return {
+          ...prev,
+          img_url: prev.img_url === oldUrl || index === 0 ? publicUrl : prev.img_url,
+          photo_urls: nextUrls,
+        }
+      })
+      toast.success('Imagen actualizada')
+    } catch (error) {
+      toast.error(getStorageErrorMessage(error))
+    } finally {
+      setUploadingEditorImage(false)
+    }
   }
 
   const handleDeletePublication = async item => {
@@ -616,10 +719,17 @@ export default function Perfil() {
     let payload = {}
 
     if (item.kind === 'ad') {
+      const allowsMultiplePhotos = supportsMultipleAdPhotos(editorForm.cat)
+      const photoUrls = uniqueUrls([
+        editorForm.img_url,
+        ...(allowsMultiplePhotos ? (editorForm.photo_urls || []) : []),
+      ])
       payload = {
         cat: normalizeAdCat(editorForm.cat) || null, sub: editorForm.sub?.trim() || null,
         type: editorForm.type || null, title: editorForm.title?.trim(),
         desc: editorForm.desc?.trim() || null, price: editorForm.price?.trim() || null,
+        img_url: photoUrls[0] || null,
+        photo_urls: allowsMultiplePhotos && photoUrls.length > 0 ? photoUrls : null,
         canton: editorForm.canton || null, plz: editorForm.plz?.trim() || null,
         privacy: editorForm.privacy || 'public',
         contact_phone: editorForm.contactPhone?.trim() || null,
@@ -1276,6 +1386,28 @@ export default function Perfil() {
               <option value="">Seleccionar...</option>
               {AD_TYPES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
             </Select>
+            <ImageUploadField
+              label="Imágenes del anuncio"
+              previewUrl={editorForm.img_url || ''}
+              previewUrls={supportsMultipleAdPhotos(editorForm.cat) ? (editorForm.photo_urls || []) : []}
+              uploading={uploadingEditorImage}
+              multiple={supportsMultipleAdPhotos(editorForm.cat)}
+              onFilesSelected={handleEditorImageUpload}
+              onRemove={() => setEditorForm(prev => ({ ...prev, img_url:'', photo_urls:[] }))}
+              onRemoveAt={index => setEditorForm(prev => {
+                const removedUrl = prev.photo_urls?.[index]
+                const nextUrls = (prev.photo_urls || []).filter((_, i) => i !== index)
+                return {
+                  ...prev,
+                  img_url: prev.img_url === removedUrl ? nextUrls[0] || '' : prev.img_url,
+                  photo_urls: nextUrls,
+                }
+              })}
+              onReplaceAt={handleEditorImageReplace}
+              hint={supportsMultipleAdPhotos(editorForm.cat)
+                ? 'Borra una foto con X, sube otra para cambiarla o añade más imágenes.'
+                : 'Sube una nueva imagen para cambiar la actual, o bórrala con X.'}
+            />
             <Input label="Título" value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
             <Input label="Descripción" rows={4} value={editorForm.desc || ''} onChange={event => updateEditorField('desc', event.target.value)} />
             <Input label="Precio" value={editorForm.price || ''} onChange={event => updateEditorField('price', event.target.value)} />

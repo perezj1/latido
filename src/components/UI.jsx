@@ -161,6 +161,7 @@ export function ImageUploadField({
   onFilesSelected,
   onRemove,
   onRemoveAt,
+  onReplaceAt,
 }) {
   const deviceId = useId()
   const cameraId = useId()
@@ -172,26 +173,43 @@ export function ImageUploadField({
     event.target.value = ''
   }
 
+  const handleReplaceFiles = (event, index) => {
+    const files = Array.from(event.target.files || [])
+    if (files.length) onReplaceAt?.(index, files)
+    event.target.value = ''
+  }
+
   return (
     <div style={{ marginBottom:12 }}>
       {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}</label>}
 
       {previews.length > 0 && (
         <div style={{ display:'grid', gridTemplateColumns: multiple ? 'repeat(auto-fill,minmax(88px,1fr))' : '1fr', gap:8, marginBottom:10 }}>
-          {previews.map((url, index) => (
-            <div key={`${url}-${index}`} style={{ position:'relative', borderRadius:14, overflow:'hidden', border:`1px solid ${C.border}`, background:C.bg, minHeight: multiple ? 88 : 180 }}>
-              <img src={url} alt="Vista previa" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
-              {(multiple ? onRemoveAt : onRemove) && (
-                <button
-                  type="button"
-                  onClick={() => multiple ? onRemoveAt?.(index) : onRemove?.()}
-                  style={{ position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(15,23,42,0.72)', color:'#fff', cursor:'pointer', fontSize:13 }}
-                >
-                  X
-                </button>
-              )}
-            </div>
-          ))}
+          {previews.map((url, index) => {
+            const replaceId = `${deviceId}-replace-${index}`
+            return (
+              <div key={`${url}-${index}`} style={{ position:'relative', borderRadius:14, overflow:'hidden', border:`1px solid ${C.border}`, background:C.bg, minHeight: multiple ? 88 : 180 }}>
+                <img src={url} alt="Vista previa" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                {(multiple ? onRemoveAt : onRemove) && (
+                  <button
+                    type="button"
+                    onClick={() => multiple ? onRemoveAt?.(index) : onRemove?.()}
+                    style={{ position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(15,23,42,0.72)', color:'#fff', cursor:'pointer', fontSize:13 }}
+                  >
+                    X
+                  </button>
+                )}
+                {onReplaceAt && (
+                  <>
+                    <label htmlFor={replaceId} style={{ position:'absolute', left:8, bottom:8, right:8, fontFamily:PP, fontWeight:700, fontSize:10, background:'rgba(255,255,255,0.92)', color:C.primary, border:`1px solid ${C.primaryMid}`, borderRadius:10, padding:'6px 8px', textAlign:'center', cursor:uploading ? 'not-allowed' : 'pointer', opacity:uploading ? 0.6 : 1 }}>
+                      Cambiar
+                    </label>
+                    <input id={replaceId} type="file" accept="image/*" onChange={event => handleReplaceFiles(event, index)} disabled={uploading} style={{ display:'none' }} />
+                  </>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -300,12 +318,12 @@ export function Modal({ show, onClose, title, children, syncHistory=true }) {
   return (
     <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))', boxSizing:'border-box' }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)' }} onClick={onClose} />
-      <div className="fade-up no-scroll" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', scrollbarWidth:'none', msOverflowStyle:'none', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
-        <div style={{ position:'sticky', top:0, background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'24px 24px 0 0' }}>
+      <div className="fade-up" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'calc(100dvh - 32px)', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
+        <div style={{ flexShrink:0, position:'relative', zIndex:2, background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'24px 24px 0 0' }}>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:0 }}>{title}</p>
           <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:C.bg, border:'none', cursor:'pointer', fontSize:14, color:C.mid }}>✕</button>
         </div>
-        <div style={{ padding:20 }}>{children}</div>
+        <div className="no-scroll" style={{ padding:20, overflowY:'auto', minHeight:0, scrollbarWidth:'none', msOverflowStyle:'none' }}>{children}</div>
       </div>
     </div>
   )
