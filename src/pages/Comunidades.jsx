@@ -24,6 +24,7 @@ import FavoriteButton from '../components/FavoriteButton'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getBusinessPath, getEventPath, getIdFromSlug } from '../lib/seo'
 import { getMissingColumnName } from '../lib/supabaseCompat'
+import { normalizeExternalUrl } from '../lib/links'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
@@ -230,6 +231,8 @@ function normalizeProvider(provider) {
 }
 
 function normalizeEvent(event) {
+  const link = normalizeExternalUrl(event.link)
+
   return {
     id: event.id,
     type: event.type,
@@ -246,7 +249,7 @@ function normalizeEvent(event) {
     featured: !!event.featured,
     desc: event.desc || 'Evento latino en Suiza.',
     img: event.img_url || '',
-    link: event.link || '#',
+    link,
   }
 }
 
@@ -983,9 +986,11 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
       </div>
       <InfoBanner emoji={event.emoji} title={`${event.day} ${event.month} · ${event.venue}`} text={`Organiza ${event.host}`} bg={C.primaryLight} border={C.primaryMid} color={C.primaryDark} />
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>{event.desc}</p>
-      <a href={event.link} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'inline-flex' }}>
-        Ver detalles / reservar
-      </a>
+      {event.link && (
+        <a href={event.link} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'inline-flex' }}>
+          Ver detalles / reservar
+        </a>
+      )}
       <RelatedRail title="Eventos parecidos" empty={!relatedEvents.length}>
         {relatedEvents.map(item => (
           <RelatedEventCard key={item.id} event={item} onClick={() => onOpenRelatedEvent?.(item)} />

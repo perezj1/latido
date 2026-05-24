@@ -7,6 +7,7 @@ import { EVENTO_TYPES } from '../lib/constants'
 import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
+import { normalizeExternalUrl } from '../lib/links'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -73,6 +74,12 @@ export default function PublicarEvento() {
 
   const handleSubmit = async () => {
     if (!form.title || !form.date || !form.canton) { toast.error('Completa título, fecha y cantón'); return }
+    const link = normalizeExternalUrl(form.link)
+    if (form.link.trim() && !link) {
+      toast.error('Añade un link válido, por ejemplo instagram.com/usuario o @usuario')
+      return
+    }
+
     setLoading(true)
     try {
       const { error } = await supabase.from('events').insert({
@@ -89,7 +96,7 @@ export default function PublicarEvento() {
         desc: form.desc,
         img_url: form.img_url || null,
         host: form.host || user?.user_metadata?.name || 'Organizador',
-        link: form.link,
+        link: link || null,
         user_id: user?.id,
         active: true,
       })

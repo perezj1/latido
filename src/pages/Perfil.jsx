@@ -11,6 +11,7 @@ import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
 import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
+import { normalizeExternalUrl } from '../lib/links'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -760,6 +761,12 @@ export default function Perfil() {
     }
 
     if (item.kind === 'event') {
+      const link = normalizeExternalUrl(editorForm.link)
+      if (editorForm.link?.trim() && !link) {
+        toast.error('Añade un link válido, por ejemplo instagram.com/usuario o @usuario')
+        return
+      }
+
       payload = {
         type: editorForm.type || null, title: editorForm.title?.trim(),
         day: editorForm.day?.trim() || null, month: editorForm.month?.trim() || null,
@@ -767,7 +774,7 @@ export default function Perfil() {
         price: editorForm.price?.trim() || null, city: editorForm.city?.trim() || null,
         canton: editorForm.canton || null, venue: editorForm.venue?.trim() || null,
         desc: editorForm.desc?.trim() || null, host: editorForm.host?.trim() || null,
-        link: editorForm.link?.trim() || null, updated_at: new Date().toISOString(),
+        link: link || null, updated_at: new Date().toISOString(),
       }
       if (!payload.title || !payload.canton) { toast.error('Completa al menos el título y el cantón del evento'); return }
     }
