@@ -44,6 +44,13 @@ const ALERT_CATS = [
 ]
 
 const LANGS = ['Español', 'Alemán', 'Francés', 'Italiano', 'Inglés', 'Portugués']
+const PRICE_UNITS = [
+  { id:'hora', label:'Por hora' },
+  { id:'dia', label:'Por día' },
+  { id:'mes', label:'Por mes' },
+  { id:'once', label:'Total' },
+]
+const PRICE_UNIT_IDS = new Set(PRICE_UNITS.map(unit => unit.id))
 
 function normalizeCommunityCategory(value='') {
   if (value === 'mamas') return 'familia'
@@ -96,6 +103,77 @@ function getAdPhotoUrls(row={}) {
     row.img_url,
     row.img,
   ])
+}
+
+function formatAdPrice(priceValue, priceUnit='hora') {
+  const value = String(priceValue || '').trim()
+  if (!value) return ''
+
+  if (priceUnit === 'once') return `CHF ${value} total`
+  if (priceUnit === 'hora') return `CHF ${value} / hora`
+  if (priceUnit === 'dia') return `CHF ${value} / día`
+  if (priceUnit === 'mes') return `CHF ${value} / mes`
+
+  return `CHF ${value}`
+}
+
+function parseAdPrice(row={}) {
+  const structuredAmount = row.price_amount
+  if (structuredAmount !== null && structuredAmount !== undefined && structuredAmount !== '') {
+    const unit = PRICE_UNIT_IDS.has(row.price_unit) ? row.price_unit : 'hora'
+    return { value:String(structuredAmount), unit }
+  }
+
+  const raw = String(row.price || '').trim()
+  const match = raw.match(/\d+(?:[.,]\d+)?/)
+  if (!match) return { value:'', unit:'hora' }
+
+  const normalized = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  let unit = 'once'
+  if (/(?:\/\s*h\b|\bhora?s?\b|por hora)/.test(normalized)) unit = 'hora'
+  else if (/(?:\/\s*d\b|\bdia?s?\b|por dia)/.test(normalized)) unit = 'dia'
+  else if (/(?:\/\s*m\b|\bmes(?:es)?\b|por mes)/.test(normalized)) unit = 'mes'
+
+  return { value:match[0], unit }
+}
+
+function AdPriceEditor({ form, onChange }) {
+  const formatted = formatAdPrice(form.priceValue, form.priceUnit)
+
+  return (
+    <div style={{ marginBottom:16 }}>
+      <label style={{ display:'block', fontFamily:PP, fontSize:12, fontWeight:700, color:C.light, marginBottom:8 }}>
+        Precio (opcional)
+      </label>
+      <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
+        <div style={{ display:'flex', border:`1.5px solid ${C.border}`, borderRadius:14, overflow:'hidden', flex:1, background:'#fff' }}>
+          <div style={{ padding:'13px 14px', background:C.primaryLight, color:C.primary, fontWeight:800, fontSize:12, whiteSpace:'nowrap', display:'flex', alignItems:'center' }}>
+            CHF
+          </div>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="Ej: 30"
+            value={form.priceValue || ''}
+            onChange={event => onChange('priceValue', event.target.value.replace(/[^0-9.,]/g, ''))}
+            style={{ flex:1, minWidth:0, border:'none', outline:'none', background:'transparent', padding:'13px 14px', fontFamily:PP, fontSize:13, color:C.text }}
+          />
+        </div>
+        <select
+          value={form.priceUnit || 'hora'}
+          onChange={event => onChange('priceUnit', event.target.value)}
+          style={{ border:`1.5px solid ${C.border}`, borderRadius:14, padding:'0 12px', fontFamily:PP, fontSize:12, color:C.text, background:'#fff', cursor:'pointer', minWidth:96 }}
+        >
+          {PRICE_UNITS.map(unit => <option key={unit.id} value={unit.id}>{unit.label}</option>)}
+        </select>
+      </div>
+      {formatted && (
+        <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'8px 0 0', background:C.primaryLight, padding:'8px 12px', borderRadius:10 }}>
+          Se mostrará como: <strong>{formatted}</strong>
+        </p>
+      )}
+    </div>
+  )
 }
 
 function formatDate(value) {
@@ -186,6 +264,7 @@ function buildEditorForm(item) {
 
   if (item.kind === 'ad') {
     const photoUrls = getAdPhotoUrls(row)
+    const parsedPrice = parseAdPrice(row)
     return {
       cat: normalizeAdCat(row.cat) || '',
       sub: row.sub || '',
@@ -195,6 +274,8 @@ function buildEditorForm(item) {
       img_url: photoUrls[0] || '',
       photo_urls: photoUrls,
       price: row.price || '',
+      priceValue: parsedPrice.value,
+      priceUnit: parsedPrice.unit,
       canton: row.canton || '',
       plz: row.plz || '',
       privacy: row.privacy || 'public',
@@ -725,10 +806,18 @@ export default function Perfil() {
         editorForm.img_url,
         ...(allowsMultiplePhotos ? (editorForm.photo_urls || []) : []),
       ])
+      const priceValue = String(editorForm.priceValue || '').trim()
+      const priceAmount = priceValue
+        ? Number(priceValue.replace(',', '.'))
+        : null
+      const finalPrice = formatAdPrice(priceValue, editorForm.priceUnit)
       payload = {
         cat: normalizeAdCat(editorForm.cat) || null, sub: editorForm.sub?.trim() || null,
         type: editorForm.type || null, title: editorForm.title?.trim(),
-        desc: editorForm.desc?.trim() || null, price: editorForm.price?.trim() || null,
+        desc: editorForm.desc?.trim() || null,
+        price: finalPrice || null,
+        price_amount: Number.isNaN(priceAmount) ? null : priceAmount,
+        price_unit: priceValue ? editorForm.priceUnit || 'hora' : null,
         img_url: photoUrls[0] || null,
         photo_urls: allowsMultiplePhotos && photoUrls.length > 0 ? photoUrls : null,
         canton: editorForm.canton || null, plz: editorForm.plz?.trim() || null,
@@ -1417,7 +1506,7 @@ export default function Perfil() {
             />
             <Input label="Título" value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
             <Input label="Descripción" rows={4} value={editorForm.desc || ''} onChange={event => updateEditorField('desc', event.target.value)} />
-            <Input label="Precio" value={editorForm.price || ''} onChange={event => updateEditorField('price', event.target.value)} />
+            <AdPriceEditor form={editorForm} onChange={updateEditorField} />
             <div className="grid-2" style={{ gap:10 }}>
               <Select label="Cantón" value={editorForm.canton || ''} onChange={event => updateEditorField('canton', event.target.value)}>
                 <option value="">Seleccionar...</option>
