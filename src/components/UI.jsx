@@ -88,7 +88,7 @@ export function Tag({ children, bg=C.primaryLight, color=C.primary, size=10, sty
 export function Avatar({ name='?', size=32, src }) {
   const colors = ['#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444']
   const bg = colors[(name?.charCodeAt(0) || 0) % colors.length]
-  if (src) return <img src={src} style={{ width:size, height:size, borderRadius:'50%', objectFit:'contain', background:'#fff', flexShrink:0 }} alt={name} />
+  if (src) return <img src={src} alt={name} loading="lazy" decoding="async" style={{ width:size, height:size, borderRadius:'50%', objectFit:'contain', background:'#fff', flexShrink:0 }} />
   return (
     <div style={{ width:size, height:size, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontFamily:PP, fontWeight:700, fontSize:size*0.38, flexShrink:0 }}>
       {name?.[0]?.toUpperCase() || '?'}
@@ -443,7 +443,7 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
   return (
     <div onClick={onClick} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', cursor:'pointer', transition:'all .2s' }}>
       {ad.img ? (
-        <img src={ad.img} alt={ad.title} style={{ width:'100%', height:160, objectFit:'cover' }} />
+        <img src={ad.img} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:160, objectFit:'cover' }} />
       ) : (
         <div style={{ width:'100%', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:52 }}>
           {displayEmoji}
@@ -681,6 +681,7 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
         <img
           src={validPhotos[active]}
           alt={`${title} ${active + 1}`}
+          decoding="async"
           draggable={false}
           style={{ maxWidth:'100%', maxHeight:'calc(100vh - 150px)', objectFit:'contain', display:'block', background:'#000', transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`, transition:gestureRef.current ? 'none' : 'transform .18s ease', touchAction:'none', userSelect:'none' }}
         />
@@ -776,7 +777,7 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
               aria-label={`Ampliar foto ${index + 1}`}
               style={{ flex:all.length > 1 ? '0 0 clamp(250px, 78%, 420px)' : '1 1 100%', height:all.length > 1 ? 360 : 320, maxHeight:'56vh', padding:0, border:`1px solid ${C.border}`, borderRadius:18, overflow:'hidden', background:'#fff', cursor:'zoom-in', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 26px rgba(15,23,42,0.08)', position:'relative' }}
             >
-              <img src={src} alt={`Foto ${index + 1}`} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+              <img src={src} alt={`Foto ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
             </button>
           ))}
         </div>

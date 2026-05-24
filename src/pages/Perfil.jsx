@@ -1245,7 +1245,7 @@ export default function Perfil() {
                 <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
                   {item.raw?.img_url ? (
                     <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0 }}>
-                      <img src={item.raw.img_url} alt={item.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      <img src={item.raw.img_url} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                     </div>
                   ) : (
                     <div style={{ width:42, height:42, borderRadius:12, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>

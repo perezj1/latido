@@ -12,6 +12,7 @@ import { Avatar, Tag, PrivacyTag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
+import { getMissingColumnName } from '../lib/supabaseCompat'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -29,6 +30,26 @@ const CAT_COLORS = {
   servicios:{ bg:'#CCFBF1', tc:'#0F766E' },
   regalo:{ bg:'#FEE2E2', tc:'#B91C1C' },
   empleo:{ bg:'#DBEAFE', tc:'#1D4ED8' },
+}
+
+const COMMUNITY_HOME_SELECT = {
+  withPhoto:'id, name, city, members, emoji, cat, desc, contact, photo_url, created_at, active',
+  safe:'id, name, city, members, emoji, cat, desc, contact, created_at, active',
+}
+
+async function fetchHomeCommunities() {
+  const buildQuery = columns => supabase
+    .from('communities')
+    .select(columns)
+    .or('active.is.null,active.eq.true')
+    .order('created_at', { ascending:false })
+    .limit(12)
+
+  const response = await buildQuery(COMMUNITY_HOME_SELECT.withPhoto)
+  if (getMissingColumnName(response.error, 'communities') === 'photo_url') {
+    return buildQuery(COMMUNITY_HOME_SELECT.safe)
+  }
+  return response
 }
 
 function formatTimeAgo(value) {
@@ -146,21 +167,18 @@ export default function Home() {
           .select('*')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
-          .limit(50),
+          .limit(18),
 
-        supabase
-          .from('communities')
-          .select('id, name, city, members, emoji, cat, desc, contact, photo_url, created_at, active')
-          .or('active.is.null,active.eq.true')
-          .order('created_at', { ascending:false })
-          .limit(50),
+        fetchHomeCommunities(),
 
         supabase
           .from('providers')
           .select('id, name, category, city, canton, description, services, photo_url, verified, featured, created_at, active')
           .or('active.is.null,active.eq.true')
+          .neq('category', 'empleo')
+          .neq('category', 'vivienda')
           .order('created_at', { ascending:false })
-          .limit(1000),
+          .limit(24),
 
         supabase
           .from('jobs')
@@ -173,7 +191,8 @@ export default function Home() {
           .from('events')
           .select('id, title, day, month, year, city, venue, price, img_url, created_at, active')
           .or('active.is.null,active.eq.true')
-          .limit(50),
+          .order('created_at', { ascending:false })
+          .limit(12),
       ])
 
       if (adsRes.error) console.error('Error loading recent ads:', adsRes.error)
@@ -532,7 +551,7 @@ export default function Home() {
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                       <div style={{ height:120, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative' }}>
                         {ad.img
-                          ? <img src={ad.img} alt={ad.title} style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
+                          ? <img src={ad.img} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
                           : <span>{displayEmoji}</span>
                         }
                         <span style={{ position:'absolute', top:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(255,255,255,0.92)', color:cc.tc, padding:'3px 7px', borderRadius:999 }}>{cat?.label}</span>
@@ -676,7 +695,7 @@ export default function Home() {
                   <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                     <div style={{ height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
                       {group.photo_url
-                        ? <img src={group.photo_url} alt={group.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        ? <img src={group.photo_url} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{group.emoji || '👥'}</span>
                       }
                     </div>
@@ -729,7 +748,7 @@ export default function Home() {
                   <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                     <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
                       {business.photo_url
-                        ? <img src={business.photo_url} alt={business.name} style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        ? <img src={business.photo_url} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{business.emoji || '🏪'}</span>
                       }
                       <span
@@ -811,7 +830,7 @@ export default function Home() {
                       <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                         <div style={{ position:'relative', height:120, background:gc.bg, overflow:'hidden' }}>
                           {doc.img ? (
-                            <img src={doc.img} alt={doc.title} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                            <img src={doc.img} alt={doc.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
                           ) : (
                             <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
                               {doc.emoji}
@@ -859,6 +878,8 @@ export default function Home() {
                 <img
                   src={selectedGuide.img}
                   alt={selectedGuide.title}
+                  loading="lazy"
+                  decoding="async"
                   style={{ width:'100%', height:210, objectFit:'cover', borderRadius:18, marginBottom:16, display:'block' }}
                 />
               )}

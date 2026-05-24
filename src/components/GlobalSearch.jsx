@@ -71,6 +71,13 @@ const TYPE_COLORS = {
 }
 
 const SEARCH_PAGE_SIZE = 1000
+const SEARCH_SELECTS = {
+  ads: 'id, cat, title, desc, canton, plz, price, privacy, active, created_at',
+  jobs: 'id, title, company, city, canton, type, sector, active, created_at',
+  communities: 'id, name, city, members, emoji, cat, desc, active',
+  providers: 'id, name, category, city, canton, description, services, active, featured, verified, created_at',
+  events: 'id, type, title, city, canton, venue, host, desc, emoji, active, featured, created_at',
+}
 
 function getCacheKey(isLoggedIn) {
   return isLoggedIn ? 'private' : 'public'
@@ -106,6 +113,9 @@ function normalizeBusiness(provider) {
     desc: provider.desc || provider.description || '',
     emoji: provider.emoji || BUSINESS_EMOJI[provider.category] || '🏪',
     services: Array.isArray(provider.services) ? provider.services : [],
+    featured: !!provider.featured,
+    verified: !!provider.verified,
+    created_at: provider.created_at || '',
   }
 }
 
@@ -204,6 +214,12 @@ function fieldIncludesSearch(value, query) {
   return normalizeSearchValue(value).includes(query)
 }
 
+function sortMatchingBusinesses(a, b) {
+  if (a.featured !== b.featured) return b.featured ? 1 : -1
+  if (a.verified !== b.verified) return b.verified ? 1 : -1
+  return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+}
+
 function searchAll(query, datasets, isLoggedIn) {
   const q = normalizeSearchValue(query)
   if (!q || q.length < 2) return []
@@ -268,23 +284,27 @@ function searchAll(query, datasets, isLoggedIn) {
       })
     })
 
-  datasets.businesses
+  const matchingBusinesses = datasets.businesses
     .filter(business =>
       fieldIncludesSearch(business.name, q) ||
       fieldIncludesSearch(business.desc, q) ||
       fieldIncludesSearch(business.city, q) ||
       business.services.some(service => fieldIncludesSearch(service, q))
     )
-    .forEach(business => {
-      results.push({
-        type:'business',
-        id:business.id,
-        icon:business.emoji || '🏪',
-        label:business.name,
-        sub:`${getNegocioTypeMeta(business.type)?.label || 'Negocio'} · ${business.city}`,
-        href:getBusinessPath(business),
-      })
+    .sort(sortMatchingBusinesses)
+
+  matchingBusinesses.forEach(business => {
+    results.push({
+      type:'business',
+      id:business.id,
+      icon:business.emoji || '🏪',
+      label:business.name,
+      sub:[business.featured ? 'Destacado' : '', getNegocioTypeMeta(business.type)?.label || 'Negocio', business.city].filter(Boolean).join(' · '),
+      href:getBusinessPath(business),
+      featured:business.featured,
+      searchPriority:business.featured ? 0 : 1,
     })
+  })
 
   datasets.events
     .filter(event =>
@@ -344,6 +364,9 @@ function searchAll(query, datasets, isLoggedIn) {
     })
 
   return results
+    .map((result, index) => ({ ...result, searchIndex:index }))
+    .sort((a, b) => (a.searchPriority ?? 1) - (b.searchPriority ?? 1) || a.searchIndex - b.searchIndex)
+    .map(({ searchPriority, searchIndex, ...result }) => result)
 }
 
 export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
@@ -407,25 +430,25 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
           fetchAllRows(() => {
             let query = supabase
               .from('listings')
-              .select('*')
+              .select(SEARCH_SELECTS.ads)
               .eq('active', true)
               .order('created_at', { ascending:false })
 
             if (!isLoggedIn) query = query.eq('privacy', 'public')
             return query
           }),
-          fetchAllRows(() => supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false })),
-          fetchAllRows(() => supabase.from('communities').select('*').eq('active', true).order('members', { ascending:false })),
+          fetchAllRows(() => supabase.from('jobs').select(SEARCH_SELECTS.jobs).eq('active', true).order('created_at', { ascending:false })),
+          fetchAllRows(() => supabase.from('communities').select(SEARCH_SELECTS.communities).eq('active', true).order('members', { ascending:false })),
           fetchAllRows(() => supabase
             .from('providers')
-            .select('*')
+            .select(SEARCH_SELECTS.providers)
             .eq('active', true)
             .order('featured', { ascending:false })
             .order('verified', { ascending:false })
             .order('created_at', { ascending:false })),
           fetchAllRows(() => supabase
             .from('events')
-            .select('*')
+            .select(SEARCH_SELECTS.events)
             .eq('active', true)
             .order('featured', { ascending:false })
             .order('created_at', { ascending:false })),

@@ -233,6 +233,7 @@ function EventCard({ event, compact }) {
           src={event.img}
           alt={event.title}
           loading="lazy"
+          decoding="async"
           style={{
             width:compact ? 74 : 92,
             height:compact ? 74 : 92,
@@ -306,6 +307,7 @@ function CarouselEventCard({ event }) {
               src={event.img}
               alt={event.title}
               loading="lazy"
+              decoding="async"
               style={{ width:'100%', height:'100%', objectFit:'cover', position:'absolute', inset:0 }}
             />
           ) : (

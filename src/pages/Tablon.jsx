@@ -126,7 +126,7 @@ function RelatedAdCard({ ad, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
       <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {photos[0] ? <img src={photos[0]} alt={ad.title} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : getAdDisplayEmoji(ad)}
+        {photos[0] ? <img src={photos[0]} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : getAdDisplayEmoji(ad)}
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{ad.title}</p>
@@ -142,7 +142,7 @@ function RelatedJobCard({ job, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
       <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {job.logo_url ? <img src={job.logo_url} alt={job.title || job.company} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : (job.emoji || '💼')}
+        {job.logo_url ? <img src={job.logo_url} alt={job.title || job.company} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : (job.emoji || '💼')}
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{job.title || job.company}</p>
@@ -179,7 +179,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
             aria-label="Ampliar fotos del anuncio"
             style={{ width:'100%', height:'100%', padding:0, border:'none', background:'transparent', cursor:'zoom-in', display:'block' }}
           >
-            <img src={coverPhoto} alt={ad.title} style={LIST_MEDIA_STYLE}/>
+            <img src={coverPhoto} alt={ad.title} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE}/>
           </button>
         ) : (
           <div style={{ ...LIST_FALLBACK_STYLE, background:C.primaryLight }}>
@@ -248,7 +248,7 @@ function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd }) {
             aria-label="Ampliar foto del anuncio"
             style={{ width:'100%', minHeight:260, maxHeight:420, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', border:'none', padding:0, cursor:'zoom-in', position:'relative' }}
           >
-            <img src={coverPhoto} alt={ad.title} style={{ width:'100%', height:'auto', maxHeight:420, objectFit:'contain', display:'block' }}/>
+            <img src={coverPhoto} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:420, objectFit:'contain', display:'block' }}/>
           </button>
         ) : (
           <div style={{ height:260, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:64 }}>
@@ -345,7 +345,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:122 }}>
       <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight }}>
         {mediaSrc
-          ? <img src={mediaSrc} alt={job.company || job.title} style={LIST_MEDIA_STYLE} />
+          ? <img src={mediaSrc} alt={job.company || job.title} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
           : <div style={LIST_FALLBACK_STYLE}>{job.emoji || '💼'}</div>}
       </div>
       <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>
@@ -382,7 +382,7 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
       <div style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
         {job.logo_url ? (
           <div style={{ width:'100%', minHeight:240, maxHeight:380, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-            <img src={job.logo_url} alt={job.company || job.title} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
+            <img src={job.logo_url} alt={job.company || job.title} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
           </div>
         ) : (
           <div style={{ height:240, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:70 }}>
@@ -469,7 +469,7 @@ function PortalCard({ portal, defaultEmoji = '🏠', onClick }) {
     <button onClick={onClick} style={{ ...LIST_CARD_STYLE, minHeight:106, borderRadius:14 }}>
       <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight, fontSize:24 }}>
         {portal.photo_url
-          ? <img src={portal.photo_url} alt={portal.name} style={LIST_MEDIA_STYLE} />
+          ? <img src={portal.photo_url} alt={portal.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
           : <span>{defaultEmoji}</span>}
       </div>
       <div style={{ flex:1, minWidth:0 }}>
@@ -491,7 +491,7 @@ function PortalDetail({ portal, defaultEmoji = '🏠' }) {
       <div style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
         {portal.photo_url ? (
           <div style={{ width:'100%', minHeight:240, maxHeight:380, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-            <img src={portal.photo_url} alt={portal.name} style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
+            <img src={portal.photo_url} alt={portal.name} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
           </div>
         ) : (
           <div style={{ height:240, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:70 }}>{defaultEmoji}</div>

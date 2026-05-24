@@ -8,6 +8,7 @@ const LAST_CHECK_KEY = 'latido_alerts_last_check'
 const DISMISSED_EVENT = 'latido_alerts_dismissed'
 const UPDATED_EVENT = 'latido_alerts_updated'
 const MAX_ALERTS = 20
+const ALERT_POLL_INTERVAL_MS = 5 * 60_000
 
 const ALERT_SOURCES = [
   {
@@ -233,6 +234,7 @@ export function useZoneAlerts() {
     cancelRef.current = false
 
     async function check() {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
       const settings = loadSettings()
       const effectiveSettings = { ...settings, canton: settings.canton || userCanton || '' }
       if (!effectiveSettings.enabled || !effectiveSettings.canton) {
@@ -289,7 +291,7 @@ export function useZoneAlerts() {
     check()
     subscribeToRealtime()
 
-    const interval = setInterval(check, 60_000)
+    const interval = setInterval(check, ALERT_POLL_INTERVAL_MS)
 
     function onDismiss() {
       setAlertItems([])
