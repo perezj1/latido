@@ -5,10 +5,9 @@ import { useAuth } from '../hooks/useAuth'
 import { useZoneAlerts, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
-import { useFavorites } from '../hooks/useFavorites'
 import GlobalSearch from '../components/GlobalSearch'
 import { C, PP } from '../lib/theme'
-import { Avatar, Tag, PrivacyTag } from '../components/UI'
+import { Avatar, Tag, PrivacyTag, RatingPill } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
@@ -30,6 +29,13 @@ const CAT_COLORS = {
   servicios:{ bg:'#CCFBF1', tc:'#0F766E' },
   regalo:{ bg:'#FEE2E2', tc:'#B91C1C' },
   empleo:{ bg:'#DBEAFE', tc:'#1D4ED8' },
+}
+
+const REVIEWABLE_AD_CATS = new Set(['servicios', 'cuidados'])
+
+function averageRating(reviews) {
+  if (!reviews?.length) return null
+  return +(reviews.reduce((sum, review) => sum + Number(review.stars || 0), 0) / reviews.length).toFixed(1)
 }
 
 const COMMUNITY_HOME_SELECT = {
@@ -101,7 +107,6 @@ export default function Home() {
   const navigate = useNavigate()
   const { alertItems, alertCount } = useZoneAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
-  const { isFavorite, toggleFavorite } = useFavorites()
 
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef(null)
@@ -140,16 +145,6 @@ export default function Home() {
   const getCommunityHref = (group) => `/comunidades?openCommunity=${encodeURIComponent(group.id)}`
   const getBusinessHref = (business) => `/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`
   const getJobHref = (job) => `/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`
-  const getAdFavoriteTarget = (ad) => String(ad.id).startsWith('job_')
-    ? { type:'jobs', id:String(ad.id).replace('job_', '') }
-    : { type:'ads', id:ad.id }
-  const toggleAdFavorite = (event, ad) => {
-    event.preventDefault()
-    event.stopPropagation()
-    const target = getAdFavoriteTarget(ad)
-    toggleFavorite(target.type, target.id)
-  }
-
   const applySnapshot = useCallback((snapshot) => {
     setRecentAds(snapshot.recentAds || [])
     setCommunityHighlights(snapshot.communityHighlights || [])
@@ -237,8 +232,41 @@ export default function Home() {
         }
       })
 
+      const adReviewStats = {}
+      const reviewableAdIds = adsNorm
+        .filter(ad => REVIEWABLE_AD_CATS.has(ad.cat))
+        .map(ad => ad.id)
+
+      if (reviewableAdIds.length) {
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from('listing_reviews')
+          .select('listing_id, stars')
+          .eq('active', true)
+          .in('listing_id', reviewableAdIds)
+
+        if (!reviewsError && Array.isArray(reviewsData)) {
+          reviewsData.forEach(review => {
+            if (!review?.listing_id) return
+            adReviewStats[review.listing_id] = [
+              ...(adReviewStats[review.listing_id] || []),
+              review,
+            ]
+          })
+        }
+      }
+
       setRecentAds(
-        [...adsNorm, ...jobsNorm]
+        [
+          ...adsNorm.map(ad => {
+            const reviews = adReviewStats[ad.id] || []
+            return {
+              ...ad,
+              rating: averageRating(reviews),
+              reviewCount: reviews.length,
+            }
+          }),
+          ...jobsNorm,
+        ]
           .sort((a, b) => (b._sort > a._sort ? 1 : -1))
           .map(({ _sort, ...rest }) => rest)
       )
@@ -535,8 +563,6 @@ export default function Home() {
                 const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
                 const location = formatAdLocation(ad)
                 const displayEmoji = getAdDisplayEmoji(ad)
-                const favoriteTarget = getAdFavoriteTarget(ad)
-                const isFav = isFavorite(favoriteTarget.type, favoriteTarget.id)
                 return (
                   <div
                     key={ad.id}
@@ -546,28 +572,27 @@ export default function Home() {
                     onKeyDown={event => {
                       if (event.key === 'Enter') navigate(getAdHref(ad))
                     }}
-                    style={{ textDecoration:'none', flexShrink:0, width:152, display:'block', cursor:'pointer' }}
+                    style={{ textDecoration:'none', flexShrink:0, width:172, display:'block', cursor:'pointer' }}
                   >
-                    <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-                      <div style={{ height:120, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative' }}>
+                    <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 10px 24px rgba(15,23,42,0.07)' }}>
+                      <div style={{ height:132, background:'#F8FAFC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative', borderBottom:`1px solid ${C.borderLight}` }}>
                         {ad.img
                           ? <img src={ad.img} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
-                          : <span>{displayEmoji}</span>
+                          : <span style={{ fontSize:44, lineHeight:1 }}>{displayEmoji}</span>
                         }
-                        <span style={{ position:'absolute', top:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(255,255,255,0.92)', color:cc.tc, padding:'3px 7px', borderRadius:999 }}>{cat?.label}</span>
-                        <button
-                          type="button"
-                          onClick={event => toggleAdFavorite(event, ad)}
-                          aria-label={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-                          style={{ position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.94)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, cursor:'pointer', boxShadow:'0 6px 16px rgba(15,23,42,0.14)', lineHeight:1 }}
-                        >
-                          {isFav ? '\u2764\uFE0F' : '\uD83E\uDD0D'}
-                        </button>
+                        <span style={{ position:'absolute', top:10, left:10, maxWidth:'calc(100% - 76px)', fontFamily:PP, fontSize:9, fontWeight:800, background:'rgba(255,255,255,0.94)', color:cc.tc, padding:'5px 8px', borderRadius:999, boxShadow:'0 6px 14px rgba(15,23,42,0.08)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{cat?.label}</span>
+                        {ad.reviewCount > 0 && (
+                          <RatingPill
+                            rating={ad.rating}
+                            count={ad.reviewCount}
+                            style={{ position:'absolute', top:10, right:10, background:'#fff', fontSize:10, padding:'5px 8px', borderColor:'#FDE68A', boxShadow:'none' }}
+                          />
+                        )}
                       </div>
-                      <div style={{ padding:'10px 10px 12px' }}>
-                        <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', lineHeight:1.35, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.7em' }}>{ad.title}</p>
-                        <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.primary, margin:'0 0 4px' }}>{fmtPrice(ad.price) || '—'}</p>
-                        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0 }}>📍 {location || ad.canton} · {ad.ts}</p>
+                      <div style={{ padding:'12px 12px 13px' }}>
+                        <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.65em', overflowWrap:'anywhere' }}>{ad.title}</p>
+                        <p style={{ fontFamily:PP, fontWeight:900, fontSize:14, color:C.primary, margin:'0 0 7px', lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtPrice(ad.price) || '—'}</p>
+                        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>📍 {location || ad.canton} · {ad.ts}</p>
                       </div>
                     </div>
                   </div>
@@ -745,8 +770,8 @@ export default function Home() {
                   to={getBusinessHref(business)}
                   style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
                 >
-                  <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-                    <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
+                    <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+                    <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'visible' }}>
                       {business.photo_url
                         ? <img src={business.photo_url} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{business.emoji || '🏪'}</span>
@@ -757,7 +782,7 @@ export default function Home() {
                           position:'absolute',
                           top:8,
                           left:8,
-                          maxWidth:(business.featured || business.verified) ? 'calc(100% - 66px)' : 'calc(100% - 16px)',
+                          maxWidth:business.verified ? 'calc(100% - 42px)' : 'calc(100% - 16px)',
                           fontFamily:PP,
                           fontSize:9,
                           fontWeight:700,
@@ -775,11 +800,15 @@ export default function Home() {
                         {business.emoji} {business.typeLabel}
                       </span>
                       <div style={{ position:'absolute', top:8, right:8, display:'flex', gap:4 }}>
-                        {business.featured && <span style={{ width:24, height:24, borderRadius:12, background:'rgba(255,255,255,0.94)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, boxShadow:'0 6px 16px rgba(15,23,42,0.12)' }}>⭐</span>}
                         {business.verified && <span style={{ width:24, height:24, borderRadius:12, background:'rgba(255,255,255,0.94)', color:'#065F46', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, boxShadow:'0 6px 16px rgba(15,23,42,0.12)' }}>✓</span>}
                       </div>
+                      {business.featured && (
+                        <span style={{ position:'absolute', left:'50%', bottom:-12, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5, fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'6px 12px', boxShadow:'0 8px 18px rgba(37,99,235,0.14)', whiteSpace:'nowrap' }}>
+                          Destacado
+                        </span>
+                      )}
                     </div>
-                    <div style={{ padding:'10px 10px 12px' }}>
+                    <div style={{ padding:business.featured ? '18px 10px 12px' : '10px 10px 12px' }}>
                       <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em', overflowWrap:'anywhere' }}>
                         {business.name}
                       </p>

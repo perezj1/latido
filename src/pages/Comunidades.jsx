@@ -258,6 +258,19 @@ function averageRating(reviews) {
   return +(reviews.reduce((sum, review) => sum + review.stars, 0) / reviews.length).toFixed(1)
 }
 
+function normalizeProviderReview(review) {
+  return {
+    id: review.id,
+    provider_id: review.provider_id,
+    user_id: review.user_id || '',
+    author: review.author_name || 'Usuario',
+    canton: review.canton || '',
+    stars: Number(review.stars || 0),
+    date: formatRelativeDate(review.created_at),
+    text: review.text || '',
+  }
+}
+
 function getRecommendationCopy(count=0) {
   if (count <= 0) {
     return {
@@ -514,7 +527,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
       onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,99,235,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
       onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
     >
-      <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight }}>
+      <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight, overflow:'visible' }}>
         {cover ? (
           <button
             type="button"
@@ -523,7 +536,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
               setLightboxOpen(true)
             }}
             aria-label="Ampliar fotos del negocio"
-            style={{ width:'100%', height:'100%', padding:0, border:'none', background:'transparent', cursor:'zoom-in', display:'block' }}
+            style={{ width:'100%', height:'100%', padding:0, border:'none', background:'transparent', cursor:'zoom-in', display:'block', borderRadius:14, overflow:'hidden' }}
           >
             <img src={cover} alt={business.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
           </button>
@@ -533,6 +546,11 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
         {photos.length > 1 && (
           <span style={{ position:'absolute', bottom:8, left:8, fontFamily:PP, fontSize:9, fontWeight:700, background:'rgba(15,23,42,0.72)', color:'#fff', padding:'3px 7px', borderRadius:999 }}>
             Fotos {photos.length}
+          </span>
+        )}
+        {business.featured && (
+          <span style={{ position:'absolute', left:'50%', bottom:-10, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:9, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'5px 10px', boxShadow:'0 8px 18px rgba(37,99,235,0.14)', whiteSpace:'nowrap' }}>
+            Destacado
           </span>
         )}
       </div>
@@ -550,7 +568,6 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
         <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap', marginBottom:5, minWidth:0 }}>
           <Tag bg={C.primaryLight} color={C.primary} title={category?.label || 'Negocio'}>{category?.label || 'Negocio'}</Tag>
           {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
-          {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{business.name}</h3>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:6, flexWrap:'wrap', minWidth:0 }}>
@@ -618,18 +635,20 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
   )
 }
 
-function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap, relatedBusinesses=[], onOpenRelatedBusiness, recommendationCount=0, recommended=false, recommendationLoading=false, onToggleRecommend }) {
-  const { isLoggedIn, displayName } = useAuth()
+function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap, onReviewsChange, relatedBusinesses=[], onOpenRelatedBusiness, recommendationCount=0, recommended=false, recommendationLoading=false, onToggleRecommend }) {
+  const { isLoggedIn, user, displayName, userCanton } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const category = getNegocioTypeMeta(business.type)
   const services = servicesMap[business.id] || business.services || []
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
   const [reviews, setReviews] = useState(reviewsMap[business.id] || [])
   const [showReviewForm, setShowReviewForm] = useState(false)
+  const [savingReview, setSavingReview] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [tab, setTab] = useState('info')
   const rating = averageRating(reviews)
+  const ownReview = user?.id ? reviews.find(review => review.user_id === user.id) : null
   const contactMethods = getBusinessContactMethods(business)
   const locationContacts = getLocationContacts(business)
   const hasContact = locationContacts ? locationContacts.length > 0 : contactMethods.length > 0
@@ -639,12 +658,68 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   useEffect(() => {
     setReviews(reviewsMap[business.id] || [])
     setShowContacts(false)
+    setShowReviewForm(false)
+    setSavingReview(false)
   }, [business.id, reviewsMap])
 
-  const handleAddReview = review => {
-    setReviews(prev => [{ id:`new-${Date.now()}`, ...review, author:isLoggedIn ? displayName : review.name }, ...prev])
-    setShowReviewForm(false)
-    toast.success('¡Reseña publicada!')
+  const handleAddReview = async review => {
+    if (!isLoggedIn || !user?.id) {
+      toast.error('Inicia sesión para escribir una reseña')
+      return
+    }
+
+    const payload = {
+      provider_id: business.id,
+      user_id: user.id,
+      author_name: displayName || review.name?.trim() || 'Usuario',
+      canton: userCanton || review.canton?.trim() || '',
+      stars: review.stars,
+      text: review.text?.trim(),
+      active: true,
+    }
+    const existingReview = reviews.find(item => item.user_id === user.id)
+
+    setSavingReview(true)
+    try {
+      const query = existingReview?.id && !String(existingReview.id).startsWith('new-')
+        ? supabase
+          .from('reviews')
+          .update({
+            author_name: payload.author_name,
+            canton: payload.canton,
+            stars: payload.stars,
+            text: payload.text,
+            active: true,
+          })
+          .eq('id', existingReview.id)
+          .eq('user_id', user.id)
+        : supabase
+          .from('reviews')
+          .insert(payload)
+
+      const { data, error } = await query
+        .select('id, provider_id, user_id, author_name, canton, stars, created_at, text')
+        .single()
+
+      if (error) throw error
+
+      const normalized = normalizeProviderReview(data || {
+        ...payload,
+        id:`new-${Date.now()}`,
+        created_at:new Date().toISOString(),
+      })
+      const mergeReviews = current => [normalized, ...(current || []).filter(item => item.id !== normalized.id && item.user_id !== user.id)]
+
+      setReviews(prev => mergeReviews(prev))
+      onReviewsChange?.(business.id, mergeReviews)
+      setShowReviewForm(false)
+      toast.success(existingReview ? 'Reseña actualizada' : 'Reseña publicada')
+    } catch (error) {
+      console.error('Could not save provider review:', error)
+      toast.error('No se pudo guardar la reseña')
+    } finally {
+      setSavingReview(false)
+    }
   }
 
   return (
@@ -686,15 +761,22 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           {tab === 'info' && (
             <>
               {photos[0] && (
-                <button
-                  type="button"
-                  onClick={() => setLightboxOpen(true)}
-                  className="provider-detail-img"
-                  aria-label="Ampliar fotos del negocio"
-                  style={{ width:'100%', border:'none', padding:0, background:'transparent', borderRadius:16, overflow:'hidden', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative' }}
-                >
-                  <img src={photos[0]} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
-                </button>
+                <div style={{ position:'relative', overflow:'visible', marginBottom:business.featured ? 26 : 14 }}>
+                  <button
+                    type="button"
+                    onClick={() => setLightboxOpen(true)}
+                    className="provider-detail-img"
+                    aria-label="Ampliar fotos del negocio"
+                    style={{ width:'100%', border:'none', padding:0, background:'transparent', borderRadius:16, overflow:'hidden', marginBottom:0, display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative' }}
+                  >
+                    <img src={photos[0]} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
+                  </button>
+                  {business.featured && (
+                    <span style={{ position:'absolute', left:'50%', bottom:-13, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 14px', boxShadow:'0 10px 22px rgba(37,99,235,0.16)', whiteSpace:'nowrap' }}>
+                      Destacado
+                    </span>
+                  )}
+                </div>
               )}
               {photos[0] && (
                 <ImageLightbox
@@ -712,7 +794,6 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                 {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
                 <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
                 {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
-                {business.featured && <Tag bg="#FEF3C7" color="#92400E">⭐ Destacado</Tag>}
               </div>
               <RecommendationBox
                 count={recommendationCount}
@@ -840,11 +921,31 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
               )}
 
               {!showReviewForm ? (
-                <button onClick={() => setShowReviewForm(true)} style={{ width:'100%', background:C.primaryLight, border:`1.5px dashed ${C.primary}`, borderRadius:14, padding:'12px 0', fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, cursor:'pointer', marginBottom:14 }}>
-                  ✍️ Escribir una reseña
+                <button
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      toast.error('Inicia sesión para escribir una reseña')
+                      return
+                    }
+                    setShowReviewForm(true)
+                  }}
+                  style={{ width:'100%', background:C.primaryLight, border:`1.5px dashed ${C.primary}`, borderRadius:14, padding:'12px 0', fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, cursor:'pointer', marginBottom:14 }}
+                >
+                  {ownReview ? 'Editar mi reseña' : '✍️ Escribir una reseña'}
                 </button>
               ) : (
-                <ReviewForm onSubmit={handleAddReview} onCancel={() => setShowReviewForm(false)} />
+                <div style={{ opacity:savingReview ? 0.7 : 1, pointerEvents:savingReview ? 'none' : 'auto' }}>
+                  <ReviewForm
+                    initialReview={ownReview}
+                    defaultName={displayName}
+                    defaultCanton={userCanton}
+                    lockName
+                    lockCanton
+                    submitLabel={ownReview ? 'Guardar cambios' : 'Publicar reseña'}
+                    onSubmit={handleAddReview}
+                    onCancel={() => setShowReviewForm(false)}
+                  />
+                </div>
               )}
 
               <ReviewList
@@ -1032,6 +1133,16 @@ export default function Comunidades() {
   const [recommendedBusinessIds, setRecommendedBusinessIds] = useState(() => new Set())
   const [recommendationLoading, setRecommendationLoading] = useState({})
 
+  const handleBusinessReviewsChange = (businessId, updater) => {
+    setBusinessReviews(prev => {
+      const current = prev[businessId] || []
+      const nextReviews = typeof updater === 'function' ? updater(current) : updater
+      const nextMap = { ...prev, [businessId]: nextReviews }
+      if (comunidadesCache.data) comunidadesCache.data = { ...comunidadesCache.data, businessReviews: nextMap }
+      return nextMap
+    })
+  }
+
   const openCommunityId = searchParams.get('openCommunity') || ''
   const openBusinessId = searchParams.get('openBusiness') || ''
   const openEventId = searchParams.get('openEvent') || ''
@@ -1061,7 +1172,7 @@ export default function Comunidades() {
           fetchCommunitiesForDirectory(),
           supabase.from('providers').select('id, created_at, category, name, city, canton, description, whatsapp, instagram, email, website, verified, featured, services, photo_url').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(100),
           supabase.from('provider_photos').select('provider_id, url, is_main, sort_order').order('is_main', { ascending:false }).order('sort_order', { ascending:true }).limit(300),
-          supabase.from('reviews').select('id, provider_id, author_name, canton, stars, created_at, text').eq('active', true).order('created_at', { ascending:false }).limit(200),
+          supabase.from('reviews').select('id, provider_id, user_id, author_name, canton, stars, created_at, text').eq('active', true).order('created_at', { ascending:false }).limit(200),
           supabase.from('events').select('id, type, emoji, title, city, canton, venue, day, month, time, price, host, featured, desc, img_url, link, created_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(60),
         ])
 
@@ -1113,14 +1224,7 @@ export default function Comunidades() {
             if (!review?.provider_id) return
             nextReviews[review.provider_id] = [
               ...(nextReviews[review.provider_id] || []),
-              {
-                id: review.id,
-                author: review.author_name || 'Usuario',
-                canton: review.canton || '',
-                stars: review.stars,
-                date: formatRelativeDate(review.created_at),
-                text: review.text,
-              },
+              normalizeProviderReview(review),
             ]
           })
         }
@@ -1607,6 +1711,7 @@ export default function Comunidades() {
           servicesMap={businessServices}
           photosMap={businessPhotos}
           reviewsMap={businessReviews}
+          onReviewsChange={handleBusinessReviewsChange}
           relatedBusinesses={relatedBusinessesForSelected}
           onOpenRelatedBusiness={openBusinessDetails}
           recommendationCount={businessRecommendations[selectedBusiness.id] || 0}

@@ -488,6 +488,43 @@ export function Stars({ rating, size = 14, showNumber = false, count }) {
 }
 
 // ── Review Card ────────────────────────────────────────────────
+export function RatingPill({ rating, count, style }) {
+  const value = Number(rating)
+  if (!Number.isFinite(value)) return null
+  const label = Number.isInteger(value) ? String(value) : value.toFixed(1)
+  const aria = count !== undefined ? `${label} de 5, ${count} reseñas` : `${label} de 5`
+
+  return (
+    <span
+      aria-label={aria}
+      title={aria}
+      style={{
+        display:'inline-flex',
+        alignItems:'center',
+        justifyContent:'center',
+        gap:4,
+        width:'fit-content',
+        minHeight:24,
+        maxWidth:'100%',
+        fontFamily:PP,
+        fontWeight:800,
+        fontSize:11,
+        lineHeight:'14px',
+        color:'#0F172A',
+        background:'#fff',
+        border:'1px solid #FDE68A',
+        borderRadius:999,
+        padding:'5px 8px',
+        whiteSpace:'nowrap',
+        ...style,
+      }}
+    >
+      <span style={{ fontSize:12, lineHeight:'14px', display:'inline-flex', alignItems:'center' }}>⭐</span>
+      <span style={{ lineHeight:'14px', display:'inline-flex', alignItems:'center' }}>{label}</span>
+    </span>
+  )
+}
+
 export function ReviewCard({ review }) {
   const colors = ['#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444']
   const bg = colors[(review.author?.charCodeAt(0) || 0) % colors.length]
@@ -883,18 +920,37 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
 }
 
 // ── Write Review Form ──────────────────────────────────────────
-export function ReviewForm({ onSubmit, onCancel }) {
+export function ReviewForm({
+  onSubmit,
+  onCancel,
+  initialReview=null,
+  defaultName='',
+  defaultCanton='',
+  lockName=false,
+  lockCanton=false,
+  submitLabel,
+}) {
   const [stars, setStars]   = useState(0)
   const [hover, setHover]   = useState(0)
   const [text, setText]     = useState('')
   const [name, setName]     = useState('')
   const [canton, setCanton] = useState('')
 
-  const canSubmit = stars > 0 && text.trim().length > 10 && name.trim()
+  useEffect(() => {
+    setStars(Number(initialReview?.stars || 0))
+    setText(initialReview?.text || '')
+    setName(initialReview?.name || initialReview?.author || defaultName || '')
+    setCanton(initialReview?.canton || defaultCanton || '')
+  }, [initialReview, defaultName, defaultCanton])
+
+  const canSubmit = stars > 0 && text.trim().length > 10 && !!name.trim()
+  const finalSubmitLabel = submitLabel || (initialReview ? 'Guardar reseña' : 'Publicar reseña')
+  const showNameField = !lockName
+  const showCantonField = !lockCanton
 
   return (
     <div style={{ background:'#F8FAFF', borderRadius:16, padding:'16px', border:'1px solid #E2EAF4', marginBottom:16 }}>
-      <p style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:14, color:'#0F172A', marginBottom:14 }}>✍️ Escribir reseña</p>
+      <p style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:14, color:'#0F172A', marginBottom:14 }}>{initialReview ? 'Editar reseña' : 'Escribir reseña'}</p>
 
       {/* Star picker */}
       <div style={{ marginBottom:12 }}>
@@ -910,19 +966,33 @@ export function ReviewForm({ onSubmit, onCancel }) {
         </div>
       </div>
 
-      {/* Name + canton */}
-      <div className="grid-2" style={{ gap:8, marginBottom:8 }}>
-        <div>
-          <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>TU NOMBRE *</p>
-          <input style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', boxSizing:'border-box' }}
-            placeholder="María G." value={name} onChange={e => setName(e.target.value)} />
+      {(showNameField || showCantonField) && (
+        <div className="grid-2" style={{ gap:8, marginBottom:8 }}>
+          {showNameField && (
+            <div>
+              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>TU NOMBRE *</p>
+              <input
+                style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', color:'#0F172A', boxSizing:'border-box' }}
+                placeholder="Maria G."
+                value={name}
+                onChange={e => setName(e.target.value)}
+              />
+            </div>
+          )}
+          {showCantonField && (
+            <div>
+              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>CANTÓN</p>
+              <input
+                style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', color:'#0F172A', boxSizing:'border-box' }}
+                placeholder="ZH"
+                maxLength={2}
+                value={canton}
+                onChange={e => setCanton(e.target.value.toUpperCase())}
+              />
+            </div>
+          )}
         </div>
-        <div>
-          <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>CANTÓN</p>
-          <input style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', boxSizing:'border-box' }}
-            placeholder="ZH" maxLength={2} value={canton} onChange={e => setCanton(e.target.value.toUpperCase())} />
-        </div>
-      </div>
+      )}
 
       {/* Text */}
       <div style={{ marginBottom:12 }}>
@@ -933,9 +1003,9 @@ export function ReviewForm({ onSubmit, onCancel }) {
       </div>
 
       <div style={{ display:'flex', gap:8 }}>
-        <button onClick={() => onSubmit({ stars, text, name, canton, date:'Ahora mismo' })} disabled={!canSubmit}
+        <button onClick={() => onSubmit({ id:initialReview?.id, stars, text, name, canton, date:'Ahora mismo' })} disabled={!canSubmit}
           style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:12, background: canSubmit?'#2563EB':'#E2EAF4', color: canSubmit?'#fff':'#94A3B8', border:'none', borderRadius:11, padding:'10px 0', flex:1, cursor: canSubmit?'pointer':'not-allowed', transition:'all .15s' }}>
-          Publicar reseña
+          {finalSubmitLabel}
         </button>
         <button onClick={onCancel}
           style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:12, background:'#F8FAFC', color:'#475569', border:'1.5px solid #CBD5E1', borderRadius:11, padding:'10px 16px', cursor:'pointer' }}>

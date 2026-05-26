@@ -6,7 +6,7 @@ import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
-import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
+import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery, ImageLightbox, Stars, RatingPill, ReviewForm, ReviewList } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 import ReportButton from '../components/ReportButton'
 import ShareButton from '../components/ShareButton'
@@ -77,6 +77,7 @@ function normalizeListingReview(review) {
   return {
     id: review.id,
     listing_id: review.listing_id,
+    user_id: review.user_id || '',
     author: review.author_name || 'Usuario',
     canton: review.canton || '',
     stars: Number(review.stars || 0),
@@ -245,19 +246,11 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
       <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.32, margin:'0 0 4px', ...CLAMP_2 }}>{ad.title}</h3>
         {ad.price && <span style={{ display:'block', maxWidth:'100%', fontFamily:PP, fontSize:14, fontWeight:800, color:C.primary, lineHeight:1.15, marginBottom:5, ...CLAMP_1 }}>{fmtPrice(ad.price)}</span>}
-        {showReviews && (
-          <div style={{ display:'flex', alignItems:'center', gap:6, margin:'0 0 5px', minWidth:0 }}>
-            {rating !== null ? (
-              <Stars rating={rating} size={13} showNumber count={reviews.length} />
-            ) : (
-              <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>Sin reseñas aún</span>
-            )}
-          </div>
-        )}
         {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:'0 0 7px', whiteSpace:'pre-line', ...CLAMP_2 }}>{ad.desc}</p>}
         <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:7 }}>
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
           {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
+          {showReviews && rating !== null && <RatingPill rating={rating} count={reviews.length} style={{ fontSize:10, padding:'4px 7px' }} />}
           <PrivacyTag privacy={ad.privacy}/>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:'auto', minWidth:0 }}>
@@ -271,7 +264,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
 }
 
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
-function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd, reviews=[], onAddReview }) {
+function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedAds=[], onOpenRelatedAd, reviews=[], onAddReview }) {
   const navigate = useNavigate()
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [showReviewForm, setShowReviewForm] = useState(false)
@@ -287,6 +280,7 @@ function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd, reviews
   const subOption = getAdSubOption(normalizedCat, ad.sub)
   const showReviews = isReviewableAd(ad)
   const rating = averageRating(reviews)
+  const ownReview = user?.id ? reviews.find(review => review.user_id === user.id) : null
 
   useEffect(() => {
     setShowReviewForm(false)
@@ -339,6 +333,7 @@ function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd, reviews
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
           {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
+          {showReviews && rating !== null && <RatingPill rating={rating} count={reviews.length} />}
           <PrivacyTag privacy={ad.privacy}/>
           {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
         </div>
@@ -402,10 +397,16 @@ function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd, reviews
             {!showReviewForm && (
               <button
                 type="button"
-                onClick={() => setShowReviewForm(true)}
+                onClick={() => {
+                  if (!user) {
+                    toast.error('Inicia sesión para escribir una reseña')
+                    return
+                  }
+                  setShowReviewForm(true)
+                }}
                 style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primaryLight, color:C.primary, border:`1px solid ${C.primaryMid}`, borderRadius:999, padding:'9px 12px', cursor:'pointer', flexShrink:0 }}
               >
-                Escribir
+                {ownReview ? 'Editar mi reseña' : 'Escribir'}
               </button>
             )}
           </div>
@@ -438,7 +439,16 @@ function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd, reviews
 
           {showReviewForm && (
             <div style={{ opacity:savingReview ? 0.7 : 1, pointerEvents:savingReview ? 'none' : 'auto' }}>
-              <ReviewForm onSubmit={handleSubmitReview} onCancel={() => setShowReviewForm(false)} />
+              <ReviewForm
+                initialReview={ownReview}
+                defaultName={displayName}
+                defaultCanton={userCanton}
+                lockName
+                lockCanton
+                submitLabel={ownReview ? 'Guardar cambios' : 'Publicar reseña'}
+                onSubmit={handleSubmitReview}
+                onCancel={() => setShowReviewForm(false)}
+              />
             </div>
           )}
 
@@ -827,7 +837,7 @@ export default function Tablon() {
       try {
         const { data, error } = await supabase
           .from('listing_reviews')
-          .select('id, listing_id, author_name, canton, stars, created_at, text')
+          .select('id, listing_id, user_id, author_name, canton, stars, created_at, text')
           .eq('active', true)
           .order('created_at', { ascending:false })
           .limit(500)
@@ -861,18 +871,33 @@ export default function Tablon() {
     const payload = {
       listing_id: ad.id,
       user_id: user.id,
-      author_name: review.name?.trim() || displayName || 'Usuario',
-      canton: review.canton?.trim() || userCanton || '',
+      author_name: displayName || review.name?.trim() || 'Usuario',
+      canton: userCanton || review.canton?.trim() || '',
       stars: review.stars,
       text: review.text?.trim(),
       active: true,
     }
+    const existingReview = (adReviews[ad.id] || []).find(item => item.user_id === user.id)
 
     try {
-      const { data, error } = await supabase
-        .from('listing_reviews')
-        .insert(payload)
-        .select('id, listing_id, author_name, canton, stars, created_at, text')
+      const query = existingReview?.id
+        ? supabase
+          .from('listing_reviews')
+          .update({
+            author_name: payload.author_name,
+            canton: payload.canton,
+            stars: payload.stars,
+            text: payload.text,
+            active: true,
+          })
+          .eq('id', existingReview.id)
+          .eq('user_id', user.id)
+        : supabase
+          .from('listing_reviews')
+          .insert(payload)
+
+      const { data, error } = await query
+        .select('id, listing_id, user_id, author_name, canton, stars, created_at, text')
         .single()
 
       if (error) throw error
@@ -883,15 +908,18 @@ export default function Tablon() {
         created_at:new Date().toISOString(),
       })
 
-      setAdReviews(prev => ({
-        ...prev,
-        [ad.id]: [normalized, ...(prev[ad.id] || [])],
-      }))
-      toast.success('Reseña publicada')
+      setAdReviews(prev => {
+        const current = prev[ad.id] || []
+        return {
+          ...prev,
+          [ad.id]: [normalized, ...current.filter(item => item.id !== normalized.id && item.user_id !== user.id)],
+        }
+      })
+      toast.success(existingReview ? 'Reseña actualizada' : 'Reseña publicada')
       return true
     } catch (error) {
       console.error('Could not save listing review:', error)
-      toast.error('No se pudo publicar la reseña')
+      toast.error('No se pudo guardar la reseña')
       return false
     }
   }
@@ -1357,6 +1385,8 @@ export default function Tablon() {
           <AdDetail
             ad={selectedAd}
             user={user}
+            displayName={displayName}
+            userCanton={userCanton}
             avatarSrc={userProfiles.get(selectedAd.user_id)?.avatarUrl}
             relatedAds={relatedAdsForSelected}
             onOpenRelatedAd={openAdDetails}
