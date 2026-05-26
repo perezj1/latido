@@ -1407,7 +1407,7 @@ export default function Perfil() {
             </button>
             <button
               onClick={() => setActionItem(null)}
-              style={{ width:'100%', fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'transparent', border:`1.5px solid ${C.border}`, borderRadius:14, padding:'11px 16px', cursor:'pointer' }}
+              style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:'#475569', background:'#F8FAFC', border:'1.5px solid #CBD5E1', borderRadius:14, padding:'11px 16px', cursor:'pointer' }}
             >
               Cancelar
             </button>
@@ -1613,7 +1613,7 @@ export default function Perfil() {
         )}
 
         <div style={{ display:'flex', gap:10, marginTop:18 }}>
-          <button onClick={closeEditor} style={{ flex:1, fontFamily:PP, fontWeight:700, fontSize:12, background:'#fff', color:C.mid, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 0', cursor:'pointer' }}>
+          <button onClick={closeEditor} style={{ flex:1, fontFamily:PP, fontWeight:700, fontSize:12, background:'#F8FAFC', color:'#475569', border:'1.5px solid #CBD5E1', borderRadius:12, padding:'11px 0', cursor:'pointer' }}>
             Cancelar
           </button>
           <Btn onClick={handleSavePublication} disabled={saving} style={{ flex:1 }}>

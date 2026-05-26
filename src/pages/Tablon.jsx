@@ -6,12 +6,13 @@ import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
-import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery, ImageLightbox } from '../components/UI'
+import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
 import { getPublishTarget } from '../lib/publishTargets'
 import ReportButton from '../components/ReportButton'
 import ShareButton from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
+import toast from 'react-hot-toast'
 
 function fmtPrice(price) {
   if (!price) return ''
@@ -44,6 +45,44 @@ function getAdPhotos(ad) {
     ad.img_url,
     ad.img,
   ].filter(Boolean)))
+}
+
+const REVIEWABLE_AD_CATS = new Set(['servicios', 'cuidados'])
+
+function isReviewableAd(ad) {
+  return REVIEWABLE_AD_CATS.has(getAdCategoryId(ad))
+}
+
+function averageRating(reviews) {
+  if (!reviews?.length) return null
+  return +(reviews.reduce((sum, review) => sum + Number(review.stars || 0), 0) / reviews.length).toFixed(1)
+}
+
+function formatRelativeDate(value) {
+  if (!value) return 'Ahora'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Ahora'
+
+  const diff = Date.now() - date.getTime()
+  const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
+  if (days === 0) return 'Hoy'
+  if (days === 1) return 'Hace 1 día'
+  if (days < 30) return `Hace ${days} días`
+  const months = Math.floor(days / 30)
+  if (months <= 1) return 'Hace 1 mes'
+  return `Hace ${months} meses`
+}
+
+function normalizeListingReview(review) {
+  return {
+    id: review.id,
+    listing_id: review.listing_id,
+    author: review.author_name || 'Usuario',
+    canton: review.canton || '',
+    stars: Number(review.stars || 0),
+    date: formatRelativeDate(review.created_at),
+    text: review.text || '',
+  }
 }
 
 const TABLON_CACHE_TTL = 5 * 60 * 1000
@@ -154,7 +193,7 @@ function RelatedJobCard({ job, onClick }) {
 }
 
 /* ── Compact ad card (list view) ────────────────────────── */
-function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
+function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const normalizedCat = getAdCategoryId(ad)
   const cat = getAdDisplayCat(ad)
@@ -166,6 +205,8 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
   const displayEmoji = getAdDisplayEmoji(ad)
   const subOption = getAdSubOption(normalizedCat, ad.sub)
   const metaBits = [ad.user_name || ad.user || 'Usuario', location || ad.canton, dateStr].filter(Boolean)
+  const rating = averageRating(reviews)
+  const showReviews = isReviewableAd(ad)
   return (
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:136 }}>
       <div style={LIST_THUMB_STYLE}>
@@ -204,6 +245,15 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
       <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.32, margin:'0 0 4px', ...CLAMP_2 }}>{ad.title}</h3>
         {ad.price && <span style={{ display:'block', maxWidth:'100%', fontFamily:PP, fontSize:14, fontWeight:800, color:C.primary, lineHeight:1.15, marginBottom:5, ...CLAMP_1 }}>{fmtPrice(ad.price)}</span>}
+        {showReviews && (
+          <div style={{ display:'flex', alignItems:'center', gap:6, margin:'0 0 5px', minWidth:0 }}>
+            {rating !== null ? (
+              <Stars rating={rating} size={13} showNumber count={reviews.length} />
+            ) : (
+              <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>Sin reseñas aún</span>
+            )}
+          </div>
+        )}
         {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:'0 0 7px', whiteSpace:'pre-line', ...CLAMP_2 }}>{ad.desc}</p>}
         <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:7 }}>
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
@@ -221,9 +271,11 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc }) {
 }
 
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
-function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd }) {
+function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd, reviews=[], onAddReview }) {
   const navigate = useNavigate()
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [savingReview, setSavingReview] = useState(false)
   const normalizedCat = getAdCategoryId(ad)
   const cat = getAdDisplayCat(ad)
   const cc  = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
@@ -233,6 +285,20 @@ function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd }) {
   const coverPhoto = photos[0]
   const location = formatAdLocation(ad)
   const subOption = getAdSubOption(normalizedCat, ad.sub)
+  const showReviews = isReviewableAd(ad)
+  const rating = averageRating(reviews)
+
+  useEffect(() => {
+    setShowReviewForm(false)
+    setSavingReview(false)
+  }, [ad.id])
+
+  const handleSubmitReview = async review => {
+    setSavingReview(true)
+    const saved = await onAddReview?.(ad, review)
+    setSavingReview(false)
+    if (saved !== false) setShowReviewForm(false)
+  }
 
   return (
     <div style={{ background:'#fff' }}>
@@ -319,6 +385,68 @@ function AdDetail({ ad, user, avatarSrc, relatedAds=[], onOpenRelatedAd }) {
         <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
           <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 10px' }}>Descripción</h2>
           <p style={{ fontFamily:PP, fontSize:14, color:C.mid, lineHeight:1.75, margin:0, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>{ad.desc}</p>
+        </div>
+      )}
+
+      {showReviews && (
+        <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:14 }}>
+            <div>
+              <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 4px' }}>Reseñas</h2>
+              {rating !== null ? (
+                <Stars rating={rating} size={15} showNumber count={reviews.length} />
+              ) : (
+                <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>Sin reseñas todavía</p>
+              )}
+            </div>
+            {!showReviewForm && (
+              <button
+                type="button"
+                onClick={() => setShowReviewForm(true)}
+                style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primaryLight, color:C.primary, border:`1px solid ${C.primaryMid}`, borderRadius:999, padding:'9px 12px', cursor:'pointer', flexShrink:0 }}
+              >
+                Escribir
+              </button>
+            )}
+          </div>
+
+          {reviews.length > 0 && (
+            <div style={{ background:C.bg, borderRadius:16, padding:'16px', marginBottom:16, display:'flex', gap:20, alignItems:'center' }}>
+              <div style={{ textAlign:'center' }}>
+                <p style={{ fontFamily:PP, fontWeight:900, fontSize:34, color:C.text, margin:'0 0 4px', letterSpacing:-1 }}>{rating}</p>
+                <Stars rating={rating} size={15} />
+                <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'4px 0 0' }}>{reviews.length} reseña{reviews.length !== 1 ? 's' : ''}</p>
+              </div>
+              <div style={{ flex:1 }}>
+                {[5, 4, 3, 2, 1].map(stars => {
+                  const count = reviews.filter(review => review.stars === stars).length
+                  const width = reviews.length ? Math.round((count / reviews.length) * 100) : 0
+                  return (
+                    <div key={stars} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
+                      <span style={{ fontFamily:PP, fontSize:10, color:C.mid, width:8 }}>{stars}</span>
+                      <span style={{ fontSize:10, color:'#F59E0B' }}>★</span>
+                      <div style={{ flex:1, height:6, background:C.border, borderRadius:3, overflow:'hidden' }}>
+                        <div style={{ height:'100%', width:`${width}%`, background:'#F59E0B', borderRadius:3, transition:'width .4s' }} />
+                      </div>
+                      <span style={{ fontFamily:PP, fontSize:10, color:C.light, width:24, textAlign:'right' }}>{count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {showReviewForm && (
+            <div style={{ opacity:savingReview ? 0.7 : 1, pointerEvents:savingReview ? 'none' : 'auto' }}>
+              <ReviewForm onSubmit={handleSubmitReview} onCancel={() => setShowReviewForm(false)} />
+            </div>
+          )}
+
+          <ReviewList
+            reviews={reviews}
+            emptyTitle="Sin reseñas todavía"
+            emptyText="Sé la primera persona en contar su experiencia."
+          />
         </div>
       )}
 
@@ -524,7 +652,7 @@ export default function Tablon() {
   const navigate = useNavigate()
   const { adSlug, jobSlug } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, displayName, userCanton } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const [userProfiles, setUserProfiles] = useState(new Map())
   const [ads, setAds] = useState([])
@@ -538,6 +666,7 @@ export default function Tablon() {
   const [selectedAd, setSelectedAd] = useState(null)
   const [selectedJob, setSelectedJob] = useState(null)
   const [selectedPortal, setSelectedPortal] = useState(null)
+  const [adReviews, setAdReviews] = useState({})
   const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const deferredSearch = useDeferredValue(norm(search.trim()))
 
@@ -690,6 +819,82 @@ export default function Tablon() {
       cancelled = true
     }
   }, [isLoggedIn])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadAdReviews() {
+      try {
+        const { data, error } = await supabase
+          .from('listing_reviews')
+          .select('id, listing_id, author_name, canton, stars, created_at, text')
+          .eq('active', true)
+          .order('created_at', { ascending:false })
+          .limit(500)
+
+        if (cancelled || error || !Array.isArray(data)) return
+
+        const nextReviews = {}
+        data.forEach(review => {
+          if (!review?.listing_id) return
+          nextReviews[review.listing_id] = [
+            ...(nextReviews[review.listing_id] || []),
+            normalizeListingReview(review),
+          ]
+        })
+        setAdReviews(nextReviews)
+      } catch {}
+    }
+
+    loadAdReviews()
+    return () => { cancelled = true }
+  }, [])
+
+  const handleAddAdReview = async (ad, review) => {
+    if (!ad?.id || !isReviewableAd(ad)) return false
+
+    if (!isLoggedIn || !user?.id) {
+      toast.error('Inicia sesión para escribir una reseña')
+      return false
+    }
+
+    const payload = {
+      listing_id: ad.id,
+      user_id: user.id,
+      author_name: review.name?.trim() || displayName || 'Usuario',
+      canton: review.canton?.trim() || userCanton || '',
+      stars: review.stars,
+      text: review.text?.trim(),
+      active: true,
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('listing_reviews')
+        .insert(payload)
+        .select('id, listing_id, author_name, canton, stars, created_at, text')
+        .single()
+
+      if (error) throw error
+
+      const normalized = normalizeListingReview(data || {
+        ...payload,
+        id:`new-${Date.now()}`,
+        created_at:new Date().toISOString(),
+      })
+
+      setAdReviews(prev => ({
+        ...prev,
+        [ad.id]: [normalized, ...(prev[ad.id] || [])],
+      }))
+      toast.success('Reseña publicada')
+      return true
+    } catch (error) {
+      console.error('Could not save listing review:', error)
+      toast.error('No se pudo publicar la reseña')
+      return false
+    }
+  }
 
   useEffect(() => {
     const ids = [
@@ -999,7 +1204,7 @@ export default function Tablon() {
           {filteredAds.length > 0 && (
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>ANUNCIOS DE LA COMUNIDAD</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userProfiles.get(ad.user_id)?.avatarUrl} />)}</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userProfiles.get(ad.user_id)?.avatarUrl} reviews={adReviews[ad.id] || []} />)}</div>
             </>
           )}
         </>
@@ -1015,7 +1220,7 @@ export default function Tablon() {
           {tablonItems.map(({ kind, item }) => kind === 'job' ? (
             <JobCard key={`job-${item.id}`} job={item} onClick={() => openJobDetails(item)} isFav={isFavorite('jobs', item.id)} onToggleFav={() => toggleFavorite('jobs', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} authorName={userProfiles.get(item.user_id)?.name} />
           ) : (
-            <AdCard key={`ad-${item.id}`} ad={item} onClick={() => openAdDetails(item)} isFav={isFavorite('ads', item.id)} onToggleFav={() => toggleFavorite('ads', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} />
+            <AdCard key={`ad-${item.id}`} ad={item} onClick={() => openAdDetails(item)} isFav={isFavorite('ads', item.id)} onToggleFav={() => toggleFavorite('ads', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} reviews={adReviews[item.id] || []} />
           ))}
         </div>
       )}
@@ -1155,6 +1360,8 @@ export default function Tablon() {
             avatarSrc={userProfiles.get(selectedAd.user_id)?.avatarUrl}
             relatedAds={relatedAdsForSelected}
             onOpenRelatedAd={openAdDetails}
+            reviews={adReviews[selectedAd.id] || []}
+            onAddReview={handleAddAdReview}
           />
         )}
       </FullPageOverlay>

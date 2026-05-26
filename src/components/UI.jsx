@@ -511,6 +511,85 @@ export function ReviewCard({ review }) {
 }
 
 // ── Photo Gallery ──────────────────────────────────────────────
+const REVIEW_PAGE_SIZE = 5
+
+export function ReviewList({
+  reviews = [],
+  emptyTitle = 'Sin reseñas todavía',
+  emptyText = 'Sé la primera persona en dejar una reseña.',
+}) {
+  const [filter, setFilter] = useState('all')
+  const [visibleCount, setVisibleCount] = useState(REVIEW_PAGE_SIZE)
+
+  useEffect(() => {
+    setVisibleCount(REVIEW_PAGE_SIZE)
+  }, [filter, reviews.length])
+
+  const countsByStars = [5, 4, 3, 2, 1].reduce((acc, stars) => {
+    acc[stars] = reviews.filter(review => Number(review.stars) === stars).length
+    return acc
+  }, {})
+  const filteredReviews = filter === 'all'
+    ? reviews
+    : reviews.filter(review => Number(review.stars) === Number(filter))
+  const visibleReviews = filteredReviews.slice(0, visibleCount)
+  const remaining = Math.max(0, filteredReviews.length - visibleReviews.length)
+
+  if (!reviews.length) {
+    return (
+      <div style={{ textAlign:'center', padding:'32px 0' }}>
+        <p style={{ fontSize:40, margin:'0 0 10px' }}>⭐</p>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:'0 0 5px' }}>{emptyTitle}</p>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>{emptyText}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="no-scroll" style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:10, marginBottom:8 }}>
+        {[{ id:'all', label:'Todas', count:reviews.length }, ...[5, 4, 3, 2, 1].map(stars => ({ id:String(stars), label:`${stars} ★`, count:countsByStars[stars] || 0 }))].map(option => {
+          const active = filter === option.id
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setFilter(option.id)}
+              style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:active ? '#fff' : C.mid, background:active ? C.primary : '#fff', border:`1.5px solid ${active ? C.primary : C.border}`, borderRadius:999, padding:'7px 11px', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+            >
+              {option.label} ({option.count})
+            </button>
+          )
+        })}
+      </div>
+
+      {filteredReviews.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'24px 0' }}>
+          <p style={{ fontSize:34, margin:'0 0 8px' }}>⭐</p>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px' }}>No hay reseñas de {filter} estrella{filter === '1' ? '' : 's'}</p>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>Prueba otro filtro o escribe la primera.</p>
+        </div>
+      ) : (
+        <>
+          <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 0 10px' }}>
+            Mostrando {visibleReviews.length} de {filteredReviews.length} reseña{filteredReviews.length !== 1 ? 's' : ''}
+          </p>
+          {visibleReviews.map(review => <ReviewCard key={review.id} review={review} />)}
+          {remaining > 0 && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount(count => count + REVIEW_PAGE_SIZE)}
+              style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, background:C.bg, color:C.primary, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 0', cursor:'pointer', marginTop:2 }}
+            >
+              Ver {Math.min(REVIEW_PAGE_SIZE, remaining)} más
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onClose, title = 'Foto' }) {
   const validPhotos = photos.filter(Boolean)
   const [active, setActive] = useState(initialIndex)
@@ -859,7 +938,7 @@ export function ReviewForm({ onSubmit, onCancel }) {
           Publicar reseña
         </button>
         <button onClick={onCancel}
-          style={{ fontFamily:"'Poppins',sans-serif", fontWeight:600, fontSize:12, background:'transparent', color:'#94A3B8', border:'1.5px solid #E2EAF4', borderRadius:11, padding:'10px 16px', cursor:'pointer' }}>
+          style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:12, background:'#F8FAFC', color:'#475569', border:'1.5px solid #CBD5E1', borderRadius:11, padding:'10px 16px', cursor:'pointer' }}>
           Cancelar
         </button>
       </div>

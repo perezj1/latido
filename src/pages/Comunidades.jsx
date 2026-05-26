@@ -17,7 +17,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Tag, PillFilters, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewCard, ReviewForm, PhotoGallery, ImageLightbox } from '../components/UI'
+import { Tag, PillFilters, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import ShareButton, { buildShareUrl } from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
@@ -847,15 +847,11 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                 <ReviewForm onSubmit={handleAddReview} onCancel={() => setShowReviewForm(false)} />
               )}
 
-              {reviews.length === 0 ? (
-                <div style={{ textAlign:'center', padding:'32px 0' }}>
-                  <p style={{ fontSize:40, marginBottom:10 }}>⭐</p>
-                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:5 }}>Sin reseñas todavía</p>
-                  <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>¡Sé el primero en dejar una reseña!</p>
-                </div>
-              ) : (
-                reviews.map(review => <ReviewCard key={review.id} review={review} />)
-              )}
+              <ReviewList
+                reviews={reviews}
+                emptyTitle="Sin reseñas todavía"
+                emptyText="¡Sé la primera persona en dejar una reseña!"
+              />
             </>
           )}
         </div>
