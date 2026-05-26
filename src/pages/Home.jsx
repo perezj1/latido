@@ -691,66 +691,13 @@ export default function Home() {
         <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
-              👥 Grupos para ti
-            </h2>
-            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
-              Tus próximos puntos de conexión en Suiza.
-            </p>
-          </div>
-          <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>
-            Ver todos →
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
-            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
-          </div>
-        ) : communityHighlights.length === 0 ? (
-          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay grupos publicados." /></div>
-        ) : (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
-            <div style={{ display:'flex', gap:12, width:'max-content' }}>
-              {communityHighlights.map(group => (
-                <Link
-                  key={group.id}
-                  to={getCommunityHref(group)}
-                  style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
-                >
-                  <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-                    <div style={{ height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
-                      {group.photo_url
-                        ? <img src={group.photo_url} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
-                        : <span>{group.emoji || '👥'}</span>
-                      }
-                    </div>
-                    <div style={{ padding:'10px 10px 12px' }}>
-                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
-                        {group.name}
-                      </p>
-                      <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        📍 {group.city}{!group.photo_url ? ` · 👥 ${group.members}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      <section style={{ padding:'40px 0 0' }}>
-        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <div>
-            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
               🏪 Negocios
             </h2>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
               Servicios y comercios hispanohablantes cerca de ti.
             </p>
           </div>
-          <Link to="/comunidades?view=negocios" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>
+          <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>
             Ver todos →
           </Link>
         </div>
@@ -814,6 +761,59 @@ export default function Home() {
                       </p>
                       <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         📍 {business.city}{business.services.length ? ` · ${business.services[0]}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section style={{ padding:'40px 0 0' }}>
+        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <div>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
+              👥 Grupos para ti
+            </h2>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
+              Tus próximos puntos de conexión en Suiza.
+            </p>
+          </div>
+          <Link to="/comunidades?view=comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>
+            Ver todos →
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
+            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
+          </div>
+        ) : communityHighlights.length === 0 ? (
+          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay grupos publicados." /></div>
+        ) : (
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+            <div style={{ display:'flex', gap:12, width:'max-content' }}>
+              {communityHighlights.map(group => (
+                <Link
+                  key={group.id}
+                  to={getCommunityHref(group)}
+                  style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
+                >
+                  <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+                    <div style={{ height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
+                      {group.photo_url
+                        ? <img src={group.photo_url} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        : <span>{group.emoji || '👥'}</span>
+                      }
+                    </div>
+                    <div style={{ padding:'10px 10px 12px' }}>
+                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
+                        {group.name}
+                      </p>
+                      <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        📍 {group.city}{!group.photo_url ? ` · 👥 ${group.members}` : ''}
                       </p>
                     </div>
                   </div>

@@ -28,8 +28,8 @@ import { normalizeExternalUrl } from '../lib/links'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
-  { id:'comunidades', label:'👥 Grupos' },
   { id:'negocios', label:'🏪 Negocios' },
+  { id:'comunidades', label:'👥 Grupos' },
   { id:'eventos', label:'🎉 Eventos' },
 ]
 
@@ -1151,8 +1151,8 @@ export default function Comunidades() {
   const targetOpenBusinessId = openBusinessId || routeBusinessId
   const targetOpenEventId = openEventId || routeEventId
   const routeView = routeBusinessId ? 'negocios' : routeEventId ? 'eventos' : ''
-  const view = searchParams.get('view') || routeView
-  const tab = MAIN_TABS.some(item => item.id === view) ? view : 'comunidades'
+  const view = searchParams.get('view') || routeView || (openCommunityId || searchParams.get('cat') ? 'comunidades' : 'negocios')
+  const tab = MAIN_TABS.some(item => item.id === view) ? view : 'negocios'
   const isCleanBusinessRoute = !!routeBusinessId
   const isCleanEventRoute = !!routeEventId
 
@@ -1352,7 +1352,7 @@ export default function Comunidades() {
 
   const handleTabChange = nextTab => {
     const params = new URLSearchParams(searchParams)
-    if (nextTab === 'comunidades') params.delete('view')
+    if (nextTab === 'negocios') params.delete('view')
     else params.set('view', nextTab)
     params.delete('openCommunity')
     params.delete('openBusiness')
@@ -1370,7 +1370,7 @@ export default function Comunidades() {
     params.delete('openBusiness')
     params.delete('openEvent')
 
-    if (nextView === 'comunidades') params.delete('view')
+    if (nextView === 'negocios') params.delete('view')
     else params.set('view', nextView)
 
     if (value) params.set(key, value)
