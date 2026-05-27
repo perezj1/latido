@@ -14,6 +14,7 @@ import {
   getAdCategoryId,
   getAdDisplayCat,
   getAdDisplayEmoji,
+  getJobCategoryEmoji,
   getJobIntentMeta,
   getNegocioTypeMeta,
   EVENTO_TYPES,
@@ -73,7 +74,7 @@ const TYPE_COLORS = {
 const SEARCH_PAGE_SIZE = 1000
 const SEARCH_SELECTS = {
   ads: 'id, cat, title, desc, canton, plz, price, privacy, active, created_at',
-  jobs: 'id, title, company, city, canton, type, sector, active, created_at',
+  jobs: 'id, title, company, city, canton, type, sector, category, job_intent, emoji, active, created_at',
   communities: 'id, name, city, members, emoji, cat, desc, active',
   providers: 'id, name, category, city, canton, description, services, active, featured, verified, created_at',
   events: 'id, type, title, city, canton, venue, host, desc, emoji, active, featured, created_at',
@@ -155,7 +156,7 @@ function normalizeJob(job) {
     city: job.city || job.canton || 'Suiza',
     type: job.type || 'Trabajo',
     intentLabel: intent.label,
-    emoji: job.emoji || '💼',
+    emoji: getJobCategoryEmoji(job),
   }
 }
 

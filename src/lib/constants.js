@@ -226,6 +226,47 @@ export function getJobIntentMeta(job={}) {
   return JOB_INTENTS.find(item => item.id === getJobIntentId(job)) || JOB_INTENTS[0]
 }
 
+export const JOB_SECTOR_EMOJI = {
+  hosteleria:'\u{1F468}\u200D\u{1F373}',
+  cuidados:'\u2764\uFE0F',
+  limpieza:'\u{1F9F9}',
+  tecnologia:'\u{1F4BB}',
+  estetica:'\u{1F487}',
+  construccion:'\u{1F3D7}\uFE0F',
+  transporte:'\u{1F69A}',
+  administracion:'\u{1F4CB}',
+  educacion:'\u{1F393}',
+  servicios:'\u{1F527}',
+  salud:'\u{1F3E5}',
+  ventas:'\u{1F6D2}',
+}
+
+const JOB_SECTOR_ALIASES = {
+  cocina:'hosteleria',
+  restaurantes:'hosteleria',
+  restaurante:'hosteleria',
+  belleza:'estetica',
+  it:'tecnologia',
+  tech:'tecnologia',
+  logistica:'transporte',
+  comercio:'ventas',
+}
+
+function normalizeJobSector(value='') {
+  return String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split('&')[0]
+    .trim()
+}
+
+export function getJobCategoryEmoji(job={}) {
+  const sector = normalizeJobSector(job.sector || job.category || job.sub)
+  return JOB_SECTOR_EMOJI[JOB_SECTOR_ALIASES[sector] || sector] || job.emoji || '\u{1F4BC}'
+}
+
 // ── COMMUNITY CATEGORIES ───────────────────────────────────────
 export const COMMUNITY_CATS = [
   { id:'pais',         emoji:'🌎', label:'País de origen', desc:'Grupos de personas del mismo país o región' },
