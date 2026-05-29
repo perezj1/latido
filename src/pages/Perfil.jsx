@@ -67,6 +67,12 @@ const EVENT_MONTH_INDEX = {
 }
 const ATTENTION_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000
 const AD_REVIEW_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000
+const EDITOR_IMAGE_CONFIG = {
+  job: { field:'logo_url', folder:'jobs', label:'Imagen del empleo', hint:'Puedes subir un logo, una foto del puesto o una imagen representativa.' },
+  event: { field:'img_url', folder:'events', label:'Imagen del evento', hint:'Una imagen ayuda a que el evento destaque en la sección de eventos.' },
+  business: { field:'photo_url', folder:'businesses', label:'Imagen del negocio', hint:'Sube una foto del negocio, logo, producto o servicio principal.' },
+  community: { field:'photo_url', folder:'communities', label:'Imagen del grupo', hint:'Una imagen hace que el grupo se vea más cercano y reconocible.' },
+}
 
 function normalizeCommunityCategory(value='') {
   if (value === 'mamas') return 'familia'
@@ -189,6 +195,15 @@ function getAdPhotoUrls(row={}) {
     row.img_url,
     row.img,
   ])
+}
+
+function getPublicationImageUrl(item) {
+  if (!item) return ''
+  if (item.kind === 'ad') return getAdPhotoUrls(item.raw)[0] || ''
+  if (item.kind === 'job') return item.raw?.logo_url || ''
+  if (item.kind === 'event') return item.raw?.img_url || ''
+  if (item.kind === 'business' || item.kind === 'community') return item.raw?.photo_url || ''
+  return ''
 }
 
 function formatAdPrice(priceValue, priceUnit='hora') {
@@ -376,6 +391,7 @@ function buildEditorForm(item) {
       sector: row.sector || row.category || '',
       title: row.title || '',
       company: row.company || '',
+      logo_url: row.logo_url || '',
       type: row.type || '',
       city: row.city || '',
       canton: row.canton || '',
@@ -401,6 +417,7 @@ function buildEditorForm(item) {
       canton: row.canton || '',
       venue: row.venue || '',
       desc: row.desc || '',
+      img_url: row.img_url || '',
       host: row.host || '',
       link: row.link || '',
     }
@@ -413,6 +430,7 @@ function buildEditorForm(item) {
       city: row.city || '',
       canton: row.canton || '',
       description: row.description || '',
+      photo_url: row.photo_url || '',
       whatsapp: row.whatsapp || '',
       email: row.email || '',
       instagram: row.instagram || '',
@@ -426,6 +444,7 @@ function buildEditorForm(item) {
     name: row.name || '',
     city: row.city || '',
     desc: row.desc || '',
+    photo_url: row.photo_url || '',
     contact: row.contact || '',
   }
 }
@@ -1102,34 +1121,48 @@ export default function Perfil() {
   }, [loadingPublications, location.search, publications])
 
   const handleEditorImageUpload = async files => {
-    if (!files?.length || editorItem?.kind !== 'ad') return
-    const allowsMultiple = supportsMultipleAdPhotos(editorForm.cat)
+    if (!files?.length || !editorItem) return
+    const isAd = editorItem.kind === 'ad'
+    const imageConfig = EDITOR_IMAGE_CONFIG[editorItem.kind]
+    if (!isAd && !imageConfig) return
+
+    const allowsMultiple = isAd && supportsMultipleAdPhotos(editorForm.cat)
     setUploadingEditorImage(true)
 
     try {
-      if (allowsMultiple) {
-        const uploadedUrls = await uploadPublicationImages({
-          files,
-          userId: user?.id,
-          folder:'ads',
-        })
+      if (isAd) {
+        if (allowsMultiple) {
+          const uploadedUrls = await uploadPublicationImages({
+            files,
+            userId: user?.id,
+            folder:'ads',
+          })
 
-        setEditorForm(prev => {
-          const nextUrls = uniqueUrls([...(prev.photo_urls || []), ...uploadedUrls])
-          return {
-            ...prev,
-            img_url: prev.img_url || nextUrls[0] || '',
-            photo_urls: nextUrls,
-          }
-        })
-        toast.success(`${uploadedUrls.length} foto(s) añadida(s)`)
+          setEditorForm(prev => {
+            const nextUrls = uniqueUrls([...(prev.photo_urls || []), ...uploadedUrls])
+            return {
+              ...prev,
+              img_url: prev.img_url || nextUrls[0] || '',
+              photo_urls: nextUrls,
+            }
+          })
+          toast.success(`${uploadedUrls.length} foto(s) añadida(s)`)
+        } else {
+          const publicUrl = await uploadPublicationImage({
+            file: files[0],
+            userId: user?.id,
+            folder:'ads',
+          })
+          setEditorForm(prev => ({ ...prev, img_url: publicUrl, photo_urls: [publicUrl] }))
+          toast.success('Imagen actualizada')
+        }
       } else {
         const publicUrl = await uploadPublicationImage({
           file: files[0],
           userId: user?.id,
-          folder:'ads',
+          folder:imageConfig.folder,
         })
-        setEditorForm(prev => ({ ...prev, img_url: publicUrl, photo_urls: [publicUrl] }))
+        setEditorForm(prev => ({ ...prev, [imageConfig.field]: publicUrl }))
         toast.success('Imagen actualizada')
       }
     } catch (error) {
@@ -1140,26 +1173,34 @@ export default function Perfil() {
   }
 
   const handleEditorImageReplace = async (index, files) => {
-    if (!files?.length || editorItem?.kind !== 'ad') return
+    if (!files?.length || !editorItem) return
+    const isAd = editorItem.kind === 'ad'
+    const imageConfig = EDITOR_IMAGE_CONFIG[editorItem.kind]
+    if (!isAd && !imageConfig) return
+
     setUploadingEditorImage(true)
 
     try {
       const publicUrl = await uploadPublicationImage({
         file: files[0],
         userId: user?.id,
-        folder:'ads',
+        folder:isAd ? 'ads' : imageConfig.folder,
       })
 
-      setEditorForm(prev => {
-        const currentUrls = prev.photo_urls?.length ? prev.photo_urls : (prev.img_url ? [prev.img_url] : [])
-        const oldUrl = currentUrls[index]
-        const nextUrls = uniqueUrls(currentUrls.map((url, currentIndex) => currentIndex === index ? publicUrl : url))
-        return {
-          ...prev,
-          img_url: prev.img_url === oldUrl || index === 0 ? publicUrl : prev.img_url,
-          photo_urls: nextUrls,
-        }
-      })
+      if (isAd) {
+        setEditorForm(prev => {
+          const currentUrls = prev.photo_urls?.length ? prev.photo_urls : (prev.img_url ? [prev.img_url] : [])
+          const oldUrl = currentUrls[index]
+          const nextUrls = uniqueUrls(currentUrls.map((url, currentIndex) => currentIndex === index ? publicUrl : url))
+          return {
+            ...prev,
+            img_url: prev.img_url === oldUrl || index === 0 ? publicUrl : prev.img_url,
+            photo_urls: nextUrls,
+          }
+        })
+      } else {
+        setEditorForm(prev => ({ ...prev, [imageConfig.field]: publicUrl }))
+      }
       toast.success('Imagen actualizada')
     } catch (error) {
       toast.error(getStorageErrorMessage(error))
@@ -1229,6 +1270,7 @@ export default function Perfil() {
         job_intent: editorForm.jobIntent || 'ofrece',
         sector: editorForm.sector?.trim() || null, category: editorForm.sector?.trim() || null,
         title: editorForm.title?.trim(), company: editorForm.company?.trim() || null,
+        logo_url: editorForm.logo_url?.trim() || null,
         type: editorForm.type || null, city: editorForm.city?.trim() || null,
         canton: editorForm.canton || null, salary: editorForm.salary?.trim() || null,
         lang: languages.length ? languages.join(' · ') : null,
@@ -1257,6 +1299,7 @@ export default function Perfil() {
         price: editorForm.price?.trim() || null, city: editorForm.city?.trim() || null,
         canton: editorForm.canton || null, venue: editorForm.venue?.trim() || null,
         desc: editorForm.desc?.trim() || null, host: editorForm.host?.trim() || null,
+        img_url: editorForm.img_url?.trim() || null,
         link: link || null, updated_at: new Date().toISOString(),
       }
       if (!payload.title || !payload.canton) { toast.error('Completa al menos el título y el cantón del evento'); return }
@@ -1268,6 +1311,7 @@ export default function Perfil() {
         category: editorForm.category || null, name: editorForm.name?.trim(),
         city: editorForm.city?.trim() || null, canton: editorForm.canton || null,
         description: editorForm.description?.trim() || null,
+        photo_url: editorForm.photo_url?.trim() || null,
         whatsapp: editorForm.whatsapp?.trim() || null, email: editorForm.email?.trim() || null,
         instagram: editorForm.instagram?.trim() || null, website: editorForm.website?.trim() || null,
         services: services.length ? services : null, updated_at: new Date().toISOString(),
@@ -1282,6 +1326,7 @@ export default function Perfil() {
         cat: editorForm.cat || null, name: editorForm.name?.trim(),
         city: editorForm.city?.trim() || null, desc: editorForm.desc?.trim() || null,
         contact: editorForm.contact?.trim() || null,
+        photo_url: editorForm.photo_url?.trim() || null,
         emoji: category?.emoji || item.raw.emoji || '👥',
         updated_at: new Date().toISOString(),
       }
@@ -1886,12 +1931,13 @@ export default function Perfil() {
             const deleteKey = `${item.kind}-${item.id}`
             const expiredEvent = isExpiredEventPublication(item, eventReviewConfirmations)
             const adNeedsReview = isAdDueForReview(item, adReviewConfirmations)
+            const imageUrl = getPublicationImageUrl(item)
             return (
               <div key={deleteKey} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'14px 15px', marginBottom:10 }}>
                 <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
-                  {item.raw?.img_url ? (
+                  {imageUrl ? (
                     <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0 }}>
-                      <img src={item.raw.img_url} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      <img src={imageUrl} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                     </div>
                   ) : (
                     <div style={{ width:42, height:42, borderRadius:12, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
@@ -2078,6 +2124,15 @@ export default function Perfil() {
             <Select label="Busco / ofrezco" value={editorForm.jobIntent || 'ofrece'} onChange={event => updateEditorField('jobIntent', event.target.value)}>
               {JOB_INTENTS.map(intent => <option key={intent.id} value={intent.id}>{intent.label}</option>)}
             </Select>
+            <ImageUploadField
+              label={EDITOR_IMAGE_CONFIG.job.label}
+              previewUrl={editorForm.logo_url || ''}
+              uploading={uploadingEditorImage}
+              onFilesSelected={handleEditorImageUpload}
+              onRemove={() => updateEditorField('logo_url', '')}
+              onReplaceAt={handleEditorImageReplace}
+              hint={EDITOR_IMAGE_CONFIG.job.hint}
+            />
             <Input label="Sector" value={editorForm.sector || ''} onChange={event => updateEditorField('sector', event.target.value)} />
             <Input label="Título del puesto" value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
             <Input label="Empresa" value={editorForm.company || ''} onChange={event => updateEditorField('company', event.target.value)} />
@@ -2104,6 +2159,15 @@ export default function Perfil() {
               <option value="">Seleccionar...</option>
               {EVENTO_TYPES.filter(item => item.id).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
             </Select>
+            <ImageUploadField
+              label={EDITOR_IMAGE_CONFIG.event.label}
+              previewUrl={editorForm.img_url || ''}
+              uploading={uploadingEditorImage}
+              onFilesSelected={handleEditorImageUpload}
+              onRemove={() => updateEditorField('img_url', '')}
+              onReplaceAt={handleEditorImageReplace}
+              hint={EDITOR_IMAGE_CONFIG.event.hint}
+            />
             <Input label="Título" value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
             <div className="grid-2" style={{ gap:10 }}>
               <Input label="Día" value={editorForm.day || ''} onChange={event => updateEditorField('day', event.target.value)} />
@@ -2134,6 +2198,15 @@ export default function Perfil() {
               <option value="">Seleccionar...</option>
               {VISIBLE_NEGOCIO_TYPES.filter(item => item.id).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
             </Select>
+            <ImageUploadField
+              label={EDITOR_IMAGE_CONFIG.business.label}
+              previewUrl={editorForm.photo_url || ''}
+              uploading={uploadingEditorImage}
+              onFilesSelected={handleEditorImageUpload}
+              onRemove={() => updateEditorField('photo_url', '')}
+              onReplaceAt={handleEditorImageReplace}
+              hint={EDITOR_IMAGE_CONFIG.business.hint}
+            />
             <Input label="Nombre" value={editorForm.name || ''} onChange={event => updateEditorField('name', event.target.value)} />
             <div className="grid-2" style={{ gap:10 }}>
               <Input label="Ciudad" value={editorForm.city || ''} onChange={event => updateEditorField('city', event.target.value)} />
@@ -2157,6 +2230,15 @@ export default function Perfil() {
               <option value="">Seleccionar...</option>
               {COMMUNITY_OPTIONS.map(item => <option key={item.id} value={item.id}>{item.emoji} {item.label}</option>)}
             </Select>
+            <ImageUploadField
+              label={EDITOR_IMAGE_CONFIG.community.label}
+              previewUrl={editorForm.photo_url || ''}
+              uploading={uploadingEditorImage}
+              onFilesSelected={handleEditorImageUpload}
+              onRemove={() => updateEditorField('photo_url', '')}
+              onReplaceAt={handleEditorImageReplace}
+              hint={EDITOR_IMAGE_CONFIG.community.hint}
+            />
             <Input label="Nombre" value={editorForm.name || ''} onChange={event => updateEditorField('name', event.target.value)} />
             <Input label="Ciudad / zona" value={editorForm.city || ''} onChange={event => updateEditorField('city', event.target.value)} />
             <Input label="Descripción" rows={4} value={editorForm.desc || ''} onChange={event => updateEditorField('desc', event.target.value)} />

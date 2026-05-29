@@ -170,6 +170,33 @@ function isPublicationDueForReview(row={}, confirmations={}) {
   return Date.now() - reviewAnchor >= AD_REVIEW_INTERVAL_MS
 }
 
+function normalizePhotoUrls(value) {
+  if (Array.isArray(value)) return value.filter(Boolean)
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed)) return parsed.filter(Boolean)
+    } catch {
+      return value.split(',').map(url => url.trim()).filter(Boolean)
+    }
+  }
+  return []
+}
+
+function hasImageForKind(kind, row={}) {
+  if (kind === 'ad') return !!(row.img_url || normalizePhotoUrls(row.photo_urls).length)
+  if (kind === 'job') return !!row.logo_url
+  if (kind === 'event') return !!row.img_url
+  if (kind === 'business' || kind === 'community') return !!row.photo_url
+  return false
+}
+
+function isMissingImageDueForReview(kind, row={}, confirmations={}) {
+  if (!row.active || hasImageForKind(kind, row)) return false
+  const confirmedAt = getTimeMs(confirmations[`${kind}:${row.id}`])
+  return !confirmedAt || Date.now() - confirmedAt >= AD_REVIEW_INTERVAL_MS
+}
+
 function buildExpiredEventsTask(items) {
   return {
     id:'expired-events',
@@ -235,7 +262,22 @@ function buildCommunityReviewTask(items) {
   }
 }
 
+function buildMissingImageTask(items) {
+  return {
+    id:'missing-image',
+    emoji:'🖼',
+    title: items.length === 1 ? 'Añade una imagen' : 'Añade imágenes',
+    text: items.length === 1
+      ? 'Una publicación activa no tiene imagen.'
+      : `${items.length} publicaciones activas no tienen imagen.`,
+    tone:'primary',
+    mode:'image',
+    items,
+  }
+}
+
 function buildAttentionTask(taskId, items) {
+  if (taskId === 'missing-image') return buildMissingImageTask(items)
   if (taskId === 'expired-events') return buildExpiredEventsTask(items)
   if (taskId === 'job-review') return buildJobReviewTask(items)
   if (taskId === 'business-review') return buildBusinessReviewTask(items)
@@ -244,6 +286,7 @@ function buildAttentionTask(taskId, items) {
 }
 
 const ATTENTION_TASK_STORAGE = {
+  'missing-image':'latido_missing_image_confirmations',
   'expired-events':'latido_event_review_confirmations',
   'ad-review':'latido_ad_review_confirmations',
   'job-review':'latido_job_review_confirmations',
@@ -252,6 +295,7 @@ const ATTENTION_TASK_STORAGE = {
 }
 
 const ATTENTION_TASK_TABLE = {
+  'missing-image':'listings',
   'expired-events':'events',
   'ad-review':'listings',
   'job-review':'jobs',
@@ -260,11 +304,25 @@ const ATTENTION_TASK_TABLE = {
 }
 
 const ATTENTION_TASK_KIND = {
+  'missing-image':'ad',
   'expired-events':'event',
   'ad-review':'ad',
   'job-review':'job',
   'business-review':'business',
   'community-review':'community',
+}
+
+function makeAttentionItem(kind, row, overrides={}) {
+  return {
+    id: row.id,
+    uid:`${kind}:${row.id}`,
+    kind,
+    table: overrides.table || ATTENTION_TASK_TABLE[`${kind}-review`] || 'listings',
+    title: overrides.title || row.title || row.name || 'Publicación',
+    meta: overrides.meta || '',
+    image: overrides.image || '',
+    emoji: overrides.emoji || '📌',
+  }
 }
 
 export default function Home() {
@@ -380,13 +438,60 @@ export default function Home() {
       const jobConfirmations = loadConfirmations(ATTENTION_TASK_STORAGE['job-review'])
       const businessConfirmations = loadConfirmations(ATTENTION_TASK_STORAGE['business-review'])
       const communityConfirmations = loadConfirmations(ATTENTION_TASK_STORAGE['community-review'])
+      const missingImageConfirmations = loadConfirmations(ATTENTION_TASK_STORAGE['missing-image'])
 
       const expiredEvents = ((eventsRes.error ? [] : eventsRes.data) || []).filter(row => isExpiredEventDueForReview(row, eventConfirmations))
       const adsToReview = ((listingsRes.error ? [] : listingsRes.data) || []).filter(row => isPublicationDueForReview(row, adConfirmations))
       const jobsToReview = ((jobsRes.error ? [] : jobsRes.data) || []).filter(row => isPublicationDueForReview(row, jobConfirmations))
       const businessesToReview = ((providersRes.error ? [] : providersRes.data) || []).filter(row => isPublicationDueForReview(row, businessConfirmations))
       const communitiesToReview = ((communitiesRes.error ? [] : communitiesRes.data) || []).filter(row => isPublicationDueForReview(row, communityConfirmations))
+      const missingImageItems = [
+        ...((listingsRes.error ? [] : listingsRes.data) || [])
+          .filter(row => isMissingImageDueForReview('ad', row, missingImageConfirmations))
+          .map(row => makeAttentionItem('ad', row, {
+            table:'listings',
+            title: row.title || 'Anuncio',
+            meta: [formatAdLocation(row), getAdDisplayCat(row)?.label].filter(Boolean).join(' · '),
+            emoji: getAdDisplayEmoji(row) || '📌',
+          })),
+        ...((jobsRes.error ? [] : jobsRes.data) || [])
+          .filter(row => isMissingImageDueForReview('job', row, missingImageConfirmations))
+          .map(row => makeAttentionItem('job', row, {
+            table:'jobs',
+            title: row.title || 'Empleo',
+            meta: [row.company, row.city || row.canton].filter(Boolean).join(' · '),
+            emoji: getJobCategoryEmoji(row) || '💼',
+          })),
+        ...((eventsRes.error ? [] : eventsRes.data) || [])
+          .filter(row => isMissingImageDueForReview('event', row, missingImageConfirmations))
+          .map(row => makeAttentionItem('event', row, {
+            table:'events',
+            title: row.title || 'Evento',
+            meta: [[row.day, row.month, row.year].filter(Boolean).join(' '), row.city || row.canton].filter(Boolean).join(' · '),
+            emoji:'🎉',
+          })),
+        ...((providersRes.error ? [] : providersRes.data) || [])
+          .filter(row => isMissingImageDueForReview('business', row, missingImageConfirmations))
+          .map(row => makeAttentionItem('business', row, {
+            table:'providers',
+            title: row.name || 'Negocio',
+            meta: [row.city || row.canton, row.category].filter(Boolean).join(' · '),
+            emoji:'🏪',
+          })),
+        ...((communitiesRes.error ? [] : communitiesRes.data) || [])
+          .filter(row => isMissingImageDueForReview('community', row, missingImageConfirmations))
+          .map(row => makeAttentionItem('community', row, {
+            table:'communities',
+            title: row.name || 'Grupo',
+            meta: [row.city || 'Suiza', row.contact].filter(Boolean).join(' · '),
+            emoji: row.emoji || '👥',
+          })),
+      ]
       const nextTasks = []
+
+      if (missingImageItems.length) {
+        nextTasks.push(buildMissingImageTask(missingImageItems))
+      }
 
       if (expiredEvents.length) {
         nextTasks.push(buildExpiredEventsTask(expiredEvents.map(row => ({
@@ -455,7 +560,7 @@ export default function Home() {
   const removeAttentionItem = useCallback((taskId, itemId) => {
     setAttentionTasks(prev => prev.flatMap(task => {
       if (task.id !== taskId) return [task]
-      const items = task.items.filter(item => item.id !== itemId)
+      const items = task.items.filter(item => (item.uid || item.id) !== itemId)
       if (!items.length) return []
       return [buildAttentionTask(taskId, items)]
     }))
@@ -474,14 +579,18 @@ export default function Home() {
 
     localStorage.setItem(storageKey, JSON.stringify({
       ...confirmations,
-      [item.id]: new Date().toISOString(),
+      [item.uid || item.id]: new Date().toISOString(),
     }))
-    removeAttentionItem(taskId, item.id)
-    toast.success(taskId === 'expired-events' ? 'Evento mantenido' : 'Publicación confirmada')
+    removeAttentionItem(taskId, item.uid || item.id)
+    toast.success(taskId === 'missing-image'
+      ? 'Se mantiene sin imagen por ahora'
+      : taskId === 'expired-events'
+        ? 'Evento mantenido'
+        : 'Publicación confirmada')
   }, [removeAttentionItem, user?.id])
 
   const editAttentionItem = useCallback((taskId, item) => {
-    const kind = ATTENTION_TASK_KIND[taskId] || item.kind || 'ad'
+    const kind = item.kind || ATTENTION_TASK_KIND[taskId] || 'ad'
     navigate(`/perfil?editar=${kind}:${encodeURIComponent(item.id)}`)
   }, [navigate])
 
@@ -490,7 +599,7 @@ export default function Home() {
     const confirmed = window.confirm(`¿Seguro que quieres eliminar?\n\n${item.title}`)
     if (!confirmed) return
 
-    const table = ATTENTION_TASK_TABLE[taskId] || 'listings'
+    const table = item.table || ATTENTION_TASK_TABLE[taskId] || 'listings'
     try {
       const { error } = await supabase
         .from(table)
@@ -499,7 +608,7 @@ export default function Home() {
         .eq('user_id', user.id)
 
       if (error) throw error
-      removeAttentionItem(taskId, item.id)
+      removeAttentionItem(taskId, item.uid || item.id)
       toast.success(taskId === 'expired-events' ? 'Evento eliminado' : 'Publicación eliminada')
     } catch (error) {
       toast.error(error?.message || 'No se pudo eliminar')
@@ -939,6 +1048,7 @@ export default function Home() {
               {visibleAttentionTasks.map(task => {
                 const warn = task.tone === 'warn'
                 const expanded = expandedAttentionTask === task.id
+                const imageTask = task.mode === 'image'
                 return (
                   <div
                     key={task.id}
@@ -1002,15 +1112,15 @@ export default function Home() {
                                 </span>
                               </span>
                             </div>
-                            <div style={{ display:'grid', gridTemplateColumns:'minmax(96px, 1.15fr) minmax(72px, .85fr) minmax(78px, .85fr)', gap:6, minWidth:0 }}>
-                              <button onClick={() => keepAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:'#065F46', background:'#D1FAE5', border:'1px solid #A7F3D0', borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
-                                Mantener
+                            <div style={{ display:'grid', gridTemplateColumns:'minmax(104px, 1.2fr) minmax(72px, .8fr) minmax(70px, .8fr)', gap:6, minWidth:0 }}>
+                              <button onClick={() => imageTask ? editAttentionItem(task.id, item) : keepAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:imageTask ? C.primaryDark : '#065F46', background:imageTask ? C.primaryLight : '#D1FAE5', border:`1px solid ${imageTask ? C.primaryMid : '#A7F3D0'}`, borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
+                                {imageTask ? 'Agregar imagen' : 'Mantener'}
                               </button>
-                              <button onClick={() => editAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:C.primaryDark, background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
-                                Editar
+                              <button onClick={() => imageTask ? keepAttentionItem(task.id, item) : editAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:imageTask ? '#065F46' : C.primaryDark, background:imageTask ? '#D1FAE5' : C.primaryLight, border:`1px solid ${imageTask ? '#A7F3D0' : C.primaryMid}`, borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
+                                {imageTask ? 'Mantener' : 'Editar'}
                               </button>
                               <button onClick={() => deleteAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:'#B91C1C', background:C.dangerLight, border:'1px solid #FECACA', borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
-                                Eliminar
+                                Borrar
                               </button>
                             </div>
                           </div>
