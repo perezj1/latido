@@ -1084,8 +1084,8 @@ export default function Home() {
                           {task.text}
                         </span>
                       </span>
-                      <span style={{ fontFamily:PP, fontWeight:900, fontSize:18, color:warn ? '#92400E' : C.primaryDark, flexShrink:0, transform:expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition:'transform .15s' }}>
-                        ›
+                      <span style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:warn ? '#92400E' : C.primaryDark, background:'#fff', border:`1px solid ${warn ? C.warnMid : C.primaryMid}`, borderRadius:999, padding:'6px 10px', flexShrink:0, minWidth:54, textAlign:'center' }}>
+                        {expanded ? 'Ocultar' : 'Ver'}
                       </span>
                     </button>
 
