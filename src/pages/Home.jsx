@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -12,6 +12,7 @@ import EventfrogCalendar from '../components/EventfrogCalendar'
 import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
+import toast from 'react-hot-toast'
 
 const fmtPrice = p => {
   if (!p) return ''
@@ -102,8 +103,172 @@ const HOME_CACHE_TTL = 5 * 60 * 1000
 let homeCache = null
 let homeCacheTs = 0
 
+const EVENT_MONTH_INDEX = {
+  ENE:0, JAN:0,
+  FEB:1,
+  MAR:2,
+  ABR:3, APR:3,
+  MAY:4,
+  JUN:5,
+  JUL:6,
+  AGO:7, AUG:7,
+  SEP:8, SET:8,
+  OCT:9,
+  NOV:10,
+  DIC:11, DEC:11,
+}
+const AD_REVIEW_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000
+
+function normalizeMonthKey(value='') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .slice(0, 3)
+    .toUpperCase()
+}
+
+function getTimeMs(value) {
+  if (!value) return 0
+  const date = new Date(value)
+  const time = date.getTime()
+  return Number.isNaN(time) ? 0 : time
+}
+
+function getEventEndDate(row={}) {
+  const day = Number.parseInt(row.day, 10)
+  const month = EVENT_MONTH_INDEX[normalizeMonthKey(row.month)]
+  const year = Number.parseInt(row.year, 10) || new Date().getFullYear()
+  if (!day || month === undefined || !year) return null
+
+  const date = new Date(year, month, day, 23, 59, 59, 999)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function isExpiredEvent(row={}) {
+  const endDate = getEventEndDate(row)
+  return !!row.active && !!endDate && endDate < new Date()
+}
+
+function isExpiredEventDueForReview(row={}, confirmations={}) {
+  if (!isExpiredEvent(row)) return false
+  const confirmedAt = getTimeMs(confirmations[row.id])
+  return !confirmedAt || Date.now() - confirmedAt >= AD_REVIEW_INTERVAL_MS
+}
+
+function isPublicationDueForReview(row={}, confirmations={}) {
+  if (!row.active) return false
+  const createdAt = getTimeMs(row.created_at)
+  if (!createdAt || Date.now() - createdAt < AD_REVIEW_INTERVAL_MS) return false
+
+  const reviewAnchor = Math.max(
+    createdAt,
+    getTimeMs(row.updated_at),
+    getTimeMs(confirmations[row.id])
+  )
+
+  return Date.now() - reviewAnchor >= AD_REVIEW_INTERVAL_MS
+}
+
+function buildExpiredEventsTask(items) {
+  return {
+    id:'expired-events',
+    emoji:'🎉',
+    title: items.length === 1 ? 'Evento con fecha pasada' : 'Eventos con fecha pasada',
+    text: items.length === 1
+      ? 'Tienes un evento activo que ya pasó.'
+      : `Tienes ${items.length} eventos activos que ya pasaron.`,
+    tone:'warn',
+    items,
+  }
+}
+
+function buildAdReviewTask(items) {
+  return {
+    id:'ad-review',
+    emoji:'📌',
+    title: items.length === 1 ? 'Confirma tu anuncio' : 'Confirma tus anuncios',
+    text: items.length === 1
+      ? 'Un anuncio lleva más de 30 días activo.'
+      : `${items.length} anuncios llevan más de 30 días activos.`,
+    tone:'primary',
+    items,
+  }
+}
+
+function buildJobReviewTask(items) {
+  return {
+    id:'job-review',
+    emoji:'💼',
+    title: items.length === 1 ? 'Confirma tu empleo' : 'Confirma tus empleos',
+    text: items.length === 1
+      ? 'Un empleo lleva más de 30 días activo.'
+      : `${items.length} empleos llevan más de 30 días activos.`,
+    tone:'primary',
+    items,
+  }
+}
+
+function buildBusinessReviewTask(items) {
+  return {
+    id:'business-review',
+    emoji:'🏪',
+    title: items.length === 1 ? 'Confirma tu negocio' : 'Confirma tus negocios',
+    text: items.length === 1
+      ? 'Un negocio lleva más de 30 días activo.'
+      : `${items.length} negocios llevan más de 30 días activos.`,
+    tone:'primary',
+    items,
+  }
+}
+
+function buildCommunityReviewTask(items) {
+  return {
+    id:'community-review',
+    emoji:'👥',
+    title: items.length === 1 ? 'Confirma tu grupo' : 'Confirma tus grupos',
+    text: items.length === 1
+      ? 'Un grupo lleva más de 30 días activo.'
+      : `${items.length} grupos llevan más de 30 días activos.`,
+    tone:'primary',
+    items,
+  }
+}
+
+function buildAttentionTask(taskId, items) {
+  if (taskId === 'expired-events') return buildExpiredEventsTask(items)
+  if (taskId === 'job-review') return buildJobReviewTask(items)
+  if (taskId === 'business-review') return buildBusinessReviewTask(items)
+  if (taskId === 'community-review') return buildCommunityReviewTask(items)
+  return buildAdReviewTask(items)
+}
+
+const ATTENTION_TASK_STORAGE = {
+  'expired-events':'latido_event_review_confirmations',
+  'ad-review':'latido_ad_review_confirmations',
+  'job-review':'latido_job_review_confirmations',
+  'business-review':'latido_business_review_confirmations',
+  'community-review':'latido_community_review_confirmations',
+}
+
+const ATTENTION_TASK_TABLE = {
+  'expired-events':'events',
+  'ad-review':'listings',
+  'job-review':'jobs',
+  'business-review':'providers',
+  'community-review':'communities',
+}
+
+const ATTENTION_TASK_KIND = {
+  'expired-events':'event',
+  'ad-review':'ad',
+  'job-review':'job',
+  'business-review':'business',
+  'community-review':'community',
+}
+
 export default function Home() {
-  const { displayName, isLoggedIn } = useAuth()
+  const { displayName, isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
   const { alertItems, alertCount } = useZoneAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
@@ -116,11 +281,15 @@ export default function Home() {
   const [businessHighlights, setBusinessHighlights] = useState([])
   const [recentJobs, setRecentJobs] = useState([])
   const [recentEvents, setRecentEvents] = useState([])
+  const [attentionTasks, setAttentionTasks] = useState([])
+  const [loadingAttention, setLoadingAttention] = useState(false)
+  const [expandedAttentionTask, setExpandedAttentionTask] = useState('')
   const [loading, setLoading] = useState(true)
   const [selectedGuide, setSelectedGuide] = useState(null)
   useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
 
   const hasNotif = alertCount > 0 || hasUnread
+  const visibleAttentionTasks = useMemo(() => loadingAttention ? [] : attentionTasks, [attentionTasks, loadingAttention])
 
   // Close panel on outside click
   function closeNotifPanel() {
@@ -145,6 +314,198 @@ export default function Home() {
   const getCommunityHref = (group) => `/comunidades?openCommunity=${encodeURIComponent(group.id)}`
   const getBusinessHref = (business) => `/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`
   const getJobHref = (job) => `/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`
+
+  const fetchAttentionTasks = useCallback(async () => {
+    if (!isLoggedIn || !user?.id) {
+      setAttentionTasks([])
+      return
+    }
+
+    setLoadingAttention(true)
+    try {
+      const [eventsRes, listingsRes, jobsRes, providersRes, communitiesRes] = await Promise.all([
+        supabase
+          .from('events')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('active', true)
+          .order('created_at', { ascending:false })
+          .limit(30),
+        supabase
+          .from('listings')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('active', true)
+          .order('created_at', { ascending:false })
+          .limit(50),
+        supabase
+          .from('jobs')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('active', true)
+          .order('created_at', { ascending:false })
+          .limit(40),
+        supabase
+          .from('providers')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('active', true)
+          .order('created_at', { ascending:false })
+          .limit(40),
+        supabase
+          .from('communities')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('active', true)
+          .order('created_at', { ascending:false })
+          .limit(40),
+      ])
+
+      if (eventsRes.error) console.error('Error loading attention events:', eventsRes.error)
+      if (listingsRes.error) console.error('Error loading attention listings:', listingsRes.error)
+      if (jobsRes.error) console.error('Error loading attention jobs:', jobsRes.error)
+      if (providersRes.error) console.error('Error loading attention providers:', providersRes.error)
+      if (communitiesRes.error) console.error('Error loading attention communities:', communitiesRes.error)
+
+      const loadConfirmations = key => {
+        try {
+          return JSON.parse(localStorage.getItem(`${key}:${user.id}`) || '{}')
+        } catch {
+          return {}
+        }
+      }
+
+      const eventConfirmations = loadConfirmations(ATTENTION_TASK_STORAGE['expired-events'])
+      const adConfirmations = loadConfirmations(ATTENTION_TASK_STORAGE['ad-review'])
+      const jobConfirmations = loadConfirmations(ATTENTION_TASK_STORAGE['job-review'])
+      const businessConfirmations = loadConfirmations(ATTENTION_TASK_STORAGE['business-review'])
+      const communityConfirmations = loadConfirmations(ATTENTION_TASK_STORAGE['community-review'])
+
+      const expiredEvents = ((eventsRes.error ? [] : eventsRes.data) || []).filter(row => isExpiredEventDueForReview(row, eventConfirmations))
+      const adsToReview = ((listingsRes.error ? [] : listingsRes.data) || []).filter(row => isPublicationDueForReview(row, adConfirmations))
+      const jobsToReview = ((jobsRes.error ? [] : jobsRes.data) || []).filter(row => isPublicationDueForReview(row, jobConfirmations))
+      const businessesToReview = ((providersRes.error ? [] : providersRes.data) || []).filter(row => isPublicationDueForReview(row, businessConfirmations))
+      const communitiesToReview = ((communitiesRes.error ? [] : communitiesRes.data) || []).filter(row => isPublicationDueForReview(row, communityConfirmations))
+      const nextTasks = []
+
+      if (expiredEvents.length) {
+        nextTasks.push(buildExpiredEventsTask(expiredEvents.map(row => ({
+          id: row.id,
+          kind:'event',
+          title: row.title || 'Evento',
+          meta: [[row.day, row.month, row.year].filter(Boolean).join(' '), row.city || row.canton].filter(Boolean).join(' · '),
+          image: row.img_url || '',
+          emoji:'🎉',
+        }))))
+      }
+
+      if (adsToReview.length) {
+        nextTasks.push(buildAdReviewTask(adsToReview.map(row => ({
+          id: row.id,
+          kind:'ad',
+          title: row.title || 'Anuncio',
+          meta: [formatAdLocation(row), row.price].filter(Boolean).join(' · '),
+          image: row.img_url || '',
+          emoji: getAdDisplayEmoji(row) || '📌',
+        }))))
+      }
+
+      if (jobsToReview.length) {
+        nextTasks.push(buildJobReviewTask(jobsToReview.map(row => ({
+          id: row.id,
+          kind:'job',
+          title: row.title || 'Empleo',
+          meta: [row.company, row.city || row.canton, row.salary].filter(Boolean).join(' · '),
+          image: row.logo_url || '',
+          emoji: getJobCategoryEmoji(row) || '💼',
+        }))))
+      }
+
+      if (businessesToReview.length) {
+        nextTasks.push(buildBusinessReviewTask(businessesToReview.map(row => ({
+          id: row.id,
+          kind:'business',
+          title: row.name || 'Negocio',
+          meta: [row.city || row.canton, row.category].filter(Boolean).join(' · '),
+          image: row.photo_url || '',
+          emoji:'🏪',
+        }))))
+      }
+
+      if (communitiesToReview.length) {
+        nextTasks.push(buildCommunityReviewTask(communitiesToReview.map(row => ({
+          id: row.id,
+          kind:'community',
+          title: row.name || 'Grupo',
+          meta: [row.city || 'Suiza', row.contact].filter(Boolean).join(' · '),
+          image: row.photo_url || '',
+          emoji: row.emoji || '👥',
+        }))))
+      }
+
+      setAttentionTasks(nextTasks)
+    } catch (error) {
+      console.error('Error loading attention tasks:', error)
+      setAttentionTasks([])
+    } finally {
+      setLoadingAttention(false)
+    }
+  }, [isLoggedIn, user?.id])
+
+  const removeAttentionItem = useCallback((taskId, itemId) => {
+    setAttentionTasks(prev => prev.flatMap(task => {
+      if (task.id !== taskId) return [task]
+      const items = task.items.filter(item => item.id !== itemId)
+      if (!items.length) return []
+      return [buildAttentionTask(taskId, items)]
+    }))
+  }, [])
+
+  const keepAttentionItem = useCallback((taskId, item) => {
+    if (!user?.id) return
+    const storageKey = `${ATTENTION_TASK_STORAGE[taskId] || ATTENTION_TASK_STORAGE['ad-review']}:${user.id}`
+
+    let confirmations = {}
+    try {
+      confirmations = JSON.parse(localStorage.getItem(storageKey) || '{}')
+    } catch {
+      confirmations = {}
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify({
+      ...confirmations,
+      [item.id]: new Date().toISOString(),
+    }))
+    removeAttentionItem(taskId, item.id)
+    toast.success(taskId === 'expired-events' ? 'Evento mantenido' : 'Publicación confirmada')
+  }, [removeAttentionItem, user?.id])
+
+  const editAttentionItem = useCallback((taskId, item) => {
+    const kind = ATTENTION_TASK_KIND[taskId] || item.kind || 'ad'
+    navigate(`/perfil?editar=${kind}:${encodeURIComponent(item.id)}`)
+  }, [navigate])
+
+  const deleteAttentionItem = useCallback(async (taskId, item) => {
+    if (!user?.id) return
+    const confirmed = window.confirm(`¿Seguro que quieres eliminar?\n\n${item.title}`)
+    if (!confirmed) return
+
+    const table = ATTENTION_TASK_TABLE[taskId] || 'listings'
+    try {
+      const { error } = await supabase
+        .from(table)
+        .delete()
+        .eq('id', item.id)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+      removeAttentionItem(taskId, item.id)
+      toast.success(taskId === 'expired-events' ? 'Evento eliminado' : 'Publicación eliminada')
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo eliminar')
+    }
+  }, [removeAttentionItem, user?.id])
+
   const applySnapshot = useCallback((snapshot) => {
     setRecentAds(snapshot.recentAds || [])
     setCommunityHighlights(snapshot.communityHighlights || [])
@@ -393,6 +754,23 @@ export default function Home() {
     }
   }, [applySnapshot, fetchHomeData])
 
+  useEffect(() => {
+    fetchAttentionTasks()
+
+    const refreshAttention = () => {
+      if (document.visibilityState === 'hidden') return
+      fetchAttentionTasks()
+    }
+
+    window.addEventListener('focus', refreshAttention)
+    document.addEventListener('visibilitychange', refreshAttention)
+
+    return () => {
+      window.removeEventListener('focus', refreshAttention)
+      document.removeEventListener('visibilitychange', refreshAttention)
+    }
+  }, [fetchAttentionTasks])
+
   return (
     <div style={{ background:'#fff' }}>
       <section className="hero-section" style={{ background:'linear-gradient(160deg, #1E40AF 0%, #2563EB 58%, #60A5FA 100%)', position:'relative', overflow:'visible', zIndex:2 }}>
@@ -542,6 +920,110 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {visibleAttentionTasks.length > 0 && (
+        <section style={{ background:'#fff', padding:'18px 0 2px' }}>
+          <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, marginBottom:10 }}>
+              <div>
+                <p style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, margin:'0 0 3px', textTransform:'uppercase' }}>
+                  Necesita atención
+                </p>
+                <h2 style={{ fontFamily:PP, fontWeight:900, fontSize:18, color:C.text, margin:0 }}>
+                  Tareas pendientes
+                </h2>
+              </div>
+            </div>
+
+            <div style={{ display:'grid', gap:10 }}>
+              {visibleAttentionTasks.map(task => {
+                const warn = task.tone === 'warn'
+                const expanded = expandedAttentionTask === task.id
+                return (
+                  <div
+                    key={task.id}
+                    style={{
+                      background: warn ? C.warnLight : C.primaryLight,
+                      border:`1px solid ${warn ? C.warnMid : C.primaryMid}`,
+                      borderRadius:16,
+                      overflow:'hidden',
+                    }}
+                  >
+                    <button
+                      onClick={() => setExpandedAttentionTask(current => current === task.id ? '' : task.id)}
+                      style={{
+                        width:'100%',
+                        textAlign:'left',
+                        background:'transparent',
+                        border:'none',
+                        padding:'13px 14px',
+                        display:'flex',
+                        gap:12,
+                        alignItems:'center',
+                        cursor:'pointer',
+                      }}
+                    >
+                      <span style={{ width:38, height:38, borderRadius:13, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                        {task.emoji}
+                      </span>
+                      <span style={{ minWidth:0, flex:1 }}>
+                        <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                          {task.title}
+                        </span>
+                        <span style={{ display:'block', fontFamily:PP, fontSize:11, color:warn ? '#92400E' : C.primaryDark, lineHeight:1.45 }}>
+                          {task.text}
+                        </span>
+                      </span>
+                      <span style={{ fontFamily:PP, fontWeight:900, fontSize:18, color:warn ? '#92400E' : C.primaryDark, flexShrink:0, transform:expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition:'transform .15s' }}>
+                        ›
+                      </span>
+                    </button>
+
+                    {expanded && (
+                      <div style={{ borderTop:`1px solid ${warn ? C.warnMid : C.primaryMid}`, padding:'8px 8px 10px', display:'grid', gap:8 }}>
+                        {task.items.map(item => (
+                          <div key={item.id} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:10, boxSizing:'border-box', overflow:'hidden' }}>
+                            <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:10, minWidth:0 }}>
+                              {item.image ? (
+                                <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0, background:C.bg }}>
+                                  <img src={item.image} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                                </div>
+                              ) : (
+                                <span style={{ width:42, height:42, borderRadius:12, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:19, flexShrink:0 }}>
+                                  {item.emoji}
+                                </span>
+                              )}
+                              <span style={{ minWidth:0, flex:1, paddingTop:1 }}>
+                                <span style={{ display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, marginBottom:3, lineHeight:1.28, overflow:'hidden', overflowWrap:'anywhere' }}>
+                                  {item.title}
+                                </span>
+                                <span style={{ display:'block', fontFamily:PP, fontSize:10, color:C.light, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', lineHeight:1.25 }}>
+                                  {item.meta || 'Publicado en Latido'}
+                                </span>
+                              </span>
+                            </div>
+                            <div style={{ display:'grid', gridTemplateColumns:'minmax(96px, 1.15fr) minmax(72px, .85fr) minmax(78px, .85fr)', gap:6, minWidth:0 }}>
+                              <button onClick={() => keepAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:'#065F46', background:'#D1FAE5', border:'1px solid #A7F3D0', borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
+                                Mantener
+                              </button>
+                              <button onClick={() => editAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:C.primaryDark, background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
+                                Editar
+                              </button>
+                              <button onClick={() => deleteAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:'#B91C1C', background:C.dangerLight, border:'1px solid #FECACA', borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
+                                Eliminar
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── ANUNCIOS RECIENTES ── */}
       <section style={{ padding:'24px 0 0' }}>

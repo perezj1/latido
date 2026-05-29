@@ -51,6 +51,22 @@ const PRICE_UNITS = [
   { id:'once', label:'Total' },
 ]
 const PRICE_UNIT_IDS = new Set(PRICE_UNITS.map(unit => unit.id))
+const EVENT_MONTH_INDEX = {
+  ENE:0, JAN:0,
+  FEB:1,
+  MAR:2,
+  ABR:3, APR:3,
+  MAY:4,
+  JUN:5,
+  JUL:6,
+  AGO:7, AUG:7,
+  SEP:8, SET:8,
+  OCT:9,
+  NOV:10,
+  DIC:11, DEC:11,
+}
+const ATTENTION_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000
+const AD_REVIEW_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000
 
 function normalizeCommunityCategory(value='') {
   if (value === 'mamas') return 'familia'
@@ -60,6 +76,76 @@ function normalizeCommunityCategory(value='') {
 
 function normalizeAlertCategories(categories=[]) {
   return Array.from(new Set((categories || []).map(normalizeAdCat).filter(Boolean)))
+}
+
+function normalizeMonthKey(value='') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .slice(0, 3)
+    .toUpperCase()
+}
+
+function getEventEndDate(row={}) {
+  const day = Number.parseInt(row.day, 10)
+  const month = EVENT_MONTH_INDEX[normalizeMonthKey(row.month)]
+  const year = Number.parseInt(row.year, 10) || new Date().getFullYear()
+  if (!day || month === undefined || !year) return null
+
+  const date = new Date(year, month, day, 23, 59, 59, 999)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function isExpiredEventPublication(item, confirmations={}) {
+  if (item?.kind !== 'event' || !item.active) return false
+  const endDate = getEventEndDate(item.raw)
+  if (!endDate || endDate >= new Date()) return false
+  const confirmedAt = getTimeMs(confirmations[item.id])
+  return !confirmedAt || Date.now() - confirmedAt >= AD_REVIEW_INTERVAL_MS
+}
+
+function formatEventSchedule(row={}) {
+  const date = [row.day, row.month, row.year].filter(Boolean).join(' ')
+  return [date, row.time].filter(Boolean).join(' · ') || 'Fecha pasada'
+}
+
+function getTimeMs(value) {
+  if (!value) return 0
+  const date = new Date(value)
+  const time = date.getTime()
+  return Number.isNaN(time) ? 0 : time
+}
+
+function formatTimeSince(value) {
+  const time = getTimeMs(value)
+  if (!time) return 'hace un tiempo'
+
+  const days = Math.max(0, Math.floor((Date.now() - time) / (24 * 60 * 60 * 1000)))
+  if (days === 0) return 'hoy'
+  if (days === 1) return 'ayer'
+  if (days < 30) return `hace ${days} días`
+
+  const months = Math.floor(days / 30)
+  if (months < 12) return `hace ${months} ${months === 1 ? 'mes' : 'meses'}`
+
+  const years = Math.floor(days / 365)
+  return `hace ${years} ${years === 1 ? 'año' : 'años'}`
+}
+
+function isAdDueForReview(item, confirmations={}) {
+  if (item?.kind !== 'ad' || !item.active) return false
+
+  const createdAt = getTimeMs(item.createdAt)
+  if (!createdAt || Date.now() - createdAt < AD_REVIEW_INTERVAL_MS) return false
+
+  const reviewAnchor = Math.max(
+    createdAt,
+    getTimeMs(item.raw?.updated_at),
+    getTimeMs(confirmations[item.id])
+  )
+
+  return Date.now() - reviewAnchor >= AD_REVIEW_INTERVAL_MS
 }
 
 const KIND_META = {
@@ -373,6 +459,12 @@ export default function Perfil() {
   const [uploadingEditorImage, setUploadingEditorImage] = useState(false)
   const [saving, setSaving] = useState(false)
   const [actionItem, setActionItem] = useState(null)
+  const [expiredEventsOpen, setExpiredEventsOpen] = useState(false)
+  const [expiredEventsDismissed, setExpiredEventsDismissed] = useState(false)
+  const [adReminderOpen, setAdReminderOpen] = useState(false)
+  const [adReminderDismissed, setAdReminderDismissed] = useState(false)
+  const [adReviewConfirmations, setAdReviewConfirmations] = useState({})
+  const [eventReviewConfirmations, setEventReviewConfirmations] = useState({})
 
   // avatar
   const avatarInputRef = useRef(null)
@@ -447,6 +539,25 @@ export default function Perfil() {
     loadPublications()
   }, [isLoggedIn, user?.id])
 
+  useEffect(() => {
+    if (!user?.id) {
+      setAdReviewConfirmations({})
+      setEventReviewConfirmations({})
+      return
+    }
+
+    try {
+      setAdReviewConfirmations(JSON.parse(localStorage.getItem(`latido_ad_review_confirmations:${user.id}`) || '{}'))
+    } catch {
+      setAdReviewConfirmations({})
+    }
+    try {
+      setEventReviewConfirmations(JSON.parse(localStorage.getItem(`latido_event_review_confirmations:${user.id}`) || '{}'))
+    } catch {
+      setEventReviewConfirmations({})
+    }
+  }, [user?.id])
+
   const loadFavorites = async () => {
     setLoadingFavs(true)
     const adIds = favorites.ads || []
@@ -484,6 +595,264 @@ export default function Perfil() {
   }, [activeTab, publications])
 
   const activeFilter = PUBLICATION_TABS.find(item => item.id === activeTab)
+  const testExpiredEventsPrompt = useMemo(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('probarModalEventos') === '1'
+  }, [location.search])
+  const testAdReminderPrompt = useMemo(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('probarModalAnuncios') === '1'
+  }, [location.search])
+  const suppressAttentionPrompts = useMemo(() => {
+    const params = new URLSearchParams(location.search)
+    return params.has('atencion') || params.has('editar')
+  }, [location.search])
+  const realExpiredEvents = useMemo(
+    () => publications.filter(item => isExpiredEventPublication(item, eventReviewConfirmations)),
+    [eventReviewConfirmations, publications]
+  )
+  const expiredEvents = useMemo(() => {
+    if (realExpiredEvents.length || !testExpiredEventsPrompt) return realExpiredEvents
+    return [{
+      id:'demo-expired-event',
+      kind:'event',
+      icon:'🎉',
+      title:'Evento demo caducado',
+      summary:'Vista de prueba',
+      meta:'Zürich · fecha pasada',
+      active:true,
+      createdAt:new Date().toISOString(),
+      raw:{
+        day:'12',
+        month:'MAY',
+        year:String(new Date().getFullYear() - 1),
+        time:'19:00',
+        city:'Zürich',
+        canton:'ZH',
+      },
+    }]
+  }, [realExpiredEvents, testExpiredEventsPrompt])
+  const expiredEventsSignature = useMemo(
+    () => expiredEvents.map(item => item.id).sort().join('|'),
+    [expiredEvents]
+  )
+  const eventAlertsEnabled = alertSettings.enabled && (alertSettings.categories || []).includes('eventos')
+  const realAdReminderItems = useMemo(
+    () => publications.filter(item => isAdDueForReview(item, adReviewConfirmations)),
+    [adReviewConfirmations, publications]
+  )
+  const adReminderItems = useMemo(() => {
+    if (realAdReminderItems.length || !testAdReminderPrompt) return realAdReminderItems
+    return [{
+      id:'demo-ad-reminder',
+      kind:'ad',
+      icon:'📌',
+      title:'Anuncio demo para revisar',
+      summary:'Servicios · CHF 30 / hora',
+      meta:'ZH · Público',
+      active:true,
+      createdAt:new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+      raw:{
+        id:'demo-ad-reminder',
+        title:'Anuncio demo para revisar',
+        price:'CHF 30 / hora',
+        canton:'ZH',
+        privacy:'public',
+        created_at:new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    }]
+  }, [realAdReminderItems, testAdReminderPrompt])
+  const adReminderItem = adReminderItems[0]
+  const adReminderSignature = useMemo(
+    () => adReminderItems.map(item => item.id).sort().join('|'),
+    [adReminderItems]
+  )
+
+  const rememberExpiredEventsDismissal = useCallback(() => {
+    if (!testExpiredEventsPrompt && user?.id && expiredEventsSignature) {
+      localStorage.setItem(`latido_attention_expired_events:${user.id}`, JSON.stringify({
+        signature: expiredEventsSignature,
+        dismissedAt: new Date().toISOString(),
+      }))
+    }
+    setExpiredEventsDismissed(true)
+  }, [expiredEventsSignature, testExpiredEventsPrompt, user?.id])
+
+  const closeExpiredEventsPrompt = useCallback(() => {
+    rememberExpiredEventsDismissal()
+    setExpiredEventsOpen(false)
+  }, [rememberExpiredEventsDismissal])
+
+  const reviewExpiredEvents = () => {
+    rememberExpiredEventsDismissal()
+    setExpiredEventsOpen(false)
+    setActiveTab('event')
+    setManageOpen(true)
+  }
+
+  const activateEventAlerts = async () => {
+    const categories = Array.from(new Set([...(alertSettings.categories || []), 'eventos']))
+    const nextSettings = {
+      ...alertSettings,
+      enabled: true,
+      messagesEnabled: true,
+      categories,
+      canton: alertSettings.canton || userCanton || '',
+    }
+
+    if (needsPushActivation) {
+      await enablePush(nextSettings)
+      return
+    }
+
+    await saveAlerts(nextSettings)
+    toast.success('Alertas de eventos activadas')
+  }
+
+  const saveAdReviewConfirmations = useCallback((next) => {
+    setAdReviewConfirmations(next)
+    if (user?.id) {
+      localStorage.setItem(`latido_ad_review_confirmations:${user.id}`, JSON.stringify(next))
+    }
+  }, [user?.id])
+
+  const rememberAdReminderDismissal = useCallback(() => {
+    if (!testAdReminderPrompt && user?.id && adReminderSignature) {
+      localStorage.setItem(`latido_attention_ad_review:${user.id}`, JSON.stringify({
+        signature: adReminderSignature,
+        dismissedAt: new Date().toISOString(),
+      }))
+    }
+    setAdReminderDismissed(true)
+  }, [adReminderSignature, testAdReminderPrompt, user?.id])
+
+  const closeAdReminderPrompt = useCallback(() => {
+    rememberAdReminderDismissal()
+    setAdReminderOpen(false)
+  }, [rememberAdReminderDismissal])
+
+  const confirmAdsStillActive = () => {
+    const now = new Date().toISOString()
+    const next = { ...adReviewConfirmations }
+    adReminderItems.forEach(item => { next[item.id] = now })
+    saveAdReviewConfirmations(next)
+    setAdReminderDismissed(true)
+    setAdReminderOpen(false)
+    toast.success('Perfecto, te lo recordaremos en 30 días')
+  }
+
+  const reviewAdReminder = () => {
+    rememberAdReminderDismissal()
+    setAdReminderOpen(false)
+    setActiveTab('ad')
+    setManageOpen(true)
+  }
+
+  const editAdReminder = () => {
+    if (!adReminderItem) return
+    if (testAdReminderPrompt && adReminderItem.id === 'demo-ad-reminder') {
+      toast.success('En un anuncio real se abriría el editor')
+      return
+    }
+    rememberAdReminderDismissal()
+    setAdReminderOpen(false)
+    openEditor(adReminderItem)
+  }
+
+  const deleteAdReminder = () => {
+    if (!adReminderItem) return
+    if (testAdReminderPrompt && adReminderItem.id === 'demo-ad-reminder') {
+      toast.success('En un anuncio real Latido pediría confirmación antes de borrar')
+      return
+    }
+    rememberAdReminderDismissal()
+    setAdReminderOpen(false)
+    handleDeletePublication(adReminderItem)
+  }
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id || loadingPublications || expiredEventsDismissed || !expiredEvents.length) return
+    if (!testExpiredEventsPrompt) return
+    if (suppressAttentionPrompts) return
+    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || shareOpen || adReminderOpen) return
+
+    if (!testExpiredEventsPrompt) {
+      const key = `latido_attention_expired_events:${user.id}`
+      let stored = {}
+      try {
+        stored = JSON.parse(localStorage.getItem(key) || '{}')
+      } catch {
+        stored = {}
+      }
+
+      const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
+      const snoozed = stored.signature === expiredEventsSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
+      if (snoozed) return
+    }
+
+    const timer = setTimeout(() => setExpiredEventsOpen(true), 900)
+    return () => clearTimeout(timer)
+  }, [
+    isLoggedIn,
+    user?.id,
+    loadingPublications,
+    expiredEventsDismissed,
+    expiredEvents.length,
+    expiredEventsSignature,
+    testExpiredEventsPrompt,
+    suppressAttentionPrompts,
+    manageOpen,
+    editorItem,
+    actionItem,
+    alertsOpen,
+    configOpen,
+    favOpen,
+    shareOpen,
+    adReminderOpen,
+  ])
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id || loadingPublications || adReminderDismissed || !adReminderItems.length) return
+    if (!testAdReminderPrompt) return
+    if (suppressAttentionPrompts) return
+    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || shareOpen || expiredEventsOpen) return
+    if (!testAdReminderPrompt && expiredEvents.length) return
+
+    if (!testAdReminderPrompt) {
+      const key = `latido_attention_ad_review:${user.id}`
+      let stored = {}
+      try {
+        stored = JSON.parse(localStorage.getItem(key) || '{}')
+      } catch {
+        stored = {}
+      }
+
+      const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
+      const snoozed = stored.signature === adReminderSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
+      if (snoozed) return
+    }
+
+    const timer = setTimeout(() => setAdReminderOpen(true), 1100)
+    return () => clearTimeout(timer)
+  }, [
+    isLoggedIn,
+    user?.id,
+    loadingPublications,
+    adReminderDismissed,
+    adReminderItems.length,
+    adReminderSignature,
+    testAdReminderPrompt,
+    suppressAttentionPrompts,
+    expiredEvents.length,
+    expiredEventsOpen,
+    manageOpen,
+    editorItem,
+    actionItem,
+    alertsOpen,
+    configOpen,
+    favOpen,
+    shareOpen,
+  ])
 
   const handleSignOut = async () => {
     await signOut()
@@ -549,6 +918,14 @@ export default function Perfil() {
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get('notificaciones') === '1') setAlertsOpen(true)
+    if (params.get('atencion') === 'eventos') {
+      setActiveTab('event')
+      setManageOpen(true)
+    }
+    if (params.get('atencion') === 'anuncios') {
+      setActiveTab('ad')
+      setManageOpen(true)
+    }
   }, [location.search])
 
   const saveAlerts = async next => {
@@ -706,6 +1083,23 @@ export default function Perfil() {
     setActionItem(null)
     openEditor(item)
   }
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const editTarget = params.get('editar')
+    if (!editTarget || loadingPublications || !publications.length) return
+
+    const [kind, encodedId] = editTarget.split(':')
+    const id = decodeURIComponent(encodedId || '')
+    if (!kind || !id) return
+
+    const item = publications.find(entry => entry.kind === kind && String(entry.id) === id)
+    if (!item) return
+
+    setManageOpen(false)
+    setActionItem(null)
+    openEditor(item)
+  }, [loadingPublications, location.search, publications])
 
   const handleEditorImageUpload = async files => {
     if (!files?.length || editorItem?.kind !== 'ad') return
@@ -1262,6 +1656,160 @@ export default function Perfil() {
         </Btn>
       </Sheet>
 
+      <Modal show={expiredEventsOpen} onClose={closeExpiredEventsPrompt} title="🎉 Eventos con fecha pasada" syncHistory={false}>
+        <div style={{ background:C.warnLight, border:`1px solid ${C.warnMid}`, borderRadius:18, padding:'15px 16px', marginBottom:14 }}>
+          <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
+            <div style={{ width:42, height:42, borderRadius:14, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
+              🎉
+            </div>
+            <div style={{ minWidth:0 }}>
+              <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, margin:'0 0 4px' }}>
+                Hay {expiredEvents.length} {expiredEvents.length === 1 ? 'evento activo que ya pasó' : 'eventos activos que ya pasaron'}
+              </p>
+              <p style={{ fontFamily:PP, fontSize:12, color:'#92400E', margin:0, lineHeight:1.55 }}>
+                Revísalos para ocultarlos, actualizarlos o volver a publicarlos. Así la comunidad ve contenido fresco sin que tengas que estar pendiente todo el tiempo.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:14 }}>
+          {expiredEvents.slice(0, 3).map(item => (
+            <div key={`expired-${item.id}`} style={{ display:'flex', gap:10, alignItems:'center', background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'10px 12px' }}>
+              <span style={{ width:34, height:34, borderRadius:12, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>
+                {item.icon}
+              </span>
+              <div style={{ minWidth:0, flex:1 }}>
+                <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {item.title}
+                </p>
+                <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {[formatEventSchedule(item.raw), item.raw?.city || item.raw?.canton].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+            </div>
+          ))}
+          {expiredEvents.length > 3 && (
+            <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 2px' }}>
+              +{expiredEvents.length - 3} más para revisar
+            </p>
+          )}
+        </div>
+
+        {!eventAlertsEnabled && (
+          <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'12px 13px', marginBottom:16, display:'flex', gap:10, alignItems:'flex-start' }}>
+            <span style={{ fontSize:20, lineHeight:1 }}>🔔</span>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.primaryDark, margin:0, lineHeight:1.55 }}>
+              {needsPushActivation
+                ? 'Activa notificaciones para recibir avisos útiles de Latido, incluidos eventos nuevos cerca de ti.'
+                : 'Puedes activar alertas de eventos para que Latido te avise cuando haya novedades en tu zona.'}
+            </p>
+          </div>
+        )}
+
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <Btn onClick={reviewExpiredEvents}>Revisar eventos</Btn>
+          {!eventAlertsEnabled && (
+            <button
+              onClick={activateEventAlerts}
+              disabled={savingPush}
+              style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, background:C.primaryLight, border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 16px', cursor:savingPush ? 'default' : 'pointer' }}
+            >
+              {savingPush ? 'Activando...' : needsPushActivation ? 'Activar notificaciones' : 'Activar alertas de eventos'}
+            </button>
+          )}
+          <button
+            onClick={closeExpiredEventsPrompt}
+            style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:C.mid, background:'#fff', border:`1.5px solid ${C.border}`, borderRadius:14, padding:'12px 16px', cursor:'pointer' }}
+          >
+            Lo reviso luego
+          </button>
+        </div>
+      </Modal>
+
+      <Modal show={adReminderOpen} onClose={closeAdReminderPrompt} title="📌 Revisar anuncio activo" syncHistory={false}>
+        {adReminderItem && (
+          <>
+            <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:18, padding:'15px 16px', marginBottom:14 }}>
+              <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
+                <div style={{ width:42, height:42, borderRadius:14, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
+                  📌
+                </div>
+                <div style={{ minWidth:0 }}>
+                  <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, margin:'0 0 4px' }}>
+                    ¿Este anuncio sigue activo?
+                  </p>
+                  <p style={{ fontFamily:PP, fontSize:12, color:C.primaryDark, margin:0, lineHeight:1.55 }}>
+                    Se publicó {formatTimeSince(adReminderItem.createdAt)}. Confírmalo, edítalo o elimínalo para que Latido muestre información actual.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display:'flex', gap:10, alignItems:'center', background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 12px', marginBottom:12 }}>
+              {adReminderItem.raw?.img_url ? (
+                <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0, background:'#fff' }}>
+                  <img src={adReminderItem.raw.img_url} alt={adReminderItem.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                </div>
+              ) : (
+                <span style={{ width:42, height:42, borderRadius:12, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                  {adReminderItem.icon}
+                </span>
+              )}
+              <div style={{ minWidth:0, flex:1 }}>
+                <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 3px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {adReminderItem.title}
+                </p>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {adReminderItem.summary || 'Anuncio activo'}
+                </p>
+                <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {adReminderItem.meta || 'Publicado en Latido'}
+                </p>
+              </div>
+            </div>
+
+            {adReminderItems.length > 1 && (
+              <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 2px 14px', lineHeight:1.5 }}>
+                Hay {adReminderItems.length - 1} {adReminderItems.length === 2 ? 'anuncio más' : 'anuncios más'} para revisar. Si confirmas, todos quedarán revisados por 30 días.
+              </p>
+            )}
+
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <Btn onClick={confirmAdsStillActive}>
+                {adReminderItems.length > 1 ? 'Sí, siguen activos' : 'Sí, sigue activo'}
+              </Btn>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                <button
+                  onClick={editAdReminder}
+                  style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, background:C.primaryLight, border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 10px', cursor:'pointer' }}
+                >
+                  ✏️ Editar
+                </button>
+                <button
+                  onClick={deleteAdReminder}
+                  style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:'#B91C1C', background:C.dangerLight, border:'1.5px solid #FECACA', borderRadius:14, padding:'12px 10px', cursor:'pointer' }}
+                >
+                  🗑️ Eliminar
+                </button>
+              </div>
+              <button
+                onClick={reviewAdReminder}
+                style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, background:'#fff', border:`1.5px solid ${C.border}`, borderRadius:14, padding:'12px 16px', cursor:'pointer' }}
+              >
+                Ver mis anuncios
+              </button>
+              <button
+                onClick={closeAdReminderPrompt}
+                style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:C.mid, background:'#fff', border:'none', borderRadius:14, padding:'8px 16px', cursor:'pointer' }}
+              >
+                Recordarme luego
+              </button>
+            </div>
+          </>
+        )}
+      </Modal>
+
       {/* ── Configuración ── */}
       <Sheet show={configOpen} onClose={() => setConfigOpen(false)} title="⚙️ Configuración">
         <Input
@@ -1336,6 +1884,8 @@ export default function Perfil() {
         ) : (
           filteredPublications.map(item => {
             const deleteKey = `${item.kind}-${item.id}`
+            const expiredEvent = isExpiredEventPublication(item, eventReviewConfirmations)
+            const adNeedsReview = isAdDueForReview(item, adReviewConfirmations)
             return (
               <div key={deleteKey} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'14px 15px', marginBottom:10 }}>
                 <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
@@ -1351,9 +1901,10 @@ export default function Perfil() {
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:6 }}>
                       <Tag bg="#DBEAFE" color={C.primaryDark}>{KIND_META[item.kind].label}</Tag>
-                      <Tag bg={item.active ? '#D1FAE5' : '#E5E7EB'} color={item.active ? '#065F46' : '#475569'}>
-                        {item.active ? 'Activa' : 'Oculta'}
+                      <Tag bg={expiredEvent ? '#FEF3C7' : item.active ? '#D1FAE5' : '#E5E7EB'} color={expiredEvent ? '#92400E' : item.active ? '#065F46' : '#475569'}>
+                        {expiredEvent ? 'Fecha pasada' : item.active ? 'Activa' : 'Oculta'}
                       </Tag>
+                      {adNeedsReview && <Tag bg="#FEF3C7" color="#92400E">Revisar</Tag>}
                     </div>
                     <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.title}</p>
                     {item.summary && (
@@ -1394,6 +1945,7 @@ export default function Perfil() {
                 <Tag bg={actionItem.active ? '#D1FAE5' : '#E5E7EB'} color={actionItem.active ? '#065F46' : '#475569'}>
                   {actionItem.active ? 'Activa' : 'Oculta'}
                 </Tag>
+                {isAdDueForReview(actionItem, adReviewConfirmations) && <Tag bg="#FEF3C7" color="#92400E">Revisar</Tag>}
               </div>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.35 }}>{actionItem.title}</p>
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
