@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
@@ -34,6 +34,7 @@ const isAndroid = /Android/.test(navigator.userAgent)
 
 function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
   const { isLoggedIn } = useAuth()
+  const navigate = useNavigate()
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('latido_pwa_dismissed') === '1')
   const [installed, setInstalled] = useState(false)
 
@@ -56,6 +57,12 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
     setInstalled(true)
   }
 
+  const openIOSInstallGuide = () => {
+    sessionStorage.setItem('latido_pwa_dismissed', '1')
+    setDismissed(true)
+    navigate('/perfil#instalar-ios')
+  }
+
   if (!isLoggedIn || isPWA || dismissed || installed) return null
   if (!canInstall && !isIOS) return null
 
@@ -75,6 +82,11 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
             </p>
           )}
           <div style={{ display:'flex', gap:8, justifyContent:'center', marginTop:4 }}>
+            {isIOS && (
+              <button onClick={openIOSInstallGuide} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:'#fff', color:C.primary, border:'none', borderRadius:10, padding:'9px 20px', cursor:'pointer', flex:1 }}>
+                Instalar
+              </button>
+            )}
             {!isIOS && canInstall && (
               <button onClick={handleInstall} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', border:'none', borderRadius:10, padding:'9px 20px', cursor:'pointer', flex:1 }}>
                 Instalar

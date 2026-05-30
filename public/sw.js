@@ -1,4 +1,4 @@
-const CACHE = 'latido-v5'
+const CACHE = 'latido-v6'
 const STATIC = ['/', '/index.html', '/manifest.json']
 
 self.addEventListener('install', e => {
@@ -11,13 +11,18 @@ self.addEventListener('activate', e => {
 })
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return
+  if (e.request.headers.has('range') || e.request.destination === 'video' || e.request.destination === 'audio') {
+    e.respondWith(fetch(e.request))
+    return
+  }
   if (e.request.url.includes('supabase.co')) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)))
     return
   }
   e.respondWith(fetch(e.request).then(res => {
+    if (!res || res.status !== 200 || res.type === 'opaque') return res
     const clone = res.clone()
-    caches.open(CACHE).then(c => c.put(e.request, clone))
+    e.waitUntil(caches.open(CACHE).then(c => c.put(e.request, clone)).catch(() => {}))
     return res
   }).catch(() => caches.match(e.request)))
 })

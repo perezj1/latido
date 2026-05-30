@@ -626,6 +626,23 @@ export default function Perfil() {
     const params = new URLSearchParams(location.search)
     return params.has('atencion') || params.has('editar')
   }, [location.search])
+
+  useEffect(() => {
+    if (location.hash !== '#instalar-ios') return
+
+    const scrollToInstallCard = () => {
+      document.getElementById('instalar-ios')?.scrollIntoView({ behavior:'smooth', block:'start' })
+    }
+
+    const first = window.setTimeout(scrollToInstallCard, 80)
+    const second = window.setTimeout(scrollToInstallCard, 350)
+
+    return () => {
+      window.clearTimeout(first)
+      window.clearTimeout(second)
+    }
+  }, [location.hash])
+
   const realExpiredEvents = useMemo(
     () => publications.filter(item => isExpiredEventPublication(item, eventReviewConfirmations)),
     [eventReviewConfirmations, publications]
@@ -1502,7 +1519,7 @@ export default function Perfil() {
 
       {/* Install app card */}
       {!isPWA && (
-        <div style={{ background:`linear-gradient(135deg,${C.primaryDark},${C.primary})`, borderRadius:16, padding:'16px 18px', marginTop:8, marginBottom:8, boxShadow:'0 8px 24px rgba(37,99,235,0.3)' }}>
+        <div id="instalar-ios" style={{ scrollMarginTop:96, background:`linear-gradient(135deg,${C.primaryDark},${C.primary})`, borderRadius:16, padding:'16px 18px', marginTop:8, marginBottom:8, boxShadow:'0 8px 24px rgba(37,99,235,0.3)' }}>
           <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
             <div style={{ fontSize:28, flexShrink:0 }}>📲</div>
             <div style={{ flex:1 }}>
@@ -1521,6 +1538,14 @@ export default function Perfil() {
                       <p key={s} style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'2px 0', lineHeight:1.4 }}>{s}</p>
                     ))}
                   </div>
+                  <video
+                    src="/videos/install-ios.mp4"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    aria-label="Video para instalar Latido en iPhone"
+                    style={{ width:'100%', maxHeight:360, objectFit:'contain', background:'#0F172A', borderRadius:12, marginTop:10, display:'block', border:'1px solid rgba(255,255,255,0.2)' }}
+                  />
                 </>
               ) : (
                 <>

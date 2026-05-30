@@ -595,7 +595,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
               <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: '#fff', margin: 0 }}>Instala Latido en tu iPhone</p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-             {[
+              {[
   { icon: '①', text: 'Pulsa ••• en el navegador' },
   { icon: '②', text: 'Toca "Compartir" 📤' },
   { icon: '③', text: 'Selecciona "Añadir a pantalla de inicio"' },
@@ -611,6 +611,14 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
   </div>
 ))}
             </div>
+            <video
+              src="/videos/install-ios.mp4"
+              controls
+              playsInline
+              preload="metadata"
+              aria-label="Video para instalar Latido en iPhone"
+              style={{ width: '100%', maxHeight: 420, objectFit: 'contain', background: '#0F172A', borderRadius: 12, marginTop: 14, display: 'block', border: '1px solid rgba(255,255,255,0.2)' }}
+            />
           </div>
         ) : (
           <button
