@@ -102,7 +102,7 @@ export function PrivacyTag({ privacy }) {
 }
 
 // ── Input ──────────────────────────────────────────────────────
-export function Input({ label, placeholder, value, onChange, type='text', rows, required, style={} }) {
+export function Input({ label, placeholder, value, onChange, type='text', rows, required, style={}, rightElement }) {
   const base = {
     width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12,
     padding:'11px 13px', fontSize:13, fontFamily:PP, outline:'none',
@@ -114,7 +114,14 @@ export function Input({ label, placeholder, value, onChange, type='text', rows, 
       {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
       {rows
         ? <textarea style={{ ...base, resize:'none', minHeight: rows*24, ...style }} placeholder={placeholder} value={value} onChange={onChange} rows={rows} />
-        : <input    style={{ ...base, ...style }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
+        : rightElement ? (
+          <div style={{ position:'relative' }}>
+            <input style={{ ...base, paddingRight:46, ...style }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
+            <div style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', display:'flex', alignItems:'center' }}>
+              {rightElement}
+            </div>
+          </div>
+        ) : <input    style={{ ...base, ...style }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
       }
     </div>
   )

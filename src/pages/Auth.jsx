@@ -7,12 +7,64 @@ import { Btn, ProgressBar, Input, Select } from '../components/UI'
 import { CANTONS } from '../lib/constants'
 import toast from 'react-hot-toast'
 
+function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M3 3l18 18" />
+      <path d="M10.6 10.6A2 2 0 0 0 13.4 13.4" />
+      <path d="M9.9 4.2A10.9 10.9 0 0 1 12 4.1c6.5 0 10 7.9 10 7.9a17.6 17.6 0 0 1-3.4 4.3" />
+      <path d="M6.6 6.6C3.7 8.6 2 12 2 12s3.5 7.9 10 7.9a10.7 10.7 0 0 0 4.1-.8" />
+    </svg>
+  )
+}
+
+function PasswordVisibilityButton({ visible, onToggle }) {
+  const label = visible ? 'Ocultar contraseña' : 'Mostrar contraseña'
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={visible}
+      title={label}
+      onClick={onToggle}
+      onMouseDown={e => e.preventDefault()}
+      style={{
+        width:30,
+        height:30,
+        border:'none',
+        borderRadius:10,
+        background:'transparent',
+        color:C.light,
+        cursor:'pointer',
+        display:'flex',
+        alignItems:'center',
+        justifyContent:'center',
+        padding:0,
+      }}
+    >
+      {visible ? <EyeOffIcon /> : <EyeIcon />}
+    </button>
+  )
+}
+
 export default function Auth() {
   const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState('register')
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false)
   const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[] })
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
   const toggleLang = l => s('languages', form.languages.includes(l) ? form.languages.filter(x => x !== l) : [...form.languages, l])
@@ -116,7 +168,17 @@ export default function Auth() {
       </div>
 
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required />
-      <Input label="Contraseña" type="password" placeholder="Tu contraseña" value={form.password} onChange={e => s('password', e.target.value)} required />
+      <Input
+        label="Contraseña"
+        type={showLoginPassword ? 'text' : 'password'}
+        placeholder="Tu contraseña"
+        value={form.password}
+        onChange={e => s('password', e.target.value)}
+        required
+        rightElement={
+          <PasswordVisibilityButton visible={showLoginPassword} onToggle={() => setShowLoginPassword(v => !v)} />
+        }
+      />
 
       <div style={{ textAlign:'right', marginBottom:16, marginTop:-8 }}>
         <button onClick={() => setMode('forgot')} style={{ fontFamily:PP, fontSize:11, fontWeight:600, color:C.primary, background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
@@ -170,7 +232,17 @@ export default function Auth() {
         <>
           <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={e => s('name', e.target.value)} />
           <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={e => s('email', e.target.value)} />
-          <Input label="Contraseña" type="password" placeholder="Mínimo 8 caracteres" required value={form.password} onChange={e => s('password', e.target.value)} />
+          <Input
+            label="Contraseña"
+            type={showRegisterPassword ? 'text' : 'password'}
+            placeholder="Mínimo 8 caracteres"
+            required
+            value={form.password}
+            onChange={e => s('password', e.target.value)}
+            rightElement={
+              <PasswordVisibilityButton visible={showRegisterPassword} onToggle={() => setShowRegisterPassword(v => !v)} />
+            }
+          />
           <p style={{ fontFamily:PP, fontSize:10, color:C.light, marginBottom:14, lineHeight:1.5 }}>
             Al registrarte aceptas los <Link to="/terminos" style={{ color:C.primary }}>términos de uso</Link> y la <Link to="/privacidad" style={{ color:C.primary }}>política de privacidad</Link>.
           </p>
