@@ -71,17 +71,8 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
       <div style={{ background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius:18, padding:'14px 16px', boxShadow:'0 8px 32px rgba(37,99,235,0.35)', display:'flex', gap:12, alignItems:'flex-start', pointerEvents:'all', maxWidth:480, margin:'0 auto' }}>
         <div style={{ fontSize:28, flexShrink:0, marginTop:2 }}>📲</div>
         <div style={{ flex:1, minWidth:0 }}>
-          <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#fff', margin:'0 0 2px' }}>Instala Latido en tu móvil</p>
-          {isIOS ? (
-            <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.5 }}>
-              Toca <strong style={{ color:'#fff' }}>Compartir 📤</strong> y luego <strong style={{ color:'#fff' }}>"Añadir a pantalla de inicio"</strong> para instalar la app.
-            </p>
-          ) : (
-            <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.5 }}>
-                    Añade Latido a tu pantalla de inicio gratis y accede a tu comunidad en segundos estés donde estés.
-            </p>
-          )}
-          <div style={{ display:'flex', gap:8, justifyContent:'center', marginTop:4 }}>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#fff', margin:'0 0 12px' }}>Instala Latido en tu móvil</p>
+          <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
             {isIOS && (
               <button onClick={openIOSInstallGuide} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:'#fff', color:C.primary, border:'none', borderRadius:10, padding:'9px 20px', cursor:'pointer', flex:1 }}>
                 Instalar

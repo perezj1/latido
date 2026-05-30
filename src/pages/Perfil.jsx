@@ -1523,12 +1523,9 @@ export default function Perfil() {
           <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
             <div style={{ fontSize:28, flexShrink:0 }}>📲</div>
             <div style={{ flex:1 }}>
-              <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:'#fff', margin:'0 0 4px', letterSpacing:-0.3 }}>Tu gente más cerca que nunca</p>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:'#fff', margin:'0 0 10px', letterSpacing:-0.3 }}>Instalar Latido</p>
               {/iPad|iPhone|iPod/.test(navigator.userAgent) ? (
                 <>
-                  <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.55 }}>
-                    Añade Latido a tu pantalla de inicio gratis y accede a tu comunidad en segundos estés donde estés.
-                  </p>
                   <div style={{ background:'rgba(255,255,255,0.15)', borderRadius:10, padding:'8px 12px' }}>
                     {[
                       '1. Pulsa ••• en el navegador',
@@ -1549,9 +1546,6 @@ export default function Perfil() {
                 </>
               ) : (
                 <>
-                  <p style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'0 0 10px', lineHeight:1.55 }}>
-                    Añade Latido a tu pantalla de inicio gratis y accede a tu comunidad en segundos estés donde estés.
-                  </p>
                   <button onClick={promptInstall} disabled={!canInstall} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', borderRadius:12, padding:'11px 0', cursor: canInstall ? 'pointer' : 'default', opacity: canInstall ? 1 : 0.5, width:'100%', display:'block' }}>
                     Instalar app
                   </button>
