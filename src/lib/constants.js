@@ -138,7 +138,7 @@ export const SERVICE_SUBCATS = [
   { label:'Clases', emoji:'🎓' },
   { label:'Peluquería', emoji:'💇' },
   { label:'Estética', emoji:'💅' },
-  { label:'Mecánico', emoji:'🚗' },
+  { label:'Vehículos', emoji:'🚗', aliases:['Mecánico', 'Mecánica'] },
   { label:'Informática', emoji:'💻' },
   { label:'Otro', emoji:'✨' },
 ]
@@ -154,7 +154,7 @@ export const AD_CATS = [
   { id:'vivienda',   emoji:'🏠', label:'Vivienda',   desc:'Pisos, habitaciones y compañeros',  types:['busca','ofrece'],           sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
   { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Limpieza, clases, mudanzas y más',  types:['busca','ofrece'],           sub:SERVICE_SUBCATS },
   { id:'cuidados',   emoji:'❤️', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia', types:['busca','ofrece'],        sub:CARE_SUBCATS },
-  { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Compra, vende o regala artículos',  types:['busca','vende','regala'],   sub:['Electrónica','Ropa','Muebles','Comida','Otro'] },
+  { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Compra, vende o regala artículos',  types:['busca','vende','regala'],   sub:['Electrónica','Ropa','Muebles','Vehículos','Comida','Otro'] },
   { id:'documentos', emoji:'📄', label:'Trámites',    desc:'Cartas, traducciones y gestiones',  types:['busca','ofrece'],           sub:['Cartas','Trámites','Traducción','Asesoría'] },
   { id:'empleo',     emoji:'💼', label:'Empleo',      desc:'Ofertas y búsqueda de trabajo',     types:['busca','ofrece'],           sub:['Full-time','Part-time','Freelance','Prácticas'] },
 ]
@@ -410,13 +410,18 @@ export const NEGOCIO_TYPES = [
   { id:'pasteleria',  label:'🍰 Pastelería', desc:'Tortas, postres, panadería y pedidos especiales' },
   { id:'belleza',     label:'💇 Belleza', desc:'Peluquería, barbería, uñas, maquillaje y estética' },
   { id:'hogar', label:'🏠 Hogar', desc:'Construcción, limpieza, jardinería, mudanzas y reparaciones' },
+  { id:'vehiculos', label:'🚗 Vehículos', desc:'Alquiler de coches, mecánicos, compra/venta y servicios para vehículos' },
   { id:'salud', label:'🩺 Salud', desc:'Dentistas, psicólogos, fisioterapia, terapias y cuidado especializado' },
   { id:'asesoria_tramites', label:'📄 Asesoría', desc:'Seguros, impuestos, permisos, traducciones, gestoría y orientación' },
-  { id:'otro',        label:'✨ Otro negocio', desc:'Para negocios que no encajan en las categorías anteriores' },
+  { id:'otro',        label:'✨ Otro', desc:'Para negocios que no encajan en las categorías anteriores' },
 ]
 
 const NEGOCIO_TYPE_ALIASES = {
   barberia: 'belleza',
+  coches: 'vehiculos',
+  mecanica: 'vehiculos',
+  mecanico: 'vehiculos',
+  vehiculo: 'vehiculos',
   servicios: 'hogar',
   servicios_hogar: 'hogar',
   servicios_profesionales: 'asesoria_tramites',
