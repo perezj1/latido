@@ -385,10 +385,25 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   const [results, setResults] = useState([])
   const [focused, setFocused] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
+  const [activeFilter, setActiveFilter] = useState(null)
 
   const deferredQuery = useDeferredValue(q)
   const fallbackDatasets = useMemo(() => buildFallbackData(isLoggedIn), [isLoggedIn])
   const accessLevel = getCacheKey(isLoggedIn)
+
+  const availableTypes = useMemo(() => {
+    const seen = new Set()
+    const types = []
+    for (const r of results) {
+      if (!seen.has(r.type)) { seen.add(r.type); types.push(r.type) }
+    }
+    return types
+  }, [results])
+
+  const filteredResults = useMemo(
+    () => activeFilter ? results.filter(r => r.type === activeFilter) : results,
+    [results, activeFilter]
+  )
 
   const ph = placeholder || (size === 'lg'
     ? 'Encuentra lo que buscas'
@@ -512,6 +527,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     const baseDatasets = dataReady ? datasets : fallbackDatasets
     setResults(searchAll(deferredQuery, baseDatasets, isLoggedIn))
     setActiveIdx(-1)
+    setActiveFilter(null)
   }, [dataReady, datasets, deferredQuery, fallbackDatasets, isLoggedIn])
 
   const goTo = href => {
@@ -602,7 +618,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
       </div>
 
       {showDropdown && (
-        <div className="fade-up" style={{ position:'absolute', top:'100%', left:0, right:0, marginTop:10, background:'#fff', borderRadius:20, boxShadow:'0 18px 48px rgba(15,23,42,0.18)', border:`1px solid ${C.border}`, zIndex:200, overflow:'hidden', maxHeight:'min(420px, 62vh)', overflowY:'auto' }}>
+        <div className="fade-up" onMouseDown={e => e.preventDefault()} style={{ position:'absolute', top:'100%', left:0, right:0, marginTop:10, background:'#fff', borderRadius:20, boxShadow:'0 18px 48px rgba(15,23,42,0.18)', border:`1px solid ${C.border}`, zIndex:200, overflow:'hidden', maxHeight:'min(420px, 62vh)', overflowY:'auto' }}>
           {results.length === 0 ? (
             <div style={{ padding:'20px 18px', textAlign:'center' }}>
               {loadingData && !dataReady ? (
@@ -624,13 +640,13 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
             </div>
           ) : (
             <>
-              {results.map((result, idx) => {
+              {filteredResults.map((result, idx) => {
                 const color = TYPE_COLORS[result.type] || TYPE_COLORS.ad
                 return (
                   <div
                     key={`${result.type}-${result.id}`}
                     onClick={() => goTo(result.href)}
-                    style={{ padding:'13px 16px', display:'flex', alignItems:'flex-start', gap:12, cursor:'pointer', background: idx === activeIdx ? C.primaryLight : '#fff', borderBottom: idx < results.length - 1 ? `1px solid ${C.borderLight}` : 'none', transition:'background .1s' }}
+                    style={{ padding:'13px 16px', display:'flex', alignItems:'flex-start', gap:12, cursor:'pointer', background: idx === activeIdx ? C.primaryLight : '#fff', borderBottom: idx < filteredResults.length - 1 ? `1px solid ${C.borderLight}` : 'none', transition:'background .1s' }}
                     onMouseEnter={e => { e.currentTarget.style.background = C.primaryLight }}
                     onMouseLeave={e => { e.currentTarget.style.background = idx === activeIdx ? C.primaryLight : '#fff' }}
                   >
@@ -648,9 +664,32 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                   </div>
                 )
               })}
-              <div style={{ padding:'12px 16px', borderTop:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, background:'#FCFDFF' }}>
-                <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{results.length} resultado{results.length !== 1 ? 's' : ''} en Latido</span>
-                <span style={{ fontFamily:PP, fontWeight:700, fontSize:10, color:C.primary }}>Mostrando todo</span>
+              <div style={{ borderTop:`1px solid ${C.border}`, background:'#FCFDFF', position:'sticky', bottom:0 }}>
+                {availableTypes.length > 1 && (
+                  <div style={{ padding:'8px 16px', display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}` }}>
+                    {availableTypes.map(type => {
+                      const color = TYPE_COLORS[type] || TYPE_COLORS.ad
+                      const isActive = activeFilter === type
+                      return (
+                        <button
+                          key={type}
+                          onClick={() => setActiveFilter(isActive ? null : type)}
+                          style={{ fontFamily:PP, fontSize:10, fontWeight:700, padding:'4px 10px', borderRadius:999, border:`1.5px solid ${isActive ? color.color : C.border}`, background: isActive ? color.bg : '#fff', color: isActive ? color.color : C.text, cursor:'pointer', transition:'all .15s' }}
+                        >
+                          {color.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                <div style={{ padding:'10px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
+                  <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{filteredResults.length} resultado{filteredResults.length !== 1 ? 's' : ''} en Latido</span>
+                  {activeFilter && (
+                    <span onClick={() => setActiveFilter(null)} style={{ fontFamily:PP, fontWeight:700, fontSize:10, color:C.primary, cursor:'pointer' }}>
+                      Mostrar todos
+                    </span>
+                  )}
+                </div>
               </div>
               {loadingData && (
                 <div style={{ padding:'10px 16px', borderTop:`1px solid ${C.borderLight}`, background:'#fff' }}>
