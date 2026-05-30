@@ -672,7 +672,7 @@ export default function Tablon() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [portalsOpen, setPortalsOpen] = useState(true)
+  const [portalsOpen, setPortalsOpen] = useState(false)
   const [selectedAd, setSelectedAd] = useState(null)
   const [selectedJob, setSelectedJob] = useState(null)
   const [selectedPortal, setSelectedPortal] = useState(null)
@@ -1179,9 +1179,9 @@ export default function Tablon() {
         <>
           {employmentPortals.length > 0 && !deferredSearch && (
             <div style={{ marginBottom:16 }}>
-              <button onClick={() => setPortalsOpen(o => !o)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', padding:0, marginBottom: portalsOpen ? 10 : 0 }}>
+              <button onClick={() => setPortalsOpen(o => !o)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background:'none', border:'none', cursor:'pointer', padding:'0 16px 0 0', marginBottom: portalsOpen ? 10 : 0 }}>
                 <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, margin:0 }}>PORTALES Y AGENCIAS DE EMPLEO</p>
-                <span style={{ fontSize:10, color:C.light, transition:'transform .2s', display:'inline-block', transform: portalsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                <span style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, letterSpacing:0, textTransform:'none' }}>{portalsOpen ? 'Ocultar' : 'Mostrar'}</span>
               </button>
               {portalsOpen && (
                 <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
@@ -1217,9 +1217,9 @@ export default function Tablon() {
       ) : cat === 'vivienda' && housingPortals.length > 0 && !deferredSearch ? (
         <>
           <div style={{ marginBottom:16 }}>
-            <button onClick={() => setPortalsOpen(o => !o)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', padding:0, marginBottom: portalsOpen ? 10 : 0 }}>
+            <button onClick={() => setPortalsOpen(o => !o)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background:'none', border:'none', cursor:'pointer', padding:'0 16px 0 0', marginBottom: portalsOpen ? 10 : 0 }}>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, margin:0 }}>PORTALES Y AGENCIAS DE VIVIENDA</p>
-              <span style={{ fontSize:10, color:C.light, transition:'transform .2s', display:'inline-block', transform: portalsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              <span style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, letterSpacing:0, textTransform:'none' }}>{portalsOpen ? 'Ocultar' : 'Mostrar'}</span>
             </button>
             {portalsOpen && (
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>

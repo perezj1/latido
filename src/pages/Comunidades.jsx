@@ -1635,10 +1635,10 @@ export default function Comunidades() {
           <div style={{ marginBottom:24 }}>
             <button
               onClick={() => setEventfrogOpen(o => !o)}
-              style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', padding:'0 0 10px', width:'100%', textAlign:'left' }}
+              style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background:'none', border:'none', cursor:'pointer', padding:'0 0 10px', width:'100%', textAlign:'left' }}
             >
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, margin:0 }}>EVENTOS EN SUIZA</p>
-              <span style={{ fontSize:10, color:C.light, display:'inline-block', transition:'transform .2s', transform: eventfrogOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              <span style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, letterSpacing:0, textTransform:'none' }}>{eventfrogOpen ? 'Ocultar' : 'Mostrar'}</span>
             </button>
             {eventfrogOpen && <EventfrogCalendar />}
           </div>

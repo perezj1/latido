@@ -341,7 +341,7 @@ function CarouselEventCard({ event }) {
 export default function EventfrogCalendar({ compact = false, maxEvents = 60, showEmbedFallback = true, layout = 'list' }) {
   const initialVisibleCount = getInitialVisibleCount(layout, compact)
   const visibleStep = getVisibleStep(layout, compact)
-  const [rangeKey, setRangeKey] = useState(compact ? 'week' : 'month')
+  const [rangeKey, setRangeKey] = useState('week')
   const [customDate, setCustomDate] = useState(() => toISODate(new Date()))
   const [filterId, setFilterId] = useState('latino')
   const [cantonFilter, setCantonFilter] = useState(ALL_CANTONS)
