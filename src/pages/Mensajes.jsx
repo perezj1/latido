@@ -223,7 +223,7 @@ export default function Mensajes() {
       window.removeEventListener('focusin', update)
       window.removeEventListener('focusout', update)
     }
-  }, [])
+  }, [selectedConv?.id, pendingTarget?.id, showList])
 
   useEffect(() => {
     if (!isLoggedIn) { navigate('/auth'); return }
@@ -899,6 +899,7 @@ export default function Mensajes() {
   const activeOtherAvatar = activeThread?.id ? convAvatars.get(activeOtherId) : undefined
   const showListPanel = !activeThread || showList
   const showChatPanel = !!activeThread && (!isMobile || !showList)
+  const mobileChatOpen = isMobile && !!activeThread && !showList
   const sortedConversations = [...conversations].sort((a, b) => {
     const ta = lastMsgAt.get(a.id) || a.created_at || ''
     const tb = lastMsgAt.get(b.id) || b.created_at || ''
@@ -917,14 +918,14 @@ export default function Mensajes() {
   })
 
   return (
-    <div ref={pageRef} style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0 0', height: pageHeight ? `${pageHeight}px` : 'calc(100dvh - 60px)', minHeight:0, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '0 16px 16px' }}>
+    <div ref={pageRef} style={{ maxWidth: mobileChatOpen ? 'none' : 900, margin: mobileChatOpen ? 0 : '0 auto', padding: mobileChatOpen ? 0 : '24px 0 0', height: pageHeight ? `${pageHeight}px` : 'calc(100dvh - 60px)', minHeight:0, display: 'flex', flexDirection: 'column', background: mobileChatOpen ? '#E9EEF7' : undefined }}>
+      {!mobileChatOpen && <div style={{ padding: '0 16px 16px' }}>
         <h1 style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, color: C.text, margin: 0, letterSpacing: -0.5 }}>
           💬 Mensajes
         </h1>
-      </div>
+      </div>}
 
-      <div style={{ flex: 1, minHeight:0, display: 'flex', overflow: 'hidden', border: `1px solid ${C.border}`, borderRadius: isMobile && activeThread && !showList ? '18px 18px 0 0' : 18, margin: isMobile && activeThread && !showList ? '0 12px 0' : '0 16px 16px', background: '#fff' }}>
+      <div style={{ flex: 1, minHeight:0, display: 'flex', overflow: 'hidden', border: mobileChatOpen ? 'none' : `1px solid ${C.border}`, borderRadius: mobileChatOpen ? 0 : 18, margin: mobileChatOpen ? 0 : '0 16px 16px', background: '#fff' }}>
 
         {/* Conversation list */}
         {(showListPanel || !isMobile) && (
@@ -1038,19 +1039,19 @@ export default function Mensajes() {
         {/* Chat panel */}
         {(showChatPanel || (!isMobile && !showListPanel)) && (
           activeThread ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ flex: 1, minHeight:0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: mobileChatOpen ? '#E9EEF7' : '#fff' }}>
+              <div style={{ padding: mobileChatOpen ? '8px 10px' : '12px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: mobileChatOpen ? 9 : 12, background:'#fff', boxShadow: mobileChatOpen ? '0 2px 10px rgba(15,23,42,0.06)' : 'none', zIndex:1 }}>
                 {isMobile && (
-                  <button onClick={() => setShowList(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px 4px 0', fontSize: 18, color: C.mid }}>←</button>
+                  <button onClick={() => setShowList(true)} style={{ width:34, height:34, borderRadius:17, background: C.bg, border: `1px solid ${C.border}`, cursor: 'pointer', padding: 0, fontSize: 18, color: C.text, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>←</button>
                 )}
                 <span style={{ position:'relative', flexShrink:0 }}>
-                  <Avatar name={activeOtherName} size={36} src={activeOtherAvatar} />
+                  <Avatar name={activeOtherName} size={mobileChatOpen ? 38 : 36} src={activeOtherAvatar} />
                   {isParticipantOnline(activeThread) && (
                     <span style={{ position:'absolute', bottom:0, right:0, width:10, height:10, borderRadius:'50%', background:'#10B981', border:'2px solid #fff' }} />
                   )}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: C.text, margin: 0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activeOtherName}</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: mobileChatOpen ? 15 : 14, color: C.text, margin: 0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activeOtherName}</p>
                   <p style={{ fontFamily: PP, fontWeight: isParticipantTyping(activeThread) ? 700 : 500, fontSize: 11, color: isParticipantTyping(activeThread) || isParticipantOnline(activeThread) ? C.primary : C.light, margin: '1px 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                     {participantStatusLabel(activeThread)}
                   </p>
@@ -1063,11 +1064,11 @@ export default function Mensajes() {
                       fontWeight: activeReferenceHref ? 700 : 500,
                       fontSize: 11,
                       color: activeReferenceHref ? C.primaryDark : C.light,
-                      margin: '4px 0 0',
+                      margin: mobileChatOpen ? '3px 0 0' : '4px 0 0',
                       background: activeReferenceHref ? C.primaryLight : 'none',
                       border: activeReferenceHref ? `1px solid ${C.primaryMid}` : 'none',
                       borderRadius: 999,
-                      padding: activeReferenceHref ? '5px 9px' : 0,
+                      padding: activeReferenceHref ? (mobileChatOpen ? '4px 8px' : '5px 9px') : 0,
                       textAlign: 'left',
                       maxWidth: '100%',
                       display: 'inline-flex',
@@ -1084,7 +1085,7 @@ export default function Mensajes() {
                 </div>
               </div>
 
-              <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 8, background: C.bg }}>
+              <div style={{ flex: 1, minHeight:0, overflowY: 'auto', padding: mobileChatOpen ? '12px 9px 10px' : '16px', display: 'flex', flexDirection: 'column', gap: mobileChatOpen ? 6 : 8, background: mobileChatOpen ? '#E9EEF7' : C.bg }}>
                 {messages.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                     <p style={{ fontFamily: PP, fontSize: 13, color: C.light }}>Empieza la conversación 👋</p>
@@ -1095,9 +1096,9 @@ export default function Mensajes() {
                   const statusLabel = mine ? getMessageStatusLabel(msg, activeThread) : ''
                   return (
                     <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
-                      <div style={{ maxWidth: '78%', background: mine ? C.primary : '#fff', color: mine ? '#fff' : C.text, borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: '10px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
-                        <p style={{ fontFamily: PP, fontSize: 13, margin: 0, lineHeight: 1.55 }}>{msg.body}</p>
-                        <p style={{ fontFamily: PP, fontSize: 10, color: mine ? 'rgba(255,255,255,0.68)' : C.light, margin: '4px 0 0', textAlign: 'right' }}>
+                      <div style={{ maxWidth: mobileChatOpen ? '84%' : '78%', background: mine ? C.primary : '#fff', color: mine ? '#fff' : C.text, borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: mobileChatOpen ? '8px 10px 6px' : '10px 14px', boxShadow: mobileChatOpen ? '0 1px 2px rgba(15,23,42,0.10)' : '0 1px 3px rgba(0,0,0,0.07)' }}>
+                        <p style={{ fontFamily: PP, fontSize: mobileChatOpen ? 14 : 13, margin: 0, lineHeight: 1.45, whiteSpace:'pre-wrap', overflowWrap:'anywhere' }}>{msg.body}</p>
+                        <p style={{ fontFamily: PP, fontSize: 10, color: mine ? 'rgba(255,255,255,0.68)' : C.light, margin: '3px 0 0', textAlign: 'right' }}>
                           {formatTime(msg.created_at)}
                           {mine && (
                             <span style={{ marginLeft: 6, color: msg.read ? '#D1FAE5' : 'rgba(255,255,255,0.78)', fontWeight: msg.read ? 800 : 600 }}>
@@ -1123,21 +1124,21 @@ export default function Mensajes() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div style={{ padding: '8px 12px 10px', borderTop: `1px solid ${C.border}`, background: '#fff' }}>
+              <div style={{ padding: mobileChatOpen ? '6px 8px calc(6px + env(safe-area-inset-bottom))' : '8px 12px 10px', borderTop: mobileChatOpen ? 'none' : `1px solid ${C.border}`, background: mobileChatOpen ? '#F1F5F9' : '#fff', boxShadow: mobileChatOpen ? '0 -2px 10px rgba(15,23,42,0.05)' : 'none' }}>
                 {!isBanned && (
-                  <div className="no-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8 }}>
+                  <div className="no-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: mobileChatOpen ? 6 : 8 }}>
                     {QUICK_REPLIES.map(reply => (
                       <button
                         key={reply}
                         onClick={() => applyQuickReply(reply)}
-                        style={{ fontFamily: PP, fontWeight: 700, fontSize: 10, color: C.primaryDark, background: C.primaryLight, border: `1px solid ${C.primaryMid}`, borderRadius: 999, padding: '6px 9px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                        style={{ fontFamily: PP, fontWeight: 700, fontSize: 10, color: C.primaryDark, background: '#fff', border: `1px solid ${C.primaryMid}`, borderRadius: 999, padding: mobileChatOpen ? '5px 8px' : '6px 9px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
                         {reply}
                       </button>
                     ))}
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <div style={{ display: 'flex', gap: mobileChatOpen ? 7 : 8, alignItems: 'flex-end' }}>
                 <textarea
                   ref={inputRef}
                   value={newMessage}
@@ -1146,10 +1147,10 @@ export default function Mensajes() {
                   placeholder={isBanned ? 'Cuenta suspendida: no puedes enviar mensajes' : 'Escribe un mensaje...'}
                   disabled={isBanned}
                   rows={1}
-                  style={{ flex: 1, fontFamily: PP, fontSize: 13, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '10px 14px', resize: 'none', outline: 'none', maxHeight: 120, lineHeight: 1.5, background: isBanned ? '#F8FAFC' : C.bg }}
+                  style={{ flex: 1, fontFamily: PP, fontSize: 14, border: mobileChatOpen ? 'none' : `1.5px solid ${C.border}`, borderRadius: mobileChatOpen ? 22 : 14, padding: mobileChatOpen ? '10px 14px' : '10px 14px', resize: 'none', outline: 'none', maxHeight: 120, minHeight: mobileChatOpen ? 42 : undefined, lineHeight: 1.5, background: isBanned ? '#F8FAFC' : '#fff', boxShadow: mobileChatOpen ? '0 1px 3px rgba(15,23,42,0.10)' : 'none' }}
                 />
                 <button onClick={sendMessage} disabled={isBanned || sending || !newMessage.trim()}
-                  style={{ background: !isBanned && newMessage.trim() ? C.primary : C.border, color: '#fff', border: 'none', borderRadius: 14, width: 44, height: 44, cursor: !isBanned && newMessage.trim() ? 'pointer' : 'default', fontSize: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}>
+                  style={{ background: !isBanned && newMessage.trim() ? C.primary : C.border, color: '#fff', border: 'none', borderRadius: mobileChatOpen ? 22 : 14, width: mobileChatOpen ? 42 : 44, height: mobileChatOpen ? 42 : 44, cursor: !isBanned && newMessage.trim() ? 'pointer' : 'default', fontSize: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}>
                   ↑
                 </button>
                 </div>

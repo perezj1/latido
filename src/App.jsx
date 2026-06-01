@@ -287,6 +287,7 @@ function AppShell() {
   const [searchOpen, setSearchOpen] = useState(false)
 
   const isRoot = pathname === '/'
+  const isMessages = pathname.startsWith('/mensajes')
   const showLanding = isRoot && !isPWA && !isLoggedIn
 
   if (showLanding) {
@@ -371,7 +372,7 @@ function AppShell() {
       <Header />
       <PushRegistrationSync />
       <UserPresenceSync />
-      <main style={{ minHeight:'100vh', paddingBottom:'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:isRoot ? '#fff' : undefined }}>
+      <main style={{ minHeight:'100vh', paddingBottom:isMessages ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:isRoot ? '#fff' : undefined }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
