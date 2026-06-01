@@ -170,6 +170,7 @@ export default function Mensajes() {
   const [sending, setSending] = useState(false)
   const [showList, setShowList] = useState(true)
   const pageRef = useRef(null)
+  const pageTopRef = useRef(null)
   const messagesEndRef = useRef(null)
   const channelRef = useRef(null)
   const inboxChannelRef = useRef(null)
@@ -196,19 +197,31 @@ export default function Mensajes() {
 
   useEffect(() => {
     const vv = window.visualViewport
-    if (!vv) return
+    const viewport = vv || window
     const update = () => {
       const el = pageRef.current
       if (!el) return
-      const top = el.getBoundingClientRect().top
-      setPageHeight(Math.max(200, vv.height - top))
+      const activeTag = document.activeElement?.tagName
+      const keyboardInputFocused = activeTag === 'INPUT' || activeTag === 'TEXTAREA'
+      if (pageTopRef.current === null || !keyboardInputFocused) {
+        pageTopRef.current = Math.max(0, el.getBoundingClientRect().top)
+      }
+      const visibleHeight = vv?.height || window.innerHeight
+      const visibleBottom = (vv?.offsetTop || 0) + visibleHeight
+      setPageHeight(Math.max(240, visibleBottom - pageTopRef.current))
     }
-    vv.addEventListener('resize', update)
-    vv.addEventListener('scroll', update)
+    viewport.addEventListener('resize', update)
+    vv?.addEventListener('scroll', update)
+    window.addEventListener('orientationchange', update)
+    window.addEventListener('focusin', update)
+    window.addEventListener('focusout', update)
     update()
     return () => {
-      vv.removeEventListener('resize', update)
-      vv.removeEventListener('scroll', update)
+      viewport.removeEventListener('resize', update)
+      vv?.removeEventListener('scroll', update)
+      window.removeEventListener('orientationchange', update)
+      window.removeEventListener('focusin', update)
+      window.removeEventListener('focusout', update)
     }
   }, [])
 
@@ -904,14 +917,14 @@ export default function Mensajes() {
   })
 
   return (
-    <div ref={pageRef} style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0 0', height: pageHeight ? `${pageHeight}px` : 'calc(100dvh - 60px)', display: 'flex', flexDirection: 'column' }}>
+    <div ref={pageRef} style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0 0', height: pageHeight ? `${pageHeight}px` : 'calc(100dvh - 60px)', minHeight:0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '0 16px 16px' }}>
         <h1 style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, color: C.text, margin: 0, letterSpacing: -0.5 }}>
           💬 Mensajes
         </h1>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', border: `1px solid ${C.border}`, borderRadius: 18, margin: '0 16px 16px', background: '#fff' }}>
+      <div style={{ flex: 1, minHeight:0, display: 'flex', overflow: 'hidden', border: `1px solid ${C.border}`, borderRadius: isMobile && activeThread && !showList ? '18px 18px 0 0' : 18, margin: isMobile && activeThread && !showList ? '0 12px 0' : '0 16px 16px', background: '#fff' }}>
 
         {/* Conversation list */}
         {(showListPanel || !isMobile) && (
