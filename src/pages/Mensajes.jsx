@@ -12,12 +12,6 @@ import { subscribeToOnlineUsers } from '../lib/presence'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import toast from 'react-hot-toast'
 
-const QUICK_REPLIES = [
-  'Hola, ¿sigue disponible?',
-  'Gracias, lo reviso y te digo.',
-  '¿Podemos hablar por WhatsApp?',
-]
-
 const PENDING_READ_KEY_PREFIX = 'latido_messages_pending_read'
 
 function pendingReadStorageKey(userId) {
@@ -766,14 +760,6 @@ export default function Mensajes() {
     inputRef.current?.focus()
   }
 
-  function applyQuickReply(text) {
-    setNewMessage(prev => {
-      const current = prev.trim()
-      return current ? `${current}\n${text}` : text
-    })
-    setTimeout(() => inputRef.current?.focus(), 50)
-  }
-
   function dismissPendingConversation(conv) {
     if (!conv?.id || !user?.id) return
     const convKey = String(conv.id)
@@ -1125,19 +1111,6 @@ export default function Mensajes() {
               </div>
 
               <div style={{ padding: mobileChatOpen ? '6px 8px calc(6px + env(safe-area-inset-bottom))' : '8px 12px 10px', borderTop: mobileChatOpen ? 'none' : `1px solid ${C.border}`, background: mobileChatOpen ? '#F1F5F9' : '#fff', boxShadow: mobileChatOpen ? '0 -2px 10px rgba(15,23,42,0.05)' : 'none' }}>
-                {!isBanned && (
-                  <div className="no-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: mobileChatOpen ? 6 : 8 }}>
-                    {QUICK_REPLIES.map(reply => (
-                      <button
-                        key={reply}
-                        onClick={() => applyQuickReply(reply)}
-                        style={{ fontFamily: PP, fontWeight: 700, fontSize: 10, color: C.primaryDark, background: '#fff', border: `1px solid ${C.primaryMid}`, borderRadius: 999, padding: mobileChatOpen ? '5px 8px' : '6px 9px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                      >
-                        {reply}
-                      </button>
-                    ))}
-                  </div>
-                )}
                 <div style={{ display: 'flex', gap: mobileChatOpen ? 7 : 8, alignItems: 'flex-end' }}>
                 <textarea
                   ref={inputRef}
