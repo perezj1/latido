@@ -1,6 +1,6 @@
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
@@ -31,10 +31,12 @@ const Admin = lazy(() => import('./pages/Admin'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
+const INSTALL_BANNER_LIFT_VAR = '--latido-install-banner-lift'
 
 function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
   const { isLoggedIn } = useAuth()
   const navigate = useNavigate()
+  const bannerRef = useRef(null)
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('latido_pwa_dismissed') === '1')
   const [installed, setInstalled] = useState(false)
 
@@ -63,11 +65,42 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
     navigate('/perfil#instalar-ios')
   }
 
-  if (!isLoggedIn || isPWA || dismissed || installed) return null
-  if (!canInstall && !isIOS) return null
+  const shouldShow = isLoggedIn && !isPWA && !dismissed && !installed && (canInstall || isIOS)
+
+  useLayoutEffect(() => {
+    if (!shouldShow) {
+      document.documentElement.style.removeProperty(INSTALL_BANNER_LIFT_VAR)
+      return undefined
+    }
+
+    const node = bannerRef.current
+    if (!node) return undefined
+
+    const updateLift = () => {
+      const height = node.getBoundingClientRect().height
+      document.documentElement.style.setProperty(INSTALL_BANNER_LIFT_VAR, `${Math.ceil(height + 20)}px`)
+    }
+
+    updateLift()
+    window.addEventListener('resize', updateLift)
+
+    let observer
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(updateLift)
+      observer.observe(node)
+    }
+
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', updateLift)
+      document.documentElement.style.removeProperty(INSTALL_BANNER_LIFT_VAR)
+    }
+  }, [shouldShow])
+
+  if (!shouldShow) return null
 
   return (
-    <div style={{ position:'fixed', bottom:'calc(96px + env(safe-area-inset-bottom))', left:'env(safe-area-inset-left)', right:'env(safe-area-inset-right)', zIndex:200, padding:'0 12px', pointerEvents:'none' }}>
+    <div ref={bannerRef} style={{ position:'fixed', bottom:'calc(96px + env(safe-area-inset-bottom))', left:'env(safe-area-inset-left)', right:'env(safe-area-inset-right)', zIndex:200, padding:'0 12px', pointerEvents:'none' }}>
       <div style={{ background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius:18, padding:'14px 16px', boxShadow:'0 8px 32px rgba(37,99,235,0.35)', display:'flex', gap:12, alignItems:'flex-start', pointerEvents:'all', maxWidth:480, margin:'0 auto' }}>
         <div style={{ fontSize:28, flexShrink:0, marginTop:2 }}>📲</div>
         <div style={{ flex:1, minWidth:0 }}>

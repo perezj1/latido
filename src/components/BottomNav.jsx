@@ -48,11 +48,11 @@ export default function BottomNav() {
     <>
       {fab && (
         <div style={{
-          position:'fixed', bottom:'calc(88px + env(safe-area-inset-bottom))', right:'calc(18px + env(safe-area-inset-right))', zIndex:60,
+          position:'fixed', bottom:'calc(88px + env(safe-area-inset-bottom) + var(--latido-install-banner-lift, 0px))', right:'calc(18px + env(safe-area-inset-right))', zIndex:60,
           padding:2.5, borderRadius:26,
           background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)',
           boxShadow:'0 4px 20px rgba(37,99,235,0.45)',
-          transform:'translateZ(0)',
+          transform:'translateZ(0)', transition:'bottom .18s ease',
         }}>
           {fab.showPicker ? (
             <button
@@ -87,7 +87,7 @@ export default function BottomNav() {
       {pickerOpen && (
         <div
           onClick={() => window.history.back()}
-          style={{ position:'fixed', inset:0, zIndex:90, background:'rgba(0,0,0,0.45)', display:'flex', flexDirection:'column', justifyContent:'flex-end' }}
+          style={{ position:'fixed', inset:0, zIndex:260, background:'rgba(0,0,0,0.45)', display:'flex', flexDirection:'column', justifyContent:'flex-end' }}
         >
           <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:'24px 24px 0 0', padding:'16px 20px 40px' }}>
             <div style={{ width:36, height:4, background:'#E2EAF4', borderRadius:4, margin:'0 auto 20px' }} />
