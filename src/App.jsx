@@ -285,10 +285,21 @@ function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPage, setMenuPage] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [messagesChatOpen, setMessagesChatOpen] = useState(false)
 
   const isRoot = pathname === '/'
-  const isMessages = pathname.startsWith('/mensajes')
   const showLanding = isRoot && !isPWA && !isLoggedIn
+
+  useEffect(() => {
+    if (!pathname.startsWith('/mensajes')) {
+      setMessagesChatOpen(false)
+      return undefined
+    }
+    const sync = event => setMessagesChatOpen(Boolean(event.detail?.open))
+    setMessagesChatOpen(Boolean(window.__latidoMessagesChatOpen))
+    window.addEventListener('latido:messages-chat-open', sync)
+    return () => window.removeEventListener('latido:messages-chat-open', sync)
+  }, [pathname])
 
   if (showLanding) {
     const MENU_ITEMS = [
@@ -372,7 +383,7 @@ function AppShell() {
       <Header />
       <PushRegistrationSync />
       <UserPresenceSync />
-      <main style={{ minHeight:'100vh', paddingBottom:isMessages ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:isRoot ? '#fff' : undefined }}>
+      <main style={{ minHeight:'100vh', paddingBottom:messagesChatOpen ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:isRoot ? '#fff' : undefined }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />

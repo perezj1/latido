@@ -220,6 +220,16 @@ export default function Mensajes() {
   }, [selectedConv?.id, pendingTarget?.id, showList])
 
   useEffect(() => {
+    const open = window.innerWidth < 700 && Boolean(selectedConv || pendingTarget) && !showList
+    window.__latidoMessagesChatOpen = open
+    window.dispatchEvent(new CustomEvent('latido:messages-chat-open', { detail:{ open } }))
+    return () => {
+      window.__latidoMessagesChatOpen = false
+      window.dispatchEvent(new CustomEvent('latido:messages-chat-open', { detail:{ open:false } }))
+    }
+  }, [selectedConv?.id, pendingTarget?.id, showList])
+
+  useEffect(() => {
     if (!isLoggedIn) { navigate('/auth'); return }
     loadConversations()
   }, [adId, convId, isLoggedIn, jobId, recipientName, user?.id])

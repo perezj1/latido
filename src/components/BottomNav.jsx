@@ -33,6 +33,7 @@ export default function BottomNav() {
   const navigate = useNavigate()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const [messagesChatOpen, setMessagesChatOpen] = useState(false)
 
   useEffect(() => {
     const onFocusIn = (e) => {
@@ -64,9 +65,20 @@ export default function BottomNav() {
     return () => window.removeEventListener('popstate', handlePop)
   }, [pickerOpen])
 
+  useEffect(() => {
+    if (!pathname.startsWith('/mensajes')) {
+      setMessagesChatOpen(false)
+      return undefined
+    }
+    const sync = event => setMessagesChatOpen(Boolean(event.detail?.open))
+    setMessagesChatOpen(Boolean(window.__latidoMessagesChatOpen))
+    window.addEventListener('latido:messages-chat-open', sync)
+    return () => window.removeEventListener('latido:messages-chat-open', sync)
+  }, [pathname])
+
   const hideFab = NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const fab = hideFab ? null : getPublishTarget()
-  const hideMobileNav = pathname.startsWith('/mensajes')
+  const hideMobileNav = pathname.startsWith('/mensajes') && messagesChatOpen
 
   return (
     <>
