@@ -7,7 +7,8 @@ import { unreadStore } from '../lib/unreadStore'
 import { C, PP } from '../lib/theme'
 import { Avatar } from '../components/UI'
 import ReportButton from '../components/ReportButton'
-import { fetchAvatarsByIds } from '../lib/profiles'
+import { fetchAvatarsByIds, fetchLastSeenByIds } from '../lib/profiles'
+import { subscribeToOnlineUsers } from '../lib/presence'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import toast from 'react-hot-toast'
 
@@ -26,6 +27,26 @@ function formatTime(ts) {
   if (diff < 3600000) return `${Math.floor(diff / 60000)}min`
   if (diff < 86400000) return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+}
+
+function formatLastSeen(ts) {
+  if (!ts) return ''
+
+  const date = new Date(ts)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const now = new Date()
+  const diff = now - date
+  if (diff < 2 * 60000) return 'Activo hace un momento'
+  if (diff < 60 * 60000) return `Activo hace ${Math.floor(diff / 60000)} min`
+  if (diff < 24 * 3600000) {
+    return `Activo hoy ${date.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}`
+  }
+  if (diff < 7 * 86400000) {
+    return `Activo ${date.toLocaleDateString('es-ES', { weekday:'short' })}`
+  }
+
+  return `Activo ${date.toLocaleDateString('es-ES', { day:'numeric', month:'short' })}`
 }
 
 function convTitle(conv) {
@@ -96,6 +117,9 @@ export default function Mensajes() {
   const [lastMsgMeta, setLastMsgMeta] = useState(new Map())
   const [dismissedPendingIds, setDismissedPendingIds] = useState(new Set())
   const [convAvatars, setConvAvatars] = useState(new Map())
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set())
+  const [lastSeenByUser, setLastSeenByUser] = useState(new Map())
+  const [typingByUser, setTypingByUser] = useState(new Map())
   const [selectedConv, setSelectedConv] = useState(null)
   const [pendingTarget, setPendingTarget] = useState(null)
   const [messages, setMessages] = useState([])
@@ -106,6 +130,9 @@ export default function Mensajes() {
   const messagesEndRef = useRef(null)
   const channelRef = useRef(null)
   const inboxChannelRef = useRef(null)
+  const typingChannelRef = useRef(null)
+  const typingStopTimerRef = useRef(null)
+  const lastTypingSentRef = useRef(0)
   const inputRef = useRef(null)
   const creatingRef = useRef(false)
   const selectedConvRef = useRef(null)
@@ -129,8 +156,58 @@ export default function Mensajes() {
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current)
       if (inboxChannelRef.current) supabase.removeChannel(inboxChannelRef.current)
+      if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current)
+      if (typingStopTimerRef.current) window.clearTimeout(typingStopTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) {
+      setOnlineUserIds(new Set())
+      return undefined
+    }
+
+    return subscribeToOnlineUsers(setOnlineUserIds)
+  }, [isLoggedIn, user?.id])
+
+  useEffect(() => {
+    if (!selectedConv?.id || !user?.id) {
+      setTypingByUser(new Map())
+      return undefined
+    }
+
+    if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current)
+    const channel = supabase.channel(`typing-${selectedConv.id}`)
+    typingChannelRef.current = channel
+
+    channel
+      .on('broadcast', { event:'typing' }, ({ payload }) => {
+        if (!payload?.user_id || payload.user_id === user.id) return
+
+        setTypingByUser(prev => {
+          const next = new Map(prev)
+          if (payload.isTyping) next.set(payload.user_id, Date.now() + 3500)
+          else next.delete(payload.user_id)
+          return next
+        })
+      })
+      .subscribe()
+
+    const pruneTyping = window.setInterval(() => {
+      setTypingByUser(prev => {
+        const now = Date.now()
+        const next = new Map([...prev].filter(([, until]) => until > now))
+        return next.size === prev.size ? prev : next
+      })
+    }, 1500)
+
+    return () => {
+      window.clearInterval(pruneTyping)
+      supabase.removeChannel(channel)
+      if (typingChannelRef.current === channel) typingChannelRef.current = null
+      setTypingByUser(new Map())
+    }
+  }, [selectedConv?.id, user?.id])
 
   async function resolveOwnDisplayName() {
     if (selfNameLoadedRef.current) return selfNameRef.current
@@ -284,6 +361,7 @@ export default function Mensajes() {
     // Fetch avatars for all other participants
     const otherIds = visibleData.map(c => c.sender_id === user.id ? c.owner_id : c.sender_id).filter(Boolean)
     fetchAvatarsByIds(otherIds).then(setConvAvatars)
+    fetchLastSeenByIds(otherIds).then(setLastSeenByUser)
 
     // Subscribe to all incoming messages in this inbox for sorting + per-conv unread
     if (inboxChannelRef.current) supabase.removeChannel(inboxChannelRef.current)
@@ -514,6 +592,36 @@ export default function Mensajes() {
     setTimeout(() => inputRef.current?.focus(), 100)
   }
 
+  function sendTypingState(isTyping) {
+    if (!typingChannelRef.current || !selectedConv?.id || !user?.id) return
+    typingChannelRef.current.send({
+      type:'broadcast',
+      event:'typing',
+      payload:{
+        conversation_id:selectedConv.id,
+        user_id:user.id,
+        isTyping,
+        at:new Date().toISOString(),
+      },
+    })
+  }
+
+  function handleMessageChange(value) {
+    setNewMessage(value)
+    if (isBanned || !selectedConv?.id) return
+
+    const now = Date.now()
+    if (now - lastTypingSentRef.current > 1200) {
+      lastTypingSentRef.current = now
+      sendTypingState(true)
+    }
+
+    if (typingStopTimerRef.current) window.clearTimeout(typingStopTimerRef.current)
+    typingStopTimerRef.current = window.setTimeout(() => {
+      sendTypingState(false)
+    }, 1800)
+  }
+
   async function sendMessage() {
     const body = newMessage.trim()
     if (!body || sending) return
@@ -530,6 +638,7 @@ export default function Mensajes() {
     let conv = selectedConv
     setSending(true)
     setNewMessage('')
+    sendTypingState(false)
 
     if (!conv) {
       conv = await openOrCreate({ adId, jobId, convList: conversations, addToList: false })
@@ -623,6 +732,27 @@ export default function Mensajes() {
     if (!conv) return 'Usuario'
     if (conv.sender_id === user.id) return cleanParticipantName(conv.owner_name) || 'Usuario'
     return cleanParticipantName(conv.sender_name) || 'Usuario'
+  }
+
+  function otherParticipantId(conv) {
+    if (!conv) return null
+    return conv.sender_id === user.id ? conv.owner_id : conv.sender_id
+  }
+
+  function isParticipantOnline(conv) {
+    const id = otherParticipantId(conv)
+    return !!id && onlineUserIds.has(id)
+  }
+
+  function isParticipantTyping(conv) {
+    const id = otherParticipantId(conv)
+    return !!id && typingByUser.has(id)
+  }
+
+  function participantStatusLabel(conv) {
+    if (isParticipantTyping(conv)) return 'Escribiendo...'
+    if (isParticipantOnline(conv)) return 'En línea'
+    return formatLastSeen(lastSeenByUser.get(otherParticipantId(conv))) || 'Sin actividad reciente'
   }
 
   function getConversationReferenceHref(conv) {
@@ -750,12 +880,17 @@ export default function Mensajes() {
                         {isUnread && (
                           <span style={{ position: 'absolute', top: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: '#EF4444', border: '2px solid #fff' }} />
                         )}
+                        {isParticipantOnline(conv) && (
+                          <span style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10B981', border: '2px solid #fff' }} />
+                        )}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontFamily: PP, fontWeight: isUnread ? 800 : 700, fontSize: 13, color: selectedConv?.id === conv.id ? C.primary : C.text, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {convTitle(conv)}
                         </p>
-                        <p style={{ fontFamily: PP, fontSize: 11, color: isUnread ? C.text : C.light, fontWeight: isUnread ? 600 : 400, margin: 0 }}>{otherName(conv)}</p>
+                        <p style={{ fontFamily: PP, fontSize: 11, color: isParticipantTyping(conv) ? C.primary : isUnread ? C.text : C.light, fontWeight: isParticipantTyping(conv) || isUnread ? 700 : 400, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {otherName(conv)} · {participantStatusLabel(conv)}
+                        </p>
                       </div>
                       <span style={{ fontFamily: PP, fontSize: 10, color: isUnread ? C.primary : C.light, fontWeight: isUnread ? 700 : 400, flexShrink: 0 }}>{formatTime(lastMsgAt.get(conv.id) || conv.created_at)}</span>
                     </button>
@@ -780,9 +915,17 @@ export default function Mensajes() {
                 {isMobile && (
                   <button onClick={() => setShowList(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px 4px 0', fontSize: 18, color: C.mid }}>←</button>
                 )}
-                <Avatar name={otherName(activeThread)} size={36} src={activeThread.id ? convAvatars.get(activeThread.sender_id === user.id ? activeThread.owner_id : activeThread.sender_id) : undefined} />
+                <span style={{ position:'relative', flexShrink:0 }}>
+                  <Avatar name={otherName(activeThread)} size={36} src={activeThread.id ? convAvatars.get(activeThread.sender_id === user.id ? activeThread.owner_id : activeThread.sender_id) : undefined} />
+                  {isParticipantOnline(activeThread) && (
+                    <span style={{ position:'absolute', bottom:0, right:0, width:10, height:10, borderRadius:'50%', background:'#10B981', border:'2px solid #fff' }} />
+                  )}
+                </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: 0 }}>{otherName(activeThread)}</p>
+                  <p style={{ fontFamily: PP, fontWeight: isParticipantTyping(activeThread) ? 700 : 500, fontSize: 11, color: isParticipantTyping(activeThread) || isParticipantOnline(activeThread) ? C.primary : C.light, margin: '1px 0 2px' }}>
+                    {participantStatusLabel(activeThread)}
+                  </p>
                   <button
                     type="button"
                     onClick={() => openConversationReference(activeThread)}
@@ -844,7 +987,7 @@ export default function Mensajes() {
                 <textarea
                   ref={inputRef}
                   value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
+                  onChange={e => handleMessageChange(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
                   placeholder={isBanned ? 'Cuenta suspendida: no puedes enviar mensajes' : 'Escribe un mensaje...'}
                   disabled={isBanned}

@@ -49,6 +49,27 @@ export async function fetchPublicProfilesByIds(ids) {
   }))
 }
 
+export async function fetchLastSeenByIds(ids) {
+  const uniqueIds = [...new Set((ids || []).filter(Boolean))]
+  if (!uniqueIds.length) return new Map()
+
+  let response = await supabase
+    .from('profile_public')
+    .select('id, last_seen_at')
+    .in('id', uniqueIds)
+
+  if (response.error) {
+    response = await supabase
+      .from('profiles')
+      .select('id, last_seen_at')
+      .in('id', uniqueIds)
+  }
+
+  if (response.error) return new Map()
+
+  return new Map((response.data || []).map(row => [row.id, row.last_seen_at || null]))
+}
+
 // Invalidate one entry after the user updates their own avatar
 export function invalidateAvatarCache(userId) {
   cache.delete(userId)

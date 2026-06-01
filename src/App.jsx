@@ -3,6 +3,8 @@ import { Toaster } from 'react-hot-toast'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
+import { supabase } from './lib/supabase'
+import { startUserPresence, trackUserPresence } from './lib/presence'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
 import { C, PP } from './lib/theme'
 
@@ -137,6 +139,51 @@ function PushRegistrationSync() {
       userCanton,
     }).catch(err => console.warn('Could not sync push registration:', err))
   }, [isLoggedIn, user?.id, userCanton])
+
+  return null
+}
+
+function UserPresenceSync() {
+  const { user, isLoggedIn } = useAuth()
+  const lastSeenDisabledRef = useRef(false)
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) return undefined
+
+    let cancelled = false
+    const markLastSeen = async () => {
+      if (lastSeenDisabledRef.current || cancelled) return
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', user.id)
+
+      if (error) {
+        lastSeenDisabledRef.current = true
+        console.warn('Could not update last_seen_at:', error.message)
+      }
+    }
+
+    const stopPresence = startUserPresence(user.id)
+
+    markLastSeen()
+    const lastSeenInterval = window.setInterval(markLastSeen, 60_000)
+    const presenceInterval = window.setInterval(trackUserPresence, 30_000)
+    const onPageHide = () => { markLastSeen() }
+
+    window.addEventListener('pagehide', onPageHide)
+    window.addEventListener('beforeunload', onPageHide)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(lastSeenInterval)
+      window.clearInterval(presenceInterval)
+      stopPresence()
+      window.removeEventListener('pagehide', onPageHide)
+      window.removeEventListener('beforeunload', onPageHide)
+    }
+  }, [isLoggedIn, user?.id])
 
   return null
 }
@@ -323,6 +370,7 @@ function AppShell() {
     <>
       <Header />
       <PushRegistrationSync />
+      <UserPresenceSync />
       <main style={{ minHeight:'100vh', paddingBottom:'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:isRoot ? '#fff' : undefined }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
