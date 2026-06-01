@@ -11,6 +11,12 @@ import { fetchAvatarsByIds } from '../lib/profiles'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import toast from 'react-hot-toast'
 
+const QUICK_REPLIES = [
+  'Hola, ¿sigue disponible?',
+  'Gracias, lo reviso y te digo.',
+  '¿Podemos hablar por WhatsApp?',
+]
+
 function formatTime(ts) {
   if (!ts) return ''
   const d = new Date(ts)
@@ -87,6 +93,8 @@ export default function Mensajes() {
   const { unreadConvIds } = useUnreadMessages()
   const [conversations, setConversations] = useState([])
   const [lastMsgAt, setLastMsgAt] = useState(new Map()) // convId → ISO string
+  const [lastMsgMeta, setLastMsgMeta] = useState(new Map())
+  const [dismissedPendingIds, setDismissedPendingIds] = useState(new Set())
   const [convAvatars, setConvAvatars] = useState(new Map())
   const [selectedConv, setSelectedConv] = useState(null)
   const [pendingTarget, setPendingTarget] = useState(null)
@@ -247,27 +255,30 @@ export default function Mensajes() {
     const data = await hydrateConversationNames(res.data || [], ownName)
     let visibleData = data
     let initLastMsg = new Map(data.map(c => [c.id, c.created_at]))
+    let initLastMsgMeta = new Map()
 
     // Empty conversations are drafts from old clicks; keep them out of the inbox.
     const conversationIds = data.map(c => c.id).filter(Boolean)
     if (conversationIds.length) {
       const { data: messageRows, error: messagesError } = await supabase
         .from('messages')
-        .select('conversation_id, created_at')
+        .select('conversation_id, sender_id, body, created_at, read')
         .in('conversation_id', conversationIds)
         .order('created_at', { ascending: false })
 
       if (!messagesError) {
         const latestByConv = new Map()
         messageRows?.forEach(msg => {
-          if (!latestByConv.has(msg.conversation_id)) latestByConv.set(msg.conversation_id, msg.created_at)
+          if (!latestByConv.has(msg.conversation_id)) latestByConv.set(msg.conversation_id, msg)
         })
         visibleData = data.filter(c => latestByConv.has(c.id))
-        initLastMsg = new Map(visibleData.map(c => [c.id, latestByConv.get(c.id) || c.created_at]))
+        initLastMsg = new Map(visibleData.map(c => [c.id, latestByConv.get(c.id)?.created_at || c.created_at]))
+        initLastMsgMeta = new Map(visibleData.map(c => [c.id, latestByConv.get(c.id)]).filter(([, msg]) => !!msg))
       }
     }
 
     setLastMsgAt(initLastMsg)
+    setLastMsgMeta(initLastMsgMeta)
     setConversations(visibleData)
 
     // Fetch avatars for all other participants
@@ -285,6 +296,12 @@ export default function Mensajes() {
         if (!inboxConvIdsRef.current.has(msg.conversation_id)) return
         // Update last message time and bubble conv to top
         setLastMsgAt(prev => new Map(prev).set(msg.conversation_id, msg.created_at))
+        setLastMsgMeta(prev => new Map(prev).set(msg.conversation_id, msg))
+        setDismissedPendingIds(prev => {
+          const next = new Set(prev)
+          next.delete(msg.conversation_id)
+          return next
+        })
         // If not from self and not currently open → mark unread
         if (msg.sender_id !== user.id && selectedConvRef.current?.id !== msg.conversation_id) {
           unreadStore.add(msg.conversation_id)
@@ -476,6 +493,12 @@ export default function Mensajes() {
     setMessages(data || [])
     supabase.from('messages').update({ read: true })
       .eq('conversation_id', conv.id).neq('sender_id', user.id).then(() => {})
+    setLastMsgMeta(prev => {
+      const next = new Map(prev)
+      const current = next.get(conv.id)
+      if (current) next.set(conv.id, { ...current, read: true })
+      return next
+    })
 
     if (channelRef.current) supabase.removeChannel(channelRef.current)
     channelRef.current = supabase
@@ -534,6 +557,7 @@ export default function Mensajes() {
     } else if (data) {
       setMessages(prev => prev.map(m => m.id === tempId ? data : m))
       setLastMsgAt(prev => new Map(prev).set(conv.id, data.created_at))
+      setLastMsgMeta(prev => new Map(prev).set(conv.id, data))
       inboxConvIdsRef.current = new Set(inboxConvIdsRef.current).add(conv.id)
       setConversations(prev => {
         const withoutCurrent = prev.filter(c => String(c.id) !== String(conv.id))
@@ -545,16 +569,54 @@ export default function Mensajes() {
     inputRef.current?.focus()
   }
 
-  async function deleteConversation(e, conv) {
-    e.stopPropagation()
-    if (!window.confirm('¿Eliminar esta conversación?')) return
+  function applyQuickReply(text) {
+    setNewMessage(prev => {
+      const current = prev.trim()
+      return current ? `${current}\n${text}` : text
+    })
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }
+
+  async function markConversationAsRead(conv) {
+    if (!conv?.id) return
+    markConvRead(conv.id)
+    unreadStore.remove(conv.id)
+    setDismissedPendingIds(prev => new Set(prev).add(conv.id))
+    setLastMsgMeta(prev => {
+      const next = new Map(prev)
+      const current = next.get(conv.id)
+      if (current) next.set(conv.id, { ...current, read: true })
+      return next
+    })
+    await supabase
+      .from('messages')
+      .update({ read: true })
+      .eq('conversation_id', conv.id)
+      .neq('sender_id', user.id)
+    toast.success('Conversación marcada como leída')
+  }
+
+  async function hideConversation(conv, successMessage = 'Conversación archivada') {
     const isSender = conv.sender_id === user.id
     const updateField = isSender ? { deleted_by_sender: true } : { deleted_by_owner: true }
     await supabase.from('conversations').update(updateField).eq('id', conv.id)
     unreadStore.remove(conv.id)
     inboxConvIdsRef.current.delete(conv.id)
     setConversations(prev => prev.filter(c => c.id !== conv.id))
-    if (selectedConv?.id === conv.id) { setSelectedConv(null); setPendingTarget(null); selectedConvRef.current = null; setMessages([]); setShowList(true) }
+    if (selectedConv?.id === conv.id) {
+      setSelectedConv(null)
+      setPendingTarget(null)
+      selectedConvRef.current = null
+      setMessages([])
+      setShowList(true)
+    }
+    toast.success(successMessage)
+  }
+
+  async function deleteConversation(e, conv) {
+    e.stopPropagation()
+    if (!window.confirm('¿Eliminar esta conversación?')) return
+    await hideConversation(conv, 'Conversación eliminada')
   }
 
   function otherName(conv) {
@@ -581,6 +643,20 @@ export default function Mensajes() {
   const activeThread = selectedConv || pendingTarget
   const showListPanel = !activeThread || showList
   const showChatPanel = !!activeThread && (!isMobile || !showList)
+  const sortedConversations = [...conversations].sort((a, b) => {
+    const ta = lastMsgAt.get(a.id) || a.created_at || ''
+    const tb = lastMsgAt.get(b.id) || b.created_at || ''
+    return tb.localeCompare(ta)
+  })
+  const pendingConversations = sortedConversations.filter(conv => {
+    if (dismissedPendingIds.has(conv.id)) return false
+    const lastMsg = lastMsgMeta.get(conv.id)
+    const isUnread = unreadConvIds.has(conv.id)
+    const fromOther = lastMsg?.sender_id && lastMsg.sender_id !== user.id
+    const lastTime = lastMsg?.created_at ? new Date(lastMsg.created_at).getTime() : 0
+    const olderThanOneDay = lastTime && Date.now() - lastTime > 24 * 60 * 60 * 1000
+    return isUnread || (fromOther && olderThanOneDay && lastMsg?.read !== true)
+  })
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0 0', height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column' }}>
@@ -598,6 +674,52 @@ export default function Mensajes() {
             <div style={{ padding: '14px 14px 10px', borderBottom: `1px solid ${C.border}` }}>
               <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, color: C.light, margin: 0, letterSpacing: 0.5 }}>CONVERSACIONES</p>
             </div>
+
+            {!loading && pendingConversations.length > 0 && (
+              <div style={{ padding: '10px 10px 12px', borderBottom: `1px solid ${C.border}`, background: '#fff' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 11, color: C.primary, margin: 0, letterSpacing: 0.4 }}>PENDIENTES</p>
+                  <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.primaryDark, background: C.primaryLight, border: `1px solid ${C.primaryMid}`, borderRadius: 999, padding: '4px 8px' }}>
+                    {pendingConversations.length}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {pendingConversations.slice(0, 2).map(conv => {
+                    const isUnread = unreadConvIds.has(conv.id)
+                    const lastMsg = lastMsgMeta.get(conv.id)
+                    return (
+                      <div key={conv.id} style={{ border: `1px solid ${C.primaryMid}`, background: C.primaryLight, borderRadius: 14, padding: 10 }}>
+                        <button
+                          onClick={() => openConversation(conv)}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
+                        >
+                          <span style={{ width: 34, height: 34, borderRadius: 12, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, flexShrink: 0 }}>
+                            💬
+                          </span>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {otherName(conv)}
+                            </span>
+                            <span style={{ display: 'block', fontFamily: PP, fontSize: 10, color: C.primaryDark, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+                              {isUnread ? 'Nuevo mensaje' : `Sin responder · ${formatTime(lastMsg?.created_at || lastMsgAt.get(conv.id))}`}
+                            </span>
+                          </span>
+                        </button>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginTop: 9 }}>
+                          <button onClick={() => openConversation(conv)} style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: '#fff', background: C.primary, border: 'none', borderRadius: 9, padding: '7px 3px', cursor: 'pointer' }}>
+                            Responder
+                          </button>
+                          <button onClick={() => markConversationAsRead(conv)} style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.primaryDark, background: '#fff', border: `1px solid ${C.primaryMid}`, borderRadius: 9, padding: '7px 3px', cursor: 'pointer' }}>
+                            Leído
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {loading ? (
               <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -617,11 +739,7 @@ export default function Mensajes() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {[...conversations].sort((a, b) => {
-                  const ta = lastMsgAt.get(a.id) || a.created_at || ''
-                  const tb = lastMsgAt.get(b.id) || b.created_at || ''
-                  return tb.localeCompare(ta)
-                }).map(conv => {
+                {sortedConversations.map(conv => {
                   const isUnread = unreadConvIds.has(conv.id)
                   return (
                   <div key={conv.id} style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${C.border}`, background: selectedConv?.id === conv.id ? C.primaryLight : isUnread ? 'rgba(37,99,235,0.04)' : 'transparent' }}>
@@ -708,7 +826,21 @@ export default function Mensajes() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div style={{ padding: '10px 12px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 8, alignItems: 'flex-end', background: '#fff' }}>
+              <div style={{ padding: '8px 12px 10px', borderTop: `1px solid ${C.border}`, background: '#fff' }}>
+                {!isBanned && (
+                  <div className="no-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8 }}>
+                    {QUICK_REPLIES.map(reply => (
+                      <button
+                        key={reply}
+                        onClick={() => applyQuickReply(reply)}
+                        style={{ fontFamily: PP, fontWeight: 700, fontSize: 10, color: C.primaryDark, background: C.primaryLight, border: `1px solid ${C.primaryMid}`, borderRadius: 999, padding: '6px 9px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                      >
+                        {reply}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                 <textarea
                   ref={inputRef}
                   value={newMessage}
@@ -723,6 +855,7 @@ export default function Mensajes() {
                   style={{ background: !isBanned && newMessage.trim() ? C.primary : C.border, color: '#fff', border: 'none', borderRadius: 14, width: 44, height: 44, cursor: !isBanned && newMessage.trim() ? 'pointer' : 'default', fontSize: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}>
                   ↑
                 </button>
+                </div>
               </div>
             </div>
           ) : (
