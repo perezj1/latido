@@ -49,6 +49,18 @@ function formatLastSeen(ts) {
   return `Activo ${date.toLocaleDateString('es-ES', { day:'numeric', month:'short' })}`
 }
 
+function isTempMessage(msg) {
+  return String(msg?.id || '').startsWith('temp-')
+}
+
+function wasActiveAfter(lastSeenAt, createdAt) {
+  if (!lastSeenAt || !createdAt) return false
+  const lastSeen = new Date(lastSeenAt).getTime()
+  const created = new Date(createdAt).getTime()
+  if (Number.isNaN(lastSeen) || Number.isNaN(created)) return false
+  return lastSeen >= created
+}
+
 function convTitle(conv) {
   return conv.title || 'Anuncio'
 }
@@ -339,7 +351,7 @@ export default function Mensajes() {
     if (conversationIds.length) {
       const { data: messageRows, error: messagesError } = await supabase
         .from('messages')
-        .select('conversation_id, sender_id, body, created_at, read')
+        .select('id, conversation_id, sender_id, body, created_at, read')
         .in('conversation_id', conversationIds)
         .order('created_at', { ascending: false })
 
@@ -587,6 +599,19 @@ export default function Mensajes() {
       }, payload => {
         setMessages(prev => prev.find(m => m.id === payload.new.id) ? prev : [...prev, payload.new])
       })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'messages',
+        filter: `conversation_id=eq.${conv.id}`
+      }, payload => {
+        const updated = payload.new
+        setMessages(prev => prev.map(msg => String(msg.id) === String(updated.id) ? { ...msg, ...updated } : msg))
+        setLastMsgMeta(prev => {
+          const next = new Map(prev)
+          const current = next.get(conv.id)
+          if (current?.id && String(current.id) === String(updated.id)) next.set(conv.id, { ...current, ...updated })
+          return next
+        })
+      })
       .subscribe()
 
     setTimeout(() => inputRef.current?.focus(), 100)
@@ -755,6 +780,14 @@ export default function Mensajes() {
     return formatLastSeen(lastSeenByUser.get(otherParticipantId(conv))) || 'Sin actividad reciente'
   }
 
+  function getMessageStatusLabel(msg, conv) {
+    if (isTempMessage(msg)) return 'Enviando...'
+    if (msg?.read) return 'Leído'
+    const otherId = otherParticipantId(conv)
+    if (isParticipantOnline(conv) || wasActiveAfter(lastSeenByUser.get(otherId), msg.created_at)) return 'Entregado'
+    return 'Enviado'
+  }
+
   function getConversationReferenceHref(conv) {
     if (!conv?.ad_id) return ''
     return conv.reference_kind === 'job'
@@ -771,6 +804,7 @@ export default function Mensajes() {
 
   const isMobile = window.innerWidth < 700
   const activeThread = selectedConv || pendingTarget
+  const activeReferenceHref = getConversationReferenceHref(activeThread)
   const showListPanel = !activeThread || showList
   const showChatPanel = !!activeThread && (!isMobile || !showList)
   const sortedConversations = [...conversations].sort((a, b) => {
@@ -929,11 +963,29 @@ export default function Mensajes() {
                   <button
                     type="button"
                     onClick={() => openConversationReference(activeThread)}
-                    disabled={!getConversationReferenceHref(activeThread)}
-                    style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', background:'none', border:'none', padding:0, textAlign:'left', width:'100%', cursor:getConversationReferenceHref(activeThread) ? 'pointer' : 'default' }}
-                    title={getConversationReferenceHref(activeThread) ? 'Abrir anuncio relacionado' : undefined}
+                    disabled={!activeReferenceHref}
+                    style={{
+                      fontFamily: PP,
+                      fontWeight: activeReferenceHref ? 700 : 500,
+                      fontSize: 11,
+                      color: activeReferenceHref ? C.primaryDark : C.light,
+                      margin: '4px 0 0',
+                      background: activeReferenceHref ? C.primaryLight : 'none',
+                      border: activeReferenceHref ? `1px solid ${C.primaryMid}` : 'none',
+                      borderRadius: 999,
+                      padding: activeReferenceHref ? '5px 9px' : 0,
+                      textAlign: 'left',
+                      maxWidth: '100%',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      cursor: activeReferenceHref ? 'pointer' : 'default',
+                      boxShadow: activeReferenceHref ? '0 2px 8px rgba(37,99,235,0.08)' : 'none',
+                    }}
+                    title={activeReferenceHref ? 'Abrir anuncio relacionado' : undefined}
                   >
-                    Re: {convTitle(activeThread)}
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Re: {convTitle(activeThread)}</span>
+                    {activeReferenceHref && <span style={{ flexShrink: 0, fontSize: 12 }}>→</span>}
                   </button>
                 </div>
               </div>
@@ -946,11 +998,19 @@ export default function Mensajes() {
                 )}
                 {messages.map(msg => {
                   const mine = msg.sender_id === user.id
+                  const statusLabel = mine ? getMessageStatusLabel(msg, activeThread) : ''
                   return (
                     <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
                       <div style={{ maxWidth: '78%', background: mine ? C.primary : '#fff', color: mine ? '#fff' : C.text, borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: '10px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
                         <p style={{ fontFamily: PP, fontSize: 13, margin: 0, lineHeight: 1.55 }}>{msg.body}</p>
-                        <p style={{ fontFamily: PP, fontSize: 10, color: mine ? 'rgba(255,255,255,0.6)' : C.light, margin: '4px 0 0', textAlign: 'right' }}>{formatTime(msg.created_at)}</p>
+                        <p style={{ fontFamily: PP, fontSize: 10, color: mine ? 'rgba(255,255,255,0.68)' : C.light, margin: '4px 0 0', textAlign: 'right' }}>
+                          {formatTime(msg.created_at)}
+                          {mine && (
+                            <span style={{ marginLeft: 6, color: msg.read ? '#D1FAE5' : 'rgba(255,255,255,0.78)', fontWeight: msg.read ? 800 : 600 }}>
+                              {statusLabel}
+                            </span>
+                          )}
+                        </p>
                       </div>
                       {!mine && activeThread.id && (
                         <ReportButton
