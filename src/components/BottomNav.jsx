@@ -32,6 +32,29 @@ export default function BottomNav() {
   const { needsActivation: needsPushActivation } = usePushActivation(user?.id)
   const navigate = useNavigate()
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+
+  useEffect(() => {
+    const onFocusIn = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setKeyboardVisible(true)
+      }
+    }
+    const onFocusOut = () => {
+      setTimeout(() => {
+        const el = document.activeElement
+        if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) {
+          setKeyboardVisible(false)
+        }
+      }, 150)
+    }
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('focusout', onFocusOut)
+    return () => {
+      document.removeEventListener('focusin', onFocusIn)
+      document.removeEventListener('focusout', onFocusOut)
+    }
+  }, [])
 
   useEffect(() => {
     if (!pickerOpen) return
@@ -113,7 +136,7 @@ export default function BottomNav() {
         </div>
       )}
 
-      <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'rgba(255,255,255,0.96)', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', minHeight:68, boxShadow:'0 -8px 26px rgba(15,23,42,0.08)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', transform:'translateZ(0)' }}>
+      <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'rgba(255,255,255,0.96)', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', minHeight:68, boxShadow:'0 -8px 26px rgba(15,23,42,0.08)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', transform: keyboardVisible && pathname.startsWith('/mensajes') ? 'translateY(100%)' : 'translateZ(0)', transition:'transform 0.12s ease' }}>
         {TABS.map(tab => {
           const active = tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
           const needsNotificationDot = tab.path === '/perfil' && needsPushActivation

@@ -18,6 +18,35 @@ const QUICK_REPLIES = [
   '¿Podemos hablar por WhatsApp?',
 ]
 
+const PENDING_READ_KEY_PREFIX = 'latido_messages_pending_read'
+
+function pendingReadStorageKey(userId) {
+  return `${PENDING_READ_KEY_PREFIX}:${userId}`
+}
+
+function readDismissedPendingMap(userId) {
+  if (!userId || typeof localStorage === 'undefined') return new Map()
+  try {
+    const raw = localStorage.getItem(pendingReadStorageKey(userId))
+    const parsed = raw ? JSON.parse(raw) : {}
+    return new Map(Object.entries(parsed || {}))
+  } catch {
+    return new Map()
+  }
+}
+
+function saveDismissedPendingMap(userId, map) {
+  if (!userId || typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(pendingReadStorageKey(userId), JSON.stringify(Object.fromEntries(map)))
+  } catch {}
+}
+
+function getPendingMessageMarker(msg, fallbackTs = '') {
+  if (!msg) return String(fallbackTs || '')
+  return String(msg.id || msg.created_at || fallbackTs || '')
+}
+
 function formatTime(ts) {
   if (!ts) return ''
   const d = new Date(ts)
@@ -127,18 +156,20 @@ export default function Mensajes() {
   const [conversations, setConversations] = useState([])
   const [lastMsgAt, setLastMsgAt] = useState(new Map()) // convId → ISO string
   const [lastMsgMeta, setLastMsgMeta] = useState(new Map())
-  const [dismissedPendingIds, setDismissedPendingIds] = useState(new Set())
+  const [dismissedPendingIds, setDismissedPendingIds] = useState(() => readDismissedPendingMap(user?.id))
   const [convAvatars, setConvAvatars] = useState(new Map())
   const [onlineUserIds, setOnlineUserIds] = useState(new Set())
   const [lastSeenByUser, setLastSeenByUser] = useState(new Map())
   const [typingByUser, setTypingByUser] = useState(new Map())
   const [selectedConv, setSelectedConv] = useState(null)
   const [pendingTarget, setPendingTarget] = useState(null)
+  const [pageHeight, setPageHeight] = useState(null)
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [showList, setShowList] = useState(true)
+  const pageRef = useRef(null)
   const messagesEndRef = useRef(null)
   const channelRef = useRef(null)
   const inboxChannelRef = useRef(null)
@@ -154,6 +185,32 @@ export default function Mensajes() {
   const selfNameRef = useRef(pickParticipantName(displayName, user?.email?.split('@')[0]) || 'Usuario')
   const selfNameLoadedRef = useRef(false)
   const [selfName, setSelfName] = useState(selfNameRef.current)
+
+  useEffect(() => {
+    if (!user?.id) {
+      setDismissedPendingIds(new Map())
+      return
+    }
+    setDismissedPendingIds(readDismissedPendingMap(user.id))
+  }, [user?.id])
+
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => {
+      const el = pageRef.current
+      if (!el) return
+      const top = el.getBoundingClientRect().top
+      setPageHeight(Math.max(200, vv.height - top))
+    }
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    update()
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [])
 
   useEffect(() => {
     if (!isLoggedIn) { navigate('/auth'); return }
@@ -387,11 +444,7 @@ export default function Mensajes() {
         // Update last message time and bubble conv to top
         setLastMsgAt(prev => new Map(prev).set(msg.conversation_id, msg.created_at))
         setLastMsgMeta(prev => new Map(prev).set(msg.conversation_id, msg))
-        setDismissedPendingIds(prev => {
-          const next = new Set(prev)
-          next.delete(msg.conversation_id)
-          return next
-        })
+        restorePendingConversation(msg.conversation_id)
         // If not from self and not currently open → mark unread
         if (msg.sender_id !== user.id && selectedConvRef.current?.id !== msg.conversation_id) {
           unreadStore.add(msg.conversation_id)
@@ -490,7 +543,6 @@ export default function Mensajes() {
     selectedConvRef.current = null
     setMessages([])
     setShowList(false)
-    setTimeout(() => inputRef.current?.focus(), 100)
     return draft
   }
 
@@ -613,8 +665,6 @@ export default function Mensajes() {
         })
       })
       .subscribe()
-
-    setTimeout(() => inputRef.current?.focus(), 100)
   }
 
   function sendTypingState(isTyping) {
@@ -711,11 +761,36 @@ export default function Mensajes() {
     setTimeout(() => inputRef.current?.focus(), 50)
   }
 
+  function dismissPendingConversation(conv) {
+    if (!conv?.id || !user?.id) return
+    const convKey = String(conv.id)
+    const marker = getPendingMessageMarker(lastMsgMeta.get(conv.id), lastMsgAt.get(conv.id) || conv.created_at)
+    if (!marker) return
+    setDismissedPendingIds(prev => {
+      const next = new Map(prev)
+      next.set(convKey, marker)
+      saveDismissedPendingMap(user.id, next)
+      return next
+    })
+  }
+
+  function restorePendingConversation(convId) {
+    if (!convId || !user?.id) return
+    const convKey = String(convId)
+    setDismissedPendingIds(prev => {
+      if (!prev.has(convKey)) return prev
+      const next = new Map(prev)
+      next.delete(convKey)
+      saveDismissedPendingMap(user.id, next)
+      return next
+    })
+  }
+
   async function markConversationAsRead(conv) {
     if (!conv?.id) return
     markConvRead(conv.id)
     unreadStore.remove(conv.id)
-    setDismissedPendingIds(prev => new Set(prev).add(conv.id))
+    dismissPendingConversation(conv)
     setLastMsgMeta(prev => {
       const next = new Map(prev)
       const current = next.get(conv.id)
@@ -735,6 +810,7 @@ export default function Mensajes() {
     const updateField = isSender ? { deleted_by_sender: true } : { deleted_by_owner: true }
     await supabase.from('conversations').update(updateField).eq('id', conv.id)
     unreadStore.remove(conv.id)
+    restorePendingConversation(conv.id)
     inboxConvIdsRef.current.delete(conv.id)
     setConversations(prev => prev.filter(c => c.id !== conv.id))
     if (selectedConv?.id === conv.id) {
@@ -805,6 +881,9 @@ export default function Mensajes() {
   const isMobile = window.innerWidth < 700
   const activeThread = selectedConv || pendingTarget
   const activeReferenceHref = getConversationReferenceHref(activeThread)
+  const activeOtherId = otherParticipantId(activeThread)
+  const activeOtherName = activeThread ? otherName(activeThread) : 'Usuario'
+  const activeOtherAvatar = activeThread?.id ? convAvatars.get(activeOtherId) : undefined
   const showListPanel = !activeThread || showList
   const showChatPanel = !!activeThread && (!isMobile || !showList)
   const sortedConversations = [...conversations].sort((a, b) => {
@@ -813,8 +892,10 @@ export default function Mensajes() {
     return tb.localeCompare(ta)
   })
   const pendingConversations = sortedConversations.filter(conv => {
-    if (dismissedPendingIds.has(conv.id)) return false
     const lastMsg = lastMsgMeta.get(conv.id)
+    const marker = getPendingMessageMarker(lastMsg, lastMsgAt.get(conv.id) || conv.created_at)
+    const dismissedMarker = dismissedPendingIds.get(String(conv.id))
+    if (dismissedMarker && dismissedMarker === marker) return false
     const isUnread = unreadConvIds.has(conv.id)
     const fromOther = lastMsg?.sender_id && lastMsg.sender_id !== user.id
     const lastTime = lastMsg?.created_at ? new Date(lastMsg.created_at).getTime() : 0
@@ -823,7 +904,7 @@ export default function Mensajes() {
   })
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0 0', height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column' }}>
+    <div ref={pageRef} style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0 0', height: pageHeight ? `${pageHeight}px` : 'calc(100dvh - 60px)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '0 16px 16px' }}>
         <h1 style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, color: C.text, margin: 0, letterSpacing: -0.5 }}>
           💬 Mensajes
@@ -950,14 +1031,14 @@ export default function Mensajes() {
                   <button onClick={() => setShowList(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px 4px 0', fontSize: 18, color: C.mid }}>←</button>
                 )}
                 <span style={{ position:'relative', flexShrink:0 }}>
-                  <Avatar name={otherName(activeThread)} size={36} src={activeThread.id ? convAvatars.get(activeThread.sender_id === user.id ? activeThread.owner_id : activeThread.sender_id) : undefined} />
+                  <Avatar name={activeOtherName} size={36} src={activeOtherAvatar} />
                   {isParticipantOnline(activeThread) && (
                     <span style={{ position:'absolute', bottom:0, right:0, width:10, height:10, borderRadius:'50%', background:'#10B981', border:'2px solid #fff' }} />
                   )}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: 0 }}>{otherName(activeThread)}</p>
-                  <p style={{ fontFamily: PP, fontWeight: isParticipantTyping(activeThread) ? 700 : 500, fontSize: 11, color: isParticipantTyping(activeThread) || isParticipantOnline(activeThread) ? C.primary : C.light, margin: '1px 0 2px' }}>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: C.text, margin: 0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activeOtherName}</p>
+                  <p style={{ fontFamily: PP, fontWeight: isParticipantTyping(activeThread) ? 700 : 500, fontSize: 11, color: isParticipantTyping(activeThread) || isParticipantOnline(activeThread) ? C.primary : C.light, margin: '1px 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                     {participantStatusLabel(activeThread)}
                   </p>
                   <button
