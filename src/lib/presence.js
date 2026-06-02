@@ -7,7 +7,9 @@ let currentUserId = null
 let subscribed = false
 let stopTimer = null
 let onlineUserIds = new Set()
+let presenceStatus = 'idle'
 const listeners = new Set()
+const statusListeners = new Set()
 
 function extractPresenceIds(state = {}) {
   return new Set(
@@ -23,6 +25,11 @@ function publishOnlineUsers(ids) {
   listeners.forEach(listener => listener(new Set(onlineUserIds)))
 }
 
+function publishPresenceStatus(status) {
+  presenceStatus = status
+  statusListeners.forEach(listener => listener(presenceStatus))
+}
+
 function syncPresenceState() {
   if (!channel) return
   publishOnlineUsers(extractPresenceIds(channel.presenceState()))
@@ -34,6 +41,15 @@ export function subscribeToOnlineUsers(listener) {
 
   return () => {
     listeners.delete(listener)
+  }
+}
+
+export function subscribeToPresenceStatus(listener) {
+  statusListeners.add(listener)
+  listener(presenceStatus)
+
+  return () => {
+    statusListeners.delete(listener)
   }
 }
 
@@ -56,6 +72,7 @@ function stopPresenceNow() {
   currentUserId = null
   subscribed = false
   publishOnlineUsers(new Set())
+  publishPresenceStatus('idle')
 
   if (activeChannel) {
     activeChannel.untrack().catch(() => {})
@@ -80,6 +97,7 @@ export function startUserPresence(userId) {
 
   currentUserId = userId
   subscribed = false
+  publishPresenceStatus('connecting')
   channel = supabase.channel(PRESENCE_TOPIC, {
     config: { presence: { key: userId } },
   })
@@ -93,12 +111,14 @@ export function startUserPresence(userId) {
 
       if (status === 'SUBSCRIBED') {
         subscribed = true
+        publishPresenceStatus('subscribed')
         trackUserPresence()
         syncPresenceState()
       }
 
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         subscribed = false
+        publishPresenceStatus(status.toLowerCase())
       }
     })
 

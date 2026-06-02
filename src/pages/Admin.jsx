@@ -7,7 +7,7 @@ import { Btn, Tag } from '../components/UI'
 import { REPORT_REASONS } from '../lib/reports'
 import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
-import { subscribeToOnlineUsers } from '../lib/presence'
+import { subscribeToOnlineUsers, subscribeToPresenceStatus } from '../lib/presence'
 import { isAdminEmail } from '../lib/admin'
 
 const STATUS_LABELS = {
@@ -564,23 +564,23 @@ function InsightBarList({ title, subtitle, rows, color = C.primary, emptyText = 
   const max = Math.max(...rows.map(row => row.value), 1)
 
   return (
-    <Card style={{ padding: 16 }}>
+    <Card style={{ padding: 16, overflow: 'hidden' }}>
       <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>{title}</p>
       <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.45 }}>{subtitle}</p>
 
-      <div style={{ display: 'grid', gap: 10 }}>
+      <div style={{ display: 'grid', gap: 10, minWidth: 0, overflow: 'hidden' }}>
         {rows.map(row => (
-          <div key={row.label}>
+          <div key={row.label} style={{ minWidth: 0, overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
-              <span style={{ minWidth: 0 }}>
+              <span style={{ minWidth: 0, flex: '1 1 0', overflow: 'hidden' }}>
                 <span style={{ display: 'block', fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</span>
                 {row.sub && (
                   <span style={{ display: 'block', fontFamily: PP, fontSize: 10, color: C.light, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{row.sub}</span>
                 )}
               </span>
-              <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color }}>{row.value}</span>
+              <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color, flexShrink: 0 }}>{row.value}</span>
             </div>
-            <div style={{ height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
+            <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
               <div style={{ width: `${Math.max(8, Math.round((row.value / max) * 100))}%`, height: '100%', borderRadius: 999, background: color }} />
             </div>
           </div>
@@ -712,6 +712,7 @@ export default function Admin() {
   const [businessVerificationFilter, setBusinessVerificationFilter] = useState('pending')
   const [contentByKey, setContentByKey] = useState(new Map())
   const [onlineUserIds, setOnlineUserIds] = useState(new Set())
+  const [presenceStatus, setPresenceStatus] = useState('idle')
   const [analyticsEvents, setAnalyticsEvents] = useState([])
   const [analyticsUnavailable, setAnalyticsUnavailable] = useState(false)
 
@@ -868,10 +869,33 @@ export default function Admin() {
   const liveTodayRate = metricUsers.length ? Math.round((activeUsersToday.length / metricUsers.length) * 100) : 0
   const liveWeekRate = metricUsers.length ? Math.round((activeUsersWeek.length / metricUsers.length) * 100) : 0
   const liveLast14Total = liveLast14Days.reduce((sum, item) => sum + item.count, 0)
+  const presenceStatusMeta = {
+    subscribed: { label: 'Conectado', color: '#059669', bg: '#D1FAE5', note: 'Canal Presence activo' },
+    connecting: { label: 'Conectando', color: '#D97706', bg: '#FEF3C7', note: 'Esperando Supabase Presence' },
+    channel_error: { label: 'Error canal', color: '#DC2626', bg: '#FEE2E2', note: 'Revisa conexión realtime' },
+    timed_out: { label: 'Timeout', color: '#DC2626', bg: '#FEE2E2', note: 'Supabase no respondió a tiempo' },
+    closed: { label: 'Cerrado', color: '#64748B', bg: '#F1F5F9', note: 'Canal Presence cerrado' },
+    idle: { label: 'Inactivo', color: '#64748B', bg: '#F1F5F9', note: 'Sin canal abierto' },
+  }[presenceStatus] || { label: presenceStatus, color: '#64748B', bg: '#F1F5F9', note: 'Estado realtime' }
 
-  useEffect(() => subscribeToOnlineUsers(setOnlineUserIds), [])
+  useEffect(() => {
+    const stopOnline = subscribeToOnlineUsers(setOnlineUserIds)
+    const stopStatus = subscribeToPresenceStatus(setPresenceStatus)
+
+    return () => {
+      stopOnline()
+      stopStatus()
+    }
+  }, [])
 
   useEffect(() => { loadAdminData() }, [])
+
+  function switchTab(nextTab) {
+    setTab(nextTab)
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    })
+  }
 
   async function loadAdminData() {
     setLoading(true)
@@ -1316,6 +1340,7 @@ export default function Admin() {
         { label: 'Online ahora', value: loading ? '...' : onlineUsers.length, hint: `${liveOnlineRate}% de la base cargada`, color: '#7C3AED' },
         { label: 'Activos hoy', value: loading ? '...' : activeUsersToday.length, hint: `${liveTodayRate}% han abierto Latido`, color: C.primary },
         { label: 'Activos 7 días', value: loading ? '...' : activeUsersWeek.length, hint: `${liveWeekRate}% activos esta semana`, color: '#059669' },
+        { label: 'Conexión live', value: loading ? '...' : presenceStatusMeta.label, hint: presenceStatusMeta.note, color: presenceStatusMeta.color },
         { label: 'Sin registro', value: loading ? '...' : liveUntrackedUsers, hint: 'Usuarios previos al tracking', color: '#D97706' },
       ]
     : tab === 'analytics'
@@ -1511,7 +1536,7 @@ export default function Admin() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 14 }}>
-            <Card style={{ padding: 16 }}>
+            <Card style={{ padding: 16, overflow: 'hidden' }}>
               <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 4px' }}>Sugerencias de mejora</p>
               <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Reglas simples basadas en actividad y carga pendiente.</p>
               <div style={{ display: 'grid', gap: 10 }}>
@@ -1538,7 +1563,7 @@ export default function Admin() {
                   <button
                     key={item.label}
                     type="button"
-                    onClick={() => setTab(item.label.includes('contenido') ? 'moderation' : item.label.includes('Reportes') ? 'reports' : 'businessVerification')}
+                    onClick={() => switchTab(item.label.includes('contenido') ? 'moderation' : item.label.includes('Reportes') ? 'reports' : 'businessVerification')}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: `1px solid ${C.border}`, borderRadius: 14, padding: '11px 12px', background: '#fff', cursor: 'pointer', textAlign: 'left' }}
                   >
                     <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text }}>{item.label}</span>
@@ -1575,22 +1600,22 @@ export default function Admin() {
                 <Tag bg="#E0F2FE" color="#0284C7">{pageViewEvents.length} vistas</Tag>
               </div>
 
-              <div style={{ display: 'grid', gap: 11 }}>
+              <div style={{ display: 'grid', gap: 11, minWidth: 0, overflow: 'hidden' }}>
                 {topPageRows.map((row, index) => (
-                  <div key={row.label}>
+                  <div key={row.label} style={{ minWidth: 0, overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-                      <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ minWidth: 0, maxWidth: '100%', flex: '1 1 0', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
                         <span style={{ width: 24, height: 24, borderRadius: 9, background: '#E0F2FE', color: '#0284C7', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, fontSize: 11, flexShrink: 0 }}>
                           {index + 1}
                         </span>
-                        <div style={{ minWidth: 0 }}>
+                        <div style={{ minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
                           <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
                           <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.sub}</p>
                         </div>
                       </div>
-                      <strong style={{ fontFamily: PP, fontSize: 12, color: '#0284C7' }}>{row.value}</strong>
+                      <strong style={{ fontFamily: PP, fontSize: 12, color: '#0284C7', flexShrink: 0 }}>{row.value}</strong>
                     </div>
-                    <div style={{ height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
+                    <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
                       <div style={{ width: `${Math.max(8, Math.round((row.value / topPageMax) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#0284C7,#2563EB)' }} />
                     </div>
                   </div>
@@ -1603,7 +1628,7 @@ export default function Admin() {
               </div>
             </Card>
 
-            <Card style={{ padding: 16 }}>
+            <Card style={{ padding: 16, overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
                 <div>
                   <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Búsquedas frecuentes</p>
@@ -1612,22 +1637,22 @@ export default function Admin() {
                 <Tag bg={C.primaryLight} color={C.primary}>{searchEvents.length} búsquedas</Tag>
               </div>
 
-              <div style={{ display: 'grid', gap: 11 }}>
+              <div style={{ display: 'grid', gap: 11, minWidth: 0, overflow: 'hidden' }}>
                 {topSearchRows.map((row, index) => (
-                  <div key={row.label}>
+                  <div key={row.label} style={{ minWidth: 0, overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-                      <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ minWidth: 0, maxWidth: '100%', flex: '1 1 0', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
                         <span style={{ width: 24, height: 24, borderRadius: 9, background: C.primaryLight, color: C.primary, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, fontSize: 11, flexShrink: 0 }}>
                           {index + 1}
                         </span>
-                        <div style={{ minWidth: 0 }}>
+                        <div style={{ minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
                           <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
                           <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '2px 0 0' }}>{row.sub}</p>
                         </div>
                       </div>
-                      <strong style={{ fontFamily: PP, fontSize: 12, color: C.primary }}>{row.value}</strong>
+                      <strong style={{ fontFamily: PP, fontSize: 12, color: C.primary, flexShrink: 0 }}>{row.value}</strong>
                     </div>
-                    <div style={{ height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
+                    <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
                       <div style={{ width: `${Math.max(8, Math.round((row.value / topSearchMax) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#2563EB,#10B981)' }} />
                     </div>
                   </div>
@@ -1985,6 +2010,12 @@ export default function Admin() {
                 <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.5, margin: '0 0 18px', opacity: 0.86 }}>
                   Online ahora, actividad diaria y señales recientes en una vista pensada para leer rápido.
                 </p>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.24)', borderRadius: 999, padding: '7px 10px', marginBottom: 12 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 999, background: presenceStatusMeta.color, boxShadow: `0 0 0 3px ${presenceStatusMeta.color}22` }} />
+                  <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 11, color: '#fff' }}>
+                    Realtime: {presenceStatusMeta.label}
+                  </span>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
                   {[
                     { label: 'Online', value: onlineUsers.length },
@@ -2147,6 +2178,7 @@ export default function Admin() {
                 {[
                   { label: 'Online ahora', note: 'Supabase Presence: usuarios con sesión conectada en este momento.', color: '#7C3AED' },
                   { label: 'Activos hoy/semana', note: 'Usuarios cuyo profiles.last_seen_at cae dentro del día o los últimos 7 días.', color: C.primary },
+                  { label: 'Conexión live', note: `Estado actual del canal realtime: ${presenceStatusMeta.label}.`, color: presenceStatusMeta.color },
                   { label: 'Sin registro', note: 'Usuarios antiguos que aún no han vuelto a abrir la app desde que se activó el tracking.', color: '#D97706' },
                 ].map(item => (
                   <div key={item.label} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 0', borderBottom: `1px solid ${C.border}` }}>
@@ -2325,7 +2357,7 @@ export default function Admin() {
             <button
               key={item.id}
               type="button"
-              onClick={() => setTab(item.id)}
+              onClick={() => switchTab(item.id)}
               style={{
                 flex: active ? '1.25 0 154px' : '1 0 116px',
                 minHeight: 56,

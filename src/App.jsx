@@ -172,9 +172,16 @@ function UserPresenceSync() {
     const lastSeenInterval = window.setInterval(markLastSeen, 60_000)
     const presenceInterval = window.setInterval(trackUserPresence, 30_000)
     const onPageHide = () => { markLastSeen() }
+    const onVisible = () => {
+      if (document.visibilityState && document.visibilityState !== 'visible') return
+      markLastSeen()
+      trackUserPresence()
+    }
 
     window.addEventListener('pagehide', onPageHide)
     window.addEventListener('beforeunload', onPageHide)
+    window.addEventListener('focus', onVisible)
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
       cancelled = true
@@ -183,6 +190,8 @@ function UserPresenceSync() {
       stopPresence()
       window.removeEventListener('pagehide', onPageHide)
       window.removeEventListener('beforeunload', onPageHide)
+      window.removeEventListener('focus', onVisible)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [isLoggedIn, user?.id])
 
