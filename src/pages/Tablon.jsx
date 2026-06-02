@@ -663,7 +663,7 @@ export default function Tablon() {
   const navigate = useNavigate()
   const { adSlug, jobSlug } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { isLoggedIn, user, displayName, userCanton } = useAuth()
+  const { isLoggedIn, user, displayName, userCanton, isAdmin } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const [userProfiles, setUserProfiles] = useState(new Map())
   const [ads, setAds] = useState([])
@@ -768,6 +768,8 @@ export default function Tablon() {
   const publishTarget = getPublishTarget('/tablon', searchParams.toString() ? `?${searchParams.toString()}` : '')
 
   useEffect(() => {
+    if (isAdmin) return undefined
+
     const query = search.trim()
     if (query.length < 2) return undefined
 
@@ -790,7 +792,7 @@ export default function Tablon() {
     }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [canton, cat, isEmpleos, jobIntent, jobType, maxPrice, plz, privacy, search, type, user?.id])
+  }, [canton, cat, isAdmin, isEmpleos, jobIntent, jobType, maxPrice, plz, privacy, search, type, user?.id])
 
 
   useEffect(() => {

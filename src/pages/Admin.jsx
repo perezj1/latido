@@ -8,6 +8,7 @@ import { REPORT_REASONS } from '../lib/reports'
 import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import { subscribeToOnlineUsers } from '../lib/presence'
+import { isAdminEmail } from '../lib/admin'
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
@@ -168,6 +169,45 @@ function analyticsScope(event) {
     comunidad_negocios: 'Negocios',
   }
   return labels[scope] || scope
+}
+
+const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab']
+
+function countByHour(items) {
+  const rows = Array.from({ length: 24 }, (_, hour) => ({
+    label: `${String(hour).padStart(2, '0')}:00`,
+    value: 0,
+  }))
+
+  items.forEach(item => {
+    const date = new Date(item.created_at)
+    if (!Number.isNaN(date.getTime())) rows[date.getHours()].value += 1
+  })
+
+  return rows
+}
+
+function countByWeekday(items) {
+  const rows = WEEKDAY_LABELS.map(label => ({ label, value: 0 }))
+
+  items.forEach(item => {
+    const date = new Date(item.created_at)
+    if (!Number.isNaN(date.getTime())) rows[date.getDay()].value += 1
+  })
+
+  return rows
+}
+
+function topTimeRows(rows, limit = 6) {
+  return [...rows]
+    .filter(row => row.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit)
+}
+
+function strongestTimeLabel(rows) {
+  const best = rows.reduce((acc, row) => row.value > acc.value ? row : acc, { label: 'Sin datos', value: 0 })
+  return best.value ? best.label : 'Sin datos'
 }
 
 function SparkBarChart({ data, color }) {
@@ -520,6 +560,40 @@ function SummaryMetric({ label, value, hint, color = C.primary }) {
   )
 }
 
+function InsightBarList({ title, subtitle, rows, color = C.primary, emptyText = 'Sin datos todavía.' }) {
+  const max = Math.max(...rows.map(row => row.value), 1)
+
+  return (
+    <Card style={{ padding: 16 }}>
+      <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>{title}</p>
+      <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.45 }}>{subtitle}</p>
+
+      <div style={{ display: 'grid', gap: 10 }}>
+        {rows.map(row => (
+          <div key={row.label}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: 'block', fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</span>
+                {row.sub && (
+                  <span style={{ display: 'block', fontFamily: PP, fontSize: 10, color: C.light, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{row.sub}</span>
+                )}
+              </span>
+              <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color }}>{row.value}</span>
+            </div>
+            <div style={{ height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
+              <div style={{ width: `${Math.max(8, Math.round((row.value / max) * 100))}%`, height: '100%', borderRadius: 999, background: color }} />
+            </div>
+          </div>
+        ))}
+
+        {!rows.length && (
+          <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>{emptyText}</p>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 function PeriodSwitch({ value, onChange }) {
   const options = [
     { value: 1, label: 'Hoy' },
@@ -641,14 +715,23 @@ export default function Admin() {
   const [analyticsEvents, setAnalyticsEvents] = useState([])
   const [analyticsUnavailable, setAnalyticsUnavailable] = useState(false)
 
+  const metricUsers = useMemo(
+    () => users.filter(profile => !isAdminEmail(profile.email)),
+    [users]
+  )
+  const adminUserIds = useMemo(
+    () => new Set(users.filter(profile => isAdminEmail(profile.email)).map(profile => profile.id)),
+    [users]
+  )
+
   const stats = useMemo(() => ({
     reports: reports.filter(r => r.status === 'pending').length,
     queue: queue.filter(r => r.status === 'pending').length,
-    users: users.length,
-    banned: users.filter(u => u.banned).length,
+    users: metricUsers.length,
+    banned: metricUsers.filter(u => u.banned).length,
     content: recentListings.length + recentJobs.length,
     businessVerification: businesses.filter(b => getBusinessVerificationDetails(b).status === 'pending').length,
-  }), [businesses, queue, reports, users, recentListings, recentJobs])
+  }), [businesses, queue, reports, metricUsers, recentListings, recentJobs])
 
   const filteredUsers = useMemo(() => {
     if (!userSearch.trim()) return users
@@ -660,39 +743,39 @@ export default function Admin() {
     )
   }, [users, userSearch])
   const newUsersInRange = useMemo(
-    () => users.filter(profile => isWithinRecentDays(profile.created_at, userDays)),
-    [users, userDays]
+    () => metricUsers.filter(profile => isWithinRecentDays(profile.created_at, userDays)),
+    [metricUsers, userDays]
   )
   const userRangeLabel = userDays === 1 ? 'hoy' : `${userDays} dias`
   const activeUsersToday = useMemo(
-    () => users.filter(profile => isWithinRecentDays(profile.last_seen_at, 1)),
-    [users]
+    () => metricUsers.filter(profile => isWithinRecentDays(profile.last_seen_at, 1)),
+    [metricUsers]
   )
   const activeUsersWeek = useMemo(
-    () => users.filter(profile => isWithinRecentDays(profile.last_seen_at, 7)),
-    [users]
+    () => metricUsers.filter(profile => isWithinRecentDays(profile.last_seen_at, 7)),
+    [metricUsers]
   )
   const onlineUsers = useMemo(
-    () => users.filter(profile => onlineUserIds.has(profile.id)),
-    [onlineUserIds, users]
+    () => metricUsers.filter(profile => onlineUserIds.has(profile.id)),
+    [metricUsers, onlineUserIds]
   )
   const recentActiveUsers = useMemo(
-    () => [...users]
+    () => [...metricUsers]
       .filter(profile => profile.last_seen_at)
       .sort((a, b) => String(b.last_seen_at || '').localeCompare(String(a.last_seen_at || '')))
       .slice(0, 6),
-    [users]
+    [metricUsers]
   )
   const activeChartUsers = useMemo(
-    () => users
+    () => metricUsers
       .filter(profile => profile.last_seen_at)
       .map(profile => ({ ...profile, created_at: profile.last_seen_at })),
-    [users]
+    [metricUsers]
   )
   const contentItems = useMemo(() => [...recentListings, ...recentJobs], [recentListings, recentJobs])
   const analytics30 = useMemo(
-    () => analyticsEvents.filter(event => isWithinRecentDays(event.created_at, 30)),
-    [analyticsEvents]
+    () => analyticsEvents.filter(event => isWithinRecentDays(event.created_at, 30) && !adminUserIds.has(event.user_id)),
+    [adminUserIds, analyticsEvents]
   )
   const pageViewEvents = useMemo(
     () => analytics30.filter(event => event.event_type === 'page_view' && !String(event.path || '').startsWith('/admin-latido')),
@@ -700,6 +783,10 @@ export default function Admin() {
   )
   const searchEvents = useMemo(
     () => analytics30.filter(event => event.event_type === 'search' && analyticsQuery(event)),
+    [analytics30]
+  )
+  const searchResultEvents = useMemo(
+    () => analytics30.filter(event => event.event_type === 'search_result_open'),
     [analytics30]
   )
   const topPageRows = useMemo(
@@ -718,6 +805,42 @@ export default function Admin() {
     })
     return ids.size
   }, [pageViewEvents])
+  const searchActionRate = searchEvents.length
+    ? Math.round((searchResultEvents.length / searchEvents.length) * 100)
+    : 0
+  const topSearchActionRows = useMemo(
+    () => topAnalyticsRows(
+      searchResultEvents,
+      event => readMetadata(event.metadata).query,
+      6,
+      event => {
+        const metadata = readMetadata(event.metadata)
+        return [metadata.result_type, metadata.result_label].filter(Boolean).join(' · ')
+      }
+    ),
+    [searchResultEvents]
+  )
+  const topResultTypeRows = useMemo(
+    () => topAnalyticsRows(
+      searchResultEvents,
+      event => readMetadata(event.metadata).result_type || 'resultado',
+      6
+    ),
+    [searchResultEvents]
+  )
+  const pageHourRows = useMemo(() => countByHour(pageViewEvents), [pageViewEvents])
+  const searchHourRows = useMemo(() => countByHour(searchEvents), [searchEvents])
+  const signupItems30 = useMemo(() => metricUsers.filter(profile => isWithinRecentDays(profile.created_at, 30)), [metricUsers])
+  const publicationItems30 = useMemo(() => contentItems.filter(item => isWithinRecentDays(item.created_at, 30)), [contentItems])
+  const signupHourRows = useMemo(() => countByHour(signupItems30), [signupItems30])
+  const publicationHourRows = useMemo(() => countByHour(publicationItems30), [publicationItems30])
+  const pageWeekdayRows = useMemo(() => countByWeekday(pageViewEvents), [pageViewEvents])
+  const signupWeekdayRows = useMemo(() => countByWeekday(signupItems30), [signupItems30])
+  const publicationWeekdayRows = useMemo(() => countByWeekday(publicationItems30), [publicationItems30])
+  const topPageHourRows = useMemo(() => topTimeRows(pageHourRows), [pageHourRows])
+  const topSearchHourRows = useMemo(() => topTimeRows(searchHourRows), [searchHourRows])
+  const topSignupHourRows = useMemo(() => topTimeRows(signupHourRows), [signupHourRows])
+  const topPublicationHourRows = useMemo(() => topTimeRows(publicationHourRows), [publicationHourRows])
   const liveLast14Days = useMemo(() => countByDay(activeChartUsers, 14), [activeChartUsers])
   const recentLiveUsers = useMemo(() => {
     const byId = new Map()
@@ -738,12 +861,12 @@ export default function Admin() {
       .slice(0, 5)
   }, [activeUsersWeek])
   const activeCantonMax = Math.max(...activeCantonRows.map(row => row.value), 1)
-  const usersWithActivityBaseline = users.filter(profile => profile.last_seen_at)
+  const usersWithActivityBaseline = metricUsers.filter(profile => profile.last_seen_at)
   const liveInactiveUsers = usersWithActivityBaseline.filter(profile => !isWithinRecentDays(profile.last_seen_at, 30)).length
-  const liveUntrackedUsers = users.length - usersWithActivityBaseline.length
-  const liveOnlineRate = users.length ? Math.round((onlineUsers.length / users.length) * 100) : 0
-  const liveTodayRate = users.length ? Math.round((activeUsersToday.length / users.length) * 100) : 0
-  const liveWeekRate = users.length ? Math.round((activeUsersWeek.length / users.length) * 100) : 0
+  const liveUntrackedUsers = metricUsers.length - usersWithActivityBaseline.length
+  const liveOnlineRate = metricUsers.length ? Math.round((onlineUsers.length / metricUsers.length) * 100) : 0
+  const liveTodayRate = metricUsers.length ? Math.round((activeUsersToday.length / metricUsers.length) * 100) : 0
+  const liveWeekRate = metricUsers.length ? Math.round((activeUsersWeek.length / metricUsers.length) * 100) : 0
   const liveLast14Total = liveLast14Days.reduce((sum, item) => sum + item.count, 0)
 
   useEffect(() => subscribeToOnlineUsers(setOnlineUserIds), [])
@@ -1098,10 +1221,10 @@ export default function Admin() {
   const businessAverageScore = businesses.length
     ? Math.round(businesses.reduce((sum, business) => sum + getBusinessVerificationDetails(business).score, 0) / businesses.length)
     : 0
-  const newUsers30 = countRecent(users, 30)
+  const newUsers30 = countRecent(metricUsers, 30)
   const newContent30 = countRecent(contentItems, 30)
   const reports30 = countRecent(reports, 30)
-  const userTrend30 = periodTrend(users, 30)
+  const userTrend30 = periodTrend(metricUsers, 30)
   const contentTrend30 = periodTrend(contentItems, 30)
   const reportsTrend30 = periodTrend(reports, 30)
   const generalScore = Math.max(0, Math.min(100,
@@ -1125,7 +1248,7 @@ export default function Admin() {
     stats.reports > 0 && `Atender ${stats.reports} reportes pendientes para mantener confianza y seguridad.`,
     stats.businessVerification > 0 && `Verificar ${stats.businessVerification} negocios pendientes para mejorar confianza visual.`,
     newContent30 < 5 && 'Impulsar publicaciones recientes: hay poca creación de contenido en los últimos 30 días.',
-    liveUntrackedUsers > users.length * 0.4 && 'Esperar unos días para leer actividad real: muchos usuarios antiguos aún no tienen last_seen_at.',
+    liveUntrackedUsers > metricUsers.length * 0.4 && 'Esperar unos días para leer actividad real: muchos usuarios antiguos aún no tienen last_seen_at.',
   ].filter(Boolean).slice(0, 4)
   const overviewSignals = [
     { label: 'Usuarios nuevos 30d', value: newUsers30, trend: userTrend30, color: C.primary },
@@ -1173,11 +1296,11 @@ export default function Admin() {
   const SECTION_DETAILS = {
     overview: { description: 'Rapport de 30 días con señales de crecimiento, actividad, pendientes y recomendaciones.', color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
     live: { description: 'Pulso operativo de actividad diaria, semanal y usuarios online en este momento.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
-    analytics: { description: 'Páginas más usadas, búsquedas frecuentes y comportamiento de navegación de los últimos 30 días.', color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas` },
+    analytics: { description: 'Páginas más usadas, búsquedas frecuentes, horarios fuertes y comportamiento de navegación de los últimos 30 días.', color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResultEvents.length} aperturas` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
     businessVerification: { description: 'Evalua datos, contacto y confianza antes de mostrar la pill verificado.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
-    users: { description: 'Busca cuentas, revisa actividad basica y gestiona baneos.', color: C.primary, count: users.length, badge: `${users.length} usuarios` },
+    users: { description: 'Busca cuentas, revisa actividad basica y gestiona baneos. Las métricas excluyen la cuenta admin.', color: C.primary, count: metricUsers.length, badge: `${metricUsers.length} usuarios sin admin` },
     content: { description: 'Control rapido de anuncios y empleos publicados en Latido.', color: '#059669', count: stats.content, badge: `${stats.content} publicaciones cargadas` },
   }
   const activeSectionDetails = SECTION_DETAILS[tab]
@@ -1199,13 +1322,13 @@ export default function Admin() {
       ? [
           { label: 'Vistas 30d', value: loading ? '...' : pageViewEvents.length, hint: `${analyticsSessions} sesiones registradas`, color: '#0284C7' },
           { label: 'Búsquedas 30d', value: loading ? '...' : searchEvents.length, hint: 'Términos escritos en barras', color: C.primary },
-          { label: 'Páginas usadas', value: loading ? '...' : topPageRows.length, hint: 'Agrupadas por sección', color: '#059669' },
-          { label: 'Tracking', value: loading ? '...' : analyticsUnavailable ? 'No activo' : 'Activo', hint: analyticsUnavailable ? 'Falta tabla analytics_events' : 'Eventos disponibles', color: analyticsUnavailable ? '#D97706' : '#059669' },
+          { label: 'Aperturas búsqueda', value: loading ? '...' : searchResultEvents.length, hint: `${searchActionRate}% sobre búsquedas registradas`, color: '#059669' },
+          { label: 'Hora fuerte', value: loading ? '...' : strongestTimeLabel(pageHourRows), hint: analyticsUnavailable ? 'Falta tabla analytics_events' : 'Según vistas de página', color: analyticsUnavailable ? '#D97706' : '#0F766E' },
         ]
     : tab === 'users'
       ? [
         { label: 'Nuevos usuarios', value: loading ? '...' : newUsersInRange.length, hint: `Registrados ${userRangeLabel}`, color: C.primary },
-        { label: 'Usuarios totales', value: loading ? '...' : users.length, hint: `${filteredUsers.length} visibles con el filtro`, color: C.text },
+        { label: 'Usuarios totales', value: loading ? '...' : metricUsers.length, hint: `Sin contar admin · ${filteredUsers.length} visibles`, color: C.text },
         { label: 'Usuarios baneados', value: loading ? '...' : stats.banned, hint: stats.banned ? 'Revisar cuentas bloqueadas' : 'Sin bloqueos activos', color: stats.banned ? '#DC2626' : '#059669' },
         { label: 'Cantones nuevos', value: loading ? '...' : new Set(newUsersInRange.map(u => u.canton).filter(Boolean)).size, hint: `Diversidad en ${userRangeLabel}`, color: '#0F766E' },
       ]
@@ -1518,16 +1641,111 @@ export default function Admin() {
             </Card>
           </div>
 
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 14 }}>
+            <InsightBarList
+              title="Horas con más navegación"
+              subtitle="Cuándo se abren más páginas de Latido."
+              rows={topPageHourRows}
+              color="#0284C7"
+              emptyText="Sin vistas suficientes para detectar horas fuertes."
+            />
+            <InsightBarList
+              title="Horas de búsqueda"
+              subtitle="Cuándo la gente escribe más en las barras de búsqueda."
+              rows={topSearchHourRows}
+              color={C.primary}
+              emptyText="Sin búsquedas suficientes para detectar horarios."
+            />
+            <InsightBarList
+              title="Altas por hora"
+              subtitle="Nuevas cuentas creadas en los últimos 30 días."
+              rows={topSignupHourRows}
+              color="#7C3AED"
+              emptyText="Sin nuevas cuentas recientes."
+            />
+            <InsightBarList
+              title="Publicaciones por hora"
+              subtitle="Anuncios y empleos creados en los últimos 30 días."
+              rows={topPublicationHourRows}
+              color="#059669"
+              emptyText="Sin publicaciones recientes."
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 14 }}>
+            <InsightBarList
+              title="Días con más navegación"
+              subtitle="Distribución semanal de vistas de página."
+              rows={pageWeekdayRows.some(row => row.value > 0) ? pageWeekdayRows : []}
+              color="#0284C7"
+              emptyText="Sin navegación suficiente por día."
+            />
+            <InsightBarList
+              title="Días de nuevas cuentas"
+              subtitle="Qué días se registran más usuarios."
+              rows={signupWeekdayRows.some(row => row.value > 0) ? signupWeekdayRows : []}
+              color="#7C3AED"
+              emptyText="Sin altas recientes por día."
+            />
+            <InsightBarList
+              title="Días de publicación"
+              subtitle="Qué días se crean más anuncios y empleos."
+              rows={publicationWeekdayRows.some(row => row.value > 0) ? publicationWeekdayRows : []}
+              color="#059669"
+              emptyText="Sin publicaciones recientes por día."
+            />
+            <InsightBarList
+              title="Resultados abiertos"
+              subtitle="Qué tipo de resultado abre la gente desde búsqueda."
+              rows={topResultTypeRows}
+              color="#0F766E"
+              emptyText="Todavía no hay aperturas desde búsqueda."
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
+            <Card style={{ padding: 16, background: 'linear-gradient(180deg,#FFFFFF,#F8FAFF)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Embudo de búsqueda</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Mide si las búsquedas acaban abriendo un resultado.</p>
+                </div>
+                <Tag bg="#ECFDF5" color="#047857">{searchActionRate}% acción</Tag>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                {[
+                  { label: 'Búsquedas', value: searchEvents.length, color: C.primary },
+                  { label: 'Aperturas', value: searchResultEvents.length, color: '#059669' },
+                  { label: 'Términos', value: topSearchRows.length, color: '#0284C7' },
+                ].map(item => (
+                  <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '11px 10px', background: '#fff' }}>
+                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 22, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
+                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.light, margin: 0 }}>{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <InsightBarList
+              title="Términos que abren resultados"
+              subtitle="Búsquedas que terminaron en clic o Enter sobre un resultado."
+              rows={topSearchActionRows}
+              color="#059669"
+              emptyText="Todavía no hay términos con apertura registrada."
+            />
+          </div>
+
           <Card style={{ padding: 16, background: '#fff' }}>
             <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
             <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.55 }}>
-              Esta sección no mide usuarios activos. Mide comportamiento: cada cambio de página guarda un page_view y cada búsqueda real guarda un search con su contexto.
+              Esta sección mezcla comportamiento y operación: navegación/búsqueda salen de analytics_events; altas y publicaciones salen de created_at en perfiles, anuncios y empleos.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 10 }}>
               {[
                 { label: 'Páginas usadas', note: 'Agrupa rutas como Inicio, Tablón, Comunidad, Mensajes o Detalle de anuncio.', color: '#0284C7' },
                 { label: 'Búsquedas', note: 'Guarda el término, la sección y filtros como categoría, cantón o tipo de empleo.', color: C.primary },
-                { label: 'Sesiones', note: 'Cuenta sesiones del navegador, útil para estimar navegación sin duplicar por usuario.', color: '#059669' },
+                { label: 'Aperturas', note: 'Registra cuando una persona abre un resultado de búsqueda con clic o Enter.', color: '#059669' },
+                { label: 'Horarios', note: 'Usa la hora local del created_at para detectar horas y días con más movimiento.', color: '#7C3AED' },
               ].map(item => (
                 <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF' }}>
                   <span style={{ width: 10, height: 10, borderRadius: 999, background: item.color, display: 'inline-block', marginBottom: 8 }} />
@@ -1974,7 +2192,7 @@ export default function Admin() {
               <strong style={{ color: '#DC2626' }}>{users.filter(u => u.banned).length}</strong> baneados
             </span>
             <span style={{ fontFamily: PP, fontSize: 12, color: C.mid }}>
-              <strong style={{ color: C.text }}>{users.length}</strong> total
+              <strong style={{ color: C.text }}>{metricUsers.length}</strong> total sin admin
             </span>
           </div>
 

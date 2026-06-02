@@ -2,7 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { trackSearchEvent } from '../lib/analytics'
+import { trackAnalyticsEvent, trackSearchEvent } from '../lib/analytics'
 import { C, PP } from '../lib/theme'
 import {
   MOCK_ADS,
@@ -372,7 +372,7 @@ function searchAll(query, datasets, isLoggedIn) {
 }
 
 export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, isAdmin } = useAuth()
   const navigate = useNavigate()
   const inputRef = useRef(null)
   const loadPromiseRef = useRef(null)
@@ -532,6 +532,8 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   }, [dataReady, datasets, deferredQuery, fallbackDatasets, isLoggedIn])
 
   useEffect(() => {
+    if (isAdmin) return undefined
+
     const query = q.trim()
     if (query.length < 2) return undefined
 
@@ -548,9 +550,26 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [activeFilter, q, results.length, user?.id])
+  }, [activeFilter, isAdmin, q, results.length, user?.id])
 
-  const goTo = href => {
+  const goTo = target => {
+    const result = typeof target === 'string' ? null : target
+    const href = result?.href || target
+    const query = q.trim()
+
+    if (!isAdmin && result && query.length >= 2) {
+      trackAnalyticsEvent('search_result_open', {
+        user_id: user?.id || null,
+        metadata: {
+          query: query.slice(0, 120),
+          result_type: result.type || '',
+          result_id: result.id || '',
+          result_label: result.label || '',
+          href,
+        },
+      })
+    }
+
     navigate(href)
     setQ('')
     setFocused(false)
@@ -570,7 +589,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
       setActiveIdx(idx => Math.max(idx - 1, 0))
     }
 
-    if (e.key === 'Enter' && activeIdx >= 0) goTo(results[activeIdx].href)
+    if (e.key === 'Enter' && activeIdx >= 0) goTo(results[activeIdx])
 
     if (e.key === 'Escape') {
       setQ('')
@@ -665,7 +684,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                 return (
                   <div
                     key={`${result.type}-${result.id}`}
-                    onClick={() => goTo(result.href)}
+                    onClick={() => goTo(result)}
                     style={{ padding:'13px 16px', display:'flex', alignItems:'flex-start', gap:12, cursor:'pointer', background: idx === activeIdx ? C.primaryLight : '#fff', borderBottom: idx < filteredResults.length - 1 ? `1px solid ${C.borderLight}` : 'none', transition:'background .1s' }}
                     onMouseEnter={e => { e.currentTarget.style.background = C.primaryLight }}
                     onMouseLeave={e => { e.currentTarget.style.background = idx === activeIdx ? C.primaryLight : '#fff' }}

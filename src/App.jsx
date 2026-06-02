@@ -283,7 +283,7 @@ function AppShell() {
   const location = useLocation()
   const { pathname } = location
   const { isPWA, canInstall, promptInstall } = usePWA()
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, isAdmin } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPage, setMenuPage] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -293,6 +293,8 @@ function AppShell() {
   const showLanding = isRoot && !isPWA && !isLoggedIn
 
   useEffect(() => {
+    if (isAdmin) return
+
     trackAnalyticsEvent('page_view', {
       user_id: user?.id || null,
       path: location.pathname,
@@ -302,7 +304,7 @@ function AppShell() {
         is_pwa: Boolean(isPWA),
       },
     })
-  }, [isLoggedIn, isPWA, location.pathname, location.search, user?.id])
+  }, [isAdmin, isLoggedIn, isPWA, location.pathname, location.search, user?.id])
 
   useEffect(() => {
     if (!pathname.startsWith('/mensajes')) {

@@ -1114,7 +1114,7 @@ function applyCachedData(snapshot, setters) {
 export default function Comunidades() {
   const navigate = useNavigate()
   const { businessSlug, eventSlug } = useParams()
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, isAdmin } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [communities, setCommunities] = useState(() => comunidadesCache.data?.communities ?? [])
   const [businesses, setBusinesses] = useState(() => comunidadesCache.data?.businesses ?? MOCK_NEGOCIOS)
@@ -1446,6 +1446,8 @@ export default function Comunidades() {
   const normSearch = norm(search)
 
   useEffect(() => {
+    if (isAdmin) return undefined
+
     const query = search.trim()
     if (query.length < 2 || tab === 'eventos') return undefined
 
@@ -1463,7 +1465,7 @@ export default function Comunidades() {
     }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [cat, negType, search, tab, user?.id])
+  }, [cat, isAdmin, negType, search, tab, user?.id])
 
   const filteredComm = communities.filter(group =>
     (!cat || group.cat === cat) &&
