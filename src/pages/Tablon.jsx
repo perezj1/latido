@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
+import { trackSearchEvent } from '../lib/analytics'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery, ImageLightbox, Stars, RatingPill, ReviewForm, ReviewList } from '../components/UI'
@@ -765,6 +766,31 @@ export default function Tablon() {
     ? [jobIntent, jobType, canton, plz].filter(Boolean).length
     : [type, canton, plz, privacy, maxPrice].filter(Boolean).length
   const publishTarget = getPublishTarget('/tablon', searchParams.toString() ? `?${searchParams.toString()}` : '')
+
+  useEffect(() => {
+    const query = search.trim()
+    if (query.length < 2) return undefined
+
+    const timer = window.setTimeout(() => {
+      trackSearchEvent({
+        query,
+        scope: isEmpleos ? 'empleos' : 'tablon',
+        user_id: user?.id || null,
+        metadata: {
+          cat: cat || null,
+          type: type || null,
+          canton: canton || null,
+          plz: plz || null,
+          privacy: privacy || null,
+          job_type: jobType || null,
+          job_intent: jobIntent || null,
+          max_price: maxPrice || null,
+        },
+      })
+    }, 900)
+
+    return () => window.clearTimeout(timer)
+  }, [canton, cat, isEmpleos, jobIntent, jobType, maxPrice, plz, privacy, search, type, user?.id])
 
 
   useEffect(() => {

@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { supabase } from './lib/supabase'
 import { startUserPresence, trackUserPresence } from './lib/presence'
+import { trackAnalyticsEvent } from './lib/analytics'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
 import { C, PP } from './lib/theme'
 
@@ -279,9 +280,10 @@ function CategoryBar() {
 }
 
 function AppShell() {
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
   const { isPWA, canInstall, promptInstall } = usePWA()
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, user } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPage, setMenuPage] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -289,6 +291,18 @@ function AppShell() {
 
   const isRoot = pathname === '/'
   const showLanding = isRoot && !isPWA && !isLoggedIn
+
+  useEffect(() => {
+    trackAnalyticsEvent('page_view', {
+      user_id: user?.id || null,
+      path: location.pathname,
+      search: location.search,
+      metadata: {
+        is_logged_in: Boolean(isLoggedIn),
+        is_pwa: Boolean(isPWA),
+      },
+    })
+  }, [isLoggedIn, isPWA, location.pathname, location.search, user?.id])
 
   useEffect(() => {
     if (!pathname.startsWith('/mensajes')) {

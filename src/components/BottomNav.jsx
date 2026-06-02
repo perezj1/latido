@@ -76,9 +76,10 @@ export default function BottomNav() {
     return () => window.removeEventListener('latido:messages-chat-open', sync)
   }, [pathname])
 
-  const hideFab = NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
+  const isAdminPage = pathname === '/admin-latido' || pathname.startsWith('/admin-latido/')
+  const hideFab = isAdminPage || NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const fab = hideFab ? null : getPublishTarget()
-  const hideMobileNav = pathname.startsWith('/mensajes') && messagesChatOpen
+  const hideMobileNav = isAdminPage || (pathname.startsWith('/mensajes') && messagesChatOpen)
 
   return (
     <>

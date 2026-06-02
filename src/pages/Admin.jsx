@@ -7,6 +7,7 @@ import { Btn, Tag } from '../components/UI'
 import { REPORT_REASONS } from '../lib/reports'
 import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
+import { subscribeToOnlineUsers } from '../lib/presence'
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
@@ -53,6 +54,17 @@ function fmtDateShort(value) {
   return new Date(value).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+function fmtActivity(value) {
+  if (!value) return 'Sin actividad'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Sin actividad'
+  const diff = Date.now() - date.getTime()
+  if (diff < 60_000) return 'Ahora'
+  if (diff < 3_600_000) return `Hace ${Math.max(1, Math.floor(diff / 60_000))} min`
+  if (diff < 86_400_000) return `Hace ${Math.floor(diff / 3_600_000)} h`
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+}
+
 function isWithinRecentDays(value, days) {
   if (!value) return false
   const date = new Date(value)
@@ -61,6 +73,10 @@ function isWithinRecentDays(value, days) {
   start.setHours(0, 0, 0, 0)
   if (days > 1) start.setDate(start.getDate() - (days - 1))
   return date >= start
+}
+
+function countRecent(items, days) {
+  return items.filter(item => isWithinRecentDays(item.created_at, days)).length
 }
 
 function localDateKey(value) {
@@ -93,6 +109,65 @@ function periodTrend(items, days) {
   const prev = full.slice(0, days).reduce((s, d) => s + d.count, 0)
   if (prev === 0) return cur > 0 ? 100 : 0
   return Math.round(((cur - prev) / prev) * 100)
+}
+
+function readMetadata(value) {
+  if (!value) return {}
+  if (typeof value === 'object') return value
+  try { return JSON.parse(value) } catch { return {} }
+}
+
+function pageLabel(path = '') {
+  const clean = String(path || '/').split('?')[0]
+  if (clean === '/') return 'Inicio'
+  if (clean.startsWith('/tablon')) return 'Tablón de anuncios'
+  if (clean.startsWith('/anuncios/')) return 'Detalle de anuncio'
+  if (clean.startsWith('/empleos/')) return 'Detalle de empleo'
+  if (clean.startsWith('/comunidades')) return 'Comunidad'
+  if (clean.startsWith('/negocios/')) return 'Perfil de negocio'
+  if (clean.startsWith('/eventos/')) return 'Evento'
+  if (clean.startsWith('/mensajes')) return 'Mensajes'
+  if (clean.startsWith('/perfil')) return 'Perfil'
+  if (clean.startsWith('/publicar-empleo')) return 'Publicar empleo'
+  if (clean.startsWith('/publicar-evento')) return 'Publicar evento'
+  if (clean.startsWith('/registrar-negocio')) return 'Registrar negocio'
+  if (clean.startsWith('/registrar-comunidad')) return 'Registrar grupo'
+  if (clean.startsWith('/publicar')) return 'Publicar anuncio'
+  if (clean.startsWith('/guias')) return 'Guías'
+  if (clean.startsWith('/auth')) return 'Acceso'
+  if (clean.startsWith('/admin-latido')) return 'Admin'
+  return clean
+}
+
+function topAnalyticsRows(items, labelFn, limit = 8, subFn) {
+  const map = new Map()
+  items.forEach(item => {
+    const label = String(labelFn(item) || '').trim()
+    if (!label) return
+    const current = map.get(label) || { label, value: 0, sub: '' }
+    current.value += 1
+    if (!current.sub && subFn) current.sub = subFn(item) || ''
+    map.set(label, current)
+  })
+  return [...map.values()].sort((a, b) => b.value - a.value).slice(0, limit)
+}
+
+function analyticsQuery(event) {
+  const metadata = readMetadata(event.metadata)
+  return String(metadata.query || '').trim()
+}
+
+function analyticsScope(event) {
+  const metadata = readMetadata(event.metadata)
+  const scope = metadata.scope || 'global'
+  const labels = {
+    global: 'Búsqueda global',
+    tablon: 'Tablón',
+    empleos: 'Empleos',
+    comunidad_grupos: 'Grupos',
+    comunidad_negocios: 'Negocios',
+  }
+  return labels[scope] || scope
 }
 
 function SparkBarChart({ data, color }) {
@@ -421,14 +496,17 @@ function AdminChartCard({ title, items, color }) {
 function SummaryMetric({ label, value, hint, color = C.primary }) {
   return (
     <div style={{
+      position: 'relative',
+      overflow: 'hidden',
       minWidth: 150,
       flex: '1 1 150px',
-      background: 'rgba(255,255,255,0.86)',
+      background: '#fff',
       border: '1px solid rgba(226,234,244,0.92)',
-      borderRadius: 18,
-      padding: '13px 14px',
-      boxShadow: '0 12px 28px rgba(15,23,42,0.05)',
+      borderRadius: 16,
+      padding: '15px 15px 14px',
+      boxShadow: '0 16px 34px rgba(15,23,42,0.055)',
     }}>
+      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: color }} />
       <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 6px' }}>
         {label}
       </p>
@@ -439,47 +517,6 @@ function SummaryMetric({ label, value, hint, color = C.primary }) {
         {hint}
       </p>
     </div>
-  )
-}
-
-function TopNavButton({ item, active, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        border: `1.5px solid ${active ? item.color : C.border}`,
-        background: active ? item.bg : '#fff',
-        color: active ? item.color : C.mid,
-        borderRadius: 999,
-        padding: '9px 12px',
-        fontFamily: PP,
-        fontSize: 12,
-        fontWeight: 900,
-        cursor: 'pointer',
-        boxShadow: active ? `0 12px 28px ${item.color}16` : '0 8px 20px rgba(15,23,42,0.04)',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      <span>{item.label}</span>
-      <span style={{
-        minWidth: 22,
-        height: 22,
-        padding: '0 7px',
-        borderRadius: 999,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: active ? '#fff' : item.bg,
-        color: item.color,
-        fontSize: 11,
-      }}>
-        {item.value}
-      </span>
-    </button>
   )
 }
 
@@ -548,10 +585,10 @@ function Card({ children, style = {} }) {
   return (
     <div style={{
       background: '#fff',
-      border: `1px solid ${C.border}`,
-      borderRadius: 20,
+      border: '1px solid rgba(226,234,244,0.95)',
+      borderRadius: 18,
       padding: 18,
-      boxShadow: '0 14px 34px rgba(15,23,42,0.055)',
+      boxShadow: '0 14px 32px rgba(15,23,42,0.05)',
       ...style,
     }}>
       {children}
@@ -588,7 +625,7 @@ async function logAdminAction(action) {
 
 export default function Admin() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('users')
+  const [tab, setTab] = useState('overview')
   const [loading, setLoading] = useState(true)
   const [userSearch, setUserSearch] = useState('')
   const [userDays, setUserDays] = useState(1)
@@ -600,6 +637,9 @@ export default function Admin() {
   const [businesses, setBusinesses] = useState([])
   const [businessVerificationFilter, setBusinessVerificationFilter] = useState('pending')
   const [contentByKey, setContentByKey] = useState(new Map())
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set())
+  const [analyticsEvents, setAnalyticsEvents] = useState([])
+  const [analyticsUnavailable, setAnalyticsUnavailable] = useState(false)
 
   const stats = useMemo(() => ({
     reports: reports.filter(r => r.status === 'pending').length,
@@ -624,6 +664,89 @@ export default function Admin() {
     [users, userDays]
   )
   const userRangeLabel = userDays === 1 ? 'hoy' : `${userDays} dias`
+  const activeUsersToday = useMemo(
+    () => users.filter(profile => isWithinRecentDays(profile.last_seen_at, 1)),
+    [users]
+  )
+  const activeUsersWeek = useMemo(
+    () => users.filter(profile => isWithinRecentDays(profile.last_seen_at, 7)),
+    [users]
+  )
+  const onlineUsers = useMemo(
+    () => users.filter(profile => onlineUserIds.has(profile.id)),
+    [onlineUserIds, users]
+  )
+  const recentActiveUsers = useMemo(
+    () => [...users]
+      .filter(profile => profile.last_seen_at)
+      .sort((a, b) => String(b.last_seen_at || '').localeCompare(String(a.last_seen_at || '')))
+      .slice(0, 6),
+    [users]
+  )
+  const activeChartUsers = useMemo(
+    () => users
+      .filter(profile => profile.last_seen_at)
+      .map(profile => ({ ...profile, created_at: profile.last_seen_at })),
+    [users]
+  )
+  const contentItems = useMemo(() => [...recentListings, ...recentJobs], [recentListings, recentJobs])
+  const analytics30 = useMemo(
+    () => analyticsEvents.filter(event => isWithinRecentDays(event.created_at, 30)),
+    [analyticsEvents]
+  )
+  const pageViewEvents = useMemo(
+    () => analytics30.filter(event => event.event_type === 'page_view' && !String(event.path || '').startsWith('/admin-latido')),
+    [analytics30]
+  )
+  const searchEvents = useMemo(
+    () => analytics30.filter(event => event.event_type === 'search' && analyticsQuery(event)),
+    [analytics30]
+  )
+  const topPageRows = useMemo(
+    () => topAnalyticsRows(pageViewEvents, event => pageLabel(event.path), 8, event => event.path),
+    [pageViewEvents]
+  )
+  const topSearchRows = useMemo(
+    () => topAnalyticsRows(searchEvents, analyticsQuery, 8, analyticsScope),
+    [searchEvents]
+  )
+  const analyticsSessions = useMemo(() => {
+    const ids = new Set()
+    pageViewEvents.forEach(event => {
+      const sessionKey = event.session_id || event.user_id || ''
+      if (sessionKey) ids.add(sessionKey)
+    })
+    return ids.size
+  }, [pageViewEvents])
+  const liveLast14Days = useMemo(() => countByDay(activeChartUsers, 14), [activeChartUsers])
+  const recentLiveUsers = useMemo(() => {
+    const byId = new Map()
+    onlineUsers.forEach(profile => byId.set(profile.id, profile))
+    recentActiveUsers.forEach(profile => byId.set(profile.id, profile))
+    return [...byId.values()].slice(0, 8)
+  }, [onlineUsers, recentActiveUsers])
+  const liveWeeklyTrend = useMemo(() => periodTrend(activeChartUsers, 7), [activeChartUsers])
+  const activeCantonRows = useMemo(() => {
+    const counts = activeUsersWeek.reduce((acc, profile) => {
+      const key = profile.canton || 'Sin canton'
+      acc[key] = (acc[key] || 0) + 1
+      return acc
+    }, {})
+    return Object.entries(counts)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5)
+  }, [activeUsersWeek])
+  const activeCantonMax = Math.max(...activeCantonRows.map(row => row.value), 1)
+  const usersWithActivityBaseline = users.filter(profile => profile.last_seen_at)
+  const liveInactiveUsers = usersWithActivityBaseline.filter(profile => !isWithinRecentDays(profile.last_seen_at, 30)).length
+  const liveUntrackedUsers = users.length - usersWithActivityBaseline.length
+  const liveOnlineRate = users.length ? Math.round((onlineUsers.length / users.length) * 100) : 0
+  const liveTodayRate = users.length ? Math.round((activeUsersToday.length / users.length) * 100) : 0
+  const liveWeekRate = users.length ? Math.round((activeUsersWeek.length / users.length) * 100) : 0
+  const liveLast14Total = liveLast14Days.reduce((sum, item) => sum + item.count, 0)
+
+  useEffect(() => subscribeToOnlineUsers(setOnlineUserIds), [])
 
   useEffect(() => { loadAdminData() }, [])
 
@@ -632,7 +755,7 @@ export default function Admin() {
     const [reportsRes, queueRes, usersRes, listingsRes, jobsRes, providersRes] = await Promise.all([
       supabase.from('reports').select('*').order('created_at', { ascending: false }).limit(120),
       supabase.from('moderation_queue').select('*').order('created_at', { ascending: false }).limit(120),
-      supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,banned_at,created_at').order('created_at', { ascending: false }).limit(300),
+      supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at').order('created_at', { ascending: false }).limit(300),
       supabase.from('listings').select('id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at').order('created_at', { ascending: false }).limit(80),
       supabase.from('jobs').select('id,title,company,desc,sector,active,user_id,canton,city,created_at').order('created_at', { ascending: false }).limit(80),
       supabase.from('providers').select('*').order('created_at', { ascending: false }).limit(300),
@@ -640,6 +763,23 @@ export default function Admin() {
 
     if (reportsRes.error || queueRes.error || usersRes.error) {
       toast.error('No se pudo cargar todo el panel. Revisa que el SQL de moderacion este aplicado.')
+    }
+
+    const analyticsSince = new Date(Date.now() - 60 * 86_400_000).toISOString()
+    const analyticsRes = await supabase
+      .from('analytics_events')
+      .select('id,event_type,path,search,user_id,session_id,metadata,created_at')
+      .gte('created_at', analyticsSince)
+      .order('created_at', { ascending: false })
+      .limit(1500)
+
+    if (analyticsRes.error) {
+      setAnalyticsEvents([])
+      setAnalyticsUnavailable(true)
+      console.warn('Analytics events unavailable:', analyticsRes.error.message)
+    } else {
+      setAnalyticsEvents(analyticsRes.data || [])
+      setAnalyticsUnavailable(false)
     }
 
     const nextReports = reportsRes.data || []
@@ -660,7 +800,7 @@ export default function Admin() {
       listingIds.length ? supabase.from('listings').select('id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at').in('id', listingIds) : Promise.resolve({ data: [] }),
       jobIds.length ? supabase.from('jobs').select('id,title,company,desc,sector,active,user_id,canton,city,created_at').in('id', jobIds) : Promise.resolve({ data: [] }),
       messageIds.length ? supabase.from('messages').select('id,conversation_id,sender_id,body,created_at').in('id', messageIds) : Promise.resolve({ data: [] }),
-      profileIds.length ? supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,created_at').in('id', profileIds) : Promise.resolve({ data: [] }),
+      profileIds.length ? supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,created_at,last_seen_at').in('id', profileIds) : Promise.resolve({ data: [] }),
     ])
 
     const nextContent = new Map()
@@ -681,7 +821,7 @@ export default function Admin() {
     ].filter(Boolean)
     const missingOwnerIds = [...new Set(ownerIds)].filter(id => !knownUserIds.has(id))
     const ownerProfilesRes = missingOwnerIds.length
-      ? await supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,banned_at,created_at').in('id', missingOwnerIds)
+      ? await supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at').in('id', missingOwnerIds)
       : { data: [] }
     const usersById = new Map(baseUsers.map(u => [u.id, u]))
     ;(ownerProfilesRes.data || []).forEach(u => usersById.set(u.id, u))
@@ -958,6 +1098,43 @@ export default function Admin() {
   const businessAverageScore = businesses.length
     ? Math.round(businesses.reduce((sum, business) => sum + getBusinessVerificationDetails(business).score, 0) / businesses.length)
     : 0
+  const newUsers30 = countRecent(users, 30)
+  const newContent30 = countRecent(contentItems, 30)
+  const reports30 = countRecent(reports, 30)
+  const userTrend30 = periodTrend(users, 30)
+  const contentTrend30 = periodTrend(contentItems, 30)
+  const reportsTrend30 = periodTrend(reports, 30)
+  const generalScore = Math.max(0, Math.min(100,
+    74
+    + Math.min(10, activeUsersWeek.length)
+    + (userTrend30 > 0 ? 6 : userTrend30 < -20 ? -8 : 0)
+    + (contentTrend30 > 0 ? 6 : contentTrend30 < -20 ? -8 : 0)
+    - Math.min(28, totalPendingActions * 4)
+    - (reportsTrend30 > 25 ? 8 : 0)
+  ))
+  const generalStatus = generalScore >= 82 ? 'Va bien' : generalScore >= 64 ? 'Estable' : 'Requiere atención'
+  const generalTrend = reportsTrend30 > 25 || userTrend30 < -20 || contentTrend30 < -20
+    ? 'Empeora'
+    : userTrend30 > 10 || contentTrend30 > 10
+      ? 'Mejora'
+      : 'Estable'
+  const generalTrendColor = generalTrend === 'Mejora' ? '#059669' : generalTrend === 'Empeora' ? '#DC2626' : '#D97706'
+  const generalSuggestions = [
+    totalPendingActions > 0 && `Resolver ${totalPendingActions} acciones pendientes para bajar fricción administrativa.`,
+    stats.queue > 0 && `Revisar ${stats.queue} elementos en cola antes de que se acumulen publicaciones bloqueadas.`,
+    stats.reports > 0 && `Atender ${stats.reports} reportes pendientes para mantener confianza y seguridad.`,
+    stats.businessVerification > 0 && `Verificar ${stats.businessVerification} negocios pendientes para mejorar confianza visual.`,
+    newContent30 < 5 && 'Impulsar publicaciones recientes: hay poca creación de contenido en los últimos 30 días.',
+    liveUntrackedUsers > users.length * 0.4 && 'Esperar unos días para leer actividad real: muchos usuarios antiguos aún no tienen last_seen_at.',
+  ].filter(Boolean).slice(0, 4)
+  const overviewSignals = [
+    { label: 'Usuarios nuevos 30d', value: newUsers30, trend: userTrend30, color: C.primary },
+    { label: 'Publicaciones 30d', value: newContent30, trend: contentTrend30, color: '#059669' },
+    { label: 'Reportes 30d', value: reports30, trend: reportsTrend30, color: '#DC2626' },
+    { label: 'Pendientes ahora', value: totalPendingActions, trend: null, color: adminHealthColor },
+  ]
+  const topPageMax = Math.max(...topPageRows.map(row => row.value), 1)
+  const topSearchMax = Math.max(...topSearchRows.map(row => row.value), 1)
 
   // eslint-disable-next-line no-unused-vars
   const STAT_CARDS = [
@@ -969,15 +1146,21 @@ export default function Admin() {
   ]
 
   const NAV_ITEMS = [
-    { id: 'users', label: 'Usuarios', value: loading ? '...' : stats.users, color: C.primary, bg: C.primaryLight },
-    { id: 'businessVerification', label: 'Negocios', value: loading ? '...' : businesses.length, color: '#059669', bg: '#ECFDF5' },
-    { id: 'content', label: 'Publicaciones', value: loading ? '...' : stats.content, color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'reports', label: 'Reportes', value: loading ? '...' : stats.reports, color: '#DC2626', bg: '#FEF2F2' },
-    { id: 'moderation', label: 'Revision', value: loading ? '...' : stats.queue, color: '#D97706', bg: '#FFFBEB' },
+    { id: 'overview', icon: '📊', label: 'Estado general', value: loading ? '...' : `${generalScore}/100`, color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
+    { id: 'live', icon: '📡', label: 'Live', value: loading ? '...' : `${onlineUsers.length} online`, color: '#7C3AED', bg: '#F3E8FF' },
+    { id: 'analytics', icon: '📈', label: 'Uso app', value: loading ? '...' : `${pageViewEvents.length} vistas`, color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'users', icon: '👥', label: 'Usuarios', value: loading ? '...' : `${stats.users} total`, color: C.primary, bg: C.primaryLight },
+    { id: 'businessVerification', icon: '✓', label: 'Negocios', value: loading ? '...' : `${stats.businessVerification} pend.`, color: '#059669', bg: '#ECFDF5' },
+    { id: 'content', icon: '📋', label: 'Publicaciones', value: loading ? '...' : `${stats.content} items`, color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'reports', icon: '🚨', label: 'Reportes', value: loading ? '...' : `${stats.reports} pend.`, color: '#DC2626', bg: '#FEF2F2' },
+    { id: 'moderation', icon: '⏳', label: 'Revisión', value: loading ? '...' : `${stats.queue} en cola`, color: '#D97706', bg: '#FFFBEB' },
   ]
 
   const SECTION_TITLES = {
-    moderation: { icon: '⏳', label: 'Cola de revisión' },
+    overview: { icon: '📊', label: 'Estado general' },
+    live: { icon: '📡', label: 'Live' },
+    analytics: { icon: '📈', label: 'Uso de la app' },
+    moderation: { icon: '⏳', label: 'Revisión manual' },
     reports:    { icon: '🚨', label: 'Reportes pendientes' },
     businessVerification: { icon: '✓', label: 'Verificación de negocios' },
     users:      { icon: '👥', label: 'Usuarios' },
@@ -988,15 +1171,39 @@ export default function Admin() {
     ? { ...SECTION_TITLES.content, label: 'Publicaciones recientes' }
     : SECTION_TITLES[tab]
   const SECTION_DETAILS = {
-    moderation: { description: 'Contenido retenido por filtros o pendiente de una decision manual.', color: '#D97706', count: stats.queue },
-    reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports },
-    businessVerification: { description: 'Evalua datos, contacto y confianza antes de mostrar la pill verificado.', color: '#059669', count: stats.businessVerification },
-    users: { description: 'Busca cuentas, revisa actividad basica y gestiona baneos.', color: C.primary, count: users.length },
-    content: { description: 'Control rapido de anuncios y empleos publicados en Latido.', color: '#059669', count: stats.content },
+    overview: { description: 'Rapport de 30 días con señales de crecimiento, actividad, pendientes y recomendaciones.', color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
+    live: { description: 'Pulso operativo de actividad diaria, semanal y usuarios online en este momento.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
+    analytics: { description: 'Páginas más usadas, búsquedas frecuentes y comportamiento de navegación de los últimos 30 días.', color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas` },
+    moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
+    reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
+    businessVerification: { description: 'Evalua datos, contacto y confianza antes de mostrar la pill verificado.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
+    users: { description: 'Busca cuentas, revisa actividad basica y gestiona baneos.', color: C.primary, count: users.length, badge: `${users.length} usuarios` },
+    content: { description: 'Control rapido de anuncios y empleos publicados en Latido.', color: '#059669', count: stats.content, badge: `${stats.content} publicaciones cargadas` },
   }
   const activeSectionDetails = SECTION_DETAILS[tab]
-  const sectionMetrics = tab === 'users'
+  const sectionMetrics = tab === 'overview'
     ? [
+        { label: 'Estado', value: loading ? '...' : generalStatus, hint: `Score operativo ${generalScore}/100`, color: generalTrendColor },
+        { label: 'Tendencia 30d', value: loading ? '...' : generalTrend, hint: `Usuarios ${userTrend30 > 0 ? '+' : ''}${userTrend30}% · contenido ${contentTrend30 > 0 ? '+' : ''}${contentTrend30}%`, color: generalTrendColor },
+        { label: 'Pendientes', value: loading ? '...' : totalPendingActions, hint: 'Reportes, revisión y negocios', color: adminHealthColor },
+        { label: 'Publicaciones 30d', value: loading ? '...' : newContent30, hint: `${recentListings.length} anuncios · ${recentJobs.length} empleos cargados`, color: '#059669' },
+      ]
+    : tab === 'live'
+    ? [
+        { label: 'Online ahora', value: loading ? '...' : onlineUsers.length, hint: `${liveOnlineRate}% de la base cargada`, color: '#7C3AED' },
+        { label: 'Activos hoy', value: loading ? '...' : activeUsersToday.length, hint: `${liveTodayRate}% han abierto Latido`, color: C.primary },
+        { label: 'Activos 7 días', value: loading ? '...' : activeUsersWeek.length, hint: `${liveWeekRate}% activos esta semana`, color: '#059669' },
+        { label: 'Sin registro', value: loading ? '...' : liveUntrackedUsers, hint: 'Usuarios previos al tracking', color: '#D97706' },
+      ]
+    : tab === 'analytics'
+      ? [
+          { label: 'Vistas 30d', value: loading ? '...' : pageViewEvents.length, hint: `${analyticsSessions} sesiones registradas`, color: '#0284C7' },
+          { label: 'Búsquedas 30d', value: loading ? '...' : searchEvents.length, hint: 'Términos escritos en barras', color: C.primary },
+          { label: 'Páginas usadas', value: loading ? '...' : topPageRows.length, hint: 'Agrupadas por sección', color: '#059669' },
+          { label: 'Tracking', value: loading ? '...' : analyticsUnavailable ? 'No activo' : 'Activo', hint: analyticsUnavailable ? 'Falta tabla analytics_events' : 'Eventos disponibles', color: analyticsUnavailable ? '#D97706' : '#059669' },
+        ]
+    : tab === 'users'
+      ? [
         { label: 'Nuevos usuarios', value: loading ? '...' : newUsersInRange.length, hint: `Registrados ${userRangeLabel}`, color: C.primary },
         { label: 'Usuarios totales', value: loading ? '...' : users.length, hint: `${filteredUsers.length} visibles con el filtro`, color: C.text },
         { label: 'Usuarios baneados', value: loading ? '...' : stats.banned, hint: stats.banned ? 'Revisar cuentas bloqueadas' : 'Sin bloqueos activos', color: stats.banned ? '#DC2626' : '#059669' },
@@ -1029,6 +1236,8 @@ export default function Admin() {
   const activeChart =
     tab === 'users'
       ? <AdminPeriodChart title="Nuevos usuarios" items={users} color={C.primary} days={userDays} onDaysChange={setUserDays} />
+      : tab === 'analytics'
+        ? <AdminChartCard title="Vistas de página" items={pageViewEvents} color="#0284C7" />
       : tab === 'reports'
         ? <AdminChartCard title="Reportes recibidos" items={reports} color="#DC2626" />
         : tab === 'businessVerification'
@@ -1036,33 +1245,24 @@ export default function Admin() {
           : tab === 'content'
             ? <AdminChartCard title="Publicaciones" items={[...recentListings, ...recentJobs]} color="#059669" />
           : null
-  const showChartPlaceholder = ['users', 'reports', 'businessVerification', 'content'].includes(tab)
+  const showChartPlaceholder = ['users', 'analytics', 'reports', 'businessVerification', 'content'].includes(tab)
 
   return (
-    <div style={{ maxWidth: 1180, margin: '0 auto', padding: '22px 14px 100px' }}>
-
-      <nav style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '4px 2px 12px', marginBottom: 6 }}>
-        {NAV_ITEMS.map(item => (
-          <TopNavButton
-            key={item.id}
-            item={item}
-            active={tab === item.id}
-            onClick={() => setTab(item.id)}
-          />
-        ))}
-      </nav>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#F4F7FB 0%,#EEF4FF 100%)', padding: '18px 14px calc(104px + env(safe-area-inset-bottom))' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto' }}>
+        <main style={{ minWidth: 0 }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: 'linear-gradient(135deg,#FFFFFF 0%,#F8FAFF 58%,#EFF6FF 100%)', border: `1px solid ${C.border}`, borderRadius: 28, padding: 20, boxShadow: '0 22px 60px rgba(37,99,235,0.08)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: '1px solid rgba(226,234,244,0.95)', borderRadius: 24, padding: 20, boxShadow: '0 18px 46px rgba(15,23,42,0.06)' }}>
         <div style={{ minWidth: 240, flex: '1 1 420px' }}>
-          <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: C.primary, margin: '0 0 6px', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-            Latido Admin
+          <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: activeSectionDetails.color, margin: '0 0 6px', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+            {activeSection.label}
           </p>
           <h1 style={{ fontFamily: PP, fontWeight: 900, fontSize: 30, color: C.text, margin: '0 0 6px', letterSpacing: -0.8, lineHeight: 1.08 }}>
             Centro de control
           </h1>
           <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, margin: 0, lineHeight: 1.55, maxWidth: 620 }}>
-            Moderación, reportes y usuarios de Latido.
+            Panel operativo para leer datos, tomar decisiones y mantener Latido ordenado.
           </p>
         </div>
         <button
@@ -1074,7 +1274,7 @@ export default function Admin() {
       </div>
 
       {/* Stat cards — double as navigation */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 16 }}>
         {sectionMetrics.map(metric => (
           <SummaryMetric
             key={metric.label}
@@ -1102,7 +1302,7 @@ export default function Admin() {
       )}
 
       {/* Section header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 20, padding: '14px 16px', boxShadow: '0 10px 26px rgba(15,23,42,0.04)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: '1px solid rgba(226,234,244,0.95)', borderRadius: 20, padding: '14px 16px', boxShadow: '0 14px 32px rgba(15,23,42,0.045)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
           <span style={{ width: 40, height: 40, borderRadius: 14, background: `${activeSectionDetails.color}14`, display: 'grid', placeItems: 'center', fontSize: 18, flexShrink: 0 }}>
             {activeSection.icon}
@@ -1117,13 +1317,238 @@ export default function Admin() {
           </div>
         </div>
         <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: activeSectionDetails.color, background: `${activeSectionDetails.color}12`, borderRadius: 999, padding: '7px 11px' }}>
-          {activeSectionDetails.count} items
+          {activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`)}
         </span>
       </div>
+
+      {/* ── Estado general ─────────────────────────────── */}
+      {tab === 'overview' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Card style={{ padding: 0, overflow: 'hidden', borderRadius: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 0 }}>
+              <div style={{ padding: 22, background: `linear-gradient(135deg,${generalTrendColor} 0%,#2563EB 100%)`, color: '#fff' }}>
+                <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.86 }}>
+                  Rapport 30 días
+                </p>
+                <h3 style={{ fontFamily: PP, fontWeight: 900, fontSize: 31, lineHeight: 1.05, margin: '0 0 8px', letterSpacing: -0.8 }}>
+                  {generalStatus}
+                </h3>
+                <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.55, margin: '0 0 18px', opacity: 0.9 }}>
+                  {newUsers30} usuarios nuevos, {newContent30} publicaciones y {reports30} reportes registrados en los últimos 30 días.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, height: 10, borderRadius: 999, background: 'rgba(255,255,255,0.22)', overflow: 'hidden' }}>
+                    <div style={{ width: `${generalScore}%`, height: '100%', borderRadius: 999, background: '#fff' }} />
+                  </div>
+                  <strong style={{ fontFamily: PP, fontSize: 22, fontWeight: 900 }}>{generalScore}/100</strong>
+                </div>
+              </div>
+
+              <div style={{ padding: 22, background: '#fff' }}>
+                <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 8px' }}>
+                  Lectura automática
+                </p>
+                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 22, color: C.text, margin: '0 0 8px', lineHeight: 1.15 }}>
+                  La tendencia está {generalTrend.toLowerCase()}.
+                </p>
+                <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, lineHeight: 1.6, margin: 0 }}>
+                  Se calcula sin IA, comparando los últimos 30 días con los 30 anteriores y penalizando acumulación de reportes, revisión y verificaciones pendientes.
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 15 }}>
+                  <Tag bg={generalTrend === 'Mejora' ? '#D1FAE5' : generalTrend === 'Empeora' ? '#FEE2E2' : '#FEF3C7'} color={generalTrendColor}>
+                    {generalTrend}
+                  </Tag>
+                  <Tag bg={C.bg} color={C.mid}>30 días</Tag>
+                  <Tag bg={totalPendingActions ? '#FEF3C7' : '#D1FAE5'} color={totalPendingActions ? '#92400E' : '#047857'}>
+                    {totalPendingActions} pendientes
+                  </Tag>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 12 }}>
+            {overviewSignals.map(signal => (
+              <Card key={signal.label} style={{ padding: 15 }}>
+                <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 7px' }}>
+                  {signal.label}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+                  <strong style={{ fontFamily: PP, fontWeight: 900, fontSize: 28, color: signal.color, lineHeight: 1 }}>
+                    {loading ? '...' : signal.value}
+                  </strong>
+                  {signal.trend != null && (
+                    <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: signal.trend > 0 ? '#047857' : signal.trend < 0 ? '#B91C1C' : C.light, background: signal.trend > 0 ? '#D1FAE5' : signal.trend < 0 ? '#FEE2E2' : C.bg, borderRadius: 999, padding: '5px 8px' }}>
+                      {signal.trend > 0 ? `+${signal.trend}%` : signal.trend < 0 ? `${signal.trend}%` : '0%'}
+                    </span>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 14 }}>
+            <Card style={{ padding: 16 }}>
+              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 4px' }}>Sugerencias de mejora</p>
+              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Reglas simples basadas en actividad y carga pendiente.</p>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {(generalSuggestions.length ? generalSuggestions : ['El panel no detecta bloqueos fuertes ahora mismo. Mantén revisión y reportes al día.']).map((text, index) => (
+                  <div key={text} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '11px 12px', border: `1px solid ${C.border}`, borderRadius: 14, background: '#F8FAFF' }}>
+                    <span style={{ width: 25, height: 25, borderRadius: 9, background: C.primaryLight, color: C.primary, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, fontSize: 12, flexShrink: 0 }}>
+                      {index + 1}
+                    </span>
+                    <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.45 }}>{text}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card style={{ padding: 16 }}>
+              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 4px' }}>Cola operativa</p>
+              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Qué necesita atención ahora.</p>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {[
+                  { label: 'Revisión de contenido', value: stats.queue, color: '#D97706' },
+                  { label: 'Reportes pendientes', value: stats.reports, color: '#DC2626' },
+                  { label: 'Negocios por verificar', value: stats.businessVerification, color: '#059669' },
+                ].map(item => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => setTab(item.label.includes('contenido') ? 'moderation' : item.label.includes('Reportes') ? 'reports' : 'businessVerification')}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: `1px solid ${C.border}`, borderRadius: 14, padding: '11px 12px', background: '#fff', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text }}>{item.label}</span>
+                    <strong style={{ fontFamily: PP, fontSize: 13, color: item.color }}>{item.value} pend.</strong>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* -- Uso de la app ---------------------------------- */}
+      {tab === 'analytics' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {analyticsUnavailable && (
+            <Card style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
+              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>
+                Tracking pendiente de activar
+              </p>
+              <p style={{ fontFamily: PP, fontSize: 12, color: '#92400E', lineHeight: 1.55, margin: 0 }}>
+                El panel ya está preparado, pero Supabase no devuelve la tabla analytics_events. Cuando exista, aquí aparecerán páginas más usadas y búsquedas reales.
+              </p>
+            </Card>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
+            <Card style={{ padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Páginas más usadas</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Agrupado por sección en los últimos 30 días.</p>
+                </div>
+                <Tag bg="#E0F2FE" color="#0284C7">{pageViewEvents.length} vistas</Tag>
+              </div>
+
+              <div style={{ display: 'grid', gap: 11 }}>
+                {topPageRows.map((row, index) => (
+                  <div key={row.label}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                      <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 24, height: 24, borderRadius: 9, background: '#E0F2FE', color: '#0284C7', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, fontSize: 11, flexShrink: 0 }}>
+                          {index + 1}
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
+                          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.sub}</p>
+                        </div>
+                      </div>
+                      <strong style={{ fontFamily: PP, fontSize: 12, color: '#0284C7' }}>{row.value}</strong>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.max(8, Math.round((row.value / topPageMax) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#0284C7,#2563EB)' }} />
+                    </div>
+                  </div>
+                ))}
+                {!topPageRows.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>
+                    Todavía no hay vistas registradas. Empezará a llenarse cuando los usuarios naveguen con el tracking activo.
+                  </p>
+                )}
+              </div>
+            </Card>
+
+            <Card style={{ padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Búsquedas frecuentes</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Términos escritos en búsqueda global, tablón y comunidad.</p>
+                </div>
+                <Tag bg={C.primaryLight} color={C.primary}>{searchEvents.length} búsquedas</Tag>
+              </div>
+
+              <div style={{ display: 'grid', gap: 11 }}>
+                {topSearchRows.map((row, index) => (
+                  <div key={row.label}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                      <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 24, height: 24, borderRadius: 9, background: C.primaryLight, color: C.primary, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, fontSize: 11, flexShrink: 0 }}>
+                          {index + 1}
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
+                          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '2px 0 0' }}>{row.sub}</p>
+                        </div>
+                      </div>
+                      <strong style={{ fontFamily: PP, fontSize: 12, color: C.primary }}>{row.value}</strong>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.max(8, Math.round((row.value / topSearchMax) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#2563EB,#10B981)' }} />
+                    </div>
+                  </div>
+                ))}
+                {!topSearchRows.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>
+                    Todavía no hay búsquedas registradas. Se guardan solo términos de 2 o más caracteres con una pequeña pausa.
+                  </p>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          <Card style={{ padding: 16, background: '#fff' }}>
+            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
+            <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.55 }}>
+              Esta sección no mide usuarios activos. Mide comportamiento: cada cambio de página guarda un page_view y cada búsqueda real guarda un search con su contexto.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 10 }}>
+              {[
+                { label: 'Páginas usadas', note: 'Agrupa rutas como Inicio, Tablón, Comunidad, Mensajes o Detalle de anuncio.', color: '#0284C7' },
+                { label: 'Búsquedas', note: 'Guarda el término, la sección y filtros como categoría, cantón o tipo de empleo.', color: C.primary },
+                { label: 'Sesiones', note: 'Cuenta sesiones del navegador, útil para estimar navegación sin duplicar por usuario.', color: '#059669' },
+              ].map(item => (
+                <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF' }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 999, background: item.color, display: 'inline-block', marginBottom: 8 }} />
+                  <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: '0 0 4px' }}>{item.label}</p>
+                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>{item.note}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* ── Moderación ─────────────────────────────────── */}
       {tab === 'moderation' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Card style={{ padding: 16, background: '#FFFBEB', borderColor: '#FDE68A' }}>
+            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>Qué significa revisión</p>
+            <p style={{ fontFamily: PP, fontSize: 12, color: '#92400E', lineHeight: 1.55, margin: 0 }}>
+              Aquí aparecen publicaciones retenidas por filtros automáticos o marcadas para decisión manual. El objetivo es aprobar contenido válido, eliminar contenido problemático o bloquear al autor si el caso lo requiere.
+            </p>
+          </Card>
           {pendingQueue.length === 0 ? (
             <EmptyState icon="✅" text="No hay contenido pendiente de revisión." />
           ) : pendingQueue.map(item => (
@@ -1327,6 +1752,199 @@ export default function Admin() {
         </div>
       )}
 
+      {/* ── Live ───────────────────────────────────────── */}
+      {tab === 'live' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Card style={{ padding: 0, overflow: 'hidden', borderRadius: 24, boxShadow: '0 24px 60px rgba(15,23,42,0.08)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 0 }}>
+              <div style={{ padding: 20, background: 'linear-gradient(135deg,#7C3AED 0%,#2563EB 58%,#0F766E 100%)', color: '#fff' }}>
+                <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.86 }}>
+                  Monitor en vivo
+                </p>
+                <h3 style={{ fontFamily: PP, fontSize: 28, fontWeight: 900, lineHeight: 1.05, margin: '0 0 10px', letterSpacing: -0.7 }}>
+                  Pulso real de Latido
+                </h3>
+                <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.5, margin: '0 0 18px', opacity: 0.86 }}>
+                  Online ahora, actividad diaria y señales recientes en una vista pensada para leer rápido.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                  {[
+                    { label: 'Online', value: onlineUsers.length },
+                    { label: 'Hoy', value: activeUsersToday.length },
+                    { label: '7 dias', value: activeUsersWeek.length },
+                  ].map(item => (
+                    <div key={item.label} style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.24)', borderRadius: 16, padding: '11px 12px' }}>
+                      <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 22, margin: '0 0 3px', lineHeight: 1 }}>{loading ? '...' : item.value}</p>
+                      <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, margin: 0, opacity: 0.82 }}>{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ padding: 20, background: '#fff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
+                  <div>
+                    <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 5px' }}>
+                      Actividad últimos 14 días
+                    </p>
+                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 30, color: C.text, margin: 0, lineHeight: 1 }}>
+                      {loading ? '...' : liveLast14Total}
+                    </p>
+                  </div>
+                  <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: liveWeeklyTrend >= 0 ? '#047857' : '#B91C1C', background: liveWeeklyTrend >= 0 ? '#D1FAE5' : '#FEE2E2', borderRadius: 999, padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                    {liveWeeklyTrend > 0 ? `+${liveWeeklyTrend}%` : liveWeeklyTrend < 0 ? `${liveWeeklyTrend}%` : 'estable'}
+                  </span>
+                </div>
+                <SparkBarChart data={liveLast14Days} color="#7C3AED" />
+              </div>
+            </div>
+          </Card>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 14 }}>
+            <Card style={{ padding: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Usuarios online</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Presencia conectada en tiempo real.</p>
+                </div>
+                <span style={{ width: 44, height: 44, borderRadius: 16, background: '#F3E8FF', color: '#7C3AED', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900 }}>
+                  {onlineUsers.length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {onlineUsers.slice(0, 7).map(profile => (
+                  <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.border}`, borderRadius: 14, padding: '9px 10px', background: '#F8FAFF' }}>
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: '#10B981', boxShadow: '0 0 0 4px rgba(16,185,129,0.14)' }} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {profile.name || profile.email || 'Usuario'}
+                      </p>
+                      <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0' }}>
+                        {profile.canton || 'Sin canton'}
+                      </p>
+                    </div>
+                    <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: '#047857', background: '#D1FAE5', borderRadius: 999, padding: '4px 7px' }}>
+                      online
+                    </span>
+                  </div>
+                ))}
+                {!onlineUsers.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, padding: '18px 0' }}>
+                    No hay usuarios online ahora mismo.
+                  </p>
+                )}
+              </div>
+            </Card>
+
+            <Card style={{ padding: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Últimas señales</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Usuarios con actividad más reciente.</p>
+                </div>
+                <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: C.primary, background: C.primaryLight, borderRadius: 999, padding: '7px 10px' }}>
+                  {recentLiveUsers.length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {recentLiveUsers.map(profile => {
+                  const isOnline = onlineUserIds.has(profile.id)
+                  return (
+                    <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${C.border}`, padding: '8px 0' }}>
+                      <span style={{ flex: '0 0 auto', width: 34, height: 34, borderRadius: 12, background: isOnline ? '#D1FAE5' : C.bg, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, color: isOnline ? '#047857' : C.mid }}>
+                        {(profile.name || profile.email || 'U').slice(0, 1).toUpperCase()}
+                      </span>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {profile.name || profile.email || 'Usuario'}
+                        </p>
+                        <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0' }}>
+                          {profile.canton || 'Sin canton'}
+                        </p>
+                      </div>
+                      <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: isOnline ? '#047857' : C.light, background: isOnline ? '#D1FAE5' : C.bg, borderRadius: 999, padding: '4px 7px', whiteSpace: 'nowrap' }}>
+                        {isOnline ? 'online' : fmtActivity(profile.last_seen_at)}
+                      </span>
+                    </div>
+                  )
+                })}
+                {!recentLiveUsers.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, padding: '18px 0' }}>
+                    Sin actividad registrada todavía.
+                  </p>
+                )}
+              </div>
+            </Card>
+
+            <Card style={{ padding: 16 }}>
+              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Actividad por cantón</p>
+              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Top de usuarios activos esta semana.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {activeCantonRows.map(row => (
+                  <div key={row.label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
+                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text }}>{row.label}</span>
+                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.primary }}>{row.value}</span>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.max(8, Math.round((row.value / activeCantonMax) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#7C3AED,#10B981)' }} />
+                    </div>
+                  </div>
+                ))}
+                {!activeCantonRows.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>
+                    Todavía no hay actividad semanal para agrupar.
+                  </p>
+                )}
+              </div>
+            </Card>
+
+            <Card style={{ padding: 16, background: 'linear-gradient(180deg,#FFFFFF,#F8FAFF)' }}>
+              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Lectura rápida</p>
+              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Resumen para decidir si hay que activar, revisar o esperar.</p>
+              <div style={{ display: 'grid', gap: 9 }}>
+                {[
+                  { label: 'Tracción diaria', value: `${liveTodayRate}%`, note: `${activeUsersToday.length} usuarios activos hoy`, color: C.primary },
+                  { label: 'Retención semanal', value: `${liveWeekRate}%`, note: `${activeUsersWeek.length} usuarios activos en 7 días`, color: '#059669' },
+                  { label: 'Sin registro', value: liveUntrackedUsers, note: 'usuarios antiguos sin last_seen_at todavía', color: '#D97706' },
+                  { label: 'Reactivación real', value: liveInactiveUsers, note: 'con tracking, sin señal en 30 días', color: '#B45309' },
+                ].map(item => (
+                  <div key={item.label} style={{ display: 'grid', gridTemplateColumns: '76px 1fr', gap: 10, alignItems: 'center', border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 11px', background: '#fff' }}>
+                    <strong style={{ fontFamily: PP, fontSize: 22, fontWeight: 900, color: item.color, lineHeight: 1 }}>{item.value}</strong>
+                    <div>
+                      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: 0 }}>{item.label}</p>
+                      <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0' }}>{item.note}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card style={{ padding: 16, background: '#fff' }}>
+              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
+              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.5 }}>
+                La actividad empieza a ser fiable desde que Latido guarda presencia y última conexión.
+              </p>
+              <div style={{ display: 'grid', gap: 9 }}>
+                {[
+                  { label: 'Online ahora', note: 'Supabase Presence: usuarios con sesión conectada en este momento.', color: '#7C3AED' },
+                  { label: 'Activos hoy/semana', note: 'Usuarios cuyo profiles.last_seen_at cae dentro del día o los últimos 7 días.', color: C.primary },
+                  { label: 'Sin registro', note: 'Usuarios antiguos que aún no han vuelto a abrir la app desde que se activó el tracking.', color: '#D97706' },
+                ].map(item => (
+                  <div key={item.label} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 0', borderBottom: `1px solid ${C.border}` }}>
+                    <span style={{ width: 9, height: 9, borderRadius: 999, background: item.color, marginTop: 5, flexShrink: 0 }} />
+                    <div>
+                      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: '0 0 2px' }}>{item.label}</p>
+                      <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>{item.note}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
       {/* ── Usuarios ───────────────────────────────────── */}
       {tab === 'users' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1459,6 +2077,69 @@ export default function Admin() {
           </div>
         </div>
       )}
+        </main>
+      </div>
+
+      <nav
+        aria-label="Navegación admin"
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 80,
+          width: '100%',
+          boxSizing: 'border-box',
+          display: 'flex',
+          gap: 7,
+          overflowX: 'auto',
+          padding: '8px max(12px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-right))',
+          background: 'rgba(255,255,255,0.94)',
+          borderTop: '1px solid rgba(203,213,225,0.9)',
+          boxShadow: '0 -18px 58px rgba(15,23,42,0.14)',
+          backdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(18px)',
+        }}
+      >
+        {NAV_ITEMS.map(item => {
+          const active = tab === item.id
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTab(item.id)}
+              style={{
+                flex: active ? '1.25 0 154px' : '1 0 116px',
+                minHeight: 56,
+                borderRadius: 18,
+                border: `1.5px solid ${active ? `${item.color}55` : 'transparent'}`,
+                background: active ? item.bg : 'transparent',
+                color: active ? item.color : C.mid,
+                cursor: 'pointer',
+                padding: '8px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                textAlign: 'left',
+                boxShadow: active ? `0 12px 28px ${item.color}16` : 'none',
+                transition: 'background .15s ease, border-color .15s ease, box-shadow .15s ease',
+              }}
+            >
+              <span style={{ width: 36, height: 36, borderRadius: 14, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 17, flexShrink: 0 }}>
+                {item.icon}
+              </span>
+              <span style={{ minWidth: 0, display: 'grid', gap: 2 }}>
+                <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 11, color: active ? item.color : C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {item.label}
+                </span>
+                <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: active ? item.color : C.light, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {item.value}
+                </span>
+              </span>
+            </button>
+          )
+        })}
+      </nav>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
+import { trackSearchEvent } from '../lib/analytics'
 import {
   MOCK_COMMUNITIES,
   MOCK_NEGOCIOS,
@@ -1443,6 +1444,26 @@ export default function Comunidades() {
 
   const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const normSearch = norm(search)
+
+  useEffect(() => {
+    const query = search.trim()
+    if (query.length < 2 || tab === 'eventos') return undefined
+
+    const timer = window.setTimeout(() => {
+      trackSearchEvent({
+        query,
+        scope: tab === 'comunidades' ? 'comunidad_grupos' : 'comunidad_negocios',
+        user_id: user?.id || null,
+        metadata: {
+          tab,
+          category: cat || null,
+          business_type: negType || null,
+        },
+      })
+    }, 900)
+
+    return () => window.clearTimeout(timer)
+  }, [cat, negType, search, tab, user?.id])
 
   const filteredComm = communities.filter(group =>
     (!cat || group.cat === cat) &&
