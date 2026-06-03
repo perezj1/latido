@@ -699,7 +699,7 @@ async function logAdminAction(action) {
 
 export default function Admin() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('overview')
+  const [tab, setTab] = useState('users')
   const [loading, setLoading] = useState(true)
   const [userSearch, setUserSearch] = useState('')
   const [userDays, setUserDays] = useState(1)
