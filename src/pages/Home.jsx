@@ -1005,14 +1005,15 @@ export default function Home() {
             <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:12 }}>
               <div className="hero-pills">
                 {[
+                  { emoji:'📌', label:'Anuncios',    to:'/tablon' },
                   { emoji:'🏠', label:'Vivienda',    to:'/tablon?cat=vivienda' },
                   { emoji:'💼', label:'Empleo',       to:'/tablon?cat=empleo' },
-                  { emoji:'👨‍👩‍👧', label:'Familia',     to:'/comunidades?cat=familia' },
                   { emoji:'🛍️', label:'Mercado',      to:'/tablon?cat=venta' },
                   { emoji:'🔧', label:'Servicios',    to:'/tablon?cat=servicios' },
                   { emoji:'❤️', label:'Cuidados',     to:'/tablon?cat=cuidados' },
+                  { emoji:'🏪', label:'Negocios',     to:'/comunidades?view=negocios' },
+                  { emoji:'👥', label:'Grupos',       to:'/comunidades?view=comunidades' },
                   { emoji:'🎉', label:'Eventos',      to:'/comunidades?view=eventos' },
-                  { emoji:'🤝', label:'Comunidad',    to:'/comunidades' },
                   { emoji:'📚', label:'Guías',        to:'/guias' },
                 ].map(cat => (
                   <Link
@@ -1138,7 +1139,7 @@ export default function Home() {
       {/* ── ANUNCIOS RECIENTES ── */}
       <section style={{ padding:'24px 0 0' }}>
         <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0, letterSpacing:-0.5 }}>📌 Anuncios recientes</h2>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0, letterSpacing:0 }}>📌 Anuncios recientes</h2>
           <Link to="/tablon" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todos →</Link>
         </div>
         {loading ? (
@@ -1441,7 +1442,7 @@ export default function Home() {
             <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
               <div>
                 <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>📚 Guías</h2>
-                <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Trámites y burocracia suiza en español.</p>
+                <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Permisos, trabajo, vivienda, salud y dinero en español.</p>
               </div>
               <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>Ver todas →</Link>
             </div>

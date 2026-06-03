@@ -15,7 +15,7 @@ const STATS = [
 ]
 
 const FEATURES = [
-  { icon: '📌', color: '#DBEAFE', title: 'Tablón de anuncios',  desc: 'Pisos, empleo, cuidados, servicios y mercado de segunda mano. Todo en tu cantón, en tu idioma. Filtra por ciudad o código postal.' },
+  { icon: '📌', color: '#DBEAFE', title: 'Anuncios claros',  desc: 'Vivienda, cuidados, servicios, trámites y mercado de segunda mano. Todo en tu cantón, en tu idioma.' },
   { icon: '👥', color: '#D1FAE5', title: 'Grupos',              desc: 'Grupos de venezolanos en Zúrich, colombianos en Ginebra, familias en Berna. Encuentra a los tuyos donde vives.' },
   { icon: '🏪', color: '#FCE7F3', title: 'Negocios',            desc: 'Restaurantes, peluquerías, tiendas y servicios de nuestra comunidad. Apoya a quien habla tu idioma.' },
   { icon: '📚', color: '#EDE9FE', title: 'Guías de trámites',   desc: 'Krankenkasse, Quellensteuer, permiso B/C/L, buscador de trabajo. La burocracia suiza explicada paso a paso en español.' },

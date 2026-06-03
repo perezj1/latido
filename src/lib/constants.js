@@ -151,12 +151,12 @@ export const CARE_SUBCATS = [
 ]
 
 export const AD_CATS = [
-  { id:'vivienda',   emoji:'🏠', label:'Vivienda',   desc:'Pisos, habitaciones y compañeros',  types:['busca','ofrece'],           sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
-  { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Limpieza, clases, mudanzas y más',  types:['busca','ofrece'],           sub:SERVICE_SUBCATS },
-  { id:'cuidados',   emoji:'❤️', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia', types:['busca','ofrece'],        sub:CARE_SUBCATS },
-  { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Compra, vende o regala artículos',  types:['busca','vende','regala'],   sub:['Electrónica','Ropa','Muebles','Vehículos','Comida','Otro'] },
-  { id:'documentos', emoji:'📄', label:'Trámites',    desc:'Cartas, traducciones y gestiones',  types:['busca','ofrece'],           sub:['Cartas','Trámites','Traducción','Asesoría'] },
-  { id:'empleo',     emoji:'💼', label:'Empleo',      desc:'Ofertas y búsqueda de trabajo',     types:['busca','ofrece'],           sub:['Full-time','Part-time','Freelance','Prácticas'] },
+  { id:'vivienda',   emoji:'🏠', label:'Vivienda',   desc:'Pisos, habitaciones, sublets y compañeros', types:['busca','ofrece'],      sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
+  { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Ayuda práctica: limpieza, clases, mudanzas y reparaciones', types:['busca','ofrece'], sub:SERVICE_SUBCATS },
+  { id:'cuidados',   emoji:'❤️', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia personal', types:['busca','ofrece'], sub:CARE_SUBCATS },
+  { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Objetos para comprar, vender o regalar', types:['busca','vende','regala'], sub:['Electrónica','Ropa','Muebles','Vehículos','Comida','Otro'] },
+  { id:'documentos', emoji:'📄', label:'Trámites',    desc:'Cartas, traducciones, permisos y asesoría', types:['busca','ofrece'],      sub:['Cartas','Trámites','Traducción','Asesoría'] },
+  { id:'empleo',     emoji:'💼', label:'Empleo',      desc:'Ofertas y búsquedas de trabajo',     types:['busca','ofrece'],           sub:['Full-time','Part-time','Freelance','Prácticas'] },
 ]
 
 export function normalizeAdCat(cat='') {

@@ -3,7 +3,7 @@ import { C, PP } from '../lib/theme'
 
 export default function Footer() {
   const links = [
-    { label:'Tablón', href:'/tablon' },
+    { label:'Anuncios', href:'/tablon' },
     { label:'Comunidad', href:'/comunidades' },
     { label:'Guías', href:'/guias' },
     { label:'Empleos', href:'/tablon?cat=empleo' },

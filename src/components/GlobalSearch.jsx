@@ -63,7 +63,7 @@ const SEARCH_CACHE = {
 }
 
 const TYPE_COLORS = {
-  ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Tablón' },
+  ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Anuncio' },
   job:{ bg:'#E0F2FE', color:'#0369A1', label:'Empleo' },
   community:{ bg:'#D1FAE5', color:'#065F46', label:'Grupo' },
   business:{ bg:'#FEF3C7', color:'#92400E', label:'Negocio' },
@@ -245,7 +245,7 @@ function searchAll(query, datasets, isLoggedIn) {
         id:ad.id,
         icon:getAdDisplayEmoji(ad),
         label:ad.title,
-        sub:[cat?.label || 'Tablón', location, ad.price].filter(Boolean).join(' · '),
+        sub:[cat?.label || 'Anuncio', location, ad.price].filter(Boolean).join(' · '),
         href:getAdPath(ad),
         privacy:ad.privacy,
       })

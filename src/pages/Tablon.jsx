@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -7,8 +7,7 @@ import { fetchPublicProfilesByIds } from '../lib/profiles'
 import { trackSearchEvent } from '../lib/analytics'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
-import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PillFilters, PhotoGallery, ImageLightbox, Stars, RatingPill, ReviewForm, ReviewList } from '../components/UI'
-import { getPublishTarget } from '../lib/publishTargets'
+import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
 import ReportButton from '../components/ReportButton'
 import ShareButton from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
@@ -133,10 +132,70 @@ const JOB_INTENT_TAG_STYLE = {
   ofrece:{ bg:'#E0F2FE', color:'#0369A1' },
   busca:{ bg:'#FEF3C7', color:'#92400E' },
 }
+const AD_TYPE_TAG_STYLE = {
+  busca:{ bg:'#FEF3C7', color:'#92400E' },
+  ofrece:{ bg:'#E0F2FE', color:'#0369A1' },
+  vende:{ bg:'#ECFDF5', color:'#047857' },
+  regala:{ bg:'#FCE7F3', color:'#BE185D' },
+}
+const AD_TYPE_SHORT_LABEL = {
+  busca:'Busco',
+  ofrece:'Ofrezco',
+  vende:'Vendo',
+  regala:'Regalo',
+}
+const AD_TYPE_CARD_EMOJI = {
+  ofrece:'🏷️',
+}
 
 function getJobIntentTag(job) {
   const intent = getJobIntentMeta(job)
   return { ...intent, ...(JOB_INTENT_TAG_STYLE[intent.id] || JOB_INTENT_TAG_STYLE.ofrece) }
+}
+
+function getAdIntentTag(ad={}) {
+  const type = AD_TYPES.find(item => item.id === ad.type)
+  if (!type) return null
+  return {
+    ...type,
+    emoji: AD_TYPE_CARD_EMOJI[type.id] || type.emoji,
+    shortLabel: AD_TYPE_SHORT_LABEL[type.id] || type.label,
+    ...(AD_TYPE_TAG_STYLE[type.id] || AD_TYPE_TAG_STYLE.ofrece),
+  }
+}
+
+function getTablonContext(cat='', isEmpleos=false) {
+  if (isEmpleos) {
+    return {
+      title:'💼 Empleo',
+      subtitle:'Ofertas de trabajo y perfiles disponibles en la comunidad.',
+      resultLabel:'publicaciones de empleo',
+      searchPlaceholder:'Buscar puesto, perfil, empresa o sector...',
+      emptyTitle:'No hay empleos con estos filtros',
+      emptyText:'Prueba otro cantón, otro tipo de empleo o publica una búsqueda.',
+    }
+  }
+
+  const meta = AD_CATS.find(item => item.id === cat)
+  if (meta) {
+    return {
+      title:`${meta.emoji} ${meta.label}`,
+      subtitle:meta.desc,
+      resultLabel:'anuncios',
+      searchPlaceholder:`Buscar en ${meta.label.toLowerCase()}...`,
+      emptyTitle:`Sin anuncios de ${meta.label.toLowerCase()}`,
+      emptyText:'Prueba otros filtros o publica el primero.',
+    }
+  }
+
+  return {
+    title:'📌 Anuncios',
+    subtitle:'Vivienda, servicios, cuidados, mercado y trámites de la comunidad.',
+    resultLabel:'publicaciones',
+    searchPlaceholder:'Buscar vivienda, servicios, productos o trámites...',
+    emptyTitle:'Sin resultados',
+    emptyText:'Prueba otros filtros o publica lo que buscas.',
+  }
 }
 
 function getAdShareText(ad) {
@@ -209,6 +268,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
   const metaBits = [ad.user_name || ad.user || 'Usuario', location || ad.canton, dateStr].filter(Boolean)
   const rating = averageRating(reviews)
   const showReviews = isReviewableAd(ad)
+  const intent = getAdIntentTag(ad)
   return (
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:136 }}>
       <div style={LIST_THUMB_STYLE}>
@@ -248,10 +308,19 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.32, margin:'0 0 4px', ...CLAMP_2 }}>{ad.title}</h3>
         {ad.price && <span style={{ display:'block', maxWidth:'100%', fontFamily:PP, fontSize:14, fontWeight:800, color:C.primary, lineHeight:1.15, marginBottom:5, ...CLAMP_1 }}>{fmtPrice(ad.price)}</span>}
         {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:'0 0 7px', whiteSpace:'pre-line', ...CLAMP_2 }}>{ad.desc}</p>}
+        {showReviews && (
+          <div style={{ display:'flex', alignItems:'center', gap:7, margin:'0 0 7px', flexWrap:'wrap', minWidth:0 }}>
+            {rating !== null ? (
+              <Stars rating={rating} size={13} showNumber count={reviews.length} />
+            ) : (
+              <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>Sin reseñas aún</span>
+            )}
+          </div>
+        )}
         <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:7 }}>
+          {intent && <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.shortLabel}</Tag>}
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
           {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
-          {showReviews && rating !== null && <RatingPill rating={rating} count={reviews.length} style={{ fontSize:10, padding:'4px 7px' }} />}
           <PrivacyTag privacy={ad.privacy}/>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:'auto', minWidth:0 }}>
@@ -267,6 +336,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
 function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedAds=[], onOpenRelatedAd, reviews=[], onAddReview }) {
   const navigate = useNavigate()
+  const reviewsRef = useRef(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [savingReview, setSavingReview] = useState(false)
@@ -282,6 +352,7 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
   const showReviews = isReviewableAd(ad)
   const rating = averageRating(reviews)
   const ownReview = user?.id ? reviews.find(review => review.user_id === user.id) : null
+  const intent = getAdIntentTag(ad)
 
   useEffect(() => {
     setShowReviewForm(false)
@@ -293,6 +364,10 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
     const saved = await onAddReview?.(ad, review)
     setSavingReview(false)
     if (saved !== false) setShowReviewForm(false)
+  }
+
+  const scrollToReviews = () => {
+    reviewsRef.current?.scrollIntoView({ behavior:'smooth', block:'start' })
   }
 
   return (
@@ -332,21 +407,32 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{ad.title}</h1>
         </div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
+          {intent && <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.shortLabel}</Tag>}
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
           {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
-          {showReviews && rating !== null && <RatingPill rating={rating} count={reviews.length} />}
           <PrivacyTag privacy={ad.privacy}/>
           {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
         </div>
         <div style={{ display:'flex', gap:9, alignItems:'center', minWidth:0 }}>
           <Avatar name={ad.user_name || ad.user} size={34} src={avatarSrc}/>
-          <div style={{ minWidth:0 }}>
+          <div style={{ minWidth:0, flex:1 }}>
             <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:C.text, margin:'0 0 2px', ...WRAPPING_TEXT }}>{ad.user_name || ad.user || 'Usuario'}</p>
             <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.4, margin:0, ...WRAPPING_TEXT }}>
               {location || ad.canton}
               {(ad.ts || ad.created_at) ? ` - ${ad.ts || new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}` : ''}
             </p>
           </div>
+          {showReviews && rating !== null && (
+            <button
+              type="button"
+              onClick={scrollToReviews}
+              aria-label={`Ver ${reviews.length} reseña${reviews.length !== 1 ? 's' : ''}`}
+              style={{ marginLeft:'auto', flexShrink:0, display:'inline-flex', alignItems:'center', gap:7, fontFamily:PP, fontWeight:900, fontSize:15, color:C.text, background:'#FFFBEB', border:'1.5px solid #FBBF24', borderRadius:999, padding:'7px 13px', cursor:'pointer' }}
+            >
+              <span style={{ fontSize:18, lineHeight:1, color:'#F59E0B' }}>★</span>
+              <span>{rating}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -385,7 +471,7 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
       )}
 
       {showReviews && (
-        <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
+        <div ref={reviewsRef} style={{ padding:'20px', borderBottom:`1px solid ${C.border}`, scrollMarginTop:70 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:14 }}>
             <div>
               <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 4px' }}>Reseñas</h2>
@@ -765,7 +851,6 @@ export default function Tablon() {
   const activeCount = isEmpleos
     ? [jobIntent, jobType, canton, plz].filter(Boolean).length
     : [type, canton, plz, privacy, maxPrice].filter(Boolean).length
-  const publishTarget = getPublishTarget('/tablon', searchParams.toString() ? `?${searchParams.toString()}` : '')
 
   useEffect(() => {
     if (isAdmin) return undefined
@@ -1128,6 +1213,8 @@ export default function Tablon() {
   const catOptions  = [{ id:'', label:'Todos' }, ...orderedCats.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
   const typeOptions = [{ id:'', label:'Todos' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
   const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Full-time' }, { id:'Part-time', label:'Part-time' }, { id:'Freelance', label:'Freelance' }, { id:'Prácticas', label:'Prácticas' }]
+  const pageContext = getTablonContext(cat, isEmpleos)
+  const resultCount = isEmpleos ? filteredJobs.length : filteredAds.length + (!cat ? filteredJobs.length : 0)
 
   return (
     <div style={{ maxWidth:800, margin:'0 auto', padding:'0 20px 100px' }}>
@@ -1135,11 +1222,14 @@ export default function Tablon() {
         <div style={{ width:'100%', maxWidth:840, margin:'0 auto', padding:'24px 20px 0px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
         <div>
-          <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, letterSpacing:-0.5, marginBottom:4 }}>
-            📌 Tablón de anuncios
+          <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, letterSpacing:0, marginBottom:4 }}>
+            {pageContext.title}
           </h1>
-          <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>
-            {loading ? 'Cargando...' : isEmpleos ? `${filteredJobs.length} anuncios encontrados` : `${filteredAds.length + (!cat ? filteredJobs.length : 0)} anuncios encontrados`}
+          <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.55, margin:'0 0 3px' }}>
+            {pageContext.subtitle}
+          </p>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>
+            {loading ? 'Cargando...' : `${resultCount} ${pageContext.resultLabel}`}
             {canton && ` · 📍 Cantón ${canton}`}
           </p>
         </div>
@@ -1157,7 +1247,7 @@ export default function Tablon() {
           <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:14, color:C.light }}>🔍</span>
           <input
             style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:13, padding:'10px 12px 10px 34px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', color:C.text, boxSizing:'border-box' }}
-            placeholder={isEmpleos ? 'Buscar empleo, perfil o empresa...' : 'Buscar en el tablón...'}
+            placeholder={pageContext.searchPlaceholder}
             value={search} onChange={e=>setSearch(e.target.value)}
           />
         </div>
@@ -1223,8 +1313,9 @@ export default function Tablon() {
           {filteredJobs.length === 0 ? (
             <div style={{ textAlign:'center', padding:'60px 20px' }}>
               <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
-              <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin empleos ahora</h3>
-              <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>Vuelve pronto — se actualizan frecuentemente</p>
+              <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
+              <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
+              <Link to="/publicar-empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>Publicar empleo</Link>
             </div>
           ) : (
             <>
@@ -1267,9 +1358,9 @@ export default function Tablon() {
       ) : tablonItems.length === 0 ? (
         <div style={{ textAlign:'center', padding:'60px 20px' }}>
           <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
-          <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>Sin resultados</h3>
-          <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:16 }}>Prueba otros filtros o sé el primero en publicar</p>
-          <Link to={publishTarget.to} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishTarget.label}</Link>
+          <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:16 }}>{pageContext.emptyText}</p>
+          <Link to={cat && cat !== 'empleo' ? `/publicar?cat=${encodeURIComponent(cat)}` : '/publicar'} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>Publicar anuncio</Link>
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
@@ -1282,11 +1373,11 @@ export default function Tablon() {
       )}
 
       {/* Filters sheet */}
-      <Sheet show={showFilters} onClose={()=>setShowFilters(false)} title="⚙️ Filtros">
+      <Sheet show={showFilters} onClose={()=>setShowFilters(false)} title={isEmpleos ? 'Filtrar empleo' : 'Filtrar anuncios'}>
         {isEmpleos ? (
           <>
             <div style={{ marginBottom:18 }}>
-              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>BUSCO / OFREZCO</p>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>INTENCIÓN</p>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {[{ id:'', label:'Todo' }, ...JOB_INTENTS.map(intent => ({ id:intent.id, label:`${intent.emoji} ${intent.label}` }))].map(o => {
                   const active = jobIntent === o.id
@@ -1315,7 +1406,7 @@ export default function Tablon() {
         ) : isMercado ? (
           <>
             <div style={{ marginBottom:18 }}>
-              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>QUÉ BUSCAS</p>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>INTENCIÓN EN MERCADO</p>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {[{ id:'', label:'Todo' }, { id:'vende', label:'🏷️ Se vende' }, { id:'busca', label:'🔍 Se busca' }, { id:'regala', label:'🎁 Se regala' }].map(o => {
                   const active = type === o.id
@@ -1343,7 +1434,7 @@ export default function Tablon() {
           </>
         ) : (
           <div style={{ marginBottom:18 }}>
-            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE ANUNCIO</p>
+            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>INTENCIÓN DEL ANUNCIO</p>
             <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
               {typeOptions.map(o => {
                 const active = type === o.id

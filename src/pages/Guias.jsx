@@ -20,10 +20,10 @@ export default function Guias() {
   const cats = [
     { id:'', label:'Todos' },
     { id:'permisos', label:'📄 Permisos' },
-    { id:'impuestos', label:'🧾 Impuestos' },
+    { id:'impuestos', label:'🧾 Dinero e impuestos' },
     { id:'salud', label:'🏥 Salud' },
-    { id:'banco', label:'🏦 Banco' },
-    { id:'educacion', label:'🎓 Educación' },
+    { id:'banco', label:'🏦 Banco y pagos' },
+    { id:'educacion', label:'🎓 Estudios' },
     { id:'trabajo', label:'💼 Trabajo' },
     { id:'vivienda', label:'🏠 Vivienda' },
   ]
@@ -78,12 +78,12 @@ export default function Guias() {
 
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 24px 100px' }}>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>
-        📚 Guías para vivir en Suiza
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:0 }}>
+        📚 Guías
       </h1>
 
       <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:18 }}>
-        Trámites, seguros, bancos y derechos — en español
+        Permisos, trabajo, vivienda, salud y dinero explicados en español.
       </p>
 
       <div style={{ position:'relative', marginBottom:12 }}>
@@ -102,7 +102,7 @@ export default function Guias() {
             background:'#fff',
             boxSizing:'border-box'
           }}
-          placeholder="Buscar guía, trámite o palabra clave..."
+          placeholder="Buscar permiso, seguro, banco, trabajo o vivienda..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -114,7 +114,7 @@ export default function Guias() {
         <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', margin:'0 0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
           <div>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:'0 0 4px' }}>
-              Guías públicas para empezar
+              Información práctica para empezar
             </p>
             <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.6 }}>
               Crea una cuenta gratuita para guardar contenido, publicar y acceder a toda la experiencia de la app.

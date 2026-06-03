@@ -86,7 +86,7 @@ function normalizeAlertItem(kind, row) {
       kind,
       title: row.title || 'Nuevo anuncio',
       category: normalizeAdCat(row.cat) || 'servicios',
-      kindLabel: 'Tablón',
+      kindLabel: 'Anuncio',
       meta: `${cat?.label || 'anuncio'} · ${row.canton || ''}`.trim(),
       href: `/tablon?openAd=${encodeURIComponent(row.id)}`,
       icon: '📌',

@@ -6,12 +6,14 @@ import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
 const NAV_GUEST = [
   { href:'/tablon', label:'📌 Anuncios' },
+  { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
 ]
 
 const NAV_USER = [
   { href:'/', label:'🏠 Inicio' },
   { href:'/tablon', label:'📌 Anuncios' },
+  { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
   { href:'/mensajes', label:'💬 Mensajes' },
 ]

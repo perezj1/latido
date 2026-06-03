@@ -28,16 +28,17 @@ export const DEFAULT_SEO = {
 
 export const SEARCHABLE_SITE_PAGES = [
   { id:'inicio', icon:'🏠', title:'Inicio', section:'Latido', desc:'Resumen de anuncios, empleos, negocios, eventos y guías.', href:'/' },
-  { id:'tablon', icon:'📌', title:'Tablón de anuncios', section:'Anuncios', desc:'Vivienda, servicios, cuidados, mercado, trámites y empleo.', href:'/tablon' },
-  { id:'vivienda', icon:'🏠', title:'Vivienda', section:'Tablón', desc:'Pisos, habitaciones, compañeros y alquileres temporales.', href:'/tablon?cat=vivienda' },
-  { id:'empleo', icon:'💼', title:'Empleo', section:'Tablón', desc:'Ofertas de trabajo y perfiles que buscan empleo.', href:'/tablon?cat=empleo' },
-  { id:'mercado', icon:'🛍️', title:'Mercado', section:'Tablón', desc:'Compra, venta, regalos y artículos de segunda mano.', href:'/tablon?cat=venta' },
-  { id:'servicios', icon:'🔧', title:'Servicios', section:'Tablón', desc:'Limpieza, clases, reparaciones, mudanzas y ayuda local.', href:'/tablon?cat=servicios' },
-  { id:'tramites', icon:'📄', title:'Trámites', section:'Tablón', desc:'Cartas, traducciones, asesoría y gestiones en Suiza.', href:'/tablon?cat=documentos' },
-  { id:'comunidades', icon:'🤝', title:'Comunidades', section:'Comunidad', desc:'Grupos latinos por país, ciudad, deporte, idioma e intereses.', href:'/comunidades' },
+  { id:'tablon', icon:'📌', title:'Anuncios', section:'Anuncios', desc:'Vivienda, servicios, cuidados, mercado y trámites de la comunidad.', href:'/tablon' },
+  { id:'vivienda', icon:'🏠', title:'Vivienda', section:'Anuncios', desc:'Pisos, habitaciones, compañeros y alquileres temporales.', href:'/tablon?cat=vivienda' },
+  { id:'empleo', icon:'💼', title:'Empleo', section:'Empleo', desc:'Ofertas de trabajo y perfiles que buscan empleo.', href:'/tablon?cat=empleo' },
+  { id:'mercado', icon:'🛍️', title:'Mercado', section:'Anuncios', desc:'Compra, venta, regalos y artículos de segunda mano.', href:'/tablon?cat=venta' },
+  { id:'servicios', icon:'🔧', title:'Servicios', section:'Anuncios', desc:'Limpieza, clases, reparaciones, mudanzas y ayuda local.', href:'/tablon?cat=servicios' },
+  { id:'cuidados', icon:'❤️', title:'Cuidados', section:'Anuncios', desc:'Cuidado de niños, mayores, au pair y asistencia personal.', href:'/tablon?cat=cuidados' },
+  { id:'tramites', icon:'📄', title:'Trámites', section:'Anuncios', desc:'Cartas, traducciones, asesoría y gestiones en Suiza.', href:'/tablon?cat=documentos' },
+  { id:'comunidades', icon:'👥', title:'Grupos', section:'Comunidad', desc:'Grupos por país, ciudad, deporte, idioma e intereses.', href:'/comunidades?view=comunidades' },
   { id:'negocios', icon:'🏪', title:'Negocios latinos', section:'Comunidad', desc:'Directorio de restaurantes, tiendas, belleza, salud y servicios.', href:'/comunidades?view=negocios' },
   { id:'eventos', icon:'🎉', title:'Eventos latinos', section:'Comunidad', desc:'Conciertos, fiestas, quedadas, networking y planes familiares.', href:'/comunidades?view=eventos' },
-  { id:'guias', icon:'📚', title:'Guías para vivir en Suiza', section:'Guías', desc:'Permisos, impuestos, salud, banco, educación, trabajo y vivienda.', href:'/guias' },
+  { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
   { id:'perfil', icon:'👤', title:'Perfil', section:'Cuenta', desc:'Datos personales, avatar, preferencias y configuración.', href:'/perfil' },
   { id:'mensajes', icon:'💬', title:'Mensajes', section:'Cuenta', desc:'Conversaciones con anunciantes, negocios y miembros de Latido.', href:'/mensajes' },
   { id:'privacidad', icon:'🔒', title:'Privacidad', section:'Legal', desc:'Cómo Latido trata los datos y protege la información.', href:'/privacidad' },
@@ -53,18 +54,18 @@ const ROUTE_SEO = [
   },
   {
     path:'/tablon',
-    title:'Tablón de anuncios para hispanohablantes en Suiza | Latido.ch',
-    description:'Encuentra vivienda, servicios, empleo, cuidados, trámites y mercado entre la comunidad hispanohablante en Suiza.',
+    title:'Anuncios para hispanohablantes en Suiza | Latido.ch',
+    description:'Encuentra vivienda, servicios, cuidados, trámites y mercado entre la comunidad hispanohablante en Suiza.',
   },
   {
     path:'/comunidades',
-    title:'Comunidades, negocios y eventos latinos en Suiza | Latido.ch',
-    description:'Conecta con grupos, negocios latinos, eventos y planes para hispanohablantes en Suiza.',
+    title:'Negocios, grupos y eventos latinos en Suiza | Latido.ch',
+    description:'Conecta con negocios, grupos, eventos y planes para hispanohablantes en Suiza.',
   },
   {
     path:'/guias',
-    title:'Guías para vivir en Suiza en español | Latido.ch',
-    description:'Guías prácticas sobre permisos, impuestos, salud, bancos, trabajo, vivienda y educación para vivir en Suiza.',
+    title:'Guías para vivir en Suiza | Latido.ch',
+    description:'Guías prácticas sobre permisos, trabajo, vivienda, salud, bancos e impuestos para vivir en Suiza.',
   },
   {
     path:'/impressum',
@@ -524,7 +525,7 @@ export function getStructuredData(seo = DEFAULT_SEO) {
         areaServed:formatAdLocation(seo.ad),
         availability:'https://schema.org/InStock',
       },
-      breadcrumb('Tablón', '/tablon', seo.ad.title),
+      breadcrumb('Anuncios', '/tablon', seo.ad.title),
     ]
   }
 
@@ -692,7 +693,7 @@ export function getEnhancedStructuredData(seo = DEFAULT_SEO) {
           name:SITE_NAME,
         },
       }),
-      breadcrumb('Tablón', '/tablon', seo.ad.title),
+      breadcrumb('Anuncios', '/tablon', seo.ad.title),
     ]
   }
 
@@ -844,7 +845,7 @@ export function getSeoSnapshot(seo = DEFAULT_SEO) {
       body:cleanText(seo.ad.desc || seo.ad.description),
       facts:[cat, formatAdLocation(seo.ad), seo.ad.price].filter(Boolean),
       links:[
-        { label:'Ver tablón', href:'/tablon' },
+        { label:'Ver anuncios', href:'/tablon' },
         { label:`Más en ${cat}`, href:`/tablon?cat=${seo.ad.cat || ''}` },
       ],
     }

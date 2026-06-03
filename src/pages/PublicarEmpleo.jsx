@@ -12,9 +12,9 @@ import { JOB_INTENTS } from '../lib/constants'
 import toast from 'react-hot-toast'
 
 const STEPS = [
-  { title:'¿Buscas u ofreces empleo?', sub:'Primero elige la intención y después el sector' },
-  { title:'Datos del puesto',   sub:'Título, jornada, cantón, ciudad y salario' },
-  { title:'Detalles y publicar', sub:'Último paso — idiomas, descripción y revisión final' },
+  { title:'¿Qué publicación de empleo es?', sub:'Elige si publicas una oferta o tu perfil buscando trabajo' },
+  { title:'Datos principales', sub:'Puesto, disponibilidad, ubicación y salario' },
+  { title:'Detalles y revisión', sub:'Idiomas, descripción y resumen final antes de publicar' },
 ]
 
 const JOB_SECTORS = [
@@ -234,7 +234,7 @@ export default function PublicarEmpleo() {
       {/* Step 0 — Intención y sector */}
       {step === 0 && (
         <>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>QUIERO PUBLICAR</p>
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE PUBLICACIÓN</p>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(210px, 1fr))', gap:10, marginBottom:18 }}>
             {JOB_INTENTS.map(intent => (
               <button key={intent.id} onClick={() => s('jobIntent', intent.id)}
@@ -429,7 +429,7 @@ export default function PublicarEmpleo() {
         }
       </div>
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
-        Gratuito · Se publica al instante · Puedes eliminarlo desde tu perfil
+        Empleo está separado de los anuncios normales para distinguir ofertas de trabajo y perfiles disponibles.
       </p>
     </div>
   )

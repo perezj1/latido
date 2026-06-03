@@ -989,7 +989,7 @@ export default function Mensajes() {
                 </p>
                 <button onClick={() => navigate('/tablon')}
                   style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, background: C.primary, color: '#fff', border: 'none', borderRadius: 12, padding: '11px 18px', cursor: 'pointer', width: '100%' }}>
-                  Ir al Tablón
+                  Ir a Anuncios
                 </button>
               </div>
             ) : (

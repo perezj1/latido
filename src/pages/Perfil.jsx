@@ -16,7 +16,7 @@ import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
   { id:'all', label:'Todo' },
-  { id:'ad', label:'📌 Tablón' },
+  { id:'ad', label:'📌 Anuncios' },
   { id:'job', label:'💼 Empleos' },
   { id:'event', label:'🎉 Eventos' },
   { id:'business', label:'🏪 Negocios' },

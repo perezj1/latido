@@ -13,23 +13,23 @@ import { addModerationQueueItem } from '../lib/reports'
 import toast from 'react-hot-toast'
 
 const STEPS = [
-  { title:'¿Qué publicas?',      sub:'Elige qué haces y en qué categoría' },
-  { title:'Cuéntanos más',       sub:'Añade título y descripción — cuanto más detallado, mejor' },
-  { title:'Foto, precio y zona', sub:'Último paso — ya casi está' },
+  { title:'¿Qué tipo de anuncio es?', sub:'Primero elige la intención y después la categoría correcta' },
+  { title:'Detalles del anuncio', sub:'Título, subcategoría y descripción clara' },
+  { title:'Fotos, precio y zona', sub:'Revisa cómo se verá antes de publicarlo' },
 ]
 
 const PUBLISH_INTENTS = [
   {
     id:'busca',
     emoji:'🔍',
-    title:'Busco / necesito',
-    desc:'Necesitas vivienda, ayuda, cuidados, un servicio o algún artículo',
+    title:'Busco o necesito',
+    desc:'Vivienda, ayuda, cuidados, servicios, trámites o algún artículo',
   },
   {
     id:'ofrece_vende',
     emoji:'🏷️',
-    title:'Ofrezco / vendo',
-    desc:'Ofreces servicios, vivienda, cuidados, ayuda con trámites o vendes algo',
+    title:'Ofrezco o vendo',
+    desc:'Servicios, vivienda, cuidados, ayuda con trámites o un objeto en venta',
   },
   {
     id:'regala',
@@ -284,7 +284,7 @@ export default function Publicar() {
         <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:8 }}>
           {publishedForReview
             ? 'Tu anuncio quedo pendiente para aprobarlo desde administracion antes de mostrarse.'
-            : 'Tu anuncio ya está visible en el tablón.'}
+            : 'Tu anuncio ya está visible en Anuncios.'}
         </p>
 
         <div
@@ -301,7 +301,7 @@ export default function Publicar() {
           </p>
         </div>
 
-        <Btn onClick={() => navigate(form.cat ? `/tablon?cat=${encodeURIComponent(form.cat)}` : '/tablon')}>Ver en el tablón →</Btn>
+        <Btn onClick={() => navigate(form.cat ? `/tablon?cat=${encodeURIComponent(form.cat)}` : '/tablon')}>Ver en Anuncios →</Btn>
 
         <button
           onClick={() => {
@@ -735,7 +735,7 @@ export default function Publicar() {
       </div>
 
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
-        Gratuito · Se publica al instante · Puedes eliminarlo desde tu perfil
+        Anuncios de vivienda, servicios, cuidados, mercado y trámites. Empleo, negocios, grupos y eventos tienen su propio formulario.
       </p>
     </div>
   )

@@ -34,6 +34,29 @@ const MAIN_TABS = [
   { id:'eventos', label:'🎉 Eventos' },
 ]
 
+const TAB_COPY = {
+  negocios:{
+    title:'🏪 Negocios',
+    subtitle:'Restaurantes, tiendas, profesionales y servicios hispanohablantes.',
+    search:'Buscar negocio, servicio o ciudad...',
+    emptyTitle:'No hay negocios con estos filtros',
+    emptyText:'Prueba otra categoría o registra tu negocio gratis.',
+  },
+  comunidades:{
+    title:'👥 Grupos',
+    subtitle:'Comunidades, chats y redes de apoyo por ciudad o interés.',
+    search:'Buscar grupo, país, interés o ciudad...',
+    emptyTitle:'No hay grupos con estos filtros',
+    emptyText:'Prueba otra categoría o registra un grupo para la comunidad.',
+  },
+  eventos:{
+    title:'🎉 Eventos',
+    subtitle:'Actividades con fecha: conciertos, fiestas, quedadas y planes familiares.',
+    emptyTitle:'Sin eventos de la comunidad aún',
+    emptyText:'Publica el primer evento para que otros puedan encontrarlo.',
+  },
+}
+
 const BUSINESS_EMOJI = {
   restaurante:'🍽️',
   barberia:'💇',
@@ -1562,12 +1585,14 @@ export default function Comunidades() {
     }
   }, [businesses, communities, events, loading, openCommunityId, targetOpenBusinessId, targetOpenEventId])
 
+  const tabCopy = TAB_COPY[tab] || TAB_COPY.negocios
+
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', padding:'0 24px 100px' }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
         <div style={{ width:'100%', maxWidth:1048, margin:'0 auto', padding:'24px 24px 0' }}>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:-0.5 }}>🤝 Comunidad</h1>
-      <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:isLoggedIn ? 14 : 20 }}>Grupos, negocios y eventos para hispanohablantes en Suiza</p>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:0 }}>{tabCopy.title}</h1>
+      <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:isLoggedIn ? 14 : 20 }}>{tabCopy.subtitle}</p>
 
 
       {/* Search bar — hidden in eventos tab */}
@@ -1586,8 +1611,8 @@ export default function Comunidades() {
             style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:13, padding:'11px 13px 11px 36px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', boxSizing:'border-box' }}
             placeholder={
               tab === 'comunidades'
-                ? 'Buscar grupo...'
-                : 'Buscar negocio...'
+                ? TAB_COPY.comunidades.search
+                : TAB_COPY.negocios.search
             }
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -1607,7 +1632,7 @@ export default function Comunidades() {
           {loading ? (
             <div className="skeleton" style={{ height:200, borderRadius:20 }} />
           ) : filteredComm.length === 0 ? (
-            <EmptyState emoji="😕" title="Sin resultados" action="Ver todas" onAction={() => { setCat(''); setSearch(''); scrollPageTop() }} />
+            <EmptyState emoji="👥" title={TAB_COPY.comunidades.emptyTitle} sub={TAB_COPY.comunidades.emptyText} action="Ver todos" onAction={() => { setCat(''); setSearch(''); scrollPageTop() }} />
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
               {filteredComm.map(group => (
@@ -1628,6 +1653,8 @@ export default function Comunidades() {
         <>
           {loading ? (
             <div className="skeleton" style={{ height:260, borderRadius:20 }} />
+          ) : filteredNeg.length === 0 ? (
+            <EmptyState emoji="🏪" title={TAB_COPY.negocios.emptyTitle} sub={TAB_COPY.negocios.emptyText} action="Ver todos" onAction={() => { setNegType(''); setSearch(''); scrollPageTop() }} />
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
               {filteredNeg.map(business => (
@@ -1676,8 +1703,8 @@ export default function Comunidades() {
             ) : events.length === 0 ? (
               <div style={{ textAlign:'center', padding:'40px 20px', background:C.bg, borderRadius:20 }}>
                 <div style={{ fontSize:48, marginBottom:12 }}>🎉</div>
-                <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>Sin eventos de la comunidad aún</p>
-                <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>¡Sé el primero en publicar un evento!</p>
+                <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>{TAB_COPY.eventos.emptyTitle}</p>
+                <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>{TAB_COPY.eventos.emptyText}</p>
               </div>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
@@ -1698,7 +1725,7 @@ export default function Comunidades() {
                     )}
                     <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
                       <div style={{ display:'flex', gap:6, marginBottom:5, flexWrap:'wrap' }}>
-                        <Tag bg={C.primaryLight} color={C.primary}>{event.emoji} {event.type}</Tag>
+                        <Tag bg={C.primaryLight} color={C.primary}>{EVENTO_TYPES.find(item => item.id === event.type)?.label || `${event.emoji} Evento`}</Tag>
                         <Tag bg={C.bg} color={C.mid}>{event.city}</Tag>
                       </div>
                       <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 5px', lineHeight:1.32, ...CLAMP_2 }}>{event.title}</h3>

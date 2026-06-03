@@ -121,7 +121,7 @@ function readMetadata(value) {
 function pageLabel(path = '') {
   const clean = String(path || '/').split('?')[0]
   if (clean === '/') return 'Inicio'
-  if (clean.startsWith('/tablon')) return 'Tablón de anuncios'
+  if (clean.startsWith('/tablon')) return 'Anuncios'
   if (clean.startsWith('/anuncios/')) return 'Detalle de anuncio'
   if (clean.startsWith('/empleos/')) return 'Detalle de empleo'
   if (clean.startsWith('/comunidades')) return 'Comunidad'
@@ -163,7 +163,7 @@ function analyticsScope(event) {
   const scope = metadata.scope || 'global'
   const labels = {
     global: 'Búsqueda global',
-    tablon: 'Tablón',
+    tablon: 'Anuncios',
     empleos: 'Empleos',
     comunidad_grupos: 'Grupos',
     comunidad_negocios: 'Negocios',
@@ -1632,7 +1632,7 @@ export default function Admin() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
                 <div>
                   <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Búsquedas frecuentes</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Términos escritos en búsqueda global, tablón y comunidad.</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Términos escritos en búsqueda global, anuncios y comunidad.</p>
                 </div>
                 <Tag bg={C.primaryLight} color={C.primary}>{searchEvents.length} búsquedas</Tag>
               </div>
@@ -1767,7 +1767,7 @@ export default function Admin() {
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 10 }}>
               {[
-                { label: 'Páginas usadas', note: 'Agrupa rutas como Inicio, Tablón, Comunidad, Mensajes o Detalle de anuncio.', color: '#0284C7' },
+                { label: 'Páginas usadas', note: 'Agrupa rutas como Inicio, Anuncios, Comunidad, Mensajes o Detalle de anuncio.', color: '#0284C7' },
                 { label: 'Búsquedas', note: 'Guarda el término, la sección y filtros como categoría, cantón o tipo de empleo.', color: C.primary },
                 { label: 'Aperturas', note: 'Registra cuando una persona abre un resultado de búsqueda con clic o Enter.', color: '#059669' },
                 { label: 'Horarios', note: 'Usa la hora local del created_at para detectar horas y días con más movimiento.', color: '#7C3AED' },
