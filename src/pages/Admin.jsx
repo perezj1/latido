@@ -86,7 +86,9 @@ function isWithinRecentDays(value, days) {
   const start = new Date()
   start.setHours(0, 0, 0, 0)
   if (days > 1) start.setDate(start.getDate() - (days - 1))
-  return date >= start
+  const end = new Date()
+  end.setHours(23, 59, 59, 999)
+  return date >= start && date <= end
 }
 
 function countRecent(items, days) {
@@ -123,6 +125,17 @@ function periodTrend(items, days) {
   const prev = full.slice(0, days).reduce((s, d) => s + d.count, 0)
   if (prev === 0) return cur > 0 ? 100 : 0
   return Math.round(((cur - prev) / prev) * 100)
+}
+
+function scoreByTarget(value, target, maxScore) {
+  if (!target || target <= 0) return 0
+  return Math.min(maxScore, Math.round((Math.max(0, value) / target) * maxScore))
+}
+
+function averageTrend(values) {
+  const valid = values.filter(value => Number.isFinite(value))
+  if (!valid.length) return 0
+  return Math.round(valid.reduce((sum, value) => sum + value, 0) / valid.length)
 }
 
 function readMetadata(value) {
@@ -610,8 +623,8 @@ function InsightBarList({ title, subtitle, rows, color = C.primary, emptyText = 
 function PeriodSwitch({ value, onChange }) {
   const options = [
     { value: 1, label: 'Hoy' },
-    { value: 7, label: '7 dias' },
-    { value: 30, label: '30 dias' },
+    { value: 7, label: '7 días' },
+    { value: 30, label: '30 días' },
   ]
   return (
     <div style={{ display: 'flex', gap: 6, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 999, padding: 5, boxShadow: '0 8px 20px rgba(15,23,42,0.04)' }}>
@@ -642,7 +655,7 @@ function PeriodSwitch({ value, onChange }) {
 function AdminPeriodChart({ title, items, color, days, onDaysChange }) {
   const data = useMemo(() => countByDay(items, days), [items, days])
   const total = data.reduce((sum, item) => sum + item.count, 0)
-  const titleSuffix = days === 1 ? 'hoy' : `${days} dias`
+  const titleSuffix = days === 1 ? 'hoy' : `${days} días`
 
   return (
     <div style={{
@@ -716,6 +729,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [userSearch, setUserSearch] = useState('')
   const [userDays, setUserDays] = useState(1)
+  const [overviewDays, setOverviewDays] = useState(30)
   const [reports, setReports] = useState([])
   const [queue, setQueue] = useState([])
   const [users, setUsers] = useState([])
@@ -728,6 +742,9 @@ export default function Admin() {
   const [presenceStatus, setPresenceStatus] = useState('idle')
   const [analyticsEvents, setAnalyticsEvents] = useState([])
   const [analyticsUnavailable, setAnalyticsUnavailable] = useState(false)
+  const [analyticsDays, setAnalyticsDays] = useState(30)
+  const [messageEvents, setMessageEvents] = useState([])
+  const [messagesUnavailable, setMessagesUnavailable] = useState(false)
 
   const metricUsers = useMemo(
     () => users.filter(profile => !isAdminEmail(profile.email)),
@@ -787,21 +804,21 @@ export default function Admin() {
     [metricUsers]
   )
   const contentItems = useMemo(() => [...recentListings, ...recentJobs], [recentListings, recentJobs])
-  const analytics30 = useMemo(
-    () => analyticsEvents.filter(event => isWithinRecentDays(event.created_at, 30) && !adminUserIds.has(event.user_id)),
-    [adminUserIds, analyticsEvents]
+  const analyticsInRange = useMemo(
+    () => analyticsEvents.filter(event => isWithinRecentDays(event.created_at, analyticsDays) && !adminUserIds.has(event.user_id)),
+    [adminUserIds, analyticsDays, analyticsEvents]
   )
   const pageViewEvents = useMemo(
-    () => analytics30.filter(event => event.event_type === 'page_view' && !String(event.path || '').startsWith('/admin-latido')),
-    [analytics30]
+    () => analyticsInRange.filter(event => event.event_type === 'page_view' && !String(event.path || '').startsWith('/admin-latido')),
+    [analyticsInRange]
   )
   const searchEvents = useMemo(
-    () => analytics30.filter(event => event.event_type === 'search' && analyticsQuery(event)),
-    [analytics30]
+    () => analyticsInRange.filter(event => event.event_type === 'search' && analyticsQuery(event)),
+    [analyticsInRange]
   )
   const searchResultEvents = useMemo(
-    () => analytics30.filter(event => event.event_type === 'search_result_open'),
-    [analytics30]
+    () => analyticsInRange.filter(event => event.event_type === 'search_result_open'),
+    [analyticsInRange]
   )
   const topPageRows = useMemo(
     () => topAnalyticsRows(pageViewEvents, event => pageLabel(event.path), 8, event => event.path),
@@ -844,13 +861,15 @@ export default function Admin() {
   )
   const pageHourRows = useMemo(() => countByHour(pageViewEvents), [pageViewEvents])
   const searchHourRows = useMemo(() => countByHour(searchEvents), [searchEvents])
-  const signupItems30 = useMemo(() => metricUsers.filter(profile => isWithinRecentDays(profile.created_at, 30)), [metricUsers])
-  const publicationItems30 = useMemo(() => contentItems.filter(item => isWithinRecentDays(item.created_at, 30)), [contentItems])
-  const signupHourRows = useMemo(() => countByHour(signupItems30), [signupItems30])
-  const publicationHourRows = useMemo(() => countByHour(publicationItems30), [publicationItems30])
+  const signupItemsInAnalyticsRange = useMemo(() => metricUsers.filter(profile => isWithinRecentDays(profile.created_at, analyticsDays)), [analyticsDays, metricUsers])
+  const publicationItemsInAnalyticsRange = useMemo(() => contentItems.filter(item => isWithinRecentDays(item.created_at, analyticsDays)), [analyticsDays, contentItems])
+  const signupHourRows = useMemo(() => countByHour(signupItemsInAnalyticsRange), [signupItemsInAnalyticsRange])
+  const publicationHourRows = useMemo(() => countByHour(publicationItemsInAnalyticsRange), [publicationItemsInAnalyticsRange])
   const pageWeekdayRows = useMemo(() => countByWeekday(pageViewEvents), [pageViewEvents])
-  const signupWeekdayRows = useMemo(() => countByWeekday(signupItems30), [signupItems30])
-  const publicationWeekdayRows = useMemo(() => countByWeekday(publicationItems30), [publicationItems30])
+  const signupWeekdayRows = useMemo(() => countByWeekday(signupItemsInAnalyticsRange), [signupItemsInAnalyticsRange])
+  const publicationWeekdayRows = useMemo(() => countByWeekday(publicationItemsInAnalyticsRange), [publicationItemsInAnalyticsRange])
+  const analyticsMetricSuffix = analyticsDays === 1 ? 'hoy' : `${analyticsDays}d`
+  const analyticsRangeText = analyticsDays === 1 ? 'hoy, de 00:00 a 23:59' : `últimos ${analyticsDays} días`
   const topPageHourRows = useMemo(() => topTimeRows(pageHourRows), [pageHourRows])
   const topSearchHourRows = useMemo(() => topTimeRows(searchHourRows), [searchHourRows])
   const topSignupHourRows = useMemo(() => topTimeRows(signupHourRows), [signupHourRows])
@@ -926,12 +945,20 @@ export default function Admin() {
     }
 
     const analyticsSince = new Date(Date.now() - 60 * 86_400_000).toISOString()
-    const analyticsRes = await supabase
-      .from('analytics_events')
-      .select('id,event_type,path,search,user_id,session_id,metadata,created_at')
-      .gte('created_at', analyticsSince)
-      .order('created_at', { ascending: false })
-      .limit(1500)
+    const [analyticsRes, messagesRes] = await Promise.all([
+      supabase
+        .from('analytics_events')
+        .select('id,event_type,path,search,user_id,session_id,metadata,created_at')
+        .gte('created_at', analyticsSince)
+        .order('created_at', { ascending: false })
+        .limit(1500),
+      supabase
+        .from('messages')
+        .select('id,conversation_id,sender_id,created_at')
+        .gte('created_at', analyticsSince)
+        .order('created_at', { ascending: false })
+        .limit(1500),
+    ])
 
     if (analyticsRes.error) {
       setAnalyticsEvents([])
@@ -940,6 +967,14 @@ export default function Admin() {
     } else {
       setAnalyticsEvents(analyticsRes.data || [])
       setAnalyticsUnavailable(false)
+    }
+    if (messagesRes.error) {
+      setMessageEvents([])
+      setMessagesUnavailable(true)
+      console.warn('Messages activity unavailable:', messagesRes.error.message)
+    } else {
+      setMessageEvents(messagesRes.data || [])
+      setMessagesUnavailable(false)
     }
 
     const nextReports = reportsRes.data || []
@@ -1283,24 +1318,82 @@ export default function Admin() {
   const businessAverageScore = businesses.length
     ? Math.round(businesses.reduce((sum, business) => sum + getBusinessVerificationDetails(business).score, 0) / businesses.length)
     : 0
-  const newUsers30 = countRecent(metricUsers, 30)
-  const newContent30 = countRecent(contentItems, 30)
-  const reports30 = countRecent(reports, 30)
-  const userTrend30 = periodTrend(metricUsers, 30)
-  const contentTrend30 = periodTrend(contentItems, 30)
-  const reportsTrend30 = periodTrend(reports, 30)
+  const overviewMetricSuffix = overviewDays === 1 ? 'hoy' : `${overviewDays}d`
+  const overviewPeriodLabel = overviewDays === 1 ? 'Hoy' : `${overviewDays} días`
+  const overviewRangeText = overviewDays === 1 ? 'hoy, de 00:00 a 23:59' : `últimos ${overviewDays} días`
+  const overviewComparisonText = overviewDays === 1 ? 'hoy con ayer' : `los últimos ${overviewDays} días con los ${overviewDays} anteriores`
+  const overviewTargets = {
+    activeUsers: Math.max(1, Math.ceil(metricUsers.length * (overviewDays === 1 ? 0.05 : overviewDays === 7 ? 0.14 : 0.25))),
+    newUsers: overviewDays === 1 ? 1 : overviewDays === 7 ? 3 : 8,
+    businesses: overviewDays === 1 ? 1 : overviewDays === 7 ? 1 : 3,
+    listings: overviewDays === 1 ? 1 : overviewDays === 7 ? 4 : 12,
+    jobs: overviewDays === 1 ? 1 : overviewDays === 7 ? 2 : 5,
+    interactions: overviewDays === 1 ? 20 : overviewDays === 7 ? 120 : 450,
+    messages: overviewDays === 1 ? 1 : overviewDays === 7 ? 6 : 20,
+  }
+  const overviewAnalyticsBaseEvents = analyticsEvents.filter(event =>
+    !adminUserIds.has(event.user_id) && !String(event.path || '').startsWith('/admin-latido')
+  )
+  const overviewInteractionEvents = overviewAnalyticsBaseEvents.filter(event => isWithinRecentDays(event.created_at, overviewDays))
+  const overviewMessageBaseEvents = messageEvents.filter(event => !event.sender_id || !adminUserIds.has(event.sender_id))
+  const overviewMessageEvents = overviewMessageBaseEvents.filter(event => isWithinRecentDays(event.created_at, overviewDays))
+  const activeUsersInOverviewRange = metricUsers.filter(profile => isWithinRecentDays(profile.last_seen_at, overviewDays))
+  const recentListingsInOverviewRange = recentListings.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
+  const recentJobsInOverviewRange = recentJobs.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
+  const newBusinessesInOverviewRange = countRecent(businesses, overviewDays)
+  const newUsersInOverviewRange = countRecent(metricUsers, overviewDays)
+  const newContentInOverviewRange = countRecent(contentItems, overviewDays)
+  const overviewTotalNewContent = newContentInOverviewRange + newBusinessesInOverviewRange
+  const reportsInOverviewRange = countRecent(reports, overviewDays)
+  const overviewPageViews = overviewInteractionEvents.filter(event => event.event_type === 'page_view').length
+  const overviewSearchInteractions = overviewInteractionEvents.filter(event => event.event_type === 'search' || event.event_type === 'search_result_open').length
+  const overviewInteractionCount = overviewInteractionEvents.length
+  const overviewMessagesCount = overviewMessageEvents.length
+  const overviewEngagementCount = (analyticsUnavailable ? 0 : overviewInteractionCount) + (messagesUnavailable ? 0 : overviewMessagesCount)
+  const overviewEngagementText = analyticsUnavailable && messagesUnavailable
+    ? 'sin datos de interacción disponibles'
+    : `${overviewEngagementCount} señales de interacción`
+  const userTrendInOverviewRange = periodTrend(metricUsers, overviewDays)
+  const activeTrendInOverviewRange = periodTrend(activeChartUsers, overviewDays)
+  const businessTrendInOverviewRange = periodTrend(businesses, overviewDays)
+  const listingTrendInOverviewRange = periodTrend(recentListings, overviewDays)
+  const jobTrendInOverviewRange = periodTrend(recentJobs, overviewDays)
+  const interactionTrendInOverviewRange = analyticsUnavailable ? null : periodTrend(overviewAnalyticsBaseEvents, overviewDays)
+  const messageTrendInOverviewRange = messagesUnavailable ? null : periodTrend(overviewMessageBaseEvents, overviewDays)
+  const reportsTrendInOverviewRange = periodTrend(reports, overviewDays)
+  const lowContentThreshold = overviewDays === 1 ? 1 : overviewDays === 7 ? 3 : 5
+  const overviewPerformanceTrends = [
+    activeTrendInOverviewRange,
+    userTrendInOverviewRange,
+    businessTrendInOverviewRange,
+    listingTrendInOverviewRange,
+    jobTrendInOverviewRange,
+    interactionTrendInOverviewRange,
+    messageTrendInOverviewRange,
+  ].filter(value => value !== null)
+  const overviewAverageTrend = averageTrend(overviewPerformanceTrends)
+  const overviewPositiveTrendCount = overviewPerformanceTrends.filter(value => value > 10).length
+  const overviewNegativeTrendCount = overviewPerformanceTrends.filter(value => value < -20).length
+  const overviewTrendAdjustment = overviewAverageTrend > 20 ? 6 : overviewAverageTrend > 8 ? 3 : overviewAverageTrend < -25 ? -8 : overviewAverageTrend < -10 ? -4 : 0
+  const overviewPendingPenalty = Math.min(24, totalPendingActions * 4)
+  const overviewReportPenalty = Math.min(10, reportsInOverviewRange * 2) + (reportsTrendInOverviewRange > 25 ? 6 : 0)
   const generalScore = Math.max(0, Math.min(100,
-    74
-    + Math.min(10, activeUsersWeek.length)
-    + (userTrend30 > 0 ? 6 : userTrend30 < -20 ? -8 : 0)
-    + (contentTrend30 > 0 ? 6 : contentTrend30 < -20 ? -8 : 0)
-    - Math.min(28, totalPendingActions * 4)
-    - (reportsTrend30 > 25 ? 8 : 0)
+    22
+    + scoreByTarget(activeUsersInOverviewRange.length, overviewTargets.activeUsers, 18)
+    + scoreByTarget(newUsersInOverviewRange, overviewTargets.newUsers, 10)
+    + scoreByTarget(newBusinessesInOverviewRange, overviewTargets.businesses, 8)
+    + scoreByTarget(recentListingsInOverviewRange, overviewTargets.listings, 10)
+    + scoreByTarget(recentJobsInOverviewRange, overviewTargets.jobs, 6)
+    + (analyticsUnavailable ? 7 : scoreByTarget(overviewInteractionCount, overviewTargets.interactions, 14))
+    + (messagesUnavailable ? 4 : scoreByTarget(overviewMessagesCount, overviewTargets.messages, 8))
+    + overviewTrendAdjustment
+    - overviewPendingPenalty
+    - overviewReportPenalty
   ))
-  const generalStatus = generalScore >= 82 ? 'Va bien' : generalScore >= 64 ? 'Estable' : 'Requiere atención'
-  const generalTrend = reportsTrend30 > 25 || userTrend30 < -20 || contentTrend30 < -20
+  const generalStatus = generalScore >= 82 ? 'Bueno' : generalScore >= 64 ? 'Estable' : 'Requiere atención'
+  const generalTrend = reportsTrendInOverviewRange > 25 || overviewNegativeTrendCount >= 2 || overviewAverageTrend < -18
     ? 'Empeora'
-    : userTrend30 > 10 || contentTrend30 > 10
+    : overviewPositiveTrendCount >= 2 || overviewAverageTrend > 12
       ? 'Mejora'
       : 'Estable'
   const generalTrendColor = generalTrend === 'Mejora' ? '#059669' : generalTrend === 'Empeora' ? '#DC2626' : '#D97706'
@@ -1309,13 +1402,25 @@ export default function Admin() {
     stats.queue > 0 && `Revisar ${stats.queue} elementos en cola antes de que se acumulen publicaciones bloqueadas.`,
     stats.reports > 0 && `Atender ${stats.reports} reportes pendientes para mantener confianza y seguridad.`,
     stats.businessVerification > 0 && `Verificar ${stats.businessVerification} negocios pendientes para mejorar confianza visual.`,
-    newContent30 < 5 && 'Impulsar publicaciones recientes: hay poca creación de contenido en los últimos 30 días.',
+    activeUsersInOverviewRange.length < overviewTargets.activeUsers && `Subir actividad: hay ${activeUsersInOverviewRange.length} usuarios activos y el objetivo del periodo es ${overviewTargets.activeUsers}.`,
+    newUsersInOverviewRange === 0 && `Atraer usuarios nuevos: no hay altas registradas en ${overviewRangeText}.`,
+    newBusinessesInOverviewRange === 0 && overviewDays > 1 && `Impulsar negocios: no hay negocios nuevos en ${overviewRangeText}.`,
+    newContentInOverviewRange < lowContentThreshold && `Impulsar publicaciones recientes: hay poca creación de contenido en ${overviewRangeText}.`,
+    !analyticsUnavailable && overviewInteractionCount < Math.ceil(overviewTargets.interactions * 0.35) && `Revisar interacción: hay ${overviewInteractionCount} eventos de navegación/búsqueda en ${overviewRangeText}.`,
+    !messagesUnavailable && overviewMessagesCount < Math.ceil(overviewTargets.messages * 0.35) && `Fomentar conversaciones: hay ${overviewMessagesCount} mensajes en ${overviewRangeText}.`,
+    analyticsUnavailable && 'Conectar analytics_events para que el score mida interacción real de navegación y búsquedas.',
+    messagesUnavailable && 'Revisar permisos de messages para que el score mida conversaciones reales.',
     liveUntrackedUsers > metricUsers.length * 0.4 && 'Esperar unos días para leer actividad real: muchos usuarios antiguos aún no tienen last_seen_at.',
-  ].filter(Boolean).slice(0, 4)
+  ].filter(Boolean).slice(0, 5)
   const overviewSignals = [
-    { label: 'Usuarios nuevos 30d', value: newUsers30, trend: userTrend30, color: C.primary },
-    { label: 'Publicaciones 30d', value: newContent30, trend: contentTrend30, color: '#059669' },
-    { label: 'Reportes 30d', value: reports30, trend: reportsTrend30, color: '#DC2626' },
+    { label: `Usuarios activos ${overviewMetricSuffix}`, value: activeUsersInOverviewRange.length, trend: activeTrendInOverviewRange, color: '#0F766E' },
+    { label: `Usuarios nuevos ${overviewMetricSuffix}`, value: newUsersInOverviewRange, trend: userTrendInOverviewRange, color: C.primary },
+    { label: `Negocios nuevos ${overviewMetricSuffix}`, value: newBusinessesInOverviewRange, trend: businessTrendInOverviewRange, color: '#059669' },
+    { label: `Anuncios nuevos ${overviewMetricSuffix}`, value: recentListingsInOverviewRange, trend: listingTrendInOverviewRange, color: '#0284C7' },
+    { label: `Empleos nuevos ${overviewMetricSuffix}`, value: recentJobsInOverviewRange, trend: jobTrendInOverviewRange, color: '#7C3AED' },
+    { label: `Interacción ${overviewMetricSuffix}`, value: analyticsUnavailable ? 'No disp.' : overviewInteractionCount, trend: interactionTrendInOverviewRange, color: '#0891B2' },
+    { label: `Mensajes ${overviewMetricSuffix}`, value: messagesUnavailable ? 'No disp.' : overviewMessagesCount, trend: messageTrendInOverviewRange, color: '#9333EA' },
+    { label: `Reportes ${overviewMetricSuffix}`, value: reportsInOverviewRange, trend: reportsTrendInOverviewRange, color: '#DC2626' },
     { label: 'Pendientes ahora', value: totalPendingActions, trend: null, color: adminHealthColor },
   ]
   const topPageMax = Math.max(...topPageRows.map(row => row.value), 1)
@@ -1356,9 +1461,9 @@ export default function Admin() {
     ? { ...SECTION_TITLES.content, label: 'Publicaciones recientes' }
     : SECTION_TITLES[tab]
   const SECTION_DETAILS = {
-    overview: { description: 'Rapport de 30 días con señales de crecimiento, actividad, pendientes y recomendaciones.', color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
+    overview: { description: `Rapport de ${overviewRangeText} con señales de crecimiento, actividad, pendientes y recomendaciones.`, color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
     live: { description: 'Pulso operativo de actividad diaria, semanal y usuarios online en este momento.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
-    analytics: { description: 'Páginas más usadas, búsquedas frecuentes, horarios fuertes y comportamiento de navegación de los últimos 30 días.', color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResultEvents.length} aperturas` },
+    analytics: { description: `Páginas más usadas, búsquedas frecuentes, horarios fuertes y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResultEvents.length} aperturas` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
     businessVerification: { description: 'Evalua datos, contacto y señales antes de mostrar la etiqueta Verificada.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
@@ -1369,9 +1474,10 @@ export default function Admin() {
   const sectionMetrics = tab === 'overview'
     ? [
         { label: 'Estado', value: loading ? '...' : generalStatus, hint: `Score operativo ${generalScore}/100`, color: generalTrendColor },
-        { label: 'Tendencia 30d', value: loading ? '...' : generalTrend, hint: `Usuarios ${userTrend30 > 0 ? '+' : ''}${userTrend30}% · contenido ${contentTrend30 > 0 ? '+' : ''}${contentTrend30}%`, color: generalTrendColor },
-        { label: 'Pendientes', value: loading ? '...' : totalPendingActions, hint: 'Reportes, revisión y negocios', color: adminHealthColor },
-        { label: 'Publicaciones 30d', value: loading ? '...' : newContent30, hint: `${recentListings.length} anuncios · ${recentJobs.length} empleos cargados`, color: '#059669' },
+        { label: `Usuarios activos ${overviewMetricSuffix}`, value: loading ? '...' : activeUsersInOverviewRange.length, hint: `${newUsersInOverviewRange} usuarios nuevos`, color: '#0F766E' },
+        { label: `Contenido ${overviewMetricSuffix}`, value: loading ? '...' : overviewTotalNewContent, hint: `${recentListingsInOverviewRange} anuncios · ${recentJobsInOverviewRange} empleos · ${newBusinessesInOverviewRange} negocios`, color: '#059669' },
+        { label: 'Interacción', value: loading ? '...' : (analyticsUnavailable && messagesUnavailable ? 'No disp.' : overviewEngagementCount), hint: `${analyticsUnavailable ? 'sin analytics' : `${overviewPageViews} vistas · ${overviewSearchInteractions} búsquedas`} · ${messagesUnavailable ? 'sin mensajes' : `${overviewMessagesCount} mensajes`}`, color: analyticsUnavailable && messagesUnavailable ? '#D97706' : '#0891B2' },
+        { label: `Tendencia ${overviewMetricSuffix}`, value: loading ? '...' : generalTrend, hint: `Promedio ${overviewAverageTrend > 0 ? '+' : ''}${overviewAverageTrend}% · reportes ${reportsTrendInOverviewRange > 0 ? '+' : ''}${reportsTrendInOverviewRange}%`, color: generalTrendColor },
       ]
     : tab === 'live'
     ? [
@@ -1383,8 +1489,8 @@ export default function Admin() {
       ]
     : tab === 'analytics'
       ? [
-          { label: 'Vistas 30d', value: loading ? '...' : pageViewEvents.length, hint: `${analyticsSessions} sesiones registradas`, color: '#0284C7' },
-          { label: 'Búsquedas 30d', value: loading ? '...' : searchEvents.length, hint: 'Términos escritos en barras', color: C.primary },
+          { label: `Vistas ${analyticsMetricSuffix}`, value: loading ? '...' : pageViewEvents.length, hint: `${analyticsSessions} sesiones registradas`, color: '#0284C7' },
+          { label: `Búsquedas ${analyticsMetricSuffix}`, value: loading ? '...' : searchEvents.length, hint: 'Términos escritos en barras', color: C.primary },
           { label: 'Aperturas búsqueda', value: loading ? '...' : searchResultEvents.length, hint: `${searchActionRate}% sobre búsquedas registradas`, color: '#059669' },
           { label: 'Hora fuerte', value: loading ? '...' : strongestTimeLabel(pageHourRows), hint: analyticsUnavailable ? 'Falta tabla analytics_events' : 'Según vistas de página', color: analyticsUnavailable ? '#D97706' : '#0F766E' },
         ]
@@ -1423,7 +1529,7 @@ export default function Admin() {
     tab === 'users'
       ? <AdminPeriodChart title="Nuevos usuarios" items={users} color={C.primary} days={userDays} onDaysChange={setUserDays} />
       : tab === 'analytics'
-        ? <AdminChartCard title="Vistas de página" items={pageViewEvents} color="#0284C7" />
+        ? <AdminPeriodChart title="Vistas de página" items={pageViewEvents} color="#0284C7" days={analyticsDays} onDaysChange={setAnalyticsDays} />
       : tab === 'reports'
         ? <AdminChartCard title="Reportes recibidos" items={reports} color="#DC2626" />
         : tab === 'businessVerification'
@@ -1460,6 +1566,11 @@ export default function Admin() {
       </div>
 
       {/* Stat cards — double as navigation */}
+      {tab === 'overview' && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '-2px 0 10px' }}>
+          <PeriodSwitch value={overviewDays} onChange={setOverviewDays} />
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 16 }}>
         {sectionMetrics.map(metric => (
           <SummaryMetric
@@ -1514,13 +1625,13 @@ export default function Admin() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 0 }}>
               <div style={{ padding: 22, background: `linear-gradient(135deg,${generalTrendColor} 0%,#2563EB 100%)`, color: '#fff' }}>
                 <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.86 }}>
-                  Rapport 30 días
+                  Rapport {overviewPeriodLabel.toLowerCase()}
                 </p>
                 <h3 style={{ fontFamily: PP, fontWeight: 900, fontSize: 31, lineHeight: 1.05, margin: '0 0 8px', letterSpacing: -0.8 }}>
                   {generalStatus}
                 </h3>
                 <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.55, margin: '0 0 18px', opacity: 0.9 }}>
-                  {newUsers30} usuarios nuevos, {newContent30} publicaciones y {reports30} reportes registrados en los últimos 30 días.
+                  {activeUsersInOverviewRange.length} usuarios activos, {newUsersInOverviewRange} nuevos, {newBusinessesInOverviewRange} negocios, {recentListingsInOverviewRange} anuncios y {overviewEngagementText} en {overviewRangeText}.
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ flex: 1, height: 10, borderRadius: 999, background: 'rgba(255,255,255,0.22)', overflow: 'hidden' }}>
@@ -1538,13 +1649,13 @@ export default function Admin() {
                   La tendencia está {generalTrend.toLowerCase()}.
                 </p>
                 <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, lineHeight: 1.6, margin: 0 }}>
-                  Se calcula sin IA, comparando los últimos 30 días con los 30 anteriores y penalizando acumulación de reportes, revisión y verificaciones pendientes.
+                  Se calcula sin IA, comparando {overviewComparisonText} en actividad, usuarios nuevos, negocios, anuncios, empleos, navegación, búsquedas, mensajes y reportes.
                 </p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 15 }}>
                   <Tag bg={generalTrend === 'Mejora' ? '#D1FAE5' : generalTrend === 'Empeora' ? '#FEE2E2' : '#FEF3C7'} color={generalTrendColor}>
                     {generalTrend}
                   </Tag>
-                  <Tag bg={C.bg} color={C.mid}>30 días</Tag>
+                  <Tag bg={C.bg} color={C.mid}>{overviewPeriodLabel}</Tag>
                   <Tag bg={totalPendingActions ? '#FEF3C7' : '#D1FAE5'} color={totalPendingActions ? '#92400E' : '#047857'}>
                     {totalPendingActions} pendientes
                   </Tag>
@@ -1633,7 +1744,7 @@ export default function Admin() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
                 <div>
                   <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Páginas más usadas</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Agrupado por sección en los últimos 30 días.</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Agrupado por sección en {analyticsRangeText}.</p>
                 </div>
                 <Tag bg="#E0F2FE" color="#0284C7">{pageViewEvents.length} vistas</Tag>
               </div>
@@ -1670,7 +1781,7 @@ export default function Admin() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
                 <div>
                   <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Búsquedas frecuentes</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Términos escritos en búsqueda global, anuncios y comunidad.</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Términos escritos en búsqueda global, anuncios y comunidad en {analyticsRangeText}.</p>
                 </div>
                 <Tag bg={C.primaryLight} color={C.primary}>{searchEvents.length} búsquedas</Tag>
               </div>
@@ -1721,14 +1832,14 @@ export default function Admin() {
             />
             <InsightBarList
               title="Altas por hora"
-              subtitle="Nuevas cuentas creadas en los últimos 30 días."
+              subtitle={`Nuevas cuentas creadas en ${analyticsRangeText}.`}
               rows={topSignupHourRows}
               color="#7C3AED"
               emptyText="Sin nuevas cuentas recientes."
             />
             <InsightBarList
               title="Publicaciones por hora"
-              subtitle="Anuncios y empleos creados en los últimos 30 días."
+              subtitle={`Anuncios y empleos creados en ${analyticsRangeText}.`}
               rows={topPublicationHourRows}
               color="#059669"
               emptyText="Sin publicaciones recientes."
