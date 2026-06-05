@@ -626,7 +626,7 @@ export default function Home() {
 
   const fetchHomeData = useCallback(async () => {
     try {
-      const [adsRes, communitiesRes, providersRes, jobsRes, eventsRes] = await Promise.all([
+      const [adsRes, communitiesRes, providersRes, providerPhotosRes, jobsRes, eventsRes] = await Promise.all([
         supabase
           .from('listings')
           .select('*')
@@ -646,6 +646,13 @@ export default function Home() {
           .limit(24),
 
         supabase
+          .from('provider_photos')
+          .select('provider_id, url, is_main, sort_order')
+          .order('is_main', { ascending:false })
+          .order('sort_order', { ascending:true })
+          .limit(300),
+
+        supabase
           .from('jobs')
           .select('*')
           .or('active.is.null,active.eq.true')
@@ -663,6 +670,7 @@ export default function Home() {
       if (adsRes.error) console.error('Error loading recent ads:', adsRes.error)
       if (communitiesRes.error) console.error('Error loading communities:', communitiesRes.error)
       if (providersRes.error) console.error('Error loading providers:', providersRes.error)
+      if (providerPhotosRes.error) console.error('Error loading provider photos:', providerPhotosRes.error)
       if (jobsRes.error) console.error('Error loading jobs:', jobsRes.error)
       if (eventsRes.error) console.error('Error loading events:', eventsRes.error)
 
@@ -756,6 +764,12 @@ export default function Home() {
         }))
       )
 
+      const providerPhotoMap = {}
+      ;((providerPhotosRes.error ? [] : providerPhotosRes.data) || []).forEach(photo => {
+        if (!photo?.provider_id || !photo?.url) return
+        providerPhotoMap[photo.provider_id] = [...(providerPhotoMap[photo.provider_id] || []), photo.url]
+      })
+
       setBusinessHighlights(
         ((providersRes.error ? [] : providersRes.data) || [])
           .filter(row => row.category !== 'empleo' && row.category !== 'vivienda')
@@ -773,7 +787,7 @@ export default function Home() {
               city: row.city || row.canton || 'Suiza',
               desc: row.description || '',
               services: Array.isArray(row.services) ? row.services : [],
-              photo_url: row.photo_url || '',
+              photo_url: row.photo_url || providerPhotoMap[row.id]?.[0] || '',
               verified: verificationStatus === 'verified',
               verification_status: verificationStatus,
               featured: !!row.featured,
