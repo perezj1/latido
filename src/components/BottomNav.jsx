@@ -23,7 +23,8 @@ const TABS = [
   { path:'/perfil',      emoji:'👤', label:'Perfil' },
 ]
 
-const NO_FAB = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad', '/mensajes']
+const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
+const NO_FAB = [...PUBLISH_FLOW_PATHS, '/mensajes']
 
 export default function BottomNav() {
   const { pathname, search } = useLocation()
@@ -77,9 +78,10 @@ export default function BottomNav() {
   }, [pathname])
 
   const isAdminPage = pathname === '/admin-latido' || pathname.startsWith('/admin-latido/')
+  const isPublishFlow = PUBLISH_FLOW_PATHS.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const hideFab = isAdminPage || NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const fab = hideFab ? null : getPublishTarget()
-  const hideMobileNav = isAdminPage || (pathname.startsWith('/mensajes') && messagesChatOpen)
+  const hideMobileNav = isAdminPage || isPublishFlow || (pathname.startsWith('/mensajes') && messagesChatOpen)
 
   return (
     <>

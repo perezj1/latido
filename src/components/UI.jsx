@@ -12,7 +12,7 @@ export function Btn({ children, onClick, variant='primary', size='md', disabled=
     secondary: { background:C.bg,           color:C.primary, border:`1.5px solid ${C.border}` },
     ghost:     { background:'transparent',  color:C.primary, border:`1.5px solid ${C.primary}` },
     danger:    { background:C.dangerLight,  color:C.danger,  border:'none' },
-    success:   { background:C.successLight, color:C.success, border:'none' },
+    success:   { background:C.successLight, color:C.success, border:`1.5px solid ${C.successMid}` },
     white:     { background:'#fff',         color:C.primary, border:'none' },
     dark:      { background:C.text,         color:'#fff',    border:'none' },
   }
@@ -36,6 +36,31 @@ export function Btn({ children, onClick, variant='primary', size='md', disabled=
 }
 
 // ── Card ───────────────────────────────────────────────────────
+export function StickyFormActions({ children }) {
+  return (
+    <div
+      className="sticky-form-actions"
+      style={{
+        position:'fixed',
+        left:0,
+        right:0,
+        zIndex:70,
+        padding:'10px max(20px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-right))',
+        background:'rgba(248,250,255,0.94)',
+        borderTop:`1px solid ${C.border}`,
+        boxShadow:'0 -14px 38px rgba(15,23,42,0.12)',
+        backdropFilter:'blur(16px)',
+        WebkitBackdropFilter:'blur(16px)',
+        transition:'bottom .16s ease',
+      }}
+    >
+      <div style={{ maxWidth:600, margin:'0 auto', display:'flex', gap:10, alignItems:'center' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export function Card({ children, onClick, style={} }) {
   return (
     <div

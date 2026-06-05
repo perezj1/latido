@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { VISIBLE_NEGOCIO_TYPES } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { calculateBusinessVerification } from '../lib/businessVerification'
 import { insertWithOptionalColumnsFallback } from '../lib/supabaseCompat'
@@ -205,7 +205,7 @@ export default function RegistrarNegocio() {
   }
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
+    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
       <ProgressBar step={step} total={STEPS.length} />
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>{STEPS[step].title}</h1>
       <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:24 }}>{STEPS[step].sub}</p>
@@ -216,7 +216,7 @@ export default function RegistrarNegocio() {
           {NEGOCIO_TYPES_FORM.map(t => {
             const [emoji, ...words] = t.label.split(' ')
             return (
-              <button key={t.id} onClick={() => { s('type', t.id); setStep(1) }}
+              <button key={t.id} onClick={() => s('type', t.id)}
                 style={{ background:form.type===t.id?C.primary:C.surface, borderRadius:16, padding:'15px 16px', display:'flex', alignItems:'center', gap:14, border:`2px solid ${form.type===t.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
                 <span style={{ fontSize:28, width:36, flex:'0 0 36px', textAlign:'center' }}>{emoji}</span>
                 <span style={{ display:'flex', flexDirection:'column', minWidth:0 }}>
@@ -324,27 +324,29 @@ export default function RegistrarNegocio() {
         </>
       )}
 
-      {/* Navigation */}
-      {step > 0 && (
-        <div style={{ display:'flex', gap:10, marginTop:24 }}>
-          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>
-          {step < STEPS.length - 1 ? (
-            <Btn onClick={() => {
-              if (step === 1 && !form.name) { toast.error('Añade el nombre del negocio'); return }
-              setStep(s => s + 1)
-            }} style={{ flex:1 }}>
-              Continuar →
-            </Btn>
-          ) : (
-            <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
-              {loading ? '⏳ Registrando...' : '🏪 Registrar negocio'}
-            </Btn>
-          )}
-        </div>
-      )}
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
         Gratuito · Se publica al instante si no requiere revisión · Puedes eliminarlo desde tu perfil
       </p>
+      <StickyFormActions>
+        {step === 0 ? (
+          <Btn onClick={() => navigate('/comunidades?view=negocios')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}>← Cancelar</Btn>
+        ) : (
+          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}>← Atrás</Btn>
+        )}
+        {step < STEPS.length - 1 ? (
+          <Btn onClick={() => {
+            if (step === 0 && !form.type) { toast.error('Elige el tipo de negocio'); return }
+            if (step === 1 && !form.name) { toast.error('Añade el nombre del negocio'); return }
+            setStep(s => s + 1)
+          }} style={{ flex:1 }}>
+            Continuar →
+          </Btn>
+        ) : (
+          <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
+            {loading ? '⏳ Registrando...' : '🏪 Registrar negocio'}
+          </Btn>
+        )}
+      </StickyFormActions>
     </div>
   )
 }

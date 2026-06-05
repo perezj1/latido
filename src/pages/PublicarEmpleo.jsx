@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
@@ -226,7 +226,7 @@ export default function PublicarEmpleo() {
   const selectedType = JOB_TYPES.find(t => t.id === form.jobType)
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
+    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
       <ProgressBar step={step} total={STEPS.length} />
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>{STEPS[step].title}</h1>
       <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:24 }}>{STEPS[step].sub}</p>
@@ -399,39 +399,38 @@ export default function PublicarEmpleo() {
         </>
       )}
 
-      {/* Navigation */}
-      <div style={{ display:'flex', gap:10, marginTop:24 }}>
-        {step > 0 && (
-          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>
-        )}
-        {step === 0 ? (
-            <Btn onClick={() => {
-              if (!form.jobIntent) { toast.error('Elige si buscas u ofreces empleo'); return }
-              if (!form.sector) { toast.error('Elige el sector del empleo'); return }
-              setStep(1)
-            }} style={{ flex:1 }}>
-              Continuar →
-            </Btn>
-          )
-          : step === 1 ? (
-            <Btn onClick={() => {
-              if (!form.title) { toast.error('Añade el título del puesto'); return }
-              if (!form.jobType) { toast.error('Selecciona el tipo de contrato'); return }
-              if (!form.canton) { toast.error('Selecciona el cantón'); return }
-              setStep(2)
-            }} style={{ flex:1 }}>
-              Continuar →
-            </Btn>
-          ) : (
-            <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
-              {loading ? '⏳ Publicando...' : isSeekingJob ? '🔎 Publicar búsqueda' : '💼 Publicar oferta'}
-            </Btn>
-          )
-        }
-      </div>
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
         Empleo está separado de los anuncios normales para distinguir ofertas de trabajo y perfiles disponibles.
       </p>
+      <StickyFormActions>
+        {step === 0 ? (
+          <Btn onClick={() => navigate('/tablon?cat=empleo')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}>← Cancelar</Btn>
+        ) : (
+          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}>← Atrás</Btn>
+        )}
+        {step === 0 ? (
+          <Btn onClick={() => {
+            if (!form.jobIntent) { toast.error('Elige si buscas u ofreces empleo'); return }
+            if (!form.sector) { toast.error('Elige el sector del empleo'); return }
+            setStep(1)
+          }} style={{ flex:1 }}>
+            Continuar →
+          </Btn>
+        ) : step === 1 ? (
+          <Btn onClick={() => {
+            if (!form.title) { toast.error('Añade el título del puesto'); return }
+            if (!form.jobType) { toast.error('Selecciona el tipo de contrato'); return }
+            if (!form.canton) { toast.error('Selecciona el cantón'); return }
+            setStep(2)
+          }} style={{ flex:1 }}>
+            Continuar →
+          </Btn>
+        ) : (
+          <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
+            {loading ? '⏳ Publicando...' : isSeekingJob ? '🔎 Publicar búsqueda' : '💼 Publicar oferta'}
+          </Btn>
+        )}
+      </StickyFormActions>
     </div>
   )
 }

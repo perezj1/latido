@@ -136,6 +136,10 @@ img { max-width: 100%; }
   padding-bottom: max(14px, calc(env(safe-area-inset-bottom) + 8px));
 }
 
+.sticky-form-actions {
+  bottom: 0;
+}
+
 /* Prevent iOS Safari from auto-zooming focused textareas. */
 @media (max-width: 767px) {
   input,

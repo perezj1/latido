@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, normalizeAdCat } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
@@ -178,7 +178,6 @@ export default function Publicar() {
       type: resolveTypeForCategory(prev.intent, catId),
       sub: '',
     }))
-    setStep(1)
   }
 
   useEffect(() => {
@@ -479,7 +478,7 @@ export default function Publicar() {
   }
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
+    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
       <ProgressBar step={step} total={STEPS.length} />
 
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>
@@ -715,29 +714,37 @@ export default function Publicar() {
         </>
       )}
 
-      <div style={{ display:'flex', gap:10, marginTop:24 }}>
-        {step > 0 && (
-          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>
-        )}
-        {step === 0 ? null
-          : step === 1 ? (
-            <Btn onClick={() => {
-              if (!form.title.trim()) { toast.error('Escribe un título para el anuncio'); return }
-              setStep(2)
-            }} style={{ flex:1 }}>
-              Continuar →
-            </Btn>
-          ) : (
-            <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1, border:`1.5px solid ${C.successMid}` }}>
-              {loading ? '⏳ Publicando...' : '✅ Publicar anuncio'}
-            </Btn>
-          )
-        }
-      </div>
-
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
         Anuncios de vivienda, servicios, cuidados, mercado y trámites. Empleo, negocios, grupos y eventos tienen su propio formulario.
       </p>
+
+      <StickyFormActions>
+        {step === 0 ? (
+          <Btn onClick={() => navigate('/tablon')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}>← Cancelar</Btn>
+        ) : (
+          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}>← Atrás</Btn>
+        )}
+        {step === 0 ? (
+          <Btn onClick={() => {
+            if (!form.intent) { toast.error('Elige qué quieres publicar'); return }
+            if (!form.cat) { toast.error('Elige una categoría'); return }
+            setStep(1)
+          }} style={{ flex:1 }}>
+            Continuar →
+          </Btn>
+        ) : step === 1 ? (
+          <Btn onClick={() => {
+            if (!form.title.trim()) { toast.error('Escribe un título para el anuncio'); return }
+            setStep(2)
+          }} style={{ flex:1 }}>
+            Continuar →
+          </Btn>
+        ) : (
+          <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
+            {loading ? '⏳ Publicando...' : '✅ Publicar anuncio'}
+          </Btn>
+        )}
+      </StickyFormActions>
     </div>
   )
 }
