@@ -116,7 +116,7 @@ export default function ReportButton({
                 {title}
               </p>
               <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.5, margin: '5px 0 0' }}>
-                Revisaremos el contenido desde administracion.
+                Revisaremos la denuncia y podremos ocultar o eliminar el contenido si incumple las reglas o la ley.
               </p>
             </div>
             <button
@@ -161,7 +161,12 @@ export default function ReportButton({
                   boxShadow: reason === item.id ? '0 0 0 3px rgba(220,38,38,0.08)' : 'none',
                 }}
               >
-                {item.label}
+                <span style={{ display:'block' }}>{item.label}</span>
+                {item.description && (
+                  <span style={{ display:'block', fontSize:10.5, fontWeight:600, color:reason === item.id ? '#991B1B' : C.light, lineHeight:1.4, marginTop:3 }}>
+                    {item.description}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -169,7 +174,7 @@ export default function ReportButton({
           <textarea
             value={notes}
             onChange={event => setNotes(event.target.value)}
-            placeholder="Detalles opcionales"
+            placeholder="Añade detalles, URL externa, datos de contacto sospechosos o por qué crees que incumple las reglas."
             rows={4}
             style={{
               fontFamily: PP,

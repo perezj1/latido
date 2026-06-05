@@ -520,7 +520,7 @@ function CommunityCard({ group, onClick }) {
       </div>
       <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
         <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:5 }}>
-          {group.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+          {group.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
           <Tag bg={C.bg} color={C.mid}>{group.city}</Tag>
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{group.name}</h3>
@@ -591,7 +591,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
       <div style={{ flex:1, minWidth:0, padding:'1px 0', display:'flex', flexDirection:'column' }}>
         <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap', marginBottom:5, minWidth:0 }}>
           <Tag bg={C.primaryLight} color={C.primary} title={category?.label || 'Negocio'}>{category?.label || 'Negocio'}</Tag>
-          {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+          {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{business.name}</h3>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:6, flexWrap:'wrap', minWidth:0 }}>
@@ -817,7 +817,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
                 {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
                 <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
-                {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+                {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
               </div>
               <RecommendationBox
                 count={recommendationCount}

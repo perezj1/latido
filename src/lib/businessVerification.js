@@ -1,6 +1,6 @@
 export const BUSINESS_VERIFICATION_STATUSES = {
   unverified: {
-    label: 'No verificado',
+    label: 'No verificada',
     color: '#64748B',
     bg: '#F1F5F9',
   },
@@ -10,7 +10,7 @@ export const BUSINESS_VERIFICATION_STATUSES = {
     bg: '#FEF3C7',
   },
   verified: {
-    label: 'Verificado',
+    label: 'Verificada',
     color: '#065F46',
     bg: '#D1FAE5',
   },

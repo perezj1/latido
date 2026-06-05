@@ -4,9 +4,11 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { COMMUNITY_CATS } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { uploadPublicationImage } from '../lib/storage'
+import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { addModerationQueueItem } from '../lib/reports'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -42,6 +44,7 @@ export default function RegistrarComunidad() {
   const [loading, setLoading] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [done, setDone] = useState(false)
+  const [publishedForReview, setPublishedForReview] = useState(false)
   const [form, setForm] = useState({
     cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español', photo_url:'',
   })
@@ -64,12 +67,14 @@ export default function RegistrarComunidad() {
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>👥</div>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>¡Grupo publicado!</h1>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Grupo enviado a revisión' : '¡Grupo publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
-        Tu grupo ya está visible para la comunidad hispanohablante en Suiza.
+        {publishedForReview
+          ? 'Tu grupo quedó oculto temporalmente hasta que el equipo lo revise.'
+          : 'Tu grupo ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades')}>Ver grupos →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español', photo_url:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setStep(0); setForm({ cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español', photo_url:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro grupo
       </button>
     </div>
@@ -77,8 +82,15 @@ export default function RegistrarComunidad() {
 
   const handleSubmit = async () => {
     if (!form.name || !form.contact) { toast.error('Completa el nombre y el enlace de invitación'); return }
+    const moderation = analyzeContent(form.name, form.desc, form.contact)
+    if (moderation.action === 'block') {
+      toast.error(getContentFilterMessage(moderation))
+      return
+    }
     setLoading(true)
     try {
+      const communityId = globalThis.crypto?.randomUUID?.()
+      const needsReview = moderation.action === 'review'
       const location = [form.city.trim(), form.canton].filter(Boolean).join(', ') || 'Toda Suiza'
       const description = [
         form.desc.trim(),
@@ -87,6 +99,7 @@ export default function RegistrarComunidad() {
       ].filter(Boolean).join('\n\n')
 
       const { error } = await supabase.from('communities').insert({
+        ...(communityId ? { id: communityId } : {}),
         user_id: user?.id,
         cat: form.cat || null,
         name: form.name.trim(),
@@ -97,9 +110,21 @@ export default function RegistrarComunidad() {
         photo_url: form.photo_url || null,
         verified: false,
         members: 0,
-        active: true,
+        active: !needsReview,
       })
       if (error) throw error
+      if (needsReview && communityId) {
+        await addModerationQueueItem({
+          contentType: 'community',
+          contentId: communityId,
+          authorId: user?.id,
+          reason: 'Filtro automatico',
+          excerpt: [form.name, form.desc, form.contact].filter(Boolean).join('\n\n').slice(0, 700),
+          matchedTerm: moderation.matchedTerm,
+          metadata: { cat: form.cat, platform: form.platform, canton: form.canton },
+        })
+      }
+      setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {
       toast.error(error?.message || 'No se pudo registrar el grupo')
@@ -259,6 +284,7 @@ export default function RegistrarComunidad() {
             Al registrar este grupo confirmas que la información es verídica y que eres responsable del buen uso, contenido y gestión del grupo. Latido no se hace responsable de lo que ocurra dentro del grupo ni de la veracidad de los datos publicados.
           </p>
         </div>
+        <PublicationLegalNotice kind="community" />
         </>
       )}
 
@@ -282,7 +308,7 @@ export default function RegistrarComunidad() {
         </div>
       )}
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
-        Gratuito · Se publica al instante · Puedes eliminarlo desde tu perfil
+        Gratuito · Se publica al instante si no requiere revisión · Puedes eliminarlo desde tu perfil
       </p>
     </div>
   )

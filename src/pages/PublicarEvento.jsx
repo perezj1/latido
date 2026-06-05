@@ -4,10 +4,12 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { EVENTO_TYPES } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { normalizeExternalUrl } from '../lib/links'
+import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { addModerationQueueItem } from '../lib/reports'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -28,6 +30,7 @@ export default function PublicarEvento() {
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [done, setDone] = useState(false)
+  const [publishedForReview, setPublishedForReview] = useState(false)
   const [form, setForm] = useState({
     type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'',
     city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'',
@@ -61,12 +64,14 @@ export default function PublicarEvento() {
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>🎉</div>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>¡Evento publicado!</h1>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Evento enviado a revisión' : '¡Evento publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
-        Tu evento ya está visible para la comunidad hispanohablante en Suiza.
+        {publishedForReview
+          ? 'Tu evento quedó oculto temporalmente hasta que el equipo lo revise.'
+          : 'Tu evento ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades?view=eventos')}>Ver en eventos →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setStep(0); setForm({ type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otro evento
       </button>
     </div>
@@ -79,10 +84,18 @@ export default function PublicarEvento() {
       toast.error('Añade un link válido, por ejemplo instagram.com/usuario o @usuario')
       return
     }
+    const moderation = analyzeContent(form.title, form.venue, form.desc, form.host)
+    if (moderation.action === 'block') {
+      toast.error(getContentFilterMessage(moderation))
+      return
+    }
 
     setLoading(true)
     try {
+      const eventId = globalThis.crypto?.randomUUID?.()
+      const needsReview = moderation.action === 'review'
       const { error } = await supabase.from('events').insert({
+        ...(eventId ? { id: eventId } : {}),
         type: form.type,
         title: form.title,
         day: form.day,
@@ -98,9 +111,21 @@ export default function PublicarEvento() {
         host: form.host || user?.user_metadata?.name || 'Organizador',
         link: link || null,
         user_id: user?.id,
-        active: true,
+        active: !needsReview,
       })
       if (error) throw error
+      if (needsReview && eventId) {
+        await addModerationQueueItem({
+          contentType: 'event',
+          contentId: eventId,
+          authorId: user?.id,
+          reason: 'Filtro automatico',
+          excerpt: [form.title, form.venue, form.desc].filter(Boolean).join('\n\n').slice(0, 700),
+          matchedTerm: moderation.matchedTerm,
+          metadata: { type: form.type, canton: form.canton, city: form.city },
+        })
+      }
+      setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {
       console.error('Publish event failed:', error)
@@ -227,6 +252,7 @@ export default function PublicarEvento() {
               Al publicar este evento confirmas que la información es verídica, que tienes autorización para anunciarlo y que eres responsable de su organización y contenido. Latido no se hace responsable de la veracidad de los datos ni de lo que ocurra en el evento.
             </p>
           </div>
+          <PublicationLegalNotice kind="event" />
         </>
       )}
 
@@ -250,7 +276,7 @@ export default function PublicarEvento() {
         </div>
       )}
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
-        Gratuito · Se publica al instante · Puedes eliminarlo desde tu perfil
+        Gratuito · Se publica al instante si no requiere revisión · Puedes eliminarlo desde tu perfil
       </p>
     </div>
   )

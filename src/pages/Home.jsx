@@ -1357,7 +1357,7 @@ export default function Home() {
                         {business.emoji} {business.typeLabel}
                       </span>
                       <div style={{ position:'absolute', top:8, right:8, display:'flex', gap:4 }}>
-                        {business.verified && <span style={{ width:24, height:24, borderRadius:12, background:'rgba(255,255,255,0.94)', color:'#065F46', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, boxShadow:'0 6px 16px rgba(15,23,42,0.12)' }}>✓</span>}
+                        {business.verified && <span title="Verificada" style={{ width:24, height:24, borderRadius:12, background:'rgba(255,255,255,0.94)', color:'#065F46', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, boxShadow:'0 6px 16px rgba(15,23,42,0.12)' }}>✓</span>}
                       </div>
                       {business.featured && (
                         <span style={{ position:'absolute', left:'50%', bottom:-12, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5, fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'6px 12px', boxShadow:'0 8px 18px rgba(37,99,235,0.14)', whiteSpace:'nowrap' }}>

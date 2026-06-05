@@ -20,15 +20,15 @@ const STATUS_LABELS = {
 
 const BUSINESS_VERIFICATION_FILTERS = [
   { id: 'pending', label: 'Pendientes', color: '#D97706', bg: '#FFFBEB' },
-  { id: 'unverified', label: 'No verificados', color: C.primary, bg: C.primaryLight },
-  { id: 'verified', label: 'Verificados', color: '#059669', bg: '#ECFDF5' },
+  { id: 'unverified', label: 'No verificadas', color: C.primary, bg: C.primaryLight },
+  { id: 'verified', label: 'Verificadas', color: '#059669', bg: '#ECFDF5' },
   { id: 'rejected', label: 'Rechazados', color: '#DC2626', bg: '#FEF2F2' },
 ]
 
 const BUSINESS_VERIFICATION_ACTIONS = [
   { id: 'pending', label: 'Pendiente', color: C.primary, bg: C.primaryLight },
-  { id: 'verified', label: 'Verificado', color: '#065F46', bg: '#D1FAE5' },
-  { id: 'unverified', label: 'No verificado', color: C.primary, bg: C.primaryLight },
+  { id: 'verified', label: 'Verificada', color: '#065F46', bg: '#D1FAE5' },
+  { id: 'unverified', label: 'No verificada', color: C.primary, bg: C.primaryLight },
   { id: 'rejected', label: 'Rechazado', color: '#B91C1C', bg: '#FEE2E2' },
 ]
 const OPTIONAL_PROVIDER_VERIFICATION_COLUMNS = new Set([
@@ -38,6 +38,19 @@ const OPTIONAL_PROVIDER_VERIFICATION_COLUMNS = new Set([
   'verified_by',
   'verification_notes',
 ])
+
+const MODERATED_CONTENT_TABLES = {
+  listing: 'listings',
+  job: 'jobs',
+  event: 'events',
+  provider: 'providers',
+  business: 'providers',
+  community: 'communities',
+}
+
+function canToggleContent(type) {
+  return Boolean(MODERATED_CONTENT_TABLES[type])
+}
 
 function reasonLabel(id) {
   return REPORT_REASONS.find(r => r.id === id)?.label || id || 'Sin motivo'
@@ -940,19 +953,40 @@ export default function Admin() {
       ...nextReports.filter(r => r.content_type === 'job').map(r => r.content_id),
       ...nextQueue.filter(r => r.content_type === 'job').map(r => r.content_id),
     ].filter(Boolean)
+    const eventIds = [
+      ...nextReports.filter(r => r.content_type === 'event').map(r => r.content_id),
+      ...nextQueue.filter(r => r.content_type === 'event').map(r => r.content_id),
+    ].filter(Boolean)
+    const providerIds = [
+      ...nextReports.filter(r => ['provider', 'business'].includes(r.content_type)).map(r => r.content_id),
+      ...nextQueue.filter(r => ['provider', 'business'].includes(r.content_type)).map(r => r.content_id),
+    ].filter(Boolean)
+    const communityIds = [
+      ...nextReports.filter(r => r.content_type === 'community').map(r => r.content_id),
+      ...nextQueue.filter(r => r.content_type === 'community').map(r => r.content_id),
+    ].filter(Boolean)
     const messageIds = nextReports.filter(r => r.content_type === 'message').map(r => r.content_id).filter(Boolean)
     const profileIds = nextReports.filter(r => r.content_type === 'profile').map(r => r.content_id).filter(Boolean)
 
-    const [reportedListings, reportedJobs, reportedMessages, reportedProfiles] = await Promise.all([
+    const [reportedListings, reportedJobs, reportedMessages, reportedProfiles, reportedEvents, reportedProviders, reportedCommunities] = await Promise.all([
       listingIds.length ? supabase.from('listings').select('id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at').in('id', listingIds) : Promise.resolve({ data: [] }),
       jobIds.length ? supabase.from('jobs').select('id,title,company,desc,sector,active,user_id,canton,city,created_at').in('id', jobIds) : Promise.resolve({ data: [] }),
       messageIds.length ? supabase.from('messages').select('id,conversation_id,sender_id,body,created_at').in('id', messageIds) : Promise.resolve({ data: [] }),
       profileIds.length ? supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,created_at,last_seen_at').in('id', profileIds) : Promise.resolve({ data: [] }),
+      eventIds.length ? supabase.from('events').select('*').in('id', eventIds) : Promise.resolve({ data: [] }),
+      providerIds.length ? supabase.from('providers').select('*').in('id', providerIds) : Promise.resolve({ data: [] }),
+      communityIds.length ? supabase.from('communities').select('*').in('id', communityIds) : Promise.resolve({ data: [] }),
     ])
 
     const nextContent = new Map()
     ;[...(listingsRes.data || []), ...(reportedListings.data || [])].forEach(item => nextContent.set(`listing:${item.id}`, item))
     ;[...(jobsRes.data || []), ...(reportedJobs.data || [])].forEach(item => nextContent.set(`job:${item.id}`, item))
+    ;(reportedEvents.data || []).forEach(item => nextContent.set(`event:${item.id}`, item))
+    ;[...(providersRes.data || []), ...(reportedProviders.data || [])].forEach(item => {
+      nextContent.set(`provider:${item.id}`, item)
+      nextContent.set(`business:${item.id}`, item)
+    })
+    ;(reportedCommunities.data || []).forEach(item => nextContent.set(`community:${item.id}`, item))
     ;(reportedMessages.data || []).forEach(item => nextContent.set(`message:${item.id}`, item))
     ;(reportedProfiles.data || []).forEach(item => nextContent.set(`profile:${item.id}`, item))
 
@@ -964,6 +998,9 @@ export default function Admin() {
       ...profileIds,
       ...(reportedListings.data || []).map(l => l.user_id),
       ...(reportedJobs.data || []).map(j => j.user_id),
+      ...(reportedEvents.data || []).map(e => e.user_id),
+      ...(reportedProviders.data || []).map(p => p.user_id),
+      ...(reportedCommunities.data || []).map(c => c.user_id),
       ...(reportedMessages.data || []).map(m => m.sender_id),
     ].filter(Boolean)
     const missingOwnerIds = [...new Set(ownerIds)].filter(id => !knownUserIds.has(id))
@@ -1012,7 +1049,8 @@ export default function Admin() {
   }
 
   async function setContentActive(type, id, active) {
-    const table = type === 'job' ? 'jobs' : 'listings'
+    const table = MODERATED_CONTENT_TABLES[type]
+    if (!table) return
     const { error } = await supabase.from(table).update({ active }).eq('id', id)
     if (error) throw error
   }
@@ -1022,7 +1060,7 @@ export default function Admin() {
     if (item.content_type === 'profile') return item.content_id
     const content = contentByKey.get(`${item.content_type}:${item.content_id}`)
     if (item.content_type === 'message' && content?.sender_id) return content.sender_id
-    if (['listing', 'job'].includes(item.content_type) && content?.user_id) return content.user_id
+    if (canToggleContent(item.content_type) && content?.user_id) return content.user_id
     return item.author_id || metadataOwnerId(item)
   }
 
@@ -1122,7 +1160,7 @@ export default function Admin() {
       console.warn('Admin action log failed:', error)
     }
     toast.success(strippedColumns.length
-      ? 'Estado guardado en la columna verified'
+      ? 'Estado guardado'
       : status === 'verified' ? 'Negocio verificado' : 'Estado actualizado')
   }
 
@@ -1159,7 +1197,7 @@ export default function Admin() {
 
   async function resolveQueueItem(item, status) {
     try {
-      if (['listing', 'job'].includes(item.content_type)) {
+      if (canToggleContent(item.content_type)) {
         await setContentActive(item.content_type, item.content_id, status === 'approved')
       }
       const { error } = await supabase
@@ -1177,7 +1215,7 @@ export default function Admin() {
 
   async function removeReportedContent(report) {
     try {
-      if (['listing', 'job'].includes(report.content_type)) {
+      if (canToggleContent(report.content_type)) {
         await setContentActive(report.content_type, report.content_id, false)
       } else if (report.content_type === 'message') {
         await supabase.from('messages').delete().eq('id', report.content_id)
@@ -1217,10 +1255,10 @@ export default function Admin() {
     return (
       <div>
         <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: C.text, margin: '0 0 4px' }}>
-          {content.title || content.company || 'Sin titulo'}
+          {content.title || content.name || content.company || content.host || 'Sin titulo'}
         </p>
         <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.5, margin: 0 }}>
-          {(content.desc || '').slice(0, 200)}
+          {(content.desc || content.description || (Array.isArray(content.services) ? content.services.join(', ') : '') || content.contact || '').slice(0, 200)}
         </p>
       </div>
     )
@@ -1323,7 +1361,7 @@ export default function Admin() {
     analytics: { description: 'Páginas más usadas, búsquedas frecuentes, horarios fuertes y comportamiento de navegación de los últimos 30 días.', color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResultEvents.length} aperturas` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
-    businessVerification: { description: 'Evalua datos, contacto y confianza antes de mostrar la pill verificado.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
+    businessVerification: { description: 'Evalua datos, contacto y señales antes de mostrar la etiqueta Verificada.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
     users: { description: 'Busca cuentas, revisa actividad basica y gestiona baneos. Las métricas excluyen la cuenta admin.', color: C.primary, count: metricUsers.length, badge: `${metricUsers.length} usuarios sin admin` },
     content: { description: 'Control rapido de anuncios y empleos publicados en Latido.', color: '#059669', count: stats.content, badge: `${stats.content} publicaciones cargadas` },
   }
@@ -1360,7 +1398,7 @@ export default function Admin() {
     : tab === 'businessVerification'
       ? [
           { label: 'Negocios activos', value: loading ? '...' : activeBusinesses, hint: `${businesses.length} negocios cargados`, color: '#059669' },
-          { label: 'Verificados', value: loading ? '...' : verifiedBusinessCount, hint: 'Con pill visible en ficha', color: '#0F766E' },
+          { label: 'Verificadas', value: loading ? '...' : verifiedBusinessCount, hint: 'Con etiqueta visible en ficha', color: '#0F766E' },
           { label: 'Pendientes', value: loading ? '...' : businessVerificationCounts.pending || 0, hint: 'Esperan decision manual', color: '#D97706' },
           { label: 'Score medio', value: loading ? '...' : `${businessAverageScore}/100`, hint: `${featuredBusinesses} destacados`, color: C.primary },
         ]

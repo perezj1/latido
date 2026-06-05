@@ -411,7 +411,7 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
           {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
           <PrivacyTag privacy={ad.privacy}/>
-          {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificado</Tag>}
+          {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
         </div>
         <div style={{ display:'flex', gap:9, alignItems:'center', minWidth:0 }}>
           <Avatar name={ad.user_name || ad.user} size={34} src={avatarSrc}/>

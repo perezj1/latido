@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
@@ -395,6 +395,7 @@ export default function PublicarEmpleo() {
                 : 'Al publicar confirmas que la oferta es real y que tienes autorización para contratar. Latido no se hace responsable de las condiciones laborales ofrecidas.'}
             </p>
           </div>
+          <PublicationLegalNotice kind="job" />
         </>
       )}
 

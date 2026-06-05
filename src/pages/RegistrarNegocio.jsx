@@ -4,11 +4,13 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { VISIBLE_NEGOCIO_TYPES } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { calculateBusinessVerification } from '../lib/businessVerification'
 import { insertWithOptionalColumnsFallback } from '../lib/supabaseCompat'
 import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
+import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { addModerationQueueItem } from '../lib/reports'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -29,6 +31,7 @@ export default function RegistrarNegocio() {
   const [uploadingCover, setUploadingCover] = useState(false)
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [done, setDone] = useState(false)
+  const [publishedForReview, setPublishedForReview] = useState(false)
   const [form, setForm] = useState({
     type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[],
   })
@@ -51,12 +54,14 @@ export default function RegistrarNegocio() {
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>🏪</div>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>¡Negocio publicado!</h1>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Negocio enviado a revisión' : '¡Negocio publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
-        Tu negocio ya está visible para la comunidad hispanohablante en Suiza.
+        {publishedForReview
+          ? 'Tu negocio quedó oculto temporalmente hasta que el equipo lo revise.'
+          : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades?view=negocios')}>Ver negocios →</Btn>
-      <button onClick={() => { setDone(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro negocio
       </button>
     </div>
@@ -66,8 +71,14 @@ export default function RegistrarNegocio() {
     if (!form.name || !form.canton) { toast.error('Completa el nombre y el cantón'); return }
     const hasContact = [form.phone, form.email, form.instagram].some(value => value.trim())
     if (!hasContact) { toast.error('Añade al menos un método de contacto'); return }
+    const moderation = analyzeContent(form.name, form.desc, form.services, form.website)
+    if (moderation.action === 'block') {
+      toast.error(getContentFilterMessage(moderation))
+      return
+    }
     setLoading(true)
     try {
+      const needsReview = moderation.action === 'review'
       const servicesList = form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6)
       const galleryPhotos = form.gallery.filter(url => url && url !== form.photo_url)
       const existingRes = await supabase
@@ -104,7 +115,7 @@ export default function RegistrarNegocio() {
         languages: ['Español'],
         verified: false,
         featured: false,
-        active: true,
+        active: !needsReview,
         verification_status: verification.status,
         verification_score: verification.score,
         verified_at: null,
@@ -121,6 +132,18 @@ export default function RegistrarNegocio() {
       })
       if (error) throw error
 
+      if (needsReview && data?.id) {
+        await addModerationQueueItem({
+          contentType: 'provider',
+          contentId: data.id,
+          authorId: user?.id,
+          reason: 'Filtro automatico',
+          excerpt: [form.name, form.desc, form.services].filter(Boolean).join('\n\n').slice(0, 700),
+          matchedTerm: moderation.matchedTerm,
+          metadata: { category: form.type, canton: form.canton, city: form.city },
+        })
+      }
+
       if (galleryPhotos.length && data?.id) {
         const { error: photosError } = await supabase.from('provider_photos').insert(
           galleryPhotos.map((url, index) => ({
@@ -135,6 +158,7 @@ export default function RegistrarNegocio() {
         }
       }
 
+      setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {
       console.error('Register business failed:', error)
@@ -296,6 +320,7 @@ export default function RegistrarNegocio() {
             Al registrar este negocio confirmas que la información publicada es verídica, que tienes autorización para representarlo y que eres responsable del contenido y la atención al cliente. Latido no se hace responsable de la veracidad de los datos ni de los servicios prestados.
           </p>
         </div>
+        <PublicationLegalNotice kind="business" />
         </>
       )}
 
@@ -318,7 +343,7 @@ export default function RegistrarNegocio() {
         </div>
       )}
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
-        Gratuito · Se publica al instante · Puedes eliminarlo desde tu perfil
+        Gratuito · Se publica al instante si no requiere revisión · Puedes eliminarlo desde tu perfil
       </p>
     </div>
   )

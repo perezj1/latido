@@ -84,6 +84,55 @@ export function Tag({ children, bg=C.primaryLight, color=C.primary, size=10, sty
   )
 }
 
+const PUBLICATION_LEGAL_COPY = {
+  ad: {
+    title: 'Publicación responsable',
+    text: 'Latido solo facilita el contacto. No verifica identidad, disponibilidad, licencias, permisos, estado de productos ni condiciones. Evita pagos por adelantado y revisa referencias, permisos y acuerdos antes de contratar o entregar dinero.',
+  },
+  job: {
+    title: 'Empleo sin intermediación',
+    text: 'Latido no es agencia de colocación ni empresa temporal: no selecciona candidatos, no gestiona contratos, no cobra por contratación y no garantiza condiciones laborales. Las ofertas deben ser reales, no discriminatorias y cumplir la normativa aplicable.',
+  },
+  event: {
+    title: 'Evento bajo responsabilidad del organizador',
+    text: 'Latido no organiza ni garantiza el evento. El publicador confirma que la información es real, que tiene autorización para anunciarlo y que cumple permisos, aforo, seguridad, derechos de imagen y obligaciones aplicables.',
+  },
+  business: {
+    title: 'Negocio y servicios regulados',
+    text: 'Latido no verifica automáticamente licencias, seguros, permisos, cualificaciones ni cumplimiento fiscal o laboral. El negocio confirma que puede ofrecer sus servicios y que sus textos, fotos, logos y marcas pueden publicarse.',
+  },
+  community: {
+    title: 'Grupo bajo responsabilidad del publicador',
+    text: 'Latido no administra grupos externos ni responde por lo que ocurra dentro de ellos. El publicador confirma que el enlace es legítimo, que puede compartirlo y que el grupo respeta privacidad, derechos de terceros y normas de convivencia.',
+  },
+}
+
+const PUBLICATION_RESPONSIBILITY_TEXT = 'La veracidad, el contenido y el buen uso de la publicación son responsabilidad de quien publica.'
+
+export function PublicationLegalNotice({ kind='ad', style={} }) {
+  const copy = PUBLICATION_LEGAL_COPY[kind] || PUBLICATION_LEGAL_COPY.ad
+  return (
+    <div
+      style={{
+        background:'#F8FAFC',
+        border:`1px solid ${C.border}`,
+        borderRadius:14,
+        padding:'12px 14px',
+        marginTop:14,
+        marginBottom:4,
+        ...style,
+      }}
+    >
+      <p style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, margin:'0 0 5px' }}>
+        {copy.title}
+      </p>
+      <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.65, margin:0 }}>
+        {copy.text} {PUBLICATION_RESPONSIBILITY_TEXT} Al publicar aceptas los <a href="/terminos" style={{ color:C.primary, fontWeight:700 }}>términos</a> y el <a href="/descargo" style={{ color:C.primary, fontWeight:700 }}>descargo</a>.
+      </p>
+    </div>
+  )
+}
+
 // ── Avatar ─────────────────────────────────────────────────────
 export function Avatar({ name='?', size=32, src }) {
   const colors = ['#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444']

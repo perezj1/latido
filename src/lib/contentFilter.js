@@ -5,6 +5,26 @@ const BLOCKED_TERMS = [
   'porno',
   'sexo por dinero',
   'masajes con final',
+  'servicios sexuales',
+  'prostitucion',
+  'prostitución',
+  'cocaina',
+  'cocaína',
+  'vendo droga',
+  'venta de droga',
+  'armas de fuego',
+  'pistola',
+  'municion',
+  'munición',
+  'documentos falsos',
+  'pasaporte falso',
+  'permiso falso',
+  'visado falso',
+  'certificado falso',
+  'contrato falso',
+  'receta falsa',
+  'medicamentos sin receta',
+  'licencia falsa',
 ]
 
 const SUSPICIOUS_TERMS = [
@@ -20,6 +40,38 @@ const SUSPICIOUS_TERMS = [
   'inversion garantizada',
   'crypto garantizado',
   'bitcoin garantizado',
+  'deposito antes de ver',
+  'depósito antes de ver',
+  'reserva antes de visitar',
+  'sin ver el piso',
+  'paga primero',
+  'pago solo en efectivo',
+  'solo efectivo',
+  'trabajo en negro',
+  'sin contrato',
+  'sin permiso de trabajo',
+  'no hace falta permiso',
+  'pagamos en efectivo',
+  'solo mujeres',
+  'solo hombres',
+  'no extranjeros',
+  'solo españoles',
+  'solo espanoles',
+  'no familias',
+  'sin niños',
+  'sin ninos',
+  'joven y guapa',
+  'garantizo permiso',
+  'permiso garantizado',
+  'trabajo garantizado',
+  'abogado sin licencia',
+  'asesoria legal garantizada',
+  'asesoría legal garantizada',
+  'prestamo urgente',
+  'préstamo urgente',
+  'sin requisitos',
+  'inversion sin riesgo',
+  'inversión sin riesgo',
 ]
 
 function normalizeText(value) {
@@ -59,7 +111,7 @@ export function shouldBlockContent(...fields) {
 
 export function getContentFilterMessage(result) {
   if (result?.action === 'review') {
-    return 'Por seguridad, este contenido necesita revision antes de publicarse.'
+    return 'Por seguridad legal, este contenido necesita revisión antes de publicarse.'
   }
-  return 'El contenido contiene terminos no permitidos.'
+  return 'El contenido incluye términos no permitidos por las reglas de Latido.'
 }

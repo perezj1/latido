@@ -22,8 +22,8 @@ function Section({ title, children }) {
   )
 }
 
-function P({ children }) {
-  return <p style={{ margin:'0 0 10px' }}>{children}</p>
+function P({ children, style={} }) {
+  return <p style={{ margin:'0 0 10px', ...style }}>{children}</p>
 }
 
 function Ul({ items }) {
@@ -64,8 +64,9 @@ function Impressum() {
         </P>
         <P>
           Los contenidos publicados por usuarios (anuncios, mensajes, reseñas) son responsabilidad
-          exclusiva de quien los publica. Latido.ch actúa únicamente como intermediario técnico
-          en el sentido del art. 12 de la Ley federal de servicios de comunicación electrónica.
+          exclusiva de quien los publica. Latido.ch actúa como plataforma de alojamiento y contacto:
+          no crea, no encarga ni garantiza automáticamente dichos contenidos, y actúa tras recibir
+          avisos razonables sobre contenido ilegal, engañoso o peligroso.
         </P>
       </Section>
 
@@ -102,7 +103,7 @@ function Privacidad() {
   return (
     <>
       <P style={{ fontStyle:'italic', fontSize:12, color:C.light }}>
-        Última actualización: enero de 2025 · Conforme a la nDSG (nueva Ley federal suiza de
+        Última actualización: junio de 2026 · Conforme a la nDSG (nueva Ley federal suiza de
         protección de datos, en vigor desde el 1 de septiembre de 2023).
       </P>
 
@@ -129,26 +130,40 @@ function Privacidad() {
         en el sentido del art. 5 lit. c nDSG salvo los que el propio usuario decida publicar.</P>
       </Section>
 
-      <Section title="3. Finalidad y base jurídica del tratamiento">
+      <Section title="3. Datos visibles públicamente">
+        <P>
+          Si publicas anuncios, empleos, eventos, negocios, grupos, reseñas, fotos, logos o datos
+          de contacto, esa información puede ser visible para otros usuarios o visitantes, indexarse
+          técnicamente por buscadores si el contenido es público, y ser compartida mediante enlaces.
+        </P>
+        <P>
+          No publiques datos personales de terceros, documentos oficiales, direcciones privadas,
+          fotos de personas sin permiso ni información sensible que no quieras hacer pública.
+        </P>
+      </Section>
+
+      <Section title="4. Finalidad y base jurídica del tratamiento">
         <Ul items={[
           'Prestación del servicio y gestión de tu cuenta (art. 31 nDSG — ejecución de un contrato).',
           'Seguridad de la plataforma y prevención de abusos (interés legítimo del operador).',
           'Comunicaciones de servicio por email (interés legítimo / consentimiento).',
           'Mejora de la experiencia de usuario mediante datos anonimizados de uso (interés legítimo).',
+          'Recepción, análisis y gestión de denuncias, moderación y retirada de contenido problemático.',
         ]} />
         <P>No realizamos tratamientos automatizados con efectos jurídicos sobre las personas ni
         elaboración de perfiles en el sentido del art. 5 lit. f nDSG.</P>
       </Section>
 
-      <Section title="4. Plazo de conservación">
+      <Section title="5. Plazo de conservación">
         <Ul items={[
           'Datos de cuenta: mientras la cuenta esté activa. Tras la eliminación de la cuenta, 30 días de retención por seguridad y luego eliminación definitiva.',
           'Anuncios y publicaciones: se eliminan cuando el usuario los borra o cuando se elimina la cuenta.',
+          'Denuncias, cola de moderación y registros de actuación: mientras sean necesarios para seguridad, prevención de abusos, defensa de derechos o cumplimiento legal.',
           'Datos de acceso (logs IP): máximo 30 días.',
         ]} />
       </Section>
 
-      <Section title="5. Transferencia de datos a terceros">
+      <Section title="6. Transferencia de datos a terceros">
         <P>No vendemos ni cedemos datos personales a terceros con fines comerciales. Los datos
         son accesibles únicamente a:</P>
         <Ul items={[
@@ -158,16 +173,16 @@ function Privacidad() {
         ]} />
       </Section>
 
-      <Section title="6. Transferencias internacionales">
+      <Section title="7. Transferencias internacionales">
         <P>
           Supabase y Vercel son empresas estadounidenses con servidores en Europa. Ambas se
-          encuentran en el ámbito de garantías adecuadas reconocidas por la Comisión federal de
-          protección de datos e información (PFPDT/EDÖB). El nivel de protección es equivalente
-          al exigido por la nDSG.
+          utilizan para prestar infraestructura técnica. Cuando exista una transferencia internacional
+          de datos, se aplicarán las salvaguardas contractuales, técnicas y organizativas disponibles
+          según la nDSG y, cuando corresponda, el RGPD.
         </P>
       </Section>
 
-      <Section title="7. Cookies y almacenamiento local">
+      <Section title="8. Cookies y almacenamiento local">
         <P>
           Latido.ch utiliza únicamente cookies técnicas esenciales (sesión de usuario) y
           almacenamiento local del navegador (localStorage) para mantener la sesión iniciada.
@@ -175,7 +190,7 @@ function Privacidad() {
         </P>
       </Section>
 
-      <Section title="8. Tus derechos (art. 25–27 nDSG)">
+      <Section title="9. Tus derechos (art. 25–27 nDSG)">
         <P>Como usuario tienes derecho a:</P>
         <Ul items={[
           'Acceso: saber qué datos tuyos tratamos.',
@@ -193,22 +208,27 @@ function Privacidad() {
         </P>
       </Section>
 
-      <Section title="9. Seguridad">
+      <Section title="10. Seguridad y brechas">
         <P>
           Aplicamos medidas técnicas y organizativas adecuadas: cifrado en tránsito (HTTPS/TLS),
           contraseñas almacenadas con hash seguro (bcrypt vía Supabase Auth), acceso restringido
           a la base de datos y revisión periódica de permisos.
         </P>
+        <P>
+          Si se produce una brecha de seguridad que pueda implicar un riesgo relevante para las
+          personas afectadas, Latido evaluará el incidente y realizará las comunicaciones necesarias
+          a usuarios o autoridades competentes conforme a la ley aplicable.
+        </P>
       </Section>
 
-      <Section title="10. Menores de edad">
+      <Section title="11. Menores de edad">
         <P>
           Latido.ch no está dirigido a menores de 16 años. Si tienes conocimiento de que un menor
           ha proporcionado datos personales, contacta con nosotros para su eliminación inmediata.
         </P>
       </Section>
 
-      <Section title="11. Cambios en esta política">
+      <Section title="12. Cambios en esta política">
         <P>
           Notificaremos cualquier cambio relevante por email o mediante aviso en la plataforma.
           El uso continuado de Latido.ch tras la notificación implica la aceptación de la nueva versión.
@@ -222,7 +242,7 @@ function Terminos() {
   return (
     <>
       <P style={{ fontStyle:'italic' }}>
-        Última actualización: enero de 2025 · Legislación aplicable: derecho suizo.
+        Última actualización: junio de 2026 · Legislación aplicable: derecho suizo.
       </P>
 
       <Section title="1. Aceptación de los términos">
@@ -247,7 +267,21 @@ function Terminos() {
         </P>
       </Section>
 
-      <Section title="3. Registro y cuenta de usuario">
+      <Section title="3. Rol de Latido: contacto, no garantía">
+        <P>
+          Latido.ch no es parte de los contratos, pagos, entregas, servicios, empleos, alquileres,
+          eventos o acuerdos que los usuarios puedan cerrar entre sí. Latido no fija precios,
+          no cobra comisiones por contratación, no selecciona candidatos, no envía trabajadores,
+          no actúa como agencia privada de colocación ni como empresa de trabajo temporal.
+        </P>
+        <P>
+          Salvo que se indique expresamente por escrito, Latido no verifica automáticamente
+          identidad, solvencia, licencias, seguros, permisos, formación, antecedentes, disponibilidad,
+          calidad, legalidad ni resultados de los servicios publicados.
+        </P>
+      </Section>
+
+      <Section title="4. Registro y cuenta de usuario">
         <Ul items={[
           'Debes tener al menos 18 años para crear una cuenta.',
           'La información que proporcionas debe ser veraz, completa y actualizada.',
@@ -257,7 +291,7 @@ function Terminos() {
         ]} />
       </Section>
 
-      <Section title="4. Responsabilidad sobre los contenidos publicados">
+      <Section title="5. Responsabilidad sobre los contenidos publicados">
         <P>
           <strong>Cada usuario es el único y exclusivo responsable de los contenidos que publica</strong>
           en Latido.ch (anuncios, mensajes, reseñas, datos de contacto, imágenes, etc.).
@@ -269,6 +303,8 @@ function Terminos() {
           'Tiene derecho a publicarlo (es el autor o tiene los permisos necesarios).',
           'No infringe derechos de terceros (propiedad intelectual, privacidad, honor).',
           'Su contenido es veraz, no es engañoso ni fraudulento.',
+          'Cuenta con autorización para publicar fotos, logos, marcas, nombres comerciales y datos de contacto.',
+          'Cuenta con los permisos, licencias, seguros o cualificaciones necesarios cuando el servicio anunciado lo requiera.',
           'No viola ninguna ley suiza ni internacional aplicable.',
         ]} />
         <P>
@@ -277,22 +313,72 @@ function Terminos() {
         </P>
       </Section>
 
-      <Section title="5. Contenidos prohibidos">
+      <Section title="6. Contenidos prohibidos">
         <P>Está estrictamente prohibido publicar contenidos que:</P>
         <Ul items={[
           'Sean ilegales según el derecho suizo (CP, LCD, CO y demás legislación aplicable).',
           'Contengan información falsa, engañosa o fraudulenta (art. 146 CP — estafa).',
           'Inciten al odio, discriminación o violencia por razón de origen, religión, sexo u otra característica (art. 261bis CP).',
           'Constituyan acoso, amenazas o intimidación a otros usuarios.',
+          'Difamen, insulten gravemente o lesionen el honor de personas o empresas.',
           'Vulneren derechos de propiedad intelectual o industrial de terceros.',
-          'Promuevan actividades ilegales, incluida la venta de sustancias prohibidas.',
+          'Promuevan actividades ilegales, incluida la venta de sustancias prohibidas, armas, medicamentos sin autorización, documentos falsos, productos falsificados o servicios sexuales si Latido no los permite.',
           'Contengan spam, publicidad no solicitada o contenido con fines puramente comerciales no autorizados.',
-          'Expongan datos personales de terceros sin su consentimiento (art. 179 CP).',
+          'Expongan datos personales de terceros sin su consentimiento, incluidas direcciones, teléfonos, documentos, imágenes privadas o información sensible.',
           'Sean de naturaleza sexual explícita o pornográfica.',
+          'Ofrezcan empleo sin contrato, sin permiso de trabajo, pagos en negro o condiciones contrarias a la normativa laboral aplicable.',
+          'Incluyan requisitos discriminatorios en empleo o vivienda, salvo requisitos objetivos y legalmente justificables.',
+          'Presenten servicios regulados como salud, legal, seguros, finanzas, transporte, construcción, cuidado infantil u otros sin permisos o cualificaciones suficientes.',
         ]} />
       </Section>
 
-      <Section title="6. Conducta en la plataforma">
+      <Section title="7. Denuncias, moderación y retirada">
+        <P>
+          Latido puede revisar contenidos publicados, denuncias recibidas y señales automáticas
+          de riesgo. Si un contenido parece ilegal, fraudulento, discriminatorio, peligroso o
+          contrario a estos Términos, Latido podrá:
+        </P>
+        <Ul items={[
+          'Ocultarlo temporalmente mientras se revisa.',
+          'Solicitar información adicional al publicador o denunciante.',
+          'Eliminarlo total o parcialmente.',
+          'Suspender, limitar o eliminar cuentas reincidentes.',
+          'Conservar registros razonables para prevenir abusos, defender derechos o colaborar con autoridades competentes cuando exista obligación legal.',
+        ]} />
+        <P>
+          Los usuarios pueden denunciar contenido desde el botón "Reportar" o escribiendo a
+          <strong> info@latido.ch</strong> con la URL, motivo y pruebas disponibles.
+        </P>
+      </Section>
+
+      <Section title="8. Empleo, vivienda y servicios regulados">
+        <P>
+          Las publicaciones de empleo deben ser reales, claras y no discriminatorias. Latido no
+          interviene en procesos de selección, contratación, cesión de personal, pagos, nóminas,
+          permisos de trabajo, seguros sociales ni cumplimiento de convenios.
+        </P>
+        <P>
+          Para vivienda, servicios profesionales, salud, asesoría legal o fiscal, seguros,
+          transporte, construcción, cuidado infantil u otros ámbitos regulados, las partes deben
+          verificar directamente permisos, cualificaciones, seguros, referencias, contratos,
+          precios, impuestos y obligaciones cantonales o federales.
+        </P>
+      </Section>
+
+      <Section title="9. Destacados, verificación y recomendaciones">
+        <P>
+          Las etiquetas como "Destacado", "Partner", "Verificada" o similares solo significan
+          lo que se indique en la interfaz. Un destacado puede responder a criterios editoriales,
+          técnicos o comerciales, y no implica por sí solo que Latido garantice calidad, seguridad,
+          licencias, disponibilidad o resultados.
+        </P>
+        <P>
+          Las recomendaciones y reseñas pertenecen a usuarios de la comunidad. Latido puede retirarlas
+          si son falsas, abusivas, difamatorias, incentivadas de forma engañosa o contrarias a estos Términos.
+        </P>
+      </Section>
+
+      <Section title="10. Conducta en la plataforma">
         <Ul items={[
           'Trata a los demás usuarios con respeto y buena fe.',
           'No utilices la plataforma para actividades comerciales masivas o scraping de datos.',
@@ -301,7 +387,7 @@ function Terminos() {
         ]} />
       </Section>
 
-      <Section title="7. Propiedad intelectual">
+      <Section title="11. Propiedad intelectual">
         <P>
           El diseño, marca, código fuente y contenidos originales de Latido.ch son propiedad del
           operador y están protegidos por la Ley federal de derecho de autor (LDA/URG).
@@ -310,7 +396,7 @@ function Terminos() {
         </P>
       </Section>
 
-      <Section title="8. Modificación y suspensión del servicio">
+      <Section title="12. Modificación y suspensión del servicio">
         <P>
           El operador puede modificar, suspender o interrumpir el servicio en cualquier momento
           sin previo aviso. También puede suspender o eliminar cuentas de usuario que infrinjan
@@ -318,7 +404,7 @@ function Terminos() {
         </P>
       </Section>
 
-      <Section title="9. Limitación de responsabilidad">
+      <Section title="13. Limitación de responsabilidad">
         <P>
           En la máxima medida permitida por el derecho suizo, Latido.ch no asume responsabilidad
           por daños directos, indirectos, incidentales o consecuentes derivados del uso o la
@@ -331,7 +417,7 @@ function Terminos() {
         </P>
       </Section>
 
-      <Section title="10. Derecho aplicable y jurisdicción">
+      <Section title="14. Derecho aplicable y jurisdicción">
         <P>
           Estos Términos se rigen exclusivamente por el <strong>derecho suizo</strong>, con
           exclusión de las normas de conflicto de leyes. Para cualquier litigio derivado del uso
@@ -344,7 +430,7 @@ function Terminos() {
         </P>
       </Section>
 
-      <Section title="11. Modificación de los Términos">
+      <Section title="15. Modificación de los Términos">
         <P>
           El operador puede actualizar estos Términos en cualquier momento. Los cambios se
           notificarán por email o mediante aviso en la plataforma con al menos 14 días de
@@ -353,7 +439,7 @@ function Terminos() {
         </P>
       </Section>
 
-      <Section title="12. Nulidad parcial">
+      <Section title="16. Nulidad parcial">
         <P>
           Si alguna cláusula de estos Términos fuera declarada nula o inaplicable por un tribunal
           competente, las demás cláusulas seguirán siendo plenamente válidas y eficaces.
@@ -371,8 +457,7 @@ function Descargo() {
           Latido.ch es una <strong>plataforma de intermediación</strong>: proporciona la
           infraestructura tecnológica para que los usuarios publiquen y consulten contenidos,
           pero no genera ni verifica dichos contenidos. Actúa como proveedor de servicios de
-          alojamiento de información en el sentido del art. 12 ss. de la legislación suiza
-          aplicable a los servicios de comunicación electrónica.
+          alojamiento de información y contacto. No crea ni encarga las publicaciones de usuarios.
         </P>
       </Section>
 
@@ -397,10 +482,29 @@ function Descargo() {
           'Que los contactos establecidos a través de la plataforma deriven en transacciones exitosas.',
           'La identidad real de los usuarios registrados.',
           'La solvencia, fiabilidad o cualificación de los usuarios que ofrecen servicios.',
+          'La existencia de licencias, permisos, seguros, cualificaciones, referencias o habilitaciones profesionales.',
+          'La autenticidad de fotos, logos, marcas, certificados o documentos mostrados por usuarios.',
         ]} />
       </Section>
 
-      <Section title="4. Transacciones entre usuarios">
+      <Section title="4. Servicios regulados y contratación">
+        <P>
+          En áreas como salud, asesoría legal o fiscal, seguros, finanzas, transporte, construcción,
+          cuidado infantil, empleo, vivienda u otros servicios sujetos a permisos, Latido.ch no
+          comprueba automáticamente la habilitación profesional ni el cumplimiento de normas
+          cantonales o federales. Cada parte debe verificarlo directamente antes de contratar.
+        </P>
+      </Section>
+
+      <Section title="5. Empleo y agencias">
+        <P>
+          Latido.ch publica ofertas o búsquedas de empleo como tablón comunitario. No actúa como
+          agencia privada de colocación, empresa de trabajo temporal, intermediario laboral activo
+          ni empleador, y no gestiona contratos, nóminas, permisos de trabajo ni cesión de personal.
+        </P>
+      </Section>
+
+      <Section title="6. Transacciones entre usuarios">
         <P>
           <strong>Cualquier acuerdo, transacción económica, intercambio de servicios o relación
           contractual que se origine a través de Latido.ch es responsabilidad exclusiva de las
@@ -413,7 +517,7 @@ function Descargo() {
         </P>
       </Section>
 
-      <Section title="5. Guías e información práctica">
+      <Section title="7. Guías e información práctica">
         <P>
           Las guías sobre trámites, permisos, impuestos, seguros y otros procedimientos en Suiza
           publicadas en Latido.ch tienen carácter <strong>meramente orientativo</strong>.
@@ -426,7 +530,7 @@ function Descargo() {
         </P>
       </Section>
 
-      <Section title="6. Enlaces externos">
+      <Section title="8. Enlaces externos">
         <P>
           Latido.ch puede contener enlaces a sitios web de terceros. Dichos enlaces se proporcionan
           únicamente como recurso informativo. El operador no controla ni asume responsabilidad
@@ -434,7 +538,16 @@ function Descargo() {
         </P>
       </Section>
 
-      <Section title="7. Limitación de responsabilidad">
+      <Section title="9. Propiedad intelectual y privacidad de terceros">
+        <P>
+          Los usuarios son responsables de contar con permisos para publicar fotos, textos, logos,
+          marcas, imágenes de personas y datos de contacto. Latido.ch podrá retirar contenidos
+          cuando reciba avisos razonables sobre infracción de copyright, marca, privacidad, honor
+          o derechos de imagen.
+        </P>
+      </Section>
+
+      <Section title="10. Limitación de responsabilidad">
         <P>
           En la medida máxima permitida por el derecho suizo (art. 100 CO), el operador de
           Latido.ch no será responsable de ningún daño directo, indirecto, incidental, especial
@@ -447,12 +560,12 @@ function Descargo() {
         </P>
       </Section>
 
-      <Section title="8. Notificación de contenidos ilegales">
+      <Section title="11. Notificación de contenidos ilegales">
         <P>
           Si encuentras en Latido.ch contenidos que consideres ilegales, fraudulentos o que
-          vulneren derechos de terceros, notifícalo a <strong>info@latido.ch</strong> indicando
-          la URL del contenido y el motivo de la denuncia. El operador actuará con la mayor
-          diligencia posible.
+          vulneren derechos de terceros, usa el botón <strong>Reportar</strong> o notifícalo a
+          <strong> info@latido.ch</strong> indicando la URL del contenido, el motivo de la denuncia
+          y cualquier prueba disponible. El operador actuará con la mayor diligencia posible.
         </P>
       </Section>
     </>

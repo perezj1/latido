@@ -339,7 +339,7 @@ function normalizePublication(kind, row) {
       icon: type?.label?.split(' ')[0] || KIND_META[kind].icon,
       title: row.name,
       summary: [type?.label?.replace(/^[^\s]+\s/, ''), row.city || row.canton].filter(Boolean).join(' · ') || 'Negocio',
-      meta: [row.featured ? 'Destacado' : null, row.verified ? 'Verificado' : null].filter(Boolean).join(' · '),
+      meta: [row.featured ? 'Destacado' : null, row.verified ? 'Verificada' : null].filter(Boolean).join(' · '),
       active: !!row.active,
       createdAt: row.created_at,
       raw: row,

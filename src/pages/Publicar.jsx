@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, normalizeAdCat } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
@@ -711,6 +711,7 @@ export default function Publicar() {
               </div>
             </div>
           </div>
+          <PublicationLegalNotice kind="ad" />
         </>
       )}
 
