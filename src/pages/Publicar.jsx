@@ -728,7 +728,7 @@ export default function Publicar() {
               Continuar →
             </Btn>
           ) : (
-            <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
+            <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1, border:`1.5px solid ${C.successMid}` }}>
               {loading ? '⏳ Publicando...' : '✅ Publicar anuncio'}
             </Btn>
           )
