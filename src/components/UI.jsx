@@ -25,7 +25,7 @@ export function Btn({ children, onClick, variant='primary', size='md', disabled=
         fontFamily: PP, fontWeight:700, fontSize:13, borderRadius:14,
         cursor: disabled?'not-allowed':'pointer',
         padding: sizes[size], display:'flex', alignItems:'center',
-        justifyContent:'center', gap:6, width:'100%', letterSpacing:0.2,
+        justifyContent:'center', gap:6, width:'100%', letterSpacing:0.2, whiteSpace:'nowrap',
         opacity: disabled ? 0.55 : 1, transition:'all .15s',
         ...variants[variant], ...style,
       }}
