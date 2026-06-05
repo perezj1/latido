@@ -158,7 +158,7 @@ export default function PublicarEvento() {
       {/* Step 1 — Date, time, price */}
       {step === 1 && (
         <>
-          <Input label="Título del evento *" placeholder="Ej: Noche de salsa en Zürich" required value={form.title} onChange={e=>s('title',e.target.value)} />
+          <Input label="Título del evento (EN ESPAÑOL)" placeholder="Ej: Noche de salsa en Zürich" required value={form.title} onChange={e=>s('title',e.target.value)} />
           <div className="grid-2" style={{ gap:10 }}>
             <Input label="Fecha del evento *" type="date" required value={form.date} onChange={e=>setEventDate(e.target.value)} />
             <Input label="Hora de inicio" type="time" placeholder="21:00" value={form.time} onChange={e=>s('time',e.target.value)} />
@@ -178,7 +178,7 @@ export default function PublicarEvento() {
             cantonRequired
           />
           <Input label="Lugar / Venue" placeholder="Ej: Rote Fabrik, Club Zukunft, Rosengarten Café" value={form.venue} onChange={e=>s('venue',e.target.value)} />
-          <Input label="Descripción del evento" placeholder="Cuéntanos qué habrá, qué pueden esperar los asistentes..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
+          <Input label="Descripción del evento (EN ESPAÑOL)" placeholder="Cuéntanos qué habrá, qué pueden esperar los asistentes..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
           <ImageUploadField
             label="Imagen del evento (opcional)"
             previewUrl={form.img_url}

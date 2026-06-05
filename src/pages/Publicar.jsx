@@ -591,14 +591,14 @@ export default function Publicar() {
             </div>
           )}
           <Input
-            label="Título del anuncio *"
+            label="Título del anuncio (EN ESPAÑOL)"
             placeholder={getTitlePlaceholder(form.intent, form.cat)}
             required
             value={form.title}
             onChange={e => s('title', e.target.value)}
           />
           <Input
-            label="Descripción"
+            label="Descripción (EN ESPAÑOL)"
             placeholder="Cuéntanos con detalle qué buscas, ofreces, vendes o regalas. Cuánta más info, mejor respuesta recibirás."
             rows={5}
             value={form.desc}

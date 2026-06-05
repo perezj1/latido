@@ -183,7 +183,7 @@ export default function RegistrarComunidad() {
             onFilesSelected={files => handlePhotoUpload(files?.[0])}
             onRemove={() => s('photo_url', '')}
           />
-          <Input label="Descripción del grupo" placeholder="¿A quién está dirigido? ¿Qué hacéis juntos? ¿Cuándo os reunís?" rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
+          <Input label="Descripción del grupo (EN ESPAÑOL)" placeholder="¿A quién está dirigido? ¿Qué hacéis juntos? ¿Cuándo os reunís?" rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
           <Input label={form.platform === 'web' ? 'URL de la web *' : 'Enlace de invitación *'} placeholder={
             form.platform === 'whatsapp'  ? 'https://chat.whatsapp.com/...' :
             form.platform === 'telegram'  ? 'https://t.me/...' :

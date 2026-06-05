@@ -216,7 +216,7 @@ export default function RegistrarNegocio() {
             onCityChange={value => s('city', value)}
             cantonRequired
           />
-          <Input label="Descripción" placeholder="Cuéntanos qué ofrece tu negocio, qué os hace especiales..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
+          <Input label="Descripción (EN ESPAÑOL)" placeholder="Cuéntanos qué ofrece tu negocio, qué os hace especiales..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
         </>
       )}
 

@@ -436,32 +436,12 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
         </div>
       </div>
 
-      <div style={{ padding:'18px 20px', borderBottom:`1px solid ${C.border}` }}>
-        {ad.price && (
-          <>
-            <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 4px' }}>Precio</p>
-            <p style={{ fontFamily:PP, fontWeight:900, fontSize:28, color:C.primary, lineHeight:1.1, margin:'0 0 16px', ...WRAPPING_TEXT }}>{fmtPrice(ad.price)}</p>
-          </>
-        )}
-        {!isOwnAd && user ? (
-          <button onClick={() => navigate(`/mensajes?adId=${ad.id}${recipientName ? `&recipientName=${recipientName}` : ''}`)}
-            style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:14, background:'#10B981', color:'#fff', border:'none', borderRadius:8, padding:'15px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginBottom:10 }}>
-            Enviar mensaje
-          </button>
-        ) : !user ? (
-          <a href="/auth" style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:8, padding:'15px 16px', display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box', marginBottom:10 }}>Inicia sesión para contactar</a>
-        ) : null}
-        {user && !isOwnAd && (
-          <ReportButton
-            contentType="listing"
-            contentId={ad.id}
-            ownerId={ad.user_id}
-            title="Reportar"
-            metadata={{ title: ad.title, cat: normalizedCat, sub: ad.sub }}
-            style={{ width:'100%' }}
-          />
-        )}
-      </div>
+      {ad.price && (
+        <div style={{ padding:'18px 20px 14px', borderBottom:`1px solid ${C.border}` }}>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 4px' }}>Precio</p>
+          <p style={{ fontFamily:PP, fontWeight:900, fontSize:28, color:C.primary, lineHeight:1.1, margin:0, ...WRAPPING_TEXT }}>{fmtPrice(ad.price)}</p>
+        </div>
+      )}
 
       {ad.desc && (
         <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
@@ -553,6 +533,31 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
         ))}
       </RelatedRail>
 
+      {!isOwnAd && (
+        <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:96, background:'#fff', borderTop:`1px solid ${C.border}`, padding:`12px 16px calc(12px + env(safe-area-inset-bottom))`, display:'flex', gap:10 }}>
+          {user ? (
+            <button onClick={() => navigate(`/mensajes?adId=${ad.id}${recipientName ? `&recipientName=${recipientName}` : ''}`)}
+              style={{ flex:1, fontFamily:PP, fontWeight:800, fontSize:14, background:'#10B981', color:'#fff', border:'none', borderRadius:8, padding:'15px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              Enviar mensaje
+            </button>
+          ) : (
+            <a href="/auth" style={{ flex:1, fontFamily:PP, fontWeight:800, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:8, padding:'15px 16px', display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box' }}>
+              Inicia sesión para contactar
+            </a>
+          )}
+          {user && (
+            <ReportButton
+              contentType="listing"
+              contentId={ad.id}
+              ownerId={ad.user_id}
+              title="Reportar"
+              metadata={{ title: ad.title, cat: normalizedCat, sub: ad.sub }}
+              style={{ flex:1, borderRadius:8, padding:'15px 16px', fontSize:14, fontWeight:800 }}
+            />
+          )}
+        </div>
+      )}
+
     </div>
   )
 }
@@ -639,32 +644,12 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
         </div>
       </div>
 
-      <div style={{ padding:'18px 20px', borderBottom:`1px solid ${C.border}` }}>
-        {job.salary && (
-          <>
-            <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 4px' }}>Salario</p>
-            <p style={{ fontFamily:PP, fontWeight:900, fontSize:28, color:'#059669', lineHeight:1.1, margin:'0 0 16px', ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>
-          </>
-        )}
-        {!isOwnJob && user ? (
-          <button onClick={() => navigate(`/mensajes?jobId=${job.id}`)}
-            style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:14, background:'#10B981', color:'#fff', border:'none', borderRadius:8, padding:'15px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginBottom:10 }}>
-            Enviar mensaje
-          </button>
-        ) : !user ? (
-          <a href="/auth" style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:8, padding:'15px 16px', display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box', marginBottom:10 }}>Inicia sesión para contactar</a>
-        ) : null}
-        {user && !isOwnJob && (
-          <ReportButton
-            contentType="job"
-            contentId={job.id}
-            ownerId={job.user_id}
-            title="Reportar"
-            metadata={{ title: job.title, company: job.company, job_intent: getJobIntentId(job), sector: job.sector }}
-            style={{ width:'100%' }}
-          />
-        )}
-      </div>
+      {job.salary && (
+        <div style={{ padding:'18px 20px 14px', borderBottom:`1px solid ${C.border}` }}>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 4px' }}>Salario</p>
+          <p style={{ fontFamily:PP, fontWeight:900, fontSize:28, color:'#059669', lineHeight:1.1, margin:0, ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>
+        </div>
+      )}
 
       {(languages || job.desc || job.description) && (
         <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
@@ -683,6 +668,31 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
           <RelatedJobCard key={item.id} job={item} onClick={() => onOpenRelatedJob?.(item)} />
         ))}
       </RelatedRail>
+
+      {!isOwnJob && (
+        <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:96, background:'#fff', borderTop:`1px solid ${C.border}`, padding:`12px 16px calc(12px + env(safe-area-inset-bottom))`, display:'flex', gap:10 }}>
+          {user ? (
+            <button onClick={() => navigate(`/mensajes?jobId=${job.id}`)}
+              style={{ flex:1, fontFamily:PP, fontWeight:800, fontSize:14, background:'#10B981', color:'#fff', border:'none', borderRadius:8, padding:'15px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              Enviar mensaje
+            </button>
+          ) : (
+            <a href="/auth" style={{ flex:1, fontFamily:PP, fontWeight:800, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:8, padding:'15px 16px', display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box' }}>
+              Inicia sesión para contactar
+            </a>
+          )}
+          {user && (
+            <ReportButton
+              contentType="job"
+              contentId={job.id}
+              ownerId={job.user_id}
+              title="Reportar"
+              metadata={{ title: job.title, company: job.company, job_intent: getJobIntentId(job), sector: job.sector }}
+              style={{ flex:1, borderRadius:8, padding:'15px 16px', fontSize:14, fontWeight:800 }}
+            />
+          )}
+        </div>
+      )}
 
     </div>
   )

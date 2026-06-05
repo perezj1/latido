@@ -268,7 +268,7 @@ export default function PublicarEmpleo() {
       {step === 1 && (
         <>
           <Input
-            label={isSeekingJob ? 'Puesto o trabajo que buscas *' : 'Título del puesto *'}
+            label={isSeekingJob ? 'Puesto o trabajo que buscas (EN ESPAÑOL)' : 'Título del puesto (EN ESPAÑOL)'}
             placeholder={isSeekingJob ? 'Ej: Busco trabajo de limpieza, cocinero/a, cuidadora...' : 'Ej: Cocinero/a, Cuidadora, Técnico IT'}
             required
             value={form.title}
@@ -361,7 +361,7 @@ export default function PublicarEmpleo() {
           </div>
 
           <Input
-            label={isSeekingJob ? 'Descripción de tu perfil (opcional)' : 'Descripción del puesto (opcional)'}
+            label={isSeekingJob ? 'Descripción de tu perfil (EN ESPAÑOL)' : 'Descripción del puesto (EN ESPAÑOL)'}
             placeholder={isSeekingJob ? 'Cuenta tu experiencia, disponibilidad, permisos, idiomas y el tipo de trabajo que buscas...' : 'Qué hará el candidato, requisitos, experiencia necesaria, condiciones...'}
             rows={4}
             value={form.desc}

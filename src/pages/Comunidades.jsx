@@ -844,47 +844,6 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                   </div>
                 </div>
               )}
-              {hasContact && (
-                <div style={{ marginBottom:14 }}>
-                  <button
-                    onClick={() => setShowContacts(current => !current)}
-                    style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', textDecoration:'none', padding:'13px 16px', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer' }}
-                  >
-                    <span>📬 Contacto</span>
-                    <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : locationContacts ? `${locationContacts.length} sedes` : 'Ver opciones'}</span>
-                  </button>
-                  {showContacts && (
-                    <div style={{ marginTop:10 }}>
-                      {locationContacts ? (
-                        <LocationContactsPanel locations={locationContacts} />
-                      ) : (
-                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:10, display:'flex', flexDirection:'column', gap:8 }}>
-                          {contactMethods.map(method => (
-                            <a
-                              key={method.id}
-                              href={method.href}
-                              target={method.external ? '_blank' : undefined}
-                              rel={method.external ? 'noreferrer' : undefined}
-                              style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
-                            >
-                              <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                                <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
-                                <div style={{ minWidth:0 }}>
-                                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
-                                  <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
-                                </div>
-                              </div>
-                              <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
-                                {method.external ? 'Abrir ↗' : 'Abrir →'}
-                              </span>
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
               {reviews.length > 0 && (
                 <button onClick={() => setTab('resenas')} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:13, padding:'11px 14px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -981,6 +940,50 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           )}
         </div>
       </div>
+
+      {tab === 'info' && hasContact && (
+        <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:96 }}>
+          {showContacts && (
+            <div style={{ background:C.bg, borderTop:`1px solid ${C.border}`, padding:'10px 16px', maxHeight:'60vh', overflowY:'auto' }}>
+              {locationContacts ? (
+                <LocationContactsPanel locations={locationContacts} />
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {contactMethods.map(method => (
+                    <a
+                      key={method.id}
+                      href={method.href}
+                      target={method.external ? '_blank' : undefined}
+                      rel={method.external ? 'noreferrer' : undefined}
+                      style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
+                    >
+                      <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                        <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
+                        <div style={{ minWidth:0 }}>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
+                          <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
+                        </div>
+                      </div>
+                      <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
+                        {method.external ? 'Abrir ↗' : 'Abrir →'}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{ background:'#fff', borderTop:`1px solid ${C.border}`, padding:`12px 16px calc(12px + env(safe-area-inset-bottom))` }}>
+            <button
+              onClick={() => setShowContacts(current => !current)}
+              style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', padding:'13px 16px', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer' }}
+            >
+              <span>📬 Contacto</span>
+              <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : locationContacts ? `${locationContacts.length} sedes` : 'Ver opciones'}</span>
+            </button>
+          </div>
+        </div>
+      )}
     </FullPageOverlay>
   )
 }
@@ -1033,6 +1036,14 @@ function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[]
         {community.desc || 'Grupo hispanohablante en Suiza.'}
       </p>
 
+      <RelatedRail title="Grupos parecidos" empty={!relatedCommunities.length}>
+        {relatedCommunities.map(item => (
+          <RelatedCommunityCard key={item.id} group={item} onClick={() => onOpenRelatedCommunity?.(item)} />
+        ))}
+      </RelatedRail>
+
+      </div>
+
       {community.contact && (() => {
         const url = normalizeCommunityContactUrl(community.contact)
         const urlKey = url.toLowerCase()
@@ -1046,19 +1057,13 @@ function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[]
         else if (url.includes('instagram.com'))                                       { icon = '📸'; label = 'Seguir en Instagram'; bg = '#E1306C' }
         else if (url.includes('discord.gg'))                                          { icon = '🎮'; label = 'Unirme por Discord'; bg = '#5865F2' }
         return (
-          <a href={url} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:bg, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', boxSizing:'border-box', marginBottom:16 }}>
-            <span>{icon}</span>{label}
-          </a>
+          <div key="join-bar" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:96, background:'#fff', borderTop:`1px solid ${C.border}`, padding:`12px 16px calc(12px + env(safe-area-inset-bottom))` }}>
+            <a href={url} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:bg, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', boxSizing:'border-box' }}>
+              <span>{icon}</span>{label}
+            </a>
+          </div>
         )
       })()}
-
-      <RelatedRail title="Grupos parecidos" empty={!relatedCommunities.length}>
-        {relatedCommunities.map(item => (
-          <RelatedCommunityCard key={item.id} group={item} onClick={() => onOpenRelatedCommunity?.(item)} />
-        ))}
-      </RelatedRail>
-
-      </div>
     </FullPageOverlay>
   )
 }
