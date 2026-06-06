@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 const SESSION_KEY = 'latido_analytics_session_id'
 let lastEventKey = ''
 let lastEventAt = 0
-let analyticsDisabled = false
+let analyticsRetryAfter = 0
 
 function getSessionId() {
   try {
@@ -37,7 +37,7 @@ function shouldSkipDuplicate(eventType, payload) {
 }
 
 export async function trackAnalyticsEvent(eventType, payload = {}) {
-  if (!eventType || analyticsDisabled || typeof window === 'undefined') return
+  if (!eventType || Date.now() < analyticsRetryAfter || typeof window === 'undefined') return
 
   const path = payload.path || window.location.pathname
   const search = payload.search ?? window.location.search
@@ -58,11 +58,13 @@ export async function trackAnalyticsEvent(eventType, payload = {}) {
       })
 
     if (error) {
-      analyticsDisabled = true
+      analyticsRetryAfter = Date.now() + 30_000
       console.warn('Analytics event not saved:', error.message)
+    } else {
+      analyticsRetryAfter = 0
     }
   } catch (error) {
-    analyticsDisabled = true
+    analyticsRetryAfter = Date.now() + 30_000
     console.warn('Analytics event failed:', error)
   }
 }

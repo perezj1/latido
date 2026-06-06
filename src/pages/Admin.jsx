@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -38,6 +38,105 @@ const OPTIONAL_PROVIDER_VERIFICATION_COLUMNS = new Set([
   'verified_by',
   'verification_notes',
 ])
+const ADMIN_QUERY_PAGE_SIZE = 500
+const ADMIN_LIST_PAGE_SIZE = 40
+
+async function fetchAllAdminRows({
+  table,
+  columns = '*',
+  orderColumn = 'created_at',
+  ascending = false,
+  since = '',
+}) {
+  const rows = []
+  let offset = 0
+  let total = null
+
+  while (total === null || rows.length < total) {
+    let query = supabase
+      .from(table)
+      .select(columns, { count: 'exact' })
+
+    if (since) query = query.gte(orderColumn, since)
+    query = query
+      .order(orderColumn, { ascending })
+      .order('id', { ascending: true })
+      .range(offset, offset + ADMIN_QUERY_PAGE_SIZE - 1)
+
+    const response = await query
+    if (response.error) return { data: rows, count: total, error: response.error }
+
+    const page = response.data || []
+    rows.push(...page)
+    total = response.count ?? total
+
+    if (!page.length || (total === null && page.length < ADMIN_QUERY_PAGE_SIZE)) break
+    offset += page.length
+  }
+
+  return { data: rows, count: total ?? rows.length, error: null }
+}
+
+async function fetchAdminRowsByIds(table, columns, ids) {
+  const uniqueIds = [...new Set(ids.filter(Boolean))]
+  if (!uniqueIds.length) return { data: [], error: null }
+
+  const rows = []
+  for (let index = 0; index < uniqueIds.length; index += 200) {
+    const response = await supabase
+      .from(table)
+      .select(columns)
+      .in('id', uniqueIds.slice(index, index + 200))
+    if (response.error) return { data: rows, error: response.error }
+    rows.push(...(response.data || []))
+  }
+  return { data: rows, error: null }
+}
+
+function countUniqueByDay(items, days, identityFn) {
+  const buckets = new Map(countByDay([], days).map(item => [item.date, new Set()]))
+  items.forEach(item => {
+    const key = localDateKey(item.created_at)
+    const identity = identityFn(item)
+    if (identity && buckets.has(key)) buckets.get(key).add(identity)
+  })
+  return [...buckets.entries()].map(([date, identities]) => ({ date, count: identities.size }))
+}
+
+function uniquePeriodTrend(items, days, identityFn) {
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
+  const currentStart = new Date(today)
+  currentStart.setDate(currentStart.getDate() - (days - 1))
+  currentStart.setHours(0, 0, 0, 0)
+  const previousStart = new Date(currentStart)
+  previousStart.setDate(previousStart.getDate() - days)
+  const previousEnd = new Date(currentStart.getTime() - 1)
+  const current = new Set()
+  const previous = new Set()
+
+  items.forEach(item => {
+    const date = new Date(item.created_at)
+    const identity = identityFn(item)
+    if (!identity || Number.isNaN(date.getTime())) return
+    if (date >= currentStart && date <= today) current.add(identity)
+    else if (date >= previousStart && date <= previousEnd) previous.add(identity)
+  })
+
+  if (!previous.size) return current.size ? 100 : 0
+  return Math.round(((current.size - previous.size) / previous.size) * 100)
+}
+
+function paginate(items, page, pageSize = ADMIN_LIST_PAGE_SIZE) {
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize))
+  const safePage = Math.min(Math.max(1, page), pageCount)
+  const start = (safePage - 1) * pageSize
+  return {
+    page: safePage,
+    pageCount,
+    items: items.slice(start, start + pageSize),
+  }
+}
 
 const MODERATED_CONTENT_TABLES = {
   listing: 'listings',
@@ -710,6 +809,71 @@ function AdminButton({ children, onClick, variant = 'secondary', disabled = fals
   )
 }
 
+function AdminFilterInput({ value, onChange, placeholder }) {
+  return (
+    <input
+      value={value}
+      onChange={event => onChange(event.target.value)}
+      placeholder={placeholder}
+      style={{
+        minWidth: 0,
+        flex: '1 1 220px',
+        boxSizing: 'border-box',
+        fontFamily: PP,
+        fontSize: 12,
+        color: C.text,
+        background: '#fff',
+        border: `1.5px solid ${C.border}`,
+        borderRadius: 12,
+        padding: '10px 12px',
+        outline: 'none',
+      }}
+    />
+  )
+}
+
+function AdminFilterSelect({ value, onChange, children, label }) {
+  return (
+    <select
+      aria-label={label}
+      value={value}
+      onChange={event => onChange(event.target.value)}
+      style={{
+        minWidth: 0,
+        width: '100%',
+        flex: '0 1 190px',
+        boxSizing: 'border-box',
+        fontFamily: PP,
+        fontSize: 11,
+        fontWeight: 800,
+        color: C.text,
+        background: '#fff',
+        border: `1.5px solid ${C.border}`,
+        borderRadius: 12,
+        padding: '10px 8px',
+        outline: 'none',
+      }}
+    >
+      {children}
+    </select>
+  )
+}
+
+function AdminPagination({ page, pageCount, total, onChange }) {
+  if (pageCount <= 1) return null
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 2px 2px' }}>
+      <span style={{ fontFamily: PP, fontSize: 11, color: C.light }}>
+        Página {page} de {pageCount} · {total} resultados
+      </span>
+      <div style={{ display: 'flex', gap: 7 }}>
+        <AdminButton disabled={page <= 1} onClick={() => onChange(page - 1)}>Anterior</AdminButton>
+        <AdminButton disabled={page >= pageCount} onClick={() => onChange(page + 1)}>Siguiente</AdminButton>
+      </div>
+    </div>
+  )
+}
+
 function EmptyState({ icon, text }) {
   return (
     <Card style={{ textAlign: 'center', padding: '48px 24px', background: 'linear-gradient(180deg,#fff,#F8FAFF)' }}>
@@ -725,18 +889,33 @@ async function logAdminAction(action) {
 
 export default function Admin() {
   const { user } = useAuth()
+  const loadRequestRef = useRef(0)
   const [tab, setTab] = useState('users')
   const [loading, setLoading] = useState(true)
+  const [dataErrors, setDataErrors] = useState([])
   const [userSearch, setUserSearch] = useState('')
+  const [userStatusFilter, setUserStatusFilter] = useState('all')
+  const [userCantonFilter, setUserCantonFilter] = useState('all')
+  const [userPage, setUserPage] = useState(1)
   const [userDays, setUserDays] = useState(1)
   const [overviewDays, setOverviewDays] = useState(30)
   const [reports, setReports] = useState([])
+  const [reportTypeFilter, setReportTypeFilter] = useState('all')
+  const [reportPage, setReportPage] = useState(1)
   const [queue, setQueue] = useState([])
+  const [moderationTypeFilter, setModerationTypeFilter] = useState('all')
+  const [moderationPage, setModerationPage] = useState(1)
   const [users, setUsers] = useState([])
   const [recentListings, setRecentListings] = useState([])
   const [recentJobs, setRecentJobs] = useState([])
+  const [contentSearch, setContentSearch] = useState('')
+  const [contentStatusFilter, setContentStatusFilter] = useState('all')
+  const [listingPage, setListingPage] = useState(1)
+  const [jobPage, setJobPage] = useState(1)
   const [businesses, setBusinesses] = useState([])
   const [businessVerificationFilter, setBusinessVerificationFilter] = useState('pending')
+  const [businessSearch, setBusinessSearch] = useState('')
+  const [businessPage, setBusinessPage] = useState(1)
   const [contentByKey, setContentByKey] = useState(new Map())
   const [onlineUserIds, setOnlineUserIds] = useState(new Set())
   const [presenceStatus, setPresenceStatus] = useState('idle')
@@ -765,14 +944,22 @@ export default function Admin() {
   }), [businesses, queue, reports, metricUsers, recentListings, recentJobs])
 
   const filteredUsers = useMemo(() => {
-    if (!userSearch.trim()) return users
-    const q = userSearch.toLowerCase()
-    return users.filter(u =>
-      (u.name || '').toLowerCase().includes(q) ||
-      (u.email || '').toLowerCase().includes(q) ||
-      (u.canton || '').toLowerCase().includes(q)
-    )
-  }, [users, userSearch])
+    const q = userSearch.trim().toLowerCase()
+    return metricUsers.filter(profile => {
+      if (userStatusFilter === 'banned' && !profile.banned) return false
+      if (userStatusFilter === 'active' && profile.banned) return false
+      if (userCantonFilter !== 'all' && (profile.canton || '') !== userCantonFilter) return false
+      if (!q) return true
+      return (profile.name || '').toLowerCase().includes(q)
+        || (profile.email || '').toLowerCase().includes(q)
+        || (profile.canton || '').toLowerCase().includes(q)
+    })
+  }, [metricUsers, userCantonFilter, userSearch, userStatusFilter])
+  const userCantons = useMemo(
+    () => [...new Set(metricUsers.map(profile => profile.canton).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
+    [metricUsers]
+  )
+  const pagedUsers = useMemo(() => paginate(filteredUsers, userPage), [filteredUsers, userPage])
   const newUsersInRange = useMemo(
     () => metricUsers.filter(profile => isWithinRecentDays(profile.created_at, userDays)),
     [metricUsers, userDays]
@@ -836,9 +1023,25 @@ export default function Admin() {
     })
     return ids.size
   }, [pageViewEvents])
-  const searchActionRate = searchEvents.length
-    ? Math.round((searchResultEvents.length / searchEvents.length) * 100)
-    : 0
+  const searchConversion = useMemo(() => {
+    const keyFor = event => {
+      const identity = event.session_id || event.user_id || ''
+      const query = analyticsQuery(event).toLowerCase()
+      return identity && query ? `${identity}:${query}` : ''
+    }
+    const searches = new Set(searchEvents.map(keyFor).filter(Boolean))
+    const opened = new Set(searchResultEvents.map(keyFor).filter(key => searches.has(key)))
+    return {
+      searches: searches.size,
+      opened: opened.size,
+      rate: searches.size ? Math.round((opened.size / searches.size) * 100) : 0,
+    }
+  }, [searchEvents, searchResultEvents])
+  const searchActionRate = searchConversion.rate
+  const uniqueSearchTerms = useMemo(
+    () => new Set(searchEvents.map(event => analyticsQuery(event).toLowerCase()).filter(Boolean)).size,
+    [searchEvents]
+  )
   const topSearchActionRows = useMemo(
     () => topAnalyticsRows(
       searchResultEvents,
@@ -874,14 +1077,32 @@ export default function Admin() {
   const topSearchHourRows = useMemo(() => topTimeRows(searchHourRows), [searchHourRows])
   const topSignupHourRows = useMemo(() => topTimeRows(signupHourRows), [signupHourRows])
   const topPublicationHourRows = useMemo(() => topTimeRows(publicationHourRows), [publicationHourRows])
-  const liveLast14Days = useMemo(() => countByDay(activeChartUsers, 14), [activeChartUsers])
+  const livePageViewEvents = useMemo(
+    () => analyticsEvents.filter(event =>
+      event.event_type === 'page_view'
+      && !adminUserIds.has(event.user_id)
+      && !String(event.path || '').startsWith('/admin-latido')
+    ),
+    [adminUserIds, analyticsEvents]
+  )
+  const liveLast14Days = useMemo(
+    () => analyticsUnavailable
+      ? countByDay(activeChartUsers, 14)
+      : countUniqueByDay(livePageViewEvents, 14, event => event.user_id || event.session_id),
+    [activeChartUsers, analyticsUnavailable, livePageViewEvents]
+  )
   const recentLiveUsers = useMemo(() => {
     const byId = new Map()
     onlineUsers.forEach(profile => byId.set(profile.id, profile))
     recentActiveUsers.forEach(profile => byId.set(profile.id, profile))
     return [...byId.values()].slice(0, 8)
   }, [onlineUsers, recentActiveUsers])
-  const liveWeeklyTrend = useMemo(() => periodTrend(activeChartUsers, 7), [activeChartUsers])
+  const liveWeeklyTrend = useMemo(
+    () => analyticsUnavailable
+      ? periodTrend(activeChartUsers, 7)
+      : uniquePeriodTrend(livePageViewEvents, 7, event => event.user_id || event.session_id),
+    [activeChartUsers, analyticsUnavailable, livePageViewEvents]
+  )
   const activeCantonRows = useMemo(() => {
     const counts = activeUsersWeek.reduce((acc, profile) => {
       const key = profile.canton || 'Sin canton'
@@ -900,13 +1121,20 @@ export default function Admin() {
   const liveOnlineRate = metricUsers.length ? Math.round((onlineUsers.length / metricUsers.length) * 100) : 0
   const liveTodayRate = metricUsers.length ? Math.round((activeUsersToday.length / metricUsers.length) * 100) : 0
   const liveWeekRate = metricUsers.length ? Math.round((activeUsersWeek.length / metricUsers.length) * 100) : 0
-  const liveLast14Total = liveLast14Days.reduce((sum, item) => sum + item.count, 0)
+  const liveLast14Total = analyticsUnavailable
+    ? liveLast14Days.reduce((sum, item) => sum + item.count, 0)
+    : new Set(
+      livePageViewEvents
+        .filter(event => isWithinRecentDays(event.created_at, 14))
+        .map(event => event.user_id || event.session_id)
+        .filter(Boolean)
+    ).size
   const presenceStatusMeta = {
     subscribed: { label: 'Conectado', color: '#059669', bg: '#D1FAE5', note: 'Canal Presence activo' },
     connecting: { label: 'Conectando', color: '#D97706', bg: '#FEF3C7', note: 'Esperando Supabase Presence' },
-    channel_error: { label: 'Error canal', color: '#DC2626', bg: '#FEE2E2', note: 'Revisa conexión realtime' },
-    timed_out: { label: 'Timeout', color: '#DC2626', bg: '#FEE2E2', note: 'Supabase no respondió a tiempo' },
-    closed: { label: 'Cerrado', color: '#64748B', bg: '#F1F5F9', note: 'Canal Presence cerrado' },
+    channel_error: { label: 'Reconectando', color: '#D97706', bg: '#FEF3C7', note: 'Reintentando conexión Presence' },
+    timed_out: { label: 'Reconectando', color: '#D97706', bg: '#FEF3C7', note: 'Supabase no respondió; reintentando' },
+    closed: { label: 'Reconectando', color: '#D97706', bg: '#FEF3C7', note: 'Canal cerrado; abriendo uno nuevo' },
     idle: { label: 'Inactivo', color: '#64748B', bg: '#F1F5F9', note: 'Sin canal abierto' },
   }[presenceStatus] || { label: presenceStatus, color: '#64748B', bg: '#F1F5F9', note: 'Estado realtime' }
 
@@ -929,130 +1157,131 @@ export default function Admin() {
     })
   }
 
-  async function loadAdminData() {
-    setLoading(true)
-    const [reportsRes, queueRes, usersRes, listingsRes, jobsRes, providersRes] = await Promise.all([
-      supabase.from('reports').select('*').order('created_at', { ascending: false }).limit(120),
-      supabase.from('moderation_queue').select('*').order('created_at', { ascending: false }).limit(120),
-      supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at').order('created_at', { ascending: false }).limit(300),
-      supabase.from('listings').select('id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at').order('created_at', { ascending: false }).limit(80),
-      supabase.from('jobs').select('id,title,company,desc,sector,active,user_id,canton,city,created_at').order('created_at', { ascending: false }).limit(80),
-      supabase.from('providers').select('*').order('created_at', { ascending: false }).limit(300),
-    ])
+  async function loadAdminData(options = {}) {
+    const requestId = ++loadRequestRef.current
+    const silent = options?.silent === true
+    if (!silent) setLoading(true)
 
-    if (reportsRes.error || queueRes.error || usersRes.error) {
-      toast.error('No se pudo cargar todo el panel. Revisa que el SQL de moderacion este aplicado.')
+    try {
+      const analyticsSince = new Date(Date.now() - 60 * 86_400_000).toISOString()
+      const [reportsRes, queueRes, usersRes, listingsRes, jobsRes, providersRes, analyticsRes, messagesRes] = await Promise.all([
+        fetchAllAdminRows({ table: 'reports' }),
+        fetchAllAdminRows({ table: 'moderation_queue' }),
+        fetchAllAdminRows({ table: 'profiles', columns: 'id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at' }),
+        fetchAllAdminRows({ table: 'listings', columns: 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at' }),
+        fetchAllAdminRows({ table: 'jobs', columns: 'id,title,company,desc,sector,active,user_id,canton,city,created_at' }),
+        fetchAllAdminRows({ table: 'providers' }),
+        fetchAllAdminRows({
+          table: 'analytics_events',
+          columns: 'id,event_type,path,search,user_id,session_id,metadata,created_at',
+          since: analyticsSince,
+        }),
+        fetchAllAdminRows({
+          table: 'messages',
+          columns: 'id,conversation_id,sender_id,created_at',
+          since: analyticsSince,
+        }),
+      ])
+
+      if (requestId !== loadRequestRef.current) return
+
+      const responses = [
+        ['reportes', reportsRes],
+        ['moderación', queueRes],
+        ['usuarios', usersRes],
+        ['anuncios', listingsRes],
+        ['empleos', jobsRes],
+        ['negocios', providersRes],
+        ['analítica', analyticsRes],
+        ['mensajes', messagesRes],
+      ]
+      const nextErrors = responses
+        .filter(([, response]) => response.error)
+        .map(([label, response]) => `${label}: ${response.error.message}`)
+      setDataErrors(nextErrors)
+
+      if (!analyticsRes.error) {
+        setAnalyticsEvents(analyticsRes.data)
+        setAnalyticsUnavailable(false)
+      } else {
+        setAnalyticsUnavailable(true)
+        console.warn('Analytics events unavailable:', analyticsRes.error.message)
+      }
+      if (!messagesRes.error) {
+        setMessageEvents(messagesRes.data)
+        setMessagesUnavailable(false)
+      } else {
+        setMessagesUnavailable(true)
+        console.warn('Messages activity unavailable:', messagesRes.error.message)
+      }
+
+      const nextReports = reportsRes.error ? [] : reportsRes.data
+      const nextQueue = queueRes.error ? [] : queueRes.data
+      const listingIds = [
+        ...nextReports.filter(r => r.content_type === 'listing').map(r => r.content_id),
+        ...nextQueue.filter(r => r.content_type === 'listing').map(r => r.content_id),
+      ]
+      const jobIds = [
+        ...nextReports.filter(r => r.content_type === 'job').map(r => r.content_id),
+        ...nextQueue.filter(r => r.content_type === 'job').map(r => r.content_id),
+      ]
+      const eventIds = [
+        ...nextReports.filter(r => r.content_type === 'event').map(r => r.content_id),
+        ...nextQueue.filter(r => r.content_type === 'event').map(r => r.content_id),
+      ]
+      const providerIds = [
+        ...nextReports.filter(r => ['provider', 'business'].includes(r.content_type)).map(r => r.content_id),
+        ...nextQueue.filter(r => ['provider', 'business'].includes(r.content_type)).map(r => r.content_id),
+      ]
+      const communityIds = [
+        ...nextReports.filter(r => r.content_type === 'community').map(r => r.content_id),
+        ...nextQueue.filter(r => r.content_type === 'community').map(r => r.content_id),
+      ]
+      const messageIds = nextReports.filter(r => r.content_type === 'message').map(r => r.content_id)
+      const profileIds = nextReports.filter(r => r.content_type === 'profile').map(r => r.content_id)
+
+      const [reportedListings, reportedJobs, reportedMessages, reportedProfiles, reportedEvents, reportedProviders, reportedCommunities] = await Promise.all([
+        fetchAdminRowsByIds('listings', 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at', listingIds),
+        fetchAdminRowsByIds('jobs', 'id,title,company,desc,sector,active,user_id,canton,city,created_at', jobIds),
+        fetchAdminRowsByIds('messages', 'id,conversation_id,sender_id,body,created_at', messageIds),
+        fetchAdminRowsByIds('profiles', 'id,name,email,canton,banned,banned_reason,created_at,last_seen_at', profileIds),
+        fetchAdminRowsByIds('events', '*', eventIds),
+        fetchAdminRowsByIds('providers', '*', providerIds),
+        fetchAdminRowsByIds('communities', '*', communityIds),
+      ])
+
+      if (requestId !== loadRequestRef.current) return
+
+      const nextContent = new Map()
+      ;[...(listingsRes.data || []), ...(reportedListings.data || [])].forEach(item => nextContent.set(`listing:${item.id}`, item))
+      ;[...(jobsRes.data || []), ...(reportedJobs.data || [])].forEach(item => nextContent.set(`job:${item.id}`, item))
+      ;(reportedEvents.data || []).forEach(item => nextContent.set(`event:${item.id}`, item))
+      ;[...(providersRes.data || []), ...(reportedProviders.data || [])].forEach(item => {
+        nextContent.set(`provider:${item.id}`, item)
+        nextContent.set(`business:${item.id}`, item)
+      })
+      ;(reportedCommunities.data || []).forEach(item => nextContent.set(`community:${item.id}`, item))
+      ;(reportedMessages.data || []).forEach(item => nextContent.set(`message:${item.id}`, item))
+      ;(reportedProfiles.data || []).forEach(item => nextContent.set(`profile:${item.id}`, item))
+
+      if (!reportsRes.error) setReports(nextReports)
+      if (!queueRes.error) setQueue(nextQueue)
+      if (!usersRes.error) setUsers(usersRes.data)
+      if (!listingsRes.error) setRecentListings(listingsRes.data)
+      if (!jobsRes.error) setRecentJobs(jobsRes.data)
+      if (!providersRes.error) setBusinesses(providersRes.data)
+      setContentByKey(nextContent)
+      if (nextErrors.length && !silent) {
+        toast.error('Hay apartados sin datos. El panel muestra el detalle del error.')
+      }
+    } catch (error) {
+      if (requestId === loadRequestRef.current) {
+        setDataErrors([error.message || 'Error inesperado al cargar el panel'])
+        if (!silent) toast.error('No se pudo actualizar el panel')
+      }
+    } finally {
+      if (requestId === loadRequestRef.current) setLoading(false)
     }
-
-    const analyticsSince = new Date(Date.now() - 60 * 86_400_000).toISOString()
-    const [analyticsRes, messagesRes] = await Promise.all([
-      supabase
-        .from('analytics_events')
-        .select('id,event_type,path,search,user_id,session_id,metadata,created_at')
-        .gte('created_at', analyticsSince)
-        .order('created_at', { ascending: false })
-        .limit(1500),
-      supabase
-        .from('messages')
-        .select('id,conversation_id,sender_id,created_at')
-        .gte('created_at', analyticsSince)
-        .order('created_at', { ascending: false })
-        .limit(1500),
-    ])
-
-    if (analyticsRes.error) {
-      setAnalyticsEvents([])
-      setAnalyticsUnavailable(true)
-      console.warn('Analytics events unavailable:', analyticsRes.error.message)
-    } else {
-      setAnalyticsEvents(analyticsRes.data || [])
-      setAnalyticsUnavailable(false)
-    }
-    if (messagesRes.error) {
-      setMessageEvents([])
-      setMessagesUnavailable(true)
-      console.warn('Messages activity unavailable:', messagesRes.error.message)
-    } else {
-      setMessageEvents(messagesRes.data || [])
-      setMessagesUnavailable(false)
-    }
-
-    const nextReports = reportsRes.data || []
-    const nextQueue = queueRes.data || []
-
-    const listingIds = [
-      ...nextReports.filter(r => r.content_type === 'listing').map(r => r.content_id),
-      ...nextQueue.filter(r => r.content_type === 'listing').map(r => r.content_id),
-    ].filter(Boolean)
-    const jobIds = [
-      ...nextReports.filter(r => r.content_type === 'job').map(r => r.content_id),
-      ...nextQueue.filter(r => r.content_type === 'job').map(r => r.content_id),
-    ].filter(Boolean)
-    const eventIds = [
-      ...nextReports.filter(r => r.content_type === 'event').map(r => r.content_id),
-      ...nextQueue.filter(r => r.content_type === 'event').map(r => r.content_id),
-    ].filter(Boolean)
-    const providerIds = [
-      ...nextReports.filter(r => ['provider', 'business'].includes(r.content_type)).map(r => r.content_id),
-      ...nextQueue.filter(r => ['provider', 'business'].includes(r.content_type)).map(r => r.content_id),
-    ].filter(Boolean)
-    const communityIds = [
-      ...nextReports.filter(r => r.content_type === 'community').map(r => r.content_id),
-      ...nextQueue.filter(r => r.content_type === 'community').map(r => r.content_id),
-    ].filter(Boolean)
-    const messageIds = nextReports.filter(r => r.content_type === 'message').map(r => r.content_id).filter(Boolean)
-    const profileIds = nextReports.filter(r => r.content_type === 'profile').map(r => r.content_id).filter(Boolean)
-
-    const [reportedListings, reportedJobs, reportedMessages, reportedProfiles, reportedEvents, reportedProviders, reportedCommunities] = await Promise.all([
-      listingIds.length ? supabase.from('listings').select('id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at').in('id', listingIds) : Promise.resolve({ data: [] }),
-      jobIds.length ? supabase.from('jobs').select('id,title,company,desc,sector,active,user_id,canton,city,created_at').in('id', jobIds) : Promise.resolve({ data: [] }),
-      messageIds.length ? supabase.from('messages').select('id,conversation_id,sender_id,body,created_at').in('id', messageIds) : Promise.resolve({ data: [] }),
-      profileIds.length ? supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,created_at,last_seen_at').in('id', profileIds) : Promise.resolve({ data: [] }),
-      eventIds.length ? supabase.from('events').select('*').in('id', eventIds) : Promise.resolve({ data: [] }),
-      providerIds.length ? supabase.from('providers').select('*').in('id', providerIds) : Promise.resolve({ data: [] }),
-      communityIds.length ? supabase.from('communities').select('*').in('id', communityIds) : Promise.resolve({ data: [] }),
-    ])
-
-    const nextContent = new Map()
-    ;[...(listingsRes.data || []), ...(reportedListings.data || [])].forEach(item => nextContent.set(`listing:${item.id}`, item))
-    ;[...(jobsRes.data || []), ...(reportedJobs.data || [])].forEach(item => nextContent.set(`job:${item.id}`, item))
-    ;(reportedEvents.data || []).forEach(item => nextContent.set(`event:${item.id}`, item))
-    ;[...(providersRes.data || []), ...(reportedProviders.data || [])].forEach(item => {
-      nextContent.set(`provider:${item.id}`, item)
-      nextContent.set(`business:${item.id}`, item)
-    })
-    ;(reportedCommunities.data || []).forEach(item => nextContent.set(`community:${item.id}`, item))
-    ;(reportedMessages.data || []).forEach(item => nextContent.set(`message:${item.id}`, item))
-    ;(reportedProfiles.data || []).forEach(item => nextContent.set(`profile:${item.id}`, item))
-
-    const baseUsers = usersRes.data || []
-    const knownUserIds = new Set(baseUsers.map(u => u.id))
-    const ownerIds = [
-      ...nextQueue.map(q => q.author_id),
-      ...nextReports.map(r => metadataOwnerId(r)),
-      ...profileIds,
-      ...(reportedListings.data || []).map(l => l.user_id),
-      ...(reportedJobs.data || []).map(j => j.user_id),
-      ...(reportedEvents.data || []).map(e => e.user_id),
-      ...(reportedProviders.data || []).map(p => p.user_id),
-      ...(reportedCommunities.data || []).map(c => c.user_id),
-      ...(reportedMessages.data || []).map(m => m.sender_id),
-    ].filter(Boolean)
-    const missingOwnerIds = [...new Set(ownerIds)].filter(id => !knownUserIds.has(id))
-    const ownerProfilesRes = missingOwnerIds.length
-      ? await supabase.from('profiles').select('id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at').in('id', missingOwnerIds)
-      : { data: [] }
-    const usersById = new Map(baseUsers.map(u => [u.id, u]))
-    ;(ownerProfilesRes.data || []).forEach(u => usersById.set(u.id, u))
-
-    setReports(nextReports)
-    setQueue(nextQueue)
-    setUsers([...usersById.values()])
-    setRecentListings(listingsRes.data || [])
-    setRecentJobs(jobsRes.data || [])
-    setBusinesses(providersRes.data || [])
-    setContentByKey(nextContent)
-    setLoading(false)
   }
 
   function metadataOwnerId(item) {
@@ -1061,33 +1290,41 @@ export default function Admin() {
   }
 
   async function updateReport(report, status) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('reports')
       .update({ status, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
       .eq('id', report.id)
+      .select('id')
+      .maybeSingle()
     if (error) { toast.error(error.message || 'No se pudo actualizar el reporte'); return }
+    if (!data) { toast.error('El reporte no se actualizó. Revisa los permisos RLS del administrador.'); return }
     await logAdminAction({ admin_id: user.id, action_type: `report_${status}`, target_type: report.content_type, target_id: report.content_id, notes: report.reason || '' })
     toast.success('Reporte actualizado')
-    loadAdminData()
+    loadAdminData({ silent: true })
   }
 
   async function setUserBanned(profile, banned) {
     const reason = banned ? window.prompt('Motivo del baneo', profile.banned_reason || 'Uso fraudulento') : ''
     if (banned && reason === null) return
-    const { error } = await supabase.from('profiles')
+    const { data, error } = await supabase.from('profiles')
       .update({ banned, banned_reason: banned ? reason : null, banned_at: banned ? new Date().toISOString() : null })
       .eq('id', profile.id)
+      .select('id,banned,banned_reason,banned_at')
+      .maybeSingle()
     if (error) { toast.error(error.message || 'No se pudo actualizar el usuario'); return }
+    if (!data) { toast.error('El usuario no se actualizó. Revisa los permisos RLS del administrador.'); return }
+    setUsers(previous => previous.map(item => item.id === profile.id ? { ...item, ...data } : item))
     await logAdminAction({ admin_id: user.id, action_type: banned ? 'ban_user' : 'unban_user', target_type: 'profile', target_id: profile.id, notes: reason || '' })
     toast.success(banned ? 'Usuario baneado' : 'Usuario reactivado')
-    loadAdminData()
   }
 
   async function setContentActive(type, id, active) {
     const table = MODERATED_CONTENT_TABLES[type]
     if (!table) return
-    const { error } = await supabase.from(table).update({ active }).eq('id', id)
+    const { data, error } = await supabase.from(table).update({ active }).eq('id', id).select('id,active').maybeSingle()
     if (error) throw error
+    if (!data) throw new Error('No se actualizó el contenido. Revisa los permisos RLS del administrador.')
+    return data
   }
 
   function getContentOwnerId(item) {
@@ -1235,14 +1472,17 @@ export default function Admin() {
       if (canToggleContent(item.content_type)) {
         await setContentActive(item.content_type, item.content_id, status === 'approved')
       }
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('moderation_queue')
         .update({ status, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
         .eq('id', item.id)
+        .select('id')
+        .maybeSingle()
       if (error) throw error
+      if (!data) throw new Error('La cola no se actualizó. Revisa los permisos RLS del administrador.')
       await logAdminAction({ admin_id: user.id, action_type: `moderation_${status}`, target_type: item.content_type, target_id: item.content_id, notes: item.reason || '' })
       toast.success(status === 'approved' ? 'Contenido aprobado' : 'Contenido eliminado')
-      loadAdminData()
+      loadAdminData({ silent: true })
     } catch (err) {
       toast.error(err.message || 'No se pudo procesar')
     }
@@ -1253,7 +1493,9 @@ export default function Admin() {
       if (canToggleContent(report.content_type)) {
         await setContentActive(report.content_type, report.content_id, false)
       } else if (report.content_type === 'message') {
-        await supabase.from('messages').delete().eq('id', report.content_id)
+        const { data, error } = await supabase.from('messages').delete().eq('id', report.content_id).select('id').maybeSingle()
+        if (error) throw error
+        if (!data) throw new Error('El mensaje no se eliminó. Revisa los permisos RLS del administrador.')
       }
       await updateReport(report, 'actioned')
     } catch (err) {
@@ -1299,15 +1541,57 @@ export default function Admin() {
     )
   }
 
-  const pendingQueue = queue.filter(q => q.status === 'pending')
-  const pendingReports = reports.filter(r => r.status === 'pending')
+  const pendingQueue = queue.filter(item => item.status === 'pending')
+  const pendingReports = reports.filter(item => item.status === 'pending')
+  const moderationTypes = [...new Set(pendingQueue.map(item => item.content_type).filter(Boolean))].sort()
+  const reportTypes = [...new Set(pendingReports.map(item => item.content_type).filter(Boolean))].sort()
+  const filteredPendingQueue = pendingQueue.filter(item =>
+    moderationTypeFilter === 'all' || item.content_type === moderationTypeFilter
+  )
+  const filteredPendingReports = pendingReports.filter(item =>
+    reportTypeFilter === 'all' || item.content_type === reportTypeFilter
+  )
+  const pagedModeration = paginate(filteredPendingQueue, moderationPage)
+  const pagedReports = paginate(filteredPendingReports, reportPage)
   const businessVerificationCounts = BUSINESS_VERIFICATION_FILTERS.reduce((acc, item) => {
     acc[item.id] = businesses.filter(business => getBusinessVerificationDetails(business).status === item.id).length
     return acc
   }, {})
+  const businessQuery = businessSearch.trim().toLowerCase()
   const filteredVerificationBusinesses = businesses
     .filter(business => getBusinessVerificationDetails(business).status === businessVerificationFilter)
+    .filter(business => !businessQuery || [
+      business.name,
+      business.category,
+      business.city,
+      business.canton,
+      business.email,
+      business.website,
+      business.whatsapp,
+    ].some(value => String(value || '').toLowerCase().includes(businessQuery)))
     .sort((a, b) => getBusinessVerificationDetails(b).score - getBusinessVerificationDetails(a).score)
+  const pagedBusinesses = paginate(filteredVerificationBusinesses, businessPage)
+  const contentQuery = contentSearch.trim().toLowerCase()
+  const contentMatches = item => {
+    if (contentStatusFilter === 'active' && item.active === false) return false
+    if (contentStatusFilter === 'hidden' && item.active !== false) return false
+    if (!contentQuery) return true
+    return [
+      item.title,
+      item.company,
+      item.desc,
+      item.cat,
+      item.sub,
+      item.sector,
+      item.user_name,
+      item.canton,
+      item.city,
+    ].some(value => String(value || '').toLowerCase().includes(contentQuery))
+  }
+  const filteredListings = recentListings.filter(contentMatches)
+  const filteredJobs = recentJobs.filter(contentMatches)
+  const pagedListings = paginate(filteredListings, listingPage)
+  const pagedJobs = paginate(filteredJobs, jobPage)
   const totalPendingActions = stats.queue + stats.reports + stats.businessVerification
   const activePublications = recentListings.filter(item => item.active !== false).length + recentJobs.filter(item => item.active !== false).length
   const verifiedBusinessCount = businessVerificationCounts.verified || 0
@@ -1354,7 +1638,13 @@ export default function Admin() {
     ? 'sin datos de interacción disponibles'
     : `${overviewEngagementCount} señales de interacción`
   const userTrendInOverviewRange = periodTrend(metricUsers, overviewDays)
-  const activeTrendInOverviewRange = periodTrend(activeChartUsers, overviewDays)
+  const activeTrendInOverviewRange = analyticsUnavailable
+    ? null
+    : uniquePeriodTrend(
+      livePageViewEvents.filter(event => event.user_id),
+      overviewDays,
+      event => event.user_id
+    )
   const businessTrendInOverviewRange = periodTrend(businesses, overviewDays)
   const listingTrendInOverviewRange = periodTrend(recentListings, overviewDays)
   const jobTrendInOverviewRange = periodTrend(recentJobs, overviewDays)
@@ -1462,13 +1752,13 @@ export default function Admin() {
     : SECTION_TITLES[tab]
   const SECTION_DETAILS = {
     overview: { description: `Rapport de ${overviewRangeText} con señales de crecimiento, actividad, pendientes y recomendaciones.`, color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
-    live: { description: 'Pulso operativo de actividad diaria, semanal y usuarios online en este momento.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
+    live: { description: 'Online ahora se actualiza en directo; actividad diaria y semanal usa la última consulta a Supabase.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
     analytics: { description: `Páginas más usadas, búsquedas frecuentes, horarios fuertes y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResultEvents.length} aperturas` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
     businessVerification: { description: 'Evalua datos, contacto y señales antes de mostrar la etiqueta Verificada.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
     users: { description: 'Busca cuentas, revisa actividad basica y gestiona baneos. Las métricas excluyen la cuenta admin.', color: C.primary, count: metricUsers.length, badge: `${metricUsers.length} usuarios sin admin` },
-    content: { description: 'Control rapido de anuncios y empleos publicados en Latido.', color: '#059669', count: stats.content, badge: `${stats.content} publicaciones cargadas` },
+    content: { description: 'Control completo de anuncios y empleos publicados en Latido.', color: '#059669', count: stats.content, badge: `${stats.content} publicaciones totales` },
   }
   const activeSectionDetails = SECTION_DETAILS[tab]
   const sectionMetrics = tab === 'overview'
@@ -1491,13 +1781,13 @@ export default function Admin() {
       ? [
           { label: `Vistas ${analyticsMetricSuffix}`, value: loading ? '...' : pageViewEvents.length, hint: `${analyticsSessions} sesiones registradas`, color: '#0284C7' },
           { label: `Búsquedas ${analyticsMetricSuffix}`, value: loading ? '...' : searchEvents.length, hint: 'Términos escritos en barras', color: C.primary },
-          { label: 'Aperturas búsqueda', value: loading ? '...' : searchResultEvents.length, hint: `${searchActionRate}% sobre búsquedas registradas`, color: '#059669' },
+          { label: 'Búsquedas con apertura', value: loading ? '...' : searchConversion.opened, hint: `${searchActionRate}% de búsquedas únicas`, color: '#059669' },
           { label: 'Hora fuerte', value: loading ? '...' : strongestTimeLabel(pageHourRows), hint: analyticsUnavailable ? 'Falta tabla analytics_events' : 'Según vistas de página', color: analyticsUnavailable ? '#D97706' : '#0F766E' },
         ]
     : tab === 'users'
       ? [
         { label: 'Nuevos usuarios', value: loading ? '...' : newUsersInRange.length, hint: `Registrados ${userRangeLabel}`, color: C.primary },
-        { label: 'Usuarios totales', value: loading ? '...' : metricUsers.length, hint: `Sin contar admin · ${filteredUsers.length} visibles`, color: C.text },
+        { label: 'Usuarios totales', value: loading ? '...' : metricUsers.length, hint: `Sin contar admin · ${filteredUsers.length} según filtros`, color: C.text },
         { label: 'Usuarios baneados', value: loading ? '...' : stats.banned, hint: stats.banned ? 'Revisar cuentas bloqueadas' : 'Sin bloqueos activos', color: stats.banned ? '#DC2626' : '#059669' },
         { label: 'Cantones nuevos', value: loading ? '...' : new Set(newUsersInRange.map(u => u.canton).filter(Boolean)).size, hint: `Diversidad en ${userRangeLabel}`, color: '#0F766E' },
       ]
@@ -1511,23 +1801,23 @@ export default function Admin() {
       : tab === 'reports'
         ? [
             { label: 'Reportes pendientes', value: loading ? '...' : stats.reports, hint: 'Necesitan revision', color: '#DC2626' },
-            { label: 'Reportes totales', value: loading ? '...' : reports.length, hint: 'Ultimos cargados', color: C.text },
-            { label: 'Contenido accionable', value: loading ? '...' : pendingReports.length, hint: 'Pendiente en esta vista', color: '#D97706' },
+            { label: 'Reportes totales', value: loading ? '...' : reports.length, hint: 'Histórico completo visible', color: C.text },
+            { label: 'Contenido accionable', value: loading ? '...' : filteredPendingReports.length, hint: 'Pendiente según filtro', color: '#D97706' },
           ]
         : tab === 'moderation'
           ? [
               { label: 'En revision', value: loading ? '...' : stats.queue, hint: 'Cola pendiente', color: '#D97706' },
-              { label: 'Cola total', value: loading ? '...' : queue.length, hint: 'Ultimos elementos cargados', color: C.text },
+              { label: 'Cola total', value: loading ? '...' : queue.length, hint: 'Histórico completo visible', color: C.text },
               { label: 'Acciones pendientes', value: loading ? '...' : totalPendingActions, hint: 'Incluye reportes y negocios', color: adminHealthColor },
             ]
           : [
-              { label: 'Publicaciones activas', value: loading ? '...' : activePublications, hint: `${stats.content} cargadas`, color: '#059669' },
-              { label: 'Anuncios', value: loading ? '...' : recentListings.length, hint: 'Publicaciones recientes', color: C.primary },
-              { label: 'Empleos', value: loading ? '...' : recentJobs.length, hint: 'Ofertas y busquedas', color: '#0F766E' },
+              { label: 'Publicaciones activas', value: loading ? '...' : activePublications, hint: `${stats.content} totales`, color: '#059669' },
+              { label: 'Anuncios', value: loading ? '...' : recentListings.length, hint: 'Total de anuncios', color: C.primary },
+              { label: 'Empleos', value: loading ? '...' : recentJobs.length, hint: 'Total de empleos', color: '#0F766E' },
             ]
   const activeChart =
     tab === 'users'
-      ? <AdminPeriodChart title="Nuevos usuarios" items={users} color={C.primary} days={userDays} onDaysChange={setUserDays} />
+      ? <AdminPeriodChart title="Nuevos usuarios" items={metricUsers} color={C.primary} days={userDays} onDaysChange={setUserDays} />
       : tab === 'analytics'
         ? <AdminPeriodChart title="Vistas de página" items={pageViewEvents} color="#0284C7" days={analyticsDays} onDaysChange={setAnalyticsDays} />
       : tab === 'reports'
@@ -1557,13 +1847,27 @@ export default function Admin() {
             Panel operativo para leer datos, tomar decisiones y mantener Latido ordenado.
           </p>
         </div>
-        <button
-          onClick={loadAdminData}
-          style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: 14, padding: '11px 15px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 14px 30px rgba(37,99,235,0.22)' }}
-        >
-          <span style={{ fontSize: 14 }}>↻</span> Actualizar
-        </button>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button
+            onClick={loadAdminData}
+            disabled={loading}
+            style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: 14, padding: '11px 15px', cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 14px 30px rgba(37,99,235,0.22)', opacity: loading ? 0.72 : 1 }}
+          >
+            <span style={{ fontSize: 14 }}>↻</span> {loading ? 'Actualizando' : 'Actualizar'}
+          </button>
+        </div>
       </div>
+
+      {dataErrors.length > 0 && (
+        <Card style={{ marginBottom: 14, borderColor: '#FCA5A5', background: '#FEF2F2' }}>
+          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 13, color: '#B91C1C', margin: '0 0 5px' }}>
+            Datos incompletos
+          </p>
+          <p style={{ fontFamily: PP, fontSize: 11, color: '#991B1B', lineHeight: 1.5, margin: 0 }}>
+            {dataErrors.join(' · ')}
+          </p>
+        </Card>
+      )}
 
       {/* Stat cards — double as navigation */}
       {tab === 'overview' && (
@@ -1888,9 +2192,9 @@ export default function Admin() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
                 {[
-                  { label: 'Búsquedas', value: searchEvents.length, color: C.primary },
-                  { label: 'Aperturas', value: searchResultEvents.length, color: '#059669' },
-                  { label: 'Términos', value: topSearchRows.length, color: '#0284C7' },
+                  { label: 'Búsquedas únicas', value: searchConversion.searches, color: C.primary },
+                  { label: 'Con apertura', value: searchConversion.opened, color: '#059669' },
+                  { label: 'Términos', value: uniqueSearchTerms, color: '#0284C7' },
                 ].map(item => (
                   <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '11px 10px', background: '#fff' }}>
                     <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 22, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
@@ -1941,9 +2245,19 @@ export default function Admin() {
               Aquí aparecen publicaciones retenidas por filtros automáticos o marcadas para decisión manual. El objetivo es aprobar contenido válido, eliminar contenido problemático o bloquear al autor si el caso lo requiere.
             </p>
           </Card>
-          {pendingQueue.length === 0 ? (
-            <EmptyState icon="✅" text="No hay contenido pendiente de revisión." />
-          ) : pendingQueue.map(item => (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <AdminFilterSelect
+              label="Tipo de contenido en moderación"
+              value={moderationTypeFilter}
+              onChange={value => { setModerationTypeFilter(value); setModerationPage(1) }}
+            >
+              <option value="all">Todos los tipos ({pendingQueue.length})</option>
+              {moderationTypes.map(type => <option key={type} value={type}>{type}</option>)}
+            </AdminFilterSelect>
+          </div>
+          {filteredPendingQueue.length === 0 ? (
+            <EmptyState icon="✅" text="No hay contenido pendiente con este filtro." />
+          ) : pagedModeration.items.map(item => (
             <Card key={item.id}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1966,15 +2280,31 @@ export default function Admin() {
               </div>
             </Card>
           ))}
+          <AdminPagination
+            page={pagedModeration.page}
+            pageCount={pagedModeration.pageCount}
+            total={filteredPendingQueue.length}
+            onChange={setModerationPage}
+          />
         </div>
       )}
 
       {/* ── Reportes ───────────────────────────────────── */}
       {tab === 'reports' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {pendingReports.length === 0 ? (
-            <EmptyState icon="✅" text="No hay reportes pendientes." />
-          ) : pendingReports.map(report => (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <AdminFilterSelect
+              label="Tipo de contenido reportado"
+              value={reportTypeFilter}
+              onChange={value => { setReportTypeFilter(value); setReportPage(1) }}
+            >
+              <option value="all">Todos los tipos ({pendingReports.length})</option>
+              {reportTypes.map(type => <option key={type} value={type}>{type}</option>)}
+            </AdminFilterSelect>
+          </div>
+          {filteredPendingReports.length === 0 ? (
+            <EmptyState icon="✅" text="No hay reportes pendientes con este filtro." />
+          ) : pagedReports.items.map(report => (
             <Card key={report.id}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1999,6 +2329,12 @@ export default function Admin() {
               </div>
             </Card>
           ))}
+          <AdminPagination
+            page={pagedReports.page}
+            pageCount={pagedReports.pageCount}
+            total={filteredPendingReports.length}
+            onChange={setReportPage}
+          />
         </div>
       )}
 
@@ -2009,7 +2345,7 @@ export default function Admin() {
             {BUSINESS_VERIFICATION_FILTERS.map(item => (
               <button
                 key={item.id}
-                onClick={() => setBusinessVerificationFilter(item.id)}
+                onClick={() => { setBusinessVerificationFilter(item.id); setBusinessPage(1) }}
                 style={{
                   fontFamily: PP,
                   fontWeight: 900,
@@ -2034,9 +2370,17 @@ export default function Admin() {
             ))}
           </div>
 
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <AdminFilterInput
+              value={businessSearch}
+              onChange={value => { setBusinessSearch(value); setBusinessPage(1) }}
+              placeholder="Buscar negocio, categoría, ciudad, email o web..."
+            />
+          </div>
+
           {filteredVerificationBusinesses.length === 0 ? (
             <EmptyState icon="✓" text="No hay negocios en este estado." />
-          ) : filteredVerificationBusinesses.map(business => {
+          ) : pagedBusinesses.items.map(business => {
             const details = getBusinessVerificationDetails(business)
             const statusMeta = BUSINESS_VERIFICATION_STATUSES[details.status] || BUSINESS_VERIFICATION_STATUSES.unverified
             const description = business.description || business.desc || ''
@@ -2141,6 +2485,12 @@ export default function Admin() {
               </Card>
             )
           })}
+          <AdminPagination
+            page={pagedBusinesses.page}
+            pageCount={pagedBusinesses.pageCount}
+            total={filteredVerificationBusinesses.length}
+            onChange={setBusinessPage}
+          />
         </div>
       )}
 
@@ -2154,10 +2504,10 @@ export default function Admin() {
                   Monitor en vivo
                 </p>
                 <h3 style={{ fontFamily: PP, fontSize: 28, fontWeight: 900, lineHeight: 1.05, margin: '0 0 10px', letterSpacing: -0.7 }}>
-                  Pulso real de Latido
+                  Actividad de Latido
                 </h3>
                 <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.5, margin: '0 0 18px', opacity: 0.86 }}>
-                  Online ahora, actividad diaria y señales recientes en una vista pensada para leer rápido.
+                  Online ahora en tiempo real y métricas históricas de la última consulta.
                 </p>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.24)', borderRadius: 999, padding: '7px 10px', marginBottom: 12 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 999, background: presenceStatusMeta.color, boxShadow: `0 0 0 3px ${presenceStatusMeta.color}22` }} />
@@ -2183,7 +2533,7 @@ export default function Admin() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
                   <div>
                     <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 5px' }}>
-                      Actividad últimos 14 días
+                      {analyticsUnavailable ? 'Últimas conexiones en 14 días' : 'Visitantes únicos en 14 días'}
                     </p>
                     <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 30, color: C.text, margin: 0, lineHeight: 1 }}>
                       {loading ? '...' : liveLast14Total}
@@ -2347,21 +2697,31 @@ export default function Admin() {
       {/* ── Usuarios ───────────────────────────────────── */}
       {tab === 'users' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {/* Search */}
-          <div style={{ position: 'relative', marginBottom: 4 }}>
-            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, pointerEvents: 'none' }}>🔍</span>
-            <input
+          <div style={{ display: 'grid', gap: 8, marginBottom: 4 }}>
+            <AdminFilterInput
               value={userSearch}
-              onChange={e => setUserSearch(e.target.value)}
+              onChange={value => { setUserSearch(value); setUserPage(1) }}
               placeholder="Buscar por nombre, email o cantón..."
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                fontFamily: PP, fontSize: 13, color: C.text,
-                background: '#fff', border: `1.5px solid ${C.border}`,
-                borderRadius: 12, padding: '11px 14px 11px 36px',
-                outline: 'none',
-              }}
             />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+              <AdminFilterSelect
+                label="Estado del usuario"
+                value={userStatusFilter}
+                onChange={value => { setUserStatusFilter(value); setUserPage(1) }}
+              >
+                <option value="all">Estado: todos</option>
+                <option value="active">Activos</option>
+                <option value="banned">Baneados</option>
+              </AdminFilterSelect>
+              <AdminFilterSelect
+                label="Cantón del usuario"
+                value={userCantonFilter}
+                onChange={value => { setUserCantonFilter(value); setUserPage(1) }}
+              >
+                <option value="all">Cantón: todos</option>
+                {userCantons.map(canton => <option key={canton} value={canton}>{canton}</option>)}
+              </AdminFilterSelect>
+            </div>
           </div>
 
           {/* Summary bar */}
@@ -2370,7 +2730,7 @@ export default function Admin() {
               <strong style={{ color: C.text }}>{filteredUsers.length}</strong> mostrados
             </span>
             <span style={{ fontFamily: PP, fontSize: 12, color: C.mid }}>
-              <strong style={{ color: '#DC2626' }}>{users.filter(u => u.banned).length}</strong> baneados
+              <strong style={{ color: '#DC2626' }}>{stats.banned}</strong> baneados
             </span>
             <span style={{ fontFamily: PP, fontSize: 12, color: C.mid }}>
               <strong style={{ color: C.text }}>{metricUsers.length}</strong> total sin admin
@@ -2379,7 +2739,7 @@ export default function Admin() {
 
           {filteredUsers.length === 0 ? (
             <EmptyState icon="👤" text="No se encontraron usuarios." />
-          ) : filteredUsers.map(profile => (
+          ) : pagedUsers.items.map(profile => (
             <Card key={profile.id} style={{ padding: '12px 14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
@@ -2413,21 +2773,52 @@ export default function Admin() {
               </div>
             </Card>
           ))}
+          <AdminPagination
+            page={pagedUsers.page}
+            pageCount={pagedUsers.pageCount}
+            total={filteredUsers.length}
+            onChange={setUserPage}
+          />
         </div>
       )}
 
       {/* ── Contenido ──────────────────────────────────── */}
       {tab === 'content' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <AdminFilterInput
+              value={contentSearch}
+              onChange={value => {
+                setContentSearch(value)
+                setListingPage(1)
+                setJobPage(1)
+              }}
+              placeholder="Buscar título, descripción, categoría, empresa o cantón..."
+            />
+            <AdminFilterSelect
+              label="Estado de publicación"
+              value={contentStatusFilter}
+              onChange={value => {
+                setContentStatusFilter(value)
+                setListingPage(1)
+                setJobPage(1)
+              }}
+            >
+              <option value="all">Todos los estados</option>
+              <option value="active">Activos</option>
+              <option value="hidden">Ocultos</option>
+            </AdminFilterSelect>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
           {/* Anuncios */}
           <div>
             <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13, color: C.mid, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-              Anuncios recientes
+              Anuncios ({filteredListings.length})
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {recentListings.length === 0 ? (
-                <EmptyState icon="📭" text="Sin anuncios recientes." />
-              ) : recentListings.map(item => (
+              {filteredListings.length === 0 ? (
+                <EmptyState icon="📭" text="Sin anuncios con estos filtros." />
+              ) : pagedListings.items.map(item => (
                 <Card key={item.id} style={{ padding: '12px 14px' }}>
                   {renderContentSummary('listing', item.id)}
                   <div style={{ display: 'flex', gap: 6, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -2437,25 +2828,33 @@ export default function Admin() {
                     <span style={{ fontFamily: PP, fontSize: 11, color: C.light, flex: 1 }}>{fmtDate(item.created_at)}</span>
                     <AdminButton
                       variant={item.active ? 'danger' : 'success'}
-                      onClick={() => setContentActive('listing', item.id, !item.active).then(loadAdminData)}
+                      onClick={() => setContentActive('listing', item.id, !item.active)
+                        .then(() => loadAdminData({ silent: true }))
+                        .catch(error => toast.error(error.message || 'No se pudo actualizar el anuncio'))}
                     >
                       {item.active ? 'Ocultar' : 'Activar'}
                     </AdminButton>
                   </div>
                 </Card>
               ))}
+              <AdminPagination
+                page={pagedListings.page}
+                pageCount={pagedListings.pageCount}
+                total={filteredListings.length}
+                onChange={setListingPage}
+              />
             </div>
           </div>
 
           {/* Empleos */}
           <div>
             <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13, color: C.mid, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-              Empleos recientes
+              Empleos ({filteredJobs.length})
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {recentJobs.length === 0 ? (
-                <EmptyState icon="📭" text="Sin empleos recientes." />
-              ) : recentJobs.map(item => (
+              {filteredJobs.length === 0 ? (
+                <EmptyState icon="📭" text="Sin empleos con estos filtros." />
+              ) : pagedJobs.items.map(item => (
                 <Card key={item.id} style={{ padding: '12px 14px' }}>
                   {renderContentSummary('job', item.id)}
                   <div style={{ display: 'flex', gap: 6, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -2465,14 +2864,23 @@ export default function Admin() {
                     <span style={{ fontFamily: PP, fontSize: 11, color: C.light, flex: 1 }}>{fmtDate(item.created_at)}</span>
                     <AdminButton
                       variant={item.active ? 'danger' : 'success'}
-                      onClick={() => setContentActive('job', item.id, !item.active).then(loadAdminData)}
+                      onClick={() => setContentActive('job', item.id, !item.active)
+                        .then(() => loadAdminData({ silent: true }))
+                        .catch(error => toast.error(error.message || 'No se pudo actualizar el empleo'))}
                     >
                       {item.active ? 'Ocultar' : 'Activar'}
                     </AdminButton>
                   </div>
                 </Card>
               ))}
+              <AdminPagination
+                page={pagedJobs.page}
+                pageCount={pagedJobs.pageCount}
+                total={filteredJobs.length}
+                onChange={setJobPage}
+              />
             </div>
+          </div>
           </div>
         </div>
       )}

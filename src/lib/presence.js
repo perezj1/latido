@@ -6,6 +6,7 @@ let channel = null
 let currentUserId = null
 let subscribed = false
 let stopTimer = null
+let reconnectTimer = null
 let onlineUserIds = new Set()
 let presenceStatus = 'idle'
 const listeners = new Set()
@@ -66,6 +67,10 @@ function stopPresenceNow() {
     window.clearTimeout(stopTimer)
     stopTimer = null
   }
+  if (reconnectTimer) {
+    window.clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
 
   const activeChannel = channel
   channel = null
@@ -80,6 +85,19 @@ function stopPresenceNow() {
   }
 }
 
+function schedulePresenceReconnect(userId, failedChannel) {
+  if (reconnectTimer) window.clearTimeout(reconnectTimer)
+  reconnectTimer = window.setTimeout(() => {
+    reconnectTimer = null
+    if (channel !== failedChannel || currentUserId !== userId) return
+
+    channel = null
+    subscribed = false
+    supabase.removeChannel(failedChannel).catch(() => {})
+    startUserPresence(userId)
+  }, 1500)
+}
+
 export function startUserPresence(userId) {
   if (!userId) return () => {}
 
@@ -87,8 +105,12 @@ export function startUserPresence(userId) {
     window.clearTimeout(stopTimer)
     stopTimer = null
   }
+  if (reconnectTimer) {
+    window.clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
 
-  if (channel && currentUserId === userId) {
+  if (channel && currentUserId === userId && (subscribed || presenceStatus === 'connecting')) {
     trackUserPresence()
     return () => schedulePresenceStop(userId)
   }
@@ -98,16 +120,17 @@ export function startUserPresence(userId) {
   currentUserId = userId
   subscribed = false
   publishPresenceStatus('connecting')
-  channel = supabase.channel(PRESENCE_TOPIC, {
+  const activeChannel = supabase.channel(PRESENCE_TOPIC, {
     config: { presence: { key: userId } },
   })
+  channel = activeChannel
 
-  channel
+  activeChannel
     .on('presence', { event: 'sync' }, syncPresenceState)
     .on('presence', { event: 'join' }, syncPresenceState)
     .on('presence', { event: 'leave' }, syncPresenceState)
     .subscribe(status => {
-      if (!channel || currentUserId !== userId) return
+      if (channel !== activeChannel || currentUserId !== userId) return
 
       if (status === 'SUBSCRIBED') {
         subscribed = true
@@ -119,6 +142,7 @@ export function startUserPresence(userId) {
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         subscribed = false
         publishPresenceStatus(status.toLowerCase())
+        schedulePresenceReconnect(userId, activeChannel)
       }
     })
 

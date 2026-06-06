@@ -146,14 +146,14 @@ function PushRegistrationSync() {
 
 function UserPresenceSync() {
   const { user, isLoggedIn } = useAuth()
-  const lastSeenDisabledRef = useRef(false)
+  const lastSeenRetryAfterRef = useRef(0)
 
   useEffect(() => {
     if (!isLoggedIn || !user?.id) return undefined
 
     let cancelled = false
     const markLastSeen = async () => {
-      if (lastSeenDisabledRef.current || cancelled) return
+      if (cancelled || Date.now() < lastSeenRetryAfterRef.current) return
 
       const { error } = await supabase
         .from('profiles')
@@ -161,8 +161,10 @@ function UserPresenceSync() {
         .eq('id', user.id)
 
       if (error) {
-        lastSeenDisabledRef.current = true
+        lastSeenRetryAfterRef.current = Date.now() + 30_000
         console.warn('Could not update last_seen_at:', error.message)
+      } else {
+        lastSeenRetryAfterRef.current = 0
       }
     }
 
