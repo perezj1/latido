@@ -1081,6 +1081,52 @@ export default function Admin() {
     ),
     [partnerServiceEvents, selectedPartner]
   )
+  const partnerDailyAccounts = useMemo(() => {
+    const profilesById = new Map(users.map(profile => [profile.id, profile]))
+    const dailyAccounts = new Map()
+
+    partnerClickEvents.forEach(event => {
+      if (!event.user_id) return
+
+      const date = localDateKey(event.created_at)
+      if (!date) return
+
+      const key = `${date}:${event.user_id}`
+      const placement = getPartnerPlacementMeta(event.partnerMetadata.placement)
+      const current = dailyAccounts.get(key) || {
+        key,
+        date,
+        userId:event.user_id,
+        created_at:event.created_at,
+        lastEventAt:event.created_at,
+        origins:new Set(),
+        clicks:0,
+      }
+
+      current.origins.add(placement.channel)
+      current.clicks += 1
+      if (String(event.created_at || '') > String(current.lastEventAt || '')) {
+        current.lastEventAt = event.created_at
+      }
+      dailyAccounts.set(key, current)
+    })
+
+    return [...dailyAccounts.values()]
+      .map(item => {
+        const profile = profilesById.get(item.userId)
+        return {
+          ...item,
+          name:profile?.name || 'Usuario sin nombre',
+          email:profile?.email || 'Email no disponible',
+          origins:[...item.origins].sort(),
+        }
+      })
+      .sort((a, b) => String(b.lastEventAt || '').localeCompare(String(a.lastEventAt || '')))
+  }, [partnerClickEvents, users])
+  const partnerUniqueAccounts = useMemo(
+    () => new Set(partnerDailyAccounts.map(item => item.userId)).size,
+    [partnerDailyAccounts]
+  )
   const partnerMetricSuffix = partnerDays === 1 ? 'hoy' : `${partnerDays}d`
   const partnerRangeText = partnerDays === 1 ? 'hoy' : `los últimos ${partnerDays} días`
   const topPageRows = useMemo(
@@ -1923,6 +1969,7 @@ export default function Admin() {
     : tab === 'partners'
       ? [
           { label: `Total enviado ${partnerMetricSuffix}`, value: loading ? '...' : partnerClickEvents.length, hint: 'Aperturas de la URL externa con UTM', color: '#4F46E5' },
+          { label: `Cuentas enviadas ${partnerMetricSuffix}`, value: loading ? '...' : partnerDailyAccounts.length, hint: `${partnerUniqueAccounts} perfiles distintos · máximo 1 por día`, color: '#7C3AED' },
           { label: 'Desde landing', value: loading ? '...' : partnerLandingClicks.length, hint: 'Landing pública de Latido', color: '#2563EB' },
           { label: 'Desde la app', value: loading ? '...' : partnerAppClicks.length, hint: 'Inicio, búsqueda o guías', color: '#0F766E' },
         ]
@@ -2494,10 +2541,75 @@ export default function Admin() {
             />
           </div>
 
+          <Card style={{ padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+              <div>
+                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Cuentas enviadas por día</p>
+                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.5, margin: 0 }}>
+                  Cada perfil aparece una sola vez por fecha, aunque abra el partner varias veces.
+                </p>
+              </div>
+              <Tag bg="#F3E8FF" color="#7C3AED">{partnerDailyAccounts.length} registros diarios</Tag>
+            </div>
+
+            <div style={{ display: 'grid', gap: 9 }}>
+              {partnerDailyAccounts.map(account => (
+                <div
+                  key={account.key}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0, 1fr) auto',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '12px 13px',
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 15,
+                    background: '#F8FAFF',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.text, margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {account.name}
+                    </p>
+                    <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, margin: 0, overflowWrap: 'anywhere' }}>
+                      {account.email}
+                    </p>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                      {account.origins.map(origin => (
+                        <Tag
+                          key={origin}
+                          bg={origin === 'Landing' ? '#EFF6FF' : '#ECFDF5'}
+                          color={origin === 'Landing' ? '#2563EB' : '#0F766E'}
+                        >
+                          {origin}
+                        </Tag>
+                      ))}
+                      <Tag bg="#F3E8FF" color="#7C3AED">1 cuenta contabilizada</Tag>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', alignSelf: 'start' }}>
+                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 11, color: C.text, margin: '0 0 3px', whiteSpace: 'nowrap' }}>
+                      {new Date(`${account.date}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                    </p>
+                    <p style={{ fontFamily: PP, fontSize: 9, color: C.light, margin: 0, whiteSpace: 'nowrap' }}>
+                      {new Date(`${account.date}T12:00:00`).toLocaleDateString('es-ES', { year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {!partnerDailyAccounts.length && (
+                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.5, margin: 0 }}>
+                  Todavía no hay cuentas enviadas en el periodo seleccionado.
+                </p>
+              )}
+            </div>
+          </Card>
+
           <Card style={{ padding: 16, background: '#fff' }}>
             <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 4px' }}>Qué significa cada número</p>
             <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.6, margin: 0 }}>
-              “Total enviado” cuenta cada vez que Latido abre la URL LIVE de Suiza en Español con <strong>utm_source=latido</strong>. “Landing” y “App” son partes de ese mismo total, nunca métricas adicionales. Pulsar la tarjeta sin completar el login no cuenta. La cuenta admin jose13hue@gmail.com y sus sesiones quedan excluidas. Suiza en Español mide la carga que finalmente llega a su servidor, por lo que sus datos UTM son la referencia final y pueden variar ligeramente si la pestaña no termina de cargar o un bloqueador impide la medición.
+              “Total enviado” cuenta cada apertura de la URL LIVE con <strong>utm_source=latido</strong>. “Cuentas enviadas” agrupa por perfil y fecha: tres clics de una misma cuenta hoy cuentan como una cuenta; si vuelve mañana, genera una nueva fila para mañana. “Landing” y “App” son partes del total de aperturas. La cuenta admin jose13hue@gmail.com queda excluida.
             </p>
           </Card>
         </div>
