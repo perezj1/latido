@@ -174,7 +174,7 @@ export default function PartnerServicesPromo({
         className="public-partner-section"
       >
         <div className="public-partner-heading">
-          <span>Partners seleccionados</span>
+          <span>Colaboradores seleccionados</span>
           <h2>Más apoyo para vivir en Suiza con confianza</h2>
           <p>
             Colaboramos con equipos especializados que entienden las necesidades
@@ -190,7 +190,7 @@ export default function PartnerServicesPromo({
             <div className="public-partner-lockup">
               <PartnerLockup />
             </div>
-            <span className="public-partner-kicker">Partner destacado</span>
+            <span className="public-partner-kicker">Colaborador destacado</span>
             <h3 id={`partner-promo-${placement}`}>
               Servicios especializados para tu vida en Suiza
             </h3>
@@ -283,7 +283,7 @@ export default function PartnerServicesPromo({
     const contextualTitle = title || (selectedService
       ? `¿Necesitas ayuda con ${selectedService.label.toLowerCase()}?`
       : '¿No encuentras lo que necesitas?')
-    const contextualDescription = description || 'Nuestro partner Suiza en Español puede orientarte y ofrecerte servicios especializados en tu idioma.'
+    const contextualDescription = description || 'Nuestro colaborador Suiza en Español puede orientarte y ofrecerte servicios especializados en tu idioma.'
 
     return (
       <aside
@@ -294,7 +294,7 @@ export default function PartnerServicesPromo({
           <img src={PARTNER_LOGO} alt="" />
         </div>
         <div className="partner-services-contextual-copy">
-          <span className="partner-services-eyebrow">Partner recomendado</span>
+          <span className="partner-services-eyebrow">Colaborador recomendado</span>
           <h2 id={`partner-promo-${placement}`}>{contextualTitle}</h2>
           <p>{contextualDescription}</p>
         </div>

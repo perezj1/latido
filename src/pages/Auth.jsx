@@ -176,7 +176,7 @@ export default function Auth() {
 
       {isPartnerAccess && (
         <div style={{ fontFamily:PP, fontSize:12, lineHeight:1.55, color:C.mid, background:C.primaryLight, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 13px', marginBottom:18 }}>
-          Inicia sesión para acceder a la información y los servicios de nuestros partners.
+          Inicia sesión para acceder a la información y los servicios de nuestros colaboradores.
         </div>
       )}
 
@@ -243,7 +243,7 @@ export default function Auth() {
 
       {isPartnerAccess && step === 0 && (
         <div style={{ fontFamily:PP, fontSize:12, lineHeight:1.55, color:C.mid, background:C.primaryLight, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 13px', marginBottom:18 }}>
-          Crea tu cuenta gratuita para acceder a la información y los servicios de nuestros partners.
+          Crea tu cuenta gratuita para acceder a la información y los servicios de nuestros colaboradores.
         </div>
       )}
 

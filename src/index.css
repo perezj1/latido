@@ -450,6 +450,15 @@
   width: max-content;
 }
 
+.home-partners-scroll--single {
+  overflow-x: hidden;
+}
+
+.home-partners-scroll--single .home-partners-track {
+  justify-content: center;
+  width: 100%;
+}
+
 .partner-card {
   --partner-accent-primary: #2563EB;
   --partner-accent-secondary: #C8102E;
@@ -861,6 +870,10 @@
   .home-partners-scroll {
     padding-right: 44px;
     padding-bottom: 14px;
+  }
+
+  .home-partners-scroll--single {
+    padding-right: 16px;
   }
 
   .partner-card {

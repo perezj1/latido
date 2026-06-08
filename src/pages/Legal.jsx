@@ -367,7 +367,7 @@ function Terminos() {
 
       <Section title="9. Destacados, verificación y recomendaciones">
         <P>
-          Las etiquetas como "Destacado", "Partner", "Verificada" o similares solo significan
+          Las etiquetas como "Destacado", "Colaborador", "Verificada" o similares solo significan
           lo que se indique en la interfaz. Un destacado puede responder a criterios editoriales,
           técnicos o comerciales, y no implica por sí solo que Latido garantice calidad, seguridad,
           licencias, disponibilidad o resultados.

@@ -1382,6 +1382,8 @@ export default function Home() {
         )}
       </section>
 
+      <PartnersSection />
+
       <section style={{ padding:'40px 0 0' }}>
         <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
@@ -1498,8 +1500,6 @@ export default function Home() {
           </section>
         )
       })()}
-
-      <PartnersSection />
 
       {/* Guide modal */}
       {selectedGuide && (

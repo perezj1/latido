@@ -347,7 +347,7 @@ function AppShell() {
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'services', label:'Servicios para vivir en Suiza', to:'/servicios-suiza' },
-      { id:'partners', label:'Para empresas y partners' },
+      { id:'partners', label:'Para empresas y colaboradores' },
       { id:'contacto', label:'Contacto' },
     ]
     const openPage = (id) => { setMenuPage(id); setMenuOpen(false) }

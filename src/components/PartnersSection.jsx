@@ -14,16 +14,18 @@ const HOME_PARTNERS = [
 ]
 
 export default function PartnersSection({ placement = 'app_home_partners' }) {
+  const hasSinglePartner = HOME_PARTNERS.length === 1
+
   return (
     <section className="home-partners-section" aria-labelledby="home-partners-title">
       <div className="home-partners-heading">
         <div>
-          <h2 id="home-partners-title">🤝 Partners</h2>
+          <h2 id="home-partners-title">🚀 Colaboradores</h2>
           <p>Equipos especializados para ayudarte en Suiza.</p>
         </div>
       </div>
 
-      <div className="home-partners-scroll no-scroll">
+      <div className={`home-partners-scroll no-scroll${hasSinglePartner ? ' home-partners-scroll--single' : ''}`}>
         <div className="home-partners-track">
           {HOME_PARTNERS.map(partner => partner.render(`${placement}_${partner.id}`))}
         </div>

@@ -71,7 +71,7 @@ const APP_PEEK_FEED = [
 ]
 
 const FAQ = [
-  { q: '¿Latido es realmente gratis?',                       a: 'Sí. Registrarte, publicar anuncios, unirte a grupos y asistir a eventos es 100% gratis para usuarios. Las empresas y partners tienen opciones de visibilidad premium opcionales.' },
+  { q: '¿Latido es realmente gratis?',                       a: 'Sí. Registrarte, publicar anuncios, unirte a grupos y asistir a eventos es 100% gratis para usuarios. Las empresas y colaboradores tienen opciones de visibilidad premium opcionales.' },
   { q: '¿Necesito hablar alemán, francés o italiano?',       a: 'No. Latido está 100% en español. Es precisamente para eso: un espacio donde no tengas que lidiar con el idioma del cantón mientras buscas piso, trabajo o comunidad.' },
   { q: '¿Es seguro? ¿Qué pasa con mis datos?',               a: 'Cumplimos la Ley Federal de Protección de Datos de Suiza (nFADP) y el GDPR europeo. Nunca vendemos tus datos. Los anuncios y perfiles se moderan para evitar fraudes y contenido inapropiado.' },
   { q: '¿Tengo que vivir en Suiza para registrarme?',        a: 'Está pensado para quienes ya viven en Suiza o están a punto de mudarse. Si estás preparando tu llegada, puedes registrarte para ir conectando y encontrar piso o empleo antes de aterrizar.' },
@@ -430,7 +430,7 @@ function PanelPartners() {
     <div>
       <div style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%)', borderRadius: 24, padding: '40px 28px', marginBottom: 28 }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.12)', color: '#BAE6FD', fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 20, marginBottom: 18, fontFamily: PP, border: '1px solid rgba(255,255,255,0.2)', letterSpacing: 0.4 }}>
-          🤝 Para empresas y partners
+          🚀 Para empresas y colaboradores
         </div>
         <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(22px,4vw,36px)', color: '#fff', lineHeight: 1.15, marginBottom: 14, letterSpacing: -0.5 }}>
           El canal directo a la comunidad hispanohablante en Suiza
@@ -520,7 +520,7 @@ function PanelContacto() {
 const PANEL_TITLES = {
   sobre:    'Sobre Latido',
   faq:      'Preguntas frecuentes',
-  partners: 'Para empresas y partners',
+  partners: 'Para empresas y colaboradores',
   contacto: 'Contacto',
 }
 

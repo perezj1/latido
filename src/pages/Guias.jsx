@@ -133,7 +133,7 @@ export default function Guias() {
         variant="contextual"
         serviceId={partnerService?.id}
         title={partnerService ? '' : '¿No encuentras la guía que necesitas?'}
-        description="Consulta a nuestro partner Suiza en Español para recibir orientación y acceder a servicios especializados."
+        description="Consulta a nuestro colaborador Suiza en Español para recibir orientación y acceder a servicios especializados."
       />
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
