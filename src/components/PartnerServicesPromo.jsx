@@ -271,7 +271,7 @@ export default function PartnerServicesPromo({
         }))}
         cta={{
           href:partnerInfoPath,
-          label:'Conocer al partner',
+          label:'Contactar',
         }}
         onServiceClick={handleServiceOpen}
         onCtaClick={handleOpen}

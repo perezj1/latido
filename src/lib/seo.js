@@ -39,8 +39,7 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'negocios', icon:'🏪', title:'Negocios latinos', section:'Comunidad', desc:'Directorio de restaurantes, tiendas, belleza, salud y servicios.', href:'/comunidades?view=negocios' },
   { id:'eventos', icon:'🎉', title:'Eventos latinos', section:'Comunidad', desc:'Conciertos, fiestas, quedadas, networking y planes familiares.', href:'/comunidades?view=eventos' },
   { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
-  // PARTNERS DESACTIVADOS TEMPORALMENTE:
-  // { id:'servicios-suiza', icon:'🇨🇭', title:'Servicios para vivir en Suiza', section:'Servicios', desc:'Seguro médico, tercer pilar y preparación para llegar a Suiza, con orientación en español.', href:'/servicios-suiza' },
+  { id:'servicios-suiza', icon:'🇨🇭', title:'Servicios para vivir en Suiza', section:'Servicios', desc:'Seguro médico, tercer pilar y preparación para llegar a Suiza, con orientación en español.', href:'/servicios-suiza' },
   { id:'perfil', icon:'👤', title:'Perfil', section:'Cuenta', desc:'Datos personales, avatar, preferencias y configuración.', href:'/perfil' },
   { id:'mensajes', icon:'💬', title:'Mensajes', section:'Cuenta', desc:'Conversaciones con anunciantes, negocios y miembros de Latido.', href:'/mensajes' },
   { id:'privacidad', icon:'🔒', title:'Privacidad', section:'Legal', desc:'Cómo Latido trata los datos y protege la información.', href:'/privacidad' },
@@ -69,14 +68,12 @@ const ROUTE_SEO = [
     title:'Guías para vivir en Suiza | Latido.ch',
     description:'Guías prácticas sobre permisos, trabajo, vivienda, salud, bancos e impuestos para vivir en Suiza.',
   },
-  /* PARTNERS DESACTIVADOS TEMPORALMENTE
   {
     path:'/servicios-suiza',
     title:'Servicios para vivir en Suiza en español | Latido.ch',
     description:'Orientación en español sobre seguro médico, tercer pilar y preparación para vivir en Suiza, en colaboración con Suiza en Español.',
     robots:'noindex, follow',
   },
-  */
   {
     path:'/impressum',
     title:'Impressum | Latido.ch',
@@ -969,8 +966,7 @@ export function getPublicSeoPages() {
     '/comunidades?view=negocios',
     '/comunidades?view=eventos',
     '/guias',
-    // PARTNERS DESACTIVADOS TEMPORALMENTE:
-    // '/servicios-suiza',
+    '/servicios-suiza',
     '/impressum',
     '/privacidad',
     '/terminos',

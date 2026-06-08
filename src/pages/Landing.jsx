@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
-// PARTNERS DESACTIVADOS TEMPORALMENTE:
-// import PartnerServicesPromo from '../components/PartnerServicesPromo'
+import PartnerServicesPromo from '../components/PartnerServicesPromo'
 import { C, PP } from '../lib/theme'
 
 /* ─────────────────────────────────────────────────────────────
@@ -767,11 +766,9 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         </div>
       </section>
 
-      {/* PARTNERS DESACTIVADOS TEMPORALMENTE
       <Reveal className="public-partner-reveal">
         <PartnerServicesPromo placement="public_landing" variant="public-featured" />
       </Reveal>
-      */}
 
       {/* ── TESTIMONIALS ─────────────────────────────────────────── */}
       <Reveal>

@@ -4,8 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent, trackSearchEvent } from '../lib/analytics'
 import { C, PP } from '../lib/theme'
-// PARTNERS DESACTIVADOS TEMPORALMENTE:
-// import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
+import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
 import {
   MOCK_ADS,
   MOCK_COMMUNITIES,
@@ -407,8 +406,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     () => activeFilter ? results.filter(r => r.type === activeFilter) : results,
     [results, activeFilter]
   )
-  // PARTNERS DESACTIVADOS TEMPORALMENTE:
-  // const partnerService = useMemo(() => getPartnerServiceMatch(q), [q])
+  const partnerService = useMemo(() => getPartnerServiceMatch(q), [q])
 
   const ph = placeholder || (size === 'lg'
     ? 'Encuentra lo que buscas'
@@ -678,7 +676,6 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                       explora Latido
                     </button>
                   </p>
-                  {/* PARTNERS DESACTIVADOS TEMPORALMENTE
                   {partnerService && (
                     <PartnerServicesPromo
                       placement="global_search_empty"
@@ -686,13 +683,11 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                       serviceId={partnerService.id}
                     />
                   )}
-                  */}
                 </>
               )}
             </div>
           ) : (
             <>
-              {/* PARTNERS DESACTIVADOS TEMPORALMENTE
               {partnerService && (
                 <PartnerServicesPromo
                   placement="global_search_results"
@@ -700,7 +695,6 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                   serviceId={partnerService.id}
                 />
               )}
-              */}
               {filteredResults.map((result, idx) => {
                 const color = TYPE_COLORS[result.type] || TYPE_COLORS.ad
                 return (
