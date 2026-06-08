@@ -942,15 +942,6 @@ export default function Admin() {
     () => new Set(users.filter(profile => isAdminEmail(profile.email)).map(profile => profile.id)),
     [users]
   )
-  const adminAnalyticsSessionIds = useMemo(
-    () => new Set(
-      analyticsEvents
-        .filter(event => adminUserIds.has(event.user_id))
-        .map(event => event.session_id)
-        .filter(Boolean)
-    ),
-    [adminUserIds, analyticsEvents]
-  )
 
   const stats = useMemo(() => ({
     reports: reports.filter(r => r.status === 'pending').length,
@@ -1030,7 +1021,6 @@ export default function Admin() {
       .filter(event =>
         String(event.event_type || '').startsWith('partner_')
         && !adminUserIds.has(event.user_id)
-        && !adminAnalyticsSessionIds.has(event.session_id)
       )
       .map(event => {
         const metadata = readMetadata(event.metadata)
@@ -1041,7 +1031,7 @@ export default function Admin() {
         }
       })
       .filter(event => event.partnerAnalyticsId),
-    [adminAnalyticsSessionIds, adminUserIds, analyticsEvents]
+    [adminUserIds, analyticsEvents]
   )
   const selectedPartner = PARTNER_ANALYTICS_PARTNERS.find(partner => partner.id === selectedPartnerId)
     || PARTNER_ANALYTICS_PARTNERS[0]
