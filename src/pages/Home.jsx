@@ -6,6 +6,8 @@ import { useZoneAlerts, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import GlobalSearch from '../components/GlobalSearch'
+// PARTNERS DESACTIVADOS TEMPORALMENTE:
+// import PartnersSection from '../components/PartnersSection'
 import { C, PP } from '../lib/theme'
 import { Avatar, Tag, PrivacyTag, RatingPill } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
@@ -1497,6 +1499,10 @@ export default function Home() {
           </section>
         )
       })()}
+
+      {/* PARTNERS DESACTIVADOS TEMPORALMENTE
+      <PartnersSection />
+      */}
 
       {/* Guide modal */}
       {selectedGuide && (

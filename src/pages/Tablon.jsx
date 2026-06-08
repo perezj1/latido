@@ -1224,7 +1224,6 @@ export default function Tablon() {
   const typeOptions = [{ id:'', label:'Todos' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
   const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Full-time' }, { id:'Part-time', label:'Part-time' }, { id:'Freelance', label:'Freelance' }, { id:'Prácticas', label:'Prácticas' }]
   const pageContext = getTablonContext(cat, isEmpleos)
-  const resultCount = isEmpleos ? filteredJobs.length : filteredAds.length + (!cat ? filteredJobs.length : 0)
 
   return (
     <div style={{ maxWidth:800, margin:'0 auto', padding:'0 20px 100px' }}>
@@ -1238,10 +1237,11 @@ export default function Tablon() {
           <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.55, margin:'0 0 3px' }}>
             {pageContext.subtitle}
           </p>
-          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>
-            {loading ? 'Cargando...' : `${resultCount} ${pageContext.resultLabel}`}
-            {canton && ` · 📍 Cantón ${canton}`}
-          </p>
+          {canton && (
+            <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>
+              📍 Cantón {canton}
+            </p>
+          )}
         </div>
       </div>
 

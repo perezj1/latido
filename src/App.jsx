@@ -31,6 +31,8 @@ const Legal = lazy(() => import('./pages/Legal'))
 const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Admin = lazy(() => import('./pages/Admin'))
+// PARTNERS DESACTIVADOS TEMPORALMENTE:
+// const PartnerServices = lazy(() => import('./pages/PartnerServices'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
@@ -222,11 +224,17 @@ function AppLoading() {
   )
 }
 
+function getSafeNextPath(search, fallback = '/') {
+  const next = new URLSearchParams(search).get('next')
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : fallback
+}
+
 function AuthRoute() {
   const { isLoggedIn, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) return <AppLoading />
-  if (isLoggedIn) return <Navigate to="/" replace />
+  if (isLoggedIn) return <Navigate to={getSafeNextPath(location.search)} replace />
 
   return (
     <Suspense fallback={<AppLoading />}>
@@ -237,9 +245,13 @@ function AuthRoute() {
 
 function ProtectedRoute({ children }) {
   const { isLoggedIn, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) return <AppLoading />
-  if (!isLoggedIn) return <Navigate to="/auth" replace />
+  if (!isLoggedIn) {
+    const next = encodeURIComponent(`${location.pathname}${location.search}`)
+    return <Navigate to={`/auth?next=${next}`} replace />
+  }
 
   return children
 }
@@ -296,13 +308,15 @@ function AppShell() {
   const location = useLocation()
   const { pathname } = location
   const { isPWA, canInstall, promptInstall } = usePWA()
-  const { isLoggedIn, user, isAdmin } = useAuth()
+  const { isLoggedIn, loading, user, isAdmin } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPage, setMenuPage] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [messagesChatOpen, setMessagesChatOpen] = useState(false)
 
   const isRoot = pathname === '/'
+  // PARTNERS DESACTIVADOS TEMPORALMENTE:
+  // const isPartnerServices = pathname === '/servicios-suiza'
   const showLanding = isRoot && !isPWA && !isLoggedIn
 
   useEffect(() => {
@@ -334,7 +348,9 @@ function AppShell() {
     const MENU_ITEMS = [
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
-      { id:'partners', label:'Para empresas y partners' },
+      // PARTNERS DESACTIVADOS TEMPORALMENTE:
+      // { id:'services', label:'Servicios para vivir en Suiza', to:'/servicios-suiza' },
+      // { id:'partners', label:'Para empresas y partners' },
       { id:'contacto', label:'Contacto' },
     ]
     const openPage = (id) => { setMenuPage(id); setMenuOpen(false) }
@@ -383,13 +399,24 @@ function AppShell() {
         {menuOpen && (
           <div style={{ position:'fixed', top:57, left:0, right:0, zIndex:99, background:'#fff', borderBottom:`1px solid ${C.border}`, boxShadow:'0 8px 24px rgba(0,0,0,0.08)', padding:'8px 0' }}>
             {MENU_ITEMS.map(item => (
-              <button
-                key={item.id}
-                onClick={() => openPage(item.id)}
-                style={{ display:'block', width:'100%', background:'none', border:'none', borderBottom:`1px solid ${C.borderLight}`, fontFamily:PP, fontWeight:600, fontSize:14, color:C.text, padding:'13px 24px', textAlign:'left', cursor:'pointer' }}
-              >
-                {item.label}
-              </button>
+              item.to ? (
+                <Link
+                  key={item.id}
+                  to={item.to}
+                  onClick={() => setMenuOpen(false)}
+                  style={{ display:'block', width:'100%', boxSizing:'border-box', background:'none', borderBottom:`1px solid ${C.borderLight}`, fontFamily:PP, fontWeight:600, fontSize:14, color:C.text, padding:'13px 24px', textAlign:'left', textDecoration:'none' }}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <button
+                  key={item.id}
+                  onClick={() => openPage(item.id)}
+                  style={{ display:'block', width:'100%', background:'none', border:'none', borderBottom:`1px solid ${C.borderLight}`, fontFamily:PP, fontWeight:600, fontSize:14, color:C.text, padding:'13px 24px', textAlign:'left', cursor:'pointer' }}
+                >
+                  {item.label}
+                </button>
+              )
             ))}
           </div>
         )}
@@ -406,6 +433,24 @@ function AppShell() {
       </>
     )
   }
+
+  /* PARTNERS DESACTIVADOS TEMPORALMENTE
+  if (isPartnerServices) {
+    if (loading) return <AppLoading />
+    if (!isLoggedIn) {
+      const next = encodeURIComponent(`${location.pathname}${location.search}`)
+      return <Navigate to={`/auth?next=${next}`} replace />
+    }
+
+    return (
+      <main style={{ minHeight:'100vh', overflowX:'hidden', background:'#fff' }}>
+        <Suspense fallback={<AppLoading />}>
+          <PartnerServices />
+        </Suspense>
+      </main>
+    )
+  }
+  */
 
   return (
     <>

@@ -5,6 +5,8 @@ import { MOCK_DOCS } from '../lib/constants'
 import { getGuideById, getGuideBySlug, getGuidePath } from '../lib/seo'
 import { C, PP } from '../lib/theme'
 import { Card, Tag, Modal, Btn, InfoBanner, PillFilters } from '../components/UI'
+// PARTNERS DESACTIVADOS TEMPORALMENTE:
+// import PartnerServicesPromo, { getPartnerServiceMatch } from '../components/PartnerServicesPromo'
 
 export default function Guias() {
   const { isLoggedIn } = useAuth()
@@ -16,6 +18,8 @@ export default function Guias() {
   const [selected, setSelected] = useState(null)
   const openGuideId = searchParams.get('openGuide') || ''
   const routeGuide = guideSlug ? getGuideBySlug(guideSlug) : null
+  // PARTNERS DESACTIVADOS TEMPORALMENTE:
+  // const partnerService = getPartnerServiceMatch(search)
 
   const cats = [
     { id:'', label:'Todos' },
@@ -125,6 +129,16 @@ export default function Guias() {
           </Link>
         </div>
       )}
+
+      {/* PARTNERS DESACTIVADOS TEMPORALMENTE
+      <PartnerServicesPromo
+        placement="guides"
+        variant="contextual"
+        serviceId={partnerService?.id}
+        title={partnerService ? '' : '¿No encuentras la guía que necesitas?'}
+        description="Consulta a nuestro partner Suiza en Español para recibir orientación y acceder a servicios especializados."
+      />
+      */}
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
         {filtered.map((doc) => (

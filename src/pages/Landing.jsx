@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
+// PARTNERS DESACTIVADOS TEMPORALMENTE:
+// import PartnerServicesPromo from '../components/PartnerServicesPromo'
 import { C, PP } from '../lib/theme'
 
 /* ─────────────────────────────────────────────────────────────
@@ -111,6 +113,7 @@ function Reveal({ children, delay = 0, as: Tag = 'div', style = {}, ...rest }) {
         transition: `opacity .7s ease-out ${delay}ms, transform .7s ease-out ${delay}ms`,
         willChange: 'opacity, transform',
       }}
+      data-in-view={inView ? 'true' : 'false'}
       {...rest}
     >
       {children}
@@ -764,6 +767,17 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         </div>
       </section>
 
+      {/* PARTNERS DESACTIVADOS TEMPORALMENTE
+      <Reveal className="public-partner-reveal">
+        <PartnerServicesPromo placement="public_landing" variant="public-featured" />
+      </Reveal>
+      */}
+
+      {/* ── TESTIMONIALS ─────────────────────────────────────────── */}
+      <Reveal>
+        <TestimonialCarousel />
+      </Reveal>
+
       {/* ── PWA INSTALL BANNER ───────────────────────────────────── */}
       <section style={{ maxWidth: 760, margin: '72px auto 0', padding: '0 24px' }}>
         {isIOS ? (
@@ -814,11 +828,6 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
           </button>
         )}
       </section>
-
-      {/* ── TESTIMONIALS ─────────────────────────────────────────── */}
-      <Reveal>
-        <TestimonialCarousel />
-      </Reveal>
 
       {/* ── FINAL CTA ────────────────────────────────────────────── */}
       <section style={{ maxWidth: 720, margin: '72px auto 0', padding: '0 24px 96px' }}>

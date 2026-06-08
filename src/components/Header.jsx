@@ -8,6 +8,8 @@ const NAV_GUEST = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
+  // PARTNERS DESACTIVADOS TEMPORALMENTE:
+  // { href:'/servicios-suiza', label:'Vivir en Suiza' },
 ]
 
 const NAV_USER = [
@@ -15,6 +17,8 @@ const NAV_USER = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
+  // PARTNERS DESACTIVADOS TEMPORALMENTE:
+  // { href:'/servicios-suiza', label:'Vivir en Suiza' },
   { href:'/mensajes', label:'💬 Mensajes' },
 ]
 

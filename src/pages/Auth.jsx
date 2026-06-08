@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
 import { Btn, ProgressBar, Input, Select } from '../components/UI'
 import { CANTONS } from '../lib/constants'
 import toast from 'react-hot-toast'
+
+function getSafeNextPath(value) {
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
+}
 
 function EyeIcon() {
   return (
@@ -60,6 +64,9 @@ function PasswordVisibilityButton({ visible, onToggle }) {
 export default function Auth() {
   const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const nextPath = getSafeNextPath(searchParams.get('next'))
+  const isPartnerAccess = nextPath.startsWith('/servicios-suiza')
   const [mode, setMode] = useState('register')
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -81,7 +88,7 @@ export default function Auth() {
       if (error) toast.error('Email o contraseña incorrectos')
       else {
         toast.success('¡Bienvenido/a!')
-        navigate('/')
+        navigate(nextPath)
       }
     } finally {
       setLoading(false)
@@ -153,7 +160,7 @@ export default function Auth() {
       }
 
       toast.success('¡Cuenta creada! Bienvenido/a 🎉')
-      navigate('/')
+      navigate(nextPath)
     } finally {
       setLoading(false)
     }
@@ -166,6 +173,12 @@ export default function Auth() {
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Bienvenido/a</h1>
         <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Inicia sesión en Latido.ch</p>
       </div>
+
+      {isPartnerAccess && (
+        <div style={{ fontFamily:PP, fontSize:12, lineHeight:1.55, color:C.mid, background:C.primaryLight, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 13px', marginBottom:18 }}>
+          Inicia sesión para acceder a la información y los servicios de nuestros partners.
+        </div>
+      )}
 
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required />
       <Input
@@ -227,6 +240,12 @@ export default function Auth() {
       <ProgressBar step={step} total={REG_STEPS.length} />
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4 }}>{REG_STEPS[step].title}</h1>
       <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:22 }}>{REG_STEPS[step].sub}</p>
+
+      {isPartnerAccess && step === 0 && (
+        <div style={{ fontFamily:PP, fontSize:12, lineHeight:1.55, color:C.mid, background:C.primaryLight, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 13px', marginBottom:18 }}>
+          Crea tu cuenta gratuita para acceder a la información y los servicios de nuestros partners.
+        </div>
+      )}
 
       {step === 0 && (
         <>
