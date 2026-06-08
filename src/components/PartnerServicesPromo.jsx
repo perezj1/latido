@@ -121,7 +121,7 @@ function PartnerLockup({ light = false }) {
       <span className="partner-services-lockup-logo">
         <img src="/favicon.svg" alt="" />
       </span>
-      <span style={{ color:light ? '#fff' : '#111827' }}>Latido</span>
+      <span className="partner-services-lockup-latido" style={{ color:light ? '#fff' : undefined }}>Latido</span>
       <span aria-hidden="true" style={{ color:light ? 'rgba(255,255,255,0.58)' : C.light }}>×</span>
       <span className="partner-services-lockup-logo">
         <img src={PARTNER_LOGO} alt="" />
@@ -139,31 +139,43 @@ export default function PartnerServicesPromo({
   title = '',
   description = '',
 }) {
-  const { user, isLoggedIn } = useAuth()
+  const { user, isLoggedIn, isAdmin } = useAuth()
   const mode = variant || (compact ? 'featured' : 'compact')
   const selectedService = SERVICES.find(service => service.id === serviceId) || null
-  const partnerPath = `/servicios-suiza?from=${encodeURIComponent(placement)}`
+  const partnerPath = `/servicios-suiza?from=${encodeURIComponent(placement)}&action=cta`
   const partnerAuthPath = `/auth?next=${encodeURIComponent(partnerPath)}`
-  const partnerInfoPath = isLoggedIn ? partnerPath : partnerAuthPath
+  const partnerLandingUrl = getPartnerServiceUrl()
+  const partnerInfoPath = isLoggedIn ? partnerLandingUrl : partnerAuthPath
   const serviceUrls = useMemo(
-    () => Object.fromEntries(SERVICES.map(service => [service.id, getPartnerServiceUrl(service.path, service.id)])),
+    () => Object.fromEntries(SERVICES.map(service => [service.id, getPartnerServiceUrl()])),
     []
+  )
+  const serviceAuthPaths = useMemo(
+    () => Object.fromEntries(SERVICES.map(service => {
+      const servicePath = `/servicios-suiza?from=${encodeURIComponent(placement)}&action=service&service=${encodeURIComponent(service.id)}`
+      return [service.id, `/auth?next=${encodeURIComponent(servicePath)}`]
+    })),
+    [placement]
   )
 
   const handleOpen = () => {
-    trackPartnerInteraction('partner_promo_open', {
+    if (!isLoggedIn || isAdmin) return
+    trackPartnerInteraction('partner_outbound_click', {
       userId:user?.id,
       placement,
-      destination:partnerInfoPath,
+      action:'cta',
+      destination:partnerLandingUrl,
     })
   }
 
   const handleServiceOpen = service => {
-    trackPartnerInteraction('partner_service_click', {
+    if (!isLoggedIn || isAdmin) return
+    trackPartnerInteraction('partner_outbound_click', {
       userId:user?.id,
       placement,
+      action:'service',
       service:service.id,
-      destination:isLoggedIn ? service.path : partnerAuthPath,
+      destination:serviceUrls[service.id],
     })
   }
 
@@ -205,14 +217,16 @@ export default function PartnerServicesPromo({
               <span>Equipo especializado</span>
             </div>
 
-            <Link
-              to={partnerInfoPath}
+            <PartnerAccessLink
+              isLoggedIn={isLoggedIn}
+              externalHref={partnerLandingUrl}
+              authHref={partnerAuthPath}
               onClick={handleOpen}
               className="public-partner-cta"
               aria-describedby={`partner-promo-description-${placement}`}
             >
               Descubrir todos los servicios <span aria-hidden="true">→</span>
-            </Link>
+            </PartnerAccessLink>
           </div>
 
           <div className="public-partner-services" aria-label="Servicios de Suiza en Español">
@@ -222,7 +236,7 @@ export default function PartnerServicesPromo({
                 key={service.id}
                 isLoggedIn={isLoggedIn}
                 externalHref={serviceUrls[service.id]}
-                authHref={partnerAuthPath}
+                authHref={serviceAuthPaths[service.id]}
                 onClick={() => handleServiceOpen(service)}
                 className="public-partner-service"
                 style={{
@@ -266,12 +280,13 @@ export default function PartnerServicesPromo({
         description="Orientación en español con un equipo especializado en seguros, previsión y llegada al país."
         services={SERVICES.map(service => ({
           ...service,
-          href:isLoggedIn ? serviceUrls[service.id] : partnerAuthPath,
+          href:isLoggedIn ? serviceUrls[service.id] : serviceAuthPaths[service.id],
           external:isLoggedIn,
         }))}
         cta={{
           href:partnerInfoPath,
           label:'Contactar',
+          external:isLoggedIn,
         }}
         onServiceClick={handleServiceOpen}
         onCtaClick={handleOpen}
@@ -303,19 +318,21 @@ export default function PartnerServicesPromo({
             className="partner-services-contextual-cta"
             isLoggedIn={isLoggedIn}
             externalHref={serviceUrls[selectedService.id]}
-            authHref={partnerAuthPath}
+            authHref={serviceAuthPaths[selectedService.id]}
             onClick={() => handleServiceOpen(selectedService)}
           >
             Consultar <span aria-hidden="true">↗</span>
           </PartnerAccessLink>
         ) : (
-          <Link
+          <PartnerAccessLink
             className="partner-services-contextual-cta"
-            to={partnerInfoPath}
+            isLoggedIn={isLoggedIn}
+            externalHref={partnerLandingUrl}
+            authHref={partnerAuthPath}
             onClick={handleOpen}
           >
             Ver servicios <span aria-hidden="true">→</span>
-          </Link>
+          </PartnerAccessLink>
         )}
       </aside>
     )
@@ -361,7 +378,7 @@ export default function PartnerServicesPromo({
                   key={service.id}
                   isLoggedIn={isLoggedIn}
                   externalHref={serviceUrls[service.id]}
-                  authHref={partnerAuthPath}
+                  authHref={serviceAuthPaths[service.id]}
                   onClick={() => handleServiceOpen(service)}
                   aria-label={isLoggedIn ? `${service.label}. Se abre en Suiza en Español` : `${service.label}. Inicia sesión para acceder`}
                   style={{ position:'relative', minWidth:0, background:'#fff', border:'1px solid #DCE7F5', borderRadius:14, padding:'11px 9px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7, textAlign:'center', textDecoration:'none', boxShadow:'0 6px 18px rgba(15,23,42,0.04)', transition:'transform .18s ease, border-color .18s ease, box-shadow .18s ease' }}
@@ -374,8 +391,10 @@ export default function PartnerServicesPromo({
                 </PartnerAccessLink>
               ))}
             </div>
-            <Link
-              to={partnerInfoPath}
+            <PartnerAccessLink
+              isLoggedIn={isLoggedIn}
+              externalHref={partnerLandingUrl}
+              authHref={partnerAuthPath}
               onClick={handleOpen}
               className="partner-services-cta"
               aria-describedby={`partner-promo-description-${placement}`}
@@ -386,7 +405,7 @@ export default function PartnerServicesPromo({
                 <span style={{ marginTop:3, fontWeight:500, fontSize:10, color:'rgba(255,255,255,0.78)' }}>Información clara y atención en español</span>
               </span>
               <span aria-hidden="true" style={{ width:36, height:36, flexShrink:0, borderRadius:'50%', background:'rgba(255,255,255,0.17)', border:'1px solid rgba(255,255,255,0.18)', display:'grid', placeItems:'center', fontSize:19 }}>→</span>
-            </Link>
+            </PartnerAccessLink>
           </div>
         </div>
       </div>

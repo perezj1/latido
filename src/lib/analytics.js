@@ -22,6 +22,8 @@ function getSessionId() {
 }
 
 function shouldSkipDuplicate(eventType, payload) {
+  if (eventType === 'partner_outbound_click') return false
+
   const key = JSON.stringify({
     eventType,
     path: payload.path,

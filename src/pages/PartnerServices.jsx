@@ -84,7 +84,7 @@ export default function PartnerServices() {
       userId:user?.id,
       placement,
       service:service.id,
-      destination:service.path,
+      destination:serviceUrls[service.id],
     })
   }
 

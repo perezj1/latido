@@ -6,6 +6,7 @@ import { usePWA } from './hooks/usePWA'
 import { supabase } from './lib/supabase'
 import { startUserPresence, trackUserPresence } from './lib/presence'
 import { trackAnalyticsEvent } from './lib/analytics'
+import { PARTNER_LANDING_URL, trackPartnerInteraction } from './lib/partnerAttribution'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
 import { C, PP } from './lib/theme'
 
@@ -31,7 +32,6 @@ const Legal = lazy(() => import('./pages/Legal'))
 const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Admin = lazy(() => import('./pages/Admin'))
-const PartnerServices = lazy(() => import('./pages/PartnerServices'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
@@ -255,6 +255,43 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function PartnerServicesRedirect() {
+  const { user, isAdmin } = useAuth()
+  const location = useLocation()
+  const params = new URLSearchParams(location.search)
+  const placement = params.get('from') || 'direct'
+  const action = params.get('action') || 'cta'
+  const service = params.get('service') || ''
+
+  useEffect(() => {
+    if (isAdmin) {
+      window.location.replace(PARTNER_LANDING_URL)
+      return undefined
+    }
+
+    let active = true
+    const redirect = async () => {
+      await Promise.race([
+        trackPartnerInteraction('partner_outbound_click', {
+          userId:user?.id,
+          placement,
+          action,
+          service,
+          destination:PARTNER_LANDING_URL,
+        }),
+        new Promise(resolve => window.setTimeout(resolve, 700)),
+      ])
+
+      if (active) window.location.replace(PARTNER_LANDING_URL)
+    }
+
+    redirect()
+    return () => { active = false }
+  }, [action, isAdmin, placement, service, user?.id])
+
+  return <AppLoading />
+}
+
 function AdminRoute({ children }) {
   const { isLoggedIn, loading, isAdmin } = useAuth()
 
@@ -438,13 +475,7 @@ function AppShell() {
       return <Navigate to={`/auth?next=${next}`} replace />
     }
 
-    return (
-      <main style={{ minHeight:'100vh', overflowX:'hidden', background:'#fff' }}>
-        <Suspense fallback={<AppLoading />}>
-          <PartnerServices />
-        </Suspense>
-      </main>
-    )
+    return <PartnerServicesRedirect />
   }
 
   return (

@@ -9,6 +9,12 @@ import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusin
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import { subscribeToOnlineUsers, subscribeToPresenceStatus } from '../lib/presence'
 import { isAdminEmail } from '../lib/admin'
+import {
+  getPartnerPlacementMeta,
+  isPartnerOutboundAnalyticsEvent,
+  PARTNER_ANALYTICS_PARTNERS,
+  resolvePartnerAnalyticsId,
+} from '../lib/partnerAnalytics'
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
@@ -923,6 +929,8 @@ export default function Admin() {
   const [analyticsEvents, setAnalyticsEvents] = useState([])
   const [analyticsUnavailable, setAnalyticsUnavailable] = useState(false)
   const [analyticsDays, setAnalyticsDays] = useState(30)
+  const [partnerDays, setPartnerDays] = useState(30)
+  const [selectedPartnerId, setSelectedPartnerId] = useState(PARTNER_ANALYTICS_PARTNERS[0]?.id || '')
   const [messageEvents, setMessageEvents] = useState([])
   const [messagesUnavailable, setMessagesUnavailable] = useState(false)
 
@@ -933,6 +941,15 @@ export default function Admin() {
   const adminUserIds = useMemo(
     () => new Set(users.filter(profile => isAdminEmail(profile.email)).map(profile => profile.id)),
     [users]
+  )
+  const adminAnalyticsSessionIds = useMemo(
+    () => new Set(
+      analyticsEvents
+        .filter(event => adminUserIds.has(event.user_id))
+        .map(event => event.session_id)
+        .filter(Boolean)
+    ),
+    [adminUserIds, analyticsEvents]
   )
 
   const stats = useMemo(() => ({
@@ -1008,6 +1025,74 @@ export default function Admin() {
     () => analyticsInRange.filter(event => event.event_type === 'search_result_open'),
     [analyticsInRange]
   )
+  const partnerAnalyticsEvents = useMemo(
+    () => analyticsEvents
+      .filter(event =>
+        String(event.event_type || '').startsWith('partner_')
+        && !adminUserIds.has(event.user_id)
+        && !adminAnalyticsSessionIds.has(event.session_id)
+      )
+      .map(event => {
+        const metadata = readMetadata(event.metadata)
+        return {
+          ...event,
+          partnerAnalyticsId:resolvePartnerAnalyticsId(metadata),
+          partnerMetadata:metadata,
+        }
+      })
+      .filter(event => event.partnerAnalyticsId),
+    [adminAnalyticsSessionIds, adminUserIds, analyticsEvents]
+  )
+  const selectedPartner = PARTNER_ANALYTICS_PARTNERS.find(partner => partner.id === selectedPartnerId)
+    || PARTNER_ANALYTICS_PARTNERS[0]
+  const selectedPartnerEvents = useMemo(
+    () => partnerAnalyticsEvents.filter(event =>
+      event.partnerAnalyticsId === selectedPartner?.id
+      && isWithinRecentDays(event.created_at, partnerDays)
+    ),
+    [partnerAnalyticsEvents, partnerDays, selectedPartner?.id]
+  )
+  const partnerClickEvents = useMemo(
+    () => selectedPartnerEvents.filter(event =>
+      isPartnerOutboundAnalyticsEvent(event, event.partnerMetadata)
+    ),
+    [selectedPartnerEvents]
+  )
+  const partnerServiceEvents = useMemo(
+    () => partnerClickEvents.filter(event => event.partnerMetadata.service),
+    [partnerClickEvents]
+  )
+  const partnerLandingClicks = useMemo(
+    () => partnerClickEvents.filter(event =>
+      getPartnerPlacementMeta(event.partnerMetadata.placement).channel === 'Landing'
+    ),
+    [partnerClickEvents]
+  )
+  const partnerAppClicks = useMemo(
+    () => partnerClickEvents.filter(event =>
+      getPartnerPlacementMeta(event.partnerMetadata.placement).channel === 'App'
+    ),
+    [partnerClickEvents]
+  )
+  const partnerPlacementRows = useMemo(
+    () => topAnalyticsRows(
+      partnerClickEvents,
+      event => getPartnerPlacementMeta(event.partnerMetadata.placement).label,
+      8,
+      event => getPartnerPlacementMeta(event.partnerMetadata.placement).channel
+    ),
+    [partnerClickEvents]
+  )
+  const partnerServiceRows = useMemo(
+    () => topAnalyticsRows(
+      partnerServiceEvents,
+      event => selectedPartner?.services[event.partnerMetadata.service] || event.partnerMetadata.service || 'Servicio',
+      8
+    ),
+    [partnerServiceEvents, selectedPartner]
+  )
+  const partnerMetricSuffix = partnerDays === 1 ? 'hoy' : `${partnerDays}d`
+  const partnerRangeText = partnerDays === 1 ? 'hoy' : `los últimos ${partnerDays} días`
   const topPageRows = useMemo(
     () => topAnalyticsRows(pageViewEvents, event => pageLabel(event.path), 8, event => event.path),
     [pageViewEvents]
@@ -1786,6 +1871,7 @@ export default function Admin() {
   const NAV_ITEMS = [
     { id: 'users', icon: '👥', label: 'Usuarios', value: loading ? '...' : `${stats.users} total`, color: C.primary, bg: C.primaryLight },
     { id: 'analytics', icon: '📈', label: 'Uso app', value: loading ? '...' : `${pageViewEvents.length} vistas`, color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'partners', icon: '🚀', label: 'Partners', value: loading ? '...' : `${partnerClickEvents.length} salidas`, color: '#4F46E5', bg: '#EEF2FF' },
     { id: 'live', icon: '📡', label: 'Live', value: loading ? '...' : `${onlineUsers.length} online`, color: '#7C3AED', bg: '#F3E8FF' },
     { id: 'overview', icon: '📊', label: 'Estado general', value: loading ? '...' : `${generalScore}/100`, color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
     { id: 'businessVerification', icon: '✓', label: 'Negocios', value: loading ? '...' : `${stats.businessVerification} pend.`, color: '#059669', bg: '#ECFDF5' },
@@ -1798,6 +1884,7 @@ export default function Admin() {
     overview: { icon: '📊', label: 'Estado general' },
     live: { icon: '📡', label: 'Live' },
     analytics: { icon: '📈', label: 'Uso de la app' },
+    partners: { icon: '🚀', label: 'Partners' },
     moderation: { icon: '⏳', label: 'Revisión manual' },
     reports:    { icon: '🚨', label: 'Reportes pendientes' },
     businessVerification: { icon: '✓', label: 'Verificación de negocios' },
@@ -1812,6 +1899,7 @@ export default function Admin() {
     overview: { description: `Rapport de ${overviewRangeText} con señales de crecimiento, actividad, pendientes y recomendaciones.`, color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
     live: { description: 'Online ahora se actualiza en directo; actividad diaria y semanal usa la última consulta a Supabase.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
     analytics: { description: `Páginas más usadas, búsquedas frecuentes, horarios fuertes y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResultEvents.length} aperturas` },
+    partners: { description: `Salidas reales hacia la web del partner, separadas entre landing y app en ${partnerRangeText}.`, color: '#4F46E5', count: partnerClickEvents.length, badge: `${partnerClickEvents.length} salidas · ${partnerLandingClicks.length} landing · ${partnerAppClicks.length} app` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
     businessVerification: { description: 'Evalua datos, contacto y señales antes de mostrar la etiqueta Verificada.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
@@ -1841,6 +1929,12 @@ export default function Admin() {
           { label: `Búsquedas ${analyticsMetricSuffix}`, value: loading ? '...' : searchEvents.length, hint: 'Términos escritos en barras', color: C.primary },
           { label: 'Búsquedas con apertura', value: loading ? '...' : searchConversion.opened, hint: `${searchActionRate}% de búsquedas únicas`, color: '#059669' },
           { label: 'Hora fuerte', value: loading ? '...' : strongestTimeLabel(pageHourRows), hint: analyticsUnavailable ? 'Falta tabla analytics_events' : 'Según vistas de página', color: analyticsUnavailable ? '#D97706' : '#0F766E' },
+        ]
+    : tab === 'partners'
+      ? [
+          { label: `Total enviado ${partnerMetricSuffix}`, value: loading ? '...' : partnerClickEvents.length, hint: 'Aperturas de la URL externa con UTM', color: '#4F46E5' },
+          { label: 'Desde landing', value: loading ? '...' : partnerLandingClicks.length, hint: 'Landing pública de Latido', color: '#2563EB' },
+          { label: 'Desde la app', value: loading ? '...' : partnerAppClicks.length, hint: 'Inicio, búsqueda o guías', color: '#0F766E' },
         ]
     : tab === 'users'
       ? [
@@ -1878,6 +1972,8 @@ export default function Admin() {
       ? <AdminPeriodChart title="Nuevos usuarios" items={metricUsers} color={C.primary} days={userDays} onDaysChange={setUserDays} />
       : tab === 'analytics'
         ? <AdminPeriodChart title="Vistas de página" items={pageViewEvents} color="#0284C7" days={analyticsDays} onDaysChange={setAnalyticsDays} />
+      : tab === 'partners'
+        ? <AdminPeriodChart title={`Salidas a ${selectedPartner?.name || 'partners'}`} items={partnerClickEvents} color="#4F46E5" days={partnerDays} onDaysChange={setPartnerDays} />
       : tab === 'reports'
         ? <AdminChartCard title="Reportes recibidos" items={reports} color="#DC2626" />
         : tab === 'businessVerification'
@@ -1885,7 +1981,7 @@ export default function Admin() {
           : tab === 'content'
             ? <AdminChartCard title="Publicaciones" items={[...recentListings, ...recentJobs]} color="#059669" />
           : null
-  const showChartPlaceholder = ['users', 'analytics', 'reports', 'businessVerification', 'content'].includes(tab)
+  const showChartPlaceholder = ['users', 'analytics', 'partners', 'reports', 'businessVerification', 'content'].includes(tab)
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#F4F7FB 0%,#EEF4FF 100%)', padding: '18px 14px calc(104px + env(safe-area-inset-bottom))' }}>
@@ -2290,6 +2386,129 @@ export default function Admin() {
                 </div>
               ))}
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Partners ───────────────────────────────────── */}
+      {tab === 'partners' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {analyticsUnavailable && (
+            <Card style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
+              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>
+                Métricas no disponibles
+              </p>
+              <p style={{ fontFamily: PP, fontSize: 12, color: '#92400E', lineHeight: 1.55, margin: 0 }}>
+                Esta sección usa analytics_events. Revisa la tabla o sus permisos si los clics no aparecen.
+              </p>
+            </Card>
+          )}
+
+          <Card style={{ padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+              <div>
+                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Partners activos</p>
+                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Selecciona un colaborador para consultar sus resultados.</p>
+              </div>
+              <PeriodSwitch value={partnerDays} onChange={setPartnerDays} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 230px), 1fr))', gap: 10 }}>
+              {PARTNER_ANALYTICS_PARTNERS.map(partner => {
+                const active = selectedPartner?.id === partner.id
+                const clicks = partnerAnalyticsEvents.filter(event =>
+                  event.partnerAnalyticsId === partner.id
+                  && isWithinRecentDays(event.created_at, partnerDays)
+                  && isPartnerOutboundAnalyticsEvent(event, event.partnerMetadata)
+                ).length
+
+                return (
+                  <button
+                    key={partner.id}
+                    type="button"
+                    onClick={() => setSelectedPartnerId(partner.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 11,
+                      width: '100%',
+                      padding: 12,
+                      borderRadius: 16,
+                      border: `1.5px solid ${active ? partner.color : C.border}`,
+                      background: active ? partner.tint : '#fff',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      boxShadow: active ? `0 12px 28px ${partner.color}16` : 'none',
+                    }}
+                  >
+                    <span style={{ width: 42, height: 42, borderRadius: 13, background: '#fff', border: `1px solid ${C.border}`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                      <img src={partner.logo} alt="" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                    </span>
+                    <span style={{ minWidth: 0, flex: 1 }}>
+                      <strong style={{ display: 'block', fontFamily: PP, fontSize: 13, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{partner.name}</strong>
+                      <span style={{ display: 'block', fontFamily: PP, fontSize: 10, fontWeight: 800, color: active ? partner.color : C.light, marginTop: 3 }}>{clicks} salidas · {partnerDays === 1 ? 'hoy' : `${partnerDays} días`}</span>
+                    </span>
+                    <span aria-hidden="true" style={{ color: active ? partner.color : C.light, fontWeight: 900 }}>›</span>
+                  </button>
+                )
+              })}
+            </div>
+          </Card>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 14 }}>
+            <Card style={{ padding: 16, background: 'linear-gradient(145deg,#FFFFFF,#F6F8FF)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 16 }}>
+                <span style={{ width: 46, height: 46, borderRadius: 15, background: '#fff', border: `1px solid ${C.border}`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  <img src={selectedPartner?.logo} alt="" style={{ width: 35, height: 35, objectFit: 'contain' }} />
+                </span>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>{selectedPartner?.name}</p>
+                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Aperturas de su URL LIVE con los UTM de Latido en {partnerRangeText}.</p>
+                </div>
+              </div>
+
+              {[
+                { label: 'Landing', value: partnerLandingClicks.length, color: '#2563EB' },
+                { label: 'App', value: partnerAppClicks.length, color: '#0F766E' },
+              ].map(row => {
+                const max = Math.max(partnerLandingClicks.length, partnerAppClicks.length, 1)
+                const share = partnerClickEvents.length ? Math.round((row.value / partnerClickEvents.length) * 100) : 0
+                return (
+                  <div key={row.label} style={{ marginTop: 13 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                      <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.text }}>{row.label}</span>
+                      <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: row.color }}>{row.value} · {share}%</span>
+                    </div>
+                    <div style={{ height: 10, borderRadius: 999, overflow: 'hidden', background: C.bg }}>
+                      <div style={{ width: `${row.value ? Math.max(8, Math.round((row.value / max) * 100)) : 0}%`, height: '100%', borderRadius: 999, background: row.color }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </Card>
+
+            <InsightBarList
+              title="Origen de las salidas"
+              subtitle="Detalle de dónde se abrió la página LIVE: landing, inicio, búsqueda o guías."
+              rows={partnerPlacementRows}
+              color="#4F46E5"
+              emptyText="Todavía no hay salidas reales hacia este partner en el periodo."
+            />
+
+            <InsightBarList
+              title="Servicios consultados"
+              subtitle="Opción elegida antes de abrir la página LIVE, cuando se pulsó un servicio concreto."
+              rows={partnerServiceRows}
+              color="#0F766E"
+              emptyText="Todavía no hay salidas desde una opción de servicio."
+            />
+          </div>
+
+          <Card style={{ padding: 16, background: '#fff' }}>
+            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 4px' }}>Qué significa cada número</p>
+            <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.6, margin: 0 }}>
+              “Total enviado” cuenta cada vez que Latido abre la URL LIVE de Suiza en Español con <strong>utm_source=latido</strong>. “Landing” y “App” son partes de ese mismo total, nunca métricas adicionales. Pulsar la tarjeta sin completar el login no cuenta. La cuenta admin jose13hue@gmail.com y sus sesiones quedan excluidas. Suiza en Español mide la carga que finalmente llega a su servidor, por lo que sus datos UTM son la referencia final y pueden variar ligeramente si la pestaña no termina de cargar o un bloqueador impide la medición.
+            </p>
           </Card>
         </div>
       )}

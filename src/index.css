@@ -75,6 +75,10 @@
   object-fit: contain;
 }
 
+.partner-services-lockup-latido {
+  color: #111827;
+}
+
 .partner-services-lockup-logo {
   display: grid;
   place-items: center;

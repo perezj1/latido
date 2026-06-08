@@ -1,9 +1,11 @@
 import { trackAnalyticsEvent } from './analytics'
+import { DEFAULT_PARTNER_ANALYTICS_ID } from './partnerAnalytics'
 
 const PARTNER_ID = 'latido'
 const DEFAULT_CAMPAIGN = 'servicios-latido'
 const STORAGE_KEY = 'latido_partner_attribution'
 const FIRST_TOUCH_KEY = 'latido_partner_first_touch'
+export const PARTNER_LANDING_URL = 'https://suizaespanol.com/latido/?utm_source=latido&utm_medium=partner&utm_campaign=servicios-latido'
 
 function readStorage(key) {
   try {
@@ -56,23 +58,15 @@ export function getPartnerAttribution() {
   return attribution
 }
 
-export function getPartnerServiceUrl(path, service) {
-  const attribution = getPartnerAttribution()
-  const url = new URL(path, 'https://suizaespanol.com')
-
-  url.searchParams.set('utm_source', attribution.utmSource)
-  url.searchParams.set('utm_medium', attribution.utmMedium)
-  url.searchParams.set('utm_campaign', attribution.utmCampaign)
-  url.searchParams.set('utm_content', service)
-  url.searchParams.set('partner', attribution.partner)
-  url.searchParams.set('see_cid', attribution.cid)
-
-  return url.toString()
+export function getPartnerServiceUrl() {
+  return PARTNER_LANDING_URL
 }
 
 export function trackPartnerInteraction(eventType, {
   userId = null,
+  partnerId = DEFAULT_PARTNER_ANALYTICS_ID,
   placement = '',
+  action = '',
   service = '',
   destination = '',
 } = {}) {
@@ -81,10 +75,12 @@ export function trackPartnerInteraction(eventType, {
   return trackAnalyticsEvent(eventType, {
     user_id:userId,
     metadata:{
-      partner:attribution.partner,
+      partner_id:partnerId,
+      affiliate:attribution.partner,
       campaign:attribution.utmCampaign,
       cid:attribution.cid,
       placement,
+      action,
       service,
       destination,
     },
