@@ -30,9 +30,13 @@ const STEPS = [
 ]
 
 const TESTIMONIALS = [
-  { text: 'Encontré piso en Basel en 4 días. Publiqué en Latido y a la semana ya estaba firmando el contrato. No lo hubiera conseguido tan rápido en ningún otro sitio.', name: 'Carlos M.',  origin: '🇨🇴 Colombiano · Basel',  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face' },
-  { text: 'Llevo 3 años en Suiza y siempre me sentía sola buscando trabajo. Con Latido encontré una oferta de una empresa que busca personas bilingües. Empiezo el mes que viene.', name: 'Lucía V.',  origin: '🇻🇪 Venezolana · Zúrich', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=face' },
-  { text: 'Registré mi restaurante y en una semana había conseguido 20 reseñas y reservas de gente de la comunidad. Es increíble el poder de tener nuestra propia plataforma.',       name: 'Roberto S.', origin: '🇵🇪 Peruano · Ginebra',   avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=face' },
+  { text: 'Por fin una herramienta útil y que tiene de todo lo necesario en Suiza en español.', name: 'Daniel Tejada', origin: 'Zúrich', avatar: '/testimonials/daniel.jpg' },
+  { text: 'No sé por qué no existía antes, es simplemente genial. No me extraña que esté creciendo tan rápido', name: 'Valentina', origin: 'Lausana', avatar: '/testimonials/valentina.jpg' },
+  { text: 'Una plataforma increíble y una ayuda enorme para los negocios que quieran conseguir clientes y GRATIS 😁', name: 'Joaquin Rubio', origin: 'Basilea', avatar: '/testimonials/andres.jpg' },
+  { text: 'Me sorprende que sea gratuita, por algo así debería pagarse 😆. Totalmente recomendada!', name: 'Camila', origin: 'Ginebra', avatar: '/testimonials/camila.jpg' },
+  { text: 'Lo más útil que he visto en tema de web, aplicaciones, etc. para hispanohablantes en Suiza.', name: 'Laura Souza', origin: 'Berna', avatar: '/testimonials/laura.jpg' },
+  { text: 'Muy fácil de usar, bonita y, sobre todo, adaptándose continuamente a las necesidades de los usuarios.', name: 'Mateo S.', origin: 'Lucerna', avatar: '/testimonials/mateo.jpg' },
+  { text: 'Llegué hace poco a Suiza y encontrar información clara en español me ahorró días de búsquedas. Ya se la recomendé a mis amigos.', name: 'Sofía Ortiz', origin: 'San Galo', avatar: '/testimonials/sofia.jpg' },
 ]
 
 const PARTNER_BENEFITS = [
@@ -140,6 +144,172 @@ function AnimatedStat({ value, duration = 1400 }) {
     return () => cancelAnimationFrame(raf)
   }, [inView, value, duration])
   return <span ref={ref}>{out}</span>
+}
+
+function TestimonialCarousel() {
+  const trackRef = useRef(null)
+  const [activePage, setActivePage] = useState(0)
+  const [pageCount, setPageCount] = useState(1)
+
+  useEffect(() => {
+    const track = trackRef.current
+    if (!track) return
+
+    const syncPagination = () => {
+      const card = track.querySelector('[data-testimonial-card]')
+      if (!card) return
+      const step = card.getBoundingClientRect().width + 16
+      const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth)
+      const lastPage = Math.max(0, Math.ceil(maxScroll / step))
+      const nextPage = maxScroll - track.scrollLeft < step / 2
+        ? lastPage
+        : Math.min(lastPage, Math.round(track.scrollLeft / step))
+      setPageCount(lastPage + 1)
+      setActivePage(nextPage)
+    }
+
+    syncPagination()
+    track.addEventListener('scroll', syncPagination, { passive: true })
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncPagination) : null
+    resizeObserver?.observe(track)
+    window.addEventListener('resize', syncPagination)
+    return () => {
+      track.removeEventListener('scroll', syncPagination)
+      resizeObserver?.disconnect()
+      window.removeEventListener('resize', syncPagination)
+    }
+  }, [])
+
+  const scrollToPage = (page) => {
+    const track = trackRef.current
+    const card = track?.querySelector('[data-testimonial-card]')
+    if (!track || !card) return
+    const step = card.getBoundingClientRect().width + 16
+    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth)
+    track.scrollTo({
+      left: page === pageCount - 1 ? maxScroll : Math.min(page * step, maxScroll),
+      behavior: 'smooth',
+    })
+  }
+
+  return (
+    <section
+      aria-labelledby="testimonial-title"
+      style={{
+        width: 'calc(100% - 32px)',
+        maxWidth: 1120,
+        margin: '56px auto 0',
+        padding: '34px 0 24px',
+        boxSizing: 'border-box',
+        background: 'linear-gradient(145deg, #F8FAFF 0%, #EEF5FF 100%)',
+        border: `1px solid ${C.border}`,
+        borderRadius: 28,
+        overflow: 'hidden',
+      }}
+    >
+      <div className="latido-testimonial-header" style={{ padding: '0 28px 24px' }}>
+        <div>
+          <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.primary, letterSpacing: 1.8, textTransform: 'uppercase', margin: '0 0 8px' }}>
+            Voces de Latido
+          </p>
+          <h2 id="testimonial-title" style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(22px,4vw,32px)', color: C.text, letterSpacing: -0.5, lineHeight: 1.18, margin: 0 }}>
+            Lo que opina la comunidad
+          </h2>
+        </div>
+      </div>
+
+      <div
+        ref={trackRef}
+        className="latido-testimonial-track"
+        tabIndex={0}
+        aria-label="Opiniones de usuarios de Latido"
+        style={{
+          display: 'flex',
+          gap: 16,
+          overflowX: 'auto',
+          padding: '4px 28px 18px',
+          scrollSnapType: 'x mandatory',
+          scrollPaddingLeft: 28,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          overscrollBehaviorX: 'contain',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {TESTIMONIALS.map(({ text, name, origin, avatar }) => (
+          <article
+            key={name}
+            data-testimonial-card
+            className="latido-testimonial-card"
+            style={{
+              flex: '0 0 clamp(278px, 36vw, 348px)',
+              minHeight: 218,
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              padding: 24,
+              background: '#fff',
+              border: `1px solid ${C.border}`,
+              borderRadius: 20,
+              boxShadow: '0 12px 30px rgba(15,31,92,0.07)',
+              scrollSnapAlign: 'start',
+            }}
+          >
+            <div>
+              <div aria-hidden="true" style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 46, lineHeight: 0.72, color: C.primary, marginBottom: 16 }}>“</div>
+              <p style={{ fontFamily: PP, fontWeight: 600, fontSize: 14, color: C.text, lineHeight: 1.7, margin: 0 }}>
+                {text}
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 22 }}>
+              <img
+                src={avatar}
+                alt={`Retrato de ${name}`}
+                loading="lazy"
+                decoding="async"
+                style={{
+                  width: 50,
+                  height: 50,
+                  flexShrink: 0,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '3px solid #fff',
+                  boxShadow: '0 0 0 1px rgba(37,99,235,0.16)',
+                }}
+              />
+              <div>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13, color: C.text, margin: '0 0 3px' }}>{name}</p>
+                <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, margin: 0 }}>{origin}, Suiza</p>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="latido-testimonial-dots" aria-label="Navegación de opiniones" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 7, padding: '2px 24px 0' }}>
+        {Array.from({ length: pageCount }, (_, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() => scrollToPage(index)}
+            aria-label={`Ir al grupo de opiniones ${index + 1}`}
+            aria-current={activePage === index ? 'true' : undefined}
+            className="latido-testimonial-dot"
+            style={{
+              width: activePage === index ? 10 : 8,
+              height: activePage === index ? 10 : 8,
+              padding: 0,
+              border: 0,
+              borderRadius: 999,
+              background: activePage === index ? C.primary : 'rgba(37,99,235,0.24)',
+              cursor: 'pointer',
+            }}
+          />
+        ))}
+      </div>
+    </section>
+  )
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -430,6 +600,12 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         .latido-float { animation: latido-float 7s ease-in-out infinite; }
         .latido-float-slow { animation: latido-float 11s ease-in-out infinite; }
         .latido-marquee-track { display: inline-flex; gap: 40px; animation: latido-marquee 40s linear infinite; }
+        .latido-testimonial-track::-webkit-scrollbar { display: none; }
+        .latido-testimonial-card { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+        .latido-testimonial-card:hover { transform: translateY(-4px); border-color: rgba(37,99,235,0.28) !important; box-shadow: 0 18px 38px rgba(15,31,92,0.12) !important; }
+        .latido-testimonial-dot { transition: width .2s ease, height .2s ease, background .2s ease, transform .15s ease; }
+        .latido-testimonial-dot:hover { transform: scale(1.15); }
+        .latido-testimonial-dot:focus-visible { outline: 3px solid rgba(37,99,235,0.25); outline-offset: 3px; }
         .latido-hero-bg { background-size: 180% 180%; animation: latido-gradient 22s ease infinite; }
         .latido-card-hover { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
         .latido-hero-logo-top {
@@ -447,6 +623,8 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
           filter: drop-shadow(0 18px 34px rgba(0,0,0,0.22));
         }
         @media (max-width: 640px) {
+          .latido-testimonial-header { padding: 0 20px 20px !important; }
+          .latido-testimonial-track { padding-left: 20px !important; padding-right: 20px !important; scroll-padding-left: 20px !important; }
           .latido-hero-logo-top {
             width: 104px;
             height: 104px;
@@ -460,7 +638,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         @media (prefers-reduced-motion: reduce) {
           .latido-enter-1, .latido-enter-2, .latido-enter-3, .latido-enter-4, .latido-enter-5,
           .latido-float, .latido-float-slow, .latido-marquee-track, .latido-hero-bg { animation: none !important; }
-          .latido-cta-primary, .latido-cta-ghost, .latido-card-hover { transition: none !important; }
+          .latido-cta-primary, .latido-cta-ghost, .latido-card-hover, .latido-testimonial-card, .latido-testimonial-dot { transition: none !important; }
         }
       `}</style>
 
@@ -637,8 +815,13 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         )}
       </section>
 
+      {/* ── TESTIMONIALS ─────────────────────────────────────────── */}
+      <Reveal>
+        <TestimonialCarousel />
+      </Reveal>
+
       {/* ── FINAL CTA ────────────────────────────────────────────── */}
-      <section style={{ maxWidth: 720, margin: '88px auto 0', padding: '0 24px 96px' }}>
+      <section style={{ maxWidth: 720, margin: '72px auto 0', padding: '0 24px 96px' }}>
         <Reveal>
           <div style={{ textAlign: 'center' }}>
             <div className="latido-float" style={{ width: 72, height: 72, background: `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, margin: '0 auto 24px', boxShadow: '0 16px 40px rgba(37,99,235,0.32)' }}>
