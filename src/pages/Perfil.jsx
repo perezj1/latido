@@ -65,6 +65,56 @@ const EVENT_MONTH_INDEX = {
   NOV:10,
   DIC:11, DEC:11,
 }
+
+function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M3 3l18 18" />
+      <path d="M10.6 10.6A2 2 0 0 0 13.4 13.4" />
+      <path d="M9.9 4.2A10.9 10.9 0 0 1 12 4.1c6.5 0 10 7.9 10 7.9a17.6 17.6 0 0 1-3.4 4.3" />
+      <path d="M6.6 6.6C3.7 8.6 2 12 2 12s3.5 7.9 10 7.9a10.7 10.7 0 0 0 4.1-.8" />
+    </svg>
+  )
+}
+
+function PasswordVisibilityButton({ visible, onToggle }) {
+  const label = visible ? 'Ocultar contraseña' : 'Mostrar contraseña'
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={visible}
+      title={label}
+      onClick={onToggle}
+      onMouseDown={event => event.preventDefault()}
+      style={{
+        width:30,
+        height:30,
+        border:'none',
+        borderRadius:10,
+        background:'transparent',
+        color:C.light,
+        cursor:'pointer',
+        display:'flex',
+        alignItems:'center',
+        justifyContent:'center',
+        padding:0,
+      }}
+    >
+      {visible ? <EyeOffIcon /> : <EyeIcon />}
+    </button>
+  )
+}
 const ATTENTION_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000
 const AD_REVIEW_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000
 const EDITOR_IMAGE_CONFIG = {
@@ -500,6 +550,8 @@ export default function Perfil() {
   const [configOpen, setConfigOpen] = useState(false)
   const [configForm, setConfigForm] = useState({})
   const [savingConfig, setSavingConfig] = useState(false)
+  const [showConfigNewPassword, setShowConfigNewPassword] = useState(false)
+  const [showConfigConfirmPassword, setShowConfigConfirmPassword] = useState(false)
 
   // favorites
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
@@ -1065,6 +1117,8 @@ export default function Perfil() {
 
   const openConfig = () => {
     setConfigForm({ name: displayName, canton: userCanton, newPassword:'', confirmPassword:'' })
+    setShowConfigNewPassword(false)
+    setShowConfigConfirmPassword(false)
     setConfigOpen(true)
   }
 
@@ -1893,15 +1947,27 @@ export default function Perfil() {
         <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, margin:'16px 0 6px' }}>Cambiar contraseña</p>
         <Input
           label="Nueva contraseña"
-          type="password"
+          type={showConfigNewPassword ? 'text' : 'password'}
           value={configForm.newPassword || ''}
           onChange={e => setConfigForm(prev => ({ ...prev, newPassword: e.target.value }))}
+          rightElement={
+            <PasswordVisibilityButton
+              visible={showConfigNewPassword}
+              onToggle={() => setShowConfigNewPassword(visible => !visible)}
+            />
+          }
         />
         <Input
           label="Confirmar contraseña"
-          type="password"
+          type={showConfigConfirmPassword ? 'text' : 'password'}
           value={configForm.confirmPassword || ''}
           onChange={e => setConfigForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+          rightElement={
+            <PasswordVisibilityButton
+              visible={showConfigConfirmPassword}
+              onToggle={() => setShowConfigConfirmPassword(visible => !visible)}
+            />
+          }
         />
 
         <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginBottom:16, lineHeight:1.5 }}>
