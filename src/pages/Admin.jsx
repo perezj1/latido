@@ -916,6 +916,7 @@ export default function Admin() {
   const [businessVerificationFilter, setBusinessVerificationFilter] = useState('pending')
   const [businessSearch, setBusinessSearch] = useState('')
   const [businessPage, setBusinessPage] = useState(1)
+  const [businessFeaturedLoading, setBusinessFeaturedLoading] = useState(new Set())
   const [contentByKey, setContentByKey] = useState(new Map())
   const [onlineUserIds, setOnlineUserIds] = useState(new Set())
   const [presenceStatus, setPresenceStatus] = useState('idle')
@@ -1400,6 +1401,7 @@ export default function Admin() {
       verification_status: status,
       verification_score: details.score,
       verified: status === 'verified',
+      ...(status === 'verified' ? {} : { featured:false }),
       verified_at: status === 'verified' ? now : null,
       verified_by: status === 'verified' ? user.id : null,
       verification_notes: status === 'rejected' ? notes : null,
@@ -1434,6 +1436,62 @@ export default function Admin() {
     toast.success(strippedColumns.length
       ? 'Estado guardado'
       : status === 'verified' ? 'Negocio verificado' : 'Estado actualizado')
+  }
+
+  async function toggleBusinessFeatured(business) {
+    const businessId = business?.id
+    if (!businessId || businessFeaturedLoading.has(businessId)) return
+
+    const featured = !business.featured
+    const isVerified = getBusinessVerificationDetails(business).status === 'verified'
+    if (featured && !isVerified) {
+      toast.error('Solo los negocios verificados pueden ser destacados')
+      return
+    }
+
+    setBusinessFeaturedLoading(previous => {
+      const next = new Set(previous)
+      next.add(businessId)
+      return next
+    })
+
+    try {
+      const { data, error } = await supabase
+        .from('providers')
+        .update({ featured })
+        .eq('id', businessId)
+        .select('id,featured')
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data) throw new Error('No se actualizó el negocio. Revisa los permisos RLS del administrador.')
+
+      setBusinesses(previous => previous.map(item =>
+        String(item.id) === String(businessId) ? { ...item, featured:data.featured } : item
+      ))
+
+      try {
+        await logAdminAction({
+          admin_id:user.id,
+          action_type:featured ? 'business_featured_enable' : 'business_featured_disable',
+          target_type:'provider',
+          target_id:businessId,
+          notes:business.name || '',
+        })
+      } catch (logError) {
+        console.warn('Admin action log failed:', logError)
+      }
+
+      toast.success(featured ? 'Negocio marcado como destacado' : 'Negocio retirado de destacados')
+    } catch (error) {
+      toast.error(error.message || 'No se pudo actualizar el estado destacado')
+    } finally {
+      setBusinessFeaturedLoading(previous => {
+        const next = new Set(previous)
+        next.delete(businessId)
+        return next
+      })
+    }
   }
 
   function renderContentOwnerMeta(item) {
@@ -2406,9 +2464,14 @@ export default function Admin() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
                       <div style={{ minWidth: 0 }}>
-                        <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px', overflowWrap: 'anywhere' }}>
-                          {business.name || 'Negocio sin nombre'}
-                        </p>
+                        <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:3 }}>
+                          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
+                            {business.name || 'Negocio sin nombre'}
+                          </p>
+                          {business.featured && (
+                            <Tag bg="#EFF6FF" color={C.primary}>★ Destacado</Tag>
+                          )}
+                        </div>
                         <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, overflowWrap: 'anywhere' }}>
                           {[business.category, business.city || business.canton].filter(Boolean).join(' · ') || 'Sin categoría'}
                         </p>
@@ -2455,6 +2518,32 @@ export default function Admin() {
                     </p>
 
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        disabled={businessFeaturedLoading.has(business.id) || (!business.featured && details.status !== 'verified')}
+                        onClick={() => toggleBusinessFeatured(business)}
+                        title={!business.featured && details.status !== 'verified' ? 'Verifica el negocio antes de destacarlo' : ''}
+                        style={{
+                          fontFamily:PP,
+                          fontWeight:900,
+                          fontSize:11,
+                          borderRadius:10,
+                          border:`1.5px solid ${business.featured ? '#F59E0B' : C.primaryMid}`,
+                          background:business.featured ? '#FFFBEB' : '#EFF6FF',
+                          color:business.featured ? '#B45309' : C.primary,
+                          padding:'9px 12px',
+                          cursor:businessFeaturedLoading.has(business.id)
+                            ? 'wait'
+                            : !business.featured && details.status !== 'verified' ? 'not-allowed' : 'pointer',
+                          opacity:businessFeaturedLoading.has(business.id) || (!business.featured && details.status !== 'verified') ? 0.55 : 1,
+                        }}
+                      >
+                        {businessFeaturedLoading.has(business.id)
+                          ? 'Guardando...'
+                          : business.featured
+                            ? '★ Quitar destacado'
+                            : details.status === 'verified' ? '☆ Marcar destacado' : '🔒 Verifica para destacar'}
+                      </button>
                       {BUSINESS_VERIFICATION_ACTIONS.map(action => {
                         const isCurrent = details.status === action.id
                         return (

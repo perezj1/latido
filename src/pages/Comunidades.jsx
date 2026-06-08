@@ -221,7 +221,8 @@ function normalizePhoneForTel(value='') {
 }
 
 function normalizePhoneForWhatsapp(value='') {
-  return value.replace(/\D/g, '')
+  const digits = value.replace(/\D/g, '')
+  return /^07\d{8}$/.test(digits) ? `41${digits.slice(1)}` : digits
 }
 
 function formatInstagramHandle(value='') {
@@ -247,7 +248,7 @@ function normalizeProvider(provider) {
     website: provider.website || '',
     verified: verificationStatus === 'verified',
     verification_status: verificationStatus,
-    featured: !!provider.featured,
+    featured: !!provider.featured && verificationStatus === 'verified',
     services: Array.isArray(provider.services) ? provider.services : [],
     photo_url: provider.photo_url || '',
     contacts: Array.isArray(provider.contacts) ? provider.contacts : null,

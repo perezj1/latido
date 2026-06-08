@@ -37,15 +37,21 @@ function normalizeText(value = '') {
 export function normalizePhone(value = '') {
   const raw = String(value || '').trim()
   if (!raw) return ''
-  if (raw.startsWith('00')) return raw.slice(2).replace(/\D/g, '')
-  return raw.replace(/\D/g, '')
+  const digits = raw.replace(/\D/g, '')
+  if (raw.startsWith('00')) return digits.slice(2)
+  if (/^07\d{8}$/.test(digits)) return `41${digits.slice(1)}`
+  return digits
 }
 
 export function isValidPhone(value = '') {
   const raw = String(value || '').trim()
+  const localDigits = raw.replace(/\D/g, '')
+  if (!raw.startsWith('+') && !raw.startsWith('00')) {
+    return /^07\d{8}$/.test(localDigits)
+  }
+
   const digits = normalizePhone(raw)
   if (digits.length < 9 || digits.length > 15) return false
-  if (!raw.startsWith('+') && !raw.startsWith('00')) return false
   return VALID_PHONE_PREFIXES.some(prefix => digits.startsWith(prefix))
 }
 

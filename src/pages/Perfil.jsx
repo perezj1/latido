@@ -2235,7 +2235,7 @@ export default function Perfil() {
               </Select>
             </div>
             <Input label="Descripción" rows={4} value={editorForm.description || ''} onChange={event => updateEditorField('description', event.target.value)} />
-            <Input label="Teléfono / WhatsApp" value={editorForm.whatsapp || ''} onChange={event => updateEditorField('whatsapp', event.target.value)} />
+            <Input label="Teléfono / WhatsApp" placeholder="079 123 45 67 o +41 79 123 45 67" value={editorForm.whatsapp || ''} onChange={event => updateEditorField('whatsapp', event.target.value)} />
             <Input label="Email" type="email" value={editorForm.email || ''} onChange={event => updateEditorField('email', event.target.value)} />
             <Input label="Instagram" value={editorForm.instagram || ''} onChange={event => updateEditorField('instagram', event.target.value)} />
             <Input label="Web (opcional)" type="url" value={editorForm.website || ''} onChange={event => updateEditorField('website', event.target.value)} />

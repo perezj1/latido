@@ -247,7 +247,7 @@ export default function RegistrarNegocio() {
       {/* Step 2 — Contact and services */}
       {step === 2 && (
         <>
-          <Input label="Teléfono / WhatsApp" placeholder="+41 79 123 45 67" value={form.phone} onChange={e=>s('phone',e.target.value)} />
+          <Input label="Teléfono / WhatsApp" placeholder="079 123 45 67 o +41 79 123 45 67" value={form.phone} onChange={e=>s('phone',e.target.value)} />
           <Input label="Email" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={e=>s('email',e.target.value)} />
           <Input label="Instagram" placeholder="@minegocio_zh" value={form.instagram} onChange={e=>s('instagram',e.target.value)} />
           <Input label="Web (opcional)" type="url" placeholder="minegocio.ch" value={form.website} onChange={e=>s('website',e.target.value)} />
