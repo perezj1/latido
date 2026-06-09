@@ -36,7 +36,7 @@ export default function MiraPartnerPromo({ variant = 'partner-card' }) {
         tagline:'Mobile Informationen Rat & Austausch',
       }}
       title="Información y acompañamiento intercultural"
-      description="Mira ayuda a personas con experiencia migratoria con información, asesoramiento e intercambio, en su idioma y cerca de donde viven."
+      description="Mira ayuda a personas ofreciendoles experiencia migratoria con información, asesoramiento e intercambio, en su idioma y cerca de donde viven."
       services={MIRA_SERVICES.map(service => ({
         ...service,
         href:MIRA_CONTACT_PATH,
