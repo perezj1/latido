@@ -181,88 +181,28 @@ export default function PartnerServicesPromo({
 
   if (mode === 'public-featured') {
     return (
-      <section
-        aria-labelledby={`partner-promo-${placement}`}
-        className="public-partner-section"
-      >
-        <div className="public-partner-heading">
-          <span>Colaboradores seleccionados</span>
-          <h2>Más apoyo para vivir en Suiza con confianza</h2>
-          <p>
-            Colaboramos con equipos especializados que entienden las necesidades
-            de la comunidad hispanohablante.
-          </p>
-        </div>
-
-        <div className="public-partner-card">
-          <span className="public-partner-orb public-partner-orb--one" aria-hidden="true" />
-          <span className="public-partner-orb public-partner-orb--two" aria-hidden="true" />
-
-          <div className="public-partner-copy">
-            <div className="public-partner-lockup">
-              <PartnerLockup />
-            </div>
-            <span className="public-partner-kicker">Colaborador destacado</span>
-            <h3 id={`partner-promo-${placement}`}>
-              Servicios especializados para tu vida en Suiza
-            </h3>
-            <p id={`partner-promo-description-${placement}`}>
-              Orientación cercana en español sobre seguro médico, previsión y
-              preparación para tu llegada al país.
-            </p>
-
-            <div className="public-partner-trust" aria-label="Ventajas del servicio">
-              <span>Atención en español</span>
-              <span>Sin compromiso</span>
-              <span>Equipo especializado</span>
-            </div>
-
-            <PartnerAccessLink
-              isLoggedIn={isLoggedIn}
-              externalHref={partnerLandingUrl}
-              authHref={partnerAuthPath}
-              onClick={handleOpen}
-              className="public-partner-cta"
-              aria-describedby={`partner-promo-description-${placement}`}
-            >
-              Descubrir todos los servicios <span aria-hidden="true">→</span>
-            </PartnerAccessLink>
-          </div>
-
-          <div className="public-partner-services" aria-label="Servicios de Suiza en Español">
-            <span className="public-partner-services-label">¿En qué pueden ayudarte?</span>
-            {SERVICES.map((service, index) => (
-              <PartnerAccessLink
-                key={service.id}
-                isLoggedIn={isLoggedIn}
-                externalHref={serviceUrls[service.id]}
-                authHref={serviceAuthPaths[service.id]}
-                onClick={() => handleServiceOpen(service)}
-                className="public-partner-service"
-                style={{
-                  '--service-color':service.color,
-                  '--service-tint':service.tint,
-                  '--service-delay':`${index * 120}ms`,
-                }}
-                aria-label={isLoggedIn ? `${service.label}. Se abre en Suiza en Español` : `${service.label}. Inicia sesión para acceder`}
-              >
-                <span className="public-partner-service-icon">
-                  <PartnerServiceIcon type={service.icon} size={22} color={service.color} />
-                </span>
-                <span>
-                  <strong>{service.label}</strong>
-                  <small>
-                    {service.id === 'seguros' && 'Compara opciones y recibe orientación'}
-                    {service.id === 'tercer-pilar' && 'Planifica tu futuro y optimiza impuestos'}
-                    {service.id === 'curso' && 'Prepárate antes de establecerte en el país'}
-                  </small>
-                </span>
-                <span className="public-partner-service-arrow" aria-hidden="true">↗</span>
-              </PartnerAccessLink>
-            ))}
-          </div>
-        </div>
-      </section>
+      <PartnerCard
+        id={`suiza-en-espanol-${placement}`}
+        className="public-partner-tile"
+        brand={{
+          partnerLogo:PARTNER_LOGO,
+          partnerName:'Suiza en Español',
+        }}
+        title="Servicios especializados para vivir en Suiza"
+        description="Orientación en español con un equipo especializado en seguros, previsión y llegada al país."
+        services={SERVICES.map(service => ({
+          ...service,
+          href:isLoggedIn ? serviceUrls[service.id] : serviceAuthPaths[service.id],
+          external:isLoggedIn,
+        }))}
+        cta={{
+          href:partnerInfoPath,
+          label:'Contactar',
+          external:isLoggedIn,
+        }}
+        onServiceClick={handleServiceOpen}
+        onCtaClick={handleOpen}
+      />
     )
   }
 
@@ -271,8 +211,6 @@ export default function PartnerServicesPromo({
       <PartnerCard
         id="suiza-en-espanol"
         brand={{
-          primaryLogo:'/favicon.svg',
-          primaryName:'Latido',
           partnerLogo:PARTNER_LOGO,
           partnerName:'Suiza en Español',
         }}

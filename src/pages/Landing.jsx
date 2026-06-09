@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
-import PartnerServicesPromo from '../components/PartnerServicesPromo'
+import PublicPartnersSection from '../components/PublicPartnersSection'
 import { C, PP } from '../lib/theme'
 
 /* ─────────────────────────────────────────────────────────────
@@ -767,7 +767,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
       </section>
 
       <Reveal className="public-partner-reveal">
-        <PartnerServicesPromo placement="public_landing" variant="public-featured" />
+        <PublicPartnersSection placement="public_landing" />
       </Reveal>
 
       {/* ── TESTIMONIALS ─────────────────────────────────────────── */}

@@ -101,7 +101,7 @@
 }
 
 .public-partner-section {
-  max-width: 980px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 72px 24px 8px;
 }
@@ -143,13 +143,99 @@
   line-height: 1.7;
 }
 
+.public-partners-scroll {
+  margin: -8px -24px -28px;
+  padding: 8px 24px 36px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 24px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.public-partners-track {
+  display: flex;
+  align-items: stretch;
+  gap: 18px;
+  width: max-content;
+  min-width: 100%;
+}
+
+.public-partners-scroll--single .public-partners-track {
+  justify-content: center;
+  width: 100%;
+}
+
+.partner-card.public-partner-tile {
+  flex: 0 0 min(500px, calc(100vw - 72px));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
+  row-gap: 0;
+  width: min(500px, calc(100vw - 72px));
+  padding: 16px;
+  background: linear-gradient(145deg, #FFFFFF 0%, #F6F9FF 100%);
+  border-color: #D5E2F3;
+  border-radius: 20px;
+  box-shadow: 0 12px 34px rgba(30, 64, 175, .1);
+}
+
+.public-partners-scroll--single .public-partner-tile {
+  flex-basis: min(500px, 100%);
+  width: min(500px, 100%);
+}
+
+.public-partner-tile .partner-card-brand,
+.public-partner-tile .partner-card-copy,
+.public-partner-tile .partner-card-services,
+.public-partner-tile .partner-card-cta {
+  grid-column: 1;
+  grid-row: auto;
+}
+
+.public-partner-tile .partner-card-brand {
+  margin-bottom: 9px;
+}
+
+.public-partner-tile .partner-card-copy {
+  margin-bottom: 12px;
+}
+
+.public-partner-tile .partner-card-copy h3 {
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+.public-partner-tile .partner-card-copy p {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.public-partner-tile .partner-card-services {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.public-partner-tile .partner-card-services a {
+  min-height: 40px;
+  padding: 7px 10px;
+}
+
+.public-partner-tile .partner-card-cta {
+  min-height: 43px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
 .public-partner-card {
   position: relative;
   display: grid;
+  flex: 0 0 min(920px, calc(100vw - 96px));
   grid-template-columns: minmax(0, 1fr) minmax(330px, .88fr);
   align-items: center;
   gap: 38px;
   overflow: hidden;
+  box-sizing: border-box;
   padding: 44px;
   background:
     radial-gradient(circle at 82% 8%, rgba(96, 165, 250, .18), transparent 31%),
@@ -157,6 +243,12 @@
   border: 1px solid #D6E4F7;
   border-radius: 30px;
   box-shadow: 0 28px 70px rgba(30, 64, 175, .13);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.public-partners-scroll--single .public-partner-card {
+  flex-basis: 100%;
 }
 
 .public-partner-card::before {
@@ -488,14 +580,16 @@
 }
 
 .partner-card-brand {
-  grid-column: 1;
+  grid-column: 1 / -1;
   grid-row: 1;
   display: flex;
   align-items: center;
   gap: 7px;
   min-width: 0;
-  margin-bottom: 8px;
+  margin-bottom: 11px;
+  padding-bottom: 10px;
   color: #111827;
+  border-bottom: 1px solid #E2E8F0;
   font-family: 'Poppins', system-ui, sans-serif;
 }
 
@@ -509,7 +603,7 @@
 
 .partner-card-brand-unit strong {
   overflow: hidden;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   text-overflow: ellipsis;
 }
@@ -517,31 +611,20 @@
 .partner-card-logo {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
   overflow: hidden;
   background: #fff;
   border: 1px solid #DFE7F2;
-  border-radius: 9px;
+  border-radius: 10px;
 }
 
 .partner-card-logo img {
   display: block;
-  width: 23px;
-  height: 23px;
+  width: 29px;
+  height: 29px;
   object-fit: contain;
-}
-
-.partner-card-logo--latido img {
-  width: 24px;
-  height: 24px;
-}
-
-.partner-card-connector {
-  color: #94A3B8;
-  font-size: 11px;
-  font-weight: 800;
 }
 
 .partner-card-copy h3 {
@@ -569,7 +652,7 @@
 
 .partner-card-services {
   grid-column: 2;
-  grid-row: 1 / 3;
+  grid-row: 2;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-self: start;
@@ -797,7 +880,59 @@
     font-size: 12px;
   }
 
+  .public-partners-scroll {
+    margin-right: -14px;
+    margin-bottom: -24px;
+    margin-left: -14px;
+    padding: 8px 14px 32px;
+    scroll-padding-inline: 14px;
+  }
+
+  .public-partners-track {
+    gap: 12px;
+  }
+
+  .partner-card.public-partner-tile {
+    flex-basis: calc(100vw - 54px);
+    width: calc(100vw - 54px);
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .public-partners-scroll--single .public-partner-tile {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .public-partner-tile .partner-card-copy {
+    margin-bottom: 11px;
+  }
+
+  .public-partner-tile .partner-card-copy h3 {
+    font-size: 16px;
+  }
+
+  .public-partner-tile .partner-card-copy p {
+    font-size: 11px;
+  }
+
+  .public-partner-tile .partner-card-services {
+    gap: 6px;
+  }
+
+  .public-partner-tile .partner-card-services a {
+    min-height: 38px;
+    padding: 6px 7px;
+    font-size: 9px;
+  }
+
+  .public-partner-tile .partner-card-cta {
+    min-height: 41px;
+    font-size: 12px;
+  }
+
   .public-partner-card {
+    flex-basis: calc(100vw - 54px);
     gap: 26px;
     padding: 25px 18px 20px;
     border-radius: 24px;
@@ -897,8 +1032,9 @@
   .partner-card-brand {
     grid-column: 1;
     grid-row: auto;
-    gap: 5px;
-    margin-bottom: 7px;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding-bottom: 9px;
   }
 
   .partner-card-brand-unit {
@@ -906,18 +1042,18 @@
   }
 
   .partner-card-brand-unit strong {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .partner-card-logo {
-    width: 26px;
-    height: 26px;
-    flex-basis: 26px;
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
   }
 
   .partner-card-logo img {
-    width: 21px;
-    height: 21px;
+    width: 27px;
+    height: 27px;
   }
 
   .partner-card-copy h3 {

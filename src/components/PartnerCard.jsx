@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 
 export default function PartnerCard({
   id,
+  className = '',
   brand,
   title,
   description,
@@ -13,21 +14,14 @@ export default function PartnerCard({
 }) {
   return (
     <article
-      className="partner-card"
+      className={`partner-card${className ? ` ${className}` : ''}`}
       aria-labelledby={`partner-card-${id}`}
       style={{
         '--partner-accent-primary':accent[0],
         '--partner-accent-secondary':accent[1],
       }}
     >
-      <div className="partner-card-brand" aria-label={`${brand.primaryName} en colaboración con ${brand.partnerName}`}>
-        <span className="partner-card-brand-unit">
-          <span className="partner-card-logo partner-card-logo--latido">
-            <img src={brand.primaryLogo} alt="" />
-          </span>
-          <strong>{brand.primaryName}</strong>
-        </span>
-        <span className="partner-card-connector" aria-hidden="true">×</span>
+      <div className="partner-card-brand" aria-label={brand.partnerName}>
         <span className="partner-card-brand-unit">
           <span className="partner-card-logo">
             <img src={brand.partnerLogo} alt="" />
