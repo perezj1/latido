@@ -202,14 +202,14 @@ export function Input({ label, placeholder, value, onChange, type='text', rows, 
 }
 
 // ── Select ─────────────────────────────────────────────────────
-export function Select({ label, value, onChange, children, required }) {
+export function Select({ label, value, onChange, children, required, disabled=false }) {
   return (
     <div style={{ marginBottom:10 }}>
       {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
       <div style={{ position:'relative' }}>
         <select
-          value={value} onChange={onChange}
-          style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 40px 11px 13px', fontSize:13, fontFamily:PP, outline:'none', background:C.surface, color:C.text, appearance:'none', WebkitAppearance:'none', MozAppearance:'none', cursor:'pointer' }}
+          value={value} onChange={onChange} disabled={disabled}
+          style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 40px 11px 13px', fontSize:13, fontFamily:PP, outline:'none', background:C.surface, color:C.text, appearance:'none', WebkitAppearance:'none', MozAppearance:'none', cursor:disabled ? 'not-allowed' : 'pointer', opacity:disabled ? 0.6 : 1 }}
         >
           {children}
         </select>
@@ -239,6 +239,8 @@ export function ImageUploadField({
   previewUrls=[],
   uploading=false,
   multiple=false,
+  maxImages=5,
+  currentImageCount,
   onFilesSelected,
   onRemove,
   onRemoveAt,
@@ -247,10 +249,14 @@ export function ImageUploadField({
   const deviceId = useId()
   const cameraId = useId()
   const previews = previewUrls.length ? previewUrls : (previewUrl ? [previewUrl] : [])
+  const imageCount = Number.isFinite(currentImageCount) ? currentImageCount : previews.length
+  const hasImageLimit = multiple && Number.isFinite(maxImages)
+  const atImageLimit = hasImageLimit && imageCount >= maxImages
+  const selectionDisabled = uploading || atImageLimit
 
   const handleFiles = event => {
     const files = Array.from(event.target.files || [])
-    if (files.length) onFilesSelected?.(files)
+    if (!atImageLimit && files.length) onFilesSelected?.(files)
     event.target.value = ''
   }
 
@@ -296,23 +302,30 @@ export function ImageUploadField({
 
       <div style={{ border:`1.5px dashed ${uploading ? C.primary : C.border}`, borderRadius:16, padding:'14px 14px 12px', background:uploading ? C.primaryLight : '#fff' }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 4px' }}>
-          {uploading ? 'Subiendo imagen...' : multiple ? 'Añade fotos desde tu dispositivo o la cámara' : 'Añade una imagen desde tu dispositivo o la cámara'}
+          {uploading
+            ? 'Subiendo imagen...'
+            : atImageLimit
+              ? `Has alcanzado el máximo de ${maxImages} imágenes`
+              : multiple
+                ? 'Añade fotos desde tu dispositivo o la cámara'
+                : 'Añade una imagen desde tu dispositivo o la cámara'}
         </p>
         <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 0 12px', lineHeight:1.6 }}>
           {hint || (multiple ? 'En móvil puedes abrir la cámara o seleccionar varias fotos de la galería.' : 'En móvil puedes tomar una foto al momento o elegir una desde la galería.')}
+          {hasImageLimit && ` (${imageCount}/${maxImages})`}
         </p>
 
         <div style={{ display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', gap:8 }}>
-          <label htmlFor={deviceId} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', borderRadius:12, padding:'11px 12px', textAlign:'center', cursor:uploading ? 'not-allowed' : 'pointer', opacity:uploading ? 0.6 : 1 }}>
+          <label htmlFor={deviceId} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', borderRadius:12, padding:'11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
             🖼 Desde dispositivo
           </label>
-          <label htmlFor={cameraId} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.bg, color:C.primary, border:`1.5px solid ${C.primaryMid}`, borderRadius:12, padding:'11px 12px', textAlign:'center', cursor:uploading ? 'not-allowed' : 'pointer', opacity:uploading ? 0.6 : 1 }}>
+          <label htmlFor={cameraId} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.bg, color:C.primary, border:`1.5px solid ${C.primaryMid}`, borderRadius:12, padding:'11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
             📷 Usar cámara
           </label>
         </div>
 
-        <input id={deviceId} type="file" accept="image/*" multiple={multiple} onChange={handleFiles} disabled={uploading} style={{ display:'none' }} />
-        <input id={cameraId} type="file" accept="image/*" capture="environment" onChange={handleFiles} disabled={uploading} style={{ display:'none' }} />
+        <input id={deviceId} type="file" accept="image/*" multiple={multiple} onChange={handleFiles} disabled={selectionDisabled} style={{ display:'none' }} />
+        <input id={cameraId} type="file" accept="image/*" capture="environment" onChange={handleFiles} disabled={selectionDisabled} style={{ display:'none' }} />
       </div>
     </div>
   )

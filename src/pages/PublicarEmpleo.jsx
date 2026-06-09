@@ -8,35 +8,13 @@ import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
-import { JOB_INTENTS } from '../lib/constants'
+import { JOB_INTENTS, JOB_SECTORS, JOB_TYPES } from '../lib/constants'
 import toast from 'react-hot-toast'
 
 const STEPS = [
   { title:'¿Qué publicación de empleo es?', sub:'Elige si publicas una oferta o tu perfil buscando trabajo' },
   { title:'Datos principales', sub:'Puesto, disponibilidad, ubicación y salario' },
   { title:'Detalles y revisión', sub:'Idiomas, descripción y resumen final antes de publicar' },
-]
-
-const JOB_SECTORS = [
-  { id:'hosteleria',     emoji:'👨‍🍳', label:'Hostelería & Cocina',      sub:'Camarero/a, cocinero/a, barista, ayudante de cocina…' },
-  { id:'cuidados',       emoji:'❤️',  label:'Cuidados & Au pair',        sub:'Niñero/a, au pair, cuidador/a de personas mayores…' },
-  { id:'limpieza',       emoji:'🧹',  label:'Limpieza & Servicios',      sub:'Limpieza doméstica, oficinas, hoteles, conserje…' },
-  { id:'tecnologia',     emoji:'💻',  label:'Tecnología & IT',           sub:'Desarrollo, soporte técnico, sistemas, diseño digital…' },
-  { id:'estetica',       emoji:'💇',  label:'Estética & Belleza',        sub:'Peluquería, barbería, uñas, maquillaje, estética…' },
-  { id:'construccion',   emoji:'🏗️', label:'Construcción',              sub:'Albañil, electricista, fontanero, pintor, carpintero…' },
-  { id:'transporte',     emoji:'🚚',  label:'Transporte & Logística',    sub:'Conductor/a, repartidor/a, almacén, mensajería…' },
-  { id:'administracion', emoji:'📋',  label:'Administración',            sub:'Recepcionista, asistente, contabilidad, oficina…' },
-  { id:'educacion',      emoji:'🎓',  label:'Educación & Clases',        sub:'Profesor/a, tutor/a, clases particulares, monitor/a…' },
-  { id:'servicios',      emoji:'🔧',  label:'Servicios & Técnico',       sub:'Reparaciones, mantenimiento, instalaciones, jardinería…' },
-  { id:'salud',          emoji:'🏥',  label:'Salud & Enfermería',        sub:'Enfermero/a, auxiliar, farmacia, fisioterapia…' },
-  { id:'ventas',         emoji:'🛒',  label:'Comercio & Ventas',         sub:'Dependiente/a, cajero/a, atención al cliente, tienda…' },
-]
-
-const JOB_TYPES = [
-  { id:'Full-time',  emoji:'🕐', label:'Full-time',  desc:'Jornada completa' },
-  { id:'Part-time',  emoji:'🕔', label:'Part-time',  desc:'Media jornada' },
-  { id:'Freelance',  emoji:'💡', label:'Freelance',  desc:'Por proyecto o autónomo' },
-  { id:'Prácticas',  emoji:'🎓', label:'Prácticas',  desc:'Internship o aprendizaje' },
 ]
 
 const LANG_OPTIONS = ['Español', 'Alemán', 'Francés', 'Italiano', 'Inglés']
@@ -248,7 +226,9 @@ export default function PublicarEmpleo() {
             ))}
           </div>
 
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>SECTOR</p>
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>
+            {isSeekingJob ? 'SECTOR EN EL QUE BUSCAS TRABAJO' : 'SECTOR DE LA OFERTA'}
+          </p>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:10 }}>
             {JOB_SECTORS.map(sector => (
               <button key={sector.id} onClick={() => s('sector', sector.id)}
@@ -289,7 +269,7 @@ export default function PublicarEmpleo() {
                 <span style={{ fontSize:22 }}>{t.emoji}</span>
                 <div>
                   <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:form.jobType===t.id?C.primary:C.text, margin:'0 0 2px' }}>{t.label}</p>
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{t.desc}</p>
+                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{isSeekingJob ? t.seekingDesc : t.desc}</p>
                 </div>
               </button>
             ))}

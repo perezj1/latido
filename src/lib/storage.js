@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 
 export const PUBLICATION_IMAGES_BUCKET = 'publication-images'
 export const AVATARS_BUCKET = 'avatars'
+export const MAX_PUBLICATION_IMAGES = 5
 
 const ONE_YEAR_SECONDS = '31536000'
 const MAX_PUBLICATION_SOURCE_BYTES = 10 * 1024 * 1024

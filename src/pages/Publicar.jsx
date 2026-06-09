@@ -3,10 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, normalizeAdCat } from '../lib/constants'
+import { AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, normalizeAdCat } from '../lib/constants'
 import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
-import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
+import { MAX_PUBLICATION_IMAGES, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
@@ -141,7 +141,8 @@ export default function Publicar() {
   const s = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const selectedCat = AD_CATS.find(c => c.id === form.cat)
-  const selectedSubOption = getAdSubOption(form.cat, form.sub)
+  const selectedSubOption = getAdSubOption(form.cat, form.sub, form.type)
+  const compatibleSubcategories = getAdSubOptions(form.cat, form.type)
   const selectedAdEmoji = getAdDisplayEmoji({ cat:form.cat, sub:form.sub })
   const selectedIntent = PUBLISH_INTENTS.find(intent => intent.id === form.intent)
   const compatibleCats = getCompatibleCategories(form.intent)
@@ -160,12 +161,15 @@ export default function Publicar() {
     setForm(prev => {
       const catStillFits = nextCats.some(cat => cat.id === prev.cat)
       const nextCat = catStillFits ? prev.cat : (nextCats.length === 1 ? nextCats[0].id : '')
+      const nextType = resolveTypeForCategory(intent, nextCat)
+      const subStillFits = catStillFits && getAdSubOptions(nextCat, nextType)
+        .some(option => getAdSubLabel(option) === prev.sub)
       return {
         ...prev,
         intent,
-        type: resolveTypeForCategory(intent, nextCat),
+        type: nextType,
         cat: nextCat,
-        sub: catStillFits ? prev.sub : '',
+        sub: subStillFits ? prev.sub : '',
       }
     })
     // Don't advance step — categories appear below on same screen
@@ -348,6 +352,11 @@ export default function Publicar() {
       toast.error('Escribe un título para el anuncio')
       return
     }
+    const resolvedType = form.type || resolveTypeForCategory(form.intent, form.cat)
+    if (!getCompatibleCategories(form.intent).some(category => category.id === form.cat)) {
+      toast.error('Elige una categoría compatible con el tipo de anuncio')
+      return
+    }
 
     const moderation = analyzeContent(form.title, form.desc)
     if (moderation.action === 'block') {
@@ -362,7 +371,10 @@ export default function Publicar() {
       const needsReview = moderation.action === 'review'
       const publishAllSwitzerland = !form.canton
       const finalPrice = getFormattedPrice() || null
-      const resolvedType = form.type || resolveTypeForCategory(form.intent, form.cat)
+      const resolvedSub = getAdSubOptions(form.cat, resolvedType)
+        .some(option => getAdSubLabel(option) === form.sub)
+        ? form.sub
+        : null
       const priceAmount = form.priceValue
         ? Number(String(form.priceValue).replace(',', '.'))
         : null
@@ -375,12 +387,12 @@ export default function Publicar() {
       const photoUrls = uniqueUrls([
         form.img_url,
         ...(supportsMultiplePhotos(form.cat) ? form.photo_urls : []),
-      ])
+      ]).slice(0, MAX_PUBLICATION_IMAGES)
 
       const payload = {
         ...(listingId ? { id: listingId } : {}),
         cat: form.cat,
-        sub: form.sub,
+        sub: resolvedSub,
         emoji: selectedAdEmoji,
         type: resolvedType,
         title: form.title,
@@ -421,7 +433,7 @@ export default function Publicar() {
           reason: 'Filtro automatico',
           excerpt: [form.title, form.desc].filter(Boolean).join('\n\n').slice(0, 700),
           matchedTerm: moderation.matchedTerm,
-          metadata: { cat: form.cat, sub: form.sub, type: resolvedType },
+          metadata: { cat: form.cat, sub: resolvedSub, type: resolvedType },
         })
       }
 
@@ -446,21 +458,33 @@ export default function Publicar() {
 
     try {
       if (supportsMultiplePhotos(form.cat)) {
+        const currentUrls = uniqueUrls([form.img_url, ...form.photo_urls])
+        const remainingSlots = MAX_PUBLICATION_IMAGES - currentUrls.length
+        if (remainingSlots <= 0) {
+          toast.error(`Puedes subir un máximo de ${MAX_PUBLICATION_IMAGES} imágenes por publicación.`)
+          return
+        }
+        const selectedFiles = Array.from(files).slice(0, remainingSlots)
         const uploadedUrls = await uploadPublicationImages({
-          files,
+          files:selectedFiles,
           userId: user?.id,
           folder:'ads'
         })
 
         setForm(prev => {
-          const nextUrls = uniqueUrls([...prev.photo_urls, ...uploadedUrls])
+          const nextUrls = uniqueUrls([prev.img_url, ...prev.photo_urls, ...uploadedUrls])
+            .slice(0, MAX_PUBLICATION_IMAGES)
           return {
             ...prev,
             img_url: prev.img_url || nextUrls[0] || '',
             photo_urls: nextUrls,
           }
         })
-        toast.success(`${uploadedUrls.length} foto(s) añadida(s)`)
+        toast.success(
+          files.length > selectedFiles.length
+            ? `${uploadedUrls.length} foto(s) añadida(s). Máximo ${MAX_PUBLICATION_IMAGES} por publicación.`
+            : `${uploadedUrls.length} foto(s) añadida(s)`
+        )
       } else {
         const publicUrl = await uploadPublicationImage({
           file:files[0],
@@ -558,13 +582,13 @@ export default function Publicar() {
       {/* Step 1 — Título + descripción + subcategoría opcional */}
       {step === 1 && (
         <>
-          {selectedCat?.sub?.length > 0 && (
+          {compatibleSubcategories.length > 0 && (
             <div style={{ marginBottom:20 }}>
               <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>
                 SUBCATEGORÍA (OPCIONAL)
               </p>
               <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                {selectedCat.sub.map(option => {
+                {compatibleSubcategories.map(option => {
                   const label = getAdSubLabel(option)
                   const emoji = option?.emoji
                   const active = form.sub === label
@@ -615,6 +639,7 @@ export default function Publicar() {
             previewUrls={supportsMultiplePhotos(form.cat) ? form.photo_urls : []}
             uploading={uploadingImage}
             multiple={supportsMultiplePhotos(form.cat)}
+            maxImages={MAX_PUBLICATION_IMAGES}
             onFilesSelected={handleImageUpload}
             onRemove={() => setForm(prev => ({ ...prev, img_url:'', photo_urls:[] }))}
             onRemoveAt={index => setForm(prev => {
@@ -623,7 +648,7 @@ export default function Publicar() {
               return { ...prev, img_url: prev.img_url === removedUrl ? nextUrls[0] || '' : prev.img_url, photo_urls: nextUrls }
             })}
             hint={supportsMultiplePhotos(form.cat)
-              ? 'Puedes añadir varias fotos para mostrar mejor el piso, habitación o producto.'
+              ? `Puedes añadir hasta ${MAX_PUBLICATION_IMAGES} fotos para mostrar mejor el piso, habitación o producto.`
               : 'Ideal para pisos, productos o servicios. En móvil puedes tomar la foto al momento.'}
           />
 

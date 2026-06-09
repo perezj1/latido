@@ -8,7 +8,7 @@ import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, Stic
 import LocationFields from '../components/LocationFields'
 import { calculateBusinessVerification } from '../lib/businessVerification'
 import { insertWithOptionalColumnsFallback } from '../lib/supabaseCompat'
-import { getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
+import { MAX_PUBLICATION_IMAGES, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
 import toast from 'react-hot-toast'
@@ -80,7 +80,10 @@ export default function RegistrarNegocio() {
     try {
       const needsReview = moderation.action === 'review'
       const servicesList = form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6)
-      const galleryPhotos = form.gallery.filter(url => url && url !== form.photo_url)
+      const galleryLimit = Math.max(MAX_PUBLICATION_IMAGES - (form.photo_url ? 1 : 0), 0)
+      const galleryPhotos = form.gallery
+        .filter(url => url && url !== form.photo_url)
+        .slice(0, galleryLimit)
       const existingRes = await supabase
         .from('providers')
         .select('id,name,city,canton,whatsapp,email,website')
@@ -178,10 +181,20 @@ export default function RegistrarNegocio() {
   const handleCoverUpload = async files => {
     const file = files?.[0]
     if (!file) return
+    const currentImages = new Set([form.photo_url, ...form.gallery].filter(Boolean))
+    if (!form.photo_url && currentImages.size >= MAX_PUBLICATION_IMAGES) {
+      toast.error(`Puedes subir un máximo de ${MAX_PUBLICATION_IMAGES} imágenes por publicación.`)
+      return
+    }
     setUploadingCover(true)
     try {
       const publicUrl = await uploadPublicationImage({ file, userId: user?.id, folder:'providers' })
-      s('photo_url', publicUrl)
+      setForm(prev => ({
+        ...prev,
+        photo_url:publicUrl,
+        gallery:Array.from(new Set(prev.gallery.filter(url => url && url !== publicUrl)))
+          .slice(0, MAX_PUBLICATION_IMAGES - 1),
+      }))
       toast.success('Portada subida')
     } catch (error) {
       toast.error(getStorageErrorMessage(error))
@@ -192,11 +205,26 @@ export default function RegistrarNegocio() {
 
   const handleGalleryUpload = async files => {
     if (!files?.length) return
+    const currentImages = new Set([form.photo_url, ...form.gallery].filter(Boolean))
+    const remainingSlots = MAX_PUBLICATION_IMAGES - currentImages.size
+    if (remainingSlots <= 0) {
+      toast.error(`Puedes subir un máximo de ${MAX_PUBLICATION_IMAGES} imágenes por publicación.`)
+      return
+    }
+    const selectedFiles = Array.from(files).slice(0, remainingSlots)
     setUploadingGallery(true)
     try {
-      const uploadedUrls = await uploadPublicationImages({ files, userId: user?.id, folder:'providers' })
-      setForm(prev => ({ ...prev, gallery:[...prev.gallery, ...uploadedUrls] }))
-      toast.success(`${uploadedUrls.length} foto(s) añadida(s)`)
+      const uploadedUrls = await uploadPublicationImages({ files:selectedFiles, userId: user?.id, folder:'providers' })
+      setForm(prev => ({
+        ...prev,
+        gallery:Array.from(new Set([...prev.gallery, ...uploadedUrls]))
+          .slice(0, Math.max(MAX_PUBLICATION_IMAGES - (prev.photo_url ? 1 : 0), 0)),
+      }))
+      toast.success(
+        files.length > selectedFiles.length
+          ? `${uploadedUrls.length} foto(s) añadida(s). Máximo ${MAX_PUBLICATION_IMAGES} por publicación.`
+          : `${uploadedUrls.length} foto(s) añadida(s)`
+      )
     } catch (error) {
       toast.error(getStorageErrorMessage(error))
     } finally {
@@ -271,9 +299,11 @@ export default function RegistrarNegocio() {
             previewUrls={form.gallery}
             uploading={uploadingGallery}
             multiple
+            maxImages={MAX_PUBLICATION_IMAGES}
+            currentImageCount={new Set([form.photo_url, ...form.gallery].filter(Boolean)).size}
             onFilesSelected={handleGalleryUpload}
             onRemoveAt={index => setForm(prev => ({ ...prev, gallery:prev.gallery.filter((_, itemIndex) => itemIndex !== index) }))}
-            hint="Puedes añadir varias fotos del local, platos, productos o ambiente."
+            hint={`Puedes añadir hasta ${MAX_PUBLICATION_IMAGES} imágenes en total, contando la portada.`}
           />
         </>
       )}

@@ -6,11 +6,11 @@ import { usePWA } from '../hooks/usePWA'
 import { useFavorites } from '../hooks/useFavorites'
 import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
 import { PUSH_STATUS_EVENT, getPushStatus, subscribeToPushNotifications, syncPushPreferences, unsubscribeFromPushNotifications } from '../lib/pushNotifications'
-import { uploadAvatar, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
+import { MAX_PUBLICATION_IMAGES, uploadAvatar, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
-import { AD_CATS, AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdDisplayCat, getAdDisplayEmoji, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
+import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOptions, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
 import toast from 'react-hot-toast'
 
@@ -23,7 +23,6 @@ const PUBLICATION_TABS = [
   { id:'community', label:'👥 Grupos' },
 ]
 
-const JOB_TYPES = ['Full-time', 'Part-time', 'Freelance', 'Prácticas']
 const MULTI_PHOTO_AD_CATS = new Set(['vivienda', 'venta'])
 
 const COMMUNITY_OPTIONS = COMMUNITY_CATS
@@ -416,10 +415,16 @@ function buildEditorForm(item) {
   if (item.kind === 'ad') {
     const photoUrls = getAdPhotoUrls(row)
     const parsedPrice = parseAdPrice(row)
+    const cat = normalizeAdCat(row.cat) || ''
+    const type = row.type || ''
+    const sub = getAdSubOptions(cat, type)
+      .some(option => getAdSubLabel(option) === row.sub)
+      ? row.sub
+      : ''
     return {
-      cat: normalizeAdCat(row.cat) || '',
-      sub: row.sub || '',
-      type: row.type || '',
+      cat,
+      sub,
+      type,
       title: row.title || '',
       desc: row.desc || '',
       img_url: photoUrls[0] || '',
@@ -1168,6 +1173,30 @@ export default function Perfil() {
   const openEditor = item => { setEditorItem(item); setEditorForm(buildEditorForm(item)) }
   const closeEditor = () => { setEditorItem(null); setEditorForm({}); setSaving(false); setUploadingEditorImage(false) }
   const updateEditorField = (key, value) => setEditorForm(prev => ({ ...prev, [key]: value }))
+  const updateEditorAdType = value => setEditorForm(prev => {
+    const compatibleCategories = getAdCategoriesForType(value)
+    const currentCat = normalizeAdCat(prev.cat)
+    const catStillFits = compatibleCategories.some(category => category.id === currentCat)
+    const nextCat = catStillFits
+      ? currentCat
+      : compatibleCategories.length === 1
+        ? compatibleCategories[0].id
+        : ''
+    const subStillFits = getAdSubOptions(nextCat, value)
+      .some(option => getAdSubLabel(option) === prev.sub)
+
+    return {
+      ...prev,
+      type:value,
+      cat:nextCat,
+      sub:subStillFits ? prev.sub : '',
+    }
+  })
+  const updateEditorAdCategory = value => setEditorForm(prev => ({
+    ...prev,
+    cat:value,
+    sub:'',
+  }))
   const handleEditPublication = item => {
     if (!item) return
     setActionItem(null)
@@ -1203,21 +1232,33 @@ export default function Perfil() {
     try {
       if (isAd) {
         if (allowsMultiple) {
+          const currentUrls = uniqueUrls([editorForm.img_url, ...(editorForm.photo_urls || [])])
+          const remainingSlots = MAX_PUBLICATION_IMAGES - currentUrls.length
+          if (remainingSlots <= 0) {
+            toast.error(`Puedes subir un máximo de ${MAX_PUBLICATION_IMAGES} imágenes por publicación.`)
+            return
+          }
+          const selectedFiles = Array.from(files).slice(0, remainingSlots)
           const uploadedUrls = await uploadPublicationImages({
-            files,
+            files:selectedFiles,
             userId: user?.id,
             folder:'ads',
           })
 
           setEditorForm(prev => {
-            const nextUrls = uniqueUrls([...(prev.photo_urls || []), ...uploadedUrls])
+            const nextUrls = uniqueUrls([prev.img_url, ...(prev.photo_urls || []), ...uploadedUrls])
+              .slice(0, MAX_PUBLICATION_IMAGES)
             return {
               ...prev,
               img_url: prev.img_url || nextUrls[0] || '',
               photo_urls: nextUrls,
             }
           })
-          toast.success(`${uploadedUrls.length} foto(s) añadida(s)`)
+          toast.success(
+            files.length > selectedFiles.length
+              ? `${uploadedUrls.length} foto(s) añadida(s). Máximo ${MAX_PUBLICATION_IMAGES} por publicación.`
+              : `${uploadedUrls.length} foto(s) añadida(s)`
+          )
         } else {
           const publicUrl = await uploadPublicationImage({
             file: files[0],
@@ -1307,18 +1348,27 @@ export default function Perfil() {
     let payload = {}
 
     if (item.kind === 'ad') {
+      const normalizedCat = normalizeAdCat(editorForm.cat)
+      const categoryIsCompatible = getAdCategoriesForType(editorForm.type)
+        .some(category => category.id === normalizedCat)
+      if (!categoryIsCompatible) {
+        toast.error('Elige una categoría compatible con el tipo de anuncio')
+        return
+      }
+      const compatibleSub = getAdSubOptions(normalizedCat, editorForm.type)
+        .some(option => getAdSubLabel(option) === editorForm.sub)
       const allowsMultiplePhotos = supportsMultipleAdPhotos(editorForm.cat)
       const photoUrls = uniqueUrls([
         editorForm.img_url,
         ...(allowsMultiplePhotos ? (editorForm.photo_urls || []) : []),
-      ])
+      ]).slice(0, MAX_PUBLICATION_IMAGES)
       const priceValue = String(editorForm.priceValue || '').trim()
       const priceAmount = priceValue
         ? Number(priceValue.replace(',', '.'))
         : null
       const finalPrice = formatAdPrice(priceValue, editorForm.priceUnit)
       payload = {
-        cat: normalizeAdCat(editorForm.cat) || null, sub: editorForm.sub?.trim() || null,
+        cat: normalizedCat || null, sub: compatibleSub ? editorForm.sub?.trim() || null : null,
         type: editorForm.type || null, title: editorForm.title?.trim(),
         desc: editorForm.desc?.trim() || null,
         price: finalPrice || null,
@@ -2157,20 +2207,30 @@ export default function Perfil() {
       <Modal show={!!editorItem} onClose={closeEditor} title={editorItem ? `Editar ${KIND_META[editorItem.kind].label.toLowerCase()}` : 'Editar'}>
         {editorItem?.kind === 'ad' && (
           <>
-            <Select label="Categoría" value={editorForm.cat || ''} onChange={event => updateEditorField('cat', event.target.value)}>
-              <option value="">Seleccionar...</option>
-              {AD_CATS.map(item => <option key={item.id} value={item.id}>{item.emoji} {item.label}</option>)}
-            </Select>
-            <Select label="Tipo" value={editorForm.type || ''} onChange={event => updateEditorField('type', event.target.value)}>
+            <Select label="Tipo" value={editorForm.type || ''} onChange={event => updateEditorAdType(event.target.value)}>
               <option value="">Seleccionar...</option>
               {AD_TYPES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
             </Select>
+            <Select label="Categoría" value={editorForm.cat || ''} onChange={event => updateEditorAdCategory(event.target.value)} disabled={!editorForm.type}>
+              <option value="">Seleccionar...</option>
+              {getAdCategoriesForType(editorForm.type).map(item => <option key={item.id} value={item.id}>{item.emoji} {item.label}</option>)}
+            </Select>
+            {getAdSubOptions(editorForm.cat, editorForm.type).length > 0 && (
+              <Select label="Subcategoría (opcional)" value={editorForm.sub || ''} onChange={event => updateEditorField('sub', event.target.value)}>
+                <option value="">Sin subcategoría</option>
+                {getAdSubOptions(editorForm.cat, editorForm.type).map(option => {
+                  const label = getAdSubLabel(option)
+                  return <option key={label} value={label}>{option?.emoji ? `${option.emoji} ` : ''}{label}</option>
+                })}
+              </Select>
+            )}
             <ImageUploadField
               label="Imágenes del anuncio"
               previewUrl={editorForm.img_url || ''}
               previewUrls={supportsMultipleAdPhotos(editorForm.cat) ? (editorForm.photo_urls || []) : []}
               uploading={uploadingEditorImage}
               multiple={supportsMultipleAdPhotos(editorForm.cat)}
+              maxImages={MAX_PUBLICATION_IMAGES}
               onFilesSelected={handleEditorImageUpload}
               onRemove={() => setEditorForm(prev => ({ ...prev, img_url:'', photo_urls:[] }))}
               onRemoveAt={index => setEditorForm(prev => {
@@ -2184,7 +2244,7 @@ export default function Perfil() {
               })}
               onReplaceAt={handleEditorImageReplace}
               hint={supportsMultipleAdPhotos(editorForm.cat)
-                ? 'Borra una foto con X, sube otra para cambiarla o añade más imágenes.'
+                ? `Borra una foto con X, cámbiala o añade hasta ${MAX_PUBLICATION_IMAGES} imágenes.`
                 : 'Sube una nueva imagen para cambiar la actual, o bórrala con X.'}
             />
             <Input label="Título" value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
@@ -2218,12 +2278,21 @@ export default function Perfil() {
               onReplaceAt={handleEditorImageReplace}
               hint={EDITOR_IMAGE_CONFIG.job.hint}
             />
-            <Input label="Sector" value={editorForm.sector || ''} onChange={event => updateEditorField('sector', event.target.value)} />
-            <Input label="Título del puesto" value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
-            <Input label="Empresa" value={editorForm.company || ''} onChange={event => updateEditorField('company', event.target.value)} />
-            <Select label="Tipo de contrato" value={editorForm.type || ''} onChange={event => updateEditorField('type', event.target.value)}>
+            <Select label={editorForm.jobIntent === 'busca' ? 'Sector en el que buscas trabajo' : 'Sector de la oferta'} value={editorForm.sector || ''} onChange={event => updateEditorField('sector', event.target.value)}>
               <option value="">Seleccionar...</option>
-              {JOB_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+              {editorForm.sector && !JOB_SECTORS.some(sector => sector.id === editorForm.sector) && (
+                <option value={editorForm.sector}>{editorForm.sector}</option>
+              )}
+              {JOB_SECTORS.map(sector => <option key={sector.id} value={sector.id}>{sector.emoji} {sector.label}</option>)}
+            </Select>
+            <Input label={editorForm.jobIntent === 'busca' ? 'Puesto o trabajo que buscas' : 'Título del puesto'} value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
+            <Input label={editorForm.jobIntent === 'busca' ? 'Nombre o perfil profesional (opcional)' : 'Empresa o empleador (opcional)'} value={editorForm.company || ''} onChange={event => updateEditorField('company', event.target.value)} />
+            <Select label={editorForm.jobIntent === 'busca' ? 'Tipo de contrato o disponibilidad' : 'Tipo de contrato'} value={editorForm.type || ''} onChange={event => updateEditorField('type', event.target.value)}>
+              <option value="">Seleccionar...</option>
+              {editorForm.type && !JOB_TYPES.some(type => type.id === editorForm.type) && (
+                <option value={editorForm.type}>{editorForm.type}</option>
+              )}
+              {JOB_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
             </Select>
             <div className="grid-2" style={{ gap:10 }}>
               <Input label="Ciudad" value={editorForm.city || ''} onChange={event => updateEditorField('city', event.target.value)} />

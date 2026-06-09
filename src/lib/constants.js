@@ -151,7 +151,21 @@ export const CARE_SUBCATS = [
 ]
 
 export const AD_CATS = [
-  { id:'vivienda',   emoji:'🏠', label:'Vivienda',   desc:'Pisos, habitaciones, sublets y compañeros', types:['busca','ofrece'],      sub:['Se busca piso','Se busca habitación','Se ofrece piso','Se ofrece habitación','Compañero/a piso','Sublet temporal'] },
+  {
+    id:'vivienda',
+    emoji:'🏠',
+    label:'Vivienda',
+    desc:'Pisos, habitaciones, sublets y compañeros',
+    types:['busca','ofrece'],
+    sub:[
+      { label:'Se busca piso', types:['busca'] },
+      { label:'Se busca habitación', types:['busca'] },
+      { label:'Se ofrece piso', types:['ofrece'] },
+      { label:'Se ofrece habitación', types:['ofrece'] },
+      { label:'Compañero/a piso', types:['busca','ofrece'] },
+      { label:'Sublet temporal', types:['busca','ofrece'] },
+    ],
+  },
   { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Ayuda práctica: limpieza, clases, mudanzas y reparaciones', types:['busca','ofrece'], sub:SERVICE_SUBCATS },
   { id:'cuidados',   emoji:'❤️', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia personal', types:['busca','ofrece'], sub:CARE_SUBCATS },
   { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Objetos para comprar, vender o regalar', types:['busca','vende','regala'], sub:['Electrónica','Ropa','Muebles','Vehículos','Comida','Otro'] },
@@ -171,6 +185,17 @@ export function getAdSubLabel(sub) {
   return typeof sub === 'string' ? sub : sub?.label || ''
 }
 
+export function getAdCategoriesForType(type='') {
+  if (!type) return AD_CATS.filter(item => item.id !== 'empleo')
+  return AD_CATS.filter(item => item.id !== 'empleo' && item.types?.includes(type))
+}
+
+export function getAdSubOptions(cat='', type='') {
+  const options = getAdCat(cat)?.sub || []
+  if (!type) return options
+  return options.filter(item => !Array.isArray(item?.types) || item.types.includes(type))
+}
+
 function normalizeSubLabel(value='') {
   return String(value)
     .trim()
@@ -179,11 +204,11 @@ function normalizeSubLabel(value='') {
     .toLowerCase()
 }
 
-export function getAdSubOption(cat='', sub='') {
+export function getAdSubOption(cat='', sub='', type='') {
   const normalizedSub = normalizeSubLabel(sub)
   if (!normalizedSub) return null
 
-  return getAdCat(cat)?.sub?.find(item => {
+  return getAdSubOptions(cat, type).find(item => {
     const labels = [getAdSubLabel(item), ...(item?.aliases || [])]
     return labels.some(label => normalizeSubLabel(label) === normalizedSub)
   }) || null
@@ -215,6 +240,28 @@ export const AD_TYPES = [
 export const JOB_INTENTS = [
   { id:'ofrece', emoji:'💼', label:'Ofrezco empleo', desc:'Publicas una vacante, puesto o encargo de trabajo' },
   { id:'busca',  emoji:'🔎', label:'Busco empleo',   desc:'Publicas tu perfil o disponibilidad para trabajar' },
+]
+
+export const JOB_SECTORS = [
+  { id:'hosteleria',     emoji:'👨‍🍳', label:'Hostelería & Cocina',   sub:'Camarero/a, cocinero/a, barista, ayudante de cocina…' },
+  { id:'cuidados',       emoji:'❤️',   label:'Cuidados & Au pair',     sub:'Niñero/a, au pair, cuidador/a de personas mayores…' },
+  { id:'limpieza',       emoji:'🧹',   label:'Limpieza & Servicios',   sub:'Limpieza doméstica, oficinas, hoteles, conserje…' },
+  { id:'tecnologia',     emoji:'💻',   label:'Tecnología & IT',        sub:'Desarrollo, soporte técnico, sistemas, diseño digital…' },
+  { id:'estetica',       emoji:'💇',   label:'Estética & Belleza',     sub:'Peluquería, barbería, uñas, maquillaje, estética…' },
+  { id:'construccion',   emoji:'🏗️',  label:'Construcción',           sub:'Albañil, electricista, fontanero, pintor, carpintero…' },
+  { id:'transporte',     emoji:'🚚',   label:'Transporte & Logística', sub:'Conductor/a, repartidor/a, almacén, mensajería…' },
+  { id:'administracion', emoji:'📋',   label:'Administración',         sub:'Recepcionista, asistente, contabilidad, oficina…' },
+  { id:'educacion',      emoji:'🎓',   label:'Educación & Clases',     sub:'Profesor/a, tutor/a, clases particulares, monitor/a…' },
+  { id:'servicios',      emoji:'🔧',   label:'Servicios & Técnico',    sub:'Reparaciones, mantenimiento, instalaciones, jardinería…' },
+  { id:'salud',          emoji:'🏥',   label:'Salud & Enfermería',     sub:'Enfermero/a, auxiliar, farmacia, fisioterapia…' },
+  { id:'ventas',         emoji:'🛒',   label:'Comercio & Ventas',      sub:'Dependiente/a, cajero/a, atención al cliente, tienda…' },
+]
+
+export const JOB_TYPES = [
+  { id:'Full-time', emoji:'🕐', label:'Full-time', desc:'Jornada completa', seekingDesc:'Disponibilidad para jornada completa' },
+  { id:'Part-time', emoji:'🕔', label:'Part-time', desc:'Media jornada', seekingDesc:'Disponibilidad para media jornada' },
+  { id:'Freelance', emoji:'💡', label:'Freelance', desc:'Por proyecto o autónomo', seekingDesc:'Disponibilidad por proyecto o como autónomo' },
+  { id:'Prácticas', emoji:'🎓', label:'Prácticas', desc:'Internship o aprendizaje', seekingDesc:'Buscas prácticas o aprendizaje' },
 ]
 
 export function getJobIntentId(job={}) {
