@@ -1,4 +1,5 @@
 import PartnerServicesPromo from './PartnerServicesPromo'
+import MiraPartnerPromo from './MiraPartnerPromo'
 
 const PUBLIC_PARTNERS = [
   {
@@ -10,6 +11,10 @@ const PUBLIC_PARTNERS = [
         variant="public-featured"
       />
     ),
+  },
+  {
+    id:'mira',
+    render:() => <MiraPartnerPromo key="mira" variant="public-featured" />,
   },
 ]
 

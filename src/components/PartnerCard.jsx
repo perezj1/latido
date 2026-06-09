@@ -23,10 +23,14 @@ export default function PartnerCard({
     >
       <div className="partner-card-brand" aria-label={brand.partnerName}>
         <span className="partner-card-brand-unit">
-          <span className="partner-card-logo">
+          <span className={`partner-card-logo${brand.logoWide ? ' partner-card-logo--wide' : ''}`}>
             <img src={brand.partnerLogo} alt="" />
           </span>
-          <strong>{brand.partnerName}</strong>
+          {brand.showName !== false && (
+            <strong className={brand.tagline ? 'partner-card-brand-tagline' : ''}>
+              {brand.tagline || brand.partnerName}
+            </strong>
+          )}
         </span>
       </div>
 
@@ -72,7 +76,7 @@ export default function PartnerCard({
           rel="noopener noreferrer sponsored"
           onClick={onCtaClick}
         >
-          {cta.label} <span aria-hidden="true">↗</span>
+          {cta.label} <span aria-hidden="true">→</span>
         </a>
       ) : (
         <Link className="partner-card-cta" to={cta.href} onClick={onCtaClick}>

@@ -1,4 +1,5 @@
 import PartnerServicesPromo from './PartnerServicesPromo'
+import MiraPartnerPromo from './MiraPartnerPromo'
 
 const HOME_PARTNERS = [
   {
@@ -10,6 +11,10 @@ const HOME_PARTNERS = [
         variant="partner-card"
       />
     ),
+  },
+  {
+    id:'mira',
+    render:() => <MiraPartnerPromo key="mira" variant="partner-card" />,
   },
 ]
 

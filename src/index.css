@@ -608,6 +608,14 @@
   text-overflow: ellipsis;
 }
 
+.partner-card-brand-tagline {
+  max-width: 230px;
+  overflow: visible !important;
+  line-height: 1.2;
+  white-space: normal;
+  text-wrap: balance;
+}
+
 .partner-card-logo {
   display: grid;
   place-items: center;
@@ -625,6 +633,22 @@
   width: 29px;
   height: 29px;
   object-fit: contain;
+}
+
+.partner-card-logo--wide {
+  width: 94px;
+  flex-basis: 94px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.partner-card-logo--wide img {
+  width: 88px;
+  height: 32px;
+}
+
+.partner-card--mira .partner-card-brand {
+  border-bottom-color: #F3DCE2;
 }
 
 .partner-card-copy h3 {
@@ -710,6 +734,167 @@
 .partner-card-cta:hover {
   transform: translateY(-1px);
   filter: brightness(0.92);
+}
+
+.mira-contact-page {
+  min-height: calc(100vh - 120px);
+  box-sizing: border-box;
+  padding: 36px 16px;
+  background:
+    radial-gradient(circle at 12% 4%, rgba(131, 216, 243, .22), transparent 28%),
+    radial-gradient(circle at 92% 16%, rgba(232, 68, 103, .12), transparent 25%),
+    #F7FAFF;
+}
+
+.mira-contact-card {
+  width: min(620px, 100%);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 28px;
+  background: #fff;
+  border: 1px solid #DCE6F2;
+  border-radius: 26px;
+  box-shadow: 0 24px 60px rgba(30, 64, 175, .12);
+}
+
+.mira-contact-brand {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.mira-contact-brand img {
+  display: block;
+  width: 148px;
+  height: auto;
+}
+
+.mira-contact-kicker {
+  margin: 0 0 8px;
+  color: #D7355A;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.mira-contact-card h1 {
+  margin: 0 0 12px;
+  color: #102A5C;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: clamp(24px, 5vw, 34px);
+  font-weight: 900;
+  line-height: 1.18;
+  letter-spacing: -.035em;
+}
+
+.mira-contact-description {
+  margin: 0 0 22px;
+  color: #52637E;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.mira-contact-person {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #F0FAFD, #FFF5F7);
+  border: 1px solid #DCEAF0;
+  border-radius: 16px;
+  font-family: 'Poppins', system-ui, sans-serif;
+}
+
+.mira-contact-person span {
+  color: #718096;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.mira-contact-person strong {
+  color: #172033;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.mira-contact-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.mira-contact-action {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  color: #172033;
+  background: #F8FAFF;
+  border: 1px solid #DCE6F2;
+  border-radius: 16px;
+  font-family: 'Poppins', system-ui, sans-serif;
+  text-decoration: none;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.mira-contact-action:hover {
+  transform: translateY(-2px);
+  border-color: #F0A5B6;
+  box-shadow: 0 12px 26px rgba(232, 68, 103, .1);
+}
+
+.mira-contact-action-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: #D7355A;
+  background: #FFF1F4;
+  border-radius: 13px;
+  font-size: 18px;
+}
+
+.mira-contact-action small,
+.mira-contact-action strong {
+  display: block;
+}
+
+.mira-contact-action small {
+  margin-bottom: 2px;
+  color: #718096;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.mira-contact-action strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mira-contact-action-arrow {
+  color: #D7355A;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.mira-contact-back {
+  display: inline-flex;
+  margin-top: 18px;
+  color: #2563EB;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
 }
 
 .partner-services-contextual {
@@ -1045,6 +1230,11 @@
     font-size: 12px;
   }
 
+  .partner-card-brand-tagline {
+    max-width: 190px;
+    font-size: 12px !important;
+  }
+
   .partner-card-logo {
     width: 32px;
     height: 32px;
@@ -1053,6 +1243,16 @@
 
   .partner-card-logo img {
     width: 27px;
+    height: 27px;
+  }
+
+  .partner-card-logo--wide {
+    width: 72px;
+    flex-basis: 72px;
+  }
+
+  .partner-card-logo--wide img {
+    width: 68px;
     height: 27px;
   }
 
@@ -1093,6 +1293,33 @@
     grid-row: auto;
     min-height: 34px;
     font-size: 11.5px;
+  }
+
+  .mira-contact-page {
+    padding: 18px 12px 32px;
+  }
+
+  .mira-contact-card {
+    padding: 20px 16px;
+    border-radius: 22px;
+  }
+
+  .mira-contact-brand {
+    min-height: 44px;
+    margin-bottom: 17px;
+    padding-bottom: 14px;
+  }
+
+  .mira-contact-brand img {
+    width: 126px;
+  }
+
+  .mira-contact-card h1 {
+    font-size: 25px;
+  }
+
+  .mira-contact-description {
+    font-size: 12px;
   }
 
   .partner-services-contextual {

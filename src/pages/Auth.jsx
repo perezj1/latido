@@ -66,7 +66,7 @@ export default function Auth() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const nextPath = getSafeNextPath(searchParams.get('next'))
-  const isPartnerAccess = nextPath.startsWith('/servicios-suiza')
+  const isPartnerAccess = nextPath.startsWith('/servicios-suiza') || nextPath.startsWith('/colaboradores/')
   const [mode, setMode] = useState('register')
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)

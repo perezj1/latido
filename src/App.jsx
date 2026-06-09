@@ -32,6 +32,7 @@ const Legal = lazy(() => import('./pages/Legal'))
 const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Admin = lazy(() => import('./pages/Admin'))
+const PartnerContact = lazy(() => import('./pages/PartnerContact'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
@@ -503,6 +504,7 @@ function AppShell() {
             <Route path="/registrar-comunidad" element={<ProtectedRoute><RegistrarComunidad /></ProtectedRoute>} />
             <Route path="/publicar-empleo" element={<ProtectedRoute><PublicarEmpleo /></ProtectedRoute>} />
             <Route path="/mensajes" element={<ProtectedRoute><Mensajes /></ProtectedRoute>} />
+            <Route path="/colaboradores/mira" element={<ProtectedRoute><PartnerContact /></ProtectedRoute>} />
             <Route path="/admin-latido" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/impressum"  element={<Legal />} />
