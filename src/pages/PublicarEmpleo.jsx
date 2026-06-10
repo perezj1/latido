@@ -211,13 +211,9 @@ export default function PublicarEmpleo() {
         await handleSubmit()
         return
       }
-      if (!status.supported) {
-        toast.error('Este dispositivo no permite notificaciones push. Actívalas desde un navegador compatible para publicar.')
-        return
-      }
       setPushModalOpen(true)
-    } catch (error) {
-      toast.error(error?.message || 'No se pudo comprobar el estado de las notificaciones')
+    } catch {
+      setPushModalOpen(true)
     }
   }
 

@@ -38,6 +38,18 @@ export default function PostPublishPushModal({
 
   if (!open || typeof document === 'undefined') return null
 
+  const publish = async () => {
+    setPhase('publishing')
+
+    try {
+      await onActivated?.()
+      onComplete?.()
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo publicar')
+      setPhase('')
+    }
+  }
+
   const activateAndPublish = async () => {
     if (phase) return
     setPhase('activating')
@@ -50,28 +62,18 @@ export default function PostPublishPushModal({
       await subscribeToPushNotifications({ user, settings, userCanton })
       localStorage.setItem(PUSH_SETTINGS_KEY, JSON.stringify(settings))
       toast.success('Notificaciones activadas')
-      setPhase('publishing')
-      await onActivated?.()
-      onComplete?.()
-    } catch (error) {
+    } catch {
       const status = await getPushStatus().catch(() => null)
       if (status?.permission) setPermission(status.permission)
-      toast.error(error?.message || 'No se pudieron activar las notificaciones')
-      setPhase('')
+      toast.error('No se activaron las notificaciones. Publicando igualmente.')
     }
+
+    await publish()
   }
 
   const publishWithoutNotifications = async () => {
     if (phase) return
-    setPhase('publishing')
-
-    try {
-      await onActivated?.()
-      onComplete?.()
-    } catch (error) {
-      toast.error(error?.message || 'No se pudo publicar')
-      setPhase('')
-    }
+    await publish()
   }
 
   return createPortal(
@@ -118,7 +120,15 @@ export default function PostPublishPushModal({
         {permission === 'denied' && (
           <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:13, padding:'10px 12px', marginBottom:14 }}>
             <p style={{ fontFamily:PP, fontSize:11, color:'#9A3412', lineHeight:1.5, margin:0 }}>
-              Las notificaciones están bloqueadas en este navegador. Permítelas en los ajustes del sitio y vuelve a intentarlo.
+              Las notificaciones están bloqueadas. Puedes publicar igualmente con “Ahora no”.
+            </p>
+          </div>
+        )}
+
+        {permission === 'unsupported' && (
+          <div style={{ background:'#F8FAFC', border:`1px solid ${C.border}`, borderRadius:13, padding:'10px 12px', marginBottom:14 }}>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.5, margin:0 }}>
+              Este navegador no permite notificaciones push, pero puedes publicar igualmente.
             </p>
           </div>
         )}
