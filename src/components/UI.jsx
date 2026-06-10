@@ -490,6 +490,58 @@ export function InfoBanner({ emoji, title, text, bg=C.warnLight, border=C.warnMi
   )
 }
 
+export function SearchBeforePublishNotice({ kind='ad', onSearch }) {
+  const isJob = kind === 'job'
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fade-in"
+      style={{
+        background:'#EFF6FF',
+        border:'1.5px solid #93C5FD',
+        borderRadius:16,
+        padding:'14px 15px',
+        boxShadow:'0 6px 18px rgba(37,99,235,0.08)',
+      }}
+    >
+      <div style={{ display:'flex', gap:11, alignItems:'flex-start' }}>
+        <span style={{ fontSize:22, lineHeight:1, flexShrink:0 }}>🔎</span>
+        <div style={{ minWidth:0 }}>
+          <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:'#1E3A8A', margin:'0 0 4px' }}>
+            Busca primero en Latido
+          </p>
+          <p style={{ fontFamily:PP, fontSize:11.5, color:'#1E40AF', margin:0, lineHeight:1.55 }}>
+            Antes de {isJob ? 'publicar una búsqueda de empleo' : 'crear tu anuncio'}, asegúrate de haber buscado en Latido. Puede que encuentres lo que necesitas sin tener que publicar.
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onSearch}
+        style={{
+          width:'100%',
+          marginTop:11,
+          border:'none',
+          borderRadius:11,
+          padding:'9px 12px',
+          background:C.primary,
+          color:'#fff',
+          fontFamily:PP,
+          fontWeight:800,
+          fontSize:11.5,
+          cursor:'pointer',
+        }}
+      >
+        {isJob ? 'Ver ofertas de empleo disponibles →' : 'Buscar antes de publicar →'}
+      </button>
+      <p style={{ fontFamily:PP, fontSize:10, color:'#64748B', margin:'7px 0 0', textAlign:'center' }}>
+        Si no encuentras una opción adecuada, puedes continuar publicando aquí.
+      </p>
+    </div>
+  )
+}
+
 // ── Empty state ────────────────────────────────────────────────
 export function EmptyState({ emoji='😕', title, sub, action, onAction }) {
   return (

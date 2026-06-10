@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, StickyFormActions } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, SearchBeforePublishNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
@@ -225,6 +225,15 @@ export default function PublicarEmpleo() {
               </button>
             ))}
           </div>
+
+          {isSeekingJob && (
+            <div style={{ marginBottom:18 }}>
+              <SearchBeforePublishNotice
+                kind="job"
+                onSearch={() => navigate('/tablon?cat=empleo&jobIntent=ofrece')}
+              />
+            </div>
+          )}
 
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>
             {isSeekingJob ? 'SECTOR EN EL QUE BUSCAS TRABAJO' : 'SECTOR DE LA OFERTA'}

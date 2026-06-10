@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, normalizeAdCat } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, StickyFormActions } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, SearchBeforePublishNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { MAX_PUBLICATION_IMAGES, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
@@ -147,6 +147,17 @@ export default function Publicar() {
   const selectedIntent = PUBLISH_INTENTS.find(intent => intent.id === form.intent)
   const compatibleCats = getCompatibleCategories(form.intent)
   const allSwitzerland = !form.canton
+
+  const searchBeforePublishing = () => {
+    if (!form.cat) {
+      navigate('/tablon')
+      return
+    }
+
+    const params = new URLSearchParams({ cat:form.cat })
+    params.set('type', form.cat === 'venta' ? 'vende' : 'ofrece')
+    navigate(`/tablon?${params.toString()}`)
+  }
 
   const handleCantonChange = value => {
     setForm(prev => ({
@@ -540,6 +551,13 @@ export default function Publicar() {
               </button>
             ))}
           </div>
+
+          {form.intent === 'busca' && (
+            <SearchBeforePublishNotice
+              kind="ad"
+              onSearch={searchBeforePublishing}
+            />
+          )}
 
           {form.intent && (
             <div>
