@@ -46,6 +46,11 @@ const OPTIONAL_PROVIDER_VERIFICATION_COLUMNS = new Set([
 ])
 const ADMIN_QUERY_PAGE_SIZE = 500
 const ADMIN_LIST_PAGE_SIZE = 40
+const PARTNER_METRICS_EXCLUDED_EMAILS = new Set(['test@g.com'])
+
+function isPartnerMetricsExcludedEmail(email) {
+  return PARTNER_METRICS_EXCLUDED_EMAILS.has(String(email || '').trim().toLowerCase())
+}
 
 async function fetchAllAdminRows({
   table,
@@ -942,6 +947,12 @@ export default function Admin() {
     () => new Set(users.filter(profile => isAdminEmail(profile.email)).map(profile => profile.id)),
     [users]
   )
+  const partnerMetricsExcludedUserIds = useMemo(
+    () => new Set(users
+      .filter(profile => isAdminEmail(profile.email) || isPartnerMetricsExcludedEmail(profile.email))
+      .map(profile => profile.id)),
+    [users]
+  )
 
   const stats = useMemo(() => ({
     reports: reports.filter(r => r.status === 'pending').length,
@@ -1020,7 +1031,7 @@ export default function Admin() {
     () => analyticsEvents
       .filter(event =>
         String(event.event_type || '').startsWith('partner_')
-        && !adminUserIds.has(event.user_id)
+        && !partnerMetricsExcludedUserIds.has(event.user_id)
       )
       .map(event => {
         const metadata = readMetadata(event.metadata)
@@ -1031,7 +1042,7 @@ export default function Admin() {
         }
       })
       .filter(event => event.partnerAnalyticsId),
-    [adminUserIds, analyticsEvents]
+    [analyticsEvents, partnerMetricsExcludedUserIds]
   )
   const selectedPartner = PARTNER_ANALYTICS_PARTNERS.find(partner => partner.id === selectedPartnerId)
     || PARTNER_ANALYTICS_PARTNERS[0]
@@ -2609,7 +2620,7 @@ export default function Admin() {
           <Card style={{ padding: 16, background: '#fff' }}>
             <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 4px' }}>Qué significa cada número</p>
             <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.6, margin: 0 }}>
-              “Total enviado” cuenta cada apertura de la URL LIVE con <strong>utm_source=latido</strong>. “Cuentas enviadas” agrupa por perfil y fecha: tres clics de una misma cuenta hoy cuentan como una cuenta; si vuelve mañana, genera una nueva fila para mañana. “Landing” y “App” son partes del total de aperturas. La cuenta admin jose13hue@gmail.com queda excluida.
+              “Total enviado” cuenta cada apertura de la URL LIVE con <strong>utm_source=latido</strong>. “Cuentas enviadas” agrupa por perfil y fecha: tres clics de una misma cuenta hoy cuentan como una cuenta; si vuelve mañana, genera una nueva fila para mañana. “Landing” y “App” son partes del total de aperturas. Las cuentas admin y test@g.com quedan excluidas.
             </p>
           </Card>
         </div>
