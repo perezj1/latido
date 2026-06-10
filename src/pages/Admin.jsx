@@ -47,6 +47,21 @@ const OPTIONAL_PROVIDER_VERIFICATION_COLUMNS = new Set([
 const ADMIN_QUERY_PAGE_SIZE = 500
 const ADMIN_LIST_PAGE_SIZE = 40
 const PARTNER_METRICS_EXCLUDED_EMAILS = new Set(['test@g.com'])
+const ADMIN_TAB_DATA_GROUPS = {
+  users: ['users'],
+  analytics: ['users', 'analytics'],
+  partners: ['users', 'analytics'],
+  live: ['users', 'analytics'],
+  overview: ['users', 'reports', 'moderation', 'content', 'businesses', 'analytics', 'messages'],
+  businessVerification: ['businesses'],
+  content: ['content'],
+  reports: ['users', 'reports'],
+  moderation: ['users', 'moderation'],
+}
+
+function getAdminTabDataGroups(tab) {
+  return ADMIN_TAB_DATA_GROUPS[tab] || ['users']
+}
 
 function isPartnerMetricsExcludedEmail(email) {
   return PARTNER_METRICS_EXCLUDED_EMAILS.has(String(email || '').trim().toLowerCase())
@@ -61,12 +76,11 @@ async function fetchAllAdminRows({
 }) {
   const rows = []
   let offset = 0
-  let total = null
 
-  while (total === null || rows.length < total) {
+  while (true) {
     let query = supabase
       .from(table)
-      .select(columns, { count: 'exact' })
+      .select(columns)
 
     if (since) query = query.gte(orderColumn, since)
     query = query
@@ -75,17 +89,16 @@ async function fetchAllAdminRows({
       .range(offset, offset + ADMIN_QUERY_PAGE_SIZE - 1)
 
     const response = await query
-    if (response.error) return { data: rows, count: total, error: response.error }
+    if (response.error) return { data: rows, count: rows.length, error: response.error }
 
     const page = response.data || []
     rows.push(...page)
-    total = response.count ?? total
 
-    if (!page.length || (total === null && page.length < ADMIN_QUERY_PAGE_SIZE)) break
+    if (page.length < ADMIN_QUERY_PAGE_SIZE) break
     offset += page.length
   }
 
-  return { data: rows, count: total ?? rows.length, error: null }
+  return { data: rows, count: rows.length, error: null }
 }
 
 async function fetchAdminRowsByIds(table, columns, ids) {
@@ -102,6 +115,56 @@ async function fetchAdminRowsByIds(table, columns, ids) {
     rows.push(...(response.data || []))
   }
   return { data: rows, error: null }
+}
+
+async function fetchAdminContentForItems(items = []) {
+  const idsFor = type => items
+    .filter(item => type.includes(item.content_type))
+    .map(item => item.content_id)
+
+  const [
+    listings,
+    jobs,
+    messages,
+    profiles,
+    events,
+    providers,
+    communities,
+  ] = await Promise.all([
+    fetchAdminRowsByIds('listings', 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at', idsFor(['listing'])),
+    fetchAdminRowsByIds('jobs', 'id,title,company,desc,sector,active,user_id,canton,city,created_at', idsFor(['job'])),
+    fetchAdminRowsByIds('messages', 'id,conversation_id,sender_id,body,created_at', idsFor(['message'])),
+    fetchAdminRowsByIds('profiles', 'id,name,email,canton,banned,banned_reason,created_at,last_seen_at', idsFor(['profile'])),
+    fetchAdminRowsByIds('events', '*', idsFor(['event'])),
+    fetchAdminRowsByIds('providers', '*', idsFor(['provider', 'business'])),
+    fetchAdminRowsByIds('communities', '*', idsFor(['community'])),
+  ])
+
+  const entries = []
+  ;(listings.data || []).forEach(item => entries.push([`listing:${item.id}`, item]))
+  ;(jobs.data || []).forEach(item => entries.push([`job:${item.id}`, item]))
+  ;(messages.data || []).forEach(item => entries.push([`message:${item.id}`, item]))
+  ;(profiles.data || []).forEach(item => entries.push([`profile:${item.id}`, item]))
+  ;(events.data || []).forEach(item => entries.push([`event:${item.id}`, item]))
+  ;(providers.data || []).forEach(item => {
+    entries.push([`provider:${item.id}`, item])
+    entries.push([`business:${item.id}`, item])
+  })
+  ;(communities.data || []).forEach(item => entries.push([`community:${item.id}`, item]))
+
+  const errors = [
+    ['anuncios relacionados', listings],
+    ['empleos relacionados', jobs],
+    ['mensajes relacionados', messages],
+    ['perfiles relacionados', profiles],
+    ['eventos relacionados', events],
+    ['negocios relacionados', providers],
+    ['comunidades relacionadas', communities],
+  ]
+    .filter(([, response]) => response.error)
+    .map(([label, response]) => `${label}: ${response.error.message}`)
+
+  return { entries, errors }
 }
 
 function countUniqueByDay(items, days, identityFn) {
@@ -900,10 +963,13 @@ async function logAdminAction(action) {
 
 export default function Admin() {
   const { user } = useAuth()
-  const loadRequestRef = useRef(0)
+  const activeLoadCountRef = useRef(0)
+  const loadedDataGroupsRef = useRef(new Set())
+  const loadingDataGroupsRef = useRef(new Set())
   const [tab, setTab] = useState('users')
   const [loading, setLoading] = useState(true)
-  const [dataErrors, setDataErrors] = useState([])
+  const [loadedDataGroups, setLoadedDataGroups] = useState(new Set())
+  const [dataErrorsByGroup, setDataErrorsByGroup] = useState({})
   const [userSearch, setUserSearch] = useState('')
   const [userStatusFilter, setUserStatusFilter] = useState('all')
   const [userCantonFilter, setUserCantonFilter] = useState('all')
@@ -938,6 +1004,7 @@ export default function Admin() {
   const [selectedPartnerId, setSelectedPartnerId] = useState(PARTNER_ANALYTICS_PARTNERS[0]?.id || '')
   const [messageEvents, setMessageEvents] = useState([])
   const [messagesUnavailable, setMessagesUnavailable] = useState(false)
+  const dataErrors = Object.values(dataErrorsByGroup).filter(Boolean)
 
   const metricUsers = useMemo(
     () => users.filter(profile => !isAdminEmail(profile.email)),
@@ -1281,139 +1348,152 @@ export default function Admin() {
     }
   }, [])
 
-  useEffect(() => { loadAdminData() }, [])
+  useEffect(() => {
+    loadAdminData({ groups: ['users'] })
+  }, [])
 
   function switchTab(nextTab) {
     setTab(nextTab)
+    loadAdminData({ groups: getAdminTabDataGroups(nextTab) })
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     })
   }
 
   async function loadAdminData(options = {}) {
-    const requestId = ++loadRequestRef.current
+    const force = options?.force === true
     const silent = options?.silent === true
+    const requestedGroups = [...new Set(options?.groups || getAdminTabDataGroups(tab))]
+    const groups = requestedGroups.filter(group =>
+      !loadingDataGroupsRef.current.has(group)
+      && (force || !loadedDataGroupsRef.current.has(group))
+    )
+
+    if (!groups.length) return
+
+    groups.forEach(group => loadingDataGroupsRef.current.add(group))
+    activeLoadCountRef.current += 1
+    setDataErrorsByGroup(previous => ({ ...previous, general: '' }))
     if (!silent) setLoading(true)
 
     try {
       const analyticsSince = new Date(Date.now() - 60 * 86_400_000).toISOString()
+      const skipped = data => ({ data, count: data.length, error: null, skipped: true })
       const [reportsRes, queueRes, usersRes, listingsRes, jobsRes, providersRes, analyticsRes, messagesRes] = await Promise.all([
-        fetchAllAdminRows({ table: 'reports' }),
-        fetchAllAdminRows({ table: 'moderation_queue' }),
-        fetchAllAdminRows({ table: 'profiles', columns: 'id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at' }),
-        fetchAllAdminRows({ table: 'listings', columns: 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at' }),
-        fetchAllAdminRows({ table: 'jobs', columns: 'id,title,company,desc,sector,active,user_id,canton,city,created_at' }),
-        fetchAllAdminRows({ table: 'providers' }),
-        fetchAllAdminRows({
+        groups.includes('reports') ? fetchAllAdminRows({ table: 'reports' }) : skipped(reports),
+        groups.includes('moderation') ? fetchAllAdminRows({ table: 'moderation_queue' }) : skipped(queue),
+        groups.includes('users')
+          ? fetchAllAdminRows({ table: 'profiles', columns: 'id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at' })
+          : skipped(users),
+        groups.includes('content')
+          ? fetchAllAdminRows({ table: 'listings', columns: 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at' })
+          : skipped(recentListings),
+        groups.includes('content')
+          ? fetchAllAdminRows({ table: 'jobs', columns: 'id,title,company,desc,sector,active,user_id,canton,city,created_at' })
+          : skipped(recentJobs),
+        groups.includes('businesses') ? fetchAllAdminRows({ table: 'providers' }) : skipped(businesses),
+        groups.includes('analytics') ? fetchAllAdminRows({
           table: 'analytics_events',
           columns: 'id,event_type,path,search,user_id,session_id,metadata,created_at',
           since: analyticsSince,
-        }),
-        fetchAllAdminRows({
+        }) : skipped(analyticsEvents),
+        groups.includes('messages') ? fetchAllAdminRows({
           table: 'messages',
           columns: 'id,conversation_id,sender_id,created_at',
           since: analyticsSince,
-        }),
+        }) : skipped(messageEvents),
       ])
 
-      if (requestId !== loadRequestRef.current) return
-
       const responses = [
-        ['reportes', reportsRes],
-        ['moderación', queueRes],
-        ['usuarios', usersRes],
-        ['anuncios', listingsRes],
-        ['empleos', jobsRes],
-        ['negocios', providersRes],
-        ['analítica', analyticsRes],
-        ['mensajes', messagesRes],
+        ['reports', 'reportes', reportsRes],
+        ['moderation', 'moderacion', queueRes],
+        ['users', 'usuarios', usersRes],
+        ['content', 'anuncios', listingsRes],
+        ['content', 'empleos', jobsRes],
+        ['businesses', 'negocios', providersRes],
+        ['analytics', 'analitica', analyticsRes],
+        ['messages', 'mensajes', messagesRes],
       ]
       const nextErrors = responses
-        .filter(([, response]) => response.error)
-        .map(([label, response]) => `${label}: ${response.error.message}`)
-      setDataErrors(nextErrors)
+        .filter(([group, , response]) => groups.includes(group) && response.error)
+        .map(([, label, response]) => `${label}: ${response.error.message}`)
 
-      if (!analyticsRes.error) {
+      groups.forEach(group => {
+        const groupErrors = responses
+          .filter(([responseGroup, , response]) => responseGroup === group && response.error)
+          .map(([, label, response]) => `${label}: ${response.error.message}`)
+        setDataErrorsByGroup(previous => ({ ...previous, [group]: groupErrors.join(' · ') }))
+      })
+
+      if (groups.includes('analytics') && !analyticsRes.error) {
         setAnalyticsEvents(analyticsRes.data)
         setAnalyticsUnavailable(false)
-      } else {
+      } else if (groups.includes('analytics')) {
         setAnalyticsUnavailable(true)
         console.warn('Analytics events unavailable:', analyticsRes.error.message)
       }
-      if (!messagesRes.error) {
+      if (groups.includes('messages') && !messagesRes.error) {
         setMessageEvents(messagesRes.data)
         setMessagesUnavailable(false)
-      } else {
+      } else if (groups.includes('messages')) {
         setMessagesUnavailable(true)
         console.warn('Messages activity unavailable:', messagesRes.error.message)
       }
 
-      const nextReports = reportsRes.error ? [] : reportsRes.data
-      const nextQueue = queueRes.error ? [] : queueRes.data
-      const listingIds = [
-        ...nextReports.filter(r => r.content_type === 'listing').map(r => r.content_id),
-        ...nextQueue.filter(r => r.content_type === 'listing').map(r => r.content_id),
-      ]
-      const jobIds = [
-        ...nextReports.filter(r => r.content_type === 'job').map(r => r.content_id),
-        ...nextQueue.filter(r => r.content_type === 'job').map(r => r.content_id),
-      ]
-      const eventIds = [
-        ...nextReports.filter(r => r.content_type === 'event').map(r => r.content_id),
-        ...nextQueue.filter(r => r.content_type === 'event').map(r => r.content_id),
-      ]
-      const providerIds = [
-        ...nextReports.filter(r => ['provider', 'business'].includes(r.content_type)).map(r => r.content_id),
-        ...nextQueue.filter(r => ['provider', 'business'].includes(r.content_type)).map(r => r.content_id),
-      ]
-      const communityIds = [
-        ...nextReports.filter(r => r.content_type === 'community').map(r => r.content_id),
-        ...nextQueue.filter(r => r.content_type === 'community').map(r => r.content_id),
-      ]
-      const messageIds = nextReports.filter(r => r.content_type === 'message').map(r => r.content_id)
-      const profileIds = nextReports.filter(r => r.content_type === 'profile').map(r => r.content_id)
-
-      const [reportedListings, reportedJobs, reportedMessages, reportedProfiles, reportedEvents, reportedProviders, reportedCommunities] = await Promise.all([
-        fetchAdminRowsByIds('listings', 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at', listingIds),
-        fetchAdminRowsByIds('jobs', 'id,title,company,desc,sector,active,user_id,canton,city,created_at', jobIds),
-        fetchAdminRowsByIds('messages', 'id,conversation_id,sender_id,body,created_at', messageIds),
-        fetchAdminRowsByIds('profiles', 'id,name,email,canton,banned,banned_reason,created_at,last_seen_at', profileIds),
-        fetchAdminRowsByIds('events', '*', eventIds),
-        fetchAdminRowsByIds('providers', '*', providerIds),
-        fetchAdminRowsByIds('communities', '*', communityIds),
-      ])
-
-      if (requestId !== loadRequestRef.current) return
+      const nextReports = groups.includes('reports') && !reportsRes.error ? reportsRes.data : []
+      const nextQueue = groups.includes('moderation') && !queueRes.error ? queueRes.data : []
+      const relatedContent = await fetchAdminContentForItems([...nextReports, ...nextQueue])
+      nextErrors.push(...relatedContent.errors)
 
       const nextContent = new Map()
-      ;[...(listingsRes.data || []), ...(reportedListings.data || [])].forEach(item => nextContent.set(`listing:${item.id}`, item))
-      ;[...(jobsRes.data || []), ...(reportedJobs.data || [])].forEach(item => nextContent.set(`job:${item.id}`, item))
-      ;(reportedEvents.data || []).forEach(item => nextContent.set(`event:${item.id}`, item))
-      ;[...(providersRes.data || []), ...(reportedProviders.data || [])].forEach(item => {
+      ;(groups.includes('content') ? listingsRes.data || [] : []).forEach(item => nextContent.set(`listing:${item.id}`, item))
+      ;(groups.includes('content') ? jobsRes.data || [] : []).forEach(item => nextContent.set(`job:${item.id}`, item))
+      ;(groups.includes('businesses') ? providersRes.data || [] : []).forEach(item => {
         nextContent.set(`provider:${item.id}`, item)
         nextContent.set(`business:${item.id}`, item)
       })
-      ;(reportedCommunities.data || []).forEach(item => nextContent.set(`community:${item.id}`, item))
-      ;(reportedMessages.data || []).forEach(item => nextContent.set(`message:${item.id}`, item))
-      ;(reportedProfiles.data || []).forEach(item => nextContent.set(`profile:${item.id}`, item))
+      relatedContent.entries.forEach(([key, value]) => nextContent.set(key, value))
 
-      if (!reportsRes.error) setReports(nextReports)
-      if (!queueRes.error) setQueue(nextQueue)
-      if (!usersRes.error) setUsers(usersRes.data)
-      if (!listingsRes.error) setRecentListings(listingsRes.data)
-      if (!jobsRes.error) setRecentJobs(jobsRes.data)
-      if (!providersRes.error) setBusinesses(providersRes.data)
-      setContentByKey(nextContent)
+      if (relatedContent.errors.length) {
+        groups
+          .filter(group => group === 'reports' || group === 'moderation')
+          .forEach(group => {
+            setDataErrorsByGroup(previous => ({
+              ...previous,
+              [group]: [previous[group], ...relatedContent.errors].filter(Boolean).join(' · '),
+            }))
+          })
+      }
+
+      if (groups.includes('reports') && !reportsRes.error) setReports(nextReports)
+      if (groups.includes('moderation') && !queueRes.error) setQueue(nextQueue)
+      if (groups.includes('users') && !usersRes.error) setUsers(usersRes.data)
+      if (groups.includes('content') && !listingsRes.error) setRecentListings(listingsRes.data)
+      if (groups.includes('content') && !jobsRes.error) setRecentJobs(jobsRes.data)
+      if (groups.includes('businesses') && !providersRes.error) setBusinesses(providersRes.data)
+      if (nextContent.size) {
+        setContentByKey(previous => {
+          const merged = new Map(previous)
+          nextContent.forEach((value, key) => merged.set(key, value))
+          return merged
+        })
+      }
+
+      groups.forEach(group => loadedDataGroupsRef.current.add(group))
+      setLoadedDataGroups(new Set(loadedDataGroupsRef.current))
       if (nextErrors.length && !silent) {
         toast.error('Hay apartados sin datos. El panel muestra el detalle del error.')
       }
     } catch (error) {
-      if (requestId === loadRequestRef.current) {
-        setDataErrors([error.message || 'Error inesperado al cargar el panel'])
-        if (!silent) toast.error('No se pudo actualizar el panel')
-      }
+      setDataErrorsByGroup(previous => ({
+        ...previous,
+        general: error.message || 'Error inesperado al cargar el panel',
+      }))
+      if (!silent) toast.error('No se pudo actualizar el panel')
     } finally {
-      if (requestId === loadRequestRef.current) setLoading(false)
+      groups.forEach(group => loadingDataGroupsRef.current.delete(group))
+      activeLoadCountRef.current = Math.max(0, activeLoadCountRef.current - 1)
+      if (activeLoadCountRef.current === 0) setLoading(false)
     }
   }
 
@@ -1433,7 +1513,7 @@ export default function Admin() {
     if (!data) { toast.error('El reporte no se actualizó. Revisa los permisos RLS del administrador.'); return }
     await logAdminAction({ admin_id: user.id, action_type: `report_${status}`, target_type: report.content_type, target_id: report.content_id, notes: report.reason || '' })
     toast.success('Reporte actualizado')
-    loadAdminData({ silent: true })
+    loadAdminData({ groups: ['reports'], force: true, silent: true })
   }
 
   async function setUserBanned(profile, banned) {
@@ -1672,7 +1752,7 @@ export default function Admin() {
       if (!data) throw new Error('La cola no se actualizó. Revisa los permisos RLS del administrador.')
       await logAdminAction({ admin_id: user.id, action_type: `moderation_${status}`, target_type: item.content_type, target_id: item.content_id, notes: item.reason || '' })
       toast.success(status === 'approved' ? 'Contenido aprobado' : 'Contenido eliminado')
-      loadAdminData({ silent: true })
+      loadAdminData({ groups: ['moderation'], force: true, silent: true })
     } catch (err) {
       toast.error(err.message || 'No se pudo procesar')
     }
@@ -1915,16 +1995,23 @@ export default function Admin() {
     { id: 'content',    icon: '📋', label: 'Contenido',   value: loading ? '—' : stats.content, color: '#059669', urgent: false, sub: 'Anuncios y empleos' },
   ]
 
+  const isTabDataReady = tabId =>
+    getAdminTabDataGroups(tabId).every(group => loadedDataGroups.has(group))
+  const isTabDataLoading = tabId =>
+    getAdminTabDataGroups(tabId).some(group => loadingDataGroupsRef.current.has(group))
+  const navValue = (tabId, value) =>
+    !isTabDataReady(tabId) || isTabDataLoading(tabId) ? '...' : value
+
   const NAV_ITEMS = [
-    { id: 'users', icon: '👥', label: 'Usuarios', value: loading ? '...' : `${stats.users} total`, color: C.primary, bg: C.primaryLight },
-    { id: 'analytics', icon: '📈', label: 'Uso app', value: loading ? '...' : `${pageViewEvents.length} vistas`, color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'partners', icon: '🚀', label: 'Partners', value: loading ? '...' : `${partnerClickEvents.length} salidas`, color: '#4F46E5', bg: '#EEF2FF' },
-    { id: 'live', icon: '📡', label: 'Live', value: loading ? '...' : `${onlineUsers.length} online`, color: '#7C3AED', bg: '#F3E8FF' },
-    { id: 'overview', icon: '📊', label: 'Estado general', value: loading ? '...' : `${generalScore}/100`, color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
-    { id: 'businessVerification', icon: '✓', label: 'Negocios', value: loading ? '...' : `${stats.businessVerification} pend.`, color: '#059669', bg: '#ECFDF5' },
-    { id: 'content', icon: '📋', label: 'Publicaciones', value: loading ? '...' : `${stats.content} items`, color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'reports', icon: '🚨', label: 'Reportes', value: loading ? '...' : `${stats.reports} pend.`, color: '#DC2626', bg: '#FEF2F2' },
-    { id: 'moderation', icon: '⏳', label: 'Revisión', value: loading ? '...' : `${stats.queue} en cola`, color: '#D97706', bg: '#FFFBEB' },
+    { id: 'users', icon: '👥', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
+    { id: 'analytics', icon: '📈', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'partners', icon: '🚀', label: 'Partners', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
+    { id: 'live', icon: '📡', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
+    { id: 'overview', icon: '📊', label: 'Estado general', value: navValue('overview', `${generalScore}/100`), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
+    { id: 'businessVerification', icon: '✓', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5' },
+    { id: 'content', icon: '📋', label: 'Publicaciones', value: navValue('content', `${stats.content} items`), color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'reports', icon: '🚨', label: 'Reportes', value: navValue('reports', `${stats.reports} pend.`), color: '#DC2626', bg: '#FEF2F2' },
+    { id: 'moderation', icon: '⏳', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB' },
   ]
 
   const SECTION_TITLES = {
@@ -2051,7 +2138,7 @@ export default function Admin() {
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button
-            onClick={loadAdminData}
+            onClick={() => loadAdminData({ groups: getAdminTabDataGroups(tab), force: true })}
             disabled={loading}
             style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: 14, padding: '11px 15px', cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 14px 30px rgba(37,99,235,0.22)', opacity: loading ? 0.72 : 1 }}
           >
@@ -2071,32 +2158,49 @@ export default function Admin() {
         </Card>
       )}
 
+      {!isTabDataReady(tab) && (
+        <Card style={{ marginBottom: 14, textAlign: 'center', padding: '34px 20px' }}>
+          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 14, color: C.text, margin: '0 0 5px' }}>
+            {isTabDataLoading(tab)
+              ? `Cargando ${activeSection.label.toLowerCase()}`
+              : 'Datos no disponibles'}
+          </p>
+          <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>
+            {isTabDataLoading(tab)
+              ? 'Solo estamos consultando los datos necesarios para esta seccion.'
+              : 'Usa Actualizar para volver a intentar esta consulta.'}
+          </p>
+        </Card>
+      )}
+
       {/* Stat cards — double as navigation */}
-      {tab === 'overview' && (
+      {tab === 'overview' && isTabDataReady('overview') && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '-2px 0 10px' }}>
           <PeriodSwitch value={overviewDays} onChange={setOverviewDays} />
         </div>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 16 }}>
-        {sectionMetrics.map(metric => (
-          <SummaryMetric
-            key={metric.label}
-            label={metric.label}
-            value={metric.value}
-            hint={metric.hint}
-            color={metric.color}
-          />
-        ))}
-      </div>
+      {isTabDataReady(tab) && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 16 }}>
+          {sectionMetrics.map(metric => (
+            <SummaryMetric
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              hint={metric.hint}
+              color={metric.color}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Context chart */}
-      {!loading && activeChart && (
+      {isTabDataReady(tab) && !loading && activeChart && (
         <div style={{ marginBottom: 24 }}>
           {activeChart}
         </div>
       )}
 
-      {loading && showChartPlaceholder && (
+      {isTabDataReady(tab) && loading && showChartPlaceholder && (
         <div style={{ marginBottom: 24 }}>
           <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: '16px', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Cargando...</p>
@@ -2105,27 +2209,29 @@ export default function Admin() {
       )}
 
       {/* Section header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: '1px solid rgba(226,234,244,0.95)', borderRadius: 20, padding: '14px 16px', boxShadow: '0 14px 32px rgba(15,23,42,0.045)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-          <span style={{ width: 40, height: 40, borderRadius: 14, background: `${activeSectionDetails.color}14`, display: 'grid', placeItems: 'center', fontSize: 18, flexShrink: 0 }}>
-            {activeSection.icon}
-          </span>
-          <div style={{ minWidth: 0 }}>
-            <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 17, color: C.text, margin: '0 0 3px', lineHeight: 1.2 }}>
-              {activeSection.label}
-            </h2>
-            <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.45 }}>
-              {activeSectionDetails.description}
-            </p>
+      {isTabDataReady(tab) && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: '1px solid rgba(226,234,244,0.95)', borderRadius: 20, padding: '14px 16px', boxShadow: '0 14px 32px rgba(15,23,42,0.045)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <span style={{ width: 40, height: 40, borderRadius: 14, background: `${activeSectionDetails.color}14`, display: 'grid', placeItems: 'center', fontSize: 18, flexShrink: 0 }}>
+              {activeSection.icon}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 17, color: C.text, margin: '0 0 3px', lineHeight: 1.2 }}>
+                {activeSection.label}
+              </h2>
+              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.45 }}>
+                {activeSectionDetails.description}
+              </p>
+            </div>
           </div>
+          <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: activeSectionDetails.color, background: `${activeSectionDetails.color}12`, borderRadius: 999, padding: '7px 11px' }}>
+            {activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`)}
+          </span>
         </div>
-        <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: activeSectionDetails.color, background: `${activeSectionDetails.color}12`, borderRadius: 999, padding: '7px 11px' }}>
-          {activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`)}
-        </span>
-      </div>
+      )}
 
       {/* ── Estado general ─────────────────────────────── */}
-      {tab === 'overview' && (
+      {tab === 'overview' && isTabDataReady('overview') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <Card style={{ padding: 0, overflow: 'hidden', borderRadius: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 0 }}>
@@ -2232,7 +2338,7 @@ export default function Admin() {
       )}
 
       {/* -- Uso de la app ---------------------------------- */}
-      {tab === 'analytics' && (
+      {tab === 'analytics' && isTabDataReady('analytics') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {analyticsUnavailable && (
             <Card style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
@@ -2439,7 +2545,7 @@ export default function Admin() {
       )}
 
       {/* ── Partners ───────────────────────────────────── */}
-      {tab === 'partners' && (
+      {tab === 'partners' && isTabDataReady('partners') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {analyticsUnavailable && (
             <Card style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
@@ -2627,7 +2733,7 @@ export default function Admin() {
       )}
 
       {/* ── Moderación ─────────────────────────────────── */}
-      {tab === 'moderation' && (
+      {tab === 'moderation' && isTabDataReady('moderation') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <Card style={{ padding: 16, background: '#FFFBEB', borderColor: '#FDE68A' }}>
             <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>Qué significa revisión</p>
@@ -2680,7 +2786,7 @@ export default function Admin() {
       )}
 
       {/* ── Reportes ───────────────────────────────────── */}
-      {tab === 'reports' && (
+      {tab === 'reports' && isTabDataReady('reports') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <AdminFilterSelect
@@ -2729,7 +2835,7 @@ export default function Admin() {
       )}
 
       {/* ── Verificación de negocios ───────────────────────────────────── */}
-      {tab === 'businessVerification' && (
+      {tab === 'businessVerification' && isTabDataReady('businessVerification') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 18, padding: 8, boxShadow: '0 10px 26px rgba(15,23,42,0.04)' }}>
             {BUSINESS_VERIFICATION_FILTERS.map(item => (
@@ -2916,7 +3022,7 @@ export default function Admin() {
       )}
 
       {/* ── Live ───────────────────────────────────────── */}
-      {tab === 'live' && (
+      {tab === 'live' && isTabDataReady('live') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <Card style={{ padding: 0, overflow: 'hidden', borderRadius: 24, boxShadow: '0 24px 60px rgba(15,23,42,0.08)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 0 }}>
@@ -3116,7 +3222,7 @@ export default function Admin() {
       )}
 
       {/* ── Usuarios ───────────────────────────────────── */}
-      {tab === 'users' && (
+      {tab === 'users' && isTabDataReady('users') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'grid', gap: 8, marginBottom: 4 }}>
             <AdminFilterInput
@@ -3204,7 +3310,7 @@ export default function Admin() {
       )}
 
       {/* ── Contenido ──────────────────────────────────── */}
-      {tab === 'content' && (
+      {tab === 'content' && isTabDataReady('content') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <AdminFilterInput
@@ -3250,7 +3356,7 @@ export default function Admin() {
                     <AdminButton
                       variant={item.active ? 'danger' : 'success'}
                       onClick={() => setContentActive('listing', item.id, !item.active)
-                        .then(() => loadAdminData({ silent: true }))
+                        .then(() => loadAdminData({ groups: ['content'], force: true, silent: true }))
                         .catch(error => toast.error(error.message || 'No se pudo actualizar el anuncio'))}
                     >
                       {item.active ? 'Ocultar' : 'Activar'}
@@ -3286,7 +3392,7 @@ export default function Admin() {
                     <AdminButton
                       variant={item.active ? 'danger' : 'success'}
                       onClick={() => setContentActive('job', item.id, !item.active)
-                        .then(() => loadAdminData({ silent: true }))
+                        .then(() => loadAdminData({ groups: ['content'], force: true, silent: true }))
                         .catch(error => toast.error(error.message || 'No se pudo actualizar el empleo'))}
                     >
                       {item.active ? 'Ocultar' : 'Activar'}
