@@ -84,6 +84,12 @@ function wasActiveAfter(lastSeenAt, createdAt) {
   return lastSeen >= created
 }
 
+function isMissingReadStatusRpc(error) {
+  const message = String(error?.message || '').toLowerCase()
+  return message.includes('mark_conversation_messages_read')
+    && (message.includes('schema cache') || message.includes('could not find the function'))
+}
+
 function convTitle(conv) {
   return conv.title || 'Anuncio'
 }
@@ -642,6 +648,50 @@ export default function Mensajes() {
     loadMessages(conv)
   }
 
+  async function markOpenedConversationRead(conv, { dismiss = false } = {}) {
+    if (!conv?.id || !user?.id) return false
+
+    markConvRead(conv.id)
+    unreadStore.remove(conv.id)
+    if (dismiss) dismissPendingConversation(conv)
+
+    const readAt = new Date().toISOString()
+    setMessages(prev => prev.map(msg =>
+      msg.sender_id !== user.id ? { ...msg, read: true, read_at: msg.read_at || readAt } : msg
+    ))
+    setLastMsgMeta(prev => {
+      const next = new Map(prev)
+      const current = next.get(conv.id)
+      if (current?.sender_id && current.sender_id !== user.id) {
+        next.set(conv.id, { ...current, read: true, read_at: current.read_at || readAt })
+      }
+      return next
+    })
+
+    const rpcResult = await supabase.rpc('mark_conversation_messages_read', {
+      p_conversation_id: conv.id,
+    })
+
+    if (!rpcResult.error) return true
+
+    // Keep compatibility until the SQL migration has been applied.
+    if (isMissingReadStatusRpc(rpcResult.error)) {
+      const fallbackResult = await supabase
+        .from('messages')
+        .update({ read: true })
+        .eq('conversation_id', conv.id)
+        .neq('sender_id', user.id)
+        .or('read.is.null,read.eq.false')
+
+      if (!fallbackResult.error) return true
+      console.warn('Could not mark conversation messages as read:', fallbackResult.error)
+      return false
+    }
+
+    console.warn('Could not mark conversation messages as read:', rpcResult.error)
+    return false
+  }
+
   async function loadMessages(conv) {
     const { data } = await supabase
       .from('messages')
@@ -650,14 +700,6 @@ export default function Mensajes() {
       .order('created_at', { ascending: true })
 
     setMessages(data || [])
-    supabase.from('messages').update({ read: true })
-      .eq('conversation_id', conv.id).neq('sender_id', user.id).then(() => {})
-    setLastMsgMeta(prev => {
-      const next = new Map(prev)
-      const current = next.get(conv.id)
-      if (current) next.set(conv.id, { ...current, read: true })
-      return next
-    })
 
     if (channelRef.current) supabase.removeChannel(channelRef.current)
     channelRef.current = supabase
@@ -667,6 +709,9 @@ export default function Mensajes() {
         filter: `conversation_id=eq.${conv.id}`
       }, payload => {
         setMessages(prev => prev.find(m => m.id === payload.new.id) ? prev : [...prev, payload.new])
+        if (payload.new.sender_id !== user.id) {
+          void markOpenedConversationRead(conv)
+        }
       })
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'messages',
@@ -682,6 +727,8 @@ export default function Mensajes() {
         })
       })
       .subscribe()
+
+    await markOpenedConversationRead(conv)
   }
 
   function sendTypingState(isTyping) {
@@ -797,21 +844,9 @@ export default function Mensajes() {
 
   async function markConversationAsRead(conv) {
     if (!conv?.id) return
-    markConvRead(conv.id)
-    unreadStore.remove(conv.id)
-    dismissPendingConversation(conv)
-    setLastMsgMeta(prev => {
-      const next = new Map(prev)
-      const current = next.get(conv.id)
-      if (current) next.set(conv.id, { ...current, read: true })
-      return next
-    })
-    await supabase
-      .from('messages')
-      .update({ read: true })
-      .eq('conversation_id', conv.id)
-      .neq('sender_id', user.id)
-    toast.success('Conversación marcada como leída')
+    const saved = await markOpenedConversationRead(conv, { dismiss: true })
+    if (saved) toast.success('Conversación marcada como leída')
+    else toast.error('No se pudo guardar el estado de lectura')
   }
 
   async function hideConversation(conv, successMessage = 'Conversación archivada') {

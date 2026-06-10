@@ -68,14 +68,24 @@ export function useUnreadMessages() {
         .select('conversation_id')
         .in('conversation_id', convIds)
         .neq('sender_id', user.id)
+        .or('read.is.null,read.eq.false')
 
-      if (lastVisit) q = q.gt('created_at', lastVisit)
-
-      const { data: unreadMsgs } = await q
+      let { data: unreadMsgs, error: unreadError } = await q
+      if (unreadError) {
+        let fallbackQuery = supabase
+          .from('messages')
+          .select('conversation_id')
+          .in('conversation_id', convIds)
+          .neq('sender_id', user.id)
+        if (lastVisit) fallbackQuery = fallbackQuery.gt('created_at', lastVisit)
+        const fallbackResult = await fallbackQuery
+        unreadMsgs = fallbackResult.data
+        unreadError = fallbackResult.error
+      }
       if (cancelled) return
 
       unreadStore.replace(
-        [...new Set((unreadMsgs || []).map(m => m.conversation_id))]
+        unreadError ? [] : [...new Set((unreadMsgs || []).map(m => m.conversation_id))]
       )
 
       // Real-time: new messages from others → add to store
@@ -87,6 +97,12 @@ export function useUnreadMessages() {
           if (msg.sender_id === user.id) return
           if (!convIdsRef.current.has(msg.conversation_id)) return
           unreadStore.add(msg.conversation_id)
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
+          const msg = payload.new
+          if (msg.sender_id === user.id || msg.read !== true) return
+          if (!convIdsRef.current.has(msg.conversation_id)) return
+          unreadStore.remove(msg.conversation_id)
         })
         .subscribe()
     }
