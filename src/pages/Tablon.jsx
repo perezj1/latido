@@ -86,7 +86,6 @@ function normalizeListingReview(review) {
   }
 }
 
-const TABLON_CACHE_TTL = 5 * 60 * 1000
 const TABLON_CACHE = {
   publicAds:null,
   publicAdsTs:0,
@@ -898,11 +897,10 @@ export default function Tablon() {
       if (TABLON_CACHE.jobs) {
         setJobs(TABLON_CACHE.jobs)
         setLoading(false)
-        if (Date.now() - TABLON_CACHE.jobsTs <= TABLON_CACHE_TTL) return
       }
 
       try {
-        const { data, error } = await supabase.from('jobs').select('*').eq('active', true).order('created_at', { ascending:false }).limit(150)
+        const { data, error } = await supabase.from('jobs').select('*').or('active.is.null,active.eq.true').order('created_at', { ascending:false }).limit(150)
         const nextJobs = error || !data?.length ? MOCK_JOBS : data
         TABLON_CACHE.jobs = nextJobs
         TABLON_CACHE.jobsTs = Date.now()
@@ -922,15 +920,14 @@ export default function Tablon() {
       if (cachedAds) {
         setAds(cachedAds)
         setLoading(false)
-        if (Date.now() - TABLON_CACHE[cacheTsKey] <= TABLON_CACHE_TTL) return
       }
 
       try {
-        let query = supabase.from('listings').select('*').eq('active', true).order('created_at', { ascending:false }).limit(150)
-        if (!isLoggedIn) query = query.eq('privacy', 'public')
+        let query = supabase.from('listings').select('*').or('active.is.null,active.eq.true').order('created_at', { ascending:false }).limit(150)
+        if (!isLoggedIn) query = query.or('privacy.is.null,privacy.eq.public')
         const { data, error } = await query
         const nextAds = error || !data?.length
-          ? MOCK_ADS.filter(ad => isLoggedIn || ad.privacy === 'public')
+          ? MOCK_ADS.filter(ad => isLoggedIn || !ad.privacy || ad.privacy === 'public')
           : data
 
         TABLON_CACHE[cacheKey] = nextAds
@@ -938,7 +935,7 @@ export default function Tablon() {
         if (!cancelled) setAds(nextAds)
       } catch {
         if (!cancelled) {
-          setAds(TABLON_CACHE[cacheKey] || MOCK_ADS.filter(ad => isLoggedIn || ad.privacy === 'public'))
+          setAds(TABLON_CACHE[cacheKey] || MOCK_ADS.filter(ad => isLoggedIn || !ad.privacy || ad.privacy === 'public'))
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -1064,7 +1061,7 @@ export default function Tablon() {
   }, [])
 
   const filteredAds = useMemo(() => ads.filter(a => {
-    if (!(isLoggedIn || a.privacy === 'public')) return false
+    if (!(isLoggedIn || !a.privacy || a.privacy === 'public')) return false
     if (cat && getAdCategoryId(a) !== cat) return false
     if (type) {
       const typeMatches = cat === 'venta' && type === 'vende'
@@ -1092,8 +1089,8 @@ export default function Tablon() {
       (!deferredSearch || norm(j.title).includes(deferredSearch) || norm(j.company).includes(deferredSearch) || norm(getJobIntentMeta(j).label).includes(deferredSearch))
     )
     const fromAds = ads.filter(a =>
-      a.cat === 'empleo' &&
-      (isLoggedIn || a.privacy === 'public') &&
+      getAdCategoryId(a) === 'empleo' &&
+      (isLoggedIn || !a.privacy || a.privacy === 'public') &&
       (!jobIntent || getJobIntentId(a) === jobIntent) &&
       (!jobType || a.type === jobType || a.sub === jobType) &&
       (!canton || !a.canton || a.canton === canton) &&
@@ -1106,6 +1103,7 @@ export default function Tablon() {
       desc: a.desc, user_id: a.user_id, user_name: a.user_name, user: a.user, created_at: a.created_at,
     }))
     return [...fromJobs, ...fromAds]
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
   }, [ads, canton, deferredSearch, isLoggedIn, jobIntent, jobType, jobs, plz])
 
   const filteredJobs = communityJobs
@@ -1126,7 +1124,7 @@ export default function Tablon() {
     return ads
       .filter(ad =>
         String(ad.id) !== String(selectedAd.id) &&
-        (isLoggedIn || ad.privacy === 'public') &&
+        (isLoggedIn || !ad.privacy || ad.privacy === 'public') &&
         getAdCategoryId(ad) === selectedCat
       )
       .sort((a, b) => {
@@ -1145,7 +1143,7 @@ export default function Tablon() {
     const jobLikeItems = [
       ...jobs,
       ...ads
-        .filter(ad => ad.cat === 'empleo' && (isLoggedIn || ad.privacy === 'public'))
+        .filter(ad => getAdCategoryId(ad) === 'empleo' && (isLoggedIn || !ad.privacy || ad.privacy === 'public'))
         .map(ad => ({
           id:ad.id,
           title:ad.title,

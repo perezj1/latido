@@ -101,6 +101,7 @@ function EmptyState({ text }) {
 }
 
 const HOME_CACHE_TTL = 5 * 60 * 1000
+const HOME_RECENT_ITEM_LIMIT = 18
 let homeCache = null
 let homeCacheTs = 0
 
@@ -633,7 +634,7 @@ export default function Home() {
           .select('*')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
-          .limit(18),
+          .limit(HOME_RECENT_ITEM_LIMIT),
 
         fetchHomeCommunities(),
 
@@ -658,7 +659,7 @@ export default function Home() {
           .select('*')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
-          .limit(3),
+          .limit(HOME_RECENT_ITEM_LIMIT),
 
         supabase
           .from('events')
@@ -748,7 +749,8 @@ export default function Home() {
           }),
           ...jobsNorm,
         ]
-          .sort((a, b) => (b._sort > a._sort ? 1 : -1))
+          .sort((a, b) => String(b._sort).localeCompare(String(a._sort)))
+          .slice(0, HOME_RECENT_ITEM_LIMIT)
           .map(({ _sort, ...rest }) => rest)
       )
 
@@ -858,9 +860,7 @@ export default function Home() {
       applySnapshot(homeCache)
     }
 
-    if (!homeCache || Date.now() - homeCacheTs > HOME_CACHE_TTL) {
-      fetchHomeData()
-    }
+    fetchHomeData()
 
     const refreshIfStale = () => {
       if (document.visibilityState === 'hidden') return
