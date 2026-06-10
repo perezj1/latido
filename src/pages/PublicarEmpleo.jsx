@@ -9,6 +9,8 @@ import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
 import { JOB_INTENTS, JOB_SECTORS, JOB_TYPES } from '../lib/constants'
+import PostPublishPushModal from '../components/PostPublishPushModal'
+import { getPushStatus } from '../lib/pushNotifications'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -43,6 +45,7 @@ export default function PublicarEmpleo() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [done, setDone] = useState(false)
   const [publishedForReview, setPublishedForReview] = useState(false)
+  const [pushModalOpen, setPushModalOpen] = useState(false)
   const [form, setForm] = useState(createInitialForm)
   const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
   const toggleLang = lang => setForm(f => ({
@@ -200,11 +203,36 @@ export default function PublicarEmpleo() {
     }
   }
 
+  const requestPublish = async () => {
+    if (loading) return
+    try {
+      const status = await getPushStatus()
+      if (status.subscribed) {
+        await handleSubmit()
+        return
+      }
+      if (!status.supported) {
+        toast.error('Este dispositivo no permite notificaciones push. Actívalas desde un navegador compatible para publicar.')
+        return
+      }
+      setPushModalOpen(true)
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo comprobar el estado de las notificaciones')
+    }
+  }
+
   const selectedSector = JOB_SECTORS.find(s => s.id === form.sector)
   const selectedType = JOB_TYPES.find(t => t.id === form.jobType)
 
   return (
     <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
+      <PostPublishPushModal
+        open={pushModalOpen}
+        user={user}
+        userCanton={form.canton}
+        onActivated={handleSubmit}
+        onComplete={() => setPushModalOpen(false)}
+      />
       <ProgressBar step={step} total={STEPS.length} />
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>{STEPS[step].title}</h1>
       <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:24 }}>{STEPS[step].sub}</p>
@@ -415,7 +443,7 @@ export default function PublicarEmpleo() {
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
+          <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
             {loading ? '⏳ Publicando...' : isSeekingJob ? '🔎 Publicar búsqueda' : '💼 Publicar oferta'}
           </Btn>
         )}

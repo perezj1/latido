@@ -10,6 +10,8 @@ import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { normalizeExternalUrl } from '../lib/links'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
+import PostPublishPushModal from '../components/PostPublishPushModal'
+import { getPushStatus } from '../lib/pushNotifications'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -31,6 +33,7 @@ export default function PublicarEvento() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [done, setDone] = useState(false)
   const [publishedForReview, setPublishedForReview] = useState(false)
+  const [pushModalOpen, setPushModalOpen] = useState(false)
   const [form, setForm] = useState({
     type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'',
     city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'',
@@ -155,8 +158,33 @@ export default function PublicarEvento() {
     }
   }
 
+  const requestPublish = async () => {
+    if (loading) return
+    try {
+      const status = await getPushStatus()
+      if (status.subscribed) {
+        await handleSubmit()
+        return
+      }
+      if (!status.supported) {
+        toast.error('Este dispositivo no permite notificaciones push. Actívalas desde un navegador compatible para publicar.')
+        return
+      }
+      setPushModalOpen(true)
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo comprobar el estado de las notificaciones')
+    }
+  }
+
   return (
     <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
+      <PostPublishPushModal
+        open={pushModalOpen}
+        user={user}
+        userCanton={form.canton}
+        onActivated={handleSubmit}
+        onComplete={() => setPushModalOpen(false)}
+      />
       <ProgressBar step={step} total={STEPS.length} />
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>{STEPS[step].title}</h1>
       <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:24 }}>{STEPS[step].sub}</p>
@@ -276,7 +304,7 @@ export default function PublicarEvento() {
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={handleSubmit} disabled={loading} variant="success" style={{ flex:1 }}>
+          <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
             {loading ? '⏳ Publicando...' : '🎉 Publicar evento'}
           </Btn>
         )}
