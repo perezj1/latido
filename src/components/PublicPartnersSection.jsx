@@ -24,12 +24,16 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
   return (
     <section className="public-partner-section" aria-labelledby="public-partners-title">
       <div className="public-partner-heading">
-        <span>Colaboradores seleccionados</span>
-        <h2 id="public-partners-title">Más apoyo para vivir en Suiza con confianza</h2>
-        <p>
-          Colaboramos con equipos especializados que entienden las necesidades
-          de la comunidad hispanohablante.
-        </p>
+        <div className="public-partner-heading-title">
+          <span>Colaboradores seleccionados</span>
+          <h2 id="public-partners-title">Más apoyo para vivir en Suiza con confianza</h2>
+        </div>
+        <div className="public-partner-heading-copy">
+          <p>
+            Colaboramos con equipos especializados que entienden las necesidades
+            de la comunidad hispanohablante.
+          </p>
+        </div>
       </div>
 
       <div
