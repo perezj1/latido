@@ -154,14 +154,17 @@ export default function RegistrarComunidad() {
 
   const requestPublish = async () => {
     if (loading) return
+    let subscribed = false
     try {
       const status = await getPushStatus()
-      if (status.subscribed) {
-        await handleSubmit()
-        return
-      }
-      setPushModalOpen(true)
+      subscribed = status.subscribed
     } catch {
+      await handleSubmit()
+      return
+    }
+    if (subscribed) {
+      await handleSubmit()
+    } else {
       setPushModalOpen(true)
     }
   }

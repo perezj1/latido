@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth'
 import { useZoneAlerts, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
+import { usePushActivation } from '../hooks/usePushActivation'
+import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
 import { C, PP } from '../lib/theme'
@@ -328,7 +330,7 @@ function makeAttentionItem(kind, row, overrides={}) {
 }
 
 export default function Home() {
-  const { displayName, isLoggedIn, user } = useAuth()
+  const { displayName, isLoggedIn, user, userCanton } = useAuth()
   const navigate = useNavigate()
   const { alertItems, alertCount } = useZoneAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
@@ -345,11 +347,30 @@ export default function Home() {
   const [loadingAttention, setLoadingAttention] = useState(false)
   const [expandedAttentionTask, setExpandedAttentionTask] = useState('')
   const [loading, setLoading] = useState(true)
+  const [activatingPush, setActivatingPush] = useState(false)
+  const { needsActivation, refresh: refreshPush } = usePushActivation(user?.id)
   const [selectedGuide, setSelectedGuide] = useState(null)
   useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
 
   const hasNotif = alertCount > 0 || hasUnread
   const visibleAttentionTasks = useMemo(() => loadingAttention ? [] : attentionTasks, [attentionTasks, loadingAttention])
+  const showAttentionSection = visibleAttentionTasks.length > 0 || (isLoggedIn && needsActivation)
+
+  async function handleActivatePush() {
+    if (activatingPush) return
+    setActivatingPush(true)
+    try {
+      const settings = { ...loadPushSettings(), messagesEnabled: true }
+      await subscribeToPushNotifications({ user, settings, userCanton })
+      localStorage.setItem(PUSH_SETTINGS_KEY, JSON.stringify(settings))
+      toast.success('Notificaciones activadas')
+      refreshPush()
+    } catch (err) {
+      toast.error(err?.message || 'No se pudieron activar las notificaciones')
+    } finally {
+      setActivatingPush(false)
+    }
+  }
 
   // Close panel on outside click
   function closeNotifPanel() {
@@ -1046,7 +1067,7 @@ export default function Home() {
         </div>
       </section>
 
-      {visibleAttentionTasks.length > 0 && (
+      {showAttentionSection && (
         <section style={{ background:'#fff', padding:'18px 0 2px' }}>
           <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, marginBottom:10 }}>
@@ -1061,6 +1082,43 @@ export default function Home() {
             </div>
 
             <div style={{ display:'grid', gap:10 }}>
+              {needsActivation && (
+                <div style={{ background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:16, overflow:'hidden' }}>
+                  <div style={{ padding:'13px 14px', display:'flex', gap:12, alignItems:'center' }}>
+                    <span style={{ width:38, height:38, borderRadius:13, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                      🔔
+                    </span>
+                    <span style={{ minWidth:0, flex:1 }}>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:2 }}>
+                        Activa las notificaciones
+                      </span>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.45 }}>
+                        Recibe respuestas a tus anuncios y novedades en tu zona.
+                      </span>
+                    </span>
+                    <button
+                      onClick={handleActivatePush}
+                      disabled={activatingPush}
+                      style={{
+                        fontFamily:PP,
+                        fontWeight:800,
+                        fontSize:10,
+                        color:'#fff',
+                        background:C.primary,
+                        border:'none',
+                        borderRadius:999,
+                        padding:'7px 12px',
+                        flexShrink:0,
+                        cursor:activatingPush ? 'default' : 'pointer',
+                        opacity:activatingPush ? 0.65 : 1,
+                        whiteSpace:'nowrap',
+                      }}
+                    >
+                      {activatingPush ? 'Activando...' : 'Activar'}
+                    </button>
+                  </div>
+                </div>
+              )}
               {visibleAttentionTasks.map(task => {
                 const warn = task.tone === 'warn'
                 const expanded = expandedAttentionTask === task.id
