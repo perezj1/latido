@@ -1,9 +1,17 @@
 import { supabase } from './supabase'
 
 const SESSION_KEY = 'latido_analytics_session_id'
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 let lastEventKey = ''
 let lastEventAt = 0
 let analyticsRetryAfter = 0
+
+export function isAnalyticsEnabled() {
+  if (!import.meta.env.PROD || typeof window === 'undefined') return false
+
+  const hostname = window.location.hostname.toLowerCase()
+  return !LOCAL_HOSTNAMES.has(hostname) && !hostname.endsWith('.localhost')
+}
 
 function getSessionId() {
   try {
@@ -39,7 +47,7 @@ function shouldSkipDuplicate(eventType, payload) {
 }
 
 export async function trackAnalyticsEvent(eventType, payload = {}) {
-  if (!eventType || Date.now() < analyticsRetryAfter || typeof window === 'undefined') return
+  if (!eventType || !isAnalyticsEnabled() || Date.now() < analyticsRetryAfter) return
 
   const path = payload.path || window.location.pathname
   const search = payload.search ?? window.location.search

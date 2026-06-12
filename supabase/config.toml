@@ -1,2 +1,5 @@
 [functions.latido_push_notification]
 verify_jwt = false
+
+[functions.latido_message_email]
+verify_jwt = false

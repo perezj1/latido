@@ -6,7 +6,8 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { supabase } from './lib/supabase'
 import { startUserPresence, trackUserPresence } from './lib/presence'
-import { trackAnalyticsEvent } from './lib/analytics'
+import { isAnalyticsEnabled, trackAnalyticsEvent } from './lib/analytics'
+import { startEmailNotificationPresence } from './lib/emailNotificationPresence'
 import { PARTNER_LANDING_URL, trackPartnerInteraction } from './lib/partnerAttribution'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
 import { C, PP } from './lib/theme'
@@ -172,6 +173,7 @@ function UserPresenceSync() {
     }
 
     const stopPresence = startUserPresence(user.id)
+    const stopEmailNotificationPresence = startEmailNotificationPresence(user.id)
 
     markLastSeen()
     const lastSeenInterval = window.setInterval(markLastSeen, 60_000)
@@ -193,6 +195,7 @@ function UserPresenceSync() {
       window.clearInterval(lastSeenInterval)
       window.clearInterval(presenceInterval)
       stopPresence()
+      stopEmailNotificationPresence()
       window.removeEventListener('pagehide', onPageHide)
       window.removeEventListener('beforeunload', onPageHide)
       window.removeEventListener('focus', onVisible)
@@ -546,7 +549,7 @@ export default function App() {
         <Routes>
           <Route path="/*" element={<AppShell />} />
         </Routes>
-        <Analytics />
+        {isAnalyticsEnabled() && <Analytics />}
       </BrowserRouter>
     </AuthProvider>
   )
