@@ -1,6 +1,7 @@
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { supabase } from './lib/supabase'
@@ -545,6 +546,7 @@ export default function App() {
         <Routes>
           <Route path="/*" element={<AppShell />} />
         </Routes>
+        <Analytics />
       </BrowserRouter>
     </AuthProvider>
   )
