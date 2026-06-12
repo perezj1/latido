@@ -88,12 +88,12 @@ function buildMessageEmail(name: string, conversationId?: string | null) {
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;padding:32px">
-            <tr><td style="font-size:24px;font-weight:700;color:#e85d3f;padding-bottom:20px">Latido</td></tr>
+            <tr><td style="font-size:24px;font-weight:700;color:#2563EB;padding-bottom:20px">Latido</td></tr>
             <tr><td style="font-size:16px;line-height:1.6">Hola ${safeName},</td></tr>
             <tr><td style="font-size:16px;line-height:1.6;padding:12px 0 24px">Tienes mensajes sin leer en Latido.</td></tr>
             <tr>
               <td>
-                <a href="${url}" style="display:inline-block;background:#e85d3f;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:12px">Ver mensajes</a>
+                <a href="${url}" style="display:inline-block;background:#2563EB;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:12px">Ver mensajes</a>
               </td>
             </tr>
             <tr><td style="font-size:12px;line-height:1.5;color:#6b7280;padding-top:28px">Este aviso se envia una sola vez hasta que leas todos tus mensajes.</td></tr>

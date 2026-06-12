@@ -46,13 +46,25 @@ const OPTIONAL_PROVIDER_VERIFICATION_COLUMNS = new Set([
 ])
 const ADMIN_QUERY_PAGE_SIZE = 500
 const ADMIN_LIST_PAGE_SIZE = 40
+const ADMIN_ACTIVITY_RETENTION_DAYS = 60
+const ADMIN_ANALYTICS_EVENT_TYPES = [
+  'page_view',
+  'search',
+  'search_result_open',
+  'partner_outbound_click',
+  'partner_page_view',
+  'partner_service_click',
+  'partner_cross_click',
+  'partner_promo_open',
+  'partner_page_redirect',
+]
 const PARTNER_METRICS_EXCLUDED_EMAILS = new Set(['test@g.com'])
 const ADMIN_TAB_DATA_GROUPS = {
   users: ['users'],
   analytics: ['users', 'analytics'],
   partners: ['users', 'analytics'],
   live: ['users', 'analytics'],
-  overview: ['users', 'reports', 'moderation', 'content', 'businesses', 'analytics', 'messages'],
+  overview: ['users', 'reports', 'moderation', 'contentMetrics', 'businesses', 'analytics', 'messages'],
   businessVerification: ['businesses'],
   content: ['content'],
   reports: ['users', 'reports'],
@@ -73,6 +85,7 @@ async function fetchAllAdminRows({
   orderColumn = 'created_at',
   ascending = false,
   since = '',
+  transformQuery,
 }) {
   const rows = []
   let offset = 0
@@ -83,6 +96,7 @@ async function fetchAllAdminRows({
       .select(columns)
 
     if (since) query = query.gte(orderColumn, since)
+    if (transformQuery) query = transformQuery(query)
     query = query
       .order(orderColumn, { ascending })
       .order('id', { ascending: true })
@@ -1339,6 +1353,11 @@ export default function Admin() {
   }[presenceStatus] || { label: presenceStatus, color: '#64748B', bg: '#F1F5F9', note: 'Estado realtime' }
 
   useEffect(() => {
+    if (tab !== 'live' && tab !== 'overview') {
+      setPresenceStatus('idle')
+      return undefined
+    }
+
     const stopOnline = subscribeToOnlineUsers(setOnlineUserIds)
     const stopStatus = subscribeToPresenceStatus(setPresenceStatus)
 
@@ -1346,7 +1365,7 @@ export default function Admin() {
       stopOnline()
       stopStatus()
     }
-  }, [])
+  }, [tab])
 
   useEffect(() => {
     loadAdminData({ groups: ['users'] })
@@ -1366,6 +1385,7 @@ export default function Admin() {
     const requestedGroups = [...new Set(options?.groups || getAdminTabDataGroups(tab))]
     const groups = requestedGroups.filter(group =>
       !loadingDataGroupsRef.current.has(group)
+      && !(group === 'contentMetrics' && loadedDataGroupsRef.current.has('content'))
       && (force || !loadedDataGroupsRef.current.has(group))
     )
 
@@ -1377,29 +1397,51 @@ export default function Admin() {
     if (!silent) setLoading(true)
 
     try {
-      const analyticsSince = new Date(Date.now() - 60 * 86_400_000).toISOString()
+      const analyticsSince = new Date(
+        Date.now() - ADMIN_ACTIVITY_RETENTION_DAYS * 86_400_000
+      ).toISOString()
+      const wantsContent = groups.includes('content')
+      const wantsContentMetrics = groups.includes('contentMetrics')
+      const contentGroup = wantsContent ? 'content' : 'contentMetrics'
       const skipped = data => ({ data, count: data.length, error: null, skipped: true })
       const [reportsRes, queueRes, usersRes, listingsRes, jobsRes, providersRes, analyticsRes, messagesRes] = await Promise.all([
-        groups.includes('reports') ? fetchAllAdminRows({ table: 'reports' }) : skipped(reports),
-        groups.includes('moderation') ? fetchAllAdminRows({ table: 'moderation_queue' }) : skipped(queue),
+        groups.includes('reports') ? fetchAllAdminRows({
+          table: 'reports',
+          transformQuery: query => query.or(`status.eq.pending,created_at.gte.${analyticsSince}`),
+        }) : skipped(reports),
+        groups.includes('moderation') ? fetchAllAdminRows({
+          table: 'moderation_queue',
+          transformQuery: query => query.eq('status', 'pending'),
+        }) : skipped(queue),
         groups.includes('users')
           ? fetchAllAdminRows({ table: 'profiles', columns: 'id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at' })
           : skipped(users),
-        groups.includes('content')
-          ? fetchAllAdminRows({ table: 'listings', columns: 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at' })
+        wantsContent || wantsContentMetrics
+          ? fetchAllAdminRows({
+              table: 'listings',
+              columns: wantsContent
+                ? 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at'
+                : 'id,active,created_at',
+            })
           : skipped(recentListings),
-        groups.includes('content')
-          ? fetchAllAdminRows({ table: 'jobs', columns: 'id,title,company,desc,sector,active,user_id,canton,city,created_at' })
+        wantsContent || wantsContentMetrics
+          ? fetchAllAdminRows({
+              table: 'jobs',
+              columns: wantsContent
+                ? 'id,title,company,desc,sector,active,user_id,canton,city,created_at'
+                : 'id,active,created_at',
+            })
           : skipped(recentJobs),
         groups.includes('businesses') ? fetchAllAdminRows({ table: 'providers' }) : skipped(businesses),
         groups.includes('analytics') ? fetchAllAdminRows({
           table: 'analytics_events',
           columns: 'id,event_type,path,search,user_id,session_id,metadata,created_at',
           since: analyticsSince,
+          transformQuery: query => query.in('event_type', ADMIN_ANALYTICS_EVENT_TYPES),
         }) : skipped(analyticsEvents),
         groups.includes('messages') ? fetchAllAdminRows({
           table: 'messages',
-          columns: 'id,conversation_id,sender_id,created_at',
+          columns: 'id,sender_id,created_at',
           since: analyticsSince,
         }) : skipped(messageEvents),
       ])
@@ -1408,8 +1450,8 @@ export default function Admin() {
         ['reports', 'reportes', reportsRes],
         ['moderation', 'moderacion', queueRes],
         ['users', 'usuarios', usersRes],
-        ['content', 'anuncios', listingsRes],
-        ['content', 'empleos', jobsRes],
+        [contentGroup, 'anuncios', listingsRes],
+        [contentGroup, 'empleos', jobsRes],
         ['businesses', 'negocios', providersRes],
         ['analytics', 'analitica', analyticsRes],
         ['messages', 'mensajes', messagesRes],
@@ -1442,12 +1484,15 @@ export default function Admin() {
 
       const nextReports = groups.includes('reports') && !reportsRes.error ? reportsRes.data : []
       const nextQueue = groups.includes('moderation') && !queueRes.error ? queueRes.data : []
-      const relatedContent = await fetchAdminContentForItems([...nextReports, ...nextQueue])
+      const relatedContent = await fetchAdminContentForItems([
+        ...nextReports.filter(item => item.status === 'pending'),
+        ...nextQueue,
+      ])
       nextErrors.push(...relatedContent.errors)
 
       const nextContent = new Map()
-      ;(groups.includes('content') ? listingsRes.data || [] : []).forEach(item => nextContent.set(`listing:${item.id}`, item))
-      ;(groups.includes('content') ? jobsRes.data || [] : []).forEach(item => nextContent.set(`job:${item.id}`, item))
+      ;(wantsContent ? listingsRes.data || [] : []).forEach(item => nextContent.set(`listing:${item.id}`, item))
+      ;(wantsContent ? jobsRes.data || [] : []).forEach(item => nextContent.set(`job:${item.id}`, item))
       ;(groups.includes('businesses') ? providersRes.data || [] : []).forEach(item => {
         nextContent.set(`provider:${item.id}`, item)
         nextContent.set(`business:${item.id}`, item)
@@ -1468,8 +1513,8 @@ export default function Admin() {
       if (groups.includes('reports') && !reportsRes.error) setReports(nextReports)
       if (groups.includes('moderation') && !queueRes.error) setQueue(nextQueue)
       if (groups.includes('users') && !usersRes.error) setUsers(usersRes.data)
-      if (groups.includes('content') && !listingsRes.error) setRecentListings(listingsRes.data)
-      if (groups.includes('content') && !jobsRes.error) setRecentJobs(jobsRes.data)
+      if ((wantsContent || wantsContentMetrics) && !listingsRes.error) setRecentListings(listingsRes.data)
+      if ((wantsContent || wantsContentMetrics) && !jobsRes.error) setRecentJobs(jobsRes.data)
       if (groups.includes('businesses') && !providersRes.error) setBusinesses(providersRes.data)
       if (nextContent.size) {
         setContentByKey(previous => {
@@ -1480,6 +1525,7 @@ export default function Admin() {
       }
 
       groups.forEach(group => loadedDataGroupsRef.current.add(group))
+      if (wantsContent) loadedDataGroupsRef.current.add('contentMetrics')
       setLoadedDataGroups(new Set(loadedDataGroupsRef.current))
       if (nextErrors.length && !silent) {
         toast.error('Hay apartados sin datos. El panel muestra el detalle del error.')
@@ -1511,9 +1557,13 @@ export default function Admin() {
       .maybeSingle()
     if (error) { toast.error(error.message || 'No se pudo actualizar el reporte'); return }
     if (!data) { toast.error('El reporte no se actualizó. Revisa los permisos RLS del administrador.'); return }
+    setReports(previous => previous.map(item =>
+      item.id === report.id
+        ? { ...item, status, reviewed_by:user.id, reviewed_at:new Date().toISOString() }
+        : item
+    ))
     await logAdminAction({ admin_id: user.id, action_type: `report_${status}`, target_type: report.content_type, target_id: report.content_id, notes: report.reason || '' })
     toast.success('Reporte actualizado')
-    loadAdminData({ groups: ['reports'], force: true, silent: true })
   }
 
   async function setUserBanned(profile, banned) {
@@ -1537,6 +1587,21 @@ export default function Admin() {
     const { data, error } = await supabase.from(table).update({ active }).eq('id', id).select('id,active').maybeSingle()
     if (error) throw error
     if (!data) throw new Error('No se actualizó el contenido. Revisa los permisos RLS del administrador.')
+
+    const updateItems = previous => previous.map(item =>
+      String(item.id) === String(id) ? { ...item, active:data.active } : item
+    )
+    if (table === 'listings') setRecentListings(updateItems)
+    if (table === 'jobs') setRecentJobs(updateItems)
+    if (table === 'providers') setBusinesses(updateItems)
+    setContentByKey(previous => {
+      const key = `${type}:${id}`
+      if (!previous.has(key)) return previous
+      const next = new Map(previous)
+      next.set(key, { ...next.get(key), active:data.active })
+      return next
+    })
+
     return data
   }
 
@@ -1750,9 +1815,9 @@ export default function Admin() {
         .maybeSingle()
       if (error) throw error
       if (!data) throw new Error('La cola no se actualizó. Revisa los permisos RLS del administrador.')
+      setQueue(previous => previous.filter(queueItem => queueItem.id !== item.id))
       await logAdminAction({ admin_id: user.id, action_type: `moderation_${status}`, target_type: item.content_type, target_id: item.content_id, notes: item.reason || '' })
       toast.success(status === 'approved' ? 'Contenido aprobado' : 'Contenido eliminado')
-      loadAdminData({ groups: ['moderation'], force: true, silent: true })
     } catch (err) {
       toast.error(err.message || 'No se pudo procesar')
     }
@@ -1995,8 +2060,11 @@ export default function Admin() {
     { id: 'content',    icon: '📋', label: 'Contenido',   value: loading ? '—' : stats.content, color: '#059669', urgent: false, sub: 'Anuncios y empleos' },
   ]
 
+  const isDataGroupReady = group =>
+    loadedDataGroups.has(group)
+    || (group === 'contentMetrics' && loadedDataGroups.has('content'))
   const isTabDataReady = tabId =>
-    getAdminTabDataGroups(tabId).every(group => loadedDataGroups.has(group))
+    getAdminTabDataGroups(tabId).every(isDataGroupReady)
   const isTabDataLoading = tabId =>
     getAdminTabDataGroups(tabId).some(group => loadingDataGroupsRef.current.has(group))
   const navValue = (tabId, value) =>
@@ -2088,13 +2156,13 @@ export default function Admin() {
       : tab === 'reports'
         ? [
             { label: 'Reportes pendientes', value: loading ? '...' : stats.reports, hint: 'Necesitan revision', color: '#DC2626' },
-            { label: 'Reportes totales', value: loading ? '...' : reports.length, hint: 'Histórico completo visible', color: C.text },
+            { label: 'Reportes cargados', value: loading ? '...' : reports.length, hint: `Últimos ${ADMIN_ACTIVITY_RETENTION_DAYS} días y pendientes`, color: C.text },
             { label: 'Contenido accionable', value: loading ? '...' : filteredPendingReports.length, hint: 'Pendiente según filtro', color: '#D97706' },
           ]
         : tab === 'moderation'
           ? [
               { label: 'En revision', value: loading ? '...' : stats.queue, hint: 'Cola pendiente', color: '#D97706' },
-              { label: 'Cola total', value: loading ? '...' : queue.length, hint: 'Histórico completo visible', color: C.text },
+              { label: 'Cola cargada', value: loading ? '...' : queue.length, hint: 'Solo elementos pendientes', color: C.text },
               { label: 'Acciones pendientes', value: loading ? '...' : totalPendingActions, hint: 'Incluye reportes y negocios', color: adminHealthColor },
             ]
           : [
@@ -3356,7 +3424,6 @@ export default function Admin() {
                     <AdminButton
                       variant={item.active ? 'danger' : 'success'}
                       onClick={() => setContentActive('listing', item.id, !item.active)
-                        .then(() => loadAdminData({ groups: ['content'], force: true, silent: true }))
                         .catch(error => toast.error(error.message || 'No se pudo actualizar el anuncio'))}
                     >
                       {item.active ? 'Ocultar' : 'Activar'}
@@ -3392,7 +3459,6 @@ export default function Admin() {
                     <AdminButton
                       variant={item.active ? 'danger' : 'success'}
                       onClick={() => setContentActive('job', item.id, !item.active)
-                        .then(() => loadAdminData({ groups: ['content'], force: true, silent: true }))
                         .catch(error => toast.error(error.message || 'No se pudo actualizar el empleo'))}
                     >
                       {item.active ? 'Ocultar' : 'Activar'}

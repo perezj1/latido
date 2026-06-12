@@ -22,11 +22,13 @@ BEGIN
   IF to_regclass('public.reports') IS NOT NULL THEN
     EXECUTE 'CREATE INDEX IF NOT EXISTS idx_reports_created_at_admin ON public.reports (created_at DESC, id ASC)';
     EXECUTE 'CREATE INDEX IF NOT EXISTS idx_reports_status_created_at_admin ON public.reports (status, created_at DESC)';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_reports_pending_admin ON public.reports (created_at DESC, id ASC) WHERE status = ''pending''';
   END IF;
 
   IF to_regclass('public.moderation_queue') IS NOT NULL THEN
     EXECUTE 'CREATE INDEX IF NOT EXISTS idx_moderation_created_at_admin ON public.moderation_queue (created_at DESC, id ASC)';
     EXECUTE 'CREATE INDEX IF NOT EXISTS idx_moderation_status_created_at_admin ON public.moderation_queue (status, created_at DESC)';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_moderation_pending_admin ON public.moderation_queue (created_at DESC, id ASC) WHERE status = ''pending''';
   END IF;
 
   IF to_regclass('public.analytics_events') IS NOT NULL THEN
