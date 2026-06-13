@@ -50,7 +50,7 @@ export default function Header({ transparent }) {
         transition:'all .3s',
       }}
     >
-      <div style={{ maxWidth:1200, margin:'0 auto', padding:'12px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
+      <div style={{ width:'100%', maxWidth:1200, margin:'0 auto', padding:'12px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
         {!isLoggedIn && (
           <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
             <img src="/favicon.svg" alt="Latido" style={{ width:32, height:32 }} />
