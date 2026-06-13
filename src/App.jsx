@@ -7,7 +7,12 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { supabase } from './lib/supabase'
 import { startUserPresence, trackUserPresence } from './lib/presence'
-import { isAnalyticsEnabled, trackAnalyticsEvent } from './lib/analytics'
+import {
+  getAnalyticsRoute,
+  isAnalyticsEnabled,
+  sanitizeVercelAnalyticsEvent,
+  trackAnalyticsEvent,
+} from './lib/analytics'
 import { startEmailNotificationPresence } from './lib/emailNotificationPresence'
 import { PARTNER_LANDING_URL, trackPartnerInteraction } from './lib/partnerAttribution'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
@@ -19,7 +24,7 @@ import Header from './components/Header'
 import GlobalSearch from './components/GlobalSearch'
 import Seo from './components/Seo'
 import CookieConsent from './components/CookieConsent'
-import { getCookieConsent, hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
+import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Home = lazy(() => import('./pages/Home'))
@@ -51,6 +56,23 @@ function useAnalyticsConsent() {
   }), [])
 
   return enabled
+}
+
+function VercelTelemetry() {
+  const analyticsConsent = useAnalyticsConsent()
+  const location = useLocation()
+
+  if (!analyticsConsent || !isAnalyticsEnabled()) return null
+
+  return (
+    <>
+      <Analytics beforeSend={sanitizeVercelAnalyticsEvent} />
+      <SpeedInsights
+        route={getAnalyticsRoute(location.pathname)}
+        beforeSend={sanitizeVercelAnalyticsEvent}
+      />
+    </>
+  )
 }
 
 function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
@@ -551,8 +573,6 @@ function AppShell() {
 }
 
 export default function App() {
-  const analyticsConsent = useAnalyticsConsent()
-
   return (
     <AuthProvider>
       <BrowserRouter>
