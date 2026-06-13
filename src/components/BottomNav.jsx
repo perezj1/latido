@@ -86,7 +86,7 @@ export default function BottomNav() {
   return (
     <>
       {fab && (
-        <div style={{
+        <div className="publish-fab" style={{
           position:'fixed', bottom:'calc(88px + env(safe-area-inset-bottom) + var(--latido-install-banner-lift, 0px))', right:'calc(18px + env(safe-area-inset-right))', zIndex:60,
           padding:2.5, borderRadius:26,
           background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)',

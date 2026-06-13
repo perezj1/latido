@@ -931,7 +931,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  max-width: 980px;
+  max-width: 1200px;
   margin: 0 auto 13px;
   padding: 0 16px;
 }
@@ -968,8 +968,8 @@
 .home-partners-scroll {
   position: relative;
   overflow-x: auto;
-  padding: 3px max(16px, calc((100vw - 980px) / 2)) 18px;
-  scroll-padding-inline: max(16px, calc((100vw - 980px) / 2));
+  padding: 3px max(16px, calc((100vw - 1200px) / 2)) 18px;
+  scroll-padding-inline: max(16px, calc((100vw - 1200px) / 2));
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
 }
@@ -991,7 +991,7 @@
 
 .home-partners-scroll--single .partner-card {
   width: 100%;
-  max-width: 980px;
+  max-width: 1200px;
 }
 
 .partner-card {
@@ -2129,6 +2129,9 @@ img { max-width: 100%; }
 /* ── Category bar sticky offset ── */
 .cat-bar { position: sticky; top: 0; z-index: 40; }
 @media (min-width: 768px) { .cat-bar { top: 57px; } }
+
+/* ── Publish FAB: lower on desktop (no bottom nav) ── */
+@media (min-width: 768px) { .publish-fab { bottom: 32px !important; } }
 .sticky-toolbar-shell {
   background: #F0F6FF;
   backdrop-filter: none;
