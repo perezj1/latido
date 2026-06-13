@@ -1632,9 +1632,9 @@ export default function Comunidades() {
   const tabCopy = TAB_COPY[tab] || TAB_COPY.negocios
 
   return (
-    <div style={{ maxWidth:1000, margin:'0 auto', padding:'0 24px 100px' }}>
+    <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px 100px' }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
-        <div style={{ width:'100%', maxWidth:1048, margin:'0 auto', padding:'24px 24px 0' }}>
+        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'24px 24px 0' }}>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:0 }}>{tabCopy.title}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:isLoggedIn ? 14 : 20 }}>{tabCopy.subtitle}</p>
 
@@ -1644,7 +1644,7 @@ export default function Comunidades() {
       </div>
 
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:16, padding:'10px 0 12px' }}>
-        <div style={{ width:'100%', maxWidth:1048, margin:'0 auto', padding:'0 8px' }}>
+        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px' }}>
           <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
           <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />
           {tab !== 'eventos' && (

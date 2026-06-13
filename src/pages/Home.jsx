@@ -924,7 +924,7 @@ export default function Home() {
           <div style={{ position:'absolute', bottom:-60, left:-20, width:180, height:180, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
         </div>
 
-        <div style={{ maxWidth:980, margin:'0 auto', position:'relative', zIndex:1 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:24 }}>
             <div style={{ flex:1, minWidth:0 }}>
               {/* <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>
@@ -1069,7 +1069,7 @@ export default function Home() {
 
       {showAttentionSection && (
         <section style={{ background:'#fff', padding:'18px 0 2px' }}>
-          <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px' }}>
+          <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, marginBottom:10 }}>
               <div>
                 <p style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, margin:'0 0 3px', textTransform:'uppercase' }}>
@@ -1211,7 +1211,7 @@ export default function Home() {
 
       {/* ── ANUNCIOS RECIENTES ── */}
       <section style={{ padding:'24px 0 0' }}>
-        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0, letterSpacing:0 }}>📌 Anuncios recientes</h2>
           <Link to="/tablon" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todos →</Link>
         </div>
@@ -1272,7 +1272,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* <section style={{ maxWidth:980, margin:'0 auto', padding:'34px 16px 0' }}>
+      {/* <section style={{ maxWidth:1200, margin:'0 auto', padding:'34px 16px 0' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, gap:12 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>
@@ -1339,7 +1339,7 @@ export default function Home() {
       </section> */}
 
       <section style={{ padding:'40px 0 0' }}>
-        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:0 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:0 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
               🎉 Próximos eventos 
@@ -1357,7 +1357,7 @@ export default function Home() {
       </section>
 
       <section style={{ padding:'40px 0 0' }}>
-        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
               🏪 Negocios
@@ -1443,7 +1443,7 @@ export default function Home() {
       <PartnersSection />
 
       <section style={{ padding:'40px 0 0' }}>
-        <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
               👥 Grupos para ti
@@ -1496,7 +1496,7 @@ export default function Home() {
       </section>
 
       {/* Empleos recientes — oculto temporalmente
-      <section style={{ maxWidth:980, margin:'0 auto', padding:'40px 16px 0' }}>
+      <section style={{ maxWidth:1200, margin:'0 auto', padding:'40px 16px 0' }}>
         ...
       </section>
       */}
@@ -1514,7 +1514,7 @@ export default function Home() {
         }
         return (
           <section style={{ padding:'40px 0 0' }}>
-            <div style={{ maxWidth:980, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+            <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
               <div>
                 <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>📚 Guías</h2>
                 <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Permisos, trabajo, vivienda, salud y dinero en español.</p>
@@ -1596,7 +1596,7 @@ export default function Home() {
         </div>
       )}
 
-      <section style={{ maxWidth:980, margin:'0 auto', padding:'42px 16px 110px' }}>
+      <section style={{ maxWidth:1200, margin:'0 auto', padding:'42px 16px 110px' }}>
   <div style={{ background:'linear-gradient(135deg,#1E3A8A,#2563EB)', borderRadius:28, padding:'28px 24px', position:'relative', overflow:'hidden' }}>
     <div style={{ position:'absolute', right:-40, top:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
     <div style={{ position:'absolute', left:-20, bottom:-30, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
