@@ -6,11 +6,12 @@ import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
 import { trackSearchEvent } from '../lib/analytics'
 import { C, PP, CAT_COLORS } from '../lib/theme'
-import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
+import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, JOB_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
 import ReportButton from '../components/ReportButton'
 import ShareButton from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
+import CompactFilterSelect from '../components/CompactFilterSelect'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import toast from 'react-hot-toast'
 
@@ -145,6 +146,30 @@ const AD_TYPE_SHORT_LABEL = {
 }
 const AD_TYPE_CARD_EMOJI = {
   ofrece:'🏷️',
+}
+
+const PRICE_RANGES = [
+  { id:'', label:'Cualquier precio' },
+  { id:'0-50', label:'Hasta CHF 50', min:0, max:50 },
+  { id:'50-150', label:'CHF 50 - 150', min:50, max:150 },
+  { id:'150-500', label:'CHF 150 - 500', min:150, max:500 },
+  { id:'500-1000', label:'CHF 500 - 1.000', min:500, max:1000 },
+  { id:'1000-plus', label:'Más de CHF 1.000', min:1000, max:null },
+]
+
+function parseListingPrice(value='') {
+  if (!value) return null
+  if (/gratis/i.test(value)) return 0
+
+  const match = String(value).replace(/[’']/g, '').match(/\d[\d\s.,]*/)
+  if (!match) return null
+
+  const normalized = match[0]
+    .replace(/\s/g, '')
+    .replace(/[.,](?=\d{3}(?:\D|$))/g, '')
+    .replace(',', '.')
+  const parsed = Number.parseFloat(normalized)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 function getJobIntentTag(job) {
@@ -783,7 +808,9 @@ export default function Tablon() {
   const privacy  = searchParams.get('privacy') || ''
   const jobType  = searchParams.get('jobType') || ''
   const jobIntent = searchParams.get('jobIntent') || ''
-  const maxPrice = searchParams.get('maxPrice') || ''
+  const legacyMaxPrice = searchParams.get('maxPrice') || ''
+  const priceRange = searchParams.get('priceRange') || ''
+  const hasPriceFilter = Boolean(priceRange || legacyMaxPrice)
   const openAdId  = searchParams.get('openAd') || ''
   const openJobId = searchParams.get('openJob') || ''
   const routeAdId = adSlug ? getIdFromSlug(adSlug) : ''
@@ -809,8 +836,40 @@ export default function Tablon() {
     setFilter(k, v)
     scrollPageTop()
   }
+  const setCategoryFilter = value => {
+    const p = new URLSearchParams(searchParams)
+    value ? p.set('cat', value) : p.delete('cat')
+
+    if (value === 'empleo') {
+      if (['busca', 'ofrece'].includes(type)) p.set('jobIntent', type)
+      p.delete('type')
+      p.delete('priceRange')
+      p.delete('maxPrice')
+      p.delete('privacy')
+    } else {
+      if (['busca', 'ofrece'].includes(jobIntent)) p.set('type', jobIntent)
+      p.delete('jobIntent')
+      p.delete('jobType')
+
+      const nextType = p.get('type') || ''
+      if (value === 'venta' && nextType === 'ofrece') p.delete('type')
+      if (value && value !== 'venta' && ['vende', 'regala'].includes(nextType)) p.delete('type')
+    }
+
+    setSearchParams(p)
+    scrollPageTop()
+  }
+  const setPriceRangeFilter = value => {
+    const p = new URLSearchParams(searchParams)
+    value ? p.set('priceRange', value) : p.delete('priceRange')
+    p.delete('maxPrice')
+    setSearchParams(p)
+    scrollPageTop()
+  }
   const clearFilters = () => {
-    setSearchParams({}, showFilters ? { replace:true } : undefined)
+    const p = new URLSearchParams()
+    if (cat) p.set('cat', cat)
+    setSearchParams(p, showFilters ? { replace:true } : undefined)
     scrollPageTop()
   }
   const openAdDetails = (ad) => {
@@ -859,7 +918,8 @@ export default function Tablon() {
   }
   const activeCount = isEmpleos
     ? [jobIntent, jobType, canton, plz].filter(Boolean).length
-    : [type, canton, plz, privacy, maxPrice].filter(Boolean).length
+    : [type, canton, plz, privacy, hasPriceFilter].filter(Boolean).length
+  const secondaryActiveCount = [plz, privacy].filter(Boolean).length
 
   useEffect(() => {
     if (isAdmin) return undefined
@@ -880,13 +940,14 @@ export default function Tablon() {
           privacy: privacy || null,
           job_type: jobType || null,
           job_intent: jobIntent || null,
-          max_price: maxPrice || null,
+          price_range: priceRange || null,
+          max_price: legacyMaxPrice || null,
         },
       })
     }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [canton, cat, isAdmin, isEmpleos, jobIntent, jobType, maxPrice, plz, privacy, search, type, user?.id])
+  }, [canton, cat, isAdmin, isEmpleos, jobIntent, jobType, legacyMaxPrice, plz, priceRange, privacy, search, type, user?.id])
 
 
   useEffect(() => {
@@ -1062,6 +1123,7 @@ export default function Tablon() {
 
   const filteredAds = useMemo(() => ads.filter(a => {
     if (!(isLoggedIn || !a.privacy || a.privacy === 'public')) return false
+    if (!cat && getAdCategoryId(a) === 'empleo') return false
     if (cat && getAdCategoryId(a) !== cat) return false
     if (type) {
       const typeMatches = cat === 'venta' && type === 'vende'
@@ -1069,23 +1131,27 @@ export default function Tablon() {
         : a.type === type
       if (!typeMatches) return false
     }
-    if (canton && a.canton && a.canton !== canton) return false
-    if (plz && a.plz && !a.plz.startsWith(plz)) return false
+    if (canton && a.canton !== canton) return false
+    if (plz && !a.plz?.startsWith(plz)) return false
     if (privacy && a.privacy !== privacy) return false
-    if (maxPrice && a.price) {
-      const num = parseFloat(a.price.replace(/[^0-9.]/g, ''))
-      if (!isNaN(num) && num > parseFloat(maxPrice)) return false
+    if (hasPriceFilter) {
+      const range = PRICE_RANGES.find(option => option.id === priceRange)
+      const numericPrice = parseListingPrice(a.price)
+      if (numericPrice === null) return false
+      if (range?.min != null && numericPrice < range.min) return false
+      if (range?.max != null && numericPrice > range.max) return false
+      if (!range && legacyMaxPrice && numericPrice > Number.parseFloat(legacyMaxPrice)) return false
     }
     if (deferredSearch && !norm(a.title).includes(deferredSearch) && !norm(a.desc).includes(deferredSearch)) return false
     return true
-  }), [ads, canton, cat, deferredSearch, isLoggedIn, maxPrice, plz, privacy, type])
+  }), [ads, canton, cat, deferredSearch, hasPriceFilter, isLoggedIn, legacyMaxPrice, plz, priceRange, privacy, type])
 
   const communityJobs = useMemo(() => {
     const fromJobs = jobs.filter(j =>
       (!jobIntent || getJobIntentId(j) === jobIntent) &&
       (!jobType || j.type === jobType) &&
-      (!canton || !j.canton || j.canton === canton) &&
-      (!plz || !j.plz || j.plz?.startsWith(plz)) &&
+      (!canton || j.canton === canton) &&
+      (!plz || j.plz?.startsWith(plz)) &&
       (!deferredSearch || norm(j.title).includes(deferredSearch) || norm(j.company).includes(deferredSearch) || norm(getJobIntentMeta(j).label).includes(deferredSearch))
     )
     const fromAds = ads.filter(a =>
@@ -1093,8 +1159,8 @@ export default function Tablon() {
       (isLoggedIn || !a.privacy || a.privacy === 'public') &&
       (!jobIntent || getJobIntentId(a) === jobIntent) &&
       (!jobType || a.type === jobType || a.sub === jobType) &&
-      (!canton || !a.canton || a.canton === canton) &&
-      (!plz || !a.plz || a.plz?.startsWith(plz)) &&
+      (!canton || a.canton === canton) &&
+      (!plz || a.plz?.startsWith(plz)) &&
       (!deferredSearch || norm(a.title).includes(deferredSearch) || norm(a.desc).includes(deferredSearch) || norm(getJobIntentMeta(a).label).includes(deferredSearch))
     ).map(a => ({
       id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
@@ -1110,11 +1176,19 @@ export default function Tablon() {
   const tablonItems = useMemo(() => {
     if (cat) return filteredAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' }))
 
+    const jobsForCurrentFilters = hasPriceFilter
+      ? []
+      : type
+        ? ['busca', 'ofrece'].includes(type)
+          ? filteredJobs.filter(job => getJobIntentId(job) === type)
+          : []
+        : filteredJobs
+
     return [
       ...filteredAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' })),
-      ...filteredJobs.map(job => ({ kind:'job', item:job, sortDate:job.created_at || '' })),
+      ...jobsForCurrentFilters.map(job => ({ kind:'job', item:job, sortDate:job.created_at || '' })),
     ].sort((a, b) => String(b.sortDate).localeCompare(String(a.sortDate)))
-  }, [cat, filteredAds, filteredJobs])
+  }, [cat, filteredAds, filteredJobs, hasPriceFilter, type])
 
   const relatedAdsForSelected = useMemo(() => {
     if (!selectedAd) return []
@@ -1218,9 +1292,21 @@ export default function Tablon() {
     return (priority[a.id] ?? 99) - (priority[b.id] ?? 99)
   })
 
-  const catOptions  = [{ id:'', label:'Todos' }, ...orderedCats.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
-  const typeOptions = [{ id:'', label:'Todos' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
-  const jobTypeOpts = [{ id:'', label:'Todos' }, { id:'Full-time', label:'Full-time' }, { id:'Part-time', label:'Part-time' }, { id:'Freelance', label:'Freelance' }, { id:'Prácticas', label:'Prácticas' }]
+  const catOptions = [{ id:'', label:'Todos' }, ...orderedCats.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
+  const cantonOptions = [{ id:'', label:'Toda Suiza' }, ...CANTONS.map(c => ({ id:c.code, label:`${c.code} · ${c.name}` }))]
+  const generalIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
+  const standardIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.filter(t => ['busca', 'ofrece'].includes(t.id)).map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
+  const marketIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.filter(t => ['busca', 'vende', 'regala'].includes(t.id)).map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
+  const jobIntentOptions = [{ id:'', label:'Todas' }, ...JOB_INTENTS.map(intent => ({ id:intent.id, label:`${intent.emoji} ${intent.label}` }))]
+  const jobTypeOptions = [{ id:'', label:'Todos' }, ...JOB_TYPES.map(jobTypeOption => ({ id:jobTypeOption.id, label:`${jobTypeOption.emoji} ${jobTypeOption.label}` }))]
+  const intentOptions = isEmpleos
+    ? jobIntentOptions
+    : isMercado
+      ? marketIntentOptions
+      : cat
+        ? standardIntentOptions
+        : generalIntentOptions
+  const intentValue = isEmpleos ? jobIntent : type
   const pageContext = getTablonContext(cat, isEmpleos)
 
   return (
@@ -1246,11 +1332,11 @@ export default function Tablon() {
         </div>
       </div>
 
-      <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:activeCount>0 ? 10 : 18, padding:'10px 0 12px' }}>
+      <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:18, padding:'10px 0 12px' }}>
         <div style={{ width:'100%', maxWidth:840, margin:'0 auto', padding:'0 8px' }}>
-          <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
+          <div className="tablon-toolbar-card" style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
       {/* Search */}
-      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+      <div style={{ display:'flex', gap:8, marginBottom:10 }}>
         <div style={{ flex:1, position:'relative' }}>
           <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:14, color:C.light }}>🔍</span>
           <input
@@ -1259,42 +1345,65 @@ export default function Tablon() {
             value={search} onChange={e=>setSearch(e.target.value)}
           />
         </div>
-        <button onClick={()=>setShowFilters(true)} style={{ position:'relative', background: activeCount>0?C.primary:C.bg, border:`1.5px solid ${activeCount>0?C.primary:C.border}`, borderRadius:13, padding:'0 16px', cursor:'pointer', fontFamily:PP, fontSize:11, fontWeight:700, color: activeCount>0?'#fff':C.mid, display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-          ⚙️ Filtros
-          {activeCount > 0 && <span style={{ background:'#fff', color:C.primary, borderRadius:'50%', width:16, height:16, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800 }}>{activeCount}</span>}
-        </button>
       </div>
 
-      {/* Category pills */}
-      <div className="no-scroll" style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:2 }}>
-        {catOptions.map(o => {
-          const active = cat === o.id
-          return (
-            <button key={o.id} onClick={()=>setFilterAndScroll('cat', active?'':o.id)} style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'5px 12px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:'#fff', color:active?'#fff':C.mid, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-              {o.label}
-            </button>
-          )
-        })}
+      {/* Contextual filters */}
+      <div className="tablon-filter-row no-scroll">
+        <CompactFilterSelect
+          className="tablon-filter-category"
+          label="Categoría"
+          value={cat}
+          options={catOptions}
+          onChange={setCategoryFilter}
+        />
+        <CompactFilterSelect
+          label="Cantón"
+          value={canton}
+          options={cantonOptions}
+          onChange={value => setFilterAndScroll('canton', value)}
+        />
+        <CompactFilterSelect
+          className="tablon-filter-intent"
+          label="Intención"
+          value={intentValue}
+          options={intentOptions}
+          onChange={value => setFilterAndScroll(isEmpleos ? 'jobIntent' : 'type', value)}
+        />
+        {isEmpleos ? (
+          <CompactFilterSelect
+            className="tablon-filter-context"
+            label="Tipo de empleo"
+            value={jobType}
+            options={jobTypeOptions}
+            onChange={value => setFilterAndScroll('jobType', value)}
+          />
+        ) : (
+          <CompactFilterSelect
+            className="tablon-filter-context"
+            label="Precio"
+            value={priceRange}
+            options={PRICE_RANGES}
+            onChange={setPriceRangeFilter}
+          />
+        )}
+        <button
+          type="button"
+          className={`tablon-more-filter-button ${secondaryActiveCount ? 'is-active' : ''}`}
+          onClick={()=>setShowFilters(true)}
+        >
+          <span>⚙️</span>
+          <span>Más</span>
+          {secondaryActiveCount > 0 && <strong>{secondaryActiveCount}</strong>}
+        </button>
+        {activeCount > 0 && (
+          <button type="button" className="tablon-clear-filter-button" onClick={clearFilters} aria-label="Limpiar todos los filtros">
+            ✕
+          </button>
+        )}
       </div>
           </div>
         </div>
       </div>
-
-
-      {/* Active filter strip */}
-      {activeCount > 0 && (
-        <div style={{ background:C.primaryLight, borderRadius:10, padding:'6px 12px', display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:14 }}>
-          {canton   && <Tag bg={C.primaryMid} color={C.primaryDark}>📍 Cantón {canton}</Tag>}
-          {plz      && <Tag bg={C.primaryMid} color={C.primaryDark}>📮 PLZ {plz}</Tag>}
-          {jobIntent && <Tag bg={C.primaryMid} color={C.primaryDark}>{JOB_INTENTS.find(intent=>intent.id===jobIntent)?.emoji} {JOB_INTENTS.find(intent=>intent.id===jobIntent)?.label}</Tag>}
-          {jobType  && <Tag bg={C.primaryMid} color={C.primaryDark}>💼 {jobType}</Tag>}
-          {type     && <Tag bg={C.primaryMid} color={C.primaryDark}>{AD_TYPES.find(t=>t.id===type)?.emoji} {AD_TYPES.find(t=>t.id===type)?.label}</Tag>}
-          {maxPrice && <Tag bg={C.primaryMid} color={C.primaryDark}>💰 Máx. CHF {maxPrice}</Tag>}
-          {privacy  && <Tag bg={C.primaryMid} color={C.primaryDark}>{privacy==='public'?'🌐 Público':'🔒 Privado'}</Tag>}
-          <button onClick={clearFilters} style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.primary, background:'none', border:'none', cursor:'pointer', marginLeft:'auto' }}>✕ Limpiar</button>
-        </div>
-      )}
-
 
       {/* Results */}
       {loading ? (
@@ -1381,95 +1490,7 @@ export default function Tablon() {
       )}
 
       {/* Filters sheet */}
-      <Sheet show={showFilters} onClose={()=>setShowFilters(false)} title={isEmpleos ? 'Filtrar empleo' : 'Filtrar anuncios'}>
-        {isEmpleos ? (
-          <>
-            <div style={{ marginBottom:18 }}>
-              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>INTENCIÓN</p>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                {[{ id:'', label:'Todo' }, ...JOB_INTENTS.map(intent => ({ id:intent.id, label:`${intent.emoji} ${intent.label}` }))].map(o => {
-                  const active = jobIntent === o.id
-                  return (
-                    <button key={o.id || 'all'} onClick={()=>setFilterAndScroll('jobIntent', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
-                      {o.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            <div style={{ marginBottom:18 }}>
-              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE EMPLEO</p>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                {jobTypeOpts.map(o => {
-                  const active = jobType === o.id
-                  return (
-                    <button key={o.id} onClick={()=>setFilterAndScroll('jobType', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
-                      {o.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </>
-        ) : isMercado ? (
-          <>
-            <div style={{ marginBottom:18 }}>
-              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>INTENCIÓN EN MERCADO</p>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                {[{ id:'', label:'Todo' }, { id:'vende', label:'🏷️ Se vende' }, { id:'busca', label:'🔍 Se busca' }, { id:'regala', label:'🎁 Se regala' }].map(o => {
-                  const active = type === o.id
-                  return (
-                    <button key={o.id} onClick={()=>setFilterAndScroll('type', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
-                      {o.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            <div style={{ marginBottom:18 }}>
-              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>PRECIO MÁXIMO (CHF)</p>
-              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                {[{ id:'', label:'Cualquier precio' }, { id:'50', label:'Hasta 50' }, { id:'150', label:'Hasta 150' }, { id:'500', label:'Hasta 500' }, { id:'1000', label:'Hasta 1000' }].map(o => {
-                  const active = maxPrice === o.id
-                  return (
-                    <button key={o.id} onClick={()=>setFilterAndScroll('maxPrice', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
-                      {o.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </>
-        ) : (
-          <div style={{ marginBottom:18 }}>
-            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>INTENCIÓN DEL ANUNCIO</p>
-            <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-              {typeOptions.map(o => {
-                const active = type === o.id
-                return (
-                  <button key={o.id} onClick={()=>setFilterAndScroll('type', active?'':o.id)} style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${active?C.primary:C.border}`, background:active?C.primary:C.surface, color:active?'#fff':C.mid, cursor:'pointer' }}>
-                    {o.label}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        <div style={{ marginBottom:18 }}>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>CANTÓN</p>
-          <select
-            value={canton}
-            onChange={e=>setFilter('canton', e.target.value)}
-            style={{ width:'100%', fontFamily:PP, fontSize:13, fontWeight:500, color:canton?C.text:C.light, border:`1.5px solid ${canton?C.primary:C.border}`, borderRadius:12, padding:'11px 14px', background:'#fff', outline:'none', cursor:'pointer', appearance:'auto' }}
-          >
-            <option value=''>Todos los cantones</option>
-            {CANTONS.map(c => (
-              <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
-            ))}
-          </select>
-        </div>
-
+      <Sheet show={showFilters} onClose={()=>setShowFilters(false)} title="Más filtros">
         <div style={{ marginBottom:22 }}>
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>PLZ (código postal)</p>
           <input
@@ -1477,6 +1498,21 @@ export default function Tablon() {
             placeholder="Ej: 8001, 3000, 1200..." value={plz} onChange={e=>setFilter('plz',e.target.value)} maxLength={4}
           />
         </div>
+
+        {!isEmpleos && isLoggedIn && (
+          <div style={{ marginBottom:22 }}>
+            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>VISIBILIDAD</p>
+            <select
+              value={privacy}
+              onChange={event=>setFilter('privacy', event.target.value)}
+              style={{ width:'100%', fontFamily:PP, fontSize:13, fontWeight:500, color:privacy?C.text:C.light, border:`1.5px solid ${privacy?C.primary:C.border}`, borderRadius:12, padding:'11px 14px', background:'#fff', outline:'none', cursor:'pointer' }}
+            >
+              <option value="">Todas las publicaciones</option>
+              <option value="public">Públicas</option>
+              <option value="private">Solo para usuarios</option>
+            </select>
+          </div>
+        )}
 
         <Btn onClick={()=>setShowFilters(false)}>Aplicar filtros</Btn>
         {activeCount > 0 && (
