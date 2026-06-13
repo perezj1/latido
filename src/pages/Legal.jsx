@@ -139,7 +139,7 @@ function Privacidad() {
       <Section title="1. Responsable del tratamiento">
         <P>
           El responsable del tratamiento de sus datos personales es el operador de Latido.ch,
-          con domicilio en Zürich, Suiza. Contacto: info@latido.ch
+          con domicilio en Luzern, Suiza. Contacto: info@latido.ch
         </P>
       </Section>
 
@@ -343,7 +343,7 @@ function Cookies() {
 
       <Section title="2. Responsable y contacto">
         <P>
-          El responsable es el operador de Latido.ch, con domicilio en Zürich, Suiza.
+          El responsable es el operador de Latido.ch, con domicilio en Luzern, Suiza.
           Para consultas o ejercicio de derechos: <strong>info@latido.ch</strong>.
         </P>
       </Section>
