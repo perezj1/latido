@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { trackAnalyticsEvent } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
 import { Btn, ProgressBar, Input, Select } from '../components/UI'
@@ -67,6 +68,7 @@ export default function Auth() {
   const [searchParams] = useSearchParams()
   const nextPath = getSafeNextPath(searchParams.get('next'))
   const isPartnerAccess = nextPath.startsWith('/servicios-suiza') || nextPath.startsWith('/colaboradores/')
+  const authEntryPoint = isPartnerAccess ? 'partner' : nextPath === '/' ? 'general' : 'protected_route'
   const [mode, setMode] = useState('register')
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -87,6 +89,9 @@ export default function Auth() {
       const { error } = await signIn({ email: form.email, password: form.password })
       if (error) toast.error('Email o contraseña incorrectos')
       else {
+        trackAnalyticsEvent('login_success', {
+          metadata: { method:'email', entry_point:authEntryPoint },
+        })
         toast.success('¡Bienvenido/a!')
         navigate(nextPath)
       }
@@ -159,6 +164,10 @@ export default function Auth() {
         return
       }
 
+      trackAnalyticsEvent('signup_success', {
+        user_id:data.user.id,
+        metadata: { method:'email', entry_point:authEntryPoint },
+      })
       toast.success('¡Cuenta creada! Bienvenido/a 🎉')
       navigate(nextPath)
     } finally {

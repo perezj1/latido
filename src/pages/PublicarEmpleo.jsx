@@ -7,6 +7,7 @@ import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import { JOB_INTENTS, JOB_SECTORS, JOB_TYPES } from '../lib/constants'
 import PostPublishPushModal from '../components/PostPublishPushModal'
@@ -174,6 +175,13 @@ export default function PublicarEmpleo() {
           metadata: { job_intent: form.jobIntent, sector: form.sector, type: form.jobType },
         })
       }
+      trackPublicationCreated({
+        user_id:user?.id,
+        contentType:'job',
+        category:form.sector,
+        intent:form.jobIntent,
+        needsReview,
+      })
       setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {

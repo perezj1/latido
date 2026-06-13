@@ -9,6 +9,7 @@ import LocationFields from '../components/LocationFields'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { normalizeExternalUrl } from '../lib/links'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
@@ -128,6 +129,12 @@ export default function PublicarEvento() {
           metadata: { type: form.type, canton: form.canton, city: form.city },
         })
       }
+      trackPublicationCreated({
+        user_id:user?.id,
+        contentType:'event',
+        category:form.type,
+        needsReview,
+      })
       setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {

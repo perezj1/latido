@@ -10,6 +10,7 @@ import { calculateBusinessVerification } from '../lib/businessVerification'
 import { insertWithOptionalColumnsFallback } from '../lib/supabaseCompat'
 import { MAX_PUBLICATION_IMAGES, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
@@ -164,6 +165,12 @@ export default function RegistrarNegocio() {
         }
       }
 
+      trackPublicationCreated({
+        user_id:user?.id,
+        contentType:'business',
+        category:form.type,
+        needsReview,
+      })
       setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {

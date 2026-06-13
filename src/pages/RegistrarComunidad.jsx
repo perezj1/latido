@@ -8,6 +8,7 @@ import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, Stic
 import LocationFields from '../components/LocationFields'
 import { uploadPublicationImage } from '../lib/storage'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
@@ -127,6 +128,13 @@ export default function RegistrarComunidad() {
           metadata: { cat: form.cat, platform: form.platform, canton: form.canton },
         })
       }
+      trackPublicationCreated({
+        user_id:user?.id,
+        contentType:'community',
+        category:form.cat,
+        channel:form.platform,
+        needsReview,
+      })
       setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {

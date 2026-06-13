@@ -588,12 +588,7 @@ export default function App() {
         <Routes>
           <Route path="/*" element={<AppShell />} />
         </Routes>
-        {analyticsConsent && isAnalyticsEnabled() && (
-          <>
-            <Analytics beforeSend={event => getCookieConsent()?.categories.analytics ? event : null} />
-            <SpeedInsights />
-          </>
-        )}
+        <VercelTelemetry />
       </BrowserRouter>
     </AuthProvider>
   )

@@ -14,6 +14,9 @@ const DYNAMIC_ROUTES = [
 const VERCEL_EVENT_PROPERTIES = {
   search: ['scope', 'cat', 'category', 'active_filter'],
   search_result_open: ['result_type'],
+  signup_success: ['method', 'entry_point'],
+  login_success: ['method', 'entry_point'],
+  publication_created: ['content_type', 'category', 'intent', 'channel', 'moderation_status'],
   partner_page_view: ['partner_id', 'placement'],
   partner_service_click: ['partner_id', 'placement', 'service'],
   partner_cross_click: ['partner_id', 'placement'],
@@ -155,6 +158,26 @@ export function trackSearchEvent({ query, scope, user_id, metadata = {} }) {
       ...metadata,
       query: cleanQuery.slice(0, 120),
       scope,
+    },
+  })
+}
+
+export function trackPublicationCreated({
+  user_id,
+  contentType,
+  category = '',
+  intent = '',
+  channel = '',
+  needsReview = false,
+}) {
+  return trackAnalyticsEvent('publication_created', {
+    user_id,
+    metadata: {
+      content_type: contentType,
+      category,
+      intent,
+      channel,
+      moderation_status: needsReview ? 'review' : 'published',
     },
   })
 }

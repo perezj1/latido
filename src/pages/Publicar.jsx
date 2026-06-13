@@ -9,6 +9,7 @@ import LocationFields from '../components/LocationFields'
 import { MAX_PUBLICATION_IMAGES, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
@@ -451,6 +452,13 @@ export default function Publicar() {
         })
       }
 
+      trackPublicationCreated({
+        user_id:user?.id,
+        contentType:'listing',
+        category:form.cat,
+        intent:resolvedType,
+        needsReview,
+      })
       setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {
