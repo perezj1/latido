@@ -2130,14 +2130,9 @@ img { max-width: 100%; }
 .cat-bar { position: sticky; top: 0; z-index: 40; }
 @media (min-width: 768px) { .cat-bar { top: 57px; } }
 
-/* ── Publish FAB: lower, larger, and within 1200px limit on desktop ── */
+/* ── Publish FAB: hidden on desktop (button moved to header nav) ── */
 @media (min-width: 768px) {
-  .publish-fab {
-    bottom: 32px !important;
-    right: max(18px, calc((100vw - 1200px) / 2 + 18px)) !important;
-    transform: scale(1.18) !important;
-    transform-origin: bottom right !important;
-  }
+  .publish-fab { display: none !important; }
 }
 .sticky-toolbar-shell {
   background: #F0F6FF;

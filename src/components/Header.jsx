@@ -1,9 +1,17 @@
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
+
+const PUBLISH_OPTIONS = [
+  { emoji:'📌', label:'Anuncio',   sub:'Vivienda, servicios, cuidados, mercado o trámites', to:'/publicar' },
+  { emoji:'💼', label:'Empleo',    sub:'Oferta de trabajo o perfil buscando empleo', to:'/publicar-empleo' },
+  { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
+  { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
+  { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
+]
 const NAV_GUEST = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
@@ -22,10 +30,20 @@ const NAV_USER = [
 
 export default function Header({ transparent }) {
   const [open, setOpen] = useState(false)
+  const [publishOpen, setPublishOpen] = useState(false)
+  const publishRef = useRef(null)
   const { pathname, search } = useLocation()
+  const navigate = useNavigate()
   const { isLoggedIn, user, displayName, signOut, avatarUrl } = useAuth()
   const { needsActivation: needsPushActivation } = usePushActivation(user?.id)
   const NAV = isLoggedIn ? NAV_USER : NAV_GUEST
+
+  useEffect(() => {
+    if (!publishOpen) return
+    const handler = e => { if (publishRef.current && !publishRef.current.contains(e.target)) setPublishOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [publishOpen])
 
   const isActive = (href) => {
     if (href === '/') return pathname === '/'
@@ -70,6 +88,36 @@ export default function Header({ transparent }) {
         </nav>
 
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div ref={publishRef} style={{ position:'relative' }}>
+            <div style={{ padding:2, borderRadius:22, background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)', boxShadow:'0 2px 12px rgba(37,99,235,0.35)' }}>
+              <button
+                onClick={() => setPublishOpen(v => !v)}
+                style={{ height:36, borderRadius:20, background:'#fff', color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, border:'none', cursor:'pointer', padding:'0 16px', whiteSpace:'nowrap', letterSpacing:-0.2, fontFamily:PP }}
+              >
+                ✏️ Publicar
+              </button>
+            </div>
+            {publishOpen && (
+              <div style={{ position:'absolute', top:'calc(100% + 10px)', right:0, background:'#fff', borderRadius:16, boxShadow:'0 8px 32px rgba(15,23,42,0.16)', border:`1px solid ${C.border}`, padding:'8px', zIndex:200, minWidth:280 }}>
+                {PUBLISH_OPTIONS.map(opt => (
+                  <button
+                    key={opt.to}
+                    onClick={() => { setPublishOpen(false); navigate(opt.to) }}
+                    style={{ display:'flex', alignItems:'center', gap:12, background:'transparent', border:'none', borderRadius:12, padding:'10px 12px', cursor:'pointer', textAlign:'left', width:'100%' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = C.bg }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <div style={{ width:36, height:36, background:C.primaryLight, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{opt.emoji}</div>
+                    <div>
+                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 1px' }}>{opt.label}</p>
+                      <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{opt.sub}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {isLoggedIn ? (
             <Link to="/perfil" style={{ textDecoration:'none', position:'relative', display:'inline-flex' }}>
               <Avatar name={displayName} size={36} src={avatarUrl} />
