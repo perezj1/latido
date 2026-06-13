@@ -2,6 +2,7 @@ import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate 
 import { Toaster } from 'react-hot-toast'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { supabase } from './lib/supabase'
@@ -568,7 +569,10 @@ export default function App() {
           <Route path="/*" element={<AppShell />} />
         </Routes>
         {analyticsConsent && isAnalyticsEnabled() && (
-          <Analytics beforeSend={event => getCookieConsent()?.categories.analytics ? event : null} />
+          <>
+            <Analytics beforeSend={event => getCookieConsent()?.categories.analytics ? event : null} />
+            <SpeedInsights />
+          </>
         )}
       </BrowserRouter>
     </AuthProvider>
