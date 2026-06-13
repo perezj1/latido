@@ -30,9 +30,11 @@ export default function PartnersSection({ placement = 'app_home_partners' }) {
         </div>
       </div>
 
-      <div className={`home-partners-scroll no-scroll${hasSinglePartner ? ' home-partners-scroll--single' : ''}`}>
-        <div className="home-partners-track">
-          {HOME_PARTNERS.map(partner => partner.render(`${placement}_${partner.id}`))}
+      <div style={{ maxWidth:1200, margin:'0 auto' }}>
+        <div className={`home-partners-scroll no-scroll${hasSinglePartner ? ' home-partners-scroll--single' : ''}`}>
+          <div className="home-partners-track">
+            {HOME_PARTNERS.map(partner => partner.render(`${placement}_${partner.id}`))}
+          </div>
         </div>
       </div>
     </section>

@@ -968,8 +968,8 @@
 .home-partners-scroll {
   position: relative;
   overflow-x: auto;
-  padding: 3px max(16px, calc((100vw - 1200px) / 2)) 18px;
-  scroll-padding-inline: max(16px, calc((100vw - 1200px) / 2));
+  padding: 3px 16px 18px;
+  scroll-padding-inline: 16px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
 }
@@ -2130,10 +2130,11 @@ img { max-width: 100%; }
 .cat-bar { position: sticky; top: 0; z-index: 40; }
 @media (min-width: 768px) { .cat-bar { top: 57px; } }
 
-/* ── Publish FAB: lower and larger on desktop (no bottom nav) ── */
+/* ── Publish FAB: lower, larger, and within 1200px limit on desktop ── */
 @media (min-width: 768px) {
   .publish-fab {
     bottom: 32px !important;
+    right: max(18px, calc((100vw - 1200px) / 2 + 18px)) !important;
     transform: scale(1.18) !important;
     transform-origin: bottom right !important;
   }
