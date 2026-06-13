@@ -266,13 +266,28 @@ function fmtActivity(value) {
   return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
 }
 
+const SWISS_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Zurich',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+function swissDateKey(value) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return SWISS_DATE_FORMATTER.format(date)
+}
+
 function isWithinRecentDays(value, days) {
   if (!value) return false
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return false
+  if (days === 1) return swissDateKey(date) === swissDateKey(new Date())
+
   const start = new Date()
   start.setHours(0, 0, 0, 0)
-  if (days > 1) start.setDate(start.getDate() - (days - 1))
+  start.setDate(start.getDate() - (days - 1))
   const end = new Date()
   end.setHours(23, 59, 59, 999)
   return date >= start && date <= end
@@ -283,12 +298,7 @@ function countRecent(items, days) {
 }
 
 function localDateKey(value) {
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  return swissDateKey(value)
 }
 
 function countByDay(items, days = 30) {
