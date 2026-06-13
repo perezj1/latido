@@ -2296,8 +2296,7 @@ img { max-width: 100%; }
   }
 
   .tablon-filter-row {
-    margin-right: -10px;
-    padding-right: 10px;
+    padding-right: 2px;
   }
 
   .compact-filter-control {
@@ -2334,8 +2333,7 @@ img { max-width: 100%; }
 
 @media (max-width: 620px) {
   .community-filter-row {
-    margin-right: -10px;
-    padding-right: 10px;
+    padding-right: 2px;
   }
 
   .community-filter-control {
