@@ -1215,16 +1215,17 @@ export default function Home() {
           <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0, letterSpacing:0 }}>📌 Anuncios recientes</h2>
           <Link to="/tablon" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todos →</Link>
         </div>
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'0 max(16px, calc((100vw - 1200px) / 2))' }}>
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'0 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ width:152, height:220, borderRadius:16, flexShrink:0 }} />)}
             </div>
           </div>
         ) : recentAds.length === 0 ? (
-          <div style={{ padding:'0 max(16px, calc((100vw - 1200px) / 2))' }}><EmptyState text="Todavía no hay anuncios publicados." /></div>
+          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay anuncios publicados." /></div>
         ) : (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px max(16px, calc((100vw - 1200px) / 2)) 16px' }}>
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {recentAds.map(ad => {
                 const normalizedCat = getAdCategoryId(ad)
@@ -1270,6 +1271,7 @@ export default function Home() {
             </div>
           </div>
         )}
+        </div>
       </section>
 
       {/* <section style={{ maxWidth:1200, margin:'0 auto', padding:'34px 16px 0' }}>
@@ -1353,7 +1355,9 @@ export default function Home() {
           </Link>
         </div>
 
-        <EventfrogCalendar compact layout="carousel" maxEvents={60} />
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
+          <EventfrogCalendar compact layout="carousel" maxEvents={60} />
+        </div>
       </section>
 
       <section style={{ padding:'40px 0 0' }}>
@@ -1371,14 +1375,15 @@ export default function Home() {
           </Link>
         </div>
 
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
-          <div className="no-scroll" style={{ display:'flex', gap:12, padding:`4px max(16px, calc((100vw - 1200px) / 2)) 16px`, overflowX:'auto' }}>
+          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
             {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
           </div>
         ) : businessHighlights.length === 0 ? (
-          <div style={{ padding:'0 max(16px, calc((100vw - 1200px) / 2))' }}><EmptyState text="Todavía no hay negocios publicados." /></div>
+          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay negocios publicados." /></div>
         ) : (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:`4px max(16px, calc((100vw - 1200px) / 2)) 16px` }}>
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {businessHighlights.map(business => (
                 <Link
@@ -1438,6 +1443,7 @@ export default function Home() {
             </div>
           </div>
         )}
+        </div>
       </section>
 
       <PartnersSection />
@@ -1457,6 +1463,7 @@ export default function Home() {
           </Link>
         </div>
 
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
           <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
             {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
@@ -1493,6 +1500,7 @@ export default function Home() {
             </div>
           </div>
         )}
+        </div>
       </section>
 
       {/* Empleos recientes — oculto temporalmente
@@ -1521,6 +1529,7 @@ export default function Home() {
               </div>
               <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>Ver todas →</Link>
             </div>
+            <div style={{ maxWidth:1200, margin:'0 auto' }}>
             <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
               <div style={{ display:'flex', gap:12, width:'max-content' }}>
                 {MOCK_DOCS.map(doc => {
@@ -1554,6 +1563,7 @@ export default function Home() {
                   )
                 })}
               </div>
+            </div>
             </div>
           </section>
         )
