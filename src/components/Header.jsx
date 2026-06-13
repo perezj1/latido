@@ -85,10 +85,8 @@ export default function Header({ transparent }) {
               </Link>
             )
           })}
-        </nav>
 
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <div ref={publishRef} style={{ position:'relative' }}>
+          <div ref={publishRef} style={{ position:'relative', marginLeft:8 }}>
             <div style={{ padding:2, borderRadius:22, background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)', boxShadow:'0 2px 12px rgba(37,99,235,0.35)' }}>
               <button
                 onClick={() => setPublishOpen(v => !v)}
@@ -98,7 +96,7 @@ export default function Header({ transparent }) {
               </button>
             </div>
             {publishOpen && (
-              <div style={{ position:'absolute', top:'calc(100% + 10px)', right:0, background:'#fff', borderRadius:16, boxShadow:'0 8px 32px rgba(15,23,42,0.16)', border:`1px solid ${C.border}`, padding:'8px', zIndex:200, minWidth:280 }}>
+              <div style={{ position:'absolute', top:'calc(100% + 10px)', left:0, background:'#fff', borderRadius:16, boxShadow:'0 8px 32px rgba(15,23,42,0.16)', border:`1px solid ${C.border}`, padding:'8px', zIndex:200, minWidth:280 }}>
                 {PUBLISH_OPTIONS.map(opt => (
                   <button
                     key={opt.to}
@@ -117,7 +115,9 @@ export default function Header({ transparent }) {
               </div>
             )}
           </div>
+        </nav>
 
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           {isLoggedIn ? (
             <Link to="/perfil" style={{ textDecoration:'none', position:'relative', display:'inline-flex' }}>
               <Avatar name={displayName} size={36} src={avatarUrl} />
