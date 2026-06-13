@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { hasAnalyticsConsent } from './cookieConsent'
 
 const SESSION_KEY = 'latido_analytics_session_id'
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
@@ -10,19 +11,22 @@ export function isAnalyticsEnabled() {
   if (!import.meta.env.PROD || typeof window === 'undefined') return false
 
   const hostname = window.location.hostname.toLowerCase()
-  return !LOCAL_HOSTNAMES.has(hostname) && !hostname.endsWith('.localhost')
+  return hasAnalyticsConsent() &&
+    !LOCAL_HOSTNAMES.has(hostname) &&
+    !hostname.endsWith('.localhost')
 }
 
 function getSessionId() {
   try {
-    const existing = window.localStorage.getItem(SESSION_KEY)
+    window.localStorage.removeItem(SESSION_KEY)
+    const existing = window.sessionStorage.getItem(SESSION_KEY)
     if (existing) return existing
 
     const next = typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 
-    window.localStorage.setItem(SESSION_KEY, next)
+    window.sessionStorage.setItem(SESSION_KEY, next)
     return next
   } catch {
     return 'session-unavailable'

@@ -263,7 +263,7 @@ export default function Auth() {
             }
           />
           <p style={{ fontFamily:PP, fontSize:10, color:C.light, marginBottom:14, lineHeight:1.5 }}>
-            Al registrarte aceptas los <Link to="/terminos" style={{ color:C.primary }}>términos de uso</Link> y la <Link to="/privacidad" style={{ color:C.primary }}>política de privacidad</Link>.
+            Al registrarte aceptas los <Link to="/terminos" style={{ color:C.primary }}>términos de uso</Link> y confirmas que has leído la <Link to="/privacidad" style={{ color:C.primary }}>política de privacidad</Link> y la <Link to="/cookies" style={{ color:C.primary }}>política de cookies</Link>.
           </p>
         </>
       )}

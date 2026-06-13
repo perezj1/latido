@@ -5,6 +5,7 @@ import { C, PP } from '../lib/theme'
 const DOCS = [
   { id:'impressum',  path:'/impressum',  label:'Impressum' },
   { id:'privacidad', path:'/privacidad', label:'Privacidad' },
+  { id:'cookies',    path:'/cookies',    label:'Cookies' },
   { id:'terminos',   path:'/terminos',   label:'Términos de uso' },
   { id:'descargo',   path:'/descargo',   label:'Descargo de responsabilidad' },
 ]
@@ -31,6 +32,34 @@ function Ul({ items }) {
     <ul style={{ margin:'0 0 10px', paddingLeft:20 }}>
       {items.map((item, i) => <li key={i} style={{ marginBottom:5 }}>{item}</li>)}
     </ul>
+  )
+}
+
+function StorageTable({ rows }) {
+  return (
+    <div style={{ overflowX:'auto', margin:'12px 0 16px' }}>
+      <table style={{ width:'100%', minWidth:620, borderCollapse:'collapse', fontFamily:PP, fontSize:11, lineHeight:1.55 }}>
+        <thead>
+          <tr>
+            {['Tecnología', 'Proveedor', 'Finalidad', 'Duración'].map(label => (
+              <th key={label} scope="col" style={{ padding:'9px 10px', textAlign:'left', color:C.text, background:C.bg, border:`1px solid ${C.border}` }}>
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => (
+            <tr key={row.name}>
+              <td style={{ padding:'9px 10px', verticalAlign:'top', border:`1px solid ${C.border}`, color:C.text, fontWeight:700 }}>{row.name}</td>
+              <td style={{ padding:'9px 10px', verticalAlign:'top', border:`1px solid ${C.border}` }}>{row.provider}</td>
+              <td style={{ padding:'9px 10px', verticalAlign:'top', border:`1px solid ${C.border}` }}>{row.purpose}</td>
+              <td style={{ padding:'9px 10px', verticalAlign:'top', border:`1px solid ${C.border}` }}>{row.duration}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
@@ -147,7 +176,7 @@ function Privacidad() {
           'Prestación del servicio y gestión de tu cuenta (art. 31 nDSG — ejecución de un contrato).',
           'Seguridad de la plataforma y prevención de abusos (interés legítimo del operador).',
           'Comunicaciones de servicio por email (interés legítimo / consentimiento).',
-          'Mejora de la experiencia de usuario mediante datos anonimizados de uso (interés legítimo).',
+          'Analítica opcional para mejorar la experiencia de usuario (consentimiento, cuando se active).',
           'Recepción, análisis y gestión de denuncias, moderación y retirada de contenido problemático.',
         ]} />
         <P>No realizamos tratamientos automatizados con efectos jurídicos sobre las personas ni
@@ -184,9 +213,14 @@ function Privacidad() {
 
       <Section title="8. Cookies y almacenamiento local">
         <P>
-          Latido.ch utiliza únicamente cookies técnicas esenciales (sesión de usuario) y
-          almacenamiento local del navegador (localStorage) para mantener la sesión iniciada.
-          No utilizamos cookies de seguimiento, publicidad ni análisis de terceros.
+          Latido.ch utiliza almacenamiento local y de sesión para prestar el servicio, mantener
+          la autenticación, recordar funciones solicitadas y conservar tu elección de privacidad.
+          La analítica propia y Vercel Web Analytics solo se activan si das tu consentimiento.
+          No utilizamos publicidad comportamental ni vendemos datos de navegación.
+        </P>
+        <P>
+          Encontrarás el inventario, las finalidades y la forma de retirar el consentimiento en
+          nuestra <Link to="/cookies" style={{ color:C.primary, fontWeight:700 }}>Política de Cookies</Link>.
         </P>
       </Section>
 
@@ -232,6 +266,152 @@ function Privacidad() {
         <P>
           Notificaremos cualquier cambio relevante por email o mediante aviso en la plataforma.
           El uso continuado de Latido.ch tras la notificación implica la aceptación de la nueva versión.
+        </P>
+      </Section>
+    </>
+  )
+}
+
+function Cookies() {
+  const necessaryRows = [
+    {
+      name:'latido_cookie_consent',
+      provider:'Latido.ch',
+      purpose:'Conserva tu elección de privacidad y la versión de la política aceptada o rechazada.',
+      duration:'6 meses.',
+    },
+    {
+      name:'sb-…-auth-token',
+      provider:'Supabase / Latido.ch',
+      purpose:'Mantiene la sesión autenticada, renueva el acceso de forma segura y permite cerrar sesión.',
+      duration:'Hasta cerrar sesión, expirar la sesión o borrar los datos del navegador.',
+    },
+    {
+      name:'Preferencias latido_*',
+      provider:'Latido.ch',
+      purpose:'Recuerda funciones solicitadas como favoritos, alertas, notificaciones, mensajes leídos y avisos ya revisados.',
+      duration:'Hasta desactivar la función, cerrar la cuenta o borrar los datos del navegador.',
+    },
+    {
+      name:'latido_pwa_dismissed y sesión técnica',
+      provider:'Latido.ch',
+      purpose:'Evita repetir avisos durante la sesión y coordina funciones activas de la aplicación.',
+      duration:'Hasta cerrar la pestaña o el navegador.',
+    },
+    {
+      name:'Cache de la PWA y Eventfrog',
+      provider:'Latido.ch',
+      purpose:'Mejora la carga, el funcionamiento sin conexión y evita repetir consultas de eventos.',
+      duration:'La caché de eventos se reutiliza hasta 1 hora; la caché PWA se renueva con nuevas versiones.',
+    },
+  ]
+
+  const analyticsRows = [
+    {
+      name:'latido_analytics_session_id',
+      provider:'Latido.ch / Supabase',
+      purpose:'Distingue de forma seudónima las interacciones de una misma sesión para medir páginas, búsquedas y clics.',
+      duration:'Hasta cerrar la pestaña o el navegador. Los eventos analíticos se conservan como máximo 12 meses.',
+    },
+    {
+      name:'Vercel Web Analytics',
+      provider:'Vercel Inc.',
+      purpose:'Genera estadísticas agregadas de visitas, rutas, dispositivo, navegador, referencia y ubicación aproximada.',
+      duration:'No instala cookies de terceros; Vercel descarta el identificador de sesión derivado en 24 horas.',
+    },
+    {
+      name:'Atribución de colaboradores',
+      provider:'Latido.ch / Supabase',
+      purpose:'Mide, con consentimiento, interacciones con servicios colaboradores y la campaña de origen.',
+      duration:'Hasta retirar el consentimiento o borrar los datos del navegador; eventos, máximo 12 meses.',
+    },
+  ]
+
+  return (
+    <>
+      <P style={{ fontStyle:'italic', fontSize:12, color:C.light }}>
+        Última actualización: 13 de junio de 2026 · Versión de consentimiento: 2026-06-13.
+      </P>
+
+      <Section title="1. Alcance">
+        <P>
+          Esta política explica cómo Latido.ch utiliza cookies y tecnologías similares, incluidas
+          localStorage, sessionStorage, identificadores de sesión y cachés del navegador. Se aplica
+          al sitio web y a la aplicación web progresiva de Latido.
+        </P>
+      </Section>
+
+      <Section title="2. Responsable y contacto">
+        <P>
+          El responsable es el operador de Latido.ch, con domicilio en Zürich, Suiza.
+          Para consultas o ejercicio de derechos: <strong>info@latido.ch</strong>.
+        </P>
+      </Section>
+
+      <Section title="3. Categorías y base jurídica">
+        <P><strong>Necesarias y funcionales.</strong> Permiten prestar el servicio solicitado,
+        autenticar usuarios, proteger la plataforma y recordar funciones elegidas. No pueden
+        desactivarse desde el panel porque Latido no funcionaría correctamente sin ellas.</P>
+        <P><strong>Analítica opcional.</strong> Se basa en tu consentimiento. Está desactivada
+        por defecto y rechazarla no limita el acceso a Latido. No usamos categorías de publicidad
+        comportamental ni creamos perfiles publicitarios.</P>
+      </Section>
+
+      <Section title="4. Tecnologías necesarias y funcionales">
+        <StorageTable rows={necessaryRows} />
+        <P>
+          Algunas claves incluyen un identificador de usuario para separar correctamente las
+          preferencias de varias cuentas que utilicen el mismo dispositivo.
+        </P>
+      </Section>
+
+      <Section title="5. Analítica opcional">
+        <StorageTable rows={analyticsRows} />
+        <P>
+          La analítica propia puede incluir la ruta visitada, términos de búsqueda limitados,
+          tipo de interacción, estado de inicio de sesión, identificador de usuario cuando exista
+          cuenta y metadatos técnicos necesarios para interpretar el evento. Evita introducir datos
+          personales o sensibles en el buscador.
+        </P>
+      </Section>
+
+      <Section title="6. Proveedores y transferencias">
+        <P>
+          Supabase Inc. presta autenticación y base de datos; Vercel Inc. presta alojamiento y
+          analítica agregada. Son proveedores estadounidenses que pueden tratar datos desde o fuera
+          de Suiza y del EEE conforme a sus contratos, medidas de seguridad y mecanismos de
+          transferencia aplicables. La información ampliada figura en la Política de Privacidad.
+        </P>
+      </Section>
+
+      <Section title="7. Cómo decidir o retirar el consentimiento">
+        <P>
+          En la primera visita a la landing pública puedes aceptar la analítica, rechazarla o
+          configurar tu selección. Puedes cambiarla en cualquier momento, sin justificar tu decisión
+          y sin perder acceso al servicio. La retirada no afecta al tratamiento realizado lícitamente
+          antes de retirarla.
+        </P>
+        <Link
+          to="/?cookie-settings=1"
+          style={{ display:'inline-flex', fontFamily:PP, fontWeight:800, fontSize:12, color:'#fff', background:C.primary, border:0, borderRadius:12, padding:'11px 16px', cursor:'pointer', textDecoration:'none' }}
+        >
+          Volver a la landing y configurar
+        </Link>
+      </Section>
+
+      <Section title="8. Control desde el navegador">
+        <P>
+          También puedes borrar o bloquear el almacenamiento desde la configuración del navegador.
+          Si eliminas los datos necesarios, se cerrará la sesión y podrían perderse favoritos,
+          alertas u otras preferencias guardadas localmente.
+        </P>
+      </Section>
+
+      <Section title="9. Cambios en esta política">
+        <P>
+          Si cambia una finalidad, proveedor o categoría relevante, actualizaremos esta política
+          y solicitaremos una nueva elección cuando sea necesario. La selección actual caduca a
+          los seis meses para que puedas revisarla periódicamente.
         </P>
       </Section>
     </>
@@ -577,6 +757,7 @@ function Descargo() {
 const DOC_MAP = {
   impressum:  { title:'Impressum',                      component: Impressum },
   privacidad: { title:'Política de Privacidad',         component: Privacidad },
+  cookies:    { title:'Política de Cookies',             component: Cookies },
   terminos:   { title:'Términos de Uso y Condiciones',  component: Terminos },
   descargo:   { title:'Descargo de Responsabilidad',    component: Descargo },
 }

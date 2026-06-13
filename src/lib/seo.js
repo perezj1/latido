@@ -43,6 +43,7 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'perfil', icon:'👤', title:'Perfil', section:'Cuenta', desc:'Datos personales, avatar, preferencias y configuración.', href:'/perfil' },
   { id:'mensajes', icon:'💬', title:'Mensajes', section:'Cuenta', desc:'Conversaciones con anunciantes, negocios y miembros de Latido.', href:'/mensajes' },
   { id:'privacidad', icon:'🔒', title:'Privacidad', section:'Legal', desc:'Cómo Latido trata los datos y protege la información.', href:'/privacidad' },
+  { id:'cookies', icon:'⚙️', title:'Cookies', section:'Legal', desc:'Tecnologías utilizadas y gestión del consentimiento.', href:'/cookies' },
   { id:'terminos', icon:'📜', title:'Términos', section:'Legal', desc:'Condiciones de uso de Latido.', href:'/terminos' },
   { id:'impressum', icon:'ℹ️', title:'Impressum', section:'Legal', desc:'Información legal y contacto responsable de Latido.', href:'/impressum' },
 ]
@@ -83,6 +84,11 @@ const ROUTE_SEO = [
     path:'/privacidad',
     title:'Privacidad | Latido.ch',
     description:'Politica de privacidad y tratamiento de datos de Latido.ch.',
+  },
+  {
+    path:'/cookies',
+    title:'Política de cookies | Latido.ch',
+    description:'Cookies, almacenamiento local, analítica y preferencias de consentimiento en Latido.ch.',
   },
   {
     path:'/terminos',
@@ -969,6 +975,7 @@ export function getPublicSeoPages() {
     '/servicios-suiza',
     '/impressum',
     '/privacidad',
+    '/cookies',
     '/terminos',
     '/descargo',
   ].map(path => getSeoForLocation(new URL(path, SITE_URL)))

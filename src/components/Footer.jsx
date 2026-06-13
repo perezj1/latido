@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { openCookieSettings } from '../lib/cookieConsent'
 import { C, PP } from '../lib/theme'
 
 export default function Footer() {
@@ -51,7 +52,7 @@ export default function Footer() {
           <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Contacto</h4>
             <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📧 info@latido.ch</p>
-            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📍 Luzern, Suiza</p>
+            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📍 Zürich, Suiza</p>
             <div style={{ marginTop:14, background:'#1E293B', borderRadius:12, padding:'12px 14px' }}>
               <p style={{ fontFamily:PP, fontSize:11, color:'#64748B', margin:0 }}>
                 ¿Buscas trabajo en Suiza?{' '}
@@ -67,11 +68,19 @@ export default function Footer() {
             {[
               { label:'Impressum',   to:'/impressum' },
               { label:'Privacidad',  to:'/privacidad' },
+              { label:'Cookies',     to:'/cookies' },
               { label:'Términos',    to:'/terminos' },
               { label:'Descargo',    to:'/descargo' },
             ].map(({ label, to }) => (
               <Link key={to} to={to} style={{ fontFamily:PP, fontSize:11, color:'#475569', textDecoration:'none' }}>{label}</Link>
             ))}
+            <button
+              type="button"
+              onClick={openCookieSettings}
+              style={{ padding:0, fontFamily:PP, fontSize:11, color:'#64748B', background:'none', border:0, cursor:'pointer' }}
+            >
+              Configurar cookies
+            </button>
           </div>
         </div>
       </div>

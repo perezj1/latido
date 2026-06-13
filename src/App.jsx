@@ -17,6 +17,8 @@ import BottomNav from './components/BottomNav'
 import Header from './components/Header'
 import GlobalSearch from './components/GlobalSearch'
 import Seo from './components/Seo'
+import CookieConsent from './components/CookieConsent'
+import { getCookieConsent, hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Home = lazy(() => import('./pages/Home'))
@@ -39,6 +41,16 @@ const PartnerContact = lazy(() => import('./pages/PartnerContact'))
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
 const INSTALL_BANNER_LIFT_VAR = '--latido-install-banner-lift'
+
+function useAnalyticsConsent() {
+  const [enabled, setEnabled] = useState(hasAnalyticsConsent)
+
+  useEffect(() => subscribeCookieConsent(consent => {
+    setEnabled(consent?.categories.analytics === true)
+  }), [])
+
+  return enabled
+}
 
 function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
   const { isLoggedIn } = useAuth()
@@ -354,6 +366,7 @@ function AppShell() {
   const [menuPage, setMenuPage] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [messagesChatOpen, setMessagesChatOpen] = useState(false)
+  const analyticsConsent = useAnalyticsConsent()
 
   const isRoot = pathname === '/'
   const isPartnerServices = pathname === '/servicios-suiza'
@@ -371,7 +384,7 @@ function AppShell() {
         is_pwa: Boolean(isPWA),
       },
     })
-  }, [isAdmin, isLoggedIn, isPWA, location.pathname, location.search, user?.id])
+  }, [analyticsConsent, isAdmin, isLoggedIn, isPWA, location.pathname, location.search, user?.id])
 
   useEffect(() => {
     if (!pathname.startsWith('/mensajes')) {
@@ -468,6 +481,7 @@ function AppShell() {
             />
           </Suspense>
         </main>
+        <CookieConsent />
         <Footer />
       </>
     )
@@ -485,6 +499,7 @@ function AppShell() {
 
   return (
     <>
+      <CookieConsent showBanner={false} />
       <Header />
       <PushRegistrationSync />
       <UserPresenceSync />
@@ -513,6 +528,7 @@ function AppShell() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/impressum"  element={<Legal />} />
             <Route path="/privacidad" element={<Legal />} />
+            <Route path="/cookies"    element={<Legal />} />
             <Route path="/terminos"   element={<Legal />} />
             <Route path="/descargo"   element={<Legal />} />
             <Route path="/documentos" element={<Navigate to="/guias" replace />} />
@@ -534,6 +550,8 @@ function AppShell() {
 }
 
 export default function App() {
+  const analyticsConsent = useAnalyticsConsent()
+
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -549,7 +567,9 @@ export default function App() {
         <Routes>
           <Route path="/*" element={<AppShell />} />
         </Routes>
-        {isAnalyticsEnabled() && <Analytics />}
+        {analyticsConsent && isAnalyticsEnabled() && (
+          <Analytics beforeSend={event => getCookieConsent()?.categories.analytics ? event : null} />
+        )}
       </BrowserRouter>
     </AuthProvider>
   )

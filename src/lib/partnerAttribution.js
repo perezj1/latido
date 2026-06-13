@@ -1,4 +1,4 @@
-import { trackAnalyticsEvent } from './analytics'
+import { isAnalyticsEnabled, trackAnalyticsEvent } from './analytics'
 import { DEFAULT_PARTNER_ANALYTICS_ID } from './partnerAnalytics'
 
 const PARTNER_ID = 'latido'
@@ -70,6 +70,8 @@ export function trackPartnerInteraction(eventType, {
   service = '',
   destination = '',
 } = {}) {
+  if (!isAnalyticsEnabled()) return undefined
+
   const attribution = getPartnerAttribution()
 
   return trackAnalyticsEvent(eventType, {
