@@ -215,7 +215,7 @@ function Privacidad() {
         <P>
           Latido.ch utiliza almacenamiento local y de sesión para prestar el servicio, mantener
           la autenticación, recordar funciones solicitadas y conservar tu elección de privacidad.
-          La analítica propia y Vercel Web Analytics solo se activan si das tu consentimiento.
+          La analítica propia, Vercel Web Analytics y Vercel Speed Insights solo se activan si das tu consentimiento.
           No utilizamos publicidad comportamental ni vendemos datos de navegación.
         </P>
         <P>
@@ -316,8 +316,14 @@ function Cookies() {
     {
       name:'Vercel Web Analytics',
       provider:'Vercel Inc.',
-      purpose:'Genera estadísticas agregadas de visitas, rutas, dispositivo, navegador, referencia y ubicación aproximada.',
+      purpose:'Genera estadísticas agregadas de visitas, eventos, rutas, dispositivo, navegador, referencia y ubicación aproximada.',
       duration:'No instala cookies de terceros; Vercel descarta el identificador de sesión derivado en 24 horas.',
+    },
+    {
+      name:'Vercel Speed Insights',
+      provider:'Vercel Inc.',
+      purpose:'Mide de forma agregada Core Web Vitals, velocidad de red y rendimiento técnico por ruta, navegador y dispositivo.',
+      duration:'Conservación según el plan y contrato de Vercel; los puntos son anónimos y no permiten reconstruir la navegación entre páginas.',
     },
     {
       name:'Atribución de colaboradores',
@@ -372,6 +378,10 @@ function Cookies() {
           tipo de interacción, estado de inicio de sesión, identificador de usuario cuando exista
           cuenta y metadatos técnicos necesarios para interpretar el evento. Evita introducir datos
           personales o sensibles en el buscador.
+        </P>
+        <P>
+          Los eventos personalizados enviados a Vercel excluyen términos de búsqueda, identificadores
+          de usuario, identificadores de contenido y direcciones con parámetros de atribución.
         </P>
       </Section>
 

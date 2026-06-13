@@ -118,7 +118,7 @@ function CookiePreferences({ initialAnalytics, hasExistingChoice, onClose, onSav
             badge="Opcional"
             checked={analytics}
             onChange={setAnalytics}
-            description="Mide visitas e interacciones mediante Latido y Vercel para mejorar el servicio. Se activa únicamente con tu consentimiento."
+            description="Mide visitas, interacciones y rendimiento técnico mediante Latido y Vercel para mejorar el servicio. Se activa únicamente con tu consentimiento."
           />
         </div>
 
