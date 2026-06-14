@@ -13,6 +13,7 @@ import ShareButton from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
 import CompactFilterSelect from '../components/CompactFilterSelect'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
+import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import toast from 'react-hot-toast'
 
 function fmtPrice(price) {
@@ -87,13 +88,21 @@ function normalizeListingReview(review) {
   }
 }
 
+const persistedTablonSnapshot = readOfflineSnapshot('tablon-public')
 const TABLON_CACHE = {
-  publicAds:null,
-  publicAdsTs:0,
+  publicAds:persistedTablonSnapshot?.data?.ads || null,
+  publicAdsTs:persistedTablonSnapshot?.savedAt || 0,
   privateAds:null,
   privateAdsTs:0,
-  jobs:null,
-  jobsTs:0,
+  jobs:persistedTablonSnapshot?.data?.jobs || null,
+  jobsTs:persistedTablonSnapshot?.savedAt || 0,
+}
+
+function persistTablonCache() {
+  writeOfflineSnapshot('tablon-public', {
+    ads:TABLON_CACHE.publicAds || [],
+    jobs:TABLON_CACHE.jobs || [],
+  })
 }
 const CARD_STACK_GAP = 10
 const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
@@ -786,11 +795,11 @@ export default function Tablon() {
   const { isLoggedIn, user, displayName, userCanton, isAdmin } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const [userProfiles, setUserProfiles] = useState(new Map())
-  const [ads, setAds] = useState([])
-  const [jobs, setJobs] = useState([])
+  const [ads, setAds] = useState(() => TABLON_CACHE.publicAds || [])
+  const [jobs, setJobs] = useState(() => TABLON_CACHE.jobs || [])
   const [housingPortals, setHousingPortals] = useState([])
   const [employmentPortals, setEmploymentPortals] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !(TABLON_CACHE.publicAds || TABLON_CACHE.jobs))
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [portalsOpen, setPortalsOpen] = useState(false)
@@ -962,9 +971,14 @@ export default function Tablon() {
 
       try {
         const { data, error } = await supabase.from('jobs').select('*').or('active.is.null,active.eq.true').order('created_at', { ascending:false }).limit(150)
-        const nextJobs = error || !data?.length ? MOCK_JOBS : data
-        TABLON_CACHE.jobs = nextJobs
-        TABLON_CACHE.jobsTs = Date.now()
+        const nextJobs = error
+          ? (TABLON_CACHE.jobs || MOCK_JOBS)
+          : (data?.length ? data : MOCK_JOBS)
+        if (!error) {
+          TABLON_CACHE.jobs = nextJobs
+          TABLON_CACHE.jobsTs = Date.now()
+          persistTablonCache()
+        }
         if (!cancelled) setJobs(nextJobs)
       } catch {
         if (!cancelled) setJobs(TABLON_CACHE.jobs || MOCK_JOBS)
@@ -976,7 +990,7 @@ export default function Tablon() {
     async function loadAds() {
       const cacheKey = isLoggedIn ? 'privateAds' : 'publicAds'
       const cacheTsKey = isLoggedIn ? 'privateAdsTs' : 'publicAdsTs'
-      const cachedAds = TABLON_CACHE[cacheKey]
+      const cachedAds = TABLON_CACHE[cacheKey] || (isLoggedIn ? TABLON_CACHE.publicAds : null)
 
       if (cachedAds) {
         setAds(cachedAds)
@@ -987,16 +1001,18 @@ export default function Tablon() {
         let query = supabase.from('listings').select('*').or('active.is.null,active.eq.true').order('created_at', { ascending:false }).limit(150)
         if (!isLoggedIn) query = query.or('privacy.is.null,privacy.eq.public')
         const { data, error } = await query
-        const nextAds = error || !data?.length
-          ? MOCK_ADS.filter(ad => isLoggedIn || !ad.privacy || ad.privacy === 'public')
-          : data
+        const fallbackAds = cachedAds || MOCK_ADS.filter(ad => isLoggedIn || !ad.privacy || ad.privacy === 'public')
+        const nextAds = error ? fallbackAds : (data?.length ? data : fallbackAds)
 
-        TABLON_CACHE[cacheKey] = nextAds
-        TABLON_CACHE[cacheTsKey] = Date.now()
+        if (!error) {
+          TABLON_CACHE[cacheKey] = nextAds
+          TABLON_CACHE[cacheTsKey] = Date.now()
+          if (!isLoggedIn) persistTablonCache()
+        }
         if (!cancelled) setAds(nextAds)
       } catch {
         if (!cancelled) {
-          setAds(TABLON_CACHE[cacheKey] || MOCK_ADS.filter(ad => isLoggedIn || !ad.privacy || ad.privacy === 'public'))
+          setAds(cachedAds || MOCK_ADS.filter(ad => isLoggedIn || !ad.privacy || ad.privacy === 'public'))
         }
       } finally {
         if (!cancelled) setLoading(false)

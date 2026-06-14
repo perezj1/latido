@@ -24,6 +24,7 @@ import Header from './components/Header'
 import GlobalSearch from './components/GlobalSearch'
 import Seo from './components/Seo'
 import CookieConsent from './components/CookieConsent'
+import OfflineNotice from './components/OfflineNotice'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
@@ -578,6 +579,7 @@ export default function App() {
       <BrowserRouter>
         <Seo />
         <ScrollToTop />
+        <OfflineNotice />
         <Toaster
           position="top-center"
           toastOptions={{

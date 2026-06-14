@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -138,6 +138,30 @@ function getSitemapXml(pages) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
 }
 
+async function injectServiceWorkerPrecache() {
+  const assetsDir = path.join(distDir, 'assets')
+  const serviceWorkerPath = path.join(distDir, 'sw.js')
+  const assetNames = await readdir(assetsDir)
+  const assets = assetNames
+    .filter(name => /\.(?:css|js|woff2?)$/i.test(name))
+    .sort()
+    .map(name => `/assets/${name}`)
+
+  const marker = 'const PRECACHE_ASSETS = []'
+  const serviceWorker = await readFile(serviceWorkerPath, 'utf8')
+  if (!serviceWorker.includes(marker)) {
+    throw new Error('Could not find service worker precache marker')
+  }
+
+  await writeFile(
+    serviceWorkerPath,
+    serviceWorker.replace(marker, `const PRECACHE_ASSETS = ${JSON.stringify(assets)}`),
+    'utf8',
+  )
+
+  return assets.length
+}
+
 const baseHtml = await readFile(distIndex, 'utf8')
 const pages = getPublicSeoPages()
 
@@ -152,5 +176,6 @@ for (const seo of pages) {
 
 await writeFile(path.join(distDir, 'sitemap.xml'), getSitemapXml(pages), 'utf8')
 await writeFile(path.join(distDir, 'llms.txt'), getLlmsText(pages), 'utf8')
+const precachedAssetCount = await injectServiceWorkerPrecache()
 
-console.log(`SEO prerender generated ${pages.filter(page => !new URL(page.canonical).search).length} HTML entry files, sitemap.xml and llms.txt`)
+console.log(`SEO prerender generated ${pages.filter(page => !new URL(page.canonical).search).length} HTML entry files, sitemap.xml and llms.txt; precached ${precachedAssetCount} app assets`)

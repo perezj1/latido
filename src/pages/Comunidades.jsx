@@ -28,6 +28,7 @@ import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getBusinessPath, getEventPath, getIdFromSlug } from '../lib/seo'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import { normalizeExternalUrl } from '../lib/links'
+import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
@@ -1131,7 +1132,11 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
 }
 
 const COMUNIDADES_CACHE_TTL = 5 * 60 * 1000
-const comunidadesCache = { data: null, ts: 0 }
+const persistedComunidadesSnapshot = readOfflineSnapshot('comunidades-public')
+const comunidadesCache = {
+  data:persistedComunidadesSnapshot?.data || null,
+  ts:persistedComunidadesSnapshot?.savedAt || 0,
+}
 
 function applyCachedData(snapshot, setters) {
   setters.setCommunities(snapshot.communities)
@@ -1211,6 +1216,9 @@ export default function Comunidades() {
         ])
 
         if (cancelled) return
+        if (comunidadesCache.data && [communitiesRes, providersRes, photosRes, reviewsRes, eventsRes].every(result => result.error)) {
+          return
+        }
 
         const nextCommunities = (communitiesRes.error || !communitiesRes.data?.length ? MOCK_COMMUNITIES : communitiesRes.data)
           .map(normalizeCommunity)
@@ -1277,6 +1285,7 @@ export default function Comunidades() {
             events: nextEvents,
           }
           comunidadesCache.ts = Date.now()
+          writeOfflineSnapshot('comunidades-public', comunidadesCache.data)
         }
       } catch {
         if (cancelled) return

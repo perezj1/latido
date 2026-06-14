@@ -1,30 +1,198 @@
-const CACHE = 'latido-v7'
-const STATIC = ['/', '/index.html', '/manifest.json']
+const SHELL_CACHE = 'latido-shell-v8'
+const ASSET_CACHE = 'latido-assets'
+const PUBLIC_DATA_CACHE = 'latido-public-data-v1'
+const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, PUBLIC_DATA_CACHE])
+const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icon-192.png']
+const PRECACHE_ASSETS = []
+const PUBLIC_TABLES = new Set([
+  'communities',
+  'events',
+  'jobs',
+  'listing_reviews',
+  'listings',
+  'provider_photos',
+  'providers',
+  'reviews',
+])
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)))
+async function trimCache(cacheName, maxEntries) {
+  const cache = await caches.open(cacheName)
+  const keys = await cache.keys()
+  const excess = keys.length - maxEntries
+  if (excess <= 0) return
+  await Promise.all(keys.slice(0, excess).map(key => cache.delete(key)))
+}
+
+async function putInCache(cacheName, request, response, maxEntries) {
+  if (!response || (!response.ok && response.type !== 'opaque')) return
+
+  try {
+    const cache = await caches.open(cacheName)
+    await cache.put(request, response)
+    if (maxEntries) await trimCache(cacheName, maxEntries)
+  } catch {}
+}
+
+function isSupabaseHost(url) {
+  return url.hostname === 'supabase.co' || url.hostname.endsWith('.supabase.co')
+}
+
+function isPublicSupabaseRequest(url) {
+  if (!isSupabaseHost(url)) return false
+
+  const match = url.pathname.match(/\/rest\/v1\/([^/]+)$/)
+  const table = match?.[1]
+  if (!table || !PUBLIC_TABLES.has(table)) return false
+  if (url.searchParams.has('user_id')) return false
+
+  if (table === 'listings') {
+    return url.searchParams.toString().includes('privacy')
+  }
+
+  return true
+}
+
+function isPublicStorageAsset(url) {
+  return isSupabaseHost(url) && url.pathname.includes('/storage/v1/object/public/')
+}
+
+function networkFirst(request, cacheName, event, maxEntries) {
+  const network = fetch(request).then(response => {
+    if (response.status >= 500) throw new Error(`HTTP ${response.status}`)
+    return response
+  })
+
+  event.waitUntil(network
+    .then(response => response.ok
+      ? putInCache(cacheName, request, response.clone(), maxEntries)
+      : undefined)
+    .catch(() => {}))
+
+  return network.catch(async error => {
+    const cached = await caches.match(request, { cacheName })
+    if (cached) return cached
+    throw error
+  })
+}
+
+async function cacheFirst(request, cacheName, maxEntries) {
+  const cache = await caches.open(cacheName)
+  const cached = await cache.match(request)
+  if (cached) return cached
+
+  const response = await fetch(request)
+  await putInCache(cacheName, request, response.clone(), maxEntries)
+  return response
+}
+
+function staleWhileRevalidate(request, cacheName, event, maxEntries) {
+  const update = fetch(request)
+    .then(async response => {
+      if (response.ok || response.type === 'opaque') {
+        await putInCache(cacheName, request, response.clone(), maxEntries)
+      }
+      return response
+    })
+
+  event.waitUntil(update.catch(() => {}))
+
+  return caches.open(cacheName)
+    .then(cache => cache.match(request))
+    .then(cached => cached || update)
+}
+
+function handleNavigation(event) {
+  const url = new URL(event.request.url)
+  const cacheKey = new Request(`${url.origin}${url.pathname}`)
+  const network = (async () => {
+    const preload = await event.preloadResponse
+    const response = preload || await fetch(event.request)
+    if (response.status >= 500) throw new Error(`HTTP ${response.status}`)
+    return response
+  })()
+
+  event.waitUntil(network
+    .then(response => response.ok
+      ? putInCache(SHELL_CACHE, cacheKey, response.clone(), 40)
+      : undefined)
+    .catch(() => {}))
+
+  return network.catch(async () => {
+    const cache = await caches.open(SHELL_CACHE)
+    return (
+      await cache.match(cacheKey) ||
+      await cache.match('/index.html') ||
+      await cache.match('/')
+    )
+  })
+}
+
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
+    await Promise.all([
+      caches.open(SHELL_CACHE).then(cache => cache.addAll(APP_SHELL)),
+      caches.open(ASSET_CACHE).then(cache => cache.addAll(PRECACHE_ASSETS)),
+    ])
+    await trimCache(ASSET_CACHE, 180)
+  })())
   self.skipWaiting()
 })
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))))
-  self.clients.claim()
+
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys()
+    await Promise.all(keys
+      .filter(key => key.startsWith('latido-') && !CURRENT_CACHES.has(key))
+      .map(key => caches.delete(key)))
+
+    if (self.registration.navigationPreload) {
+      await self.registration.navigationPreload.enable()
+    }
+
+    await self.clients.claim()
+  })())
 })
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return
-  if (e.request.headers.has('range') || e.request.destination === 'video' || e.request.destination === 'audio') {
-    e.respondWith(fetch(e.request))
+
+self.addEventListener('fetch', event => {
+  const { request } = event
+  if (request.method !== 'GET') return
+
+  if (request.headers.has('range') || request.destination === 'video' || request.destination === 'audio') {
     return
   }
-  if (e.request.url.includes('supabase.co')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)))
+
+  const url = new URL(request.url)
+
+  if (request.mode === 'navigate') {
+    event.respondWith(handleNavigation(event))
     return
   }
-  e.respondWith(fetch(e.request).then(res => {
-    if (!res || res.status !== 200 || res.type === 'opaque') return res
-    const clone = res.clone()
-    e.waitUntil(caches.open(CACHE).then(c => c.put(e.request, clone)).catch(() => {}))
-    return res
-  }).catch(() => caches.match(e.request)))
+
+  if (isPublicSupabaseRequest(url)) {
+    event.respondWith(networkFirst(request, PUBLIC_DATA_CACHE, event, 80))
+    return
+  }
+
+  if (isPublicStorageAsset(url)) {
+    event.respondWith(staleWhileRevalidate(request, ASSET_CACHE, event, 180))
+    return
+  }
+
+  if (url.origin !== self.location.origin) return
+
+  if (request.destination === 'script' || request.destination === 'style' || request.destination === 'font') {
+    event.respondWith(cacheFirst(request, ASSET_CACHE, 180))
+    return
+  }
+
+  if (request.destination === 'image') {
+    event.respondWith(staleWhileRevalidate(request, ASSET_CACHE, event, 180))
+    return
+  }
+
+  if (url.pathname === '/manifest.json') {
+    event.respondWith(networkFirst(request, SHELL_CACHE, event, 40))
+  }
 })
 
 self.addEventListener('push', e => {

@@ -10,6 +10,7 @@ import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } fro
 import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
 import { C, PP } from '../lib/theme'
+import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
@@ -104,8 +105,9 @@ function EmptyState({ text }) {
 
 const HOME_CACHE_TTL = 5 * 60 * 1000
 const HOME_RECENT_ITEM_LIMIT = 18
-let homeCache = null
-let homeCacheTs = 0
+const persistedHomeSnapshot = readOfflineSnapshot('home-public')
+let homeCache = persistedHomeSnapshot?.data || null
+let homeCacheTs = persistedHomeSnapshot?.savedAt || 0
 
 const EVENT_MONTH_INDEX = {
   ENE:0, JAN:0,
@@ -338,15 +340,15 @@ export default function Home() {
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef(null)
 
-  const [recentAds, setRecentAds] = useState([])
-  const [communityHighlights, setCommunityHighlights] = useState([])
-  const [businessHighlights, setBusinessHighlights] = useState([])
-  const [recentJobs, setRecentJobs] = useState([])
-  const [recentEvents, setRecentEvents] = useState([])
+  const [recentAds, setRecentAds] = useState(() => homeCache?.recentAds || [])
+  const [communityHighlights, setCommunityHighlights] = useState(() => homeCache?.communityHighlights || [])
+  const [businessHighlights, setBusinessHighlights] = useState(() => homeCache?.businessHighlights || [])
+  const [recentJobs, setRecentJobs] = useState(() => homeCache?.recentJobs || [])
+  const [recentEvents, setRecentEvents] = useState(() => homeCache?.recentEvents || [])
   const [attentionTasks, setAttentionTasks] = useState([])
   const [loadingAttention, setLoadingAttention] = useState(false)
   const [expandedAttentionTask, setExpandedAttentionTask] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !homeCache)
   const [activatingPush, setActivatingPush] = useState(false)
   const { needsActivation, refresh: refreshPush } = usePushActivation(user?.id)
   const [selectedGuide, setSelectedGuide] = useState(null)
@@ -654,6 +656,7 @@ export default function Home() {
           .from('listings')
           .select('*')
           .or('active.is.null,active.eq.true')
+          .or('privacy.is.null,privacy.eq.public')
           .order('created_at', { ascending:false })
           .limit(HOME_RECENT_ITEM_LIMIT),
 
@@ -689,6 +692,10 @@ export default function Home() {
           .order('created_at', { ascending:false })
           .limit(12),
       ])
+
+      if (homeCache && [adsRes, communitiesRes, providersRes, providerPhotosRes, jobsRes, eventsRes].every(result => result.error)) {
+        return
+      }
 
       if (adsRes.error) console.error('Error loading recent ads:', adsRes.error)
       if (communitiesRes.error) console.error('Error loading communities:', communitiesRes.error)
@@ -874,6 +881,10 @@ export default function Home() {
     if (loading) return
     homeCache = { recentAds, communityHighlights, businessHighlights, recentJobs, recentEvents }
     homeCacheTs = Date.now()
+    writeOfflineSnapshot('home-public', {
+      ...homeCache,
+      recentAds: recentAds.filter(item => !item.privacy || item.privacy === 'public'),
+    })
   }, [businessHighlights, communityHighlights, loading, recentAds, recentEvents, recentJobs])
 
   useEffect(() => {
