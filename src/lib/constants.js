@@ -231,15 +231,15 @@ export function getAdDisplayEmoji(ad={}) {
 }
 
 export const AD_TYPES = [
-  { id:'busca',  emoji:'🔍', label:'Busco / Necesito',  desc:'Estás buscando algo o a alguien' },
+  { id:'busca',  emoji:'🔍', label:'Busco o necesito',   desc:'Estás buscando algo o a alguien' },
   { id:'ofrece', emoji:'✨', label:'Ofrezco',            desc:'Ofreces un servicio o ayuda' },
   { id:'vende',  emoji:'🏷️', label:'Vendo',              desc:'Quieres vender algo' },
   { id:'regala', emoji:'🎁', label:'Regalo',             desc:'Das algo gratis' },
 ]
 
 export const JOB_INTENTS = [
-  { id:'ofrece', emoji:'💼', label:'Ofrezco empleo', desc:'Publicas una vacante, puesto o encargo de trabajo' },
-  { id:'busca',  emoji:'🔎', label:'Busco empleo',   desc:'Publicas tu perfil o disponibilidad para trabajar' },
+  { id:'ofrece', emoji:'💼', label:'Ofrezco', desc:'Publicas una vacante, puesto o encargo de trabajo' },
+  { id:'busca',  emoji:'🔎', label:'Busco',   desc:'Publicas tu perfil o disponibilidad para trabajar' },
 ]
 
 export const JOB_SECTORS = [
