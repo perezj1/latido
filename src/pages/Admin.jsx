@@ -10,6 +10,12 @@ import { getMissingColumnName } from '../lib/supabaseCompat'
 import { subscribeToOnlineUsers, subscribeToPresenceStatus } from '../lib/presence'
 import { isAdminEmail } from '../lib/admin'
 import {
+  formatPromotionEndDate,
+  getBusinessPromotionMeta,
+  getEffectiveBusinessPromotionPlan,
+  mergeBusinessPromotionPlans,
+} from '../lib/businessPromotion'
+import {
   getPartnerPlacementMeta,
   isPartnerOutboundAnalyticsEvent,
   PARTNER_ANALYTICS_PARTNERS,
@@ -1017,7 +1023,9 @@ export default function Admin() {
   const [businessVerificationFilter, setBusinessVerificationFilter] = useState('pending')
   const [businessSearch, setBusinessSearch] = useState('')
   const [businessPage, setBusinessPage] = useState(1)
-  const [businessFeaturedLoading, setBusinessFeaturedLoading] = useState(new Set())
+  const [businessPromotionAvailability, setBusinessPromotionAvailability] = useState([])
+  const [businessPromotionUnavailable, setBusinessPromotionUnavailable] = useState(false)
+  const [businessPromotionLoading, setBusinessPromotionLoading] = useState(new Set())
   const [contentByKey, setContentByKey] = useState(new Map())
   const [onlineUserIds, setOnlineUserIds] = useState(new Set())
   const [presenceStatus, setPresenceStatus] = useState('idle')
@@ -1043,6 +1051,10 @@ export default function Admin() {
       .filter(profile => isAdminEmail(profile.email) || isPartnerMetricsExcludedEmail(profile.email))
       .map(profile => profile.id)),
     [users]
+  )
+  const businessPromotionPlans = useMemo(
+    () => mergeBusinessPromotionPlans(businessPromotionAvailability),
+    [businessPromotionAvailability],
   )
 
   const stats = useMemo(() => ({
@@ -1526,6 +1538,7 @@ export default function Admin() {
       if ((wantsContent || wantsContentMetrics) && !listingsRes.error) setRecentListings(listingsRes.data)
       if ((wantsContent || wantsContentMetrics) && !jobsRes.error) setRecentJobs(jobsRes.data)
       if (groups.includes('businesses') && !providersRes.error) setBusinesses(providersRes.data)
+      if (groups.includes('businesses')) await loadBusinessPromotionAvailability({ silent:true })
       if (nextContent.size) {
         setContentByKey(previous => {
           const merged = new Map(previous)
@@ -1725,55 +1738,144 @@ export default function Admin() {
       : status === 'verified' ? 'Negocio verificado' : 'Estado actualizado')
   }
 
-  async function toggleBusinessFeatured(business) {
-    const businessId = business?.id
-    if (!businessId || businessFeaturedLoading.has(businessId)) return
+  async function loadBusinessPromotionAvailability({ silent = false } = {}) {
+    const { data, error } = await supabase.rpc('get_business_promotion_availability')
 
-    const featured = !business.featured
-    const isVerified = getBusinessVerificationDetails(business).status === 'verified'
-    if (featured && !isVerified) {
-      toast.error('Solo los negocios verificados pueden ser destacados')
+    if (error) {
+      setBusinessPromotionUnavailable(true)
+      if (!silent) toast.error('Aplica primero el SQL de planes de negocios en Supabase.')
+      return false
+    }
+
+    setBusinessPromotionAvailability(data || [])
+    setBusinessPromotionUnavailable(false)
+    return true
+  }
+
+  async function updateBusinessPromotionLimit(plan) {
+    if (!plan?.key || plan.key === 'free') return
+
+    const nextValue = window.prompt(
+      `Cupo máximo para ${plan.label}`,
+      String(plan.maxActive ?? ''),
+    )
+    if (nextValue === null) return
+
+    const maxActive = Number.parseInt(nextValue, 10)
+    if (!Number.isInteger(maxActive) || maxActive < 1) {
+      toast.error('Introduce un cupo válido mayor que cero')
       return
     }
 
-    setBusinessFeaturedLoading(previous => {
+    const { error } = await supabase.rpc('update_business_promotion_plan', {
+      p_plan_key:plan.key,
+      p_max_active:maxActive,
+      p_enabled:plan.enabled !== false,
+      p_rotation_weight:plan.rotationWeight,
+    })
+
+    if (error) {
+      toast.error(String(error.message || '').includes('LIMIT_BELOW_ACTIVE')
+        ? 'El cupo no puede ser menor que los planes activos.'
+        : error.message || 'No se pudo actualizar el cupo')
+      return
+    }
+
+    await loadBusinessPromotionAvailability()
+    toast.success(`Cupo de ${plan.label} actualizado`)
+  }
+
+  async function setBusinessPromotion(business, planKey) {
+    const businessId = business?.id
+    if (!businessId || businessPromotionLoading.has(businessId)) return
+
+    const plan = businessPromotionPlans.find(item => item.key === planKey) || getBusinessPromotionMeta(planKey)
+    const currentPlanKey = getEffectiveBusinessPromotionPlan(business)
+    const isVerified = getBusinessVerificationDetails(business).status === 'verified'
+    if (planKey !== 'free' && !isVerified) {
+      toast.error('Solo los negocios verificados pueden activar un plan')
+      return
+    }
+    if (planKey !== 'free' && plan.enabled === false) {
+      toast.error('Este plan está desactivado')
+      return
+    }
+    if (
+      planKey !== 'free' &&
+      currentPlanKey !== planKey &&
+      plan.availableSlots != null &&
+      plan.availableSlots <= 0
+    ) {
+      toast.error(`${plan.label} no tiene plazas disponibles`)
+      return
+    }
+
+    let startsAt = null
+    let endsAt = null
+    if (planKey !== 'free') {
+      const durationValue = window.prompt(
+        `Duración en días para ${plan.label}`,
+        '30',
+      )
+      if (durationValue === null) return
+
+      const durationDays = Number.parseInt(durationValue, 10)
+      if (!Number.isInteger(durationDays) || durationDays < 1 || durationDays > 730) {
+        toast.error('La duración debe estar entre 1 y 730 días')
+        return
+      }
+
+      const startsAtDate = new Date()
+      const endsAtDate = new Date(startsAtDate.getTime() + durationDays * 86_400_000)
+      startsAt = startsAtDate.toISOString()
+      endsAt = endsAtDate.toISOString()
+    }
+
+    setBusinessPromotionLoading(previous => {
       const next = new Set(previous)
       next.add(businessId)
       return next
     })
 
     try {
-      const { data, error } = await supabase
-        .from('providers')
-        .update({ featured })
-        .eq('id', businessId)
-        .select('id,featured')
-        .maybeSingle()
+      const { data, error } = await supabase.rpc('set_provider_business_promotion', {
+        p_provider_id:businessId,
+        p_plan_key:planKey,
+        p_starts_at:startsAt,
+        p_ends_at:endsAt,
+      })
 
       if (error) throw error
-      if (!data) throw new Error('No se actualizó el negocio. Revisa los permisos RLS del administrador.')
+      const savedBusiness = Array.isArray(data) ? data[0] : data
+      if (!savedBusiness) throw new Error('No se actualizó el plan del negocio.')
 
       setBusinesses(previous => previous.map(item =>
-        String(item.id) === String(businessId) ? { ...item, featured:data.featured } : item
+        String(item.id) === String(businessId) ? { ...item, ...savedBusiness } : item
       ))
 
       try {
         await logAdminAction({
           admin_id:user.id,
-          action_type:featured ? 'business_featured_enable' : 'business_featured_disable',
+          action_type:planKey === 'free' ? 'business_promotion_disable' : 'business_promotion_enable',
           target_type:'provider',
           target_id:businessId,
-          notes:business.name || '',
+          notes:`${business.name || ''} · ${plan.label}${endsAt ? ` · hasta ${endsAt}` : ''}`,
         })
       } catch (logError) {
         console.warn('Admin action log failed:', logError)
       }
 
-      toast.success(featured ? 'Negocio marcado como destacado' : 'Negocio retirado de destacados')
+      await loadBusinessPromotionAvailability({ silent:true })
+      toast.success(planKey === 'free' ? 'Plan retirado' : `${plan.label} activado`)
     } catch (error) {
-      toast.error(error.message || 'No se pudo actualizar el estado destacado')
+      const message = String(error?.message || '')
+      toast.error(message.includes('PLAN_FULL')
+        ? `${plan.label} ya no tiene plazas disponibles`
+        : message.includes('BUSINESS_NOT_VERIFIED')
+          ? 'El negocio debe estar verificado'
+          : message || 'No se pudo actualizar el plan')
     } finally {
-      setBusinessFeaturedLoading(previous => {
+      setBusinessPromotionLoading(previous => {
         const next = new Set(previous)
         next.delete(businessId)
         return next
@@ -1943,7 +2045,9 @@ export default function Admin() {
   const adminHealth = totalPendingActions > 0 ? 'Requiere atencion' : 'Todo al dia'
   const adminHealthColor = totalPendingActions > 0 ? '#D97706' : '#059669'
   const activeBusinesses = businesses.filter(business => business.active !== false).length
-  const featuredBusinesses = businesses.filter(business => business.featured).length
+  const featuredBusinesses = businesses.filter(
+    business => getEffectiveBusinessPromotionPlan(business) !== 'free',
+  ).length
   const businessAverageScore = businesses.length
     ? Math.round(businesses.reduce((sum, business) => sum + getBusinessVerificationDetails(business).score, 0) / businesses.length)
     : 0
@@ -2161,7 +2265,7 @@ export default function Admin() {
           { label: 'Negocios activos', value: loading ? '...' : activeBusinesses, hint: `${businesses.length} negocios cargados`, color: '#059669' },
           { label: 'Verificadas', value: loading ? '...' : verifiedBusinessCount, hint: 'Con etiqueta visible en ficha', color: '#0F766E' },
           { label: 'Pendientes', value: loading ? '...' : businessVerificationCounts.pending || 0, hint: 'Esperan decision manual', color: '#D97706' },
-          { label: 'Score medio', value: loading ? '...' : `${businessAverageScore}/100`, hint: `${featuredBusinesses} destacados`, color: C.primary },
+          { label: 'Score medio', value: loading ? '...' : `${businessAverageScore}/100`, hint: `${featuredBusinesses} planes activos`, color: C.primary },
         ]
       : tab === 'reports'
         ? [
@@ -2915,6 +3019,48 @@ export default function Admin() {
       {/* ── Verificación de negocios ───────────────────────────────────── */}
       {tab === 'businessVerification' && isTabDataReady('businessVerification') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {businessPromotionUnavailable ? (
+            <div style={{ padding:14, borderRadius:16, border:'1px solid #F59E0B', background:'#FFFBEB' }}>
+              <p style={{ fontFamily:PP, fontWeight:900, fontSize:12, color:'#92400E', margin:'0 0 4px' }}>
+                Planes de Inicio pendientes de configurar
+              </p>
+              <p style={{ fontFamily:PP, fontSize:11, color:'#A16207', margin:0, lineHeight:1.55 }}>
+                Ejecuta el SQL de planes en Supabase para activar cupos, vigencia y rotación.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:8 }}>
+              {businessPromotionPlans.filter(plan => plan.key !== 'free').map(plan => (
+                <div key={plan.key} style={{ padding:12, borderRadius:16, border:`1px solid ${plan.color}44`, background:plan.background }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
+                    <div>
+                      <p style={{ fontFamily:PP, fontWeight:900, fontSize:11, color:plan.color, margin:'0 0 4px' }}>{plan.label}</p>
+                      <p style={{ fontFamily:PP, fontWeight:800, fontSize:16, color:C.text, margin:0 }}>
+                        {plan.availableSlots ?? '∞'} libres
+                      </p>
+                    </div>
+                    {plan.key === 'featured' ? (
+                      <span style={{ border:`1px solid ${plan.color}55`, background:'#fff', color:plan.color, borderRadius:9, padding:'6px 8px', fontFamily:PP, fontWeight:800, fontSize:9 }}>
+                        Fijo
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => updateBusinessPromotionLimit(plan)}
+                        style={{ border:`1px solid ${plan.color}55`, background:'#fff', color:plan.color, borderRadius:9, padding:'6px 8px', fontFamily:PP, fontWeight:800, fontSize:9, cursor:'pointer' }}
+                      >
+                        Editar
+                      </button>
+                    )}
+                  </div>
+                  <p style={{ fontFamily:PP, fontSize:9, color:C.mid, margin:'5px 0 0' }}>
+                    {plan.activeCount || 0} activos de {plan.maxActive ?? '∞'} · peso {plan.rotationWeight}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 18, padding: 8, boxShadow: '0 10px 26px rgba(15,23,42,0.04)' }}>
             {BUSINESS_VERIFICATION_FILTERS.map(item => (
               <button
@@ -2963,6 +3109,12 @@ export default function Admin() {
               business.email,
               business.website,
             ].filter(Boolean)
+            const promotionPlanKey = getEffectiveBusinessPromotionPlan(business)
+            const promotionPlan = businessPromotionPlans.find(plan => plan.key === promotionPlanKey)
+              || getBusinessPromotionMeta(promotionPlanKey)
+            const promotionEndsOn = promotionPlanKey === 'free'
+              ? ''
+              : formatPromotionEndDate(business.promotion_ends_at)
 
             return (
               <Card key={business.id}>
@@ -2984,8 +3136,10 @@ export default function Admin() {
                           <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
                             {business.name || 'Negocio sin nombre'}
                           </p>
-                          {business.featured && (
-                            <Tag bg="#EFF6FF" color={C.primary}>★ Destacado</Tag>
+                          {promotionPlanKey !== 'free' && (
+                            <Tag bg={promotionPlan.background} color={promotionPlan.color}>
+                              {promotionPlan.label}{promotionEndsOn ? ` · hasta ${promotionEndsOn}` : ''}
+                            </Tag>
                           )}
                         </div>
                         <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, overflowWrap: 'anywhere' }}>
@@ -3034,32 +3188,59 @@ export default function Admin() {
                     </p>
 
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        disabled={businessFeaturedLoading.has(business.id) || (!business.featured && details.status !== 'verified')}
-                        onClick={() => toggleBusinessFeatured(business)}
-                        title={!business.featured && details.status !== 'verified' ? 'Verifica el negocio antes de destacarlo' : ''}
-                        style={{
-                          fontFamily:PP,
-                          fontWeight:900,
-                          fontSize:11,
-                          borderRadius:10,
-                          border:`1.5px solid ${business.featured ? '#F59E0B' : C.primaryMid}`,
-                          background:business.featured ? '#FFFBEB' : '#EFF6FF',
-                          color:business.featured ? '#B45309' : C.primary,
-                          padding:'9px 12px',
-                          cursor:businessFeaturedLoading.has(business.id)
-                            ? 'wait'
-                            : !business.featured && details.status !== 'verified' ? 'not-allowed' : 'pointer',
-                          opacity:businessFeaturedLoading.has(business.id) || (!business.featured && details.status !== 'verified') ? 0.55 : 1,
-                        }}
-                      >
-                        {businessFeaturedLoading.has(business.id)
-                          ? 'Guardando...'
-                          : business.featured
-                            ? '★ Quitar destacado'
-                            : details.status === 'verified' ? '☆ Marcar destacado' : '🔒 Verifica para destacar'}
-                      </button>
+                      <div style={{ width:'100%', padding:10, borderRadius:14, border:`1px solid ${C.border}`, background:C.bg }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:8 }}>
+                          <p style={{ fontFamily:PP, fontWeight:900, fontSize:11, color:C.text, margin:0 }}>
+                            Plan de rotación en Inicio
+                          </p>
+                          <span style={{ fontFamily:PP, fontSize:9, fontWeight:800, color:promotionPlan.color }}>
+                            {businessPromotionLoading.has(business.id) ? 'Guardando...' : promotionPlan.label}
+                          </span>
+                        </div>
+                        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                          {businessPromotionPlans.map(plan => {
+                            const isCurrent = promotionPlanKey === plan.key
+                            const noAvailability = plan.key !== 'free'
+                              && !isCurrent
+                              && plan.availableSlots != null
+                              && plan.availableSlots <= 0
+                            const disabled = businessPromotionUnavailable
+                              || businessPromotionLoading.has(business.id)
+                              || (plan.key === 'free' && isCurrent)
+                              || (plan.key !== 'free' && (details.status !== 'verified' || plan.enabled === false || noAvailability))
+
+                            return (
+                              <button
+                                key={plan.key}
+                                type="button"
+                                disabled={disabled}
+                                onClick={() => setBusinessPromotion(business, plan.key)}
+                                title={noAvailability ? 'Plan completo' : isCurrent && plan.key !== 'free' ? 'Renovar o cambiar duración' : ''}
+                                style={{
+                                  fontFamily:PP,
+                                  fontWeight:900,
+                                  fontSize:9,
+                                  borderRadius:999,
+                                  border:`1.5px solid ${isCurrent ? plan.color : C.border}`,
+                                  background:isCurrent ? plan.background : '#fff',
+                                  color:isCurrent ? plan.color : C.mid,
+                                  padding:'7px 9px',
+                                  cursor:disabled ? 'not-allowed' : 'pointer',
+                                  opacity:disabled && !isCurrent ? 0.45 : 1,
+                                }}
+                              >
+                                {plan.shortLabel}
+                                {plan.key !== 'free' && plan.availableSlots != null ? ` · ${plan.availableSlots}` : ''}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {details.status !== 'verified' && (
+                          <p style={{ fontFamily:PP, fontSize:9, color:'#B45309', margin:'7px 0 0' }}>
+                            Verifica el negocio antes de activar un plan.
+                          </p>
+                        )}
+                      </div>
                       {BUSINESS_VERIFICATION_ACTIONS.map(action => {
                         const isCurrent = details.status === action.id
                         return (

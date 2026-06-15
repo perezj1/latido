@@ -44,6 +44,7 @@ const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Admin = lazy(() => import('./pages/Admin'))
 const PartnerContact = lazy(() => import('./pages/PartnerContact'))
+const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
@@ -536,6 +537,7 @@ function AppShell() {
             <Route path="/empleos/:jobSlug" element={<Tablon />} />
             <Route path="/publicar" element={<ProtectedRoute><Publicar /></ProtectedRoute>} />
             <Route path="/comunidades" element={<Comunidades />} />
+            <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />
             <Route path="/eventos/:eventSlug" element={<Comunidades />} />
             <Route path="/guias/:guideSlug" element={<Guias />} />

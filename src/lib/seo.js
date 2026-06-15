@@ -417,6 +417,15 @@ export function getSeoForLocation(location = {}) {
   const pathname = normalizePath(location.pathname || '/')
   const params = new URLSearchParams(location.search || '')
 
+  if (/^\/negocios\/[^/]+\/destacar$/.test(pathname)) {
+    return withDefaults({
+      path:pathname,
+      title:'Area privada | Latido.ch',
+      description:'Gestion del plan Negocio Destacado en Latido.ch.',
+      robots:'noindex, nofollow',
+    })
+  }
+
   if (pathname.startsWith('/guias/')) {
     const guide = getGuideBySlug(pathname.replace('/guias/', ''))
     if (guide) return getGuideSeo(guide)

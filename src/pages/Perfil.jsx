@@ -24,6 +24,24 @@ const PUBLICATION_TABS = [
 ]
 
 const MULTI_PHOTO_AD_CATS = new Set(['vivienda', 'venta'])
+const BLOCKING_BUSINESS_SUBSCRIPTION_STATUSES = new Set([
+  'active',
+  'past_due',
+  'processing',
+])
+
+function isActiveBusinessSubscriptionError(error) {
+  if (!error) return false
+
+  const errorText = [
+    error.message,
+    error.details,
+    error.hint,
+    error.code,
+  ].filter(Boolean).join(' ')
+
+  return errorText.includes('ACTIVE_BUSINESS_SUBSCRIPTION')
+}
 
 const COMMUNITY_OPTIONS = COMMUNITY_CATS
   .filter(item => item.id !== 'fe')
@@ -533,6 +551,8 @@ export default function Perfil() {
   const [uploadingEditorImage, setUploadingEditorImage] = useState(false)
   const [saving, setSaving] = useState(false)
   const [actionItem, setActionItem] = useState(null)
+  const [businessDeleteBlock, setBusinessDeleteBlock] = useState(null)
+  const [openingBusinessPortal, setOpeningBusinessPortal] = useState(false)
   const [expiredEventsOpen, setExpiredEventsOpen] = useState(false)
   const [expiredEventsDismissed, setExpiredEventsDismissed] = useState(false)
   const [adReminderOpen, setAdReminderOpen] = useState(false)
@@ -1322,22 +1342,113 @@ export default function Perfil() {
   }
 
   const handleDeletePublication = async item => {
-    const confirmed = window.confirm(`¿Seguro que quieres borrar esta publicación?\n\n${item.title}`)
-    if (!confirmed) return
     const table = KIND_META[item.kind].table
     const deleteKey = `${item.kind}-${item.id}`
     setDeletingKey(deleteKey)
+
     try {
+      if (item.kind === 'business') {
+        const { data: syncResult, error: syncError } = await supabase.functions
+          .invoke('create_business_promotion_portal', {
+            body:{
+              providerId:item.id,
+              syncOnly:true,
+            },
+          })
+
+        if (syncError) {
+          console.warn('Could not refresh Stripe subscription before deletion:', syncError)
+          throw new Error(
+            'No se pudo comprobar la suscripción en Stripe. Inténtalo de nuevo.',
+          )
+        }
+
+        const { data: deletionStatus, error: deletionStatusError } = await supabase
+          .rpc('get_business_deletion_status', {
+            p_provider_id:item.id,
+          })
+
+        const deletionStatusUnavailable =
+          deletionStatusError?.code === 'PGRST202'
+          || deletionStatusError?.message?.includes('get_business_deletion_status')
+
+        if (deletionStatusError && !deletionStatusUnavailable) {
+          throw deletionStatusError
+        }
+
+        const subscription = deletionStatus?.subscription
+        const deletionBlocked = deletionStatus?.blocked
+          || BLOCKING_BUSINESS_SUBSCRIPTION_STATUSES.has(subscription?.status)
+
+        if (deletionBlocked) {
+          setBusinessDeleteBlock({
+            providerId:item.id,
+            subscription,
+          })
+          return
+        }
+
+        if (syncResult?.blocked === true) {
+          setBusinessDeleteBlock({
+            providerId:item.id,
+            subscription:null,
+          })
+          return
+        }
+
+        setBusinessDeleteBlock(null)
+      }
+
+      const confirmed = window.confirm(`¿Seguro que quieres borrar esta publicación?\n\n${item.title}`)
+      if (!confirmed) return
+
       const { error } = await supabase.from(table).delete().eq('id', item.id).eq('user_id', user.id)
+      if (isActiveBusinessSubscriptionError(error)) {
+        setBusinessDeleteBlock({
+          providerId:item.id,
+          subscription:null,
+        })
+        return
+      }
       if (error) throw error
       setPublications(prev => prev.filter(entry => !(entry.kind === item.kind && entry.id === item.id)))
       if (editorItem?.kind === item.kind && editorItem?.id === item.id) closeEditor()
       if (actionItem?.kind === item.kind && actionItem?.id === item.id) setActionItem(null)
+      setBusinessDeleteBlock(null)
       toast.success(`${KIND_META[item.kind].label} eliminada`)
     } catch (error) {
+      if (item.kind === 'business' && isActiveBusinessSubscriptionError(error)) {
+        setBusinessDeleteBlock({
+          providerId:item.id,
+          subscription:null,
+        })
+        return
+      }
       toast.error(error?.message || 'No se pudo eliminar la publicación')
     } finally {
       setDeletingKey('')
+    }
+  }
+
+  const openBusinessSubscriptionPortal = async providerId => {
+    setOpeningBusinessPortal(true)
+
+    try {
+      const { data, error } = await supabase.functions
+        .invoke('create_business_promotion_portal', {
+          body:{ providerId },
+        })
+
+      if (error || !data?.url) {
+        throw new Error(data?.error || 'PORTAL_CREATE_FAILED')
+      }
+
+      window.location.assign(data.url)
+    } catch (error) {
+      console.error('Could not open Stripe portal:', error)
+      toast.error('No se pudo abrir la gestión de la suscripción.')
+    } finally {
+      setOpeningBusinessPortal(false)
     }
   }
 
@@ -2099,7 +2210,10 @@ export default function Perfil() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setActionItem(item)}
+                    onClick={() => {
+                      setBusinessDeleteBlock(null)
+                      setActionItem(item)
+                    }}
                     style={{ width:36, height:36, borderRadius:12, border:`1px solid ${C.border}`, background:C.bg, color:C.mid, fontSize:18, cursor:'pointer', flexShrink:0 }}
                     aria-label={`Gestionar ${item.title}`}
                   >
@@ -2117,7 +2231,15 @@ export default function Perfil() {
         )}
       </Modal>
 
-      <Sheet show={!!actionItem} onClose={() => setActionItem(null)} title={actionItem ? actionItem.title : 'Acciones'} syncHistory={false}>
+      <Sheet
+        show={!!actionItem}
+        onClose={() => {
+          setBusinessDeleteBlock(null)
+          setActionItem(null)
+        }}
+        title={actionItem ? actionItem.title : 'Acciones'}
+        syncHistory={false}
+      >
         {actionItem && (
           <>
             <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'12px 14px', marginBottom:14 }}>
@@ -2132,14 +2254,57 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
             </div>
             <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
+            {actionItem.kind === 'business' && (
+              <button
+                onClick={() => {
+                  const providerId = actionItem.id
+                  setActionItem(null)
+                  setManageOpen(false)
+                  navigate(`/negocios/${providerId}/destacar`)
+                }}
+                style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:13, background:C.primaryLight, color:C.primaryDark, border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 16px', cursor:'pointer', marginBottom:10 }}
+              >
+                Destacar negocio
+              </button>
+            )}
+            {actionItem.kind === 'business'
+              && businessDeleteBlock?.providerId === actionItem.id && (
+              <div style={{ background:'#FFF7ED', border:'1.5px solid #FDBA74', borderRadius:16, padding:'14px 15px', marginBottom:12 }}>
+                <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:'#9A3412', margin:'0 0 5px' }}>
+                  No se puede eliminar este negocio
+                </p>
+                <p style={{ fontFamily:PP, fontSize:11, color:'#9A3412', lineHeight:1.55, margin:'0 0 12px' }}>
+                  Este negocio tiene una suscripcion de Negocio Destacado que todavia se renovara. Cancelala primero desde Stripe para poder eliminarlo.
+                </p>
+                <button
+                  onClick={() => openBusinessSubscriptionPortal(actionItem.id)}
+                  disabled={openingBusinessPortal}
+                  style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:12, color:'#fff', background:'#EA580C', border:'none', borderRadius:12, padding:'11px 14px', cursor:openingBusinessPortal ? 'default' : 'pointer', opacity:openingBusinessPortal ? 0.65 : 1 }}
+                >
+                  {openingBusinessPortal
+                    ? 'Abriendo Stripe...'
+                    : 'Cancelar suscripcion'}
+                </button>
+              </div>
+            )}
             <button
               onClick={() => handleDeletePublication(actionItem)}
-              style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:'#FEF2F2', color:'#DC2626', border:'none', borderRadius:14, padding:'12px 16px', cursor:'pointer', marginBottom:8 }}
+              disabled={
+                deletingKey === `${actionItem.kind}-${actionItem.id}`
+              }
+              style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:'#FEF2F2', color:'#DC2626', border:'none', borderRadius:14, padding:'12px 16px', cursor:deletingKey === `${actionItem.kind}-${actionItem.id}` ? 'default' : 'pointer', opacity:deletingKey === `${actionItem.kind}-${actionItem.id}` ? 0.65 : 1, marginBottom:8 }}
             >
-              🗑️ Borrar publicación
+              {deletingKey === `${actionItem.kind}-${actionItem.id}`
+                ? 'Comprobando...'
+                : businessDeleteBlock?.providerId === actionItem.id
+                ? 'Volver a comprobar y borrar'
+                : '🗑️ Borrar publicación'}
             </button>
             <button
-              onClick={() => setActionItem(null)}
+              onClick={() => {
+                setBusinessDeleteBlock(null)
+                setActionItem(null)
+              }}
               style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:'#475569', background:'#F8FAFC', border:'1.5px solid #CBD5E1', borderRadius:14, padding:'11px 16px', cursor:'pointer' }}
             >
               Cancelar

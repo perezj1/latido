@@ -16,6 +16,10 @@ import EventfrogCalendar from '../components/EventfrogCalendar'
 import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
+import {
+  getBusinessPromotionMeta,
+  rotateHomeBusinesses,
+} from '../lib/businessPromotion'
 import toast from 'react-hot-toast'
 
 const fmtPrice = p => {
@@ -59,6 +63,29 @@ async function fetchHomeCommunities() {
   const response = await buildQuery(COMMUNITY_HOME_SELECT.withPhoto)
   if (getMissingColumnName(response.error, 'communities') === 'photo_url') {
     return buildQuery(COMMUNITY_HOME_SELECT.safe)
+  }
+  return response
+}
+
+const HOME_PROVIDER_SELECT = {
+  withPromotion:'id, name, category, city, canton, description, services, photo_url, verified, featured, created_at, active, promotion_plan, promotion_starts_at, promotion_ends_at',
+  safe:'id, name, category, city, canton, description, services, photo_url, verified, featured, created_at, active',
+}
+
+async function fetchHomeProviders() {
+  const buildQuery = columns => supabase
+    .from('providers')
+    .select(columns)
+    .or('active.is.null,active.eq.true')
+    .neq('category', 'empleo')
+    .neq('category', 'vivienda')
+    .order('created_at', { ascending:false })
+    .limit(100)
+
+  const response = await buildQuery(HOME_PROVIDER_SELECT.withPromotion)
+  const missingColumn = getMissingColumnName(response.error, 'providers')
+  if (['promotion_plan', 'promotion_starts_at', 'promotion_ends_at'].includes(missingColumn)) {
+    return buildQuery(HOME_PROVIDER_SELECT.safe)
   }
   return response
 }
@@ -343,6 +370,7 @@ export default function Home() {
   const [recentAds, setRecentAds] = useState(() => homeCache?.recentAds || [])
   const [communityHighlights, setCommunityHighlights] = useState(() => homeCache?.communityHighlights || [])
   const [businessHighlights, setBusinessHighlights] = useState(() => homeCache?.businessHighlights || [])
+  const [businessPromotionPlans, setBusinessPromotionPlans] = useState(() => homeCache?.businessPromotionPlans || [])
   const [recentJobs, setRecentJobs] = useState(() => homeCache?.recentJobs || [])
   const [recentEvents, setRecentEvents] = useState(() => homeCache?.recentEvents || [])
   const [attentionTasks, setAttentionTasks] = useState([])
@@ -355,6 +383,10 @@ export default function Home() {
   useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
 
   const hasNotif = alertCount > 0 || hasUnread
+  const rotatedBusinessHighlights = useMemo(
+    () => rotateHomeBusinesses(businessHighlights, businessPromotionPlans),
+    [businessHighlights, businessPromotionPlans],
+  )
   const visibleAttentionTasks = useMemo(() => loadingAttention ? [] : attentionTasks, [attentionTasks, loadingAttention])
   const showAttentionSection = visibleAttentionTasks.length > 0 || (isLoggedIn && needsActivation)
 
@@ -644,6 +676,7 @@ export default function Home() {
     setRecentAds(snapshot.recentAds || [])
     setCommunityHighlights(snapshot.communityHighlights || [])
     setBusinessHighlights(snapshot.businessHighlights || [])
+    setBusinessPromotionPlans(snapshot.businessPromotionPlans || [])
     setRecentJobs(snapshot.recentJobs || [])
     setRecentEvents(snapshot.recentEvents || [])
     setLoading(false)
@@ -651,7 +684,7 @@ export default function Home() {
 
   const fetchHomeData = useCallback(async () => {
     try {
-      const [adsRes, communitiesRes, providersRes, providerPhotosRes, jobsRes, eventsRes] = await Promise.all([
+      const [adsRes, communitiesRes, providersRes, providerPhotosRes, jobsRes, eventsRes, promotionPlansRes] = await Promise.all([
         supabase
           .from('listings')
           .select('*')
@@ -662,14 +695,7 @@ export default function Home() {
 
         fetchHomeCommunities(),
 
-        supabase
-          .from('providers')
-          .select('id, name, category, city, canton, description, services, photo_url, verified, featured, created_at, active')
-          .or('active.is.null,active.eq.true')
-          .neq('category', 'empleo')
-          .neq('category', 'vivienda')
-          .order('created_at', { ascending:false })
-          .limit(24),
+        fetchHomeProviders(),
 
         supabase
           .from('provider_photos')
@@ -691,6 +717,8 @@ export default function Home() {
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
           .limit(12),
+
+        supabase.rpc('get_business_promotion_availability'),
       ])
 
       if (homeCache && [adsRes, communitiesRes, providersRes, providerPhotosRes, jobsRes, eventsRes].every(result => result.error)) {
@@ -703,6 +731,7 @@ export default function Home() {
       if (providerPhotosRes.error) console.error('Error loading provider photos:', providerPhotosRes.error)
       if (jobsRes.error) console.error('Error loading jobs:', jobsRes.error)
       if (eventsRes.error) console.error('Error loading events:', eventsRes.error)
+      if (!promotionPlansRes.error) setBusinessPromotionPlans(promotionPlansRes.data || [])
 
       const adsNorm = ((adsRes.error ? [] : adsRes.data) || []).map((row) => ({
         id: row.id,
@@ -823,6 +852,9 @@ export default function Home() {
               verification_status: verificationStatus,
               featured: !!row.featured,
               created_at: row.created_at || '',
+              promotion_plan: row.promotion_plan,
+              promotion_starts_at: row.promotion_starts_at,
+              promotion_ends_at: row.promotion_ends_at,
             }
           })
       )
@@ -879,13 +911,13 @@ export default function Home() {
 
   useEffect(() => {
     if (loading) return
-    homeCache = { recentAds, communityHighlights, businessHighlights, recentJobs, recentEvents }
+    homeCache = { recentAds, communityHighlights, businessHighlights, businessPromotionPlans, recentJobs, recentEvents }
     homeCacheTs = Date.now()
     writeOfflineSnapshot('home-public', {
       ...homeCache,
       recentAds: recentAds.filter(item => !item.privacy || item.privacy === 'public'),
     })
-  }, [businessHighlights, communityHighlights, loading, recentAds, recentEvents, recentJobs])
+  }, [businessHighlights, businessPromotionPlans, communityHighlights, loading, recentAds, recentEvents, recentJobs])
 
   useEffect(() => {
     if (homeCache) {
@@ -1391,17 +1423,21 @@ export default function Home() {
           <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
             {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
           </div>
-        ) : businessHighlights.length === 0 ? (
+        ) : rotatedBusinessHighlights.length === 0 ? (
           <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay negocios publicados." /></div>
         ) : (
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
-              {businessHighlights.map(business => (
-                <Link
-                  key={business.id}
-                  to={getBusinessHref(business)}
-                  style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
-                >
+              {rotatedBusinessHighlights.map(business => {
+                const promotionMeta = getBusinessPromotionMeta(business.effectivePromotionPlan)
+                const hasPromotion = promotionMeta.key !== 'free'
+
+                return (
+                  <Link
+                    key={business.id}
+                    to={getBusinessHref(business)}
+                    style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
+                  >
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                     <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'visible' }}>
                       {business.photo_url
@@ -1434,13 +1470,13 @@ export default function Home() {
                       <div style={{ position:'absolute', top:8, right:8, display:'flex', gap:4 }}>
                         {business.verified && <span title="Verificada" style={{ width:24, height:24, borderRadius:12, background:'rgba(255,255,255,0.94)', color:'#065F46', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, boxShadow:'0 6px 16px rgba(15,23,42,0.12)' }}>✓</span>}
                       </div>
-                      {business.featured && (
-                        <span style={{ position:'absolute', left:'50%', bottom:-12, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5, fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'6px 12px', boxShadow:'0 8px 18px rgba(37,99,235,0.14)', whiteSpace:'nowrap' }}>
-                          Destacado
+                      {hasPromotion && (
+                        <span style={{ position:'absolute', left:'50%', bottom:-12, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5, fontFamily:PP, fontSize:9, fontWeight:800, color:promotionMeta.color, background:'#fff', border:`1.5px solid ${promotionMeta.color}`, borderRadius:999, padding:'6px 10px', boxShadow:'0 8px 18px rgba(15,23,42,0.14)', whiteSpace:'nowrap' }}>
+                          {promotionMeta.shortLabel}
                         </span>
                       )}
                     </div>
-                    <div style={{ padding:business.featured ? '18px 10px 12px' : '10px 10px 12px' }}>
+                    <div style={{ padding:hasPromotion ? '18px 10px 12px' : '10px 10px 12px' }}>
                       <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em', overflowWrap:'anywhere' }}>
                         {business.name}
                       </p>
@@ -1449,8 +1485,9 @@ export default function Home() {
                       </p>
                     </div>
                   </div>
-                </Link>
-              ))}
+                  </Link>
+                )
+              })}
             </div>
           </div>
         )}

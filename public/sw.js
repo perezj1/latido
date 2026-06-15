@@ -5,6 +5,7 @@ const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, PUBLIC_DATA_CACHE])
 const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icon-192.png']
 const PRECACHE_ASSETS = []
 const PUBLIC_TABLES = new Set([
+  'business_promotion_plans',
   'communities',
   'events',
   'jobs',
