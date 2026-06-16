@@ -55,10 +55,6 @@ BEGIN
     RAISE EXCEPTION 'PROVIDER_NOT_FOUND';
   END IF;
 
-  IF selected_provider.active IS NOT TRUE THEN
-    RAISE EXCEPTION 'BUSINESS_NOT_VERIFIED';
-  END IF;
-
   IF selected_provider.promotion_plan = 'featured'
      AND selected_provider.promotion_starts_at <= NOW()
      AND selected_provider.promotion_ends_at > NOW() THEN

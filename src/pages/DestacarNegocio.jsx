@@ -21,7 +21,7 @@ function friendlyError(code='') {
   const messages = {
     PLAN_FULL:'Las 20 plazas estan ocupadas en este momento.',
     PLAN_UNAVAILABLE:'El plan no esta disponible temporalmente.',
-    BUSINESS_NOT_VERIFIED:'El negocio debe estar activo antes de destacarlo.',
+    BUSINESS_NOT_VERIFIED:'Este negocio no puede destacarse en este momento.',
     ALREADY_FEATURED:'Este negocio ya esta destacado.',
     SUBSCRIPTION_EXISTS:'Ya existe una suscripcion asociada a este negocio.',
     CHECKOUT_EXPIRED_RETRY:'La reserva anterior ha caducado. Pulsa de nuevo para continuar.',
@@ -47,6 +47,17 @@ async function getFunctionErrorPayload(error, data, response) {
   }
 
   return null
+}
+
+function formatErrorDetail(detail) {
+  if (!detail) return ''
+  if (typeof detail === 'string') return detail
+
+  try {
+    return JSON.stringify(detail)
+  } catch {
+    return String(detail)
+  }
 }
 
 export default function DestacarNegocio() {
@@ -160,7 +171,8 @@ export default function DestacarNegocio() {
   const checkoutResumable = ['reserved', 'checkout_open'].includes(subscription?.status)
   const paymentProcessing = subscription?.status === 'processing'
   const isFeatured = provider?.promotionActive
-  const canStartCheckout = status?.eligible
+  const checkoutEligible = plan?.enabled === true
+  const canStartCheckout = checkoutEligible
     && !isFeatured
     && !paymentProcessing
     && (checkoutResumable || availableSlots > 0)
@@ -169,7 +181,6 @@ export default function DestacarNegocio() {
     if (isFeatured) return 'Negocio destacado'
     if (checkoutResumable) return 'Pago pendiente'
     if (paymentProcessing) return 'Confirmando pago'
-    if (!provider?.active) return 'Negocio inactivo'
     if (availableSlots < 1) return 'Sin plazas disponibles'
     return 'Disponible'
   }, [availableSlots, checkoutResumable, isFeatured, paymentProcessing, provider])
@@ -184,7 +195,9 @@ export default function DestacarNegocio() {
 
       if (error || !data?.ok) {
         const payload = await getFunctionErrorPayload(error, data, response)
-        if (payload?.detail) console.error('Stripe Checkout detail:', payload.detail)
+        if (payload?.detail) {
+          console.error('Stripe Checkout detail:', formatErrorDetail(payload.detail))
+        }
         throw new Error(payload?.error || 'CHECKOUT_CREATE_FAILED')
       }
       if (data.url) {

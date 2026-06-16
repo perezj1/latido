@@ -233,8 +233,7 @@ BEGIN
       'availableSlots', available_slots
     ),
     'eligible',
-      selected_provider.active = TRUE
-      AND selected_plan.enabled = TRUE,
+      selected_plan.enabled = TRUE,
     'subscription', CASE
       WHEN latest_subscription.id IS NULL THEN NULL
       ELSE jsonb_build_object(
@@ -308,10 +307,6 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'PROVIDER_NOT_FOUND';
-  END IF;
-
-  IF selected_provider.active IS NOT TRUE THEN
-    RAISE EXCEPTION 'BUSINESS_NOT_VERIFIED';
   END IF;
 
   IF selected_provider.promotion_plan = 'featured'
@@ -561,10 +556,6 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'PROVIDER_NOT_FOUND';
-  END IF;
-
-  IF selected_provider.active IS NOT TRUE THEN
-    RAISE EXCEPTION 'BUSINESS_NOT_VERIFIED';
   END IF;
 
   SELECT *
