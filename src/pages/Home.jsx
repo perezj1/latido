@@ -133,6 +133,7 @@ function EmptyState({ text }) {
 
 const HOME_CACHE_TTL = 5 * 60 * 1000
 const HOME_RECENT_ITEM_LIMIT = 18
+const SHOW_HOME_BUSINESS_PROMOTION_TASK = false
 const persistedHomeSnapshot = readOfflineSnapshot('home-public')
 let homeCache = persistedHomeSnapshot?.data || null
 let homeCacheTs = persistedHomeSnapshot?.savedAt || 0
@@ -411,11 +412,11 @@ export default function Home() {
     return { maxActive, availableSlots, occupiedPercentage }
   }, [businessPromotionPlans])
   const visibleAttentionTasks = useMemo(() => loadingAttention ? [] : attentionTasks, [attentionTasks, loadingAttention])
+  const showBusinessPromotionTask = SHOW_HOME_BUSINESS_PROMOTION_TASK
+    && promotableBusinesses.length > 0
+    && featuredPromotionAvailability.availableSlots > 0
   const showAttentionSection = visibleAttentionTasks.length > 0
-    || (
-      promotableBusinesses.length > 0
-      && featuredPromotionAvailability.availableSlots > 0
-    )
+    || showBusinessPromotionTask
     || (isLoggedIn && needsActivation)
 
   async function handleActivatePush() {
@@ -1206,8 +1207,7 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              {promotableBusinesses.length > 0
-                && featuredPromotionAvailability.availableSlots > 0 && (
+              {showBusinessPromotionTask && (
                 <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, overflow:'hidden' }}>
                   <div style={{ padding:'13px 14px', display:'flex', gap:12, alignItems:'center' }}>
                     <span style={{ width:38, height:38, borderRadius:13, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
