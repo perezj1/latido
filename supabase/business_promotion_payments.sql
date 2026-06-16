@@ -168,7 +168,6 @@ BEGIN
   INTO active_slots
   FROM public.providers
   WHERE promotion_plan = 'featured'
-    AND verified = TRUE
     AND active = TRUE
     AND promotion_starts_at <= NOW()
     AND promotion_ends_at > NOW();
@@ -191,7 +190,6 @@ BEGIN
       FROM public.providers AS reserved_provider
       WHERE reserved_provider.id = subscriptions.provider_id
         AND reserved_provider.promotion_plan = 'featured'
-        AND reserved_provider.verified = TRUE
         AND reserved_provider.active = TRUE
         AND reserved_provider.promotion_starts_at <= NOW()
         AND reserved_provider.promotion_ends_at > NOW()
@@ -206,7 +204,6 @@ BEGIN
 
   promotion_active :=
     selected_provider.promotion_plan = 'featured'
-    AND selected_provider.verified = TRUE
     AND selected_provider.active = TRUE
     AND selected_provider.promotion_starts_at <= NOW()
     AND selected_provider.promotion_ends_at > NOW();
@@ -236,8 +233,7 @@ BEGIN
       'availableSlots', available_slots
     ),
     'eligible',
-      selected_provider.verified = TRUE
-      AND selected_provider.active = TRUE
+      selected_provider.active = TRUE
       AND selected_plan.enabled = TRUE,
     'subscription', CASE
       WHEN latest_subscription.id IS NULL THEN NULL
@@ -314,7 +310,7 @@ BEGIN
     RAISE EXCEPTION 'PROVIDER_NOT_FOUND';
   END IF;
 
-  IF selected_provider.verified IS NOT TRUE OR selected_provider.active IS NOT TRUE THEN
+  IF selected_provider.active IS NOT TRUE THEN
     RAISE EXCEPTION 'BUSINESS_NOT_VERIFIED';
   END IF;
 
@@ -370,7 +366,6 @@ BEGIN
   INTO active_slots
   FROM public.providers
   WHERE promotion_plan = 'featured'
-    AND verified = TRUE
     AND active = TRUE
     AND promotion_starts_at <= NOW()
     AND promotion_ends_at > NOW();
@@ -568,7 +563,7 @@ BEGIN
     RAISE EXCEPTION 'PROVIDER_NOT_FOUND';
   END IF;
 
-  IF selected_provider.verified IS NOT TRUE OR selected_provider.active IS NOT TRUE THEN
+  IF selected_provider.active IS NOT TRUE THEN
     RAISE EXCEPTION 'BUSINESS_NOT_VERIFIED';
   END IF;
 
@@ -589,7 +584,6 @@ BEGIN
   FROM public.providers
   WHERE id <> p_provider_id
     AND promotion_plan = 'featured'
-    AND verified = TRUE
     AND active = TRUE
     AND promotion_starts_at < p_period_end
     AND promotion_ends_at > p_period_start;
@@ -798,7 +792,6 @@ DECLARE
   checkout_slots INTEGER := 0;
 BEGIN
   IF NEW.promotion_plan <> 'featured'
-     OR NEW.verified IS NOT TRUE
      OR NEW.active IS NOT TRUE
      OR NEW.promotion_ends_at <= NOW() THEN
     RETURN NEW;
@@ -819,7 +812,6 @@ BEGIN
   FROM public.providers
   WHERE id <> NEW.id
     AND promotion_plan = 'featured'
-    AND verified = TRUE
     AND active = TRUE
     AND promotion_starts_at < NEW.promotion_ends_at
     AND promotion_ends_at > NEW.promotion_starts_at;
@@ -967,8 +959,7 @@ BEGIN
     SELECT
       plans.plan_key,
       COUNT(providers.id) FILTER (
-        WHERE providers.verified = TRUE
-          AND providers.active = TRUE
+        WHERE providers.active = TRUE
           AND providers.promotion_starts_at <= NOW()
           AND providers.promotion_ends_at > NOW()
       ) AS active_count

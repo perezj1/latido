@@ -251,7 +251,7 @@ function normalizeProvider(provider) {
     website: provider.website || '',
     verified: verificationStatus === 'verified',
     verification_status: verificationStatus,
-    featured: !!provider.featured && verificationStatus === 'verified',
+    featured: !!provider.featured,
     services: Array.isArray(provider.services) ? provider.services : [],
     photo_url: provider.photo_url || '',
     contacts: Array.isArray(provider.contacts) ? provider.contacts : null,

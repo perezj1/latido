@@ -11,13 +11,14 @@ import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
 import { C, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
-import { Avatar, Tag, PrivacyTag, RatingPill } from '../components/UI'
+import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import {
   getBusinessPromotionMeta,
+  isBusinessPromotionActive,
   rotateHomeBusinesses,
 } from '../lib/businessPromotion'
 import toast from 'react-hot-toast'
@@ -376,6 +377,8 @@ export default function Home() {
   const [attentionTasks, setAttentionTasks] = useState([])
   const [loadingAttention, setLoadingAttention] = useState(false)
   const [expandedAttentionTask, setExpandedAttentionTask] = useState('')
+  const [promotableBusinesses, setPromotableBusinesses] = useState([])
+  const [businessPromotionModalOpen, setBusinessPromotionModalOpen] = useState(false)
   const [loading, setLoading] = useState(() => !homeCache)
   const [activatingPush, setActivatingPush] = useState(false)
   const { needsActivation, refresh: refreshPush } = usePushActivation(user?.id)
@@ -387,8 +390,33 @@ export default function Home() {
     () => rotateHomeBusinesses(businessHighlights, businessPromotionPlans),
     [businessHighlights, businessPromotionPlans],
   )
+  const featuredPromotionAvailability = useMemo(() => {
+    const featuredPlan = businessPromotionPlans.find(plan =>
+      (plan.plan_key || plan.key) === 'featured'
+    )
+    const maxActiveValue = Number(featuredPlan?.max_active ?? featuredPlan?.maxActive)
+    const maxActive = Number.isFinite(maxActiveValue) && maxActiveValue > 0
+      ? maxActiveValue
+      : 20
+    const availableValue = featuredPlan?.available_slots ?? featuredPlan?.availableSlots
+    const parsedAvailable = availableValue == null ? maxActive : Number(availableValue)
+    const availableSlots = Number.isFinite(parsedAvailable)
+      ? Math.min(Math.max(parsedAvailable, 0), maxActive)
+      : maxActive
+    const occupiedPercentage = Math.min(
+      Math.max(((maxActive - availableSlots) / maxActive) * 100, 0),
+      100,
+    )
+
+    return { maxActive, availableSlots, occupiedPercentage }
+  }, [businessPromotionPlans])
   const visibleAttentionTasks = useMemo(() => loadingAttention ? [] : attentionTasks, [attentionTasks, loadingAttention])
-  const showAttentionSection = visibleAttentionTasks.length > 0 || (isLoggedIn && needsActivation)
+  const showAttentionSection = visibleAttentionTasks.length > 0
+    || (
+      promotableBusinesses.length > 0
+      && featuredPromotionAvailability.availableSlots > 0
+    )
+    || (isLoggedIn && needsActivation)
 
   async function handleActivatePush() {
     if (activatingPush) return
@@ -433,6 +461,7 @@ export default function Home() {
   const fetchAttentionTasks = useCallback(async () => {
     if (!isLoggedIn || !user?.id) {
       setAttentionTasks([])
+      setPromotableBusinesses([])
       return
     }
 
@@ -605,10 +634,25 @@ export default function Home() {
         }))))
       }
 
+      const userBusinesses = (providersRes.error ? [] : providersRes.data) || []
+      const hasFeaturedBusiness = userBusinesses.some(row => isBusinessPromotionActive(row))
+
+      setPromotableBusinesses(hasFeaturedBusiness
+        ? []
+        : userBusinesses
+          .map(row => ({
+            id:row.id,
+            name:row.name || 'Negocio',
+            city:row.city || row.canton || 'Suiza',
+            category:row.category || 'Negocio',
+            photoUrl:row.photo_url || '',
+          }))
+      )
       setAttentionTasks(nextTasks)
     } catch (error) {
       console.error('Error loading attention tasks:', error)
       setAttentionTasks([])
+      setPromotableBusinesses([])
     } finally {
       setLoadingAttention(false)
     }
@@ -1162,6 +1206,52 @@ export default function Home() {
                   </div>
                 </div>
               )}
+              {promotableBusinesses.length > 0
+                && featuredPromotionAvailability.availableSlots > 0 && (
+                <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, overflow:'hidden' }}>
+                  <div style={{ padding:'13px 14px', display:'flex', gap:12, alignItems:'center' }}>
+                    <span style={{ width:38, height:38, borderRadius:13, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                      ✨
+                    </span>
+                    <span style={{ minWidth:0, flex:1 }}>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:2 }}>
+                        Destaca tu negocio
+                      </span>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.45 }}>
+                        Consigue más visibilidad entre los usuarios de Latido.
+                      </span>
+                    </span>
+                    <button
+                      onClick={() => setBusinessPromotionModalOpen(true)}
+                      style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'7px 12px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
+                    >
+                      Destacar
+                    </button>
+                  </div>
+                  <div style={{ padding:'0 14px 13px' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:6 }}>
+                      <span style={{ fontFamily:PP, fontSize:9, fontWeight:700, color:C.primaryDark }}>
+                        Disponibles
+                      </span>
+                      <span style={{ fontFamily:PP, fontSize:9, fontWeight:900, color:C.primaryDark }}>
+                        {featuredPromotionAvailability.availableSlots}/{featuredPromotionAvailability.maxActive}
+                      </span>
+                    </div>
+                    <div style={{ height:5, borderRadius:999, background:C.primaryLight, overflow:'hidden' }}>
+                      <div
+                        style={{
+                          width:`${featuredPromotionAvailability.occupiedPercentage}%`,
+                          minWidth:featuredPromotionAvailability.occupiedPercentage > 0 ? 5 : 0,
+                          height:'100%',
+                          borderRadius:999,
+                          background:C.primary,
+                          transition:'width 220ms ease',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               {visibleAttentionTasks.map(task => {
                 const warn = task.tone === 'warn'
                 const expanded = expandedAttentionTask === task.id
@@ -1253,6 +1343,71 @@ export default function Home() {
       )}
 
       {/* ── ANUNCIOS RECIENTES ── */}
+      <Modal
+        show={businessPromotionModalOpen}
+        onClose={() => setBusinessPromotionModalOpen(false)}
+        title="Destaca tu negocio"
+        syncHistory={false}
+      >
+        <div style={{ textAlign:'center', marginBottom:18 }}>
+          <div style={{ width:64, height:64, borderRadius:22, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 12px' }}>
+            ✨
+          </div>
+          <h3 style={{ fontFamily:PP, fontWeight:900, fontSize:20, color:C.text, margin:'0 0 8px' }}>
+            Haz que más clientes te encuentren
+          </h3>
+          <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.65, color:C.mid, margin:0 }}>
+            Tu negocio tendrá prioridad en la rotación de Inicio y mostrará la identificación azul de Negocio Destacado.
+          </p>
+        </div>
+
+        <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'13px 14px', marginBottom:16 }}>
+          <p style={{ fontFamily:PP, fontWeight:900, fontSize:18, color:C.primaryDark, margin:'0 0 4px' }}>
+            CHF 49 <span style={{ fontSize:11, fontWeight:700 }}>/ mes</span>
+          </p>
+          <p style={{ fontFamily:PP, fontSize:11, lineHeight:1.5, color:C.primaryDark, margin:0 }}>
+            Suscripción mensual, con un máximo de 20 negocios destacados al mismo tiempo.
+          </p>
+        </div>
+
+        <p style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, margin:'0 0 9px' }}>
+          {promotableBusinesses.length === 1
+            ? 'Tu negocio'
+            : 'Elige el negocio que quieres destacar'}
+        </p>
+
+        <div style={{ display:'grid', gap:9 }}>
+          {promotableBusinesses.map(business => (
+            <div key={business.id} style={{ display:'flex', alignItems:'center', gap:11, border:`1px solid ${C.border}`, borderRadius:15, padding:10 }}>
+              {business.photoUrl ? (
+                <img src={business.photoUrl} alt={business.name} style={{ width:44, height:44, borderRadius:12, objectFit:'cover', flexShrink:0 }} />
+              ) : (
+                <span style={{ width:44, height:44, borderRadius:12, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:21, flexShrink:0 }}>
+                  🏪
+                </span>
+              )}
+              <span style={{ minWidth:0, flex:1 }}>
+                <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {business.name}
+                </span>
+                <span style={{ display:'block', fontFamily:PP, fontSize:10, color:C.light, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {[business.category, business.city].filter(Boolean).join(' · ')}
+                </span>
+              </span>
+              <button
+                onClick={() => {
+                  setBusinessPromotionModalOpen(false)
+                  navigate(`/negocios/${business.id}/destacar`)
+                }}
+                style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:'#fff', background:C.primary, border:'none', borderRadius:11, padding:'9px 11px', cursor:'pointer', flexShrink:0 }}
+              >
+                Destacar negocio
+              </button>
+            </div>
+          ))}
+        </div>
+      </Modal>
+
       <section style={{ padding:'24px 0 0' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0, letterSpacing:0 }}>📌 Anuncios recientes</h2>

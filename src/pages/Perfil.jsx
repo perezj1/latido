@@ -12,6 +12,7 @@ import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOptions, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
+import { isBusinessPromotionActive } from '../lib/businessPromotion'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -553,6 +554,7 @@ export default function Perfil() {
   const [actionItem, setActionItem] = useState(null)
   const [businessDeleteBlock, setBusinessDeleteBlock] = useState(null)
   const [openingBusinessPortal, setOpeningBusinessPortal] = useState(false)
+  const [professionalOpen, setProfessionalOpen] = useState(false)
   const [expiredEventsOpen, setExpiredEventsOpen] = useState(false)
   const [expiredEventsDismissed, setExpiredEventsDismissed] = useState(false)
   const [adReminderOpen, setAdReminderOpen] = useState(false)
@@ -689,6 +691,14 @@ export default function Perfil() {
     if (activeTab === 'all') return publications
     return publications.filter(item => item.kind === activeTab)
   }, [activeTab, publications])
+  const businessPublications = useMemo(
+    () => publications.filter(item => item.kind === 'business'),
+    [publications]
+  )
+  const promotableBusinessPublications = useMemo(
+    () => businessPublications.filter(item => !isBusinessPromotionActive(item.raw)),
+    [businessPublications]
+  )
 
   const activeFilter = PUBLICATION_TABS.find(item => item.id === activeTab)
   const testExpiredEventsPrompt = useMemo(() => {
@@ -887,7 +897,7 @@ export default function Perfil() {
     if (!isLoggedIn || !user?.id || loadingPublications || expiredEventsDismissed || !expiredEvents.length) return
     if (!testExpiredEventsPrompt) return
     if (suppressAttentionPrompts) return
-    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || shareOpen || adReminderOpen) return
+    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || shareOpen || adReminderOpen) return
 
     if (!testExpiredEventsPrompt) {
       const key = `latido_attention_expired_events:${user.id}`
@@ -920,6 +930,7 @@ export default function Perfil() {
     alertsOpen,
     configOpen,
     favOpen,
+    professionalOpen,
     shareOpen,
     adReminderOpen,
   ])
@@ -928,7 +939,7 @@ export default function Perfil() {
     if (!isLoggedIn || !user?.id || loadingPublications || adReminderDismissed || !adReminderItems.length) return
     if (!testAdReminderPrompt) return
     if (suppressAttentionPrompts) return
-    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || shareOpen || expiredEventsOpen) return
+    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || shareOpen || expiredEventsOpen) return
     if (!testAdReminderPrompt && expiredEvents.length) return
 
     if (!testAdReminderPrompt) {
@@ -964,6 +975,7 @@ export default function Perfil() {
     alertsOpen,
     configOpen,
     favOpen,
+    professionalOpen,
     shareOpen,
   ])
 
@@ -1031,6 +1043,7 @@ export default function Perfil() {
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get('notificaciones') === '1') setAlertsOpen(true)
+    if (params.get('seccion') === 'profesional') setProfessionalOpen(true)
     if (params.get('atencion') === 'eventos') {
       setActiveTab('event')
       setManageOpen(true)
@@ -1592,6 +1605,12 @@ export default function Perfil() {
         { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
       ],
     },
+    {
+      title: 'Profesional',
+      items: [
+        { icon:'✨', color:'#F1F5F9', label:'Destacar negocio', sub: promotableBusinessPublications.length ? `${promotableBusinessPublications.length} ${promotableBusinessPublications.length === 1 ? 'negocio listo' : 'negocios listos'} para destacar` : businessPublications.length ? 'Tus negocios ya estan destacados' : 'Publica un negocio para desbloquear esta ventaja', action:() => setProfessionalOpen(true) },
+      ],
+    },
     ...(isAdmin ? [{
       title: 'Administrador',
       items: [
@@ -1841,6 +1860,85 @@ export default function Perfil() {
       </Sheet>
 
       {/* ── Notifications ── */}
+      <Sheet show={professionalOpen} onClose={() => setProfessionalOpen(false)} title="✨ Profesional">
+        <div style={{ background:`linear-gradient(135deg,${C.primaryDark},${C.primary})`, borderRadius:18, padding:'18px 16px', marginBottom:14, color:'#fff', overflow:'hidden', position:'relative' }}>
+          <div style={{ position:'absolute', top:-32, right:-24, width:110, height:110, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }} />
+          <p style={{ fontFamily:PP, fontWeight:900, fontSize:18, margin:'0 0 6px', position:'relative' }}>
+            Ventajas profesionales
+          </p>
+          <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.65, margin:0, color:'rgba(255,255,255,0.78)', position:'relative' }}>
+            Herramientas para que tu negocio tenga mas visibilidad y puedas gestionarlo desde Latido.
+          </p>
+        </div>
+
+        <div style={{ display:'grid', gap:8, marginBottom:16 }}>
+          {[
+            'Prioridad en la rotacion de negocios de Inicio',
+            'Acceso rapido para destacar tu negocio',
+            'Mas visibilidad para clientes de la comunidad',
+          ].map(text => (
+            <div key={text} style={{ display:'flex', gap:9, alignItems:'flex-start', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:13, padding:'10px 12px' }}>
+              <span style={{ width:22, height:22, borderRadius:11, background:'#fff', color:C.primary, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontWeight:900, fontSize:13, flexShrink:0 }}>+</span>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, margin:0, lineHeight:1.45 }}>{text}</p>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 10px' }}>
+          Tus negocios
+        </p>
+
+        {loadingPublications ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {[1,2].map(index => <div key={index} className="skeleton" style={{ height:74, borderRadius:14 }} />)}
+          </div>
+        ) : businessPublications.length === 0 ? (
+          <EmptyState
+            emoji="🏪"
+            title="Publica un negocio"
+            sub="Cuando publiques tu primer negocio, este apartado profesional se activara con sus ventajas."
+            action="Registrar negocio"
+            onAction={() => {
+              setProfessionalOpen(false)
+              navigate('/registrar-negocio')
+            }}
+          />
+        ) : (
+          <div style={{ display:'grid', gap:10 }}>
+            {businessPublications.map(item => {
+              const isFeatured = isBusinessPromotionActive(item.raw)
+              return (
+                <div key={item.id} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:15, padding:'11px 12px', display:'flex', gap:11, alignItems:'center' }}>
+                  <div style={{ width:42, height:42, borderRadius:13, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                    {item.icon}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      {item.title || 'Negocio'}
+                    </p>
+                    <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      {isFeatured ? 'Ya esta destacado' : item.summary || 'Listo para destacar'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isFeatured) return
+                      setProfessionalOpen(false)
+                      navigate(`/negocios/${item.id}/destacar`)
+                    }}
+                    disabled={isFeatured}
+                    style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:isFeatured ? C.mid : '#fff', background:isFeatured ? C.bg : C.primary, border:isFeatured ? `1px solid ${C.border}` : 'none', borderRadius:999, padding:'8px 12px', cursor:isFeatured ? 'default' : 'pointer', flexShrink:0, opacity:isFeatured ? 0.8 : 1 }}
+                  >
+                    {isFeatured ? 'Destacado' : 'Destacar'}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </Sheet>
+
       <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones">
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.6 }}>
           Recibe una alerta cuando te escriban o cuando aparezca un anuncio de tu interés en la zona que elijas.

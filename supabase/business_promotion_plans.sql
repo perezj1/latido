@@ -76,7 +76,7 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS idx_providers_promotion_active
   ON public.providers (promotion_plan, promotion_starts_at, promotion_ends_at)
-  WHERE active = TRUE AND verified = TRUE;
+  WHERE active = TRUE;
 
 -- Existing highlighted businesses receive a 30-day Destacado period,
 -- respecting the initial plan capacity.
@@ -84,7 +84,6 @@ WITH legacy_featured AS (
   SELECT providers.id
   FROM public.providers AS providers
   WHERE providers.featured = TRUE
-    AND providers.verified = TRUE
     AND providers.promotion_plan = 'free'
   ORDER BY providers.created_at ASC, providers.id ASC
   LIMIT (
@@ -111,8 +110,7 @@ SET
   promotion_starts_at = NULL,
   promotion_ends_at = NULL,
   featured = FALSE
-WHERE verified IS NOT TRUE
-   OR active IS FALSE;
+WHERE active IS FALSE;
 
 ALTER TABLE public.business_promotion_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.business_promotion_admins ENABLE ROW LEVEL SECURITY;
@@ -172,7 +170,7 @@ BEGIN
       OR NEW.featured IS DISTINCT FROM OLD.featured;
 
     IF promotion_changed AND NOT admin_context THEN
-      IF NEW.verified IS NOT TRUE OR NEW.active IS FALSE THEN
+      IF NEW.active IS FALSE THEN
         NEW.promotion_plan := 'free';
         NEW.promotion_starts_at := NULL;
         NEW.promotion_ends_at := NULL;
@@ -184,8 +182,7 @@ BEGIN
     END IF;
   END IF;
 
-  IF NEW.verified IS NOT TRUE
-     OR NEW.active IS FALSE
+  IF NEW.active IS FALSE
      OR (
        NEW.promotion_plan <> 'free'
        AND NEW.promotion_ends_at IS NOT NULL
@@ -268,8 +265,7 @@ BEGIN
     plans.max_active,
     plans.enabled,
     COUNT(providers.id) FILTER (
-      WHERE providers.verified = TRUE
-        AND providers.active = TRUE
+      WHERE providers.active = TRUE
         AND providers.promotion_starts_at <= NOW()
         AND providers.promotion_ends_at > NOW()
     ) AS active_count,
@@ -278,8 +274,7 @@ BEGIN
       ELSE GREATEST(
         plans.max_active - (
           COUNT(providers.id) FILTER (
-            WHERE providers.verified = TRUE
-              AND providers.active = TRUE
+            WHERE providers.active = TRUE
               AND providers.promotion_starts_at <= NOW()
               AND providers.promotion_ends_at > NOW()
           )
@@ -365,8 +360,7 @@ BEGIN
     RAISE EXCEPTION 'PLAN_UNAVAILABLE';
   END IF;
 
-  IF selected_provider.verified IS NOT TRUE
-     OR selected_provider.active IS FALSE THEN
+  IF selected_provider.active IS FALSE THEN
     RAISE EXCEPTION 'BUSINESS_NOT_VERIFIED';
   END IF;
 
@@ -382,7 +376,6 @@ BEGIN
   FROM public.providers
   WHERE id <> p_provider_id
     AND promotion_plan = p_plan_key
-    AND verified = TRUE
     AND active = TRUE
     AND promotion_starts_at < ends_at
     AND promotion_ends_at > starts_at;
@@ -465,7 +458,6 @@ BEGIN
   INTO active_plans
   FROM public.providers
   WHERE promotion_plan = p_plan_key
-    AND verified = TRUE
     AND active = TRUE
     AND promotion_ends_at > NOW();
 

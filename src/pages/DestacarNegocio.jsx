@@ -21,7 +21,7 @@ function friendlyError(code='') {
   const messages = {
     PLAN_FULL:'Las 20 plazas estan ocupadas en este momento.',
     PLAN_UNAVAILABLE:'El plan no esta disponible temporalmente.',
-    BUSINESS_NOT_VERIFIED:'El negocio debe estar activo y verificado antes de destacarlo.',
+    BUSINESS_NOT_VERIFIED:'El negocio debe estar activo antes de destacarlo.',
     ALREADY_FEATURED:'Este negocio ya esta destacado.',
     SUBSCRIPTION_EXISTS:'Ya existe una suscripcion asociada a este negocio.',
     CHECKOUT_EXPIRED_RETRY:'La reserva anterior ha caducado. Pulsa de nuevo para continuar.',
@@ -169,7 +169,6 @@ export default function DestacarNegocio() {
     if (isFeatured) return 'Negocio destacado'
     if (checkoutResumable) return 'Pago pendiente'
     if (paymentProcessing) return 'Confirmando pago'
-    if (!provider?.verified) return 'Pendiente de verificacion'
     if (!provider?.active) return 'Negocio inactivo'
     if (availableSlots < 1) return 'Sin plazas disponibles'
     return 'Disponible'
@@ -329,8 +328,8 @@ export default function DestacarNegocio() {
             {[
               'Prioridad en la rotacion de negocios de Inicio',
               'Pill azul de Negocio Destacado',
-              'Renovacion mensual mediante TWINT o tarjeta',
-              'Cancelacion desde el portal seguro de Stripe',
+              'Renovacion mensual',
+              'Cancela la suscripción en cualquier momento desde tu perfil',
             ].map(benefit => (
               <div key={benefit} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
                 <span style={{ width:20, height:20, borderRadius:10, background:'#DBEAFE', color:C.primary, display:'grid', placeItems:'center', fontFamily:PP, fontWeight:900, fontSize:11, flexShrink:0 }}>
@@ -356,15 +355,6 @@ export default function DestacarNegocio() {
           {checkoutResult === 'canceled' && (
             <Notice
               text="El pago se cancelo y no se realizo ningun cargo."
-              background="#FFF7ED"
-              border="#FED7AA"
-              color="#9A3412"
-            />
-          )}
-
-          {!provider?.verified && (
-            <Notice
-              text="Podras contratar el plan cuando Latido haya verificado el negocio."
               background="#FFF7ED"
               border="#FED7AA"
               color="#9A3412"
@@ -414,7 +404,7 @@ export default function DestacarNegocio() {
           )}
 
           <p style={{ fontFamily:PP, fontSize:10, color:C.light, textAlign:'center', margin:'11px 4px 0', lineHeight:1.5 }}>
-            El pago se procesa de forma segura en Stripe. Latido no almacena los datos de tu tarjeta ni de TWINT.
+            El pago se procesa de forma segura en Stripe. Latido no almacena los datos de tu tarjeta.
           </p>
         </div>
       </section>

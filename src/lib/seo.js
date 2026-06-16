@@ -15,10 +15,11 @@ export const SITE_URL = (import.meta.env?.VITE_SITE_URL || 'https://latido.ch').
 export const SITE_NAME = 'Latido.ch'
 export const DEFAULT_IMAGE = '/og-image.png'
 
-const DEFAULT_DESCRIPTION = 'La plataforma para hispanohablantes en Suiza: anuncios, empleo, comunidades, eventos, negocios y guías prácticas en español.'
+const DEFAULT_DESCRIPTION = 'Encuentra negocios, servicios, empleo, vivienda, artículos y comunidad en Suiza. Todo en español, en un solo lugar.'
+const DEFAULT_SOCIAL_DESCRIPTION = 'Negocios, servicios, empleo, vivienda, artículos y comunidad para hispanohablantes en Suiza.'
 
 export const DEFAULT_SEO = {
-  title:'Latido.ch - Comunidad hispanohablante en Suiza',
+  title:'Latido.ch — Todo lo que necesitas en Suiza, en español',
   description:DEFAULT_DESCRIPTION,
   path:'/',
   image:DEFAULT_IMAGE,
@@ -51,8 +52,9 @@ export const SEARCHABLE_SITE_PAGES = [
 const ROUTE_SEO = [
   {
     path:'/',
-    title:'Latido.ch - Comunidad hispanohablante en Suiza',
+    title:'Latido.ch — Todo lo que necesitas en Suiza, en español',
     description:DEFAULT_DESCRIPTION,
+    socialDescription:DEFAULT_SOCIAL_DESCRIPTION,
   },
   {
     path:'/tablon',

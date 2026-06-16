@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { VISIBLE_NEGOCIO_TYPES } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, StickyFormActions } from '../components/UI'
+import { Btn, ProgressBar, Input, ImageUploadField, Modal, PublicationLegalNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { calculateBusinessVerification } from '../lib/businessVerification'
 import { insertWithOptionalColumnsFallback } from '../lib/supabaseCompat'
@@ -24,6 +24,7 @@ const STEPS = [
 ]
 
 const NEGOCIO_TYPES_FORM = VISIBLE_NEGOCIO_TYPES.filter(t => t.id !== '')
+const PROFESSIONAL_CONFETTI_EMBED_URL = 'https://lottie.host/embed/6a54f360-7100-4a5c-a6ae-a5f2287488d8/lR9bbFp6Qg.json'
 
 export default function RegistrarNegocio() {
   const { isLoggedIn, user } = useAuth()
@@ -36,6 +37,7 @@ export default function RegistrarNegocio() {
   const [done, setDone] = useState(false)
   const [publishedForReview, setPublishedForReview] = useState(false)
   const [pushModalOpen, setPushModalOpen] = useState(false)
+  const [professionalUnlockOpen, setProfessionalUnlockOpen] = useState(false)
   const [form, setForm] = useState({
     type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[],
   })
@@ -57,6 +59,57 @@ export default function RegistrarNegocio() {
 
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <Modal
+        show={professionalUnlockOpen}
+        onClose={() => setProfessionalUnlockOpen(false)}
+        title="Profesional desbloqueado"
+        syncHistory={false}
+      >
+        <div style={{ position:'relative', overflow:'hidden', textAlign:'center', padding:'10px 0 2px' }}>
+          <div
+            aria-hidden="true"
+            style={{
+              position:'absolute',
+              top:-34,
+              left:'50%',
+              width:340,
+              height:210,
+              transform:'translateX(-50%)',
+              pointerEvents:'none',
+              opacity:.95,
+              zIndex:0,
+            }}
+          >
+            <iframe
+              title="Confeti profesional"
+              src={PROFESSIONAL_CONFETTI_EMBED_URL}
+              style={{
+                width:'100%',
+                height:'100%',
+                border:0,
+                display:'block',
+                pointerEvents:'none',
+              }}
+            />
+          </div>
+          <div style={{ width:76, height:76, borderRadius:24, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:38, margin:'8px auto 22px', position:'relative', zIndex:1 }}>
+            ✨
+          </div>
+          <h2 style={{ fontFamily:PP, fontWeight:900, fontSize:21, color:C.text, margin:'0 0 9px', position:'relative', zIndex:1 }}>
+            Enhorabuena
+          </h2>
+          <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.65, margin:'0 0 18px', position:'relative', zIndex:1 }}>
+            Has desbloqueado la sección Profesional. Ahora podrás aprovechar las ventajas profesionales para tu negocio en el perfil.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/perfil?seccion=profesional')}
+            style={{ width:'100%', border:'none', borderRadius:14, padding:'12px 16px', background:C.primary, color:'#fff', fontFamily:PP, fontWeight:800, fontSize:13, cursor:'pointer', position:'relative', zIndex:1 }}
+          >
+            Ver ventajas
+          </button>
+        </div>
+      </Modal>
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>🏪</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Negocio enviado a revisión' : '¡Negocio publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
@@ -65,7 +118,7 @@ export default function RegistrarNegocio() {
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades?view=negocios')}>Ver negocios →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro negocio
       </button>
     </div>
@@ -172,6 +225,7 @@ export default function RegistrarNegocio() {
         needsReview,
       })
       setPublishedForReview(needsReview)
+      setProfessionalUnlockOpen(true)
       setDone(true)
     } catch (error) {
       console.error('Register business failed:', error)

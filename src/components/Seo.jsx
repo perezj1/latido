@@ -43,13 +43,14 @@ function upsertJsonLd(data) {
 function applySeo(seo) {
   document.documentElement.lang = 'es'
   document.title = seo.title || DEFAULT_SEO.title
+  const socialDescription = seo.socialDescription || seo.description || DEFAULT_SEO.description
 
   upsertMeta('meta[name="description"]', { name:'description', content:seo.description || DEFAULT_SEO.description })
   upsertMeta('meta[name="robots"]', { name:'robots', content:seo.robots || DEFAULT_SEO.robots })
 
   upsertMeta('meta[property="og:site_name"]', { property:'og:site_name', content:SITE_NAME })
   upsertMeta('meta[property="og:title"]', { property:'og:title', content:seo.title || DEFAULT_SEO.title })
-  upsertMeta('meta[property="og:description"]', { property:'og:description', content:seo.description || DEFAULT_SEO.description })
+  upsertMeta('meta[property="og:description"]', { property:'og:description', content:socialDescription })
   upsertMeta('meta[property="og:type"]', { property:'og:type', content:seo.type || DEFAULT_SEO.type })
   upsertMeta('meta[property="og:url"]', { property:'og:url', content:seo.canonical })
   upsertMeta('meta[property="og:image"]', { property:'og:image', content:seo.image })

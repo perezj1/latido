@@ -55,8 +55,7 @@ BEGIN
     RAISE EXCEPTION 'PROVIDER_NOT_FOUND';
   END IF;
 
-  IF selected_provider.verified IS NOT TRUE
-     OR selected_provider.active IS NOT TRUE THEN
+  IF selected_provider.active IS NOT TRUE THEN
     RAISE EXCEPTION 'BUSINESS_NOT_VERIFIED';
   END IF;
 
@@ -112,7 +111,6 @@ BEGIN
   INTO active_slots
   FROM public.providers
   WHERE promotion_plan = 'featured'
-    AND verified = TRUE
     AND active = TRUE
     AND promotion_starts_at <= NOW()
     AND promotion_ends_at > NOW();

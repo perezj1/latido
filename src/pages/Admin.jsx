@@ -1791,11 +1791,6 @@ export default function Admin() {
 
     const plan = businessPromotionPlans.find(item => item.key === planKey) || getBusinessPromotionMeta(planKey)
     const currentPlanKey = getEffectiveBusinessPromotionPlan(business)
-    const isVerified = getBusinessVerificationDetails(business).status === 'verified'
-    if (planKey !== 'free' && !isVerified) {
-      toast.error('Solo los negocios verificados pueden activar un plan')
-      return
-    }
     if (planKey !== 'free' && plan.enabled === false) {
       toast.error('Este plan está desactivado')
       return
@@ -1872,7 +1867,7 @@ export default function Admin() {
       toast.error(message.includes('PLAN_FULL')
         ? `${plan.label} ya no tiene plazas disponibles`
         : message.includes('BUSINESS_NOT_VERIFIED')
-          ? 'El negocio debe estar verificado'
+          ? 'El negocio debe estar activo'
           : message || 'No se pudo actualizar el plan')
     } finally {
       setBusinessPromotionLoading(previous => {
@@ -3207,7 +3202,7 @@ export default function Admin() {
                             const disabled = businessPromotionUnavailable
                               || businessPromotionLoading.has(business.id)
                               || (plan.key === 'free' && isCurrent)
-                              || (plan.key !== 'free' && (details.status !== 'verified' || plan.enabled === false || noAvailability))
+                              || (plan.key !== 'free' && (plan.enabled === false || noAvailability))
 
                             return (
                               <button
@@ -3235,11 +3230,6 @@ export default function Admin() {
                             )
                           })}
                         </div>
-                        {details.status !== 'verified' && (
-                          <p style={{ fontFamily:PP, fontSize:9, color:'#B45309', margin:'7px 0 0' }}>
-                            Verifica el negocio antes de activar un plan.
-                          </p>
-                        )}
                       </div>
                       {BUSINESS_VERIFICATION_ACTIONS.map(action => {
                         const isCurrent = details.status === action.id

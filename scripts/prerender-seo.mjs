@@ -99,11 +99,12 @@ function setSnapshot(html, seo) {
 
 function renderHtml(baseHtml, seo) {
   let html = baseHtml.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(seo.title)}</title>`)
+  const socialDescription = seo.socialDescription || seo.description
 
   html = setMeta(html, 'name=["\']description["\']', `<meta name="description" content="${escapeHtml(seo.description)}" />`)
   html = setMeta(html, 'name=["\']robots["\']', `<meta name="robots" content="${escapeHtml(seo.robots)}" />`)
   html = setMeta(html, 'property=["\']og:title["\']', `<meta property="og:title" content="${escapeHtml(seo.title)}" />`)
-  html = setMeta(html, 'property=["\']og:description["\']', `<meta property="og:description" content="${escapeHtml(seo.description)}" />`)
+  html = setMeta(html, 'property=["\']og:description["\']', `<meta property="og:description" content="${escapeHtml(socialDescription)}" />`)
   html = setMeta(html, 'property=["\']og:type["\']', `<meta property="og:type" content="${escapeHtml(seo.type)}" />`)
   html = setMeta(html, 'property=["\']og:url["\']', `<meta property="og:url" content="${escapeHtml(seo.canonical)}" />`)
   html = setMeta(html, 'property=["\']og:image["\']', `<meta property="og:image" content="${escapeHtml(seo.image)}" />`)

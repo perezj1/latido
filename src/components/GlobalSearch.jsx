@@ -116,7 +116,7 @@ function normalizeBusiness(provider) {
     desc: provider.desc || provider.description || '',
     emoji: provider.emoji || BUSINESS_EMOJI[provider.category] || '🏪',
     services: Array.isArray(provider.services) ? provider.services : [],
-    featured: !!provider.featured && !!provider.verified,
+    featured: !!provider.featured,
     verified: !!provider.verified,
     created_at: provider.created_at || '',
   }
