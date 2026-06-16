@@ -60,7 +60,7 @@ const COUNTRIES = [
   '🇨🇴 Colombia', '🇻🇪 Venezuela', '🇲🇽 México', '🇵🇪 Perú',
   '🇪🇨 Ecuador', '🇦🇷 Argentina', '🇪🇸 España', '🇨🇱 Chile',
   '🇩🇴 R. Dominicana', '🇧🇴 Bolivia', '🇺🇾 Uruguay', '🇵🇾 Paraguay',
-  '🇨🇷 Costa Rica', '🇬🇹 Guatemala', '🇭🇳 Honduras', '🇨🇺 Cuba',
+  '🇨🇷 Costa Rica', '🇬🇹 Guatemala', '🇭🇳 Honduras',
 ]
 
 const APP_PEEK_FEED = [
