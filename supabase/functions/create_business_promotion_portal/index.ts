@@ -73,7 +73,31 @@ function requireStripeConfiguration() {
 }
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
+  if (error instanceof Error) return error.message
+
+  if (error && typeof error === 'object') {
+    const message = 'message' in error && typeof error.message === 'string'
+      ? error.message
+      : null
+    const details = 'details' in error && typeof error.details === 'string'
+      ? error.details
+      : null
+    const hint = 'hint' in error && typeof error.hint === 'string'
+      ? error.hint
+      : null
+    const code = 'code' in error && typeof error.code === 'string'
+      ? error.code
+      : null
+
+    const parts = [message, details, hint, code].filter(Boolean)
+    if (parts.length) return parts.join(' | ')
+
+    try {
+      return JSON.stringify(error)
+    } catch {}
+  }
+
+  return String(error)
 }
 
 function isMissingStripeResource(error: unknown) {

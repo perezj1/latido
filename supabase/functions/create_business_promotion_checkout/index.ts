@@ -73,7 +73,40 @@ function requireStripeConfiguration() {
 }
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
+  if (error instanceof Error) return error.message
+
+  if (error && typeof error === 'object') {
+    const message = 'message' in error && typeof error.message === 'string'
+      ? error.message
+      : null
+    const details = 'details' in error && typeof error.details === 'string'
+      ? error.details
+      : null
+    const hint = 'hint' in error && typeof error.hint === 'string'
+      ? error.hint
+      : null
+    const code = 'code' in error && typeof error.code === 'string'
+      ? error.code
+      : null
+
+    const parts = [message, details, hint, code].filter(Boolean)
+    if (parts.length) return parts.join(' | ')
+
+    try {
+      return JSON.stringify(error)
+    } catch {}
+  }
+
+  return String(error)
+}
+
+function isMissingStripeResource(error: unknown) {
+  return Boolean(
+    error
+    && typeof error === 'object'
+    && 'code' in error
+    && error.code === 'resource_missing'
+  )
 }
 
 function checkoutErrorCode(message: string) {
@@ -148,13 +181,20 @@ Deno.serve(async req => {
 
     if (error) throw error
     reservationId = data.reservation_id
+    let checkoutCustomerId = data.stripe_customer_id
 
     if (data.stripe_checkout_session_id) {
-      const existingSession = await stripe.checkout.sessions.retrieve(
-        data.stripe_checkout_session_id,
-      )
+      let existingSession: Stripe.Checkout.Session | null = null
 
-      if (existingSession.status === 'open') {
+      try {
+        existingSession = await stripe.checkout.sessions.retrieve(
+          data.stripe_checkout_session_id,
+        )
+      } catch (retrieveError) {
+        if (!isMissingStripeResource(retrieveError)) throw retrieveError
+      }
+
+      if (existingSession?.status === 'open') {
         if (existingSession.locale === 'es' && existingSession.url) {
           return json(req, {
             ok: true,
@@ -168,11 +208,11 @@ Deno.serve(async req => {
         await stripe.checkout.sessions.expire(existingSession.id)
       }
 
-      if (existingSession.status === 'complete') {
+      if (existingSession?.status === 'complete') {
         return json(req, { ok: true, pending: true })
       }
 
-      if (existingSession.status !== 'open') {
+      if (existingSession && existingSession.status !== 'open') {
         await serviceClient.rpc('release_featured_promotion_reservation', {
           p_reservation_id: reservationId,
           p_status: 'expired',
@@ -193,16 +233,21 @@ Deno.serve(async req => {
       latido_plan_key: 'featured',
     }
 
-    if (data.stripe_customer_id) {
-      await stripe.customers.update(data.stripe_customer_id, {
-        preferred_locales: ['es'],
-      })
+    if (checkoutCustomerId) {
+      try {
+        await stripe.customers.update(checkoutCustomerId, {
+          preferred_locales: ['es'],
+        })
+      } catch (updateError) {
+        if (!isMissingStripeResource(updateError)) throw updateError
+        checkoutCustomerId = null
+      }
     }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      customer: data.stripe_customer_id || undefined,
-      customer_email: data.stripe_customer_id ? undefined : user.email,
+      customer: checkoutCustomerId || undefined,
+      customer_email: checkoutCustomerId ? undefined : user.email,
       client_reference_id: reservationId,
       line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
       success_url:
