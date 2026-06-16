@@ -56,13 +56,6 @@ const AD_CATS_PREVIEW = [
   { emoji: '✨', label: 'Y más...',  color: '#F1F5F9', tc: '#475569', desc: 'Servicios, guías y mucho más',    to: '/' },
 ]
 
-const COUNTRIES = [
-  '🇨🇴 Colombia', '🇻🇪 Venezuela', '🇲🇽 México', '🇵🇪 Perú',
-  '🇪🇨 Ecuador', '🇦🇷 Argentina', '🇪🇸 España', '🇨🇱 Chile',
-  '🇩🇴 R. Dominicana', '🇧🇴 Bolivia', '🇺🇾 Uruguay', '🇵🇾 Paraguay',
-  '🇨🇷 Costa Rica', '🇬🇹 Guatemala', '🇭🇳 Honduras',
-]
-
 const APP_PEEK_FEED = [
   { tag: '🏠 Vivienda',  who: 'María · Zürich',    text: 'Busco piso de 2 habitaciones en Oerlikon para julio. Hasta 2.800 CHF.', time: 'hace 3 min',  color: '#DBEAFE', tc: '#1D4ED8' },
   { tag: '💼 Empleo',    who: 'Tech Startup · GVA', text: 'Buscamos developer full-stack hispanohablante. Remoto o híbrido.',        time: 'hace 12 min', color: '#D1FAE5', tc: '#065F46' },
@@ -601,7 +594,6 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         .latido-cta-ghost:hover { background: rgba(255,255,255,0.22) !important; border-color: rgba(255,255,255,0.55) !important; transform: translateY(-2px); }
         .latido-float { animation: latido-float 7s ease-in-out infinite; }
         .latido-float-slow { animation: latido-float 11s ease-in-out infinite; }
-        .latido-marquee-track { display: inline-flex; gap: 40px; animation: latido-marquee 40s linear infinite; }
         .latido-testimonial-track::-webkit-scrollbar { display: none; }
         .latido-testimonial-card { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
         .latido-testimonial-card:hover { transform: translateY(-4px); border-color: rgba(37,99,235,0.28) !important; box-shadow: 0 18px 38px rgba(15,31,92,0.12) !important; }
@@ -639,7 +631,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         }
         @media (prefers-reduced-motion: reduce) {
           .latido-enter-1, .latido-enter-2, .latido-enter-3, .latido-enter-4, .latido-enter-5,
-          .latido-float, .latido-float-slow, .latido-marquee-track, .latido-hero-bg { animation: none !important; }
+          .latido-float, .latido-float-slow, .latido-hero-bg { animation: none !important; }
           .latido-cta-primary, .latido-cta-ghost, .latido-card-hover, .latido-testimonial-card, .latido-testimonial-dot { transition: none !important; }
         }
       `}</style>
@@ -713,17 +705,6 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
     </div>
   </div>
 </section>
-
-      {/* ── COUNTRY MARQUEE ──────────────────────────────────────── */}
-      <div style={{ background: '#F0F6FF', borderBottom: `1px solid ${C.border}`, padding: '14px 0', overflow: 'hidden', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, width: 60, height: '100%', background: 'linear-gradient(90deg, #F0F6FF, rgba(240,246,255,0))', zIndex: 2 }} />
-        <div style={{ position: 'absolute', top: 0, right: 0, width: 60, height: '100%', background: 'linear-gradient(270deg, #F0F6FF, rgba(240,246,255,0))', zIndex: 2 }} />
-        <div className="latido-marquee-track" style={{ whiteSpace: 'nowrap' }}>
-          {[...COUNTRIES, ...COUNTRIES].map((c, i) => (
-            <span key={`${c}-${i}`} style={{ fontFamily: PP, fontSize: 13, fontWeight: 600, color: C.mid, whiteSpace: 'nowrap' }}>{c}</span>
-          ))}
-        </div>
-      </div>
 
       {/* ── SEARCH ──────────────────────────────────────────────── */}
       <Reveal style={{ position: 'relative', zIndex: 10 }}>
