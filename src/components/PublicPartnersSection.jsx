@@ -1,7 +1,12 @@
 import PartnerServicesPromo from './PartnerServicesPromo'
 import MiraPartnerPromo from './MiraPartnerPromo'
+import Virtus360PartnerPromo from './Virtus360PartnerPromo'
 
 const PUBLIC_PARTNERS = [
+  {
+    id:'virtus360',
+    render:placement => <Virtus360PartnerPromo key="virtus360" placement={placement} variant="public-featured" />,
+  },
   {
     id:'suiza-en-espanol',
     render:placement => (

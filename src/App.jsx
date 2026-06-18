@@ -45,6 +45,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Admin = lazy(() => import('./pages/Admin'))
 const PartnerContact = lazy(() => import('./pages/PartnerContact'))
 const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
+const Virtus360Services = lazy(() => import('./pages/Virtus360Services'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
@@ -395,6 +396,7 @@ function AppShell() {
 
   const isRoot = pathname === '/'
   const isPartnerServices = pathname === '/servicios-suiza'
+  const isVirtus360Services = pathname === '/servicios-virtus360'
   const showLanding = isRoot && !isPWA && !isLoggedIn
 
   useEffect(() => {
@@ -520,6 +522,17 @@ function AppShell() {
     }
 
     return <PartnerServicesRedirect />
+  }
+
+  if (isVirtus360Services) {
+    return (
+      <>
+        <CookieConsent />
+        <Suspense fallback={<AppLoading />}>
+          <Virtus360Services />
+        </Suspense>
+      </>
+    )
   }
 
   return (

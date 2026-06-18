@@ -535,7 +535,7 @@
   right: 24px;
   left: 24px;
   height: 3px;
-  background: #2563EB;
+  background: var(--partner-accent-primary);
   border-radius: 0 0 999px 999px;
   content: '';
   opacity: .72;
@@ -1081,8 +1081,10 @@
   height: 32px;
 }
 
-.partner-card--mira .partner-card-brand {
-  border-bottom-color: #F3DCE2;
+.partner-card--virtus360 .partner-card-logo--wide {
+  background: #F8FAFC;
+  border-color: #E2E8F0;
+  border-radius: 10px;
 }
 
 .partner-card-copy h3 {

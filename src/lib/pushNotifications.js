@@ -8,6 +8,7 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 const VAPID_KEY_STORAGE_KEY = 'latido_vapid_public_key'
 const PUSH_MANUAL_DISABLED_KEY = 'latido_push_manual_disabled'
 const PUSH_USER_STORAGE_KEY = 'latido_push_user_id'
+const SERVICE_WORKER_ENABLED = import.meta.env.PROD
 
 export function notifyPushStatusChanged() {
   if (typeof window !== 'undefined') {
@@ -38,6 +39,7 @@ export function loadPushSettings() {
 
 export function isPushSupported() {
   return Boolean(
+    SERVICE_WORKER_ENABLED &&
     typeof window !== 'undefined' &&
     window.isSecureContext &&
     'serviceWorker' in navigator &&

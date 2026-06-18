@@ -41,6 +41,7 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'eventos', icon:'🎉', title:'Eventos latinos', section:'Comunidad', desc:'Conciertos, fiestas, quedadas, networking y planes familiares.', href:'/comunidades?view=eventos' },
   { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
   { id:'servicios-suiza', icon:'🇨🇭', title:'Servicios para vivir en Suiza', section:'Servicios', desc:'Seguro médico, tercer pilar y preparación para llegar a Suiza, con orientación en español.', href:'/servicios-suiza' },
+  { id:'servicios-virtus360', icon:'360', title:'Gestoría y finanzas con Virtus360', section:'Servicios', desc:'Trámites, impuestos, seguros, mudanza y contabilidad en colaboración con Virtus360.', href:'/servicios-virtus360' },
   { id:'perfil', icon:'👤', title:'Perfil', section:'Cuenta', desc:'Datos personales, avatar, preferencias y configuración.', href:'/perfil' },
   { id:'mensajes', icon:'💬', title:'Mensajes', section:'Cuenta', desc:'Conversaciones con anunciantes, negocios y miembros de Latido.', href:'/mensajes' },
   { id:'privacidad', icon:'🔒', title:'Privacidad', section:'Legal', desc:'Cómo Latido trata los datos y protege la información.', href:'/privacidad' },
@@ -75,6 +76,12 @@ const ROUTE_SEO = [
     path:'/servicios-suiza',
     title:'Servicios para vivir en Suiza en español | Latido.ch',
     description:'Orientación en español sobre seguro médico, tercer pilar y preparación para vivir en Suiza, en colaboración con Suiza en Español.',
+    robots:'noindex, follow',
+  },
+  {
+    path:'/servicios-virtus360',
+    title:'Gestoría y finanzas en Suiza con Virtus360 | Latido.ch',
+    description:'Trámites, impuestos, seguros, mudanza, administración y contabilidad en Suiza, en colaboración con Virtus360.',
     robots:'noindex, follow',
   },
   {
@@ -984,6 +991,7 @@ export function getPublicSeoPages() {
     '/comunidades?view=eventos',
     '/guias',
     '/servicios-suiza',
+    '/servicios-virtus360',
     '/impressum',
     '/privacidad',
     '/cookies',

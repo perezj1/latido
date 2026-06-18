@@ -15,6 +15,42 @@ if ('scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual'
 }
 
+function cleanupDevServiceWorkers() {
+  if (import.meta.env.PROD || !('serviceWorker' in navigator)) return
+
+  window.addEventListener('load', async () => {
+    const hadController = Boolean(navigator.serviceWorker.controller)
+    const registrations = await navigator.serviceWorker.getRegistrations()
+      .catch(() => [])
+
+    await Promise.all(
+      registrations.map(registration => registration.unregister().catch(() => false)),
+    )
+
+    if ('caches' in window) {
+      const cacheKeys = await caches.keys().catch(() => [])
+      await Promise.all(
+        cacheKeys
+          .filter(key => key.startsWith('latido-'))
+          .map(key => caches.delete(key).catch(() => false)),
+      )
+    }
+
+    const refreshFlag = 'latido-dev-sw-reset'
+    const alreadyReloaded = sessionStorage.getItem(refreshFlag) === '1'
+
+    if (hadController && !alreadyReloaded) {
+      sessionStorage.setItem(refreshFlag, '1')
+      window.location.reload()
+      return
+    }
+
+    sessionStorage.removeItem(refreshFlag)
+  }, { once:true })
+}
+
+cleanupDevServiceWorkers()
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
