@@ -1,0 +1,274 @@
+.v360-landing {
+  --see-blue: #2563eb;
+  --see-blue-dark: #1e3a8a;
+  --see-blue-100: #c7d7ff;
+  --see-tint: #f7f9ff;
+  --see-tint-2: #f3f7ff;
+  --see-red: #e64661;
+}
+
+.see-cobar-x {
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.v360-cobar-partner img {
+  display: block;
+  width: 82px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.v360-cobar-partner span {
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.v360-hero {
+  background:
+    radial-gradient(circle at 82% 22%, rgba(230, 70, 97, .32), transparent 31%),
+    linear-gradient(135deg, #17337f 0%, #2563eb 48%, #101827 100%);
+}
+
+.v360-hero::after {
+  background: radial-gradient(circle, rgba(255, 255, 255, .2) 0%, transparent 70%);
+}
+
+.v360-hero-cobrand-partner {
+  width: 58px;
+}
+
+.v360-hero-cobrand-partner img {
+  width: 50px;
+  height: 24px;
+}
+
+.v360-hero-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.v360-hero-contact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  padding: .85rem 1.5rem;
+  color: #fff !important;
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 999px;
+  box-shadow: 0 10px 26px rgba(2, 6, 23, .18);
+  font-size: 1rem;
+  font-weight: 700;
+  transition: transform .25s ease, background .25s ease, border-color .25s ease;
+}
+
+.v360-hero-contact:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, .18);
+  border-color: rgba(255, 255, 255, .42);
+}
+
+.v360-trust-strip .see-press-word {
+  padding: 4px 10px;
+  color: #fff;
+  background: rgba(255, 255, 255, .11);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 999px;
+  font-size: .75rem;
+}
+
+.v360-hero-panel {
+  position: relative;
+  width: min(360px, 100%);
+  padding: 22px;
+  overflow: hidden;
+  color: #0f172a;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.94));
+  border: 1px solid rgba(255, 255, 255, .36);
+  border-radius: 26px;
+  box-shadow: 0 28px 70px rgba(2, 6, 23, .42);
+}
+
+.v360-hero-panel::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, #e64661, #2563eb);
+  content: '';
+}
+
+.v360-hero-logo-card {
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+  margin-bottom: 18px;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(230, 70, 97, .12), transparent 32%),
+    #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+}
+
+.v360-hero-logo-card img {
+  width: min(220px, 76%);
+  height: auto;
+}
+
+.v360-hero-service-list {
+  display: grid;
+  gap: 9px;
+  padding-bottom: 38px;
+}
+
+.v360-hero-service-list span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 10px 12px;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.v360-hero-service-list span::before {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  background: #e64661;
+  border-radius: 50%;
+  content: '';
+}
+
+.v360-hero-badge {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  padding: 6px 11px;
+  color: #fff;
+  background: #0f172a;
+  border-radius: 999px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .2);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.v360-story .see-team-inner {
+  grid-template-columns: 1fr;
+}
+
+.v360-story-card {
+  display: grid;
+  gap: 18px;
+  align-content: center;
+  min-height: 260px;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(230, 70, 97, .13), transparent 30%),
+    linear-gradient(145deg, #fff, #f8fbff);
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(30, 64, 175, .08);
+}
+
+.v360-story-card img {
+  width: min(240px, 78%);
+  height: auto;
+}
+
+.v360-story-card strong,
+.v360-story-card span {
+  display: block;
+}
+
+.v360-story-card strong {
+  margin-bottom: 6px;
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.v360-story-card span {
+  color: #64748b;
+  font-size: .92rem;
+}
+
+.v360-stat div {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.v360-footer-logo img {
+  width: 112px;
+  height: auto;
+  margin-right: .8rem;
+  padding: 6px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+@media (min-width: 820px) {
+  .v360-story .see-team-inner {
+    grid-template-columns: .86fr 1.14fr;
+  }
+}
+
+@media (min-width: 900px) {
+  .v360-hero-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 620px) {
+  .v360-cobar-partner img {
+    width: 62px;
+    height: 26px;
+  }
+
+  .v360-cobar-partner span {
+    display: none;
+  }
+
+  .v360-hero-cobrand-partner {
+    width: 48px;
+  }
+
+  .v360-hero-cobrand-partner img {
+    width: 42px;
+    height: 22px;
+  }
+
+  .v360-hero-actions {
+    width: 100%;
+  }
+
+  .v360-hero-actions .see-hero-cta,
+  .v360-hero-contact {
+    width: 100%;
+  }
+
+  .v360-hero-panel {
+    padding: 18px;
+  }
+
+  .v360-hero-badge {
+    position: static;
+    display: inline-flex;
+    margin-top: 12px;
+  }
+
+  .v360-hero-service-list {
+    padding-bottom: 0;
+  }
+}

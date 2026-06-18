@@ -15,6 +15,20 @@ export const PARTNER_ANALYTICS_PARTNERS = [
       curso:'Curso para llegar',
     },
   },
+  {
+    id:'virtus360',
+    name:'Virtus360',
+    logo:'/partners/virtus360/logo.svg',
+    campaign:'virtus360-latido',
+    legacyPartnerIds:[],
+    color:'#E64661',
+    tint:'#FFF1F4',
+    services:{
+      gestoria:'Gestoria',
+      finanzas:'Finanzas',
+      seguros:'Seguros',
+    },
+  },
 ]
 
 export function resolvePartnerAnalyticsId(metadata = {}) {
