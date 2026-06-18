@@ -12,19 +12,20 @@ Ejecuta los archivos en este orden desde Supabase SQL Editor:
 1. `supabase/business_promotion_plans.sql`
 2. `supabase/business_promotion_payments.sql`
 
-## 2. Secretos de prueba
+## 2. Secretos de Stripe
 
 No guardes `sk_test`, `sk_live` ni `whsec` en Git o en variables `VITE_*`.
 
 ```powershell
 supabase secrets set `
-  STRIPE_SECRET_KEY=sk_test_REEMPLAZAR `
-  STRIPE_PRICE_ID=price_1TiZLlHL87xfPHmmxfxTesm3 `
+  STRIPE_SECRET_KEY=sk_live_REEMPLAZAR `
+  STRIPE_PRICE_ID=price_1TjZKOH2cbjImjqPfshQGYUi `
   LATIDO_APP_URL=https://www.latido.ch `
   --project-ref zmievixfjefjppofebbh
 ```
 
-La clave `sk_test` debe pertenecer al mismo Sandbox que el `price_...`.
+La clave `sk_live` o `sk_test` debe pertenecer a la misma cuenta de Stripe
+que el `price_...` configurado.
 
 ## 3. Desplegar Edge Functions
 
