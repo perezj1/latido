@@ -2182,7 +2182,7 @@ export default function Admin() {
   const NAV_ITEMS = [
     { id: 'users', icon: '👥', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
     { id: 'analytics', icon: '📈', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'partners', icon: '🚀', label: 'Partners', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
+    { id: 'partners', icon: '🚀', label: 'Colaboraciones', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
     { id: 'live', icon: '📡', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
     { id: 'overview', icon: '📊', label: 'Estado general', value: navValue('overview', `${generalScore}/100`), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
     { id: 'businessVerification', icon: '✓', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5' },
@@ -2195,7 +2195,7 @@ export default function Admin() {
     overview: { icon: '📊', label: 'Estado general' },
     live: { icon: '📡', label: 'Live' },
     analytics: { icon: '📈', label: 'Uso de la app' },
-    partners: { icon: '🚀', label: 'Partners' },
+    partners: { icon: '🚀', label: 'Colaboraciones' },
     moderation: { icon: '⏳', label: 'Revisión manual' },
     reports:    { icon: '🚨', label: 'Reportes pendientes' },
     businessVerification: { icon: '✓', label: 'Verificación de negocios' },
@@ -2210,7 +2210,7 @@ export default function Admin() {
     overview: { description: `Rapport de ${overviewRangeText} con señales de crecimiento, actividad, pendientes y recomendaciones.`, color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
     live: { description: 'Online ahora se actualiza en directo; actividad diaria y semanal usa la última consulta a Supabase.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
     analytics: { description: `Páginas más usadas, búsquedas frecuentes, horarios fuertes y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResultEvents.length} aperturas` },
-    partners: { description: `Salidas reales hacia la web del partner, separadas entre landing y app en ${partnerRangeText}.`, color: '#4F46E5', count: partnerClickEvents.length, badge: `${partnerClickEvents.length} salidas · ${partnerLandingClicks.length} landing · ${partnerAppClicks.length} app` },
+    partners: { description: `Salidas reales hacia el colaborador seleccionado, separadas entre landing y app en ${partnerRangeText}.`, color: '#4F46E5', count: partnerClickEvents.length, badge: `${partnerClickEvents.length} salidas · ${partnerLandingClicks.length} landing · ${partnerAppClicks.length} app` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
     businessVerification: { description: 'Evalua datos, contacto y señales antes de mostrar la etiqueta Verificada.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
@@ -2243,7 +2243,7 @@ export default function Admin() {
         ]
     : tab === 'partners'
       ? [
-          { label: `Total enviado ${partnerMetricSuffix}`, value: loading ? '...' : partnerClickEvents.length, hint: 'Aperturas de la URL externa con UTM', color: '#4F46E5' },
+          { label: `Total enviado ${partnerMetricSuffix}`, value: loading ? '...' : partnerClickEvents.length, hint: 'Aperturas y contactos del colaborador', color: '#4F46E5' },
           { label: `Cuentas enviadas ${partnerMetricSuffix}`, value: loading ? '...' : partnerDailyAccounts.length, hint: `${partnerUniqueAccounts} perfiles distintos · máximo 1 por día`, color: '#7C3AED' },
           { label: 'Desde landing', value: loading ? '...' : partnerLandingClicks.length, hint: 'Landing pública de Latido', color: '#2563EB' },
           { label: 'Desde la app', value: loading ? '...' : partnerAppClicks.length, hint: 'Inicio, búsqueda o guías', color: '#0F766E' },
@@ -2371,13 +2371,13 @@ export default function Admin() {
       )}
 
       {/* Context chart */}
-      {isTabDataReady(tab) && !loading && activeChart && (
+      {isTabDataReady(tab) && !loading && activeChart && tab !== 'partners' && (
         <div style={{ marginBottom: 24 }}>
           {activeChart}
         </div>
       )}
 
-      {isTabDataReady(tab) && loading && showChartPlaceholder && (
+      {isTabDataReady(tab) && loading && showChartPlaceholder && tab !== 'partners' && (
         <div style={{ marginBottom: 24 }}>
           <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: '16px', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Cargando...</p>
@@ -2738,7 +2738,7 @@ export default function Admin() {
           <Card style={{ padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
               <div>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Partners activos</p>
+                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Colaboraciones</p>
                 <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Selecciona un colaborador para consultar sus resultados.</p>
               </div>
               <PeriodSwitch value={partnerDays} onChange={setPartnerDays} />
@@ -2786,6 +2786,20 @@ export default function Admin() {
             </div>
           </Card>
 
+          {!loading && activeChart && (
+            <div style={{ marginBottom: 10 }}>
+              {activeChart}
+            </div>
+          )}
+
+          {loading && showChartPlaceholder && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: '16px', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: PP, fontSize: 12, color: C.light }}>Cargando gráfico...</span>
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 14 }}>
             <Card style={{ padding: 16, background: 'linear-gradient(145deg,#FFFFFF,#F6F8FF)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 16 }}>
@@ -2794,7 +2808,7 @@ export default function Admin() {
                 </span>
                 <div>
                   <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>{selectedPartner?.name}</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Aperturas de su URL LIVE con los UTM de Latido en {partnerRangeText}.</p>
+                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Aperturas y contactos del colaborador en {partnerRangeText}.</p>
                 </div>
               </div>
 
@@ -2833,6 +2847,7 @@ export default function Admin() {
               color="#0F766E"
               emptyText="Todavía no hay salidas desde una opción de servicio."
             />
+
           </div>
 
           <Card style={{ padding: 16 }}>
@@ -2903,7 +2918,7 @@ export default function Admin() {
           <Card style={{ padding: 16, background: '#fff' }}>
             <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 4px' }}>Qué significa cada número</p>
             <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.6, margin: 0 }}>
-              “Total enviado” cuenta cada apertura de la URL LIVE con <strong>utm_source=latido</strong>. “Cuentas enviadas” agrupa por perfil y fecha: tres clics de una misma cuenta hoy cuentan como una cuenta; si vuelve mañana, genera una nueva fila para mañana. “Landing” y “App” son partes del total de aperturas. Las cuentas admin y test@g.com quedan excluidas.
+              “Total enviado” cuenta cada apertura o contacto registrado hacia el colaborador. “Cuentas enviadas” agrupa por perfil y fecha: tres clics de una misma cuenta hoy cuentan como una cuenta; si vuelve mañana, genera una nueva fila para mañana. “Landing” y “App” son partes del total de aperturas. Las cuentas admin y test@g.com quedan excluidas.
             </p>
           </Card>
         </div>

@@ -29,6 +29,48 @@ export const PARTNER_ANALYTICS_PARTNERS = [
       seguros:'Seguros',
     },
   },
+  {
+    id:'bellini',
+    name:'Bellini',
+    logo:'/partners/bellini/logo-wide.svg',
+    campaign:'bellini-latido',
+    legacyPartnerIds:[],
+    color:'#2563EB',
+    tint:'#EFF6FF',
+    services:{
+      empleo:'Empleo',
+      construccion:'Construcción',
+      asesoramiento:'Asesoramiento',
+    },
+  },
+  {
+    id:'syna',
+    name:'Syna',
+    logo:'/partners/syna/logo.svg',
+    campaign:'syna-latido',
+    legacyPartnerIds:[],
+    color:'#174A96',
+    tint:'#EFF6FF',
+    services:{
+      trabajo:'Trabajo',
+      derechos:'Derechos laborales',
+      sindicato:'Sindicato',
+    },
+  },
+  {
+    id:'mira',
+    name:'mira',
+    logo:'/partners/mira/mira-removebg-preview.png',
+    campaign:'mira-latido',
+    legacyPartnerIds:[],
+    color:'#BE3455',
+    tint:'#FFF1F4',
+    services:{
+      informacion:'Información',
+      asesoramiento:'Asesoramiento',
+      intercambio:'Intercambio',
+    },
+  },
 ]
 
 export function resolvePartnerAnalyticsId(metadata = {}) {

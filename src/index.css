@@ -431,6 +431,23 @@
   pointer-events: none;
 }
 
+.public-partner-vip-star {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgba(203, 216, 235, .92);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, .12);
+  font-size: 22px;
+  transform: translateX(-50%);
+}
+
 .public-partner-heading {
   position: relative;
   z-index: 1;
@@ -439,6 +456,7 @@
   align-items: end;
   gap: 54px;
   margin: 0 0 34px;
+  padding-top: 28px;
   text-align: left;
 }
 
@@ -1082,9 +1100,19 @@
 }
 
 .partner-card--virtus360 .partner-card-logo--wide {
-  background: #F8FAFC;
-  border-color: #E2E8F0;
-  border-radius: 10px;
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0;
+}
+
+.partner-card--bellini .partner-card-logo--wide img {
+  width: 78px;
+  height: 28px;
+}
+
+.partner-card--syna .partner-card-logo--wide img {
+  width: 82px;
+  height: 31px;
 }
 
 .partner-card-copy h3 {
@@ -1172,6 +1200,88 @@
   filter: brightness(0.92);
 }
 
+@media (max-width: 760px) and (min-width: 641px) {
+  .partner-card {
+    width: min(430px, calc(100vw - 58px));
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    row-gap: 0;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .partner-card-brand {
+    grid-column: 1;
+    grid-row: auto;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding-bottom: 13px;
+  }
+
+  .partner-card-brand-unit {
+    align-items: center;
+    gap: 10px;
+    white-space: normal;
+  }
+
+  .partner-card-brand-unit strong {
+    font-size: 14px;
+    line-height: 1.18;
+  }
+
+  .partner-card-logo--wide {
+    width: 118px;
+    flex-basis: 118px;
+  }
+
+  .partner-card-logo--wide img {
+    width: 112px;
+    height: 36px;
+  }
+
+  .partner-card-copy {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .partner-card-copy h3 {
+    max-width: 310px;
+    margin-bottom: 10px;
+    font-size: 25px;
+    line-height: 1.18;
+  }
+
+  .partner-card-copy p {
+    max-width: 330px;
+    margin-bottom: 18px;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+
+  .partner-card-services {
+    grid-column: 1;
+    grid-row: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .partner-card-services a {
+    min-height: 42px;
+    padding: 8px 10px;
+    font-size: 9.5px;
+    white-space: normal;
+  }
+
+  .partner-card-cta {
+    grid-column: 1;
+    grid-row: auto;
+    min-height: 52px;
+    border-radius: 14px;
+    font-size: 15px;
+  }
+}
+
 .mira-contact-page {
   min-height: calc(100vh - 120px);
   box-sizing: border-box;
@@ -1208,6 +1318,14 @@
   height: auto;
 }
 
+.mira-contact-brand--bellini img {
+  width: min(230px, 72vw);
+}
+
+.mira-contact-brand--syna img {
+  width: min(210px, 70vw);
+}
+
 .mira-contact-kicker {
   margin: 0 0 8px;
   color: #D7355A;
@@ -1226,6 +1344,19 @@
   font-weight: 900;
   line-height: 1.18;
   letter-spacing: -.035em;
+}
+
+.mira-contact-photo {
+  display: block;
+  width: 100%;
+  height: clamp(260px, 62vw, 360px);
+  margin: 0 0 20px;
+  object-fit: contain;
+  object-position: center bottom;
+  background: #F8FAFC;
+  border: 1px solid #DCE6F2;
+  border-radius: 22px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
 }
 
 .mira-contact-description {
@@ -1606,7 +1737,7 @@
   .public-partner-heading {
     gap: 14px;
     margin-bottom: 24px;
-    padding: 0 3px;
+    padding: 28px 3px 0;
     text-align: center;
   }
 

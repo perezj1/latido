@@ -1,5 +1,7 @@
 import PartnerServicesPromo from './PartnerServicesPromo'
+import BelliniPartnerPromo from './BelliniPartnerPromo'
 import MiraPartnerPromo from './MiraPartnerPromo'
+import SynaPartnerPromo from './SynaPartnerPromo'
 import Virtus360PartnerPromo from './Virtus360PartnerPromo'
 
 const HOME_PARTNERS = [
@@ -18,8 +20,16 @@ const HOME_PARTNERS = [
     ),
   },
   {
+    id:'syna',
+    render:placement => <SynaPartnerPromo key="syna" placement={placement} variant="partner-card" />,
+  },
+  {
+    id:'bellini',
+    render:placement => <BelliniPartnerPromo key="bellini" placement={placement} variant="partner-card" />,
+  },
+  {
     id:'mira',
-    render:() => <MiraPartnerPromo key="mira" variant="partner-card" />,
+    render:placement => <MiraPartnerPromo key="mira" placement={placement} variant="partner-card" />,
   },
 ]
 
