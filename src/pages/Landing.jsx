@@ -47,6 +47,14 @@ const PARTNER_BENEFITS = [
   { icon: '⭐', title: 'Reseñas y confianza',   desc: 'Construye reputación con reseñas reales de la comunidad que te elige.' },
 ]
 
+const LANDING_COLLABORATOR_LOGOS = [
+  { name: 'Suiza en Español', logo: '/partners/suiza-en-espanol/logo-see.webp' },
+  { name: 'Virtus360', logo: '/partners/virtus360/logo.svg' },
+  { name: 'Syna', logo: '/partners/syna/logo.svg' },
+  { name: 'Bellini', logo: '/partners/bellini/logo-wide.svg' },
+  { name: 'mira', logo: '/partners/mira/mira-removebg-preview.png' },
+]
+
 const AD_CATS_PREVIEW = [
   { emoji: '🏠', label: 'Vivienda',  color: '#DBEAFE', tc: '#1D4ED8', desc: 'Pisos, habitaciones, alquileres', to: '/tablon?cat=vivienda' },
   { emoji: '💼', label: 'Empleo',    color: '#D1FAE5', tc: '#065F46', desc: 'Ofertas para hispanohablantes',  to: '/tablon?cat=empleo'  },
@@ -141,6 +149,147 @@ function AnimatedStat({ value, duration = 1400 }) {
   return <span ref={ref}>{out}</span>
 }
 
+function LandingCollaboratorsStrip() {
+  const carouselRef = useRef(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  useEffect(() => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce) return undefined
+
+    const interval = window.setInterval(() => {
+      setActiveIndex(index => (index + 1) % LANDING_COLLABORATOR_LOGOS.length)
+    }, 3000)
+
+    return () => window.clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const carousel = carouselRef.current
+    const activeCard = carousel?.querySelector(`[data-collaborator-index="${activeIndex}"]`)
+    if (!carousel || !activeCard) return
+
+    carousel.scrollTo({
+      left: activeCard.offsetLeft - carousel.offsetLeft,
+      behavior: 'smooth',
+    })
+  }, [activeIndex])
+
+  return (
+    <section
+      aria-labelledby="landing-collaborators-title"
+      style={{
+        background: 'linear-gradient(180deg, #F8FAFF 0%, #EEF5FF 100%)',
+        padding: '34px 0 16px',
+        borderBottom: `1px solid ${C.border}`,
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          margin: '0 auto',
+          textAlign: 'center',
+        }}
+      >
+        <h2
+          id="landing-collaborators-title"
+          style={{
+            fontFamily: PP,
+            fontWeight: 900,
+            fontSize: 'clamp(18px, 2.6vw, 25px)',
+            lineHeight: 1.08,
+            letterSpacing: -0.7,
+            color: C.primary,
+            margin: '0 24px 20px',
+          }}
+        >
+          Nuestros colaboradores / usuarios
+        </h2>
+
+        <div
+          ref={carouselRef}
+          className="latido-collaborator-carousel"
+          aria-label="Logos de colaboradores de Latido"
+          style={{
+            display: 'flex',
+            gap: 16,
+            overflowX: 'hidden',
+            scrollBehavior: 'smooth',
+            scrollSnapType: 'x mandatory',
+            padding: '0 max(20px, calc((100vw - 1120px) / 2)) 12px',
+          }}
+        >
+          {LANDING_COLLABORATOR_LOGOS.map((partner, index) => (
+            <div
+                key={partner.name}
+                data-collaborator-index={index}
+                className="latido-collaborator-card"
+                style={{
+                flex: '0 0 clamp(190px, 23vw, 240px)',
+                minHeight: 82,
+                display: 'grid',
+                placeItems: 'center',
+                padding: '14px 18px',
+                borderRadius: 0,
+                background: 'transparent',
+                border: '0',
+                boxShadow: 'none',
+                scrollSnapAlign: 'start',
+              }}
+            >
+              <img
+                src={partner.logo}
+                alt={partner.name}
+                loading="lazy"
+                decoding="async"
+                style={{
+                  display: 'block',
+                  maxWidth: 'min(158px, 100%)',
+                  maxHeight: 46,
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div
+          aria-label="Navegación de colaboradores"
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 7,
+            padding: '0 24px 10px',
+          }}
+        >
+          {LANDING_COLLABORATOR_LOGOS.map((partner, index) => (
+            <button
+              key={partner.name}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              aria-label={`Ver logo de ${partner.name}`}
+              aria-current={activeIndex === index ? 'true' : undefined}
+              className="latido-collaborator-dot"
+              style={{
+                width: activeIndex === index ? 18 : 8,
+                height: 8,
+                padding: 0,
+                border: 0,
+                borderRadius: 999,
+                background: activeIndex === index ? C.primary : '#BFDBFE',
+                cursor: 'pointer',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function TestimonialCarousel() {
   const trackRef = useRef(null)
   const [activePage, setActivePage] = useState(0)
@@ -202,8 +351,8 @@ function TestimonialCarousel() {
         overflow: 'hidden',
       }}
     >
-      <div className="latido-testimonial-header" style={{ padding: '0 28px 24px' }}>
-        <div>
+      <div className="latido-testimonial-header" style={{ padding: '0 28px 24px', textAlign: 'center' }}>
+        <div style={{ width: '100%' }}>
           <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.primary, letterSpacing: 1.8, textTransform: 'uppercase', margin: '0 0 8px' }}>
             Voces de Latido
           </p>
@@ -594,6 +743,13 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         .latido-cta-ghost:hover { background: rgba(255,255,255,0.22) !important; border-color: rgba(255,255,255,0.55) !important; transform: translateY(-2px); }
         .latido-float { animation: latido-float 7s ease-in-out infinite; }
         .latido-float-slow { animation: latido-float 11s ease-in-out infinite; }
+        .latido-collaborator-carousel::-webkit-scrollbar { display: none; }
+        .latido-collaborator-carousel { scrollbar-width: none; -ms-overflow-style: none; }
+        .latido-collaborator-card { transition: transform .22s ease; }
+        .latido-collaborator-card:hover { transform: translateY(-3px); }
+        .latido-collaborator-dot { transition: width .2s ease, background .2s ease, transform .15s ease; }
+        .latido-collaborator-dot:hover { transform: scale(1.15); }
+        .latido-collaborator-dot:focus-visible { outline: 3px solid rgba(37,99,235,0.25); outline-offset: 3px; }
         .latido-testimonial-track::-webkit-scrollbar { display: none; }
         .latido-testimonial-card { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
         .latido-testimonial-card:hover { transform: translateY(-4px); border-color: rgba(37,99,235,0.28) !important; box-shadow: 0 18px 38px rgba(15,31,92,0.12) !important; }
@@ -632,7 +788,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         @media (prefers-reduced-motion: reduce) {
           .latido-enter-1, .latido-enter-2, .latido-enter-3, .latido-enter-4, .latido-enter-5,
           .latido-float, .latido-float-slow, .latido-hero-bg { animation: none !important; }
-          .latido-cta-primary, .latido-cta-ghost, .latido-card-hover, .latido-testimonial-card, .latido-testimonial-dot { transition: none !important; }
+          .latido-cta-primary, .latido-cta-ghost, .latido-card-hover, .latido-collaborator-card, .latido-collaborator-dot, .latido-testimonial-card, .latido-testimonial-dot { transition: none !important; }
         }
       `}</style>
 
@@ -647,7 +803,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
     background: 'linear-gradient(160deg, #0F1F5C 0%, #1E40AF 45%, #2563EB 100%)',
     position: 'relative',
     overflow: 'hidden',
-    padding: '80px 24px 104px',
+    padding: '80px 24px 52px',
   }}
 >
   <div className="latido-float" style={{ position: 'absolute', top: -100, right: -80, width: 360, height: 360, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(2px)' }} />
@@ -705,6 +861,8 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
     </div>
   </div>
 </section>
+
+      <LandingCollaboratorsStrip />
 
       {/* ── SEARCH ──────────────────────────────────────────────── */}
       <Reveal style={{ position: 'relative', zIndex: 10 }}>

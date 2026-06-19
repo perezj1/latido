@@ -1,5 +1,7 @@
 import PartnerServicesPromo from './PartnerServicesPromo'
+import BelliniPartnerPromo from './BelliniPartnerPromo'
 import MiraPartnerPromo from './MiraPartnerPromo'
+import SynaPartnerPromo from './SynaPartnerPromo'
 import Virtus360PartnerPromo from './Virtus360PartnerPromo'
 
 const PUBLIC_PARTNERS = [
@@ -18,8 +20,16 @@ const PUBLIC_PARTNERS = [
     ),
   },
   {
+    id:'syna',
+    render:placement => <SynaPartnerPromo key="syna" placement={placement} variant="public-featured" />,
+  },
+  {
+    id:'bellini',
+    render:placement => <BelliniPartnerPromo key="bellini" placement={placement} variant="public-featured" />,
+  },
+  {
     id:'mira',
-    render:() => <MiraPartnerPromo key="mira" variant="public-featured" />,
+    render:placement => <MiraPartnerPromo key="mira" placement={placement} variant="public-featured" />,
   },
 ]
 
@@ -28,6 +38,7 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
 
   return (
     <section className="public-partner-section" aria-labelledby="public-partners-title">
+      <div className="public-partner-vip-star" aria-hidden="true">⭐</div>
       <div className="public-partner-heading">
         <div className="public-partner-heading-title">
           <span>Colaboradores seleccionados</span>

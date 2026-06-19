@@ -44,6 +44,8 @@ const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Admin = lazy(() => import('./pages/Admin'))
 const PartnerContact = lazy(() => import('./pages/PartnerContact'))
+const BelliniPartnerContact = lazy(() => import('./pages/BelliniPartnerContact'))
+const SynaPartnerContact = lazy(() => import('./pages/SynaPartnerContact'))
 const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
 const Virtus360Services = lazy(() => import('./pages/Virtus360Services'))
 
@@ -563,6 +565,8 @@ function AppShell() {
             <Route path="/publicar-empleo" element={<ProtectedRoute><PublicarEmpleo /></ProtectedRoute>} />
             <Route path="/mensajes" element={<ProtectedRoute><Mensajes /></ProtectedRoute>} />
             <Route path="/colaboradores/mira" element={<ProtectedRoute><PartnerContact /></ProtectedRoute>} />
+            <Route path="/colaboradores/bellini" element={<ProtectedRoute><BelliniPartnerContact /></ProtectedRoute>} />
+            <Route path="/colaboradores/syna" element={<ProtectedRoute><SynaPartnerContact /></ProtectedRoute>} />
             <Route path="/admin-latido" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/impressum"  element={<Legal />} />

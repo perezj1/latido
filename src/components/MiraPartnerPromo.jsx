@@ -1,5 +1,8 @@
+import { useAuth } from '../hooks/useAuth'
+import { trackPartnerInteraction } from '../lib/partnerAttribution'
 import PartnerCard from './PartnerCard'
 
+const MIRA_PARTNER_ID = 'mira'
 const MIRA_LOGO = '/partners/mira/mira-removebg-preview.png'
 const MIRA_CONTACT_PATH = '/colaboradores/mira'
 
@@ -24,10 +27,28 @@ const MIRA_SERVICES = [
   },
 ]
 
-export default function MiraPartnerPromo({ variant = 'partner-card' }) {
+export default function MiraPartnerPromo({
+  placement = 'app_home_partners_mira',
+  variant = 'partner-card',
+}) {
+  const { user, isAdmin } = useAuth()
+
+  const trackContactIntent = ({ action, service = '' }) => {
+    if (isAdmin) return
+
+    trackPartnerInteraction('partner_outbound_click', {
+      userId:user?.id,
+      partnerId:MIRA_PARTNER_ID,
+      placement,
+      action,
+      service,
+      destination:MIRA_CONTACT_PATH,
+    })
+  }
+
   return (
     <PartnerCard
-      id={`mira-${variant}`}
+      id={`mira-${variant}-${placement}`}
       className={variant === 'public-featured' ? 'public-partner-tile partner-card--mira' : 'partner-card--mira'}
       brand={{
         partnerLogo:MIRA_LOGO,
@@ -48,6 +69,8 @@ export default function MiraPartnerPromo({ variant = 'partner-card' }) {
         external:false,
       }}
       accent={['#2563EB', '#1D4ED8']}
+      onServiceClick={service => trackContactIntent({ action:'service', service:service.id })}
+      onCtaClick={() => trackContactIntent({ action:'cta' })}
     />
   )
 }
