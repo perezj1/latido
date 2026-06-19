@@ -407,10 +407,12 @@
 .public-partner-section {
   position: relative;
   isolation: isolate;
+  width: min(1180px, calc(100% - 48px));
   max-width: 1180px;
   margin: 72px auto 12px;
   padding: 48px 48px 32px;
   overflow: hidden;
+  box-sizing: border-box;
   background:
     radial-gradient(circle at 92% 8%, rgba(37, 99, 235, .09), transparent 25%),
     radial-gradient(circle at 7% 92%, rgba(15, 118, 110, .055), transparent 24%),
@@ -522,21 +524,25 @@
 .public-partners-track {
   display: flex;
   align-items: stretch;
-  gap: 16px;
-  width: 100%;
+  gap: 20px;
+  width: max-content;
+  min-width: 100%;
 }
 
 .public-partners-scroll--single .public-partners-track {
+  width: 100%;
+  min-width: 100%;
   justify-content: center;
 }
 
 .partner-card.public-partner-tile {
-  flex: 1 1 0;
+  flex: 0 0 clamp(318px, 31vw, 340px);
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr auto auto;
   row-gap: 0;
-  min-width: 0;
-  min-height: 354px;
+  width: clamp(318px, 31vw, 340px);
+  min-width: clamp(318px, 31vw, 340px);
+  min-height: 390px;
   padding: 24px;
   background: #FFFFFF;
   border-color: #D9E4F1;
@@ -553,10 +559,10 @@
   right: 24px;
   left: 24px;
   height: 3px;
-  background: var(--partner-accent-primary);
+  background: #2563EB;
   border-radius: 0 0 999px 999px;
   content: '';
-  opacity: .72;
+  opacity: 1;
 }
 
 .partner-card.public-partner-tile:hover {
@@ -591,7 +597,9 @@
 }
 
 .public-partner-tile .partner-card-brand-unit {
+  flex: 1 1 auto;
   gap: 9px;
+  white-space: normal;
 }
 
 .public-partner-tile .partner-card-logo {
@@ -619,7 +627,11 @@
 }
 
 .public-partner-tile .partner-card-brand-unit strong {
+  overflow: visible;
   font-size: 13px;
+  line-height: 1.15;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .public-partner-tile .partner-card-copy {
@@ -630,7 +642,7 @@
 .public-partner-tile .partner-card-copy h3 {
   max-width: 410px;
   margin-bottom: 8px;
-  font-size: 21px;
+  font-size: 20px;
   line-height: 1.2;
   letter-spacing: -.035em;
   text-wrap: balance;
@@ -652,15 +664,18 @@
 
 .public-partner-tile .partner-card-services a {
   position: relative;
-  justify-content: flex-start;
-  min-height: 42px;
-  padding: 8px 10px 8px 13px;
-  overflow: hidden;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 9px;
+  overflow: visible;
   background: color-mix(in srgb, var(--service-tint) 78%, #FFFFFF);
   border-color: color-mix(in srgb, var(--service-color) 14%, #DDE6F1);
   border-radius: 12px;
-  font-size: 9px;
+  font-size: 8.5px;
+  line-height: 1.12;
   white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .public-partner-tile .partner-card-services a::before {
@@ -672,10 +687,18 @@
   content: '';
 }
 
+.public-partner-tile .partner-card-services a span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .public-partner-tile .partner-card-cta {
   grid-row: 4;
   min-height: 43px;
+  background: #2563EB !important;
   border-radius: 12px;
+  color: #FFFFFF !important;
   font-size: 13px;
 }
 
