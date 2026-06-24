@@ -26,7 +26,7 @@ function ContactAction({ href, icon, label, value, external = false, onClick }) 
         <small>{label}</small>
         <strong>{value}</strong>
       </span>
-      <span className="mira-contact-action-arrow" aria-hidden="true">-&gt;</span>
+      <span className="mira-contact-action-arrow" aria-hidden="true">→</span>
     </a>
   )
 }

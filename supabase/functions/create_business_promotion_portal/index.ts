@@ -4,9 +4,38 @@ import { createClient } from 'npm:@supabase/supabase-js@2.101.1'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || ''
-const STRIPE_PRICE_ID = Deno.env.get('STRIPE_PRICE_ID') || ''
 const APP_URL = (Deno.env.get('LATIDO_APP_URL') || 'https://www.latido.ch')
   .replace(/\/+$/, '')
+
+const PLAN_CONFIGS = {
+  featured: {
+    key: 'featured',
+    priceId: Deno.env.get('STRIPE_FEATURED_PRICE_ID')
+      || Deno.env.get('STRIPE_PRICE_FEATURED')
+      || Deno.env.get('STRIPE_PRICE_ID')
+      || '',
+  },
+  basic: {
+    key: 'basic',
+    priceId: Deno.env.get('STRIPE_BASIC_PRICE_ID')
+      || Deno.env.get('STRIPE_PRICE_BASIC')
+      || '',
+  },
+  premium: {
+    key: 'premium',
+    priceId: Deno.env.get('STRIPE_PREMIUM_PRICE_ID')
+      || Deno.env.get('STRIPE_PRICE_PREMIUM')
+      || '',
+  },
+} as const
+
+type PlanKey = keyof typeof PLAN_CONFIGS
+
+const PRICE_TO_PLAN = new Map(
+  Object.values(PLAN_CONFIGS)
+    .filter(plan => plan.priceId)
+    .map(plan => [plan.priceId, plan.key]),
+)
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion:'2026-05-27.dahlia',
@@ -66,7 +95,6 @@ function requireStripeConfiguration() {
     !SUPABASE_URL
     || !SERVICE_ROLE_KEY
     || !STRIPE_SECRET_KEY
-    || !STRIPE_PRICE_ID
   ) {
     throw new Error('STRIPE_NOT_CONFIGURED')
   }
@@ -118,9 +146,15 @@ function getStripeId(value: unknown) {
   return null
 }
 
+function getPlanKey(value: unknown): PlanKey {
+  return typeof value === 'string' && value in PLAN_CONFIGS
+    ? value as PlanKey
+    : 'featured'
+}
+
 function getSubscriptionPeriod(subscription: Stripe.Subscription) {
   const item = subscription.items?.data?.find(subscriptionItem =>
-    getStripeId(subscriptionItem.price) === STRIPE_PRICE_ID
+    PRICE_TO_PLAN.has(getStripeId(subscriptionItem.price) || '')
   ) || subscription.items?.data?.[0]
 
   const start = item?.current_period_start
@@ -156,6 +190,7 @@ Deno.serve(async req => {
     const body = await req.json().catch(() => ({}))
     const providerId = body?.providerId
     const syncOnly = body?.syncOnly === true
+    const returnPlanKey = getPlanKey(body?.planKey)
 
     if (!isUuid(providerId)) {
       return json(req, { ok: false, error: 'INVALID_PROVIDER_ID' }, 400)
@@ -269,7 +304,7 @@ Deno.serve(async req => {
     const portal = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
       locale: 'es',
-      return_url: `${APP_URL}/negocios/${providerId}/destacar?portal=return`,
+      return_url: `${APP_URL}/negocios/${providerId}/destacar?plan=${returnPlanKey}&portal=return`,
     })
 
     return json(req, { ok: true, url: portal.url })

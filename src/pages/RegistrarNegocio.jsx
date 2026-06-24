@@ -136,7 +136,7 @@ export default function RegistrarNegocio() {
     setLoading(true)
     try {
       const needsReview = moderation.action === 'review'
-      const servicesList = form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6)
+      const servicesList = form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3)
       const galleryLimit = Math.max(MAX_PUBLICATION_IMAGES - (form.photo_url ? 1 : 0), 0)
       const galleryPhotos = form.gallery
         .filter(url => url && url !== form.photo_url)
@@ -370,9 +370,9 @@ export default function RegistrarNegocio() {
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-4, marginBottom:12, lineHeight:1.6 }}>
             Añade al menos un contacto: teléfono, email o Instagram. La web es opcional y se mostrará en tu perfil.
           </p>
-          <Input label="Servicios principales" placeholder="Ej: Arepas, Menú casero, Delivery (separados por coma)" value={form.services} onChange={e=>s('services',e.target.value)} />
+          <Input label="Los 3 servicios principales que ofrece tu empresa" placeholder="Ej: Arepas, Menú casero, Delivery (separados por coma)" value={form.services} onChange={e=>s('services',e.target.value)} />
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-8, marginBottom:12, lineHeight:1.6 }}>
-            Lista tus servicios o productos principales separados por coma. Máximo 6.
+            Estos tres servicios aparecerán como botones en la tarjeta de colaborador si activas un plan Básico o Premium.
           </p>
           <ImageUploadField
             label="Foto de portada (opcional)"
@@ -419,7 +419,7 @@ export default function RegistrarNegocio() {
           {form.website && <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'0 0 10px' }}>🌐 {form.website}</p>}
           {form.services && (
             <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>
-              {form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0,6).map(sv => (
+              {form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0,3).map(sv => (
                 <span key={sv} style={{ fontFamily:PP, fontSize:11, fontWeight:600, background:C.primaryLight, color:C.primary, padding:'5px 11px', borderRadius:10 }}>{sv}</span>
               ))}
             </div>

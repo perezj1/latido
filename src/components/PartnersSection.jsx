@@ -1,8 +1,11 @@
+import { useEffect, useRef, useState } from 'react'
 import PartnerServicesPromo from './PartnerServicesPromo'
 import BelliniPartnerPromo from './BelliniPartnerPromo'
 import MiraPartnerPromo from './MiraPartnerPromo'
 import SynaPartnerPromo from './SynaPartnerPromo'
 import Virtus360PartnerPromo from './Virtus360PartnerPromo'
+import DynamicBusinessPartnerCard from './DynamicBusinessPartnerCard'
+import { fetchActiveBusinessPartners } from '../lib/businessPartners'
 
 const HOME_PARTNERS = [
   {
@@ -34,7 +37,27 @@ const HOME_PARTNERS = [
 ]
 
 export default function PartnersSection({ placement = 'app_home_partners' }) {
-  const hasSinglePartner = HOME_PARTNERS.length === 1
+  const [businessPartners, setBusinessPartners] = useState([])
+  const scrollRef = useRef(null)
+  const hasSinglePartner = businessPartners.length + HOME_PARTNERS.length === 1
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchActiveBusinessPartners({ plans:['premium', 'basic'], limit:8 })
+      .then(partners => {
+        if (!cancelled) setBusinessPartners(partners)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollLeft = 0
+  }, [businessPartners.length])
 
   return (
     <section className="home-partners-section" aria-labelledby="home-partners-title">
@@ -46,8 +69,15 @@ export default function PartnersSection({ placement = 'app_home_partners' }) {
       </div>
 
       <div style={{ maxWidth:1200, margin:'0 auto' }}>
-        <div className={`home-partners-scroll no-scroll${hasSinglePartner ? ' home-partners-scroll--single' : ''}`}>
+        <div ref={scrollRef} className={`home-partners-scroll no-scroll${hasSinglePartner ? ' home-partners-scroll--single' : ''}`}>
           <div className="home-partners-track">
+            {businessPartners.map(partner => (
+              <DynamicBusinessPartnerCard
+                key={partner.id}
+                partner={partner}
+                placement={`${placement}_business_${partner.id}`}
+              />
+            ))}
             {HOME_PARTNERS.map(partner => partner.render(`${placement}_${partner.id}`))}
           </div>
         </div>

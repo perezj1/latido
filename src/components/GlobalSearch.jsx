@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent, trackSearchEvent } from '../lib/analytics'
 import { C, PP } from '../lib/theme'
 import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
+import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import {
   MOCK_ADS,
   MOCK_COMMUNITIES,
@@ -75,11 +76,18 @@ const TYPE_COLORS = {
 
 const SEARCH_PAGE_SIZE = 1000
 const SEARCH_SELECTS = {
-  ads: 'id, cat, title, desc, canton, plz, price, privacy, active, created_at',
-  jobs: 'id, title, company, city, canton, type, sector, category, job_intent, emoji, active, created_at',
-  communities: 'id, name, city, members, emoji, cat, desc, active',
-  providers: 'id, name, category, city, canton, description, services, active, featured, verified, created_at',
-  events: 'id, type, title, city, canton, venue, host, desc, emoji, active, featured, created_at',
+  ads: 'id, cat, title, desc, canton, plz, price, privacy, active, img_url, photo_urls, created_at',
+  jobs: 'id, title, company, city, canton, type, sector, category, job_intent, emoji, logo_url, active, created_at',
+  communities: 'id, name, city, members, emoji, cat, desc, photo_url, active',
+  providers: 'id, name, category, city, canton, description, services, active, featured, verified, promotion_plan, promotion_starts_at, promotion_ends_at, photo_url, created_at',
+  events: 'id, type, title, city, canton, venue, host, desc, emoji, img_url, active, featured, created_at',
+}
+
+const BUSINESS_SEARCH_PRIORITY = {
+  premium:0,
+  basic:1,
+  featured:2,
+  free:3,
 }
 
 function getCacheKey(isLoggedIn) {
@@ -94,6 +102,33 @@ function setCachedSearchData(isLoggedIn, datasets) {
   SEARCH_CACHE[getCacheKey(isLoggedIn)] = datasets
 }
 
+function normalizePhotoUrls(value) {
+  if (Array.isArray(value)) return value.filter(Boolean)
+
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed)) return parsed.filter(Boolean)
+    } catch {
+      return value.split(',').map(url => url.trim()).filter(Boolean)
+    }
+  }
+
+  return []
+}
+
+function getFirstImage(...values) {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      const first = value.find(Boolean)
+      if (first) return first
+    } else if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+  return ''
+}
+
 function normalizeCommunity(group) {
   if (!group || group.cat === 'fe') return null
 
@@ -104,10 +139,13 @@ function normalizeCommunity(group) {
     members: group.members || 0,
     emoji: group.emoji || '👥',
     desc: group.desc || group.description || '',
+    image: group.photo_url || '',
   }
 }
 
 function normalizeBusiness(provider) {
+  const promotionPlan = getEffectiveBusinessPromotionPlan(provider)
+
   return {
     id: provider.id,
     name: provider.name || 'Negocio',
@@ -118,8 +156,27 @@ function normalizeBusiness(provider) {
     services: Array.isArray(provider.services) ? provider.services : [],
     featured: !!provider.featured,
     verified: !!provider.verified,
+    promotionPlan,
+    photoUrl: provider.photo_url || provider.img || '',
     created_at: provider.created_at || '',
   }
+}
+
+function getBusinessSearchPlan(business) {
+  if (business.promotionPlan && business.promotionPlan !== 'free') return business.promotionPlan
+  return business.featured ? 'featured' : 'free'
+}
+
+function getBusinessSearchPriority(business) {
+  return BUSINESS_SEARCH_PRIORITY[getBusinessSearchPlan(business)] ?? 9
+}
+
+function sortBusinessesByPromotion(a, b) {
+  const planDiff = getBusinessSearchPriority(a) - getBusinessSearchPriority(b)
+  if (planDiff !== 0) return planDiff
+  if (a.featured !== b.featured) return a.featured ? -1 : 1
+  if (a.verified !== b.verified) return a.verified ? -1 : 1
+  return new Date(b.created_at || 0) - new Date(a.created_at || 0)
 }
 
 function normalizeEvent(event) {
@@ -132,6 +189,7 @@ function normalizeEvent(event) {
     host: event.host || '',
     desc: event.desc || event.description || '',
     emoji: event.emoji || EVENT_EMOJI[event.type] || '🎉',
+    image: event.img_url || event.img || event.photo_url || '',
   }
 }
 
@@ -146,6 +204,7 @@ function normalizeAd(ad) {
     plz: ad.plz || '',
     price: ad.price || '',
     privacy: ad.privacy || 'public',
+    image: getFirstImage(normalizePhotoUrls(ad.photo_urls), ad.img_url, ad.img),
   }
 }
 
@@ -159,6 +218,7 @@ function normalizeJob(job) {
     type: job.type || 'Trabajo',
     intentLabel: intent.label,
     emoji: getJobCategoryEmoji(job),
+    image: job.logo_url || job.img || '',
   }
 }
 
@@ -172,6 +232,7 @@ function normalizeGuide(doc) {
     time: doc.time || '',
     level: doc.level || '',
     emoji: doc.emoji || '📚',
+    image: doc.img || doc.image || '',
   }
 }
 
@@ -218,9 +279,19 @@ function fieldIncludesSearch(value, query) {
 }
 
 function sortMatchingBusinesses(a, b) {
+  const planDiff = getBusinessSearchPriority(a) - getBusinessSearchPriority(b)
+  if (planDiff) return planDiff
   if (a.featured !== b.featured) return b.featured ? 1 : -1
   if (a.verified !== b.verified) return b.verified ? 1 : -1
   return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+}
+
+function getBusinessPlanSearchLabel(business) {
+  const plan = getBusinessSearchPlan(business)
+  if (plan === 'premium') return 'Colaborador premium'
+  if (plan === 'basic') return 'Colaborador básico'
+  if (plan === 'featured') return 'Destacado'
+  return ''
 }
 
 function searchAll(query, datasets, isLoggedIn) {
@@ -245,6 +316,8 @@ function searchAll(query, datasets, isLoggedIn) {
         type:'ad',
         id:ad.id,
         icon:getAdDisplayEmoji(ad),
+        image:ad.image,
+        imageFit:'cover',
         label:ad.title,
         sub:[cat?.label || 'Anuncio', location, ad.price].filter(Boolean).join(' · '),
         href:getAdPath(ad),
@@ -264,6 +337,8 @@ function searchAll(query, datasets, isLoggedIn) {
         type:'job',
         id:job.id,
         icon:job.emoji || '💼',
+        image:job.image,
+        imageFit:'contain',
         label:job.title,
         sub:[job.intentLabel, job.company, job.city, job.type].filter(Boolean).join(' · '),
         href:getJobPath(job),
@@ -281,6 +356,8 @@ function searchAll(query, datasets, isLoggedIn) {
         type:'community',
         id:group.id,
         icon:group.emoji || '👥',
+        image:group.image,
+        imageFit:'cover',
         label:group.name,
         sub:`Grupo · ${group.city} · ${group.members} miembros`,
         href:`/comunidades?openCommunity=${encodeURIComponent(group.id)}`,
@@ -296,16 +373,40 @@ function searchAll(query, datasets, isLoggedIn) {
     )
     .sort(sortMatchingBusinesses)
 
+  const recommendedPartner = matchingBusinesses.find(
+    business => getBusinessSearchPlan(business) === 'premium'
+  )
+
+  if (recommendedPartner) {
+    results.push({
+      type:'business',
+      id:recommendedPartner.id,
+      icon:recommendedPartner.emoji || '🏪',
+      image:recommendedPartner.photoUrl,
+      imageFit:'contain',
+      label:recommendedPartner.name,
+      sub:recommendedPartner.services.slice(0, 3).join(' · ') || recommendedPartner.desc || 'Servicios para la comunidad hispanohablante en Suiza.',
+      href:getBusinessPath(recommendedPartner),
+      isPartnerRecommendation:true,
+      searchPriority:-2,
+    })
+  }
+
   matchingBusinesses.forEach(business => {
+    if (recommendedPartner && String(business.id) === String(recommendedPartner.id)) return
+    const planLabel = getBusinessPlanSearchLabel(business)
+
     results.push({
       type:'business',
       id:business.id,
       icon:business.emoji || '🏪',
+      image:business.photoUrl,
+      imageFit:'contain',
       label:business.name,
-      sub:[business.featured ? 'Destacado' : '', getNegocioTypeMeta(business.type)?.label || 'Negocio', business.city].filter(Boolean).join(' · '),
+      sub:[planLabel, getNegocioTypeMeta(business.type)?.label || 'Negocio', business.city].filter(Boolean).join(' · '),
       href:getBusinessPath(business),
       featured:business.featured,
-      searchPriority:business.featured ? 0 : 1,
+      searchPriority:getBusinessSearchPriority(business),
     })
   })
 
@@ -323,6 +424,8 @@ function searchAll(query, datasets, isLoggedIn) {
         type:'event',
         id:event.id,
         icon:event.emoji || '🎉',
+        image:event.image,
+        imageFit:'cover',
         label:event.title,
         sub:`${EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'} · ${event.city}`,
         href:getEventPath(event),
@@ -343,6 +446,8 @@ function searchAll(query, datasets, isLoggedIn) {
         type:'guide',
         id:guide.id,
         icon:guide.emoji || '📚',
+        image:guide.image,
+        imageFit:'cover',
         label:guide.title,
         sub:['Guía', guide.cat, guide.time, guide.level].filter(Boolean).join(' · '),
         href:getGuidePath(guide),
@@ -379,6 +484,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   const loadPromiseRef = useRef(null)
   const mountedRef = useRef(true)
   const accessLevelRef = useRef(getCacheKey(isLoggedIn))
+  const blurCloseTimerRef = useRef(null)
 
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
   const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
@@ -420,6 +526,10 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     mountedRef.current = true
     return () => {
       mountedRef.current = false
+      if (blurCloseTimerRef.current) {
+        window.clearTimeout(blurCloseTimerRef.current)
+        blurCloseTimerRef.current = null
+      }
     }
   }, [])
 
@@ -481,7 +591,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
             : communitiesRes.data.map(normalizeCommunity).filter(Boolean),
           businesses: providersRes.error || !providersRes.data?.length
             ? fallbackDatasets.businesses
-            : providersRes.data.map(normalizeBusiness),
+            : providersRes.data.map(normalizeBusiness).sort(sortBusinessesByPromotion),
           events: eventsRes.error || !eventsRes.data?.length
             ? fallbackDatasets.events
             : eventsRes.data.map(normalizeEvent),
@@ -519,6 +629,33 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     loadPromiseRef.current = request
     return request
   }, [accessLevel, fallbackDatasets, isLoggedIn])
+
+  const cancelBlurClose = useCallback(() => {
+    if (!blurCloseTimerRef.current) return
+    window.clearTimeout(blurCloseTimerRef.current)
+    blurCloseTimerRef.current = null
+  }, [])
+
+  const handleFocus = useCallback(() => {
+    cancelBlurClose()
+    setFocused(true)
+    ensureDataLoaded()
+  }, [cancelBlurClose, ensureDataLoaded])
+
+  const handleBlur = useCallback(() => {
+    cancelBlurClose()
+    blurCloseTimerRef.current = window.setTimeout(() => {
+      setFocused(false)
+      blurCloseTimerRef.current = null
+    }, 160)
+  }, [cancelBlurClose])
+
+  const clearSearch = useCallback(() => {
+    cancelBlurClose()
+    setQ('')
+    setFocused(true)
+    inputRef.current?.focus()
+  }, [cancelBlurClose])
 
   useEffect(() => {
     if (focused || deferredQuery.trim().length >= 2) {
@@ -573,6 +710,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     }
 
     navigate(href)
+    cancelBlurClose()
     setQ('')
     setFocused(false)
     onClose?.()
@@ -594,6 +732,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     if (e.key === 'Enter' && activeIdx >= 0) goTo(results[activeIdx])
 
     if (e.key === 'Escape') {
+      cancelBlurClose()
       setQ('')
       setFocused(false)
       onClose?.()
@@ -643,16 +782,13 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
           placeholder={ph}
           value={q}
           onChange={e => setQ(e.target.value)}
-          onFocus={() => {
-            setFocused(true)
-            ensureDataLoaded()
-          }}
-          onBlur={() => setTimeout(() => setFocused(false), 160)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           onKeyDown={handleKey}
           autoComplete="off"
         />
         {q && (
-          <button onClick={() => { setQ(''); inputRef.current?.focus() }} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:C.border, border:'none', borderRadius:'50%', width:20, height:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:C.mid }}>
+          <button onMouseDown={e => e.preventDefault()} onClick={clearSearch} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:C.border, border:'none', borderRadius:'50%', width:20, height:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:C.mid }}>
             ✕
           </button>
         )}
@@ -697,6 +833,38 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
               )}
               {filteredResults.map((result, idx) => {
                 const color = TYPE_COLORS[result.type] || TYPE_COLORS.ad
+                if (result.isPartnerRecommendation) {
+                  return (
+                    <div
+                      key={`partner-${result.id}`}
+                      onClick={() => goTo(result)}
+                      style={{ padding:12, cursor:'pointer', background: idx === activeIdx ? C.primaryLight : '#fff', borderBottom:`1px solid ${C.borderLight}` }}
+                    >
+                      <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:12, alignItems:'center', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 14px 12px' }}>
+                        <span style={{ width:46, height:46, borderRadius:14, background:'#fff', border:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, overflow:'hidden', gridRow:'span 2', flexShrink:0 }}>
+                          {result.image ? (
+                            <img src={result.image} alt="" loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'contain', display:'block', background:'#fff' }} />
+                          ) : result.icon}
+                        </span>
+                        <div style={{ minWidth:0 }}>
+                          <p style={{ fontFamily:PP, fontSize:10, fontWeight:800, letterSpacing:1.2, color:C.primary, margin:'0 0 6px', textTransform:'uppercase' }}>
+                            Colaborador recomendado
+                          </p>
+                          <p style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:'0 0 5px', lineHeight:1.25, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                            {result.label}
+                          </p>
+                          <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.45, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                            {result.sub}
+                          </p>
+                        </div>
+                        <span style={{ gridColumn:'2', justifySelf:'start', fontFamily:PP, fontWeight:800, fontSize:11, color:C.primary, background:'#fff', border:`1px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 12px', whiteSpace:'nowrap' }}>
+                          Ver servicios →
+                        </span>
+                      </div>
+                    </div>
+                  )
+                }
+
                 return (
                   <div
                     key={`${result.type}-${result.id}`}
@@ -705,8 +873,10 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                     onMouseEnter={e => { e.currentTarget.style.background = C.primaryLight }}
                     onMouseLeave={e => { e.currentTarget.style.background = idx === activeIdx ? C.primaryLight : '#fff' }}
                   >
-                    <span style={{ width:size === 'lg' ? 42 : 34, height:size === 'lg' ? 42 : 34, borderRadius:14, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:size === 'lg' ? 22 : 18, flexShrink:0 }}>
-                      {result.icon}
+                    <span style={{ width:size === 'lg' ? 42 : 34, height:size === 'lg' ? 42 : 34, borderRadius:14, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:size === 'lg' ? 22 : 18, flexShrink:0, overflow:'hidden', border:result.image ? `1px solid ${C.borderLight}` : 'none' }}>
+                      {result.image ? (
+                        <img src={result.image} alt="" loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'cover', display:'block', background:'#fff' }} />
+                      ) : result.icon}
                     </span>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10, marginBottom:3 }}>

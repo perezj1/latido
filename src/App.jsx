@@ -21,7 +21,6 @@ import { C, PP } from './lib/theme'
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
 import Header from './components/Header'
-import GlobalSearch from './components/GlobalSearch'
 import Seo from './components/Seo'
 import CookieConsent from './components/CookieConsent'
 import OfflineNotice from './components/OfflineNotice'
@@ -392,7 +391,6 @@ function AppShell() {
   const { isLoggedIn, loading, user, isAdmin } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPage, setMenuPage] = useState(null)
-  const [searchOpen, setSearchOpen] = useState(false)
   const [messagesChatOpen, setMessagesChatOpen] = useState(false)
   const analyticsConsent = useAnalyticsConsent()
 
@@ -445,16 +443,9 @@ function AppShell() {
           </div>
           {/* Right side */}
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <button
-              onClick={() => { setSearchOpen(o => !o); setMenuOpen(false) }}
-              style={{ display:'flex', alignItems:'center', justifyContent:'center', width:36, height:36, borderRadius:10, background: searchOpen ? C.primary : C.bg, border:'none', cursor:'pointer', fontSize:16, transition:'background .15s' }}
-              aria-label="Buscar"
-            >
-              {searchOpen ? <span style={{ color:'#fff', fontSize:14, fontWeight:700 }}>✕</span> : '🔍'}
-            </button>
             <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:11, padding:'8px 14px' }}>Entrar →</a>
             <button
-              onClick={() => { setMenuOpen(o => !o); setSearchOpen(false); if (menuPage) setMenuPage(null) }}
+              onClick={() => { setMenuOpen(o => !o); if (menuPage) setMenuPage(null) }}
               style={{ display:'flex', flexDirection:'column', gap:4, background:'none', border:'none', cursor:'pointer', padding:'6px', borderRadius:8 }}
               aria-label="Menú"
             >
@@ -464,18 +455,6 @@ function AppShell() {
             </button>
           </div>
         </nav>
-        {/* Search overlay */}
-        {searchOpen && (
-          <>
-            <div
-              onClick={() => setSearchOpen(false)}
-              style={{ position:'fixed', inset:0, top:57, zIndex:96, background:'rgba(15,23,42,0.35)', backdropFilter:'blur(2px)' }}
-            />
-            <div style={{ position:'fixed', top:57, left:0, right:0, zIndex:97, background:'#fff', borderBottom:`1px solid ${C.border}`, padding:'14px 16px', boxShadow:'0 8px 32px rgba(15,23,42,0.12)' }}>
-              <GlobalSearch size="lg" onClose={() => setSearchOpen(false)} />
-            </div>
-          </>
-        )}
         {/* Hamburger dropdown */}
         {menuOpen && (
           <div style={{ position:'fixed', top:57, left:0, right:0, zIndex:99, background:'#fff', borderBottom:`1px solid ${C.border}`, boxShadow:'0 8px 24px rgba(0,0,0,0.08)', padding:'8px 0' }}>

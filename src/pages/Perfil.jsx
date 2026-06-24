@@ -12,7 +12,7 @@ import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOptions, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
-import { isBusinessPromotionActive } from '../lib/businessPromotion'
+import { getBusinessPromotionMeta, isBusinessPromotionActive } from '../lib/businessPromotion'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -510,6 +510,12 @@ function buildEditorForm(item) {
       instagram: row.instagram || '',
       website: row.website || '',
       services: Array.isArray(row.services) ? row.services.join(', ') : '',
+      partner_logo_url: row.partner_logo_url || '',
+      partner_card_title: row.partner_card_title || '',
+      partner_card_description: row.partner_card_description || '',
+      partner_cta_label: row.partner_cta_label || '',
+      partner_cta_url: row.partner_cta_url || '',
+      partner_published: row.partner_published !== false,
     }
   }
 
@@ -589,6 +595,7 @@ export default function Perfil() {
   // share
   const [shareOpen, setShareOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [uploadingPartnerLogo, setUploadingPartnerLogo] = useState(false)
 
 
   const loadPublications = async () => {
@@ -1204,7 +1211,7 @@ export default function Perfil() {
   }
 
   const openEditor = item => { setEditorItem(item); setEditorForm(buildEditorForm(item)) }
-  const closeEditor = () => { setEditorItem(null); setEditorForm({}); setSaving(false); setUploadingEditorImage(false) }
+  const closeEditor = () => { setEditorItem(null); setEditorForm({}); setSaving(false); setUploadingEditorImage(false); setUploadingPartnerLogo(false) }
   const updateEditorField = (key, value) => setEditorForm(prev => ({ ...prev, [key]: value }))
   const updateEditorAdType = value => setEditorForm(prev => {
     const compatibleCategories = getAdCategoriesForType(value)
@@ -1234,6 +1241,11 @@ export default function Perfil() {
     if (!item) return
     setActionItem(null)
     openEditor(item)
+  }
+  const openProfessionalBusinessEditor = item => {
+    if (!item) return
+    setProfessionalOpen(false)
+    window.setTimeout(() => openEditor(item), 0)
   }
 
   useEffect(() => {
@@ -1314,6 +1326,26 @@ export default function Perfil() {
       toast.error(getStorageErrorMessage(error))
     } finally {
       setUploadingEditorImage(false)
+    }
+  }
+
+  const handlePartnerLogoUpload = async files => {
+    if (!files?.length || editorItem?.kind !== 'business') return
+
+    setUploadingPartnerLogo(true)
+
+    try {
+      const publicUrl = await uploadPublicationImage({
+        file:files[0],
+        userId:user?.id,
+        folder:'business-partners',
+      })
+      setEditorForm(prev => ({ ...prev, partner_logo_url:publicUrl }))
+      toast.success('Logo actualizado')
+    } catch (error) {
+      toast.error(getStorageErrorMessage(error))
+    } finally {
+      setUploadingPartnerLogo(false)
     }
   }
 
@@ -1551,7 +1583,12 @@ export default function Perfil() {
     }
 
     if (item.kind === 'business') {
-      const services = splitList(editorForm.services || '')
+      const services = splitList(editorForm.services || '').slice(0, 3)
+      const partnerCtaUrl = normalizeExternalUrl(editorForm.partner_cta_url)
+      if (editorForm.partner_cta_url?.trim() && !partnerCtaUrl) {
+        toast.error('Añade un enlace válido para la tarjeta de colaborador')
+        return
+      }
       payload = {
         category: editorForm.category || null, name: editorForm.name?.trim(),
         city: editorForm.city?.trim() || null, canton: editorForm.canton || null,
@@ -1559,7 +1596,14 @@ export default function Perfil() {
         photo_url: editorForm.photo_url?.trim() || null,
         whatsapp: editorForm.whatsapp?.trim() || null, email: editorForm.email?.trim() || null,
         instagram: editorForm.instagram?.trim() || null, website: editorForm.website?.trim() || null,
-        services: services.length ? services : null, updated_at: new Date().toISOString(),
+        services: services.length ? services : null,
+        partner_logo_url: editorForm.partner_logo_url?.trim() || null,
+        partner_card_title: editorForm.partner_card_title?.trim() || null,
+        partner_card_description: editorForm.partner_card_description?.trim() || null,
+        partner_cta_label: editorForm.partner_cta_label?.trim() || null,
+        partner_cta_url: partnerCtaUrl || null,
+        partner_published: editorForm.partner_published !== false,
+        updated_at: new Date().toISOString(),
       }
       if (!payload.name || !payload.canton) { toast.error('Completa al menos el nombre y el cantón del negocio'); return }
       if (![payload.whatsapp, payload.email, payload.instagram].some(Boolean)) { toast.error('Añade al menos un método de contacto para el negocio'); return }
@@ -1608,7 +1652,7 @@ export default function Perfil() {
     {
       title: 'Profesional',
       items: [
-        { icon:'✨', color:'#F1F5F9', label:'Destacar negocio', sub: promotableBusinessPublications.length ? `${promotableBusinessPublications.length} ${promotableBusinessPublications.length === 1 ? 'negocio listo' : 'negocios listos'} para destacar` : businessPublications.length ? 'Tus negocios ya estan destacados' : 'Publica un negocio para desbloquear esta ventaja', action:() => setProfessionalOpen(true) },
+        { icon:'✨', color:'#F1F5F9', label:'Ventajas para tu negocio', sub: promotableBusinessPublications.length ? `${promotableBusinessPublications.length} ${promotableBusinessPublications.length === 1 ? 'negocio listo' : 'negocios listos'} para activar un plan` : businessPublications.length ? 'Tus negocios ya tienen un plan activo' : 'Publica un negocio para desbloquear esta ventaja', action:() => setProfessionalOpen(true) },
       ],
     },
     ...(isAdmin ? [{
@@ -1860,7 +1904,7 @@ export default function Perfil() {
       </Sheet>
 
       {/* ── Notifications ── */}
-      <Sheet show={professionalOpen} onClose={() => setProfessionalOpen(false)} title="✨ Profesional">
+      <Sheet show={professionalOpen} onClose={() => setProfessionalOpen(false)} title="✨ Profesional" syncHistory={false}>
         <div style={{ background:`linear-gradient(135deg,${C.primaryDark},${C.primary})`, borderRadius:18, padding:'18px 16px', marginBottom:14, color:'#fff', overflow:'hidden', position:'relative' }}>
           <div style={{ position:'absolute', top:-32, right:-24, width:110, height:110, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }} />
           <p style={{ fontFamily:PP, fontWeight:900, fontSize:18, margin:'0 0 6px', position:'relative' }}>
@@ -1906,9 +1950,10 @@ export default function Perfil() {
         ) : (
           <div style={{ display:'grid', gap:10 }}>
             {businessPublications.map(item => {
-              const isFeatured = isBusinessPromotionActive(item.raw)
+              const hasActivePlan = isBusinessPromotionActive(item.raw)
+              const activePlan = getBusinessPromotionMeta(item.raw?.promotion_plan)
               return (
-                <div key={item.id} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:15, padding:'11px 12px', display:'flex', gap:11, alignItems:'center' }}>
+                <div key={item.id} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:15, padding:'12px', display:'flex', gap:11, alignItems:'center' }}>
                   <div style={{ width:42, height:42, borderRadius:13, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
                     {item.icon}
                   </div>
@@ -1917,20 +1962,33 @@ export default function Perfil() {
                       {item.title || 'Negocio'}
                     </p>
                     <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                      {isFeatured ? 'Ya esta destacado' : item.summary || 'Listo para destacar'}
+                      {hasActivePlan ? `Plan activo: ${activePlan.shortLabel}` : item.summary || 'Listo para elegir un plan'}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      if (isFeatured) return
                       setProfessionalOpen(false)
+                      if (hasActivePlan) {
+                        openProfessionalBusinessEditor(item)
+                        return
+                      }
                       navigate(`/negocios/${item.id}/destacar`)
                     }}
-                    disabled={isFeatured}
-                    style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:isFeatured ? C.mid : '#fff', background:isFeatured ? C.bg : C.primary, border:isFeatured ? `1px solid ${C.border}` : 'none', borderRadius:999, padding:'8px 12px', cursor:isFeatured ? 'default' : 'pointer', flexShrink:0, opacity:isFeatured ? 0.8 : 1 }}
+                    style={{
+                      fontFamily:PP,
+                      fontWeight:900,
+                      fontSize:11,
+                      color:'#fff',
+                      background:C.primary,
+                      border:'none',
+                      borderRadius:999,
+                      padding:'10px 15px',
+                      cursor:'pointer',
+                      flexShrink:0,
+                    }}
                   >
-                    {isFeatured ? 'Destacado' : 'Destacar'}
+                    {hasActivePlan ? 'Editar' : 'Elegir'}
                   </button>
                 </div>
               )
@@ -2362,7 +2420,7 @@ export default function Perfil() {
                 }}
                 style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:13, background:C.primaryLight, color:C.primaryDark, border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 16px', cursor:'pointer', marginBottom:10 }}
               >
-                Destacar negocio
+                Ver planes de colaboración
               </button>
             )}
             {actionItem.kind === 'business'
@@ -2372,7 +2430,7 @@ export default function Perfil() {
                   No se puede eliminar este negocio
                 </p>
                 <p style={{ fontFamily:PP, fontSize:11, color:'#9A3412', lineHeight:1.55, margin:'0 0 12px' }}>
-                  Este negocio tiene una suscripcion de Negocio Destacado que todavia se renovara. Cancelala primero desde Stripe para poder eliminarlo.
+                  Este negocio tiene una suscripción profesional que todavía se renovará. Cancélala primero desde Stripe para poder eliminarlo.
                 </p>
                 <button
                   onClick={() => openBusinessSubscriptionPortal(actionItem.id)}
@@ -2637,7 +2695,42 @@ export default function Perfil() {
             <Input label="Email" type="email" value={editorForm.email || ''} onChange={event => updateEditorField('email', event.target.value)} />
             <Input label="Instagram" value={editorForm.instagram || ''} onChange={event => updateEditorField('instagram', event.target.value)} />
             <Input label="Web (opcional)" type="url" value={editorForm.website || ''} onChange={event => updateEditorField('website', event.target.value)} />
-            <Input label="Servicios (coma)" value={editorForm.services || ''} onChange={event => updateEditorField('services', event.target.value)} />
+            <Input
+              label={isBusinessPromotionActive(editorItem.raw) && ['basic', 'premium'].includes(editorItem.raw?.promotion_plan) ? 'Los 3 servicios principales que ofrece tu empresa' : 'Servicios principales (máximo 3)'}
+              placeholder="Ej: Gestoría, Finanzas, Seguros"
+              value={editorForm.services || ''}
+              onChange={event => updateEditorField('services', event.target.value)}
+            />
+            {isBusinessPromotionActive(editorItem.raw) && ['basic', 'premium'].includes(editorItem.raw?.promotion_plan) && (
+              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'13px 14px', margin:'8px 0 12px' }}>
+                <p style={{ fontFamily:PP, fontWeight:900, fontSize:13, color:C.text, margin:'0 0 4px' }}>
+                  Tarjeta de colaborador
+                </p>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.55, margin:'0 0 12px' }}>
+                  Si dejas estos campos vacíos, Latido usará automáticamente la información principal del negocio.
+                </p>
+                <ImageUploadField
+                  label="Logo para la tarjeta"
+                  previewUrl={editorForm.partner_logo_url || ''}
+                  uploading={uploadingPartnerLogo}
+                  onFilesSelected={handlePartnerLogoUpload}
+                  onRemove={() => updateEditorField('partner_logo_url', '')}
+                  hint="Sube un logo cuadrado o horizontal. Si no subes uno, usaremos la imagen principal del negocio."
+                />
+                <Input label="Título de la tarjeta" value={editorForm.partner_card_title || ''} placeholder={editorForm.name || 'Nombre del negocio'} onChange={event => updateEditorField('partner_card_title', event.target.value)} />
+                <Input label="Descripción corta" rows={3} value={editorForm.partner_card_description || ''} placeholder={editorForm.description || 'Resumen breve para la tarjeta de colaborador'} onChange={event => updateEditorField('partner_card_description', event.target.value)} />
+                <Input label="Enlace de contacto o web" value={editorForm.partner_cta_url || ''} placeholder={editorForm.website || 'https://...'} onChange={event => updateEditorField('partner_cta_url', event.target.value)} />
+                <label style={{ display:'flex', gap:10, alignItems:'flex-start', fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, cursor:'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={editorForm.partner_published !== false}
+                    onChange={event => updateEditorField('partner_published', event.target.checked)}
+                    style={{ marginTop:2, accentColor:C.primary }}
+                  />
+                  Mostrar la tarjeta mientras el plan esté activo
+                </label>
+              </div>
+            )}
           </>
         )}
 

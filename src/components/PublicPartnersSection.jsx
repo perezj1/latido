@@ -1,8 +1,11 @@
+import { useEffect, useRef, useState } from 'react'
 import PartnerServicesPromo from './PartnerServicesPromo'
 import BelliniPartnerPromo from './BelliniPartnerPromo'
 import MiraPartnerPromo from './MiraPartnerPromo'
 import SynaPartnerPromo from './SynaPartnerPromo'
 import Virtus360PartnerPromo from './Virtus360PartnerPromo'
+import DynamicBusinessPartnerCard from './DynamicBusinessPartnerCard'
+import { fetchActiveBusinessPartners } from '../lib/businessPartners'
 
 const PUBLIC_PARTNERS = [
   {
@@ -34,7 +37,27 @@ const PUBLIC_PARTNERS = [
 ]
 
 export default function PublicPartnersSection({ placement = 'public_landing' }) {
-  const hasSinglePartner = PUBLIC_PARTNERS.length === 1
+  const [businessPartners, setBusinessPartners] = useState([])
+  const scrollRef = useRef(null)
+  const hasSinglePartner = businessPartners.length + PUBLIC_PARTNERS.length === 1
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchActiveBusinessPartners({ plans:['premium'], limit:6 })
+      .then(partners => {
+        if (!cancelled) setBusinessPartners(partners)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollLeft = 0
+  }, [businessPartners.length])
 
   return (
     <section className="public-partner-section" aria-labelledby="public-partners-title">
@@ -53,10 +76,19 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
       </div>
 
       <div
+        ref={scrollRef}
         className={`public-partners-scroll no-scroll${hasSinglePartner ? ' public-partners-scroll--single' : ''}`}
         aria-label="Colaboradores de Latido"
       >
         <div className="public-partners-track">
+          {businessPartners.map(partner => (
+            <DynamicBusinessPartnerCard
+              key={partner.id}
+              partner={partner}
+              placement={`${placement}_business_${partner.id}`}
+              variant="public-featured"
+            />
+          ))}
           {PUBLIC_PARTNERS.map(partner => partner.render(`${placement}_${partner.id}`))}
         </div>
       </div>

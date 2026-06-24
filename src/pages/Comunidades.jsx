@@ -29,6 +29,7 @@ import { getBusinessPath, getEventPath, getIdFromSlug } from '../lib/seo'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import { normalizeExternalUrl } from '../lib/links'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
+import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
@@ -138,6 +139,12 @@ const LIST_MEDIA_STYLE = { width:'100%', height:'100%', objectFit:'contain', dis
 const LIST_FALLBACK_STYLE = { width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:38 }
 const CLAMP_1 = { minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }
 const CLAMP_2 = { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }
+const BUSINESS_DIRECTORY_PRIORITY = {
+  premium:0,
+  basic:1,
+  featured:2,
+  free:3,
+}
 
 const COMMUNITY_OPTIONS = COMMUNITY_CATS
   .filter(item => item.id !== 'fe')
@@ -235,6 +242,8 @@ function formatInstagramHandle(value='') {
 
 function normalizeProvider(provider) {
   const verificationStatus = getBusinessVerificationStatus(provider)
+  const promotionPlan = getEffectiveBusinessPromotionPlan(provider)
+
   return {
     id: provider.id,
     created_at: provider.created_at || '',
@@ -252,10 +261,31 @@ function normalizeProvider(provider) {
     verified: verificationStatus === 'verified',
     verification_status: verificationStatus,
     featured: !!provider.featured,
+    promotion_plan: provider.promotion_plan || 'free',
+    promotion_starts_at: provider.promotion_starts_at || null,
+    promotion_ends_at: provider.promotion_ends_at || null,
+    promotionPlan,
     services: Array.isArray(provider.services) ? provider.services : [],
     photo_url: provider.photo_url || '',
     contacts: Array.isArray(provider.contacts) ? provider.contacts : null,
   }
+}
+
+function getDirectoryBusinessPlan(business) {
+  if (business.promotionPlan && business.promotionPlan !== 'free') return business.promotionPlan
+  return business.featured ? 'featured' : 'free'
+}
+
+function getDirectoryBusinessPriority(business) {
+  return BUSINESS_DIRECTORY_PRIORITY[getDirectoryBusinessPlan(business)] ?? BUSINESS_DIRECTORY_PRIORITY.free
+}
+
+function getDirectoryBusinessPlanLabel(business) {
+  const plan = getDirectoryBusinessPlan(business)
+  if (plan === 'premium') return 'Premium'
+  if (plan === 'basic') return 'Básico'
+  if (plan === 'featured') return 'Destacado'
+  return ''
 }
 
 function normalizeEvent(event) {
@@ -540,6 +570,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
   const services = servicesMap[business.id] || business.services || []
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
   const reviews = reviewsMap[business.id] || []
+  const planLabel = getDirectoryBusinessPlanLabel(business)
   const rating = averageRating(reviews)
   const cover = photos[0] || business.photo_url
   const contactMethods = getBusinessContactMethods(business)
@@ -576,9 +607,9 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
             Fotos {photos.length}
           </span>
         )}
-        {business.featured && (
+        {planLabel && (
           <span style={{ position:'absolute', left:'50%', bottom:-10, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:9, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'5px 10px', boxShadow:'0 8px 18px rgba(37,99,235,0.14)', whiteSpace:'nowrap' }}>
-            Destacado
+            {planLabel}
           </span>
         )}
       </div>
@@ -610,7 +641,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{business.desc}</p>
       </div>
 
-      <div style={{ gridColumn:'1 / -1', display:'flex', flexDirection:'column', gap:8, minWidth:0 }}>
+      <div style={{ gridColumn:'1 / -1', display:'flex', flexDirection:'column', gap:8, minWidth:0, marginTop:planLabel ? 6 : 0 }}>
         {services.length > 0 && (
           <div style={{ display:'flex', flexWrap:'wrap', gap:5, minWidth:0, overflow:'hidden' }}>
             {services.slice(0, 4).map(service => <Tag key={service} bg={C.bg} color={C.mid} title={service}>{service}</Tag>)}
@@ -667,6 +698,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   const { isLoggedIn, user, displayName, userCanton } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const category = getNegocioTypeMeta(business.type)
+  const planLabel = getDirectoryBusinessPlanLabel(business)
   const services = servicesMap[business.id] || business.services || []
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
   const [reviews, setReviews] = useState(reviewsMap[business.id] || [])
@@ -789,7 +821,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           {tab === 'info' && (
             <>
               {photos[0] && (
-                <div style={{ position:'relative', overflow:'visible', marginBottom:business.featured ? 26 : 14 }}>
+                <div style={{ position:'relative', overflow:'visible', marginBottom:planLabel ? 26 : 14 }}>
                   <button
                     type="button"
                     onClick={() => setLightboxOpen(true)}
@@ -799,9 +831,9 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                   >
                     <img src={photos[0]} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
                   </button>
-                  {business.featured && (
+                  {planLabel && (
                     <span style={{ position:'absolute', left:'50%', bottom:-13, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 14px', boxShadow:'0 10px 22px rgba(37,99,235,0.16)', whiteSpace:'nowrap' }}>
-                      Destacado
+                      {planLabel}
                     </span>
                   )}
                 </div>
@@ -1209,7 +1241,7 @@ export default function Comunidades() {
       try {
         const [communitiesRes, providersRes, photosRes, reviewsRes, eventsRes] = await Promise.all([
           fetchCommunitiesForDirectory(),
-          supabase.from('providers').select('id, created_at, category, name, city, canton, description, whatsapp, instagram, email, website, verified, featured, services, photo_url').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(100),
+          supabase.from('providers').select('id, created_at, category, name, city, canton, description, whatsapp, instagram, email, website, verified, featured, services, photo_url, promotion_plan, promotion_starts_at, promotion_ends_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(100),
           supabase.from('provider_photos').select('provider_id, url, is_main, sort_order').order('is_main', { ascending:false }).order('sort_order', { ascending:true }).limit(300),
           supabase.from('reviews').select('id, provider_id, user_id, author_name, canton, stars, created_at, text').eq('active', true).order('created_at', { ascending:false }).limit(200),
           supabase.from('events').select('id, type, emoji, title, city, canton, venue, day, month, time, price, host, featured, desc, img_url, link, created_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(60),
@@ -1554,6 +1586,8 @@ export default function Comunidades() {
         (businessServices[business.id] || business.services || []).some(service => norm(service).includes(normSearch)))
     )
     .sort((a, b) => {
+      const planDiff = getDirectoryBusinessPriority(a) - getDirectoryBusinessPriority(b)
+      if (planDiff) return planDiff
       if (a.featured !== b.featured) return b.featured ? 1 : -1
       const recommendationDiff = (businessRecommendations[b.id] || 0) - (businessRecommendations[a.id] || 0)
       if (recommendationDiff) return recommendationDiff

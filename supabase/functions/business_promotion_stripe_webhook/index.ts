@@ -4,8 +4,37 @@ import { createClient } from 'npm:@supabase/supabase-js@2.101.1'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || ''
-const STRIPE_PRICE_ID = Deno.env.get('STRIPE_PRICE_ID') || ''
 const STRIPE_WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
+
+const PLAN_CONFIGS = {
+  featured: {
+    key: 'featured',
+    priceId: Deno.env.get('STRIPE_FEATURED_PRICE_ID')
+      || Deno.env.get('STRIPE_PRICE_FEATURED')
+      || Deno.env.get('STRIPE_PRICE_ID')
+      || '',
+  },
+  basic: {
+    key: 'basic',
+    priceId: Deno.env.get('STRIPE_BASIC_PRICE_ID')
+      || Deno.env.get('STRIPE_PRICE_BASIC')
+      || '',
+  },
+  premium: {
+    key: 'premium',
+    priceId: Deno.env.get('STRIPE_PREMIUM_PRICE_ID')
+      || Deno.env.get('STRIPE_PRICE_PREMIUM')
+      || '',
+  },
+} as const
+
+type PlanKey = keyof typeof PLAN_CONFIGS
+
+const PRICE_TO_PLAN = new Map(
+  Object.values(PLAN_CONFIGS)
+    .filter(plan => plan.priceId)
+    .map(plan => [plan.priceId, plan.key]),
+)
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion:'2026-05-27.dahlia',
@@ -34,7 +63,6 @@ function requireStripeConfiguration() {
     !SUPABASE_URL
     || !SERVICE_ROLE_KEY
     || !STRIPE_SECRET_KEY
-    || !STRIPE_PRICE_ID
   ) {
     throw new Error('STRIPE_NOT_CONFIGURED')
   }
@@ -49,18 +77,29 @@ function getStripeId(value: unknown) {
   return null
 }
 
-function getSubscriptionPeriod(subscription: Stripe.Subscription) {
+function getSubscriptionPlanItem(subscription: Stripe.Subscription) {
   const item = subscription.items?.data?.find(subscriptionItem =>
-    getStripeId(subscriptionItem.price) === STRIPE_PRICE_ID
+    PRICE_TO_PLAN.has(getStripeId(subscriptionItem.price) || '')
   ) || subscription.items?.data?.[0]
+  const priceId = getStripeId(item?.price)
 
+  return {
+    item,
+    priceId,
+    planKey: priceId ? PRICE_TO_PLAN.get(priceId) || null : null,
+  }
+}
+
+function getSubscriptionPeriod(subscription: Stripe.Subscription) {
+  const { item, priceId, planKey } = getSubscriptionPlanItem(subscription)
   const start = item?.current_period_start
   const end = item?.current_period_end || item?.billed_until
 
   return {
     start:typeof start === 'number' ? new Date(start * 1000).toISOString() : null,
     end:typeof end === 'number' ? new Date(end * 1000).toISOString() : null,
-    priceId:getStripeId(item?.price),
+    priceId,
+    planKey,
   }
 }
 
@@ -73,10 +112,21 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
 }
 
+function isMissingRpc(error: unknown, rpcName: string) {
+  const message = errorMessage(error)
+  return Boolean(
+    error
+    && typeof error === 'object'
+    && 'code' in error
+    && error.code === 'PGRST202'
+  ) || message.includes(rpcName)
+}
+
 type LatidoMetadata = {
   latido_reservation_id?: string
   latido_provider_id?: string
   latido_user_id?: string
+  latido_plan_key?: string
 }
 
 function metadataFor(value: { metadata?: Stripe.Metadata | null }): LatidoMetadata {
@@ -110,6 +160,8 @@ async function syncSubscriptionState(
 async function activateSubscription(subscription: Stripe.Subscription) {
   const metadata = metadataFor(subscription)
   const period = getSubscriptionPeriod(subscription)
+  const metadataPlanKey = metadata.latido_plan_key as PlanKey | undefined
+  const planKey = metadataPlanKey || period.planKey
 
   if (
     !metadata.latido_reservation_id
@@ -118,18 +170,25 @@ async function activateSubscription(subscription: Stripe.Subscription) {
   ) {
     throw new Error('LATIDO_METADATA_MISSING')
   }
-  if (period.priceId !== STRIPE_PRICE_ID) {
+  if (!period.priceId || !period.planKey) {
     throw new Error('UNEXPECTED_STRIPE_PRICE')
+  }
+  if (metadataPlanKey && metadataPlanKey !== period.planKey) {
+    throw new Error('UNEXPECTED_STRIPE_PRICE')
+  }
+  if (!planKey) {
+    throw new Error('PLAN_KEY_MISSING')
   }
   if (!period.start || !period.end) {
     throw new Error('SUBSCRIPTION_PERIOD_MISSING')
   }
 
-  const { error } = await serviceClient
-    .rpc('activate_featured_promotion_subscription', {
+  let activateResponse = await serviceClient
+    .rpc('activate_business_promotion_subscription', {
       p_reservation_id: metadata.latido_reservation_id,
       p_provider_id: metadata.latido_provider_id,
       p_user_id: metadata.latido_user_id,
+      p_plan_key: planKey,
       p_subscription_id: subscription.id,
       p_customer_id: getStripeId(subscription.customer),
       p_price_id: period.priceId,
@@ -138,7 +197,26 @@ async function activateSubscription(subscription: Stripe.Subscription) {
       p_cancel_at_period_end: hasScheduledCancellation(subscription),
     })
 
-  if (error) throw error
+  if (
+    activateResponse.error
+    && planKey === 'featured'
+    && isMissingRpc(activateResponse.error, 'activate_business_promotion_subscription')
+  ) {
+    activateResponse = await serviceClient
+      .rpc('activate_featured_promotion_subscription', {
+        p_reservation_id: metadata.latido_reservation_id,
+        p_provider_id: metadata.latido_provider_id,
+        p_user_id: metadata.latido_user_id,
+        p_subscription_id: subscription.id,
+        p_customer_id: getStripeId(subscription.customer),
+        p_price_id: period.priceId,
+        p_period_start: period.start,
+        p_period_end: period.end,
+        p_cancel_at_period_end: hasScheduledCancellation(subscription),
+      })
+  }
+
+  if (activateResponse.error) throw activateResponse.error
 }
 
 function invoiceSubscriptionId(invoice: Stripe.Invoice) {

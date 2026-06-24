@@ -57,6 +57,7 @@ const ADMIN_ANALYTICS_EVENT_TYPES = [
   'page_view',
   'search',
   'search_result_open',
+  'partner_card_impression',
   'partner_outbound_click',
   'partner_page_view',
   'partner_service_click',
@@ -68,7 +69,7 @@ const PARTNER_METRICS_EXCLUDED_EMAILS = new Set(['test@g.com'])
 const ADMIN_TAB_DATA_GROUPS = {
   users: ['users'],
   analytics: ['users', 'analytics'],
-  partners: ['users', 'analytics'],
+  partners: ['users', 'businesses', 'analytics'],
   live: ['users', 'analytics'],
   overview: ['users', 'reports', 'moderation', 'contentMetrics', 'businesses', 'analytics', 'messages'],
   businessVerification: ['businesses'],
@@ -83,6 +84,41 @@ function getAdminTabDataGroups(tab) {
 
 function isPartnerMetricsExcludedEmail(email) {
   return PARTNER_METRICS_EXCLUDED_EMAILS.has(String(email || '').trim().toLowerCase())
+}
+
+function getBusinessPartnerAnalyticsId(providerId) {
+  return `business:${providerId}`
+}
+
+function isBusinessPartnerAnalyticsId(value) {
+  return String(value || '').startsWith('business:')
+}
+
+function isActiveBusinessPartner(business) {
+  if (!['basic', 'premium'].includes(business?.promotion_plan)) return false
+  if (business?.active === false) return false
+
+  const startsAt = business?.promotion_starts_at ? new Date(business.promotion_starts_at).getTime() : 0
+  const endsAt = business?.promotion_ends_at ? new Date(business.promotion_ends_at).getTime() : 0
+  const now = Date.now()
+
+  return startsAt <= now && endsAt > now
+}
+
+function businessPartnerColor(planKey) {
+  return planKey === 'premium' ? '#EF3340' : C.primary
+}
+
+function businessPartnerTint(planKey) {
+  return planKey === 'premium' ? '#FFF1F2' : C.primaryLight
+}
+
+function isPartnerClickAnalyticsEvent(event, partner) {
+  if (partner?.isBusinessPartner) {
+    return ['partner_outbound_click', 'partner_service_click'].includes(event?.event_type)
+  }
+
+  return isPartnerOutboundAnalyticsEvent(event, event.partnerMetadata)
 }
 
 async function fetchAllAdminRows({
@@ -1056,6 +1092,42 @@ export default function Admin() {
     () => mergeBusinessPromotionPlans(businessPromotionAvailability),
     [businessPromotionAvailability],
   )
+  const businessPartnerOptions = useMemo(
+    () => businesses
+      .filter(isActiveBusinessPartner)
+      .map(business => {
+        const services = Array.isArray(business.services)
+          ? Object.fromEntries(business.services.map(service => [service, service]))
+          : {}
+        return {
+          id:getBusinessPartnerAnalyticsId(business.id),
+          providerId:business.id,
+          name:business.partner_card_title || business.name || 'Colaborador',
+          logo:business.partner_logo_url || business.photo_url || '/favicon.svg',
+          campaign:`business-${business.id}`,
+          legacyPartnerIds:[],
+          color:businessPartnerColor(business.promotion_plan),
+          tint:businessPartnerTint(business.promotion_plan),
+          services,
+          isBusinessPartner:true,
+          planKey:business.promotion_plan,
+        }
+      })
+      .sort((a, b) => {
+        const planDiff = (a.planKey === 'premium' ? 0 : 1) - (b.planKey === 'premium' ? 0 : 1)
+        if (planDiff !== 0) return planDiff
+        return a.name.localeCompare(b.name, 'es')
+      }),
+    [businesses],
+  )
+  const partnerOptions = useMemo(
+    () => [...businessPartnerOptions, ...PARTNER_ANALYTICS_PARTNERS],
+    [businessPartnerOptions],
+  )
+  const businessPartnerAnalyticsIds = useMemo(
+    () => new Set(businessPartnerOptions.map(partner => partner.id)),
+    [businessPartnerOptions],
+  )
 
   const stats = useMemo(() => ({
     reports: reports.filter(r => r.status === 'pending').length,
@@ -1138,16 +1210,22 @@ export default function Admin() {
       )
       .map(event => {
         const metadata = readMetadata(event.metadata)
+        const explicitPartnerId = String(metadata.partner_id || metadata.partnerId || '').trim()
+        const businessPartnerId = isBusinessPartnerAnalyticsId(explicitPartnerId)
+          && businessPartnerAnalyticsIds.has(explicitPartnerId)
+          ? explicitPartnerId
+          : ''
         return {
           ...event,
-          partnerAnalyticsId:resolvePartnerAnalyticsId(metadata),
+          partnerAnalyticsId:businessPartnerId || resolvePartnerAnalyticsId(metadata),
           partnerMetadata:metadata,
         }
       })
       .filter(event => event.partnerAnalyticsId),
-    [analyticsEvents, partnerMetricsExcludedUserIds]
+    [analyticsEvents, businessPartnerAnalyticsIds, partnerMetricsExcludedUserIds]
   )
-  const selectedPartner = PARTNER_ANALYTICS_PARTNERS.find(partner => partner.id === selectedPartnerId)
+  const selectedPartner = partnerOptions.find(partner => partner.id === selectedPartnerId)
+    || partnerOptions[0]
     || PARTNER_ANALYTICS_PARTNERS[0]
   const selectedPartnerEvents = useMemo(
     () => partnerAnalyticsEvents.filter(event =>
@@ -1158,8 +1236,12 @@ export default function Admin() {
   )
   const partnerClickEvents = useMemo(
     () => selectedPartnerEvents.filter(event =>
-      isPartnerOutboundAnalyticsEvent(event, event.partnerMetadata)
+      isPartnerClickAnalyticsEvent(event, selectedPartner)
     ),
+    [selectedPartnerEvents, selectedPartner]
+  )
+  const partnerImpressionEvents = useMemo(
+    () => selectedPartnerEvents.filter(event => event.event_type === 'partner_card_impression'),
     [selectedPartnerEvents]
   )
   const partnerServiceEvents = useMemo(
@@ -2243,6 +2325,7 @@ export default function Admin() {
         ]
     : tab === 'partners'
       ? [
+          { label: `Vistas tarjeta ${partnerMetricSuffix}`, value: loading ? '...' : partnerImpressionEvents.length, hint: 'Apariciones registradas de la tarjeta', color: '#0284C7' },
           { label: `Total enviado ${partnerMetricSuffix}`, value: loading ? '...' : partnerClickEvents.length, hint: 'Aperturas y contactos del colaborador', color: '#4F46E5' },
           { label: `Cuentas enviadas ${partnerMetricSuffix}`, value: loading ? '...' : partnerDailyAccounts.length, hint: `${partnerUniqueAccounts} perfiles distintos · máximo 1 por día`, color: '#7C3AED' },
           { label: 'Desde landing', value: loading ? '...' : partnerLandingClicks.length, hint: 'Landing pública de Latido', color: '#2563EB' },
@@ -2745,12 +2828,12 @@ export default function Admin() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 230px), 1fr))', gap: 10 }}>
-              {PARTNER_ANALYTICS_PARTNERS.map(partner => {
+              {partnerOptions.map(partner => {
                 const active = selectedPartner?.id === partner.id
                 const clicks = partnerAnalyticsEvents.filter(event =>
                   event.partnerAnalyticsId === partner.id
                   && isWithinRecentDays(event.created_at, partnerDays)
-                  && isPartnerOutboundAnalyticsEvent(event, event.partnerMetadata)
+                  && isPartnerClickAnalyticsEvent(event, partner)
                 ).length
 
                 return (
@@ -2777,7 +2860,9 @@ export default function Admin() {
                     </span>
                     <span style={{ minWidth: 0, flex: 1 }}>
                       <strong style={{ display: 'block', fontFamily: PP, fontSize: 13, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{partner.name}</strong>
-                      <span style={{ display: 'block', fontFamily: PP, fontSize: 10, fontWeight: 800, color: active ? partner.color : C.light, marginTop: 3 }}>{clicks} salidas · {partnerDays === 1 ? 'hoy' : `${partnerDays} días`}</span>
+                      <span style={{ display: 'block', fontFamily: PP, fontSize: 10, fontWeight: 800, color: active ? partner.color : C.light, marginTop: 3 }}>
+                        {partner.isBusinessPartner ? `${partner.planKey === 'premium' ? 'Premium' : 'Básica'} · ` : ''}{clicks} salidas · {partnerDays === 1 ? 'hoy' : `${partnerDays} días`}
+                      </span>
                     </span>
                     <span aria-hidden="true" style={{ color: active ? partner.color : C.light, fontWeight: 900 }}>›</span>
                   </button>

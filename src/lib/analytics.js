@@ -17,6 +17,7 @@ const VERCEL_EVENT_PROPERTIES = {
   signup_success: ['method', 'entry_point'],
   login_success: ['method', 'entry_point'],
   publication_created: ['content_type', 'category', 'intent', 'channel', 'moderation_status'],
+  partner_card_impression: ['partner_id', 'placement'],
   partner_page_view: ['partner_id', 'placement'],
   partner_service_click: ['partner_id', 'placement', 'service'],
   partner_cross_click: ['partner_id', 'placement'],

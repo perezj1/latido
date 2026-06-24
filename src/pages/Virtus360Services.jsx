@@ -152,7 +152,7 @@ export default function Virtus360Services() {
             </div>
             <div className="see-hero-label"><span /> Gestoría para la comunidad</div>
             <h1>Menos papeleo para <em>vivir en Suiza</em> con calma</h1>
-            <p>Trámites, impuestos, seguros, correspondencia, mudanzas y contabilidad con una gestoría multicultural desde Horgen.</p>
+            <p>Trámites, impuestos, seguros, correspondencia y contabilidad con una gestoría multicultural desde Horgen.</p>
             <div className="v360-hero-actions">
               <a className="see-hero-cta" href="#servicios">Ver los servicios →</a>
               <a className="v360-hero-contact" href={CONTACT_URL} target="_blank" rel="noopener noreferrer sponsored" onClick={() => trackContactClick('hero_contact')}>
@@ -284,7 +284,7 @@ export default function Virtus360Services() {
               <p>Con correspondencia, formularios, declaraciones de impuestos, seguros, contratos, planificación de entrada o salida de Suiza y organización de finanzas del día a día.</p>
             </details>
             <details>
-              <summary>¿Tambien gestionan mudanzas o salida de Suiza?</summary>
+              <summary>¿Tambien gestionan seguros o salida de Suiza?</summary>
               <p>Sí. Su servicio de entrada y salida incluye formularios, cancelación de contratos, caja de pensión, impuestos del año de salida, seguros y redirección de correspondencia.</p>
             </details>
             <details>

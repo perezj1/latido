@@ -695,6 +695,8 @@
 
 .public-partner-tile .partner-card-cta {
   grid-row: 4;
+  width: 100%;
+  box-sizing: border-box;
   min-height: 43px;
   background: #2563EB !important;
   border-radius: 12px;
@@ -1218,6 +1220,11 @@
   transition: background .18s ease, transform .18s ease;
 }
 
+.partner-card-cta--button {
+  border: 0;
+  cursor: pointer;
+}
+
 .partner-card-cta:hover {
   transform: translateY(-1px);
   filter: brightness(0.92);
@@ -1485,6 +1492,52 @@
   font-size: 11px;
   font-weight: 800;
   text-decoration: none;
+}
+
+.business-partner-contact-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 620;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 16px;
+  background: rgba(15, 23, 42, .62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.business-partner-contact-dialog {
+  position: relative;
+  width: min(470px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.business-partner-contact-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #64748B;
+  background: #F8FAFC;
+  border: 1px solid #DCE6F2;
+  border-radius: 999px;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.business-partner-contact-brand img {
+  width: min(160px, 52vw);
+  max-height: 72px;
+  object-fit: contain;
 }
 
 .partner-services-contextual {
