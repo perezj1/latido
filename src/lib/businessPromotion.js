@@ -35,8 +35,8 @@ export const BUSINESS_PROMOTION_PLANS = [
     shortLabel:'Premium',
     priority:3,
     rotationWeight:7,
-    color:'#DC2626',
-    background:'#FEE2E2',
+    color:'#2563EB',
+    background:'#EFF6FF',
   },
   {
     key:'exclusive',

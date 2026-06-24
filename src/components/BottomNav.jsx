@@ -79,7 +79,8 @@ export default function BottomNav() {
 
   const isAdminPage = pathname === '/admin-latido' || pathname.startsWith('/admin-latido/')
   const isPublishFlow = PUBLISH_FLOW_PATHS.some(path => pathname === path || pathname.startsWith(`${path}/`))
-  const hideFab = isAdminPage || NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
+  const isPromotionCheckoutPage = /^\/negocios\/[^/]+\/destacar\/?$/.test(pathname)
+  const hideFab = isAdminPage || isPromotionCheckoutPage || NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const fab = hideFab ? null : getPublishTarget()
   const hideMobileNav = isAdminPage || isPublishFlow || (pathname.startsWith('/mensajes') && messagesChatOpen)
 

@@ -4,9 +4,36 @@ import { createClient } from 'npm:@supabase/supabase-js@2.101.1'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || ''
-const STRIPE_PRICE_ID = Deno.env.get('STRIPE_PRICE_ID') || ''
 const APP_URL = (Deno.env.get('LATIDO_APP_URL') || 'https://www.latido.ch')
   .replace(/\/+$/, '')
+
+const PLAN_CONFIGS = {
+  featured: {
+    key: 'featured',
+    label: 'Negocio Destacado',
+    priceId: Deno.env.get('STRIPE_FEATURED_PRICE_ID')
+      || Deno.env.get('STRIPE_PRICE_FEATURED')
+      || Deno.env.get('STRIPE_PRICE_ID')
+      || '',
+  },
+  basic: {
+    key: 'basic',
+    label: 'Partner Basico',
+    priceId: Deno.env.get('STRIPE_BASIC_PRICE_ID')
+      || Deno.env.get('STRIPE_PRICE_BASIC')
+      || '',
+  },
+  premium: {
+    key: 'premium',
+    label: 'Partner Premium',
+    priceId: Deno.env.get('STRIPE_PREMIUM_PRICE_ID')
+      || Deno.env.get('STRIPE_PRICE_PREMIUM')
+      || '',
+  },
+} as const
+
+type PlanKey = keyof typeof PLAN_CONFIGS
+type PlanConfig = typeof PLAN_CONFIGS[PlanKey]
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion:'2026-05-27.dahlia',
@@ -61,12 +88,20 @@ async function requireUser(req: Request) {
   return data.user
 }
 
-function requireStripeConfiguration() {
+function getPlanConfig(value: unknown): PlanConfig {
+  const key = typeof value === 'string' && value in PLAN_CONFIGS
+    ? value as PlanKey
+    : 'featured'
+
+  return PLAN_CONFIGS[key]
+}
+
+function requireStripeConfiguration(planConfig: PlanConfig) {
   if (
     !SUPABASE_URL
     || !SERVICE_ROLE_KEY
     || !STRIPE_SECRET_KEY
-    || !STRIPE_PRICE_ID
+    || !planConfig.priceId
   ) {
     throw new Error('STRIPE_NOT_CONFIGURED')
   }
@@ -107,6 +142,16 @@ function isMissingStripeResource(error: unknown) {
     && 'code' in error
     && error.code === 'resource_missing'
   )
+}
+
+function isMissingRpc(error: unknown, rpcName: string) {
+  const message = errorMessage(error)
+  return Boolean(
+    error
+    && typeof error === 'object'
+    && 'code' in error
+    && error.code === 'PGRST202'
+  ) || message.includes(rpcName)
 }
 
 function checkoutErrorCode(message: string) {
@@ -161,24 +206,42 @@ Deno.serve(async req => {
   let createdCheckoutSessionId: string | null = null
 
   try {
-    requireStripeConfiguration()
-    const user = await requireUser(req)
     const body = await req.json().catch(() => ({}))
+    const planConfig = getPlanConfig(body?.planKey)
+    requireStripeConfiguration(planConfig)
+    const user = await requireUser(req)
     const providerId = body?.providerId
 
     if (!isUuid(providerId)) {
       return json(req, { ok: false, error: 'INVALID_PROVIDER_ID' }, 400)
     }
 
-    const { data, error } = await serviceClient
-      .rpc('reserve_featured_promotion_checkout', {
+    let reservationResponse = await serviceClient
+      .rpc('reserve_business_promotion_checkout', {
         p_provider_id: providerId,
         p_user_id: user.id,
-        p_price_id: STRIPE_PRICE_ID,
+        p_plan_key: planConfig.key,
+        p_price_id: planConfig.priceId,
         p_reservation_minutes: 35,
       })
       .single<Reservation>()
 
+    if (
+      reservationResponse.error
+      && planConfig.key === 'featured'
+      && isMissingRpc(reservationResponse.error, 'reserve_business_promotion_checkout')
+    ) {
+      reservationResponse = await serviceClient
+        .rpc('reserve_featured_promotion_checkout', {
+          p_provider_id: providerId,
+          p_user_id: user.id,
+          p_price_id: planConfig.priceId,
+          p_reservation_minutes: 35,
+        })
+        .single<Reservation>()
+    }
+
+    const { data, error } = reservationResponse
     if (error) throw error
     reservationId = data.reservation_id
     let checkoutCustomerId = data.stripe_customer_id
@@ -230,7 +293,7 @@ Deno.serve(async req => {
       latido_reservation_id: reservationId,
       latido_provider_id: providerId,
       latido_user_id: user.id,
-      latido_plan_key: 'featured',
+      latido_plan_key: planConfig.key,
     }
 
     if (checkoutCustomerId) {
@@ -244,24 +307,25 @@ Deno.serve(async req => {
       }
     }
 
+    const planParam = encodeURIComponent(planConfig.key)
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: checkoutCustomerId || undefined,
       customer_email: checkoutCustomerId ? undefined : user.email,
       client_reference_id: reservationId,
-      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+      line_items: [{ price: planConfig.priceId, quantity: 1 }],
       success_url:
-        `${APP_URL}/negocios/${providerId}/destacar?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_URL}/negocios/${providerId}/destacar?checkout=canceled`,
+        `${APP_URL}/negocios/${providerId}/destacar?plan=${planParam}&checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_URL}/negocios/${providerId}/destacar?plan=${planParam}&checkout=canceled`,
       expires_at: checkoutExpiresAt,
       locale: 'es',
       metadata,
       subscription_data: {
         metadata,
-        description: 'Latido - Negocio Destacado',
+        description: `Latido - ${planConfig.label}`,
       },
     }, {
-      idempotencyKey: `latido-promotion-checkout-es-v2-${reservationId}`,
+      idempotencyKey: `latido-promotion-checkout-es-v3-${reservationId}`,
     })
 
     if (!session.url) throw new Error('CHECKOUT_URL_MISSING')
@@ -304,8 +368,11 @@ Deno.serve(async req => {
       BUSINESS_NOT_VERIFIED: 409,
       PLAN_FULL: 409,
       PLAN_UNAVAILABLE: 409,
+      PLAN_NOT_FOUND: 409,
       ALREADY_FEATURED: 409,
+      ALREADY_PROMOTED: 409,
       SUBSCRIPTION_EXISTS: 409,
+      CHECKOUT_OPEN_OTHER_PLAN: 409,
       STRIPE_NOT_CONFIGURED: 503,
     }
     const databaseErrorCode = Object.keys(knownErrors)

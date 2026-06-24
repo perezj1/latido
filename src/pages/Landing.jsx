@@ -45,6 +45,86 @@ const PARTNER_BENEFITS = [
   { icon: '🌐', title: 'Visibilidad real',      desc: 'Tu negocio, grupo o empresa aparece donde nuestra gente busca cada día.' },
   { icon: '💬', title: 'Contacto directo',      desc: 'Sin intermediarios. Los usuarios te contactan por WhatsApp, email o teléfono.' },
   { icon: '⭐', title: 'Reseñas y confianza',   desc: 'Construye reputación con reseñas reales de la comunidad que te elige.' },
+  { icon: '💙', title: 'Apoya a la comunidad', desc: 'Apoyas una plataforma creada para ayudar a la comunidad hispanohablante en Suiza.' },
+]
+
+const PARTNER_PLANS = [
+  {
+    name: 'Gratis',
+    label: 'Alta básica',
+    monthly: 'CHF 0',
+    annual: 'CHF 0/año',
+    annualNote: 'Sin permanencia',
+    accent: '#64748B',
+    background: '#F8FAFC',
+    cta: 'Registrar gratis',
+    to: '/registrar-negocio',
+    benefits: [
+      'Perfil básico con descripción, categoría y contacto',
+      'Aparición orgánica en el directorio de negocios',
+      'Usuarios pueden encontrarte por categoría o zona',
+      'Publicación sujeta a revisión de Latido',
+    ],
+  },
+  {
+    name: 'Negocio destacado',
+    label: 'Más visibilidad local',
+    monthly: 'CHF 49',
+    annual: 'CHF 490/año',
+    annualNote: '2 meses gratis, ahorras CHF 98',
+    accent: '#0F9F8E',
+    background: '#F0FDFA',
+    cta: 'Destacar negocio',
+    to: '/perfil?seccion=profesional',
+    benefits: [
+      'Etiqueta de Negocio Destacado o Patrocinado',
+      'Mayor visibilidad en tu categoría y zona',
+      'Mejor posicionamiento en búsquedas',
+      'Más presencia por zona o cantón',
+      'Aparición rotatoria en espacios de negocios',
+      'Botones directos de contacto',
+    ],
+  },
+  {
+    name: 'Partner básico',
+    label: 'Presencia de partner',
+    monthly: 'CHF 149',
+    annual: "CHF 1'490/año",
+    annualNote: '2 meses gratis, ahorras CHF 298',
+    accent: '#2563EB',
+    background: '#EFF6FF',
+    cta: 'Activar colaboración',
+    to: '/perfil?seccion=profesional',
+    benefits: [
+      'Tarjeta de partner con logo, descripción y servicios',
+      'Botones de contacto y enlaces de seguimiento',
+      'Aparición en la sección de partners de la app',
+      'Presencia en espacios relacionados dentro de Latido',
+      'Posibilidad de aparecer en contenidos relacionados',
+      'Pill azul de colaboración Básico',
+      'Alta y activación manual por Latido',
+    ],
+  },
+  {
+    name: 'Partner premium',
+    label: 'Mayor visibilidad',
+    monthly: 'CHF 249',
+    annual: "CHF 2'490/año",
+    annualNote: '2 meses gratis, ahorras CHF 498',
+    accent: '#EF3340',
+    background: '#FFF1F2',
+    cta: 'Activar colaboración',
+    to: '/perfil?seccion=profesional',
+    benefits: [
+      'Mayor presencia en la página principal de Latido',
+      'Aparición más frecuente dentro de la app',
+      'Mejor posicionamiento frente a partners básicos',
+      'Promoción contextual en categorías relacionadas',
+      'Posible aparición en guías o secciones especiales',
+      'Informe mensual de clics (opcional)',
+      'Mayor prioridad en campañas internas de Latido',
+    ],
+  },
 ]
 
 const LANDING_COLLABORATOR_LOGOS = [
@@ -570,37 +650,53 @@ function PanelFaq() {
 function PanelPartners() {
   return (
     <div>
-      <div style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%)', borderRadius: 24, padding: '40px 28px', marginBottom: 28 }}>
+      <div style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%)', borderRadius: 24, padding: '40px 28px', marginBottom: 28, textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.12)', color: '#BAE6FD', fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 20, marginBottom: 18, fontFamily: PP, border: '1px solid rgba(255,255,255,0.2)', letterSpacing: 0.4 }}>
           🚀 Para empresas y colaboradores
         </div>
-        <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(22px,4vw,36px)', color: '#fff', lineHeight: 1.15, marginBottom: 14, letterSpacing: -0.5 }}>
-          El canal directo a la comunidad hispanohablante en Suiza
+        <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(22px,4vw,36px)', color: '#fff', lineHeight: 1.15, margin: '0 auto 14px', letterSpacing: -0.5, maxWidth: 680 }}>
+          Convierte tu visibilidad en nuevos clientes
         </h2>
-        <p style={{ fontFamily: PP, fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.8, marginBottom: 24 }}>
-          ¿Tienes un negocio, ofreces empleo o buscas conectar con nuestra comunidad?
-          Latido es el canal directo al mercado hispanohablante en Suiza.
+        <p style={{ fontFamily: PP, fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.8, margin: '0 auto', maxWidth: 620 }}>
+          Muestra tu negocio a la comunidad hispanohablante en Suiza y conecta
+          con personas que ya buscan servicios como el tuyo.
+
         </p>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Link to="/registrar-negocio" style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, background: '#fff', color: C.primaryDark, textDecoration: 'none', padding: '12px 22px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-            Registrar negocio →
-          </Link>
-          <Link to="/publicar-empleo" style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, background: 'rgba(255,255,255,0.13)', color: '#fff', textDecoration: 'none', padding: '12px 22px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 7, border: '1.5px solid rgba(255,255,255,0.3)' }}>
-            Publicar empleo
-          </Link>
-        </div>
       </div>
 
       <h3 style={{ fontFamily: PP, fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>¿Por qué Latido?</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 12, marginBottom: 32 }}>
+      <div className="latido-partner-benefits-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 12, marginBottom: 32 }}>
         {PARTNER_BENEFITS.map((b) => (
-          <div key={b.title} style={{ background: '#F8FAFF', borderRadius: 18, padding: '20px 18px', border: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 28, marginBottom: 10 }}>{b.icon}</div>
-            <h3 style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: C.text, marginBottom: 6, lineHeight: 1.3 }}>{b.title}</h3>
-            <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.6, margin: 0 }}>{b.desc}</p>
+          <div className="latido-partner-benefit-card" key={b.title} style={{ background: '#F8FAFF', borderRadius: 18, padding: '20px 18px', border: `1px solid ${C.border}` }}>
+            <div className="latido-partner-benefit-icon" style={{ fontSize: 28, marginBottom: 10 }}>{b.icon}</div>
+            <h3 className="latido-partner-benefit-title" style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: C.text, marginBottom: 6, lineHeight: 1.3 }}>{b.title}</h3>
+            <p className="latido-partner-benefit-desc" style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.6, margin: 0 }}>{b.desc}</p>
           </div>
         ))}
       </div>
+
+      <section className="latido-partner-pricing-section" style={{ marginBottom: 34 }}>
+        <div style={{ textAlign: 'center', marginBottom: 18 }}>
+          <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 11, color: C.primary, letterSpacing: 0, textTransform: 'uppercase', margin: '0 0 7px' }}>
+            Precios para destacar tu negocio
+          </p>
+          <h3 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(20px,4vw,28px)', color: C.text, margin: '0 0 8px', lineHeight: 1.15 }}>
+            Elige la visibilidad que necesitas
+          </h3>
+          <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.65, maxWidth: 620, margin: '0 auto' }}>
+            Todos los precios están en CHF. En los planes anuales tienes 2 meses gratis frente al pago mensual.
+          </p>
+        </div>
+
+        <div className="latido-partner-pricing-scroll">
+          <div className="latido-partner-pricing-track" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12 }}>
+            {PARTNER_PLANS.map(plan => (
+              <PricingPlanCard key={plan.name} plan={plan} />
+            ))}
+          </div>
+        </div>
+
+      </section>
 
       <div style={{ background: C.primaryLight, borderRadius: 18, padding: '24px', textAlign: 'center' }}>
         <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.primaryDark, margin: '0 0 6px' }}>¿Hablamos?</p>
@@ -610,6 +706,80 @@ function PanelPartners() {
         </a>
       </div>
     </div>
+  )
+}
+
+function PlanAction({ plan, compact = false, inverse = false }) {
+  const style = {
+    fontFamily: PP,
+    fontWeight: 800,
+    fontSize: compact ? 12 : 13,
+    background: inverse ? '#fff' : plan.accent,
+    color: inverse ? plan.accent : '#fff',
+    textDecoration: 'none',
+    padding: compact ? '10px 14px' : '12px 16px',
+    borderRadius: 12,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    border: inverse ? 'none' : `1px solid ${plan.accent}`,
+    width: compact ? 'auto' : '100%',
+    boxSizing: 'border-box',
+  }
+
+  if (plan.to) {
+    return <Link to={plan.to} style={style}>{plan.cta}</Link>
+  }
+
+  return <a href={plan.href} style={style}>{plan.cta || 'Solicitar propuesta'}</a>
+}
+
+function PricingPlanCard({ plan }) {
+  return (
+    <article className="latido-partner-pricing-card" style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderTop: `5px solid ${plan.accent}`, borderRadius: 18, padding: '18px 16px', display: 'flex', flexDirection: 'column', minHeight: 430, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }}>
+      <div style={{ marginBottom: 14 }}>
+        <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: plan.accent, background: plan.background, borderRadius: 999, padding: '6px 10px', display: 'inline-flex', marginBottom: 12 }}>
+          {plan.label}
+        </span>
+        <h4 style={{ fontFamily: PP, fontWeight: 900, fontSize: 17, color: C.text, margin: '0 0 10px', lineHeight: 1.18 }}>
+          {plan.name}
+        </h4>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 8, flexWrap: 'nowrap', minWidth: 0 }}>
+          <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(25px, 4vw, 30px)', color: C.text, letterSpacing: 0, lineHeight: 1, whiteSpace: 'nowrap' }}>
+            {plan.monthly}
+          </span>
+          <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 11, color: C.light, paddingBottom: 3, whiteSpace: 'nowrap' }}>
+            / mes
+          </span>
+        </div>
+        <div style={{ background: plan.background, borderRadius: 12, padding: '10px 11px' }}>
+          <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: plan.accent, margin: '0 0 3px' }}>
+            {plan.annual}
+          </p>
+          <p style={{ fontFamily: PP, fontSize: 10, color: C.mid, margin: 0, lineHeight: 1.4 }}>
+            {plan.annualNote}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+        {plan.benefits.map(benefit => (
+          <div key={benefit} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <span style={{ width: 18, height: 18, borderRadius: 9, background: plan.background, color: plan.accent, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, fontSize: 10, flexShrink: 0 }}>
+              ✓
+            </span>
+            <span style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.45 }}>
+              {benefit}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 'auto' }}>
+        <PlanAction plan={plan} />
+      </div>
+    </article>
   )
 }
 
@@ -758,6 +928,9 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         .latido-testimonial-dot:focus-visible { outline: 3px solid rgba(37,99,235,0.25); outline-offset: 3px; }
         .latido-hero-bg { background-size: 180% 180%; animation: latido-gradient 22s ease infinite; }
         .latido-card-hover { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+        .latido-partner-pricing-scroll {
+          overflow: visible;
+        }
         .latido-hero-logo-top {
           width: 132px;
           height: 132px;
@@ -775,6 +948,66 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         @media (max-width: 640px) {
           .latido-testimonial-header { padding: 0 20px 20px !important; }
           .latido-testimonial-track { padding-left: 20px !important; padding-right: 20px !important; scroll-padding-left: 20px !important; }
+          .latido-partner-benefits-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            margin-bottom: 30px !important;
+          }
+          .latido-partner-benefit-card {
+            min-height: 158px !important;
+            padding: 12px 10px !important;
+            border-radius: 14px !important;
+          }
+          .latido-partner-benefit-card:nth-child(5) {
+            grid-column: 1 / -1 !important;
+            min-height: 118px !important;
+          }
+          .latido-partner-benefit-icon {
+            margin-bottom: 7px !important;
+            font-size: 22px !important;
+            line-height: 1 !important;
+          }
+          .latido-partner-benefit-title {
+            margin-bottom: 5px !important;
+            font-size: 11.5px !important;
+            line-height: 1.22 !important;
+          }
+          .latido-partner-benefit-desc {
+            display: -webkit-box !important;
+            overflow: hidden !important;
+            font-size: 10px !important;
+            line-height: 1.42 !important;
+            -webkit-box-orient: vertical !important;
+            -webkit-line-clamp: 4 !important;
+          }
+          .latido-partner-pricing-scroll {
+            margin: 0 -24px !important;
+            padding: 0 24px 16px !important;
+            overflow-x: auto !important;
+            overscroll-behavior-x: contain !important;
+            scroll-padding-left: 24px !important;
+            scroll-snap-type: x mandatory !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+          .latido-partner-pricing-scroll::-webkit-scrollbar {
+            display: none;
+          }
+          .latido-partner-pricing-track {
+            display: flex !important;
+            width: max-content !important;
+            min-width: 0 !important;
+            grid-template-columns: none !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .latido-partner-pricing-card {
+            flex: 0 0 min(82vw, 320px) !important;
+            width: min(82vw, 320px) !important;
+            min-width: min(82vw, 320px) !important;
+            min-height: 470px !important;
+            scroll-snap-align: start !important;
+            scroll-snap-stop: always !important;
+          }
           .latido-hero-logo-top {
             width: 104px;
             height: 104px;

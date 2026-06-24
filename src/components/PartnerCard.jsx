@@ -43,8 +43,10 @@ export default function PartnerCard({
         {services.map(service => {
           const content = <span>{service.label}</span>
           const style = { '--service-color':service.color, '--service-tint':service.tint }
+          const isSpecialHref = /^(tel|mailto):/i.test(service.href || '')
+          const isExternal = service.external !== false || isSpecialHref
 
-          return service.external === false ? (
+          return !isExternal ? (
             <Link
               key={service.id}
               to={service.href}
@@ -57,8 +59,8 @@ export default function PartnerCard({
             <a
               key={service.id}
               href={service.href}
-              target="_blank"
-              rel="noopener noreferrer sponsored"
+              target={isSpecialHref ? undefined : '_blank'}
+              rel={isSpecialHref ? undefined : 'noopener noreferrer sponsored'}
               onClick={() => onServiceClick?.(service)}
               style={style}
             >
@@ -68,7 +70,15 @@ export default function PartnerCard({
         })}
       </div>
 
-      {cta.external ? (
+      {cta.button ? (
+        <button
+          type="button"
+          className="partner-card-cta partner-card-cta--button"
+          onClick={onCtaClick}
+        >
+          {cta.label} <span aria-hidden="true">→</span>
+        </button>
+      ) : cta.external ? (
         <a
           className="partner-card-cta"
           href={cta.href}

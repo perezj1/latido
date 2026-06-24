@@ -1,10 +1,72 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
 
 const PENDING_STATUSES = new Set(['reserved', 'checkout_open', 'processing'])
+const PLAN_KEYS = ['featured', 'basic', 'premium']
+const PLAN_KEY_SET = new Set(PLAN_KEYS)
+
+const PLAN_COPY = {
+  featured: {
+    eyebrow: 'NEGOCIO DESTACADO',
+    label: 'Destacado',
+    description: 'Más visibilidad en la página de inicio de Latido.',
+    price: 'CHF 49',
+    annual: 'CHF 490/año',
+    accent: '#0F9F8E',
+    soft: '#F0FDFA',
+    success: 'Tu plan de Negocio Destacado ya está activo.',
+    benefits: [
+      'Prioridad en la rotación de negocios de Inicio',
+      'Pill azul de Negocio Destacado',
+      'Mejor posicionamiento en búsquedas',
+      'Aparición rotatoria en espacios de negocios',
+      'Botones directos de contacto',
+      'Cancela la suscripción en cualquier momento desde tu perfil',
+    ],
+  },
+  basic: {
+    eyebrow: 'COLABORACIÓN BÁSICA',
+    label: 'Básica',
+    description: 'Presencia estable como colaborador dentro de Latido.',
+    price: 'CHF 149',
+    annual: "CHF 1'490/año",
+    accent: C.primary,
+    soft: '#EFF6FF',
+    success: 'Tu plan de Partner Básico ya está activo.',
+    benefits: [
+      'Tarjeta de partner con logo, descripción y servicios',
+      'Botones de contacto y enlaces de seguimiento',
+      'Aparición en la sección de partners de la app',
+      'Presencia en espacios relacionados dentro de Latido',
+      'Posibilidad de aparecer en contenidos relacionados',
+      'Pill azul de Colaboración Básico',
+      'Alta y activación automática',
+    ],
+  },
+  premium: {
+    eyebrow: 'COLABORACIÓN PREMIUM',
+    label: 'Premium',
+    description: 'Más presencia, mejor posicionamiento y visibilidad prioritaria.',
+    price: 'CHF 249',
+    annual: "CHF 2'490/año",
+    accent: '#EF3340',
+    soft: '#FFF1F2',
+    success: 'Tu plan de Partner Premium ya está activo.',
+    benefits: [
+      'Todo lo del plan básico más:',
+      'Mayor presencia en la página principal de Latido',
+      'Aparición más frecuente dentro de la app',
+      'Mejor posicionamiento frente a partners básicos',
+      'Promoción contextual en categorías relacionadas',
+      'Posible aparición en guías o secciones especiales',
+      'Informe mensual de clics (opcional)',
+      'Mayor prioridad y aparición en campañas internas de Latido y en redes sociales',
+    ],
+  },
+}
 
 function formatDate(value) {
   if (!value) return ''
@@ -19,21 +81,24 @@ function formatDate(value) {
 
 function friendlyError(code='') {
   const messages = {
-    PLAN_FULL:'Las 20 plazas estan ocupadas en este momento.',
-    PLAN_UNAVAILABLE:'El plan no esta disponible temporalmente.',
-    BUSINESS_NOT_VERIFIED:'Este negocio no puede destacarse en este momento.',
-    ALREADY_FEATURED:'Este negocio ya esta destacado.',
-    SUBSCRIPTION_EXISTS:'Ya existe una suscripcion asociada a este negocio.',
+    PLAN_FULL:'Las plazas de este plan están ocupadas en este momento.',
+    PLAN_UNAVAILABLE:'Este plan no está disponible temporalmente.',
+    PLAN_NOT_FOUND:'Este plan no existe o no está activado.',
+    BUSINESS_NOT_VERIFIED:'Este negocio no puede activarse en este momento.',
+    ALREADY_FEATURED:'Este negocio ya tiene un plan activo.',
+    ALREADY_PROMOTED:'Este negocio ya tiene un plan activo.',
+    SUBSCRIPTION_EXISTS:'Ya existe una suscripción asociada a este negocio.',
+    CHECKOUT_OPEN_OTHER_PLAN:'Ya hay un pago abierto para otro plan. Continúalo o espera unos minutos para intentarlo de nuevo.',
     CHECKOUT_EXPIRED_RETRY:'La reserva anterior ha caducado. Pulsa de nuevo para continuar.',
-    STRIPE_NOT_CONFIGURED:'Stripe aun no esta configurado en Supabase.',
+    STRIPE_NOT_CONFIGURED:'Stripe aún no está configurado en Supabase.',
     STRIPE_PRICE_NOT_FOUND:'La tarifa configurada no pertenece a esta cuenta de Stripe.',
-    STRIPE_KEY_INVALID:'La clave privada de Stripe no es valida o ha caducado.',
-    CHECKOUT_EXPIRATION_INVALID:'Stripe rechazo el tiempo de reserva del pago.',
-    PAYMENT_METHOD_UNAVAILABLE:'No hay un metodo de pago compatible habilitado en Stripe.',
-    PORTAL_CREATE_FAILED:'No se pudo abrir la gestion de la suscripcion.',
+    STRIPE_KEY_INVALID:'La clave privada de Stripe no es válida o ha caducado.',
+    CHECKOUT_EXPIRATION_INVALID:'Stripe rechazó el tiempo de reserva del pago.',
+    PAYMENT_METHOD_UNAVAILABLE:'No hay un método de pago compatible habilitado en Stripe.',
+    PORTAL_CREATE_FAILED:'No se pudo abrir la gestión de la suscripción.',
   }
 
-  return messages[code] || 'No se pudo completar la operacion. Intentalo de nuevo.'
+  return messages[code] || 'No se pudo completar la operación. Inténtalo de nuevo.'
 }
 
 async function getFunctionErrorPayload(error, data, response) {
@@ -60,40 +125,128 @@ function formatErrorDetail(detail) {
   }
 }
 
+function isMissingRpc(error, rpcName) {
+  const message = String(error?.message || '')
+  return error?.code === 'PGRST202' || message.includes(rpcName)
+}
+
+function getPlanState(planKey, status) {
+  const plan = status?.plan
+  const provider = status?.provider
+  const subscription = status?.subscription
+  const maxActive = Number(plan?.maxActive || 0)
+  const activeCount = Number(plan?.activeCount || 0)
+  const reservedCount = Number(plan?.reservedCount || 0)
+  const usedSlots = maxActive > 0 ? Math.min(maxActive, activeCount + reservedCount) : activeCount + reservedCount
+  const availableSlots = Number(plan?.availableSlots ?? 0)
+  const percentage = maxActive > 0 ? Math.min(100, (usedSlots / maxActive) * 100) : 0
+  const paymentPending = PENDING_STATUSES.has(subscription?.status)
+  const checkoutResumable = ['reserved', 'checkout_open'].includes(subscription?.status)
+  const paymentProcessing = subscription?.status === 'processing'
+  const isPromoted = provider?.promotionActive === true
+  const currentProviderPlan = provider?.promotionPlan || (isPromoted ? planKey : 'free')
+  const selectedPlanActive = isPromoted && currentProviderPlan === planKey
+  const checkoutEligible = plan?.enabled === true
+  const canStartCheckout = checkoutEligible
+    && !isPromoted
+    && !paymentProcessing
+    && (checkoutResumable || availableSlots > 0)
+
+  let statusText = 'Disponible'
+  if (selectedPlanActive) statusText = 'Plan activo'
+  else if (isPromoted) statusText = 'Otro plan activo'
+  else if (checkoutResumable) statusText = 'Pago pendiente'
+  else if (paymentProcessing) statusText = 'Confirmando pago'
+  else if (availableSlots < 1) statusText = 'Sin plazas disponibles'
+
+  return {
+    plan,
+    provider,
+    subscription,
+    maxActive,
+    availableSlots,
+    percentage,
+    reservedCount,
+    paymentPending,
+    checkoutResumable,
+    paymentProcessing,
+    isPromoted,
+    selectedPlanActive,
+    canStartCheckout,
+    statusText,
+  }
+}
+
 export default function DestacarNegocio() {
   const { providerId } = useParams()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [status, setStatus] = useState(null)
+  const requestedPlanKey = searchParams.get('plan') || 'featured'
+  const resultPlanKey = PLAN_KEY_SET.has(requestedPlanKey) ? requestedPlanKey : 'featured'
+  const resultPlanCopy = PLAN_COPY[resultPlanKey]
+  const [statuses, setStatuses] = useState({})
   const [loading, setLoading] = useState(true)
-  const [startingCheckout, setStartingCheckout] = useState(false)
-  const [openingPortal, setOpeningPortal] = useState(false)
+  const [startingCheckout, setStartingCheckout] = useState('')
+  const [openingPortal, setOpeningPortal] = useState('')
   const [confirmationFinished, setConfirmationFinished] = useState(false)
+  const [activePlanIndex, setActivePlanIndex] = useState(() => Math.max(0, PLAN_KEYS.indexOf(resultPlanKey)))
+  const carouselRef = useRef(null)
   const checkoutResult = searchParams.get('checkout')
   const portalResult = searchParams.get('portal')
+
+  const loadPlanStatus = useCallback(async currentPlanKey => {
+    let response = await supabase
+      .rpc('get_business_promotion_checkout_status', {
+        p_provider_id:providerId,
+        p_plan_key:currentPlanKey,
+      })
+
+    if (
+      response.error
+      && currentPlanKey === 'featured'
+      && isMissingRpc(response.error, 'get_business_promotion_checkout_status')
+    ) {
+      response = await supabase
+        .rpc('get_featured_promotion_checkout_status', {
+          p_provider_id:providerId,
+        })
+    }
+
+    if (response.error) throw response.error
+    return response.data
+  }, [providerId])
 
   const loadStatus = useCallback(async ({ quiet = false } = {}) => {
     if (!quiet) setLoading(true)
 
-    const { data, error } = await supabase
-      .rpc('get_featured_promotion_checkout_status', {
-        p_provider_id:providerId,
-      })
-
-    if (error) {
+    try {
+      const entries = await Promise.all(
+        PLAN_KEYS.map(async currentPlanKey => [
+          currentPlanKey,
+          await loadPlanStatus(currentPlanKey),
+        ]),
+      )
+      const nextStatuses = Object.fromEntries(entries)
+      setStatuses(nextStatuses)
+      if (!quiet) setLoading(false)
+      return nextStatuses
+    } catch (error) {
       console.error('Could not load promotion checkout status:', error)
-      if (!quiet) toast.error('No se pudo comprobar la disponibilidad.')
-    } else {
-      setStatus(data)
+      if (!quiet) {
+        toast.error('No se pudo comprobar la disponibilidad.')
+        setLoading(false)
+      }
+      return null
     }
-
-    if (!quiet) setLoading(false)
-    return data
-  }, [providerId])
+  }, [loadPlanStatus])
 
   useEffect(() => {
     loadStatus()
   }, [loadStatus])
+
+  useEffect(() => {
+    window.scrollTo({ top:0, left:0, behavior:'auto' })
+  }, [providerId])
 
   useEffect(() => {
     if (portalResult !== 'return') return
@@ -106,6 +259,7 @@ export default function DestacarNegocio() {
           body:{
             providerId,
             syncOnly:true,
+            planKey:resultPlanKey,
           },
         })
 
@@ -124,7 +278,7 @@ export default function DestacarNegocio() {
     return () => {
       stopped = true
     }
-  }, [loadStatus, portalResult, providerId, searchParams, setSearchParams])
+  }, [loadStatus, portalResult, providerId, resultPlanKey, searchParams, setSearchParams])
 
   useEffect(() => {
     if (checkoutResult !== 'success') return undefined
@@ -136,10 +290,10 @@ export default function DestacarNegocio() {
 
     const checkPayment = async () => {
       attempts += 1
-      const nextStatus = await loadStatus({ quiet:true })
+      const nextStatuses = await loadStatus({ quiet:true })
       if (stopped) return
 
-      if (nextStatus?.provider?.promotionActive) {
+      if (nextStatuses?.[resultPlanKey]?.provider?.promotionActive) {
         setConfirmationFinished(true)
         return
       }
@@ -156,41 +310,58 @@ export default function DestacarNegocio() {
       stopped = true
       window.clearTimeout(timer)
     }
-  }, [checkoutResult, loadStatus])
+  }, [checkoutResult, loadStatus, resultPlanKey])
 
-  const plan = status?.plan
-  const provider = status?.provider
-  const subscription = status?.subscription
-  const maxActive = Number(plan?.maxActive || 20)
-  const activeCount = Number(plan?.activeCount || 0)
-  const reservedCount = Number(plan?.reservedCount || 0)
-  const usedSlots = Math.min(maxActive, activeCount + reservedCount)
-  const availableSlots = Number(plan?.availableSlots || 0)
-  const percentage = maxActive > 0 ? Math.min(100, (usedSlots / maxActive) * 100) : 0
-  const paymentPending = PENDING_STATUSES.has(subscription?.status)
-  const checkoutResumable = ['reserved', 'checkout_open'].includes(subscription?.status)
-  const paymentProcessing = subscription?.status === 'processing'
-  const isFeatured = provider?.promotionActive
-  const checkoutEligible = plan?.enabled === true
-  const canStartCheckout = checkoutEligible
-    && !isFeatured
-    && !paymentProcessing
-    && (checkoutResumable || availableSlots > 0)
+  const selectedStatus = statuses[resultPlanKey]
+  const selectedState = getPlanState(resultPlanKey, selectedStatus)
+  const provider = selectedState.provider || PLAN_KEYS.map(key => statuses[key]?.provider).find(Boolean)
 
-  const statusText = useMemo(() => {
-    if (isFeatured) return 'Negocio destacado'
-    if (checkoutResumable) return 'Pago pendiente'
-    if (paymentProcessing) return 'Confirmando pago'
-    if (availableSlots < 1) return 'Sin plazas disponibles'
-    return 'Disponible'
-  }, [availableSlots, checkoutResumable, isFeatured, paymentProcessing, provider])
+  const syncCarouselIndex = useCallback(() => {
+    const carousel = carouselRef.current
+    if (!carousel) return
 
-  const startCheckout = async () => {
-    setStartingCheckout(true)
+    const carouselRect = carousel.getBoundingClientRect()
+    const carouselCenter = carouselRect.left + carouselRect.width / 2
+    let closestIndex = 0
+    let closestDistance = Infinity
+
+    Array.from(carousel.children).forEach((child, index) => {
+      const childRect = child.getBoundingClientRect()
+      const childCenter = childRect.left + childRect.width / 2
+      const distance = Math.abs(childCenter - carouselCenter)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestIndex = index
+      }
+    })
+
+    setActivePlanIndex(closestIndex)
+  }, [])
+
+  useEffect(() => {
+    if (loading) return
+
+    const selectedIndex = Math.max(0, PLAN_KEYS.indexOf(resultPlanKey))
+    const carousel = carouselRef.current
+    const selectedCard = carousel?.children?.[selectedIndex]
+
+    if (carousel && selectedCard) {
+      const centeredLeft = selectedCard.offsetLeft - ((carousel.clientWidth - selectedCard.clientWidth) / 2)
+      carousel.scrollTo({ left:Math.max(0, centeredLeft), behavior:'auto' })
+    }
+
+    setActivePlanIndex(selectedIndex)
+  }, [loading, resultPlanKey])
+
+  const startCheckout = async targetPlanKey => {
+    setStartingCheckout(targetPlanKey)
     try {
       const { data, error, response } = await supabase.functions
         .invoke('create_business_promotion_checkout', {
-          body:{ providerId },
+          body:{
+            providerId,
+            planKey:targetPlanKey,
+          },
         })
 
       if (error || !data?.ok) {
@@ -210,16 +381,16 @@ export default function DestacarNegocio() {
       console.error('Could not start Checkout:', error)
       toast.error(friendlyError(error.message))
     } finally {
-      setStartingCheckout(false)
+      setStartingCheckout('')
     }
   }
 
-  const openPortal = async () => {
-    setOpeningPortal(true)
+  const openPortal = async targetPlanKey => {
+    setOpeningPortal(targetPlanKey)
     try {
       const { data, error, response } = await supabase.functions
         .invoke('create_business_promotion_portal', {
-          body:{ providerId },
+          body:{ providerId, planKey:targetPlanKey },
         })
 
       if (error || !data?.url) {
@@ -232,7 +403,7 @@ export default function DestacarNegocio() {
       console.error('Could not open Stripe portal:', error)
       toast.error(friendlyError(error.message))
     } finally {
-      setOpeningPortal(false)
+      setOpeningPortal('')
     }
   }
 
@@ -245,14 +416,14 @@ export default function DestacarNegocio() {
     )
   }
 
-  if (!status) {
+  if (!provider) {
     return (
       <div style={{ maxWidth:560, margin:'0 auto', padding:'60px 20px', textAlign:'center' }}>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text }}>
           No se pudo cargar el plan
         </h1>
         <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.6 }}>
-          Comprueba que el SQL de pagos esta instalado en Supabase.
+          Comprueba que el SQL de colaboraciones está instalado en Supabase.
         </p>
         <button onClick={() => navigate('/perfil')} style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, background:C.primaryLight, border:'none', borderRadius:14, padding:'12px 18px', cursor:'pointer' }}>
           Volver al perfil
@@ -261,167 +432,260 @@ export default function DestacarNegocio() {
     )
   }
 
-  const statusColor = isFeatured
-    ? '#166534'
-    : paymentPending || availableSlots > 0 ? C.primary : '#B91C1C'
-  const statusBackground = isFeatured
-    ? '#DCFCE7'
-    : paymentPending || availableSlots > 0 ? '#DBEAFE' : '#FEE2E2'
-
   if (checkoutResult === 'success') {
     return (
       <PaymentSuccess
         businessName={provider?.name}
-        confirmed={isFeatured}
+        confirmed={selectedState.isPromoted}
         confirmationFinished={confirmationFinished}
+        planCopy={resultPlanCopy}
         onReturn={() => navigate('/')}
       />
     )
   }
 
   return (
-    <div style={{ maxWidth:620, margin:'0 auto', padding:'24px 16px 60px' }}>
-      <button
-        onClick={() => navigate('/perfil')}
-        style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.mid, background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'9px 13px', cursor:'pointer', marginBottom:18 }}
-      >
-        Volver al perfil
-      </button>
-
-      <section style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:24, overflow:'hidden', boxShadow:'0 16px 44px rgba(15,23,42,0.08)' }}>
-        <div style={{ padding:'22px 22px 20px', background:'linear-gradient(135deg,#EFF6FF,#FFFFFF)' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', gap:12, alignItems:'flex-start' }}>
-            <div>
-              <p style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:C.primary, textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 7px' }}>
-                Negocio Destacado
-              </p>
-              <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:23, color:C.text, margin:'0 0 5px', lineHeight:1.25 }}>
-                {provider?.name}
-              </h1>
-              <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
-                Mas visibilidad en la pagina de inicio de Latido
-              </p>
-            </div>
-            <span style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:statusColor, background:statusBackground, borderRadius:999, padding:'7px 10px', whiteSpace:'nowrap' }}>
-              {statusText}
-            </span>
+    <div style={{ maxWidth:620, margin:'0 auto', padding:'24px 0 60px' }}>
+      <div style={{ padding:'0 16px' }}>
+        <button
+          onClick={() => navigate('/perfil')}
+          style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.mid, background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'9px 13px', cursor:'pointer', marginBottom:14 }}
+        >
+          Volver al perfil
+        </button>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, margin:'0 0 12px' }}>
+          <div>
+            <p style={{ fontFamily:PP, fontWeight:900, fontSize:14, color:C.text, margin:'0 0 3px', lineHeight:1.2 }}>
+              Elige el plan que necesites
+            </p>
+            <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0 }}>
+              Desliza para comparar opciones
+            </p>
           </div>
-        </div>
-
-        <div style={{ padding:22 }}>
-          <div style={{ display:'flex', alignItems:'flex-end', gap:7, marginBottom:22 }}>
-            <span style={{ fontFamily:PP, fontWeight:800, fontSize:34, color:C.text, letterSpacing:-1.2 }}>
-              CHF 49
-            </span>
-            <span style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.light, paddingBottom:5 }}>
-              / mes
-            </span>
-          </div>
-
-          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'15px 16px', marginBottom:18 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', gap:12, marginBottom:9 }}>
-              <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text }}>
-                Disponibilidad
-              </span>
-              <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:availableSlots > 0 ? C.primary : '#B91C1C' }}>
-                {availableSlots} de {maxActive} plazas libres
-              </span>
-            </div>
-            <div style={{ height:8, background:'#E2E8F0', borderRadius:999, overflow:'hidden' }}>
-              <div style={{ width:`${percentage}%`, height:'100%', borderRadius:999, background:availableSlots > 0 ? C.primary : '#EF4444', transition:'width .25s ease' }} />
-            </div>
-            {reservedCount > 0 && (
-              <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'8px 0 0' }}>
-                {reservedCount} {reservedCount === 1 ? 'plaza esta reservada durante un pago' : 'plazas estan reservadas durante pagos'}.
-              </p>
-            )}
-          </div>
-
-          <div style={{ display:'grid', gap:10, marginBottom:22 }}>
-            {[
-              'Prioridad en la rotacion de negocios de Inicio',
-              'Pill azul de Negocio Destacado',
-              'Renovacion mensual',
-              'Cancela la suscripción en cualquier momento desde tu perfil',
-            ].map(benefit => (
-              <div key={benefit} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
-                <span style={{ width:20, height:20, borderRadius:10, background:'#DBEAFE', color:C.primary, display:'grid', placeItems:'center', fontFamily:PP, fontWeight:900, fontSize:11, flexShrink:0 }}>
-                  +
-                </span>
-                <span style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.55 }}>
-                  {benefit}
-                </span>
-              </div>
+          <div aria-hidden="true" style={{ display:'flex', gap:5, alignItems:'center', paddingBottom:2 }}>
+            {PLAN_KEYS.map((key, index) => (
+              <span
+                key={key}
+                style={{
+                  width:activePlanIndex === index ? 20 : 7,
+                  height:7,
+                  borderRadius:999,
+                  background:activePlanIndex === index ? PLAN_COPY[key].accent : '#CBD5E1',
+                  transition:'all .2s ease',
+                  display:'block',
+                }}
+              />
             ))}
           </div>
-
-          {checkoutResult === 'success' && !isFeatured && (
-            <Notice
-              title="Estamos confirmando el pago"
-              text="La activacion se completara cuando Stripe confirme el cobro."
-              background="#EFF6FF"
-              border="#BFDBFE"
-              color={C.primaryDark}
-            />
-          )}
-
-          {checkoutResult === 'canceled' && (
-            <Notice
-              text="El pago se cancelo y no se realizo ningun cargo."
-              background="#FFF7ED"
-              border="#FED7AA"
-              color="#9A3412"
-            />
-          )}
-
-          {isFeatured && (
-            <Notice
-              title="Tu negocio esta destacado"
-              text={`${subscription?.cancelAtPeriodEnd ? 'Finaliza' : 'Siguiente renovacion'}: ${formatDate(subscription?.currentPeriodEnd || provider?.promotionEndsAt)}`}
-              background="#F0FDF4"
-              border="#BBF7D0"
-              color="#166534"
-            />
-          )}
-
-          {paymentPending && !isFeatured && checkoutResult !== 'success' && (
-            <Notice
-              text="Hay un pago abierto o pendiente de confirmacion para este negocio."
-              background="#EFF6FF"
-              border="#BFDBFE"
-              color={C.primaryDark}
-            />
-          )}
-
-          {subscription?.canManage ? (
-            <PrimaryButton onClick={openPortal} disabled={openingPortal}>
-              {openingPortal ? 'Abriendo...' : 'Gestionar suscripcion'}
-            </PrimaryButton>
-          ) : (
-            <PrimaryButton
-              onClick={startCheckout}
-              disabled={!canStartCheckout || startingCheckout}
-            >
-              {startingCheckout
-                ? 'Reservando plaza...'
-                : isFeatured
-                  ? 'Plan activo'
-                  : availableSlots < 1
-                  ? 'Plan completo'
-                  : checkoutResumable
-                    ? 'Continuar pago'
-                    : paymentProcessing
-                      ? 'Confirmando pago'
-                    : 'Continuar al pago'}
-            </PrimaryButton>
-          )}
-
-          <p style={{ fontFamily:PP, fontSize:10, color:C.light, textAlign:'center', margin:'11px 4px 0', lineHeight:1.5 }}>
-            El pago se procesa de forma segura en Stripe. Latido no almacena los datos de tu tarjeta.
-          </p>
         </div>
-      </section>
+      </div>
+
+      <div
+        ref={carouselRef}
+        aria-label="Planes profesionales"
+        onScroll={syncCarouselIndex}
+        style={{
+          display:'flex',
+          gap:14,
+          overflowX:'auto',
+          WebkitOverflowScrolling:'touch',
+          scrollSnapType:'x mandatory',
+          padding:'0 16px 16px',
+        }}
+      >
+        {PLAN_KEYS.map(currentPlanKey => {
+          const state = getPlanState(currentPlanKey, statuses[currentPlanKey])
+          return (
+            <PlanCheckoutCard
+              key={currentPlanKey}
+              planKey={currentPlanKey}
+              planCopy={PLAN_COPY[currentPlanKey]}
+              provider={state.provider || provider}
+              state={state}
+              checkoutResult={checkoutResult}
+              openingPortal={openingPortal === currentPlanKey}
+              startingCheckout={startingCheckout === currentPlanKey}
+              onOpenPortal={() => openPortal(currentPlanKey)}
+              onStartCheckout={() => startCheckout(currentPlanKey)}
+            />
+          )
+        })}
+      </div>
     </div>
+  )
+}
+
+function PlanCheckoutCard({
+  planCopy,
+  provider,
+  state,
+  checkoutResult,
+  openingPortal,
+  startingCheckout,
+  onOpenPortal,
+  onStartCheckout,
+}) {
+  const {
+    subscription,
+    maxActive,
+    availableSlots,
+    percentage,
+    reservedCount,
+    paymentPending,
+    checkoutResumable,
+    paymentProcessing,
+    isPromoted,
+    selectedPlanActive,
+    canStartCheckout,
+    statusText,
+  } = state
+  const statusColor = selectedPlanActive
+    ? '#166534'
+    : paymentPending || availableSlots > 0 ? C.primary : '#B91C1C'
+  const statusBackground = selectedPlanActive
+    ? '#DCFCE7'
+    : paymentPending || availableSlots > 0 ? '#DBEAFE' : '#FEE2E2'
+
+  return (
+    <section
+      style={{
+        flex:'0 0 min(88vw, 500px)',
+        scrollSnapAlign:'center',
+        background:'#fff',
+        border:`1px solid ${C.border}`,
+        borderRadius:24,
+        overflow:'hidden',
+        boxShadow:'0 16px 44px rgba(15,23,42,0.08)',
+      }}
+    >
+      <div style={{ padding:'22px 22px 20px', background:`linear-gradient(135deg,${planCopy.soft},#FFFFFF)` }}>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:12, alignItems:'flex-start' }}>
+          <div>
+            <p style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:planCopy.accent, textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 7px' }}>
+              {planCopy.eyebrow}
+            </p>
+            <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:23, color:C.text, margin:'0 0 5px', lineHeight:1.25 }}>
+              {provider?.name}
+            </h1>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, lineHeight:1.55 }}>
+              {planCopy.description}
+            </p>
+          </div>
+          <span style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:statusColor, background:statusBackground, borderRadius:999, padding:'7px 10px', whiteSpace:'nowrap' }}>
+            {statusText}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ padding:22 }}>
+        <div style={{ display:'flex', alignItems:'flex-end', gap:7, marginBottom:20 }}>
+          <span style={{ fontFamily:PP, fontWeight:800, fontSize:34, color:C.text, letterSpacing:-1.2 }}>
+            {planCopy.price}
+          </span>
+          <span style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.light, paddingBottom:5 }}>
+            / mes
+          </span>
+        </div>
+        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'15px 16px', marginBottom:18 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', gap:12, marginBottom:9 }}>
+            <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text }}>
+              Disponibilidad
+            </span>
+            <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:availableSlots > 0 ? C.primary : '#B91C1C' }}>
+              {maxActive > 0 ? `${availableSlots} de ${maxActive} plazas libres` : 'Sin límite'}
+            </span>
+          </div>
+          {maxActive > 0 && (
+            <div style={{ height:8, background:'#E2E8F0', borderRadius:999, overflow:'hidden' }}>
+              <div style={{ width:`${percentage}%`, height:'100%', borderRadius:999, background:availableSlots > 0 ? planCopy.accent : '#EF4444', transition:'width .25s ease' }} />
+            </div>
+          )}
+          {reservedCount > 0 && (
+            <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'8px 0 0' }}>
+              {reservedCount} {reservedCount === 1 ? 'plaza está reservada durante un pago' : 'plazas están reservadas durante pagos'}.
+            </p>
+          )}
+        </div>
+
+        <div style={{ display:'grid', gap:10, marginBottom:22 }}>
+          {planCopy.benefits.map(benefit => (
+            <div key={benefit} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+              <span style={{ width:20, height:20, borderRadius:10, background:planCopy.soft, color:planCopy.accent, display:'grid', placeItems:'center', fontFamily:PP, fontWeight:900, fontSize:11, flexShrink:0 }}>
+                +
+              </span>
+              <span style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.55 }}>
+                {benefit}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {checkoutResult === 'canceled' && (
+          <Notice
+            text="El pago se canceló y no se realizó ningún cargo."
+            background="#FFF7ED"
+            border="#FED7AA"
+            color="#9A3412"
+          />
+        )}
+
+        {selectedPlanActive && (
+          <Notice
+            title="Tu plan está activo"
+            text={`${subscription?.cancelAtPeriodEnd ? 'Finaliza' : 'Siguiente renovación'}: ${formatDate(subscription?.currentPeriodEnd || provider?.promotionEndsAt)}`}
+            background="#F0FDF4"
+            border="#BBF7D0"
+            color="#166534"
+          />
+        )}
+
+        {isPromoted && !selectedPlanActive && (
+          <Notice
+            title="Este negocio ya tiene un plan activo"
+            text="Para cambiar de plan, gestiona primero la suscripción actual desde Stripe."
+            background="#EFF6FF"
+            border="#BFDBFE"
+            color={C.primaryDark}
+          />
+        )}
+
+        {paymentPending && !isPromoted && checkoutResult !== 'success' && (
+          <Notice
+            text="Hay un pago abierto o pendiente de confirmación para este negocio."
+            background="#EFF6FF"
+            border="#BFDBFE"
+            color={C.primaryDark}
+          />
+        )}
+
+        {subscription?.canManage ? (
+          <PrimaryButton onClick={onOpenPortal} disabled={openingPortal}>
+            {openingPortal ? 'Abriendo...' : 'Gestionar suscripción'}
+          </PrimaryButton>
+        ) : (
+          <PrimaryButton
+            onClick={onStartCheckout}
+            disabled={!canStartCheckout || startingCheckout}
+          >
+            {startingCheckout
+              ? 'Reservando plaza...'
+              : isPromoted
+                ? 'Plan activo'
+                : availableSlots < 1
+                ? 'Plan completo'
+                : checkoutResumable
+                  ? 'Continuar pago'
+                  : paymentProcessing
+                    ? 'Confirmando pago'
+                    : 'Continuar al pago'}
+          </PrimaryButton>
+        )}
+
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, textAlign:'center', margin:'11px 4px 0', lineHeight:1.5 }}>
+          El pago se procesa de forma segura en Stripe. Latido no almacena los datos de tu tarjeta.
+        </p>
+      </div>
+    </section>
   )
 }
 
@@ -429,6 +693,7 @@ function PaymentSuccess({
   businessName,
   confirmed,
   confirmationFinished,
+  planCopy,
   onReturn,
 }) {
   const waiting = !confirmed && !confirmationFinished
@@ -444,24 +709,24 @@ function PaymentSuccess({
           Pago completado
         </p>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:28, color:C.text, lineHeight:1.2, margin:'0 0 13px' }}>
-          &iexcl;Enhorabuena!
+          Enhorabuena
         </h1>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:16, color:C.text, lineHeight:1.55, margin:'0 auto 10px', maxWidth:430 }}>
-          Ahora {businessName || 'tu negocio'} recibira mas visibilidad para los clientes de Latido.
+          Ahora {businessName || 'tu negocio'} recibirá más visibilidad para los clientes de Latido.
         </p>
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, margin:'0 auto 24px', maxWidth:430 }}>
           {confirmed
-            ? 'Tu plan de Negocio Destacado ya esta activo.'
+            ? planCopy.success
             : waiting
-              ? 'Estamos terminando de activar tu plan. Solo tardara unos segundos.'
-              : 'El pago esta confirmado. La activacion puede tardar unos minutos en reflejarse.'}
+              ? 'Estamos terminando de activar tu plan. Solo tardará unos segundos.'
+              : 'El pago está confirmado. La activación puede tardar unos minutos en reflejarse.'}
         </p>
 
         {waiting && (
           <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:8, margin:'-8px 0 22px' }}>
             <span className="skeleton" style={{ width:10, height:10, borderRadius:5 }} />
             <span style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary }}>
-              Confirmando activacion
+              Confirmando activación
             </span>
           </div>
         )}
