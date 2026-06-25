@@ -19,10 +19,6 @@ export default function Colaboraciones() {
             padding: 12px 10px !important;
             border-radius: 14px !important;
           }
-          .latido-partner-benefit-card:nth-child(5) {
-            grid-column: 1 / -1 !important;
-            min-height: 118px !important;
-          }
           .latido-partner-benefit-icon {
             margin-bottom: 7px !important;
             font-size: 22px !important;

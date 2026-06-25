@@ -429,8 +429,7 @@ function AppShell() {
     const MENU_ITEMS = [
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
-      { id:'services', label:'Servicios para vivir en Suiza', to:'/servicios-suiza' },
-      { id:'partners', label:'Para empresas y colaboradores', to:'/colaboraciones' },
+      { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
     const openPage = (id) => { setMenuPage(id); setMenuOpen(false) }
@@ -442,10 +441,33 @@ function AppShell() {
             <img src="/favicon.svg" alt="Latido" style={{ width:30, height:30 }} />
             <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary, letterSpacing:-0.5 }}>Latido</span>
           </div>
+          <div className="show-lg" style={{ alignItems:'center', justifyContent:'center', gap:4, flex:1 }}>
+            {MENU_ITEMS.map(item => (
+              item.to ? (
+                <Link
+                  key={item.id}
+                  to={item.to}
+                  style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.mid, textDecoration:'none', padding:'8px 12px', borderRadius:11 }}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => openPage(item.id)}
+                  style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.mid, background:'transparent', border:'none', padding:'8px 12px', borderRadius:11, cursor:'pointer' }}
+                >
+                  {item.label}
+                </button>
+              )
+            ))}
+          </div>
           {/* Right side */}
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <a href="/auth" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:11, padding:'8px 14px' }}>Entrar →</a>
             <button
+              className="hide-lg"
               onClick={() => { setMenuOpen(o => !o); if (menuPage) setMenuPage(null) }}
               style={{ display:'flex', flexDirection:'column', gap:4, background:'none', border:'none', cursor:'pointer', padding:'6px', borderRadius:8 }}
               aria-label="Menú"
