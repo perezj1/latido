@@ -56,7 +56,7 @@ const PLAN_COPY = {
     soft: '#FFF1F2',
     success: 'Tu plan de Partner Premium ya está activo.',
     benefits: [
-      'Todo lo del plan básico más:',
+      'Todo lo del partner Básico más:',
       'Mayor presencia en la página principal de Latido',
       'Aparición más frecuente dentro de la app',
       'Mejor posicionamiento frente a partners básicos',
