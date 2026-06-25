@@ -5,27 +5,26 @@ import PartnerCard from './PartnerCard'
 const VIRTUS360_PARTNER_ID = 'virtus360'
 const VIRTUS360_LOGO = '/partners/virtus360/logo.svg'
 const VIRTUS360_CONTACT_URL = 'https://www.360-virtus.ch/kontakt.html'
-const VIRTUS360_LANDING_PATH = '/servicios-virtus360'
 
 const VIRTUS360_SERVICES = [
   {
     id:'gestoria',
     label:'Gestor\u00eda',
-    href:`${VIRTUS360_LANDING_PATH}#servicios`,
+    href:VIRTUS360_CONTACT_URL,
     color:'#E64661',
     tint:'#FFF1F4',
   },
   {
     id:'finanzas',
     label:'Finanzas',
-    href:`${VIRTUS360_LANDING_PATH}#servicios`,
+    href:VIRTUS360_CONTACT_URL,
     color:'#2563EB',
     tint:'#EFF6FF',
   },
   {
     id:'seguros',
     label:'Seguros',
-    href:`${VIRTUS360_LANDING_PATH}#servicios`,
+    href:VIRTUS360_CONTACT_URL,
     color:'#0F766E',
     tint:'#ECFDF5',
   },
@@ -50,19 +49,6 @@ export default function Virtus360PartnerPromo({
     })
   }
 
-  const trackLandingClick = service => {
-    if (isAdmin) return
-
-    trackPartnerInteraction('partner_cross_click', {
-      userId:user?.id,
-      partnerId:VIRTUS360_PARTNER_ID,
-      placement,
-      action:'landing',
-      service:service.id,
-      destination:service.href,
-    })
-  }
-
   return (
     <PartnerCard
       id={`virtus360-${variant}-${placement}`}
@@ -76,7 +62,7 @@ export default function Virtus360PartnerPromo({
       description={'Apoyo personal para tr\u00e1mites, impuestos, seguros y burocracia diaria, con atenci\u00f3n multicultural desde Horgen.'}
       services={VIRTUS360_SERVICES.map(service => ({
         ...service,
-        external:false,
+        external:true,
       }))}
       cta={{
         href:VIRTUS360_CONTACT_URL,
@@ -84,7 +70,7 @@ export default function Virtus360PartnerPromo({
         external:true,
       }}
       accent={['#2563EB', '#1D4ED8']}
-      onServiceClick={trackLandingClick}
+      onServiceClick={service => trackOutbound({ action:'service', service:service.id, destination:service.href })}
       onCtaClick={() => trackOutbound({ action:'cta' })}
     />
   )
