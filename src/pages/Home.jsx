@@ -378,6 +378,8 @@ export default function Home() {
   const [attentionTasks, setAttentionTasks] = useState([])
   const [loadingAttention, setLoadingAttention] = useState(false)
   const [expandedAttentionTask, setExpandedAttentionTask] = useState('')
+  const attentionCarouselRef = useRef(null)
+  const [activeAttentionSlide, setActiveAttentionSlide] = useState(0)
   const [promotableBusinesses, setPromotableBusinesses] = useState([])
   const [businessPromotionModalOpen, setBusinessPromotionModalOpen] = useState(false)
   const [loading, setLoading] = useState(() => !homeCache)
@@ -415,9 +417,74 @@ export default function Home() {
   const showBusinessPromotionTask = SHOW_HOME_BUSINESS_PROMOTION_TASK
     && promotableBusinesses.length > 0
     && featuredPromotionAvailability.availableSlots > 0
-  const showAttentionSection = visibleAttentionTasks.length > 0
-    || showBusinessPromotionTask
-    || (isLoggedIn && needsActivation)
+  const attentionCarouselCards = [
+    ...(isLoggedIn && needsActivation ? [{
+      id:'push-activation',
+      type:'push',
+      emoji:'🔔',
+      title:'Activa las notificaciones',
+      text:'Recibe respuestas a tus anuncios y novedades en tu zona.',
+      actionLabel:activatingPush ? 'Activando...' : 'Activar',
+      disabled:activatingPush,
+      tone:'primary',
+    }] : []),
+    ...(showBusinessPromotionTask ? [{
+      id:'business-promotion',
+      type:'promotion',
+      emoji:'✨',
+      title:'Destaca tu negocio',
+      text:'Consigue más visibilidad entre los usuarios de Latido.',
+      actionLabel:'Destacar',
+      tone:'primary',
+    }] : []),
+    ...visibleAttentionTasks.map(task => ({
+      ...task,
+      type:'review',
+      actionLabel:expandedAttentionTask === task.id ? 'Ocultar' : 'Ver',
+      count:task.items.length,
+    })),
+  ]
+  const showAttentionSection = attentionCarouselCards.length > 0
+  const attentionCarouselCardIds = attentionCarouselCards.map(card => card.id).join('|')
+  const expandedAttentionTaskVisible = !expandedAttentionTask
+    || attentionCarouselCards.some(card => card.id === expandedAttentionTask)
+
+  const updateAttentionSlideFromScroll = useCallback(() => {
+    const scroller = attentionCarouselRef.current
+    if (!scroller) return
+
+    const scrollerLeft = scroller.getBoundingClientRect().left
+    const slides = Array.from(scroller.children)
+    let nextIndex = 0
+    let closestDistance = Number.POSITIVE_INFINITY
+
+    slides.forEach((slide, index) => {
+      const distance = Math.abs(slide.getBoundingClientRect().left - scrollerLeft)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        nextIndex = index
+      }
+    })
+
+    setActiveAttentionSlide(current => current === nextIndex ? current : nextIndex)
+  }, [])
+
+  const scrollAttentionCardTo = useCallback(index => {
+    const scroller = attentionCarouselRef.current
+    const target = scroller?.children?.[index]
+    if (!target) return
+
+    target.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' })
+    setActiveAttentionSlide(index)
+  }, [])
+
+  useEffect(() => {
+    setActiveAttentionSlide(current => Math.min(current, Math.max(attentionCarouselCards.length - 1, 0)))
+
+    if (!expandedAttentionTaskVisible) {
+      setExpandedAttentionTask('')
+    }
+  }, [attentionCarouselCardIds, attentionCarouselCards.length, expandedAttentionTaskVisible])
 
   async function handleActivatePush() {
     if (activatingPush) return
@@ -1167,11 +1234,33 @@ export default function Home() {
                   Tareas pendientes
                 </h2>
               </div>
+              {attentionCarouselCards.length > 1 && (
+                <span style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:C.primaryDark, whiteSpace:'nowrap' }}>
+                  {Math.min(activeAttentionSlide + 1, attentionCarouselCards.length)}/{attentionCarouselCards.length}
+                </span>
+              )}
             </div>
 
-            <div style={{ display:'grid', gap:10 }}>
-              {needsActivation && (
-                <div style={{ background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:16, overflow:'hidden' }}>
+            <div
+              ref={attentionCarouselRef}
+              className="no-scroll"
+              onScroll={updateAttentionSlideFromScroll}
+              style={{
+                display:'flex',
+                gap:10,
+                margin:'0 -16px',
+                padding:'0 16px 12px',
+                overflowX:'auto',
+                scrollBehavior:'smooth',
+                scrollPaddingInline:16,
+                scrollSnapType:'x mandatory',
+                WebkitOverflowScrolling:'touch',
+              }}
+              aria-roledescription="carrusel"
+              aria-label="Tareas pendientes"
+            >
+              {isLoggedIn && needsActivation && (
+                <div style={{ flex:'0 0 100%', minWidth:0, scrollSnapAlign:'start', scrollSnapStop:'always', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:16, overflow:'hidden', boxShadow:'0 10px 24px rgba(37, 99, 235, 0.08)' }}>
                   <div style={{ padding:'13px 14px', display:'flex', gap:12, alignItems:'center' }}>
                     <span style={{ width:38, height:38, borderRadius:13, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
                       🔔
@@ -1208,7 +1297,7 @@ export default function Home() {
                 </div>
               )}
               {showBusinessPromotionTask && (
-                <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, overflow:'hidden' }}>
+                <div style={{ flex:'0 0 100%', minWidth:0, scrollSnapAlign:'start', scrollSnapStop:'always', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, overflow:'hidden', boxShadow:'0 10px 24px rgba(37, 99, 235, 0.08)' }}>
                   <div style={{ padding:'13px 14px', display:'flex', gap:12, alignItems:'center' }}>
                     <span style={{ width:38, height:38, borderRadius:13, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
                       ✨
@@ -1262,8 +1351,13 @@ export default function Home() {
                     style={{
                       background: warn ? C.warnLight : C.primaryLight,
                       border:`1px solid ${warn ? C.warnMid : C.primaryMid}`,
+                      flex:'0 0 100%',
+                      minWidth:0,
+                      scrollSnapAlign:'start',
+                      scrollSnapStop:'always',
                       borderRadius:16,
                       overflow:'hidden',
+                      boxShadow:'0 10px 24px rgba(37, 99, 235, 0.08)',
                     }}
                   >
                     <button
@@ -1338,6 +1432,34 @@ export default function Home() {
                 )
               })}
             </div>
+
+            {attentionCarouselCards.length > 1 && (
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, padding:'0 0 5px' }} aria-label="Tarjetas de tareas pendientes">
+                {attentionCarouselCards.map((card, index) => {
+                  const active = activeAttentionSlide === index
+                  return (
+                    <button
+                      key={card.id}
+                      type="button"
+                      onClick={() => scrollAttentionCardTo(index)}
+                      aria-label={`Ver tarea ${index + 1} de ${attentionCarouselCards.length}`}
+                      aria-current={active ? 'true' : undefined}
+                      style={{
+                        width:active ? 18 : 7,
+                        height:7,
+                        padding:0,
+                        border:'none',
+                        borderRadius:999,
+                        background:active ? C.primary : '#CBD5E1',
+                        boxShadow:active ? '0 3px 8px rgba(37, 99, 235, 0.22)' : 'none',
+                        cursor:'pointer',
+                        transition:'width 180ms ease, background 180ms ease, box-shadow 180ms ease',
+                      }}
+                    />
+                  )
+                })}
+              </div>
+            )}
           </div>
         </section>
       )}
