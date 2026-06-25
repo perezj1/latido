@@ -31,6 +31,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Tablon = lazy(() => import('./pages/Tablon'))
 const Publicar = lazy(() => import('./pages/Publicar'))
 const Comunidades = lazy(() => import('./pages/Comunidades'))
+const Colaboraciones = lazy(() => import('./pages/Colaboraciones'))
 const Guias = lazy(() => import('./pages/Guias'))
 const Perfil = lazy(() => import('./pages/Perfil'))
 const Auth = lazy(() => import('./pages/Auth'))
@@ -429,7 +430,7 @@ function AppShell() {
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'services', label:'Servicios para vivir en Suiza', to:'/servicios-suiza' },
-      { id:'partners', label:'Para empresas y colaboradores' },
+      { id:'partners', label:'Para empresas y colaboradores', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
     const openPage = (id) => { setMenuPage(id); setMenuOpen(false) }
@@ -531,6 +532,7 @@ function AppShell() {
             <Route path="/empleos/:jobSlug" element={<Tablon />} />
             <Route path="/publicar" element={<ProtectedRoute><Publicar /></ProtectedRoute>} />
             <Route path="/comunidades" element={<Comunidades />} />
+            <Route path="/colaboraciones" element={<Colaboraciones />} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />
             <Route path="/eventos/:eventSlug" element={<Comunidades />} />

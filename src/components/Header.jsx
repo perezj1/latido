@@ -16,7 +16,7 @@ const NAV_GUEST = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
-  { href:'/servicios-suiza', label:'Vivir en Suiza' },
+  { href:'/colaboraciones', label:'🚀 Colaboraciones' },
 ]
 
 const NAV_USER = [
@@ -24,7 +24,7 @@ const NAV_USER = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
-  { href:'/servicios-suiza', label:'Vivir en Suiza' },
+  { href:'/colaboraciones', label:'🚀 Colaboraciones' },
   { href:'/mensajes', label:'💬 Mensajes' },
 ]
 
@@ -37,6 +37,7 @@ export default function Header({ transparent }) {
   const { isLoggedIn, user, displayName, signOut, avatarUrl } = useAuth()
   const { needsActivation: needsPushActivation } = usePushActivation(user?.id)
   const NAV = isLoggedIn ? NAV_USER : NAV_GUEST
+  const isProfilePage = pathname === '/perfil' || pathname.startsWith('/perfil/')
 
   useEffect(() => {
     if (!publishOpen) return
@@ -44,6 +45,10 @@ export default function Header({ transparent }) {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [publishOpen])
+
+  useEffect(() => {
+    if (isProfilePage) setPublishOpen(false)
+  }, [isProfilePage])
 
   const isActive = (href) => {
     if (href === '/') return pathname === '/'
@@ -86,6 +91,7 @@ export default function Header({ transparent }) {
             )
           })}
 
+          {!isProfilePage && (
           <div ref={publishRef} style={{ position:'relative', marginLeft:8 }}>
             <div style={{ padding:2, borderRadius:22, background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)', boxShadow:'0 2px 12px rgba(37,99,235,0.35)' }}>
               <button
@@ -115,6 +121,7 @@ export default function Header({ transparent }) {
               </div>
             )}
           </div>
+          )}
         </nav>
 
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>

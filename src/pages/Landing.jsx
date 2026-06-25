@@ -416,10 +416,15 @@ function TestimonialCarousel() {
     })
   }
 
+  const scrollByPage = (direction) => {
+    scrollToPage(Math.min(Math.max(activePage + direction, 0), pageCount - 1))
+  }
+
   return (
     <section
       aria-labelledby="testimonial-title"
       style={{
+        position: 'relative',
         width: 'calc(100% - 32px)',
         maxWidth: 1120,
         margin: '56px auto 0',
@@ -510,6 +515,27 @@ function TestimonialCarousel() {
           </article>
         ))}
       </div>
+
+      {pageCount > 1 && (
+        <>
+          <button
+            type="button"
+            className="latido-testimonial-arrow latido-testimonial-arrow--prev"
+            onClick={() => scrollByPage(-1)}
+            aria-label="Ver opiniones anteriores"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className="latido-testimonial-arrow latido-testimonial-arrow--next"
+            onClick={() => scrollByPage(1)}
+            aria-label="Ver más opiniones"
+          >
+            ›
+          </button>
+        </>
+      )}
 
       <div className="latido-testimonial-dots" aria-label="Navegación de opiniones" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 7, padding: '2px 24px 0' }}>
         {Array.from({ length: pageCount }, (_, index) => (
@@ -647,7 +673,7 @@ function PanelFaq() {
   )
 }
 
-function PanelPartners() {
+export function PanelPartners() {
   return (
     <div>
       <div style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%)', borderRadius: 24, padding: '40px 28px', marginBottom: 28, textAlign: 'center' }}>
@@ -923,6 +949,38 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         .latido-testimonial-track::-webkit-scrollbar { display: none; }
         .latido-testimonial-card { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
         .latido-testimonial-card:hover { transform: translateY(-4px); border-color: rgba(37,99,235,0.28) !important; box-shadow: 0 18px 38px rgba(15,31,92,0.12) !important; }
+        .latido-testimonial-arrow {
+          position: absolute;
+          top: 58%;
+          z-index: 3;
+          display: grid;
+          width: 44px;
+          height: 44px;
+          place-items: center;
+          padding: 0;
+          color: #1D4ED8;
+          background: rgba(255,255,255,.97);
+          border: 1px solid #CFE0F6;
+          border-radius: 50%;
+          box-shadow: 0 14px 34px rgba(30,64,175,.15);
+          font-size: 30px;
+          font-weight: 800;
+          line-height: 1;
+          cursor: pointer;
+          transform: translateY(-50%);
+          transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+        }
+        .latido-testimonial-arrow:hover {
+          border-color: #93C5FD;
+          box-shadow: 0 18px 42px rgba(30,64,175,.2);
+          transform: translateY(-50%) scale(1.05);
+        }
+        .latido-testimonial-arrow:focus-visible { outline: 3px solid rgba(37,99,235,0.25); outline-offset: 3px; }
+        .latido-testimonial-arrow--prev { left: 12px; }
+        .latido-testimonial-arrow--next { right: 12px; }
+        @media (max-width: 820px) {
+          .latido-testimonial-arrow { display: none; }
+        }
         .latido-testimonial-dot { transition: width .2s ease, height .2s ease, background .2s ease, transform .15s ease; }
         .latido-testimonial-dot:hover { transform: scale(1.15); }
         .latido-testimonial-dot:focus-visible { outline: 3px solid rgba(37,99,235,0.25); outline-offset: 3px; }
@@ -946,6 +1004,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
           filter: drop-shadow(0 18px 34px rgba(0,0,0,0.22));
         }
         @media (max-width: 640px) {
+          .latido-testimonial-arrow { display: none; }
           .latido-testimonial-header { padding: 0 20px 20px !important; }
           .latido-testimonial-track { padding-left: 20px !important; padding-right: 20px !important; scroll-padding-left: 20px !important; }
           .latido-partner-benefits-grid {

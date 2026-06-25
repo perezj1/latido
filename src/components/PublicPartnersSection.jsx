@@ -41,6 +41,16 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
   const scrollRef = useRef(null)
   const hasSinglePartner = businessPartners.length + PUBLIC_PARTNERS.length === 1
 
+  const scrollPartners = direction => {
+    const scroller = scrollRef.current
+    if (!scroller) return
+
+    scroller.scrollBy({
+      left: direction * Math.max(scroller.clientWidth * 0.82, 320),
+      behavior: 'smooth',
+    })
+  }
+
   useEffect(() => {
     let cancelled = false
 
@@ -92,6 +102,27 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
           {PUBLIC_PARTNERS.map(partner => partner.render(`${placement}_${partner.id}`))}
         </div>
       </div>
+
+      {!hasSinglePartner && (
+        <>
+          <button
+            type="button"
+            className="public-partners-arrow public-partners-arrow--prev"
+            onClick={() => scrollPartners(-1)}
+            aria-label="Ver colaboradores anteriores"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className="public-partners-arrow public-partners-arrow--next"
+            onClick={() => scrollPartners(1)}
+            aria-label="Ver más colaboradores"
+          >
+            ›
+          </button>
+        </>
+      )}
     </section>
   )
 }
