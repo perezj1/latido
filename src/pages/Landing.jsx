@@ -109,6 +109,7 @@ const PARTNER_PLANS = [
     cta: 'Activar plan',
     to: '/perfil?seccion=profesional',
     benefits: [
+      'Todo lo del partner Básico más:',
       'Mayor presencia en la página principal de Latido',
       'Aparición más frecuente dentro de la app',
       'Mejor posicionamiento frente a partners básicos',
