@@ -16,7 +16,7 @@ const NAV_GUEST = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
-  { href:'/colaboraciones', label:'🚀 Colaboraciones' },
+  { href:'/colaboraciones', label:'🚀 Para Empresas' },
 ]
 
 const NAV_USER = [
@@ -24,7 +24,7 @@ const NAV_USER = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
-  { href:'/colaboraciones', label:'🚀 Colaboraciones' },
+  { href:'/colaboraciones', label:'🚀 Para Empresas' },
   { href:'/mensajes', label:'💬 Mensajes' },
 ]
 

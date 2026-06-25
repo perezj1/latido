@@ -46,6 +46,7 @@ const PARTNER_BENEFITS = [
   { icon: '💬', title: 'Contacto directo',      desc: 'Sin intermediarios. Los usuarios te contactan por WhatsApp, email o teléfono.' },
   { icon: '⭐', title: 'Reseñas y confianza',   desc: 'Construye reputación con reseñas reales de la comunidad que te elige.' },
   { icon: '💙', title: 'Apoya a la comunidad', desc: 'Apoyas una plataforma creada para ayudar a la comunidad hispanohablante en Suiza.' },
+  { icon: '🚀', title: 'Crecimiento local', desc: 'Refuerzas tu marca dentro de una comunidad que valora servicios cercanos y de confianza.' },
 ]
 
 const PARTNER_PLANS = [
@@ -53,8 +54,6 @@ const PARTNER_PLANS = [
     name: 'Gratis',
     label: 'Alta básica',
     monthly: 'CHF 0',
-    annual: 'CHF 0/año',
-    annualNote: 'Sin permanencia',
     accent: '#64748B',
     background: '#F8FAFC',
     cta: 'Registrar gratis',
@@ -70,8 +69,6 @@ const PARTNER_PLANS = [
     name: 'Negocio destacado',
     label: 'Más visibilidad local',
     monthly: 'CHF 49',
-    annual: 'CHF 490/año',
-    annualNote: '2 meses gratis, ahorras CHF 98',
     accent: '#0F9F8E',
     background: '#F0FDFA',
     cta: 'Destacar negocio',
@@ -89,11 +86,9 @@ const PARTNER_PLANS = [
     name: 'Partner básico',
     label: 'Presencia de partner',
     monthly: 'CHF 149',
-    annual: "CHF 1'490/año",
-    annualNote: '2 meses gratis, ahorras CHF 298',
     accent: '#2563EB',
     background: '#EFF6FF',
-    cta: 'Activar colaboración',
+    cta: 'Activar plan',
     to: '/perfil?seccion=profesional',
     benefits: [
       'Tarjeta de partner con logo, descripción y servicios',
@@ -109,11 +104,9 @@ const PARTNER_PLANS = [
     name: 'Partner premium',
     label: 'Mayor visibilidad',
     monthly: 'CHF 249',
-    annual: "CHF 2'490/año",
-    annualNote: '2 meses gratis, ahorras CHF 498',
     accent: '#EF3340',
     background: '#FFF1F2',
-    cta: 'Activar colaboración',
+    cta: 'Activar plan',
     to: '/perfil?seccion=profesional',
     benefits: [
       'Mayor presencia en la página principal de Latido',
@@ -710,7 +703,7 @@ export function PanelPartners() {
             Elige la visibilidad que necesitas
           </h3>
           <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.65, maxWidth: 620, margin: '0 auto' }}>
-            Todos los precios están en CHF. En los planes anuales tienes 2 meses gratis frente al pago mensual.
+            Todos los precios están en CHF y se muestran como referencia mensual.
           </p>
         </div>
 
@@ -749,6 +742,7 @@ function PlanAction({ plan, compact = false, inverse = false }) {
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
+    whiteSpace: 'nowrap',
     border: inverse ? 'none' : `1px solid ${plan.accent}`,
     width: compact ? 'auto' : '100%',
     boxSizing: 'border-box',
@@ -778,14 +772,6 @@ function PricingPlanCard({ plan }) {
           <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 11, color: C.light, paddingBottom: 3, whiteSpace: 'nowrap' }}>
             / mes
           </span>
-        </div>
-        <div style={{ background: plan.background, borderRadius: 12, padding: '10px 11px' }}>
-          <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: plan.accent, margin: '0 0 3px' }}>
-            {plan.annual}
-          </p>
-          <p style={{ fontFamily: PP, fontSize: 10, color: C.mid, margin: 0, lineHeight: 1.4 }}>
-            {plan.annualNote}
-          </p>
         </div>
       </div>
 
@@ -1016,10 +1002,6 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             min-height: 158px !important;
             padding: 12px 10px !important;
             border-radius: 14px !important;
-          }
-          .latido-partner-benefit-card:nth-child(5) {
-            grid-column: 1 / -1 !important;
-            min-height: 118px !important;
           }
           .latido-partner-benefit-icon {
             margin-bottom: 7px !important;
