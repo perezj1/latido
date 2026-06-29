@@ -34,6 +34,14 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 8080,
+      watch: {
+        // Windows + Deno's node-compat fs watcher can crash when Vite tries to
+        // watch a path that was just removed during HMR. Polling is a little
+        // less fancy, but much more stable for local development here.
+        usePolling: true,
+        interval: 350,
+        ignored: ['**/.git/**', '**/dist/**', '**/node_modules/**'],
+      },
       proxy: {
         '/api/eventfrog': {
           target: 'https://api.eventfrog.net',
@@ -41,6 +49,19 @@ export default defineConfig(({ mode }) => {
           secure: true,
           rewrite: rewriteEventfrogPath,
           headers: eventfrogKey ? { Authorization: `Bearer ${eventfrogKey}` } : {},
+          configure(proxy) {
+            const emit = proxy.emit.bind(proxy)
+            proxy.emit = (event, error, ...args) => {
+              const aborted = event === 'error'
+                && (
+                  error?.name === 'AbortError'
+                  || error?.code === 'ECONNRESET'
+                  || error?.message === 'The request has been cancelled.'
+                )
+              if (aborted) return false
+              return emit(event, error, ...args)
+            }
+          },
         },
       },
     },

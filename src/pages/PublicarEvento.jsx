@@ -39,8 +39,20 @@ export default function PublicarEvento() {
     type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'',
     city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'',
   })
-  const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
+  const [errors, setErrors] = useState({})
+  const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'6px 2px 0', lineHeight:1.45 }
+  const clearFieldError = key => setErrors(prev => {
+    if (!prev[key]) return prev
+    const next = { ...prev }
+    delete next[key]
+    return next
+  })
+  const s = (k, v) => {
+    setForm(f => ({ ...f, [k]:v }))
+    clearFieldError(k)
+  }
   const setEventDate = value => {
+    clearFieldError('date')
     const [, month, day] = value ? value.split('-') : []
     setForm(f => ({
       ...f,
@@ -49,6 +61,43 @@ export default function PublicarEvento() {
       month:month ? EVENT_MONTHS[Number(month) - 1] || '' : '',
       year:value ? value.slice(0, 4) : '',
     }))
+  }
+  const getStepErrors = targetStep => {
+    const next = {}
+    if (targetStep === 0 && !form.type) next.type = 'Elige el tipo de evento.'
+    if (targetStep === 1) {
+      if (!form.title.trim()) next.title = 'Añade un título para el evento.'
+      if (!form.date) next.date = 'Selecciona la fecha del evento.'
+    }
+    if (targetStep === 2 && !form.canton) next.canton = 'Selecciona el cantón del evento.'
+    if (targetStep === 3 && form.link.trim() && !normalizeExternalUrl(form.link)) {
+      next.link = 'Añade un link válido, por ejemplo instagram.com/usuario o @usuario.'
+    }
+    return next
+  }
+  const scrollToFirstError = next => {
+    const firstKey = Object.keys(next)[0]
+    if (!firstKey) return
+    window.setTimeout(() => {
+      document.querySelector(`[data-error-field="${firstKey}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' })
+    }, 80)
+  }
+  const validateCurrentStep = () => {
+    const next = getStepErrors(step)
+    setErrors(next)
+    scrollToFirstError(next)
+    return Object.keys(next).length === 0
+  }
+  const validateBeforePublish = () => {
+    const next = { ...getStepErrors(0), ...getStepErrors(1), ...getStepErrors(2), ...getStepErrors(3) }
+    setErrors(next)
+    if (Object.keys(next).length === 0) return true
+    if (next.type) setStep(0)
+    else if (next.title || next.date) setStep(1)
+    else if (next.canton) setStep(2)
+    else setStep(3)
+    scrollToFirstError(next)
+    return false
   }
 
   if (!isLoggedIn) return (
@@ -75,13 +124,14 @@ export default function PublicarEvento() {
           : 'Tu evento ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades?view=eventos')}>Ver en eventos →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setStep(0); setForm({ type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setErrors({}); setStep(0); setForm({ type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otro evento
       </button>
     </div>
   )
 
   const handleSubmit = async () => {
+    if (!validateBeforePublish()) return
     if (!form.title || !form.date || !form.canton) { toast.error('Completa título, fecha y cantón'); return }
     const link = normalizeExternalUrl(form.link)
     if (form.link.trim() && !link) {
@@ -167,6 +217,7 @@ export default function PublicarEvento() {
 
   const requestPublish = async () => {
     if (loading) return
+    if (!validateBeforePublish()) return
     let subscribed = false
     try {
       const status = await getPushStatus()
@@ -211,15 +262,16 @@ export default function PublicarEvento() {
               </button>
             )
           })}
+          {errors.type && <p data-error-field="type" style={errorTextStyle}>{errors.type}</p>}
         </div>
       )}
 
       {/* Step 1 — Date, time, price */}
       {step === 1 && (
         <>
-          <Input label="Título del evento (EN ESPAÑOL)" placeholder="Ej: Noche de salsa en Zürich" required value={form.title} onChange={e=>s('title',e.target.value)} />
+          <Input label="Título del evento (EN ESPAÑOL)" placeholder="Ej: Noche de salsa en Zürich" required value={form.title} onChange={e=>s('title',e.target.value)} error={errors.title} errorKey="title" />
           <div className="grid-2" style={{ gap:10 }}>
-            <Input label="Fecha del evento *" type="date" required value={form.date} onChange={e=>setEventDate(e.target.value)} />
+            <Input label="Fecha del evento *" type="date" required value={form.date} onChange={e=>setEventDate(e.target.value)} error={errors.date} errorKey="date" />
             <Input label="Hora de inicio" type="time" placeholder="21:00" value={form.time} onChange={e=>s('time',e.target.value)} />
           </div>
           <Input label="Precio de entrada" placeholder="Ej: Gratis · CHF 15 · CHF 10–20" value={form.price} onChange={e=>s('price',e.target.value)} />
@@ -235,6 +287,7 @@ export default function PublicarEvento() {
             onCantonChange={value => s('canton', value)}
             onCityChange={value => s('city', value)}
             cantonRequired
+            cantonError={errors.canton}
           />
           <Input label="Lugar / Venue" placeholder="Ej: Rote Fabrik, Club Zukunft, Rosengarten Café" value={form.venue} onChange={e=>s('venue',e.target.value)} />
           <Input label="Descripción del evento (EN ESPAÑOL)" placeholder="Cuéntanos qué habrá, qué pueden esperar los asistentes..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
@@ -253,7 +306,7 @@ export default function PublicarEvento() {
       {step === 3 && (
         <>
           <Input label="Nombre del organizador" placeholder="Ej: Asociación Latina Zürich" value={form.host} onChange={e=>s('host',e.target.value)} />
-          <Input label="Link de tickets / más info" placeholder="Ej: eventbrite.com/... o instagram.com/..." value={form.link} onChange={e=>s('link',e.target.value)} />
+          <Input label="Link de tickets / más info" placeholder="Ej: eventbrite.com/... o instagram.com/..." value={form.link} onChange={e=>s('link',e.target.value)} error={errors.link} errorKey="link" />
 
           {form.title && (
             <div style={{ background:C.bg, borderRadius:14, padding:'14px 16px', marginTop:10 }}>
@@ -301,10 +354,7 @@ export default function PublicarEvento() {
         )}
         {step < STEPS.length - 1 ? (
           <Btn onClick={() => {
-            if (step === 0 && !form.type) { toast.error('Elige el tipo de evento'); return }
-            if (step === 1 && !form.title) { toast.error('Añade un título'); return }
-            if (step === 1 && !form.date) { toast.error('Selecciona la fecha del evento'); return }
-            if (step === 2 && !form.canton) { toast.error('Selecciona el cantón'); return }
+            if (!validateCurrentStep()) return
             setStep(s => s + 1)
           }} style={{ flex:1 }}>
             Continuar →

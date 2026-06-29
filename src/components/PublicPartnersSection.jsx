@@ -38,8 +38,10 @@ const PUBLIC_PARTNERS = [
 
 export default function PublicPartnersSection({ placement = 'public_landing' }) {
   const [businessPartners, setBusinessPartners] = useState([])
+  const [activePartnerIndex, setActivePartnerIndex] = useState(0)
   const scrollRef = useRef(null)
-  const hasSinglePartner = businessPartners.length + PUBLIC_PARTNERS.length === 1
+  const totalPartners = businessPartners.length + PUBLIC_PARTNERS.length
+  const hasSinglePartner = totalPartners === 1
 
   const scrollPartners = direction => {
     const scroller = scrollRef.current
@@ -49,6 +51,20 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
       left: direction * Math.max(scroller.clientWidth * 0.82, 320),
       behavior: 'smooth',
     })
+  }
+
+  const scrollToPartner = index => {
+    const scroller = scrollRef.current
+    const track = scroller?.querySelector('.public-partners-track')
+    const target = track?.children?.[index]
+    if (!target) return
+
+    target.scrollIntoView({
+      behavior:'smooth',
+      block:'nearest',
+      inline:'center',
+    })
+    setActivePartnerIndex(index)
   }
 
   useEffect(() => {
@@ -67,7 +83,48 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
   useEffect(() => {
     if (!scrollRef.current) return
     scrollRef.current.scrollLeft = 0
+    setActivePartnerIndex(0)
   }, [businessPartners.length])
+
+  useEffect(() => {
+    const scroller = scrollRef.current
+    if (!scroller || hasSinglePartner) return undefined
+
+    let frame = 0
+    const updateActiveDot = () => {
+      window.cancelAnimationFrame(frame)
+      frame = window.requestAnimationFrame(() => {
+        const track = scroller.querySelector('.public-partners-track')
+        const cards = Array.from(track?.children || [])
+        if (!cards.length) return
+
+        const viewportCenter = scroller.scrollLeft + scroller.clientWidth / 2
+        let closestIndex = 0
+        let closestDistance = Number.POSITIVE_INFINITY
+
+        cards.forEach((card, index) => {
+          const cardCenter = card.offsetLeft + card.offsetWidth / 2
+          const distance = Math.abs(cardCenter - viewportCenter)
+          if (distance < closestDistance) {
+            closestDistance = distance
+            closestIndex = index
+          }
+        })
+
+        setActivePartnerIndex(closestIndex)
+      })
+    }
+
+    updateActiveDot()
+    scroller.addEventListener('scroll', updateActiveDot, { passive:true })
+    window.addEventListener('resize', updateActiveDot)
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      scroller.removeEventListener('scroll', updateActiveDot)
+      window.removeEventListener('resize', updateActiveDot)
+    }
+  }, [hasSinglePartner, totalPartners])
 
   return (
     <section className="public-partner-section" aria-labelledby="public-partners-title">
@@ -102,6 +159,21 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
           {PUBLIC_PARTNERS.map(partner => partner.render(`${placement}_${partner.id}`))}
         </div>
       </div>
+
+      {!hasSinglePartner && (
+        <div className="public-partners-dots" aria-label="Navegación de colaboradores">
+          {Array.from({ length:totalPartners }).map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              className={`public-partners-dot${activePartnerIndex === index ? ' public-partners-dot--active' : ''}`}
+              aria-label={`Ver colaborador ${index + 1} de ${totalPartners}`}
+              aria-current={activePartnerIndex === index ? 'true' : undefined}
+              onClick={() => scrollToPartner(index)}
+            />
+          ))}
+        </div>
+      )}
 
       {!hasSinglePartner && (
         <>
