@@ -53,6 +53,9 @@ const OPTIONAL_PROVIDER_VERIFICATION_COLUMNS = new Set([
 const ADMIN_QUERY_PAGE_SIZE = 500
 const ADMIN_LIST_PAGE_SIZE = 40
 const ADMIN_ACTIVITY_RETENTION_DAYS = 60
+const ADMIN_DELTA_CONCURRENCY = 2
+const ADMIN_DELTA_REFRESH_RECENT_DAYS = 2
+const ADMIN_PERIOD_OPTIONS = [1, 7, 30]
 const ADMIN_ANALYTICS_EVENT_TYPES = [
   'page_view',
   'search',
@@ -155,6 +158,110 @@ async function fetchAllAdminRows({
   }
 
   return { data: rows, count: rows.length, error: null }
+}
+
+function getAdminDayRanges(days = 30) {
+  const safeDays = Math.max(1, Math.min(Number(days) || 1, ADMIN_ACTIVITY_RETENTION_DAYS))
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  return Array.from({ length: safeDays }, (_, index) => {
+    const start = new Date(today)
+    start.setDate(today.getDate() - (safeDays - 1 - index))
+    const end = new Date(start)
+    end.setDate(start.getDate() + 1)
+
+    return {
+      key: localDateKey(start),
+      start:start.toISOString(),
+      end:end.toISOString(),
+    }
+  })
+}
+
+function mergeRowsById(rows = []) {
+  const byId = new Map()
+  rows.forEach(row => {
+    const key = row?.id || `${row?.created_at || ''}:${JSON.stringify(row)}`
+    if (key) byId.set(key, row)
+  })
+  return [...byId.values()]
+}
+
+async function fetchAdminRowsByDayDelta({
+  cache,
+  cacheKey,
+  table,
+  columns = '*',
+  orderColumn = 'created_at',
+  days = 30,
+  refreshRecent = false,
+  transformQuery,
+}) {
+  const ranges = getAdminDayRanges(days)
+  const missing = ranges.filter((range, index) => {
+    const key = `${cacheKey}:${range.key}`
+    const shouldRefresh = refreshRecent && index >= ranges.length - ADMIN_DELTA_REFRESH_RECENT_DAYS
+    return shouldRefresh || !cache.has(key)
+  })
+
+  for (let index = 0; index < missing.length; index += ADMIN_DELTA_CONCURRENCY) {
+    const chunk = missing.slice(index, index + ADMIN_DELTA_CONCURRENCY)
+    await Promise.all(chunk.map(async range => {
+      const response = await fetchAllAdminRows({
+        table,
+        columns,
+        orderColumn,
+        ascending:false,
+        transformQuery: query => {
+          const scoped = query.gte(orderColumn, range.start).lt(orderColumn, range.end)
+          return transformQuery ? transformQuery(scoped) : scoped
+        },
+      })
+      cache.set(`${cacheKey}:${range.key}`, {
+        ...response,
+        fetchedAt:new Date().toISOString(),
+      })
+    }))
+  }
+
+  const selected = ranges.map(range => cache.get(`${cacheKey}:${range.key}`)).filter(Boolean)
+  const firstError = selected.find(item => item.error)?.error || null
+  return {
+    data: mergeRowsById(selected.flatMap(item => item.data || []))
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))),
+    count: selected.reduce((sum, item) => sum + (item.count || item.data?.length || 0), 0),
+    error:firstError,
+    delta:{
+      days:ranges.length,
+      cached:ranges.length - missing.length,
+      fetched:missing.length,
+    },
+  }
+}
+
+async function fetchAdminReportsDelta({ cache, days, refreshRecent }) {
+  const [pendingRes, recentRes] = await Promise.all([
+    fetchAllAdminRows({
+      table:'reports',
+      transformQuery: query => query.eq('status', 'pending'),
+    }),
+    fetchAdminRowsByDayDelta({
+      cache,
+      cacheKey:'reports:recent',
+      table:'reports',
+      days,
+      refreshRecent,
+    }),
+  ])
+
+  return {
+    data: mergeRowsById([...(pendingRes.data || []), ...(recentRes.data || [])])
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))),
+    count:(pendingRes.count || 0) + (recentRes.count || 0),
+    error:pendingRes.error || recentRes.error,
+    delta:recentRes.delta,
+  }
 }
 
 async function fetchAdminRowsByIds(table, columns, ids) {
@@ -1032,16 +1139,21 @@ export default function Admin() {
   const activeLoadCountRef = useRef(0)
   const loadedDataGroupsRef = useRef(new Set())
   const loadingDataGroupsRef = useRef(new Set())
-  const [tab, setTab] = useState('users')
+  const dataRangeDaysByGroupRef = useRef(new Map())
+  const dailyRowsCacheRef = useRef(new Map())
+  const [tab, setTab] = useState('overview')
+  const [crmMenuOpen, setCrmMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadedDataGroups, setLoadedDataGroups] = useState(new Set())
   const [dataErrorsByGroup, setDataErrorsByGroup] = useState({})
+  const [dataRangeDaysByGroup, setDataRangeDaysByGroup] = useState(new Map())
+  const [deltaLoadSummary, setDeltaLoadSummary] = useState(null)
   const [userSearch, setUserSearch] = useState('')
   const [userStatusFilter, setUserStatusFilter] = useState('all')
   const [userCantonFilter, setUserCantonFilter] = useState('all')
   const [userPage, setUserPage] = useState(1)
   const [userDays, setUserDays] = useState(1)
-  const [overviewDays, setOverviewDays] = useState(30)
+  const [overviewDays, setOverviewDays] = useState(7)
   const [reports, setReports] = useState([])
   const [reportTypeFilter, setReportTypeFilter] = useState('all')
   const [reportPage, setReportPage] = useState(1)
@@ -1067,8 +1179,8 @@ export default function Admin() {
   const [presenceStatus, setPresenceStatus] = useState('idle')
   const [analyticsEvents, setAnalyticsEvents] = useState([])
   const [analyticsUnavailable, setAnalyticsUnavailable] = useState(false)
-  const [analyticsDays, setAnalyticsDays] = useState(30)
-  const [partnerDays, setPartnerDays] = useState(30)
+  const [analyticsDays, setAnalyticsDays] = useState(7)
+  const [partnerDays, setPartnerDays] = useState(7)
   const [selectedPartnerId, setSelectedPartnerId] = useState(PARTNER_ANALYTICS_PARTNERS[0]?.id || '')
   const [messageEvents, setMessageEvents] = useState([])
   const [messagesUnavailable, setMessagesUnavailable] = useState(false)
@@ -1456,6 +1568,24 @@ export default function Admin() {
     idle: { label: 'Inactivo', color: '#64748B', bg: '#F1F5F9', note: 'Sin canal abierto' },
   }[presenceStatus] || { label: presenceStatus, color: '#64748B', bg: '#F1F5F9', note: 'Estado realtime' }
 
+  function getLoadDaysForTab(tabId = tab) {
+    if (tabId === 'overview') return Math.min(ADMIN_ACTIVITY_RETENTION_DAYS, Math.max(overviewDays * 2, 14))
+    if (tabId === 'analytics') return analyticsDays
+    if (tabId === 'partners') return partnerDays
+    if (tabId === 'live') return 14
+    if (tabId === 'users') return userDays
+    return 30
+  }
+
+  function isRangeSensitiveGroup(group) {
+    return ['analytics', 'messages', 'contentMetrics', 'content', 'reports'].includes(group)
+  }
+
+  function groupHasRequiredRange(group, days) {
+    if (!isRangeSensitiveGroup(group)) return true
+    return (dataRangeDaysByGroupRef.current.get(group) || 0) >= days
+  }
+
   useEffect(() => {
     if (tab !== 'live' && tab !== 'overview') {
       setPresenceStatus('idle')
@@ -1472,12 +1602,21 @@ export default function Admin() {
   }, [tab])
 
   useEffect(() => {
-    loadAdminData({ groups: ['users'] })
+    loadAdminData({ groups: getAdminTabDataGroups('overview'), days: getLoadDaysForTab('overview') })
   }, [])
 
+  useEffect(() => {
+    const groups = getAdminTabDataGroups(tab)
+    const needsMoreRange = groups.some(group => !groupHasRequiredRange(group, getLoadDaysForTab(tab)))
+    if (needsMoreRange) {
+      loadAdminData({ groups, days: getLoadDaysForTab(tab), silent:true })
+    }
+  }, [overviewDays, analyticsDays, partnerDays, userDays, tab])
+
   function switchTab(nextTab) {
+    setCrmMenuOpen(false)
     setTab(nextTab)
-    loadAdminData({ groups: getAdminTabDataGroups(nextTab) })
+    loadAdminData({ groups: getAdminTabDataGroups(nextTab), days: getLoadDaysForTab(nextTab) })
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     })
@@ -1486,11 +1625,12 @@ export default function Admin() {
   async function loadAdminData(options = {}) {
     const force = options?.force === true
     const silent = options?.silent === true
+    const requestedDays = Math.max(1, Math.min(Number(options?.days || getLoadDaysForTab(tab)) || 1, ADMIN_ACTIVITY_RETENTION_DAYS))
     const requestedGroups = [...new Set(options?.groups || getAdminTabDataGroups(tab))]
     const groups = requestedGroups.filter(group =>
       !loadingDataGroupsRef.current.has(group)
-      && !(group === 'contentMetrics' && loadedDataGroupsRef.current.has('content'))
-      && (force || !loadedDataGroupsRef.current.has(group))
+      && !(group === 'contentMetrics' && !force && loadedDataGroupsRef.current.has('content') && groupHasRequiredRange('contentMetrics', requestedDays))
+      && (force || !loadedDataGroupsRef.current.has(group) || !groupHasRequiredRange(group, requestedDays))
     )
 
     if (!groups.length) return
@@ -1498,20 +1638,25 @@ export default function Admin() {
     groups.forEach(group => loadingDataGroupsRef.current.add(group))
     activeLoadCountRef.current += 1
     setDataErrorsByGroup(previous => ({ ...previous, general: '' }))
+    setDeltaLoadSummary(previous => silent ? previous : {
+      status:'loading',
+      groups,
+      days:requestedDays,
+      fetched:0,
+      cached:0,
+    })
     if (!silent) setLoading(true)
 
     try {
-      const analyticsSince = new Date(
-        Date.now() - ADMIN_ACTIVITY_RETENTION_DAYS * 86_400_000
-      ).toISOString()
       const wantsContent = groups.includes('content')
       const wantsContentMetrics = groups.includes('contentMetrics')
       const contentGroup = wantsContent ? 'content' : 'contentMetrics'
       const skipped = data => ({ data, count: data.length, error: null, skipped: true })
       const [reportsRes, queueRes, usersRes, listingsRes, jobsRes, providersRes, analyticsRes, messagesRes] = await Promise.all([
-        groups.includes('reports') ? fetchAllAdminRows({
-          table: 'reports',
-          transformQuery: query => query.or(`status.eq.pending,created_at.gte.${analyticsSince}`),
+        groups.includes('reports') ? fetchAdminReportsDelta({
+          cache:dailyRowsCacheRef.current,
+          days:requestedDays,
+          refreshRecent:force,
         }) : skipped(reports),
         groups.includes('moderation') ? fetchAllAdminRows({
           table: 'moderation_queue',
@@ -1521,32 +1666,46 @@ export default function Admin() {
           ? fetchAllAdminRows({ table: 'profiles', columns: 'id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at' })
           : skipped(users),
         wantsContent || wantsContentMetrics
-          ? fetchAllAdminRows({
+          ? fetchAdminRowsByDayDelta({
+              cache:dailyRowsCacheRef.current,
+              cacheKey:`listings:${wantsContent ? 'full' : 'metrics'}`,
               table: 'listings',
               columns: wantsContent
                 ? 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at'
                 : 'id,active,created_at',
+              days:requestedDays,
+              refreshRecent:force,
             })
           : skipped(recentListings),
         wantsContent || wantsContentMetrics
-          ? fetchAllAdminRows({
+          ? fetchAdminRowsByDayDelta({
+              cache:dailyRowsCacheRef.current,
+              cacheKey:`jobs:${wantsContent ? 'full' : 'metrics'}`,
               table: 'jobs',
               columns: wantsContent
                 ? 'id,title,company,desc,sector,active,user_id,canton,city,created_at'
                 : 'id,active,created_at',
+              days:requestedDays,
+              refreshRecent:force,
             })
           : skipped(recentJobs),
         groups.includes('businesses') ? fetchAllAdminRows({ table: 'providers' }) : skipped(businesses),
-        groups.includes('analytics') ? fetchAllAdminRows({
+        groups.includes('analytics') ? fetchAdminRowsByDayDelta({
+          cache:dailyRowsCacheRef.current,
+          cacheKey:'analytics:events',
           table: 'analytics_events',
           columns: 'id,event_type,path,search,user_id,session_id,metadata,created_at',
-          since: analyticsSince,
+          days:requestedDays,
+          refreshRecent:force,
           transformQuery: query => query.in('event_type', ADMIN_ANALYTICS_EVENT_TYPES),
         }) : skipped(analyticsEvents),
-        groups.includes('messages') ? fetchAllAdminRows({
+        groups.includes('messages') ? fetchAdminRowsByDayDelta({
+          cache:dailyRowsCacheRef.current,
+          cacheKey:'messages:activity',
           table: 'messages',
           columns: 'id,sender_id,created_at',
-          since: analyticsSince,
+          days:requestedDays,
+          refreshRecent:force,
         }) : skipped(messageEvents),
       ])
 
@@ -1560,6 +1719,13 @@ export default function Admin() {
         ['analytics', 'analitica', analyticsRes],
         ['messages', 'mensajes', messagesRes],
       ]
+      const deltaResponses = responses
+        .filter(([group, , response]) => groups.includes(group) && response.delta)
+        .map(([, label, response]) => ({ label, ...response.delta }))
+      const deltaTotals = deltaResponses.reduce((acc, item) => ({
+        fetched:acc.fetched + (item.fetched || 0),
+        cached:acc.cached + (item.cached || 0),
+      }), { fetched:0, cached:0 })
       const nextErrors = responses
         .filter(([group, , response]) => groups.includes(group) && response.error)
         .map(([, label, response]) => `${label}: ${response.error.message}`)
@@ -1631,7 +1797,30 @@ export default function Admin() {
 
       groups.forEach(group => loadedDataGroupsRef.current.add(group))
       if (wantsContent) loadedDataGroupsRef.current.add('contentMetrics')
+      groups.forEach(group => {
+        if (isRangeSensitiveGroup(group)) {
+          dataRangeDaysByGroupRef.current.set(group, Math.max(
+            dataRangeDaysByGroupRef.current.get(group) || 0,
+            requestedDays,
+          ))
+        }
+      })
+      if (wantsContent) {
+        dataRangeDaysByGroupRef.current.set('contentMetrics', Math.max(
+          dataRangeDaysByGroupRef.current.get('contentMetrics') || 0,
+          requestedDays,
+        ))
+      }
       setLoadedDataGroups(new Set(loadedDataGroupsRef.current))
+      setDataRangeDaysByGroup(new Map(dataRangeDaysByGroupRef.current))
+      setDeltaLoadSummary({
+        status:'ready',
+        groups,
+        days:requestedDays,
+        fetched:deltaTotals.fetched,
+        cached:deltaTotals.cached,
+        at:new Date().toISOString(),
+      })
       if (nextErrors.length && !silent) {
         toast.error('Hay apartados sin datos. El panel muestra el detalle del error.')
       }
@@ -1639,6 +1828,11 @@ export default function Admin() {
       setDataErrorsByGroup(previous => ({
         ...previous,
         general: error.message || 'Error inesperado al cargar el panel',
+      }))
+      setDeltaLoadSummary(previous => ({
+        ...(previous || {}),
+        status:'error',
+        at:new Date().toISOString(),
       }))
       if (!silent) toast.error('No se pudo actualizar el panel')
     } finally {
@@ -2273,6 +2467,37 @@ export default function Admin() {
     { id: 'moderation', icon: '⏳', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB' },
   ]
 
+  const navById = new Map(NAV_ITEMS.map(item => [item.id, item]))
+  const NAV_GROUPS = [
+    { label: 'Direccion', hint: 'Estado global y decisiones rapidas', items: ['overview', 'live'] },
+    { label: 'Crecimiento', hint: 'Usuarios, uso real y colaboraciones', items: ['users', 'analytics', 'partners'] },
+    { label: 'Operacion', hint: 'Negocios, publicaciones y seguridad', items: ['businessVerification', 'content', 'reports', 'moderation'] },
+  ]
+  const BOTTOM_NAV_ITEMS = ['users', 'analytics', 'partners', 'businessVerification']
+    .map(id => navById.get(id))
+    .filter(Boolean)
+  const activeRangeDays = Math.max(
+    ...getAdminTabDataGroups(tab)
+      .filter(isRangeSensitiveGroup)
+      .map(group => dataRangeDaysByGroup.get(group) || 0),
+    0,
+  )
+  const deltaStatusColor = deltaLoadSummary?.status === 'error'
+    ? '#DC2626'
+    : deltaLoadSummary?.status === 'loading'
+      ? '#D97706'
+      : '#059669'
+  const deltaStatusBg = deltaLoadSummary?.status === 'error'
+    ? '#FEF2F2'
+    : deltaLoadSummary?.status === 'loading'
+      ? '#FFFBEB'
+      : '#ECFDF5'
+  const deltaStatusLabel = deltaLoadSummary?.status === 'loading'
+    ? `Cargando delta ${deltaLoadSummary.days || getLoadDaysForTab(tab)}d`
+    : activeRangeDays
+      ? `Delta ${activeRangeDays}d listo`
+      : 'Carga ligera'
+
   const SECTION_TITLES = {
     overview: { icon: '📊', label: 'Estado general' },
     live: { icon: '📡', label: 'Live' },
@@ -2377,6 +2602,7 @@ export default function Admin() {
             ? <AdminChartCard title="Publicaciones" items={[...recentListings, ...recentJobs]} color="#059669" />
           : null
   const showChartPlaceholder = ['users', 'analytics', 'partners', 'reports', 'businessVerification', 'content'].includes(tab)
+  const menuNavActive = crmMenuOpen || !BOTTOM_NAV_ITEMS.some(item => item.id === tab)
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#F4F7FB 0%,#EEF4FF 100%)', padding: '18px 14px calc(104px + env(safe-area-inset-bottom))' }}>
@@ -2398,7 +2624,7 @@ export default function Admin() {
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button
-            onClick={() => loadAdminData({ groups: getAdminTabDataGroups(tab), force: true })}
+            onClick={() => loadAdminData({ groups: getAdminTabDataGroups(tab), days: getLoadDaysForTab(tab), force: true })}
             disabled={loading}
             style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: 14, padding: '11px 15px', cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 14px 30px rgba(37,99,235,0.22)', opacity: loading ? 0.72 : 1 }}
           >
@@ -2406,6 +2632,79 @@ export default function Admin() {
           </button>
         </div>
       </div>
+
+      {false && (
+      <Card style={{ marginBottom: 14, padding: 14, background: 'linear-gradient(135deg,#FFFFFF 0%,#F8FAFF 100%)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+          <div>
+            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 13, color: C.text, margin: '0 0 3px' }}>
+              Control CRM Latido
+            </p>
+            <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>
+              Datos reales agrupados por operacion. Las metricas pesadas se cargan por dia y se reutilizan al cambiar entre hoy, 7 y 30 dias.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <Tag bg={deltaStatusBg} color={deltaStatusColor}>{deltaStatusLabel}</Tag>
+            <Tag bg={C.bg} color={C.mid}>Cache diario</Tag>
+            <Tag bg="#EEF2FF" color="#4F46E5">1 · 7 · 30 dias</Tag>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 10 }}>
+          {NAV_GROUPS.map(group => (
+            <div key={group.label} style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 12, background: '#fff' }}>
+              <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase', color: C.light, margin: '0 0 3px' }}>
+                {group.label}
+              </p>
+              <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, margin: '0 0 10px', lineHeight: 1.35 }}>
+                {group.hint}
+              </p>
+              <div style={{ display: 'grid', gap: 7 }}>
+                {group.items.map(id => {
+                  const item = navById.get(id)
+                  if (!item) return null
+                  const active = tab === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => switchTab(item.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 10,
+                        width: '100%',
+                        border: `1.5px solid ${active ? `${item.color}66` : C.border}`,
+                        borderRadius: 14,
+                        padding: '10px 11px',
+                        background: active ? item.bg : '#fff',
+                        color: active ? item.color : C.text,
+                        cursor: 'pointer',
+                        boxShadow: active ? `0 10px 22px ${item.color}12` : 'none',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                        <span style={{ width: 30, height: 30, borderRadius: 11, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>
+                          {item.icon}
+                        </span>
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 10, color: active ? item.color : C.light, marginTop: 1 }}>{item.value}</span>
+                        </span>
+                      </span>
+                      <span style={{ fontFamily: PP, fontSize: 15, fontWeight: 900, color: active ? item.color : C.light }}>›</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+      )}
 
       {dataErrors.length > 0 && (
         <Card style={{ marginBottom: 14, borderColor: '#FCA5A5', background: '#FEF2F2' }}>
@@ -3761,6 +4060,108 @@ export default function Admin() {
         </main>
       </div>
 
+      {crmMenuOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Cerrar menú CRM"
+            onClick={() => setCrmMenuOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 78,
+              background: 'rgba(15,23,42,0.22)',
+              border: 'none',
+              cursor: 'default',
+            }}
+          />
+          <div
+            role="dialog"
+            aria-label="Control CRM Latido"
+            style={{
+              position: 'fixed',
+              left: 12,
+              right: 12,
+              bottom: 'calc(82px + env(safe-area-inset-bottom))',
+              zIndex: 79,
+              maxWidth: 620,
+              margin: '0 auto',
+              background: '#fff',
+              border: '1px solid rgba(203,213,225,0.95)',
+              borderRadius: 26,
+              boxShadow: '0 24px 74px rgba(15,23,42,0.24)',
+              padding: 14,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+              <div>
+                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>
+                  Control CRM Latido
+                </p>
+                <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>
+                  Accesos completos del panel, sin duplicar información en la página.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCrmMenuOpen(false)}
+                style={{ width: 34, height: 34, borderRadius: 13, border: `1px solid ${C.border}`, background: C.bg, color: C.mid, cursor: 'pointer', fontFamily: PP, fontWeight: 900 }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 12 }}>
+              <Tag bg={deltaStatusBg} color={deltaStatusColor}>{deltaStatusLabel}</Tag>
+              <Tag bg={C.bg} color={C.mid}>Carga delta</Tag>
+            </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {NAV_GROUPS.map(group => (
+                <div key={group.label} style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 10, background: '#F8FAFC' }}>
+                  <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase', color: C.light, margin: '0 0 8px' }}>
+                    {group.label}
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(132px, 1fr))', gap: 7 }}>
+                    {group.items.map(id => {
+                      const item = navById.get(id)
+                      if (!item) return null
+                      const active = tab === item.id
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => switchTab(item.id)}
+                          style={{
+                            border: `1.5px solid ${active ? `${item.color}66` : C.border}`,
+                            borderRadius: 15,
+                            background: active ? item.bg : '#fff',
+                            color: active ? item.color : C.text,
+                            cursor: 'pointer',
+                            padding: '10px 9px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            textAlign: 'left',
+                            boxShadow: active ? `0 10px 22px ${item.color}12` : 'none',
+                          }}
+                        >
+                          <span style={{ width: 30, height: 30, borderRadius: 12, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 15, flexShrink: 0 }}>
+                            {item.icon}
+                          </span>
+                          <span style={{ minWidth: 0 }}>
+                            <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                            <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 9, color: active ? item.color : C.light, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</span>
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       <nav
         aria-label="Navegación admin"
         style={{
@@ -3782,7 +4183,7 @@ export default function Admin() {
           WebkitBackdropFilter: 'blur(18px)',
         }}
       >
-        {NAV_ITEMS.map(item => {
+        {BOTTOM_NAV_ITEMS.map(item => {
           const active = tab === item.id
           return (
             <button
@@ -3790,36 +4191,64 @@ export default function Admin() {
               type="button"
               onClick={() => switchTab(item.id)}
               style={{
-                flex: active ? '1.25 0 154px' : '1 0 116px',
-                minHeight: 56,
-                borderRadius: 18,
+                flex: '1 1 0',
+                minWidth: 0,
+                minHeight: 58,
+                borderRadius: 17,
                 border: `1.5px solid ${active ? `${item.color}55` : 'transparent'}`,
                 background: active ? item.bg : 'transparent',
                 color: active ? item.color : C.mid,
                 cursor: 'pointer',
-                padding: '8px 10px',
+                padding: '8px 5px',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: 9,
-                textAlign: 'left',
+                justifyContent: 'center',
+                gap: 4,
+                textAlign: 'center',
                 boxShadow: active ? `0 12px 28px ${item.color}16` : 'none',
                 transition: 'background .15s ease, border-color .15s ease, box-shadow .15s ease',
               }}
             >
-              <span style={{ width: 36, height: 36, borderRadius: 14, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 17, flexShrink: 0 }}>
+              <span style={{ width: 31, height: 31, borderRadius: 13, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 16, flexShrink: 0 }}>
                 {item.icon}
               </span>
-              <span style={{ minWidth: 0, display: 'grid', gap: 2 }}>
-                <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 11, color: active ? item.color : C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {item.label}
-                </span>
-                <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: active ? item.color : C.light, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {item.value}
-                </span>
+              <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 10, lineHeight: 1.05, color: active ? item.color : C.text, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {item.label}
               </span>
             </button>
           )
         })}
+        <button
+          type="button"
+          onClick={() => setCrmMenuOpen(open => !open)}
+          style={{
+            flex: '1 1 0',
+            minWidth: 0,
+            minHeight: 58,
+            borderRadius: 17,
+            border: `1.5px solid ${menuNavActive ? `${C.primary}55` : 'transparent'}`,
+            background: menuNavActive ? C.primaryLight : 'transparent',
+            color: menuNavActive ? C.primary : C.text,
+            cursor: 'pointer',
+            padding: '8px 5px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            textAlign: 'center',
+            boxShadow: menuNavActive ? '0 12px 28px rgba(37,99,235,0.16)' : 'none',
+            transition: 'background .15s ease, border-color .15s ease, box-shadow .15s ease',
+          }}
+        >
+          <span style={{ width: 31, height: 31, borderRadius: 13, background: menuNavActive ? '#fff' : C.primaryLight, display: 'grid', placeItems: 'center', fontSize: 17, fontFamily: PP, fontWeight: 900, flexShrink: 0 }}>
+            ☰
+          </span>
+          <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 10, lineHeight: 1.05, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            Menú
+          </span>
+        </button>
       </nav>
     </div>
   )
