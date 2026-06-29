@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useZoneAlerts, dismissZoneAlerts } from '../hooks/useZoneAlerts'
+import { useBusinessLeadAlerts } from '../hooks/useBusinessLeadAlerts'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { usePushActivation } from '../hooks/usePushActivation'
@@ -364,6 +365,7 @@ export default function Home() {
   const { displayName, isLoggedIn, user, userCanton } = useAuth()
   const navigate = useNavigate()
   const { alertItems, alertCount } = useZoneAlerts()
+  const { alerts:businessLeadAlerts, unreadCount:businessLeadUnreadCount, markRead:markBusinessLeadAlertRead } = useBusinessLeadAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
 
   const [notifOpen, setNotifOpen] = useState(false)
@@ -388,7 +390,7 @@ export default function Home() {
   const [selectedGuide, setSelectedGuide] = useState(null)
   useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
 
-  const hasNotif = alertCount > 0 || hasUnread
+  const hasNotif = alertCount > 0 || hasUnread || businessLeadUnreadCount > 0
   const rotatedBusinessHighlights = useMemo(
     () => rotateHomeBusinesses(businessHighlights, businessPromotionPlans),
     [businessHighlights, businessPromotionPlans],
@@ -1152,6 +1154,28 @@ export default function Home() {
                             </div>
                             <span style={{ color:C.primary, fontSize:16 }}>›</span>
                           </button>
+                        </div>
+                      )}
+
+                      {businessLeadAlerts.length > 0 && (
+                        <div style={{ padding:'10px 14px 6px' }}>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>CLIENTES POTENCIALES</p>
+                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                            {businessLeadAlerts.map(alert => (
+                              <button
+                                key={alert.id}
+                                onClick={() => { markBusinessLeadAlertRead(alert.id); closeNotifPanel(); navigate(alert.listing_path) }}
+                                style={{ width:'100%', background:alert.read_at ? C.bg : '#EFF6FF', border:`1px solid ${alert.read_at ? C.border : '#BFDBFE'}`, borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
+                              >
+                                <span style={{ fontSize:18, marginTop:1 }}>🔔</span>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{alert.listing_title}</p>
+                                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{alert.provider_name}{alert.matched_terms?.length ? ` · ${alert.matched_terms.join(', ')}` : ''}</p>
+                                </div>
+                                <span style={{ color:C.light, fontSize:16 }}>›</span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       )}
 

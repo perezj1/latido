@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
 import PublicPartnersSection from '../components/PublicPartnersSection'
 import { C, PP } from '../lib/theme'
+import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST } from '../lib/businessPromotion'
 
 /* ─────────────────────────────────────────────────────────────
    DATA
@@ -49,76 +50,34 @@ const PARTNER_BENEFITS = [
   { icon: '🚀', title: 'Crecimiento local', desc: 'Refuerzas tu marca dentro de una comunidad que valora servicios cercanos y de confianza.' },
 ]
 
+const FREE_PARTNER_PLAN = {
+  name: 'Gratis',
+  label: 'Alta básica',
+  monthly: 'CHF 0',
+  accent: '#64748B',
+  background: '#F8FAFC',
+  cta: 'Registrar gratis',
+  to: '/registrar-negocio',
+  benefits: [
+    'Perfil básico con descripción, categoría y contacto',
+    'Aparición orgánica en el directorio de negocios',
+    'Usuarios pueden encontrarte por categoría o zona',
+    'Publicación sujeta a revisión de Latido',
+  ],
+}
+
 const PARTNER_PLANS = [
-  {
-    name: 'Gratis',
-    label: 'Alta básica',
-    monthly: 'CHF 0',
-    accent: '#64748B',
-    background: '#F8FAFC',
-    cta: 'Registrar gratis',
-    to: '/registrar-negocio',
-    benefits: [
-      'Perfil básico con descripción, categoría y contacto',
-      'Aparición orgánica en el directorio de negocios',
-      'Usuarios pueden encontrarte por categoría o zona',
-      'Publicación sujeta a revisión de Latido',
-    ],
-  },
-  {
-    name: 'Negocio destacado',
-    label: 'Más visibilidad local',
-    monthly: 'CHF 49',
-    accent: '#0F9F8E',
-    background: '#F0FDFA',
-    cta: 'Destacar negocio',
-    to: '/perfil?seccion=profesional',
-    benefits: [
-      'Etiqueta de Negocio Destacado o Patrocinado',
-      'Mayor visibilidad en tu categoría y zona',
-      'Mejor posicionamiento en búsquedas',
-      'Más presencia por zona o cantón',
-      'Aparición rotatoria en espacios de negocios',
-      'Botones directos de contacto',
-    ],
-  },
-  {
-    name: 'Partner básico',
-    label: 'Presencia de partner',
-    monthly: 'CHF 149',
-    accent: '#2563EB',
-    background: '#EFF6FF',
-    cta: 'Activar plan',
-    to: '/perfil?seccion=profesional',
-    benefits: [
-      'Tarjeta de partner con logo, descripción y servicios',
-      'Botones de contacto y enlaces de seguimiento',
-      'Aparición en la sección de partners de la app',
-      'Presencia en espacios relacionados dentro de Latido',
-      'Posibilidad de aparecer en contenidos relacionados',
-      'Pill azul de colaboración Básico',
-      'Alta y activación manual por Latido',
-    ],
-  },
-  {
-    name: 'Partner premium',
-    label: 'Mayor visibilidad',
-    monthly: 'CHF 249',
-    accent: '#EF3340',
-    background: '#FFF1F2',
-    cta: 'Activar plan',
-    to: '/perfil?seccion=profesional',
-    benefits: [
-      'Todo lo del partner Básico más:',
-      'Mayor presencia en la página principal de Latido',
-      'Aparición más frecuente dentro de la app',
-      'Mejor posicionamiento frente a partners básicos',
-      'Promoción contextual en categorías relacionadas',
-      'Posible aparición en guías o secciones especiales',
-      'Informe mensual de clics (opcional)',
-      'Mayor prioridad en campañas internas de Latido',
-    ],
-  },
+  FREE_PARTNER_PLAN,
+  ...BUSINESS_PROMOTION_PLAN_DETAIL_LIST.map(plan => ({
+    name:plan.landingName,
+    label:plan.landingLabel,
+    monthly:plan.price,
+    accent:plan.accent,
+    background:plan.background,
+    cta:plan.cta,
+    to:plan.to,
+    benefits:plan.benefits,
+  })),
 ]
 
 const LANDING_COLLABORATOR_LOGOS = [

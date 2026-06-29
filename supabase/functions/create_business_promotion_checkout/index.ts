@@ -4,6 +4,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.101.1'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || ''
+const STRIPE_PRICE_ALERTS = Deno.env.get('STRIPE_PRICE_ALERTS') || ''
 const APP_URL = (Deno.env.get('LATIDO_APP_URL') || 'https://www.latido.ch')
   .replace(/\/+$/, '')
 
@@ -18,7 +19,7 @@ const PLAN_CONFIGS = {
   },
   basic: {
     key: 'basic',
-    label: 'Partner Basico',
+    label: 'Colaborador Basico',
     priceId: Deno.env.get('STRIPE_BASIC_PRICE_ID')
       || Deno.env.get('STRIPE_PRICE_BASIC')
       || '',
@@ -96,12 +97,13 @@ function getPlanConfig(value: unknown): PlanConfig {
   return PLAN_CONFIGS[key]
 }
 
-function requireStripeConfiguration(planConfig: PlanConfig) {
+function requireStripeConfiguration(planConfig: PlanConfig, alertsEnabled = false) {
   if (
     !SUPABASE_URL
     || !SERVICE_ROLE_KEY
     || !STRIPE_SECRET_KEY
     || !planConfig.priceId
+    || (alertsEnabled && !STRIPE_PRICE_ALERTS)
   ) {
     throw new Error('STRIPE_NOT_CONFIGURED')
   }
@@ -194,6 +196,11 @@ function isUuid(value: unknown): value is string {
     && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
 
+function isEmail(value: unknown): value is string {
+  return typeof value === 'string'
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders(req) })
@@ -208,12 +215,17 @@ Deno.serve(async req => {
   try {
     const body = await req.json().catch(() => ({}))
     const planConfig = getPlanConfig(body?.planKey)
-    requireStripeConfiguration(planConfig)
+    const alertsEnabled = body?.alertsEnabled === true
+    const alertsEmail = typeof body?.alertsEmail === 'string' ? body.alertsEmail.trim() : ''
+    requireStripeConfiguration(planConfig, alertsEnabled)
     const user = await requireUser(req)
     const providerId = body?.providerId
 
     if (!isUuid(providerId)) {
       return json(req, { ok: false, error: 'INVALID_PROVIDER_ID' }, 400)
+    }
+    if (alertsEnabled && !isEmail(alertsEmail)) {
+      return json(req, { ok:false, error:'ALERT_EMAIL_REQUIRED' }, 400)
     }
 
     let reservationResponse = await serviceClient
@@ -294,6 +306,8 @@ Deno.serve(async req => {
       latido_provider_id: providerId,
       latido_user_id: user.id,
       latido_plan_key: planConfig.key,
+      latido_alerts_enabled: alertsEnabled ? 'true' : 'false',
+      ...(alertsEnabled ? { latido_alert_recipient_email:alertsEmail } : {}),
     }
 
     if (checkoutCustomerId) {
@@ -313,7 +327,10 @@ Deno.serve(async req => {
       customer: checkoutCustomerId || undefined,
       customer_email: checkoutCustomerId ? undefined : user.email,
       client_reference_id: reservationId,
-      line_items: [{ price: planConfig.priceId, quantity: 1 }],
+      line_items: [
+        { price: planConfig.priceId, quantity: 1 },
+        ...(alertsEnabled ? [{ price: STRIPE_PRICE_ALERTS, quantity: 1 }] : []),
+      ],
       success_url:
         `${APP_URL}/negocios/${providerId}/destacar?plan=${planParam}&checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_URL}/negocios/${providerId}/destacar?plan=${planParam}&checkout=canceled`,
@@ -322,7 +339,7 @@ Deno.serve(async req => {
       metadata,
       subscription_data: {
         metadata,
-        description: `Latido - ${planConfig.label}`,
+        description: `Latido - ${planConfig.label}${alertsEnabled ? ' + Alertas de clientes potenciales' : ''}`,
       },
     }, {
       idempotencyKey: `latido-promotion-checkout-es-v3-${reservationId}`,

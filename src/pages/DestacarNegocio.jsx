@@ -3,70 +3,13 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
+import { BUSINESS_PROMOTION_PLAN_DETAILS } from '../lib/businessPromotion'
 
 const PENDING_STATUSES = new Set(['reserved', 'checkout_open', 'processing'])
 const PLAN_KEYS = ['featured', 'basic', 'premium']
 const PLAN_KEY_SET = new Set(PLAN_KEYS)
 
-const PLAN_COPY = {
-  featured: {
-    eyebrow: 'NEGOCIO DESTACADO',
-    label: 'Destacado',
-    description: 'Más visibilidad en la página de inicio de Latido.',
-    price: 'CHF 49',
-    annual: 'CHF 490/año',
-    accent: '#0F9F8E',
-    soft: '#F0FDFA',
-    success: 'Tu plan de Negocio Destacado ya está activo.',
-    benefits: [
-      'Prioridad en la rotación de negocios de Inicio',
-      'Pill azul de Negocio Destacado',
-      'Mejor posicionamiento en búsquedas',
-      'Aparición rotatoria en espacios de negocios',
-      'Botones directos de contacto',
-      'Cancela la suscripción en cualquier momento desde tu perfil',
-    ],
-  },
-  basic: {
-    eyebrow: 'COLABORACIÓN BÁSICA',
-    label: 'Básica',
-    description: 'Presencia estable como colaborador dentro de Latido.',
-    price: 'CHF 149',
-    annual: "CHF 1'490/año",
-    accent: C.primary,
-    soft: '#EFF6FF',
-    success: 'Tu plan de Partner Básico ya está activo.',
-    benefits: [
-      'Tarjeta de partner con logo, descripción y servicios',
-      'Botones de contacto y enlaces de seguimiento',
-      'Aparición en la sección de partners de la app',
-      'Presencia en espacios relacionados dentro de Latido',
-      'Posibilidad de aparecer en contenidos relacionados',
-      'Pill azul de Colaboración Básico',
-      'Alta y activación automática',
-    ],
-  },
-  premium: {
-    eyebrow: 'COLABORACIÓN PREMIUM',
-    label: 'Premium',
-    description: 'Más presencia, mejor posicionamiento y visibilidad prioritaria.',
-    price: 'CHF 249',
-    annual: "CHF 2'490/año",
-    accent: '#EF3340',
-    soft: '#FFF1F2',
-    success: 'Tu plan de Partner Premium ya está activo.',
-    benefits: [
-      'Todo lo del partner Básico más:',
-      'Mayor presencia en la página principal de Latido',
-      'Aparición más frecuente dentro de la app',
-      'Mejor posicionamiento frente a partners básicos',
-      'Promoción contextual en categorías relacionadas',
-      'Posible aparición en guías o secciones especiales',
-      'Informe mensual de clics (opcional)',
-      'Mayor prioridad y aparición en campañas internas de Latido y en redes sociales',
-    ],
-  },
-}
+const PLAN_COPY = BUSINESS_PROMOTION_PLAN_DETAILS
 
 function formatDate(value) {
   if (!value) return ''
@@ -185,6 +128,7 @@ export default function DestacarNegocio() {
   const resultPlanKey = PLAN_KEY_SET.has(requestedPlanKey) ? requestedPlanKey : 'featured'
   const resultPlanCopy = PLAN_COPY[resultPlanKey]
   const [statuses, setStatuses] = useState({})
+  const [businessDetails, setBusinessDetails] = useState(null)
   const [loading, setLoading] = useState(true)
   const [startingCheckout, setStartingCheckout] = useState('')
   const [openingPortal, setOpeningPortal] = useState('')
@@ -220,14 +164,20 @@ export default function DestacarNegocio() {
     if (!quiet) setLoading(true)
 
     try {
-      const entries = await Promise.all(
-        PLAN_KEYS.map(async currentPlanKey => [
+      const [entries, businessResponse] = await Promise.all([
+        Promise.all(PLAN_KEYS.map(async currentPlanKey => [
           currentPlanKey,
           await loadPlanStatus(currentPlanKey),
-        ]),
-      )
+        ])),
+        supabase
+          .from('providers')
+          .select('id, email, services, city, canton, category')
+          .eq('id', providerId)
+          .maybeSingle(),
+      ])
       const nextStatuses = Object.fromEntries(entries)
       setStatuses(nextStatuses)
+      if (!businessResponse.error) setBusinessDetails(businessResponse.data || null)
       if (!quiet) setLoading(false)
       return nextStatuses
     } catch (error) {
@@ -353,7 +303,7 @@ export default function DestacarNegocio() {
     setActivePlanIndex(selectedIndex)
   }, [loading, resultPlanKey])
 
-  const startCheckout = async targetPlanKey => {
+  const startCheckout = async (targetPlanKey, alertOptions = {}) => {
     setStartingCheckout(targetPlanKey)
     try {
       const { data, error, response } = await supabase.functions
@@ -361,6 +311,8 @@ export default function DestacarNegocio() {
           body:{
             providerId,
             planKey:targetPlanKey,
+            alertsEnabled:alertOptions.enabled === true,
+            alertsEmail:alertOptions.email || '',
           },
         })
 
@@ -501,12 +453,13 @@ export default function DestacarNegocio() {
               planKey={currentPlanKey}
               planCopy={PLAN_COPY[currentPlanKey]}
               provider={state.provider || provider}
+              businessDetails={businessDetails}
               state={state}
               checkoutResult={checkoutResult}
               openingPortal={openingPortal === currentPlanKey}
               startingCheckout={startingCheckout === currentPlanKey}
               onOpenPortal={() => openPortal(currentPlanKey)}
-              onStartCheckout={() => startCheckout(currentPlanKey)}
+              onStartCheckout={alertOptions => startCheckout(currentPlanKey, alertOptions)}
             />
           )
         })}
@@ -518,6 +471,7 @@ export default function DestacarNegocio() {
 function PlanCheckoutCard({
   planCopy,
   provider,
+  businessDetails,
   state,
   checkoutResult,
   openingPortal,
@@ -525,6 +479,9 @@ function PlanCheckoutCard({
   onOpenPortal,
   onStartCheckout,
 }) {
+  const [alertsOpen, setAlertsOpen] = useState(false)
+  const [alertsEnabled, setAlertsEnabled] = useState(false)
+  const [alertsEmail, setAlertsEmail] = useState('')
   const {
     subscription,
     maxActive,
@@ -545,6 +502,23 @@ function PlanCheckoutCard({
   const statusBackground = selectedPlanActive
     ? '#DCFCE7'
     : paymentPending || availableSlots > 0 ? '#DBEAFE' : '#FEE2E2'
+  const businessEmail = businessDetails?.email || ''
+  const recipientEmail = (alertsEmail || businessEmail).trim()
+  const totalMonthlyPrice = Number(planCopy.monthlyPrice || 0) + (alertsEnabled ? 49 : 0)
+  const hasBusinessEmail = Boolean(businessEmail.trim())
+
+  useEffect(() => {
+    if (businessEmail) setAlertsEmail(businessEmail)
+  }, [businessEmail])
+
+  const continueCheckout = () => {
+    if (alertsEnabled && !recipientEmail) {
+      setAlertsOpen(true)
+      toast.error('Añade un email para recibir las alertas.')
+      return
+    }
+    onStartCheckout({ enabled:alertsEnabled, email:recipientEmail })
+  }
 
   return (
     <section
@@ -580,7 +554,7 @@ function PlanCheckoutCard({
       <div style={{ padding:22 }}>
         <div style={{ display:'flex', alignItems:'flex-end', gap:7, marginBottom:20 }}>
           <span style={{ fontFamily:PP, fontWeight:800, fontSize:34, color:C.text, letterSpacing:-1.2 }}>
-            {planCopy.price}
+            CHF {totalMonthlyPrice}
           </span>
           <span style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.light, paddingBottom:5 }}>
             / mes
@@ -618,6 +592,40 @@ function PlanCheckoutCard({
               </span>
             </div>
           ))}
+        </div>
+
+        <div style={{ background:alertsEnabled ? '#EFF6FF' : '#F8FAFC', border:`1px solid ${alertsEnabled ? '#93C5FD' : C.border}`, borderRadius:16, overflow:'hidden', marginBottom:16 }}>
+          <button
+            type="button"
+            onClick={() => setAlertsOpen(open => !open)}
+            style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, padding:'13px 14px', border:'none', background:'transparent', cursor:'pointer', textAlign:'left' }}
+          >
+            <span>
+              <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:3 }}>🔔 Activa alertas de clientes potenciales</span>
+              <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.45 }}>CHF 49/mes extra · un solo pago en Stripe</span>
+            </span>
+            <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary }}>{alertsOpen ? '−' : '+'}</span>
+          </button>
+          {alertsOpen && (
+            <div style={{ padding:'0 14px 14px', borderTop:`1px solid ${alertsEnabled ? '#BFDBFE' : C.border}` }}>
+              <label style={{ display:'flex', alignItems:'center', gap:9, margin:'13px 0', cursor:'pointer' }}>
+                <input type="checkbox" checked={alertsEnabled} onChange={event => setAlertsEnabled(event.target.checked)} />
+                <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text }}>Sí, quiero recibir alertas para este negocio</span>
+              </label>
+              <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.55, margin:'0 0 11px' }}>
+                Usaremos los servicios, la categoría y la zona ya guardados para <strong>{provider?.name}</strong>. Cuando alguien publique una búsqueda relacionada, recibirás un aviso interno y por email.
+              </p>
+              {businessDetails?.services?.length > 0 && <p style={{ fontFamily:PP, fontSize:10, color:C.light, lineHeight:1.5, margin:'0 0 9px' }}>Servicios: {businessDetails.services.join(', ')}</p>}
+              {(businessDetails?.city || businessDetails?.canton) && <p style={{ fontFamily:PP, fontSize:10, color:C.light, lineHeight:1.5, margin:'0 0 10px' }}>Zona: {[businessDetails.city, businessDetails.canton].filter(Boolean).join(' · ')}</p>}
+              {alertsEnabled && !hasBusinessEmail && (
+                <>
+                  <label style={{ display:'block', fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, marginBottom:6 }}>Email para recibir las alertas</label>
+                  <input type="email" value={alertsEmail} onChange={event => setAlertsEmail(event.target.value)} placeholder="empresa@ejemplo.ch" style={{ width:'100%', boxSizing:'border-box', fontFamily:PP, fontSize:12, color:C.text, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 11px', outline:'none' }} />
+                </>
+              )}
+              {alertsEnabled && hasBusinessEmail && <p style={{ fontFamily:PP, fontSize:10, color:'#166534', background:'#DCFCE7', borderRadius:9, padding:'8px 9px', margin:'0' }}>Las alertas llegarán a {businessEmail}.</p>}
+            </div>
+          )}
         </div>
 
         {checkoutResult === 'canceled' && (
@@ -664,7 +672,7 @@ function PlanCheckoutCard({
           </PrimaryButton>
         ) : (
           <PrimaryButton
-            onClick={onStartCheckout}
+            onClick={continueCheckout}
             disabled={!canStartCheckout || startingCheckout}
           >
             {startingCheckout
@@ -677,7 +685,7 @@ function PlanCheckoutCard({
                   ? 'Continuar pago'
                   : paymentProcessing
                     ? 'Confirmando pago'
-                    : 'Continuar al pago'}
+                  : `Continuar al pago · CHF ${totalMonthlyPrice}/mes`}
           </PrimaryButton>
         )}
 

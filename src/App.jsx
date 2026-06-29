@@ -47,6 +47,7 @@ const PartnerContact = lazy(() => import('./pages/PartnerContact'))
 const BelliniPartnerContact = lazy(() => import('./pages/BelliniPartnerContact'))
 const SynaPartnerContact = lazy(() => import('./pages/SynaPartnerContact'))
 const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
+const AlertasClientesPotenciales = lazy(() => import('./pages/AlertasClientesPotenciales'))
 const Virtus360Services = lazy(() => import('./pages/Virtus360Services'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
@@ -556,6 +557,7 @@ function AppShell() {
             <Route path="/comunidades" element={<Comunidades />} />
             <Route path="/colaboraciones" element={<Colaboraciones />} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
+            <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />
             <Route path="/eventos/:eventSlug" element={<Comunidades />} />
             <Route path="/guias/:guideSlug" element={<Guias />} />
