@@ -75,19 +75,74 @@ export default function Auth() {
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showRegisterPassword, setShowRegisterPassword] = useState(false)
   const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[] })
-  const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
+  const [errors, setErrors] = useState({})
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const clearFieldError = key => setErrors(prev => {
+    if (!prev[key]) return prev
+    const next = { ...prev }
+    delete next[key]
+    return next
+  })
+  const s = (k, v) => {
+    setForm(f => ({ ...f, [k]:v }))
+    clearFieldError(k)
+  }
   const toggleLang = l => s('languages', form.languages.includes(l) ? form.languages.filter(x => x !== l) : [...form.languages, l])
 
+  const showErrors = next => {
+    setErrors(next)
+    const firstKey = Object.keys(next)[0]
+    if (firstKey) {
+      window.setTimeout(() => {
+        document.querySelector(`[data-error-field="${firstKey}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' })
+      }, 80)
+    }
+    return Object.keys(next).length === 0
+  }
+
+  const getRegisterStepErrors = targetStep => {
+    const next = {}
+    if (targetStep === 0) {
+      if (!form.name.trim()) next.name = 'Añade tu nombre.'
+      if (!form.email.trim()) next.email = 'Añade tu email.'
+      else if (!emailPattern.test(form.email.trim())) next.email = 'Introduce un email válido.'
+      if (!form.password) next.password = 'Añade una contraseña.'
+      else if (form.password.length < 8) next.password = 'La contraseña debe tener al menos 8 caracteres.'
+    }
+    if (targetStep === 1 && !form.canton) {
+      next.canton = 'Selecciona tu cantón.'
+    }
+    return next
+  }
+
+  const validateRegisterStep = () => showErrors(getRegisterStepErrors(step))
+
+  const validateRegisterAll = () => {
+    const next = { ...getRegisterStepErrors(0), ...getRegisterStepErrors(1) }
+    const valid = showErrors(next)
+    if (!valid) {
+      if (next.name || next.email || next.password) setStep(0)
+      else setStep(1)
+    }
+    return valid
+  }
+
   const handleLogin = async () => {
-    if (!form.email || !form.password) {
-      toast.error('Email y contraseña requeridos')
+    const next = {}
+    if (!form.email.trim()) next.email = 'Añade tu email.'
+    else if (!emailPattern.test(form.email.trim())) next.email = 'Introduce un email válido.'
+    if (!form.password) next.password = 'Añade tu contraseña.'
+    if (!showErrors(next)) {
       return
     }
 
     setLoading(true)
     try {
       const { error } = await signIn({ email: form.email, password: form.password })
-      if (error) toast.error('Email o contraseña incorrectos')
+      if (error) {
+        setErrors({ email:'Email o contraseña incorrectos.', password:'Email o contraseña incorrectos.' })
+        toast.error('Email o contraseña incorrectos')
+      }
       else {
         trackAnalyticsEvent('login_success', {
           metadata: { method:'email', entry_point:authEntryPoint },
@@ -101,7 +156,10 @@ export default function Auth() {
   }
 
   const handleForgot = async () => {
-    if (!form.email) { toast.error('Introduce tu email'); return }
+    const next = {}
+    if (!form.email.trim()) next.email = 'Introduce tu email.'
+    else if (!emailPattern.test(form.email.trim())) next.email = 'Introduce un email válido.'
+    if (!showErrors(next)) return
     setLoading(true)
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
@@ -120,14 +178,7 @@ export default function Auth() {
 
   const handleRegister = async () => {
     if (loading) return
-    if (!form.name || !form.email || !form.password) {
-      toast.error('Rellena todos los campos')
-      return
-    }
-    if (!form.canton) {
-      toast.error('Selecciona tu cantón')
-      return
-    }
+    if (!validateRegisterAll()) return
 
     setLoading(true)
     try {
@@ -147,10 +198,13 @@ export default function Auth() {
         } else if (msg.includes('database') || msg.includes('saving')) {
           toast.error('Error interno. Intenta de nuevo en unos segundos.')
         } else if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user_already_exists')) {
+          setErrors({ email:'Este email ya está registrado. Inicia sesión.' })
           toast.error('Este email ya está registrado. Inicia sesión.')
         } else if (msg.includes('password') || msg.includes('weak')) {
-          toast.error('La contraseña debe tener al menos 6 caracteres.')
+          setErrors({ password:'La contraseña debe tener al menos 8 caracteres.' })
+          toast.error('La contraseña debe tener al menos 8 caracteres.')
         } else if (msg.includes('invalid email')) {
+          setErrors({ email:'El email no es válido.' })
           toast.error('El email no es válido.')
         } else {
           toast.error('Error al crear la cuenta. Inténtalo de nuevo.')
@@ -189,7 +243,7 @@ export default function Auth() {
         </div>
       )}
 
-      <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required />
+      <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
       <Input
         label="Contraseña"
         type={showLoginPassword ? 'text' : 'password'}
@@ -197,13 +251,15 @@ export default function Auth() {
         value={form.password}
         onChange={e => s('password', e.target.value)}
         required
+        error={errors.password}
+        errorKey="password"
         rightElement={
           <PasswordVisibilityButton visible={showLoginPassword} onToggle={() => setShowLoginPassword(v => !v)} />
         }
       />
 
       <div style={{ textAlign:'right', marginBottom:16, marginTop:-8 }}>
-        <button onClick={() => setMode('forgot')} style={{ fontFamily:PP, fontSize:11, fontWeight:600, color:C.primary, background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
+        <button onClick={() => { setErrors({}); setMode('forgot') }} style={{ fontFamily:PP, fontSize:11, fontWeight:600, color:C.primary, background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
           ¿Olvidaste tu contraseña?
         </button>
       </div>
@@ -212,7 +268,7 @@ export default function Auth() {
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:24 }}>
         ¿Sin cuenta?{' '}
-        <button onClick={() => setMode('register')} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
+        <button onClick={() => { setErrors({}); setMode('register') }} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
           Regístrate gratis
         </button>
       </p>
@@ -227,12 +283,12 @@ export default function Auth() {
         <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Te enviaremos un enlace para crear una nueva.</p>
       </div>
 
-      <Input label="Tu email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required />
+      <Input label="Tu email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
 
       <Btn onClick={handleForgot} disabled={loading}>{loading ? '⏳ Enviando...' : 'Enviar enlace'}</Btn>
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:14 }}>
-        <button onClick={() => setMode('login')} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
+        <button onClick={() => { setErrors({}); setMode('login') }} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
           ← Volver al inicio de sesión
         </button>
       </p>
@@ -258,8 +314,8 @@ export default function Auth() {
 
       {step === 0 && (
         <>
-          <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={e => s('name', e.target.value)} />
-          <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={e => s('email', e.target.value)} />
+          <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={e => s('name', e.target.value)} error={errors.name} errorKey="name" />
+          <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={e => s('email', e.target.value)} error={errors.email} errorKey="email" />
           <Input
             label="Contraseña"
             type={showRegisterPassword ? 'text' : 'password'}
@@ -267,6 +323,8 @@ export default function Auth() {
             required
             value={form.password}
             onChange={e => s('password', e.target.value)}
+            error={errors.password}
+            errorKey="password"
             rightElement={
               <PasswordVisibilityButton visible={showRegisterPassword} onToggle={() => setShowRegisterPassword(v => !v)} />
             }
@@ -279,7 +337,7 @@ export default function Auth() {
 
       {step === 1 && (
         <>
-          <Select label="Tu cantón" required value={form.canton} onChange={e => s('canton', e.target.value)}>
+          <Select label="Tu cantón" required value={form.canton} onChange={e => s('canton', e.target.value)} error={errors.canton} errorKey="canton">
             <option value="">Seleccionar cantón...</option>
             {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
           </Select>
@@ -308,7 +366,7 @@ export default function Auth() {
       <div style={{ display:'flex', gap:10 }}>
         {step > 0 && <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>}
         {step < REG_STEPS.length - 1 ? (
-          <Btn onClick={() => { if(!form.name || !form.email || !form.password){ toast.error('Rellena todos los campos'); return } setStep(1) }} style={{ flex:1 }}>
+          <Btn onClick={() => { if (!validateRegisterStep()) return; setStep(1) }} style={{ flex:1 }}>
             Continuar →
           </Btn>
         ) : (
@@ -320,7 +378,7 @@ export default function Auth() {
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:24 }}>
         ¿Ya tienes cuenta?{' '}
-        <button onClick={() => setMode('login')} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
+        <button onClick={() => { setErrors({}); setMode('login') }} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
           Iniciar sesión
         </button>
       </p>

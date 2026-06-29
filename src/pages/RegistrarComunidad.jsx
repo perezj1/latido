@@ -52,7 +52,51 @@ export default function RegistrarComunidad() {
   const [form, setForm] = useState({
     cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español', photo_url:'',
   })
-  const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
+  const [errors, setErrors] = useState({})
+  const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'6px 2px 0', lineHeight:1.45 }
+  const clearFieldError = key => setErrors(prev => {
+    if (!prev[key]) return prev
+    const next = { ...prev }
+    delete next[key]
+    return next
+  })
+  const s = (k, v) => {
+    setForm(f => ({ ...f, [k]:v }))
+    clearFieldError(k)
+  }
+  const getStepErrors = targetStep => {
+    const next = {}
+    if (targetStep === 0 && !form.cat) next.cat = 'Elige la categoría del grupo.'
+    if (targetStep === 1) {
+      if (!form.name.trim()) next.name = 'Añade el nombre del grupo.'
+      if (!form.platform) next.platform = 'Elige la plataforma del grupo.'
+    }
+    if (targetStep === 2 && !form.contact.trim()) next.contact = 'Añade el enlace de invitación.'
+    return next
+  }
+  const scrollToFirstError = next => {
+    const firstKey = Object.keys(next)[0]
+    if (!firstKey) return
+    window.setTimeout(() => {
+      document.querySelector(`[data-error-field="${firstKey}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' })
+    }, 80)
+  }
+  const validateCurrentStep = () => {
+    const next = getStepErrors(step)
+    setErrors(next)
+    scrollToFirstError(next)
+    return Object.keys(next).length === 0
+  }
+  const validateBeforePublish = () => {
+    const next = { ...getStepErrors(0), ...getStepErrors(1), ...getStepErrors(2) }
+    setErrors(next)
+    if (Object.keys(next).length === 0) return true
+    if (next.cat) setStep(0)
+    else if (next.name || next.platform) setStep(1)
+    else setStep(2)
+    scrollToFirstError(next)
+    return false
+  }
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
@@ -78,13 +122,14 @@ export default function RegistrarComunidad() {
           : 'Tu grupo ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades')}>Ver grupos →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setStep(0); setForm({ cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español', photo_url:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setErrors({}); setStep(0); setForm({ cat:'', name:'', platform:'', city:'', canton:'', desc:'', contact:'', lang:'Español', photo_url:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro grupo
       </button>
     </div>
   )
 
   const handleSubmit = async () => {
+    if (!validateBeforePublish()) return
     if (!form.name || !form.contact) { toast.error('Completa el nombre y el enlace de invitación'); return }
     const moderation = analyzeContent(form.name, form.desc, form.contact)
     if (moderation.action === 'block') {
@@ -162,6 +207,7 @@ export default function RegistrarComunidad() {
 
   const requestPublish = async () => {
     if (loading) return
+    if (!validateBeforePublish()) return
     let subscribed = false
     try {
       const status = await getPushStatus()
@@ -203,16 +249,17 @@ export default function RegistrarComunidad() {
               </span>
             </button>
           ))}
+          {errors.cat && <p data-error-field="cat" style={errorTextStyle}>{errors.cat}</p>}
         </div>
       )}
 
       {/* Step 1 — Name, platform, city */}
       {step === 1 && (
         <>
-          <Input label="Nombre del grupo *" placeholder="Ej: Venezolanos en Zürich" required value={form.name} onChange={e=>s('name',e.target.value)} />
+          <Input label="Nombre del grupo *" placeholder="Ej: Venezolanos en Zürich" required value={form.name} onChange={e=>s('name',e.target.value)} error={errors.name} errorKey="name" />
 
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>PLATAFORMA</p>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:8, marginBottom:16 }}>
+          <div data-error-field="platform" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:8, marginBottom:errors.platform ? 6 : 16 }}>
             {PLATFORMS.map(p => (
               <button key={p.id} onClick={() => s('platform', p.id)}
                 style={{ background:form.platform===p.id?C.primaryLight:'#fff', border:`1.5px solid ${form.platform===p.id?C.primary:C.border}`, borderRadius:12, padding:'12px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:8, transition:'all .15s' }}>
@@ -221,6 +268,7 @@ export default function RegistrarComunidad() {
               </button>
             ))}
           </div>
+          {errors.platform && <p style={{ ...errorTextStyle, marginBottom:16 }}>{errors.platform}</p>}
 
           <LocationFields
             canton={form.canton}
@@ -252,7 +300,7 @@ export default function RegistrarComunidad() {
             form.platform === 'instagram' ? 'https://instagram.com/...' :
             form.platform === 'web'       ? 'https://www.tuweb.ch' :
             'https://...'
-          } required value={form.contact} onChange={e=>s('contact',e.target.value)} />
+          } required value={form.contact} onChange={e=>s('contact',e.target.value)} error={errors.contact} errorKey="contact" />
           {form.platform && form.platform !== 'web' && (
             <div style={{ background:'#FFFBEB', border:'1px solid #FCD34D', borderRadius:12, padding:'12px 14px', marginTop:-8, marginBottom:16 }}>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#92400E', margin:'0 0 6px' }}>
@@ -334,9 +382,7 @@ export default function RegistrarComunidad() {
         )}
         {step < STEPS.length - 1 ? (
           <Btn onClick={() => {
-            if (step === 0 && !form.cat) { toast.error('Elige la categoría del grupo'); return }
-            if (step === 1 && !form.name) { toast.error('Añade el nombre del grupo'); return }
-            if (step === 2 && !form.contact) { toast.error('Añade el enlace de invitación'); return }
+            if (!validateCurrentStep()) return
             setStep(s => s + 1)
           }} style={{ flex:1 }}>
             Continuar →

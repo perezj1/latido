@@ -10,12 +10,18 @@ export default function LocationFields({
   cantonRequired=false,
   cityRequired=false,
   allowAllSwitzerland=false,
+  cityError,
+  cantonError,
   cantonLabel='Cantón',
   cityLabel='Ciudad',
   cityPlaceholder='Nombre de la ciudad',
   hint='Empieza por la ciudad; al elegir una sugerencia completamos el cantón.',
 }) {
   const [focused, setFocused] = useState(false)
+  const hasCityError = Boolean(cityError)
+  const hasCantonError = Boolean(cantonError)
+  const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'5px 2px 0', lineHeight:1.45 }
+  const errorControlStyle = { border:'1.5px solid #EF4444', background:'#FFF7F7' }
   const suggestions = useMemo(
     () => getCitySuggestionItems(city ? '' : canton, city, 7),
     [canton, city]
@@ -25,11 +31,12 @@ export default function LocationFields({
   return (
     <div style={{ marginBottom:10 }}>
       <div className="grid-2" style={{ gap:10 }}>
-        <div style={{ position:'relative' }}>
+        <div data-error-field="city" style={{ position:'relative' }}>
           <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>
             {cityLabel}{cityRequired && ' *'}
           </label>
           <input
+            aria-invalid={hasCityError || undefined}
             value={city}
             onChange={event => onCityChange(event.target.value)}
             onFocus={() => setFocused(true)}
@@ -46,8 +53,10 @@ export default function LocationFields({
               background:C.surface,
               color:C.text,
               boxSizing:'border-box',
+              ...(hasCityError ? errorControlStyle : {}),
             }}
           />
+          {hasCityError && <p style={errorTextStyle}>{cityError}</p>}
 
           {showSuggestions && (
             <div
@@ -103,12 +112,13 @@ export default function LocationFields({
           )}
         </div>
 
-        <div>
+        <div data-error-field="canton">
           <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>
             {cantonLabel}{cantonRequired && ' *'}
           </label>
           <div style={{ position:'relative' }}>
             <select
+              aria-invalid={hasCantonError || undefined}
               value={canton}
               onChange={event => onCantonChange(event.target.value)}
               style={{
@@ -125,6 +135,7 @@ export default function LocationFields({
                 WebkitAppearance:'none',
                 MozAppearance:'none',
                 cursor:'pointer',
+                ...(hasCantonError ? errorControlStyle : {}),
               }}
             >
               <option value="">{allowAllSwitzerland ? 'Todos los cantones' : 'Seleccionar...'}</option>
@@ -138,6 +149,7 @@ export default function LocationFields({
               ▾
             </span>
           </div>
+          {hasCantonError && <p style={errorTextStyle}>{cantonError}</p>}
         </div>
       </div>
 

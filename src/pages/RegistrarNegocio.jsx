@@ -48,7 +48,112 @@ export default function RegistrarNegocio() {
   const [form, setForm] = useState({
     type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[],
   })
-  const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
+  const [errors, setErrors] = useState({})
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const websitePattern = /^(https?:\/\/)?[^\s@]+\.[^\s@]{2,}(\/.*)?$/i
+  const hasContactInfo = () => [form.phone, form.email, form.instagram].some(value => value.trim())
+  const hasConfiguredServices = () => form.services.split(',').some(service => service.trim())
+  const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'6px 2px 0', lineHeight:1.45 }
+
+  const clearFieldError = key => {
+    const relatedKeys = ['phone', 'email', 'instagram'].includes(key)
+      ? ['phone', 'email', 'instagram']
+      : [key]
+    setErrors(prev => {
+      let changed = false
+      const next = { ...prev }
+      relatedKeys.forEach(item => {
+        if (next[item]) {
+          delete next[item]
+          changed = true
+        }
+      })
+      return changed ? next : prev
+    })
+  }
+
+  const s = (k, v) => {
+    setForm(f => ({ ...f, [k]:v }))
+    clearFieldError(k)
+  }
+
+  const getStepErrors = targetStep => {
+    const next = {}
+    if (targetStep === 0 && !form.type) {
+      next.type = 'Elige el tipo de negocio.'
+    }
+    if (targetStep === 1) {
+      if (!form.name.trim()) next.name = 'Añade el nombre del negocio.'
+      if (!form.canton) next.canton = 'Selecciona el cantón del negocio.'
+    }
+    if (targetStep === 2) {
+      if (!hasContactInfo()) {
+        const message = 'Añade al menos un contacto: teléfono, email o Instagram.'
+        next.phone = message
+        next.email = message
+        next.instagram = message
+      }
+      if (form.email.trim() && !emailPattern.test(form.email.trim())) {
+        next.email = 'Introduce un email válido.'
+      }
+      if (form.website.trim() && !websitePattern.test(form.website.trim())) {
+        next.website = 'Introduce una web válida, por ejemplo minegocio.ch.'
+      }
+    }
+    return next
+  }
+
+  const scrollToFirstError = next => {
+    const firstKey = Object.keys(next)[0]
+    if (!firstKey) return
+    window.setTimeout(() => {
+      document.querySelector(`[data-error-field="${firstKey}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' })
+    }, 80)
+  }
+
+  const validateCurrentStep = () => {
+    const next = getStepErrors(step)
+    setErrors(next)
+    scrollToFirstError(next)
+    return Object.keys(next).length === 0
+  }
+
+  const getPublishErrors = () => {
+    const next = {
+      ...getStepErrors(0),
+      ...getStepErrors(1),
+      ...getStepErrors(2),
+    }
+    if (leadAlertsSelected) {
+      if (!form.email.trim()) {
+        next.email = 'Añade un email para recibir las alertas.'
+      } else if (!emailPattern.test(form.email.trim())) {
+        next.email = 'Introduce un email válido para recibir alertas.'
+      }
+      if (!hasConfiguredServices()) {
+        next.services = 'Añade al menos un servicio para poder enviarte alertas relevantes.'
+      }
+    }
+    return next
+  }
+
+  const stepForErrors = next => {
+    if (next.type) return 0
+    if (next.name || next.city || next.canton) return 1
+    if (next.phone || next.email || next.instagram || next.website || next.services) return 2
+    return step
+  }
+
+  const validateBeforePublish = () => {
+    const next = getPublishErrors()
+    setErrors(next)
+    const valid = Object.keys(next).length === 0
+    if (!valid) {
+      setStep(stepForErrors(next))
+      scrollToFirstError(next)
+    }
+    return valid
+  }
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
@@ -125,13 +230,14 @@ export default function RegistrarNegocio() {
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades?view=negocios')}>Ver negocios →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setProfessionalOptionsOpen(false); setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLeadAlertsSelected(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setProfessionalOptionsOpen(false); setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLeadAlertsSelected(false); setErrors({}); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro negocio
       </button>
     </div>
   )
 
   const handleSubmit = async () => {
+    if (!validateBeforePublish()) return
     if (!form.name || !form.canton) { toast.error('Completa el nombre y el cantón'); return }
     const hasContact = [form.phone, form.email, form.instagram].some(value => value.trim())
     if (leadAlertsSelected && !form.email.trim()) {
@@ -351,6 +457,7 @@ export default function RegistrarNegocio() {
 
   const requestPublish = async () => {
     if (loading) return
+    if (!validateBeforePublish()) return
     let subscribed = false
     try {
       const status = await getPushStatus()
@@ -395,19 +502,26 @@ export default function RegistrarNegocio() {
               </button>
             )
           })}
+          {errors.type && (
+            <p data-error-field="type" style={errorTextStyle}>
+              {errors.type}
+            </p>
+          )}
         </div>
       )}
 
       {/* Step 1 — Name, location, description */}
       {step === 1 && (
         <>
-          <Input label="Nombre del negocio *" placeholder="Ej: El Rincón Colombiano" required value={form.name} onChange={e=>s('name',e.target.value)} />
+          <Input label="Nombre del negocio *" placeholder="Ej: El Rincón Colombiano" required value={form.name} onChange={e=>s('name',e.target.value)} error={errors.name} errorKey="name" />
           <LocationFields
             canton={form.canton}
             city={form.city}
             onCantonChange={value => s('canton', value)}
             onCityChange={value => s('city', value)}
             cantonRequired
+            cantonError={errors.canton}
+            cityError={errors.city}
           />
           <Input label="Descripción (EN ESPAÑOL)" placeholder="Cuéntanos qué ofrece tu negocio, qué os hace especiales..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
         </>
@@ -416,14 +530,14 @@ export default function RegistrarNegocio() {
       {/* Step 2 — Contact and services */}
       {step === 2 && (
         <>
-          <Input label="Teléfono / WhatsApp" placeholder="079 123 45 67 o +41 79 123 45 67" value={form.phone} onChange={e=>s('phone',e.target.value)} />
-          <Input label="Email" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={e=>s('email',e.target.value)} />
-          <Input label="Instagram" placeholder="@minegocio_zh" value={form.instagram} onChange={e=>s('instagram',e.target.value)} />
-          <Input label="Web (opcional)" type="url" placeholder="minegocio.ch" value={form.website} onChange={e=>s('website',e.target.value)} />
+          <Input label="Teléfono / WhatsApp" placeholder="079 123 45 67 o +41 79 123 45 67" value={form.phone} onChange={e=>s('phone',e.target.value)} error={errors.phone} errorKey="phone" />
+          <Input label="Email" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={e=>s('email',e.target.value)} error={errors.email} errorKey="email" />
+          <Input label="Instagram" placeholder="@minegocio_zh" value={form.instagram} onChange={e=>s('instagram',e.target.value)} error={errors.instagram} errorKey="instagram" />
+          <Input label="Web (opcional)" type="url" placeholder="minegocio.ch" value={form.website} onChange={e=>s('website',e.target.value)} error={errors.website} errorKey="website" />
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-4, marginBottom:12, lineHeight:1.6 }}>
             Añade al menos un contacto: teléfono, email o Instagram. La web es opcional y se mostrará en tu perfil.
           </p>
-          <Input label="Los 3 servicios principales que ofrece tu empresa" placeholder="Ej: Arepas, Menú casero, Delivery (separados por coma)" value={form.services} onChange={e=>s('services',e.target.value)} />
+          <Input label="Los 3 servicios principales que ofrece tu empresa" placeholder="Ej: Arepas, Menú casero, Delivery (separados por coma)" value={form.services} onChange={e=>s('services',e.target.value)} error={errors.services} errorKey="services" />
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-8, marginBottom:12, lineHeight:1.6 }}>
             Estos tres servicios aparecerán como botones en la tarjeta de colaborador si activas un plan Básico o Premium.
           </p>
@@ -632,7 +746,7 @@ export default function RegistrarNegocio() {
           </div>
           {leadAlertsSelected && !form.email.trim() && (
             <div style={{ marginTop:12 }}>
-              <Input label="Email para recibir las alertas *" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={event => s('email', event.target.value)} />
+              <Input label="Email para recibir las alertas *" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={event => s('email', event.target.value)} error={errors.email} errorKey="email" />
               <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.5, margin:'-4px 2px 0' }}>Usaremos este email solo para enviarte los anuncios que coincidan con tus servicios y zona.</p>
             </div>
           )}
@@ -682,8 +796,7 @@ export default function RegistrarNegocio() {
         )}
         {step < STEPS.length - 1 ? (
           <Btn onClick={() => {
-            if (step === 0 && !form.type) { toast.error('Elige el tipo de negocio'); return }
-            if (step === 1 && !form.name) { toast.error('Añade el nombre del negocio'); return }
+            if (!validateCurrentStep()) return
             setStep(s => s + 1)
           }} style={{ flex:1 }}>
             Continuar →

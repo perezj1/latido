@@ -176,40 +176,50 @@ export function PrivacyTag({ privacy }) {
 }
 
 // ── Input ──────────────────────────────────────────────────────
-export function Input({ label, placeholder, value, onChange, type='text', rows, required, style={}, rightElement }) {
+export function Input({ label, placeholder, value, onChange, type='text', rows, required, style={}, rightElement, error, errorKey }) {
+  const hasError = Boolean(error)
   const base = {
     width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12,
     padding:'11px 13px', fontSize:13, fontFamily:PP, outline:'none',
     background:C.surface, color:C.text, boxSizing:'border-box',
     marginBottom: label ? 0 : 10,
   }
+  const errorStyle = hasError ? { border:'1.5px solid #EF4444', background:'#FFF7F7' } : {}
+  const controlStyle = { ...base, ...style, ...errorStyle }
   return (
-    <div style={{ marginBottom: 10 }}>
+    <div data-error-field={errorKey || undefined} style={{ marginBottom: 10 }}>
       {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
       {rows
-        ? <textarea style={{ ...base, resize:'none', minHeight: rows*24, ...style }} placeholder={placeholder} value={value} onChange={onChange} rows={rows} />
+        ? <textarea aria-invalid={hasError || undefined} style={{ ...controlStyle, resize:'none', minHeight: rows*24 }} placeholder={placeholder} value={value} onChange={onChange} rows={rows} />
         : rightElement ? (
           <div style={{ position:'relative' }}>
-            <input style={{ ...base, paddingRight:46, ...style }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
+            <input aria-invalid={hasError || undefined} style={{ ...controlStyle, paddingRight:46 }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
             <div style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', display:'flex', alignItems:'center' }}>
               {rightElement}
             </div>
           </div>
-        ) : <input    style={{ ...base, ...style }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
+        ) : <input aria-invalid={hasError || undefined} style={controlStyle} type={type} placeholder={placeholder} value={value} onChange={onChange} />
       }
+      {hasError && (
+        <p style={{ fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'5px 2px 0', lineHeight:1.45 }}>
+          {error}
+        </p>
+      )}
     </div>
   )
 }
 
 // ── Select ─────────────────────────────────────────────────────
-export function Select({ label, value, onChange, children, required, disabled=false }) {
+export function Select({ label, value, onChange, children, required, disabled=false, error, errorKey }) {
+  const hasError = Boolean(error)
   return (
-    <div style={{ marginBottom:10 }}>
+    <div data-error-field={errorKey || undefined} style={{ marginBottom:10 }}>
       {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
       <div style={{ position:'relative' }}>
         <select
+          aria-invalid={hasError || undefined}
           value={value} onChange={onChange} disabled={disabled}
-          style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 40px 11px 13px', fontSize:13, fontFamily:PP, outline:'none', background:C.surface, color:C.text, appearance:'none', WebkitAppearance:'none', MozAppearance:'none', cursor:disabled ? 'not-allowed' : 'pointer', opacity:disabled ? 0.6 : 1 }}
+          style={{ width:'100%', border:`1.5px solid ${hasError ? '#EF4444' : C.border}`, borderRadius:12, padding:'11px 40px 11px 13px', fontSize:13, fontFamily:PP, outline:'none', background:hasError ? '#FFF7F7' : C.surface, color:C.text, appearance:'none', WebkitAppearance:'none', MozAppearance:'none', cursor:disabled ? 'not-allowed' : 'pointer', opacity:disabled ? 0.6 : 1 }}
         >
           {children}
         </select>
@@ -227,6 +237,11 @@ export function Select({ label, value, onChange, children, required, disabled=fa
           ▾
         </span>
       </div>
+      {hasError && (
+        <p style={{ fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'5px 2px 0', lineHeight:1.45 }}>
+          {error}
+        </p>
+      )}
     </div>
   )
 }

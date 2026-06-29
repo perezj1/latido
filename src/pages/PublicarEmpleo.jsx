@@ -48,13 +48,59 @@ export default function PublicarEmpleo() {
   const [publishedForReview, setPublishedForReview] = useState(false)
   const [pushModalOpen, setPushModalOpen] = useState(false)
   const [form, setForm] = useState(createInitialForm)
-  const s = (k, v) => setForm(f => ({ ...f, [k]:v }))
+  const [errors, setErrors] = useState({})
+  const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'6px 2px 0', lineHeight:1.45 }
+  const clearFieldError = key => setErrors(prev => {
+    if (!prev[key]) return prev
+    const next = { ...prev }
+    delete next[key]
+    return next
+  })
+  const s = (k, v) => {
+    setForm(f => ({ ...f, [k]:v }))
+    clearFieldError(k)
+  }
   const toggleLang = lang => setForm(f => ({
     ...f,
     langs: f.langs.includes(lang) ? f.langs.filter(l => l !== lang) : [...f.langs, lang],
   }))
   const selectedIntent = JOB_INTENTS.find(intent => intent.id === form.jobIntent)
   const isSeekingJob = form.jobIntent === 'busca'
+  const getStepErrors = targetStep => {
+    const next = {}
+    if (targetStep === 0) {
+      if (!form.jobIntent) next.jobIntent = 'Elige si buscas u ofreces empleo.'
+      if (!form.sector) next.sector = 'Elige el sector del empleo.'
+    }
+    if (targetStep === 1) {
+      if (!form.title.trim()) next.title = 'Añade el título del puesto.'
+      if (!form.jobType) next.jobType = 'Selecciona el tipo de contrato.'
+      if (!form.canton) next.canton = 'Selecciona el cantón.'
+    }
+    return next
+  }
+  const scrollToFirstError = next => {
+    const firstKey = Object.keys(next)[0]
+    if (!firstKey) return
+    window.setTimeout(() => {
+      document.querySelector(`[data-error-field="${firstKey}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' })
+    }, 80)
+  }
+  const validateCurrentStep = () => {
+    const next = getStepErrors(step)
+    setErrors(next)
+    scrollToFirstError(next)
+    return Object.keys(next).length === 0
+  }
+  const validateBeforePublish = () => {
+    const next = { ...getStepErrors(0), ...getStepErrors(1) }
+    setErrors(next)
+    if (Object.keys(next).length === 0) return true
+    if (next.jobIntent || next.sector) setStep(0)
+    else setStep(1)
+    scrollToFirstError(next)
+    return false
+  }
 
   const getFormattedSalary = () => {
     const value = String(form.salaryValue || '').trim()
@@ -107,13 +153,14 @@ export default function PublicarEmpleo() {
             : 'Tu oferta ya está visible para miles de personas en Suiza. Los candidatos te escribirán por mensaje dentro de Latido.'}
       </p>
       <Btn onClick={() => navigate('/tablon?cat=empleo')}>Ver empleos →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setStep(0); setForm(createInitialForm()); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setErrors({}); setStep(0); setForm(createInitialForm()); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otro empleo
       </button>
     </div>
   )
 
   const handleSubmit = async () => {
+    if (!validateBeforePublish()) return
     if (!form.jobIntent) { toast.error('Elige si buscas u ofreces empleo'); return }
     if (!form.sector) { toast.error('Elige el sector del empleo'); return }
     if (!form.title || !form.canton) { toast.error('Completa el título y el cantón'); return }
@@ -213,6 +260,7 @@ export default function PublicarEmpleo() {
 
   const requestPublish = async () => {
     if (loading) return
+    if (!validateBeforePublish()) return
     let subscribed = false
     try {
       const status = await getPushStatus()
@@ -248,7 +296,7 @@ export default function PublicarEmpleo() {
       {step === 0 && (
         <>
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE PUBLICACIÓN</p>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(210px, 1fr))', gap:10, marginBottom:18 }}>
+          <div data-error-field="jobIntent" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(210px, 1fr))', gap:10, marginBottom:errors.jobIntent ? 6 : 18 }}>
             {JOB_INTENTS.map(intent => (
               <button key={intent.id} onClick={() => s('jobIntent', intent.id)}
                 style={{ background:form.jobIntent===intent.id?C.primaryLight:'#fff', borderRadius:16, padding:'12px 14px', minHeight:78, display:'flex', alignItems:'center', gap:12, border:`2px solid ${form.jobIntent===intent.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
@@ -260,6 +308,7 @@ export default function PublicarEmpleo() {
               </button>
             ))}
           </div>
+          {errors.jobIntent && <p style={{ ...errorTextStyle, marginBottom:18 }}>{errors.jobIntent}</p>}
 
           {isSeekingJob && (
             <div style={{ marginBottom:18 }}>
@@ -273,7 +322,7 @@ export default function PublicarEmpleo() {
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>
             {isSeekingJob ? 'SECTOR EN EL QUE BUSCAS TRABAJO' : 'SECTOR DE LA OFERTA'}
           </p>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:10 }}>
+          <div data-error-field="sector" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:10 }}>
             {JOB_SECTORS.map(sector => (
               <button key={sector.id} onClick={() => s('sector', sector.id)}
                 style={{ background:form.sector===sector.id?C.primaryLight:'#fff', borderRadius:16, padding:'16px 14px', minHeight:150, display:'flex', flexDirection:'column', alignItems:'flex-start', gap:8, border:`2px solid ${form.sector===sector.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
@@ -285,6 +334,7 @@ export default function PublicarEmpleo() {
               </button>
             ))}
           </div>
+          {errors.sector && <p style={errorTextStyle}>{errors.sector}</p>}
         </>
       )}
 
@@ -297,6 +347,8 @@ export default function PublicarEmpleo() {
             required
             value={form.title}
             onChange={e=>s('title',e.target.value)}
+            error={errors.title}
+            errorKey="title"
           />
           <Input
             label={isSeekingJob ? 'Nombre o perfil profesional (opcional)' : 'Empresa o nombre del empleador (opcional)'}
@@ -306,7 +358,7 @@ export default function PublicarEmpleo() {
           />
 
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>{isSeekingJob ? 'TIPO DE CONTRATO O DISPONIBILIDAD' : 'TIPO DE CONTRATO'}</p>
-          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
+          <div data-error-field="jobType" style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:errors.jobType ? 6 : 20 }}>
             {JOB_TYPES.map(t => (
               <button key={t.id} onClick={() => s('jobType', t.id)}
                 style={{ background:form.jobType===t.id?C.primaryLight:'#fff', border:`1.5px solid ${form.jobType===t.id?C.primary:C.border}`, borderRadius:14, padding:'13px 16px', cursor:'pointer', display:'flex', gap:12, alignItems:'center', textAlign:'left', transition:'all .15s' }}>
@@ -318,6 +370,7 @@ export default function PublicarEmpleo() {
               </button>
             ))}
           </div>
+          {errors.jobType && <p style={{ ...errorTextStyle, marginBottom:20 }}>{errors.jobType}</p>}
 
           <LocationFields
             canton={form.canton}
@@ -325,6 +378,7 @@ export default function PublicarEmpleo() {
             onCantonChange={value => s('canton', value)}
             onCityChange={value => s('city', value)}
             cantonRequired
+            cantonError={errors.canton}
           />
 
           <div style={{ marginBottom:4 }}>
@@ -434,17 +488,14 @@ export default function PublicarEmpleo() {
         )}
         {step === 0 ? (
           <Btn onClick={() => {
-            if (!form.jobIntent) { toast.error('Elige si buscas u ofreces empleo'); return }
-            if (!form.sector) { toast.error('Elige el sector del empleo'); return }
+            if (!validateCurrentStep()) return
             setStep(1)
           }} style={{ flex:1 }}>
             Continuar →
           </Btn>
         ) : step === 1 ? (
           <Btn onClick={() => {
-            if (!form.title) { toast.error('Añade el título del puesto'); return }
-            if (!form.jobType) { toast.error('Selecciona el tipo de contrato'); return }
-            if (!form.canton) { toast.error('Selecciona el cantón'); return }
+            if (!validateCurrentStep()) return
             setStep(2)
           }} style={{ flex:1 }}>
             Continuar →

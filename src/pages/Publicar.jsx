@@ -142,7 +142,18 @@ export default function Publicar() {
     privacy:'public',
   })
 
-  const s = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const [errors, setErrors] = useState({})
+  const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'6px 2px 0', lineHeight:1.45 }
+  const clearFieldError = key => setErrors(prev => {
+    if (!prev[key]) return prev
+    const next = { ...prev }
+    delete next[key]
+    return next
+  })
+  const s = (k, v) => {
+    setForm(f => ({ ...f, [k]: v }))
+    clearFieldError(k)
+  }
 
   const selectedCat = AD_CATS.find(c => c.id === form.cat)
   const selectedSubOption = getAdSubOption(form.cat, form.sub, form.type)
@@ -151,6 +162,39 @@ export default function Publicar() {
   const selectedIntent = PUBLISH_INTENTS.find(intent => intent.id === form.intent)
   const compatibleCats = getCompatibleCategories(form.intent)
   const allSwitzerland = !form.canton
+  const getStepErrors = targetStep => {
+    const next = {}
+    if (targetStep === 0) {
+      if (!form.intent) next.intent = 'Elige qué quieres publicar.'
+      if (!form.cat) next.cat = 'Elige una categoría.'
+    }
+    if (targetStep === 1 && !form.title.trim()) {
+      next.title = 'Escribe un título para el anuncio.'
+    }
+    return next
+  }
+  const scrollToFirstError = next => {
+    const firstKey = Object.keys(next)[0]
+    if (!firstKey) return
+    window.setTimeout(() => {
+      document.querySelector(`[data-error-field="${firstKey}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' })
+    }, 80)
+  }
+  const validateCurrentStep = () => {
+    const next = getStepErrors(step)
+    setErrors(next)
+    scrollToFirstError(next)
+    return Object.keys(next).length === 0
+  }
+  const validateBeforePublish = () => {
+    const next = { ...getStepErrors(0), ...getStepErrors(1) }
+    setErrors(next)
+    if (Object.keys(next).length === 0) return true
+    if (next.intent || next.cat) setStep(0)
+    else setStep(1)
+    scrollToFirstError(next)
+    return false
+  }
 
   const searchBeforePublishing = () => {
     if (!form.cat) {
@@ -172,6 +216,7 @@ export default function Publicar() {
   }
 
   const selectIntent = (intent) => {
+    clearFieldError('intent')
     const nextCats = getCompatibleCategories(intent)
     setForm(prev => {
       const catStillFits = nextCats.some(cat => cat.id === prev.cat)
@@ -191,6 +236,7 @@ export default function Publicar() {
   }
 
   const selectCategory = (catId) => {
+    clearFieldError('cat')
     setForm(prev => ({
       ...prev,
       cat: catId,
@@ -325,6 +371,7 @@ export default function Publicar() {
           onClick={() => {
             setDone(false)
             setPublishedForReview(false)
+            setErrors({})
             setStep(0)
             setForm({
               intent:'',
@@ -363,6 +410,7 @@ export default function Publicar() {
   }
 
   const handleSubmit = async () => {
+    if (!validateBeforePublish()) return
     if (!form.title.trim()) {
       toast.error('Escribe un título para el anuncio')
       return
@@ -525,6 +573,7 @@ export default function Publicar() {
 
   const requestPublish = async () => {
     if (loading) return
+    if (!validateBeforePublish()) return
     let subscribed = false
     try {
       const status = await getPushStatus()
@@ -561,7 +610,7 @@ export default function Publicar() {
       {/* Step 0 — Intención + Categoría */}
       {step === 0 && (
         <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          <div data-error-field="intent" style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {PUBLISH_INTENTS.map(intent => (
               <button
                 key={intent.id}
@@ -586,6 +635,7 @@ export default function Publicar() {
               </button>
             ))}
           </div>
+          {errors.intent && <p style={{ ...errorTextStyle, marginTop:-12 }}>{errors.intent}</p>}
 
           {form.intent === 'busca' && (
             <SearchBeforePublishNotice
@@ -599,7 +649,7 @@ export default function Publicar() {
               <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>
                 ELIGE LA CATEGORÍA
               </p>
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <div data-error-field="cat" style={{ display:'flex', flexDirection:'column', gap:8 }}>
                 {compatibleCats.map(cat => {
                   const categoryType = resolveTypeForCategory(form.intent, cat.id)
                   return (
@@ -627,6 +677,7 @@ export default function Publicar() {
                   )
                 })}
               </div>
+              {errors.cat && <p style={errorTextStyle}>{errors.cat}</p>}
             </div>
           )}
         </div>
@@ -672,6 +723,8 @@ export default function Publicar() {
             required
             value={form.title}
             onChange={e => s('title', e.target.value)}
+            error={errors.title}
+            errorKey="title"
           />
           <Input
             label="Descripción (EN ESPAÑOL)"
@@ -804,15 +857,14 @@ export default function Publicar() {
         )}
         {step === 0 ? (
           <Btn onClick={() => {
-            if (!form.intent) { toast.error('Elige qué quieres publicar'); return }
-            if (!form.cat) { toast.error('Elige una categoría'); return }
+            if (!validateCurrentStep()) return
             setStep(1)
           }} style={{ flex:1 }}>
             Continuar →
           </Btn>
         ) : step === 1 ? (
           <Btn onClick={() => {
-            if (!form.title.trim()) { toast.error('Escribe un título para el anuncio'); return }
+            if (!validateCurrentStep()) return
             setStep(2)
           }} style={{ flex:1 }}>
             Continuar →
