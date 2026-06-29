@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
 import PublicPartnersSection from '../components/PublicPartnersSection'
 import { C, PP } from '../lib/theme'
-import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST } from '../lib/businessPromotion'
+import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 
 /* ─────────────────────────────────────────────────────────────
    DATA
@@ -66,19 +66,20 @@ const FREE_PARTNER_PLAN = {
   ],
 }
 
-const PARTNER_PLANS = [
-  FREE_PARTNER_PLAN,
-  ...BUSINESS_PROMOTION_PLAN_DETAIL_LIST.map(plan => ({
-    name:plan.landingName,
-    label:plan.landingLabel,
-    monthly:plan.price,
-    accent:plan.accent,
-    background:plan.background,
-    cta:plan.cta,
-    to:plan.to,
-    benefits:plan.benefits,
-  })),
-]
+const PAID_PARTNER_PLANS = BUSINESS_PROMOTION_PLAN_DETAIL_LIST.map(plan => ({
+  name:plan.landingName,
+  label:plan.landingLabel,
+  monthly:plan.price,
+  accent:plan.accent,
+  background:plan.background,
+  cta:plan.cta,
+  to:plan.to,
+  benefits:plan.benefits,
+}))
+
+const PARTNER_PLANS = PAID_BUSINESS_FEATURES_VISIBLE
+  ? [FREE_PARTNER_PLAN, ...PAID_PARTNER_PLANS]
+  : [FREE_PARTNER_PLAN]
 
 const LANDING_COLLABORATOR_LOGOS = [
   { name: 'Suiza en Español', logo: '/partners/suiza-en-espanol/logo-see.webp' },
@@ -105,7 +106,12 @@ const APP_PEEK_FEED = [
 ]
 
 const FAQ = [
-  { q: '¿Latido es realmente gratis?',                       a: 'Sí. Registrarte, publicar anuncios, unirte a grupos y asistir a eventos es 100% gratis para usuarios. Las empresas y colaboradores tienen opciones de visibilidad premium opcionales.' },
+  {
+    q: '¿Latido es realmente gratis?',
+    a: PAID_BUSINESS_FEATURES_VISIBLE
+      ? 'Sí. Registrarte, publicar anuncios, unirte a grupos y asistir a eventos es 100% gratis para usuarios. Las empresas y colaboradores tienen opciones de visibilidad premium opcionales.'
+      : 'Sí. Registrarte, publicar anuncios, unirte a grupos, publicar eventos y registrar tu negocio es gratis.',
+  },
   { q: '¿Necesito hablar alemán, francés o italiano?',       a: 'No. Latido está 100% en español. Es precisamente para eso: un espacio donde no tengas que lidiar con el idioma del cantón mientras buscas piso, trabajo o comunidad.' },
   { q: '¿Es seguro? ¿Qué pasa con mis datos?',               a: 'Cumplimos la Ley Federal de Protección de Datos de Suiza (nFADP) y el GDPR europeo. Nunca vendemos tus datos. Los anuncios y perfiles se moderan para evitar fraudes y contenido inapropiado.' },
   { q: '¿Tengo que vivir en Suiza para registrarme?',        a: 'Está pensado para quienes ya viven en Suiza o están a punto de mudarse. Si estás preparando tu llegada, puedes registrarte para ir conectando y encontrar piso o empleo antes de aterrizar.' },
@@ -657,13 +663,15 @@ export function PanelPartners() {
       <section className="latido-partner-pricing-section" style={{ marginBottom: 34 }}>
         <div style={{ textAlign: 'center', marginBottom: 18 }}>
           <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 11, color: C.primary, letterSpacing: 0, textTransform: 'uppercase', margin: '0 0 7px' }}>
-            Precios para destacar tu negocio
+            {PAID_BUSINESS_FEATURES_VISIBLE ? 'Precios para destacar tu negocio' : 'Alta gratuita para negocios'}
           </p>
           <h3 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(20px,4vw,28px)', color: C.text, margin: '0 0 8px', lineHeight: 1.15 }}>
-            Elige la visibilidad que necesitas
+            {PAID_BUSINESS_FEATURES_VISIBLE ? 'Elige la visibilidad que necesitas' : 'Registra tu negocio en Latido'}
           </h3>
           <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.65, maxWidth: 620, margin: '0 auto' }}>
-            Todos los precios están en CHF y se muestran como referencia mensual.
+            {PAID_BUSINESS_FEATURES_VISIBLE
+              ? 'Todos los precios están en CHF y se muestran como referencia mensual.'
+              : 'Crea un perfil gratuito para que la comunidad pueda encontrarte y contactarte.'}
           </p>
         </div>
 
