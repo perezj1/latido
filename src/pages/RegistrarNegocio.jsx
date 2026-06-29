@@ -14,6 +14,7 @@ import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
+import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST } from '../lib/businessPromotion'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -25,6 +26,8 @@ const STEPS = [
 
 const NEGOCIO_TYPES_FORM = VISIBLE_NEGOCIO_TYPES.filter(t => t.id !== '')
 const PROFESSIONAL_CONFETTI_EMBED_URL = 'https://lottie.host/embed/6a54f360-7100-4a5c-a6ae-a5f2287488d8/lR9bbFp6Qg.json'
+const PROFESSIONAL_PLAN_OPTIONS = BUSINESS_PROMOTION_PLAN_DETAIL_LIST
+const LEAD_ALERTS_MONTHLY_PRICE = 49
 
 export default function RegistrarNegocio() {
   const { isLoggedIn, user } = useAuth()
@@ -38,6 +41,10 @@ export default function RegistrarNegocio() {
   const [publishedForReview, setPublishedForReview] = useState(false)
   const [pushModalOpen, setPushModalOpen] = useState(false)
   const [professionalUnlockOpen, setProfessionalUnlockOpen] = useState(false)
+  const [professionalOptionsOpen, setProfessionalOptionsOpen] = useState(false)
+  const [professionalOptionsActive, setProfessionalOptionsActive] = useState(false)
+  const [selectedProfessionalPlan, setSelectedProfessionalPlan] = useState('')
+  const [leadAlertsSelected, setLeadAlertsSelected] = useState(false)
   const [form, setForm] = useState({
     type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[],
   })
@@ -118,7 +125,7 @@ export default function RegistrarNegocio() {
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades?view=negocios')}>Ver negocios →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setProfessionalOptionsOpen(false); setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLeadAlertsSelected(false); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro negocio
       </button>
     </div>
@@ -127,6 +134,14 @@ export default function RegistrarNegocio() {
   const handleSubmit = async () => {
     if (!form.name || !form.canton) { toast.error('Completa el nombre y el cantón'); return }
     const hasContact = [form.phone, form.email, form.instagram].some(value => value.trim())
+    if (leadAlertsSelected && !form.email.trim()) {
+      toast.error('Añade un email para recibir las alertas de clientes potenciales')
+      return
+    }
+    if (leadAlertsSelected && !form.services.split(',').some(service => service.trim())) {
+      toast.error('Añade al menos un servicio para poder encontrar clientes potenciales')
+      return
+    }
     if (!hasContact) { toast.error('Añade al menos un método de contacto'); return }
     const moderation = analyzeContent(form.name, form.desc, form.services, form.website)
     if (moderation.action === 'block') {
@@ -224,6 +239,41 @@ export default function RegistrarNegocio() {
         category:form.type,
         needsReview,
       })
+
+      if ((selectedProfessionalPlan || leadAlertsSelected) && !needsReview && data?.id) {
+        const checkoutFunction = selectedProfessionalPlan
+          ? 'create_business_promotion_checkout'
+          : 'create_business_lead_checkout'
+        const checkoutBody = selectedProfessionalPlan
+          ? {
+              providerId:data.id,
+              planKey:selectedProfessionalPlan,
+              alertsEnabled:leadAlertsSelected,
+              alertsEmail:form.email.trim(),
+            }
+          : {
+              providerId:data.id,
+              recipientEmail:form.email.trim(),
+            }
+        const { data: checkout, error: checkoutError } = await supabase.functions
+          .invoke(checkoutFunction, { body:checkoutBody })
+
+        if (checkoutError || !checkout?.url) {
+          console.error('Business promotion checkout failed:', checkoutError || checkout)
+          toast.error('El negocio se publicó, pero no pudimos abrir el pago. Puedes activarlo desde tu perfil.')
+          setPublishedForReview(false)
+          setProfessionalUnlockOpen(true)
+          setDone(true)
+          return
+        }
+
+        window.location.assign(checkout.url)
+        return
+      }
+
+      if ((selectedProfessionalPlan || leadAlertsSelected) && needsReview) {
+        toast('El negocio se enviará a revisión antes de poder activar el plan o las alertas.', { icon:'ℹ️' })
+      }
       setPublishedForReview(needsReview)
       setProfessionalUnlockOpen(true)
       setDone(true)
@@ -241,6 +291,9 @@ export default function RegistrarNegocio() {
   }
 
   const selectedType = NEGOCIO_TYPES_FORM.find(t => t.id === form.type)
+  const selectedPlanOption = PROFESSIONAL_PLAN_OPTIONS.find(plan => plan.key === selectedProfessionalPlan)
+  const professionalTotal = (selectedPlanOption?.monthlyPrice || 0) + (leadAlertsSelected ? LEAD_ALERTS_MONTHLY_PRICE : 0)
+  const hasPaidSelection = Boolean(selectedPlanOption || leadAlertsSelected)
 
   const handleCoverUpload = async files => {
     const file = files?.[0]
@@ -432,6 +485,180 @@ export default function RegistrarNegocio() {
             {form.gallery.length > 0 && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📷 {form.gallery.length} foto(s) extra</span>}
           </div>
         </div>
+        <div style={{ marginTop:16 }}>
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.light, letterSpacing:.7, margin:'0 2px 8px' }}>EXTRAS</p>
+        <section style={{ marginTop:0, border:`1.5px solid ${professionalOptionsActive ? C.primary : C.border}`, borderRadius:16, background:'#fff', overflow:'hidden' }}>
+          <div style={{ padding:'12px 14px 12px 16px', display:'flex', alignItems:'center', gap:12 }}>
+          <button
+            type="button"
+            aria-expanded={professionalOptionsOpen}
+            onClick={() => {
+              if (!professionalOptionsActive) setProfessionalOptionsActive(true)
+              setProfessionalOptionsOpen(open => professionalOptionsActive ? !open : true)
+            }}
+            style={{ flex:1, minWidth:0, padding:0, border:'none', background:'transparent', cursor:'pointer', display:'flex', alignItems:'center', gap:12, textAlign:'left' }}
+          >
+            <span style={{ display:'flex', alignItems:'center', gap:11 }}>
+              <span style={{ width:34, height:34, borderRadius:11, background:C.primaryLight, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>🚀</span>
+              <span>
+                <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text }}>Potenciar tu negocio</span>
+                <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.light, marginTop:2 }}>
+                  {selectedPlanOption
+                    ? `${selectedPlanOption.label}${leadAlertsSelected ? ' + Alertas' : ''} · CHF ${professionalTotal}/mes`
+                    : professionalOptionsActive
+                      ? 'Elige un plan para activarlo'
+                      : 'Opcional · elige un plan cuando quieras'}
+                </span>
+              </span>
+            </span>
+          </button>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={professionalOptionsActive}
+            aria-label={professionalOptionsActive ? 'Desactivar potenciar tu negocio' : 'Activar potenciar tu negocio'}
+            onClick={() => {
+              if (professionalOptionsActive) {
+                setProfessionalOptionsActive(false)
+                setSelectedProfessionalPlan('')
+                setProfessionalOptionsOpen(false)
+              } else {
+                setProfessionalOptionsActive(true)
+                setProfessionalOptionsOpen(true)
+              }
+            }}
+            style={{ width:46, height:28, flex:'0 0 46px', padding:3, border:'none', borderRadius:999, background:professionalOptionsActive ? C.primary : '#CBD5E1', cursor:'pointer', transition:'background .18s ease' }}
+          >
+            <span style={{ width:22, height:22, borderRadius:'50%', background:'#fff', display:'block', transform:professionalOptionsActive ? 'translateX(18px)' : 'translateX(0)', transition:'transform .18s ease', boxShadow:'0 1px 3px rgba(15,23,42,.2)' }} />
+          </button>
+          </div>
+
+          {professionalOptionsOpen && (
+            <div style={{ borderTop:`1px solid ${C.border}`, padding:'0 14px 16px' }}>
+              <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, margin:'14px 2px 12px' }}>
+                Elige un plan para dar más visibilidad a tu empresa. El cobro se realizará de forma segura en Stripe después de publicar.
+              </p>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {PROFESSIONAL_PLAN_OPTIONS.map(plan => {
+                  const selected = selectedProfessionalPlan === plan.key
+                  return (
+                    <div
+                      key={plan.key}
+                      style={{ border:`1.5px solid ${selected ? plan.color : C.border}`, borderRadius:13, padding:'12px', background:selected ? plan.soft : '#fff', display:'flex', flexDirection:'column', gap:selected ? 10 : 0, position:'relative' }}
+                    >
+                      {selected && (
+                        <span style={{ position:'absolute', top:-10, right:16, fontFamily:PP, fontWeight:900, fontSize:9, letterSpacing:.5, color:plan.color, background:selected ? plan.soft : '#fff', border:`1px solid ${plan.color}`, borderRadius:999, padding:'4px 8px', lineHeight:1 }}>
+                          SELECCIONADO
+                        </span>
+                      )}
+                      <div style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProfessionalPlan(plan.key)}
+                          style={{ flex:1, minWidth:0, border:'none', background:'transparent', padding:0, cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}
+                        >
+                          <span style={{ minWidth:0 }}>
+                            <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:12, color:C.text }}>{plan.label}</span>
+                            <span style={{ display:'block', fontFamily:PP, fontSize:10.5, color:C.mid, lineHeight:1.45, marginTop:3 }}>{plan.description}</span>
+                          </span>
+                          <span style={{ flex:'0 0 auto', fontFamily:PP, fontWeight:900, fontSize:12, color:plan.color }}>CHF {plan.monthlyPrice}<small style={{ fontSize:9, fontWeight:700 }}> /mes</small></span>
+                        </button>
+                      </div>
+                      {selected && (
+                        <div style={{ width:'100%', borderTop:`1px solid ${plan.color}33`, paddingTop:10 }}>
+                          <p style={{ fontFamily:PP, fontWeight:800, fontSize:10.5, color:plan.color, margin:'0 0 8px' }}>
+                            Incluye:
+                          </p>
+                          <div style={{ display:'grid', gap:7 }}>
+                            {plan.benefits.map(benefit => (
+                              <div key={benefit} style={{ display:'flex', alignItems:'flex-start', gap:7 }}>
+                                <span style={{ width:17, height:17, flex:'0 0 17px', borderRadius:999, background:'#fff', color:plan.color, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontWeight:900, fontSize:10, marginTop:1 }}>
+                                  ✓
+                                </span>
+                                <span style={{ fontFamily:PP, fontSize:10.7, color:C.mid, lineHeight:1.45 }}>
+                                  {benefit}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => { setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setProfessionalOptionsOpen(false) }}
+                style={{ width:'100%', border:'none', background:'transparent', cursor:'pointer', padding:'12px 4px 0', color:C.mid, fontFamily:PP, fontWeight:700, fontSize:11 }}
+              >
+                Continuar solo con el perfil gratuito
+              </button>
+            </div>
+          )}
+        </section>
+        <div style={{ marginTop:12 }}>
+          <div style={{ width:'100%', padding:'12px 14px 12px 16px', border:`1.5px solid ${leadAlertsSelected ? '#14B8A6' : C.border}`, borderRadius:16, background:leadAlertsSelected ? '#F0FDFA' : '#fff', display:'flex', alignItems:'center', gap:12 }}>
+            <span style={{ width:34, height:34, flex:'0 0 34px', borderRadius:11, background:'#ECFEFF', display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>📣</span>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+                <button
+                  type="button"
+                  onClick={() => setLeadAlertsSelected(selected => !selected)}
+                  style={{ flex:1, minWidth:0, padding:0, border:'none', background:'transparent', cursor:'pointer', textAlign:'left', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text }}
+                >
+                  Alertas de clientes potenciales
+                </button>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={leadAlertsSelected}
+                  aria-label={leadAlertsSelected ? 'Desactivar alertas de clientes potenciales' : 'Activar alertas de clientes potenciales'}
+                  onClick={() => setLeadAlertsSelected(selected => !selected)}
+                  style={{ width:46, height:28, flex:'0 0 46px', padding:3, border:'none', borderRadius:999, background:leadAlertsSelected ? '#14B8A6' : '#CBD5E1', cursor:'pointer', transition:'background .18s ease' }}
+                >
+                  <span style={{ width:22, height:22, borderRadius:'50%', background:'#fff', display:'block', transform:leadAlertsSelected ? 'translateX(18px)' : 'translateX(0)', transition:'transform .18s ease', boxShadow:'0 1px 3px rgba(15,23,42,.2)' }} />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLeadAlertsSelected(selected => !selected)}
+                style={{ width:'100%', marginTop:4, padding:0, border:'none', background:'transparent', cursor:'pointer', display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:18, textAlign:'left' }}
+              >
+                <span style={{ minWidth:0, fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.45 }}>Recibe avisos cuando alguien publique un anuncio buscando servicios como los que ofreces.</span>
+                <span style={{ flex:'0 0 auto', marginTop:22, marginLeft:8, fontFamily:PP, fontWeight:900, fontSize:12, color:'#0F9F8E', whiteSpace:'nowrap' }}>CHF 49<small style={{ fontSize:9, fontWeight:700 }}> /mes</small></span>
+              </button>
+            </div>
+          </div>
+          {leadAlertsSelected && !form.email.trim() && (
+            <div style={{ marginTop:12 }}>
+              <Input label="Email para recibir las alertas *" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={event => s('email', event.target.value)} />
+              <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.5, margin:'-4px 2px 0' }}>Usaremos este email solo para enviarte los anuncios que coincidan con tus servicios y zona.</p>
+            </div>
+          )}
+          {hasPaidSelection && (
+            <div style={{ marginTop:12, borderRadius:12, background:C.bg, padding:'12px', display:'grid', gap:8 }}>
+              {selectedPlanOption && (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+                  <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>{selectedPlanOption.label}</span>
+                  <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {selectedPlanOption.monthlyPrice}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
+                </div>
+              )}
+              {leadAlertsSelected && (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+                  <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>Alertas de clientes potenciales</span>
+                  <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {LEAD_ALERTS_MONTHLY_PRICE}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
+                </div>
+              )}
+              <div style={{ height:1, background:C.border, margin:'2px 0' }} />
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+                <span style={{ fontFamily:PP, fontSize:11, fontWeight:800, color:C.text }}>Total mensual</span>
+                <span style={{ fontFamily:PP, fontWeight:900, fontSize:16, color:C.text, whiteSpace:'nowrap' }}>CHF {professionalTotal}<small style={{ fontSize:10, color:C.light }}> /mes</small></span>
+              </div>
+            </div>
+          )}
+        </div>
+        </div>
         <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginTop:14 }}>
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>
           <p style={{ fontFamily:PP, fontSize:11, color:'#7C2D12', lineHeight:1.7, margin:0 }}>
@@ -443,7 +670,9 @@ export default function RegistrarNegocio() {
       )}
 
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
-        Gratuito · Se publica al instante si no requiere revisión · Puedes eliminarlo desde tu perfil
+        {hasPaidSelection
+          ? `Total elegido: CHF ${professionalTotal}/mes · El pago se procesa de forma segura en Stripe.`
+          : 'Gratuito · Se publica al instante si no requiere revisión · Puedes eliminarlo desde tu perfil'}
       </p>
       <StickyFormActions>
         {step === 0 ? (
@@ -461,7 +690,11 @@ export default function RegistrarNegocio() {
           </Btn>
         ) : (
           <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Registrando...' : '🏪 Registrar negocio'}
+            {loading
+              ? '⏳ Registrando...'
+              : hasPaidSelection
+                ? '💳 Publicar y pagar'
+                : '🏪 Registrar negocio'}
           </Btn>
         )}
       </StickyFormActions>

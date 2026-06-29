@@ -21,10 +21,16 @@ INSERT INTO public.business_promotion_plans
 VALUES
   ('free',      'Gratuito',           0,  1, NULL, TRUE),
   ('featured',  'Negocio Destacado',  1,  2,   20, TRUE),
-  ('basic',     'Partner Básico',      2,  4,   12, TRUE),
+  ('basic',     'Colaborador Básico',  2,  4,   12, TRUE),
   ('premium',   'Partner Premium',     3,  7,    6, TRUE),
   ('exclusive', 'Partner Exclusivo',   4, 10,    3, TRUE)
 ON CONFLICT (plan_key) DO NOTHING;
+
+UPDATE public.business_promotion_plans
+SET label = 'Colaborador Básico',
+    updated_at = NOW()
+WHERE plan_key = 'basic'
+  AND label = 'Partner Básico';
 
 CREATE TABLE IF NOT EXISTS public.business_promotion_admins (
   email       TEXT PRIMARY KEY,
