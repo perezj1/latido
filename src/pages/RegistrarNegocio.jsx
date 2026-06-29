@@ -14,7 +14,7 @@ import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
-import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST } from '../lib/businessPromotion'
+import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -124,7 +124,7 @@ export default function RegistrarNegocio() {
       ...getStepErrors(1),
       ...getStepErrors(2),
     }
-    if (leadAlertsSelected) {
+    if (PAID_BUSINESS_FEATURES_VISIBLE && leadAlertsSelected) {
       if (!form.email.trim()) {
         next.email = 'Añade un email para recibir las alertas.'
       } else if (!emailPattern.test(form.email.trim())) {
@@ -240,11 +240,11 @@ export default function RegistrarNegocio() {
     if (!validateBeforePublish()) return
     if (!form.name || !form.canton) { toast.error('Completa el nombre y el cantón'); return }
     const hasContact = [form.phone, form.email, form.instagram].some(value => value.trim())
-    if (leadAlertsSelected && !form.email.trim()) {
+    if (PAID_BUSINESS_FEATURES_VISIBLE && leadAlertsSelected && !form.email.trim()) {
       toast.error('Añade un email para recibir las alertas de clientes potenciales')
       return
     }
-    if (leadAlertsSelected && !form.services.split(',').some(service => service.trim())) {
+    if (PAID_BUSINESS_FEATURES_VISIBLE && leadAlertsSelected && !form.services.split(',').some(service => service.trim())) {
       toast.error('Añade al menos un servicio para poder encontrar clientes potenciales')
       return
     }
@@ -346,7 +346,7 @@ export default function RegistrarNegocio() {
         needsReview,
       })
 
-      if ((selectedProfessionalPlan || leadAlertsSelected) && !needsReview && data?.id) {
+      if (PAID_BUSINESS_FEATURES_VISIBLE && (selectedProfessionalPlan || leadAlertsSelected) && !needsReview && data?.id) {
         const checkoutFunction = selectedProfessionalPlan
           ? 'create_business_promotion_checkout'
           : 'create_business_lead_checkout'
@@ -377,11 +377,11 @@ export default function RegistrarNegocio() {
         return
       }
 
-      if ((selectedProfessionalPlan || leadAlertsSelected) && needsReview) {
+      if (PAID_BUSINESS_FEATURES_VISIBLE && (selectedProfessionalPlan || leadAlertsSelected) && needsReview) {
         toast('El negocio se enviará a revisión antes de poder activar el plan o las alertas.', { icon:'ℹ️' })
       }
       setPublishedForReview(needsReview)
-      setProfessionalUnlockOpen(true)
+      setProfessionalUnlockOpen(PAID_BUSINESS_FEATURES_VISIBLE)
       setDone(true)
     } catch (error) {
       console.error('Register business failed:', error)
@@ -397,9 +397,12 @@ export default function RegistrarNegocio() {
   }
 
   const selectedType = NEGOCIO_TYPES_FORM.find(t => t.id === form.type)
-  const selectedPlanOption = PROFESSIONAL_PLAN_OPTIONS.find(plan => plan.key === selectedProfessionalPlan)
-  const professionalTotal = (selectedPlanOption?.monthlyPrice || 0) + (leadAlertsSelected ? LEAD_ALERTS_MONTHLY_PRICE : 0)
-  const hasPaidSelection = Boolean(selectedPlanOption || leadAlertsSelected)
+  const selectedPlanOption = PAID_BUSINESS_FEATURES_VISIBLE
+    ? PROFESSIONAL_PLAN_OPTIONS.find(plan => plan.key === selectedProfessionalPlan)
+    : null
+  const paidLeadAlertsSelected = PAID_BUSINESS_FEATURES_VISIBLE && leadAlertsSelected
+  const professionalTotal = (selectedPlanOption?.monthlyPrice || 0) + (paidLeadAlertsSelected ? LEAD_ALERTS_MONTHLY_PRICE : 0)
+  const hasPaidSelection = PAID_BUSINESS_FEATURES_VISIBLE && Boolean(selectedPlanOption || paidLeadAlertsSelected)
 
   const handleCoverUpload = async files => {
     const file = files?.[0]
@@ -539,7 +542,7 @@ export default function RegistrarNegocio() {
           </p>
           <Input label="Los 3 servicios principales que ofrece tu empresa" placeholder="Ej: Arepas, Menú casero, Delivery (separados por coma)" value={form.services} onChange={e=>s('services',e.target.value)} error={errors.services} errorKey="services" />
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-8, marginBottom:12, lineHeight:1.6 }}>
-            Estos tres servicios aparecerán como botones en la tarjeta de colaborador si activas un plan Básico o Premium.
+            Estos tres servicios ayudan a que la comunidad entienda rápido qué ofrece tu negocio.
           </p>
           <ImageUploadField
             label="Foto de portada (opcional)"
@@ -599,6 +602,7 @@ export default function RegistrarNegocio() {
             {form.gallery.length > 0 && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📷 {form.gallery.length} foto(s) extra</span>}
           </div>
         </div>
+        {PAID_BUSINESS_FEATURES_VISIBLE && (
         <div style={{ marginTop:16 }}>
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.light, letterSpacing:.7, margin:'0 2px 8px' }}>EXTRAS</p>
         <section style={{ marginTop:0, border:`1.5px solid ${professionalOptionsActive ? C.primary : C.border}`, borderRadius:16, background:'#fff', overflow:'hidden' }}>
@@ -618,7 +622,7 @@ export default function RegistrarNegocio() {
                 <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text }}>Potenciar tu negocio</span>
                 <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.light, marginTop:2 }}>
                   {selectedPlanOption
-                    ? `${selectedPlanOption.label}${leadAlertsSelected ? ' + Alertas' : ''} · CHF ${professionalTotal}/mes`
+                    ? `${selectedPlanOption.label}${paidLeadAlertsSelected ? ' + Alertas' : ''} · CHF ${professionalTotal}/mes`
                     : professionalOptionsActive
                       ? 'Elige un plan para activarlo'
                       : 'Opcional · elige un plan cuando quieras'}
@@ -744,7 +748,7 @@ export default function RegistrarNegocio() {
               </button>
             </div>
           </div>
-          {leadAlertsSelected && !form.email.trim() && (
+          {paidLeadAlertsSelected && !form.email.trim() && (
             <div style={{ marginTop:12 }}>
               <Input label="Email para recibir las alertas *" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={event => s('email', event.target.value)} error={errors.email} errorKey="email" />
               <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.5, margin:'-4px 2px 0' }}>Usaremos este email solo para enviarte los anuncios que coincidan con tus servicios y zona.</p>
@@ -758,7 +762,7 @@ export default function RegistrarNegocio() {
                   <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {selectedPlanOption.monthlyPrice}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
                 </div>
               )}
-              {leadAlertsSelected && (
+              {paidLeadAlertsSelected && (
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
                   <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>Alertas de clientes potenciales</span>
                   <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {LEAD_ALERTS_MONTHLY_PRICE}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
@@ -773,6 +777,7 @@ export default function RegistrarNegocio() {
           )}
         </div>
         </div>
+        )}
         <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginTop:14 }}>
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>
           <p style={{ fontFamily:PP, fontSize:11, color:'#7C2D12', lineHeight:1.7, margin:0 }}>

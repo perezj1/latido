@@ -12,7 +12,7 @@ import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOptions, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
-import { getBusinessPromotionMeta, isBusinessPromotionActive } from '../lib/businessPromotion'
+import { getBusinessPromotionMeta, isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -1050,7 +1050,7 @@ export default function Perfil() {
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get('notificaciones') === '1') setAlertsOpen(true)
-    if (params.get('seccion') === 'profesional') setProfessionalOpen(true)
+    if (PAID_BUSINESS_FEATURES_VISIBLE && params.get('seccion') === 'profesional') setProfessionalOpen(true)
     if (params.get('atencion') === 'eventos') {
       setActiveTab('event')
       setManageOpen(true)
@@ -1649,12 +1649,12 @@ export default function Perfil() {
         { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
       ],
     },
-    {
+    ...(PAID_BUSINESS_FEATURES_VISIBLE ? [{
       title: 'Profesional',
       items: [
         { icon:'✨', color:'#F1F5F9', label:'Ventajas para tu negocio', sub: promotableBusinessPublications.length ? `${promotableBusinessPublications.length} ${promotableBusinessPublications.length === 1 ? 'negocio listo' : 'negocios listos'} para activar un plan` : businessPublications.length ? 'Tus negocios ya tienen un plan activo' : 'Publica un negocio para desbloquear esta ventaja', action:() => setProfessionalOpen(true) },
       ],
-    },
+    }] : []),
     ...(isAdmin ? [{
       title: 'Administrador',
       items: [
@@ -2410,7 +2410,7 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
             </div>
             <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
-            {actionItem.kind === 'business' && (
+            {PAID_BUSINESS_FEATURES_VISIBLE && actionItem.kind === 'business' && (
               <button
                 onClick={() => {
                   const providerId = actionItem.id

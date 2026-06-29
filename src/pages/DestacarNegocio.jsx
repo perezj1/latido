@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
-import { BUSINESS_PROMOTION_PLAN_DETAILS } from '../lib/businessPromotion'
+import { BUSINESS_PROMOTION_PLAN_DETAILS, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 
 const PENDING_STATUSES = new Set(['reserved', 'checkout_open', 'processing'])
 const PLAN_KEYS = ['featured', 'basic', 'premium']
@@ -191,6 +191,10 @@ export default function DestacarNegocio() {
   }, [loadPlanStatus])
 
   useEffect(() => {
+    if (!PAID_BUSINESS_FEATURES_VISIBLE) {
+      setLoading(false)
+      return
+    }
     loadStatus()
   }, [loadStatus])
 
@@ -364,6 +368,25 @@ export default function DestacarNegocio() {
       <div style={{ maxWidth:620, margin:'0 auto', padding:'28px 18px 60px' }}>
         <div className="skeleton" style={{ height:44, width:180, borderRadius:14, marginBottom:18 }} />
         <div className="skeleton" style={{ height:390, borderRadius:24 }} />
+      </div>
+    )
+  }
+
+  if (!PAID_BUSINESS_FEATURES_VISIBLE) {
+    return (
+      <div style={{ maxWidth:560, margin:'0 auto', padding:'60px 20px', textAlign:'center' }}>
+        <div style={{ width:72, height:72, borderRadius:24, background:C.primaryLight, color:C.primary, display:'grid', placeItems:'center', fontSize:34, margin:'0 auto 20px' }}>
+          ✨
+        </div>
+        <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:24, color:C.text, margin:'0 0 10px' }}>
+          Opciones profesionales temporalmente pausadas
+        </h1>
+        <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, margin:'0 0 24px' }}>
+          Los planes y extras de pago no se muestran por ahora. El código sigue preparado para reactivarlos rápidamente.
+        </p>
+        <button onClick={() => navigate('/perfil')} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:'#fff', background:C.primary, border:'none', borderRadius:14, padding:'12px 18px', cursor:'pointer' }}>
+          Volver al perfil
+        </button>
       </div>
     )
   }

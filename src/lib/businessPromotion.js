@@ -1,6 +1,10 @@
 const HOUR_MS = 60 * 60 * 1000
 const NEW_FREE_BUSINESS_WINDOW_MS = 72 * HOUR_MS
 
+// TEMPORAL: planes y extras de pago ocultos hasta el lunes 6 de julio de 2026.
+// Para reactivarlos, cambiar a true. No borrar el código de planes/checkout.
+export const PAID_BUSINESS_FEATURES_VISIBLE = false
+
 export const BUSINESS_PROMOTION_PLANS = [
   {
     key:'free',
