@@ -53,9 +53,14 @@ const OPTIONAL_PROVIDER_VERIFICATION_COLUMNS = new Set([
 const ADMIN_QUERY_PAGE_SIZE = 500
 const ADMIN_LIST_PAGE_SIZE = 40
 const ADMIN_ACTIVITY_RETENTION_DAYS = 60
+const ADMIN_MAX_DELTA_DAYS = 70
 const ADMIN_DELTA_CONCURRENCY = 2
 const ADMIN_DELTA_REFRESH_RECENT_DAYS = 2
 const ADMIN_PERIOD_OPTIONS = [1, 7, 30]
+const PARTNER_MONTH_PERIOD_OPTIONS = [
+  { value: 'current', label: 'Mes actual' },
+  { value: 'previous', label: 'Mes pasado' },
+]
 const ADMIN_ANALYTICS_EVENT_TYPES = [
   'page_view',
   'search',
@@ -161,7 +166,7 @@ async function fetchAllAdminRows({
 }
 
 function getAdminDayRanges(days = 30) {
-  const safeDays = Math.max(1, Math.min(Number(days) || 1, ADMIN_ACTIVITY_RETENTION_DAYS))
+  const safeDays = Math.max(1, Math.min(Number(days) || 1, ADMIN_MAX_DELTA_DAYS))
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -463,6 +468,67 @@ function countByDay(items, days = 30) {
     if (key in counts) counts[key]++
   })
   return Object.entries(counts).map(([date, count]) => ({ date, count }))
+}
+
+function calendarMonthRange(period = 'current') {
+  const now = new Date()
+  const offset = period === 'previous' ? -1 : 0
+  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1)
+  const endExclusive = new Date(now.getFullYear(), now.getMonth() + offset + 1, 1)
+  const endInclusive = new Date(endExclusive.getTime() - 1)
+  const monthLabel = start.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+  const shortLabel = start.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })
+
+  return {
+    period,
+    start,
+    endExclusive,
+    endInclusive,
+    monthLabel,
+    shortLabel,
+    startLabel:start.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    endLabel:endInclusive.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+  }
+}
+
+function isWithinDateRange(value, range) {
+  if (!value || !range) return false
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return false
+  return date >= range.start && date < range.endExclusive
+}
+
+function countByDateRange(items, range) {
+  if (!range) return []
+  const counts = {}
+  const cursor = new Date(range.start)
+
+  while (cursor < range.endExclusive) {
+    counts[localDateKey(cursor)] = 0
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  items.forEach(item => {
+    const key = localDateKey(item.created_at)
+    if (key in counts) counts[key] += 1
+  })
+
+  return Object.entries(counts).map(([date, count]) => ({ date, count }))
+}
+
+function getPartnerMonthlyLoadDays() {
+  const previousMonth = calendarMonthRange('previous')
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  let days = 0
+  const cursor = new Date(previousMonth.start)
+  while (cursor <= today) {
+    days += 1
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return Math.max(1, days)
 }
 
 function periodTrend(items, days) {
@@ -998,6 +1064,33 @@ function PeriodSwitch({ value, onChange }) {
   )
 }
 
+function MonthPeriodSwitch({ value, onChange }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 999, padding: 5, boxShadow: '0 8px 20px rgba(15,23,42,0.04)' }}>
+      {PARTNER_MONTH_PERIOD_OPTIONS.map(option => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          style={{
+            border: 'none',
+            borderRadius: 999,
+            background: value === option.value ? '#4F46E5' : 'transparent',
+            color: value === option.value ? '#fff' : C.mid,
+            padding: '7px 10px',
+            fontFamily: PP,
+            fontSize: 11,
+            fontWeight: 900,
+            cursor: 'pointer',
+          }}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function AdminPeriodChart({ title, items, color, days, onDaysChange }) {
   const data = useMemo(() => countByDay(items, days), [items, days])
   const total = data.reduce((sum, item) => sum + item.count, 0)
@@ -1021,6 +1114,46 @@ function AdminPeriodChart({ title, items, color, days, onDaysChange }) {
           </p>
         </div>
         <PeriodSwitch value={days} onChange={onDaysChange} />
+      </div>
+      <SparkBarChart data={data} color={color} />
+    </div>
+  )
+}
+
+function AdminMonthlyChart({ title, items, color, range }) {
+  const data = useMemo(() => countByDateRange(items, range), [items, range])
+  const total = data.reduce((sum, item) => sum + item.count, 0)
+
+  return (
+    <div style={{
+      background: '#fff',
+      border: `1px solid ${C.border}`,
+      borderRadius: 22,
+      padding: '18px',
+      boxShadow: '0 18px 44px rgba(15,23,42,0.06)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', marginBottom: 10 }}>
+        <div>
+          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '0 0 4px', fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase' }}>
+            {title} · {range.monthLabel}
+          </p>
+          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 32, color: C.text, margin: 0, letterSpacing: -1, lineHeight: 1 }}>
+            {total}
+          </p>
+        </div>
+        <span style={{
+          fontFamily: PP,
+          fontSize: 11,
+          fontWeight: 900,
+          color,
+          background: `${color}14`,
+          padding: '6px 10px',
+          borderRadius: 999,
+          marginTop: 2,
+          whiteSpace: 'nowrap',
+        }}>
+          {range.startLabel} - {range.endLabel}
+        </span>
       </div>
       <SparkBarChart data={data} color={color} />
     </div>
@@ -1180,7 +1313,7 @@ export default function Admin() {
   const [analyticsEvents, setAnalyticsEvents] = useState([])
   const [analyticsUnavailable, setAnalyticsUnavailable] = useState(false)
   const [analyticsDays, setAnalyticsDays] = useState(7)
-  const [partnerDays, setPartnerDays] = useState(7)
+  const [partnerMonthPeriod, setPartnerMonthPeriod] = useState('current')
   const [selectedPartnerId, setSelectedPartnerId] = useState(PARTNER_ANALYTICS_PARTNERS[0]?.id || '')
   const [messageEvents, setMessageEvents] = useState([])
   const [messagesUnavailable, setMessagesUnavailable] = useState(false)
@@ -1339,12 +1472,16 @@ export default function Admin() {
   const selectedPartner = partnerOptions.find(partner => partner.id === selectedPartnerId)
     || partnerOptions[0]
     || PARTNER_ANALYTICS_PARTNERS[0]
+  const partnerMonthRange = useMemo(
+    () => calendarMonthRange(partnerMonthPeriod),
+    [partnerMonthPeriod],
+  )
   const selectedPartnerEvents = useMemo(
     () => partnerAnalyticsEvents.filter(event =>
       event.partnerAnalyticsId === selectedPartner?.id
-      && isWithinRecentDays(event.created_at, partnerDays)
+      && isWithinDateRange(event.created_at, partnerMonthRange)
     ),
-    [partnerAnalyticsEvents, partnerDays, selectedPartner?.id]
+    [partnerAnalyticsEvents, partnerMonthRange, selectedPartner?.id]
   )
   const partnerClickEvents = useMemo(
     () => selectedPartnerEvents.filter(event =>
@@ -1435,8 +1572,8 @@ export default function Admin() {
     () => new Set(partnerDailyAccounts.map(item => item.userId)).size,
     [partnerDailyAccounts]
   )
-  const partnerMetricSuffix = partnerDays === 1 ? 'hoy' : `${partnerDays}d`
-  const partnerRangeText = partnerDays === 1 ? 'hoy' : `los últimos ${partnerDays} días`
+  const partnerMetricSuffix = partnerMonthRange.shortLabel
+  const partnerRangeText = `${partnerMonthRange.monthLabel}, del ${partnerMonthRange.startLabel} al ${partnerMonthRange.endLabel}`
   const topPageRows = useMemo(
     () => topAnalyticsRows(pageViewEvents, event => pageLabel(event.path), 8, event => event.path),
     [pageViewEvents]
@@ -1571,7 +1708,7 @@ export default function Admin() {
   function getLoadDaysForTab(tabId = tab) {
     if (tabId === 'overview') return Math.min(ADMIN_ACTIVITY_RETENTION_DAYS, Math.max(overviewDays * 2, 14))
     if (tabId === 'analytics') return analyticsDays
-    if (tabId === 'partners') return partnerDays
+    if (tabId === 'partners') return Math.min(ADMIN_MAX_DELTA_DAYS, getPartnerMonthlyLoadDays())
     if (tabId === 'live') return 14
     if (tabId === 'users') return userDays
     return 30
@@ -1611,7 +1748,7 @@ export default function Admin() {
     if (needsMoreRange) {
       loadAdminData({ groups, days: getLoadDaysForTab(tab), silent:true })
     }
-  }, [overviewDays, analyticsDays, partnerDays, userDays, tab])
+  }, [overviewDays, analyticsDays, userDays, tab])
 
   function switchTab(nextTab) {
     setCrmMenuOpen(false)
@@ -1625,7 +1762,7 @@ export default function Admin() {
   async function loadAdminData(options = {}) {
     const force = options?.force === true
     const silent = options?.silent === true
-    const requestedDays = Math.max(1, Math.min(Number(options?.days || getLoadDaysForTab(tab)) || 1, ADMIN_ACTIVITY_RETENTION_DAYS))
+    const requestedDays = Math.max(1, Math.min(Number(options?.days || getLoadDaysForTab(tab)) || 1, ADMIN_MAX_DELTA_DAYS))
     const requestedGroups = [...new Set(options?.groups || getAdminTabDataGroups(tab))]
     const groups = requestedGroups.filter(group =>
       !loadingDataGroupsRef.current.has(group)
@@ -2593,7 +2730,7 @@ export default function Admin() {
       : tab === 'analytics'
         ? <AdminPeriodChart title="Vistas de página" items={pageViewEvents} color="#0284C7" days={analyticsDays} onDaysChange={setAnalyticsDays} />
       : tab === 'partners'
-        ? <AdminPeriodChart title={`Salidas a ${selectedPartner?.name || 'partners'}`} items={partnerClickEvents} color="#4F46E5" days={partnerDays} onDaysChange={setPartnerDays} />
+        ? <AdminMonthlyChart title={`Salidas a ${selectedPartner?.name || 'partners'}`} items={partnerClickEvents} color="#4F46E5" range={partnerMonthRange} />
       : tab === 'reports'
         ? <AdminChartCard title="Reportes recibidos" items={reports} color="#DC2626" />
         : tab === 'businessVerification'
@@ -3121,9 +3258,9 @@ export default function Admin() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
               <div>
                 <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Colaboraciones</p>
-                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Selecciona un colaborador para consultar sus resultados.</p>
+                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Selecciona un colaborador para consultar sus resultados por mes natural.</p>
               </div>
-              <PeriodSwitch value={partnerDays} onChange={setPartnerDays} />
+              <MonthPeriodSwitch value={partnerMonthPeriod} onChange={setPartnerMonthPeriod} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 230px), 1fr))', gap: 10 }}>
@@ -3131,7 +3268,7 @@ export default function Admin() {
                 const active = selectedPartner?.id === partner.id
                 const clicks = partnerAnalyticsEvents.filter(event =>
                   event.partnerAnalyticsId === partner.id
-                  && isWithinRecentDays(event.created_at, partnerDays)
+                  && isWithinDateRange(event.created_at, partnerMonthRange)
                   && isPartnerClickAnalyticsEvent(event, partner)
                 ).length
 
@@ -3160,7 +3297,7 @@ export default function Admin() {
                     <span style={{ minWidth: 0, flex: 1 }}>
                       <strong style={{ display: 'block', fontFamily: PP, fontSize: 13, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{partner.name}</strong>
                       <span style={{ display: 'block', fontFamily: PP, fontSize: 10, fontWeight: 800, color: active ? partner.color : C.light, marginTop: 3 }}>
-                        {partner.isBusinessPartner ? `${partner.planKey === 'premium' ? 'Premium' : 'Básica'} · ` : ''}{clicks} salidas · {partnerDays === 1 ? 'hoy' : `${partnerDays} días`}
+                        {partner.isBusinessPartner ? `${partner.planKey === 'premium' ? 'Premium' : 'Básica'} · ` : ''}{clicks} salidas · {partnerMonthRange.monthLabel}
                       </span>
                     </span>
                     <span aria-hidden="true" style={{ color: active ? partner.color : C.light, fontWeight: 900 }}>›</span>
