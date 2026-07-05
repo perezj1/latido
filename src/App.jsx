@@ -1,6 +1,6 @@
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Component, lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
@@ -53,6 +53,88 @@ const Virtus360Services = lazy(() => import('./pages/Virtus360Services'))
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
 const INSTALL_BANNER_LIFT_VAR = '--latido-install-banner-lift'
+const CHUNK_RELOAD_KEY = 'latido_chunk_reload_at'
+
+function isLazyChunkError(error) {
+  const message = String(error?.message || '')
+  const name = String(error?.name || '')
+
+  return name === 'ChunkLoadError'
+    || message.includes('Failed to fetch dynamically imported module')
+    || message.includes('Importing a module script failed')
+    || message.includes('error loading dynamically imported module')
+    || message.includes('Loading chunk')
+}
+
+async function clearLatidoCaches() {
+  if (!('caches' in window)) return
+
+  const keys = await caches.keys()
+  await Promise.all(
+    keys
+      .filter(key => key.startsWith('latido-'))
+      .map(key => caches.delete(key)),
+  )
+}
+
+class LazyRouteErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { error:null, reloading:false }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  componentDidCatch(error) {
+    if (!isLazyChunkError(error) || this.state.reloading) return
+
+    const lastReloadAt = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0)
+    const canReload = !lastReloadAt || Date.now() - lastReloadAt > 15000
+    if (!canReload) return
+
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()))
+    this.setState({ reloading:true })
+    clearLatidoCaches()
+      .catch(() => {})
+      .finally(() => window.location.reload())
+  }
+
+  render() {
+    const { error, reloading } = this.state
+    if (!error) return this.props.children
+
+    const recoverable = isLazyChunkError(error)
+
+    return (
+      <div style={{ minHeight:'100vh', display:'grid', placeItems:'center', padding:'24px', background:'#F7FAFF' }}>
+        <div style={{ width:'min(420px, 100%)', textAlign:'center', background:'#fff', border:'1px solid #DCE6F2', borderRadius:24, padding:'24px', boxShadow:'0 18px 42px rgba(30,64,175,.12)' }}>
+          <img src="/favicon.svg" alt="Latido" style={{ width:54, height:54, marginBottom:16 }} />
+          <h1 style={{ fontFamily:PP, fontSize:22, lineHeight:1.18, color:C.text, margin:'0 0 10px' }}>
+            {recoverable ? 'Actualizando Latido' : 'No se pudo abrir esta pagina'}
+          </h1>
+          <p style={{ fontFamily:PP, fontSize:13, lineHeight:1.65, color:C.mid, margin:'0 0 18px' }}>
+            {recoverable
+              ? reloading
+                ? 'Estamos cargando la version mas reciente de la app.'
+                : 'Tu app tenia una version antigua en cache. Recarga para abrir la version actual.'
+              : 'Ha ocurrido un error inesperado. Recarga la app e intentalo de nuevo.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              clearLatidoCaches().catch(() => {}).finally(() => window.location.reload())
+            }}
+            style={{ width:'100%', minHeight:46, border:0, borderRadius:14, background:C.primary, color:'#fff', fontFamily:PP, fontWeight:800, fontSize:13, cursor:'pointer' }}
+          >
+            Recargar app
+          </button>
+        </div>
+      </div>
+    )
+  }
+}
 
 function useAnalyticsConsent() {
   const [enabled, setEnabled] = useState(hasAnalyticsConsent)
@@ -612,7 +694,7 @@ export default function App() {
           }}
         />
         <Routes>
-          <Route path="/*" element={<AppShell />} />
+          <Route path="/*" element={<LazyRouteErrorBoundary><AppShell /></LazyRouteErrorBoundary>} />
         </Routes>
         <VercelTelemetry />
       </BrowserRouter>
