@@ -4,6 +4,7 @@ import BelliniPartnerPromo from './BelliniPartnerPromo'
 import MiraPartnerPromo from './MiraPartnerPromo'
 import SynaPartnerPromo from './SynaPartnerPromo'
 import Virtus360PartnerPromo from './Virtus360PartnerPromo'
+import GildaPartnerPromo from './GildaPartnerPromo'
 import DynamicBusinessPartnerCard from './DynamicBusinessPartnerCard'
 import { fetchActiveBusinessPartners } from '../lib/businessPartners'
 
@@ -29,6 +30,10 @@ const PUBLIC_PARTNERS = [
   {
     id:'bellini',
     render:placement => <BelliniPartnerPromo key="bellini" placement={placement} variant="public-featured" />,
+  },
+  {
+    id:'gilda',
+    render:placement => <GildaPartnerPromo key="gilda" placement={placement} variant="public-featured" />,
   },
   {
     id:'mira',

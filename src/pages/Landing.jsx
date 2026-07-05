@@ -86,6 +86,7 @@ const LANDING_COLLABORATOR_LOGOS = [
   { name: 'Virtus360', logo: '/partners/virtus360/logo.svg' },
   { name: 'Syna', logo: '/partners/syna/logo.svg' },
   { name: 'Bellini', logo: '/partners/bellini/logo-wide.svg' },
+  { name: 'Gilda by de Matos', logo: '/partners/gilda/logo.png', maxWidth: 150, maxHeight: 78 },
   { name: 'mira', logo: '/partners/mira/mira-removebg-preview.png' },
 ]
 
@@ -284,8 +285,8 @@ function LandingCollaboratorsStrip() {
                 decoding="async"
                 style={{
                   display: 'block',
-                  maxWidth: 'min(158px, 100%)',
-                  maxHeight: 46,
+                  maxWidth: `min(${partner.maxWidth || 158}px, 100%)`,
+                  maxHeight: partner.maxHeight || 46,
                   width: 'auto',
                   height: 'auto',
                   objectFit: 'contain',

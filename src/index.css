@@ -1218,6 +1218,31 @@
   height: 31px;
 }
 
+.partner-card--gilda .partner-card-logo--wide {
+  width: 86px;
+  height: 56px;
+  flex-basis: 86px;
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0;
+}
+
+.partner-card--gilda .partner-card-logo--wide img {
+  width: 82px;
+  height: 54px;
+}
+
+.partner-card.public-partner-tile.partner-card--gilda .partner-card-logo--wide {
+  width: 96px;
+  height: 64px;
+  flex-basis: 96px;
+}
+
+.partner-card.public-partner-tile.partner-card--gilda .partner-card-logo--wide img {
+  width: 92px;
+  height: 62px;
+}
+
 .partner-card-copy h3 {
   margin: 0 0 4px;
   color: #102A5C;
@@ -1396,7 +1421,7 @@
   padding: 36px 16px;
   background:
     radial-gradient(circle at 12% 4%, rgba(131, 216, 243, .22), transparent 28%),
-    radial-gradient(circle at 92% 16%, rgba(232, 68, 103, .12), transparent 25%),
+    radial-gradient(circle at 92% 16%, rgba(37, 99, 235, .12), transparent 25%),
     #F7FAFF;
 }
 
@@ -1436,7 +1461,7 @@
 
 .mira-contact-kicker {
   margin: 0 0 8px;
-  color: #D7355A;
+  color: #2563EB;
   font-family: 'Poppins', system-ui, sans-serif;
   font-size: 10px;
   font-weight: 800;
@@ -1481,8 +1506,8 @@
   gap: 3px;
   margin-bottom: 12px;
   padding: 14px 16px;
-  background: linear-gradient(135deg, #F0FAFD, #FFF5F7);
-  border: 1px solid #DCEAF0;
+  background: linear-gradient(135deg, #EFF6FF, #F8FAFF);
+  border: 1px solid #BFDBFE;
   border-radius: 16px;
   font-family: 'Poppins', system-ui, sans-serif;
 }
@@ -1523,8 +1548,8 @@
 
 .mira-contact-action:hover {
   transform: translateY(-2px);
-  border-color: #F0A5B6;
-  box-shadow: 0 12px 26px rgba(232, 68, 103, .1);
+  border-color: #93C5FD;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, .12);
 }
 
 .mira-contact-action-icon {
@@ -1532,8 +1557,8 @@
   place-items: center;
   width: 40px;
   height: 40px;
-  color: #D7355A;
-  background: #FFF1F4;
+  color: #2563EB;
+  background: #EFF6FF;
   border-radius: 13px;
   font-size: 18px;
 }
@@ -1557,7 +1582,7 @@
 }
 
 .mira-contact-action-arrow {
-  color: #D7355A;
+  color: #2563EB;
   font-size: 17px;
   font-weight: 800;
 }

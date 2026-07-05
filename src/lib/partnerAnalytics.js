@@ -44,6 +44,20 @@ export const PARTNER_ANALYTICS_PARTNERS = [
     },
   },
   {
+    id:'gilda',
+    name:'Gilda by de Matos',
+    logo:'/partners/gilda/logo.png',
+    campaign:'gilda-latido',
+    legacyPartnerIds:[],
+    color:'#B45309',
+    tint:'#FEF3C7',
+    services:{
+      tapas:'Tapas',
+      winebar:'Winebar',
+      lunch:'Lunch',
+    },
+  },
+  {
     id:'syna',
     name:'Syna',
     logo:'/partners/syna/logo.svg',
