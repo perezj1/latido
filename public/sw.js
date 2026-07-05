@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'latido-shell-v8'
+const SHELL_CACHE = 'latido-shell-v9'
 const ASSET_CACHE = 'latido-assets'
 const PUBLIC_DATA_CACHE = 'latido-public-data-v1'
 const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, PUBLIC_DATA_CACHE])
