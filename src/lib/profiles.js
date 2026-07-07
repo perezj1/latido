@@ -32,9 +32,9 @@ export async function fetchAvatarsByIds(ids) {
       foundIds.add(row.id)
     })
     // cache misses so we don't re-fetch every render
-    toFetch.filter(id => !foundIds.has(id)).forEach(id => {
-      cache.set(id, { avatarUrl: null, ts: now })
-    })
+    for (const id of toFetch) {
+      if (!foundIds.has(id)) cache.set(id, { avatarUrl: null, ts: now })
+    }
   }
 
   return new Map(uniqueIds.map(id => [id, cache.get(id)?.avatarUrl || null]))

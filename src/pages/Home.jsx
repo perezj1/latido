@@ -601,48 +601,44 @@ export default function Home() {
       const jobsToReview = ((jobsRes.error ? [] : jobsRes.data) || []).filter(row => isPublicationDueForReview(row, jobConfirmations))
       const businessesToReview = ((providersRes.error ? [] : providersRes.data) || []).filter(row => isPublicationDueForReview(row, businessConfirmations))
       const communitiesToReview = ((communitiesRes.error ? [] : communitiesRes.data) || []).filter(row => isPublicationDueForReview(row, communityConfirmations))
-      const missingImageItems = [
-        ...((listingsRes.error ? [] : listingsRes.data) || [])
-          .filter(row => isMissingImageDueForReview('ad', row, missingImageConfirmations))
-          .map(row => makeAttentionItem('ad', row, {
-            table:'listings',
-            title: row.title || 'Anuncio',
-            meta: [formatAdLocation(row), getAdDisplayCat(row)?.label].filter(Boolean).join(' · '),
-            emoji: getAdDisplayEmoji(row) || '📌',
-          })),
-        ...((jobsRes.error ? [] : jobsRes.data) || [])
-          .filter(row => isMissingImageDueForReview('job', row, missingImageConfirmations))
-          .map(row => makeAttentionItem('job', row, {
-            table:'jobs',
-            title: row.title || 'Empleo',
-            meta: [row.company, row.city || row.canton].filter(Boolean).join(' · '),
-            emoji: getJobCategoryEmoji(row) || '💼',
-          })),
-        ...((eventsRes.error ? [] : eventsRes.data) || [])
-          .filter(row => isMissingImageDueForReview('event', row, missingImageConfirmations))
-          .map(row => makeAttentionItem('event', row, {
-            table:'events',
-            title: row.title || 'Evento',
-            meta: [[row.day, row.month, row.year].filter(Boolean).join(' '), row.city || row.canton].filter(Boolean).join(' · '),
-            emoji:'🎉',
-          })),
-        ...((providersRes.error ? [] : providersRes.data) || [])
-          .filter(row => isMissingImageDueForReview('business', row, missingImageConfirmations))
-          .map(row => makeAttentionItem('business', row, {
-            table:'providers',
-            title: row.name || 'Negocio',
-            meta: [row.city || row.canton, row.category].filter(Boolean).join(' · '),
-            emoji:'🏪',
-          })),
-        ...((communitiesRes.error ? [] : communitiesRes.data) || [])
-          .filter(row => isMissingImageDueForReview('community', row, missingImageConfirmations))
-          .map(row => makeAttentionItem('community', row, {
-            table:'communities',
-            title: row.name || 'Grupo',
-            meta: [row.city || 'Suiza', row.contact].filter(Boolean).join(' · '),
-            emoji: row.emoji || '👥',
-          })),
-      ]
+      const missingImageItems = []
+      const addMissingImageItems = (rows, kind, buildItem) => {
+        for (const row of rows) {
+          if (!isMissingImageDueForReview(kind, row, missingImageConfirmations)) continue
+          missingImageItems.push(makeAttentionItem(kind, row, buildItem(row)))
+        }
+      }
+
+      addMissingImageItems((listingsRes.error ? [] : listingsRes.data) || [], 'ad', row => ({
+        table:'listings',
+        title: row.title || 'Anuncio',
+        meta: [formatAdLocation(row), getAdDisplayCat(row)?.label].filter(Boolean).join(' \u00B7 '),
+        emoji: getAdDisplayEmoji(row) || '\u{1F4CC}',
+      }))
+      addMissingImageItems((jobsRes.error ? [] : jobsRes.data) || [], 'job', row => ({
+        table:'jobs',
+        title: row.title || 'Empleo',
+        meta: [row.company, row.city || row.canton].filter(Boolean).join(' \u00B7 '),
+        emoji: getJobCategoryEmoji(row) || '\u{1F4BC}',
+      }))
+      addMissingImageItems((eventsRes.error ? [] : eventsRes.data) || [], 'event', row => ({
+        table:'events',
+        title: row.title || 'Evento',
+        meta: [[row.day, row.month, row.year].filter(Boolean).join(' '), row.city || row.canton].filter(Boolean).join(' \u00B7 '),
+        emoji:'\u{1F389}',
+      }))
+      addMissingImageItems((providersRes.error ? [] : providersRes.data) || [], 'business', row => ({
+        table:'providers',
+        title: row.name || 'Negocio',
+        meta: [row.city || row.canton, row.category].filter(Boolean).join(' \u00B7 '),
+        emoji:'\u{1F3EA}',
+      }))
+      addMissingImageItems((communitiesRes.error ? [] : communitiesRes.data) || [], 'community', row => ({
+        table:'communities',
+        title: row.name || 'Grupo',
+        meta: [row.city || 'Suiza', row.contact].filter(Boolean).join(' \u00B7 '),
+        emoji: row.emoji || '\u{1F465}',
+      }))
       const nextTasks = []
 
       if (missingImageItems.length) {
@@ -886,9 +882,10 @@ export default function Home() {
       })
 
       const adReviewStats = {}
-      const reviewableAdIds = adsNorm
-        .filter(ad => REVIEWABLE_AD_CATS.has(ad.cat))
-        .map(ad => ad.id)
+      const reviewableAdIds = []
+      for (const ad of adsNorm) {
+        if (REVIEWABLE_AD_CATS.has(ad.cat)) reviewableAdIds.push(ad.id)
+      }
 
       if (reviewableAdIds.length) {
         const { data: reviewsData, error: reviewsError } = await supabase
@@ -908,22 +905,23 @@ export default function Home() {
         }
       }
 
-      setRecentAds(
-        [
-          ...adsNorm.map(ad => {
-            const reviews = adReviewStats[ad.id] || []
-            return {
-              ...ad,
-              rating: averageRating(reviews),
-              reviewCount: reviews.length,
-            }
-          }),
-          ...jobsNorm,
-        ]
-          .sort((a, b) => String(b._sort).localeCompare(String(a._sort)))
-          .slice(0, HOME_RECENT_ITEM_LIMIT)
-          .map(({ _sort, ...rest }) => rest)
-      )
+      const recentItems = []
+      for (const ad of adsNorm) {
+        const reviews = adReviewStats[ad.id] || []
+        recentItems.push({
+          ...ad,
+          rating: averageRating(reviews),
+          reviewCount: reviews.length,
+        })
+      }
+      recentItems.push(...jobsNorm)
+      recentItems.sort((a, b) => String(b._sort).localeCompare(String(a._sort)))
+
+      const nextRecentAds = []
+      for (const { _sort, ...rest } of recentItems.slice(0, HOME_RECENT_ITEM_LIMIT)) {
+        nextRecentAds.push(rest)
+      }
+      setRecentAds(nextRecentAds)
 
       setCommunityHighlights(
         ((communitiesRes.error ? [] : communitiesRes.data) || []).map((row) => ({
@@ -944,34 +942,33 @@ export default function Home() {
         providerPhotoMap[photo.provider_id] = [...(providerPhotoMap[photo.provider_id] || []), photo.url]
       })
 
-      setBusinessHighlights(
-        ((providersRes.error ? [] : providersRes.data) || [])
-          .filter(row => row.category !== 'empleo' && row.category !== 'vivienda')
-          .map((row) => {
-            const type = getNegocioTypeMeta(row.category)
-            const typeLabel = type?.label?.replace(/^[^\s]+\s/, '') || 'Negocio'
-            const verificationStatus = getBusinessVerificationStatus(row)
-            const typeEmoji = type?.label?.split(' ')[0] || '🏪'
-            return {
-              id: row.id,
-              name: row.name || 'Negocio',
-              type: row.category || '',
-              typeLabel,
-              emoji: typeEmoji,
-              city: row.city || row.canton || 'Suiza',
-              desc: row.description || '',
-              services: Array.isArray(row.services) ? row.services : [],
-              photo_url: row.photo_url || providerPhotoMap[row.id]?.[0] || '',
-              verified: verificationStatus === 'verified',
-              verification_status: verificationStatus,
-              featured: !!row.featured,
-              created_at: row.created_at || '',
-              promotion_plan: row.promotion_plan,
-              promotion_starts_at: row.promotion_starts_at,
-              promotion_ends_at: row.promotion_ends_at,
-            }
-          })
-      )
+      const nextBusinessHighlights = []
+      for (const row of ((providersRes.error ? [] : providersRes.data) || [])) {
+        if (row.category === 'empleo' || row.category === 'vivienda') continue
+        const type = getNegocioTypeMeta(row.category)
+        const typeLabel = type?.label?.replace(/^[^\s]+\s/, '') || 'Negocio'
+        const verificationStatus = getBusinessVerificationStatus(row)
+        const typeEmoji = type?.label?.split(' ')[0] || '\u{1F3EA}'
+        nextBusinessHighlights.push({
+          id: row.id,
+          name: row.name || 'Negocio',
+          type: row.category || '',
+          typeLabel,
+          emoji: typeEmoji,
+          city: row.city || row.canton || 'Suiza',
+          desc: row.description || '',
+          services: Array.isArray(row.services) ? row.services : [],
+          photo_url: row.photo_url || providerPhotoMap[row.id]?.[0] || '',
+          verified: verificationStatus === 'verified',
+          verification_status: verificationStatus,
+          featured: !!row.featured,
+          created_at: row.created_at || '',
+          promotion_plan: row.promotion_plan,
+          promotion_starts_at: row.promotion_starts_at,
+          promotion_ends_at: row.promotion_ends_at,
+        })
+      }
+      setBusinessHighlights(nextBusinessHighlights)
 
       setRecentJobs(
         ((jobsRes.error ? [] : jobsRes.data) || []).map((row) => {
@@ -1000,22 +997,26 @@ export default function Home() {
         return new Date(y, m, d)
       }
       const today = new Date(); today.setHours(0,0,0,0)
-      setRecentEvents(
-        ((eventsRes.error ? [] : eventsRes.data) || [])
-          .filter(row => toEventDate(row) >= today)
-          .sort((a, b) => toEventDate(a) - toEventDate(b))
-          .slice(0, 3)
-          .map((row) => ({
-            id: row.id,
-            title: row.title || '',
-            day: row.day || '',
-            month: row.month || '',
-            city: row.city || 'Suiza',
-            venue: row.venue || '',
-            price: row.price || '',
-            img: row.img_url || '',
-          }))
-      )
+      const upcomingEvents = []
+      for (const row of ((eventsRes.error ? [] : eventsRes.data) || [])) {
+        if (toEventDate(row) >= today) upcomingEvents.push(row)
+      }
+      upcomingEvents.sort((a, b) => toEventDate(a) - toEventDate(b))
+
+      const nextRecentEvents = []
+      for (const row of upcomingEvents.slice(0, 3)) {
+        nextRecentEvents.push({
+          id: row.id,
+          title: row.title || '',
+          day: row.day || '',
+          month: row.month || '',
+          city: row.city || 'Suiza',
+          venue: row.venue || '',
+          price: row.price || '',
+          img: row.img_url || '',
+        })
+      }
+      setRecentEvents(nextRecentEvents)
     } catch (error) {
       console.error('Error loading home data:', error)
     } finally {

@@ -45,13 +45,11 @@ export function startEmailNotificationPresence(userId) {
     const now = Date.now()
     try {
       const { error } = await supabase
-        .from('app_presence_sessions')
-        .upsert({
-          user_id: userId,
-          session_id: sessionId,
-          active_until: new Date(active ? now + ACTIVE_WINDOW_MS : now).toISOString(),
-          last_seen_at: new Date(now).toISOString(),
-        }, { onConflict: 'user_id,session_id' })
+        .rpc('upsert_app_presence_session', {
+          p_session_id: sessionId,
+          p_active_until: new Date(active ? now + ACTIVE_WINDOW_MS : now).toISOString(),
+          p_last_seen_at: new Date(now).toISOString(),
+        })
 
       if (error && !stopped) {
         console.warn('Could not sync email notification presence:', error.message)

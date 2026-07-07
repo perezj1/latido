@@ -46,6 +46,42 @@ CREATE POLICY "app_presence_delete_own"
   FOR DELETE
   USING (user_id = auth.uid());
 
+CREATE OR REPLACE FUNCTION public.upsert_app_presence_session(
+  p_session_id TEXT,
+  p_active_until TIMESTAMPTZ,
+  p_last_seen_at TIMESTAMPTZ
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  INSERT INTO public.app_presence_sessions (
+    user_id,
+    session_id,
+    active_until,
+    last_seen_at
+  )
+  VALUES (
+    auth.uid(),
+    p_session_id,
+    p_active_until,
+    p_last_seen_at
+  )
+  ON CONFLICT (user_id, session_id)
+  DO UPDATE SET
+    active_until = EXCLUDED.active_until,
+    last_seen_at = EXCLUDED.last_seen_at;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.upsert_app_presence_session(TEXT, TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
+
 CREATE TABLE IF NOT EXISTS public.email_notification_preferences (
   user_id                 UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
   message_emails_enabled  BOOLEAN NOT NULL DEFAULT TRUE,

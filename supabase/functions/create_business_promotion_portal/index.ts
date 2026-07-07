@@ -31,11 +31,11 @@ const PLAN_CONFIGS = {
 
 type PlanKey = keyof typeof PLAN_CONFIGS
 
-const PRICE_TO_PLAN = new Map(
-  Object.values(PLAN_CONFIGS)
-    .filter(plan => plan.priceId)
-    .map(plan => [plan.priceId, plan.key]),
-)
+const priceToPlanEntries: Array<[string, PlanKey]> = []
+for (const plan of Object.values(PLAN_CONFIGS)) {
+  if (plan.priceId) priceToPlanEntries.push([plan.priceId, plan.key])
+}
+const PRICE_TO_PLAN = new Map(priceToPlanEntries)
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion:'2026-05-27.dahlia',
@@ -219,14 +219,13 @@ Deno.serve(async req => {
       ?.find(subscription => subscription.stripe_customer_id)
       ?.stripe_customer_id
 
-    const subscriptionIds = [...new Set(
-      (subscriptions || [])
-        .filter(subscription =>
-          ['active', 'past_due', 'processing'].includes(subscription.status)
-        )
-        .map(subscription => subscription.stripe_subscription_id)
-        .filter((id): id is string => typeof id === 'string' && id.length > 0),
-    )]
+    const subscriptionIdSet = new Set<string>()
+    for (const subscription of subscriptions || []) {
+      if (!['active', 'past_due', 'processing'].includes(subscription.status)) continue
+      const id = subscription.stripe_subscription_id
+      if (typeof id === 'string' && id.length > 0) subscriptionIdSet.add(id)
+    }
+    const subscriptionIds = [...subscriptionIdSet]
     const syncedSubscriptions = []
 
     for (const subscriptionId of subscriptionIds) {

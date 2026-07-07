@@ -925,14 +925,13 @@ export async function fetchEventfrogEvents({ from, to, filterId = 'latino', sign
           throw error
         }
 
-        const normalizedMatches = (data.events || [])
-          .map(normalizeEventfrogEvent)
-          .filter(event => {
-            const eventTime = event.date?.getTime() || 0
-            return !event.cancelled && eventTime >= fromTime && matchesLatidoTerms(event, filter.terms)
-          })
-
-        matches.push(...normalizedMatches)
+        for (const rawEvent of data.events || []) {
+          const event = normalizeEventfrogEvent(rawEvent)
+          const eventTime = event.date?.getTime() || 0
+          if (!event.cancelled && eventTime >= fromTime && matchesLatidoTerms(event, filter.terms)) {
+            matches.push(event)
+          }
+        }
         emitProgress()
       }
 

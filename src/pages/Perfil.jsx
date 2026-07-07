@@ -44,11 +44,13 @@ function isActiveBusinessSubscriptionError(error) {
   return errorText.includes('ACTIVE_BUSINESS_SUBSCRIPTION')
 }
 
-const COMMUNITY_OPTIONS = COMMUNITY_CATS
-  .filter(item => item.id !== 'fe')
-  .map(item => item.id === 'mamas'
-    ? { ...item, id:'familia', emoji:'👨‍👩‍👧', label:'Familia' }
+const COMMUNITY_OPTIONS = []
+for (const item of COMMUNITY_CATS) {
+  if (item.id === 'fe') continue
+  COMMUNITY_OPTIONS.push(item.id === 'mamas'
+    ? { ...item, id:'familia', emoji:'????????', label:'Familia' }
     : item)
+}
 
 const ALERT_CATS = [
   { id:'eventos', emoji:'🎉', label:'Eventos' },
@@ -672,17 +674,17 @@ export default function Perfil() {
       const { data } = await supabase.from('listings').select('*').in('id', adIds)
       const foundIds = new Set((data || []).map(a => a.id))
       if (data) results.push(...data.map(a => ({ ...a, _kind:'ad' })))
-      adIds.filter(id => !foundIds.has(id)).forEach(id =>
-        results.push({ id, _kind:'ad', _unavailable:true })
-      )
+      for (const id of adIds) {
+        if (!foundIds.has(id)) results.push({ id, _kind:'ad', _unavailable:true })
+      }
     }
     if (jobIds.length) {
       const { data } = await supabase.from('jobs').select('*').in('id', jobIds)
       const foundIds = new Set((data || []).map(j => j.id))
       if (data) results.push(...data.map(j => ({ ...j, _kind:'job' })))
-      jobIds.filter(id => !foundIds.has(id)).forEach(id =>
-        results.push({ id, _kind:'job', _unavailable:true })
-      )
+      for (const id of jobIds) {
+        if (!foundIds.has(id)) results.push({ id, _kind:'job', _unavailable:true })
+      }
     }
     setFavItems(results)
     setLoadingFavs(false)
@@ -2632,7 +2634,7 @@ export default function Perfil() {
           <>
             <Select label="Tipo de evento" value={editorForm.type || ''} onChange={event => updateEditorField('type', event.target.value)}>
               <option value="">Seleccionar...</option>
-              {EVENTO_TYPES.filter(item => item.id).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              {EVENTO_TYPES.map(item => item.id ? <option key={item.id} value={item.id}>{item.label}</option> : null)}
             </Select>
             <ImageUploadField
               label={EDITOR_IMAGE_CONFIG.event.label}
@@ -2671,7 +2673,7 @@ export default function Perfil() {
           <>
             <Select label="Categoría" value={normalizeNegocioType(editorForm.category || '')} onChange={event => updateEditorField('category', event.target.value)}>
               <option value="">Seleccionar...</option>
-              {VISIBLE_NEGOCIO_TYPES.filter(item => item.id).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              {VISIBLE_NEGOCIO_TYPES.map(item => item.id ? <option key={item.id} value={item.id}>{item.label}</option> : null)}
             </Select>
             <ImageUploadField
               label={EDITOR_IMAGE_CONFIG.business.label}

@@ -190,9 +190,13 @@ async function fetchAlertsForSource(source, settings, lastCheck) {
   const { data, error } = await query
   if (error) return []
 
-  return (data || [])
-    .filter(row => matchesSettings(row, source.kind, settings, lastCheck))
-    .map(row => normalizeAlertItem(source.kind, row))
+  const alerts = []
+  for (const row of data || []) {
+    if (matchesSettings(row, source.kind, settings, lastCheck)) {
+      alerts.push(normalizeAlertItem(source.kind, row))
+    }
+  }
+  return alerts
 }
 
 export function notifyZoneAlertsUpdated() {
@@ -264,28 +268,28 @@ export function useZoneAlerts() {
       const effectiveSettings = { ...settings, canton: settings.canton || userCanton || '' }
       if (!effectiveSettings.enabled || !effectiveSettings.canton) return
 
-      ALERT_SOURCES
-        .filter(source => shouldTrackKind(effectiveSettings, source.kind))
-        .forEach(source => {
-          const channel = supabase
-            .channel(`${source.channelPrefix}-${effectiveSettings.canton}-${channelScopeRef.current}`)
-            .on('postgres_changes', {
-              event: 'INSERT',
-              schema: 'public',
-              table: source.table,
-              filter: `canton=eq.${effectiveSettings.canton}`,
-            }, payload => {
-              const lastCheck = localStorage.getItem(LAST_CHECK_KEY)
-              const latestSettings = loadSettings()
-              const latestEffectiveSettings = { ...latestSettings, canton: latestSettings.canton || userCanton || '' }
-              if (!matchesSettings(payload.new, source.kind, latestEffectiveSettings, lastCheck)) return
-              const nextItem = normalizeAlertItem(source.kind, payload.new)
-              setAlertItems(prev => mergeAlertItems(prev, [nextItem]))
-            })
-            .subscribe()
+      for (const source of ALERT_SOURCES) {
+        if (!shouldTrackKind(effectiveSettings, source.kind)) continue
 
-          channelsRef.current.push(channel)
-        })
+        const channel = supabase
+          .channel(`${source.channelPrefix}-${effectiveSettings.canton}-${channelScopeRef.current}`)
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: source.table,
+            filter: `canton=eq.${effectiveSettings.canton}`,
+          }, payload => {
+            const lastCheck = localStorage.getItem(LAST_CHECK_KEY)
+            const latestSettings = loadSettings()
+            const latestEffectiveSettings = { ...latestSettings, canton: latestSettings.canton || userCanton || '' }
+            if (!matchesSettings(payload.new, source.kind, latestEffectiveSettings, lastCheck)) return
+            const nextItem = normalizeAlertItem(source.kind, payload.new)
+            setAlertItems(prev => mergeAlertItems(prev, [nextItem]))
+          })
+          .subscribe()
+
+        channelsRef.current.push(channel)
+      }
     }
 
     check()

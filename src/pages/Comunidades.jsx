@@ -146,11 +146,14 @@ const BUSINESS_DIRECTORY_PRIORITY = {
   free:3,
 }
 
-const COMMUNITY_OPTIONS = COMMUNITY_CATS
-  .filter(item => item.id !== 'fe')
-  .map(item => item.id === 'mamas'
-    ? { ...item, id:'familia', emoji:'👨‍👩‍👧', label:'Familia' }
+const COMMUNITY_OPTIONS = []
+for (const item of COMMUNITY_CATS) {
+  if (item.id === 'fe') continue
+  COMMUNITY_OPTIONS.push(item.id === 'mamas'
+    ? { ...item, id:'familia', emoji:'\u{1F468}\u200D\u{1F469}\u200D\u{1F467}', label:'Familia' }
     : item)
+}
+
 
 const CHAT_HOSTS = ['chat.whatsapp.com','wa.me','t.me','telegram.me','facebook.com','discord.gg','instagram.com','meetup.com']
 function normalizeCommunityContactUrl(contact='') {
@@ -427,10 +430,14 @@ function getBusinessContactMethods(business) {
 
 function getLocationContacts(business) {
   if (!Array.isArray(business.contacts) || !business.contacts.length) return null
-  return business.contacts
-    .map(loc => ({ city: loc.city || '', address: loc.address || '', phone: loc.phone || '', email: loc.email || '' }))
-    .filter(loc => loc.phone || loc.email)
+  const contacts = []
+  for (const loc of business.contacts) {
+    const contact = { city: loc.city || '', address: loc.address || '', phone: loc.phone || '', email: loc.email || '' }
+    if (contact.phone || contact.email) contacts.push(contact)
+  }
+  return contacts
 }
+
 
 function LocationContactsPanel({ locations }) {
   return (
@@ -1523,9 +1530,12 @@ export default function Comunidades() {
     ...CANTONS.map(cantonOption => ({ id:cantonOption.code, label:`${cantonOption.code} · ${cantonOption.name}` })),
   ], [])
   const communityCityOptions = useMemo(() => {
-    const cities = [...new Set(communities.map(group => group.city).filter(city => city && city !== 'Suiza'))]
-      .sort((a, b) => a.localeCompare(b, 'es'))
-    return [{ id:'', label:'Todas las ciudades' }, ...cities.map(city => ({ id:city, label:`📍 ${city}` }))]
+    const citySet = new Set()
+    for (const group of communities) {
+      if (group.city && group.city !== 'Suiza') citySet.add(group.city)
+    }
+    const cities = [...citySet].sort((a, b) => a.localeCompare(b, 'es'))
+    return [{ id:'', label:'Todas las ciudades' }, ...cities.map(city => ({ id:city, label:`\u{1F4CD} ${city}` }))]
   }, [communities])
   const eventTypeOptions = useMemo(() => EVENTO_TYPES.map(item => ({ id:item.id, label:item.label })), [])
   const activeDirectoryFilters = tab === 'negocios'

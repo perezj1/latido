@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS contact_reveals (
 -- ── 4. COMMUNITIES ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS communities (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID REFERENCES profiles(id) ON DELETE SET NULL,
   name       TEXT NOT NULL,
   cat        TEXT,
   city       TEXT,
@@ -85,6 +86,7 @@ CREATE TABLE IF NOT EXISTS communities (
 -- ── 5. PROVIDERS (directorio de eventos) ───────────────────────
 CREATE TABLE IF NOT EXISTS providers (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES profiles(id) ON DELETE SET NULL,
   name        TEXT NOT NULL,
   category    TEXT NOT NULL,
   city        TEXT,
@@ -191,13 +193,13 @@ DROP POLICY IF EXISTS "forum_insert" ON forum_posts;
 DROP POLICY IF EXISTS "jobs_read" ON jobs;
 DROP POLICY IF EXISTS "jobs_insert" ON jobs;
 CREATE POLICY "communities_read"   ON communities  FOR SELECT USING (active = TRUE);
-CREATE POLICY "communities_insert" ON communities  FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "communities_insert" ON communities  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 CREATE POLICY "providers_read"     ON providers    FOR SELECT USING (active = TRUE);
-CREATE POLICY "providers_insert"   ON providers    FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "providers_insert"   ON providers    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 CREATE POLICY "forum_read"         ON forum_posts  FOR SELECT USING (active = TRUE);
-CREATE POLICY "forum_insert"       ON forum_posts  FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "forum_insert"       ON forum_posts  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 CREATE POLICY "jobs_read"          ON jobs         FOR SELECT USING (active = TRUE);
-CREATE POLICY "jobs_insert"        ON jobs         FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "jobs_insert"        ON jobs         FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 -- ── 9. INDEXES ─────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_ads_cat      ON ads(cat);
@@ -308,9 +310,17 @@ DROP POLICY IF EXISTS "reviews_insert" ON reviews;
 DROP POLICY IF EXISTS "photos_read" ON provider_photos;
 DROP POLICY IF EXISTS "photos_insert_own" ON provider_photos;
 CREATE POLICY "reviews_read"      ON reviews         FOR SELECT USING (active = TRUE);
-CREATE POLICY "reviews_insert"    ON reviews         FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "reviews_insert"    ON reviews         FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 CREATE POLICY "photos_read"       ON provider_photos FOR SELECT USING (TRUE);
-CREATE POLICY "photos_insert_own" ON provider_photos FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "photos_insert_own" ON provider_photos FOR INSERT WITH CHECK (
+  auth.uid() IS NOT NULL
+  AND EXISTS (
+    SELECT 1
+    FROM providers
+    WHERE providers.id = provider_photos.provider_id
+      AND providers.user_id = auth.uid()
+  )
+);
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_reviews_provider ON reviews(provider_id);

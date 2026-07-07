@@ -286,9 +286,13 @@ async function fetchAdminRowsByIds(table, columns, ids) {
 }
 
 async function fetchAdminContentForItems(items = []) {
-  const idsFor = type => items
-    .filter(item => type.includes(item.content_type))
-    .map(item => item.content_id)
+  const idsFor = type => {
+    const ids = []
+    for (const item of items) {
+      if (type.includes(item.content_type)) ids.push(item.content_id)
+    }
+    return ids
+  }
 
   const [
     listings,
@@ -320,7 +324,8 @@ async function fetchAdminContentForItems(items = []) {
   })
   ;(communities.data || []).forEach(item => entries.push([`community:${item.id}`, item]))
 
-  const errors = [
+  const errors = []
+  for (const [label, response] of [
     ['anuncios relacionados', listings],
     ['empleos relacionados', jobs],
     ['mensajes relacionados', messages],
@@ -328,9 +333,9 @@ async function fetchAdminContentForItems(items = []) {
     ['eventos relacionados', events],
     ['negocios relacionados', providers],
     ['comunidades relacionadas', communities],
-  ]
-    .filter(([, response]) => response.error)
-    .map(([label, response]) => `${label}: ${response.error.message}`)
+  ]) {
+    if (response.error) errors.push(`${label}: ${response.error.message}`)
+  }
 
   return { entries, errors }
 }
@@ -1324,13 +1329,23 @@ export default function Admin() {
     [users]
   )
   const adminUserIds = useMemo(
-    () => new Set(users.filter(profile => isAdminEmail(profile.email)).map(profile => profile.id)),
+    () => {
+      const ids = new Set()
+      for (const profile of users) {
+        if (isAdminEmail(profile.email)) ids.add(profile.id)
+      }
+      return ids
+    },
     [users]
   )
   const partnerMetricsExcludedUserIds = useMemo(
-    () => new Set(users
-      .filter(profile => isAdminEmail(profile.email) || isPartnerMetricsExcludedEmail(profile.email))
-      .map(profile => profile.id)),
+    () => {
+      const ids = new Set()
+      for (const profile of users) {
+        if (isAdminEmail(profile.email) || isPartnerMetricsExcludedEmail(profile.email)) ids.add(profile.id)
+      }
+      return ids
+    },
     [users]
   )
   const businessPromotionPlans = useMemo(
@@ -1338,13 +1353,14 @@ export default function Admin() {
     [businessPromotionAvailability],
   )
   const businessPartnerOptions = useMemo(
-    () => businesses
-      .filter(isActiveBusinessPartner)
-      .map(business => {
+    () => {
+      const options = []
+      for (const business of businesses) {
+        if (!isActiveBusinessPartner(business)) continue
         const services = Array.isArray(business.services)
           ? Object.fromEntries(business.services.map(service => [service, service]))
           : {}
-        return {
+        options.push({
           id:getBusinessPartnerAnalyticsId(business.id),
           providerId:business.id,
           name:business.partner_card_title || business.name || 'Colaborador',
@@ -1356,13 +1372,14 @@ export default function Admin() {
           services,
           isBusinessPartner:true,
           planKey:business.promotion_plan,
-        }
-      })
-      .sort((a, b) => {
+        })
+      }
+      return options.sort((a, b) => {
         const planDiff = (a.planKey === 'premium' ? 0 : 1) - (b.planKey === 'premium' ? 0 : 1)
         if (planDiff !== 0) return planDiff
         return a.name.localeCompare(b.name, 'es')
-      }),
+      })
+    },
     [businesses],
   )
   const partnerOptions = useMemo(
@@ -1425,9 +1442,13 @@ export default function Admin() {
     [metricUsers]
   )
   const activeChartUsers = useMemo(
-    () => metricUsers
-      .filter(profile => profile.last_seen_at)
-      .map(profile => ({ ...profile, created_at: profile.last_seen_at })),
+    () => {
+      const rows = []
+      for (const profile of metricUsers) {
+        if (profile.last_seen_at) rows.push({ ...profile, created_at: profile.last_seen_at })
+      }
+      return rows
+    },
     [metricUsers]
   )
   const contentItems = useMemo(() => [...recentListings, ...recentJobs], [recentListings, recentJobs])
@@ -1448,25 +1469,29 @@ export default function Admin() {
     [analyticsInRange]
   )
   const partnerAnalyticsEvents = useMemo(
-    () => analyticsEvents
-      .filter(event =>
-        String(event.event_type || '').startsWith('partner_')
-        && !partnerMetricsExcludedUserIds.has(event.user_id)
-      )
-      .map(event => {
+    () => {
+      const rows = []
+      for (const event of analyticsEvents) {
+        if (
+          !String(event.event_type || '').startsWith('partner_')
+          || partnerMetricsExcludedUserIds.has(event.user_id)
+        ) continue
         const metadata = readMetadata(event.metadata)
         const explicitPartnerId = String(metadata.partner_id || metadata.partnerId || '').trim()
         const businessPartnerId = isBusinessPartnerAnalyticsId(explicitPartnerId)
           && businessPartnerAnalyticsIds.has(explicitPartnerId)
           ? explicitPartnerId
           : ''
-        return {
+        const partnerAnalyticsId = businessPartnerId || resolvePartnerAnalyticsId(metadata)
+        if (!partnerAnalyticsId) continue
+        rows.push({
           ...event,
-          partnerAnalyticsId:businessPartnerId || resolvePartnerAnalyticsId(metadata),
+          partnerAnalyticsId,
           partnerMetadata:metadata,
-        }
-      })
-      .filter(event => event.partnerAnalyticsId),
+        })
+      }
+      return rows
+    },
     [analyticsEvents, businessPartnerAnalyticsIds, partnerMetricsExcludedUserIds]
   )
   const selectedPartner = partnerOptions.find(partner => partner.id === selectedPartnerId)
@@ -1596,8 +1621,16 @@ export default function Admin() {
       const query = analyticsQuery(event).toLowerCase()
       return identity && query ? `${identity}:${query}` : ''
     }
-    const searches = new Set(searchEvents.map(keyFor).filter(Boolean))
-    const opened = new Set(searchResultEvents.map(keyFor).filter(key => searches.has(key)))
+    const searches = new Set()
+    for (const event of searchEvents) {
+      const key = keyFor(event)
+      if (key) searches.add(key)
+    }
+    const opened = new Set()
+    for (const event of searchResultEvents) {
+      const key = keyFor(event)
+      if (searches.has(key)) opened.add(key)
+    }
     return {
       searches: searches.size,
       opened: opened.size,
@@ -1606,7 +1639,14 @@ export default function Admin() {
   }, [searchEvents, searchResultEvents])
   const searchActionRate = searchConversion.rate
   const uniqueSearchTerms = useMemo(
-    () => new Set(searchEvents.map(event => analyticsQuery(event).toLowerCase()).filter(Boolean)).size,
+    () => {
+      const terms = new Set()
+      for (const event of searchEvents) {
+        const term = analyticsQuery(event).toLowerCase()
+        if (term) terms.add(term)
+      }
+      return terms.size
+    },
     [searchEvents]
   )
   const topSearchActionRows = useMemo(
@@ -1690,12 +1730,15 @@ export default function Admin() {
   const liveWeekRate = metricUsers.length ? Math.round((activeUsersWeek.length / metricUsers.length) * 100) : 0
   const liveLast14Total = analyticsUnavailable
     ? liveLast14Days.reduce((sum, item) => sum + item.count, 0)
-    : new Set(
-      livePageViewEvents
-        .filter(event => isWithinRecentDays(event.created_at, 14))
-        .map(event => event.user_id || event.session_id)
-        .filter(Boolean)
-    ).size
+    : (() => {
+      const identities = new Set()
+      for (const event of livePageViewEvents) {
+        if (!isWithinRecentDays(event.created_at, 14)) continue
+        const identity = event.user_id || event.session_id
+        if (identity) identities.add(identity)
+      }
+      return identities.size
+    })()
   const presenceStatusMeta = {
     subscribed: { label: 'Conectado', color: '#059669', bg: '#D1FAE5', note: 'Canal Presence activo' },
     connecting: { label: 'Conectando', color: '#D97706', bg: '#FEF3C7', note: 'Esperando Supabase Presence' },
@@ -1856,21 +1899,24 @@ export default function Admin() {
         ['analytics', 'analitica', analyticsRes],
         ['messages', 'mensajes', messagesRes],
       ]
-      const deltaResponses = responses
-        .filter(([group, , response]) => groups.includes(group) && response.delta)
-        .map(([, label, response]) => ({ label, ...response.delta }))
+      const deltaResponses = []
+      for (const [group, label, response] of responses) {
+        if (groups.includes(group) && response.delta) deltaResponses.push({ label, ...response.delta })
+      }
       const deltaTotals = deltaResponses.reduce((acc, item) => ({
         fetched:acc.fetched + (item.fetched || 0),
         cached:acc.cached + (item.cached || 0),
       }), { fetched:0, cached:0 })
-      const nextErrors = responses
-        .filter(([group, , response]) => groups.includes(group) && response.error)
-        .map(([, label, response]) => `${label}: ${response.error.message}`)
+      const nextErrors = []
+      for (const [group, label, response] of responses) {
+        if (groups.includes(group) && response.error) nextErrors.push(`${label}: ${response.error.message}`)
+      }
 
       groups.forEach(group => {
-        const groupErrors = responses
-          .filter(([responseGroup, , response]) => responseGroup === group && response.error)
-          .map(([, label, response]) => `${label}: ${response.error.message}`)
+        const groupErrors = []
+        for (const [responseGroup, label, response] of responses) {
+          if (responseGroup === group && response.error) groupErrors.push(`${label}: ${response.error.message}`)
+        }
         setDataErrorsByGroup(previous => ({ ...previous, [group]: groupErrors.join(' · ') }))
       })
 
@@ -1907,14 +1953,13 @@ export default function Admin() {
       relatedContent.entries.forEach(([key, value]) => nextContent.set(key, value))
 
       if (relatedContent.errors.length) {
-        groups
-          .filter(group => group === 'reports' || group === 'moderation')
-          .forEach(group => {
-            setDataErrorsByGroup(previous => ({
-              ...previous,
-              [group]: [previous[group], ...relatedContent.errors].filter(Boolean).join(' · '),
-            }))
-          })
+        for (const group of groups) {
+          if (group !== 'reports' && group !== 'moderation') continue
+          setDataErrorsByGroup(previous => ({
+            ...previous,
+            [group]: [previous[group], ...relatedContent.errors].filter(Boolean).join(' ? '),
+          }))
+        }
       }
 
       if (groups.includes('reports') && !reportsRes.error) setReports(nextReports)
@@ -2398,8 +2443,16 @@ export default function Admin() {
 
   const pendingQueue = queue.filter(item => item.status === 'pending')
   const pendingReports = reports.filter(item => item.status === 'pending')
-  const moderationTypes = [...new Set(pendingQueue.map(item => item.content_type).filter(Boolean))].sort()
-  const reportTypes = [...new Set(pendingReports.map(item => item.content_type).filter(Boolean))].sort()
+  const moderationTypeSet = new Set()
+  for (const item of pendingQueue) {
+    if (item.content_type) moderationTypeSet.add(item.content_type)
+  }
+  const moderationTypes = [...moderationTypeSet].sort()
+  const reportTypeSet = new Set()
+  for (const item of pendingReports) {
+    if (item.content_type) reportTypeSet.add(item.content_type)
+  }
+  const reportTypes = [...reportTypeSet].sort()
   const filteredPendingQueue = pendingQueue.filter(item =>
     moderationTypeFilter === 'all' || item.content_type === moderationTypeFilter
   )
@@ -2413,9 +2466,10 @@ export default function Admin() {
     return acc
   }, {})
   const businessQuery = businessSearch.trim().toLowerCase()
-  const filteredVerificationBusinesses = businesses
-    .filter(business => getBusinessVerificationDetails(business).status === businessVerificationFilter)
-    .filter(business => !businessQuery || [
+  const filteredVerificationBusinesses = []
+  for (const business of businesses) {
+    if (getBusinessVerificationDetails(business).status !== businessVerificationFilter) continue
+    if (businessQuery && ![
       business.name,
       business.category,
       business.city,
@@ -2423,8 +2477,10 @@ export default function Admin() {
       business.email,
       business.website,
       business.whatsapp,
-    ].some(value => String(value || '').toLowerCase().includes(businessQuery)))
-    .sort((a, b) => getBusinessVerificationDetails(b).score - getBusinessVerificationDetails(a).score)
+    ].some(value => String(value || '').toLowerCase().includes(businessQuery))) continue
+    filteredVerificationBusinesses.push(business)
+  }
+  filteredVerificationBusinesses.sort((a, b) => getBusinessVerificationDetails(b).score - getBusinessVerificationDetails(a).score)
   const pagedBusinesses = paginate(filteredVerificationBusinesses, businessPage)
   const contentQuery = contentSearch.trim().toLowerCase()
   const contentMatches = item => {
@@ -2610,15 +2666,16 @@ export default function Admin() {
     { label: 'Crecimiento', hint: 'Usuarios, uso real y colaboraciones', items: ['users', 'analytics', 'partners'] },
     { label: 'Operacion', hint: 'Negocios, publicaciones y seguridad', items: ['businessVerification', 'content', 'reports', 'moderation'] },
   ]
-  const BOTTOM_NAV_ITEMS = ['users', 'analytics', 'partners', 'businessVerification']
-    .map(id => navById.get(id))
-    .filter(Boolean)
-  const activeRangeDays = Math.max(
-    ...getAdminTabDataGroups(tab)
-      .filter(isRangeSensitiveGroup)
-      .map(group => dataRangeDaysByGroup.get(group) || 0),
-    0,
-  )
+  const BOTTOM_NAV_ITEMS = []
+  for (const id of ['users', 'analytics', 'partners', 'businessVerification']) {
+    const item = navById.get(id)
+    if (item) BOTTOM_NAV_ITEMS.push(item)
+  }
+  const activeRangeValues = []
+  for (const group of getAdminTabDataGroups(tab)) {
+    if (isRangeSensitiveGroup(group)) activeRangeValues.push(dataRangeDaysByGroup.get(group) || 0)
+  }
+  const activeRangeDays = Math.max(...activeRangeValues, 0)
   const deltaStatusColor = deltaLoadSummary?.status === 'error'
     ? '#DC2626'
     : deltaLoadSummary?.status === 'loading'
@@ -3561,7 +3618,7 @@ export default function Admin() {
             </div>
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:8 }}>
-              {businessPromotionPlans.filter(plan => plan.key !== 'free').map(plan => (
+              {businessPromotionPlans.map(plan => plan.key !== 'free' ? (
                 <div key={plan.key} style={{ padding:12, borderRadius:16, border:`1px solid ${plan.color}44`, background:plan.background }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
                     <div>
@@ -3588,7 +3645,7 @@ export default function Admin() {
                     {plan.activeCount || 0} activos de {plan.maxActive ?? '∞'} · peso {plan.rotationWeight}
                   </p>
                 </div>
-              ))}
+              ) : null)}
             </div>
           )}
 

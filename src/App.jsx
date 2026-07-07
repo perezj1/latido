@@ -49,6 +49,7 @@ const SynaPartnerContact = lazy(() => import('./pages/SynaPartnerContact'))
 const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
 const AlertasClientesPotenciales = lazy(() => import('./pages/AlertasClientesPotenciales'))
 const Virtus360Services = lazy(() => import('./pages/Virtus360Services'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 const isAndroid = /Android/.test(navigator.userAgent)
@@ -70,11 +71,11 @@ async function clearLatidoCaches() {
   if (!('caches' in window)) return
 
   const keys = await caches.keys()
-  await Promise.all(
-    keys
-      .filter(key => key.startsWith('latido-'))
-      .map(key => caches.delete(key)),
-  )
+  const deletions = []
+  for (const key of keys) {
+    if (key.startsWith('latido-')) deletions.push(caches.delete(key))
+  }
+  await Promise.all(deletions)
 }
 
 class LazyRouteErrorBoundary extends Component {

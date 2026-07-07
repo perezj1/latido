@@ -44,7 +44,10 @@ CREATE POLICY "analytics_events_insert"
   ON public.analytics_events
   FOR INSERT
   TO anon, authenticated
-  WITH CHECK (TRUE);
+  WITH CHECK (
+    (auth.uid() IS NULL AND user_id IS NULL)
+    OR (auth.uid() IS NOT NULL AND user_id = auth.uid())
+  );
 
 DROP POLICY IF EXISTS "analytics_events_select_admin" ON public.analytics_events;
 CREATE POLICY "analytics_events_select_admin"

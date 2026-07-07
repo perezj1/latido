@@ -21,11 +21,13 @@ const STEPS = [
   { title:'Confirma y publica',           sub:'Revisa el resumen antes de enviar' },
 ]
 
-const COMMUNITY_OPTIONS = COMMUNITY_CATS
-  .filter(item => item.id !== 'fe')
-  .map(item => item.id === 'mamas'
-    ? { ...item, id:'familia', emoji:'👨‍👩‍👧', label:'Familia', desc:'Familias, crianza, apoyo y planes con niños' }
+const COMMUNITY_OPTIONS = []
+for (const item of COMMUNITY_CATS) {
+  if (item.id === 'fe') continue
+  COMMUNITY_OPTIONS.push(item.id === 'mamas'
+    ? { ...item, id:'familia', emoji:'\u{1F468}\u200D\u{1F469}\u200D\u{1F467}', label:'Familia', desc:'Familias, crianza, apoyo y planes con ni\u00F1os' }
     : item)
+}
 
 const PLATFORMS = [
   { id:'whatsapp',  emoji:'💬', label:'WhatsApp' },

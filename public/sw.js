@@ -142,9 +142,11 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys()
-    await Promise.all(keys
-      .filter(key => key.startsWith('latido-') && !CURRENT_CACHES.has(key))
-      .map(key => caches.delete(key)))
+    const deletions = []
+    for (const key of keys) {
+      if (key.startsWith('latido-') && !CURRENT_CACHES.has(key)) deletions.push(caches.delete(key))
+    }
+    await Promise.all(deletions)
 
     if (self.registration.navigationPreload) {
       await self.registration.navigationPreload.enable()
