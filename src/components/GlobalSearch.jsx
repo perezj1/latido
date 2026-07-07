@@ -299,17 +299,17 @@ function searchAll(query, datasets, isLoggedIn) {
   if (!q || q.length < 2) return []
 
   const results = []
+  const metaSeparator = ' \u00B7 '
 
-  datasets.ads
-    .filter(ad =>
+  for (const ad of datasets.ads) {
+    if (
       (isLoggedIn || ad.privacy === 'public') && (
         fieldIncludesSearch(ad.title, q) ||
         fieldIncludesSearch(ad.desc, q) ||
         fieldIncludesSearch(ad.canton, q) ||
         fieldIncludesSearch(formatAdLocation(ad), q)
       )
-    )
-    .forEach(ad => {
+    ) {
       const cat = getAdDisplayCat(ad)
       const location = formatAdLocation(ad)
       results.push({
@@ -319,59 +319,64 @@ function searchAll(query, datasets, isLoggedIn) {
         image:ad.image,
         imageFit:'cover',
         label:ad.title,
-        sub:[cat?.label || 'Anuncio', location, ad.price].filter(Boolean).join(' · '),
+        sub:[cat?.label || 'Anuncio', location, ad.price].filter(Boolean).join(metaSeparator),
         href:getAdPath(ad),
         privacy:ad.privacy,
       })
-    })
+    }
+  }
 
-  datasets.jobs
-    .filter(job =>
+  for (const job of datasets.jobs) {
+    if (
       fieldIncludesSearch(job.title, q) ||
       fieldIncludesSearch(job.company, q) ||
       fieldIncludesSearch(job.city, q) ||
       fieldIncludesSearch(job.intentLabel, q)
-    )
-    .forEach(job => {
+    ) {
       results.push({
         type:'job',
         id:job.id,
-        icon:job.emoji || '💼',
+        icon:job.emoji || '\u{1F4BC}',
         image:job.image,
         imageFit:'contain',
         label:job.title,
-        sub:[job.intentLabel, job.company, job.city, job.type].filter(Boolean).join(' · '),
+        sub:[job.intentLabel, job.company, job.city, job.type].filter(Boolean).join(metaSeparator),
         href:getJobPath(job),
       })
-    })
+    }
+  }
 
-  datasets.communities
-    .filter(group =>
+  for (const group of datasets.communities) {
+    if (
       fieldIncludesSearch(group.name, q) ||
       fieldIncludesSearch(group.desc, q) ||
       fieldIncludesSearch(group.city, q)
-    )
-    .forEach(group => {
+    ) {
       results.push({
         type:'community',
         id:group.id,
-        icon:group.emoji || '👥',
+        icon:group.emoji || '\u{1F465}',
         image:group.image,
         imageFit:'cover',
         label:group.name,
-        sub:`Grupo · ${group.city} · ${group.members} miembros`,
+        sub:['Grupo', group.city, `${group.members} miembros`].filter(Boolean).join(metaSeparator),
         href:`/comunidades?openCommunity=${encodeURIComponent(group.id)}`,
       })
-    })
+    }
+  }
 
-  const matchingBusinesses = datasets.businesses
-    .filter(business =>
+  const matchingBusinesses = []
+  for (const business of datasets.businesses) {
+    if (
       fieldIncludesSearch(business.name, q) ||
       fieldIncludesSearch(business.desc, q) ||
       fieldIncludesSearch(business.city, q) ||
       business.services.some(service => fieldIncludesSearch(service, q))
-    )
-    .sort(sortMatchingBusinesses)
+    ) {
+      matchingBusinesses.push(business)
+    }
+  }
+  matchingBusinesses.sort(sortMatchingBusinesses)
 
   const recommendedPartner = matchingBusinesses.find(
     business => getBusinessSearchPlan(business) === 'premium'
@@ -381,100 +386,108 @@ function searchAll(query, datasets, isLoggedIn) {
     results.push({
       type:'business',
       id:recommendedPartner.id,
-      icon:recommendedPartner.emoji || '🏪',
+      icon:recommendedPartner.emoji || '\u{1F3EA}',
       image:recommendedPartner.photoUrl,
       imageFit:'contain',
       label:recommendedPartner.name,
-      sub:recommendedPartner.services.slice(0, 3).join(' · ') || recommendedPartner.desc || 'Servicios para la comunidad hispanohablante en Suiza.',
+      sub:recommendedPartner.services.slice(0, 3).join(metaSeparator) || recommendedPartner.desc || 'Servicios para la comunidad hispanohablante en Suiza.',
       href:getBusinessPath(recommendedPartner),
       isPartnerRecommendation:true,
       searchPriority:-2,
     })
   }
 
-  matchingBusinesses.forEach(business => {
-    if (recommendedPartner && String(business.id) === String(recommendedPartner.id)) return
+  for (const business of matchingBusinesses) {
+    if (recommendedPartner && String(business.id) === String(recommendedPartner.id)) continue
     const planLabel = getBusinessPlanSearchLabel(business)
 
     results.push({
       type:'business',
       id:business.id,
-      icon:business.emoji || '🏪',
+      icon:business.emoji || '\u{1F3EA}',
       image:business.photoUrl,
       imageFit:'contain',
       label:business.name,
-      sub:[planLabel, getNegocioTypeMeta(business.type)?.label || 'Negocio', business.city].filter(Boolean).join(' · '),
+      sub:[planLabel, getNegocioTypeMeta(business.type)?.label || 'Negocio', business.city].filter(Boolean).join(metaSeparator),
       href:getBusinessPath(business),
       featured:business.featured,
       searchPriority:getBusinessSearchPriority(business),
     })
-  })
+  }
 
-  datasets.events
-    .filter(event =>
+  for (const event of datasets.events) {
+    const eventType = EVENTO_TYPES.find(type => type.id === event.type)
+    if (
       fieldIncludesSearch(event.title, q) ||
       fieldIncludesSearch(event.desc, q) ||
       fieldIncludesSearch(event.city, q) ||
       fieldIncludesSearch(event.venue, q) ||
       fieldIncludesSearch(event.host, q) ||
-      fieldIncludesSearch(EVENTO_TYPES.find(type => type.id === event.type)?.label, q)
-    )
-    .forEach(event => {
+      fieldIncludesSearch(eventType?.label, q)
+    ) {
       results.push({
         type:'event',
         id:event.id,
-        icon:event.emoji || '🎉',
+        icon:event.emoji || '\u{1F389}',
         image:event.image,
         imageFit:'cover',
         label:event.title,
-        sub:`${EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'} · ${event.city}`,
+        sub:[eventType?.label || 'Evento', event.city].filter(Boolean).join(metaSeparator),
         href:getEventPath(event),
       })
-    })
+    }
+  }
 
-  ;(datasets.guides || [])
-    .filter(guide =>
+  for (const guide of datasets.guides || []) {
+    if (
       fieldIncludesSearch(guide.title, q) ||
       fieldIncludesSearch(guide.summary, q) ||
       fieldIncludesSearch(guide.content, q) ||
       fieldIncludesSearch(guide.cat, q) ||
       fieldIncludesSearch(guide.time, q) ||
       fieldIncludesSearch(guide.level, q)
-    )
-    .forEach(guide => {
+    ) {
       results.push({
         type:'guide',
         id:guide.id,
-        icon:guide.emoji || '📚',
+        icon:guide.emoji || '\u{1F4DA}',
         image:guide.image,
         imageFit:'cover',
         label:guide.title,
-        sub:['Guía', guide.cat, guide.time, guide.level].filter(Boolean).join(' · '),
+        sub:['Gu\u00EDa', guide.cat, guide.time, guide.level].filter(Boolean).join(metaSeparator),
         href:getGuidePath(guide),
       })
-    })
+    }
+  }
 
-  ;(datasets.pages || [])
-    .filter(page =>
+  for (const page of datasets.pages || []) {
+    if (
       fieldIncludesSearch(page.title, q) ||
       fieldIncludesSearch(page.section, q) ||
       fieldIncludesSearch(page.desc, q)
-    )
-    .forEach(page => {
+    ) {
       results.push({
         type:'page',
         id:page.id,
-        icon:page.icon || '🔎',
+        icon:page.icon || '\u{1F50E}',
         label:page.title,
-        sub:[page.section, page.desc].filter(Boolean).join(' · '),
+        sub:[page.section, page.desc].filter(Boolean).join(metaSeparator),
         href:page.href,
       })
-    })
+    }
+  }
 
-  return results
-    .map((result, index) => ({ ...result, searchIndex:index }))
-    .sort((a, b) => (a.searchPriority ?? 1) - (b.searchPriority ?? 1) || a.searchIndex - b.searchIndex)
-    .map(({ searchPriority, searchIndex, ...result }) => result)
+  const rankedResults = []
+  for (let index = 0; index < results.length; index += 1) {
+    rankedResults.push({ ...results[index], searchIndex:index })
+  }
+  rankedResults.sort((a, b) => (a.searchPriority ?? 1) - (b.searchPriority ?? 1) || a.searchIndex - b.searchIndex)
+
+  const cleanResults = []
+  for (const { searchPriority, searchIndex, ...result } of rankedResults) {
+    cleanResults.push(result)
+  }
+  return cleanResults
 }
 
 export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {

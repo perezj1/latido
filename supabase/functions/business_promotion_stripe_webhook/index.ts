@@ -30,11 +30,11 @@ const PLAN_CONFIGS = {
 
 type PlanKey = keyof typeof PLAN_CONFIGS
 
-const PRICE_TO_PLAN = new Map(
-  Object.values(PLAN_CONFIGS)
-    .filter(plan => plan.priceId)
-    .map(plan => [plan.priceId, plan.key]),
-)
+const priceToPlanEntries: Array<[string, PlanKey]> = []
+for (const plan of Object.values(PLAN_CONFIGS)) {
+  if (plan.priceId) priceToPlanEntries.push([plan.priceId, plan.key])
+}
+const PRICE_TO_PLAN = new Map(priceToPlanEntries)
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion:'2026-05-27.dahlia',

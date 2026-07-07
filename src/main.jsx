@@ -29,11 +29,11 @@ function cleanupDevServiceWorkers() {
 
     if ('caches' in window) {
       const cacheKeys = await caches.keys().catch(() => [])
-      await Promise.all(
-        cacheKeys
-          .filter(key => key.startsWith('latido-'))
-          .map(key => caches.delete(key).catch(() => false)),
-      )
+      const deletions = []
+      for (const key of cacheKeys) {
+        if (key.startsWith('latido-')) deletions.push(caches.delete(key).catch(() => false))
+      }
+      await Promise.all(deletions)
     }
 
     const refreshFlag = 'latido-dev-sw-reset'

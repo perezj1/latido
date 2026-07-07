@@ -427,7 +427,10 @@ export default function Mensajes() {
     let initLastMsgMeta = new Map()
 
     // Empty conversations are drafts from old clicks; keep them out of the inbox.
-    const conversationIds = data.map(c => c.id).filter(Boolean)
+    const conversationIds = []
+    for (const conversation of data) {
+      if (conversation.id) conversationIds.push(conversation.id)
+    }
     if (conversationIds.length) {
       const { data: messageRows, error: messagesError } = await supabase
         .from('messages')
@@ -442,7 +445,11 @@ export default function Mensajes() {
         })
         visibleData = data.filter(c => latestByConv.has(c.id))
         initLastMsg = new Map(visibleData.map(c => [c.id, latestByConv.get(c.id)?.created_at || c.created_at]))
-        initLastMsgMeta = new Map(visibleData.map(c => [c.id, latestByConv.get(c.id)]).filter(([, msg]) => !!msg))
+        initLastMsgMeta = new Map()
+        for (const conversation of visibleData) {
+          const msg = latestByConv.get(conversation.id)
+          if (msg) initLastMsgMeta.set(conversation.id, msg)
+        }
       }
     }
 
@@ -451,7 +458,11 @@ export default function Mensajes() {
     setConversations(visibleData)
 
     // Fetch avatars for all other participants
-    const otherIds = visibleData.map(c => c.sender_id === user.id ? c.owner_id : c.sender_id).filter(Boolean)
+    const otherIds = []
+    for (const conversation of visibleData) {
+      const otherId = conversation.sender_id === user.id ? conversation.owner_id : conversation.sender_id
+      if (otherId) otherIds.push(otherId)
+    }
     fetchAvatarsByIds(otherIds).then(setConvAvatars)
     fetchLastSeenByIds(otherIds).then(setLastSeenByUser)
 

@@ -513,9 +513,11 @@ async function handlePublication(req: Request, table: string, payload: WebhookPa
     Array.isArray(preference.categories) ? preference.categories.map(String) : [],
   ))
 
-  const recipients = categoryMatched
-    .filter((preference: Record<string, unknown>) => text(preference.user_id) !== authorId)
-    .map((preference: Record<string, unknown>) => text(preference.user_id))
+  const recipients: string[] = []
+  for (const preference of categoryMatched) {
+    const recipientId = text(preference.user_id)
+    if (recipientId !== authorId) recipients.push(recipientId)
+  }
 
   const subscriptions = await fetchActiveSubscriptions(recipients)
   console.log('push_publication', {

@@ -1170,20 +1170,25 @@ export default function Tablon() {
       (!plz || j.plz?.startsWith(plz)) &&
       (!deferredSearch || norm(j.title).includes(deferredSearch) || norm(j.company).includes(deferredSearch) || norm(getJobIntentMeta(j).label).includes(deferredSearch))
     )
-    const fromAds = ads.filter(a =>
-      getAdCategoryId(a) === 'empleo' &&
-      (isLoggedIn || !a.privacy || a.privacy === 'public') &&
-      (!jobIntent || getJobIntentId(a) === jobIntent) &&
-      (!jobType || a.type === jobType || a.sub === jobType) &&
-      (!canton || a.canton === canton) &&
-      (!plz || a.plz?.startsWith(plz)) &&
-      (!deferredSearch || norm(a.title).includes(deferredSearch) || norm(a.desc).includes(deferredSearch) || norm(getJobIntentMeta(a).label).includes(deferredSearch))
-    ).map(a => ({
-      id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
-      canton: a.canton, type: ['busca','ofrece'].includes(a.type) ? (a.sub || '') : a.type, job_intent: getJobIntentId(a), salary: a.salary, emoji: a.emoji || '💼',
-      logo_url: getAdPhotos(a)[0] || '', lang: a.lang, languages: a.languages,
-      desc: a.desc, user_id: a.user_id, user_name: a.user_name, user: a.user, created_at: a.created_at,
-    }))
+    const fromAds = []
+    for (const a of ads) {
+      if (
+        getAdCategoryId(a) === 'empleo' &&
+        (isLoggedIn || !a.privacy || a.privacy === 'public') &&
+        (!jobIntent || getJobIntentId(a) === jobIntent) &&
+        (!jobType || a.type === jobType || a.sub === jobType) &&
+        (!canton || a.canton === canton) &&
+        (!plz || a.plz?.startsWith(plz)) &&
+        (!deferredSearch || norm(a.title).includes(deferredSearch) || norm(a.desc).includes(deferredSearch) || norm(getJobIntentMeta(a).label).includes(deferredSearch))
+      ) {
+        fromAds.push({
+          id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
+          canton: a.canton, type: ['busca','ofrece'].includes(a.type) ? (a.sub || '') : a.type, job_intent: getJobIntentId(a), salary: a.salary, emoji: a.emoji || '\u{1F4BC}',
+          logo_url: getAdPhotos(a)[0] || '', lang: a.lang, languages: a.languages,
+          desc: a.desc, user_id: a.user_id, user_name: a.user_name, user: a.user, created_at: a.created_at,
+        })
+      }
+    }
     return [...fromJobs, ...fromAds]
       .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
   }, [ads, canton, deferredSearch, isLoggedIn, jobIntent, jobType, jobs, plz])
@@ -1232,28 +1237,30 @@ export default function Tablon() {
     const selectedType = selectedJob.type || ''
     const jobLikeItems = [
       ...jobs,
-      ...ads
-        .filter(ad => getAdCategoryId(ad) === 'empleo' && (isLoggedIn || !ad.privacy || ad.privacy === 'public'))
-        .map(ad => ({
-          id:ad.id,
-          title:ad.title,
-          company:ad.company || ad.user_name || ad.user || ad.title,
-          city:ad.city || ad.canton,
-          canton:ad.canton,
-          type:['busca', 'ofrece'].includes(ad.type) ? (ad.sub || '') : ad.type,
-          job_intent:getJobIntentId(ad),
-          salary:ad.salary || ad.price,
-          emoji:ad.emoji || getAdDisplayEmoji(ad),
-          logo_url:getAdPhotos(ad)[0] || '',
-          lang:ad.lang,
-          languages:ad.languages,
-          desc:ad.desc,
-          user_id:ad.user_id,
-          user_name:ad.user_name,
-          user:ad.user,
-          created_at:ad.created_at,
-          sector:ad.sub || '',
-        })),
+      ...ads.flatMap(ad => (
+        getAdCategoryId(ad) === 'empleo' && (isLoggedIn || !ad.privacy || ad.privacy === 'public')
+          ? [{
+            id:ad.id,
+            title:ad.title,
+            company:ad.company || ad.user_name || ad.user || ad.title,
+            city:ad.city || ad.canton,
+            canton:ad.canton,
+            type:['busca', 'ofrece'].includes(ad.type) ? (ad.sub || '') : ad.type,
+            job_intent:getJobIntentId(ad),
+            salary:ad.salary || ad.price,
+            emoji:ad.emoji || getAdDisplayEmoji(ad),
+            logo_url:getAdPhotos(ad)[0] || '',
+            lang:ad.lang,
+            languages:ad.languages,
+            desc:ad.desc,
+            user_id:ad.user_id,
+            user_name:ad.user_name,
+            user:ad.user,
+            created_at:ad.created_at,
+            sector:ad.sub || '',
+          }]
+          : []
+      )),
     ]
 
     return jobLikeItems
@@ -1311,8 +1318,8 @@ export default function Tablon() {
   const catOptions = [{ id:'', label:'Todos' }, ...orderedCats.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
   const cantonOptions = [{ id:'', label:'Toda Suiza' }, ...CANTONS.map(c => ({ id:c.code, label:`${c.code} · ${c.name}` }))]
   const generalIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
-  const standardIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.filter(t => ['busca', 'ofrece'].includes(t.id)).map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
-  const marketIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.filter(t => ['busca', 'vende', 'regala'].includes(t.id)).map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
+  const standardIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.flatMap(t => ['busca', 'ofrece'].includes(t.id) ? [{ id:t.id, label:`${t.emoji} ${t.label}` }] : [])]
+  const marketIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.flatMap(t => ['busca', 'vende', 'regala'].includes(t.id) ? [{ id:t.id, label:`${t.emoji} ${t.label}` }] : [])]
   const jobIntentOptions = [{ id:'', label:'Todas' }, ...JOB_INTENTS.map(intent => ({ id:intent.id, label:`${intent.emoji} ${intent.label}` }))]
   const jobTypeOptions = [{ id:'', label:'Todos' }, ...JOB_TYPES.map(jobTypeOption => ({ id:jobTypeOption.id, label:`${jobTypeOption.emoji} ${jobTypeOption.label}` }))]
   const intentOptions = isEmpleos

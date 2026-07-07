@@ -234,9 +234,12 @@ function toIsoDate(value = '') {
 }
 
 function publicLinks() {
-  return SEARCHABLE_SITE_PAGES
-    .filter(page => !PRIVATE_PATHS.some(path => page.href === path || page.href.startsWith(`${path}?`)))
-    .map(page => ({ label:page.title, href:page.href, description:page.desc }))
+  const links = []
+  for (const page of SEARCHABLE_SITE_PAGES) {
+    if (PRIVATE_PATHS.some(path => page.href === path || page.href.startsWith(`${path}?`))) continue
+    links.push({ label:page.title, href:page.href, description:page.desc })
+  }
+  return links
 }
 
 export function getGuidePath(doc) {
@@ -1000,7 +1003,10 @@ export function getPublicSeoPages() {
   ].map(path => getSeoForLocation(new URL(path, SITE_URL)))
 
   const guidePages = MOCK_DOCS.map(getGuideSeo)
-  const adPages = MOCK_ADS.filter(ad => ad.privacy === 'public').map(getAdSeo)
+  const adPages = []
+  for (const ad of MOCK_ADS) {
+    if (ad.privacy === 'public') adPages.push(getAdSeo(ad))
+  }
   const jobPages = MOCK_JOBS.map(getJobSeo)
   const businessPages = MOCK_NEGOCIOS.map(getBusinessSeo)
   const eventPages = MOCK_EVENTOS_LATINOS.map(getEventSeo)
