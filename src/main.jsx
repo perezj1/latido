@@ -35,7 +35,18 @@ function prepareImageConnections() {
   } catch {}
 }
 
-prepareImageConnections()
+function scheduleImageConnections() {
+  const schedule = callback => {
+    if ('requestIdleCallback' in window) window.requestIdleCallback(callback, { timeout:2000 })
+    else window.setTimeout(callback, 1200)
+  }
+  const run = () => schedule(prepareImageConnections)
+
+  if (document.readyState === 'complete') run()
+  else window.addEventListener('load', run, { once:true })
+}
+
+scheduleImageConnections()
 
 function cleanupDevServiceWorkers() {
   if (import.meta.env.PROD || !('serviceWorker' in navigator)) return

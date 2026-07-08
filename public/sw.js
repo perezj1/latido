@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'latido-shell-v10'
+const SHELL_CACHE = 'latido-shell-v11'
 const ASSET_CACHE = 'latido-assets'
 const IMAGE_CACHE = 'latido-images-v1'
 const PUBLIC_DATA_CACHE = 'latido-public-data-v1'
@@ -108,9 +108,7 @@ function staleWhileRevalidate(request, cacheName, event, maxEntries) {
     .then(cached => cached || update)
 }
 
-async function imageCacheFirst(request, event) {
-  const cache = await caches.open(IMAGE_CACHE)
-  const cached = await cache.match(request, { ignoreVary:true })
+function imageStaleWhileRevalidate(request, event) {
   const update = fetch(request)
     .then(async response => {
       if (response.ok || response.type === 'opaque') {
@@ -119,18 +117,12 @@ async function imageCacheFirst(request, event) {
       return response
     })
 
-  if (cached) {
-    event.waitUntil(update.catch(() => {}))
-    return cached
-  }
+  event.waitUntil(update.catch(() => {}))
 
-  try {
-    return await update
-  } catch (error) {
-    const fallback = await cache.match(request, { ignoreVary:true })
-    if (fallback) return fallback
-    throw error
-  }
+  return caches.open(IMAGE_CACHE)
+    .then(cache => cache.match(request, { ignoreVary:true }))
+    .then(cached => cached || update)
+    .catch(() => update)
 }
 
 function handleNavigation(event) {
@@ -212,12 +204,12 @@ self.addEventListener('fetch', event => {
   }
 
   if (isPublicStorageAsset(url)) {
-    event.respondWith(imageCacheFirst(request, event))
+    event.respondWith(imageStaleWhileRevalidate(request, event))
     return
   }
 
-  if (request.destination === 'image') {
-    event.respondWith(imageCacheFirst(request, event))
+  if (url.origin === self.location.origin && request.destination === 'image') {
+    event.respondWith(imageStaleWhileRevalidate(request, event))
     return
   }
 

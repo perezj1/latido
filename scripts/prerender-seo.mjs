@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -140,13 +140,21 @@ function getSitemapXml(pages) {
 }
 
 async function injectServiceWorkerPrecache() {
-  const assetsDir = path.join(distDir, 'assets')
   const serviceWorkerPath = path.join(distDir, 'sw.js')
-  const assetNames = await readdir(assetsDir)
-  const assets = assetNames
-    .filter(name => /\.(?:css|js|woff2?)$/i.test(name))
+  const html = await readFile(distIndex, 'utf8')
+  const assets = Array.from(html.matchAll(/<(script|link)\b[^>]*(?:src|href)=["']([^"']+)["'][^>]*>/gi))
+    .reduce((list, match) => {
+      const tag = match[0]
+      const asset = match[2]
+      if (!asset.startsWith('/assets/')) return list
+
+      const isModuleScript = /^<script\b/i.test(tag) && /\btype=["']module["']/i.test(tag)
+      const rel = tag.match(/\brel=["']([^"']+)["']/i)?.[1] || ''
+      const isCriticalLink = ['stylesheet', 'modulepreload'].includes(rel.toLowerCase())
+      if (isModuleScript || isCriticalLink) list.push(asset)
+      return list
+    }, [])
     .sort()
-    .map(name => `/assets/${name}`)
 
   const marker = 'const PRECACHE_ASSETS = []'
   const serviceWorker = await readFile(serviceWorkerPath, 'utf8')
