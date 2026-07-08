@@ -2352,6 +2352,10 @@
     transform: none;
   }
 
+  img[data-latido-img-state="loading"] {
+    animation: none !important;
+  }
+
   .partner-services-cta,
   .partner-services-promo-option,
   .partner-card-services a,
@@ -2428,6 +2432,17 @@ html { scroll-behavior: smooth; }
 
 /* ── Prevent horizontal overflow ── */
 img { max-width: 100%; }
+
+img[data-latido-img-state="loading"] {
+  background-color: #EEF4FF !important;
+  background-image: linear-gradient(90deg, #EEF4FF 0%, #F8FBFF 42%, #E2EAF6 58%, #EEF4FF 100%) !important;
+  background-size: 220% 100% !important;
+  animation: shimmer 1.15s ease-in-out infinite !important;
+}
+
+img[data-latido-img-state="loaded"] {
+  animation: none !important;
+}
 
 /* ── Header responsive visibility (override inline styles with !important) ── */
 .show-lg { display: none !important; }
