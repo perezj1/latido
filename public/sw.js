@@ -1,9 +1,11 @@
-const SHELL_CACHE = 'latido-shell-v9'
+const SHELL_CACHE = 'latido-shell-v10'
 const ASSET_CACHE = 'latido-assets'
+const IMAGE_CACHE = 'latido-images-v1'
 const PUBLIC_DATA_CACHE = 'latido-public-data-v1'
-const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, PUBLIC_DATA_CACHE])
+const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, IMAGE_CACHE, PUBLIC_DATA_CACHE])
 const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icon-192.png']
 const PRECACHE_ASSETS = []
+const MAX_IMAGE_CACHE_ENTRIES = 260
 const PUBLIC_TABLES = new Set([
   'business_promotion_plans',
   'communities',
@@ -57,6 +59,10 @@ function isPublicStorageAsset(url) {
   return isSupabaseHost(url) && url.pathname.includes('/storage/v1/object/public/')
 }
 
+function isHttpRequest(url) {
+  return url.protocol === 'http:' || url.protocol === 'https:'
+}
+
 function networkFirst(request, cacheName, event, maxEntries) {
   const network = fetch(request).then(response => {
     if (response.status >= 500) throw new Error(`HTTP ${response.status}`)
@@ -102,6 +108,31 @@ function staleWhileRevalidate(request, cacheName, event, maxEntries) {
     .then(cached => cached || update)
 }
 
+async function imageCacheFirst(request, event) {
+  const cache = await caches.open(IMAGE_CACHE)
+  const cached = await cache.match(request, { ignoreVary:true })
+  const update = fetch(request)
+    .then(async response => {
+      if (response.ok || response.type === 'opaque') {
+        await putInCache(IMAGE_CACHE, request, response.clone(), MAX_IMAGE_CACHE_ENTRIES)
+      }
+      return response
+    })
+
+  if (cached) {
+    event.waitUntil(update.catch(() => {}))
+    return cached
+  }
+
+  try {
+    return await update
+  } catch (error) {
+    const fallback = await cache.match(request, { ignoreVary:true })
+    if (fallback) return fallback
+    throw error
+  }
+}
+
 function handleNavigation(event) {
   const url = new URL(event.request.url)
   const cacheKey = new Request(`${url.origin}${url.pathname}`)
@@ -133,8 +164,10 @@ self.addEventListener('install', event => {
     await Promise.all([
       caches.open(SHELL_CACHE).then(cache => cache.addAll(APP_SHELL)),
       caches.open(ASSET_CACHE).then(cache => cache.addAll(PRECACHE_ASSETS)),
+      caches.open(IMAGE_CACHE),
     ])
     await trimCache(ASSET_CACHE, 180)
+    await trimCache(IMAGE_CACHE, MAX_IMAGE_CACHE_ENTRIES)
   })())
   self.skipWaiting()
 })
@@ -159,12 +192,14 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const { request } = event
   if (request.method !== 'GET') return
+  if (request.cache === 'only-if-cached' && request.mode !== 'same-origin') return
 
   if (request.headers.has('range') || request.destination === 'video' || request.destination === 'audio') {
     return
   }
 
   const url = new URL(request.url)
+  if (!isHttpRequest(url)) return
 
   if (request.mode === 'navigate') {
     event.respondWith(handleNavigation(event))
@@ -177,7 +212,12 @@ self.addEventListener('fetch', event => {
   }
 
   if (isPublicStorageAsset(url)) {
-    event.respondWith(staleWhileRevalidate(request, ASSET_CACHE, event, 180))
+    event.respondWith(imageCacheFirst(request, event))
+    return
+  }
+
+  if (request.destination === 'image') {
+    event.respondWith(imageCacheFirst(request, event))
     return
   }
 
@@ -185,11 +225,6 @@ self.addEventListener('fetch', event => {
 
   if (request.destination === 'script' || request.destination === 'style' || request.destination === 'font') {
     event.respondWith(cacheFirst(request, ASSET_CACHE, 180))
-    return
-  }
-
-  if (request.destination === 'image') {
-    event.respondWith(staleWhileRevalidate(request, ASSET_CACHE, event, 180))
     return
   }
 

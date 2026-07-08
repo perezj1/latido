@@ -15,6 +15,28 @@ if ('scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual'
 }
 
+function addPreconnect(url, crossOrigin = false) {
+  if (!url || !document.head) return
+  if (document.querySelector(`link[rel="preconnect"][href="${url}"]`)) return
+
+  const link = document.createElement('link')
+  link.rel = 'preconnect'
+  link.href = url
+  if (crossOrigin) link.crossOrigin = ''
+  document.head.appendChild(link)
+}
+
+function prepareImageConnections() {
+  addPreconnect('https://images.unsplash.com', true)
+
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    if (supabaseUrl) addPreconnect(new URL(supabaseUrl).origin, true)
+  } catch {}
+}
+
+prepareImageConnections()
+
 function cleanupDevServiceWorkers() {
   if (import.meta.env.PROD || !('serviceWorker' in navigator)) return
 
