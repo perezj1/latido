@@ -6,6 +6,7 @@ import { C, PP } from '../lib/theme'
 import { EVENTO_TYPES } from '../lib/constants'
 import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
+import OptimizedImage from '../components/OptimizedImage'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { normalizeExternalUrl } from '../lib/links'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
@@ -313,7 +314,7 @@ export default function PublicarEvento() {
               <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:10, letterSpacing:0.5 }}>VISTA PREVIA</p>
               {form.img_url && (
                 <div style={{ borderRadius:12, overflow:'hidden', marginBottom:10 }}>
-                  <img src={form.img_url} alt={form.title || 'Vista previa del evento'} style={{ width:'100%', maxHeight:180, objectFit:'cover' }} />
+                  <OptimizedImage src={form.img_url} alt={form.title || 'Vista previa del evento'} width={760} height={360} resize="cover" quality={76} loading="eager" style={{ width:'100%', maxHeight:180, objectFit:'cover' }} />
                 </div>
               )}
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>

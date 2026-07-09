@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { Btn, Tag } from '../components/UI'
+import OptimizedImage from '../components/OptimizedImage'
 import { REPORT_REASONS } from '../lib/reports'
 import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
@@ -3349,7 +3350,7 @@ export default function Admin() {
                     }}
                   >
                     <span style={{ width: 42, height: 42, borderRadius: 13, background: '#fff', border: `1px solid ${C.border}`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                      <img src={partner.logo} alt="" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                      <OptimizedImage src={partner.logo} alt="" width={96} height={96} resize="contain" quality={72} loading="lazy" style={{ width: 32, height: 32, objectFit: 'contain' }} />
                     </span>
                     <span style={{ minWidth: 0, flex: 1 }}>
                       <strong style={{ display: 'block', fontFamily: PP, fontSize: 13, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{partner.name}</strong>
@@ -3382,7 +3383,7 @@ export default function Admin() {
             <Card style={{ padding: 16, background: 'linear-gradient(145deg,#FFFFFF,#F6F8FF)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 16 }}>
                 <span style={{ width: 46, height: 46, borderRadius: 15, background: '#fff', border: `1px solid ${C.border}`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                  <img src={selectedPartner?.logo} alt="" style={{ width: 35, height: 35, objectFit: 'contain' }} />
+                  <OptimizedImage src={selectedPartner?.logo} alt="" width={96} height={96} resize="contain" quality={72} loading="lazy" style={{ width: 35, height: 35, objectFit: 'contain' }} />
                 </span>
                 <div>
                   <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>{selectedPartner?.name}</p>
@@ -3708,9 +3709,14 @@ export default function Admin() {
               <Card key={business.id}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   {business.photo_url ? (
-                    <img
+                    <OptimizedImage
                       src={business.photo_url}
                       alt={business.name || 'Negocio'}
+                      width={180}
+                      height={180}
+                      resize="contain"
+                      quality={72}
+                      loading="lazy"
                       style={{ width: 74, height: 74, objectFit: 'contain', borderRadius: 12, background: C.bg, border: `1px solid ${C.border}`, flexShrink: 0 }}
                     />
                   ) : (
