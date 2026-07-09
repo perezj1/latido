@@ -7,6 +7,7 @@ import { getNegocioTypeMeta } from '../lib/constants'
 import { getIdFromSlug } from '../lib/seo'
 import { getBusinessPartnerAnalyticsId, hasActiveBusinessLanding } from '../lib/businessPartners'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
+import OptimizedImage from '../components/OptimizedImage'
 import './PartnerServices.css'
 
 const FALLBACK_LOGO = '/favicon.svg'
@@ -237,7 +238,7 @@ export default function BusinessPartnerLanding() {
           </Link>
           <span className="see-cobar-x" aria-hidden="true">x</span>
           <span className="see-cobar-brand bpl-cobar-partner">
-            <img src={logoUrl} alt="" />
+            <OptimizedImage src={logoUrl} alt="" width={96} height={96} resize="contain" quality={72} loading="eager" />
             <span>{provider.name}</span>
           </span>
         </div>
@@ -261,7 +262,7 @@ export default function BusinessPartnerLanding() {
               <span className="see-hero-cobrand-x" aria-hidden="true">x</span>
               <span className="see-hero-cobrand-brand">
                 <span className="see-hero-cobrand-mark bpl-hero-cobrand-partner">
-                  <img src={logoUrl} alt="" />
+                  <OptimizedImage src={logoUrl} alt="" width={140} height={140} resize="contain" quality={74} loading="eager" />
                 </span>
                 <strong>{provider.name}</strong>
               </span>
@@ -293,7 +294,7 @@ export default function BusinessPartnerLanding() {
           <div className="see-hero-visual">
             <div className="bpl-hero-panel">
               <div className="bpl-logo-card">
-                <img src={logoUrl} alt={provider.name} />
+                <OptimizedImage src={logoUrl} alt={provider.name} width={420} height={420} resize="contain" quality={78} loading="eager" />
               </div>
               <div className="bpl-hero-list">
                 <span>{category}</span>
@@ -381,7 +382,7 @@ export default function BusinessPartnerLanding() {
         <div className="see-footer-content">
           <div className="see-footer-header">
             <div className="see-footer-logo bpl-footer-logo">
-              <img src={logoUrl} alt="" />
+              <OptimizedImage src={logoUrl} alt="" width={96} height={96} resize="contain" quality={72} loading="lazy" />
               {provider.name}
             </div>
             <p>Colaboración Latido x {provider.name} para la comunidad hispanohablante en Suiza.</p>

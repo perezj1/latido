@@ -6,6 +6,7 @@ import { C, PP } from '../lib/theme'
 import { VISIBLE_NEGOCIO_TYPES } from '../lib/constants'
 import { Btn, ProgressBar, Input, ImageUploadField, Modal, PublicationLegalNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
+import OptimizedImage from '../components/OptimizedImage'
 import { calculateBusinessVerification } from '../lib/businessVerification'
 import { insertWithOptionalColumnsFallback } from '../lib/supabaseCompat'
 import { MAX_PUBLICATION_IMAGES, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
@@ -559,7 +560,7 @@ export default function RegistrarNegocio() {
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:12, letterSpacing:0.5 }}>RESUMEN DE TU NEGOCIO</p>
           {form.photo_url && (
             <div style={{ borderRadius:14, overflow:'hidden', marginBottom:12 }}>
-              <img src={form.photo_url} alt={form.name || 'Vista previa del negocio'} style={{ width:'100%', maxHeight:190, objectFit:'cover' }} />
+              <OptimizedImage src={form.photo_url} alt={form.name || 'Vista previa del negocio'} width={760} height={380} resize="cover" quality={76} loading="eager" style={{ width:'100%', maxHeight:190, objectFit:'cover' }} />
             </div>
           )}
           <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>

@@ -10,6 +10,7 @@ import { MAX_PUBLICATION_IMAGES, uploadAvatar, getStorageErrorMessage, uploadPub
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
+import OptimizedImage from '../components/OptimizedImage'
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOptions, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
 import { getBusinessPromotionMeta, isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
@@ -2186,7 +2187,7 @@ export default function Perfil() {
             <div style={{ display:'flex', gap:10, alignItems:'center', background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 12px', marginBottom:12 }}>
               {adReminderItem.raw?.img_url ? (
                 <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0, background:'#fff' }}>
-                  <img src={adReminderItem.raw.img_url} alt={adReminderItem.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                  <OptimizedImage src={adReminderItem.raw.img_url} alt={adReminderItem.title} width={96} height={96} resize="cover" quality={70} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 </div>
               ) : (
                 <span style={{ width:42, height:42, borderRadius:12, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
@@ -2341,7 +2342,7 @@ export default function Perfil() {
                 <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
                   {imageUrl ? (
                     <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0 }}>
-                      <img src={imageUrl} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      <OptimizedImage src={imageUrl} alt={item.title} width={96} height={96} resize="cover" quality={70} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                     </div>
                   ) : (
                     <div style={{ width:42, height:42, borderRadius:12, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>

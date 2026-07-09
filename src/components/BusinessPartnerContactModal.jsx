@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
+import OptimizedImage from './OptimizedImage'
 
 function ContactAction({ action, onClick }) {
   const content = (
@@ -100,7 +101,7 @@ export default function BusinessPartnerContactModal({
         </button>
 
         <div className="mira-contact-brand business-partner-contact-brand">
-          <img src={partner.logoUrl} alt={partner.name} />
+          <OptimizedImage src={partner.logoUrl} alt={partner.name} width={220} height={220} resize="contain" quality={76} loading="eager" />
         </div>
 
         <p className="mira-contact-kicker">Colaborador de Latido</p>
