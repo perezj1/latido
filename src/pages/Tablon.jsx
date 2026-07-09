@@ -415,9 +415,9 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
             type="button"
             onClick={() => setLightboxOpen(true)}
             aria-label="Ampliar foto del anuncio"
-            style={{ width:'100%', minHeight:0, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'visible', border:'none', padding:'10px 0', cursor:'zoom-in', position:'relative' }}
+            style={{ width:'100%', height:'min(58vh, 460px)', minHeight:260, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', border:'none', padding:0, cursor:'zoom-in', position:'relative' }}
           >
-            <img src={coverPhoto} alt={ad.title} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'auto', maxWidth:'min(100%, 420px)', objectFit:'contain', display:'block' }}/>
+            <img src={coverPhoto} alt={ad.title} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }}/>
           </button>
         ) : (
           <div style={{ height:260, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:64 }}>
@@ -644,8 +644,8 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
     <div style={{ background:'#fff' }}>
       <div style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
         {job.logo_url ? (
-          <div style={{ width:'100%', minHeight:0, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'visible', padding:'10px 0', boxSizing:'border-box' }}>
-            <img src={job.logo_url} alt={job.company || job.title} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'auto', maxWidth:'min(100%, 440px)', objectFit:'contain', display:'block' }} />
+          <div style={{ width:'100%', height:'min(58vh, 460px)', minHeight:260, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', padding:0, boxSizing:'border-box' }}>
+            <img src={job.logo_url} alt={job.company || job.title} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
           </div>
         ) : (
           <div style={{ height:240, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:70 }}>
@@ -758,8 +758,8 @@ function PortalDetail({ portal, defaultEmoji = '🏠' }) {
     <div style={{ background:'#fff' }}>
       <div style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
         {portal.photo_url ? (
-          <div style={{ width:'100%', minHeight:0, display:'flex', alignItems:'center', justifyContent:'center', overflow:'visible', padding:'10px 0', boxSizing:'border-box' }}>
-            <img src={portal.photo_url} alt={portal.name} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'auto', maxWidth:'min(100%, 440px)', objectFit:'contain', display:'block' }} />
+          <div style={{ width:'100%', height:'min(58vh, 460px)', minHeight:260, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', padding:0, boxSizing:'border-box' }}>
+            <img src={portal.photo_url} alt={portal.name} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
           </div>
         ) : (
           <div style={{ height:240, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:70 }}>{defaultEmoji}</div>
