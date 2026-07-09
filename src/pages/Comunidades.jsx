@@ -30,6 +30,7 @@ import { getMissingColumnName } from '../lib/supabaseCompat'
 import { normalizeExternalUrl } from '../lib/links'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
+import { getThumbnailImageUrl } from '../lib/imageVariants'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
@@ -498,7 +499,7 @@ function RelatedCommunityCard({ group, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
       <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {group.photo_url ? <img src={group.photo_url} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : group.emoji}
+        {group.photo_url ? <img src={getThumbnailImageUrl(group.photo_url)} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : group.emoji}
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{group.name}</p>
@@ -515,7 +516,7 @@ function RelatedBusinessCard({ business, photosMap={}, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
       <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {photos[0] ? <img src={photos[0]} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : business.emoji}
+        {photos[0] ? <img src={getThumbnailImageUrl(photos[0])} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : business.emoji}
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{business.name}</p>
@@ -531,7 +532,7 @@ function RelatedEventCard({ event, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
       <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {event.img ? <img src={event.img} alt={event.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : event.emoji}
+        {event.img ? <img src={getThumbnailImageUrl(event.img)} alt={event.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : event.emoji}
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{event.title}</p>
@@ -554,7 +555,7 @@ function CommunityCard({ group, onClick }) {
     >
       <div style={{ ...LIST_THUMB_STYLE, background:hasImage ? '#fff' : C.primaryLight }}>
         {hasImage ? (
-          <img src={group.photo_url} alt={group.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
+          <img src={getThumbnailImageUrl(group.photo_url)} alt={group.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
         ) : (
           <div style={LIST_FALLBACK_STYLE}>{group.emoji}</div>
         )}
@@ -604,7 +605,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
             aria-label="Ampliar fotos del negocio"
             style={{ width:'100%', height:'100%', padding:0, border:'none', background:'transparent', cursor:'zoom-in', display:'block', borderRadius:14, overflow:'hidden' }}
           >
-            <img src={cover} alt={business.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
+            <img src={getThumbnailImageUrl(cover)} alt={business.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
           </button>
         ) : (
           <div style={LIST_FALLBACK_STYLE}>{business.emoji}</div>
@@ -1877,7 +1878,7 @@ export default function Comunidades() {
                   >
                     {event.img ? (
                       <div style={LIST_THUMB_STYLE}>
-                        <img src={event.img} alt={event.title} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
+                        <img src={getThumbnailImageUrl(event.img)} alt={event.title} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
                       </div>
                     ) : (
                       <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight, fontSize:32 }}>

@@ -47,6 +47,7 @@ const SUPABASE_STORAGE_OBJECT_SEGMENT = '/storage/v1/object/public/'
 const SUPABASE_STORAGE_RENDER_SEGMENT = '/storage/v1/render/image/public/'
 const RASTER_IMAGE_EXTENSIONS = new Set(['avif', 'jpeg', 'jpg', 'png', 'webp'])
 const FAST_IMAGE_WIDTH = 800
+const FAST_THUMB_IMAGE_WIDTH = 420
 const FAST_IMAGE_QUALITY = 68
 
 function isSupabaseHost(url) {
@@ -57,6 +58,11 @@ function hasRasterImageExtension(url) {
   const filename = url.pathname.split('/').pop() || ''
   const extension = filename.split('.').pop()?.toLowerCase() || ''
   return RASTER_IMAGE_EXTENSIONS.has(extension)
+}
+
+function getFastImageWidth(url) {
+  const filename = url.pathname.split('/').pop()?.toLowerCase() || ''
+  return /-thumb\.[a-z0-9]+$/.test(filename) ? FAST_THUMB_IMAGE_WIDTH : FAST_IMAGE_WIDTH
 }
 
 function getFastSupabaseImageSrc(url) {
@@ -76,7 +82,7 @@ function getFastSupabaseImageSrc(url) {
   optimized.search = ''
   const version = url.searchParams.get('v')
   if (version) optimized.searchParams.set('v', version)
-  optimized.searchParams.set('width', String(FAST_IMAGE_WIDTH))
+  optimized.searchParams.set('width', String(getFastImageWidth(url)))
   optimized.searchParams.set('quality', String(FAST_IMAGE_QUALITY))
   optimized.searchParams.set('resize', 'contain')
   return optimized.href

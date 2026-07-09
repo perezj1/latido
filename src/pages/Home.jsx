@@ -22,6 +22,7 @@ import {
   isBusinessPromotionActive,
   rotateHomeBusinesses,
 } from '../lib/businessPromotion'
+import { getThumbnailImageUrl } from '../lib/imageVariants'
 import toast from 'react-hot-toast'
 
 const fmtPrice = p => {
@@ -1422,7 +1423,7 @@ export default function Home() {
                             <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:10, minWidth:0 }}>
                               {item.image ? (
                                 <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0, background:C.bg }}>
-                                  <img src={item.image} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                                  <img src={getThumbnailImageUrl(item.image)} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                                 </div>
                               ) : (
                                 <span style={{ width:42, height:42, borderRadius:12, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:19, flexShrink:0 }}>
@@ -1527,7 +1528,7 @@ export default function Home() {
           {promotableBusinesses.map(business => (
             <div key={business.id} style={{ display:'flex', alignItems:'center', gap:11, border:`1px solid ${C.border}`, borderRadius:15, padding:10 }}>
               {business.photoUrl ? (
-                <img src={business.photoUrl} alt={business.name} style={{ width:44, height:44, borderRadius:12, objectFit:'cover', flexShrink:0 }} />
+                <img src={getThumbnailImageUrl(business.photoUrl)} alt={business.name} style={{ width:44, height:44, borderRadius:12, objectFit:'cover', flexShrink:0 }} />
               ) : (
                 <span style={{ width:44, height:44, borderRadius:12, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:21, flexShrink:0 }}>
                   🏪
@@ -1592,7 +1593,7 @@ export default function Home() {
                     <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 10px 24px rgba(15,23,42,0.07)' }}>
                       <div style={{ height:132, background:'#F8FAFC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative', borderBottom:`1px solid ${C.borderLight}` }}>
                         {ad.img
-                          ? <img src={ad.img} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
+                          ? <img src={getThumbnailImageUrl(ad.img)} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
                           : <span style={{ fontSize:44, lineHeight:1 }}>{displayEmoji}</span>
                         }
                         <span style={{ position:'absolute', top:10, left:10, maxWidth:'calc(100% - 76px)', fontFamily:PP, fontSize:9, fontWeight:800, background:'rgba(255,255,255,0.94)', color:cc.tc, padding:'5px 8px', borderRadius:999, boxShadow:'0 6px 14px rgba(15,23,42,0.08)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{cat?.label}</span>
@@ -1723,7 +1724,7 @@ export default function Home() {
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                     <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'visible' }}>
                       {business.photo_url
-                        ? <img src={business.photo_url} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        ? <img src={getThumbnailImageUrl(business.photo_url)} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{business.emoji || '🏪'}</span>
                       }
                       <span
@@ -1832,7 +1833,7 @@ export default function Home() {
                   <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                     <div style={{ height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
                       {group.photo_url
-                        ? <img src={group.photo_url} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        ? <img src={getThumbnailImageUrl(group.photo_url)} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{group.emoji || '👥'}</span>
                       }
                     </div>

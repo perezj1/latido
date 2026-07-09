@@ -13,6 +13,7 @@ import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Se
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOptions, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
 import { getBusinessPromotionMeta, isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
+import { getThumbnailImageUrl } from '../lib/imageVariants'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -2186,7 +2187,7 @@ export default function Perfil() {
             <div style={{ display:'flex', gap:10, alignItems:'center', background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 12px', marginBottom:12 }}>
               {adReminderItem.raw?.img_url ? (
                 <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0, background:'#fff' }}>
-                  <img src={adReminderItem.raw.img_url} alt={adReminderItem.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                  <img src={getThumbnailImageUrl(adReminderItem.raw.img_url)} alt={adReminderItem.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 </div>
               ) : (
                 <span style={{ width:42, height:42, borderRadius:12, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
@@ -2341,7 +2342,7 @@ export default function Perfil() {
                 <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
                   {imageUrl ? (
                     <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0 }}>
-                      <img src={imageUrl} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      <img src={getThumbnailImageUrl(imageUrl)} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                     </div>
                   ) : (
                     <div style={{ width:42, height:42, borderRadius:12, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
