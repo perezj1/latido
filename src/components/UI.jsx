@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { C, PP } from '../lib/theme'
 import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
+import { getThumbnailImageUrl } from '../lib/imageVariants'
 
 // ── Button ─────────────────────────────────────────────────────
 export function Btn({ children, onClick, variant='primary', size='md', disabled=false, style={}, className='' }) {
@@ -604,7 +605,7 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
   return (
     <div onClick={onClick} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', cursor:'pointer', transition:'all .2s' }}>
       {ad.img ? (
-        <img src={ad.img} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:160, objectFit:'cover' }} />
+        <img src={getThumbnailImageUrl(ad.img)} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:160, objectFit:'cover' }} />
       ) : (
         <div style={{ width:'100%', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:52 }}>
           {displayEmoji}

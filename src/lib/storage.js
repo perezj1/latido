@@ -12,7 +12,7 @@ const OUTPUT_FORMATS = [
   { type:'image/webp', extension:'webp' },
   { type:'image/jpeg', extension:'jpg' },
 ]
-const PUBLICATION_IMAGE_PROFILE = {
+const PUBLICATION_IMAGE_DETAIL_PROFILE = {
   maxSourceBytes: MAX_PUBLICATION_SOURCE_BYTES,
   maxOutputBytes: 360 * 1024,
   maxDimension: 1280,
@@ -20,6 +20,15 @@ const PUBLICATION_IMAGE_PROFILE = {
   quality: 0.76,
   minQuality: 0.52,
   fallbackMaxBytes: 5 * 1024 * 1024,
+}
+const PUBLICATION_IMAGE_THUMB_PROFILE = {
+  maxSourceBytes: MAX_PUBLICATION_SOURCE_BYTES,
+  maxOutputBytes: 92 * 1024,
+  maxDimension: 520,
+  minDimension: 320,
+  quality: 0.72,
+  minQuality: 0.48,
+  fallbackMaxBytes: 1024 * 1024,
 }
 const AVATAR_IMAGE_PROFILE = {
   maxSourceBytes: MAX_AVATAR_SOURCE_BYTES,
@@ -41,6 +50,10 @@ function inferExtension(file) {
 function getOptimizedName(file, extension = 'webp') {
   const base = file.name?.replace(/\.[^.]+$/, '') || 'image'
   return `${base}.${extension}`
+}
+
+function getUniqueImageBasePath(userId, folder) {
+  return `${userId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 function getExtensionForType(type) {
@@ -134,7 +147,14 @@ async function renderOptimizedImage(image, {
   throw new Error('No se pudo optimizar la imagen')
 }
 
-async function prepareImageForUpload(file, {
+function validateImageSource(file, { maxSourceBytes }) {
+  if (!file.type?.startsWith('image/')) throw new Error('Selecciona un archivo de imagen valido')
+  if (file.size > maxSourceBytes) {
+    throw new Error(`La imagen es demasiado grande. Maximo ${Math.round(maxSourceBytes / 1024 / 1024)} MB.`)
+  }
+}
+
+async function prepareLoadedImageForUpload(file, image, {
   maxSourceBytes,
   maxOutputBytes,
   maxDimension,
@@ -143,17 +163,7 @@ async function prepareImageForUpload(file, {
   minQuality,
   fallbackMaxBytes,
 }) {
-  if (!file.type?.startsWith('image/')) throw new Error('Selecciona un archivo de imagen valido')
-  if (file.size > maxSourceBytes) {
-    throw new Error(`La imagen es demasiado grande. Maximo ${Math.round(maxSourceBytes / 1024 / 1024)} MB.`)
-  }
-
-  if (BYPASS_COMPRESSION_TYPES.has(file.type) || typeof document === 'undefined') {
-    if (file.size > fallbackMaxBytes) throw new Error('La imagen es demasiado grande. Usa JPG, PNG o WebP.')
-    return file
-  }
-
-  const image = await loadImage(file)
+  validateImageSource(file, { maxSourceBytes })
   const width = image.naturalWidth || image.width
   const height = image.naturalHeight || image.height
   if (!width || !height) throw new Error('No se pudo leer la imagen')
@@ -172,7 +182,6 @@ async function prepareImageForUpload(file, {
   })
 
   if (!blob) throw new Error('No se pudo optimizar la imagen')
-  if (blob.size > file.size && file.size <= maxOutputBytes) return file
   if (blob.size > fallbackMaxBytes) {
     throw new Error('La imagen es demasiado pesada incluso optimizada. Prueba con otra foto.')
   }
@@ -182,6 +191,18 @@ async function prepareImageForUpload(file, {
   return typeof File === 'function'
     ? new File([blob], name, { type:blob.type || 'image/jpeg', lastModified:Date.now() })
     : Object.assign(blob, { name })
+}
+
+async function prepareImageForUpload(file, profile) {
+  validateImageSource(file, profile)
+
+  if (BYPASS_COMPRESSION_TYPES.has(file.type) || typeof document === 'undefined') {
+    if (file.size > profile.fallbackMaxBytes) throw new Error('La imagen es demasiado grande. Usa JPG, PNG o WebP.')
+    return file
+  }
+
+  const image = await loadImage(file)
+  return prepareLoadedImageForUpload(file, image, profile)
 }
 
 export function getStorageErrorMessage(error) {
@@ -204,23 +225,43 @@ export async function uploadPublicationImage({ file, userId, folder = 'misc' }) 
   if (!file) throw new Error('No se ha seleccionado ninguna imagen')
   if (!userId) throw new Error('Necesitas iniciar sesion para subir imagenes')
 
-  const optimizedFile = await prepareImageForUpload(file, PUBLICATION_IMAGE_PROFILE)
+  const uploadPreparedFile = async (preparedFile, path) => {
+    const { error } = await supabase.storage.from(PUBLICATION_IMAGES_BUCKET).upload(path, preparedFile, {
+      cacheControl: ONE_YEAR_SECONDS,
+      upsert: false,
+      contentType: preparedFile.type || 'image/webp',
+    })
 
-  const extension = inferExtension(optimizedFile)
-  const path = `${userId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`
+    if (error) throw error
 
-  const { error } = await supabase.storage.from(PUBLICATION_IMAGES_BUCKET).upload(path, optimizedFile, {
-    cacheControl: ONE_YEAR_SECONDS,
-    upsert: false,
-    contentType: optimizedFile.type || 'image/webp',
-  })
+    const { data } = supabase.storage.from(PUBLICATION_IMAGES_BUCKET).getPublicUrl(path)
+    if (!data?.publicUrl) throw new Error('No se pudo obtener la URL publica de la imagen')
 
-  if (error) throw error
+    return data.publicUrl
+  }
 
-  const { data } = supabase.storage.from(PUBLICATION_IMAGES_BUCKET).getPublicUrl(path)
-  if (!data?.publicUrl) throw new Error('No se pudo obtener la URL publica de la imagen')
+  const canCreateVariants = !BYPASS_COMPRESSION_TYPES.has(file.type) && typeof document !== 'undefined'
 
-  return data.publicUrl
+  if (!canCreateVariants) {
+    const optimizedFile = await prepareImageForUpload(file, PUBLICATION_IMAGE_DETAIL_PROFILE)
+    const extension = inferExtension(optimizedFile)
+    return uploadPreparedFile(optimizedFile, `${getUniqueImageBasePath(userId, folder)}.${extension}`)
+  }
+
+  validateImageSource(file, PUBLICATION_IMAGE_DETAIL_PROFILE)
+  const image = await loadImage(file)
+  const detailFile = await prepareLoadedImageForUpload(file, image, PUBLICATION_IMAGE_DETAIL_PROFILE)
+  const thumbFile = await prepareLoadedImageForUpload(file, image, PUBLICATION_IMAGE_THUMB_PROFILE)
+
+  const basePath = getUniqueImageBasePath(userId, folder)
+  const detailPath = `${basePath}-detail.${inferExtension(detailFile)}`
+  const thumbPath = `${basePath}-thumb.${inferExtension(thumbFile)}`
+  const [detailUrl] = await Promise.all([
+    uploadPreparedFile(detailFile, detailPath),
+    uploadPreparedFile(thumbFile, thumbPath),
+  ])
+
+  return detailUrl
 }
 
 export async function uploadPublicationImages({ files, userId, folder = 'misc' }) {
