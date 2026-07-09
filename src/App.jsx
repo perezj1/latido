@@ -50,6 +50,10 @@ const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
 const AlertasClientesPotenciales = lazy(() => import('./pages/AlertasClientesPotenciales'))
 const Virtus360Services = lazy(() => import('./pages/Virtus360Services'))
 const BusinessPartnerLanding = lazy(() => import('./pages/BusinessPartnerLanding'))
+const WorkCheckConstruccion = lazy(() => import('./pages/WorkCheckConstruccion'))
+const PerfilLaboral = lazy(() => import('./pages/PerfilLaboral'))
+const TemporeraPublica = lazy(() => import('./pages/TemporeraPublica'))
+const PortalTemporera = lazy(() => import('./pages/PortalTemporera'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
@@ -654,6 +658,12 @@ function AppShell() {
             <Route path="/publicar" element={<ProtectedRoute><Publicar /></ProtectedRoute>} />
             <Route path="/comunidades" element={<Comunidades />} />
             <Route path="/colaboraciones" element={<Colaboraciones />} />
+            <Route path="/workcheck-construccion" element={<WorkCheckConstruccion />} />
+            <Route path="/perfil-laboral" element={<PerfilLaboral />} />
+            <Route path="/perfil-laboral/:agencySlug" element={<TemporeraPublica />} />
+            <Route path="/temporeras/:agencySlug" element={<TemporeraPublica />} />
+            <Route path="/portal-temporera" element={<PortalTemporera />} />
+            <Route path="/portal-temporera/:agencySlug" element={<PortalTemporera />} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />

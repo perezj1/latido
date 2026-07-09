@@ -153,6 +153,11 @@ export default function PublicarEmpleo() {
             : 'Tu oferta ya está visible para miles de personas en Suiza. Los candidatos te escribirán por mensaje dentro de Latido.'}
       </p>
       <Btn onClick={() => navigate('/tablon?cat=empleo')}>Ver empleos →</Btn>
+      {isSeekingJob && (
+        <button onClick={() => navigate('/perfil-laboral')} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:'#fff', background:C.primary, border:'none', borderRadius:14, padding:'13px 0', width:'100%', cursor:'pointer', marginTop:10 }}>
+          Crear mi Perfil Laboral
+        </button>
+      )}
       <button onClick={() => { setDone(false); setPublishedForReview(false); setErrors({}); setStep(0); setForm(createInitialForm()); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Publicar otro empleo
       </button>

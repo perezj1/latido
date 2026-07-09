@@ -1,0 +1,2752 @@
+/* Latido WorkCheck + Portal Temporera visual system. */
+:root {
+  --lw-blue: #4A76EF;
+  --lw-blue-dark: #2F5BD9;
+  --lw-blue-soft: #EEF3FE;
+  --lw-blue-border: #D9E4FC;
+  --lw-blue-ink: #2F4B9E;
+  --lw-ink: #16171C;
+  --lw-gray: #70737C;
+  --lw-gray-light: #9A9DA6;
+  --lw-bg: #F7F7F5;
+  --lw-card: #FFFFFF;
+  --lw-border: #ECECE9;
+  --lw-divider: #F1F1EE;
+  --lw-green: #1F8A5B;
+  --lw-green-soft: #EFFAF3;
+  --lw-green-border: #C9E8D4;
+  --lw-red: #D04545;
+  --lw-red-soft: #FFF1F1;
+  --lw-red-border: #FFD1D1;
+  --lw-amber: #B97A0A;
+  --lw-amber-soft: #FFF8E8;
+  --lw-amber-border: #F7DCA0;
+  --lw-font: "Instrument Sans", system-ui, sans-serif;
+}
+
+.workcheck-page,
+.portal-page {
+  background: var(--lw-bg) !important;
+  color: var(--lw-ink) !important;
+  font-family: var(--lw-font) !important;
+  letter-spacing: 0 !important;
+}
+
+.workcheck-page *,
+.portal-page * {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
+
+/* WorkCheck form */
+.workcheck-page {
+  min-height: 100dvh !important;
+  padding: 0 0 calc(88px + env(safe-area-inset-bottom)) !important;
+}
+
+.workcheck-shell {
+  width: min(480px, 100%) !important;
+  max-width: 480px !important;
+  margin: 0 auto !important;
+  background: var(--lw-bg) !important;
+}
+
+.workcheck-top {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 12px 20px 14px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--lw-border) !important;
+  border-radius: 0 !important;
+  background: var(--lw-card) !important;
+  box-shadow: none !important;
+  color: var(--lw-ink) !important;
+  text-align: left !important;
+}
+
+.workcheck-top::after {
+  display: none !important;
+}
+
+.workcheck-brand {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  text-align: left !important;
+}
+
+.workcheck-logo {
+  width: 28px !important;
+  height: 28px !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: var(--lw-blue-soft) !important;
+  box-shadow: none !important;
+  flex: 0 0 auto !important;
+}
+
+.workcheck-brand h1 {
+  margin: 0 !important;
+  color: var(--lw-ink) !important;
+  font-size: 15.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.workcheck-brand p {
+  max-width: none !important;
+  margin: 2px 0 0 !important;
+  color: var(--lw-gray) !important;
+  font-size: 11.5px !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.workcheck-hero-meta {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+  justify-content: flex-start !important;
+  margin: 8px 0 0 !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+}
+
+.workcheck-hero-meta::-webkit-scrollbar {
+  display: none !important;
+}
+
+.workcheck-hero-meta span,
+.workcheck-step-count {
+  min-height: 26px !important;
+  padding: 5px 10px !important;
+  border: 1px solid var(--lw-blue-border) !important;
+  border-radius: 999px !important;
+  background: var(--lw-blue-soft) !important;
+  color: var(--lw-blue) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+}
+
+.workcheck-top-actions {
+  display: flex !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.workcheck-link,
+.workcheck-button {
+  min-height: 36px !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 13px !important;
+  background: var(--lw-card) !important;
+  color: var(--lw-ink) !important;
+  box-shadow: none !important;
+  font-family: var(--lw-font) !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+.workcheck-button--primary,
+.workcheck-summary-actions .workcheck-button--primary {
+  border-color: var(--lw-blue) !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+}
+
+.workcheck-top-actions .workcheck-link:first-child {
+  border-color: var(--lw-blue) !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+}
+
+.workcheck-agency-banner {
+  margin: 12px 20px 0 !important;
+  padding: 12px 14px !important;
+  border: 1px solid var(--lw-green-border) !important;
+  border-radius: 16px !important;
+  background: var(--lw-green-soft) !important;
+  color: var(--lw-green) !important;
+  box-shadow: none !important;
+}
+
+.workcheck-stepper {
+  margin: 0 !important;
+  padding: 12px 20px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--lw-border) !important;
+  border-radius: 0 !important;
+  background: var(--lw-card) !important;
+  box-shadow: none !important;
+}
+
+.workcheck-step-description {
+  margin: 7px 0 10px !important;
+  color: var(--lw-gray) !important;
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+}
+
+.workcheck-progress {
+  height: 4px !important;
+  overflow: hidden !important;
+  border-radius: 99px !important;
+  background: var(--lw-border) !important;
+}
+
+.workcheck-progress span {
+  display: block !important;
+  height: 100% !important;
+  border-radius: 99px !important;
+  background: var(--lw-blue) !important;
+}
+
+.workcheck-step-scroll {
+  display: flex !important;
+  gap: 6px !important;
+  margin-top: 11px !important;
+  padding-bottom: 2px !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+}
+
+.workcheck-step-scroll::-webkit-scrollbar {
+  display: none !important;
+}
+
+.workcheck-step-chip {
+  flex: 0 0 auto !important;
+  min-width: 38px !important;
+  min-height: 32px !important;
+  padding: 0 10px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 999px !important;
+  background: var(--lw-bg) !important;
+  color: var(--lw-gray) !important;
+  font-family: var(--lw-font) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+.workcheck-step-chip span {
+  margin-right: 4px !important;
+}
+
+.workcheck-step-chip--done,
+.workcheck-step-chip--active {
+  border-color: var(--lw-blue) !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+}
+
+.workcheck-layout {
+  display: block !important;
+  padding: 18px 20px 0 !important;
+}
+
+.workcheck-main {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.workcheck-layout > .workcheck-summary:not(.workcheck-summary--open) {
+  display: none !important;
+}
+
+.workcheck-section,
+.workcheck-summary-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  margin: 0 0 16px !important;
+  padding: 16px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 16px !important;
+  background: var(--lw-card) !important;
+  box-shadow: none !important;
+}
+
+.workcheck-section h2,
+.workcheck-summary-panel h2 {
+  margin: 0 !important;
+  color: var(--lw-ink) !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.workcheck-eyebrow {
+  margin: 0 !important;
+  color: var(--lw-blue) !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+}
+
+.workcheck-note,
+.workcheck-help {
+  margin: 0 !important;
+  color: var(--lw-gray) !important;
+  font-size: 13.5px !important;
+  line-height: 1.45 !important;
+}
+
+.workcheck-field {
+  display: grid !important;
+  gap: 7px !important;
+  margin: 0 !important;
+}
+
+.workcheck-field-label,
+.workcheck-label {
+  margin: 0 !important;
+  color: var(--lw-gray) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+}
+
+.workcheck-input,
+.workcheck-select,
+.workcheck-textarea {
+  width: 100% !important;
+  min-height: 46px !important;
+  padding: 12px 14px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 12px !important;
+  background: var(--lw-bg) !important;
+  color: var(--lw-ink) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font-family: var(--lw-font) !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+}
+
+.workcheck-textarea {
+  min-height: 92px !important;
+  resize: vertical !important;
+  line-height: 1.5 !important;
+}
+
+.workcheck-input:focus,
+.workcheck-select:focus,
+.workcheck-textarea:focus {
+  border-color: var(--lw-blue) !important;
+  background: var(--lw-card) !important;
+}
+
+.workcheck-select-wrap {
+  position: relative !important;
+  display: block !important;
+}
+
+.workcheck-select {
+  appearance: none !important;
+  padding-right: 38px !important;
+}
+
+.workcheck-select-wrap::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 14px !important;
+  top: 50% !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-right: 2px solid var(--lw-gray) !important;
+  border-bottom: 2px solid var(--lw-gray) !important;
+  transform: translateY(-70%) rotate(45deg) !important;
+  pointer-events: none !important;
+}
+
+.workcheck-two {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.workcheck-multi-hint {
+  display: inline-flex !important;
+  width: fit-content !important;
+  margin: 0 !important;
+  padding: 7px 11px !important;
+  border: 1px solid var(--lw-blue-border) !important;
+  border-radius: 999px !important;
+  background: var(--lw-blue-soft) !important;
+  color: var(--lw-blue) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.workcheck-choice-grid,
+.workcheck-chip-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.workcheck-choice,
+.workcheck-chip {
+  min-height: 36px !important;
+  padding: 8px 13px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 999px !important;
+  background: var(--lw-card) !important;
+  color: var(--lw-ink) !important;
+  box-shadow: none !important;
+  font-family: var(--lw-font) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+}
+
+.workcheck-choice--active,
+.workcheck-chip {
+  border-color: var(--lw-blue) !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+}
+
+.workcheck-checkline {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-height: 52px !important;
+  margin: 0 !important;
+  padding: 12px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--lw-divider) !important;
+  background: transparent !important;
+  color: var(--lw-ink) !important;
+  box-shadow: none !important;
+  font-size: 13.5px !important;
+  line-height: 1.4 !important;
+}
+
+.workcheck-checkline input {
+  width: 24px !important;
+  height: 24px !important;
+  margin: 0 !important;
+  accent-color: var(--lw-blue) !important;
+  flex: 0 0 auto !important;
+}
+
+.workcheck-task-legend {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px 14px !important;
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  border: 1px solid var(--lw-blue-border) !important;
+  border-radius: 16px !important;
+  background: var(--lw-blue-soft) !important;
+}
+
+.workcheck-task-legend div {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  color: var(--lw-blue-ink) !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+}
+
+.workcheck-task-legend strong {
+  width: 20px !important;
+  height: 20px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 6px !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+  font-size: 11px !important;
+  flex: 0 0 auto !important;
+}
+
+.workcheck-task-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 4px 16px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 16px !important;
+  background: var(--lw-card) !important;
+}
+
+.workcheck-task-card {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 12px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--lw-divider) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.workcheck-task-card:last-child {
+  border-bottom: 0 !important;
+}
+
+.workcheck-task-card p {
+  margin: 0 !important;
+  color: var(--lw-ink) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+}
+
+.workcheck-task-card > div {
+  display: flex !important;
+  gap: 6px !important;
+  flex: 0 0 auto !important;
+}
+
+.workcheck-level {
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 10px !important;
+  background: var(--lw-bg) !important;
+  color: var(--lw-gray) !important;
+  box-shadow: none !important;
+  font-family: var(--lw-font) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.workcheck-level--active {
+  border-color: var(--lw-blue) !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+}
+
+.workcheck-situation {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin: 0 !important;
+  padding: 14px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 16px !important;
+  background: var(--lw-card) !important;
+  box-shadow: none !important;
+}
+
+.workcheck-situation h3 {
+  margin: 0 !important;
+  color: var(--lw-ink) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+.workcheck-situation p {
+  margin: 0 !important;
+  color: var(--lw-gray-light) !important;
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+}
+
+.workcheck-option-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.workcheck-option {
+  width: 100% !important;
+  min-height: 44px !important;
+  padding: 12px 13px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 12px !important;
+  background: var(--lw-bg) !important;
+  color: var(--lw-ink) !important;
+  box-shadow: none !important;
+  font-family: var(--lw-font) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+}
+
+.workcheck-option--danger,
+.workcheck-option--weak,
+.workcheck-option--strong {
+  border-color: var(--lw-border) !important;
+  background: var(--lw-bg) !important;
+  color: var(--lw-ink) !important;
+}
+
+.workcheck-option--active {
+  border-color: var(--lw-blue) !important;
+  background: var(--lw-blue-soft) !important;
+  color: var(--lw-blue-ink) !important;
+}
+
+.workcheck-summary {
+  margin: 0 !important;
+}
+
+.workcheck-profile-preview {
+  display: flex !important;
+  align-items: center !important;
+  gap: 13px !important;
+  margin: 0 !important;
+  padding: 18px !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+}
+
+.workcheck-avatar {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, .18) !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+.workcheck-profile-preview strong {
+  display: block !important;
+  color: #fff !important;
+  font-size: 17px !important;
+  line-height: 1.2 !important;
+}
+
+.workcheck-profile-preview span {
+  display: block !important;
+  margin-top: 3px !important;
+  color: rgba(255,255,255,.78) !important;
+  font-size: 13px !important;
+}
+
+.workcheck-scorebar {
+  height: 6px !important;
+  border-radius: 999px !important;
+  background: var(--lw-border) !important;
+}
+
+.workcheck-scorebar span {
+  background: var(--lw-blue) !important;
+}
+
+.workcheck-completion {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  color: var(--lw-gray) !important;
+}
+
+.workcheck-completion strong {
+  color: var(--lw-ink) !important;
+  font-size: 34px !important;
+  line-height: 1 !important;
+}
+
+.workcheck-preview-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.workcheck-preview-grid div,
+.workcheck-target-box,
+.workcheck-success {
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 14px !important;
+  background: var(--lw-bg) !important;
+  padding: 11px 12px !important;
+  box-shadow: none !important;
+}
+
+.workcheck-preview-grid span,
+.workcheck-privacy-box small {
+  color: var(--lw-gray) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+.workcheck-preview-grid strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: var(--lw-ink) !important;
+  font-size: 13.5px !important;
+  line-height: 1.35 !important;
+}
+
+.workcheck-private-note {
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  border: 1px solid var(--lw-blue-border) !important;
+  border-radius: 14px !important;
+  background: var(--lw-blue-soft) !important;
+  color: var(--lw-blue-ink) !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+}
+
+.workcheck-privacy-box {
+  display: grid !important;
+  gap: 10px !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
+
+.workcheck-privacy-box > strong {
+  color: var(--lw-ink) !important;
+  font-size: 14px !important;
+}
+
+.workcheck-privacy-box label {
+  display: flex !important;
+  gap: 10px !important;
+  align-items: flex-start !important;
+  margin: 0 !important;
+  padding: 12px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 12px !important;
+  background: var(--lw-bg) !important;
+}
+
+.workcheck-privacy-box input {
+  margin-top: 2px !important;
+  accent-color: var(--lw-blue) !important;
+}
+
+.workcheck-summary-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.workcheck-page .sticky-form-actions {
+  padding: 12px 20px calc(14px + env(safe-area-inset-bottom)) !important;
+  border-top: 1px solid var(--lw-border) !important;
+  background: var(--lw-card) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.workcheck-page .sticky-form-actions > div {
+  max-width: 440px !important;
+  gap: 10px !important;
+}
+
+.workcheck-page .sticky-form-actions button {
+  min-height: 48px !important;
+  border-radius: 13px !important;
+  box-shadow: none !important;
+  font-family: var(--lw-font) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
+.workcheck-page .sticky-form-actions button:first-child {
+  flex: 1 !important;
+  border: 1px solid var(--lw-border) !important;
+  background: var(--lw-card) !important;
+  color: var(--lw-ink) !important;
+}
+
+.workcheck-page .sticky-form-actions button:last-child {
+  flex: 1.6 !important;
+  border: 0 !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+}
+
+/* Portal temporera */
+.portal-page {
+  min-height: 100dvh !important;
+  padding: 0 0 calc(96px + env(safe-area-inset-bottom)) !important;
+}
+
+.portal-shell {
+  width: min(1180px, 100%) !important;
+  max-width: 1180px !important;
+  margin: 0 auto !important;
+}
+
+.portal-top {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 14px !important;
+  margin: 0 0 16px !important;
+  padding: 16px 20px 18px !important;
+  border: 0 !important;
+  border-radius: 0 0 24px 24px !important;
+  background: var(--lw-blue) !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  text-align: left !important;
+}
+
+.portal-top::after {
+  display: none !important;
+}
+
+.portal-top-main {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.portal-top-logo {
+  width: 30px !important;
+  height: 30px !important;
+  padding: 3px !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  flex: 0 0 auto !important;
+}
+
+.portal-eyebrow {
+  display: inline-flex !important;
+  min-height: 24px !important;
+  margin: 0 0 5px !important;
+  padding: 4px 10px !important;
+  border: 1px solid rgba(255,255,255,.24) !important;
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.9) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+}
+
+.portal-top h1 {
+  margin: 0 !important;
+  color: #fff !important;
+  font-size: 25px !important;
+  font-weight: 700 !important;
+  line-height: 1.08 !important;
+}
+
+.portal-top p {
+  max-width: none !important;
+  margin: 4px 0 0 !important;
+  color: rgba(255,255,255,.76) !important;
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+}
+
+.portal-top-meta,
+.portal-quick-stats {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.portal-top-meta span {
+  display: block !important;
+  min-height: 54px !important;
+  padding: 10px 12px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.72) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-align: left !important;
+}
+
+.portal-top-meta strong {
+  display: block !important;
+  margin-bottom: 1px !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+.portal-top-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.portal-top-actions a,
+.portal-top-actions button,
+.portal-save-note {
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  border: 1px solid rgba(255,255,255,.28) !important;
+  border-radius: 13px !important;
+  background: rgba(255,255,255,.16) !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  font-family: var(--lw-font) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+.portal-top-actions a:first-child,
+.portal-top-actions button:last-child {
+  background: #fff !important;
+  color: var(--lw-blue) !important;
+  border-color: #fff !important;
+}
+
+.portal-top .portal-filters {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portal-layout .portal-filters {
+  display: none !important;
+}
+
+.portal-searchbar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  align-items: end !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.portal-searchbar label {
+  position: relative !important;
+  display: block !important;
+  min-width: 0 !important;
+  color: #fff !important;
+  font-size: 0 !important;
+}
+
+.portal-searchbar label > span {
+  position: absolute !important;
+  left: 14px !important;
+  top: 50% !important;
+  z-index: 2 !important;
+  transform: translateY(-50%) !important;
+  pointer-events: none !important;
+  font-size: 0 !important;
+}
+
+.portal-searchbar label > span::before {
+  content: "🔎" !important;
+  font-size: 17px !important;
+}
+
+.portal-searchbar input {
+  width: 100% !important;
+  min-height: 44px !important;
+  padding: 0 14px 0 42px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(22,23,28,.14) !important;
+  color: var(--lw-ink) !important;
+  font-family: var(--lw-font) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  outline: none !important;
+}
+
+.portal-searchbar input::placeholder {
+  color: var(--lw-gray-light) !important;
+  font-weight: 600 !important;
+}
+
+.portal-searchbar button {
+  min-height: 44px !important;
+  padding: 0 14px !important;
+  border: 1px solid rgba(255,255,255,.28) !important;
+  border-radius: 14px !important;
+  background: rgba(255,255,255,.16) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  font-family: var(--lw-font) !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+}
+
+.portal-filter-grid {
+  display: none !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 10px !important;
+}
+
+.portal-filter-grid--open {
+  display: grid !important;
+}
+
+.portal-filter-grid label {
+  color: rgba(255,255,255,.88) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+.portal-filter-grid select {
+  width: 100% !important;
+  min-height: 40px !important;
+  margin-top: 5px !important;
+  padding: 0 11px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  color: var(--lw-ink) !important;
+  font-family: var(--lw-font) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.portal-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px) !important;
+  gap: 16px !important;
+  align-items: start !important;
+  padding: 0 20px !important;
+}
+
+.portal-table-card,
+.portal-detail,
+.portal-mobile-card {
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 16px !important;
+  background: var(--lw-card) !important;
+  box-shadow: none !important;
+}
+
+.portal-mobile-list {
+  display: none !important;
+  gap: 14px !important;
+}
+
+.portal-mobile-card {
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.portal-mobile-card-head {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+  align-items: center !important;
+  padding: 15px 16px 13px !important;
+}
+
+.portal-mobile-avatar {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 14px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: var(--lw-blue-soft) !important;
+  color: var(--lw-blue) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+
+.portal-mobile-card-head button {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--lw-ink) !important;
+  font-family: var(--lw-font) !important;
+  font-size: 15.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  text-align: left !important;
+}
+
+.portal-mobile-card-head p {
+  margin: 3px 0 0 !important;
+  color: var(--lw-gray) !important;
+  font-size: 12.5px !important;
+  line-height: 1.35 !important;
+}
+
+.portal-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 26px !important;
+  padding: 5px 11px !important;
+  border-radius: 999px !important;
+  background: var(--lw-blue-soft) !important;
+  color: var(--lw-blue) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+
+.portal-mobile-main {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1px !important;
+  background: var(--lw-border) !important;
+  border-top: 1px solid var(--lw-border) !important;
+}
+
+.portal-mobile-main div {
+  min-width: 0 !important;
+  padding: 10px 16px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--lw-card) !important;
+}
+
+.portal-mobile-main span,
+.portal-facts span {
+  display: block !important;
+  color: var(--lw-gray-light) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .07em !important;
+  text-transform: uppercase !important;
+}
+
+.portal-mobile-main strong,
+.portal-facts strong {
+  display: block !important;
+  margin-top: 2px !important;
+  color: var(--lw-ink) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.portal-mobile-main small,
+.portal-facts small {
+  display: block !important;
+  margin-top: 3px !important;
+  color: var(--lw-gray) !important;
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
+
+.portal-mobile-status {
+  display: grid !important;
+  gap: 6px !important;
+  padding: 12px 16px 0 !important;
+  color: var(--lw-gray) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .07em !important;
+  text-transform: uppercase !important;
+}
+
+.portal-mobile-status select,
+.portal-detail-actions select,
+.portal-note textarea {
+  width: 100% !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 12px !important;
+  background: var(--lw-bg) !important;
+  color: var(--lw-ink) !important;
+  font-family: var(--lw-font) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+.portal-mobile-status select,
+.portal-detail-actions select {
+  min-height: 40px !important;
+  padding: 0 11px !important;
+}
+
+.portal-mobile-actions,
+.portal-contact-actions {
+  display: flex !important;
+  gap: 8px !important;
+  padding: 12px 16px !important;
+  border-top: 1px solid var(--lw-border) !important;
+}
+
+.portal-mobile-actions button,
+.portal-mobile-actions a,
+.portal-contact-actions a,
+.portal-detail-actions button {
+  min-height: 42px !important;
+  padding: 0 12px !important;
+  border-radius: 11px !important;
+  border: 1px solid var(--lw-border) !important;
+  background: var(--lw-card) !important;
+  color: var(--lw-ink) !important;
+  box-shadow: none !important;
+  font-family: var(--lw-font) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+.portal-mobile-actions button,
+.portal-contact-actions a:first-child {
+  flex: 1.4 !important;
+  border-color: var(--lw-blue) !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+}
+
+.portal-mobile-actions a[href^="https://wa.me"],
+.portal-contact-actions a[href^="https://wa.me"] {
+  flex: 1 !important;
+  border-color: var(--lw-green-border) !important;
+  background: var(--lw-green-soft) !important;
+  color: var(--lw-green) !important;
+}
+
+.portal-mobile-actions a[href^="tel:"],
+.portal-contact-actions a[href^="tel:"] {
+  flex: 1 !important;
+}
+
+.portal-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 12.5px !important;
+}
+
+.portal-table th,
+.portal-table td {
+  padding: 12px 10px !important;
+  border-bottom: 1px solid var(--lw-divider) !important;
+  color: var(--lw-ink) !important;
+  text-align: left !important;
+}
+
+.portal-table th {
+  color: var(--lw-gray) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+.portal-table button {
+  color: var(--lw-blue) !important;
+  font-weight: 700 !important;
+}
+
+.portal-detail {
+  position: sticky !important;
+  top: 16px !important;
+  padding: 16px !important;
+}
+
+.portal-detail-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+  align-items: start !important;
+}
+
+.portal-detail h2 {
+  margin: 0 !important;
+  color: var(--lw-ink) !important;
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+}
+
+.portal-detail p {
+  color: var(--lw-gray) !important;
+}
+
+.portal-detail .portal-eyebrow {
+  color: var(--lw-blue) !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.portal-detail-actions {
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.portal-facts {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1px !important;
+  margin: 14px 0 !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  background: var(--lw-border) !important;
+}
+
+.portal-facts div {
+  min-width: 0 !important;
+  padding: 10px 12px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--lw-card) !important;
+}
+
+.portal-recommendation {
+  margin: 0 0 12px !important;
+  padding: 12px 14px !important;
+  border: 1px solid var(--lw-green-border) !important;
+  border-radius: 14px !important;
+  background: var(--lw-green-soft) !important;
+  color: var(--lw-green) !important;
+}
+
+.portal-recommendation--danger {
+  border-color: var(--lw-red-border) !important;
+  background: var(--lw-red-soft) !important;
+  color: var(--lw-red) !important;
+}
+
+.portal-recommendation--warning {
+  border-color: var(--lw-amber-border) !important;
+  background: var(--lw-amber-soft) !important;
+  color: var(--lw-amber) !important;
+}
+
+.portal-recommendation--success {
+  border-color: var(--lw-green-border) !important;
+  background: var(--lw-green-soft) !important;
+  color: var(--lw-green) !important;
+}
+
+.portal-recommendation strong {
+  display: block !important;
+  margin-bottom: 5px !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+}
+
+.portal-lists {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.portal-lists section,
+.portal-note {
+  display: grid !important;
+  gap: 7px !important;
+  padding: 12px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 14px !important;
+  background: var(--lw-bg) !important;
+}
+
+.portal-lists h3,
+.portal-note span {
+  margin: 0 !important;
+  color: var(--lw-gray) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+.portal-lists span {
+  color: var(--lw-ink) !important;
+  font-size: 12.5px !important;
+  line-height: 1.35 !important;
+}
+
+.portal-note {
+  margin-top: 12px !important;
+}
+
+.portal-note textarea {
+  min-height: 82px !important;
+  padding: 10px 11px !important;
+  resize: vertical !important;
+}
+
+.portal-save-note {
+  margin-top: 8px !important;
+  border-color: var(--lw-blue) !important;
+  background: var(--lw-blue) !important;
+  color: #fff !important;
+}
+
+.portal-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 220 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 18px !important;
+}
+
+.portal-modal-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  background: rgba(22,23,28,.42) !important;
+}
+
+.portal-modal-panel {
+  position: relative !important;
+  width: min(920px, 100%) !important;
+  max-height: min(860px, calc(100vh - 36px)) !important;
+  overflow: auto !important;
+  border-radius: 18px !important;
+  background: var(--lw-card) !important;
+  box-shadow: none !important;
+}
+
+.portal-detail--modal {
+  position: static !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+}
+
+@media (max-width: 900px) {
+  .portal-layout {
+    display: block !important;
+    padding: 0 20px !important;
+  }
+
+  .portal-layout > .portal-detail,
+  .portal-table-card {
+    display: none !important;
+  }
+
+  .portal-mobile-list {
+    display: grid !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .workcheck-top {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .workcheck-top-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .workcheck-top-actions .workcheck-link,
+  .workcheck-top-actions .workcheck-button {
+    width: 100% !important;
+  }
+
+  .portal-top-main {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .portal-top-main .portal-top-actions {
+    grid-column: 1 / -1 !important;
+  }
+
+  .portal-top h1 {
+    font-size: 24px !important;
+  }
+
+  .portal-lists,
+  .portal-contact-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .portal-contact-actions {
+    flex-direction: column !important;
+  }
+
+  .portal-modal {
+    padding: 0 !important;
+    place-items: stretch !important;
+  }
+
+  .portal-modal-panel {
+    width: 100% !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .portal-detail--modal {
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+    padding: 14px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .workcheck-two,
+  .workcheck-preview-grid,
+  .portal-facts,
+  .portal-mobile-main,
+  .portal-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .workcheck-task-card {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .workcheck-task-card > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+}
+
+/* Portal temporera: compact card layout matching the handoff mockup. */
+.portal-page {
+  background: var(--lw-bg) !important;
+}
+
+.portal-top {
+  gap: 20px !important;
+  margin: 0 !important;
+  padding: 30px 26px 22px !important;
+  border-radius: 0 !important;
+  background: #4A76EF !important;
+}
+
+.portal-top-main {
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+}
+
+.portal-top-logo {
+  width: 38px !important;
+  height: 38px !important;
+  padding: 5px !important;
+  border-radius: 11px !important;
+}
+
+.portal-top h1 {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.portal-top p {
+  margin-top: 4px !important;
+  color: rgba(255,255,255,.74) !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+}
+
+.portal-csv-button {
+  min-width: 90px !important;
+  min-height: 40px !important;
+  padding: 0 16px !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: rgba(255,255,255,.18) !important;
+  color: #fff !important;
+  font-family: var(--lw-font) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+
+.portal-top-meta {
+  gap: 10px !important;
+}
+
+.portal-top-meta span {
+  min-height: 68px !important;
+  padding: 14px 14px 10px !important;
+  border-radius: 13px !important;
+  background: rgba(255,255,255,.15) !important;
+  color: rgba(255,255,255,.82) !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+}
+
+.portal-top-meta strong {
+  margin: 0 0 6px !important;
+  font-size: 24px !important;
+  line-height: 1 !important;
+}
+
+.portal-searchbar {
+  display: block !important;
+}
+
+.portal-searchbar input {
+  min-height: 55px !important;
+  padding-left: 54px !important;
+  border: 0 !important;
+  border-radius: 15px !important;
+  font-size: 16px !important;
+  box-shadow: none !important;
+}
+
+.portal-searchbar label > span {
+  left: 20px !important;
+}
+
+.portal-searchbar label > span::before {
+  content: "" !important;
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+  border: 2px solid #9A9DA6 !important;
+  border-radius: 50% !important;
+}
+
+.portal-searchbar label::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 35px !important;
+  top: 33px !important;
+  width: 8px !important;
+  height: 2px !important;
+  border-radius: 99px !important;
+  background: #9A9DA6 !important;
+  transform: rotate(45deg) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+.portal-filter-strip {
+  display: flex !important;
+  gap: 12px !important;
+  overflow-x: auto !important;
+  padding: 18px 26px 14px !important;
+  background: var(--lw-bg) !important;
+  scrollbar-width: none !important;
+}
+
+.portal-filter-strip::-webkit-scrollbar {
+  display: none !important;
+}
+
+.portal-filter-pill {
+  position: relative !important;
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 44px !important;
+  padding: 0 33px 0 16px !important;
+  border: 1px solid var(--lw-border) !important;
+  border-radius: 999px !important;
+  background: var(--lw-card) !important;
+  color: var(--lw-ink) !important;
+  white-space: nowrap !important;
+}
+
+.portal-filter-pill span {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+
+.portal-filter-pill select {
+  max-width: 155px !important;
+  border: 0 !important;
+  outline: 0 !important;
+  appearance: none !important;
+  background: transparent !important;
+  color: var(--lw-ink) !important;
+  font-family: var(--lw-font) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+
+.portal-filter-pill::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 15px !important;
+  top: 50% !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-right: 1.7px solid var(--lw-gray) !important;
+  border-bottom: 1.7px solid var(--lw-gray) !important;
+  transform: translateY(-70%) rotate(45deg) !important;
+  pointer-events: none !important;
+}
+
+.portal-layout {
+  padding: 12px 26px 0 !important;
+}
+
+.portal-mobile-list {
+  gap: 14px !important;
+}
+
+.portal-mobile-card {
+  border-radius: 17px !important;
+  border-color: var(--lw-border) !important;
+  overflow: hidden !important;
+}
+
+.portal-mobile-card-head {
+  grid-template-columns: 58px minmax(0, 1fr) auto !important;
+  padding: 19px 20px 16px !important;
+}
+
+.portal-mobile-avatar {
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 16px !important;
+  background: #EEF3FE !important;
+  color: #4A76EF !important;
+  font-size: 17px !important;
+}
+
+.portal-mobile-card-head button {
+  font-size: 20px !important;
+  line-height: 1.05 !important;
+}
+
+.portal-mobile-card-head p {
+  margin-top: 4px !important;
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+}
+
+.portal-pill {
+  min-height: 30px !important;
+  padding: 5px 14px !important;
+  background: #EEF3FE !important;
+  color: #4A76EF !important;
+  font-size: 13px !important;
+}
+
+.portal-mobile-main {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1px !important;
+  border-top: 1px solid var(--lw-border) !important;
+  background: var(--lw-border) !important;
+}
+
+.portal-mobile-main div {
+  padding: 12px 20px !important;
+}
+
+.portal-mobile-main span {
+  font-size: 13px !important;
+  letter-spacing: .04em !important;
+}
+
+.portal-mobile-main strong {
+  margin-top: 4px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
+.portal-mobile-main small {
+  font-size: 12px !important;
+}
+
+.portal-tone--success {
+  color: var(--lw-green) !important;
+}
+
+.portal-tone--warning {
+  color: var(--lw-amber) !important;
+}
+
+.portal-tone--danger {
+  color: var(--lw-red) !important;
+}
+
+.portal-tone--muted {
+  color: var(--lw-gray) !important;
+}
+
+.portal-mobile-status {
+  display: none !important;
+}
+
+.portal-mobile-actions {
+  display: grid !important;
+  grid-template-columns: 1.25fr 1fr 1fr !important;
+  gap: 10px !important;
+  padding: 15px 20px !important;
+  border-top: 1px solid var(--lw-border) !important;
+}
+
+.portal-mobile-actions button,
+.portal-mobile-actions a {
+  min-height: 49px !important;
+  border-radius: 12px !important;
+  font-size: 16px !important;
+}
+
+.portal-mobile-actions button {
+  border-color: #4A76EF !important;
+  background: #4A76EF !important;
+  color: #fff !important;
+}
+
+.portal-mobile-actions a[href^="https://wa.me"] {
+  border-color: #C9E8D4 !important;
+  background: #EFFAF3 !important;
+  color: var(--lw-green) !important;
+}
+
+.portal-mobile-actions a[href^="tel:"] {
+  border-color: var(--lw-border) !important;
+  background: #fff !important;
+  color: var(--lw-ink) !important;
+}
+
+@media (min-width: 901px) {
+  .portal-mobile-list {
+    display: grid !important;
+  }
+
+  .portal-table-card {
+    display: none !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .portal-top {
+    padding: 22px 26px !important;
+  }
+
+  .portal-top-main {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+
+  .portal-top h1 {
+    font-size: 21px !important;
+  }
+
+  .portal-csv-button {
+    min-width: 90px !important;
+  }
+
+  .portal-layout {
+    padding: 12px 26px 0 !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .portal-top,
+  .portal-filter-strip,
+  .portal-layout {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  .portal-top-main {
+    gap: 9px !important;
+  }
+
+  .portal-csv-button {
+    min-width: 78px !important;
+    padding: 0 12px !important;
+  }
+
+  .portal-mobile-card-head {
+    grid-template-columns: 50px minmax(0, 1fr) auto !important;
+    padding: 16px !important;
+  }
+
+  .portal-mobile-avatar {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .portal-mobile-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* WorkCheck final mobile form layout: grouped cards, short labels, clean header. */
+.workcheck-page {
+  background: #F7F7F5 !important;
+}
+
+.workcheck-shell {
+  max-width: 500px !important;
+  background: #F7F7F5 !important;
+}
+
+.workcheck-top {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 60 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 10px 12px !important;
+  align-items: center !important;
+  padding: 15px 16px 17px !important;
+  border-bottom: 1px solid #E6E6E3 !important;
+  background: #fff !important;
+}
+
+.workcheck-brand {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  gap: 10px !important;
+}
+
+.workcheck-logo {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 11px !important;
+  background: #fff !important;
+}
+
+.workcheck-logo img {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.workcheck-brand h1 {
+  color: #16171C !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1.05 !important;
+}
+
+.workcheck-brand p {
+  color: #70737C !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+}
+
+.workcheck-top .workcheck-stepper {
+  display: contents !important;
+}
+
+.workcheck-top .workcheck-step-count {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+  min-height: 32px !important;
+  padding: 7px 13px !important;
+  border-radius: 999px !important;
+  border: 1px solid #D9E4FC !important;
+  background: #EEF3FE !important;
+  color: #4A76EF !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+.workcheck-top .workcheck-progress {
+  grid-column: 1 / -1 !important;
+  grid-row: 2 !important;
+  display: flex !important;
+  gap: 6px !important;
+  height: auto !important;
+  margin-top: 1px !important;
+  background: transparent !important;
+}
+
+.workcheck-top .workcheck-progress span {
+  flex: 1 !important;
+  height: 4px !important;
+  border-radius: 99px !important;
+  background: #E6E6E3 !important;
+}
+
+.workcheck-top .workcheck-progress span.is-done {
+  background: #4A76EF !important;
+}
+
+.workcheck-layout {
+  padding: 24px 16px 0 !important;
+}
+
+.workcheck-main {
+  gap: 0 !important;
+}
+
+.workcheck-section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.workcheck-section > .workcheck-eyebrow {
+  display: none !important;
+}
+
+.workcheck-section h2 {
+  margin: 0 !important;
+  color: #16171C !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+}
+
+.workcheck-section > .workcheck-note {
+  margin-top: -14px !important;
+  color: #70737C !important;
+  font-size: 17px !important;
+  line-height: 1.45 !important;
+}
+
+.workcheck-form-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  padding: 20px !important;
+  border: 1px solid #ECECE9 !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+.workcheck-card-title {
+  margin: 0 0 2px !important;
+  color: #16171C !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.workcheck-field {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.workcheck-field-label,
+.workcheck-label {
+  margin: 0 !important;
+  color: #70737C !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+  line-height: 1.15 !important;
+  text-transform: uppercase !important;
+}
+
+.workcheck-help,
+.workcheck-multi-hint {
+  display: block !important;
+  width: auto !important;
+  margin: -10px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #9A9DA6 !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  line-height: 1.35 !important;
+}
+
+.workcheck-input,
+.workcheck-select,
+.workcheck-textarea {
+  min-height: 58px !important;
+  padding: 0 18px !important;
+  border: 1px solid #ECECE9 !important;
+  border-radius: 14px !important;
+  background: #F7F7F5 !important;
+  color: #16171C !important;
+  font-size: 18px !important;
+  font-weight: 400 !important;
+}
+
+.workcheck-textarea {
+  min-height: 96px !important;
+  padding-top: 16px !important;
+  line-height: 1.4 !important;
+}
+
+.workcheck-input::placeholder,
+.workcheck-textarea::placeholder {
+  color: #9A9DA6 !important;
+}
+
+.workcheck-select-wrap::after {
+  right: 19px !important;
+  border-color: #70737C !important;
+}
+
+.workcheck-two {
+  gap: 12px !important;
+}
+
+.workcheck-choice-grid,
+.workcheck-chip-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+
+.workcheck-choice,
+.workcheck-chip {
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border: 1px solid #ECECE9 !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #16171C !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
+.workcheck-choice--active,
+.workcheck-chip {
+  border-color: #4A76EF !important;
+  background: #4A76EF !important;
+  color: #fff !important;
+}
+
+.workcheck-consent-card {
+  gap: 0 !important;
+}
+
+.workcheck-checkline {
+  min-height: 58px !important;
+  padding: 14px 0 !important;
+  border-bottom: 1px solid #ECECE9 !important;
+  color: #16171C !important;
+  font-size: 17px !important;
+  line-height: 1.4 !important;
+}
+
+.workcheck-checkline:last-child {
+  border-bottom: 0 !important;
+}
+
+.workcheck-checkline input {
+  appearance: none !important;
+  width: 30px !important;
+  height: 30px !important;
+  border: 1px solid #D5D5D1 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+}
+
+.workcheck-checkline input:checked {
+  border-color: #4A76EF !important;
+  background: #4A76EF !important;
+  box-shadow: inset 0 0 0 6px #fff !important;
+}
+
+.workcheck-task-legend {
+  margin: 0 !important;
+  padding: 14px !important;
+}
+
+.workcheck-task-grid {
+  padding: 4px 16px !important;
+}
+
+.workcheck-situation {
+  gap: 12px !important;
+  padding: 20px !important;
+  border-radius: 18px !important;
+}
+
+.workcheck-situation h3 {
+  font-size: 20px !important;
+}
+
+.workcheck-situation p {
+  color: #9A9DA6 !important;
+  font-size: 15px !important;
+}
+
+.workcheck-option {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 26px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 58px !important;
+  padding: 12px 16px !important;
+  border-radius: 14px !important;
+  font-size: 17px !important;
+  font-weight: 400 !important;
+}
+
+.workcheck-option::before {
+  content: "" !important;
+  width: 24px !important;
+  height: 24px !important;
+  border: 1px solid #D5D5D1 !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+}
+
+.workcheck-option--active::before {
+  border-color: #4A76EF !important;
+  background: #4A76EF !important;
+  box-shadow: inset 0 0 0 7px #fff !important;
+}
+
+@media (max-width: 390px) {
+  .workcheck-top {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .workcheck-brand h1 {
+    font-size: 18px !important;
+  }
+
+  .workcheck-brand p {
+    font-size: 12.5px !important;
+  }
+
+  .workcheck-top .workcheck-step-count {
+    font-size: 10.5px !important;
+    padding-left: 9px !important;
+    padding-right: 9px !important;
+  }
+
+  .workcheck-section h2 {
+    font-size: 25px !important;
+  }
+
+  .workcheck-input,
+  .workcheck-select,
+  .workcheck-textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Compact mobile sizing requested after visual pass. */
+.workcheck-page {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+}
+
+.workcheck-top {
+  padding: 9px 14px 10px !important;
+  gap: 8px !important;
+}
+
+.workcheck-logo {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 8px !important;
+}
+
+.workcheck-brand {
+  gap: 8px !important;
+}
+
+.workcheck-brand h1 {
+  font-size: 14px !important;
+}
+
+.workcheck-brand p {
+  font-size: 10.5px !important;
+}
+
+.workcheck-top .workcheck-step-count,
+.workcheck-step-count {
+  min-height: 23px !important;
+  padding: 4px 8px !important;
+  font-size: 9.5px !important;
+}
+
+.workcheck-layout {
+  padding: 16px 12px 0 !important;
+}
+
+.workcheck-main,
+.workcheck-section {
+  gap: 14px !important;
+}
+
+.workcheck-section h2 {
+  font-size: 22px !important;
+  line-height: 1.12 !important;
+}
+
+.workcheck-section > .workcheck-note {
+  margin-top: -8px !important;
+  font-size: 13.5px !important;
+  line-height: 1.35 !important;
+}
+
+.workcheck-form-card,
+.workcheck-section,
+.workcheck-summary-panel {
+  border-radius: 14px !important;
+}
+
+.workcheck-form-card {
+  gap: 12px !important;
+  padding: 14px !important;
+}
+
+.workcheck-card-title {
+  font-size: 16px !important;
+}
+
+.workcheck-field {
+  gap: 6px !important;
+}
+
+.workcheck-field-label,
+.workcheck-label {
+  font-size: 11px !important;
+  letter-spacing: .02em !important;
+}
+
+.workcheck-help,
+.workcheck-multi-hint {
+  margin: -6px 0 0 !important;
+  font-size: 12.5px !important;
+  line-height: 1.3 !important;
+}
+
+.workcheck-input,
+.workcheck-select,
+.workcheck-textarea {
+  min-height: 44px !important;
+  padding: 0 13px !important;
+  border-radius: 11px !important;
+  font-size: 14px !important;
+}
+
+.workcheck-textarea {
+  min-height: 78px !important;
+  padding-top: 12px !important;
+}
+
+.workcheck-select {
+  padding-right: 32px !important;
+}
+
+.workcheck-select-wrap::after {
+  right: 14px !important;
+  width: 7px !important;
+  height: 7px !important;
+}
+
+.workcheck-two {
+  gap: 8px !important;
+}
+
+.workcheck-choice-grid,
+.workcheck-chip-row {
+  gap: 7px !important;
+}
+
+.workcheck-choice,
+.workcheck-chip {
+  min-height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+}
+
+.workcheck-checkline {
+  min-height: 46px !important;
+  gap: 10px !important;
+  padding: 10px 0 !important;
+  font-size: 13.5px !important;
+}
+
+.workcheck-checkline input {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 7px !important;
+}
+
+.workcheck-task-legend {
+  gap: 7px !important;
+  padding: 10px !important;
+  border-radius: 12px !important;
+}
+
+.workcheck-task-legend div {
+  gap: 6px !important;
+  font-size: 11px !important;
+}
+
+.workcheck-task-legend strong {
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 10px !important;
+}
+
+.workcheck-task-grid {
+  padding: 2px 12px !important;
+  border-radius: 13px !important;
+}
+
+.workcheck-task-card {
+  gap: 8px !important;
+  padding: 9px 0 !important;
+}
+
+.workcheck-task-card p {
+  font-size: 12.5px !important;
+}
+
+.workcheck-task-card > div {
+  gap: 5px !important;
+}
+
+.workcheck-level {
+  width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  border-radius: 9px !important;
+  font-size: 12px !important;
+}
+
+.workcheck-situation {
+  gap: 9px !important;
+  padding: 14px !important;
+  border-radius: 14px !important;
+}
+
+.workcheck-situation h3 {
+  font-size: 16px !important;
+}
+
+.workcheck-situation p {
+  font-size: 12.5px !important;
+}
+
+.workcheck-option-list {
+  gap: 7px !important;
+}
+
+.workcheck-option {
+  grid-template-columns: 20px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  min-height: 44px !important;
+  padding: 9px 12px !important;
+  border-radius: 11px !important;
+  font-size: 13.5px !important;
+  line-height: 1.3 !important;
+}
+
+.workcheck-option::before {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 6px !important;
+}
+
+.workcheck-profile-preview {
+  gap: 10px !important;
+  padding: 13px !important;
+  border-radius: 14px !important;
+}
+
+.workcheck-avatar {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+}
+
+.workcheck-profile-preview strong {
+  font-size: 14.5px !important;
+}
+
+.workcheck-profile-preview span {
+  font-size: 11.5px !important;
+}
+
+.workcheck-completion strong {
+  font-size: 26px !important;
+}
+
+.workcheck-preview-grid {
+  gap: 8px !important;
+}
+
+.workcheck-preview-grid div,
+.workcheck-target-box,
+.workcheck-success,
+.workcheck-private-note,
+.workcheck-privacy-box label {
+  padding: 9px 10px !important;
+  border-radius: 11px !important;
+}
+
+.workcheck-preview-grid span,
+.workcheck-privacy-box small {
+  font-size: 9.5px !important;
+}
+
+.workcheck-preview-grid strong {
+  font-size: 12px !important;
+}
+
+.workcheck-page .sticky-form-actions {
+  padding: 9px 12px calc(10px + env(safe-area-inset-bottom)) !important;
+}
+
+.workcheck-page .sticky-form-actions > div {
+  gap: 8px !important;
+}
+
+.workcheck-page .sticky-form-actions button {
+  min-height: 42px !important;
+  border-radius: 12px !important;
+  font-size: 13.5px !important;
+}
+
+.portal-page {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+}
+
+.portal-top {
+  gap: 10px !important;
+  padding: 13px 16px 15px !important;
+  border-radius: 0 0 18px 18px !important;
+}
+
+.portal-top-main {
+  gap: 8px !important;
+}
+
+.portal-top-logo {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+}
+
+.portal-top h1 {
+  font-size: 20px !important;
+}
+
+.portal-top p {
+  margin-top: 2px !important;
+  font-size: 11px !important;
+}
+
+.portal-csv-button,
+.portal-top-actions a,
+.portal-top-actions button,
+.portal-save-note {
+  min-height: 32px !important;
+  padding: 0 10px !important;
+  border-radius: 11px !important;
+  font-size: 11px !important;
+}
+
+.portal-top-meta {
+  gap: 7px !important;
+}
+
+.portal-top-meta span {
+  min-height: 44px !important;
+  padding: 8px 10px !important;
+  border-radius: 10px !important;
+  font-size: 10px !important;
+}
+
+.portal-top-meta strong {
+  font-size: 16px !important;
+}
+
+.portal-searchbar {
+  gap: 7px !important;
+}
+
+.portal-searchbar input {
+  min-height: 40px !important;
+  padding-left: 38px !important;
+  border-radius: 12px !important;
+  font-size: 12.5px !important;
+}
+
+.portal-searchbar label > span {
+  left: 13px !important;
+}
+
+.portal-searchbar label > span::before {
+  font-size: 15px !important;
+}
+
+.portal-searchbar button {
+  min-height: 40px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  font-size: 11.5px !important;
+}
+
+.portal-filter-strip {
+  gap: 7px !important;
+  padding: 0 12px 12px !important;
+}
+
+.portal-filter-pill {
+  min-height: 34px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  font-size: 11.5px !important;
+}
+
+.portal-filter-pill span,
+.portal-filter-pill select {
+  font-size: 11.5px !important;
+}
+
+.portal-layout {
+  gap: 12px !important;
+  padding: 0 12px !important;
+}
+
+.portal-table-card,
+.portal-detail,
+.portal-mobile-card {
+  border-radius: 13px !important;
+}
+
+.portal-mobile-list {
+  gap: 10px !important;
+}
+
+.portal-mobile-card-head {
+  gap: 9px !important;
+  padding: 12px 12px 10px !important;
+}
+
+.portal-mobile-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  font-size: 13px !important;
+}
+
+.portal-mobile-card-head button {
+  font-size: 14px !important;
+}
+
+.portal-mobile-card-head p {
+  font-size: 11.5px !important;
+}
+
+.portal-pill {
+  min-height: 23px !important;
+  padding: 4px 9px !important;
+  font-size: 10px !important;
+}
+
+.portal-mobile-main div {
+  padding: 8px 12px !important;
+}
+
+.portal-mobile-main span,
+.portal-facts span {
+  font-size: 9px !important;
+}
+
+.portal-mobile-main strong,
+.portal-facts strong {
+  font-size: 12px !important;
+}
+
+.portal-mobile-main small,
+.portal-facts small {
+  font-size: 10px !important;
+}
+
+.portal-mobile-status {
+  gap: 5px !important;
+  padding: 10px 12px 0 !important;
+  font-size: 9px !important;
+}
+
+.portal-mobile-status select,
+.portal-detail-actions select {
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+}
+
+.portal-mobile-actions,
+.portal-contact-actions {
+  gap: 7px !important;
+  padding: 10px 12px !important;
+}
+
+.portal-mobile-actions button,
+.portal-mobile-actions a,
+.portal-contact-actions a,
+.portal-detail-actions button {
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+}
+
+.portal-table {
+  font-size: 11.5px !important;
+}
+
+.portal-table th,
+.portal-table td {
+  padding: 9px 8px !important;
+}
+
+.portal-detail {
+  padding: 13px !important;
+}
+
+@media (max-width: 390px) {
+  .workcheck-section h2 {
+    font-size: 21px !important;
+  }
+
+  .workcheck-input,
+  .workcheck-select,
+  .workcheck-textarea {
+    font-size: 13.5px !important;
+  }
+
+  .workcheck-choice,
+  .workcheck-chip,
+  .workcheck-option {
+    font-size: 12.5px !important;
+  }
+
+  .portal-top h1 {
+    font-size: 19px !important;
+  }
+}

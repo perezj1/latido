@@ -42,6 +42,10 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
   { id:'servicios-suiza', icon:'🇨🇭', title:'Servicios para vivir en Suiza', section:'Servicios', desc:'Seguro médico, tercer pilar y preparación para llegar a Suiza, con orientación en español.', href:'/servicios-suiza' },
   { id:'servicios-virtus360', icon:'360', title:'Gestoría y finanzas con Virtus360', section:'Servicios', desc:'Trámites, impuestos, seguros, mudanza y contabilidad en colaboración con Virtus360.', href:'/servicios-virtus360' },
+  { id:'workcheck-construccion', icon:'WC', title:'Latido WorkCheck Construccion', section:'Empresas', desc:'Preseleccion de trabajadores de construccion para temporeras en Suiza.', href:'/workcheck-construccion' },
+  { id:'perfil-laboral', icon:'PL', title:'Mi Perfil Laboral Latido', section:'Empleo', desc:'Perfil reutilizable para enviar a temporeras colaboradoras.', href:'/perfil-laboral' },
+  { id:'temporera-demo', icon:'TP', title:'Pagina de temporera demo', section:'Empleo', desc:'Entrada publica para candidatos que quieren enviar su Perfil Laboral.', href:'/temporeras/aha-personal' },
+  { id:'portal-temporera', icon:'PT', title:'Portal Temporera demo', section:'Empresas', desc:'Dashboard para filtrar y gestionar candidatos con Perfil Laboral Latido.', href:'/portal-temporera/aha-personal' },
   { id:'perfil', icon:'👤', title:'Perfil', section:'Cuenta', desc:'Datos personales, avatar, preferencias y configuración.', href:'/perfil' },
   { id:'mensajes', icon:'💬', title:'Mensajes', section:'Cuenta', desc:'Conversaciones con anunciantes, negocios y miembros de Latido.', href:'/mensajes' },
   { id:'privacidad', icon:'🔒', title:'Privacidad', section:'Legal', desc:'Cómo Latido trata los datos y protege la información.', href:'/privacidad' },
@@ -82,6 +86,29 @@ const ROUTE_SEO = [
     path:'/servicios-virtus360',
     title:'Gestoría y finanzas en Suiza con Virtus360 | Latido.ch',
     description:'Trámites, impuestos, seguros, mudanza, administración y contabilidad en Suiza, en colaboración con Virtus360.',
+    robots:'noindex, follow',
+  },
+  {
+    path:'/workcheck-construccion',
+    title:'Latido WorkCheck Construccion para temporeras | Latido.ch',
+    description:'Herramienta de preseleccion para recibir perfiles de trabajadores de construccion con experiencia, seguridad, movilidad y disponibilidad resumidas.',
+  },
+  {
+    path:'/perfil-laboral',
+    title:'Mi Perfil Laboral Latido | Latido.ch',
+    description:'Perfil laboral reutilizable para guardar experiencia, disponibilidad, movilidad y enviar candidaturas a temporeras colaboradoras.',
+    robots:'noindex, follow',
+  },
+  {
+    path:'/temporeras/aha-personal',
+    title:'Enviar Perfil Laboral a AHA Personal | Latido.ch',
+    description:'Pagina publica demo para que candidatos creen o envien su Perfil Laboral Latido a una temporera.',
+    robots:'noindex, follow',
+  },
+  {
+    path:'/portal-temporera/aha-personal',
+    title:'Portal Temporera Perfil Laboral | Latido.ch',
+    description:'Portal demo para que temporeras filtren, revisen y gestionen candidatos recibidos con Perfil Laboral Latido.',
     robots:'noindex, follow',
   },
   {
@@ -496,6 +523,24 @@ export function getSeoForLocation(location = {}) {
     if (COMMUNITY_VIEW_SEO[view]) {
       return withDefaults({ path:`/comunidades?view=${view}`, ...COMMUNITY_VIEW_SEO[view] })
     }
+  }
+
+  if (pathname.startsWith('/temporeras/') || pathname.startsWith('/perfil-laboral/')) {
+    return withDefaults({
+      path:pathname,
+      title:'Enviar Perfil Laboral a una temporera | Latido.ch',
+      description:'Pagina publica para que candidatos creen o envien su Perfil Laboral Latido a una temporera colaboradora.',
+      robots:'noindex, follow',
+    })
+  }
+
+  if (pathname.startsWith('/portal-temporera')) {
+    return withDefaults({
+      path:pathname,
+      title:'Portal Temporera Perfil Laboral | Latido.ch',
+      description:'Portal para filtrar, revisar y gestionar candidatos recibidos con Perfil Laboral Latido.',
+      robots:'noindex, follow',
+    })
   }
 
   if (isPrivatePath(pathname)) {
@@ -1010,6 +1055,9 @@ export function getPublicSeoPages() {
     '/guias',
     '/servicios-suiza',
     '/servicios-virtus360',
+    '/workcheck-construccion',
+    '/temporeras/aha-personal',
+    '/portal-temporera/aha-personal',
     '/impressum',
     '/privacidad',
     '/cookies',

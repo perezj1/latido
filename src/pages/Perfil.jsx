@@ -48,7 +48,7 @@ const COMMUNITY_OPTIONS = []
 for (const item of COMMUNITY_CATS) {
   if (item.id === 'fe') continue
   COMMUNITY_OPTIONS.push(item.id === 'mamas'
-    ? { ...item, id:'familia', emoji:'????????', label:'Familia' }
+    ? { ...item, id:'familia', emoji:'👨‍👩‍👧', label:'Familia' }
     : item)
 }
 
@@ -1648,6 +1648,7 @@ export default function Perfil() {
       title: 'Mi actividad',
       items: [
         { icon:'📌', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
+        { icon:'💼', color:'#EFF6FF', label:'Mi Perfil Laboral', sub:'Perfil para temporeras, envíos y visibilidad', action:() => navigate('/perfil-laboral') },
         { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
       ],
     },

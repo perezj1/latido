@@ -1,4 +1,5 @@
 import { PanelPartners } from './Landing'
+import { Link } from 'react-router-dom'
 
 export default function Colaboraciones() {
   return (
@@ -68,6 +69,39 @@ export default function Colaboraciones() {
         }
       `}</style>
       <div style={{ maxWidth:860, margin:'0 auto', width:'100%' }}>
+        <div style={{ border:'1px solid #BFDBFE', background:'#EFF6FF', borderRadius:18, padding:16, margin:'0 0 18px', display:'grid', gap:10 }}>
+          <div>
+            <p style={{ fontFamily:'Poppins, system-ui, sans-serif', fontWeight:900, fontSize:10, letterSpacing:0.9, color:'#2563EB', textTransform:'uppercase', margin:'0 0 6px' }}>
+              Herramienta para temporeras
+            </p>
+            <h1 style={{ fontFamily:'Poppins, system-ui, sans-serif', fontWeight:900, fontSize:22, lineHeight:1.18, color:'#0F172A', margin:'0 0 8px' }}>
+              Latido WorkCheck Construccion
+            </h1>
+            <p style={{ fontFamily:'Poppins, system-ui, sans-serif', fontSize:13, lineHeight:1.65, color:'#475569', margin:0 }}>
+              Perfiles de trabajadores prefiltrados con experiencia real, seguridad, movilidad, disponibilidad y resumen listo para decidir si merece la pena llamar.
+            </p>
+          </div>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <Link
+              to="/workcheck-construccion"
+              style={{ fontFamily:'Poppins, system-ui, sans-serif', fontWeight:800, fontSize:13, background:'#2563EB', color:'#fff', textDecoration:'none', borderRadius:14, padding:'12px 18px', display:'inline-flex', justifyContent:'center', alignItems:'center', width:'fit-content' }}
+            >
+              Formulario trabajador
+            </Link>
+            <Link
+              to="/temporeras/aha-personal"
+              style={{ fontFamily:'Poppins, system-ui, sans-serif', fontWeight:800, fontSize:13, background:'#fff', color:'#2563EB', border:'1.5px solid #BFDBFE', textDecoration:'none', borderRadius:14, padding:'12px 18px', display:'inline-flex', justifyContent:'center', alignItems:'center', width:'fit-content' }}
+            >
+              Pagina temporera
+            </Link>
+            <Link
+              to="/portal-temporera/aha-personal"
+              style={{ fontFamily:'Poppins, system-ui, sans-serif', fontWeight:800, fontSize:13, background:'#fff', color:'#2563EB', border:'1.5px solid #BFDBFE', textDecoration:'none', borderRadius:14, padding:'12px 18px', display:'inline-flex', justifyContent:'center', alignItems:'center', width:'fit-content' }}
+            >
+              Portal temporera
+            </Link>
+          </div>
+        </div>
         <PanelPartners />
       </div>
     </div>
