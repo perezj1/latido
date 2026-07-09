@@ -43,6 +43,71 @@ function getSupabaseOrigin() {
   }
 }
 
+const SUPABASE_STORAGE_OBJECT_SEGMENT = '/storage/v1/object/public/'
+const SUPABASE_STORAGE_RENDER_SEGMENT = '/storage/v1/render/image/public/'
+const RASTER_IMAGE_EXTENSIONS = new Set(['avif', 'jpeg', 'jpg', 'png', 'webp'])
+const FAST_IMAGE_WIDTH = 960
+const FAST_IMAGE_QUALITY = 72
+
+function isSupabaseHost(url) {
+  return url.hostname === 'supabase.co' || url.hostname.endsWith('.supabase.co')
+}
+
+function hasRasterImageExtension(url) {
+  const filename = url.pathname.split('/').pop() || ''
+  const extension = filename.split('.').pop()?.toLowerCase() || ''
+  return RASTER_IMAGE_EXTENSIONS.has(extension)
+}
+
+function getFastSupabaseImageSrc(url) {
+  if (
+    !isSupabaseHost(url)
+    || !url.pathname.includes(SUPABASE_STORAGE_OBJECT_SEGMENT)
+    || !hasRasterImageExtension(url)
+  ) {
+    return ''
+  }
+
+  const optimized = new URL(url.href)
+  optimized.pathname = optimized.pathname.replace(
+    SUPABASE_STORAGE_OBJECT_SEGMENT,
+    SUPABASE_STORAGE_RENDER_SEGMENT,
+  )
+  optimized.search = ''
+  const version = url.searchParams.get('v')
+  if (version) optimized.searchParams.set('v', version)
+  optimized.searchParams.set('width', String(FAST_IMAGE_WIDTH))
+  optimized.searchParams.set('quality', String(FAST_IMAGE_QUALITY))
+  return optimized.href
+}
+
+function getFastUnsplashImageSrc(url) {
+  if (url.hostname !== 'images.unsplash.com') return ''
+
+  const optimized = new URL(url.href)
+  const currentWidth = Number(optimized.searchParams.get('w'))
+  if (!Number.isFinite(currentWidth) || currentWidth > FAST_IMAGE_WIDTH) {
+    optimized.searchParams.set('w', String(FAST_IMAGE_WIDTH))
+  }
+  optimized.searchParams.set('auto', 'format')
+  optimized.searchParams.set('q', String(FAST_IMAGE_QUALITY))
+  if (!optimized.searchParams.has('fit')) optimized.searchParams.set('fit', 'crop')
+
+  return optimized.href === url.href ? '' : optimized.href
+}
+
+function getFastImageSrc(rawSrc) {
+  if (!rawSrc) return ''
+
+  try {
+    const url = new URL(rawSrc, window.location.href)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return ''
+    return getFastSupabaseImageSrc(url) || getFastUnsplashImageSrc(url)
+  } catch {
+    return ''
+  }
+}
+
 function prepareImageDnsPrefetch() {
   addDnsPrefetch('https://images.unsplash.com')
   const supabaseOrigin = getSupabaseOrigin()
@@ -90,6 +155,20 @@ function installImageLoadingPlaceholders() {
     }
   }
 
+  const prepareFastImage = img => {
+    if (!(img instanceof HTMLImageElement)) return
+    if (!img.hasAttribute('decoding')) img.decoding = 'async'
+    if (img.dataset.latidoImgFallback === '1') return
+
+    const rawSrc = img.getAttribute('src') || img.currentSrc || img.src || ''
+    const optimizedSrc = getFastImageSrc(rawSrc)
+    if (!optimizedSrc) return
+
+    if (!img.dataset.latidoImgOriginalSrc) img.dataset.latidoImgOriginalSrc = rawSrc
+    img.dataset.latidoImgOptimizedSrc = optimizedSrc
+    if (img.getAttribute('src') !== optimizedSrc) img.setAttribute('src', optimizedSrc)
+  }
+
   const setImageLoaded = img => {
     if (!isPlaceholderCandidate(img)) {
       clearImageState(img)
@@ -98,8 +177,21 @@ function installImageLoadingPlaceholders() {
     img.dataset.latidoImgState = 'loaded'
   }
 
+  const fallbackToOriginalImage = img => {
+    const originalSrc = img.dataset.latidoImgOriginalSrc
+    if (!originalSrc || img.dataset.latidoImgFallback === '1') {
+      setImageLoaded(img)
+      return
+    }
+
+    img.dataset.latidoImgFallback = '1'
+    img.dataset.latidoImgState = 'loading'
+    img.setAttribute('src', originalSrc)
+  }
+
   const syncImageState = img => {
     if (!(img instanceof HTMLImageElement)) return
+    prepareFastImage(img)
     if (!isPlaceholderCandidate(img)) {
       clearImageState(img)
       return
@@ -113,7 +205,7 @@ function installImageLoadingPlaceholders() {
     if (img.dataset.latidoImgTracked !== '1') {
       img.dataset.latidoImgTracked = '1'
       img.addEventListener('load', () => setImageLoaded(img))
-      img.addEventListener('error', () => setImageLoaded(img))
+      img.addEventListener('error', () => fallbackToOriginalImage(img))
     }
     syncImageState(img)
   }
@@ -202,6 +294,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 // PWA service worker
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(console.error)
+    navigator.serviceWorker
+      .register('/sw.js', { updateViaCache:'none' })
+      .then(registration => registration.update().catch(() => {}))
+      .catch(console.error)
   })
 }

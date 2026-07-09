@@ -561,7 +561,7 @@ function PanelSobre() {
         </div>
       </div>
       <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-        <img src="/founder.jpg" alt="José Pérez González" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid rgba(255,255,255,0.2)' }} />
+        <img src="/founder-small.jpg" alt="José Pérez González" loading="lazy" decoding="async" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid rgba(255,255,255,0.2)' }} />
         <div>
           <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: '#fff', margin: '0 0 2px' }}>{'José Pérez González'}</p>
           <p style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Fundador · Español en Suiza desde 2017 · Luzern</p>

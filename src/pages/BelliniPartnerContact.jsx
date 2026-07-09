@@ -4,7 +4,7 @@ import { trackPartnerInteraction } from '../lib/partnerAttribution'
 
 const BELLINI_PARTNER_ID = 'bellini'
 const BELLINI_LOGO = '/partners/bellini/logo-wide.svg'
-const BELLINI_PHOTO = '/partners/bellini/paulo-souza.png'
+const BELLINI_PHOTO = '/partners/bellini/paulo-souza-small.jpg'
 const WHATSAPP_DISPLAY = '+41 79 938 14 01'
 const WHATSAPP_HREF = 'https://wa.me/41799381401'
 const PHONE_DISPLAY = '+41 58 059 59 75'
@@ -59,6 +59,8 @@ export default function BelliniPartnerContact() {
           className="mira-contact-photo"
           src={BELLINI_PHOTO}
           alt="Paulo Souza"
+          loading="eager"
+          decoding="async"
         />
         <p className="mira-contact-description">
           Bellini Personal AG ayuda a encontrar oportunidades temporales en el
