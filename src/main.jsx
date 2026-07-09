@@ -46,8 +46,8 @@ function getSupabaseOrigin() {
 const SUPABASE_STORAGE_OBJECT_SEGMENT = '/storage/v1/object/public/'
 const SUPABASE_STORAGE_RENDER_SEGMENT = '/storage/v1/render/image/public/'
 const RASTER_IMAGE_EXTENSIONS = new Set(['avif', 'jpeg', 'jpg', 'png', 'webp'])
-const FAST_IMAGE_WIDTH = 960
-const FAST_IMAGE_QUALITY = 72
+const FAST_IMAGE_WIDTH = 800
+const FAST_IMAGE_QUALITY = 68
 
 function isSupabaseHost(url) {
   return url.hostname === 'supabase.co' || url.hostname.endsWith('.supabase.co')
@@ -78,6 +78,7 @@ function getFastSupabaseImageSrc(url) {
   if (version) optimized.searchParams.set('v', version)
   optimized.searchParams.set('width', String(FAST_IMAGE_WIDTH))
   optimized.searchParams.set('quality', String(FAST_IMAGE_QUALITY))
+  optimized.searchParams.set('resize', 'contain')
   return optimized.href
 }
 

@@ -834,9 +834,9 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                     onClick={() => setLightboxOpen(true)}
                     className="provider-detail-img"
                     aria-label="Ampliar fotos del negocio"
-                    style={{ width:'100%', border:'none', padding:0, background:'transparent', borderRadius:16, overflow:'hidden', marginBottom:0, display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative' }}
+                    style={{ width:'100%', maxHeight:'none', border:'none', padding:'10px 0', background:'transparent', borderRadius:16, overflow:'visible', marginBottom:0, display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative', boxSizing:'border-box' }}
                   >
-                    <img src={photos[0]} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
+                    <img src={photos[0]} alt={business.name} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'auto', maxWidth:'min(100%, 420px)', objectFit:'contain', display:'block' }} />
                   </button>
                   {planLabel && (
                     <span style={{ position:'absolute', left:'50%', bottom:-13, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 14px', boxShadow:'0 10px 22px rgba(37,99,235,0.16)', whiteSpace:'nowrap' }}>
@@ -1061,8 +1061,8 @@ function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[]
     >
       <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {community.photo_url && (
-        <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-          <img src={community.photo_url} alt={community.name} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
+        <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'visible', padding:'10px 20px', boxSizing:'border-box' }}>
+          <img src={community.photo_url} alt={community.name} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'auto', maxWidth:'min(100%, 440px)', objectFit:'contain', display:'block' }} />
         </div>
       )}
       <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
@@ -1140,8 +1140,8 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
     >
       <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {event.img && (
-        <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-          <img src={event.img} alt={event.title} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
+        <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'visible', padding:'10px 20px', boxSizing:'border-box' }}>
+          <img src={event.img} alt={event.title} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'auto', maxWidth:'min(100%, 440px)', objectFit:'contain', display:'block' }} />
         </div>
       )}
       <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
