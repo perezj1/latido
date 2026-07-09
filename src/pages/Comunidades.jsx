@@ -24,7 +24,6 @@ import EventfrogCalendar from '../components/EventfrogCalendar'
 import CompactFilterSelect from '../components/CompactFilterSelect'
 import ShareButton, { buildShareUrl } from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
-import OptimizedImage from '../components/OptimizedImage'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getBusinessPath, getEventPath, getIdFromSlug } from '../lib/seo'
 import { getMissingColumnName } from '../lib/supabaseCompat'
@@ -499,7 +498,7 @@ function RelatedCommunityCard({ group, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
       <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {group.photo_url ? <OptimizedImage src={group.photo_url} alt={group.name} width={320} height={240} resize="contain" quality={72} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : group.emoji}
+        {group.photo_url ? <img src={group.photo_url} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : group.emoji}
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{group.name}</p>
@@ -516,7 +515,7 @@ function RelatedBusinessCard({ business, photosMap={}, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
       <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {photos[0] ? <OptimizedImage src={photos[0]} alt={business.name} width={320} height={240} resize="contain" quality={72} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : business.emoji}
+        {photos[0] ? <img src={photos[0]} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : business.emoji}
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{business.name}</p>
@@ -532,7 +531,7 @@ function RelatedEventCard({ event, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
       <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {event.img ? <OptimizedImage src={event.img} alt={event.title} width={320} height={240} resize="contain" quality={72} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : event.emoji}
+        {event.img ? <img src={event.img} alt={event.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : event.emoji}
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{event.title}</p>
@@ -555,7 +554,7 @@ function CommunityCard({ group, onClick }) {
     >
       <div style={{ ...LIST_THUMB_STYLE, background:hasImage ? '#fff' : C.primaryLight }}>
         {hasImage ? (
-          <OptimizedImage src={group.photo_url} alt={group.name} width={240} height={260} resize="contain" quality={72} loading="lazy" style={LIST_MEDIA_STYLE} />
+          <img src={group.photo_url} alt={group.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
         ) : (
           <div style={LIST_FALLBACK_STYLE}>{group.emoji}</div>
         )}
@@ -605,7 +604,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
             aria-label="Ampliar fotos del negocio"
             style={{ width:'100%', height:'100%', padding:0, border:'none', background:'transparent', cursor:'zoom-in', display:'block', borderRadius:14, overflow:'hidden' }}
           >
-            <OptimizedImage src={cover} alt={business.name} width={240} height={260} resize="contain" quality={72} loading="lazy" style={LIST_MEDIA_STYLE} />
+            <img src={cover} alt={business.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
           </button>
         ) : (
           <div style={LIST_FALLBACK_STYLE}>{business.emoji}</div>
@@ -837,7 +836,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                     aria-label="Ampliar fotos del negocio"
                     style={{ width:'100%', border:'none', padding:0, background:'transparent', borderRadius:16, overflow:'hidden', marginBottom:0, display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative' }}
                   >
-                    <OptimizedImage src={photos[0]} alt={business.name} width={1100} resize="contain" quality={78} loading="eager" srcSetWidths={[480, 720, 960, 1200]} sizes="100vw" style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
+                    <img src={photos[0]} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:'340px', objectFit:'contain', display:'block' }} />
                   </button>
                   {planLabel && (
                     <span style={{ position:'absolute', left:'50%', bottom:-13, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 14px', boxShadow:'0 10px 22px rgba(37,99,235,0.16)', whiteSpace:'nowrap' }}>
@@ -1063,7 +1062,7 @@ function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[]
       <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {community.photo_url && (
         <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-          <OptimizedImage src={community.photo_url} alt={community.name} width={1100} resize="contain" quality={78} loading="eager" srcSetWidths={[480, 720, 960, 1200]} sizes="100vw" style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
+          <img src={community.photo_url} alt={community.name} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
         </div>
       )}
       <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
@@ -1142,7 +1141,7 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
       <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {event.img && (
         <div style={{ width:'calc(100% + 40px)', margin:'-16px -20px 18px', borderBottom:`1px solid ${C.border}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-          <OptimizedImage src={event.img} alt={event.title} width={1100} resize="contain" quality={78} loading="eager" srcSetWidths={[480, 720, 960, 1200]} sizes="100vw" style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
+          <img src={event.img} alt={event.title} loading="lazy" decoding="async" style={{ width:'100%', height:'auto', maxHeight:380, objectFit:'contain', display:'block' }} />
         </div>
       )}
       <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
@@ -1878,7 +1877,7 @@ export default function Comunidades() {
                   >
                     {event.img ? (
                       <div style={LIST_THUMB_STYLE}>
-                        <OptimizedImage src={event.img} alt={event.title} width={240} height={260} resize="contain" quality={72} loading="lazy" style={LIST_MEDIA_STYLE} />
+                        <img src={event.img} alt={event.title} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
                       </div>
                     ) : (
                       <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight, fontSize:32 }}>

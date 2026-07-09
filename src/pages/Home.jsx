@@ -13,7 +13,6 @@ import PartnersSection from '../components/PartnersSection'
 import { C, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
-import OptimizedImage from '../components/OptimizedImage'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
@@ -1423,7 +1422,7 @@ export default function Home() {
                             <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:10, minWidth:0 }}>
                               {item.image ? (
                                 <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0, background:C.bg }}>
-                                  <OptimizedImage src={item.image} alt={item.title} width={96} height={96} resize="cover" quality={70} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                                  <img src={item.image} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                                 </div>
                               ) : (
                                 <span style={{ width:42, height:42, borderRadius:12, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:19, flexShrink:0 }}>
@@ -1528,7 +1527,7 @@ export default function Home() {
           {promotableBusinesses.map(business => (
             <div key={business.id} style={{ display:'flex', alignItems:'center', gap:11, border:`1px solid ${C.border}`, borderRadius:15, padding:10 }}>
               {business.photoUrl ? (
-                <OptimizedImage src={business.photoUrl} alt={business.name} width={96} height={96} resize="cover" quality={70} loading="lazy" style={{ width:44, height:44, borderRadius:12, objectFit:'cover', flexShrink:0 }} />
+                <img src={business.photoUrl} alt={business.name} style={{ width:44, height:44, borderRadius:12, objectFit:'cover', flexShrink:0 }} />
               ) : (
                 <span style={{ width:44, height:44, borderRadius:12, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:21, flexShrink:0 }}>
                   🏪
@@ -1593,7 +1592,7 @@ export default function Home() {
                     <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 10px 24px rgba(15,23,42,0.07)' }}>
                       <div style={{ height:132, background:'#F8FAFC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative', borderBottom:`1px solid ${C.borderLight}` }}>
                         {ad.img
-                          ? <OptimizedImage src={ad.img} alt={ad.title} width={420} height={300} resize="contain" quality={72} loading="eager" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
+                          ? <img src={ad.img} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
                           : <span style={{ fontSize:44, lineHeight:1 }}>{displayEmoji}</span>
                         }
                         <span style={{ position:'absolute', top:10, left:10, maxWidth:'calc(100% - 76px)', fontFamily:PP, fontSize:9, fontWeight:800, background:'rgba(255,255,255,0.94)', color:cc.tc, padding:'5px 8px', borderRadius:999, boxShadow:'0 6px 14px rgba(15,23,42,0.08)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{cat?.label}</span>
@@ -1724,7 +1723,7 @@ export default function Home() {
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                     <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'visible' }}>
                       {business.photo_url
-                        ? <OptimizedImage src={business.photo_url} alt={business.name} width={360} height={360} resize="contain" quality={72} loading="eager" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        ? <img src={business.photo_url} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{business.emoji || '🏪'}</span>
                       }
                       <span
@@ -1833,7 +1832,7 @@ export default function Home() {
                   <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                     <div style={{ height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
                       {group.photo_url
-                        ? <OptimizedImage src={group.photo_url} alt={group.name} width={360} height={360} resize="contain" quality={72} loading="eager" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        ? <img src={group.photo_url} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{group.emoji || '👥'}</span>
                       }
                     </div>
@@ -1890,7 +1889,7 @@ export default function Home() {
                       <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                         <div style={{ position:'relative', height:120, background:gc.bg, overflow:'hidden' }}>
                           {doc.img ? (
-                            <OptimizedImage src={doc.img} alt={doc.title} width={360} height={260} resize="cover" quality={72} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                            <img src={doc.img} alt={doc.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
                           ) : (
                             <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
                               {doc.emoji}
@@ -1936,14 +1935,11 @@ export default function Home() {
             </div>
             <div style={{ padding:'18px 20px 32px', overflowY:'auto', flex:1 }}>
               {selectedGuide.img && (
-                <OptimizedImage
+                <img
                   src={selectedGuide.img}
                   alt={selectedGuide.title}
-                  width={920}
-                  height={420}
-                  resize="cover"
-                  quality={76}
-                  loading="eager"
+                  loading="lazy"
+                  decoding="async"
                   style={{ width:'100%', height:210, objectFit:'cover', borderRadius:18, marginBottom:16, display:'block' }}
                 />
               )}

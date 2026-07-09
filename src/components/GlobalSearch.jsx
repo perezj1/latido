@@ -5,7 +5,6 @@ import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent, trackSearchEvent } from '../lib/analytics'
 import { C, PP } from '../lib/theme'
 import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
-import OptimizedImage from './OptimizedImage'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import {
   MOCK_ADS,
@@ -857,7 +856,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                       <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:12, alignItems:'center', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 14px 12px' }}>
                         <span style={{ width:46, height:46, borderRadius:14, background:'#fff', border:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, overflow:'hidden', gridRow:'span 2', flexShrink:0 }}>
                           {result.image ? (
-                            <OptimizedImage src={result.image} alt="" width={96} height={96} resize={result.imageFit === 'cover' ? 'cover' : 'contain'} quality={70} loading="eager" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'contain', display:'block', background:'#fff' }} />
+                            <img src={result.image} alt="" loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'contain', display:'block', background:'#fff' }} />
                           ) : result.icon}
                         </span>
                         <div style={{ minWidth:0 }}>
@@ -889,7 +888,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                   >
                     <span style={{ width:size === 'lg' ? 42 : 34, height:size === 'lg' ? 42 : 34, borderRadius:14, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:size === 'lg' ? 22 : 18, flexShrink:0, overflow:'hidden', border:result.image ? `1px solid ${C.borderLight}` : 'none' }}>
                       {result.image ? (
-                        <OptimizedImage src={result.image} alt="" width={96} height={96} resize={result.imageFit === 'contain' ? 'contain' : 'cover'} quality={70} loading="eager" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'cover', display:'block', background:'#fff' }} />
+                        <img src={result.image} alt="" loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'cover', display:'block', background:'#fff' }} />
                       ) : result.icon}
                     </span>
                     <div style={{ flex:1, minWidth:0 }}>
