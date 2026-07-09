@@ -6,7 +6,6 @@ import { getGuideById, getGuideBySlug, getGuidePath } from '../lib/seo'
 import { C, PP } from '../lib/theme'
 import { Card, Tag, Modal, Btn, InfoBanner, PillFilters } from '../components/UI'
 import PartnerServicesPromo, { getPartnerServiceMatch } from '../components/PartnerServicesPromo'
-import OptimizedImage from '../components/OptimizedImage'
 
 export default function Guias() {
   const { isLoggedIn } = useAuth()
@@ -142,7 +141,7 @@ export default function Guias() {
           <Card key={doc.id} onClick={() => openGuide(doc)} style={{ padding:0, overflow:'hidden' }}>
             <div style={{ position:'relative', height:150, background:C.bg }}>
               {doc.img ? (
-                <OptimizedImage src={doc.img} alt={doc.title} width={640} height={360} resize="cover" quality={74} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                <img src={doc.img} alt={doc.title} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
               ) : (
                 <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
                   {doc.emoji}
@@ -214,14 +213,9 @@ export default function Guias() {
         {selected && (
           <>
             {selected.img && (
-              <OptimizedImage
+              <img
                 src={selected.img}
                 alt={selected.title}
-                width={920}
-                height={420}
-                resize="cover"
-                quality={76}
-                loading="eager"
                 style={{ width:'100%', height:210, objectFit:'cover', borderRadius:18, marginBottom:14, display:'block' }}
               />
             )}
