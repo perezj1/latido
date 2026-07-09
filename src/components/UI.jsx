@@ -290,8 +290,8 @@ export function ImageUploadField({
           {previews.map((url, index) => {
             const replaceId = `${deviceId}-replace-${index}`
             return (
-              <div key={`${url}-${index}`} style={{ position:'relative', borderRadius:14, overflow:'hidden', border:`1px solid ${C.border}`, background:C.bg, minHeight: multiple ? 88 : 180 }}>
-                <img src={url} alt="Vista previa" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+              <div key={`${url}-${index}`} style={{ position:'relative', borderRadius:14, overflow:'visible', border:`1px solid ${C.border}`, background:'#fff', minHeight: multiple ? 88 : 180, display:'flex', alignItems:'center', justifyContent:'center', padding:multiple ? 4 : 8, boxSizing:'border-box' }}>
+                <img src={url} alt="Vista previa" style={{ width:'100%', height:'auto', maxHeight:multiple ? 160 : 280, objectFit:'contain', display:'block' }} />
                 {(multiple ? onRemoveAt : onRemove) && (
                   <button
                     type="button"
@@ -427,7 +427,7 @@ export function Modal({ show, onClose, title, children, syncHistory=true }) {
   return (
     <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))', boxSizing:'border-box' }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)' }} onClick={onClose} />
-      <div className="fade-up" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'calc(100dvh - 32px)', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
+      <div className="fade-up" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'calc(100vh - 32px)', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
         <div style={{ flexShrink:0, position:'relative', zIndex:2, background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'24px 24px 0 0' }}>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:0 }}>{title}</p>
           <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:C.bg, border:'none', cursor:'pointer', fontSize:14, color:C.mid }}>✕</button>
@@ -958,9 +958,11 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
         <img
           src={validPhotos[active]}
           alt={`${title} ${active + 1}`}
+          loading="eager"
+          fetchpriority="high"
           decoding="async"
           draggable={false}
-          style={{ maxWidth:'100%', maxHeight:'calc(100vh - 150px)', objectFit:'contain', display:'block', background:'#000', transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`, transition:gestureRef.current ? 'none' : 'transform .18s ease', touchAction:'none', userSelect:'none' }}
+          style={{ width:'auto', height:'auto', maxWidth:'calc(100vw - 28px)', maxHeight:'calc(100vh - 110px)', objectFit:'contain', display:'block', background:'#000', transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`, transition:gestureRef.current ? 'none' : 'transform .18s ease', touchAction:'none', userSelect:'none' }}
         />
       </div>
 
@@ -1052,9 +1054,9 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
               data-photo-index={index}
               onClick={() => handlePhotoClick(index)}
               aria-label={`Ampliar foto ${index + 1}`}
-              style={{ flex:all.length > 1 ? '0 0 clamp(250px, 78%, 420px)' : '1 1 100%', height:all.length > 1 ? 360 : 320, maxHeight:'56vh', padding:0, border:`1px solid ${C.border}`, borderRadius:18, overflow:'hidden', background:'#fff', cursor:'zoom-in', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 26px rgba(15,23,42,0.08)', position:'relative' }}
+              style={{ flex:all.length > 1 ? '0 0 clamp(250px, 78%, 420px)' : '1 1 100%', minHeight:all.length > 1 ? 220 : 240, padding:8, border:`1px solid ${C.border}`, borderRadius:18, overflow:'visible', background:'#fff', cursor:'zoom-in', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 26px rgba(15,23,42,0.08)', position:'relative', boxSizing:'border-box' }}
             >
-              <img src={src} alt={`Foto ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+              <img src={src} alt={`Foto ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 ? 'high' : undefined} decoding="async" style={{ width:'100%', height:'auto', maxWidth:'100%', maxHeight:420, objectFit:'contain', display:'block' }} />
             </button>
           ))}
         </div>

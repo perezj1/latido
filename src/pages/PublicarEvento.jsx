@@ -313,7 +313,7 @@ export default function PublicarEvento() {
               <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:10, letterSpacing:0.5 }}>VISTA PREVIA</p>
               {form.img_url && (
                 <div style={{ borderRadius:12, overflow:'hidden', marginBottom:10 }}>
-                  <img src={form.img_url} alt={form.title || 'Vista previa del evento'} style={{ width:'100%', maxHeight:180, objectFit:'cover' }} />
+                  <img src={form.img_url} alt={form.title || 'Vista previa del evento'} style={{ width:'100%', maxHeight:180, objectFit:'contain', background:'#fff' }} />
                 </div>
               )}
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>

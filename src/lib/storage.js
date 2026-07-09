@@ -8,6 +8,28 @@ const ONE_YEAR_SECONDS = '31536000'
 const MAX_PUBLICATION_SOURCE_BYTES = 10 * 1024 * 1024
 const MAX_AVATAR_SOURCE_BYTES = 6 * 1024 * 1024
 const BYPASS_COMPRESSION_TYPES = new Set(['image/gif', 'image/svg+xml'])
+const OUTPUT_FORMATS = [
+  { type:'image/webp', extension:'webp' },
+  { type:'image/jpeg', extension:'jpg' },
+]
+const PUBLICATION_IMAGE_PROFILE = {
+  maxSourceBytes: MAX_PUBLICATION_SOURCE_BYTES,
+  maxOutputBytes: 360 * 1024,
+  maxDimension: 1280,
+  minDimension: 640,
+  quality: 0.76,
+  minQuality: 0.52,
+  fallbackMaxBytes: 5 * 1024 * 1024,
+}
+const AVATAR_IMAGE_PROFILE = {
+  maxSourceBytes: MAX_AVATAR_SOURCE_BYTES,
+  maxOutputBytes: 140 * 1024,
+  maxDimension: 640,
+  minDimension: 320,
+  quality: 0.78,
+  minQuality: 0.56,
+  fallbackMaxBytes: 3 * 1024 * 1024,
+}
 
 function inferExtension(file) {
   const fromName = file.name?.split('.').pop()?.toLowerCase()
@@ -19,6 +41,10 @@ function inferExtension(file) {
 function getOptimizedName(file, extension = 'webp') {
   const base = file.name?.replace(/\.[^.]+$/, '') || 'image'
   return `${base}.${extension}`
+}
+
+function getExtensionForType(type) {
+  return OUTPUT_FORMATS.find(format => format.type === type)?.extension || 'jpg'
 }
 
 function loadImage(file) {
@@ -41,11 +67,80 @@ function canvasToBlob(canvas, type, quality) {
   return new Promise(resolve => canvas.toBlob(resolve, type, quality))
 }
 
+async function encodeCanvas(canvas, type, quality) {
+  const blob = await canvasToBlob(canvas, type, quality)
+  if (!blob?.size) return null
+  if (blob.type && blob.type !== type) return null
+  return blob
+}
+
+function getQualitySteps(start, min) {
+  const steps = []
+  for (let quality = start; quality >= min; quality -= 0.08) {
+    steps.push(Number(quality.toFixed(2)))
+  }
+  if (!steps.includes(min)) steps.push(min)
+  return steps
+}
+
+async function renderOptimizedImage(image, {
+  maxOutputBytes,
+  maxDimension,
+  minDimension,
+  quality,
+  minQuality,
+}) {
+  const sourceWidth = image.naturalWidth || image.width
+  const sourceHeight = image.naturalHeight || image.height
+  if (!sourceWidth || !sourceHeight) throw new Error('No se pudo leer la imagen')
+
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('No se pudo preparar la imagen')
+  context.imageSmoothingEnabled = true
+  context.imageSmoothingQuality = 'high'
+
+  const qualitySteps = getQualitySteps(quality, minQuality)
+  let bestBlob = null
+
+  for (let dimension = maxDimension; dimension >= minDimension; dimension = Math.floor(dimension * 0.82)) {
+    const scale = Math.min(1, dimension / Math.max(sourceWidth, sourceHeight))
+    const targetWidth = Math.max(1, Math.round(sourceWidth * scale))
+    const targetHeight = Math.max(1, Math.round(sourceHeight * scale))
+
+    canvas.width = targetWidth
+    canvas.height = targetHeight
+    context.clearRect(0, 0, targetWidth, targetHeight)
+    context.drawImage(image, 0, 0, targetWidth, targetHeight)
+
+    for (const format of OUTPUT_FORMATS) {
+      for (const nextQuality of qualitySteps) {
+        const blob = await encodeCanvas(canvas, format.type, nextQuality)
+        if (!blob) continue
+        if (!bestBlob || blob.size < bestBlob.size) bestBlob = blob
+        if (blob.size <= maxOutputBytes) {
+          canvas.width = 1
+          canvas.height = 1
+          return blob
+        }
+      }
+    }
+  }
+
+  canvas.width = 1
+  canvas.height = 1
+  if (bestBlob) return bestBlob
+
+  throw new Error('No se pudo optimizar la imagen')
+}
+
 async function prepareImageForUpload(file, {
   maxSourceBytes,
   maxOutputBytes,
   maxDimension,
+  minDimension,
   quality,
+  minQuality,
   fallbackMaxBytes,
 }) {
   if (!file.type?.startsWith('image/')) throw new Error('Selecciona un archivo de imagen valido')
@@ -63,34 +158,29 @@ async function prepareImageForUpload(file, {
   const height = image.naturalHeight || image.height
   if (!width || !height) throw new Error('No se pudo leer la imagen')
 
-  const shouldKeepOriginal = file.type === 'image/webp'
+  const shouldKeepOriginal = OUTPUT_FORMATS.some(format => format.type === file.type)
     && file.size <= maxOutputBytes
     && Math.max(width, height) <= maxDimension
   if (shouldKeepOriginal) return file
 
-  const scale = Math.min(1, maxDimension / Math.max(width, height))
-  const targetWidth = Math.max(1, Math.round(width * scale))
-  const targetHeight = Math.max(1, Math.round(height * scale))
-  const canvas = document.createElement('canvas')
-  canvas.width = targetWidth
-  canvas.height = targetHeight
-  const context = canvas.getContext('2d')
-  if (!context) throw new Error('No se pudo preparar la imagen')
-
-  context.drawImage(image, 0, 0, targetWidth, targetHeight)
-
-  let blob = null
-  for (const nextQuality of [quality, 0.72, 0.66, 0.6]) {
-    blob = await canvasToBlob(canvas, 'image/webp', nextQuality)
-    if (blob && blob.size <= maxOutputBytes) break
-  }
+  const blob = await renderOptimizedImage(image, {
+    maxOutputBytes,
+    maxDimension,
+    minDimension,
+    quality,
+    minQuality,
+  })
 
   if (!blob) throw new Error('No se pudo optimizar la imagen')
   if (blob.size > file.size && file.size <= maxOutputBytes) return file
+  if (blob.size > fallbackMaxBytes) {
+    throw new Error('La imagen es demasiado pesada incluso optimizada. Prueba con otra foto.')
+  }
 
-  const name = getOptimizedName(file)
+  const extension = getExtensionForType(blob.type)
+  const name = getOptimizedName(file, extension)
   return typeof File === 'function'
-    ? new File([blob], name, { type:'image/webp', lastModified:Date.now() })
+    ? new File([blob], name, { type:blob.type || 'image/jpeg', lastModified:Date.now() })
     : Object.assign(blob, { name })
 }
 
@@ -114,13 +204,7 @@ export async function uploadPublicationImage({ file, userId, folder = 'misc' }) 
   if (!file) throw new Error('No se ha seleccionado ninguna imagen')
   if (!userId) throw new Error('Necesitas iniciar sesion para subir imagenes')
 
-  const optimizedFile = await prepareImageForUpload(file, {
-    maxSourceBytes: MAX_PUBLICATION_SOURCE_BYTES,
-    maxOutputBytes: 420 * 1024,
-    maxDimension: 1280,
-    quality: 0.74,
-    fallbackMaxBytes: 5 * 1024 * 1024,
-  })
+  const optimizedFile = await prepareImageForUpload(file, PUBLICATION_IMAGE_PROFILE)
 
   const extension = inferExtension(optimizedFile)
   const path = `${userId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`
@@ -147,13 +231,7 @@ export async function uploadAvatar({ file, userId }) {
   if (!file) throw new Error('No se ha seleccionado ninguna imagen')
   if (!userId) throw new Error('Necesitas iniciar sesion para subir una foto')
 
-  const optimizedFile = await prepareImageForUpload(file, {
-    maxSourceBytes: MAX_AVATAR_SOURCE_BYTES,
-    maxOutputBytes: 180 * 1024,
-    maxDimension: 640,
-    quality: 0.78,
-    fallbackMaxBytes: 3 * 1024 * 1024,
-  })
+  const optimizedFile = await prepareImageForUpload(file, AVATAR_IMAGE_PROFILE)
 
   const extension = inferExtension(optimizedFile)
   const path = `${userId}/avatar.${extension}`

@@ -559,7 +559,7 @@ export default function RegistrarNegocio() {
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:12, letterSpacing:0.5 }}>RESUMEN DE TU NEGOCIO</p>
           {form.photo_url && (
             <div style={{ borderRadius:14, overflow:'hidden', marginBottom:12 }}>
-              <img src={form.photo_url} alt={form.name || 'Vista previa del negocio'} style={{ width:'100%', maxHeight:190, objectFit:'cover' }} />
+              <img src={form.photo_url} alt={form.name || 'Vista previa del negocio'} style={{ width:'100%', maxHeight:190, objectFit:'contain', background:'#fff' }} />
             </div>
           )}
           <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
