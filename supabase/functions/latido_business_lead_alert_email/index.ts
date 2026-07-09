@@ -40,8 +40,32 @@ function json(body: Record<string, unknown>, status = 200) {
 function escapeHtml(value:string) {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
 }
+
+function slugify(value:string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+}
+
+function listingUrl(alert: Alert) {
+  const rawPath = alert.listing_path || ''
+  if (/^https?:\/\//i.test(rawPath)) return rawPath
+
+  const idFromPath = rawPath.match(/\/anuncios\/([0-9a-f-]{36})/i)?.[1]
+  const slug = slugify(alert.listing_title || '')
+  const path = idFromPath
+    ? `/anuncios/${idFromPath}${slug ? `--${slug}` : ''}`
+    : rawPath.startsWith('/') ? rawPath : `/${rawPath || 'tablon'}`
+
+  return `${APP_URL}${path}`
+}
+
 function emailContent(alert: Alert) {
-  const url = `${APP_URL}${alert.listing_path}`
+  const url = listingUrl(alert)
   const location = [alert.listing_city, alert.listing_canton].filter(Boolean).join(', ')
   const matches = alert.matched_terms?.join(', ') || 'servicios configurados'
   const provider = escapeHtml(alert.provider_name || 'tu empresa')

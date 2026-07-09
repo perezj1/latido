@@ -679,13 +679,7 @@ function AppShell() {
             <Route path="/descargo"   element={<Legal />} />
             <Route path="/documentos" element={<Navigate to="/guias" replace />} />
             <Route path="/empleos" element={<Navigate to="/tablon?cat=empleo" replace />} />
-            <Route path="*" element={
-              <div style={{ textAlign:'center', padding:'100px 24px' }}>
-                <div style={{ fontSize:64, marginBottom:16 }}>🌎</div>
-                <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>Página no encontrada</h1>
-                <a href="/" style={{ fontFamily:PP, fontWeight:700, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', padding:'14px 28px', borderRadius:14, display:'inline-flex' }}>← Volver al inicio</a>
-              </div>
-            } />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </main>
