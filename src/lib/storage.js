@@ -6,9 +6,7 @@ export const MAX_PUBLICATION_IMAGES = 5
 
 const ONE_YEAR_SECONDS = '31536000'
 const MAX_PUBLICATION_SOURCE_BYTES = 10 * 1024 * 1024
-const MAX_PUBLICATION_OUTPUT_BYTES = 650 * 1024
 const MAX_AVATAR_SOURCE_BYTES = 6 * 1024 * 1024
-const MAX_AVATAR_OUTPUT_BYTES = 260 * 1024
 const BYPASS_COMPRESSION_TYPES = new Set(['image/gif', 'image/svg+xml'])
 
 function inferExtension(file) {
@@ -118,9 +116,9 @@ export async function uploadPublicationImage({ file, userId, folder = 'misc' }) 
 
   const optimizedFile = await prepareImageForUpload(file, {
     maxSourceBytes: MAX_PUBLICATION_SOURCE_BYTES,
-    maxOutputBytes: MAX_PUBLICATION_OUTPUT_BYTES,
-    maxDimension: 1600,
-    quality: 0.78,
+    maxOutputBytes: 420 * 1024,
+    maxDimension: 1280,
+    quality: 0.74,
     fallbackMaxBytes: 5 * 1024 * 1024,
   })
 
@@ -151,9 +149,9 @@ export async function uploadAvatar({ file, userId }) {
 
   const optimizedFile = await prepareImageForUpload(file, {
     maxSourceBytes: MAX_AVATAR_SOURCE_BYTES,
-    maxOutputBytes: MAX_AVATAR_OUTPUT_BYTES,
-    maxDimension: 800,
-    quality: 0.8,
+    maxOutputBytes: 180 * 1024,
+    maxDimension: 640,
+    quality: 0.78,
     fallbackMaxBytes: 3 * 1024 * 1024,
   })
 

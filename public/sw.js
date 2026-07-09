@@ -1,11 +1,14 @@
-const SHELL_CACHE = 'latido-shell-v11'
+const SHELL_CACHE = 'latido-shell-v12'
 const ASSET_CACHE = 'latido-assets'
-const IMAGE_CACHE = 'latido-images-v1'
+const IMAGE_CACHE = 'latido-images-v2'
 const PUBLIC_DATA_CACHE = 'latido-public-data-v1'
 const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, IMAGE_CACHE, PUBLIC_DATA_CACHE])
 const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icon-192.png']
 const PRECACHE_ASSETS = []
 const MAX_IMAGE_CACHE_ENTRIES = 260
+const SUPABASE_STORAGE_OBJECT_SEGMENT = '/storage/v1/object/public/'
+const DEFAULT_OPTIMIZED_IMAGE_WIDTH = 960
+const DEFAULT_OPTIMIZED_IMAGE_QUALITY = 72
 const PUBLIC_TABLES = new Set([
   'business_promotion_plans',
   'communities',
@@ -56,11 +59,45 @@ function isPublicSupabaseRequest(url) {
 }
 
 function isPublicStorageAsset(url) {
-  return isSupabaseHost(url) && url.pathname.includes('/storage/v1/object/public/')
+  return isSupabaseHost(url) && url.pathname.includes(SUPABASE_STORAGE_OBJECT_SEGMENT)
 }
 
 function isHttpRequest(url) {
   return url.protocol === 'http:' || url.protocol === 'https:'
+}
+
+function isImageRequest(request) {
+  return request.destination === 'image'
+}
+
+function optimizedUnsplashUrl(url) {
+  if (url.hostname !== 'images.unsplash.com') return null
+
+  const optimized = new URL(url.href)
+  const currentWidth = Number(optimized.searchParams.get('w'))
+  if (!Number.isFinite(currentWidth) || currentWidth > DEFAULT_OPTIMIZED_IMAGE_WIDTH) {
+    optimized.searchParams.set('w', String(DEFAULT_OPTIMIZED_IMAGE_WIDTH))
+  }
+  optimized.searchParams.set('auto', 'format')
+  optimized.searchParams.set('q', String(DEFAULT_OPTIMIZED_IMAGE_QUALITY))
+  if (!optimized.searchParams.has('fit')) optimized.searchParams.set('fit', 'crop')
+  return optimized
+}
+
+function getOptimizedImageRequest(request, url) {
+  const optimizedUrl = optimizedUnsplashUrl(url)
+  if (!optimizedUrl || optimizedUrl.href === request.url) return request
+
+  return new Request(optimizedUrl.href, {
+    cache: 'default',
+    credentials: request.credentials,
+    headers: request.headers,
+    integrity: request.integrity,
+    mode: request.mode,
+    redirect: request.redirect,
+    referrer: request.referrer,
+    referrerPolicy: request.referrerPolicy,
+  })
 }
 
 function networkFirst(request, cacheName, event, maxEntries) {
@@ -108,21 +145,33 @@ function staleWhileRevalidate(request, cacheName, event, maxEntries) {
     .then(cached => cached || update)
 }
 
-function imageStaleWhileRevalidate(request, event) {
-  const update = fetch(request)
-    .then(async response => {
-      if (response.ok || response.type === 'opaque') {
-        await putInCache(IMAGE_CACHE, request, response.clone(), MAX_IMAGE_CACHE_ENTRIES)
-      }
-      return response
-    })
+async function refreshImageCache(cacheKey, fetchRequest = cacheKey) {
+  let response
+  try {
+    response = await fetch(fetchRequest)
+  } catch (error) {
+    if (fetchRequest === cacheKey) throw error
+    response = await fetch(cacheKey)
+  }
 
-  event.waitUntil(update.catch(() => {}))
+  if (response.ok || response.type === 'opaque') {
+    await putInCache(IMAGE_CACHE, cacheKey, response.clone(), MAX_IMAGE_CACHE_ENTRIES)
+  }
+  return response
+}
 
-  return caches.open(IMAGE_CACHE)
-    .then(cache => cache.match(request, { ignoreVary:true }))
-    .then(cached => cached || update)
-    .catch(() => update)
+async function imageCacheFirstWithRefresh(request, event) {
+  const url = new URL(request.url)
+  const fetchRequest = getOptimizedImageRequest(request, url)
+  const cache = await caches.open(IMAGE_CACHE)
+  const cached = await cache.match(request, { ignoreVary:true })
+
+  if (cached) {
+    event.waitUntil(refreshImageCache(request, fetchRequest).catch(() => {}))
+    return cached
+  }
+
+  return refreshImageCache(request, fetchRequest)
 }
 
 function handleNavigation(event) {
@@ -203,13 +252,13 @@ self.addEventListener('fetch', event => {
     return
   }
 
-  if (isPublicStorageAsset(url)) {
-    event.respondWith(imageStaleWhileRevalidate(request, event))
+  if (isImageRequest(request) && (isPublicStorageAsset(url) || url.origin !== self.location.origin)) {
+    event.respondWith(imageCacheFirstWithRefresh(request, event))
     return
   }
 
-  if (url.origin === self.location.origin && request.destination === 'image') {
-    event.respondWith(imageStaleWhileRevalidate(request, event))
+  if (url.origin === self.location.origin && isImageRequest(request)) {
+    event.respondWith(imageCacheFirstWithRefresh(request, event))
     return
   }
 
