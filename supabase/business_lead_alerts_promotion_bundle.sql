@@ -1,5 +1,5 @@
 -- =====================================================================
--- LATIDO.CH - Alertas incluidas como extra de un plan profesional
+-- LATIDO.CH - Alertas incluidas en un plan profesional
 -- Ejecuta este parche despues de business_lead_alerts.sql.
 -- =====================================================================
 
@@ -26,7 +26,10 @@ DECLARE
   alert_services TEXT[];
   alert_cities TEXT[];
   alert_cantons TEXT[];
+  selected_user_email TEXT := '';
   normalized_email TEXT := LOWER(BTRIM(COALESCE(p_recipient_email, '')));
+  included_in_plan BOOLEAN := COALESCE(p_price_id, '') LIKE 'included:%';
+  alert_price NUMERIC(10,2) := CASE WHEN included_in_plan THEN 0.00 ELSE 49.00 END;
 BEGIN
   IF p_period_start IS NULL OR p_period_end IS NULL OR p_period_end <= p_period_start THEN
     RAISE EXCEPTION 'INVALID_ALERT_DATES';
@@ -42,6 +45,18 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'PROVIDER_NOT_FOUND';
   END IF;
+
+  SELECT email
+  INTO selected_user_email
+  FROM auth.users
+  WHERE id = p_user_id;
+
+  normalized_email := LOWER(BTRIM(COALESCE(
+    NULLIF(normalized_email, ''),
+    NULLIF(selected_provider.email, ''),
+    NULLIF(selected_user_email, ''),
+    ''
+  )));
 
   IF normalized_email = '' THEN
     RAISE EXCEPTION 'ALERT_EMAIL_REQUIRED';
@@ -95,7 +110,7 @@ BEGIN
       provider_id = p_provider_id,
       user_id = p_user_id,
       status = 'active',
-      price_chf = 49.00,
+      price_chf = alert_price,
       stripe_customer_id = p_customer_id,
       stripe_price_id = p_price_id,
       current_period_start = p_period_start,
@@ -114,7 +129,7 @@ BEGIN
       stripe_subscription_id, stripe_price_id, current_period_start,
       current_period_end, cancel_at_period_end, last_payment_at
     ) VALUES (
-      p_provider_id, p_user_id, 'active', 49.00, p_customer_id,
+      p_provider_id, p_user_id, 'active', alert_price, p_customer_id,
       p_subscription_id, p_price_id, p_period_start,
       p_period_end, COALESCE(p_cancel_at_period_end, FALSE), NOW()
     );

@@ -266,6 +266,12 @@ export function getBusinessPath(business) {
   return `/negocios/${business.id}${slug ? `--${slug}` : ''}`
 }
 
+export function getBusinessLandingPath(business) {
+  if (!business?.id) return '/colaboraciones'
+  const slug = slugify(business.name || business.id)
+  return `/latido-x/${business.id}${slug ? `--${slug}` : ''}`
+}
+
 export function getEventPath(event) {
   if (!event?.id) return '/comunidades?view=eventos'
   const slug = slugify(event.title || event.id)
@@ -435,6 +441,15 @@ export function getSeoForLocation(location = {}) {
       title:'Area privada | Latido.ch',
       description:'Gestion del plan Negocio Destacado en Latido.ch.',
       robots:'noindex, nofollow',
+    })
+  }
+
+  if (pathname.startsWith('/latido-x/')) {
+    return withDefaults({
+      path:pathname,
+      title:'Colaboración Latido x Negocio | Latido.ch',
+      description:'Landing dedicada de un negocio colaborador dentro de Latido.ch.',
+      robots:'noindex, follow',
     })
   }
 

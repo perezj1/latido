@@ -126,10 +126,11 @@ export const BUSINESS_PROMOTION_PLAN_DETAILS = {
     success:'Tu plan de Partner Premium ya está activo.',
     benefits:[
       'Todo lo del plan Colaborador Básico',
-      'Logo y tarjeta destacada en la landing pública de Latido',
+      'Presencia destacada en la landing pública de Latido',
       'Mayor presencia en la página principal de Latido',
       'Mejor posicionamiento frente a colaboradores básicos',
       'Promoción contextual en categorías relacionadas',
+      'Alertas de clientes potenciales incluidas',
       '1 post mensual dedicado en las redes sociales de Latido',
     ],
   },

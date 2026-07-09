@@ -315,8 +315,7 @@ export default function DestacarNegocio() {
           body:{
             providerId,
             planKey:targetPlanKey,
-            alertsEnabled:alertOptions.enabled === true,
-            alertsEmail:alertOptions.email || '',
+            landingPageEnabled:alertOptions.landingPageEnabled === true,
           },
         })
 
@@ -502,9 +501,8 @@ function PlanCheckoutCard({
   onOpenPortal,
   onStartCheckout,
 }) {
-  const [alertsOpen, setAlertsOpen] = useState(false)
-  const [alertsEnabled, setAlertsEnabled] = useState(false)
-  const [alertsEmail, setAlertsEmail] = useState('')
+  const [landingOpen, setLandingOpen] = useState(false)
+  const [landingPageEnabled, setLandingPageEnabled] = useState(false)
   const {
     subscription,
     maxActive,
@@ -525,22 +523,10 @@ function PlanCheckoutCard({
   const statusBackground = selectedPlanActive
     ? '#DCFCE7'
     : paymentPending || availableSlots > 0 ? '#DBEAFE' : '#FEE2E2'
-  const businessEmail = businessDetails?.email || ''
-  const recipientEmail = (alertsEmail || businessEmail).trim()
-  const totalMonthlyPrice = Number(planCopy.monthlyPrice || 0) + (alertsEnabled ? 49 : 0)
-  const hasBusinessEmail = Boolean(businessEmail.trim())
-
-  useEffect(() => {
-    if (businessEmail) setAlertsEmail(businessEmail)
-  }, [businessEmail])
+  const totalMonthlyPrice = Number(planCopy.monthlyPrice || 0) + (landingPageEnabled ? 49 : 0)
 
   const continueCheckout = () => {
-    if (alertsEnabled && !recipientEmail) {
-      setAlertsOpen(true)
-      toast.error('Añade un email para recibir las alertas.')
-      return
-    }
-    onStartCheckout({ enabled:alertsEnabled, email:recipientEmail })
+    onStartCheckout({ landingPageEnabled })
   }
 
   return (
@@ -617,36 +603,30 @@ function PlanCheckoutCard({
           ))}
         </div>
 
-        <div style={{ background:alertsEnabled ? '#EFF6FF' : '#F8FAFC', border:`1px solid ${alertsEnabled ? '#93C5FD' : C.border}`, borderRadius:16, overflow:'hidden', marginBottom:16 }}>
+        <div style={{ background:landingPageEnabled ? '#EFF6FF' : '#F8FAFC', border:`1px solid ${landingPageEnabled ? '#93C5FD' : C.border}`, borderRadius:16, overflow:'hidden', marginBottom:16 }}>
           <button
             type="button"
-            onClick={() => setAlertsOpen(open => !open)}
+            onClick={() => setLandingOpen(open => !open)}
             style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, padding:'13px 14px', border:'none', background:'transparent', cursor:'pointer', textAlign:'left' }}
           >
             <span>
-              <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:3 }}>🔔 Activa alertas de clientes potenciales</span>
-              <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.45 }}>CHF 49/mes extra · un solo pago en Stripe</span>
+              <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:3 }}>Landing page dedicada en Latido</span>
+              <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.45 }}>CHF 49/mes extra · página Latido x {provider?.name || 'Negocio'}</span>
             </span>
-            <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary }}>{alertsOpen ? '−' : '+'}</span>
+            <span style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.primary }}>{landingOpen ? '−' : '+'}</span>
           </button>
-          {alertsOpen && (
-            <div style={{ padding:'0 14px 14px', borderTop:`1px solid ${alertsEnabled ? '#BFDBFE' : C.border}` }}>
+          {landingOpen && (
+            <div style={{ padding:'0 14px 14px', borderTop:`1px solid ${landingPageEnabled ? '#BFDBFE' : C.border}` }}>
               <label style={{ display:'flex', alignItems:'center', gap:9, margin:'13px 0', cursor:'pointer' }}>
-                <input type="checkbox" checked={alertsEnabled} onChange={event => setAlertsEnabled(event.target.checked)} />
-                <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text }}>Sí, quiero recibir alertas para este negocio</span>
+                <input type="checkbox" checked={landingPageEnabled} onChange={event => setLandingPageEnabled(event.target.checked)} />
+                <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text }}>Sí, quiero crear una landing dedicada</span>
               </label>
               <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.55, margin:'0 0 11px' }}>
-                Usaremos los servicios, la categoría y la zona ya guardados para <strong>{provider?.name}</strong>. Cuando alguien publique una búsqueda relacionada, recibirás un aviso interno y por email.
+                Latido crea automáticamente una página pública con formato de colaboración, usando el logo, descripción, servicios y contactos guardados de <strong>{provider?.name}</strong>.
               </p>
               {businessDetails?.services?.length > 0 && <p style={{ fontFamily:PP, fontSize:10, color:C.light, lineHeight:1.5, margin:'0 0 9px' }}>Servicios: {businessDetails.services.join(', ')}</p>}
               {(businessDetails?.city || businessDetails?.canton) && <p style={{ fontFamily:PP, fontSize:10, color:C.light, lineHeight:1.5, margin:'0 0 10px' }}>Zona: {[businessDetails.city, businessDetails.canton].filter(Boolean).join(' · ')}</p>}
-              {alertsEnabled && !hasBusinessEmail && (
-                <>
-                  <label style={{ display:'block', fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, marginBottom:6 }}>Email para recibir las alertas</label>
-                  <input type="email" value={alertsEmail} onChange={event => setAlertsEmail(event.target.value)} placeholder="empresa@ejemplo.ch" style={{ width:'100%', boxSizing:'border-box', fontFamily:PP, fontSize:12, color:C.text, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 11px', outline:'none' }} />
-                </>
-              )}
-              {alertsEnabled && hasBusinessEmail && <p style={{ fontFamily:PP, fontSize:10, color:'#166534', background:'#DCFCE7', borderRadius:9, padding:'8px 9px', margin:'0' }}>Las alertas llegarán a {businessEmail}.</p>}
+              {landingPageEnabled && <p style={{ fontFamily:PP, fontSize:10, color:'#166534', background:'#DCFCE7', borderRadius:9, padding:'8px 9px', margin:'0' }}>La landing quedará activa al confirmarse el pago y se enlazará desde las tarjetas de colaborador.</p>}
             </div>
           )}
         </div>

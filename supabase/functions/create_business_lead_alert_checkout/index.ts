@@ -70,6 +70,11 @@ type Reservation = {
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers:cors(req) })
   if (req.method !== 'POST') return json(req, { ok:false, error:'METHOD_NOT_ALLOWED' }, 405)
+  return json(req, {
+    ok:false,
+    error:'ALERTS_INCLUDED_IN_PREMIUM',
+    message:'Las alertas de clientes potenciales ya no se venden como complemento separado. Se activan con Partner Premium.',
+  }, 410)
 
   let reservationId = ''
   let sessionId = ''
