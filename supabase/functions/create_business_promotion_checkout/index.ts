@@ -4,7 +4,9 @@ import { createClient } from 'npm:@supabase/supabase-js@2.101.1'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || ''
-const STRIPE_PRICE_ALERTS = Deno.env.get('STRIPE_PRICE_ALERTS') || ''
+const STRIPE_PRICE_LANDING_PAGE = Deno.env.get('STRIPE_PRICE_LANDING_PAGE')
+  || Deno.env.get('STRIPE_PRICE_ALERTS')
+  || ''
 const APP_URL = (Deno.env.get('LATIDO_APP_URL') || 'https://www.latido.ch')
   .replace(/\/+$/, '')
 
@@ -97,13 +99,13 @@ function getPlanConfig(value: unknown): PlanConfig {
   return PLAN_CONFIGS[key]
 }
 
-function requireStripeConfiguration(planConfig: PlanConfig, alertsEnabled = false) {
+function requireStripeConfiguration(planConfig: PlanConfig, landingPageEnabled = false) {
   if (
     !SUPABASE_URL
     || !SERVICE_ROLE_KEY
     || !STRIPE_SECRET_KEY
     || !planConfig.priceId
-    || (alertsEnabled && !STRIPE_PRICE_ALERTS)
+    || (landingPageEnabled && !STRIPE_PRICE_LANDING_PAGE)
   ) {
     throw new Error('STRIPE_NOT_CONFIGURED')
   }
@@ -196,11 +198,6 @@ function isUuid(value: unknown): value is string {
     && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
 
-function isEmail(value: unknown): value is string {
-  return typeof value === 'string'
-    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
-}
-
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders(req) })
@@ -215,17 +212,14 @@ Deno.serve(async req => {
   try {
     const body = await req.json().catch(() => ({}))
     const planConfig = getPlanConfig(body?.planKey)
-    const alertsEnabled = body?.alertsEnabled === true
-    const alertsEmail = typeof body?.alertsEmail === 'string' ? body.alertsEmail.trim() : ''
-    requireStripeConfiguration(planConfig, alertsEnabled)
+    const landingPageEnabled = body?.landingPageEnabled === true
+      || body?.landingEnabled === true
+    requireStripeConfiguration(planConfig, landingPageEnabled)
     const user = await requireUser(req)
     const providerId = body?.providerId
 
     if (!isUuid(providerId)) {
       return json(req, { ok: false, error: 'INVALID_PROVIDER_ID' }, 400)
-    }
-    if (alertsEnabled && !isEmail(alertsEmail)) {
-      return json(req, { ok:false, error:'ALERT_EMAIL_REQUIRED' }, 400)
     }
 
     let reservationResponse = await serviceClient
@@ -270,7 +264,13 @@ Deno.serve(async req => {
       }
 
       if (existingSession?.status === 'open') {
-        if (existingSession.locale === 'es' && existingSession.url) {
+        const existingLandingPageEnabled =
+          existingSession.metadata?.latido_landing_page_enabled === 'true'
+        if (
+          existingSession.locale === 'es'
+          && existingSession.url
+          && existingLandingPageEnabled === landingPageEnabled
+        ) {
           return json(req, {
             ok: true,
             url: existingSession.url,
@@ -278,8 +278,8 @@ Deno.serve(async req => {
           })
         }
 
-        // Checkout Sessions keep the locale used when they were created.
-        // Replace older German/automatic sessions instead of reusing them.
+        // Checkout Sessions keep their locale and line items. Replace older
+        // sessions when the language or landing extra selection changed.
         await stripe.checkout.sessions.expire(existingSession.id)
       }
 
@@ -306,8 +306,7 @@ Deno.serve(async req => {
       latido_provider_id: providerId,
       latido_user_id: user.id,
       latido_plan_key: planConfig.key,
-      latido_alerts_enabled: alertsEnabled ? 'true' : 'false',
-      ...(alertsEnabled ? { latido_alert_recipient_email:alertsEmail } : {}),
+      latido_landing_page_enabled: landingPageEnabled ? 'true' : 'false',
     }
 
     if (checkoutCustomerId) {
@@ -329,7 +328,7 @@ Deno.serve(async req => {
       client_reference_id: reservationId,
       line_items: [
         { price: planConfig.priceId, quantity: 1 },
-        ...(alertsEnabled ? [{ price: STRIPE_PRICE_ALERTS, quantity: 1 }] : []),
+        ...(landingPageEnabled ? [{ price: STRIPE_PRICE_LANDING_PAGE, quantity: 1 }] : []),
       ],
       success_url:
         `${APP_URL}/negocios/${providerId}/destacar?plan=${planParam}&checkout=success&session_id={CHECKOUT_SESSION_ID}`,
@@ -339,10 +338,10 @@ Deno.serve(async req => {
       metadata,
       subscription_data: {
         metadata,
-        description: `Latido - ${planConfig.label}${alertsEnabled ? ' + Alertas de clientes potenciales' : ''}`,
+        description: `Latido - ${planConfig.label}${landingPageEnabled ? ' + Landing page dedicada' : ''}`,
       },
     }, {
-      idempotencyKey: `latido-promotion-checkout-es-v3-${reservationId}`,
+      idempotencyKey: `latido-promotion-checkout-es-v4-${reservationId}-${landingPageEnabled ? 'landing' : 'plan'}`,
     })
 
     if (!session.url) throw new Error('CHECKOUT_URL_MISSING')

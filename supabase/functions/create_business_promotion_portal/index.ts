@@ -4,6 +4,9 @@ import { createClient } from 'npm:@supabase/supabase-js@2.101.1'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || ''
+const STRIPE_PRICE_LANDING_PAGE = Deno.env.get('STRIPE_PRICE_LANDING_PAGE')
+  || Deno.env.get('STRIPE_PRICE_ALERTS')
+  || ''
 const APP_URL = (Deno.env.get('LATIDO_APP_URL') || 'https://www.latido.ch')
   .replace(/\/+$/, '')
 
@@ -146,6 +149,23 @@ function getStripeId(value: unknown) {
   return null
 }
 
+type LatidoMetadata = {
+  latido_provider_id?: string
+  latido_plan_key?: string
+  latido_landing_page_enabled?: string
+}
+
+function metadataFor(value: { metadata?: Stripe.Metadata | null }): LatidoMetadata {
+  return (value.metadata || {}) as LatidoMetadata
+}
+
+function subscriptionHasPrice(subscription: Stripe.Subscription, priceId = '') {
+  if (!priceId) return false
+  return subscription.items?.data?.some(subscriptionItem =>
+    getStripeId(subscriptionItem.price) === priceId
+  ) || false
+}
+
 function getPlanKey(value: unknown): PlanKey {
   return typeof value === 'string' && value in PLAN_CONFIGS
     ? value as PlanKey
@@ -157,12 +177,15 @@ function getSubscriptionPeriod(subscription: Stripe.Subscription) {
     PRICE_TO_PLAN.has(getStripeId(subscriptionItem.price) || '')
   ) || subscription.items?.data?.[0]
 
+  const priceId = getStripeId(item?.price)
   const start = item?.current_period_start
   const end = item?.current_period_end || item?.billed_until
 
   return {
     start:typeof start === 'number' ? new Date(start * 1000).toISOString() : null,
     end:typeof end === 'number' ? new Date(end * 1000).toISOString() : null,
+    priceId,
+    planKey:priceId ? PRICE_TO_PLAN.get(priceId) || null : null,
   }
 }
 
@@ -258,6 +281,9 @@ Deno.serve(async req => {
 
       const period = getSubscriptionPeriod(stripeSubscription)
       const cancellationScheduled = hasScheduledCancellation(stripeSubscription)
+      const metadata = metadataFor(stripeSubscription)
+      const planKey = metadata.latido_plan_key || period.planKey
+      const isActive = ['active', 'trialing'].includes(stripeSubscription.status)
       const { error: syncError } = await serviceClient
         .rpc('sync_featured_promotion_subscription_state', {
           p_subscription_id: stripeSubscription.id,
@@ -270,6 +296,40 @@ Deno.serve(async req => {
         })
 
       if (syncError) throw syncError
+
+      const landingEnabled = isActive
+        && metadata.latido_landing_page_enabled === 'true'
+        && subscriptionHasPrice(stripeSubscription, STRIPE_PRICE_LANDING_PAGE)
+
+      const { error: landingSyncError } = await serviceClient
+        .rpc('sync_business_landing_from_promotion', {
+          p_provider_id: metadata.latido_provider_id || providerId,
+          p_enabled: landingEnabled,
+          p_period_start: landingEnabled ? period.start : null,
+          p_period_end: landingEnabled ? period.end : null,
+        })
+
+      if (landingSyncError) {
+        console.warn('Business landing portal sync failed:', errorMessage(landingSyncError))
+      }
+
+      if (planKey === 'premium') {
+        const { error: alertsSyncError } = await serviceClient
+          .rpc('sync_business_lead_alert_subscription_state', {
+            p_subscription_id: stripeSubscription.id,
+            p_customer_id: getStripeId(stripeSubscription.customer),
+            p_status: stripeSubscription.status,
+            p_period_start: period.start,
+            p_period_end: period.end,
+            p_cancel_at_period_end: cancellationScheduled,
+            p_last_error: null,
+          })
+
+        if (alertsSyncError) {
+          console.warn('Business lead alert portal sync failed:', errorMessage(alertsSyncError))
+        }
+      }
+
       syncedSubscriptions.push({
         id:stripeSubscription.id,
         status:stripeSubscription.status,

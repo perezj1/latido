@@ -27,7 +27,7 @@ const STEPS = [
 const NEGOCIO_TYPES_FORM = VISIBLE_NEGOCIO_TYPES.filter(t => t.id !== '')
 const PROFESSIONAL_CONFETTI_EMBED_URL = 'https://lottie.host/embed/6a54f360-7100-4a5c-a6ae-a5f2287488d8/lR9bbFp6Qg.json'
 const PROFESSIONAL_PLAN_OPTIONS = BUSINESS_PROMOTION_PLAN_DETAIL_LIST
-const LEAD_ALERTS_MONTHLY_PRICE = 49
+const LANDING_PAGE_MONTHLY_PRICE = 49
 
 export default function RegistrarNegocio() {
   const { isLoggedIn, user } = useAuth()
@@ -44,7 +44,7 @@ export default function RegistrarNegocio() {
   const [professionalOptionsOpen, setProfessionalOptionsOpen] = useState(false)
   const [professionalOptionsActive, setProfessionalOptionsActive] = useState(false)
   const [selectedProfessionalPlan, setSelectedProfessionalPlan] = useState('')
-  const [leadAlertsSelected, setLeadAlertsSelected] = useState(false)
+  const [landingPageSelected, setLandingPageSelected] = useState(false)
   const [form, setForm] = useState({
     type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[],
   })
@@ -52,7 +52,6 @@ export default function RegistrarNegocio() {
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   const websitePattern = /^(https?:\/\/)?[^\s@]+\.[^\s@]{2,}(\/.*)?$/i
   const hasContactInfo = () => [form.phone, form.email, form.instagram].some(value => value.trim())
-  const hasConfiguredServices = () => form.services.split(',').some(service => service.trim())
   const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'6px 2px 0', lineHeight:1.45 }
 
   const clearFieldError = key => {
@@ -123,16 +122,6 @@ export default function RegistrarNegocio() {
       ...getStepErrors(0),
       ...getStepErrors(1),
       ...getStepErrors(2),
-    }
-    if (PAID_BUSINESS_FEATURES_VISIBLE && leadAlertsSelected) {
-      if (!form.email.trim()) {
-        next.email = 'Añade un email para recibir las alertas.'
-      } else if (!emailPattern.test(form.email.trim())) {
-        next.email = 'Introduce un email válido para recibir alertas.'
-      }
-      if (!hasConfiguredServices()) {
-        next.services = 'Añade al menos un servicio para poder enviarte alertas relevantes.'
-      }
     }
     return next
   }
@@ -230,7 +219,7 @@ export default function RegistrarNegocio() {
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades?view=negocios')}>Ver negocios →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setProfessionalOptionsOpen(false); setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLeadAlertsSelected(false); setErrors({}); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setProfessionalOptionsOpen(false); setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLandingPageSelected(false); setErrors({}); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro negocio
       </button>
     </div>
@@ -240,14 +229,6 @@ export default function RegistrarNegocio() {
     if (!validateBeforePublish()) return
     if (!form.name || !form.canton) { toast.error('Completa el nombre y el cantón'); return }
     const hasContact = [form.phone, form.email, form.instagram].some(value => value.trim())
-    if (PAID_BUSINESS_FEATURES_VISIBLE && leadAlertsSelected && !form.email.trim()) {
-      toast.error('Añade un email para recibir las alertas de clientes potenciales')
-      return
-    }
-    if (PAID_BUSINESS_FEATURES_VISIBLE && leadAlertsSelected && !form.services.split(',').some(service => service.trim())) {
-      toast.error('Añade al menos un servicio para poder encontrar clientes potenciales')
-      return
-    }
     if (!hasContact) { toast.error('Añade al menos un método de contacto'); return }
     const moderation = analyzeContent(form.name, form.desc, form.services, form.website)
     if (moderation.action === 'block') {
@@ -346,23 +327,14 @@ export default function RegistrarNegocio() {
         needsReview,
       })
 
-      if (PAID_BUSINESS_FEATURES_VISIBLE && (selectedProfessionalPlan || leadAlertsSelected) && !needsReview && data?.id) {
-        const checkoutFunction = selectedProfessionalPlan
-          ? 'create_business_promotion_checkout'
-          : 'create_business_lead_checkout'
-        const checkoutBody = selectedProfessionalPlan
-          ? {
-              providerId:data.id,
-              planKey:selectedProfessionalPlan,
-              alertsEnabled:leadAlertsSelected,
-              alertsEmail:form.email.trim(),
-            }
-          : {
-              providerId:data.id,
-              recipientEmail:form.email.trim(),
-            }
+      if (PAID_BUSINESS_FEATURES_VISIBLE && selectedProfessionalPlan && !needsReview && data?.id) {
+        const checkoutBody = {
+          providerId:data.id,
+          planKey:selectedProfessionalPlan,
+          landingPageEnabled:landingPageSelected,
+        }
         const { data: checkout, error: checkoutError } = await supabase.functions
-          .invoke(checkoutFunction, { body:checkoutBody })
+          .invoke('create_business_promotion_checkout', { body:checkoutBody })
 
         if (checkoutError || !checkout?.url) {
           console.error('Business promotion checkout failed:', checkoutError || checkout)
@@ -377,8 +349,8 @@ export default function RegistrarNegocio() {
         return
       }
 
-      if (PAID_BUSINESS_FEATURES_VISIBLE && (selectedProfessionalPlan || leadAlertsSelected) && needsReview) {
-        toast('El negocio se enviará a revisión antes de poder activar el plan o las alertas.', { icon:'ℹ️' })
+      if (PAID_BUSINESS_FEATURES_VISIBLE && selectedProfessionalPlan && needsReview) {
+        toast('El negocio se enviará a revisión antes de poder activar el plan o la landing.', { icon:'ℹ️' })
       }
       setPublishedForReview(needsReview)
       setProfessionalUnlockOpen(PAID_BUSINESS_FEATURES_VISIBLE)
@@ -400,9 +372,17 @@ export default function RegistrarNegocio() {
   const selectedPlanOption = PAID_BUSINESS_FEATURES_VISIBLE
     ? PROFESSIONAL_PLAN_OPTIONS.find(plan => plan.key === selectedProfessionalPlan)
     : null
-  const paidLeadAlertsSelected = PAID_BUSINESS_FEATURES_VISIBLE && leadAlertsSelected
-  const professionalTotal = (selectedPlanOption?.monthlyPrice || 0) + (paidLeadAlertsSelected ? LEAD_ALERTS_MONTHLY_PRICE : 0)
-  const hasPaidSelection = PAID_BUSINESS_FEATURES_VISIBLE && Boolean(selectedPlanOption || paidLeadAlertsSelected)
+  const paidLandingPageSelected = PAID_BUSINESS_FEATURES_VISIBLE && selectedPlanOption && landingPageSelected
+  const professionalTotal = (selectedPlanOption?.monthlyPrice || 0) + (paidLandingPageSelected ? LANDING_PAGE_MONTHLY_PRICE : 0)
+  const hasPaidSelection = PAID_BUSINESS_FEATURES_VISIBLE && Boolean(selectedPlanOption)
+
+  const toggleLandingPageExtra = () => {
+    if (!selectedPlanOption) {
+      toast('Elige primero un plan profesional.', { icon:'ℹ️' })
+      return
+    }
+    setLandingPageSelected(selected => !selected)
+  }
 
   const handleCoverUpload = async files => {
     const file = files?.[0]
@@ -622,7 +602,7 @@ export default function RegistrarNegocio() {
                 <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text }}>Potenciar tu negocio</span>
                 <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.light, marginTop:2 }}>
                   {selectedPlanOption
-                    ? `${selectedPlanOption.label}${paidLeadAlertsSelected ? ' + Alertas' : ''} · CHF ${professionalTotal}/mes`
+                    ? `${selectedPlanOption.label}${paidLandingPageSelected ? ' + Landing' : ''} · CHF ${professionalTotal}/mes`
                     : professionalOptionsActive
                       ? 'Elige un plan para activarlo'
                       : 'Opcional · elige un plan cuando quieras'}
@@ -639,6 +619,7 @@ export default function RegistrarNegocio() {
               if (professionalOptionsActive) {
                 setProfessionalOptionsActive(false)
                 setSelectedProfessionalPlan('')
+                setLandingPageSelected(false)
                 setProfessionalOptionsOpen(false)
               } else {
                 setProfessionalOptionsActive(true)
@@ -707,7 +688,7 @@ export default function RegistrarNegocio() {
               </div>
               <button
                 type="button"
-                onClick={() => { setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setProfessionalOptionsOpen(false) }}
+                onClick={() => { setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLandingPageSelected(false); setProfessionalOptionsOpen(false) }}
                 style={{ width:'100%', border:'none', background:'transparent', cursor:'pointer', padding:'12px 4px 0', color:C.mid, fontFamily:PP, fontWeight:700, fontSize:11 }}
               >
                 Continuar solo con el perfil gratuito
@@ -716,44 +697,38 @@ export default function RegistrarNegocio() {
           )}
         </section>
         <div style={{ marginTop:12 }}>
-          <div style={{ width:'100%', padding:'12px 14px 12px 16px', border:`1.5px solid ${leadAlertsSelected ? '#14B8A6' : C.border}`, borderRadius:16, background:leadAlertsSelected ? '#F0FDFA' : '#fff', display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ width:'100%', padding:'12px 14px 12px 16px', border:`1.5px solid ${landingPageSelected ? C.primary : C.border}`, borderRadius:16, background:landingPageSelected ? C.primaryLight : '#fff', display:'flex', alignItems:'center', gap:12 }}>
             <span style={{ width:34, height:34, flex:'0 0 34px', borderRadius:11, background:'#ECFEFF', display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>📣</span>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
                 <button
                   type="button"
-                  onClick={() => setLeadAlertsSelected(selected => !selected)}
+                  onClick={toggleLandingPageExtra}
                   style={{ flex:1, minWidth:0, padding:0, border:'none', background:'transparent', cursor:'pointer', textAlign:'left', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text }}
                 >
-                  Alertas de clientes potenciales
+                  Landing page en Latido
                 </button>
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={leadAlertsSelected}
-                  aria-label={leadAlertsSelected ? 'Desactivar alertas de clientes potenciales' : 'Activar alertas de clientes potenciales'}
-                  onClick={() => setLeadAlertsSelected(selected => !selected)}
-                  style={{ width:46, height:28, flex:'0 0 46px', padding:3, border:'none', borderRadius:999, background:leadAlertsSelected ? '#14B8A6' : '#CBD5E1', cursor:'pointer', transition:'background .18s ease' }}
+                  aria-checked={landingPageSelected}
+                  aria-label={landingPageSelected ? 'Desactivar landing page en Latido' : 'Activar landing page en Latido'}
+                  onClick={toggleLandingPageExtra}
+                  style={{ width:46, height:28, flex:'0 0 46px', padding:3, border:'none', borderRadius:999, background:landingPageSelected ? C.primary : '#CBD5E1', cursor:'pointer', transition:'background .18s ease' }}
                 >
-                  <span style={{ width:22, height:22, borderRadius:'50%', background:'#fff', display:'block', transform:leadAlertsSelected ? 'translateX(18px)' : 'translateX(0)', transition:'transform .18s ease', boxShadow:'0 1px 3px rgba(15,23,42,.2)' }} />
+                  <span style={{ width:22, height:22, borderRadius:'50%', background:'#fff', display:'block', transform:landingPageSelected ? 'translateX(18px)' : 'translateX(0)', transition:'transform .18s ease', boxShadow:'0 1px 3px rgba(15,23,42,.2)' }} />
                 </button>
               </div>
               <button
                 type="button"
-                onClick={() => setLeadAlertsSelected(selected => !selected)}
+                onClick={toggleLandingPageExtra}
                 style={{ width:'100%', marginTop:4, padding:0, border:'none', background:'transparent', cursor:'pointer', display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:18, textAlign:'left' }}
               >
-                <span style={{ minWidth:0, fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.45 }}>Recibe avisos cuando alguien publique un anuncio buscando servicios como los que ofreces.</span>
+                <span style={{ minWidth:0, fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.45 }}>Crea una página dedicada Latido x Negocio con tus servicios, zona y botones de contacto.</span>
                 <span style={{ flex:'0 0 auto', marginTop:22, marginLeft:8, fontFamily:PP, fontWeight:900, fontSize:12, color:'#0F9F8E', whiteSpace:'nowrap' }}>CHF 49<small style={{ fontSize:9, fontWeight:700 }}> /mes</small></span>
               </button>
             </div>
           </div>
-          {paidLeadAlertsSelected && !form.email.trim() && (
-            <div style={{ marginTop:12 }}>
-              <Input label="Email para recibir las alertas *" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={event => s('email', event.target.value)} error={errors.email} errorKey="email" />
-              <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.5, margin:'-4px 2px 0' }}>Usaremos este email solo para enviarte los anuncios que coincidan con tus servicios y zona.</p>
-            </div>
-          )}
           {hasPaidSelection && (
             <div style={{ marginTop:12, borderRadius:12, background:C.bg, padding:'12px', display:'grid', gap:8 }}>
               {selectedPlanOption && (
@@ -762,10 +737,10 @@ export default function RegistrarNegocio() {
                   <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {selectedPlanOption.monthlyPrice}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
                 </div>
               )}
-              {paidLeadAlertsSelected && (
+              {paidLandingPageSelected && (
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-                  <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>Alertas de clientes potenciales</span>
-                  <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {LEAD_ALERTS_MONTHLY_PRICE}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
+                  <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>Landing page en Latido</span>
+                  <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {LANDING_PAGE_MONTHLY_PRICE}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
                 </div>
               )}
               <div style={{ height:1, background:C.border, margin:'2px 0' }} />

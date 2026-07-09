@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { normalizeExternalUrl } from './links'
+import { getBusinessLandingPath } from './seo'
 
 const ACTIVE_PARTNER_PLANS = new Set(['basic', 'premium'])
 const PLAN_ORDER = { premium:0, basic:1 }
@@ -17,6 +18,21 @@ export function getBusinessPartnerAccent(planKey = 'basic') {
 function cleanText(value = '', fallback = '') {
   const text = String(value || '').trim()
   return text || fallback
+}
+
+function toTimestamp(value) {
+  if (!value) return null
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : null
+}
+
+export function hasActiveBusinessLanding(provider = {}, now = Date.now()) {
+  if (provider.partner_landing_enabled !== true) return false
+  const startsAt = toTimestamp(provider.partner_landing_starts_at)
+  const endsAt = toTimestamp(provider.partner_landing_ends_at)
+  if (startsAt && startsAt > now) return false
+  if (endsAt && endsAt <= now) return false
+  return true
 }
 
 function getWhatsappUrl(value = '') {
@@ -138,6 +154,14 @@ function getBusinessPartnerContactActions(provider = {}) {
 }
 
 export function getBusinessPartnerDestination(provider = {}) {
+  if (hasActiveBusinessLanding(provider)) {
+    return {
+      href:getBusinessLandingPath(provider),
+      label:cleanText(provider.partner_cta_label, 'Ver landing en Latido'),
+      external:false,
+    }
+  }
+
   const customUrl = normalizeExternalUrl(provider.partner_cta_url)
   const websiteUrl = normalizeExternalUrl(provider.website)
   const whatsappUrl = getWhatsappUrl(provider.whatsapp)
@@ -207,6 +231,7 @@ export function normalizeBusinessPartner(provider = {}) {
     contactActions:getBusinessPartnerContactActions(provider),
     accent:getBusinessPartnerAccent(planKey),
     city:provider.city || provider.canton || '',
+    landingUrl:hasActiveBusinessLanding(provider) ? getBusinessLandingPath(provider) : '',
   }
 }
 
@@ -241,6 +266,9 @@ export async function fetchActiveBusinessPartners({
       partner_card_description,
       partner_cta_label,
       partner_cta_url,
+      partner_landing_enabled,
+      partner_landing_starts_at,
+      partner_landing_ends_at,
       partner_published
     `)
     .eq('active', true)

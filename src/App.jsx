@@ -49,6 +49,7 @@ const SynaPartnerContact = lazy(() => import('./pages/SynaPartnerContact'))
 const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
 const AlertasClientesPotenciales = lazy(() => import('./pages/AlertasClientesPotenciales'))
 const Virtus360Services = lazy(() => import('./pages/Virtus360Services'))
+const BusinessPartnerLanding = lazy(() => import('./pages/BusinessPartnerLanding'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
@@ -482,6 +483,7 @@ function AppShell() {
   const isRoot = pathname === '/'
   const isPartnerServices = pathname === '/servicios-suiza'
   const isVirtus360Services = pathname === '/servicios-virtus360'
+  const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
 
   useEffect(() => {
@@ -618,6 +620,19 @@ function AppShell() {
         <CookieConsent />
         <Suspense fallback={<AppLoading />}>
           <Virtus360Services />
+        </Suspense>
+      </>
+    )
+  }
+
+  if (isBusinessPartnerLanding) {
+    return (
+      <>
+        <CookieConsent />
+        <Suspense fallback={<AppLoading />}>
+          <Routes>
+            <Route path="/latido-x/:businessSlug" element={<BusinessPartnerLanding />} />
+          </Routes>
         </Suspense>
       </>
     )

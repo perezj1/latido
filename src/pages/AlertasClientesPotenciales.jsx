@@ -219,7 +219,7 @@ export default function AlertasClientesPotenciales() {
         <p style={{ fontFamily:PP, color:C.mid, fontSize:14, lineHeight:1.6, margin:'0 0 17px' }}>No esperes a que el cliente te encuentre. Latido te avisa cuando alguien busca un servicio como el tuyo.</p>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
           <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:state.color, background:state.background, padding:'8px 11px', borderRadius:999 }}>{state.label}</span>
-          <span style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text }}>CHF 49 / mes</span>
+          <span style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text }}>Incluidas en Premium</span>
         </div>
       </section>
 
@@ -254,9 +254,9 @@ export default function AlertasClientesPotenciales() {
         </section>
       ) : (
         <section style={{ ...cardStyle, borderColor:C.primaryMid, background:'#F8FBFF' }}>
-          <h2 style={headingStyle}>Activa tus alertas</h2>
-          <p style={helpStyle}>CHF 49 al mes, sin incluirse en ningún plan. Solo esta empresa recibirá las coincidencias.</p>
-          <button onClick={startCheckout} disabled={checkingOut || saving} style={primaryButton}>{checkingOut ? 'Abriendo pago...' : 'Activar alertas · CHF 49/mes'}</button>
+          <h2 style={headingStyle}>Incluidas en Partner Premium</h2>
+          <p style={helpStyle}>Las alertas de clientes potenciales ya no se venden como complemento separado. Se activan automáticamente con el plan Premium del negocio.</p>
+          <button onClick={() => navigate(`/negocios/${providerId}/destacar?plan=premium`)} disabled={saving} style={primaryButton}>Ver plan Premium</button>
         </section>
       )}
 

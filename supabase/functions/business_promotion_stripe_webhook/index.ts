@@ -5,6 +5,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || ''
 const STRIPE_WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
+const STRIPE_PRICE_LANDING_PAGE = Deno.env.get('STRIPE_PRICE_LANDING_PAGE')
+  || Deno.env.get('STRIPE_PRICE_ALERTS')
+  || ''
 
 const PLAN_CONFIGS = {
   featured: {
@@ -127,10 +130,18 @@ type LatidoMetadata = {
   latido_provider_id?: string
   latido_user_id?: string
   latido_plan_key?: string
+  latido_landing_page_enabled?: string
 }
 
 function metadataFor(value: { metadata?: Stripe.Metadata | null }): LatidoMetadata {
   return (value.metadata || {}) as LatidoMetadata
+}
+
+function subscriptionHasPrice(subscription: Stripe.Subscription, priceId = '') {
+  if (!priceId) return false
+  return subscription.items?.data?.some(subscriptionItem =>
+    getStripeId(subscriptionItem.price) === priceId
+  ) || false
 }
 
 async function retrieveSubscription(subscriptionId: string) {
@@ -155,6 +166,49 @@ async function syncSubscriptionState(
     })
 
   if (error) throw error
+
+  const metadata = metadataFor(subscription)
+  const providerId = metadata.latido_provider_id
+  const planKey = metadata.latido_plan_key || period.planKey
+  const isActive = ['active', 'trialing'].includes(statusOverride || subscription.status)
+  if (providerId) {
+    const landingEnabled = isActive
+      && metadata.latido_landing_page_enabled === 'true'
+      && subscriptionHasPrice(subscription, STRIPE_PRICE_LANDING_PAGE)
+
+    const { error: landingSyncError } = await serviceClient
+      .rpc('sync_business_landing_from_promotion', {
+        p_provider_id: providerId,
+        p_enabled: landingEnabled,
+        p_period_start: landingEnabled ? period.start : null,
+        p_period_end: landingEnabled ? period.end : null,
+      })
+
+    if (landingSyncError && errorMessage(landingSyncError).includes('sync_business_landing_from_promotion')) {
+      console.warn('Business landing sync function missing:', errorMessage(landingSyncError))
+    } else if (landingSyncError) {
+      throw landingSyncError
+    }
+  }
+
+  if (planKey === 'premium') {
+    const { error: alertsSyncError } = await serviceClient
+      .rpc('sync_business_lead_alert_subscription_state', {
+        p_subscription_id: subscription.id,
+        p_customer_id: getStripeId(subscription.customer),
+        p_status: statusOverride || subscription.status,
+        p_period_start: period.start,
+        p_period_end: period.end,
+        p_cancel_at_period_end: hasScheduledCancellation(subscription),
+        p_last_error: lastError,
+      })
+
+    if (alertsSyncError && errorMessage(alertsSyncError).includes('sync_business_lead_alert_subscription_state')) {
+      console.warn('Business lead alert sync function missing:', errorMessage(alertsSyncError))
+    } else if (alertsSyncError) {
+      throw alertsSyncError
+    }
+  }
 }
 
 async function activateSubscription(subscription: Stripe.Subscription) {
@@ -217,6 +271,39 @@ async function activateSubscription(subscription: Stripe.Subscription) {
   }
 
   if (activateResponse.error) throw activateResponse.error
+
+  const landingEnabled = metadata.latido_landing_page_enabled === 'true'
+    && subscriptionHasPrice(subscription, STRIPE_PRICE_LANDING_PAGE)
+
+  if (landingEnabled) {
+    const { error: landingError } = await serviceClient
+      .rpc('activate_business_landing_from_promotion', {
+        p_provider_id: metadata.latido_provider_id,
+        p_user_id: metadata.latido_user_id,
+        p_price_id: STRIPE_PRICE_LANDING_PAGE,
+        p_period_start: period.start,
+        p_period_end: period.end,
+      })
+
+    if (landingError) throw landingError
+  }
+
+  if (planKey === 'premium') {
+    const { error: alertsError } = await serviceClient
+      .rpc('activate_business_lead_alert_from_promotion', {
+        p_provider_id: metadata.latido_provider_id,
+        p_user_id: metadata.latido_user_id,
+        p_subscription_id: subscription.id,
+        p_customer_id: getStripeId(subscription.customer),
+        p_price_id: `included:${period.priceId}`,
+        p_period_start: period.start,
+        p_period_end: period.end,
+        p_recipient_email: '',
+        p_cancel_at_period_end: hasScheduledCancellation(subscription),
+      })
+
+    if (alertsError) throw alertsError
+  }
 }
 
 function invoiceSubscriptionId(invoice: Stripe.Invoice) {
