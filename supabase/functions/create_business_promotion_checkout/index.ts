@@ -198,6 +198,11 @@ function isUuid(value: unknown): value is string {
     && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
 
+function isEmail(value: unknown): value is string {
+  return typeof value === 'string'
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders(req) })
@@ -220,6 +225,23 @@ Deno.serve(async req => {
 
     if (!isUuid(providerId)) {
       return json(req, { ok: false, error: 'INVALID_PROVIDER_ID' }, 400)
+    }
+
+    let premiumAlertEmail = ''
+    if (planConfig.key === 'premium') {
+      const { data: providerEmailData, error: providerEmailError } = await serviceClient
+        .from('providers')
+        .select('email')
+        .eq('id', providerId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (providerEmailError) throw providerEmailError
+      if (!providerEmailData) throw new Error('PROVIDER_NOT_FOUND')
+      if (!isEmail(providerEmailData.email)) {
+        return json(req, { ok: false, error: 'PREMIUM_EMAIL_REQUIRED' }, 400)
+      }
+      premiumAlertEmail = providerEmailData.email.trim().toLowerCase()
     }
 
     let reservationResponse = await serviceClient
@@ -307,6 +329,7 @@ Deno.serve(async req => {
       latido_user_id: user.id,
       latido_plan_key: planConfig.key,
       latido_landing_page_enabled: landingPageEnabled ? 'true' : 'false',
+      ...(premiumAlertEmail ? { latido_alert_recipient_email: premiumAlertEmail } : {}),
     }
 
     if (checkoutCustomerId) {
@@ -389,6 +412,7 @@ Deno.serve(async req => {
       ALREADY_PROMOTED: 409,
       SUBSCRIPTION_EXISTS: 409,
       CHECKOUT_OPEN_OTHER_PLAN: 409,
+      PREMIUM_EMAIL_REQUIRED: 400,
       STRIPE_NOT_CONFIGURED: 503,
     }
     const databaseErrorCode = Object.keys(knownErrors)

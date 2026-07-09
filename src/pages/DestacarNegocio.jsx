@@ -8,6 +8,7 @@ import { BUSINESS_PROMOTION_PLAN_DETAILS, PAID_BUSINESS_FEATURES_VISIBLE } from 
 const PENDING_STATUSES = new Set(['reserved', 'checkout_open', 'processing'])
 const PLAN_KEYS = ['featured', 'basic', 'premium']
 const PLAN_KEY_SET = new Set(PLAN_KEYS)
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const PLAN_COPY = BUSINESS_PROMOTION_PLAN_DETAILS
 
@@ -33,6 +34,7 @@ function friendlyError(code='') {
     SUBSCRIPTION_EXISTS:'Ya existe una suscripción asociada a este negocio.',
     CHECKOUT_OPEN_OTHER_PLAN:'Ya hay un pago abierto para otro plan. Continúalo o espera unos minutos para intentarlo de nuevo.',
     CHECKOUT_EXPIRED_RETRY:'La reserva anterior ha caducado. Pulsa de nuevo para continuar.',
+    PREMIUM_EMAIL_REQUIRED:'Añade un email válido al negocio antes de activar Premium. Las alertas se enviarán a esa dirección.',
     STRIPE_NOT_CONFIGURED:'Stripe aún no está configurado en Supabase.',
     STRIPE_PRICE_NOT_FOUND:'La tarifa configurada no pertenece a esta cuenta de Stripe.',
     STRIPE_KEY_INVALID:'La clave privada de Stripe no es válida o ha caducado.',
@@ -42,6 +44,10 @@ function friendlyError(code='') {
   }
 
   return messages[code] || 'No se pudo completar la operación. Inténtalo de nuevo.'
+}
+
+function hasValidEmail(value='') {
+  return EMAIL_PATTERN.test(String(value).trim())
 }
 
 async function getFunctionErrorPayload(error, data, response) {
@@ -491,6 +497,7 @@ export default function DestacarNegocio() {
 }
 
 function PlanCheckoutCard({
+  planKey,
   planCopy,
   provider,
   businessDetails,
@@ -524,8 +531,14 @@ function PlanCheckoutCard({
     ? '#DCFCE7'
     : paymentPending || availableSlots > 0 ? '#DBEAFE' : '#FEE2E2'
   const totalMonthlyPrice = Number(planCopy.monthlyPrice || 0) + (landingPageEnabled ? 49 : 0)
+  const premiumEmailRequired = planKey === 'premium'
+  const premiumEmailReady = !premiumEmailRequired || hasValidEmail(businessDetails?.email)
 
   const continueCheckout = () => {
+    if (!premiumEmailReady) {
+      toast.error(friendlyError('PREMIUM_EMAIL_REQUIRED'))
+      return
+    }
     onStartCheckout({ landingPageEnabled })
   }
 
@@ -640,6 +653,16 @@ function PlanCheckoutCard({
           />
         )}
 
+        {premiumEmailRequired && !premiumEmailReady && (
+          <Notice
+            title="Email obligatorio para Premium"
+            text="Premium incluye alertas de clientes. Añade un email válido al negocio para recibirlas antes de pagar."
+            background="#FFF7ED"
+            border="#FED7AA"
+            color="#9A3412"
+          />
+        )}
+
         {selectedPlanActive && (
           <Notice
             title="Tu plan está activo"
@@ -676,10 +699,12 @@ function PlanCheckoutCard({
         ) : (
           <PrimaryButton
             onClick={continueCheckout}
-            disabled={!canStartCheckout || startingCheckout}
+            disabled={!canStartCheckout || startingCheckout || !premiumEmailReady}
           >
             {startingCheckout
               ? 'Reservando plaza...'
+              : !premiumEmailReady
+                ? 'Añade un email para continuar'
               : isPromoted
                 ? 'Plan activo'
                 : availableSlots < 1

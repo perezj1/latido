@@ -131,6 +131,7 @@ type LatidoMetadata = {
   latido_user_id?: string
   latido_plan_key?: string
   latido_landing_page_enabled?: string
+  latido_alert_recipient_email?: string
 }
 
 function metadataFor(value: { metadata?: Stripe.Metadata | null }): LatidoMetadata {
@@ -298,7 +299,7 @@ async function activateSubscription(subscription: Stripe.Subscription) {
         p_price_id: `included:${period.priceId}`,
         p_period_start: period.start,
         p_period_end: period.end,
-        p_recipient_email: '',
+        p_recipient_email: metadata.latido_alert_recipient_email || '',
         p_cancel_at_period_end: hasScheduledCancellation(subscription),
       })
 

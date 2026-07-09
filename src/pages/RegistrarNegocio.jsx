@@ -51,6 +51,8 @@ export default function RegistrarNegocio() {
   const [errors, setErrors] = useState({})
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   const websitePattern = /^(https?:\/\/)?[^\s@]+\.[^\s@]{2,}(\/.*)?$/i
+  const premiumEmailRequired = selectedProfessionalPlan === 'premium'
+  const premiumEmailMessage = 'El email es obligatorio para activar Premium y recibir alertas.'
   const hasContactInfo = () => [form.phone, form.email, form.instagram].some(value => value.trim())
   const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'6px 2px 0', lineHeight:1.45 }
 
@@ -86,13 +88,17 @@ export default function RegistrarNegocio() {
       if (!form.canton) next.canton = 'Selecciona el cantón del negocio.'
     }
     if (targetStep === 2) {
+      const email = form.email.trim()
       if (!hasContactInfo()) {
         const message = 'Añade al menos un contacto: teléfono, email o Instagram.'
         next.phone = message
         next.email = message
         next.instagram = message
       }
-      if (form.email.trim() && !emailPattern.test(form.email.trim())) {
+      if (premiumEmailRequired && !email) {
+        next.email = premiumEmailMessage
+      }
+      if (email && !emailPattern.test(email)) {
         next.email = 'Introduce un email válido.'
       }
       if (form.website.trim() && !websitePattern.test(form.website.trim())) {
@@ -514,11 +520,11 @@ export default function RegistrarNegocio() {
       {step === 2 && (
         <>
           <Input label="Teléfono / WhatsApp" placeholder="079 123 45 67 o +41 79 123 45 67" value={form.phone} onChange={e=>s('phone',e.target.value)} error={errors.phone} errorKey="phone" />
-          <Input label="Email" type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={e=>s('email',e.target.value)} error={errors.email} errorKey="email" />
+          <Input label={premiumEmailRequired ? 'Email *' : 'Email'} type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={e=>s('email',e.target.value)} error={errors.email} errorKey="email" />
           <Input label="Instagram" placeholder="@minegocio_zh" value={form.instagram} onChange={e=>s('instagram',e.target.value)} error={errors.instagram} errorKey="instagram" />
           <Input label="Web (opcional)" type="url" placeholder="minegocio.ch" value={form.website} onChange={e=>s('website',e.target.value)} error={errors.website} errorKey="website" />
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-4, marginBottom:12, lineHeight:1.6 }}>
-            Añade al menos un contacto: teléfono, email o Instagram. La web es opcional y se mostrará en tu perfil.
+            Añade al menos un contacto: teléfono, email o Instagram. La web es opcional y se mostrará en tu perfil.{premiumEmailRequired ? ' Para Premium el email es obligatorio porque las alertas se envían ahí.' : ''}
           </p>
           <Input label="Los 3 servicios principales que ofrece tu empresa" placeholder="Ej: Arepas, Menú casero, Delivery (separados por coma)" value={form.services} onChange={e=>s('services',e.target.value)} error={errors.services} errorKey="services" />
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, marginTop:-8, marginBottom:12, lineHeight:1.6 }}>
@@ -680,6 +686,11 @@ export default function RegistrarNegocio() {
                               </div>
                             ))}
                           </div>
+                          {plan.key === 'premium' && (
+                            <p style={{ fontFamily:PP, fontSize:10.5, color:'#9A3412', background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:10, padding:'8px 9px', margin:'10px 0 0', lineHeight:1.45 }}>
+                              Premium incluye alertas de clientes. Necesitamos un email válido del negocio para enviarlas.
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
