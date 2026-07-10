@@ -1,6 +1,6 @@
 import { C, PP } from '../lib/theme'
 
-export default function FavoriteButton({ isFav, onClick, style={} }) {
+export default function FavoriteButton({ isFav, onClick, label='', icon='', style={} }) {
   return (
     <button
       type="button"
@@ -28,7 +28,8 @@ export default function FavoriteButton({ isFav, onClick, style={} }) {
       aria-label={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
       title={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
     >
-      {isFav ? '❤️' : '🤍'}
+      <span aria-hidden="true">{icon || (isFav ? '❤️' : '🤍')}</span>
+      {label && <span>{label}</span>}
     </button>
   )
 }

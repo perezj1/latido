@@ -22,8 +22,8 @@ import { C, PP } from '../lib/theme'
 import { Tag, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CompactFilterSelect from '../components/CompactFilterSelect'
-import ShareButton, { buildShareUrl } from '../components/ShareButton'
-import FavoriteButton from '../components/FavoriteButton'
+import { buildShareUrl } from '../components/ShareButton'
+import DetailActionBar from '../components/DetailActionBar'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getBusinessPath, getEventPath, getIdFromSlug } from '../lib/seo'
 import { getMissingColumnName } from '../lib/supabaseCompat'
@@ -79,8 +79,8 @@ const BUSINESS_EMOJI = {
 }
 
 const COMMUNITY_SELECT = {
-  withPhoto:'id, cat, name, city, members, emoji, verified, desc, contact, photo_url, created_at',
-  safe:'id, cat, name, city, members, emoji, verified, desc, contact, created_at',
+  withPhoto:'id, user_id, cat, name, city, members, emoji, verified, desc, contact, photo_url, created_at',
+  safe:'id, user_id, cat, name, city, members, emoji, verified, desc, contact, created_at',
 }
 
 async function fetchCommunitiesForDirectory() {
@@ -195,6 +195,7 @@ function normalizeCommunity(group) {
 
   return {
     id: group.id,
+    user_id: group.user_id || '',
     cat: normalizedCat || '',
     name: (group.name || 'Grupo').replace(/Mam[aá]s Latinas/gi, 'Familias Latinas'),
     city: group.city || 'Suiza',
@@ -250,6 +251,7 @@ function normalizeProvider(provider) {
 
   return {
     id: provider.id,
+    user_id: provider.user_id || '',
     created_at: provider.created_at || '',
     emoji: BUSINESS_EMOJI[provider.category] || '🏪',
     name: provider.name,
@@ -297,6 +299,7 @@ function normalizeEvent(event) {
 
   return {
     id: event.id,
+    user_id: event.user_id || '',
     type: event.type,
     emoji: event.emoji || EVENT_EMOJI[event.type] || '🎉',
     title: event.title,
@@ -331,42 +334,6 @@ function normalizeProviderReview(review) {
     date: formatRelativeDate(review.created_at),
     text: review.text || '',
   }
-}
-
-function getRecommendationCopy(count=0) {
-  if (count <= 0) {
-    return {
-      title:'Sé la primera persona en recomendarlo',
-      helper:'Tu recomendación ayuda a otros en la comunidad.',
-    }
-  }
-  if (count === 1) return { title:'1 persona lo recomienda' }
-  return { title:`${count} personas lo recomiendan.` }
-}
-
-function RecommendationBox({ count=0, recommended=false, loading=false, onToggle }) {
-  const buttonLabel = recommended ? 'Quitar recomendación' : 'Recomendar este negocio'
-  const copy = getRecommendationCopy(count)
-  return (
-    <div style={{ background:'#fff', border:`1px solid ${C.borderLight}`, borderRadius:12, padding:'8px 9px', marginBottom:14, display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
-      <div style={{ minWidth:0 }}>
-        <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.mid, lineHeight:1.35, margin:0, ...WRAPPING_TEXT }}>{copy.title}</p>
-        {copy.helper && (
-          <p style={{ fontFamily:PP, fontWeight:500, fontSize:10.5, color:C.light, lineHeight:1.35, margin:'2px 0 0', ...WRAPPING_TEXT }}>{copy.helper}</p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={loading}
-        aria-label={buttonLabel}
-        title={buttonLabel}
-        style={{ width:38, height:38, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontWeight:800, fontSize:18, color:recommended ? '#065F46' : C.primary, background:'#fff', border:`1px solid ${recommended ? '#86EFAC' : C.border}`, borderRadius:'50%', padding:0, cursor:loading ? 'wait' : 'pointer', whiteSpace:'nowrap', flexShrink:0, boxShadow:'0 4px 14px rgba(15,23,42,0.06)', opacity:loading ? 0.7 : 1 }}
-      >
-        <span aria-hidden="true">👍</span>
-      </button>
-    </div>
-  )
 }
 
 function getContentShareText(kind, location) {
@@ -663,7 +630,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
               onClick={e => { e.stopPropagation(); setShowContacts(v => !v) }}
               style={{ fontFamily:PP, fontWeight:700, fontSize:11, background:showContacts ? C.primaryDark : C.primaryLight, color:showContacts ? '#fff' : C.primary, border:'none', padding:'7px 11px', borderRadius:999, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}
             >
-              Contacto
+              Contactar
             </button>
           )}
         </div>
@@ -722,6 +689,22 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   const hasContact = locationContacts ? locationContacts.length > 0 : contactMethods.length > 0
   const websiteLabel = business.website ? formatUrlLabel(business.website) : ''
   const websiteHref = business.website ? ensureUrl(business.website) : ''
+  const mainPhoto = photos[0] || ''
+  const tabItems = [
+    { id:'info', label:'Info' },
+    { id:'servicios', label:'Servicios' },
+    { id:'fotos', label:'Galería' },
+    { id:'resenas', label:'Reseñas' },
+  ]
+  const floatingButtonStyle = {
+    width:38,
+    height:38,
+    borderRadius:'50%',
+    border:`1px solid ${C.border}`,
+    background:'#fff',
+    color:C.text,
+    boxShadow:'0 8px 22px rgba(15,23,42,0.16)',
+  }
 
   useEffect(() => {
     setReviews(reviewsMap[business.id] || [])
@@ -796,79 +779,90 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
       onClose={onClose}
       title="Negocio"
       syncHistory={false}
-      actions={(
-        <>
-          <ShareButton
-            title={business.name || 'Negocio en Latido'}
-            text={getContentShareText('negocio', business.city)}
-            url={getBusinessPath(business)}
-            ariaLabel="Compartir negocio"
-          />
-          <FavoriteButton
-            isFav={isFavorite('businesses', business.id)}
-            onClick={() => toggleFavorite('businesses', business.id)}
-            style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
-          />
-        </>
-      )}
+      showHeader={false}
+      contentStyle={{
+        maxWidth:560,
+        minHeight:'100vh',
+        background:'#fff',
+        padding:'0 0 calc(118px + env(safe-area-inset-bottom))',
+        boxShadow:'0 24px 70px rgba(15,23,42,0.12)',
+      }}
     >
       <div style={{ background:'#fff' }}>
-        <div style={{ display:'flex', borderBottom:`1px solid ${C.border}`, background:'#fff', position:'sticky', top:59, zIndex:12 }}>
-          {[
-            { id:'info', label:'ℹ️ Info' },
-            { id:'fotos', label:`📷 Fotos (${photos.length})` },
-            { id:'resenas', label:`⭐ Reseñas (${reviews.length})` },
-          ].map(item => (
-            <button key={item.id} onClick={() => setTab(item.id)} style={{ flex:1, fontFamily:PP, fontWeight:600, fontSize:12, padding:'12px 0', background:'none', border:'none', borderBottom:`3px solid ${tab === item.id ? C.primary : 'transparent'}`, cursor:'pointer', color:tab === item.id ? C.primary : C.mid, transition:'all .15s' }}>
+        <div style={{ position:'relative', height:'clamp(270px, 44vh, 430px)', minHeight:270, background:'linear-gradient(135deg,#F8FAFC 0%,#EEF4FF 100%)', overflow:'hidden' }}>
+          {mainPhoto ? (
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="provider-detail-img"
+              aria-label="Ampliar fotos del negocio"
+              style={{ width:'100%', height:'100%', border:'none', padding:0, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative', boxSizing:'border-box' }}
+            >
+              <img src={mainPhoto} alt={business.name} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+            </button>
+          ) : (
+            <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:56 }}>
+              {business.emoji}
+            </div>
+          )}
+          <div style={{ position:'absolute', inset:0, pointerEvents:'none', background:'linear-gradient(180deg,rgba(15,23,42,0.08) 0%,rgba(15,23,42,0) 42%,rgba(15,23,42,0.06) 100%)' }} />
+          <button
+            onClick={onClose}
+            aria-label="Volver"
+            style={{ ...floatingButtonStyle, position:'absolute', top:'calc(16px + env(safe-area-inset-top))', left:16, cursor:'pointer', fontSize:20, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', padding:0 }}
+          >
+            ←
+          </button>
+          {planLabel && (
+            <span style={{ position:'absolute', left:'50%', bottom:14, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 14px', boxShadow:'0 10px 22px rgba(37,99,235,0.16)', whiteSpace:'nowrap' }}>
+              {planLabel}
+            </span>
+          )}
+        </div>
+
+        {mainPhoto && (
+          <ImageLightbox
+            open={lightboxOpen}
+            photos={photos}
+            initialIndex={0}
+            onClose={() => setLightboxOpen(false)}
+            title={business.name || 'Foto del negocio'}
+          />
+        )}
+
+        <div style={{ padding:'18px 20px 14px' }}>
+          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:14 }}>
+            <div style={{ minWidth:0, flex:1 }}>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
+                {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
+                {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
+              </div>
+              <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, lineHeight:1.18, margin:'0 0 8px', ...WRAPPING_TEXT }}>{business.name}</h1>
+              <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
+            </div>
+            {rating !== null && (
+              <button
+                type="button"
+                onClick={() => setTab('resenas')}
+                style={{ flexShrink:0, background:'transparent', border:'none', padding:'3px 0 0', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'flex-end' }}
+              >
+                <Stars rating={rating} size={13} showNumber count={reviews.length} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="no-scroll" style={{ display:'flex', gap:28, overflowX:'auto', borderBottom:`1px solid ${C.border}`, background:'#fff', position:'sticky', top:0, zIndex:12, padding:'0 20px' }}>
+          {tabItems.map(item => (
+            <button key={item.id} onClick={() => setTab(item.id)} style={{ flex:'0 0 auto', fontFamily:PP, fontWeight:700, fontSize:13, padding:'13px 0 12px', background:'none', border:'none', borderBottom:`2px solid ${tab === item.id ? C.primary : 'transparent'}`, cursor:'pointer', color:tab === item.id ? C.primary : C.light, transition:'all .15s', minWidth:0, whiteSpace:'nowrap' }}>
               {item.label}
             </button>
           ))}
         </div>
 
-        <div style={{ padding:'16px 20px 28px' }}>
+        <div style={{ padding:'18px 20px 28px' }}>
           {tab === 'info' && (
             <>
-              {photos[0] && (
-                <div style={{ position:'relative', overflow:'visible', marginBottom:planLabel ? 26 : 14 }}>
-                  <button
-                    type="button"
-                    onClick={() => setLightboxOpen(true)}
-                    className="provider-detail-img"
-                    aria-label="Ampliar fotos del negocio"
-                    style={{ width:'100%', height:'min(58vh, 460px)', minHeight:260, border:'none', padding:0, background:'#fff', borderRadius:16, overflow:'hidden', marginBottom:0, display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-in', position:'relative', boxSizing:'border-box' }}
-                  >
-                    <img src={photos[0]} alt={business.name} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
-                  </button>
-                  {planLabel && (
-                    <span style={{ position:'absolute', left:'50%', bottom:-13, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 14px', boxShadow:'0 10px 22px rgba(37,99,235,0.16)', whiteSpace:'nowrap' }}>
-                      {planLabel}
-                    </span>
-                  )}
-                </div>
-              )}
-              {photos[0] && (
-                <ImageLightbox
-                  open={lightboxOpen}
-                  photos={photos}
-                  initialIndex={0}
-                  onClose={() => setLightboxOpen(false)}
-                  title={business.name || 'Foto del negocio'}
-                />
-              )}
-              <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
-                <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{business.name}</h1>
-              </div>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
-                {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
-                <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
-                {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
-              </div>
-              <RecommendationBox
-                count={recommendationCount}
-                recommended={recommended}
-                loading={recommendationLoading}
-                onToggle={onToggleRecommend}
-              />
               <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:business.website ? 8 : 14, whiteSpace:'pre-line' }}>{business.desc}</p>
               {business.website && (
                 <a
@@ -879,23 +873,6 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                 >
                   🌐 {websiteLabel}
                 </a>
-              )}
-              {services.length > 0 && (
-                <div style={{ marginBottom:16 }}>
-                  <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>SERVICIOS</p>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                    {services.map(service => <span key={service} style={{ fontFamily:PP, fontSize:12, fontWeight:600, background:C.primaryLight, color:C.primary, padding:'7px 14px', borderRadius:10 }}>{service}</span>)}
-                  </div>
-                </div>
-              )}
-              {reviews.length > 0 && (
-                <button onClick={() => setTab('resenas')} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:13, padding:'11px 14px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <Stars rating={rating} size={14} />
-                    <span style={{ fontFamily:PP, fontSize:12, fontWeight:600, color:C.text }}>{rating} de 5</span>
-                  </div>
-                  <span style={{ fontFamily:PP, fontSize:11, color:C.primary, fontWeight:600 }}>Ver {reviews.length} reseñas →</span>
-                </button>
               )}
               <RelatedRail title="Negocios parecidos" empty={!relatedBusinesses.length}>
                 {relatedBusinesses.map(item => (
@@ -908,6 +885,12 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                 ))}
               </RelatedRail>
             </>
+          )}
+
+          {tab === 'servicios' && (
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+              {services.map(service => <span key={service} style={{ fontFamily:PP, fontSize:12, fontWeight:600, background:C.primaryLight, color:C.primary, padding:'7px 14px', borderRadius:10 }}>{service}</span>)}
+            </div>
           )}
 
           {tab === 'fotos' && (
@@ -985,58 +968,83 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
         </div>
       </div>
 
-      {tab === 'info' && hasContact && (
-        <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:96 }}>
-          {showContacts && (
-            <div style={{ background:C.bg, borderTop:`1px solid ${C.border}`, padding:'10px 16px', maxHeight:'60vh', overflowY:'auto' }}>
-              {locationContacts ? (
-                <LocationContactsPanel locations={locationContacts} />
-              ) : (
-                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  {contactMethods.map(method => (
-                    <a
-                      key={method.id}
-                      href={method.href}
-                      target={method.external ? '_blank' : undefined}
-                      rel={method.external ? 'noreferrer' : undefined}
-                      style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
-                    >
-                      <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                        <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
-                        <div style={{ minWidth:0 }}>
-                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
-                          <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
-                        </div>
-                      </div>
-                      <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
-                        {method.external ? 'Abrir ↗' : 'Abrir →'}
-                      </span>
-                    </a>
-                  ))}
+      <DetailActionBar
+        maxWidth={560}
+        primaryLabel={hasContact ? 'Contactar' : ''}
+        onPrimaryClick={hasContact ? () => setShowContacts(current => !current) : undefined}
+        onMenuOpen={() => setShowContacts(false)}
+        expandedContent={showContacts ? (locationContacts ? (
+          <LocationContactsPanel locations={locationContacts} />
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {contactMethods.map(method => (
+              <a
+                key={method.id}
+                href={method.href}
+                target={method.external ? '_blank' : undefined}
+                rel={method.external ? 'noreferrer' : undefined}
+                style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
+              >
+                <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                  <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
+                  <div style={{ minWidth:0 }}>
+                    <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
+                    <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
-          <div style={{ background:'#fff', borderTop:`1px solid ${C.border}`, padding:`12px 16px calc(12px + env(safe-area-inset-bottom))` }}>
-            <button
-              onClick={() => setShowContacts(current => !current)}
-              style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', border:'none', padding:'13px 16px', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer' }}
-            >
-              <span>📬 Contacto</span>
-              <span style={{ fontSize:12 }}>{showContacts ? 'Ocultar' : locationContacts ? `${locationContacts.length} sedes` : 'Ver opciones'}</span>
-            </button>
+                <span style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, flexShrink:0 }}>
+                  {method.external ? 'Abrir ↗' : 'Abrir →'}
+                </span>
+              </a>
+            ))}
           </div>
-        </div>
-      )}
+        )) : null}
+        share={{
+          title:business.name || 'Negocio en Latido',
+          text:getContentShareText('negocio', business.city),
+          url:getBusinessPath(business),
+          ariaLabel:'Enviar negocio',
+        }}
+        favorite={{
+          isFav:isFavorite('businesses', business.id),
+          onClick:() => toggleFavorite('businesses', business.id),
+        }}
+        like={{
+          active:recommended,
+          loading:recommendationLoading,
+          onClick:onToggleRecommend,
+          label:'Me gusta',
+          hint:recommendationCount === 1 ? '1 persona lo recomienda' : `${recommendationCount} personas lo recomiendan`,
+        }}
+        report={{
+          contentType:'business',
+          contentId:business.id,
+          ownerId:business.user_id,
+          title:'Reportar negocio',
+          metadata:{ title:business.name, category:business.type, city:business.city },
+        }}
+      />
     </FullPageOverlay>
   )
 }
 
-function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[], onOpenRelatedCommunity }) {
+function CommunityDetail({ community, onClose, relatedCommunities=[], onOpenRelatedCommunity }) {
   const { isFavorite, toggleFavorite } = useFavorites()
   if (!community) return null
 
   const category = getCommunityMeta(community.cat)
+  const contactUrl = normalizeCommunityContactUrl(community.contact)
+  const contactUrlKey = contactUrl.toLowerCase()
+  const isWeb = /^https?:\/\//i.test(contactUrl) && !CHAT_HOSTS.some(host => contactUrlKey.includes(host))
+  let primaryLabel = contactUrl ? 'Unirme al grupo' : ''
+  let primaryColor = C.primary
+  if (isWeb)                                                                  primaryLabel = 'Acceder a la web'
+  else if (contactUrl.includes('chat.whatsapp.com') || contactUrl.includes('wa.me')) { primaryLabel = 'Unirme por WhatsApp'; primaryColor = '#25D366' }
+  else if (contactUrl.includes('t.me') || contactUrl.includes('telegram'))           { primaryLabel = 'Unirme por Telegram'; primaryColor = '#229ED9' }
+  else if (contactUrl.includes('meetup.com'))                                        { primaryLabel = 'Unirme en Meetup'; primaryColor = '#E0393E' }
+  else if (contactUrl.includes('facebook.com'))                                      { primaryLabel = 'Ver en Facebook'; primaryColor = '#1877F2' }
+  else if (contactUrl.includes('instagram.com'))                                     { primaryLabel = 'Seguir en Instagram'; primaryColor = '#E1306C' }
+  else if (contactUrl.includes('discord.gg'))                                        { primaryLabel = 'Unirme por Discord'; primaryColor = '#5865F2' }
 
   return (
     <FullPageOverlay
@@ -1044,21 +1052,7 @@ function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[]
       onClose={onClose}
       title="Grupo"
       syncHistory={false}
-      actions={(
-        <>
-          <ShareButton
-            title={community.name || 'Grupo en Latido'}
-            text={getContentShareText('grupo', community.city)}
-            url={buildShareUrl('/comunidades', { openCommunity:community.id })}
-            ariaLabel="Compartir grupo"
-          />
-          <FavoriteButton
-            isFav={isFavorite('communities', community.id)}
-            onClick={() => toggleFavorite('communities', community.id)}
-            style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
-          />
-        </>
-      )}
+      headerVariant="floating"
     >
       <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {community.photo_url && (
@@ -1088,26 +1082,29 @@ function CommunityDetail({ community, onClose, isLoggedIn, relatedCommunities=[]
 
       </div>
 
-      {community.contact && (() => {
-        const url = normalizeCommunityContactUrl(community.contact)
-        const urlKey = url.toLowerCase()
-        const isWeb = /^https?:\/\//i.test(url) && !CHAT_HOSTS.some(host => urlKey.includes(host))
-        let icon = '🔗', label = 'Unirme al grupo', bg = C.primary
-        if (isWeb)                                                                    { icon = '🌐'; label = 'Acceder a la web'; bg = C.primary }
-        else if (url.includes('chat.whatsapp.com') || url.includes('wa.me'))         { icon = '💬'; label = 'Unirme por WhatsApp'; bg = '#25D366' }
-        else if (url.includes('t.me') || url.includes('telegram'))                   { icon = '✈️'; label = 'Unirme por Telegram'; bg = '#229ED9' }
-        else if (url.includes('meetup.com'))                                          { icon = '📅'; label = 'Unirme en Meetup'; bg = '#E0393E' }
-        else if (url.includes('facebook.com'))                                        { icon = '👥'; label = 'Ver en Facebook'; bg = '#1877F2' }
-        else if (url.includes('instagram.com'))                                       { icon = '📸'; label = 'Seguir en Instagram'; bg = '#E1306C' }
-        else if (url.includes('discord.gg'))                                          { icon = '🎮'; label = 'Unirme por Discord'; bg = '#5865F2' }
-        return (
-          <div key="join-bar" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:96, background:'#fff', borderTop:`1px solid ${C.border}`, padding:`12px 16px calc(12px + env(safe-area-inset-bottom))` }}>
-            <a href={url} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:bg, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', boxSizing:'border-box' }}>
-              <span>{icon}</span>{label}
-            </a>
-          </div>
-        )
-      })()}
+      <DetailActionBar
+        primaryLabel={primaryLabel}
+        primaryHref={contactUrl}
+        primaryExternal
+        primaryColor={primaryColor}
+        share={{
+          title:community.name || 'Grupo en Latido',
+          text:getContentShareText('grupo', community.city),
+          url:buildShareUrl('/comunidades', { openCommunity:community.id }),
+          ariaLabel:'Enviar grupo',
+        }}
+        favorite={{
+          isFav:isFavorite('communities', community.id),
+          onClick:() => toggleFavorite('communities', community.id),
+        }}
+        report={{
+          contentType:'community',
+          contentId:community.id,
+          ownerId:community.user_id,
+          title:'Reportar grupo',
+          metadata:{ title:community.name, category:community.cat, city:community.city },
+        }}
+      />
     </FullPageOverlay>
   )
 }
@@ -1123,21 +1120,7 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
       onClose={onClose}
       title="Evento"
       syncHistory={false}
-      actions={(
-        <>
-          <ShareButton
-            title={event.title || 'Evento en Latido'}
-            text={getContentShareText('evento', [event.day, event.month, event.city].filter(Boolean).join(' - '))}
-            url={getEventPath(event)}
-            ariaLabel="Compartir evento"
-          />
-          <FavoriteButton
-            isFav={isFavorite('events', event.id)}
-            onClick={() => toggleFavorite('events', event.id)}
-            style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
-          />
-        </>
-      )}
+      headerVariant="floating"
     >
       <div style={{ background:'#fff', padding:'16px 20px 28px' }}>
       {event.img && (
@@ -1156,17 +1139,34 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
       </div>
       <InfoBanner emoji={event.emoji} title={`${event.day} ${event.month} · ${event.venue}`} text={`Organiza ${event.host}`} bg={C.primaryLight} border={C.primaryMid} color={C.primaryDark} />
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>{event.desc}</p>
-      {event.link && (
-        <a href={event.link} target="_blank" rel="noreferrer" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'13px 18px', borderRadius:14, display:'inline-flex' }}>
-          Ver detalles / reservar
-        </a>
-      )}
       <RelatedRail title="Eventos parecidos" empty={!relatedEvents.length}>
         {relatedEvents.map(item => (
           <RelatedEventCard key={item.id} event={item} onClick={() => onOpenRelatedEvent?.(item)} />
         ))}
       </RelatedRail>
       </div>
+      <DetailActionBar
+        primaryLabel={event.link ? 'Ver detalles / reservar' : ''}
+        primaryHref={event.link}
+        primaryExternal
+        share={{
+          title:event.title || 'Evento en Latido',
+          text:getContentShareText('evento', [event.day, event.month, event.city].filter(Boolean).join(' - ')),
+          url:getEventPath(event),
+          ariaLabel:'Enviar evento',
+        }}
+        favorite={{
+          isFav:isFavorite('events', event.id),
+          onClick:() => toggleFavorite('events', event.id),
+        }}
+        report={{
+          contentType:'event',
+          contentId:event.id,
+          ownerId:event.user_id,
+          title:'Reportar evento',
+          metadata:{ title:event.title, type:event.type, city:event.city },
+        }}
+      />
     </FullPageOverlay>
   )
 }
@@ -1249,10 +1249,10 @@ export default function Comunidades() {
       try {
         const [communitiesRes, providersRes, photosRes, reviewsRes, eventsRes] = await Promise.all([
           fetchCommunitiesForDirectory(),
-          supabase.from('providers').select('id, created_at, category, name, city, canton, description, whatsapp, instagram, email, website, verified, featured, services, photo_url, promotion_plan, promotion_starts_at, promotion_ends_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(100),
+          supabase.from('providers').select('id, user_id, created_at, category, name, city, canton, description, whatsapp, instagram, email, website, verified, featured, services, photo_url, promotion_plan, promotion_starts_at, promotion_ends_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(100),
           supabase.from('provider_photos').select('provider_id, url, is_main, sort_order').order('is_main', { ascending:false }).order('sort_order', { ascending:true }).limit(300),
           supabase.from('reviews').select('id, provider_id, user_id, author_name, canton, stars, created_at, text').eq('active', true).order('created_at', { ascending:false }).limit(200),
-          supabase.from('events').select('id, type, emoji, title, city, canton, venue, day, month, time, price, host, featured, desc, img_url, link, created_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(60),
+          supabase.from('events').select('id, user_id, type, emoji, title, city, canton, venue, day, month, time, price, host, featured, desc, img_url, link, created_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(60),
         ])
 
         if (cancelled) return
@@ -1910,7 +1910,6 @@ export default function Comunidades() {
       <CommunityDetail
         community={selectedCommunity}
         onClose={closeCommunityDetails}
-        isLoggedIn={isLoggedIn}
         relatedCommunities={relatedCommunitiesForSelected}
         onOpenRelatedCommunity={openCommunityDetails}
       />

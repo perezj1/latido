@@ -8,9 +8,8 @@ import { trackSearchEvent } from '../lib/analytics'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, JOB_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
-import ReportButton from '../components/ReportButton'
-import ShareButton from '../components/ShareButton'
 import FavoriteButton from '../components/FavoriteButton'
+import DetailActionBar from '../components/DetailActionBar'
 import CompactFilterSelect from '../components/CompactFilterSelect'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
@@ -280,7 +279,7 @@ function RelatedJobCard({ job, onClick }) {
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{job.title || job.company}</p>
-        {job.salary && <p style={{ fontFamily:PP, fontWeight:900, fontSize:13, color:'#059669', margin:'0 0 5px', ...CLAMP_1 }}>{fmtPrice(job.salary)}</p>}
+        {job.salary && <p style={{ fontFamily:PP, fontWeight:900, fontSize:13, color:C.primary, margin:'0 0 5px', ...CLAMP_1 }}>{fmtPrice(job.salary)}</p>}
         <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{intent.label}</p>
       </div>
     </button>
@@ -368,7 +367,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
 }
 
 /* ── Full ad detail (inside Sheet) ─────────────────────── */
-function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedAds=[], onOpenRelatedAd, reviews=[], onAddReview }) {
+function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedAds=[], onOpenRelatedAd, reviews=[], onAddReview, isFav=false, onToggleFavorite }) {
   const navigate = useNavigate()
   const reviewsRef = useRef(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -567,30 +566,28 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
         ))}
       </RelatedRail>
 
-      {!isOwnAd && (
-        <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:96, background:'#fff', borderTop:`1px solid ${C.border}`, padding:`12px 16px calc(12px + env(safe-area-inset-bottom))`, display:'flex', gap:10 }}>
-          {user ? (
-            <button onClick={() => navigate(`/mensajes?adId=${ad.id}${recipientName ? `&recipientName=${recipientName}` : ''}`)}
-              style={{ flex:1, fontFamily:PP, fontWeight:800, fontSize:14, background:'#10B981', color:'#fff', border:'none', borderRadius:8, padding:'15px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              Enviar mensaje
-            </button>
-          ) : (
-            <a href="/auth" style={{ flex:1, fontFamily:PP, fontWeight:800, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:8, padding:'15px 16px', display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box' }}>
-              Inicia sesión para contactar
-            </a>
-          )}
-          {user && (
-            <ReportButton
-              contentType="listing"
-              contentId={ad.id}
-              ownerId={ad.user_id}
-              title="Reportar"
-              metadata={{ title: ad.title, cat: normalizedCat, sub: ad.sub }}
-              style={{ flex:1, borderRadius:8, padding:'15px 16px', fontSize:14, fontWeight:800 }}
-            />
-          )}
-        </div>
-      )}
+      <DetailActionBar
+        primaryLabel={!isOwnAd ? (user ? 'Enviar mensaje' : 'Inicia sesión para contactar') : ''}
+        onPrimaryClick={!isOwnAd ? () => navigate(user ? `/mensajes?adId=${ad.id}${recipientName ? `&recipientName=${recipientName}` : ''}` : '/auth') : undefined}
+        primaryColor={C.primary}
+        share={{
+          title:ad.title || 'Anuncio en Latido',
+          text:getAdShareText(ad),
+          url:getAdPath(ad),
+          ariaLabel:'Enviar anuncio',
+        }}
+        favorite={{
+          isFav,
+          onClick:onToggleFavorite,
+        }}
+        report={!isOwnAd ? {
+          contentType:'listing',
+          contentId:ad.id,
+          ownerId:ad.user_id,
+          title:'Reportar anuncio',
+          metadata:{ title:ad.title, cat:normalizedCat, sub:ad.sub },
+        } : null}
+      />
 
     </div>
   )
@@ -614,7 +611,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
       </div>
       <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.32, margin:'0 0 4px', ...CLAMP_2 }}>{job.title || job.company}</h3>
-        {job.salary && <p style={{ fontFamily:PP, fontSize:14, fontWeight:800, color:'#059669', lineHeight:1.15, margin:'0 0 5px', ...CLAMP_1 }}>{fmtPrice(job.salary)}</p>}
+        {job.salary && <p style={{ fontFamily:PP, fontSize:14, fontWeight:800, color:C.primary, lineHeight:1.15, margin:'0 0 5px', ...CLAMP_1 }}>{fmtPrice(job.salary)}</p>}
         {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.35, margin:'0 0 3px', ...CLAMP_1 }}>{isSeekingJob ? '👤' : '🏢'} {job.company}</p>}
         {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, margin:'0 0 7px', ...CLAMP_1 }}>{languages}</p>}
         <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:'auto' }}>
@@ -632,7 +629,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
 }
 
 /* ── Full job detail (inside Sheet) ─────────────────────── */
-function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRelatedJob }) {
+function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRelatedJob, isFav=false, onToggleFavorite }) {
   const navigate = useNavigate()
   const languages = job.lang || (Array.isArray(job.languages) ? job.languages.join(' · ') : job.languages)
   const isOwnJob = user && job.user_id === user.id
@@ -681,7 +678,7 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
       {job.salary && (
         <div style={{ padding:'18px 20px 14px', borderBottom:`1px solid ${C.border}` }}>
           <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 4px' }}>Salario</p>
-          <p style={{ fontFamily:PP, fontWeight:900, fontSize:28, color:'#059669', lineHeight:1.1, margin:0, ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>
+          <p style={{ fontFamily:PP, fontWeight:900, fontSize:28, color:C.primary, lineHeight:1.1, margin:0, ...WRAPPING_TEXT }}>{fmtPrice(job.salary)}</p>
         </div>
       )}
 
@@ -703,30 +700,28 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
         ))}
       </RelatedRail>
 
-      {!isOwnJob && (
-        <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:96, background:'#fff', borderTop:`1px solid ${C.border}`, padding:`12px 16px calc(12px + env(safe-area-inset-bottom))`, display:'flex', gap:10 }}>
-          {user ? (
-            <button onClick={() => navigate(`/mensajes?jobId=${job.id}`)}
-              style={{ flex:1, fontFamily:PP, fontWeight:800, fontSize:14, background:'#10B981', color:'#fff', border:'none', borderRadius:8, padding:'15px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              Enviar mensaje
-            </button>
-          ) : (
-            <a href="/auth" style={{ flex:1, fontFamily:PP, fontWeight:800, fontSize:14, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:8, padding:'15px 16px', display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box' }}>
-              Inicia sesión para contactar
-            </a>
-          )}
-          {user && (
-            <ReportButton
-              contentType="job"
-              contentId={job.id}
-              ownerId={job.user_id}
-              title="Reportar"
-              metadata={{ title: job.title, company: job.company, job_intent: getJobIntentId(job), sector: job.sector }}
-              style={{ flex:1, borderRadius:8, padding:'15px 16px', fontSize:14, fontWeight:800 }}
-            />
-          )}
-        </div>
-      )}
+      <DetailActionBar
+        primaryLabel={!isOwnJob ? (user ? 'Enviar mensaje' : 'Inicia sesión para contactar') : ''}
+        onPrimaryClick={!isOwnJob ? () => navigate(user ? `/mensajes?jobId=${job.id}` : '/auth') : undefined}
+        primaryColor={C.primary}
+        share={{
+          title:job.title || job.company || 'Empleo en Latido',
+          text:getJobShareText(job),
+          url:getJobPath(job),
+          ariaLabel:'Enviar empleo',
+        }}
+        favorite={{
+          isFav,
+          onClick:onToggleFavorite,
+        }}
+        report={!isOwnJob ? {
+          contentType:'job',
+          contentId:job.id,
+          ownerId:job.user_id,
+          title:'Reportar empleo',
+          metadata:{ title:job.title, company:job.company, job_intent:getJobIntentId(job), sector:job.sector },
+        } : null}
+      />
 
     </div>
   )
@@ -1552,21 +1547,7 @@ export default function Tablon() {
         onClose={closeAdDetails}
         title="Anuncio"
         syncHistory={false}
-        actions={selectedAd && (
-          <>
-            <ShareButton
-              title={selectedAd.title || 'Anuncio en Latido'}
-              text={getAdShareText(selectedAd)}
-              url={getAdPath(selectedAd)}
-              ariaLabel="Compartir anuncio"
-            />
-            <FavoriteButton
-              isFav={isFavorite('ads', selectedAd.id)}
-              onClick={() => toggleFavorite('ads', selectedAd.id)}
-              style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
-            />
-          </>
-        )}
+        headerVariant="floating"
       >
         {selectedAd && (
           <AdDetail
@@ -1579,6 +1560,8 @@ export default function Tablon() {
             onOpenRelatedAd={openAdDetails}
             reviews={adReviews[selectedAd.id] || []}
             onAddReview={handleAddAdReview}
+            isFav={isFavorite('ads', selectedAd.id)}
+            onToggleFavorite={() => toggleFavorite('ads', selectedAd.id)}
           />
         )}
       </FullPageOverlay>
@@ -1589,21 +1572,7 @@ export default function Tablon() {
         onClose={closeJobDetails}
         title="Empleo"
         syncHistory={false}
-        actions={selectedJob && (
-          <>
-            <ShareButton
-              title={selectedJob.title || selectedJob.company || 'Empleo en Latido'}
-              text={getJobShareText(selectedJob)}
-              url={getJobPath(selectedJob)}
-              ariaLabel="Compartir empleo"
-            />
-            <FavoriteButton
-              isFav={isFavorite('jobs', selectedJob.id)}
-              onClick={() => toggleFavorite('jobs', selectedJob.id)}
-              style={{ width:38, height:38, fontSize:18, border:`1px solid ${C.border}`, boxShadow:'0 4px 14px rgba(15,23,42,0.06)' }}
-            />
-          </>
-        )}
+        headerVariant="floating"
       >
         {selectedJob && (
           <JobDetail
@@ -1613,12 +1582,14 @@ export default function Tablon() {
             authorName={userProfiles.get(selectedJob.user_id)?.name}
             relatedJobs={relatedJobsForSelected}
             onOpenRelatedJob={openJobDetails}
+            isFav={isFavorite('jobs', selectedJob.id)}
+            onToggleFavorite={() => toggleFavorite('jobs', selectedJob.id)}
           />
         )}
       </FullPageOverlay>
 
       {/* Portal detail page */}
-      <FullPageOverlay show={!!selectedPortal} onClose={() => setSelectedPortal(null)} title={selectedPortal?.name || ''} eyebrow="Portal">
+      <FullPageOverlay show={!!selectedPortal} onClose={() => setSelectedPortal(null)} title={selectedPortal?.name || ''} eyebrow="Portal" headerVariant="floating">
         {selectedPortal && <PortalDetail portal={selectedPortal} defaultEmoji={selectedPortal.defaultEmoji || '🏠'} />}
       </FullPageOverlay>
     </div>
