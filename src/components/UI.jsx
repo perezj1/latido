@@ -373,9 +373,27 @@ export function Sheet({ show, onClose, title, children, syncHistory=true }) {
 }
 
 // ── Modal (centered) ───────────────────────────────────────────
-export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncHistory=true, actions=null }) {
+export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncHistory=true, actions=null, showHeader=true, headerVariant='bar', contentStyle={} }) {
   useOverlayHistory(show, onClose, syncHistory)
   const scrollerRef = useRef(null)
+  const floatingHeader = showHeader && headerVariant === 'floating'
+  const barHeader = showHeader && !floatingHeader
+  const headerButtonStyle = {
+    width:38,
+    height:38,
+    borderRadius:'50%',
+    border:`1px solid ${C.border}`,
+    background:'#fff',
+    color:C.text,
+    cursor:'pointer',
+    fontSize:20,
+    lineHeight:1,
+    display:'flex',
+    alignItems:'center',
+    justifyContent:'center',
+    flexShrink:0,
+    boxShadow:'0 8px 22px rgba(15,23,42,0.16)',
+  }
 
   useEffect(() => {
     if (!show) return
@@ -391,23 +409,39 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
   if (!show) return null
   return (
     <div ref={scrollerRef} className="fade-in no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', overflowX:'hidden', scrollbarWidth:'none', msOverflowStyle:'none', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}>
-      <div style={{ position:'sticky', top:0, zIndex:20, background:'rgba(255,255,255,0.96)', borderBottom:`1px solid ${C.border}`, backdropFilter:'blur(10px)' }}>
-        <div style={{ maxWidth:760, margin:'0 auto', padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
-          <button
-            onClick={onClose}
-            aria-label="Volver"
-            style={{ width:38, height:38, borderRadius:'50%', border:`1px solid ${C.border}`, background:'#fff', color:C.text, cursor:'pointer', fontSize:20, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
-          >
-            ←
-          </button>
-          <div style={{ minWidth:0, flex:1 }}>
-            {eyebrow && <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:0.8, margin:'0 0 1px', textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eyebrow}</p>}
-            {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</p>}
+      {floatingHeader && (
+        <div style={{ position:'sticky', top:0, zIndex:30, height:0, pointerEvents:'none' }}>
+          <div style={{ maxWidth:760, margin:'0 auto', padding:'calc(16px + env(safe-area-inset-top)) 16px 0', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+            <button
+              onClick={onClose}
+              aria-label="Volver"
+              style={{ ...headerButtonStyle, pointerEvents:'auto' }}
+            >
+              ←
+            </button>
+            {actions && <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0, pointerEvents:'auto' }}>{actions}</div>}
           </div>
-          {actions && <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>{actions}</div>}
         </div>
-      </div>
-      <div style={{ maxWidth:760, margin:'0 auto', padding:'0 0 calc(108px + env(safe-area-inset-bottom))' }}>
+      )}
+      {barHeader && (
+        <div style={{ position:'sticky', top:0, zIndex:20, background:'rgba(255,255,255,0.96)', borderBottom:`1px solid ${C.border}`, backdropFilter:'blur(10px)' }}>
+          <div style={{ maxWidth:760, margin:'0 auto', padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
+            <button
+              onClick={onClose}
+              aria-label="Volver"
+              style={{ width:38, height:38, borderRadius:'50%', border:`1px solid ${C.border}`, background:'#fff', color:C.text, cursor:'pointer', fontSize:20, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
+            >
+              ←
+            </button>
+            <div style={{ minWidth:0, flex:1 }}>
+              {eyebrow && <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:0.8, margin:'0 0 1px', textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eyebrow}</p>}
+              {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</p>}
+            </div>
+            {actions && <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>{actions}</div>}
+          </div>
+        </div>
+      )}
+      <div style={{ maxWidth:760, margin:'0 auto', padding:'0 0 calc(108px + env(safe-area-inset-bottom))', ...contentStyle }}>
         {children}
       </div>
     </div>

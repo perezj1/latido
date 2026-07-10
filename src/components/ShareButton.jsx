@@ -64,6 +64,8 @@ export default function ShareButton({
   text='Mira esto en Latido.',
   url,
   ariaLabel='Compartir',
+  label='',
+  icon='📤',
   style={},
 }) {
   const [busy, setBusy] = useState(false)
@@ -143,7 +145,8 @@ export default function ShareButton({
         ...style,
       }}
     >
-      <span aria-hidden="true" style={{ fontSize:18, lineHeight:1 }}>📤</span>
+      {icon && <span aria-hidden="true" style={{ fontSize:18, lineHeight:1 }}>{icon}</span>}
+      {label && <span>{label}</span>}
       <span style={SR_ONLY} aria-live="polite">{status}</span>
     </button>
   )
