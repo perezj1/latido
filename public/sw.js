@@ -7,6 +7,8 @@ const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icon-
 const PRECACHE_ASSETS = []
 const MAX_IMAGE_CACHE_ENTRIES = 260
 const SUPABASE_STORAGE_OBJECT_SEGMENT = '/storage/v1/object/public/'
+const SUPABASE_STORAGE_RENDER_SEGMENT = '/storage/v1/render/image/public/'
+const RASTER_IMAGE_EXTENSIONS = new Set(['avif', 'jpeg', 'jpg', 'png', 'webp'])
 const DEFAULT_OPTIMIZED_IMAGE_WIDTH = 960
 const DEFAULT_OPTIMIZED_IMAGE_QUALITY = 72
 const PUBLIC_TABLES = new Set([
@@ -59,15 +61,26 @@ function isPublicSupabaseRequest(url) {
 }
 
 function isPublicStorageAsset(url) {
-  return isSupabaseHost(url) && url.pathname.includes(SUPABASE_STORAGE_OBJECT_SEGMENT)
+  return isSupabaseHost(url) && (
+    url.pathname.includes(SUPABASE_STORAGE_OBJECT_SEGMENT) ||
+    url.pathname.includes(SUPABASE_STORAGE_RENDER_SEGMENT)
+  )
 }
 
 function isHttpRequest(url) {
   return url.protocol === 'http:' || url.protocol === 'https:'
 }
 
-function isImageRequest(request) {
-  return request.destination === 'image'
+function hasRasterImageExtension(url) {
+  const filename = url.pathname.split('/').pop() || ''
+  const extension = filename.split('.').pop()?.toLowerCase() || ''
+  return RASTER_IMAGE_EXTENSIONS.has(extension)
+}
+
+function isImageRequest(request, url) {
+  if (request.destination === 'image') return true
+  if (request.headers.get('accept')?.toLowerCase().includes('image/')) return true
+  return isPublicStorageAsset(url) || hasRasterImageExtension(url)
 }
 
 function optimizedUnsplashUrl(url) {
@@ -160,18 +173,20 @@ async function refreshImageCache(cacheKey, fetchRequest = cacheKey) {
   return response
 }
 
-async function imageCacheFirstWithRefresh(request, event) {
+async function imageCacheFirst(request) {
   const url = new URL(request.url)
   const fetchRequest = getOptimizedImageRequest(request, url)
   const cache = await caches.open(IMAGE_CACHE)
   const cached = await cache.match(request, { ignoreVary:true })
 
-  if (cached) {
-    event.waitUntil(refreshImageCache(request, fetchRequest).catch(() => {}))
-    return cached
-  }
+  if (cached && request.cache !== 'reload') return cached
 
-  return refreshImageCache(request, fetchRequest)
+  try {
+    return await refreshImageCache(request, fetchRequest)
+  } catch (error) {
+    if (cached) return cached
+    throw error
+  }
 }
 
 function handleNavigation(event) {
@@ -252,13 +267,13 @@ self.addEventListener('fetch', event => {
     return
   }
 
-  if (isImageRequest(request) && (isPublicStorageAsset(url) || url.origin !== self.location.origin)) {
-    event.respondWith(imageCacheFirstWithRefresh(request, event))
+  if (isImageRequest(request, url) && (isPublicStorageAsset(url) || url.origin !== self.location.origin)) {
+    event.respondWith(imageCacheFirst(request))
     return
   }
 
-  if (url.origin === self.location.origin && isImageRequest(request)) {
-    event.respondWith(imageCacheFirstWithRefresh(request, event))
+  if (url.origin === self.location.origin && isImageRequest(request, url)) {
+    event.respondWith(imageCacheFirst(request))
     return
   }
 
