@@ -13,6 +13,12 @@ import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import toast from 'react-hot-toast'
 
 const PENDING_READ_KEY_PREFIX = 'latido_messages_pending_read'
+const MESSAGE_INPUT_FONT_SIZE = 13
+const MESSAGE_INPUT_LINE_HEIGHT = 18
+const MESSAGE_INPUT_MIN_HEIGHT = 42
+const MESSAGE_INPUT_MAX_HEIGHT = (MESSAGE_INPUT_LINE_HEIGHT * 6) + 20
+const MESSAGE_INPUT_SCROLL_INSET = 8
+const MESSAGE_INPUT_SCROLL_MIN_THUMB = 24
 
 function pendingReadStorageKey(userId) {
   return `${PENDING_READ_KEY_PREFIX}:${userId}`
@@ -166,6 +172,7 @@ export default function Mensajes() {
   const [pageHeight, setPageHeight] = useState(null)
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
+  const [messageInputScroll, setMessageInputScroll] = useState({ visible:false, top:0, height:0 })
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [showList, setShowList] = useState(true)
@@ -758,6 +765,7 @@ export default function Mensajes() {
 
   function handleMessageChange(value) {
     setNewMessage(value)
+    queueMessageInputResize()
     if (isBanned || !selectedConv?.id) return
 
     const now = Date.now()
@@ -770,6 +778,50 @@ export default function Mensajes() {
     typingStopTimerRef.current = window.setTimeout(() => {
       sendTypingState(false)
     }, 1800)
+  }
+
+  function resizeMessageInput() {
+    const input = inputRef.current
+    if (!input) return
+
+    input.style.height = 'auto'
+    const nextHeight = Math.min(input.scrollHeight, MESSAGE_INPUT_MAX_HEIGHT)
+    input.style.height = `${Math.max(MESSAGE_INPUT_MIN_HEIGHT, nextHeight)}px`
+    input.style.overflowY = input.scrollHeight > MESSAGE_INPUT_MAX_HEIGHT ? 'auto' : 'hidden'
+    updateMessageInputScroll(input)
+  }
+
+  function updateMessageInputScroll(input = inputRef.current) {
+    if (!input) return
+
+    const scrollable = input.scrollHeight > input.clientHeight + 1
+    if (!scrollable) {
+      setMessageInputScroll(previous => previous.visible ? { visible:false, top:0, height:0 } : previous)
+      return
+    }
+
+    const trackHeight = Math.max(input.clientHeight - (MESSAGE_INPUT_SCROLL_INSET * 2), 0)
+    const thumbHeight = Math.max(
+      MESSAGE_INPUT_SCROLL_MIN_THUMB,
+      Math.round(trackHeight * (input.clientHeight / input.scrollHeight)),
+    )
+    const maxScrollTop = Math.max(input.scrollHeight - input.clientHeight, 1)
+    const maxThumbTop = Math.max(trackHeight - thumbHeight, 0)
+    const thumbTop = Math.round((input.scrollTop / maxScrollTop) * maxThumbTop)
+    const next = { visible:true, top:thumbTop, height:Math.min(thumbHeight, trackHeight) }
+
+    setMessageInputScroll(previous =>
+      previous.visible === next.visible
+        && previous.top === next.top
+        && previous.height === next.height
+        ? previous
+        : next
+    )
+  }
+
+  function queueMessageInputResize() {
+    if (typeof window === 'undefined') return
+    window.requestAnimationFrame(resizeMessageInput)
   }
 
   async function sendMessage() {
@@ -788,12 +840,14 @@ export default function Mensajes() {
     let conv = selectedConv
     setSending(true)
     setNewMessage('')
+    queueMessageInputResize()
     sendTypingState(false)
 
     if (!conv) {
       conv = await openOrCreate({ adId, jobId, convList: conversations, addToList: false })
       if (!conv) {
         setNewMessage(body)
+        queueMessageInputResize()
         setSending(false)
         return
       }
@@ -812,6 +866,7 @@ export default function Mensajes() {
     if (error) {
       toast.error('No se pudo enviar')
       setNewMessage(body)
+      queueMessageInputResize()
       setMessages(prev => prev.filter(m => m.id !== tempId))
     } else if (data) {
       setMessages(prev => prev.map(m => m.id === tempId ? data : m))
@@ -826,6 +881,25 @@ export default function Mensajes() {
 
     setSending(false)
     inputRef.current?.focus()
+  }
+
+  function submitMessageFromKeyboard(event) {
+    if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return
+    event.preventDefault()
+    sendMessage()
+  }
+
+  function handleMessageKeyDown(event) {
+    if (event.key === 'Enter') submitMessageFromKeyboard(event)
+  }
+
+  function handleMessageBeforeInput(event) {
+    if (event.nativeEvent?.inputType !== 'insertLineBreak') return
+    submitMessageFromKeyboard(event)
+  }
+
+  function handleMessageInputScroll(event) {
+    updateMessageInputScroll(event.currentTarget)
   }
 
   function dismissPendingConversation(conv) {
@@ -1168,16 +1242,29 @@ export default function Mensajes() {
 
               <div style={{ padding: mobileChatOpen ? '6px 8px calc(6px + env(safe-area-inset-bottom))' : '8px 12px 10px', borderTop: mobileChatOpen ? 'none' : `1px solid ${C.border}`, background: mobileChatOpen ? '#F1F5F9' : '#fff', boxShadow: mobileChatOpen ? '0 -2px 10px rgba(15,23,42,0.05)' : 'none' }}>
                 <div style={{ display: 'flex', gap: mobileChatOpen ? 7 : 8, alignItems: 'flex-end' }}>
-                <textarea
-                  ref={inputRef}
-                  value={newMessage}
-                  onChange={e => handleMessageChange(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                  placeholder={isBanned ? 'Cuenta suspendida: no puedes enviar mensajes' : 'Escribe un mensaje...'}
-                  disabled={isBanned}
-                  rows={1}
-                  style={{ flex: 1, fontFamily: PP, fontSize: 14, border: mobileChatOpen ? 'none' : `1.5px solid ${C.border}`, borderRadius: mobileChatOpen ? 22 : 14, padding: mobileChatOpen ? '10px 14px' : '10px 14px', resize: 'none', outline: 'none', maxHeight: 120, minHeight: mobileChatOpen ? 42 : undefined, lineHeight: 1.5, background: isBanned ? '#F8FAFC' : '#fff', boxShadow: mobileChatOpen ? '0 1px 3px rgba(15,23,42,0.10)' : 'none' }}
-                />
+                <div style={{ flex: 1, minWidth: 0, position: 'relative', display: 'flex' }}>
+                  <textarea
+                    ref={inputRef}
+                    value={newMessage}
+                    onChange={e => handleMessageChange(e.target.value)}
+                    onKeyDown={handleMessageKeyDown}
+                    onBeforeInput={handleMessageBeforeInput}
+                    onScroll={handleMessageInputScroll}
+                    enterKeyHint="send"
+                    placeholder={isBanned ? 'Cuenta suspendida: no puedes enviar mensajes' : 'Escribe un mensaje...'}
+                    disabled={isBanned}
+                    rows={1}
+                    style={{ flex: 1, width: '100%', fontFamily: PP, fontSize: MESSAGE_INPUT_FONT_SIZE, border: mobileChatOpen ? 'none' : `1.5px solid ${C.border}`, borderRadius: mobileChatOpen ? 22 : 14, padding: '10px 24px 10px 14px', resize: 'none', outline: 'none', boxSizing: 'border-box', maxHeight: MESSAGE_INPUT_MAX_HEIGHT, minHeight: MESSAGE_INPUT_MIN_HEIGHT, height: MESSAGE_INPUT_MIN_HEIGHT, lineHeight: `${MESSAGE_INPUT_LINE_HEIGHT}px`, overflowY: 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none', background: isBanned ? '#F8FAFC' : '#fff', boxShadow: mobileChatOpen ? '0 1px 3px rgba(15,23,42,0.10)' : 'none' }}
+                  />
+                  {messageInputScroll.visible && (
+                    <div
+                      aria-hidden="true"
+                      style={{ position: 'absolute', top: MESSAGE_INPUT_SCROLL_INSET, right: 8, bottom: MESSAGE_INPUT_SCROLL_INSET, width: 3, borderRadius: 999, background: 'rgba(148,163,184,0.20)', pointerEvents: 'none' }}
+                    >
+                      <span style={{ position: 'absolute', left: 0, right: 0, top: messageInputScroll.top, height: messageInputScroll.height, borderRadius: 999, background: 'rgba(100,116,139,0.62)' }} />
+                    </div>
+                  )}
+                </div>
                 <button onClick={sendMessage} disabled={isBanned || sending || !newMessage.trim()}
                   style={{ background: !isBanned && newMessage.trim() ? C.primary : C.border, color: '#fff', border: 'none', borderRadius: mobileChatOpen ? 22 : 14, width: mobileChatOpen ? 42 : 44, height: mobileChatOpen ? 42 : 44, cursor: !isBanned && newMessage.trim() ? 'pointer' : 'default', fontSize: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}>
                   ↑
