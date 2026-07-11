@@ -883,21 +883,6 @@ export default function Mensajes() {
     inputRef.current?.focus()
   }
 
-  function submitMessageFromKeyboard(event) {
-    if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return
-    event.preventDefault()
-    sendMessage()
-  }
-
-  function handleMessageKeyDown(event) {
-    if (event.key === 'Enter') submitMessageFromKeyboard(event)
-  }
-
-  function handleMessageBeforeInput(event) {
-    if (event.nativeEvent?.inputType !== 'insertLineBreak') return
-    submitMessageFromKeyboard(event)
-  }
-
   function handleMessageInputScroll(event) {
     updateMessageInputScroll(event.currentTarget)
   }
@@ -1247,10 +1232,8 @@ export default function Mensajes() {
                     ref={inputRef}
                     value={newMessage}
                     onChange={e => handleMessageChange(e.target.value)}
-                    onKeyDown={handleMessageKeyDown}
-                    onBeforeInput={handleMessageBeforeInput}
                     onScroll={handleMessageInputScroll}
-                    enterKeyHint="send"
+                    enterKeyHint="enter"
                     placeholder={isBanned ? 'Cuenta suspendida: no puedes enviar mensajes' : 'Escribe un mensaje...'}
                     disabled={isBanned}
                     rows={1}
