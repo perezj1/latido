@@ -14,6 +14,7 @@ import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTO
 import { normalizeExternalUrl } from '../lib/links'
 import { getBusinessPromotionMeta, isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { canUseWhatsappNumber } from '../lib/businessContact'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -506,8 +507,11 @@ function buildEditorForm(item) {
       name: row.name || '',
       city: row.city || '',
       canton: row.canton || '',
+      address: row.address || '',
       description: row.description || '',
       photo_url: row.photo_url || '',
+      phone: row.phone || row.whatsapp || '',
+      hasWhatsapp: Boolean(row.whatsapp),
       whatsapp: row.whatsapp || '',
       email: row.email || '',
       instagram: row.instagram || '',
@@ -1595,9 +1599,12 @@ export default function Perfil() {
       payload = {
         category: editorForm.category || null, name: editorForm.name?.trim(),
         city: editorForm.city?.trim() || null, canton: editorForm.canton || null,
+        address: editorForm.address?.trim() || null,
         description: editorForm.description?.trim() || null,
         photo_url: editorForm.photo_url?.trim() || null,
-        whatsapp: editorForm.whatsapp?.trim() || null, email: editorForm.email?.trim() || null,
+        phone: editorForm.phone?.trim() || null,
+        whatsapp: editorForm.hasWhatsapp && canUseWhatsappNumber(editorForm.phone) ? editorForm.phone.trim() : null,
+        email: editorForm.email?.trim() || null,
         instagram: editorForm.instagram?.trim() || null, website: editorForm.website?.trim() || null,
         services: services.length ? services : null,
         partner_logo_url: editorForm.partner_logo_url?.trim() || null,
@@ -1609,7 +1616,7 @@ export default function Perfil() {
         updated_at: new Date().toISOString(),
       }
       if (!payload.name || !payload.canton) { toast.error('Completa al menos el nombre y el cantón del negocio'); return }
-      if (![payload.whatsapp, payload.email, payload.instagram].some(Boolean)) { toast.error('Añade al menos un método de contacto para el negocio'); return }
+      if (![payload.phone, payload.email, payload.instagram].some(Boolean)) { toast.error('Añade al menos un método de contacto para el negocio'); return }
     }
 
     if (item.kind === 'community') {
@@ -2693,8 +2700,25 @@ export default function Perfil() {
                 {CANTONS.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}
               </Select>
             </div>
+            <Input label="Dirección" placeholder="Ej: Bahnhofstrasse 10, 8001 Zürich" value={editorForm.address || ''} onChange={event => updateEditorField('address', event.target.value)} />
             <Input label="Descripción" rows={4} value={editorForm.description || ''} onChange={event => updateEditorField('description', event.target.value)} />
-            <Input label="Teléfono / WhatsApp" placeholder="079 123 45 67 o +41 79 123 45 67" value={editorForm.whatsapp || ''} onChange={event => updateEditorField('whatsapp', event.target.value)} />
+            <Input label="Teléfono" placeholder="079 123 45 67 o +41 22 123 45 67" value={editorForm.phone || ''} onChange={event => {
+              updateEditorField('phone', event.target.value)
+              if (!canUseWhatsappNumber(event.target.value)) updateEditorField('hasWhatsapp', false)
+            }} />
+            <label style={{ display:'flex', alignItems:'center', gap:9, fontFamily:PP, fontSize:12, color:canUseWhatsappNumber(editorForm.phone) ? C.mid : C.light, margin:'-2px 2px 4px', cursor:canUseWhatsappNumber(editorForm.phone) ? 'pointer' : 'not-allowed' }}>
+              <input
+                type="checkbox"
+                checked={Boolean(editorForm.hasWhatsapp && canUseWhatsappNumber(editorForm.phone))}
+                disabled={!canUseWhatsappNumber(editorForm.phone)}
+                onChange={event => updateEditorField('hasWhatsapp', event.target.checked)}
+                style={{ accentColor:C.primary }}
+              />
+              Este número también está disponible en WhatsApp
+            </label>
+            <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, margin:'0 2px 12px', lineHeight:1.45 }}>
+              Los números fijos suizos se mostrarán solo como teléfono.
+            </p>
             <Input label="Email" type="email" value={editorForm.email || ''} onChange={event => updateEditorField('email', event.target.value)} />
             <Input label="Instagram" value={editorForm.instagram || ''} onChange={event => updateEditorField('instagram', event.target.value)} />
             <Input label="Web (opcional)" type="url" value={editorForm.website || ''} onChange={event => updateEditorField('website', event.target.value)} />

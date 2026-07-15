@@ -17,6 +17,10 @@ export function getMissingColumnName(error, table) {
   const relationMatch = message.match(/column "([^"]+)" of relation "[^"]+" does not exist/i)
   if (relationMatch?.[1]) return relationMatch[1]
 
+  // PostgREST SELECT errors use: "column providers.address does not exist".
+  const qualifiedColumnMatch = message.match(/column\s+(?:[a-z_][\w$]*\.)?([a-z_][\w$]*)\s+does not exist/i)
+  if (qualifiedColumnMatch?.[1]) return qualifiedColumnMatch[1]
+
   return null
 }
 

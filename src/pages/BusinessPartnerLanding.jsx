@@ -7,6 +7,7 @@ import { getNegocioTypeMeta } from '../lib/constants'
 import { getIdFromSlug } from '../lib/seo'
 import { getBusinessPartnerAnalyticsId, hasActiveBusinessLanding } from '../lib/businessPartners'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
+import { getBusinessPhone, getBusinessWhatsapp, getNavigationUrl, getPhoneDigits } from '../lib/businessContact'
 import './PartnerServices.css'
 
 const FALLBACK_LOGO = '/favicon.svg'
@@ -14,14 +15,6 @@ const FALLBACK_LOGO = '/favicon.svg'
 function cleanText(value = '', fallback = '') {
   const text = String(value || '').trim()
   return text || fallback
-}
-
-function getPhoneDigits(value = '') {
-  const digits = String(value || '').replace(/[^\d]/g, '')
-  if (!digits) return ''
-  if (digits.startsWith('00')) return digits.slice(2)
-  if (digits.startsWith('0')) return `41${digits.slice(1)}`
-  return digits
 }
 
 function getPhoneDisplay(value = '') {
@@ -55,16 +48,30 @@ function normalizeServices(value) {
 
 function buildActions(provider = {}) {
   const actions = []
-  const phoneDigits = getPhoneDigits(provider.whatsapp)
-  const phoneDisplay = getPhoneDisplay(provider.whatsapp)
+  const phone = getBusinessPhone(provider)
+  const whatsapp = getBusinessWhatsapp(provider)
+  const phoneDigits = getPhoneDigits(phone)
+  const whatsappDigits = getPhoneDigits(whatsapp)
+  const phoneDisplay = getPhoneDisplay(phone)
   const email = String(provider.email || '').trim()
   const website = normalizeExternalUrl(provider.website)
   const instagram = getInstagramUrl(provider.instagram)
   const custom = normalizeExternalUrl(provider.partner_cta_url)
 
+  if (whatsappDigits) {
+    actions.push({ id:'whatsapp', label:'WhatsApp', value:getPhoneDisplay(whatsapp), href:`https://wa.me/${whatsappDigits}`, external:true })
+  }
   if (phoneDigits) {
-    actions.push({ id:'whatsapp', label:'WhatsApp', value:phoneDisplay, href:`https://wa.me/${phoneDigits}`, external:true })
     actions.push({ id:'phone', label:'Llamar', value:phoneDisplay, href:`tel:+${phoneDigits}`, external:false })
+  }
+  if (provider.address) {
+    actions.push({
+      id:'address',
+      label:'Dirección',
+      value:provider.address,
+      href:getNavigationUrl(provider.address, provider.city, provider.canton),
+      external:true,
+    })
   }
   if (email) actions.push({ id:'email', label:'Email', value:email, href:`mailto:${email}`, external:false })
   if (website) actions.push({ id:'website', label:'Web', value:getUrlDisplay(website), href:website, external:true })
@@ -156,6 +163,8 @@ export default function BusinessPartnerLanding() {
           description,
           services,
           website,
+          address,
+          phone,
           whatsapp,
           instagram,
           email,
@@ -387,7 +396,7 @@ export default function BusinessPartnerLanding() {
             <p>Colaboración Latido x {provider.name} para la comunidad hispanohablante en Suiza.</p>
           </div>
           <div className="see-footer-bottom">
-            <p>{[category, locationLabel, provider.email, getPhoneDisplay(provider.whatsapp)].filter(Boolean).join(' · ')}</p>
+            <p>{[category, locationLabel, provider.email, getPhoneDisplay(getBusinessPhone(provider))].filter(Boolean).join(' · ')}</p>
           </div>
         </div>
       </footer>

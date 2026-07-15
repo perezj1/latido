@@ -2474,8 +2474,10 @@ export default function Admin() {
       business.category,
       business.city,
       business.canton,
+      business.address,
       business.email,
       business.website,
+      business.phone,
       business.whatsapp,
     ].some(value => String(value || '').toLowerCase().includes(businessQuery))) continue
     filteredVerificationBusinesses.push(business)
