@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -31,6 +31,15 @@ import { normalizeExternalUrl } from '../lib/links'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
+import {
+  getBusinessAddress,
+  getBusinessPhone,
+  getBusinessWhatsapp,
+  getNavigationUrl,
+  getPhoneHref,
+  getWhatsappHref,
+  isLikelySwissMobilePhone,
+} from '../lib/businessContact'
 import toast from 'react-hot-toast'
 
 const MAIN_TABS = [
@@ -81,6 +90,27 @@ const BUSINESS_EMOJI = {
 const COMMUNITY_SELECT = {
   withPhoto:'id, user_id, cat, name, city, members, emoji, verified, desc, contact, photo_url, created_at',
   safe:'id, user_id, cat, name, city, members, emoji, verified, desc, contact, created_at',
+}
+
+const PROVIDER_DIRECTORY_SELECT = {
+  withContactDetails:'id, user_id, created_at, category, name, city, canton, address, description, phone, whatsapp, instagram, email, website, verified, featured, services, photo_url, promotion_plan, promotion_starts_at, promotion_ends_at',
+  safe:'id, user_id, created_at, category, name, city, canton, description, whatsapp, instagram, email, website, verified, featured, services, photo_url, promotion_plan, promotion_starts_at, promotion_ends_at',
+}
+
+async function fetchProvidersForDirectory() {
+  const buildQuery = columns => supabase
+    .from('providers')
+    .select(columns)
+    .eq('active', true)
+    .order('featured', { ascending:false })
+    .order('created_at', { ascending:false })
+    .limit(100)
+
+  const response = await buildQuery(PROVIDER_DIRECTORY_SELECT.withContactDetails)
+  if (['address', 'phone'].includes(getMissingColumnName(response.error, 'providers'))) {
+    return buildQuery(PROVIDER_DIRECTORY_SELECT.safe)
+  }
+  return response
 }
 
 async function fetchCommunitiesForDirectory() {
@@ -231,15 +261,6 @@ function formatUrlLabel(value='') {
   return value.replace(/^https?:\/\//i, '').replace(/\/$/, '')
 }
 
-function normalizePhoneForTel(value='') {
-  return value.replace(/[^\d+]/g, '')
-}
-
-function normalizePhoneForWhatsapp(value='') {
-  const digits = value.replace(/\D/g, '')
-  return /^07\d{8}$/.test(digits) ? `41${digits.slice(1)}` : digits
-}
-
 function formatInstagramHandle(value='') {
   if (!value) return ''
   return value.startsWith('@') ? value : `@${value}`
@@ -248,6 +269,8 @@ function formatInstagramHandle(value='') {
 function normalizeProvider(provider) {
   const verificationStatus = getBusinessVerificationStatus(provider)
   const promotionPlan = getEffectiveBusinessPromotionPlan(provider)
+  const supportsSeparatePhone = Object.prototype.hasOwnProperty.call(provider, 'phone')
+  const legacyWhatsapp = getBusinessWhatsapp(provider)
 
   return {
     id: provider.id,
@@ -259,8 +282,11 @@ function normalizeProvider(provider) {
     city: provider.city || provider.canton || 'Suiza',
     canton: provider.canton || '',
     desc: provider.description || 'Negocio latino en Suiza.',
-    phone: provider.phone || provider.whatsapp || '',
-    whatsapp: provider.whatsapp || provider.phone || '',
+    address: getBusinessAddress(provider),
+    phone: getBusinessPhone(provider),
+    whatsapp: supportsSeparatePhone
+      ? legacyWhatsapp
+      : isLikelySwissMobilePhone(legacyWhatsapp) ? legacyWhatsapp : '',
     instagram: provider.instagram || '',
     email: provider.email || '',
     website: provider.website || '',
@@ -343,11 +369,23 @@ function getContentShareText(kind, location) {
 
 function getBusinessContactMethods(business) {
   const phone = (business.phone || business.whatsapp || '').trim()
-  const whatsapp = (business.whatsapp || business.phone || '').trim()
+  const whatsapp = (business.whatsapp || '').trim()
+  const address = (business.address || '').trim()
   const email = (business.email || '').trim()
   const instagram = formatInstagramHandle((business.instagram || '').trim())
 
   const methods = []
+
+  if (address) {
+    methods.push({
+      id:'address',
+      icon:'🧭',
+      label:'Dirección',
+      value:address,
+      href:getNavigationUrl(address, business.city, business.canton),
+      external:true,
+    })
+  }
 
   if (phone) {
     methods.push({
@@ -355,7 +393,7 @@ function getBusinessContactMethods(business) {
       icon:'📞',
       label:'Teléfono',
       value:phone,
-      href:`tel:${normalizePhoneForTel(phone)}`,
+      href:getPhoneHref(phone),
       external:false,
     })
   }
@@ -366,7 +404,7 @@ function getBusinessContactMethods(business) {
       icon:'💬',
       label:'WhatsApp',
       value:whatsapp,
-      href:`https://wa.me/${normalizePhoneForWhatsapp(whatsapp)}`,
+      href:getWhatsappHref(whatsapp),
       external:true,
     })
   }
@@ -401,7 +439,7 @@ function getLocationContacts(business) {
   const contacts = []
   for (const loc of business.contacts) {
     const contact = { city: loc.city || '', address: loc.address || '', phone: loc.phone || '', email: loc.email || '' }
-    if (contact.phone || contact.email) contacts.push(contact)
+    if (contact.address || contact.phone || contact.email) contacts.push(contact)
   }
   return contacts
 }
@@ -415,12 +453,22 @@ function LocationContactsPanel({ locations }) {
           <div style={{ background:C.primaryLight, padding:'7px 12px', display:'flex', alignItems:'center', gap:6 }}>
             <span style={{ fontSize:12 }}>📍</span>
             <span style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primaryDark }}>{loc.city}</span>
-            {loc.address && <span style={{ fontFamily:PP, fontSize:10, color:C.mid }}>— {loc.address}</span>}
+            {loc.address && (
+              <a
+                href={getNavigationUrl(loc.address, loc.city)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={event => event.stopPropagation()}
+                style={{ fontFamily:PP, fontSize:10, color:C.primary, textDecoration:'none' }}
+              >
+                — {loc.address} ↗
+              </a>
+            )}
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
             {loc.phone && (
               <a
-                href={`tel:${loc.phone.replace(/\s/g,'')}`}
+                href={getPhoneHref(loc.phone)}
                 style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', textDecoration:'none', borderBottom: loc.email ? `1px solid ${C.border}` : 'none' }}
               >
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -459,6 +507,37 @@ function RelatedRail({ title, children, empty=false }) {
       </div>
     </div>
   )
+}
+
+function BusinessDescription({ business }) {
+  const description = String(business.desc || '')
+    .replace(/\s*(?:\.\s*)?Web profesional verificada(?:\s+el\s+\d{4}-\d{2}-\d{2})?\s*:\s*https?:\/\/\S+\s*$/i, '')
+    .trim()
+  const address = String(business.address || '').trim()
+  const addressIndex = address
+    ? description.toLocaleLowerCase('es').indexOf(address.toLocaleLowerCase('es'))
+    : -1
+  let visibleDescription = description
+
+  if (addressIndex >= 0) {
+    const beforeAddress = description.slice(0, addressIndex)
+    const labelMatch = beforeAddress.match(/Direcci[oó]n(?:\s+profesional)?\s*:\s*$/i)
+    const removeStart = labelMatch?.index ?? addressIndex
+    let removeEnd = addressIndex + address.length
+    if (description[removeEnd] === '.') removeEnd += 1
+    while (/\s/.test(description[removeEnd] || '')) removeEnd += 1
+    visibleDescription = `${description.slice(0, removeStart)}${description.slice(removeEnd)}`.trim()
+  }
+
+  const paragraphStyle = {
+    fontFamily:PP,
+    fontSize:13,
+    color:C.mid,
+    lineHeight:1.75,
+    margin:'0 0 10px',
+    whiteSpace:'pre-line',
+  }
+  return <p style={paragraphStyle}>{visibleDescription}</p>
 }
 
 function RelatedCommunityCard({ group, onClick }) {
@@ -553,6 +632,25 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
   const hasContact = locationContacts ? locationContacts.length > 0 : contactMethods.length > 0
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
+  const contactMenuRef = useRef(null)
+
+  useEffect(() => {
+    if (!showContacts) return undefined
+
+    const closeOnOutsidePress = event => {
+      if (!contactMenuRef.current?.contains(event.target)) setShowContacts(false)
+    }
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setShowContacts(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsidePress)
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePress)
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [showContacts])
 
   return (
     <div
@@ -623,6 +721,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
             {services.length > 4 && <Tag bg={C.bg} color={C.mid} style={{ flexShrink:0 }}>+{services.length - 4}</Tag>}
           </div>
         )}
+        <div ref={contactMenuRef} style={{ display:'flex', flexDirection:'column', gap:8 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, borderTop:`1px solid ${C.borderLight}`, paddingTop:10, marginTop:2 }}>
           <span style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, flexShrink:0 }}>Ver perfil</span>
           {hasContact && (
@@ -664,6 +763,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   )
@@ -689,6 +789,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   const hasContact = locationContacts ? locationContacts.length > 0 : contactMethods.length > 0
   const websiteLabel = business.website ? formatUrlLabel(business.website) : ''
   const websiteHref = business.website ? ensureUrl(business.website) : ''
+  const addressHref = business.address ? getNavigationUrl(business.address, business.city, business.canton) : ''
   const mainPhoto = photos[0] || ''
   const tabItems = [
     { id:'info', label:'Info' },
@@ -863,15 +964,26 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
         <div style={{ padding:'18px 20px 28px' }}>
           {tab === 'info' && (
             <>
-              <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.75, marginBottom:business.website ? 8 : 14, whiteSpace:'pre-line' }}>{business.desc}</p>
+              <BusinessDescription business={business} />
               {business.website && (
                 <a
                   href={websiteHref}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.primary, textDecoration:'none', display:'inline-flex', alignItems:'center', gap:6, marginBottom:16 }}
+                  style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.primary, textDecoration:'none', display:'flex', alignItems:'center', gap:6, width:'fit-content', marginBottom:business.address ? 8 : 16 }}
                 >
                   🌐 {websiteLabel}
+                </a>
+              )}
+              {business.address && (
+                <a
+                  href={addressHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.primary, textDecoration:'none', display:'flex', alignItems:'flex-start', gap:6, width:'fit-content', lineHeight:1.55, marginBottom:16 }}
+                >
+                  <span aria-hidden="true">🧭</span>
+                  <span>{business.address}</span>
                 </a>
               )}
               <RelatedRail title="Negocios parecidos" empty={!relatedBusinesses.length}>
@@ -973,6 +1085,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
         primaryLabel={hasContact ? 'Contactar' : ''}
         onPrimaryClick={hasContact ? () => setShowContacts(current => !current) : undefined}
         onMenuOpen={() => setShowContacts(false)}
+        onExpandedClose={() => setShowContacts(false)}
         expandedContent={showContacts ? (locationContacts ? (
           <LocationContactsPanel locations={locationContacts} />
         ) : (
@@ -1173,14 +1286,31 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
 
 const COMUNIDADES_CACHE_TTL = 5 * 60 * 1000
 const persistedComunidadesSnapshot = readOfflineSnapshot('comunidades-public')
+const sanitizeCachedBusinesses = businesses => (businesses || []).map(business => {
+  const phone = getBusinessPhone(business)
+  const whatsapp = getBusinessWhatsapp(business)
+  const isLegacySharedNumber = Boolean(phone && whatsapp && phone === whatsapp)
+
+  return {
+    ...business,
+    address:getBusinessAddress({ address:business.address, description:business.desc }),
+    phone,
+    whatsapp:isLegacySharedNumber && !isLikelySwissMobilePhone(whatsapp) ? '' : whatsapp,
+  }
+})
 const comunidadesCache = {
-  data:persistedComunidadesSnapshot?.data || null,
+  data:persistedComunidadesSnapshot?.data
+    ? {
+        ...persistedComunidadesSnapshot.data,
+        businesses:sanitizeCachedBusinesses(persistedComunidadesSnapshot.data.businesses),
+      }
+    : null,
   ts:persistedComunidadesSnapshot?.savedAt || 0,
 }
 
 function applyCachedData(snapshot, setters) {
   setters.setCommunities(snapshot.communities)
-  setters.setBusinesses(snapshot.businesses)
+  setters.setBusinesses(sanitizeCachedBusinesses(snapshot.businesses))
   setters.setBusinessServices(snapshot.businessServices)
   setters.setBusinessPhotos(snapshot.businessPhotos)
   setters.setBusinessReviews(snapshot.businessReviews)
@@ -1249,7 +1379,7 @@ export default function Comunidades() {
       try {
         const [communitiesRes, providersRes, photosRes, reviewsRes, eventsRes] = await Promise.all([
           fetchCommunitiesForDirectory(),
-          supabase.from('providers').select('id, user_id, created_at, category, name, city, canton, description, whatsapp, instagram, email, website, verified, featured, services, photo_url, promotion_plan, promotion_starts_at, promotion_ends_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(100),
+          fetchProvidersForDirectory(),
           supabase.from('provider_photos').select('provider_id, url, is_main, sort_order').order('is_main', { ascending:false }).order('sort_order', { ascending:true }).limit(300),
           supabase.from('reviews').select('id, provider_id, user_id, author_name, canton, stars, created_at, text').eq('active', true).order('created_at', { ascending:false }).limit(200),
           supabase.from('events').select('id, user_id, type, emoji, title, city, canton, venue, day, month, time, price, host, featured, desc, img_url, link, created_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(60),

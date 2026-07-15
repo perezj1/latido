@@ -7,7 +7,8 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+  ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+  ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
 
 CREATE OR REPLACE VIEW public.profile_names AS
 SELECT id, name
@@ -17,7 +18,7 @@ WHERE COALESCE(name, '') <> '';
 GRANT SELECT ON public.profile_names TO anon, authenticated;
 
 CREATE OR REPLACE VIEW public.profile_public AS
-SELECT id, name, avatar_url
+SELECT id, name, avatar_url, last_seen_at
 FROM public.profiles;
 
 GRANT SELECT ON public.profile_public TO anon, authenticated;

@@ -15,6 +15,7 @@ import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
+import { canUseWhatsappNumber } from '../lib/businessContact'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -46,7 +47,7 @@ export default function RegistrarNegocio() {
   const [selectedProfessionalPlan, setSelectedProfessionalPlan] = useState('')
   const [landingPageSelected, setLandingPageSelected] = useState(false)
   const [form, setForm] = useState({
-    type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[],
+    type:'', name:'', city:'', canton:'', address:'', desc:'', phone:'', hasWhatsapp:false, email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[],
   })
   const [errors, setErrors] = useState({})
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -74,7 +75,11 @@ export default function RegistrarNegocio() {
   }
 
   const s = (k, v) => {
-    setForm(f => ({ ...f, [k]:v }))
+    setForm(f => ({
+      ...f,
+      [k]:v,
+      ...(k === 'phone' && !canUseWhatsappNumber(v) ? { hasWhatsapp:false } : {}),
+    }))
     clearFieldError(k)
   }
 
@@ -86,6 +91,7 @@ export default function RegistrarNegocio() {
     if (targetStep === 1) {
       if (!form.name.trim()) next.name = 'Añade el nombre del negocio.'
       if (!form.canton) next.canton = 'Selecciona el cantón del negocio.'
+      if (!form.address.trim()) next.address = 'Añade la dirección del negocio.'
     }
     if (targetStep === 2) {
       const email = form.email.trim()
@@ -225,7 +231,7 @@ export default function RegistrarNegocio() {
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => navigate('/comunidades?view=negocios')}>Ver negocios →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setProfessionalOptionsOpen(false); setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLandingPageSelected(false); setErrors({}); setStep(0); setForm({ type:'', name:'', city:'', canton:'', desc:'', phone:'', email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setProfessionalOptionsOpen(false); setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLandingPageSelected(false); setErrors({}); setStep(0); setForm({ type:'', name:'', city:'', canton:'', address:'', desc:'', phone:'', hasWhatsapp:false, email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Registrar otro negocio
       </button>
     </div>
@@ -236,7 +242,7 @@ export default function RegistrarNegocio() {
     if (!form.name || !form.canton) { toast.error('Completa el nombre y el cantón'); return }
     const hasContact = [form.phone, form.email, form.instagram].some(value => value.trim())
     if (!hasContact) { toast.error('Añade al menos un método de contacto'); return }
-    const moderation = analyzeContent(form.name, form.desc, form.services, form.website)
+    const moderation = analyzeContent(form.name, form.address, form.desc, form.services, form.website)
     if (moderation.action === 'block') {
       toast.error(getContentFilterMessage(moderation))
       return
@@ -251,16 +257,17 @@ export default function RegistrarNegocio() {
         .slice(0, galleryLimit)
       const existingRes = await supabase
         .from('providers')
-        .select('id,name,city,canton,whatsapp,email,website')
+        .select('id,name,city,canton,address,phone,whatsapp,email,website')
         .limit(500)
       const verification = calculateBusinessVerification({
         category: form.type,
         name: form.name,
         city: form.city,
         canton: form.canton,
+        address: form.address,
         description: form.desc,
         phone: form.phone,
-        whatsapp: form.phone,
+        whatsapp: form.hasWhatsapp && canUseWhatsappNumber(form.phone) ? form.phone : '',
         email: form.email,
         website: form.website,
         photo_url: form.photo_url,
@@ -273,8 +280,10 @@ export default function RegistrarNegocio() {
         name: form.name.trim(),
         city: form.city.trim() || null,
         canton: form.canton,
+        address: form.address.trim(),
         description: form.desc.trim() || null,
-        whatsapp: form.phone.trim() || null,
+        phone: form.phone.trim() || null,
+        whatsapp: form.hasWhatsapp && canUseWhatsappNumber(form.phone) ? form.phone.trim() : null,
         email: form.email.trim() || null,
         instagram: form.instagram.trim() || null,
         website: form.website.trim() || null,
@@ -512,6 +521,7 @@ export default function RegistrarNegocio() {
             cantonError={errors.canton}
             cityError={errors.city}
           />
+          <Input label="Dirección" placeholder="Ej: Bahnhofstrasse 10, 8001 Zürich" required value={form.address} onChange={e=>s('address',e.target.value)} error={errors.address} errorKey="address" />
           <Input label="Descripción (EN ESPAÑOL)" placeholder="Cuéntanos qué ofrece tu negocio, qué os hace especiales..." rows={5} value={form.desc} onChange={e=>s('desc',e.target.value)} />
         </>
       )}
@@ -519,7 +529,20 @@ export default function RegistrarNegocio() {
       {/* Step 2 — Contact and services */}
       {step === 2 && (
         <>
-          <Input label="Teléfono / WhatsApp" placeholder="079 123 45 67 o +41 79 123 45 67" value={form.phone} onChange={e=>s('phone',e.target.value)} error={errors.phone} errorKey="phone" />
+          <Input label="Teléfono" placeholder="079 123 45 67 o +41 22 123 45 67" value={form.phone} onChange={e=>s('phone',e.target.value)} error={errors.phone} errorKey="phone" />
+          <label style={{ display:'flex', alignItems:'center', gap:9, fontFamily:PP, fontSize:12, color:canUseWhatsappNumber(form.phone) ? C.mid : C.light, margin:'-2px 2px 4px', cursor:canUseWhatsappNumber(form.phone) ? 'pointer' : 'not-allowed' }}>
+            <input
+              type="checkbox"
+              checked={Boolean(form.hasWhatsapp && canUseWhatsappNumber(form.phone))}
+              disabled={!canUseWhatsappNumber(form.phone)}
+              onChange={event => s('hasWhatsapp', event.target.checked)}
+              style={{ accentColor:C.primary }}
+            />
+            Este número también está disponible en WhatsApp
+          </label>
+          <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, margin:'0 2px 12px', lineHeight:1.45 }}>
+            Los números fijos suizos se mostrarán solo como teléfono.
+          </p>
           <Input label={premiumEmailRequired ? 'Email *' : 'Email'} type="email" placeholder="hola@minegocio.ch" value={form.email} onChange={e=>s('email',e.target.value)} error={errors.email} errorKey="email" />
           <Input label="Instagram" placeholder="@minegocio_zh" value={form.instagram} onChange={e=>s('instagram',e.target.value)} error={errors.instagram} errorKey="instagram" />
           <Input label="Web (opcional)" type="url" placeholder="minegocio.ch" value={form.website} onChange={e=>s('website',e.target.value)} error={errors.website} errorKey="website" />
@@ -571,6 +594,7 @@ export default function RegistrarNegocio() {
             )}
           </div>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:6 }}>{form.name || '—'}</p>
+          {form.address && <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'0 0 8px' }}>🧭 {form.address}</p>}
           {form.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:form.website ? 8 : 10, whiteSpace:'pre-line' }}>{form.desc}</p>}
           {form.website && <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'0 0 10px' }}>🌐 {form.website}</p>}
           {form.services && (
@@ -581,7 +605,8 @@ export default function RegistrarNegocio() {
             </div>
           )}
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            {form.phone && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>💬 {form.phone}</span>}
+            {form.phone && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📞 {form.phone}</span>}
+            {form.hasWhatsapp && canUseWhatsappNumber(form.phone) && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>💬 WhatsApp</span>}
             {form.email && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>✉️ {form.email}</span>}
             {form.instagram && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📸 {form.instagram}</span>}
             {form.website && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>🌐 {form.website}</span>}

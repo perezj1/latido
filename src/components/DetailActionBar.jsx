@@ -61,6 +61,7 @@ export default function DetailActionBar({
   primaryColor=C.primary,
   onPrimaryClick,
   onMenuOpen,
+  onExpandedClose,
   expandedContent=null,
   share=null,
   favorite=null,
@@ -73,13 +74,17 @@ export default function DetailActionBar({
   const hasMenu = !!(share || favorite || like || report)
 
   useEffect(() => {
-    if (!menuOpen) return undefined
+    if (!menuOpen && !expandedContent) return undefined
 
     const closeOnOutsidePress = event => {
-      if (!rootRef.current?.contains(event.target)) setMenuOpen(false)
+      if (rootRef.current?.contains(event.target)) return
+      setMenuOpen(false)
+      if (expandedContent) onExpandedClose?.()
     }
     const closeOnEscape = event => {
-      if (event.key === 'Escape') setMenuOpen(false)
+      if (event.key !== 'Escape') return
+      setMenuOpen(false)
+      if (expandedContent) onExpandedClose?.()
     }
 
     document.addEventListener('pointerdown', closeOnOutsidePress)
@@ -88,7 +93,7 @@ export default function DetailActionBar({
       document.removeEventListener('pointerdown', closeOnOutsidePress)
       window.removeEventListener('keydown', closeOnEscape)
     }
-  }, [menuOpen])
+  }, [expandedContent, menuOpen, onExpandedClose])
 
   if (!primaryLabel && !hasMenu && !expandedContent) return null
 

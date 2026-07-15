@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { normalizeExternalUrl } from './links'
 import { getBusinessLandingPath } from './seo'
+import { getBusinessPhone, getBusinessWhatsapp, getNavigationUrl, getPhoneDigits } from './businessContact'
 
 const ACTIVE_PARTNER_PLANS = new Set(['basic', 'premium'])
 const PLAN_ORDER = { premium:0, basic:1 }
@@ -40,14 +41,6 @@ function getWhatsappUrl(value = '') {
   if (!digits) return ''
 
   return `https://wa.me/${digits}`
-}
-
-function getPhoneDigits(value = '') {
-  const digits = String(value || '').replace(/[^\d]/g, '')
-  if (!digits) return ''
-  if (digits.startsWith('00')) return digits.slice(2)
-  if (digits.startsWith('0')) return `41${digits.slice(1)}`
-  return digits
 }
 
 function getPhoneDisplay(value = '') {
@@ -91,8 +84,11 @@ function getInstagramAction(value = '') {
 
 function getBusinessPartnerContactActions(provider = {}) {
   const actions = []
-  const phoneDigits = getPhoneDigits(provider.whatsapp)
-  const phoneDisplay = getPhoneDisplay(provider.whatsapp)
+  const phone = getBusinessPhone(provider)
+  const whatsapp = getBusinessWhatsapp(provider)
+  const phoneDigits = getPhoneDigits(phone)
+  const whatsappDigits = getPhoneDigits(whatsapp)
+  const phoneDisplay = getPhoneDisplay(phone)
   const email = String(provider.email || '').trim()
   const websiteUrl = normalizeExternalUrl(provider.website)
   const customUrl = normalizeExternalUrl(provider.partner_cta_url)
@@ -102,16 +98,18 @@ function getBusinessPartnerContactActions(provider = {}) {
       : ''
   )
 
-  if (phoneDigits) {
+  if (whatsappDigits) {
     actions.push({
       id:'whatsapp',
       type:'whatsapp',
       icon:'WA',
       label:'WhatsApp',
-      value:phoneDisplay,
-      href:`https://wa.me/${phoneDigits}`,
+      value:getPhoneDisplay(whatsapp),
+      href:`https://wa.me/${whatsappDigits}`,
       external:true,
     })
+  }
+  if (phoneDigits) {
     actions.push({
       id:'phone',
       type:'phone',
@@ -120,6 +118,18 @@ function getBusinessPartnerContactActions(provider = {}) {
       value:phoneDisplay,
       href:`tel:+${phoneDigits}`,
       external:false,
+    })
+  }
+
+  if (provider.address) {
+    actions.push({
+      id:'address',
+      type:'address',
+      icon:'Map',
+      label:'Dirección',
+      value:provider.address,
+      href:getNavigationUrl(provider.address, provider.city, provider.canton),
+      external:true,
     })
   }
 
@@ -254,6 +264,8 @@ export async function fetchActiveBusinessPartners({
       description,
       services,
       website,
+      address,
+      phone,
       whatsapp,
       instagram,
       email,

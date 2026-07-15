@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   canton     TEXT,
   languages  TEXT[],
   avatar_url TEXT,
+  last_seen_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -24,7 +25,7 @@ WHERE COALESCE(name, '') <> '';
 GRANT SELECT ON public.profile_names TO anon, authenticated;
 
 CREATE OR REPLACE VIEW public.profile_public AS
-SELECT id, name, avatar_url
+SELECT id, name, avatar_url, last_seen_at
 FROM public.profiles;
 
 GRANT SELECT ON public.profile_public TO anon, authenticated;
@@ -91,9 +92,11 @@ CREATE TABLE IF NOT EXISTS providers (
   category    TEXT NOT NULL,
   city        TEXT,
   canton      TEXT,
+  address     TEXT,
   description TEXT,
   services    TEXT[],
   price_range TEXT,
+  phone       TEXT,
   whatsapp    TEXT,
   instagram   TEXT,
   email       TEXT,
@@ -257,14 +260,14 @@ WHERE NOT EXISTS (
   SELECT 1 FROM communities WHERE name = 'Venezolanos en Suiza' AND city = 'Toda Suiza'
 );
 
-INSERT INTO providers (name,category,city,description,services,price_range,whatsapp,instagram,email,website,photo_url,verified,featured,active)
-SELECT 'DJ Sebastián Vega','dj','Zürich','DJ especializado en salsa, reggaetón y cumbia. 10 años en Suiza.',ARRAY['Salsa','Reggaetón','Cumbia'],'medio','+41791234567','@djsebastianvega','hola@djsebastianvega.ch','djsebastianvega.ch','https://images.unsplash.com/photo-1571266028243-3716f02d2d50?w=400&h=300&fit=crop',TRUE,TRUE,TRUE
+INSERT INTO providers (name,category,city,description,services,price_range,phone,whatsapp,instagram,email,website,photo_url,verified,featured,active)
+SELECT 'DJ Sebastián Vega','dj','Zürich','DJ especializado en salsa, reggaetón y cumbia. 10 años en Suiza.',ARRAY['Salsa','Reggaetón','Cumbia'],'medio','+41791234567','+41791234567','@djsebastianvega','hola@djsebastianvega.ch','djsebastianvega.ch','https://images.unsplash.com/photo-1571266028243-3716f02d2d50?w=400&h=300&fit=crop',TRUE,TRUE,TRUE
 WHERE NOT EXISTS (
   SELECT 1 FROM providers WHERE name = 'DJ Sebastián Vega' AND category = 'dj' AND city = 'Zürich'
 );
 
-INSERT INTO providers (name,category,city,description,services,price_range,whatsapp,instagram,email,website,photo_url,verified,featured,active)
-SELECT 'Sabor Latino Catering','catering','Zürich','Cocina latinoamericana auténtica. Ceviche, tamales, lechón.',ARRAY['Colombiana','Peruana','Mexicana'],'medio','+41791122334','@saborlatino_ch','hola@saborlatinocatering.ch','saborlatinocatering.ch','https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&h=300&fit=crop',TRUE,TRUE,TRUE
+INSERT INTO providers (name,category,city,description,services,price_range,phone,whatsapp,instagram,email,website,photo_url,verified,featured,active)
+SELECT 'Sabor Latino Catering','catering','Zürich','Cocina latinoamericana auténtica. Ceviche, tamales, lechón.',ARRAY['Colombiana','Peruana','Mexicana'],'medio','+41791122334','+41791122334','@saborlatino_ch','hola@saborlatinocatering.ch','saborlatinocatering.ch','https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&h=300&fit=crop',TRUE,TRUE,TRUE
 WHERE NOT EXISTS (
   SELECT 1 FROM providers WHERE name = 'Sabor Latino Catering' AND category = 'catering' AND city = 'Zürich'
 );

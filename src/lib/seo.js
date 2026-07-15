@@ -617,6 +617,7 @@ export function getStructuredData(seo = DEFAULT_SEO) {
         url:ensureUrl(seo.business.website, seo.canonical),
         address:{
           '@type':'PostalAddress',
+          streetAddress:seo.business.address,
           addressLocality:seo.business.city || seo.business.canton || 'Suiza',
           addressCountry:'CH',
         },
@@ -806,6 +807,7 @@ export function getEnhancedStructuredData(seo = DEFAULT_SEO) {
         sameAs:seo.business.instagram ? `https://instagram.com/${String(seo.business.instagram).replace('@', '')}` : undefined,
         address:{
           '@type':'PostalAddress',
+          streetAddress:seo.business.address,
           addressLocality:seo.business.city || seo.business.canton || 'Suiza',
           addressCountry:'CH',
         },
