@@ -134,12 +134,57 @@ function HighlightSearchText({ text: value, tokens }) {
   ))
 }
 
+function PremiumPartnerSearchList({ partners, onOpen, highlightTokens }) {
+  return (
+    <section style={{ padding:'10px 12px 12px', background:'linear-gradient(135deg, #F8FAFF 0%, #EFF6FF 100%)', borderBottom:`1px solid ${C.borderLight}` }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'0 2px 7px' }}>
+        <span style={{ fontFamily:PP, fontSize:9.5, fontWeight:850, letterSpacing:0.8, textTransform:'uppercase', color:C.primary }}>
+          Partners premium
+        </span>
+        <span style={{ fontFamily:PP, fontSize:9.5, fontWeight:650, color:C.light }}>
+          {partners.length} recomendados
+        </span>
+      </div>
+      <div style={{ overflow:'hidden', border:`1px solid ${C.primaryMid}`, borderRadius:15, background:'#fff', boxShadow:'0 6px 16px rgba(37,99,235,0.06)' }}>
+        {partners.map((partner, index) => (
+          <div
+            key={`premium-partner-${partner.id}`}
+            style={{ display:'grid', gridTemplateColumns:'44px minmax(0, 1fr) auto', alignItems:'center', gap:12, padding:'12px', borderTop:index ? `1px solid ${C.borderLight}` : 'none' }}
+          >
+            <span style={{ width:44, height:44, borderRadius:13, border:`1px solid ${C.borderLight}`, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', fontSize:21 }}>
+              {partner.image ? (
+                <img src={getThumbnailImageUrl(partner.image)} alt="" loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#fff' }} />
+              ) : partner.icon}
+            </span>
+            <div style={{ minWidth:0 }}>
+              <p style={{ fontFamily:PP, fontWeight:750, fontSize:14, color:C.text, lineHeight:1.3, margin:'0 0 4px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                <HighlightSearchText text={partner.label} tokens={highlightTokens} />
+              </p>
+              <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.4, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                <HighlightSearchText text={partner.sub} tokens={highlightTokens} />
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpen(partner)}
+              aria-label={`Ver ${partner.label}`}
+              style={{ border:`1px solid ${C.primaryMid}`, borderRadius:999, background:C.primaryLight, color:C.primary, padding:'8px 12px', fontFamily:PP, fontWeight:800, fontSize:11, cursor:'pointer', whiteSpace:'nowrap' }}
+            >
+              Ver <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 const SEARCH_SERVICE_BUSINESS_TYPES = new Set(['hogar', 'salud', 'asesoria_tramites', 'belleza'])
 const SEARCH_SERVICE_JOB_SECTORS = new Set(['cuidados', 'limpieza', 'construccion', 'transporte', 'servicios', 'salud'])
 
 function getBusinessCategoryKeys(business) {
   const normalizedType = getNegocioTypeMeta(business.type)?.id || business.type
-  const keys = ['negocios', business.type, normalizedType].filter(Boolean)
+  const keys = ['negocios', business.type, normalizedType, ...(business.partnerCategories || [])].filter(Boolean)
   if (SEARCH_SERVICE_BUSINESS_TYPES.has(normalizedType)) keys.push('servicios')
   if (normalizedType === 'asesoria_tramites') keys.push('documentos')
   return [...new Set(keys)]
@@ -213,6 +258,80 @@ const BUSINESS_SEARCH_PRIORITY = {
   free:3,
 }
 
+const EDITORIAL_PREMIUM_PARTNERS = [
+  {
+    id:'virtus360',
+    name:'Virtus360',
+    aliases:['360 virtus gmbh', 'virtus360'],
+    type:'asesoria_tramites',
+    city:'Horgen',
+    canton:'ZH',
+    description:'Gestoría, finanzas, seguros, impuestos, contabilidad y trámites para vivir o emprender en Suiza.',
+    services:['Gestoría', 'Finanzas', 'Seguros', 'Impuestos', 'Contabilidad'],
+    categories:['negocios', 'servicios', 'documentos'],
+    image:'/partners/virtus360/logo.svg',
+    href:'/servicios-virtus360',
+  },
+  {
+    id:'bellini',
+    name:'Bellini Personal AG',
+    aliases:['bellini', 'bellini personal ag'],
+    type:'empleo',
+    city:'Luzern',
+    canton:'LU',
+    description:'Empleo temporal, selección de personal y oportunidades laborales en construcción en Suiza.',
+    services:['Empleo', 'Trabajo temporal', 'Construcción', 'Asesoramiento laboral'],
+    categories:['negocios', 'empleo', 'servicios'],
+    image:'/partners/bellini/logo-wide.svg',
+    href:'/colaboradores/bellini',
+  },
+  {
+    id:'syna',
+    name:'Syna',
+    aliases:['syna'],
+    type:'empleo',
+    city:'Luzern',
+    canton:'LU',
+    description:'Acompañamiento para trabajadores sobre empleo, contratos, salarios, derechos laborales y sindicatos en Suiza.',
+    services:['Trabajo', 'Derechos laborales', 'Contratos', 'Salarios', 'Sindicato'],
+    categories:['negocios', 'empleo', 'servicios'],
+    image:'/partners/syna/logo.svg',
+    href:'/colaboradores/syna',
+  },
+  {
+    id:'gilda',
+    name:'GILDA by de Matos',
+    aliases:['gilda', 'gilda by de matos', 'de matos'],
+    type:'restaurante',
+    city:'Luzern',
+    canton:'LU',
+    description:'Tapas de autor, cocina española, wine bar, lunch y platos para compartir en Lucerna.',
+    services:['Tapas', 'Cocina española', 'Wine bar', 'Lunch'],
+    categories:['negocios'],
+    image:'/partners/gilda/logo.png',
+    href:'https://www.dematos-luzern.ch/cafeweinbar',
+  },
+  {
+    id:'mira',
+    name:'mira',
+    aliases:['mira'],
+    type:'asesoria_tramites',
+    city:'Suiza',
+    canton:'',
+    description:'Información, asesoramiento y acompañamiento intercultural para personas migrantes en Suiza.',
+    services:['Información', 'Asesoramiento', 'Migración', 'Intercambio'],
+    categories:['negocios', 'servicios', 'documentos'],
+    image:'/partners/mira/mira-removebg-preview.png',
+    href:'/colaboradores/mira',
+  },
+]
+
+function getEditorialPremiumPartner(business) {
+  const normalizedName = normalizeSearchText(business?.name)
+  if (!normalizedName) return null
+  return EDITORIAL_PREMIUM_PARTNERS.find(partner => partner.aliases.includes(normalizedName)) || null
+}
+
 function getCacheKey(isLoggedIn) {
   return isLoggedIn ? 'private' : 'public'
 }
@@ -268,29 +387,35 @@ function normalizeCommunity(group) {
 }
 
 function normalizeBusiness(provider) {
-  const promotionPlan = getEffectiveBusinessPromotionPlan(provider)
+  const editorialPartner = getEditorialPremiumPartner(provider)
+  const promotionPlan = editorialPartner ? 'premium' : getEffectiveBusinessPromotionPlan(provider)
+  const providerServices = Array.isArray(provider.services) ? provider.services : []
 
   return {
     id: provider.id,
-    name: provider.name || 'Negocio',
-    type: provider.type || provider.category || '',
-    city: provider.city || provider.canton || 'Suiza',
-    canton: provider.canton || '',
-    desc: provider.desc || provider.description || '',
+    name: editorialPartner?.name || provider.name || 'Negocio',
+    type: provider.type || provider.category || editorialPartner?.type || '',
+    city: provider.city || provider.canton || editorialPartner?.city || 'Suiza',
+    canton: provider.canton || editorialPartner?.canton || '',
+    desc: provider.desc || provider.description || editorialPartner?.description || '',
     emoji: provider.emoji || BUSINESS_EMOJI[provider.category] || '🏪',
-    services: Array.isArray(provider.services) ? provider.services : [],
+    services: providerServices.length ? providerServices : (editorialPartner?.services || []),
     languages: Array.isArray(provider.languages) ? provider.languages : [],
     spanishSupported:provider.spanish_supported === true,
     featured: !!provider.featured,
     verified: !!provider.verified,
     promotionPlan,
-    photoUrl: provider.photo_url || provider.img || '',
+    editorialPartnerId:editorialPartner?.id || '',
+    partnerCategories:editorialPartner?.categories || [],
+    href:editorialPartner?.href || '',
+    photoUrl: editorialPartner?.image || provider.photo_url || provider.img || '',
     created_at: provider.created_at || '',
   }
 }
 
 function getBusinessSearchPlan(business) {
-  if (business.promotionPlan && business.promotionPlan !== 'free') return business.promotionPlan
+  if (business?.editorialPartnerId || getEditorialPremiumPartner(business)) return 'premium'
+  if (business.promotionPlan) return business.promotionPlan
   return business.featured ? 'featured' : 'free'
 }
 
@@ -624,6 +749,56 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
       })
     }
   }
+
+  const availableEditorialPartnerIds = new Set(
+    datasets.businesses.map(business => business.editorialPartnerId).filter(Boolean)
+  )
+  for (const partner of EDITORIAL_PREMIUM_PARTNERS) {
+    if (availableEditorialPartnerIds.has(partner.id)) continue
+    const businessType = getNegocioTypeMeta(partner.type)
+    const searchScore = getSearchScore([
+      { value:partner.name, weight:6 },
+      { value:partner.services.join(' '), weight:5 },
+      { value:partner.description, weight:4 },
+      { value:businessType?.label, weight:2 },
+      { value:partner.type, weight:2 },
+      { value:partner.city, weight:2 },
+    ])
+    if (!searchScore) continue
+
+    matchingBusinesses.push({
+      id:`editorial-${partner.id}`,
+      name:partner.name,
+      type:partner.type,
+      city:partner.city,
+      canton:partner.canton,
+      desc:partner.description,
+      emoji:'✨',
+      services:partner.services,
+      languages:['Español'],
+      spanishSupported:true,
+      featured:true,
+      verified:true,
+      promotionPlan:'premium',
+      editorialPartnerId:partner.id,
+      partnerCategories:partner.categories,
+      href:partner.href,
+      photoUrl:partner.image,
+      created_at:'',
+      filterMeta:{
+        categories:partner.categories,
+        searchText:[partner.name, partner.services.join(' '), partner.description, businessType?.label, partner.type].filter(Boolean).join(' '),
+        canton:partner.canton,
+        city:partner.city,
+        location:partner.city,
+        intent:'ofrece',
+        languages:['Español'],
+        languageText:partner.description,
+        spanishSupported:true,
+      },
+      searchScore,
+    })
+  }
   matchingBusinesses.sort(sortMatchingBusinesses)
 
   const recommendedPartner = matchingBusinesses.find(
@@ -639,9 +814,10 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
       imageFit:'contain',
       label:recommendedPartner.name,
       sub:recommendedPartner.services.slice(0, 3).join(metaSeparator) || recommendedPartner.desc || 'Servicios para la comunidad hispanohablante en Suiza.',
-      href:getBusinessPath(recommendedPartner),
+      href:recommendedPartner.href || getBusinessPath(recommendedPartner),
       isPartnerRecommendation:true,
       filterMeta:recommendedPartner.filterMeta,
+      partnerPlan:getBusinessSearchPlan(recommendedPartner),
       searchPriority:-2,
       searchScore:recommendedPartner.searchScore,
     })
@@ -659,9 +835,10 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
       imageFit:'contain',
       label:business.name,
       sub:[planLabel, getNegocioTypeMeta(business.type)?.label || 'Negocio', business.city].filter(Boolean).join(metaSeparator),
-      href:getBusinessPath(business),
+      href:business.href || getBusinessPath(business),
       featured:business.featured,
       filterMeta:business.filterMeta,
+      partnerPlan:getBusinessSearchPlan(business),
       searchPriority:getBusinessSearchPriority(business),
       searchScore:business.searchScore,
     })
@@ -755,7 +932,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
     rankedResults.push({ ...eligibleResults[index], searchIndex:index })
   }
   rankedResults.sort((a, b) => (
-    (a.searchPriority ?? 1) - (b.searchPriority ?? 1) ||
+    (a.searchPriority ?? BUSINESS_SEARCH_PRIORITY.free) - (b.searchPriority ?? BUSINESS_SEARCH_PRIORITY.free) ||
     (b.searchScore || 0) - (a.searchScore || 0) ||
     a.searchIndex - b.searchIndex
   ))
@@ -824,19 +1001,47 @@ export default function GlobalSearch({
     () => activeFilter ? searchFilteredResults.filter(r => r.type === activeFilter) : searchFilteredResults,
     [activeFilter, searchFilteredResults]
   )
-  const filteredResults = useMemo(
-    () => resultPool.slice(0, expandedResults ? MAX_SEARCH_RESULTS : INITIAL_SEARCH_RESULTS),
-    [expandedResults, resultPool]
-  )
   const partnerService = useMemo(() => getPartnerServiceMatch(q), [q])
+  const hasSearchFilters = hasActiveSearchFilters(searchFilters)
+  const showPartnerService = partnerService && !hasSearchFilters
+  const premiumBusinessResults = useMemo(
+    () => resultPool.filter(result => result.type === 'business' && result.partnerPlan === 'premium'),
+    [resultPool]
+  )
+  const premiumPartnerEntries = useMemo(() => {
+    const entries = []
+    if (showPartnerService) {
+      entries.push({
+        type:'business',
+        id:'suiza-en-espanol',
+        label:'Suiza en Español',
+        sub:partnerService?.label ? `${partnerService.label} · Atención en español` : 'Seguros, previsión y llegada a Suiza',
+        image:'/partners/suiza-en-espanol/logo-see.webp',
+        href:`/servicios-suiza${partnerService?.id ? `?service=${encodeURIComponent(partnerService.id)}` : ''}`,
+        partnerPlan:'premium',
+      })
+    }
+    entries.push(...premiumBusinessResults)
+    return entries
+  }, [partnerService, premiumBusinessResults, showPartnerService])
+  const showPremiumPartnerList = premiumPartnerEntries.length > 1
+  const visibleResultPool = useMemo(
+    () => showPremiumPartnerList
+      ? resultPool.filter(result => !(result.type === 'business' && result.partnerPlan === 'premium'))
+      : resultPool,
+    [resultPool, showPremiumPartnerList]
+  )
+  const filteredResults = useMemo(
+    () => visibleResultPool.slice(0, expandedResults ? MAX_SEARCH_RESULTS : INITIAL_SEARCH_RESULTS),
+    [expandedResults, visibleResultPool]
+  )
+  const displayedResultCount = filteredResults.length + (showPremiumPartnerList ? premiumBusinessResults.length : 0)
   const currentSearchProfile = useMemo(
     () => buildSearchProfile(assistantQuery?.active ? assistantQuery.semanticQuery : q),
     [assistantQuery, q]
   )
   const searchInterpretation = getSearchInterpretation(currentSearchProfile)
   const highlightTokens = currentSearchProfile.tokens
-  const hasSearchFilters = hasActiveSearchFilters(searchFilters)
-  const showPartnerService = partnerService && !hasSearchFilters && !assistantMode
   const assistantCriteria = assistantQuery?.criteria || []
   const assistantLoading = assistantRpc.status === 'loading'
 
@@ -1125,7 +1330,11 @@ export default function GlobalSearch({
       })
     }
 
-    navigate(href)
+    if (/^https?:\/\//i.test(href)) {
+      window.open(href, '_blank', 'noopener,noreferrer')
+    } else {
+      navigate(href)
+    }
     cancelBlurClose()
     setQ('')
     setFocused(false)
@@ -1268,7 +1477,7 @@ export default function GlobalSearch({
               <strong style={{ color:C.primary }}>{searchInterpretation}</strong>
             </div>
           )}
-          {filteredResults.length === 0 ? (
+          {filteredResults.length === 0 && !showPremiumPartnerList ? (
             <div style={{ padding:'20px 18px', textAlign:'center' }}>
               {(loadingData && !dataReady) || assistantLoading ? (
                 <>
@@ -1318,7 +1527,13 @@ export default function GlobalSearch({
             </div>
           ) : (
             <>
-              {showPartnerService && (
+              {showPremiumPartnerList ? (
+                <PremiumPartnerSearchList
+                  partners={premiumPartnerEntries}
+                  onOpen={goTo}
+                  highlightTokens={highlightTokens}
+                />
+              ) : showPartnerService && (
                 <PartnerServicesPromo
                   placement="global_search_results"
                   variant="contextual"
@@ -1411,15 +1626,15 @@ export default function GlobalSearch({
                 )}
                 <div style={{ padding:'10px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
                   <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>
-                    {resultPool.length > filteredResults.length
-                      ? `Mostrando ${filteredResults.length} de ${resultPool.length} resultados`
+                    {resultPool.length > displayedResultCount
+                      ? `Mostrando ${displayedResultCount} de ${resultPool.length} resultados`
                       : `${resultPool.length} resultado${resultPool.length !== 1 ? 's' : ''} en Latido`}
                   </span>
-                  {!expandedResults && resultPool.length > filteredResults.length ? (
+                  {!expandedResults && visibleResultPool.length > filteredResults.length ? (
                     <button type="button" onClick={() => { setExpandedResults(true); setActiveIdx(-1) }} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:C.primary, background:'none', border:'none', padding:0, cursor:'pointer' }}>
                       Ver más
                     </button>
-                  ) : expandedResults && resultPool.length > INITIAL_SEARCH_RESULTS ? (
+                  ) : expandedResults && visibleResultPool.length > INITIAL_SEARCH_RESULTS ? (
                     <button type="button" onClick={() => { setExpandedResults(false); setActiveIdx(-1) }} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:C.primary, background:'none', border:'none', padding:0, cursor:'pointer' }}>
                       Ver menos
                     </button>
