@@ -106,8 +106,8 @@ const SCOPE_DEFINITIONS = [
     label:'Reparaciones',
     category:'servicios',
     entityTypes:['business', 'ad'],
-    triggers:['arreglar', 'averia', 'reparacion', 'reparar', 'fontanero', 'electricista', 'pintor', 'bricolaje'],
-    searchTerms:['reparacion', 'mantenimiento', 'fontanero', 'electricista', 'pintor', 'bricolaje'],
+    triggers:['arreglar', 'averia', 'reparacion', 'reparar', 'fontanero', 'electricista', 'pintor', 'bricolaje', 'manitas', 'carpintero', 'montar muebles', 'colgar lampara'],
+    searchTerms:['reparacion', 'mantenimiento', 'fontanero', 'electricista', 'pintor', 'bricolaje', 'manitas', 'carpinteria', 'reformas'],
     semanticSeed:'reparacion',
   },
   {
@@ -133,36 +133,72 @@ const SCOPE_DEFINITIONS = [
     label:'Trámites y asesoría',
     category:'documentos',
     entityTypes:['business', 'ad', 'guide'],
-    triggers:['tramite', 'gestoria', 'permiso', 'apostilla', 'impuesto', 'declaracion', 'asesoria'],
-    searchTerms:['tramite', 'gestoria', 'permiso', 'apostilla', 'impuesto', 'declaracion', 'asesoria'],
+    triggers:['tramite', 'gestoria', 'permiso', 'apostilla', 'impuesto', 'declaracion', 'asesoria', 'seguro', 'abogado', 'notario', 'residencia', 'empadronamiento'],
+    searchTerms:['tramite', 'gestoria', 'permiso', 'apostilla', 'impuesto', 'declaracion', 'asesoria', 'seguro', 'abogado', 'notario', 'residencia'],
     semanticSeed:'tramite',
   },
   {
     id:'health',
     label:'Salud',
-    category:'negocios',
+    category:'',
     entityTypes:['business', 'ad'],
-    triggers:['dentista', 'medico', 'doctora', 'doctor', 'psicologo', 'psicologa', 'fisioterapia', 'terapia', 'pediatra', 'ginecologo'],
-    searchTerms:['dentista', 'medico', 'doctor', 'psicologia', 'fisioterapia', 'terapia', 'salud'],
+    triggers:['dentista', 'medico', 'doctora', 'doctor', 'psicologo', 'psicologa', 'fisioterapia', 'terapia', 'pediatra', 'ginecologo', 'odontologo', 'odontologia', 'muela', 'diente', 'caries', 'ortodoncia', 'dolor de espalda', 'rehabilitacion'],
+    searchTerms:['dentista', 'medico', 'doctor', 'psicologia', 'fisioterapia', 'terapia', 'salud', 'odontologia', 'clinica'],
     semanticSeed:'salud',
   },
   {
     id:'beauty',
     label:'Belleza',
-    category:'negocios',
+    category:'',
     entityTypes:['business', 'ad'],
-    triggers:['peluqueria', 'peluquero', 'peluquera', 'barberia', 'barbero', 'unas', 'maquillaje', 'estetica'],
-    searchTerms:['peluqueria', 'barberia', 'estetica', 'belleza', 'unas', 'maquillaje'],
+    triggers:['peluqueria', 'peluquero', 'peluquera', 'barberia', 'barbero', 'unas', 'maquillaje', 'estetica', 'manicura', 'pedicura', 'depilacion', 'masaje', 'cortar el pelo'],
+    searchTerms:['peluqueria', 'barberia', 'estetica', 'belleza', 'unas', 'maquillaje', 'manicura', 'pedicura', 'depilacion', 'masaje'],
     semanticSeed:'belleza',
+  },
+  {
+    id:'dance',
+    label:'Baile y danza',
+    category:'',
+    entityTypes:['business', 'event', 'ad'],
+    triggers:['bailar', 'baile', 'danza', 'bachata', 'tango', 'merengue', 'kizomba', 'zumba', 'coreografia', 'clases de salsa', 'aprender salsa', 'noche de salsa'],
+    searchTerms:['baile', 'bailar', 'danza', 'salsa', 'bachata', 'tango', 'merengue', 'kizomba', 'zumba', 'clases de baile'],
+    semanticSeed:'baile',
   },
   {
     id:'food',
     label:'Comida y restauración',
-    category:'negocios',
+    category:'',
     entityTypes:['business', 'ad'],
-    triggers:['comer', 'comida', 'restaurante', 'catering', 'pastel', 'torta', 'panaderia'],
-    searchTerms:['comida', 'restaurante', 'catering', 'pasteleria', 'pastel'],
+    triggers:['comer', 'comida', 'restaurante', 'catering', 'pastel', 'torta', 'tarta', 'pasteleria', 'reposteria', 'panaderia', 'cupcake', 'postre', 'dulces', 'salsa'],
+    searchTerms:['comida', 'restaurante', 'catering', 'pasteleria', 'reposteria', 'pastel', 'tarta', 'torta', 'panaderia', 'cupcake', 'postre'],
     semanticSeed:'restaurante',
+  },
+  {
+    id:'education',
+    label:'Clases y formación',
+    category:'',
+    entityTypes:['business', 'ad', 'event'],
+    triggers:['aprender', 'clases', 'curso', 'cursos', 'profesor', 'profesora', 'academia', 'formacion', 'taller educativo'],
+    searchTerms:['clases', 'curso', 'profesor', 'profesora', 'academia', 'formacion', 'taller'],
+    semanticSeed:'clases',
+  },
+  {
+    id:'vehicle',
+    label:'Vehículos y talleres',
+    category:'',
+    entityTypes:['business', 'ad'],
+    triggers:['coche', 'carro', 'auto', 'vehiculo', 'mecanico', 'mecanica', 'taller mecanico', 'neumaticos', 'llantas'],
+    searchTerms:['coche', 'vehiculo', 'mecanico', 'mecanica', 'taller', 'automovil', 'neumaticos'],
+    semanticSeed:'vehiculo',
+  },
+  {
+    id:'transport',
+    label:'Transporte',
+    category:'',
+    entityTypes:['business', 'ad'],
+    triggers:['taxi', 'chofer', 'conductor', 'llevar al aeropuerto', 'traslado aeropuerto', 'transporte de personas'],
+    searchTerms:['taxi', 'chofer', 'conductor', 'aeropuerto', 'transporte', 'traslado'],
+    semanticSeed:'transporte',
   },
   {
     id:'events',
@@ -205,7 +241,10 @@ const SCOPE_DEFINITIONS = [
 const ACTION_WORDS = new Set([
   'busca', 'buscando', 'buscar', 'busco', 'encuentra', 'encontrar', 'encuentro',
   'necesito', 'necesitamos', 'quiero', 'quisiera', 'ofrezco', 'ofrecer', 'ofrece',
-  'tengo', 'hay', 'me', 'interesa', 'interesado', 'interesada',
+  'tengo', 'hay', 'me', 'interesa', 'interesado', 'interesada', 'encargar', 'encargo',
+  'pedir', 'pido', 'reservar', 'reservo', 'contratar', 'contrato', 'curar', 'curarme',
+  'tratar', 'tratarme', 'comprar', 'compro', 'vender', 'vendo', 'regalar', 'regalo',
+  'arreglar', 'reparar',
 ])
 
 const STRUCTURAL_WORDS = new Set([
@@ -340,6 +379,27 @@ function extractLocation(original, normalized, priceMatched) {
   return { municipality:resolved?.municipality || '', canton:resolved?.canton || '', postalCode, matched:postalCode }
 }
 
+function getScopeDefinition(id) {
+  return SCOPE_DEFINITIONS.find(scope => scope.id === id) || null
+}
+
+function hasAnyPhrase(normalized, terms) {
+  return terms.some(term => includesPhrase(normalized, term))
+}
+
+function focusScope(id, semanticSeed, focusTerms = [], focusKind = 'terms') {
+  const scope = getScopeDefinition(id)
+  if (!scope) return null
+  return {
+    ...scope,
+    semanticSeed:semanticSeed || scope.semanticSeed,
+    searchTerms:[...new Set([...focusTerms, ...scope.searchTerms])],
+    consumedTerms:[...new Set([...(scope.consumedTerms || []), ...focusTerms])],
+    focusTerms,
+    focusKind,
+  }
+}
+
 function detectScope(normalized) {
   const hasEmploymentContext = ['empleo', 'trabajo', 'trabajar', 'vacante', 'puesto laboral', 'curro', 'chamba']
     .some(term => includesPhrase(normalized, term))
@@ -347,7 +407,7 @@ function detectScope(normalized) {
     .some(term => includesPhrase(normalized, term))
 
   if (hasEmploymentContext) {
-    const employment = SCOPE_DEFINITIONS.find(scope => scope.id === 'employment')
+    const employment = getScopeDefinition('employment')
     return hasConstruction
       ? { ...employment, searchTerms:[...employment.searchTerms, 'construccion', 'obra', 'albanil'], semanticSeed:'empleo' }
       : employment
@@ -358,7 +418,61 @@ function detectScope(normalized) {
   const hasMarketplaceVerb = ['comprar', 'compro', 'vender', 'vendo', 'regalar', 'regalo']
     .some(term => includesPhrase(normalized, term))
   if (hasHousing && hasMarketplaceVerb) {
-    return SCOPE_DEFINITIONS.find(scope => scope.id === 'housing')
+    return getScopeDefinition('housing')
+  }
+
+  const dentalTerms = ['dentista', 'odontologo', 'odontologia', 'muela', 'muelas', 'diente', 'dientes', 'caries', 'encia', 'encias', 'ortodoncia', 'endodoncia', 'implante dental']
+  if (hasAnyPhrase(normalized, dentalTerms)) {
+    return focusScope('health', 'dentista', ['dentista', 'odontologia', 'clinica dental', 'dental', 'muela', 'diente'])
+  }
+
+  const healthFocuses = [
+    { terms:['psicologo', 'psicologa', 'psicologia', 'ansiedad', 'depresion', 'terapia de pareja'], seed:'psicologia', matches:['psicologo', 'psicologa', 'psicologia', 'psicoterapia', 'terapia'] },
+    { terms:['fisioterapia', 'fisioterapeuta', 'fisio', 'rehabilitacion', 'dolor de espalda', 'lesion muscular'], seed:'fisioterapia', matches:['fisioterapia', 'fisioterapeuta', 'fisio', 'rehabilitacion'] },
+    { terms:['pediatra', 'pediatria', 'medico para ninos'], seed:'pediatra', matches:['pediatra', 'pediatria'] },
+    { terms:['ginecologo', 'ginecologa', 'ginecologia'], seed:'ginecologia', matches:['ginecologo', 'ginecologa', 'ginecologia'] },
+  ]
+  const healthFocus = healthFocuses.find(focus => hasAnyPhrase(normalized, focus.terms))
+  if (healthFocus) {
+    return focusScope('health', healthFocus.seed, healthFocus.matches)
+  }
+
+  const danceStyles = ['salsa', 'bachata', 'tango', 'merengue', 'kizomba', 'zumba', 'reggaeton']
+  const danceContext = hasAnyPhrase(normalized, ['bailar', 'baile', 'danza', 'coreografia'])
+    || hasAnyPhrase(normalized, ['clases de salsa', 'aprender salsa', 'noche de salsa', 'fiesta de salsa', 'evento de salsa', 'festival de salsa', 'noche latina'])
+    || hasAnyPhrase(normalized, danceStyles.filter(style => style !== 'salsa'))
+  if (danceContext) {
+    const style = danceStyles.find(term => includesPhrase(normalized, term))
+    return focusScope('dance', style || 'baile', style ? [style, 'baile', 'danza'] : ['baile', 'danza'], 'dance')
+  }
+
+  const cakeTerms = ['tarta', 'tartas', 'torta', 'tortas', 'pastel', 'pasteles', 'pasteleria', 'reposteria', 'cupcake', 'cupcakes']
+  if (hasAnyPhrase(normalized, cakeTerms)) {
+    return focusScope('food', 'tarta', ['tarta', 'torta', 'pastel', 'pasteleria', 'reposteria', 'cupcake'])
+  }
+
+  const foodFocuses = [
+    { terms:['catering', 'banquete'], seed:'catering' },
+    { terms:['panaderia', 'pan', 'bolleria'], seed:'panaderia' },
+    { terms:['restaurante', 'comer fuera'], seed:'restaurante' },
+    { terms:['comida', 'comer', 'plato', 'menu'], seed:'comida' },
+    { terms:['salsa'], seed:'salsa' },
+  ]
+  const foodFocus = foodFocuses.find(focus => hasAnyPhrase(normalized, focus.terms))
+  if (foodFocus) {
+    return focusScope('food', foodFocus.seed, foodFocus.terms, foodFocus.seed === 'salsa' ? 'food' : 'terms')
+  }
+
+  const vehicleTerms = ['coche', 'carro', 'auto', 'vehiculo', 'mecanico', 'mecanica', 'taller mecanico', 'neumaticos', 'llantas']
+  if (hasAnyPhrase(normalized, vehicleTerms)) {
+    const repairContext = hasAnyPhrase(normalized, ['arreglar', 'reparar', 'averia', 'mecanico', 'mecanica', 'taller mecanico'])
+    return focusScope('vehicle', repairContext ? 'mecanico' : 'vehiculo', repairContext
+      ? ['mecanico', 'mecanica', 'taller', 'reparacion de coches']
+      : ['coche', 'vehiculo', 'automovil'])
+  }
+
+  if (hasAnyPhrase(normalized, ['taxi', 'chofer', 'llevar al aeropuerto', 'traslado aeropuerto', 'transporte de personas'])) {
+    return focusScope('transport', includesPhrase(normalized, 'aeropuerto') ? 'aeropuerto' : 'transporte')
   }
 
   return SCOPE_DEFINITIONS.find(scope => scope.triggers.some(term => includesPhrase(normalized, term))) || null
@@ -376,7 +490,9 @@ function detectResultIntents(normalized, scope) {
     return ['vende', 'regala', 'ofrece']
   }
   if (offering && !seeking) return ['busca']
-  if (scope && (seeking || ['housing', 'employment', 'cleaning', 'translation', 'moving', 'repairs', 'childcare', 'eldercare', 'paperwork', 'health', 'beauty', 'food'].includes(scope.id))) {
+  const providesSomething = scope?.id !== 'marketplace'
+    && scope?.entityTypes?.some(type => ['business', 'ad', 'job'].includes(type))
+  if (scope && (seeking || providesSomething)) {
     return ['ofrece']
   }
   return []
@@ -408,7 +524,10 @@ function getMeaningfulTerms(normalized, scope, location, extractedPhrases) {
   }
   if (location?.matched) remaining = remaining.replace(location.matched, ' ')
 
-  const triggerWords = new Set((scope?.triggers || []).flatMap(term => normalizeSearchText(term).split(' ')))
+  const triggerWords = new Set(
+    [...(scope?.triggers || []), ...(scope?.consumedTerms || [])]
+      .flatMap(term => normalizeSearchText(term).split(' '))
+  )
   return remaining
     .split(/\s+/)
     .filter(token => token.length > 1)
@@ -484,7 +603,12 @@ export function parseLatidoAssistantQuery(query, now = new Date()) {
     date.matched,
     ...languageNeeds.matched,
   ])
-  const semanticParts = [scope?.semanticSeed, ...meaningfulTerms].filter(Boolean)
+  const semanticParts = [...new Set(
+    [scope?.semanticSeed, ...meaningfulTerms]
+      .filter(Boolean)
+      .flatMap(term => normalizeSearchText(term).split(' '))
+      .filter(Boolean)
+  )]
   const searchTerms = [...new Set([...(scope?.searchTerms || []), ...meaningfulTerms])]
 
   let confidence = 0.1
@@ -578,6 +702,27 @@ function matchesGermanRequirement(meta, level) {
   return order.indexOf(resultLevel) <= order.indexOf(level)
 }
 
+function matchesScopeFocus(result, scope) {
+  if (!scope?.focusKind) return true
+  const meta = result?.filterMeta || {}
+  const searchText = normalizeSearchText(meta.searchText || `${result?.label || ''} ${result?.sub || ''}`)
+  if (!searchText) return false
+
+  if (scope.focusKind === 'dance') {
+    const explicitDanceTerms = ['baile', 'bailar', 'danza', 'bachata', 'tango', 'merengue', 'kizomba', 'zumba', 'reggaeton', 'coreografia']
+    if (hasAnyPhrase(searchText, explicitDanceTerms)) return true
+    return includesPhrase(searchText, 'salsa')
+      && hasAnyPhrase(searchText, ['clase', 'clases', 'noche', 'noches', 'dj', 'musica', 'concierto', 'pista', 'academia', 'escuela'])
+  }
+
+  if (scope.focusKind === 'food') {
+    return hasAnyPhrase(searchText, scope.focusTerms || [])
+      && hasAnyPhrase(searchText, ['comida', 'cocina', 'restaurante', 'tortilla', 'picante', 'receta', 'catering', 'pasteleria', 'panaderia', 'postre'])
+  }
+
+  return hasAnyPhrase(searchText, scope.focusTerms || [])
+}
+
 export function matchesLatidoAssistantResult(result, parsed) {
   if (!parsed?.active) return true
   const meta = result?.filterMeta || {}
@@ -585,6 +730,7 @@ export function matchesLatidoAssistantResult(result, parsed) {
   if (parsed.entityTypes.length && !parsed.entityTypes.includes(result.type)) return false
   if (parsed.category && !meta.categories?.includes(parsed.category)) return false
   if (parsed.resultIntents.length && meta.intent && !parsed.resultIntents.includes(meta.intent)) return false
+  if (!matchesScopeFocus(result, parsed.scope)) return false
   if (!matchesLocation(result, parsed)) return false
 
   const rawAmount = meta.priceAmount ?? meta.salaryAmount

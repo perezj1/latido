@@ -8,7 +8,8 @@ const SEARCH_STOP_WORDS = new Set([
   'ofrezca', 'para', 'persona', 'por', 'profesional', 'pueda', 'puede', 'pueden', 'que',
   'quien', 'quiero', 'quisiera', 'sacar', 'se', 'servicio', 'servicios', 'sobre', 'su',
   'sus', 'tema', 'tenga', 'un', 'una', 'unas', 'uno', 'unos', 'urgente', 'ya',
-  'busca', 'buscando', 'buscar', 'busco',
+  'busca', 'buscando', 'buscar', 'busco', 'comprar', 'compro', 'contratar', 'contrato',
+  'curar', 'curarme', 'encargar', 'encargo', 'pedir', 'pido', 'reservar', 'reservo',
 ])
 
 const INTENT_DEFINITIONS = [
@@ -38,9 +39,9 @@ const INTENT_DEFINITIONS = [
   },
   {
     id:'repairs',
-    triggers:['arreglar', 'averia', 'reparacion', 'reparar', 'fontanero', 'electricista'],
-    consumed:['casa', 'piso'],
-    terms:['reparacion', 'mantenimiento', 'fontanero', 'electricista', 'handwerker'],
+    triggers:['arreglar', 'averia', 'reparacion', 'reparar', 'fontanero', 'electricista', 'bricolaje', 'manitas'],
+    consumed:['casa', 'piso', 'mueble', 'lampara'],
+    terms:['reparacion', 'mantenimiento', 'fontanero', 'electricista', 'bricolaje', 'manitas', 'carpinteria', 'handwerker'],
   },
   {
     id:'childcare',
@@ -68,27 +69,45 @@ const INTENT_DEFINITIONS = [
   },
   {
     id:'health',
-    triggers:['dentista', 'medico', 'psicologo', 'psicologa', 'fisioterapia', 'terapia', 'salud'],
-    consumed:['cita', 'consulta'],
-    terms:['dentista', 'medico', 'psicologia', 'psicologo', 'fisioterapia', 'terapia', 'salud'],
+    triggers:['dentista', 'medico', 'psicologo', 'psicologa', 'fisioterapia', 'terapia', 'salud', 'odontologo', 'odontologia', 'muela', 'diente', 'caries', 'ortodoncia'],
+    consumed:['cita', 'consulta', 'muelas', 'dientes', 'encias', 'dolor'],
+    terms:['dentista', 'odontologia', 'clinica dental', 'medico', 'psicologia', 'psicologo', 'fisioterapia', 'terapia', 'salud'],
   },
   {
     id:'beauty',
-    triggers:['peluqueria', 'peluquero', 'peluquera', 'barberia', 'barbero', 'unas', 'maquillaje'],
+    triggers:['peluqueria', 'peluquero', 'peluquera', 'barberia', 'barbero', 'unas', 'maquillaje', 'manicura', 'pedicura', 'depilacion', 'masaje'],
     consumed:['cabello', 'corte', 'pelo'],
-    terms:['peluqueria', 'peluquero', 'barberia', 'barbero', 'estetica', 'belleza', 'unas', 'maquillaje'],
+    terms:['peluqueria', 'peluquero', 'barberia', 'barbero', 'estetica', 'belleza', 'unas', 'maquillaje', 'manicura', 'pedicura', 'depilacion', 'masaje'],
+  },
+  {
+    id:'dance',
+    triggers:['bailar', 'baile', 'danza', 'bachata', 'tango', 'merengue', 'kizomba', 'zumba', 'coreografia'],
+    consumed:['clase', 'clases', 'aprender', 'salsa', 'reggaeton'],
+    terms:['baile', 'bailar', 'danza', 'salsa', 'bachata', 'tango', 'merengue', 'kizomba', 'zumba', 'coreografia'],
   },
   {
     id:'food',
-    triggers:['comer', 'comida', 'restaurante', 'catering', 'pastel', 'torta'],
-    consumed:['domicilio', 'llevar'],
-    terms:['comida', 'restaurante', 'cocina', 'catering', 'pasteleria', 'pastel', 'delivery'],
+    triggers:['comer', 'comida', 'restaurante', 'catering', 'pastel', 'torta', 'tarta', 'pasteleria', 'reposteria', 'panaderia', 'cupcake', 'postre'],
+    consumed:['domicilio', 'llevar', 'pasteles', 'tartas', 'tortas', 'cupcakes'],
+    terms:['comida', 'restaurante', 'cocina', 'catering', 'pasteleria', 'reposteria', 'pastel', 'tarta', 'torta', 'panaderia', 'cupcake', 'postre', 'delivery'],
+  },
+  {
+    id:'education',
+    triggers:['aprender', 'clase', 'clases', 'curso', 'cursos', 'profesor', 'profesora', 'academia', 'formacion'],
+    consumed:['ensenar', 'ensenanza', 'estudiar'],
+    terms:['clase', 'clases', 'curso', 'profesor', 'profesora', 'academia', 'formacion', 'taller'],
   },
   {
     id:'vehicle',
     triggers:['coche', 'carro', 'auto', 'vehiculo', 'mecanico', 'taller'],
     consumed:['comprar', 'reparar', 'vender'],
     terms:['coche', 'vehiculo', 'mecanico', 'mecanica', 'taller', 'automovil'],
+  },
+  {
+    id:'transport',
+    triggers:['taxi', 'chofer', 'conductor', 'aeropuerto', 'transporte de personas'],
+    consumed:['llevar', 'recoger', 'traslado'],
+    terms:['taxi', 'chofer', 'conductor', 'aeropuerto', 'transporte', 'traslado'],
   },
   {
     id:'marketplace',
@@ -161,9 +180,13 @@ export function buildSearchProfile(query) {
   const normalized = normalizeSearchText(query)
   const allTokens = getWords(normalized)
   const tokens = allTokens.filter(token => token.length > 1 && !SEARCH_STOP_WORDS.has(token))
-  const intents = INTENT_DEFINITIONS.filter(intent => (
+  const matchedIntents = INTENT_DEFINITIONS.filter(intent => (
     intent.triggers.some(trigger => valueMatchesTerm(normalized, trigger))
   ))
+  const hasSpecificIntent = matchedIntents.some(intent => intent.id !== 'marketplace')
+  const intents = hasSpecificIntent
+    ? matchedIntents.filter(intent => intent.id !== 'marketplace')
+    : matchedIntents
   const consumedTerms = intents.flatMap(intent => [...intent.triggers, ...(intent.consumed || [])])
   const requiredTokens = tokens.filter(token => !tokenMatchesAny(token, consumedTerms))
 

@@ -505,6 +505,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
         privacy:ad.privacy,
         filterMeta:{
           categories:['anuncios', getAdCategoryId(ad)].filter(Boolean),
+          searchText:[ad.title, ad.desc, cat?.label, ad.cat, ad.sub].filter(Boolean).join(' '),
           canton:ad.canton,
           city:ad.city,
           location,
@@ -610,6 +611,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
         ...business,
         filterMeta:{
           categories,
+          searchText:[business.name, business.services.join(' '), business.desc, businessType?.label, business.type].filter(Boolean).join(' '),
           canton:business.canton,
           city:business.city,
           location:business.city,
@@ -688,6 +690,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
         href:getEventPath(event),
         filterMeta:{
           categories:['eventos'],
+          searchText:[event.title, event.desc, eventType?.label, event.type, event.venue, event.host].filter(Boolean).join(' '),
           canton:event.canton,
           city:event.city,
           location:event.city,
