@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
 import PublicPartnersSection from '../components/PublicPartnersSection'
 import { C, PP } from '../lib/theme'
+import { CANTONS } from '../lib/constants'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 
 /* ─────────────────────────────────────────────────────────────
@@ -98,6 +99,56 @@ const AD_CATS_PREVIEW = [
   { emoji: '🎉', label: 'Eventos',   color: '#FCE7F3', tc: '#9D174D', desc: 'Lo que pasa en Suiza',           to: '/comunidades?view=eventos' },
   { emoji: '✨', label: 'Y más...',  color: '#F1F5F9', tc: '#475569', desc: 'Servicios, guías y mucho más',    to: '/' },
 ]
+
+const LANDING_SEARCH_CATEGORY_OPTIONS = [
+  { value:'', label:'Todos' },
+  { value:'anuncios', label:'Anuncios' },
+  { value:'vivienda', label:'Vivienda' },
+  { value:'empleo', label:'Empleo' },
+  { value:'servicios', label:'Servicios' },
+  { value:'cuidados', label:'Cuidados' },
+  { value:'venta', label:'Mercado' },
+  { value:'documentos', label:'Trámites' },
+  { value:'negocios', label:'Negocios' },
+  { value:'grupos', label:'Grupos' },
+  { value:'eventos', label:'Eventos' },
+  { value:'guias', label:'Guías' },
+]
+
+const LANDING_SEARCH_INTENT_OPTIONS = [
+  { value:'', label:'Todas' },
+  { value:'busca', label:'Busco o necesito' },
+  { value:'ofrece', label:'Ofrezco' },
+  { value:'vende', label:'Vendo' },
+  { value:'regala', label:'Regalo' },
+]
+
+function LandingSearchFilterSelect({ label, value, options, onChange, flex = 1 }) {
+  const selectedLabel = options.find(option => option.value === value)?.label || options[0]?.label || label
+  const isActive = !!value
+
+  return (
+    <label style={{ position:'relative', display:'flex', minWidth:0, flex:`${flex} 1 0`, height:46, border:`1.5px solid ${isActive ? C.primary : '#BFDBFE'}`, borderRadius:13, background:isActive ? C.primaryLight : '#F8FAFF', overflow:'hidden', transition:'all .15s' }}>
+      <span style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'flex-start', padding:'3px 30px 3px 11px', pointerEvents:'none', minWidth:0 }}>
+        <span style={{ fontFamily:PP, fontSize:8, lineHeight:1.1, fontWeight:900, color:C.primary, textTransform:'uppercase', letterSpacing:0.55 }}>
+          {label}
+        </span>
+        <span style={{ width:'100%', marginTop:3, fontFamily:PP, fontSize:10.5, lineHeight:1.15, fontWeight:750, color:isActive ? C.primaryDark : C.text, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', textAlign:'left' }}>
+          {selectedLabel}
+        </span>
+      </span>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={onChange}
+        style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none', outline:'none', appearance:'none', WebkitAppearance:'none', background:'transparent', color:'transparent', cursor:'pointer' }}
+      >
+        {options.map(option => <option key={option.value || 'all'} value={option.value} style={{ color:C.text, background:'#fff' }}>{option.label}</option>)}
+      </select>
+      <span aria-hidden="true" style={{ position:'absolute', right:11, top:'50%', width:6, height:6, borderRight:`1.5px solid ${C.primary}`, borderBottom:`1.5px solid ${C.primary}`, transform:'translateY(-65%) rotate(45deg)', pointerEvents:'none' }} />
+    </label>
+  )
+}
 
 const APP_PEEK_FEED = [
   { tag: '🏠 Vivienda',  who: 'María · Zürich',    text: 'Busco piso de 2 habitaciones en Oerlikon para julio. Hasta 2.800 CHF.', time: 'hace 3 min',  color: '#DBEAFE', tc: '#1D4ED8' },
@@ -863,6 +914,7 @@ const isAndroid = typeof navigator !== 'undefined' && /Android/.test(navigator.u
 
 export default function Landing({ onInstall, menuPage, setMenuPage }) {
   const [cols, setCols] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 500 ? 2 : 3))
+  const [searchFilters, setSearchFilters] = useState({ category:'', canton:'', intent:'' })
 
   useEffect(() => {
     const fn = () => setCols(window.innerWidth < 500 ? 2 : 3)
@@ -1113,7 +1165,43 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
           <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
             <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 6 }}>¿Qué necesitas hoy?</p>
             <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, marginBottom: 18 }}>Pisos, empleo, cuidadoras, trámites, grupos y mucho más</p>
-            <GlobalSearch size="lg" />
+            <GlobalSearch
+              size="lg"
+              assistantMode
+              assistantLabelColor={C.primaryDark}
+              placeholder="Ej.: busco piso en Zürich hasta 3.000 CHF"
+              searchFilters={searchFilters}
+              onSearchFiltersChange={setSearchFilters}
+              filtersContent={(
+                <div className="no-scroll" role="group" aria-label="Filtros de búsqueda" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:8 }}>
+                  <div style={{ display:'flex', gap:8, width:'100%', minWidth:340 }}>
+                    <LandingSearchFilterSelect
+                      label="Categoría"
+                      value={searchFilters.category}
+                      options={LANDING_SEARCH_CATEGORY_OPTIONS}
+                      onChange={event => setSearchFilters(current => ({ ...current, category:event.target.value }))}
+                    />
+                    <LandingSearchFilterSelect
+                      label="Cantón"
+                      value={searchFilters.canton}
+                      flex={1.1}
+                      options={[
+                        { value:'', label:'Toda Suiza' },
+                        ...CANTONS.map(canton => ({ value:canton.code, label:`${canton.code} · ${canton.name}` })),
+                      ]}
+                      onChange={event => setSearchFilters(current => ({ ...current, canton:event.target.value }))}
+                    />
+                    <LandingSearchFilterSelect
+                      label="Intención"
+                      value={searchFilters.intent}
+                      flex={1.05}
+                      options={LANDING_SEARCH_INTENT_OPTIONS}
+                      onChange={event => setSearchFilters(current => ({ ...current, intent:event.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+            />
           </div>
         </div>
       </Reveal>
