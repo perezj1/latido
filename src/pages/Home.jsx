@@ -14,7 +14,7 @@ import { C, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
+import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import {
@@ -44,6 +44,29 @@ const CAT_COLORS = {
 }
 
 const REVIEWABLE_AD_CATS = new Set(['servicios', 'cuidados'])
+
+const HOME_SEARCH_CATEGORY_OPTIONS = [
+  { value:'', label:'Todos' },
+  { value:'anuncios', label:'Anuncios' },
+  { value:'vivienda', label:'Vivienda' },
+  { value:'empleo', label:'Empleo' },
+  { value:'servicios', label:'Servicios' },
+  { value:'cuidados', label:'Cuidados' },
+  { value:'venta', label:'Mercado' },
+  { value:'documentos', label:'Trámites' },
+  { value:'negocios', label:'Negocios' },
+  { value:'grupos', label:'Grupos' },
+  { value:'eventos', label:'Eventos' },
+  { value:'guias', label:'Guías' },
+]
+
+const HOME_SEARCH_INTENT_OPTIONS = [
+  { value:'', label:'Todas' },
+  { value:'busca', label:'Busco o necesito' },
+  { value:'ofrece', label:'Ofrezco' },
+  { value:'vende', label:'Vendo' },
+  { value:'regala', label:'Regalo' },
+]
 
 function averageRating(reviews) {
   if (!reviews?.length) return null
@@ -130,6 +153,25 @@ function EmptyState({ text }) {
         {text}
       </p>
     </div>
+  )
+}
+
+function SearchFilterSelect({ label, value, options, onChange, flex = 1 }) {
+  return (
+    <label style={{ position:'relative', display:'block', minWidth:0, flex:`${flex} 1 0`, height:50, border:'1.5px solid rgba(255,255,255,0.42)', borderRadius:14, background:'rgba(255,255,255,0.14)', overflow:'hidden', backdropFilter:'blur(4px)' }}>
+      <span style={{ position:'absolute', top:7, left:11, zIndex:2, fontFamily:PP, fontSize:8.5, lineHeight:1, fontWeight:900, letterSpacing:0.65, color:'rgba(255,255,255,0.78)', textTransform:'uppercase', pointerEvents:'none' }}>
+        {label}
+      </span>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={onChange}
+        style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none', outline:'none', appearance:'none', WebkitAppearance:'none', background:'transparent', padding:'19px 27px 5px 11px', fontFamily:PP, fontSize:11, fontWeight:800, color:'#fff', cursor:'pointer', textOverflow:'ellipsis' }}
+      >
+        {options.map(option => <option key={option.value || 'all'} value={option.value} style={{ color:C.text, background:'#fff' }}>{option.label}</option>)}
+      </select>
+      <span aria-hidden="true" style={{ position:'absolute', right:11, top:20, zIndex:2, width:6, height:6, borderRight:'1.5px solid rgba(255,255,255,0.9)', borderBottom:'1.5px solid rgba(255,255,255,0.9)', transform:'rotate(45deg)', pointerEvents:'none' }} />
+    </label>
   )
 }
 
@@ -387,6 +429,7 @@ export default function Home() {
   const [businessPromotionModalOpen, setBusinessPromotionModalOpen] = useState(false)
   const [loading, setLoading] = useState(() => !homeCache)
   const [activatingPush, setActivatingPush] = useState(false)
+  const [searchFilters, setSearchFilters] = useState({ category:'', canton:'', intent:'' })
   const { needsActivation, refresh: refreshPush } = usePushActivation(user?.id)
   const [selectedGuide, setSelectedGuide] = useState(null)
   useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
@@ -1218,32 +1261,41 @@ export default function Home() {
           </div>
 
           <div className="hero-search-wrap">
-            <GlobalSearch size="lg" placeholder="¿Qué necesitas hoy?" />
-            <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:12 }}>
-              <div className="hero-pills">
-                {[
-                  { emoji:'📌', label:'Anuncios',    to:'/tablon' },
-                  { emoji:'🏠', label:'Vivienda',    to:'/tablon?cat=vivienda' },
-                  { emoji:'💼', label:'Empleo',       to:'/tablon?cat=empleo' },
-                  { emoji:'🛍️', label:'Mercado',      to:'/tablon?cat=venta' },
-                  { emoji:'🔧', label:'Servicios',    to:'/tablon?cat=servicios' },
-                  { emoji:'❤️', label:'Cuidados',     to:'/tablon?cat=cuidados' },
-                  { emoji:'🏪', label:'Negocios',     to:'/comunidades?view=negocios' },
-                  { emoji:'👥', label:'Grupos',       to:'/comunidades?view=comunidades' },
-                  { emoji:'🎉', label:'Eventos',      to:'/comunidades?view=eventos' },
-                  { emoji:'📚', label:'Guías',        to:'/guias' },
-                ].map(cat => (
-                  <Link
-                    key={cat.label}
-                    to={cat.to}
-                    style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(255,255,255,0.15)', border:'1.5px solid rgba(255,255,255,0.25)', borderRadius:999, padding:'7px 14px', fontFamily:PP, fontWeight:600, fontSize:12, color:'#fff', textDecoration:'none', whiteSpace:'nowrap' }}
-                  >
-                    <span style={{ fontSize:14 }}>{cat.emoji}</span>
-                    {cat.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <GlobalSearch
+              size="lg"
+              placeholder="Describe lo que necesitas…"
+              searchFilters={searchFilters}
+              onSearchFiltersChange={setSearchFilters}
+              filtersContent={(
+                <div className="no-scroll" role="group" aria-label="Filtros de búsqueda" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:10 }}>
+                  <div style={{ display:'flex', gap:6, width:'100%', minWidth:350 }}>
+                    <SearchFilterSelect
+                      label="Categoría"
+                      value={searchFilters.category}
+                      options={HOME_SEARCH_CATEGORY_OPTIONS}
+                      onChange={event => setSearchFilters(current => ({ ...current, category:event.target.value }))}
+                    />
+                    <SearchFilterSelect
+                      label="Cantón"
+                      value={searchFilters.canton}
+                      flex={1.12}
+                      options={[
+                        { value:'', label:'Suiza' },
+                        ...CANTONS.map(canton => ({ value:canton.code, label:`${canton.code} · ${canton.name}` })),
+                      ]}
+                      onChange={event => setSearchFilters(current => ({ ...current, canton:event.target.value }))}
+                    />
+                    <SearchFilterSelect
+                      label="Intención"
+                      value={searchFilters.intent}
+                      flex={1.08}
+                      options={HOME_SEARCH_INTENT_OPTIONS}
+                      onChange={event => setSearchFilters(current => ({ ...current, intent:event.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+            />
           </div>
         </div>
       </section>
