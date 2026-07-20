@@ -13,7 +13,9 @@ import {
   MOCK_NEGOCIOS,
   MOCK_EVENTOS_LATINOS,
   MOCK_DOCS,
+  CANTONS,
   formatAdLocation,
+  getCantonForCity,
   getAdCategoryId,
   getAdDisplayCat,
   getAdDisplayEmoji,
@@ -24,6 +26,7 @@ import {
 } from '../lib/constants'
 import { SEARCHABLE_SITE_PAGES, getAdPath, getBusinessPath, getEventPath, getGuidePath, getJobPath } from '../lib/seo'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { buildSearchProfile, normalizeSearchText, profileHasIntent, scoreSearchFields } from '../lib/naturalSearch'
 
 const BUSINESS_EMOJI = {
   restaurante:'🍽️',
@@ -65,6 +68,8 @@ const SEARCH_CACHE = {
   private:null,
 }
 
+const EMPTY_SEARCH_FILTERS = Object.freeze({ category:'', canton:'', intent:'' })
+
 const TYPE_COLORS = {
   ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Anuncio' },
   job:{ bg:'#E0F2FE', color:'#0369A1', label:'Empleo' },
@@ -75,9 +80,119 @@ const TYPE_COLORS = {
   page:{ bg:'#F1F5F9', color:'#475569', label:'Página' },
 }
 
+const SEARCH_INTENT_LABELS = {
+  employment:'Empleo',
+  cleaning:'Limpieza',
+  translation:'Traducciones',
+  moving:'Mudanzas',
+  repairs:'Reparaciones y mantenimiento',
+  childcare:'Cuidado infantil',
+  eldercare:'Cuidado de mayores',
+  paperwork:'Trámites y asesoría',
+  housing:'Vivienda',
+  health:'Salud',
+  beauty:'Belleza',
+  food:'Comida y restauración',
+  vehicle:'Vehículos',
+  marketplace:'Compra y venta',
+}
+
+function getSearchInterpretation(profile) {
+  return profile?.intents
+    ?.map(intent => SEARCH_INTENT_LABELS[intent.id])
+    .filter(Boolean)
+    .join(' · ') || ''
+}
+
+function escapeSearchRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function HighlightSearchText({ text: value, tokens }) {
+  const text = String(value || '')
+  if (!text || !tokens.length) return text
+
+  const pattern = tokens
+    .filter(token => token.length >= 3)
+    .sort((a, b) => b.length - a.length)
+    .map(escapeSearchRegExp)
+    .join('|')
+  if (!pattern) return text
+
+  const matcher = new RegExp(`(${pattern})`, 'gi')
+  return text.split(matcher).map((part, index) => (
+    tokens.some(token => part.toLowerCase() === token.toLowerCase())
+      ? <mark key={`${part}-${index}`} style={{ background:'#FEF3C7', color:'inherit', borderRadius:3, padding:'0 1px' }}>{part}</mark>
+      : part
+  ))
+}
+
+const SEARCH_SERVICE_BUSINESS_TYPES = new Set(['hogar', 'salud', 'asesoria_tramites', 'belleza'])
+const SEARCH_SERVICE_JOB_SECTORS = new Set(['cuidados', 'limpieza', 'construccion', 'transporte', 'servicios', 'salud'])
+
+function getBusinessCategoryKeys(business) {
+  const normalizedType = getNegocioTypeMeta(business.type)?.id || business.type
+  const keys = ['negocios', business.type, normalizedType].filter(Boolean)
+  if (SEARCH_SERVICE_BUSINESS_TYPES.has(normalizedType)) keys.push('servicios')
+  if (normalizedType === 'asesoria_tramites') keys.push('documentos')
+  return [...new Set(keys)]
+}
+
+function getJobCategoryKeys(job) {
+  const keys = ['empleo']
+  if (job.sector === 'cuidados') keys.push('cuidados')
+  if (SEARCH_SERVICE_JOB_SECTORS.has(job.sector)) keys.push('servicios')
+  return keys
+}
+
+function getPageCategoryKeys(page) {
+  if (page.id === 'tablon') return ['anuncios']
+  if (page.id === 'vivienda') return ['vivienda']
+  if (page.id === 'empleo') return ['empleo']
+  if (page.id === 'mercado') return ['venta']
+  if (page.id === 'servicios') return ['servicios']
+  if (page.id === 'cuidados') return ['cuidados', 'servicios']
+  if (page.id === 'tramites') return ['documentos', 'servicios']
+  if (['servicios-suiza', 'servicios-virtus360'].includes(page.id)) return ['servicios']
+  if (page.id === 'negocios') return ['negocios']
+  if (page.id === 'comunidades') return ['grupos']
+  if (page.id === 'eventos') return ['eventos']
+  if (page.id === 'guias') return ['guias']
+  return []
+}
+
+function matchesCanton(filterMeta, cantonCode) {
+  if (!cantonCode) return true
+
+  const location = normalizeSearchText(`${filterMeta?.canton || ''} ${filterMeta?.location || ''}`)
+  if (!location) return false
+  if (location === 'suiza' || location.includes('toda suiza') || location.split(' ').includes('nacional')) return true
+
+  const canton = CANTONS.find(item => item.code === cantonCode)
+  const words = location.split(' ')
+  return getCantonForCity(filterMeta?.location) === cantonCode ||
+    words.includes(normalizeSearchText(cantonCode)) || (
+    canton?.name && location.includes(normalizeSearchText(canton.name))
+  )
+}
+
+function matchesSearchFilters(result, filters) {
+  const meta = result.filterMeta || {}
+  if (filters?.category && !meta.categories?.includes(filters.category)) return false
+  if (filters?.canton && !matchesCanton(meta, filters.canton)) return false
+  if (filters?.intent && meta.intent !== filters.intent) return false
+  return true
+}
+
+function hasActiveSearchFilters(filters) {
+  return !!(filters?.category || filters?.canton || filters?.intent)
+}
+
 const SEARCH_PAGE_SIZE = 1000
+const INITIAL_SEARCH_RESULTS = 12
+const MAX_SEARCH_RESULTS = 120
 const SEARCH_SELECTS = {
-  ads: 'id, cat, title, desc, canton, plz, price, privacy, active, img_url, photo_urls, created_at',
+  ads: 'id, cat, type, title, desc, canton, plz, price, privacy, active, img_url, photo_urls, created_at',
   jobs: 'id, title, company, city, canton, type, sector, category, job_intent, emoji, logo_url, active, created_at',
   communities: 'id, name, city, members, emoji, cat, desc, photo_url, active',
   providers: 'id, name, category, city, canton, description, services, active, featured, verified, promotion_plan, promotion_starts_at, promotion_ends_at, photo_url, created_at',
@@ -139,6 +254,7 @@ function normalizeCommunity(group) {
     city: group.city || 'Suiza',
     members: group.members || 0,
     emoji: group.emoji || '👥',
+    category: group.cat || '',
     desc: group.desc || group.description || '',
     image: group.photo_url || '',
   }
@@ -152,6 +268,7 @@ function normalizeBusiness(provider) {
     name: provider.name || 'Negocio',
     type: provider.type || provider.category || '',
     city: provider.city || provider.canton || 'Suiza',
+    canton: provider.canton || '',
     desc: provider.desc || provider.description || '',
     emoji: provider.emoji || BUSINESS_EMOJI[provider.category] || '🏪',
     services: Array.isArray(provider.services) ? provider.services : [],
@@ -186,6 +303,7 @@ function normalizeEvent(event) {
     type: event.type || '',
     title: event.title || 'Evento',
     city: event.city || event.canton || 'Suiza',
+    canton: event.canton || '',
     venue: event.venue || '',
     host: event.host || '',
     desc: event.desc || event.description || '',
@@ -198,6 +316,7 @@ function normalizeAd(ad) {
   return {
     id: ad.id,
     cat: getAdCategoryId(ad) || '',
+    intent: ad.type || '',
     title: ad.title || '',
     desc: ad.desc || ad.description || '',
     city: ad.city || '',
@@ -216,7 +335,10 @@ function normalizeJob(job) {
     title: job.title || '',
     company: job.company || (intent.id === 'busca' ? 'Perfil profesional' : 'Empresa'),
     city: job.city || job.canton || 'Suiza',
+    canton: job.canton || '',
     type: job.type || 'Trabajo',
+    sector: job.sector || job.category || '',
+    intentId: intent.id,
     intentLabel: intent.label,
     emoji: getJobCategoryEmoji(job),
     image: job.logo_url || job.img || '',
@@ -267,21 +389,11 @@ function buildFallbackData(isLoggedIn) {
   }
 }
 
-function normalizeSearchValue(value = '') {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-}
-
-function fieldIncludesSearch(value, query) {
-  return normalizeSearchValue(value).includes(query)
-}
-
 function sortMatchingBusinesses(a, b) {
   const planDiff = getBusinessSearchPriority(a) - getBusinessSearchPriority(b)
   if (planDiff) return planDiff
+  const relevanceDiff = (b.searchScore || 0) - (a.searchScore || 0)
+  if (relevanceDiff) return relevanceDiff
   if (a.featured !== b.featured) return b.featured ? 1 : -1
   if (a.verified !== b.verified) return b.verified ? 1 : -1
   return String(b.created_at || '').localeCompare(String(a.created_at || ''))
@@ -295,24 +407,31 @@ function getBusinessPlanSearchLabel(business) {
   return ''
 }
 
-function searchAll(query, datasets, isLoggedIn) {
-  const q = normalizeSearchValue(query)
-  if (!q || q.length < 2) return []
+function searchAll(query, datasets, isLoggedIn, allowBrowse = false) {
+  const profile = buildSearchProfile(query)
+  const hasSearchQuery = profile.normalized.length >= 2
+  const browseAll = allowBrowse && !hasSearchQuery
+  if (!hasSearchQuery && !browseAll) return []
+  const getSearchScore = fields => browseAll ? 1 : scoreSearchFields(profile, fields)
+  const matchReason = browseAll ? '' : getSearchInterpretation(profile)
 
   const results = []
   const metaSeparator = ' \u00B7 '
 
   for (const ad of datasets.ads) {
-    if (
-      (isLoggedIn || ad.privacy === 'public') && (
-        fieldIncludesSearch(ad.title, q) ||
-        fieldIncludesSearch(ad.desc, q) ||
-        fieldIncludesSearch(ad.canton, q) ||
-        fieldIncludesSearch(formatAdLocation(ad), q)
-      )
-    ) {
+    if (isLoggedIn || ad.privacy === 'public') {
       const cat = getAdDisplayCat(ad)
       const location = formatAdLocation(ad)
+      const searchScore = getSearchScore([
+        { value:ad.title, weight:6 },
+        { value:ad.desc, weight:4 },
+        { value:cat?.label, weight:2 },
+        { value:ad.cat, weight:2 },
+        { value:location, weight:2 },
+        { value:ad.canton, weight:1 },
+      ])
+      if (!searchScore) continue
+
       results.push({
         type:'ad',
         id:ad.id,
@@ -323,17 +442,29 @@ function searchAll(query, datasets, isLoggedIn) {
         sub:[cat?.label || 'Anuncio', location, ad.price].filter(Boolean).join(metaSeparator),
         href:getAdPath(ad),
         privacy:ad.privacy,
+        filterMeta:{
+          categories:['anuncios', getAdCategoryId(ad)].filter(Boolean),
+          canton:ad.canton,
+          location,
+          intent:ad.intent,
+        },
+        searchScore,
       })
     }
   }
 
   for (const job of datasets.jobs) {
-    if (
-      fieldIncludesSearch(job.title, q) ||
-      fieldIncludesSearch(job.company, q) ||
-      fieldIncludesSearch(job.city, q) ||
-      fieldIncludesSearch(job.intentLabel, q)
-    ) {
+    let searchScore = getSearchScore([
+      { value:job.title, weight:6 },
+      { value:job.company, weight:4 },
+      { value:job.sector, weight:4 },
+      { value:job.city, weight:2 },
+      { value:job.intentLabel, weight:2 },
+      { value:job.type, weight:2 },
+      { value:'empleo trabajo oferta laboral vacante puesto', weight:3 },
+    ])
+    if (searchScore) {
+      if (profileHasIntent(profile, 'employment') && job.intentId === 'ofrece') searchScore += 24
       results.push({
         type:'job',
         id:job.id,
@@ -343,16 +474,26 @@ function searchAll(query, datasets, isLoggedIn) {
         label:job.title,
         sub:[job.intentLabel, job.company, job.city, job.type].filter(Boolean).join(metaSeparator),
         href:getJobPath(job),
+        filterMeta:{
+          categories:getJobCategoryKeys(job),
+          canton:job.canton,
+          location:job.city,
+          intent:job.intentId,
+        },
+        searchScore,
       })
     }
   }
 
   for (const group of datasets.communities) {
-    if (
-      fieldIncludesSearch(group.name, q) ||
-      fieldIncludesSearch(group.desc, q) ||
-      fieldIncludesSearch(group.city, q)
-    ) {
+    const searchScore = getSearchScore([
+      { value:group.name, weight:6 },
+      { value:group.desc, weight:4 },
+      { value:group.category, weight:3 },
+      { value:group.city, weight:2 },
+      { value:'grupo comunidad', weight:1 },
+    ])
+    if (searchScore) {
       results.push({
         type:'community',
         id:group.id,
@@ -362,19 +503,40 @@ function searchAll(query, datasets, isLoggedIn) {
         label:group.name,
         sub:['Grupo', group.city, `${group.members} miembros`].filter(Boolean).join(metaSeparator),
         href:`/comunidades?openCommunity=${encodeURIComponent(group.id)}`,
+        filterMeta:{
+          categories:['grupos'],
+          location:group.city,
+        },
+        searchScore,
       })
     }
   }
 
   const matchingBusinesses = []
   for (const business of datasets.businesses) {
-    if (
-      fieldIncludesSearch(business.name, q) ||
-      fieldIncludesSearch(business.desc, q) ||
-      fieldIncludesSearch(business.city, q) ||
-      business.services.some(service => fieldIncludesSearch(service, q))
-    ) {
-      matchingBusinesses.push(business)
+    const businessType = getNegocioTypeMeta(business.type)
+    const searchScore = getSearchScore([
+      { value:business.name, weight:6 },
+      { value:business.services.join(' '), weight:5 },
+      { value:business.desc, weight:4 },
+      { value:businessType?.label, weight:2 },
+      { value:business.type, weight:2 },
+      { value:business.city, weight:2 },
+      { value:'negocio profesional servicio', weight:1 },
+    ])
+    if (searchScore) {
+      const categories = getBusinessCategoryKeys(business)
+      if (profileHasIntent(profile, 'employment')) categories.push('empleo')
+      matchingBusinesses.push({
+        ...business,
+        filterMeta:{
+          categories,
+          canton:business.canton,
+          location:business.city,
+          intent:'ofrece',
+        },
+        searchScore,
+      })
     }
   }
   matchingBusinesses.sort(sortMatchingBusinesses)
@@ -394,7 +556,9 @@ function searchAll(query, datasets, isLoggedIn) {
       sub:recommendedPartner.services.slice(0, 3).join(metaSeparator) || recommendedPartner.desc || 'Servicios para la comunidad hispanohablante en Suiza.',
       href:getBusinessPath(recommendedPartner),
       isPartnerRecommendation:true,
+      filterMeta:recommendedPartner.filterMeta,
       searchPriority:-2,
+      searchScore:recommendedPartner.searchScore,
     })
   }
 
@@ -412,20 +576,24 @@ function searchAll(query, datasets, isLoggedIn) {
       sub:[planLabel, getNegocioTypeMeta(business.type)?.label || 'Negocio', business.city].filter(Boolean).join(metaSeparator),
       href:getBusinessPath(business),
       featured:business.featured,
+      filterMeta:business.filterMeta,
       searchPriority:getBusinessSearchPriority(business),
+      searchScore:business.searchScore,
     })
   }
 
   for (const event of datasets.events) {
     const eventType = EVENTO_TYPES.find(type => type.id === event.type)
-    if (
-      fieldIncludesSearch(event.title, q) ||
-      fieldIncludesSearch(event.desc, q) ||
-      fieldIncludesSearch(event.city, q) ||
-      fieldIncludesSearch(event.venue, q) ||
-      fieldIncludesSearch(event.host, q) ||
-      fieldIncludesSearch(eventType?.label, q)
-    ) {
+    const searchScore = getSearchScore([
+      { value:event.title, weight:6 },
+      { value:event.desc, weight:4 },
+      { value:eventType?.label, weight:3 },
+      { value:event.venue, weight:2 },
+      { value:event.host, weight:2 },
+      { value:event.city, weight:2 },
+      { value:'evento plan actividad', weight:1 },
+    ])
+    if (searchScore) {
       results.push({
         type:'event',
         id:event.id,
@@ -435,19 +603,27 @@ function searchAll(query, datasets, isLoggedIn) {
         label:event.title,
         sub:[eventType?.label || 'Evento', event.city].filter(Boolean).join(metaSeparator),
         href:getEventPath(event),
+        filterMeta:{
+          categories:['eventos'],
+          canton:event.canton,
+          location:event.city,
+        },
+        searchScore,
       })
     }
   }
 
   for (const guide of datasets.guides || []) {
-    if (
-      fieldIncludesSearch(guide.title, q) ||
-      fieldIncludesSearch(guide.summary, q) ||
-      fieldIncludesSearch(guide.content, q) ||
-      fieldIncludesSearch(guide.cat, q) ||
-      fieldIncludesSearch(guide.time, q) ||
-      fieldIncludesSearch(guide.level, q)
-    ) {
+    const searchScore = getSearchScore([
+      { value:guide.title, weight:6 },
+      { value:guide.summary, weight:4 },
+      { value:guide.cat, weight:3 },
+      { value:guide.content, weight:1 },
+      { value:guide.time, weight:1 },
+      { value:guide.level, weight:1 },
+      { value:'guia informacion ayuda', weight:1 },
+    ])
+    if (searchScore) {
       results.push({
         type:'guide',
         id:guide.id,
@@ -457,16 +633,20 @@ function searchAll(query, datasets, isLoggedIn) {
         label:guide.title,
         sub:['Gu\u00EDa', guide.cat, guide.time, guide.level].filter(Boolean).join(metaSeparator),
         href:getGuidePath(guide),
+        filterMeta:{ categories:['guias'] },
+        searchScore,
       })
     }
   }
 
   for (const page of datasets.pages || []) {
-    if (
-      fieldIncludesSearch(page.title, q) ||
-      fieldIncludesSearch(page.section, q) ||
-      fieldIncludesSearch(page.desc, q)
-    ) {
+    const searchScore = getSearchScore([
+      { value:page.title, weight:6 },
+      { value:page.desc, weight:4 },
+      { value:page.section, weight:3 },
+      { value:page.id, weight:2 },
+    ])
+    if (searchScore) {
       results.push({
         type:'page',
         id:page.id,
@@ -474,6 +654,8 @@ function searchAll(query, datasets, isLoggedIn) {
         label:page.title,
         sub:[page.section, page.desc].filter(Boolean).join(metaSeparator),
         href:page.href,
+        filterMeta:{ categories:getPageCategoryKeys(page) },
+        searchScore,
       })
     }
   }
@@ -482,16 +664,27 @@ function searchAll(query, datasets, isLoggedIn) {
   for (let index = 0; index < results.length; index += 1) {
     rankedResults.push({ ...results[index], searchIndex:index })
   }
-  rankedResults.sort((a, b) => (a.searchPriority ?? 1) - (b.searchPriority ?? 1) || a.searchIndex - b.searchIndex)
+  rankedResults.sort((a, b) => (
+    (a.searchPriority ?? 1) - (b.searchPriority ?? 1) ||
+    (b.searchScore || 0) - (a.searchScore || 0) ||
+    a.searchIndex - b.searchIndex
+  ))
 
   const cleanResults = []
-  for (const { searchPriority, searchIndex, ...result } of rankedResults) {
-    cleanResults.push(result)
+  for (const { searchPriority, searchScore, searchIndex, ...result } of rankedResults) {
+    cleanResults.push(matchReason ? { ...result, matchReason } : result)
   }
   return cleanResults
 }
 
-export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
+export default function GlobalSearch({
+  size = 'lg',
+  placeholder,
+  onClose,
+  searchFilters = EMPTY_SEARCH_FILTERS,
+  onSearchFiltersChange,
+  filtersContent = null,
+}) {
   const { isLoggedIn, user, isAdmin } = useAuth()
   const navigate = useNavigate()
   const inputRef = useRef(null)
@@ -499,6 +692,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   const mountedRef = useRef(true)
   const accessLevelRef = useRef(getCacheKey(isLoggedIn))
   const blurCloseTimerRef = useRef(null)
+  const searchFilterKey = `${searchFilters.category || ''}|${searchFilters.canton || ''}|${searchFilters.intent || ''}`
 
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
   const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
@@ -508,25 +702,40 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   const [focused, setFocused] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
   const [activeFilter, setActiveFilter] = useState(null)
+  const [expandedResults, setExpandedResults] = useState(false)
 
   const deferredQuery = useDeferredValue(q)
   const fallbackDatasets = useMemo(() => buildFallbackData(isLoggedIn), [isLoggedIn])
   const accessLevel = getCacheKey(isLoggedIn)
 
+  const searchFilteredResults = useMemo(
+    () => results.filter(result => matchesSearchFilters(result, searchFilters)),
+    [results, searchFilterKey]
+  )
+
   const availableTypes = useMemo(() => {
     const seen = new Set()
     const types = []
-    for (const r of results) {
+    for (const r of searchFilteredResults) {
       if (!seen.has(r.type)) { seen.add(r.type); types.push(r.type) }
     }
     return types
-  }, [results])
+  }, [searchFilteredResults])
 
+  const resultPool = useMemo(
+    () => activeFilter ? searchFilteredResults.filter(r => r.type === activeFilter) : searchFilteredResults,
+    [activeFilter, searchFilteredResults]
+  )
   const filteredResults = useMemo(
-    () => activeFilter ? results.filter(r => r.type === activeFilter) : results,
-    [results, activeFilter]
+    () => resultPool.slice(0, expandedResults ? MAX_SEARCH_RESULTS : INITIAL_SEARCH_RESULTS),
+    [expandedResults, resultPool]
   )
   const partnerService = useMemo(() => getPartnerServiceMatch(q), [q])
+  const currentSearchProfile = useMemo(() => buildSearchProfile(q), [q])
+  const searchInterpretation = getSearchInterpretation(currentSearchProfile)
+  const highlightTokens = currentSearchProfile.tokens
+  const hasSearchFilters = hasActiveSearchFilters(searchFilters)
+  const showPartnerService = partnerService && !hasSearchFilters
 
   const ph = placeholder || (size === 'lg'
     ? 'Encuentra lo que buscas'
@@ -672,6 +881,12 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   }, [cancelBlurClose])
 
   useEffect(() => {
+    setActiveFilter(null)
+    setActiveIdx(-1)
+    setExpandedResults(false)
+  }, [searchFilterKey])
+
+  useEffect(() => {
     if (focused || deferredQuery.trim().length >= 2) {
       ensureDataLoaded()
     }
@@ -679,10 +894,11 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
 
   useEffect(() => {
     const baseDatasets = dataReady ? datasets : fallbackDatasets
-    setResults(searchAll(deferredQuery, baseDatasets, isLoggedIn))
+    setResults(searchAll(deferredQuery, baseDatasets, isLoggedIn, hasSearchFilters))
     setActiveIdx(-1)
     setActiveFilter(null)
-  }, [dataReady, datasets, deferredQuery, fallbackDatasets, isLoggedIn])
+    setExpandedResults(false)
+  }, [dataReady, datasets, deferredQuery, fallbackDatasets, hasSearchFilters, isLoggedIn, searchFilterKey])
 
   useEffect(() => {
     if (isAdmin) return undefined
@@ -696,14 +912,15 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
         scope: 'global',
         user_id: user?.id || null,
         metadata: {
-          results_count: results.length,
+          results_count: resultPool.length,
           active_filter: activeFilter || null,
+          search_filters:searchFilters,
         },
       })
     }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [activeFilter, isAdmin, q, results.length, user?.id])
+  }, [activeFilter, isAdmin, q, resultPool.length, searchFilterKey, user?.id])
 
   const goTo = target => {
     const result = typeof target === 'string' ? null : target
@@ -718,6 +935,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
           result_type: result.type || '',
           result_id: result.id || '',
           result_label: result.label || '',
+          search_filters:searchFilters,
           href,
         },
       })
@@ -731,11 +949,11 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
   }
 
   const handleKey = e => {
-    if (!results.length) return
+    if (!filteredResults.length) return
 
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIdx(idx => Math.min(idx + 1, results.length - 1))
+      setActiveIdx(idx => Math.min(idx + 1, filteredResults.length - 1))
     }
 
     if (e.key === 'ArrowUp') {
@@ -743,7 +961,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
       setActiveIdx(idx => Math.max(idx - 1, 0))
     }
 
-    if (e.key === 'Enter' && activeIdx >= 0) goTo(results[activeIdx])
+    if (e.key === 'Enter' && activeIdx >= 0) goTo(filteredResults[activeIdx])
 
     if (e.key === 'Escape') {
       cancelBlurClose()
@@ -753,7 +971,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
     }
   }
 
-  const showDropdown = focused && q.length >= 2
+  const showDropdown = focused && (q.length >= 2 || hasSearchFilters)
 
   const inputStyle = size === 'lg'
     ? {
@@ -767,7 +985,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
         background:'#fff',
         boxSizing:'border-box',
         color:C.text,
-        boxShadow: focused ? `0 0 0 4px ${C.primaryLight}` : '0 2px 12px rgba(0,0,0,0.06)',
+        boxShadow: focused ? `0 0 0 2px ${C.primaryLight}, 0 4px 14px rgba(15,23,42,0.08)` : '0 2px 12px rgba(0,0,0,0.06)',
         transition:'all .2s',
       }
     : {
@@ -808,9 +1026,21 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
         )}
       </div>
 
+      {filtersContent && (
+        <div onFocusCapture={handleFocus}>
+          {filtersContent}
+        </div>
+      )}
+
       {showDropdown && (
         <div className="fade-up" onMouseDown={e => e.preventDefault()} style={{ position:'absolute', top:'100%', left:0, right:0, marginTop:10, background:'#fff', borderRadius:20, boxShadow:'0 18px 48px rgba(15,23,42,0.18)', border:`1px solid ${C.border}`, zIndex:200, overflow:'hidden', maxHeight:'min(420px, 62vh)', overflowY:'auto' }}>
-          {results.length === 0 ? (
+          {searchInterpretation && (
+            <div style={{ padding:'10px 16px', background:'#F5F8FF', borderBottom:`1px solid ${C.borderLight}`, fontFamily:PP, fontSize:11, color:C.mid }}>
+              Interpretamos <strong style={{ color:C.text }}>“{q.trim()}”</strong> como{' '}
+              <strong style={{ color:C.primary }}>{searchInterpretation}</strong>
+            </div>
+          )}
+          {filteredResults.length === 0 ? (
             <div style={{ padding:'20px 18px', textAlign:'center' }}>
               {loadingData && !dataReady ? (
                 <>
@@ -819,14 +1049,22 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                 </>
               ) : (
                 <>
-                  <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>Sin resultados para <strong style={{ color:C.text }}>{q}</strong></p>
+                  <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>Sin resultados para <strong style={{ color:C.text }}>{q || 'los filtros seleccionados'}</strong></p>
                   <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'6px 0 0' }}>
-                    Prueba con otras palabras o{' '}
-                    <button onClick={() => goTo('/')} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                      explora Latido
-                    </button>
+                    {hasSearchFilters ? (
+                      <button onClick={() => onSearchFiltersChange?.({ category:'', canton:'', intent:'' })} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                        Quitar los filtros y buscar en todo Latido
+                      </button>
+                    ) : (
+                      <>
+                        Prueba con otras palabras o{' '}
+                        <button onClick={() => goTo('/')} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                          explora Latido
+                        </button>
+                      </>
+                    )}
                   </p>
-                  {partnerService && (
+                  {showPartnerService && (
                     <PartnerServicesPromo
                       placement="global_search_empty"
                       variant="contextual"
@@ -838,7 +1076,7 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
             </div>
           ) : (
             <>
-              {partnerService && (
+              {showPartnerService && (
                 <PartnerServicesPromo
                   placement="global_search_results"
                   variant="contextual"
@@ -865,10 +1103,10 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                             Colaborador recomendado
                           </p>
                           <p style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:'0 0 5px', lineHeight:1.25, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
-                            {result.label}
+                            <HighlightSearchText text={result.label} tokens={highlightTokens} />
                           </p>
                           <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.45, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
-                            {result.sub}
+                            <HighlightSearchText text={result.sub} tokens={highlightTokens} />
                           </p>
                         </div>
                         <span style={{ gridColumn:'2', justifySelf:'start', fontFamily:PP, fontWeight:800, fontSize:11, color:C.primary, background:'#fff', border:`1px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 12px', whiteSpace:'nowrap' }}>
@@ -894,17 +1132,22 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                     </span>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10, marginBottom:3 }}>
-                        <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:0, lineHeight:1.3, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{result.label}</p>
+                        <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:0, lineHeight:1.3, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}><HighlightSearchText text={result.label} tokens={highlightTokens} /></p>
                         <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, background:color.bg, color:color.color, padding:'4px 8px', borderRadius:999, flexShrink:0, whiteSpace:'nowrap' }}>{color.label}</span>
                       </div>
-                      <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0, lineHeight:1.45, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{result.sub}</p>
+                      {result.matchReason && (
+                        <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.primary, margin:'0 0 2px', lineHeight:1.35 }}>
+                          Coincide por: {result.matchReason}
+                        </p>
+                      )}
+                      <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.45, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}><HighlightSearchText text={result.sub} tokens={highlightTokens} /></p>
                     </div>
                     {result.privacy === 'private' && <span style={{ fontSize:12, marginTop:6, flexShrink:0 }}>🔒</span>}
                   </div>
                 )
               })}
               <div style={{ borderTop:`1px solid ${C.border}`, background:'#FCFDFF', position:'sticky', bottom:0 }}>
-                {availableTypes.length > 1 && (
+                {!filtersContent && availableTypes.length > 1 && (
                   <div style={{ padding:'8px 16px', display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}` }}>
                     {availableTypes.map(type => {
                       const color = TYPE_COLORS[type] || TYPE_COLORS.ad
@@ -912,7 +1155,10 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                       return (
                         <button
                           key={type}
-                          onClick={() => setActiveFilter(isActive ? null : type)}
+                          onClick={() => {
+                            setActiveFilter(isActive ? null : type)
+                            setActiveIdx(-1)
+                          }}
                           style={{ fontFamily:PP, fontSize:10, fontWeight:700, padding:'4px 10px', borderRadius:999, border:`1.5px solid ${isActive ? color.color : C.border}`, background: isActive ? color.bg : '#fff', color: isActive ? color.color : C.text, cursor:'pointer', transition:'all .15s' }}
                         >
                           {color.label}
@@ -922,12 +1168,24 @@ export default function GlobalSearch({ size = 'lg', placeholder, onClose }) {
                   </div>
                 )}
                 <div style={{ padding:'10px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
-                  <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>{filteredResults.length} resultado{filteredResults.length !== 1 ? 's' : ''} en Latido</span>
-                  {activeFilter && (
-                    <span onClick={() => setActiveFilter(null)} style={{ fontFamily:PP, fontWeight:700, fontSize:10, color:C.primary, cursor:'pointer' }}>
+                  <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>
+                    {resultPool.length > filteredResults.length
+                      ? `Mostrando ${filteredResults.length} de ${resultPool.length} resultados`
+                      : `${resultPool.length} resultado${resultPool.length !== 1 ? 's' : ''} en Latido`}
+                  </span>
+                  {!expandedResults && resultPool.length > filteredResults.length ? (
+                    <button type="button" onClick={() => { setExpandedResults(true); setActiveIdx(-1) }} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:C.primary, background:'none', border:'none', padding:0, cursor:'pointer' }}>
+                      Ver más
+                    </button>
+                  ) : expandedResults && resultPool.length > INITIAL_SEARCH_RESULTS ? (
+                    <button type="button" onClick={() => { setExpandedResults(false); setActiveIdx(-1) }} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:C.primary, background:'none', border:'none', padding:0, cursor:'pointer' }}>
+                      Ver menos
+                    </button>
+                  ) : activeFilter ? (
+                    <button type="button" onClick={() => { setActiveFilter(null); setActiveIdx(-1) }} style={{ fontFamily:PP, fontWeight:700, fontSize:10, color:C.primary, background:'none', border:'none', padding:0, cursor:'pointer' }}>
                       Mostrar todos
-                    </span>
-                  )}
+                    </button>
+                  ) : null}
                 </div>
               </div>
               {loadingData && (
