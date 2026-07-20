@@ -2717,9 +2717,9 @@ img[data-latido-img-state="loaded"] {
 }
 
 /* ── Hero section responsive ── */
-.hero-section { padding: 26px 16px 34px !important; }
-@media (min-width: 768px)  { .hero-section { padding: 52px 32px 60px !important; } }
-@media (min-width: 1024px) { .hero-section { padding: 64px 40px 72px !important; } }
+.hero-section { padding: 20px 16px 24px !important; }
+@media (min-width: 768px)  { .hero-section { padding: 40px 32px 48px !important; } }
+@media (min-width: 1024px) { .hero-section { padding: 48px 40px 56px !important; } }
 
 .hero-search-wrap { max-width: 620px; }
 @media (min-width: 768px) { .hero-search-wrap { max-width: 100%; } }
