@@ -247,7 +247,7 @@ export default function PartnerServicesPromo({
           <img src={PARTNER_LOGO} alt="" />
         </div>
         <div className="partner-services-contextual-copy">
-          <span className="partner-services-eyebrow">Colaborador recomendado</span>
+          <span className="partner-services-eyebrow">Partner premium recomendado</span>
           <h2 id={`partner-promo-${placement}`}>{contextualTitle}</h2>
           <p>{contextualDescription}</p>
         </div>

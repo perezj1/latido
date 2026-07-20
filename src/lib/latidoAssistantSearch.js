@@ -68,8 +68,8 @@ const SCOPE_DEFINITIONS = [
   {
     id:'employment',
     label:'Empleo',
-    category:'empleo',
-    entityTypes:['job'],
+    category:'',
+    entityTypes:['job', 'business', 'ad'],
     triggers:['empleo', 'trabajo', 'trabajar', 'vacante', 'puesto laboral', 'curro', 'chamba'],
     searchTerms:['empleo', 'trabajo', 'vacante', 'puesto', 'oferta laboral'],
     semanticSeed:'empleo',
@@ -129,12 +129,21 @@ const SCOPE_DEFINITIONS = [
     semanticSeed:'cuidado mayores',
   },
   {
+    id:'insurance',
+    label:'Seguros y previsión',
+    category:'documentos',
+    entityTypes:['business', 'ad'],
+    triggers:['seguro', 'seguros', 'aseguradora', 'poliza', 'tercer pilar', 'prevision', 'krankenkasse'],
+    searchTerms:['seguro', 'seguros', 'aseguradora', 'poliza', 'tercer pilar', 'prevision', 'krankenkasse'],
+    semanticSeed:'seguro',
+  },
+  {
     id:'paperwork',
     label:'Trámites y asesoría',
     category:'documentos',
     entityTypes:['business', 'ad', 'guide'],
-    triggers:['tramite', 'gestoria', 'permiso', 'apostilla', 'impuesto', 'declaracion', 'asesoria', 'seguro', 'abogado', 'notario', 'residencia', 'empadronamiento'],
-    searchTerms:['tramite', 'gestoria', 'permiso', 'apostilla', 'impuesto', 'declaracion', 'asesoria', 'seguro', 'abogado', 'notario', 'residencia'],
+    triggers:['tramite', 'gestoria', 'permiso', 'apostilla', 'impuesto', 'declaracion', 'asesoria', 'abogado', 'notario', 'residencia', 'empadronamiento'],
+    searchTerms:['tramite', 'gestoria', 'permiso', 'apostilla', 'impuesto', 'declaracion', 'asesoria', 'abogado', 'notario', 'residencia'],
     semanticSeed:'tramite',
   },
   {
@@ -455,7 +464,7 @@ function detectScope(normalized) {
     { terms:['catering', 'banquete'], seed:'catering' },
     { terms:['panaderia', 'pan', 'bolleria'], seed:'panaderia' },
     { terms:['restaurante', 'comer fuera'], seed:'restaurante' },
-    { terms:['comida', 'comer', 'plato', 'menu'], seed:'comida' },
+    { terms:['comida', 'comer', 'cocina', 'gastronomia', 'plato', 'menu'], seed:'comida' },
     { terms:['salsa'], seed:'salsa' },
   ]
   const foodFocus = foodFocuses.find(focus => hasAnyPhrase(normalized, focus.terms))
