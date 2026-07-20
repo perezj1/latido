@@ -27,6 +27,13 @@ import {
 import { SEARCHABLE_SITE_PAGES, getAdPath, getBusinessPath, getEventPath, getGuidePath, getJobPath } from '../lib/seo'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
 import { buildSearchProfile, normalizeSearchText, profileHasIntent, scoreSearchFields } from '../lib/naturalSearch'
+import {
+  buildLatidoSearchRpcParams,
+  matchesLatidoAssistantResult,
+  parseLatidoAssistantQuery,
+  parseResultAmount,
+  parseResultRooms,
+} from '../lib/latidoAssistantSearch'
 
 const BUSINESS_EMOJI = {
   restaurante:'🍽️',
@@ -192,11 +199,11 @@ const SEARCH_PAGE_SIZE = 1000
 const INITIAL_SEARCH_RESULTS = 12
 const MAX_SEARCH_RESULTS = 120
 const SEARCH_SELECTS = {
-  ads: 'id, cat, type, title, desc, canton, plz, price, privacy, active, img_url, photo_urls, created_at',
-  jobs: 'id, title, company, city, canton, type, sector, category, job_intent, emoji, logo_url, active, created_at',
+  ads: 'id, cat, sub, type, title, desc, city, canton, plz, price, price_amount, price_unit, privacy, active, img_url, photo_urls, created_at',
+  jobs: 'id, title, company, city, canton, type, sector, category, job_intent, salary, salary_amount, salary_unit, lang, languages, desc, emoji, logo_url, active, created_at',
   communities: 'id, name, city, members, emoji, cat, desc, photo_url, active',
-  providers: 'id, name, category, city, canton, description, services, active, featured, verified, promotion_plan, promotion_starts_at, promotion_ends_at, photo_url, created_at',
-  events: 'id, type, title, city, canton, venue, host, desc, emoji, img_url, active, featured, created_at',
+  providers: 'id, name, category, city, canton, description, services, languages, active, featured, verified, promotion_plan, promotion_starts_at, promotion_ends_at, photo_url, created_at',
+  events: 'id, type, title, day, month, year, price, city, canton, venue, host, desc, emoji, img_url, active, featured, created_at',
 }
 
 const BUSINESS_SEARCH_PRIORITY = {
@@ -272,6 +279,8 @@ function normalizeBusiness(provider) {
     desc: provider.desc || provider.description || '',
     emoji: provider.emoji || BUSINESS_EMOJI[provider.category] || '🏪',
     services: Array.isArray(provider.services) ? provider.services : [],
+    languages: Array.isArray(provider.languages) ? provider.languages : [],
+    spanishSupported:provider.spanish_supported === true,
     featured: !!provider.featured,
     verified: !!provider.verified,
     promotionPlan,
@@ -307,22 +316,35 @@ function normalizeEvent(event) {
     venue: event.venue || '',
     host: event.host || '',
     desc: event.desc || event.description || '',
+    day:event.day || '',
+    month:event.month || '',
+    year:event.year || '',
+    price:event.price || '',
     emoji: event.emoji || EVENT_EMOJI[event.type] || '🎉',
     image: event.img_url || event.img || event.photo_url || '',
   }
 }
 
 function normalizeAd(ad) {
+  const priceAmount = Number(ad.price_amount)
+  const rooms = Number(ad.rooms)
+  const hasPriceAmount = ad.price_amount != null && ad.price_amount !== '' && Number.isFinite(priceAmount)
+  const hasRooms = ad.rooms != null && ad.rooms !== '' && Number.isFinite(rooms)
   return {
     id: ad.id,
     cat: getAdCategoryId(ad) || '',
     intent: ad.type || '',
     title: ad.title || '',
     desc: ad.desc || ad.description || '',
+    sub:ad.sub || '',
     city: ad.city || '',
     canton: ad.canton || 'Toda Suiza',
     plz: ad.plz || '',
     price: ad.price || '',
+    priceAmount:hasPriceAmount ? priceAmount : parseResultAmount(ad.price),
+    priceUnit:ad.price_unit || '',
+    rooms:hasRooms ? rooms : parseResultRooms(ad.sub, ad.title, ad.desc),
+    availableFrom:ad.available_from || '',
     privacy: ad.privacy || 'public',
     image: getFirstImage(normalizePhotoUrls(ad.photo_urls), ad.img_url, ad.img),
   }
@@ -330,6 +352,8 @@ function normalizeAd(ad) {
 
 function normalizeJob(job) {
   const intent = getJobIntentMeta(job)
+  const salaryAmount = Number(job.salary_amount)
+  const hasSalaryAmount = job.salary_amount != null && job.salary_amount !== '' && Number.isFinite(salaryAmount)
   return {
     id: job.id,
     title: job.title || '',
@@ -338,6 +362,15 @@ function normalizeJob(job) {
     canton: job.canton || '',
     type: job.type || 'Trabajo',
     sector: job.sector || job.category || '',
+    desc:job.desc || job.description || '',
+    salary:job.salary || '',
+    salaryAmount:hasSalaryAmount ? salaryAmount : parseResultAmount(job.salary),
+    salaryUnit:job.salary_unit || '',
+    languages:Array.isArray(job.languages) ? job.languages : [],
+    languageText:job.lang || '',
+    germanLevel:job.german_level || '',
+    germanRequired:job.german_required,
+    spanishSupported:job.spanish_supported === true,
     intentId: intent.id,
     intentLabel: intent.label,
     emoji: getJobCategoryEmoji(job),
@@ -389,6 +422,33 @@ function buildFallbackData(isLoggedIn) {
   }
 }
 
+function buildRpcDatasets(rows, fallbackDatasets) {
+  const next = {
+    ads:[],
+    jobs:[],
+    communities:[],
+    businesses:[],
+    events:[],
+    guides:fallbackDatasets.guides,
+    pages:fallbackDatasets.pages,
+  }
+
+  for (const row of rows || []) {
+    const payload = row?.payload
+    if (!payload || typeof payload !== 'object') continue
+    if (row.entity_type === 'ad') next.ads.push(normalizeAd(payload))
+    else if (row.entity_type === 'job') next.jobs.push(normalizeJob(payload))
+    else if (row.entity_type === 'community') {
+      const community = normalizeCommunity(payload)
+      if (community) next.communities.push(community)
+    } else if (row.entity_type === 'business') next.businesses.push(normalizeBusiness(payload))
+    else if (row.entity_type === 'event') next.events.push(normalizeEvent(payload))
+  }
+
+  next.businesses.sort(sortBusinessesByPromotion)
+  return next
+}
+
 function sortMatchingBusinesses(a, b) {
   const planDiff = getBusinessSearchPriority(a) - getBusinessSearchPriority(b)
   if (planDiff) return planDiff
@@ -407,10 +467,11 @@ function getBusinessPlanSearchLabel(business) {
   return ''
 }
 
-function searchAll(query, datasets, isLoggedIn, allowBrowse = false) {
-  const profile = buildSearchProfile(query)
+function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQuery = null) {
+  const semanticQuery = assistantQuery?.active ? assistantQuery.semanticQuery : query
+  const profile = buildSearchProfile(semanticQuery)
   const hasSearchQuery = profile.normalized.length >= 2
-  const browseAll = allowBrowse && !hasSearchQuery
+  const browseAll = (allowBrowse && !hasSearchQuery) || (!!assistantQuery?.hasStructuredCriteria && !hasSearchQuery)
   if (!hasSearchQuery && !browseAll) return []
   const getSearchScore = fields => browseAll ? 1 : scoreSearchFields(profile, fields)
   const matchReason = browseAll ? '' : getSearchInterpretation(profile)
@@ -445,8 +506,14 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false) {
         filterMeta:{
           categories:['anuncios', getAdCategoryId(ad)].filter(Boolean),
           canton:ad.canton,
+          city:ad.city,
           location,
+          postalCode:ad.plz,
           intent:ad.intent,
+          priceAmount:ad.priceAmount,
+          priceUnit:ad.priceUnit,
+          rooms:ad.rooms,
+          availableFrom:ad.availableFrom,
         },
         searchScore,
       })
@@ -461,6 +528,9 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false) {
       { value:job.city, weight:2 },
       { value:job.intentLabel, weight:2 },
       { value:job.type, weight:2 },
+      { value:job.desc, weight:3 },
+      { value:job.languageText, weight:2 },
+      { value:job.languages.join(' '), weight:2 },
       { value:'empleo trabajo oferta laboral vacante puesto', weight:3 },
     ])
     if (searchScore) {
@@ -477,8 +547,16 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false) {
         filterMeta:{
           categories:getJobCategoryKeys(job),
           canton:job.canton,
+          city:job.city,
           location:job.city,
           intent:job.intentId,
+          salaryAmount:job.salaryAmount,
+          salaryUnit:job.salaryUnit,
+          languages:job.languages,
+          languageText:job.languageText,
+          germanLevel:job.germanLevel,
+          germanRequired:job.germanRequired,
+          spanishSupported:job.spanishSupported,
         },
         searchScore,
       })
@@ -522,6 +600,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false) {
       { value:businessType?.label, weight:2 },
       { value:business.type, weight:2 },
       { value:business.city, weight:2 },
+      { value:business.languages.join(' '), weight:2 },
       { value:'negocio profesional servicio', weight:1 },
     ])
     if (searchScore) {
@@ -532,8 +611,12 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false) {
         filterMeta:{
           categories,
           canton:business.canton,
+          city:business.city,
           location:business.city,
           intent:'ofrece',
+          languages:business.languages,
+          languageText:business.desc,
+          spanishSupported:business.spanishSupported,
         },
         searchScore,
       })
@@ -606,6 +689,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false) {
         filterMeta:{
           categories:['eventos'],
           canton:event.canton,
+          city:event.city,
           location:event.city,
         },
         searchScore,
@@ -660,9 +744,12 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false) {
     }
   }
 
+  const eligibleResults = assistantQuery?.active
+    ? results.filter(result => matchesLatidoAssistantResult(result, assistantQuery))
+    : results
   const rankedResults = []
-  for (let index = 0; index < results.length; index += 1) {
-    rankedResults.push({ ...results[index], searchIndex:index })
+  for (let index = 0; index < eligibleResults.length; index += 1) {
+    rankedResults.push({ ...eligibleResults[index], searchIndex:index })
   }
   rankedResults.sort((a, b) => (
     (a.searchPriority ?? 1) - (b.searchPriority ?? 1) ||
@@ -684,6 +771,7 @@ export default function GlobalSearch({
   searchFilters = EMPTY_SEARCH_FILTERS,
   onSearchFiltersChange,
   filtersContent = null,
+  assistantMode = false,
 }) {
   const { isLoggedIn, user, isAdmin } = useAuth()
   const navigate = useNavigate()
@@ -692,6 +780,8 @@ export default function GlobalSearch({
   const mountedRef = useRef(true)
   const accessLevelRef = useRef(getCacheKey(isLoggedIn))
   const blurCloseTimerRef = useRef(null)
+  const assistantRequestRef = useRef(0)
+  const assistantRpcUnavailableRef = useRef(false)
   const searchFilterKey = `${searchFilters.category || ''}|${searchFilters.canton || ''}|${searchFilters.intent || ''}`
 
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
@@ -703,9 +793,14 @@ export default function GlobalSearch({
   const [activeIdx, setActiveIdx] = useState(-1)
   const [activeFilter, setActiveFilter] = useState(null)
   const [expandedResults, setExpandedResults] = useState(false)
+  const [assistantRpc, setAssistantRpc] = useState({ status:'idle', datasets:null })
 
   const deferredQuery = useDeferredValue(q)
   const fallbackDatasets = useMemo(() => buildFallbackData(isLoggedIn), [isLoggedIn])
+  const assistantQuery = useMemo(
+    () => assistantMode ? parseLatidoAssistantQuery(deferredQuery) : null,
+    [assistantMode, deferredQuery]
+  )
   const accessLevel = getCacheKey(isLoggedIn)
 
   const searchFilteredResults = useMemo(
@@ -731,14 +826,19 @@ export default function GlobalSearch({
     [expandedResults, resultPool]
   )
   const partnerService = useMemo(() => getPartnerServiceMatch(q), [q])
-  const currentSearchProfile = useMemo(() => buildSearchProfile(q), [q])
+  const currentSearchProfile = useMemo(
+    () => buildSearchProfile(assistantQuery?.active ? assistantQuery.semanticQuery : q),
+    [assistantQuery, q]
+  )
   const searchInterpretation = getSearchInterpretation(currentSearchProfile)
   const highlightTokens = currentSearchProfile.tokens
   const hasSearchFilters = hasActiveSearchFilters(searchFilters)
-  const showPartnerService = partnerService && !hasSearchFilters
+  const showPartnerService = partnerService && !hasSearchFilters && !assistantMode
+  const assistantCriteria = assistantQuery?.criteria || []
+  const assistantLoading = assistantRpc.status === 'loading'
 
   const ph = placeholder || (size === 'lg'
-    ? 'Encuentra lo que buscas'
+    ? (assistantMode ? 'Ej.: piso en Zürich hasta 3.000 CHF' : 'Encuentra lo que buscas')
     : 'Buscar en todo Latido...')
 
   useEffect(() => {
@@ -853,6 +953,54 @@ export default function GlobalSearch({
     return request
   }, [accessLevel, fallbackDatasets, isLoggedIn])
 
+  useEffect(() => {
+    const requestId = assistantRequestRef.current + 1
+    assistantRequestRef.current = requestId
+    let cancelled = false
+
+    if (
+      !assistantMode ||
+      !assistantQuery?.active ||
+      (!assistantQuery.scope && !assistantQuery.searchTerms.length) ||
+      assistantRpcUnavailableRef.current
+    ) {
+      setAssistantRpc({ status:'idle', datasets:null })
+      return undefined
+    }
+
+    setAssistantRpc(current => ({ status:'loading', datasets:current.datasets }))
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc(
+          'search_latido',
+          buildLatidoSearchRpcParams(assistantQuery)
+        )
+        if (cancelled || requestId !== assistantRequestRef.current) return
+        if (error) {
+          if (['42883', 'PGRST202', 'PGRST205'].includes(error.code)) {
+            assistantRpcUnavailableRef.current = true
+          }
+          setAssistantRpc({ status:'fallback', datasets:null })
+          return
+        }
+
+        setAssistantRpc({
+          status:'ready',
+          datasets:buildRpcDatasets(data, fallbackDatasets),
+        })
+      } catch {
+        if (!cancelled && requestId === assistantRequestRef.current) {
+          setAssistantRpc({ status:'fallback', datasets:null })
+        }
+      }
+    }, 260)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [assistantMode, assistantQuery, fallbackDatasets])
+
   const cancelBlurClose = useCallback(() => {
     if (!blurCloseTimerRef.current) return
     window.clearTimeout(blurCloseTimerRef.current)
@@ -893,12 +1041,20 @@ export default function GlobalSearch({
   }, [deferredQuery, ensureDataLoaded, focused])
 
   useEffect(() => {
-    const baseDatasets = dataReady ? datasets : fallbackDatasets
-    setResults(searchAll(deferredQuery, baseDatasets, isLoggedIn, hasSearchFilters))
+    const baseDatasets = assistantRpc.status === 'ready' && assistantRpc.datasets
+      ? assistantRpc.datasets
+      : (dataReady ? datasets : fallbackDatasets)
+    setResults(searchAll(
+      deferredQuery,
+      baseDatasets,
+      isLoggedIn,
+      hasSearchFilters,
+      assistantQuery,
+    ))
     setActiveIdx(-1)
     setActiveFilter(null)
     setExpandedResults(false)
-  }, [dataReady, datasets, deferredQuery, fallbackDatasets, hasSearchFilters, isLoggedIn, searchFilterKey])
+  }, [assistantQuery, assistantRpc, dataReady, datasets, deferredQuery, fallbackDatasets, hasSearchFilters, isLoggedIn, searchFilterKey])
 
   useEffect(() => {
     if (isAdmin) return undefined
@@ -907,20 +1063,45 @@ export default function GlobalSearch({
     if (query.length < 2) return undefined
 
     const timer = window.setTimeout(() => {
+      const assistantMetadata = assistantQuery?.active ? {
+        intent:assistantQuery.scope?.id || 'unknown',
+        category:assistantQuery.category || null,
+        canton:assistantQuery.canton || null,
+        municipality:assistantQuery.municipality || null,
+        postal_code:assistantQuery.postalCode || null,
+        price_min:assistantQuery.priceMin,
+        price_max:assistantQuery.priceMax,
+        rooms_min:assistantQuery.roomsMin,
+        available_on:assistantQuery.dateFrom || null,
+        spanish_required:assistantQuery.spanishRequired,
+        german_level:assistantQuery.germanLevel || null,
+        confidence:assistantQuery.confidence,
+      } : null
       trackSearchEvent({
         query,
-        scope: 'global',
+        scope: assistantMode ? 'pregunta_latido' : 'global',
         user_id: user?.id || null,
         metadata: {
           results_count: resultPool.length,
           active_filter: activeFilter || null,
           search_filters:searchFilters,
+          assistant:assistantMetadata,
         },
       })
+      if (assistantMode && assistantMetadata) {
+        trackAnalyticsEvent(resultPool.length ? 'natural_search' : 'natural_search_no_results', {
+          user_id:user?.id || null,
+          metadata:{
+            query:query.slice(0, 120),
+            result_count:resultPool.length,
+            ...assistantMetadata,
+          },
+        })
+      }
     }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [activeFilter, isAdmin, q, resultPool.length, searchFilterKey, user?.id])
+  }, [activeFilter, assistantMode, assistantQuery, isAdmin, q, resultPool.length, searchFilterKey, user?.id])
 
   const goTo = target => {
     const result = typeof target === 'string' ? null : target
@@ -1004,6 +1185,11 @@ export default function GlobalSearch({
 
   return (
     <div style={{ position:'relative', width:'100%', zIndex:showDropdown ? 80 : 1 }}>
+      {assistantMode && size === 'lg' && (
+        <div style={{ display:'flex', alignItems:'baseline', flexWrap:'wrap', gap:'3px 8px', margin:'0 2px 8px', color:'#fff', fontFamily:PP }}>
+          <span style={{ fontSize:13, fontWeight:400 }}>✨ Dile lo que necesitas a Latido</span>
+        </div>
+      )}
       <div style={{ position:'relative' }}>
         <span style={{ position:'absolute', left:size === 'lg' ? 16 : 12, top:'50%', transform:'translateY(-50%)', fontSize:size === 'lg' ? 20 : 15, color:focused ? C.primary : C.light, transition:'color .15s', pointerEvents:'none' }}>
           🔍
@@ -1018,6 +1204,7 @@ export default function GlobalSearch({
           onBlur={handleBlur}
           onKeyDown={handleKey}
           autoComplete="off"
+          aria-label={assistantMode ? 'Pregunta a Latido' : 'Buscar en Latido'}
         />
         {q && (
           <button onMouseDown={e => e.preventDefault()} onClick={clearSearch} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:C.border, border:'none', borderRadius:'50%', width:20, height:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:C.mid }}>
@@ -1034,7 +1221,45 @@ export default function GlobalSearch({
 
       {showDropdown && (
         <div className="fade-up" onMouseDown={e => e.preventDefault()} style={{ position:'absolute', top:'100%', left:0, right:0, marginTop:10, background:'#fff', borderRadius:20, boxShadow:'0 18px 48px rgba(15,23,42,0.18)', border:`1px solid ${C.border}`, zIndex:200, overflow:'hidden', maxHeight:'min(420px, 62vh)', overflowY:'auto' }}>
-          {searchInterpretation && (
+          {assistantMode && assistantQuery?.active ? (
+            <div style={{ padding:'11px 14px', background:'linear-gradient(135deg, #EFF6FF 0%, #F8FAFF 100%)', borderBottom:`1px solid ${C.borderLight}` }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:8 }}>
+                <p style={{ fontFamily:PP, fontSize:10, fontWeight:900, letterSpacing:0.7, textTransform:'uppercase', color:C.primary, margin:0 }}>
+                  {assistantCriteria.length ? 'Latido ha entendido' : 'Cuéntame un poco más'}
+                </p>
+                <span style={{ fontFamily:PP, fontSize:9.5, fontWeight:700, color:C.light }}>
+                  {assistantLoading
+                    ? 'Consultando la base de datos…'
+                    : assistantCriteria.length
+                      ? `${resultPool.length} coincidencia${resultPool.length !== 1 ? 's' : ''}`
+                      : 'Escribe una necesidad concreta'}
+                </span>
+              </div>
+              {assistantCriteria.length > 0 ? (
+                <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
+                  {assistantCriteria.map(criterion => (
+                    <span key={criterion.key} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 8px', borderRadius:999, border:'1px solid #BFDBFE', background:'#fff', fontFamily:PP, fontSize:9.5, fontWeight:750, color:'#1E3A8A' }}>
+                      <span aria-hidden="true" style={{ fontSize:10, fontWeight:900 }}>{criterion.icon}</span>
+                      {criterion.label}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
+                  {['Busco piso', 'Busco trabajo', 'Necesito una traducción', 'Busco un evento'].map(suggestion => (
+                    <button key={suggestion} type="button" onClick={() => { setQ(suggestion); inputRef.current?.focus() }} style={{ border:'1px solid #BFDBFE', borderRadius:999, background:'#fff', color:'#1E3A8A', padding:'5px 8px', fontFamily:PP, fontSize:9.5, fontWeight:750, cursor:'pointer' }}>
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {assistantQuery?.missingFields?.length > 0 && (
+                <p style={{ fontFamily:PP, fontSize:9.5, color:C.mid, margin:'7px 0 0' }}>
+                  Para afinar más, añade {assistantQuery.missingFields.join(' y ')}.
+                </p>
+              )}
+            </div>
+          ) : searchInterpretation && (
             <div style={{ padding:'10px 16px', background:'#F5F8FF', borderBottom:`1px solid ${C.borderLight}`, fontFamily:PP, fontSize:11, color:C.mid }}>
               Interpretamos <strong style={{ color:C.text }}>“{q.trim()}”</strong> como{' '}
               <strong style={{ color:C.primary }}>{searchInterpretation}</strong>
@@ -1042,16 +1267,30 @@ export default function GlobalSearch({
           )}
           {filteredResults.length === 0 ? (
             <div style={{ padding:'20px 18px', textAlign:'center' }}>
-              {loadingData && !dataReady ? (
+              {(loadingData && !dataReady) || assistantLoading ? (
                 <>
-                  <p style={{ fontFamily:PP, fontSize:13, color:C.text, fontWeight:700, margin:'0 0 6px' }}>Buscando en la comunidad...</p>
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Estamos cargando los resultados más recientes.</p>
+                  <p style={{ fontFamily:PP, fontSize:13, color:C.text, fontWeight:700, margin:'0 0 6px' }}>Buscando en Latido...</p>
+                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Consultando publicaciones, empleos, negocios y eventos.</p>
                 </>
               ) : (
                 <>
-                  <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>Sin resultados para <strong style={{ color:C.text }}>{q || 'los filtros seleccionados'}</strong></p>
+                  <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>
+                    {assistantMode
+                      ? (assistantQuery?.scope ? 'No encontré resultados que cumplan todos los criterios' : 'Elige una necesidad para empezar')
+                      : 'Sin resultados para'}{' '}
+                    {!assistantMode && <strong style={{ color:C.text }}>{q || 'los filtros seleccionados'}</strong>}
+                  </p>
                   <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'6px 0 0' }}>
-                    {hasSearchFilters ? (
+                    {assistantMode && !assistantQuery?.scope ? (
+                      <>Puedes usar una de las opciones sugeridas arriba o escribir más detalles.</>
+                    ) : assistantMode ? (
+                      <>
+                        Prueba a ampliar la ubicación o el presupuesto, o{' '}
+                        <button onClick={clearSearch} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                          haz otra pregunta
+                        </button>
+                      </>
+                    ) : hasSearchFilters ? (
                       <button onClick={() => onSearchFiltersChange?.({ category:'', canton:'', intent:'' })} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
                         Quitar los filtros y buscar en todo Latido
                       </button>

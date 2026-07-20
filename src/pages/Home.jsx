@@ -157,20 +157,28 @@ function EmptyState({ text }) {
 }
 
 function SearchFilterSelect({ label, value, options, onChange, flex = 1 }) {
+  const selectedLabel = options.find(o => o.value === value)?.label || label
+  const isActive = !!value
+  const defaultValue = options[0]?.value || ''
+  const isDefault = value === defaultValue
+
   return (
-    <label style={{ position:'relative', display:'block', minWidth:0, flex:`${flex} 1 0`, height:50, border:'1.5px solid rgba(255,255,255,0.42)', borderRadius:14, background:'rgba(255,255,255,0.14)', overflow:'hidden', backdropFilter:'blur(4px)' }}>
-      <span style={{ position:'absolute', top:7, left:11, zIndex:2, fontFamily:PP, fontSize:8.5, lineHeight:1, fontWeight:900, letterSpacing:0.65, color:'rgba(255,255,255,0.78)', textTransform:'uppercase', pointerEvents:'none' }}>
+    <label style={{ position:'relative', display:'flex', alignItems:'center', minWidth:0, flex:`${flex} 1 0`, height:40, paddingLeft:12, border:`1.5px solid ${isActive ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.32)'}`, borderRadius:12, background:isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)', overflow:'hidden', backdropFilter:'blur(6px)', transition:'all .15s' }}>
+      <span style={{ position:'absolute', top:0, left:0, right:0, bottom:0, display:'flex', alignItems:'center', gap:6, paddingLeft:12, paddingRight:32, fontFamily:PP, fontSize:9.5, fontWeight:900, color:isActive ? '#fff' : 'rgba(255,255,255,0.72)', cursor:'pointer', pointerEvents:'none', whiteSpace:'nowrap', overflow:'hidden', minWidth:0, textTransform:'uppercase', letterSpacing:0.5 }}>
         {label}
+        {isActive && !isDefault && (
+          <span aria-hidden="true" style={{ width:4, height:4, borderRadius:'50%', background:'#fff', flexShrink:0, marginLeft:'auto' }} />
+        )}
       </span>
       <select
         aria-label={label}
         value={value}
         onChange={onChange}
-        style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none', outline:'none', appearance:'none', WebkitAppearance:'none', background:'transparent', padding:'19px 27px 5px 11px', fontFamily:PP, fontSize:11, fontWeight:800, color:'#fff', cursor:'pointer', textOverflow:'ellipsis' }}
+        style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none', outline:'none', appearance:'none', WebkitAppearance:'none', background:'transparent', padding:'0 32px 0 12px', fontFamily:PP, fontSize:10.5, fontWeight:700, color:'rgba(255,255,255,0)', cursor:'pointer' }}
       >
         {options.map(option => <option key={option.value || 'all'} value={option.value} style={{ color:C.text, background:'#fff' }}>{option.label}</option>)}
       </select>
-      <span aria-hidden="true" style={{ position:'absolute', right:11, top:20, zIndex:2, width:6, height:6, borderRight:'1.5px solid rgba(255,255,255,0.9)', borderBottom:'1.5px solid rgba(255,255,255,0.9)', transform:'rotate(45deg)', pointerEvents:'none' }} />
+      <span aria-hidden="true" style={{ position:'absolute', right:10, top:'50%', width:5, height:5, borderRight:`1.5px solid ${isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.8)'}`, borderBottom:`1.5px solid ${isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.8)'}`, transform:'translateY(-50%) rotate(45deg)', pointerEvents:'none', flexShrink:0 }} />
     </label>
   )
 }
@@ -1127,27 +1135,14 @@ export default function Home() {
         </div>
 
         <div style={{ maxWidth:1200, margin:'0 auto', position:'relative', zIndex:1 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:24 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:18 }}>
             <div style={{ flex:1, minWidth:0 }}>
-              {/* <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.75)', margin:'0 0 8px' }}>
-                Más cerca de tu gente
-              </p> */}
-              <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(30px,6vw,48px)', lineHeight:1.2, letterSpacing:-0.5, color:'#fff', margin:'0 0 10px' }}>
-                Hola&nbsp;  {firstName}.<br />                
+              <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(28px,5.5vw,44px)', lineHeight:1.15, letterSpacing:-0.6, color:'#fff', margin:'0 0 4px' }}>
+                Hola {firstName}.
               </h1>
-              
-              <h2
-  style={{
-    fontFamily:PP,
-    fontWeight:600,
-    fontSize:'clamp(16px,4vw,28px)',
-    lineHeight:1.2,
-    letterSpacing:-0.3,
-    color:'#fff',
-    margin:'0 0 8px'
-  }}
->
-¡Te estábamos esperando!</h2>
+              <h2 style={{ fontFamily:PP, fontWeight:500, fontSize:'clamp(16px,4vw,22px)', lineHeight:1.3, letterSpacing:-0.2, color:'rgba(255,255,255,0.85)', margin:0 }}>
+                ¡Te estábamos esperando!
+              </h2>
 
               {/* <p style={{ fontFamily:PP, fontSize:14, color:'rgba(255,255,255,0.82)', lineHeight:1.7, maxWidth:520, margin:0 }}>
                 Encuentra información, servicios, empleos y apoyo real en una plataforma creada para ti y para los tuyos.
@@ -1161,7 +1156,7 @@ export default function Home() {
                     if (notifOpen) closeNotifPanel()
                     else setNotifOpen(true)
                   }}
-                  style={{ position:'relative', background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:46, height:46, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, cursor:'pointer', marginTop:6 }}
+                  style={{ position:'relative', background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:46, height:46, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, cursor:'pointer', marginTop:0 }}
                   aria-label="Notificaciones"
                 >
                   🔔
@@ -1263,12 +1258,13 @@ export default function Home() {
           <div className="hero-search-wrap">
             <GlobalSearch
               size="lg"
-              placeholder="Describe lo que necesitas…"
+              assistantMode
+              placeholder="Ej.: busco piso en Zürich hasta 3.000 CHF"
               searchFilters={searchFilters}
               onSearchFiltersChange={setSearchFilters}
               filtersContent={(
-                <div className="no-scroll" role="group" aria-label="Filtros de búsqueda" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:10 }}>
-                  <div style={{ display:'flex', gap:6, width:'100%', minWidth:350 }}>
+                <div className="no-scroll" role="group" aria-label="Filtros de búsqueda" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:8 }}>
+                  <div style={{ display:'flex', gap:8, width:'100%', minWidth:340 }}>
                     <SearchFilterSelect
                       label="Categoría"
                       value={searchFilters.category}
@@ -1278,7 +1274,7 @@ export default function Home() {
                     <SearchFilterSelect
                       label="Cantón"
                       value={searchFilters.canton}
-                      flex={1.12}
+                      flex={1.1}
                       options={[
                         { value:'', label:'Suiza' },
                         ...CANTONS.map(canton => ({ value:canton.code, label:`${canton.code} · ${canton.name}` })),
@@ -1288,7 +1284,7 @@ export default function Home() {
                     <SearchFilterSelect
                       label="Intención"
                       value={searchFilters.intent}
-                      flex={1.08}
+                      flex={1.05}
                       options={HOME_SEARCH_INTENT_OPTIONS}
                       onChange={event => setSearchFilters(current => ({ ...current, intent:event.target.value }))}
                     />
@@ -1301,9 +1297,9 @@ export default function Home() {
       </section>
 
       {showAttentionSection && (
-        <section style={{ background:'#fff', padding:'18px 0 2px' }}>
+        <section style={{ background:'#fff', padding:'12px 0 2px' }}>
           <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, marginBottom:10 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, marginBottom:8 }}>
               <div>
                 <p style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, margin:'0 0 3px', textTransform:'uppercase' }}>
                   Necesita atención
