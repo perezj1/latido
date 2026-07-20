@@ -99,9 +99,9 @@ const INTENT_DEFINITIONS = [
   },
   {
     id:'vehicle',
-    triggers:['coche', 'carro', 'auto', 'vehiculo', 'mecanico', 'taller'],
+    triggers:['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'automoviles', 'vehiculo', 'vehiculos', 'moto', 'motos', 'motocicleta', 'motocicletas', 'motociclo', 'motociclos', 'scooter', 'scooters', 'ciclomotor', 'ciclomotores', 'mecanico', 'taller'],
     consumed:['comprar', 'reparar', 'vender'],
-    terms:['coche', 'vehiculo', 'mecanico', 'mecanica', 'taller', 'automovil'],
+    terms:['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'automoviles', 'vehiculo', 'vehiculos', 'moto', 'motos', 'motocicleta', 'motocicletas', 'motociclo', 'motociclos', 'scooter', 'scooters', 'ciclomotor', 'ciclomotores', 'mecanico', 'mecanica', 'taller'],
   },
   {
     id:'transport',

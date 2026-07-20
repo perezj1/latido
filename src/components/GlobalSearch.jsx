@@ -631,6 +631,9 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
         filterMeta:{
           categories:['anuncios', getAdCategoryId(ad)].filter(Boolean),
           searchText:[ad.title, ad.desc, cat?.label, ad.cat, ad.sub].filter(Boolean).join(' '),
+          title:ad.title,
+          description:ad.desc,
+          subcategory:ad.sub,
           canton:ad.canton,
           city:ad.city,
           location,
@@ -952,6 +955,7 @@ export default function GlobalSearch({
   onSearchFiltersChange,
   filtersContent = null,
   assistantMode = false,
+  assistantLabelColor = '#fff',
 }) {
   const { isLoggedIn, user, isAdmin } = useAuth()
   const navigate = useNavigate()
@@ -1398,7 +1402,7 @@ export default function GlobalSearch({
   return (
     <div style={{ position:'relative', width:'100%', zIndex:showDropdown ? 80 : 1 }}>
       {assistantMode && size === 'lg' && (
-        <div style={{ display:'flex', alignItems:'baseline', flexWrap:'wrap', gap:'3px 8px', margin:'0 2px 8px', color:'#fff', fontFamily:PP }}>
+        <div style={{ display:'flex', alignItems:'baseline', flexWrap:'wrap', gap:'3px 8px', margin:'0 2px 8px', color:assistantLabelColor, fontFamily:PP }}>
           <span style={{ fontSize:13, fontWeight:400 }}>✨ Dile lo que necesitas a Latido</span>
         </div>
       )}
