@@ -5,6 +5,7 @@ import { getAdCat, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
 
 const SETTINGS_KEY = 'latido_alerts'
 const LAST_CHECK_KEY = 'latido_alerts_last_check'
+const DISMISSED_KEYS_KEY = 'latido_alerts_dismissed_keys'
 const DISMISSED_EVENT = 'latido_alerts_dismissed'
 const UPDATED_EVENT = 'latido_alerts_updated'
 const MAX_ALERTS = 20
@@ -58,6 +59,18 @@ function loadSettings() {
 function dispatchZoneAlertEvent(name) {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new Event(name))
+}
+
+function loadDismissedAlertKeys() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEYS_KEY) || '[]'))
+  } catch {
+    return new Set()
+  }
+}
+
+function saveDismissedAlertKeys(keys) {
+  localStorage.setItem(DISMISSED_KEYS_KEY, JSON.stringify([...keys].slice(-200)))
 }
 
 function sortAlertItems(items) {
@@ -203,8 +216,17 @@ export function notifyZoneAlertsUpdated() {
   dispatchZoneAlertEvent(UPDATED_EVENT)
 }
 
+export function dismissZoneAlert(alertKey) {
+  if (!alertKey) return
+  const dismissedKeys = loadDismissedAlertKeys()
+  dismissedKeys.add(alertKey)
+  saveDismissedAlertKeys(dismissedKeys)
+  window.dispatchEvent(new CustomEvent(DISMISSED_EVENT, { detail:{ alertKey } }))
+}
+
 export function dismissZoneAlerts() {
   localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString())
+  localStorage.removeItem(DISMISSED_KEYS_KEY)
   dispatchZoneAlertEvent(DISMISSED_EVENT)
 }
 
@@ -222,7 +244,7 @@ export function useZoneAlerts() {
     }
 
     function onStorage(event) {
-      if (event.key === SETTINGS_KEY || event.key === LAST_CHECK_KEY) onUpdated()
+      if ([SETTINGS_KEY, LAST_CHECK_KEY, DISMISSED_KEYS_KEY].includes(event.key)) onUpdated()
     }
 
     window.addEventListener(UPDATED_EVENT, onUpdated)
@@ -252,7 +274,12 @@ export function useZoneAlerts() {
       )
 
       if (!cancelRef.current) {
-        setAlertItems(sortAlertItems(dedupeAlertItems(results.flat())).slice(0, MAX_ALERTS))
+        const dismissedKeys = loadDismissedAlertKeys()
+        setAlertItems(
+          sortAlertItems(dedupeAlertItems(results.flat()))
+            .filter(item => !dismissedKeys.has(item.key))
+            .slice(0, MAX_ALERTS)
+        )
       }
     }
 
@@ -284,6 +311,7 @@ export function useZoneAlerts() {
             const latestEffectiveSettings = { ...latestSettings, canton: latestSettings.canton || userCanton || '' }
             if (!matchesSettings(payload.new, source.kind, latestEffectiveSettings, lastCheck)) return
             const nextItem = normalizeAlertItem(source.kind, payload.new)
+            if (loadDismissedAlertKeys().has(nextItem.key)) return
             setAlertItems(prev => mergeAlertItems(prev, [nextItem]))
           })
           .subscribe()
@@ -297,8 +325,11 @@ export function useZoneAlerts() {
 
     const interval = setInterval(check, ALERT_POLL_INTERVAL_MS)
 
-    function onDismiss() {
-      setAlertItems([])
+    function onDismiss(event) {
+      const alertKey = event.detail?.alertKey
+      setAlertItems(current => alertKey
+        ? current.filter(item => item.key !== alertKey)
+        : [])
     }
 
     window.addEventListener(DISMISSED_EVENT, onDismiss)

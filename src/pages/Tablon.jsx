@@ -13,7 +13,7 @@ import CompactFilterSelect from '../components/CompactFilterSelect'
 import GlobalSearch from '../components/GlobalSearch'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
-import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { getThumbnailImageUrl, handleThumbnailImageError } from '../lib/imageVariants'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import toast from 'react-hot-toast'
 
@@ -276,7 +276,7 @@ function RelatedJobCard({ job, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
       <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {job.logo_url ? <img src={getThumbnailImageUrl(job.logo_url)} alt={job.title || job.company} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : (job.emoji || '💼')}
+        {job.logo_url ? <img src={getThumbnailImageUrl(job.logo_url)} onError={event => handleThumbnailImageError(event, job.logo_url)} alt={job.title || job.company} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : (job.emoji || '💼')}
       </div>
       <div style={{ padding:10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{job.title || job.company}</p>
@@ -607,7 +607,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:122 }}>
       <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight }}>
         {mediaSrc
-          ? <img src={getThumbnailImageUrl(mediaSrc)} alt={job.company || job.title} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
+          ? <img src={getThumbnailImageUrl(mediaSrc)} onError={event => handleThumbnailImageError(event, mediaSrc)} alt={job.company || job.title} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
           : <div style={LIST_FALLBACK_STYLE}>{job.emoji || '💼'}</div>}
       </div>
       <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>

@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { useZoneAlerts, dismissZoneAlerts } from '../hooks/useZoneAlerts'
+import { useZoneAlerts, dismissZoneAlert, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { useBusinessLeadAlerts } from '../hooks/useBusinessLeadAlerts'
-import { useUnreadMessages } from '../hooks/useUnreadMessages'
+import { markAllRead as markAllMessagesRead, markConvRead, useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
@@ -416,7 +416,12 @@ export default function Home() {
   const { displayName, isLoggedIn, user, userCanton } = useAuth()
   const navigate = useNavigate()
   const { alertItems, alertCount } = useZoneAlerts()
-  const { alerts:businessLeadAlerts, unreadCount:businessLeadUnreadCount, markRead:markBusinessLeadAlertRead } = useBusinessLeadAlerts()
+  const {
+    alerts:businessLeadAlerts,
+    unreadCount:businessLeadUnreadCount,
+    markRead:markBusinessLeadAlertRead,
+    markAllRead:markAllBusinessLeadAlertsRead,
+  } = useBusinessLeadAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
 
   const [notifOpen, setNotifOpen] = useState(false)
@@ -558,8 +563,13 @@ export default function Home() {
 
   // Close panel on outside click
   function closeNotifPanel() {
-    dismissZoneAlerts() // mark zone alerts as seen on close
     setNotifOpen(false)
+  }
+
+  function clearAllNotifications() {
+    markAllMessagesRead()
+    dismissZoneAlerts()
+    void markAllBusinessLeadAlertsRead()
   }
 
   useEffect(() => {
@@ -1173,7 +1183,17 @@ export default function Home() {
                   }}>
                     <div style={{ padding:'14px 16px 10px', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                       <span style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text }}>Notificaciones</span>
-                      {!hasNotif && <span style={{ fontFamily:PP, fontSize:12, color:C.light }}>Todo al día ✓</span>}
+                      {hasNotif ? (
+                        <button
+                          type="button"
+                          onClick={clearAllNotifications}
+                          style={{ border:'none', background:'none', padding:0, fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, cursor:'pointer' }}
+                        >
+                          Borrar todas
+                        </button>
+                      ) : (
+                        <span style={{ fontFamily:PP, fontSize:12, color:C.light }}>Todo al día ✓</span>
+                      )}
                     </div>
 
                     <div style={{ overflowY:'auto', flex:1 }}>
@@ -1181,19 +1201,28 @@ export default function Home() {
                       {hasUnread && (
                         <div style={{ padding:'10px 14px 6px' }}>
                           <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>MENSAJES</p>
-                          <button
-                            onClick={() => { closeNotifPanel(); navigate('/mensajes') }}
-                            style={{ width:'100%', background:C.primaryLight, border:'none', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'center', gap:10, cursor:'pointer', textAlign:'left' }}
-                          >
-                            <span style={{ fontSize:20 }}>💬</span>
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, margin:0 }}>
-                                {unreadConvIds.size === 1 ? '1 conversación nueva' : `${unreadConvIds.size} conversaciones nuevas`}
-                              </p>
-                              <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0 }}>Toca para ver los mensajes</p>
-                            </div>
-                            <span style={{ color:C.primary, fontSize:16 }}>›</span>
-                          </button>
+                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                            {[...unreadConvIds].map((conversationId, index) => (
+                              <button
+                                key={conversationId}
+                                onClick={() => {
+                                  markConvRead(conversationId)
+                                  closeNotifPanel()
+                                  navigate(`/mensajes?conv=${encodeURIComponent(conversationId)}`)
+                                }}
+                                style={{ width:'100%', background:C.primaryLight, border:'none', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'center', gap:10, cursor:'pointer', textAlign:'left' }}
+                              >
+                                <span style={{ fontSize:20 }}>💬</span>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, margin:0 }}>
+                                    {unreadConvIds.size === 1 ? 'Conversación nueva' : `Conversación nueva ${index + 1}`}
+                                  </p>
+                                  <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0 }}>Toca para abrir esta conversación</p>
+                                </div>
+                                <span style={{ color:C.primary, fontSize:16 }}>›</span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       )}
 
@@ -1204,8 +1233,8 @@ export default function Home() {
                             {businessLeadAlerts.map(alert => (
                               <button
                                 key={alert.id}
-                                onClick={() => { markBusinessLeadAlertRead(alert.id); closeNotifPanel(); navigate(alert.listing_path) }}
-                                style={{ width:'100%', background:alert.read_at ? C.bg : '#EFF6FF', border:`1px solid ${alert.read_at ? C.border : '#BFDBFE'}`, borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
+                                onClick={() => { void markBusinessLeadAlertRead(alert.id); closeNotifPanel(); navigate(alert.listing_path) }}
+                                style={{ width:'100%', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
                               >
                                 <span style={{ fontSize:18, marginTop:1 }}>🔔</span>
                                 <div style={{ flex:1, minWidth:0 }}>
@@ -1227,7 +1256,7 @@ export default function Home() {
                             {alertItems.map(item => (
                               <button
                                 key={item.key}
-                                onClick={() => { closeNotifPanel(); navigate(item.href) }}
+                                onClick={() => { dismissZoneAlert(item.key); closeNotifPanel(); navigate(item.href) }}
                                 style={{ width:'100%', background:`${C.bg}`, border:`1px solid ${C.border}`, borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
                               >
                                 <span style={{ fontSize:18, marginTop:1 }}>{item.icon}</span>

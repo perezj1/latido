@@ -69,6 +69,7 @@ export function useUnreadMessages() {
         .in('conversation_id', convIds)
         .neq('sender_id', user.id)
         .or('read.is.null,read.eq.false')
+      if (lastVisit) q = q.gt('created_at', lastVisit)
 
       let { data: unreadMsgs, error: unreadError } = await q
       if (unreadError) {
