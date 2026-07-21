@@ -18,7 +18,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Tag, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox } from '../components/UI'
+import { Tag, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CompactFilterSelect from '../components/CompactFilterSelect'
 import GlobalSearch from '../components/GlobalSearch'
@@ -99,6 +99,8 @@ const PROVIDER_DIRECTORY_SELECT = {
 }
 
 const PROVIDER_DIRECTORY_PAGE_SIZE = 500
+const BUSINESS_CLAIM_EMAIL = 'latidoch@gmail.com'
+const BUSINESS_CLAIM_SUBJECT = 'Encontre mi negocio en latido'
 
 async function fetchAllProviderDirectoryRows(columns) {
   const rows = []
@@ -801,6 +803,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [savingReview, setSavingReview] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
+  const [claimModalOpen, setClaimModalOpen] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [tab, setTab] = useState('info')
   const rating = averageRating(reviews)
@@ -811,6 +814,15 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   const websiteLabel = business.website ? formatUrlLabel(business.website) : ''
   const websiteHref = business.website ? ensureUrl(business.website) : ''
   const addressHref = business.address ? getNavigationUrl(business.address, business.city, business.canton) : ''
+  const claimEmailBody = [
+    'Hola Latido,',
+    '',
+    `He encontrado mi negocio "${business.name}" en Latido y quiero solicitar que se asigne a mi cuenta.`,
+    `Negocio: ${business.name}`,
+    `Ubicación: ${business.city}`,
+    `Enlace: ${buildShareUrl(getBusinessPath(business))}`,
+  ].join('\n')
+  const claimEmailHref = `mailto:${BUSINESS_CLAIM_EMAIL}?subject=${encodeURIComponent(BUSINESS_CLAIM_SUBJECT)}&body=${encodeURIComponent(claimEmailBody)}`
   const googleReviewsUrl = getNavigationUrl(
     [business.name, business.address].filter(Boolean).join(', '),
     business.city,
@@ -836,6 +848,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   useEffect(() => {
     setReviews(reviewsMap[business.id] || [])
     setShowContacts(false)
+    setClaimModalOpen(false)
     setShowReviewForm(false)
     setSavingReview(false)
   }, [business.id, reviewsMap])
@@ -1156,6 +1169,11 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           label:'Me gusta',
           hint:recommendationCount === 1 ? '1 persona lo recomienda' : `${recommendationCount} personas lo recomiendan`,
         }}
+        ownershipClaim={!business.user_id ? {
+          label:'Este negocio es mío',
+          icon:'🏪',
+          onClick:() => setClaimModalOpen(true),
+        } : null}
         report={{
           contentType:'business',
           contentId:business.id,
@@ -1164,6 +1182,30 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           metadata:{ title:business.name, category:business.type, city:business.city },
         }}
       />
+
+      <Modal
+        show={claimModalOpen}
+        onClose={() => setClaimModalOpen(false)}
+        title="¡Enhorabuena!"
+        syncHistory={false}
+        zIndex={120}
+      >
+        <div style={{ textAlign:'center' }}>
+          <div aria-hidden="true" style={{ width:64, height:64, borderRadius:'50%', margin:'0 auto 16px', display:'grid', placeItems:'center', background:C.primaryLight, color:C.primary, fontSize:30 }}>
+            🏪
+          </div>
+          <p style={{ fontFamily:PP, fontSize:14, color:C.mid, lineHeight:1.7, margin:'0 0 20px' }}>
+            Tu negocio está llegando a cientos de posibles clientes. Si este es tu negocio, contáctanos para asignarlo a tu cuenta y que puedas administrarlo.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.assign(claimEmailHref)}
+            style={{ width:'100%', minHeight:50, display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box', border:'none', borderRadius:15, background:C.primary, color:'#fff', padding:'13px 18px', fontFamily:PP, fontWeight:800, fontSize:13, cursor:'pointer', boxShadow:'0 12px 26px rgba(37,99,235,0.22)' }}
+          >
+            Enviar email a Latido
+          </button>
+        </div>
+      </Modal>
     </FullPageOverlay>
   )
 }
