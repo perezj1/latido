@@ -23,6 +23,14 @@ export default defineConfig(({ mode }) => {
     return `${pathname.replace(/^\/api\/eventfrog/, endpoint)}${query ? `?${query}` : ''}`
   }
 
+  function rewriteProviderImagePath(path) {
+    const requestUrl = new URL(path, 'http://localhost')
+    if (requestUrl.searchParams.get('key') === 'colombia-cancilleria') {
+      return '/sites/default/files/inline-images/logo-cancilleria.png'
+    }
+    return '/provider-image-not-found'
+  }
+
   return {
     plugins: [react()],
     resolve: {
@@ -43,6 +51,18 @@ export default defineConfig(({ mode }) => {
         ignored: ['**/.git/**', '**/dist/**', '**/node_modules/**'],
       },
       proxy: {
+        '/api/provider-image': {
+          target: 'https://suiza.embajada.gov.co',
+          changeOrigin: true,
+          secure: true,
+          rewrite: rewriteProviderImagePath,
+          configure(proxy) {
+            proxy.on('proxyReq', proxyRequest => {
+              proxyRequest.removeHeader('referer')
+              proxyRequest.removeHeader('origin')
+            })
+          },
+        },
         '/api/eventfrog': {
           target: 'https://api.eventfrog.net',
           changeOrigin: true,
