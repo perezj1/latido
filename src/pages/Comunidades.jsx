@@ -30,7 +30,7 @@ import { getMissingColumnName } from '../lib/supabaseCompat'
 import { normalizeExternalUrl } from '../lib/links'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
-import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import {
   getBusinessAddress,
@@ -321,7 +321,7 @@ function normalizeProvider(provider) {
     promotion_ends_at: provider.promotion_ends_at || null,
     promotionPlan,
     services: Array.isArray(provider.services) ? provider.services : [],
-    photo_url: provider.photo_url || '',
+    photo_url: resolveImageUrl(provider.photo_url),
     contacts: Array.isArray(provider.contacts) ? provider.contacts : null,
   }
 }

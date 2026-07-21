@@ -16,7 +16,7 @@ WITH media (name, website, photo_url) AS (
     (
       'El Rincón Argentino',
       'https://el-rincon-argentino.ch',
-      'https://el-rincon-argentino.ch/images/s2dlogo.jpg'
+      'https://img.restaurantguru.com/w550/h367/r18b-El-Rincon-Argentino-design-2024-12-3.jpg'
     ),
     (
       'Pikante Peruvian Culinary Art',
