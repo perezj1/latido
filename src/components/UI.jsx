@@ -448,7 +448,7 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
   )
 }
 
-export function Modal({ show, onClose, title, children, syncHistory=true }) {
+export function Modal({ show, onClose, title, children, syncHistory=true, zIndex=80 }) {
   useOverlayHistory(show, onClose, syncHistory)
 
   useEffect(() => {
@@ -460,7 +460,7 @@ export function Modal({ show, onClose, title, children, syncHistory=true }) {
 
   if (!show) return null
   return (
-    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))', boxSizing:'border-box' }}>
+    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))', boxSizing:'border-box' }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)' }} onClick={onClose} />
       <div className="fade-up" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'calc(100vh - 32px)', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
         <div style={{ flexShrink:0, position:'relative', zIndex:2, background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'24px 24px 0 0' }}>

@@ -66,12 +66,13 @@ export default function DetailActionBar({
   share=null,
   favorite=null,
   like=null,
+  ownershipClaim=null,
   report=null,
   maxWidth=760,
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const rootRef = useRef(null)
-  const hasMenu = !!(share || favorite || like || report)
+  const hasMenu = !!(share || favorite || like || ownershipClaim || report)
 
   useEffect(() => {
     if (!menuOpen && !expandedContent) return undefined
@@ -181,7 +182,7 @@ export default function DetailActionBar({
                   style={MENU_ITEM_STYLE}
                 />
               )}
-              {share && (favorite || like || report) && (
+              {share && (favorite || like || ownershipClaim || report) && (
                 <span aria-hidden="true" style={{ height:1, background:C.borderLight, margin:'0 10px', display:'block' }} />
               )}
               {favorite && (
@@ -193,7 +194,7 @@ export default function DetailActionBar({
                   style={MENU_ITEM_STYLE}
                 />
               )}
-              {favorite && (like || report) && (
+              {favorite && (like || ownershipClaim || report) && (
                 <span aria-hidden="true" style={{ height:1, background:C.borderLight, margin:'0 10px', display:'block' }} />
               )}
               {like && (
@@ -216,7 +217,24 @@ export default function DetailActionBar({
                   </span>
                 </button>
               )}
-              {like && report && (
+              {like && (ownershipClaim || report) && (
+                <span aria-hidden="true" style={{ height:1, background:C.borderLight, margin:'0 10px', display:'block' }} />
+              )}
+              {ownershipClaim && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    ownershipClaim.onClick?.()
+                  }}
+                  style={MENU_ITEM_STYLE}
+                >
+                  <MenuIcon active>{ownershipClaim.icon || '🏪'}</MenuIcon>
+                  <span style={{ minWidth:0, flex:1 }}>{ownershipClaim.label || 'Este negocio es mío'}</span>
+                </button>
+              )}
+              {ownershipClaim && report && (
                 <span aria-hidden="true" style={{ height:1, background:C.borderLight, margin:'0 10px', display:'block' }} />
               )}
               {report && (
