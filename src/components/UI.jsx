@@ -1007,6 +1007,7 @@ export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onC
           alt={`${title} ${active + 1}`}
           loading="eager"
           fetchpriority="high"
+          referrerPolicy="no-referrer"
           decoding="async"
           draggable={false}
           style={{ width:'auto', height:'auto', maxWidth:'calc(100vw - 28px)', maxHeight:'calc(100vh - 110px)', objectFit:'contain', display:'block', background:'#000', transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`, transition:gestureRef.current ? 'none' : 'transform .18s ease', touchAction:'none', userSelect:'none' }}
@@ -1103,7 +1104,7 @@ export function PhotoGallery({ photos = [], mainPhoto }) {
               aria-label={`Ampliar foto ${index + 1}`}
               style={{ flex:all.length > 1 ? '0 0 clamp(250px, 78%, 420px)' : '1 1 100%', height:'min(58vh, 460px)', minHeight:260, padding:8, border:`1px solid ${C.border}`, borderRadius:18, overflow:'hidden', background:'#fff', cursor:'zoom-in', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 26px rgba(15,23,42,0.08)', position:'relative', boxSizing:'border-box' }}
             >
-              <img src={src} alt={`Foto ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 ? 'high' : undefined} decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+              <img src={src} alt={`Foto ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 ? 'high' : undefined} decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
             </button>
           ))}
         </div>

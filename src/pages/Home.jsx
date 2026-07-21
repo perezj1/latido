@@ -24,7 +24,7 @@ import {
   isBusinessPromotionActive,
   rotateHomeBusinesses,
 } from '../lib/businessPromotion'
-import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
 import toast from 'react-hot-toast'
 
 const fmtPrice = p => {
@@ -188,8 +188,17 @@ function SearchFilterSelect({ label, value, options, onChange, flex = 1 }) {
 const HOME_CACHE_TTL = 5 * 60 * 1000
 const HOME_RECENT_ITEM_LIMIT = 18
 const SHOW_HOME_BUSINESS_PROMOTION_TASK = false
+const sanitizeHomeBusinessHighlights = businesses => (businesses || []).map(business => ({
+  ...business,
+  photo_url:resolveImageUrl(business.photo_url),
+}))
 const persistedHomeSnapshot = readOfflineSnapshot('home-public')
-let homeCache = persistedHomeSnapshot?.data || null
+let homeCache = persistedHomeSnapshot?.data
+  ? {
+      ...persistedHomeSnapshot.data,
+      businessHighlights:sanitizeHomeBusinessHighlights(persistedHomeSnapshot.data.businessHighlights),
+    }
+  : null
 let homeCacheTs = persistedHomeSnapshot?.savedAt || 0
 
 const EVENT_MONTH_INDEX = {
@@ -749,7 +758,7 @@ export default function Home() {
           kind:'business',
           title: row.name || 'Negocio',
           meta: [row.city || row.canton, row.category].filter(Boolean).join(' · '),
-          image: row.photo_url || '',
+          image: resolveImageUrl(row.photo_url),
           emoji:'🏪',
         }))))
       }
@@ -776,7 +785,7 @@ export default function Home() {
             name:row.name || 'Negocio',
             city:row.city || row.canton || 'Suiza',
             category:row.category || 'Negocio',
-            photoUrl:row.photo_url || '',
+            photoUrl:resolveImageUrl(row.photo_url),
           }))
       )
       setAttentionTasks(nextTasks)
@@ -850,7 +859,7 @@ export default function Home() {
   const applySnapshot = useCallback((snapshot) => {
     setRecentAds(snapshot.recentAds || [])
     setCommunityHighlights(snapshot.communityHighlights || [])
-    setBusinessHighlights(snapshot.businessHighlights || [])
+    setBusinessHighlights(sanitizeHomeBusinessHighlights(snapshot.businessHighlights))
     setBusinessPromotionPlans(snapshot.businessPromotionPlans || [])
     setRecentJobs(snapshot.recentJobs || [])
     setRecentEvents(snapshot.recentEvents || [])
@@ -1004,7 +1013,7 @@ export default function Home() {
       const providerPhotoMap = {}
       ;((providerPhotosRes.error ? [] : providerPhotosRes.data) || []).forEach(photo => {
         if (!photo?.provider_id || !photo?.url) return
-        providerPhotoMap[photo.provider_id] = [...(providerPhotoMap[photo.provider_id] || []), photo.url]
+        providerPhotoMap[photo.provider_id] = [...(providerPhotoMap[photo.provider_id] || []), resolveImageUrl(photo.url)]
       })
 
       const nextBusinessHighlights = []
@@ -1023,7 +1032,7 @@ export default function Home() {
           city: row.city || row.canton || 'Suiza',
           desc: row.description || '',
           services: Array.isArray(row.services) ? row.services : [],
-          photo_url: row.photo_url || providerPhotoMap[row.id]?.[0] || '',
+          photo_url: resolveImageUrl(row.photo_url || providerPhotoMap[row.id]?.[0]),
           verified: verificationStatus === 'verified',
           verification_status: verificationStatus,
           featured: !!row.featured,
@@ -1608,7 +1617,7 @@ export default function Home() {
           {promotableBusinesses.map(business => (
             <div key={business.id} style={{ display:'flex', alignItems:'center', gap:11, border:`1px solid ${C.border}`, borderRadius:15, padding:10 }}>
               {business.photoUrl ? (
-                <img src={getThumbnailImageUrl(business.photoUrl)} alt={business.name} style={{ width:44, height:44, borderRadius:12, objectFit:'cover', flexShrink:0 }} />
+                <img src={getThumbnailImageUrl(business.photoUrl)} alt={business.name} referrerPolicy="no-referrer" style={{ width:44, height:44, borderRadius:12, objectFit:'cover', flexShrink:0 }} />
               ) : (
                 <span style={{ width:44, height:44, borderRadius:12, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:21, flexShrink:0 }}>
                   🏪
@@ -1804,7 +1813,7 @@ export default function Home() {
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                     <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'visible' }}>
                       {business.photo_url
-                        ? <img src={getThumbnailImageUrl(business.photo_url)} alt={business.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        ? <img src={getThumbnailImageUrl(business.photo_url)} alt={business.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{business.emoji || '🏪'}</span>
                       }
                       <span
