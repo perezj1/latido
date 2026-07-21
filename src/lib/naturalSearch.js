@@ -38,10 +38,61 @@ const INTENT_DEFINITIONS = [
     terms:['mudanza', 'mudanzas', 'traslado', 'transporte de muebles', 'umzug'],
   },
   {
+    id:'plumbing',
+    triggers:[
+      'fontanero', 'fontaneria', 'plomero', 'plomeria',
+      'reparar ducha', 'arreglar ducha', 'instalar ducha', 'cambiar grifo',
+      'fuga de agua', 'tuberia rota', 'desatascar desague',
+    ],
+    consumed:['ducha', 'banera', 'grifo', 'tuberia', 'caneria', 'fuga', 'agua', 'lavabo', 'inodoro', 'cisterna', 'desague'],
+    terms:['fontanero', 'fontaneria', 'plomero', 'plomeria', 'instalacion sanitaria', 'tuberia', 'desague'],
+  },
+  {
+    id:'electrical',
+    triggers:[
+      'electricista', 'electricidad', 'instalacion electrica',
+      'reparar enchufe', 'arreglar enchufe', 'cortocircuito', 'cuadro electrico',
+    ],
+    consumed:['enchufe', 'interruptor', 'fusible', 'lampara', 'cable', 'corriente'],
+    terms:['electricista', 'electricidad', 'instalacion electrica', 'enchufe', 'cortocircuito', 'cuadro electrico'],
+  },
+  {
+    id:'locksmith',
+    triggers:['cerrajero', 'cerrajeria', 'cambiar cerradura', 'reparar cerradura', 'llave rota', 'puerta bloqueada'],
+    consumed:['cerradura', 'llave', 'puerta'],
+    terms:['cerrajero', 'cerrajeria', 'cerradura', 'apertura de puertas', 'llaves'],
+  },
+  {
+    id:'painting',
+    triggers:['pintor', 'pintura de paredes', 'pintar pared', 'pintar techo', 'pintar casa'],
+    consumed:['pared', 'paredes', 'techo', 'casa', 'habitacion'],
+    terms:['pintor', 'pintura', 'pintura interior', 'pintura exterior', 'maler'],
+  },
+  {
+    id:'carpentry',
+    triggers:['carpintero', 'carpinteria', 'reparar mueble', 'montar mueble', 'montar armario', 'reparar puerta'],
+    consumed:['mueble', 'muebles', 'armario', 'puerta', 'madera', 'parquet'],
+    terms:['carpintero', 'carpinteria', 'muebles', 'madera', 'montaje de muebles', 'schreiner'],
+  },
+  {
+    id:'appliance_repair',
+    triggers:[
+      'tecnico electrodomesticos', 'reparacion electrodomesticos',
+      'reparar lavadora', 'lavadora rota', 'reparar lavavajillas', 'reparar nevera', 'reparar frigorifico',
+    ],
+    consumed:['electrodomestico', 'electrodomesticos', 'lavadora', 'lavavajillas', 'secadora', 'nevera', 'frigorifico', 'horno'],
+    terms:['tecnico electrodomesticos', 'reparacion electrodomesticos', 'servicio tecnico', 'lavadora', 'lavavajillas', 'nevera', 'frigorifico'],
+  },
+  {
     id:'repairs',
-    triggers:['arreglar', 'averia', 'reparacion', 'reparar', 'fontanero', 'electricista', 'bricolaje', 'manitas'],
+    triggers:['arreglar', 'averia', 'reparacion', 'reparar', 'bricolaje', 'manitas'],
     consumed:['casa', 'piso', 'mueble', 'lampara'],
-    terms:['reparacion', 'mantenimiento', 'fontanero', 'electricista', 'bricolaje', 'manitas', 'carpinteria', 'handwerker'],
+    terms:[
+      'reparacion', 'mantenimiento', 'fontanero', 'fontaneria', 'plomero', 'plomeria',
+      'electricista', 'electricidad', 'pintor', 'pintura', 'cerrajero', 'cerrajeria',
+      'cerradura', 'bricolaje', 'manitas', 'carpinteria', 'montaje de muebles',
+      'servicio tecnico', 'electrodomesticos', 'calefaccion', 'handwerker',
+    ],
   },
   {
     id:'childcare',
