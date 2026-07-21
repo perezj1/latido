@@ -17,6 +17,7 @@ export function useBusinessLeadAlerts() {
       .from('business_lead_alerts')
       .select('id, provider_name, listing_title, listing_city, listing_canton, listing_path, matched_terms, read_at, created_at')
       .eq('notification_status', 'sent')
+      .is('read_at', null)
       .order('created_at', { ascending:false })
       .limit(20)
     if (!error) setAlerts(data || [])
@@ -29,13 +30,26 @@ export function useBusinessLeadAlerts() {
   }, [load])
 
   const markRead = useCallback(async alertId => {
+    setAlerts(current => current.filter(alert => alert.id !== alertId))
     const { error } = await supabase.rpc('mark_business_lead_alert_read', { p_alert_id:alertId })
-    if (!error) setAlerts(current => current.map(alert => alert.id === alertId ? { ...alert, read_at:alert.read_at || new Date().toISOString() } : alert))
-  }, [])
+    if (error) load()
+  }, [load])
+
+  const markAllRead = useCallback(async () => {
+    const alertIds = alerts.map(alert => alert.id)
+    if (!alertIds.length) return
+
+    setAlerts([])
+    const results = await Promise.all(
+      alertIds.map(alertId => supabase.rpc('mark_business_lead_alert_read', { p_alert_id:alertId }))
+    )
+    if (results.some(result => result.error)) load()
+  }, [alerts, load])
 
   return {
     alerts,
-    unreadCount:alerts.filter(alert => !alert.read_at).length,
+    unreadCount:alerts.length,
     markRead,
+    markAllRead,
   }
 }

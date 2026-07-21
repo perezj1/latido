@@ -42,9 +42,9 @@ const AVATAR_IMAGE_PROFILE = {
 
 function inferExtension(file) {
   const fromName = file.name?.split('.').pop()?.toLowerCase()
-  if (fromName && fromName.length <= 4) return fromName
+  if (fromName && fromName.length <= 4) return fromName === 'jpeg' ? 'jpg' : fromName
   const fromType = file.type?.split('/').pop()?.toLowerCase()
-  return fromType || 'jpg'
+  return fromType === 'jpeg' ? 'jpg' : (fromType || 'jpg')
 }
 
 function getOptimizedName(file, extension = 'webp') {
@@ -254,8 +254,12 @@ export async function uploadPublicationImage({ file, userId, folder = 'misc' }) 
   const thumbFile = await prepareLoadedImageForUpload(file, image, PUBLICATION_IMAGE_THUMB_PROFILE)
 
   const basePath = getUniqueImageBasePath(userId, folder)
-  const detailPath = `${basePath}-detail.${inferExtension(detailFile)}`
-  const thumbPath = `${basePath}-thumb.${inferExtension(thumbFile)}`
+  // Both variant object names must share the extension because consumers derive
+  // the thumbnail URL from the stored detail URL. The actual MIME type is still
+  // preserved in Storage metadata for correct browser decoding.
+  const variantExtension = inferExtension(detailFile)
+  const detailPath = `${basePath}-detail.${variantExtension}`
+  const thumbPath = `${basePath}-thumb.${variantExtension}`
   const [detailUrl] = await Promise.all([
     uploadPreparedFile(detailFile, detailPath),
     uploadPreparedFile(thumbFile, thumbPath),
