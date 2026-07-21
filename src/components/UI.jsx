@@ -747,7 +747,7 @@ export function ReviewCard({ review, googleReviewsUrl = '' }) {
           rel="noreferrer"
           style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:8, fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, textDecoration:'none' }}
         >
-          Leer reseña completa en Google ↗
+          Ver reseñas en Google ↗
         </a>
       )}
     </div>
