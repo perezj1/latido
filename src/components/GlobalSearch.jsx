@@ -97,6 +97,7 @@ const SEARCH_INTENT_LABELS = {
   locksmith:'Cerrajería',
   painting:'Pintura',
   carpentry:'Carpintería',
+  gardening:'Jardinería',
   appliance_repair:'Reparación de electrodomésticos',
   repairs:'Reparaciones y mantenimiento',
   childcare:'Cuidado infantil',
@@ -111,7 +112,7 @@ const SEARCH_INTENT_LABELS = {
 }
 
 const SPECIALIZED_HOME_INTENTS = new Set([
-  'plumbing', 'electrical', 'locksmith', 'painting', 'carpentry', 'appliance_repair',
+  'plumbing', 'electrical', 'locksmith', 'painting', 'carpentry', 'gardening', 'appliance_repair',
 ])
 
 function getSearchInterpretation(profile) {
@@ -197,8 +198,17 @@ const SEARCH_SERVICE_JOB_SECTORS = new Set(['cuidados', 'limpieza', 'construccio
 function getBusinessCategoryKeys(business) {
   const normalizedType = getNegocioTypeMeta(business.type)?.id || business.type
   const keys = ['negocios', business.type, normalizedType, ...(business.partnerCategories || [])].filter(Boolean)
+  const searchText = normalizeSearchText([
+    business.name,
+    business.desc,
+    ...(business.services || []),
+  ].filter(Boolean).join(' '))
   if (SEARCH_SERVICE_BUSINESS_TYPES.has(normalizedType)) keys.push('servicios')
   if (normalizedType === 'asesoria_tramites') keys.push('documentos')
+  if ([
+    'guarderia', 'kita', 'kinderkrippe', 'ninera', 'ninero', 'canguro', 'au pair',
+    'cuidado de ninos', 'cuidado infantil', 'cuidado de mayores', 'spitex',
+  ].some(term => searchText.includes(term))) keys.push('cuidados')
   return [...new Set(keys)]
 }
 
@@ -946,7 +956,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
   let eligibleResults = results
   if (assistantQuery?.active) {
     eligibleResults = results.filter(result => matchesLatidoAssistantResult(result, assistantQuery))
-    if (!eligibleResults.length && assistantQuery.scope?.focusKind === 'home-trade') {
+    if (!eligibleResults.length && ['home-trade', 'gardening'].includes(assistantQuery.scope?.focusKind)) {
       eligibleResults = results.filter(result => matchesLatidoAssistantResult(
         result,
         assistantQuery,

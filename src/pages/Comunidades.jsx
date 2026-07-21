@@ -98,18 +98,33 @@ const PROVIDER_DIRECTORY_SELECT = {
   safe:'id, user_id, created_at, category, name, city, canton, description, whatsapp, instagram, email, website, verified, featured, services, photo_url, promotion_plan, promotion_starts_at, promotion_ends_at',
 }
 
-async function fetchProvidersForDirectory() {
-  const buildQuery = columns => supabase
-    .from('providers')
-    .select(columns)
-    .eq('active', true)
-    .order('featured', { ascending:false })
-    .order('created_at', { ascending:false })
-    .limit(100)
+const PROVIDER_DIRECTORY_PAGE_SIZE = 500
 
-  const response = await buildQuery(PROVIDER_DIRECTORY_SELECT.withContactDetails)
+async function fetchAllProviderDirectoryRows(columns) {
+  const rows = []
+
+  for (let from = 0; ; from += PROVIDER_DIRECTORY_PAGE_SIZE) {
+    const response = await supabase
+      .from('providers')
+      .select(columns)
+      .eq('active', true)
+      .order('featured', { ascending:false })
+      .order('created_at', { ascending:false })
+      .order('id', { ascending:false })
+      .range(from, from + PROVIDER_DIRECTORY_PAGE_SIZE - 1)
+
+    if (response.error) return response
+
+    const page = response.data || []
+    rows.push(...page)
+    if (page.length < PROVIDER_DIRECTORY_PAGE_SIZE) return { data:rows, error:null }
+  }
+}
+
+async function fetchProvidersForDirectory() {
+  const response = await fetchAllProviderDirectoryRows(PROVIDER_DIRECTORY_SELECT.withContactDetails)
   if (['address', 'phone'].includes(getMissingColumnName(response.error, 'providers'))) {
-    return buildQuery(PROVIDER_DIRECTORY_SELECT.safe)
+    return fetchAllProviderDirectoryRows(PROVIDER_DIRECTORY_SELECT.safe)
   }
   return response
 }
@@ -1732,28 +1747,45 @@ export default function Comunidades() {
     ]))
   )
 
-  const filteredNeg = [...businesses]
-    .filter(business =>
-      business.type !== 'empleo' && business.type !== 'vivienda' &&
-      (!negType || normalizeNegocioType(business.type) === negType) &&
-      (!locationFilter || business.canton === locationFilter) &&
-      (!hasSearch || scoreSearchFields(searchProfile, [
-        { value:business.name, weight:6 },
-        { value:(businessServices[business.id] || business.services || []).join(' '), weight:5 },
-        { value:business.desc, weight:4 },
-        { value:getNegocioTypeMeta(business.type)?.label, weight:3 },
-        { value:business.type, weight:2 },
-        { value:business.city, weight:2 },
-      ]))
-    )
+  const eligibleBusinesses = businesses.filter(business =>
+    business.type !== 'empleo' && business.type !== 'vivienda' &&
+    (!negType || normalizeNegocioType(business.type) === negType) &&
+    (!locationFilter || business.canton === locationFilter)
+  )
+  const getBusinessSearchFields = business => [
+    { value:business.name, weight:6 },
+    { value:(businessServices[business.id] || business.services || []).join(' '), weight:5 },
+    { value:business.desc, weight:4 },
+    { value:getNegocioTypeMeta(business.type)?.label, weight:3 },
+    { value:business.type, weight:2 },
+    { value:business.city, weight:2 },
+  ]
+  const exactBusinessMatches = hasSearch
+    ? eligibleBusinesses
+      .map(business => ({ business, searchScore:scoreSearchFields(searchProfile, getBusinessSearchFields(business)) }))
+      .filter(item => item.searchScore > 0)
+    : eligibleBusinesses.map(business => ({ business, searchScore:0 }))
+  const businessMatches = hasSearch && exactBusinessMatches.length === 0
+    ? eligibleBusinesses
+      .map(business => ({
+        business,
+        searchScore:scoreSearchFields(searchProfile, getBusinessSearchFields(business), { allowIntentFallback:true }),
+      }))
+      .filter(item => item.searchScore > 0)
+    : exactBusinessMatches
+
+  const filteredNeg = businessMatches
     .sort((a, b) => {
-      const planDiff = getDirectoryBusinessPriority(a) - getDirectoryBusinessPriority(b)
+      const planDiff = getDirectoryBusinessPriority(a.business) - getDirectoryBusinessPriority(b.business)
       if (planDiff) return planDiff
-      if (a.featured !== b.featured) return b.featured ? 1 : -1
-      const recommendationDiff = (businessRecommendations[b.id] || 0) - (businessRecommendations[a.id] || 0)
+      const searchDiff = b.searchScore - a.searchScore
+      if (searchDiff) return searchDiff
+      if (a.business.featured !== b.business.featured) return b.business.featured ? 1 : -1
+      const recommendationDiff = (businessRecommendations[b.business.id] || 0) - (businessRecommendations[a.business.id] || 0)
       if (recommendationDiff) return recommendationDiff
-      return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+      return String(b.business.created_at || '').localeCompare(String(a.business.created_at || ''))
     })
+    .map(item => item.business)
 
   const filteredEvents = events.filter(event =>
     (!eventType || event.type === eventType) &&
