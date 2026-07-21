@@ -302,6 +302,15 @@ const HOME_REPAIR_FOCUSES = [
     requiresRepairAction:true,
   },
   {
+    id:'gardening',
+    label:'Jardinero',
+    seed:'jardineria',
+    signals:['jardinero', 'jardinera', 'jardineria', 'paisajista', 'paisajismo', 'jardin', 'jardines', 'cesped', 'seto', 'setos', 'podar', 'poda', 'gartenbau', 'gartenpflege', 'gartner'],
+    professionalTerms:['jardinero', 'jardinera', 'jardineria', 'paisajista', 'paisajismo', 'gartenbau', 'gartenpflege', 'gartner'],
+    searchTerms:['jardinero', 'jardinera', 'jardineria', 'paisajismo', 'mantenimiento de jardines', 'poda', 'cesped', 'gartenbau', 'gartenpflege', 'gartner'],
+    focusKind:'gardening',
+  },
+  {
     id:'appliance_repair',
     label:'Técnico de electrodomésticos',
     seed:'reparacion',
@@ -526,7 +535,7 @@ function detectHomeRepairFocus(normalized) {
   const focusTerms = [...new Set([...focus.searchTerms, ...focus.signals])]
 
   return {
-    ...focusScope('repairs', focus.seed, focusTerms, 'home-trade'),
+    ...focusScope('repairs', focus.seed, focusTerms, focus.focusKind || 'home-trade'),
     label:focus.label,
     professionalLabel:focus.label,
     tradeId:focus.id,
@@ -892,7 +901,7 @@ function matchesScopeFocus(result, scope, allowGeneralFallback = false) {
   const meta = result?.filterMeta || {}
   const searchText = normalizeSearchText(meta.searchText || `${result?.label || ''} ${result?.sub || ''}`)
   if (!searchText) return false
-  if (scope.focusKind === 'home-trade' && hasAnyPhrase(searchText, HOME_TRADE_UNRELATED_RESULT_TERMS)) return false
+  if (['home-trade', 'gardening'].includes(scope.focusKind) && hasAnyPhrase(searchText, HOME_TRADE_UNRELATED_RESULT_TERMS)) return false
   if (scope.excludedFocusTerms?.length && hasAnyPhrase(searchText, scope.excludedFocusTerms)) return false
 
   if (scope.marketplaceVehicle && ['car', 'motorcycle'].includes(scope.focusKind)) {
@@ -913,6 +922,17 @@ function matchesScopeFocus(result, scope, allowGeneralFallback = false) {
   if (scope.focusKind === 'food') {
     return hasAnyPhrase(searchText, scope.focusTerms || [])
       && hasAnyPhrase(searchText, ['comida', 'cocina', 'restaurante', 'tortilla', 'picante', 'receta', 'catering', 'pasteleria', 'panaderia', 'postre'])
+  }
+
+  if (scope.focusKind === 'gardening') {
+    const professionalTerms = ['jardinero', 'jardinera', 'jardineria', 'paisajista', 'paisajismo', 'gartenbau', 'gartenpflege', 'gartner']
+    if (hasAnyPhrase(searchText, professionalTerms)) return true
+    const hasGardenContext = hasAnyPhrase(searchText, ['jardin', 'jardines', 'cesped', 'seto', 'setos', 'poda', 'podar'])
+      && hasAnyPhrase(searchText, ['mantenimiento', 'cuidado', 'servicio', 'trabajo', 'transforma', 'especialista'])
+    if (hasGardenContext) return true
+    if (!allowGeneralFallback) return false
+    return hasAnyPhrase(searchText, HOME_REPAIR_GENERAL_RESULT_TERMS)
+      && !hasAnyPhrase(searchText, HOME_REPAIR_GENERAL_EXCLUDED_TERMS)
   }
 
   if (scope.focusKind === 'home-trade') {

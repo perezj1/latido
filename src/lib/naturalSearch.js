@@ -12,6 +12,12 @@ const SEARCH_STOP_WORDS = new Set([
   'curar', 'curarme', 'encargar', 'encargo', 'pedir', 'pido', 'reservar', 'reservo',
 ])
 
+const HOME_SERVICE_EXCLUDED_TERMS = [
+  'personalberater', 'agencia de colocacion', 'empresa de trabajo temporal',
+  'oportunidad laboral', 'oportunidades laborales', 'oferta laboral', 'vacante',
+  'reclutamiento', 'incorporar personal', 'buscas una oportunidad', 'busca trabajadores',
+]
+
 const INTENT_DEFINITIONS = [
   {
     id:'employment',
@@ -46,6 +52,8 @@ const INTENT_DEFINITIONS = [
     ],
     consumed:['ducha', 'banera', 'grifo', 'tuberia', 'caneria', 'fuga', 'agua', 'lavabo', 'inodoro', 'cisterna', 'desague'],
     terms:['fontanero', 'fontaneria', 'plomero', 'plomeria', 'instalacion sanitaria', 'tuberia', 'desague'],
+    fallbackTerms:['manitas', 'handyman', 'bricolaje', 'reparaciones hogar', 'reparaciones varias', 'arreglos generales'],
+    excludedTerms:HOME_SERVICE_EXCLUDED_TERMS,
   },
   {
     id:'electrical',
@@ -73,6 +81,14 @@ const INTENT_DEFINITIONS = [
     triggers:['carpintero', 'carpinteria', 'reparar mueble', 'montar mueble', 'montar armario', 'reparar puerta'],
     consumed:['mueble', 'muebles', 'armario', 'puerta', 'madera', 'parquet'],
     terms:['carpintero', 'carpinteria', 'muebles', 'madera', 'montaje de muebles', 'schreiner'],
+  },
+  {
+    id:'gardening',
+    triggers:['jardinero', 'jardinera', 'jardineria', 'paisajista', 'paisajismo', 'podar arbol', 'cortar cesped', 'gartenbau', 'gartenpflege', 'gartner'],
+    consumed:['jardin', 'jardines', 'cesped', 'seto', 'setos', 'arbol', 'arboles', 'plantas'],
+    terms:['jardinero', 'jardinera', 'jardineria', 'paisajista', 'paisajismo', 'mantenimiento jardines', 'cuidado jardines', 'poda arboles', 'cortar cesped', 'gartenbau', 'gartenpflege', 'gartner'],
+    fallbackTerms:['manitas', 'handyman'],
+    excludedTerms:HOME_SERVICE_EXCLUDED_TERMS,
   },
   {
     id:'appliance_repair',
@@ -209,6 +225,16 @@ function wordsAreRelated(left, right) {
     return true
   }
 
+  const isProfessionalSuffixExtension = (longer, shorter) => (
+    shorter.length >= 5
+    && longer.startsWith(shorter)
+    && ['ero', 'era', 'eria'].some(suffix => longer.endsWith(suffix))
+  )
+  if (isProfessionalSuffixExtension(canonicalLeft, canonicalRight)
+    || isProfessionalSuffixExtension(canonicalRight, canonicalLeft)) {
+    return false
+  }
+
   return shortestLength >= 6 && (
     canonicalLeft.startsWith(canonicalRight) || canonicalRight.startsWith(canonicalLeft)
   )
@@ -260,7 +286,7 @@ function getBestMatchWeight(term, fields) {
   return bestWeight
 }
 
-export function scoreSearchFields(profile, fields) {
+export function scoreSearchFields(profile, fields, { allowIntentFallback = false } = {}) {
   if (!profile?.normalized || profile.normalized.length < 2) return 0
 
   const normalizedFields = normalizeFields(fields)
@@ -269,10 +295,21 @@ export function scoreSearchFields(profile, fields) {
   const directWeights = profile.tokens.map(token => getBestMatchWeight(token, normalizedFields))
   const directMatches = directWeights.filter(Boolean).length
   const requiredMatches = profile.requiredTokens.filter(token => getBestMatchWeight(token, normalizedFields) > 0).length
-  const intentWeights = profile.intents.map(intent => (
+  const exactIntentWeights = profile.intents.map(intent => (
     Math.max(...intent.terms.map(term => getBestMatchWeight(term, normalizedFields)), 0)
   ))
+  const fallbackIntentWeights = profile.intents.map((intent, index) => (
+    allowIntentFallback && !exactIntentWeights[index] && intent.fallbackTerms?.length
+      ? Math.max(...intent.fallbackTerms.map(term => getBestMatchWeight(term, normalizedFields)), 0)
+      : 0
+  ))
+  const intentWeights = exactIntentWeights.map((weight, index) => weight || fallbackIntentWeights[index])
   const matchedIntents = intentWeights.filter(Boolean).length
+
+  const hasExcludedIntentTerm = profile.intents.some(intent => (
+    intent.excludedTerms?.some(term => getBestMatchWeight(term, normalizedFields) > 0)
+  ))
+  if (hasExcludedIntentTerm) return 0
 
   if (profile.intents.length > 0 && matchedIntents < profile.intents.length) return 0
   if (profile.requiredTokens.length > 0 && requiredMatches < Math.ceil(profile.requiredTokens.length * 0.6)) return 0
@@ -285,7 +322,8 @@ export function scoreSearchFields(profile, fields) {
   }
 
   score += directWeights.reduce((total, weight) => total + (weight * 12), 0)
-  score += intentWeights.reduce((total, weight) => total + 24 + (weight * 8), 0)
+  score += exactIntentWeights.reduce((total, weight) => total + (weight ? 24 + (weight * 8) : 0), 0)
+  score += fallbackIntentWeights.reduce((total, weight) => total + (weight ? 8 + (weight * 3) : 0), 0)
   score += Math.round((directMatches / Math.max(profile.tokens.length, 1)) * 20)
   score += requiredMatches * 8
 
