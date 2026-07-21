@@ -796,6 +796,11 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   const websiteLabel = business.website ? formatUrlLabel(business.website) : ''
   const websiteHref = business.website ? ensureUrl(business.website) : ''
   const addressHref = business.address ? getNavigationUrl(business.address, business.city, business.canton) : ''
+  const googleReviewsUrl = getNavigationUrl(
+    [business.name, business.address].filter(Boolean).join(', '),
+    business.city,
+    business.canton,
+  )
   const mainPhoto = photos[0] || ''
   const tabItems = [
     { id:'info', label:'Info' },
@@ -1080,6 +1085,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                 reviews={reviews}
                 emptyTitle="Sin reseñas todavía"
                 emptyText="¡Sé la primera persona en dejar una reseña!"
+                googleReviewsUrl={googleReviewsUrl}
               />
             </>
           )}
@@ -1291,6 +1297,28 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
 }
 
 const COMUNIDADES_CACHE_TTL = 5 * 60 * 1000
+const REVIEWS_QUERY_PAGE_SIZE = 500
+
+async function fetchAllActiveBusinessReviews() {
+  const rows = []
+
+  for (let from = 0; ; from += REVIEWS_QUERY_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('id, provider_id, user_id, author_name, canton, stars, created_at, text')
+      .eq('active', true)
+      .order('created_at', { ascending:false })
+      .order('id', { ascending:false })
+      .range(from, from + REVIEWS_QUERY_PAGE_SIZE - 1)
+
+    if (error) return { data:null, error }
+
+    const page = data || []
+    rows.push(...page)
+    if (page.length < REVIEWS_QUERY_PAGE_SIZE) return { data:rows, error:null }
+  }
+}
+
 const persistedComunidadesSnapshot = readOfflineSnapshot('comunidades-public')
 const sanitizeCachedBusinesses = businesses => (businesses || []).map(business => {
   const phone = getBusinessPhone(business)
@@ -1387,7 +1415,7 @@ export default function Comunidades() {
           fetchCommunitiesForDirectory(),
           fetchProvidersForDirectory(),
           supabase.from('provider_photos').select('provider_id, url, is_main, sort_order').order('is_main', { ascending:false }).order('sort_order', { ascending:true }).limit(300),
-          supabase.from('reviews').select('id, provider_id, user_id, author_name, canton, stars, created_at, text').eq('active', true).order('created_at', { ascending:false }).limit(200),
+          fetchAllActiveBusinessReviews(),
           supabase.from('events').select('id, user_id, type, emoji, title, city, canton, venue, day, month, time, price, host, featured, desc, img_url, link, created_at').eq('active', true).order('featured', { ascending:false }).order('created_at', { ascending:false }).limit(60),
         ])
 

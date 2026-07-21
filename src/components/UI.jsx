@@ -721,9 +721,10 @@ export function RatingPill({ rating, count, style }) {
   )
 }
 
-export function ReviewCard({ review }) {
+export function ReviewCard({ review, googleReviewsUrl = '' }) {
   const colors = ['#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444']
   const bg = colors[(review.author?.charCodeAt(0) || 0) % colors.length]
+  const isGoogleReview = Boolean(googleReviewsUrl && /(?:·|-)\s*Google\s*$/i.test(review.author || ''))
   return (
     <div style={{ background:'#FAFAFA', borderRadius:14, padding:'13px 15px', border:'1px solid #E2EAF4', marginBottom:10 }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
@@ -739,6 +740,16 @@ export function ReviewCard({ review }) {
         <Stars rating={review.stars} size={12} />
       </div>
       <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:12, color:'#475569', lineHeight:1.65, margin:0 }}>{review.text}</p>
+      {isGoogleReview && (
+        <a
+          href={googleReviewsUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:8, fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, textDecoration:'none' }}
+        >
+          Leer reseña completa en Google ↗
+        </a>
+      )}
     </div>
   )
 }
@@ -750,6 +761,7 @@ export function ReviewList({
   reviews = [],
   emptyTitle = 'Sin reseñas todavía',
   emptyText = 'Sé la primera persona en dejar una reseña.',
+  googleReviewsUrl = '',
 }) {
   const [filter, setFilter] = useState('all')
   const [visibleCount, setVisibleCount] = useState(REVIEW_PAGE_SIZE)
@@ -807,7 +819,7 @@ export function ReviewList({
           <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 0 10px' }}>
             Mostrando {visibleReviews.length} de {filteredReviews.length} reseña{filteredReviews.length !== 1 ? 's' : ''}
           </p>
-          {visibleReviews.map(review => <ReviewCard key={review.id} review={review} />)}
+          {visibleReviews.map(review => <ReviewCard key={review.id} review={review} googleReviewsUrl={googleReviewsUrl} />)}
           {remaining > 0 && (
             <button
               type="button"
