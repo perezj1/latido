@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -157,14 +158,27 @@ async function injectServiceWorkerPrecache() {
     .sort()
 
   const marker = 'const PRECACHE_ASSETS = []'
+  const buildIdMarker = '__LATIDO_BUILD_ID__'
   const serviceWorker = await readFile(serviceWorkerPath, 'utf8')
   if (!serviceWorker.includes(marker)) {
     throw new Error('Could not find service worker precache marker')
   }
+  if (!serviceWorker.includes(buildIdMarker)) {
+    throw new Error('Could not find service worker build ID marker')
+  }
+
+  const serviceWorkerWithAssets = serviceWorker.replace(
+    marker,
+    `const PRECACHE_ASSETS = ${JSON.stringify(assets)}`,
+  )
+  const buildId = createHash('sha256')
+    .update(serviceWorkerWithAssets)
+    .digest('hex')
+    .slice(0, 12)
 
   await writeFile(
     serviceWorkerPath,
-    serviceWorker.replace(marker, `const PRECACHE_ASSETS = ${JSON.stringify(assets)}`),
+    serviceWorkerWithAssets.replace(buildIdMarker, buildId),
     'utf8',
   )
 

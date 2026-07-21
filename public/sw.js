@@ -1,5 +1,6 @@
-const SHELL_CACHE = 'latido-shell-v12'
-const ASSET_CACHE = 'latido-assets'
+const BUILD_ID = '__LATIDO_BUILD_ID__'
+const SHELL_CACHE = `latido-shell-${BUILD_ID}`
+const ASSET_CACHE = `latido-assets-${BUILD_ID}`
 const IMAGE_CACHE = 'latido-images-v2'
 const PUBLIC_DATA_CACHE = 'latido-public-data-v1'
 const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, IMAGE_CACHE, PUBLIC_DATA_CACHE])
@@ -193,8 +194,10 @@ function handleNavigation(event) {
   const url = new URL(event.request.url)
   const cacheKey = new Request(`${url.origin}${url.pathname}`)
   const network = (async () => {
+    // Navigation preload keeps startup fast. The explicit no-store fallback
+    // prevents stale HTML when preload is unavailable (notably on older iOS).
     const preload = await event.preloadResponse
-    const response = preload || await fetch(event.request)
+    const response = preload || await fetch(new Request(event.request, { cache:'no-store' }))
     if (response.status >= 500) throw new Error(`HTTP ${response.status}`)
     return response
   })()
@@ -224,8 +227,8 @@ self.addEventListener('install', event => {
     ])
     await trimCache(ASSET_CACHE, 180)
     await trimCache(IMAGE_CACHE, MAX_IMAGE_CACHE_ENTRIES)
+    await self.skipWaiting()
   })())
-  self.skipWaiting()
 })
 
 self.addEventListener('activate', event => {
