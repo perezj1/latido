@@ -247,13 +247,111 @@ const SCOPE_DEFINITIONS = [
   },
 ]
 
+const HOME_REPAIR_FOCUSES = [
+  {
+    id:'plumbing',
+    label:'Fontanero',
+    seed:'reparacion',
+    signals:[
+      'fontanero', 'fontaneria', 'plomero', 'plomeria', 'ducha', 'banera', 'grifo',
+      'tuberia', 'tuberias', 'caneria', 'canerias', 'fuga de agua', 'gotera',
+      'desague', 'desatascar', 'lavabo', 'inodoro', 'cisterna', 'calentador de agua',
+    ],
+    professionalTerms:['fontanero', 'fontaneria', 'plomero', 'plomeria'],
+    searchTerms:[
+      'fontanero', 'fontaneria', 'plomero', 'plomeria', 'instalacion sanitaria',
+      'tuberia', 'ducha', 'grifo', 'fuga de agua', 'desague',
+    ],
+    excludeTerms:['carretera', 'carreteras', 'obra civil', 'excavacion', 'pavimentacion', 'hormigon'],
+  },
+  {
+    id:'electrical',
+    label:'Electricista',
+    seed:'reparacion',
+    signals:[
+      'electricista', 'electricidad', 'instalacion electrica', 'enchufe', 'interruptor',
+      'cortocircuito', 'fusible', 'cuadro electrico', 'cable quemado', 'lampara',
+    ],
+    professionalTerms:['electricista', 'electricidad', 'instalacion electrica'],
+    searchTerms:['electricista', 'electricidad', 'instalacion electrica', 'enchufe', 'cortocircuito', 'cuadro electrico', 'lampara'],
+  },
+  {
+    id:'locksmith',
+    label:'Cerrajero',
+    seed:'reparacion',
+    signals:['cerrajero', 'cerrajeria', 'cerradura', 'llave rota', 'perdi las llaves', 'puerta bloqueada', 'puerta cerrada'],
+    professionalTerms:['cerrajero', 'cerrajeria'],
+    searchTerms:['cerrajero', 'cerrajeria', 'cerradura', 'apertura de puertas', 'llaves'],
+  },
+  {
+    id:'painting',
+    label:'Pintor',
+    seed:'reparacion',
+    signals:['pintor', 'pintura', 'pintar', 'pared', 'paredes', 'techo'],
+    professionalTerms:['pintor', 'pintura', 'pintar'],
+    searchTerms:['pintor', 'pintura', 'pintura interior', 'pintura exterior', 'paredes', 'maler'],
+    excludeTerms:['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'vehiculo'],
+  },
+  {
+    id:'carpentry',
+    label:'Carpintero',
+    seed:'reparacion',
+    signals:['carpintero', 'carpinteria', 'mueble', 'muebles', 'armario', 'puerta', 'madera', 'parquet'],
+    professionalTerms:['carpintero', 'carpinteria'],
+    searchTerms:['carpintero', 'carpinteria', 'muebles', 'madera', 'montaje de muebles', 'parquet', 'schreiner'],
+    requiresRepairAction:true,
+  },
+  {
+    id:'appliance_repair',
+    label:'Técnico de electrodomésticos',
+    seed:'reparacion',
+    signals:['tecnico electrodomesticos', 'electrodomestico', 'lavadora', 'lavavajillas', 'secadora', 'nevera', 'frigorifico', 'horno'],
+    professionalTerms:['tecnico electrodomesticos', 'reparacion electrodomesticos', 'servicio tecnico'],
+    searchTerms:['tecnico electrodomesticos', 'reparacion electrodomesticos', 'servicio tecnico', 'lavadora', 'lavavajillas', 'secadora', 'nevera', 'frigorifico'],
+    requiresRepairAction:true,
+  },
+  {
+    id:'heating',
+    label:'Técnico de calefacción',
+    seed:'reparacion',
+    signals:['tecnico calefaccion', 'calefaccion', 'caldera', 'radiador', 'suelo radiante', 'bomba de calor'],
+    professionalTerms:['tecnico calefaccion', 'instalador calefaccion'],
+    searchTerms:['tecnico calefaccion', 'instalador calefaccion', 'calefaccion', 'caldera', 'radiador', 'heizung', 'bomba de calor'],
+    requiresRepairAction:true,
+  },
+]
+
+const HOME_REPAIR_ACTIONS = [
+  'arreglar', 'reparar', 'averia', 'roto', 'rota', 'se rompio', 'no funciona',
+  'instalar', 'cambiar', 'sustituir', 'montar', 'desatascar', 'destapar', 'pintar',
+]
+
+const HOME_MARKETPLACE_CONTEXTS = ['comprar', 'compro', 'vender', 'vendo', 'regalar', 'regalo']
+const HOME_CLEANING_CONTEXTS = ['limpiar', 'limpieza', 'fregar', 'aseo']
+const HOME_TRADE_UNRELATED_RESULT_TERMS = [
+  'personalberater', 'oportunidad laboral', 'oferta laboral', 'reclutamiento',
+  'incorporar personal', 'buscas una oportunidad', 'busca trabajadores',
+]
+const HOME_REPAIR_GENERAL_RESULT_TERMS = [
+  'reparacion', 'reparaciones', 'mantenimiento del hogar', 'mantenimiento de hogar',
+  'reformas', 'bricolaje', 'manitas', 'handyman', 'handwerker', 'arreglos generales',
+  'pequenas reparaciones',
+]
+const HOME_REPAIR_GENERAL_EXCLUDED_TERMS = [
+  'mecanico', 'mecanica', 'taller mecanico', 'carroceria', 'autoescuela',
+  'coche', 'coches', 'carro', 'carros', 'automovil', 'vehiculo',
+  'limpieza profesional', 'servicio de limpieza', 'limpieza de jardines',
+]
+
 const ACTION_WORDS = new Set([
   'busca', 'buscando', 'buscar', 'busco', 'encuentra', 'encontrar', 'encuentro',
   'necesito', 'necesitamos', 'quiero', 'quisiera', 'ofrezco', 'ofrecer', 'ofrece',
   'tengo', 'hay', 'me', 'interesa', 'interesado', 'interesada', 'encargar', 'encargo',
   'pedir', 'pido', 'reservar', 'reservo', 'contratar', 'contrato', 'curar', 'curarme',
   'tratar', 'tratarme', 'comprar', 'compro', 'vender', 'vendo', 'regalar', 'regalo',
-  'arreglar', 'reparar',
+  'arreglar', 'reparar', 'cambiar', 'instalar', 'sustituir', 'montar',
+  'desatascar', 'destapar', 'pintar', 'revisar', 'colocar', 'averia',
+  'roto', 'rota', 'rompio', 'funciona', 'funcionar',
 ])
 
 const STRUCTURAL_WORDS = new Set([
@@ -261,7 +359,7 @@ const STRUCTURAL_WORDS = new Set([
   'hasta', 'la', 'las', 'lo', 'los', 'max', 'maximo', 'maxima', 'menos', 'min',
   'minimo', 'minima', 'para', 'por', 'que', 'se', 'sin', 'suiza', 'un', 'una',
   'chf', 'aproximadamente', 'presupuesto', 'tope', 'precio', 'cerca', 'zona',
-  'vivo', 'vive', 'vivimos', 'no', 'solo', 'nivel',
+  'vivo', 'vive', 'vivimos', 'no', 'solo', 'nivel', 'esta', 'estan', 'ha', 'han',
 ])
 
 function includesPhrase(text, phrase) {
@@ -409,6 +507,34 @@ function focusScope(id, semanticSeed, focusTerms = [], focusKind = 'terms') {
   }
 }
 
+function detectHomeRepairFocus(normalized) {
+  if (hasAnyPhrase(normalized, HOME_MARKETPLACE_CONTEXTS)) return null
+
+  const repairAction = hasAnyPhrase(normalized, HOME_REPAIR_ACTIONS)
+  const focus = HOME_REPAIR_FOCUSES.find(candidate => (
+    hasAnyPhrase(normalized, candidate.signals)
+    && (
+      !candidate.requiresRepairAction
+      || repairAction
+      || hasAnyPhrase(normalized, candidate.professionalTerms)
+    )
+  ))
+  if (!focus) return null
+  const explicitProfessional = hasAnyPhrase(normalized, focus.professionalTerms)
+  if (hasAnyPhrase(normalized, HOME_CLEANING_CONTEXTS) && !repairAction && !explicitProfessional) return null
+
+  const focusTerms = [...new Set([...focus.searchTerms, ...focus.signals])]
+
+  return {
+    ...focusScope('repairs', focus.seed, focusTerms, 'home-trade'),
+    label:focus.label,
+    professionalLabel:focus.label,
+    tradeId:focus.id,
+    excludedFocusTerms:focus.excludeTerms || [],
+    fallbackLabel:'Reparaciones generales',
+  }
+}
+
 function detectScope(normalized) {
   const hasEmploymentContext = ['empleo', 'trabajo', 'trabajar', 'vacante', 'puesto laboral', 'curro', 'chamba']
     .some(term => includesPhrase(normalized, term))
@@ -519,6 +645,9 @@ function detectScope(normalized) {
       motorcycleContext ? 'motorcycle' : carContext ? 'car' : 'terms',
     )
   }
+
+  const homeRepairFocus = detectHomeRepairFocus(normalized)
+  if (homeRepairFocus) return homeRepairFocus
 
   if (hasAnyPhrase(normalized, ['taxi', 'chofer', 'llevar al aeropuerto', 'traslado aeropuerto', 'transporte de personas'])) {
     return focusScope('transport', includesPhrase(normalized, 'aeropuerto') ? 'aeropuerto' : 'transporte')
@@ -758,11 +887,13 @@ function matchesGermanRequirement(meta, level) {
   return order.indexOf(resultLevel) <= order.indexOf(level)
 }
 
-function matchesScopeFocus(result, scope) {
+function matchesScopeFocus(result, scope, allowGeneralFallback = false) {
   if (!scope?.focusKind) return true
   const meta = result?.filterMeta || {}
   const searchText = normalizeSearchText(meta.searchText || `${result?.label || ''} ${result?.sub || ''}`)
   if (!searchText) return false
+  if (scope.focusKind === 'home-trade' && hasAnyPhrase(searchText, HOME_TRADE_UNRELATED_RESULT_TERMS)) return false
+  if (scope.excludedFocusTerms?.length && hasAnyPhrase(searchText, scope.excludedFocusTerms)) return false
 
   if (scope.marketplaceVehicle && ['car', 'motorcycle'].includes(scope.focusKind)) {
     const title = normalizeSearchText(meta.title || result?.label || '')
@@ -784,17 +915,24 @@ function matchesScopeFocus(result, scope) {
       && hasAnyPhrase(searchText, ['comida', 'cocina', 'restaurante', 'tortilla', 'picante', 'receta', 'catering', 'pasteleria', 'panaderia', 'postre'])
   }
 
+  if (scope.focusKind === 'home-trade') {
+    if (hasAnyPhrase(searchText, scope.focusTerms || [])) return true
+    if (!allowGeneralFallback) return false
+    return hasAnyPhrase(searchText, HOME_REPAIR_GENERAL_RESULT_TERMS)
+      && !hasAnyPhrase(searchText, HOME_REPAIR_GENERAL_EXCLUDED_TERMS)
+  }
+
   return hasAnyPhrase(searchText, scope.focusTerms || [])
 }
 
-export function matchesLatidoAssistantResult(result, parsed) {
+export function matchesLatidoAssistantResult(result, parsed, { allowGeneralScopeFallback = false } = {}) {
   if (!parsed?.active) return true
   const meta = result?.filterMeta || {}
 
   if (parsed.entityTypes.length && !parsed.entityTypes.includes(result.type)) return false
   if (parsed.category && !meta.categories?.includes(parsed.category)) return false
   if (parsed.resultIntents.length && meta.intent && !parsed.resultIntents.includes(meta.intent)) return false
-  if (!matchesScopeFocus(result, parsed.scope)) return false
+  if (!matchesScopeFocus(result, parsed.scope, allowGeneralScopeFallback)) return false
   if (!matchesLocation(result, parsed)) return false
 
   const rawAmount = meta.priceAmount ?? meta.salaryAmount

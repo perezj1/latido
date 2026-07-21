@@ -92,6 +92,12 @@ const SEARCH_INTENT_LABELS = {
   cleaning:'Limpieza',
   translation:'Traducciones',
   moving:'Mudanzas',
+  plumbing:'Fontanería',
+  electrical:'Electricidad',
+  locksmith:'Cerrajería',
+  painting:'Pintura',
+  carpentry:'Carpintería',
+  appliance_repair:'Reparación de electrodomésticos',
   repairs:'Reparaciones y mantenimiento',
   childcare:'Cuidado infantil',
   eldercare:'Cuidado de mayores',
@@ -104,8 +110,14 @@ const SEARCH_INTENT_LABELS = {
   marketplace:'Compra y venta',
 }
 
+const SPECIALIZED_HOME_INTENTS = new Set([
+  'plumbing', 'electrical', 'locksmith', 'painting', 'carpentry', 'appliance_repair',
+])
+
 function getSearchInterpretation(profile) {
+  const hasSpecializedHomeIntent = profile?.intents?.some(intent => SPECIALIZED_HOME_INTENTS.has(intent.id))
   return profile?.intents
+    ?.filter(intent => !(hasSpecializedHomeIntent && intent.id === 'repairs'))
     ?.map(intent => SEARCH_INTENT_LABELS[intent.id])
     .filter(Boolean)
     .join(' · ') || ''
@@ -600,7 +612,9 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
   const browseAll = (allowBrowse && !hasSearchQuery) || (!!assistantQuery?.hasStructuredCriteria && !hasSearchQuery)
   if (!hasSearchQuery && !browseAll) return []
   const getSearchScore = fields => browseAll ? 1 : scoreSearchFields(profile, fields)
-  const matchReason = browseAll ? '' : getSearchInterpretation(profile)
+  const matchReason = browseAll
+    ? ''
+    : (assistantQuery?.scope?.professionalLabel || getSearchInterpretation(profile))
 
   const results = []
   const metaSeparator = ' \u00B7 '
@@ -928,9 +942,19 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
     }
   }
 
-  const eligibleResults = assistantQuery?.active
-    ? results.filter(result => matchesLatidoAssistantResult(result, assistantQuery))
-    : results
+  let assistantFocusFallback = false
+  let eligibleResults = results
+  if (assistantQuery?.active) {
+    eligibleResults = results.filter(result => matchesLatidoAssistantResult(result, assistantQuery))
+    if (!eligibleResults.length && assistantQuery.scope?.focusKind === 'home-trade') {
+      eligibleResults = results.filter(result => matchesLatidoAssistantResult(
+        result,
+        assistantQuery,
+        { allowGeneralScopeFallback:true },
+      ))
+      assistantFocusFallback = eligibleResults.length > 0
+    }
+  }
   const rankedResults = []
   for (let index = 0; index < eligibleResults.length; index += 1) {
     rankedResults.push({ ...eligibleResults[index], searchIndex:index })
@@ -943,7 +967,10 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
 
   const cleanResults = []
   for (const { searchPriority, searchScore, searchIndex, ...result } of rankedResults) {
-    cleanResults.push(matchReason ? { ...result, matchReason } : result)
+    const displayedMatchReason = assistantFocusFallback
+      ? `${assistantQuery.scope?.fallbackLabel || 'Servicio relacionado'} (alternativa)`
+      : matchReason
+    cleanResults.push(displayedMatchReason ? { ...result, matchReason:displayedMatchReason } : result)
   }
   return cleanResults
 }
