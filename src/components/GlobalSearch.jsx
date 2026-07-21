@@ -25,7 +25,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { SEARCHABLE_SITE_PAGES, getAdPath, getBusinessPath, getEventPath, getGuidePath, getJobPath } from '../lib/seo'
-import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
 import { buildSearchProfile, normalizeSearchText, profileHasIntent, scoreSearchFields } from '../lib/naturalSearch'
 import {
   buildLatidoSearchRpcParams,
@@ -431,7 +431,7 @@ function normalizeBusiness(provider) {
     editorialPartnerId:editorialPartner?.id || '',
     partnerCategories:editorialPartner?.categories || [],
     href:editorialPartner?.href || '',
-    photoUrl: editorialPartner?.image || provider.photo_url || provider.img || '',
+    photoUrl: resolveImageUrl(editorialPartner?.image || provider.photo_url || provider.img),
     created_at: provider.created_at || '',
   }
 }
@@ -1614,7 +1614,7 @@ export default function GlobalSearch({
                       <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:12, alignItems:'center', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 14px 12px' }}>
                         <span style={{ width:46, height:46, borderRadius:14, background:'#fff', border:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, overflow:'hidden', gridRow:'span 2', flexShrink:0 }}>
                           {result.image ? (
-                            <img src={getThumbnailImageUrl(result.image)} alt="" loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'contain', display:'block', background:'#fff' }} />
+                            <img src={getThumbnailImageUrl(result.image)} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'contain', display:'block', background:'#fff' }} />
                           ) : result.icon}
                         </span>
                         <div style={{ minWidth:0 }}>
@@ -1646,7 +1646,7 @@ export default function GlobalSearch({
                   >
                     <span style={{ width:size === 'lg' ? 42 : 34, height:size === 'lg' ? 42 : 34, borderRadius:14, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:size === 'lg' ? 22 : 18, flexShrink:0, overflow:'hidden', border:result.image ? `1px solid ${C.borderLight}` : 'none' }}>
                       {result.image ? (
-                        <img src={getThumbnailImageUrl(result.image)} alt="" loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'cover', display:'block', background:'#fff' }} />
+                        <img src={getThumbnailImageUrl(result.image)} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:result.imageFit || 'cover', display:'block', background:'#fff' }} />
                       ) : result.icon}
                     </span>
                     <div style={{ flex:1, minWidth:0 }}>
