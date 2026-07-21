@@ -4,16 +4,17 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
-import { trackSearchEvent } from '../lib/analytics'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, JOB_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
 import FavoriteButton from '../components/FavoriteButton'
 import DetailActionBar from '../components/DetailActionBar'
 import CompactFilterSelect from '../components/CompactFilterSelect'
+import GlobalSearch from '../components/GlobalSearch'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import toast from 'react-hot-toast'
 
 function fmtPrice(price) {
@@ -788,7 +789,7 @@ export default function Tablon() {
   const navigate = useNavigate()
   const { adSlug, jobSlug } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { isLoggedIn, user, displayName, userCanton, isAdmin } = useAuth()
+  const { isLoggedIn, user, displayName, userCanton } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const [userProfiles, setUserProfiles] = useState(new Map())
   const [ads, setAds] = useState(() => TABLON_CACHE.publicAds || [])
@@ -803,8 +804,8 @@ export default function Tablon() {
   const [selectedJob, setSelectedJob] = useState(null)
   const [selectedPortal, setSelectedPortal] = useState(null)
   const [adReviews, setAdReviews] = useState({})
-  const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-  const deferredSearch = useDeferredValue(norm(search.trim()))
+  const deferredSearch = useDeferredValue(search.trim())
+  const searchProfile = useMemo(() => buildSearchProfile(deferredSearch), [deferredSearch])
 
   const cat      = normalizeAdCat(searchParams.get('cat') || '')
   const type     = searchParams.get('type') || ''
@@ -925,35 +926,6 @@ export default function Tablon() {
     ? [jobIntent, jobType, canton, plz].filter(Boolean).length
     : [type, canton, plz, privacy, hasPriceFilter].filter(Boolean).length
   const secondaryActiveCount = [plz, privacy].filter(Boolean).length
-
-  useEffect(() => {
-    if (isAdmin) return undefined
-
-    const query = search.trim()
-    if (query.length < 2) return undefined
-
-    const timer = window.setTimeout(() => {
-      trackSearchEvent({
-        query,
-        scope: isEmpleos ? 'empleos' : 'tablon',
-        user_id: user?.id || null,
-        metadata: {
-          cat: cat || null,
-          type: type || null,
-          canton: canton || null,
-          plz: plz || null,
-          privacy: privacy || null,
-          job_type: jobType || null,
-          job_intent: jobIntent || null,
-          price_range: priceRange || null,
-          max_price: legacyMaxPrice || null,
-        },
-      })
-    }, 900)
-
-    return () => window.clearTimeout(timer)
-  }, [canton, cat, isAdmin, isEmpleos, jobIntent, jobType, legacyMaxPrice, plz, priceRange, privacy, search, type, user?.id])
-
 
   useEffect(() => {
     setLoading(true)
@@ -1154,9 +1126,16 @@ export default function Tablon() {
       if (range?.max != null && numericPrice > range.max) return false
       if (!range && legacyMaxPrice && numericPrice > Number.parseFloat(legacyMaxPrice)) return false
     }
-    if (deferredSearch && !norm(a.title).includes(deferredSearch) && !norm(a.desc).includes(deferredSearch)) return false
+    if (deferredSearch && !scoreSearchFields(searchProfile, [
+      { value:a.title, weight:6 },
+      { value:a.desc, weight:4 },
+      { value:a.sub, weight:3 },
+      { value:getAdDisplayCat(a)?.label, weight:2 },
+      { value:a.city, weight:2 },
+      { value:a.canton, weight:1 },
+    ])) return false
     return true
-  }), [ads, canton, cat, deferredSearch, hasPriceFilter, isLoggedIn, legacyMaxPrice, plz, priceRange, privacy, type])
+  }), [ads, canton, cat, deferredSearch, hasPriceFilter, isLoggedIn, legacyMaxPrice, plz, priceRange, privacy, searchProfile, type])
 
   const communityJobs = useMemo(() => {
     const fromJobs = jobs.filter(j =>
@@ -1164,7 +1143,15 @@ export default function Tablon() {
       (!jobType || j.type === jobType) &&
       (!canton || j.canton === canton) &&
       (!plz || j.plz?.startsWith(plz)) &&
-      (!deferredSearch || norm(j.title).includes(deferredSearch) || norm(j.company).includes(deferredSearch) || norm(getJobIntentMeta(j).label).includes(deferredSearch))
+      (!deferredSearch || scoreSearchFields(searchProfile, [
+        { value:j.title, weight:6 },
+        { value:j.company, weight:4 },
+        { value:j.desc, weight:4 },
+        { value:j.sector || j.category, weight:3 },
+        { value:getJobIntentMeta(j).label, weight:2 },
+        { value:j.type, weight:2 },
+        { value:j.city || j.canton, weight:2 },
+      ]))
     )
     const fromAds = []
     for (const a of ads) {
@@ -1175,7 +1162,13 @@ export default function Tablon() {
         (!jobType || a.type === jobType || a.sub === jobType) &&
         (!canton || a.canton === canton) &&
         (!plz || a.plz?.startsWith(plz)) &&
-        (!deferredSearch || norm(a.title).includes(deferredSearch) || norm(a.desc).includes(deferredSearch) || norm(getJobIntentMeta(a).label).includes(deferredSearch))
+        (!deferredSearch || scoreSearchFields(searchProfile, [
+          { value:a.title, weight:6 },
+          { value:a.desc, weight:4 },
+          { value:a.sub, weight:3 },
+          { value:getJobIntentMeta(a).label, weight:2 },
+          { value:a.city || a.canton, weight:2 },
+        ]))
       ) {
         fromAds.push({
           id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
@@ -1187,7 +1180,7 @@ export default function Tablon() {
     }
     return [...fromJobs, ...fromAds]
       .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
-  }, [ads, canton, deferredSearch, isLoggedIn, jobIntent, jobType, jobs, plz])
+  }, [ads, canton, deferredSearch, isLoggedIn, jobIntent, jobType, jobs, plz, searchProfile])
 
   const filteredJobs = communityJobs
   const tablonItems = useMemo(() => {
@@ -1354,72 +1347,72 @@ export default function Tablon() {
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:18, padding:'10px 0 12px' }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px' }}>
           <div className="tablon-toolbar-card" style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
-      {/* Search */}
-      <div style={{ display:'flex', gap:8, marginBottom:10 }}>
-        <div style={{ flex:1, position:'relative' }}>
-          <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:14, color:C.light }}>🔍</span>
-          <input
-            style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:13, padding:'10px 12px 10px 34px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', color:C.text, boxSizing:'border-box' }}
-            placeholder={pageContext.searchPlaceholder}
-            value={search} onChange={e=>setSearch(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Contextual filters */}
-      <div className="tablon-filter-row no-scroll">
-        <CompactFilterSelect
-          className="tablon-filter-category"
-          label="Categoría"
-          value={cat}
-          options={catOptions}
-          onChange={setCategoryFilter}
-        />
-        <CompactFilterSelect
-          label="Cantón"
-          value={canton}
-          options={cantonOptions}
-          onChange={value => setFilterAndScroll('canton', value)}
-        />
-        <CompactFilterSelect
-          className="tablon-filter-intent"
-          label="Intención"
-          value={intentValue}
-          options={intentOptions}
-          onChange={value => setFilterAndScroll(isEmpleos ? 'jobIntent' : 'type', value)}
-        />
-        {isEmpleos ? (
-          <CompactFilterSelect
-            className="tablon-filter-context"
-            label="Tipo de empleo"
-            value={jobType}
-            options={jobTypeOptions}
-            onChange={value => setFilterAndScroll('jobType', value)}
-          />
-        ) : (
-          <CompactFilterSelect
-            className="tablon-filter-context"
-            label="Precio"
-            value={priceRange}
-            options={PRICE_RANGES}
-            onChange={setPriceRangeFilter}
-          />
+      <GlobalSearch
+        size="sm"
+        placeholder={pageContext.searchPlaceholder}
+        value={search}
+        onValueChange={setSearch}
+        resultTypes={['ad', 'job']}
+        analyticsScope={isEmpleos ? 'empleos' : 'tablon'}
+        showResultsDropdown={false}
+        searchFilters={{ category:cat, canton, intent:intentValue }}
+        onSearchFiltersChange={clearFilters}
+        filtersContent={(
+          <div className="tablon-filter-row no-scroll" style={{ marginTop:10 }}>
+            <CompactFilterSelect
+              className="tablon-filter-category"
+              label="Categoría"
+              value={cat}
+              options={catOptions}
+              onChange={setCategoryFilter}
+            />
+            <CompactFilterSelect
+              label="Cantón"
+              value={canton}
+              options={cantonOptions}
+              onChange={value => setFilterAndScroll('canton', value)}
+            />
+            <CompactFilterSelect
+              className="tablon-filter-intent"
+              label="Intención"
+              value={intentValue}
+              options={intentOptions}
+              onChange={value => setFilterAndScroll(isEmpleos ? 'jobIntent' : 'type', value)}
+            />
+            {isEmpleos ? (
+              <CompactFilterSelect
+                className="tablon-filter-context"
+                label="Tipo de empleo"
+                value={jobType}
+                options={jobTypeOptions}
+                onChange={value => setFilterAndScroll('jobType', value)}
+              />
+            ) : (
+              <CompactFilterSelect
+                className="tablon-filter-context"
+                label="Precio"
+                value={priceRange}
+                options={PRICE_RANGES}
+                onChange={setPriceRangeFilter}
+              />
+            )}
+            <button
+              type="button"
+              className={`tablon-more-filter-button ${secondaryActiveCount ? 'is-active' : ''}`}
+              onClick={()=>setShowFilters(true)}
+            >
+              <span>⚙️</span>
+              <span>Más</span>
+              {secondaryActiveCount > 0 && <strong>{secondaryActiveCount}</strong>}
+            </button>
+            {activeCount > 0 && (
+              <button type="button" className="tablon-clear-filter-button" onClick={clearFilters} aria-label="Limpiar todos los filtros">
+                ✕
+              </button>
+            )}
+          </div>
         )}
-        <button
-          type="button"
-          className={`tablon-more-filter-button ${secondaryActiveCount ? 'is-active' : ''}`}
-          onClick={()=>setShowFilters(true)}
-        >
-          <span>⚙️</span>
-          <span>Más</span>
-          {secondaryActiveCount > 0 && <strong>{secondaryActiveCount}</strong>}
-        </button>
-        {activeCount > 0 && (
-          <button type="button" className="tablon-clear-filter-button" onClick={clearFilters} aria-label="Limpiar todos los filtros">
-            ✕
-          </button>
-        )}
-      </div>
+      />
           </div>
         </div>
       </div>

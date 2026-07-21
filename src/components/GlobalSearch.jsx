@@ -75,7 +75,7 @@ const SEARCH_CACHE = {
   private:null,
 }
 
-const EMPTY_SEARCH_FILTERS = Object.freeze({ category:'', canton:'', intent:'' })
+const EMPTY_SEARCH_FILTERS = Object.freeze({ category:'', canton:'', location:'', intent:'' })
 
 const TYPE_COLORS = {
   ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Anuncio' },
@@ -232,12 +232,13 @@ function matchesSearchFilters(result, filters) {
   const meta = result.filterMeta || {}
   if (filters?.category && !meta.categories?.includes(filters.category)) return false
   if (filters?.canton && !matchesCanton(meta, filters.canton)) return false
+  if (filters?.location && normalizeSearchText(meta.location) !== normalizeSearchText(filters.location)) return false
   if (filters?.intent && meta.intent !== filters.intent) return false
   return true
 }
 
 function hasActiveSearchFilters(filters) {
-  return !!(filters?.category || filters?.canton || filters?.intent)
+  return !!(filters?.category || filters?.canton || filters?.location || filters?.intent)
 }
 
 const SEARCH_PAGE_SIZE = 1000
@@ -380,7 +381,7 @@ function normalizeCommunity(group) {
     city: group.city || 'Suiza',
     members: group.members || 0,
     emoji: group.emoji || '👥',
-    category: group.cat || '',
+    category: group.cat === 'mamas' ? 'familia' : (group.cat || ''),
     desc: group.desc || group.description || '',
     image: group.photo_url || '',
   }
@@ -711,7 +712,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
         sub:['Grupo', group.city, `${group.members} miembros`].filter(Boolean).join(metaSeparator),
         href:`/comunidades?openCommunity=${encodeURIComponent(group.id)}`,
         filterMeta:{
-          categories:['grupos'],
+          categories:['grupos', group.category].filter(Boolean),
           location:group.city,
         },
         searchScore,
@@ -951,6 +952,11 @@ export default function GlobalSearch({
   size = 'lg',
   placeholder,
   onClose,
+  value,
+  onValueChange,
+  resultTypes = null,
+  analyticsScope = 'global',
+  showResultsDropdown = true,
   searchFilters = EMPTY_SEARCH_FILTERS,
   onSearchFiltersChange,
   filtersContent = null,
@@ -966,18 +972,28 @@ export default function GlobalSearch({
   const blurCloseTimerRef = useRef(null)
   const assistantRequestRef = useRef(0)
   const assistantRpcUnavailableRef = useRef(false)
-  const searchFilterKey = `${searchFilters.category || ''}|${searchFilters.canton || ''}|${searchFilters.intent || ''}`
+  const searchFilterKey = `${searchFilters.category || ''}|${searchFilters.canton || ''}|${searchFilters.location || ''}|${searchFilters.intent || ''}`
 
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
   const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
   const [loadingData, setLoadingData] = useState(false)
-  const [q, setQ] = useState('')
+  const [internalQuery, setInternalQuery] = useState('')
   const [results, setResults] = useState([])
   const [focused, setFocused] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
   const [activeFilter, setActiveFilter] = useState(null)
   const [expandedResults, setExpandedResults] = useState(false)
   const [assistantRpc, setAssistantRpc] = useState({ status:'idle', datasets:null })
+  const q = value === undefined ? internalQuery : String(value || '')
+  const setQ = useCallback(nextQuery => {
+    setInternalQuery(nextQuery)
+    onValueChange?.(nextQuery)
+  }, [onValueChange])
+  const allowedResultTypes = useMemo(
+    () => Array.isArray(resultTypes) && resultTypes.length ? new Set(resultTypes) : null,
+    [resultTypes]
+  )
+  const hasPageScope = !!allowedResultTypes
 
   const deferredQuery = useDeferredValue(q)
   const fallbackDatasets = useMemo(() => buildFallbackData(isLoggedIn), [isLoggedIn])
@@ -988,8 +1004,11 @@ export default function GlobalSearch({
   const accessLevel = getCacheKey(isLoggedIn)
 
   const searchFilteredResults = useMemo(
-    () => results.filter(result => matchesSearchFilters(result, searchFilters)),
-    [results, searchFilterKey]
+    () => results.filter(result => (
+      (!allowedResultTypes || allowedResultTypes.has(result.type)) &&
+      matchesSearchFilters(result, searchFilters)
+    )),
+    [allowedResultTypes, results, searchFilterKey]
   )
 
   const availableTypes = useMemo(() => {
@@ -1007,7 +1026,7 @@ export default function GlobalSearch({
   )
   const partnerService = useMemo(() => getPartnerServiceMatch(q), [q])
   const hasSearchFilters = hasActiveSearchFilters(searchFilters)
-  const showPartnerService = partnerService && !hasSearchFilters
+  const showPartnerService = partnerService && !hasSearchFilters && (!allowedResultTypes || allowedResultTypes.has('business'))
   const premiumBusinessResults = useMemo(
     () => resultPool.filter(result => result.type === 'business' && result.partnerPlan === 'premium'),
     [resultPool]
@@ -1291,7 +1310,7 @@ export default function GlobalSearch({
       } : null
       trackSearchEvent({
         query,
-        scope: assistantMode ? 'pregunta_latido' : 'global',
+        scope: assistantMode ? 'pregunta_latido' : analyticsScope,
         user_id: user?.id || null,
         metadata: {
           results_count: resultPool.length,
@@ -1313,7 +1332,7 @@ export default function GlobalSearch({
     }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [activeFilter, assistantMode, assistantQuery, isAdmin, q, resultPool.length, searchFilterKey, user?.id])
+  }, [activeFilter, analyticsScope, assistantMode, assistantQuery, isAdmin, q, resultPool.length, searchFilterKey, user?.id])
 
   const goTo = target => {
     const result = typeof target === 'string' ? null : target
@@ -1368,7 +1387,7 @@ export default function GlobalSearch({
     }
   }
 
-  const showDropdown = focused && (q.length >= 2 || hasSearchFilters)
+  const showDropdown = showResultsDropdown && focused && (q.length >= 2 || hasSearchFilters)
 
   const inputStyle = size === 'lg'
     ? {
@@ -1420,7 +1439,7 @@ export default function GlobalSearch({
           onBlur={handleBlur}
           onKeyDown={handleKey}
           autoComplete="off"
-          aria-label={assistantMode ? 'Pregunta a Latido' : 'Buscar en Latido'}
+          aria-label={assistantMode ? 'Pregunta a Latido' : (hasPageScope ? 'Buscar en esta sección' : 'Buscar en Latido')}
         />
         {q && (
           <button onMouseDown={e => e.preventDefault()} onClick={clearSearch} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:C.border, border:'none', borderRadius:'50%', width:20, height:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:C.mid }}>
@@ -1486,7 +1505,9 @@ export default function GlobalSearch({
               {(loadingData && !dataReady) || assistantLoading ? (
                 <>
                   <p style={{ fontFamily:PP, fontSize:13, color:C.text, fontWeight:700, margin:'0 0 6px' }}>Buscando en Latido...</p>
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Consultando publicaciones, empleos, negocios y eventos.</p>
+                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
+                    {hasPageScope ? 'Consultando el contenido de esta sección.' : 'Consultando publicaciones, empleos, negocios y eventos.'}
+                  </p>
                 </>
               ) : (
                 <>
@@ -1507,8 +1528,8 @@ export default function GlobalSearch({
                         </button>
                       </>
                     ) : hasSearchFilters ? (
-                      <button onClick={() => onSearchFiltersChange?.({ category:'', canton:'', intent:'' })} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                        Quitar los filtros y buscar en todo Latido
+                      <button onClick={() => onSearchFiltersChange?.({ category:'', canton:'', location:'', intent:'' })} style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                        {hasPageScope ? 'Quitar los filtros de esta sección' : 'Quitar los filtros y buscar en todo Latido'}
                       </button>
                     ) : (
                       <>
@@ -1632,7 +1653,7 @@ export default function GlobalSearch({
                   <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>
                     {resultPool.length > displayedResultCount
                       ? `Mostrando ${displayedResultCount} de ${resultPool.length} resultados`
-                      : `${resultPool.length} resultado${resultPool.length !== 1 ? 's' : ''} en Latido`}
+                      : `${resultPool.length} resultado${resultPool.length !== 1 ? 's' : ''} ${hasPageScope ? 'en esta sección' : 'en Latido'}`}
                   </span>
                   {!expandedResults && visibleResultPool.length > filteredResults.length ? (
                     <button type="button" onClick={() => { setExpandedResults(true); setActiveIdx(-1) }} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:C.primary, background:'none', border:'none', padding:0, cursor:'pointer' }}>

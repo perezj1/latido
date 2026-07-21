@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
-import { trackSearchEvent } from '../lib/analytics'
 import {
   MOCK_COMMUNITIES,
   MOCK_NEGOCIOS,
@@ -22,6 +21,7 @@ import { C, PP } from '../lib/theme'
 import { Tag, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CompactFilterSelect from '../components/CompactFilterSelect'
+import GlobalSearch from '../components/GlobalSearch'
 import { buildShareUrl } from '../components/ShareButton'
 import DetailActionBar from '../components/DetailActionBar'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
@@ -31,6 +31,7 @@ import { normalizeExternalUrl } from '../lib/links'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import {
   getBusinessAddress,
   getBusinessPhone,
@@ -175,6 +176,11 @@ const BUSINESS_DIRECTORY_PRIORITY = {
   basic:1,
   featured:2,
   free:3,
+}
+
+const DIRECTORY_SEARCH_RESULT_TYPES = {
+  negocios:['business'],
+  comunidades:['community'],
 }
 
 const COMMUNITY_OPTIONS = []
@@ -1320,7 +1326,7 @@ function applyCachedData(snapshot, setters) {
 export default function Comunidades() {
   const navigate = useNavigate()
   const { businessSlug, eventSlug } = useParams()
-  const { isLoggedIn, user, isAdmin } = useAuth()
+  const { isLoggedIn, user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [communities, setCommunities] = useState(() => comunidadesCache.data?.communities ?? [])
   const [businesses, setBusinesses] = useState(() => comunidadesCache.data?.businesses ?? MOCK_NEGOCIOS)
@@ -1683,36 +1689,19 @@ export default function Comunidades() {
     scrollPageTop()
   }
 
-  const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-  const normSearch = norm(search)
-
-  useEffect(() => {
-    if (isAdmin) return undefined
-
-    const query = search.trim()
-    if (query.length < 2 || tab === 'eventos') return undefined
-
-    const timer = window.setTimeout(() => {
-      trackSearchEvent({
-        query,
-        scope: tab === 'comunidades' ? 'comunidad_grupos' : 'comunidad_negocios',
-        user_id: user?.id || null,
-        metadata: {
-          tab,
-          category: cat || null,
-          business_type: negType || null,
-          location: locationFilter || null,
-        },
-      })
-    }, 900)
-
-    return () => window.clearTimeout(timer)
-  }, [cat, isAdmin, locationFilter, negType, search, tab, user?.id])
+  const searchProfile = useMemo(() => buildSearchProfile(search), [search])
+  const hasSearch = searchProfile.normalized.length >= 2
 
   const filteredComm = communities.filter(group =>
     (!cat || group.cat === cat) &&
     (!locationFilter || group.city === locationFilter) &&
-    (!normSearch || norm(group.name).includes(normSearch) || norm(group.desc).includes(normSearch))
+    (!hasSearch || scoreSearchFields(searchProfile, [
+      { value:group.name, weight:6 },
+      { value:group.desc, weight:4 },
+      { value:getCommunityMeta(group.cat)?.label, weight:3 },
+      { value:group.city, weight:2 },
+      { value:'grupo comunidad', weight:1 },
+    ]))
   )
 
   const filteredNeg = [...businesses]
@@ -1720,11 +1709,14 @@ export default function Comunidades() {
       business.type !== 'empleo' && business.type !== 'vivienda' &&
       (!negType || normalizeNegocioType(business.type) === negType) &&
       (!locationFilter || business.canton === locationFilter) &&
-      (!normSearch ||
-        norm(business.name).includes(normSearch) ||
-        norm(business.desc).includes(normSearch) ||
-        norm(business.city).includes(normSearch) ||
-        (businessServices[business.id] || business.services || []).some(service => norm(service).includes(normSearch)))
+      (!hasSearch || scoreSearchFields(searchProfile, [
+        { value:business.name, weight:6 },
+        { value:(businessServices[business.id] || business.services || []).join(' '), weight:5 },
+        { value:business.desc, weight:4 },
+        { value:getNegocioTypeMeta(business.type)?.label, weight:3 },
+        { value:business.type, weight:2 },
+        { value:business.city, weight:2 },
+      ]))
     )
     .sort((a, b) => {
       const planDiff = getDirectoryBusinessPriority(a) - getDirectoryBusinessPriority(b)
@@ -1832,62 +1824,64 @@ export default function Comunidades() {
           <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
           <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />
           {tab !== 'eventos' && (
-            <div style={{ position:'relative', marginBottom:10 }}>
-          <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:C.light }}>🔍</span>
-          <input
-            style={{ width:'100%', border:`1.5px solid ${C.border}`, borderRadius:13, padding:'11px 13px 11px 36px', fontSize:12, fontFamily:PP, outline:'none', background:'#fff', boxSizing:'border-box' }}
-            placeholder={
-              tab === 'comunidades'
-                ? TAB_COPY.comunidades.search
-                : TAB_COPY.negocios.search
-            }
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-            </div>
-          )}
-
-          {tab !== 'eventos' && (
-            <div className="community-filter-row no-scroll">
-              {tab === 'negocios' && (
-                <CompactFilterSelect
-                  className="community-filter-control"
-                  label="Categoría"
-                  value={negType}
-                  options={VISIBLE_NEGOCIO_TYPES}
-                  onChange={handleBusinessTypeChange}
-                />
+            <GlobalSearch
+              size="sm"
+              placeholder={TAB_COPY[tab].search}
+              value={search}
+              onValueChange={setSearch}
+              resultTypes={DIRECTORY_SEARCH_RESULT_TYPES[tab]}
+              analyticsScope={tab === 'comunidades' ? 'comunidad_grupos' : 'comunidad_negocios'}
+              showResultsDropdown={false}
+              searchFilters={{
+                category:tab === 'comunidades' ? cat : negType,
+                canton:tab === 'negocios' ? locationFilter : '',
+                location:tab === 'comunidades' ? locationFilter : '',
+                intent:'',
+              }}
+              onSearchFiltersChange={clearDirectoryFilters}
+              filtersContent={(
+                <div className="community-filter-row no-scroll" style={{ marginTop:10 }}>
+                  {tab === 'negocios' && (
+                    <CompactFilterSelect
+                      className="community-filter-control"
+                      label="Categoría"
+                      value={negType}
+                      options={VISIBLE_NEGOCIO_TYPES}
+                      onChange={handleBusinessTypeChange}
+                    />
+                  )}
+                  {tab === 'comunidades' && (
+                    <CompactFilterSelect
+                      className="community-filter-control"
+                      label="Categoría"
+                      value={cat}
+                      options={catOptions}
+                      onChange={handleCommunityCategoryChange}
+                    />
+                  )}
+                  <CompactFilterSelect
+                    className="community-filter-control community-filter-location"
+                    label={tab === 'comunidades' ? 'Ciudad' : 'Cantón'}
+                    value={locationFilter}
+                    options={tab === 'comunidades' ? communityCityOptions : cantonOptions}
+                    onChange={value => {
+                      setLocationFilter(value)
+                      scrollPageTop()
+                    }}
+                  />
+                  {activeDirectoryFilters > 0 && (
+                    <button
+                      type="button"
+                      className="tablon-clear-filter-button"
+                      onClick={clearDirectoryFilters}
+                      aria-label="Limpiar filtros"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               )}
-              {tab === 'comunidades' && (
-                <CompactFilterSelect
-                  className="community-filter-control"
-                  label="Categoría"
-                  value={cat}
-                  options={catOptions}
-                  onChange={handleCommunityCategoryChange}
-                />
-              )}
-              <CompactFilterSelect
-                className="community-filter-control community-filter-location"
-                label={tab === 'comunidades' ? 'Ciudad' : 'Cantón'}
-                value={locationFilter}
-                options={tab === 'comunidades' ? communityCityOptions : cantonOptions}
-                onChange={value => {
-                  setLocationFilter(value)
-                  scrollPageTop()
-                }}
-              />
-              {activeDirectoryFilters > 0 && (
-                <button
-                  type="button"
-                  className="tablon-clear-filter-button"
-                  onClick={clearDirectoryFilters}
-                  aria-label="Limpiar filtros"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            />
           )}
           </div>
         </div>
