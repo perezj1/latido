@@ -15,7 +15,11 @@ const IMAGE_URL_REPLACEMENTS = new Map([
   ],
   [
     'https://suiza.embajada.gov.co/sites/default/files/inline-images/logoGovCO.png',
+    '/api/provider-image?key=colombia-cancilleria',
+  ],
+  [
     'https://suiza.embajada.gov.co/sites/default/files/inline-images/logo-cancilleria.png',
+    '/api/provider-image?key=colombia-cancilleria',
   ],
   [
     'https://www.exteriores.gob.es/Consulados/berna/es/Consulado/PublishingImages/MAEC_SUIZA_BERNA2.jpg?width=1440&height=628',

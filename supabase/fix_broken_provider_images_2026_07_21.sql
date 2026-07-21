@@ -8,7 +8,7 @@ BEGIN;
 WITH replacements (id, name, photo_url) AS (
   VALUES
     ('6d0b9f60-c283-4e9c-900f-e8124d7ba9f9'::uuid, 'Consejería de Trabajo, Migraciones y Seguridad Social', NULL::text),
-    ('46301ee8-4bd8-4d7d-8f25-6cb4c69341f0'::uuid, 'Consulado de Colombia en Berna', 'https://suiza.embajada.gov.co/sites/default/files/inline-images/logo-cancilleria.png'),
+    ('46301ee8-4bd8-4d7d-8f25-6cb4c69341f0'::uuid, 'Consulado de Colombia en Berna', '/api/provider-image?key=colombia-cancilleria'),
     ('064a62c4-5c77-405d-820c-8ef3cebdc7d9'::uuid, 'Consulado General de España en Berna', NULL::text),
     ('3c14e455-4d87-4133-ba95-20376b097adf'::uuid, 'Consulado General de España en Ginebra', NULL::text),
     ('03283706-1023-48b0-aeb9-6dd7ae7dbd4e'::uuid, 'Consulado General de España en Zúrich', NULL::text),
