@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import PartnerServicesPromo from './PartnerServicesPromo'
 import BelliniPartnerPromo from './BelliniPartnerPromo'
 import MiraPartnerPromo from './MiraPartnerPromo'
@@ -7,6 +7,9 @@ import Virtus360PartnerPromo from './Virtus360PartnerPromo'
 import GildaPartnerPromo from './GildaPartnerPromo'
 import DynamicBusinessPartnerCard from './DynamicBusinessPartnerCard'
 import { fetchActiveBusinessPartners } from '../lib/businessPartners'
+import { BUSINESS_ROTATION_INTERVAL_MS } from '../lib/businessPromotion'
+import { rotateItems } from '../lib/rotation'
+import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 
 const PUBLIC_PARTNERS = [
   {
@@ -45,7 +48,20 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
   const [businessPartners, setBusinessPartners] = useState([])
   const [activePartnerIndex, setActivePartnerIndex] = useState(0)
   const scrollRef = useRef(null)
-  const totalPartners = businessPartners.length + PUBLIC_PARTNERS.length
+  const rotationOffset = useTimedRotationBucket(BUSINESS_ROTATION_INTERVAL_MS)
+  const partnerCards = useMemo(() => rotateItems([
+    ...businessPartners.map(partner => ({
+      id:`business:${partner.id}`,
+      type:'business',
+      partner,
+    })),
+    ...PUBLIC_PARTNERS.map(partner => ({
+      id:`editorial:${partner.id}`,
+      type:'editorial',
+      partner,
+    })),
+  ], rotationOffset), [businessPartners, rotationOffset])
+  const totalPartners = partnerCards.length
   const hasSinglePartner = totalPartners === 1
 
   const scrollPartners = direction => {
@@ -89,7 +105,7 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
     if (!scrollRef.current) return
     scrollRef.current.scrollLeft = 0
     setActivePartnerIndex(0)
-  }, [businessPartners.length])
+  }, [businessPartners.length, rotationOffset])
 
   useEffect(() => {
     const scroller = scrollRef.current
@@ -153,15 +169,16 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
         aria-label="Colaboradores de Latido"
       >
         <div className="public-partners-track">
-          {businessPartners.map(partner => (
-            <DynamicBusinessPartnerCard
-              key={partner.id}
-              partner={partner}
-              placement={`${placement}_business_${partner.id}`}
-              variant="public-featured"
-            />
+          {partnerCards.map(card => (
+            card.type === 'business' ? (
+              <DynamicBusinessPartnerCard
+                key={card.id}
+                partner={card.partner}
+                placement={`${placement}_business_${card.partner.id}`}
+                variant="public-featured"
+              />
+            ) : card.partner.render(`${placement}_${card.partner.id}`)
           ))}
-          {PUBLIC_PARTNERS.map(partner => partner.render(`${placement}_${partner.id}`))}
         </div>
       </div>
 

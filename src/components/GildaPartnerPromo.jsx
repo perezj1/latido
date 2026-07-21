@@ -123,7 +123,7 @@ export default function GildaPartnerPromo({
           external:true,
         }))}
         cta={{
-          label:'Ver info',
+          label:'Contactar',
           button:true,
         }}
         accent={['#2563EB', '#1D4ED8']}

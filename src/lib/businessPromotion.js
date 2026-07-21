@@ -1,5 +1,6 @@
 const HOUR_MS = 60 * 60 * 1000
 const NEW_FREE_BUSINESS_WINDOW_MS = 72 * HOUR_MS
+export const BUSINESS_ROTATION_INTERVAL_MS = 6 * HOUR_MS
 
 // TEMPORAL: planes y extras de pago ocultos hasta el lunes 6 de julio de 2026.
 // Para reactivarlos, cambiar a true. No borrar el código de planes/checkout.
@@ -162,8 +163,8 @@ function deterministicUnit(value) {
   return ((hash >>> 0) + 1) / 4294967297
 }
 
-function getRotationBucket(now, hours = 6) {
-  return Math.floor(now / (hours * HOUR_MS))
+function getRotationBucket(now) {
+  return Math.floor(now / BUSINESS_ROTATION_INTERVAL_MS)
 }
 
 export function getBusinessPromotionMeta(planKey) {
@@ -245,21 +246,22 @@ export function rotateHomeBusinesses(businesses = [], planRows = [], now = Date.
   const remaining = enriched
     .filter(item => item !== first)
     .sort((a, b) =>
-      a.weightedScore - b.weightedScore ||
       b.plan.priority - a.plan.priority ||
+      a.weightedScore - b.weightedScore ||
       String(a.business.id).localeCompare(String(b.business.id))
     )
 
   const ordered = first ? [first, ...remaining] : remaining
+  const firstFreeIndex = ordered.findIndex(item => item.plan.key === 'free')
   const recentFreeIndex = ordered.findIndex((item, index) => {
-    if (index < 1 || item.plan.key !== 'free') return false
+    if (firstFreeIndex < 0 || index <= firstFreeIndex || item.plan.key !== 'free') return false
     const createdAt = toTimestamp(item.business.created_at)
     return createdAt && now - createdAt <= NEW_FREE_BUSINESS_WINDOW_MS
   })
 
-  if (recentFreeIndex > 2) {
+  if (recentFreeIndex > firstFreeIndex + 2) {
     const [recentFree] = ordered.splice(recentFreeIndex, 1)
-    ordered.splice(Math.min(2, ordered.length), 0, recentFree)
+    ordered.splice(Math.min(firstFreeIndex + 2, ordered.length), 0, recentFree)
   }
 
   return ordered.map(item => item.business)

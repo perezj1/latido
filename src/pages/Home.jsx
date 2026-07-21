@@ -6,6 +6,7 @@ import { useZoneAlerts, dismissZoneAlert, dismissZoneAlerts } from '../hooks/use
 import { useBusinessLeadAlerts } from '../hooks/useBusinessLeadAlerts'
 import { markAllRead as markAllMessagesRead, markConvRead, useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
+import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
@@ -18,6 +19,7 @@ import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat,
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import {
+  BUSINESS_ROTATION_INTERVAL_MS,
   getBusinessPromotionMeta,
   isBusinessPromotionActive,
   rotateHomeBusinesses,
@@ -444,13 +446,14 @@ export default function Home() {
   const [activatingPush, setActivatingPush] = useState(false)
   const [searchFilters, setSearchFilters] = useState({ category:'', canton:'', intent:'' })
   const { needsActivation, refresh: refreshPush } = usePushActivation(user?.id)
+  const businessRotationBucket = useTimedRotationBucket(BUSINESS_ROTATION_INTERVAL_MS)
   const [selectedGuide, setSelectedGuide] = useState(null)
   useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
 
   const hasNotif = alertCount > 0 || hasUnread || businessLeadUnreadCount > 0
   const rotatedBusinessHighlights = useMemo(
     () => rotateHomeBusinesses(businessHighlights, businessPromotionPlans),
-    [businessHighlights, businessPromotionPlans],
+    [businessHighlights, businessPromotionPlans, businessRotationBucket],
   )
   const featuredPromotionAvailability = useMemo(() => {
     const featuredPlan = businessPromotionPlans.find(plan =>

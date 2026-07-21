@@ -67,7 +67,7 @@ export default function SynaPartnerPromo({
         label:'Contactar',
         external:false,
       }}
-      accent={['#174A96', '#E30613']}
+      accent={['#2563EB', '#1D4ED8']}
       onServiceClick={service => trackContactIntent({ action:'service', service:service.id })}
       onCtaClick={() => trackContactIntent({ action:'cta' })}
     />

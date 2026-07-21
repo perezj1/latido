@@ -26,6 +26,7 @@ import {
 } from '../lib/constants'
 import { SEARCHABLE_SITE_PAGES, getAdPath, getBusinessPath, getEventPath, getGuidePath, getJobPath } from '../lib/seo'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { rotateItems, takeNextRotationOffset } from '../lib/rotation'
 import { buildSearchProfile, normalizeSearchText, profileHasIntent, scoreSearchFields } from '../lib/naturalSearch'
 import {
   buildLatidoSearchRpcParams,
@@ -1009,6 +1010,7 @@ export default function GlobalSearch({
   const blurCloseTimerRef = useRef(null)
   const assistantRequestRef = useRef(0)
   const assistantRpcUnavailableRef = useRef(false)
+  const premiumRotationArmedRef = useRef(true)
   const searchFilterKey = `${searchFilters.category || ''}|${searchFilters.canton || ''}|${searchFilters.location || ''}|${searchFilters.intent || ''}`
 
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
@@ -1021,6 +1023,7 @@ export default function GlobalSearch({
   const [activeFilter, setActiveFilter] = useState(null)
   const [expandedResults, setExpandedResults] = useState(false)
   const [assistantRpc, setAssistantRpc] = useState({ status:'idle', datasets:null })
+  const [premiumRotationOffset, setPremiumRotationOffset] = useState(0)
   const q = value === undefined ? internalQuery : String(value || '')
   const setQ = useCallback(nextQuery => {
     setInternalQuery(nextQuery)
@@ -1084,6 +1087,10 @@ export default function GlobalSearch({
     entries.push(...premiumBusinessResults)
     return entries
   }, [partnerService, premiumBusinessResults, showPartnerService])
+  const rotatedPremiumPartnerEntries = useMemo(
+    () => rotateItems(premiumPartnerEntries, premiumRotationOffset),
+    [premiumPartnerEntries, premiumRotationOffset]
+  )
   const showPremiumPartnerList = premiumPartnerEntries.length > 1
   const visibleResultPool = useMemo(
     () => showPremiumPartnerList
@@ -1426,6 +1433,18 @@ export default function GlobalSearch({
 
   const showDropdown = showResultsDropdown && focused && (q.length >= 2 || hasSearchFilters)
 
+  useEffect(() => {
+    const hasSearchPrompt = q.trim().length >= 2 || hasSearchFilters
+    if (!showDropdown || !hasSearchPrompt) {
+      premiumRotationArmedRef.current = true
+      return
+    }
+    if (!showPremiumPartnerList || !premiumRotationArmedRef.current) return
+
+    premiumRotationArmedRef.current = false
+    setPremiumRotationOffset(takeNextRotationOffset('global-search-premium', premiumPartnerEntries.length))
+  }, [hasSearchFilters, premiumPartnerEntries.length, q, showDropdown, showPremiumPartnerList])
+
   const inputStyle = size === 'lg'
     ? {
         width:'100%',
@@ -1591,7 +1610,7 @@ export default function GlobalSearch({
             <>
               {showPremiumPartnerList ? (
                 <PremiumPartnerSearchList
-                  partners={premiumPartnerEntries}
+                  partners={rotatedPremiumPartnerEntries}
                   onOpen={goTo}
                   highlightTokens={highlightTokens}
                 />

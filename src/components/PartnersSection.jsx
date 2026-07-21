@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import PartnerServicesPromo from './PartnerServicesPromo'
 import BelliniPartnerPromo from './BelliniPartnerPromo'
 import MiraPartnerPromo from './MiraPartnerPromo'
@@ -7,6 +7,9 @@ import Virtus360PartnerPromo from './Virtus360PartnerPromo'
 import GildaPartnerPromo from './GildaPartnerPromo'
 import DynamicBusinessPartnerCard from './DynamicBusinessPartnerCard'
 import { fetchActiveBusinessPartners } from '../lib/businessPartners'
+import { BUSINESS_ROTATION_INTERVAL_MS } from '../lib/businessPromotion'
+import { rotateItems } from '../lib/rotation'
+import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 
 const HOME_PARTNERS = [
   {
@@ -44,7 +47,32 @@ const HOME_PARTNERS = [
 export default function PartnersSection({ placement = 'app_home_partners' }) {
   const [businessPartners, setBusinessPartners] = useState([])
   const scrollRef = useRef(null)
-  const hasSinglePartner = businessPartners.length + HOME_PARTNERS.length === 1
+  const rotationOffset = useTimedRotationBucket(BUSINESS_ROTATION_INTERVAL_MS)
+  const partnerCards = useMemo(() => {
+    const dynamicCards = businessPartners.map(partner => ({
+      id:`business:${partner.id}`,
+      type:'business',
+      planKey:partner.planKey,
+      partner,
+    }))
+    const editorialCards = HOME_PARTNERS.map(partner => ({
+      id:`editorial:${partner.id}`,
+      type:'editorial',
+      planKey:'premium',
+      partner,
+    }))
+    const premiumCards = [
+      ...dynamicCards.filter(card => card.planKey === 'premium'),
+      ...editorialCards,
+    ]
+    const basicCards = dynamicCards.filter(card => card.planKey !== 'premium')
+
+    return [
+      ...rotateItems(premiumCards, rotationOffset),
+      ...rotateItems(basicCards, rotationOffset),
+    ]
+  }, [businessPartners, rotationOffset])
+  const hasSinglePartner = partnerCards.length === 1
 
   useEffect(() => {
     let cancelled = false
@@ -62,7 +90,7 @@ export default function PartnersSection({ placement = 'app_home_partners' }) {
   useEffect(() => {
     if (!scrollRef.current) return
     scrollRef.current.scrollLeft = 0
-  }, [businessPartners.length])
+  }, [businessPartners.length, rotationOffset])
 
   return (
     <section className="home-partners-section" aria-labelledby="home-partners-title">
@@ -76,14 +104,15 @@ export default function PartnersSection({ placement = 'app_home_partners' }) {
       <div style={{ maxWidth:1200, margin:'0 auto' }}>
         <div ref={scrollRef} className={`home-partners-scroll no-scroll${hasSinglePartner ? ' home-partners-scroll--single' : ''}`}>
           <div className="home-partners-track">
-            {businessPartners.map(partner => (
-              <DynamicBusinessPartnerCard
-                key={partner.id}
-                partner={partner}
-                placement={`${placement}_business_${partner.id}`}
-              />
+            {partnerCards.map(card => (
+              card.type === 'business' ? (
+                <DynamicBusinessPartnerCard
+                  key={card.id}
+                  partner={card.partner}
+                  placement={`${placement}_business_${card.partner.id}`}
+                />
+              ) : card.partner.render(`${placement}_${card.partner.id}`)
             ))}
-            {HOME_PARTNERS.map(partner => partner.render(`${placement}_${partner.id}`))}
           </div>
         </div>
       </div>
