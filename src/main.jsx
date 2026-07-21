@@ -299,11 +299,51 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 )
 
 // PWA service worker
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js', { updateViaCache:'none' })
-      .then(registration => registration.update().catch(() => {}))
-      .catch(console.error)
+function registerProductionServiceWorker() {
+  if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return
+
+  const hadControllerAtBoot = Boolean(navigator.serviceWorker.controller)
+  const reloadKey = 'latido-sw-update-reload-at'
+  const updateCheckInterval = 5 * 60 * 1000
+  let registration = null
+  let lastUpdateCheckAt = 0
+  let reloading = false
+
+  function reloadForUpdate() {
+    if (!hadControllerAtBoot || reloading) return
+
+    const lastReloadAt = Number(sessionStorage.getItem(reloadKey) || 0)
+    if (lastReloadAt && Date.now() - lastReloadAt < 15_000) return
+
+    reloading = true
+    sessionStorage.setItem(reloadKey, String(Date.now()))
+    window.location.reload()
+  }
+
+  async function checkForUpdate(force = false) {
+    if (!registration || document.visibilityState === 'hidden') return
+
+    const now = Date.now()
+    if (!force && now - lastUpdateCheckAt < updateCheckInterval) return
+    lastUpdateCheckAt = now
+    await registration.update().catch(() => {})
+  }
+
+  navigator.serviceWorker.addEventListener('controllerchange', reloadForUpdate)
+
+  window.addEventListener('load', async () => {
+    try {
+      registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache:'none' })
+      await checkForUpdate(true)
+    } catch (error) {
+      console.error(error)
+    }
+  }, { once:true })
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void checkForUpdate()
   })
+  window.addEventListener('pageshow', () => { void checkForUpdate() })
 }
+
+registerProductionServiceWorker()
