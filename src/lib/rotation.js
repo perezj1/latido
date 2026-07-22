@@ -10,6 +10,27 @@ export function rotateItems(items = [], offset = 0) {
   return [...items.slice(normalizedOffset), ...items.slice(0, normalizedOffset)]
 }
 
+export function mixRecentWithOlder(items = [], rotationBucket = 0, getCreatedAt = item => item?.created_at) {
+  if (!Array.isArray(items) || items.length < 3) return items || []
+
+  const sorted = [...items].sort((a, b) => {
+    const aTime = new Date(getCreatedAt(a) || 0).getTime()
+    const bTime = new Date(getCreatedAt(b) || 0).getTime()
+    return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0)
+  })
+  const recentCount = Math.ceil(sorted.length / 2)
+  const recent = sorted.slice(0, recentCount)
+  const older = rotateItems(sorted.slice(recentCount), rotationBucket)
+  const mixed = []
+
+  for (let index = 0; index < recent.length; index += 1) {
+    mixed.push(recent[index])
+    if (older[index]) mixed.push(older[index])
+  }
+
+  return mixed
+}
+
 export function takeNextRotationOffset(key, itemCount) {
   const count = Math.max(0, Number(itemCount) || 0)
   if (count < 2) return 0
