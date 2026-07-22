@@ -15,6 +15,8 @@ import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getThumbnailImageUrl, handleThumbnailImageError } from '../lib/imageVariants'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
+import { mixRecentWithOlder } from '../lib/rotation'
+import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import toast from 'react-hot-toast'
 
 function fmtPrice(price) {
@@ -106,6 +108,7 @@ function persistTablonCache() {
   })
 }
 const CARD_STACK_GAP = 10
+const TABLON_ROTATION_INTERVAL_MS = 6 * 60 * 60 * 1000
 const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
 const LIST_CARD_STYLE = {
   background:'#fff',
@@ -806,6 +809,7 @@ export default function Tablon() {
   const [adReviews, setAdReviews] = useState({})
   const deferredSearch = useDeferredValue(search.trim())
   const searchProfile = useMemo(() => buildSearchProfile(deferredSearch), [deferredSearch])
+  const tablonRotationBucket = useTimedRotationBucket(TABLON_ROTATION_INTERVAL_MS)
 
   const cat      = normalizeAdCat(searchParams.get('cat') || '')
   const type     = searchParams.get('type') || ''
@@ -1183,8 +1187,20 @@ export default function Tablon() {
   }, [ads, canton, deferredSearch, isLoggedIn, jobIntent, jobType, jobs, plz, searchProfile])
 
   const filteredJobs = communityJobs
+  const displayedAds = useMemo(
+    () => deferredSearch
+      ? filteredAds
+      : mixRecentWithOlder(filteredAds, tablonRotationBucket),
+    [deferredSearch, filteredAds, tablonRotationBucket]
+  )
+  const displayedJobs = useMemo(
+    () => deferredSearch
+      ? filteredJobs
+      : mixRecentWithOlder(filteredJobs, tablonRotationBucket),
+    [deferredSearch, filteredJobs, tablonRotationBucket]
+  )
   const tablonItems = useMemo(() => {
-    if (cat) return filteredAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' }))
+    if (cat) return displayedAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' }))
 
     const jobsForCurrentFilters = hasPriceFilter
       ? []
@@ -1194,11 +1210,15 @@ export default function Tablon() {
           : []
         : filteredJobs
 
-    return [
+    const items = [
       ...filteredAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' })),
       ...jobsForCurrentFilters.map(job => ({ kind:'job', item:job, sortDate:job.created_at || '' })),
     ].sort((a, b) => String(b.sortDate).localeCompare(String(a.sortDate)))
-  }, [cat, filteredAds, filteredJobs, hasPriceFilter, type])
+
+    return deferredSearch
+      ? items
+      : mixRecentWithOlder(items, tablonRotationBucket, entry => entry.sortDate)
+  }, [cat, deferredSearch, displayedAds, filteredAds, filteredJobs, hasPriceFilter, tablonRotationBucket, type])
 
   const relatedAdsForSelected = useMemo(() => {
     if (!selectedAd) return []
@@ -1439,7 +1459,7 @@ export default function Tablon() {
               )}
             </div>
           )}
-          {filteredJobs.length === 0 ? (
+          {displayedJobs.length === 0 ? (
             <div style={{ textAlign:'center', padding:'60px 20px' }}>
               <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
               <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
@@ -1450,7 +1470,7 @@ export default function Tablon() {
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>EMPLEOS DE LA COMUNIDAD</p>
               <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
-                {filteredJobs.map(j => (
+                {displayedJobs.map(j => (
                   <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userProfiles.get(j.user_id)?.avatarUrl} authorName={userProfiles.get(j.user_id)?.name} />
                 ))}
                 <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
@@ -1477,10 +1497,10 @@ export default function Tablon() {
               </div>
             )}
           </div>
-          {filteredAds.length > 0 && (
+          {displayedAds.length > 0 && (
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>ANUNCIOS DE LA COMUNIDAD</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{filteredAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userProfiles.get(ad.user_id)?.avatarUrl} reviews={adReviews[ad.id] || []} />)}</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{displayedAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userProfiles.get(ad.user_id)?.avatarUrl} reviews={adReviews[ad.id] || []} />)}</div>
             </>
           )}
         </>
