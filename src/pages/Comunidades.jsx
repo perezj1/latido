@@ -29,9 +29,11 @@ import { getBusinessPath, getEventPath, getIdFromSlug } from '../lib/seo'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import { normalizeExternalUrl } from '../lib/links'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
-import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
+import { BUSINESS_ROTATION_INTERVAL_MS, getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
+import { rotateItems } from '../lib/rotation'
+import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import {
   getBusinessAddress,
   getBusinessPhone,
@@ -194,6 +196,7 @@ const BUSINESS_DIRECTORY_PRIORITY = {
   featured:2,
   free:3,
 }
+const BUSINESS_DIRECTORY_PLAN_ORDER = ['premium', 'basic', 'featured', 'free']
 
 const DIRECTORY_SEARCH_RESULT_TYPES = {
   negocios:['business'],
@@ -1440,6 +1443,7 @@ export default function Comunidades() {
   const [businessRecommendations, setBusinessRecommendations] = useState({})
   const [recommendedBusinessIds, setRecommendedBusinessIds] = useState(() => new Set())
   const [recommendationLoading, setRecommendationLoading] = useState({})
+  const businessDirectoryRotationBucket = useTimedRotationBucket(BUSINESS_ROTATION_INTERVAL_MS)
 
   const handleBusinessReviewsChange = (businessId, updater) => {
     setBusinessReviews(prev => {
@@ -1824,7 +1828,7 @@ export default function Comunidades() {
       .filter(item => item.searchScore > 0)
     : exactBusinessMatches
 
-  const filteredNeg = businessMatches
+  const baseOrderedBusinesses = businessMatches
     .sort((a, b) => {
       const planDiff = getDirectoryBusinessPriority(a.business) - getDirectoryBusinessPriority(b.business)
       if (planDiff) return planDiff
@@ -1836,6 +1840,12 @@ export default function Comunidades() {
       return String(b.business.created_at || '').localeCompare(String(a.business.created_at || ''))
     })
     .map(item => item.business)
+  const filteredNeg = BUSINESS_DIRECTORY_PLAN_ORDER.flatMap(plan =>
+    rotateItems(
+      baseOrderedBusinesses.filter(business => getDirectoryBusinessPlan(business) === plan),
+      businessDirectoryRotationBucket,
+    )
+  )
 
   const filteredEvents = events.filter(event =>
     (!eventType || event.type === eventType) &&
