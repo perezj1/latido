@@ -1,5 +1,6 @@
 const HOUR_MS = 60 * 60 * 1000
 const NEW_FREE_BUSINESS_WINDOW_MS = 72 * HOUR_MS
+export const BUSINESS_ROTATION_INTERVAL_MS = 6 * HOUR_MS
 
 // TEMPORAL: planes y extras de pago ocultos hasta el lunes 6 de julio de 2026.
 // Para reactivarlos, cambiar a true. No borrar el código de planes/checkout.
