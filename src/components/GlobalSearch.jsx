@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent, trackSearchEvent } from '../lib/analytics'
+import { createSearchAttemptId, rememberSearchResultForResolution } from '../lib/searchResolution'
 import { C, PP } from '../lib/theme'
 import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
@@ -1010,6 +1011,8 @@ export default function GlobalSearch({
   const blurCloseTimerRef = useRef(null)
   const assistantRequestRef = useRef(0)
   const assistantRpcUnavailableRef = useRef(false)
+  const searchAttemptRef = useRef({ key:'', id:'' })
+  const trackedSearchAttemptsRef = useRef(new Set())
   const searchFilterKey = `${searchFilters.category || ''}|${searchFilters.canton || ''}|${searchFilters.location || ''}|${searchFilters.intent || ''}`
 
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
@@ -1105,6 +1108,67 @@ export default function GlobalSearch({
   const highlightTokens = currentSearchProfile.tokens
   const assistantCriteria = assistantQuery?.criteria || []
   const assistantLoading = assistantRpc.status === 'loading'
+  const assistantMetadata = useMemo(() => assistantQuery?.active ? {
+    intent:assistantQuery.scope?.id || 'unknown',
+    category:assistantQuery.category || null,
+    canton:assistantQuery.canton || null,
+    municipality:assistantQuery.municipality || null,
+    postal_code:assistantQuery.postalCode || null,
+    price_min:assistantQuery.priceMin,
+    price_max:assistantQuery.priceMax,
+    rooms_min:assistantQuery.roomsMin,
+    available_on:assistantQuery.dateFrom || null,
+    spanish_required:assistantQuery.spanishRequired,
+    german_level:assistantQuery.germanLevel || null,
+    confidence:assistantQuery.confidence,
+  } : null, [assistantQuery])
+
+  const getSearchAttemptId = useCallback(query => {
+    const attemptKey = [
+      String(query || '').trim().toLowerCase(),
+      assistantMode ? 'pregunta_latido' : analyticsScope,
+      searchFilterKey,
+      activeFilter || '',
+    ].join('|')
+
+    if (searchAttemptRef.current.key !== attemptKey) {
+      searchAttemptRef.current = {
+        key:attemptKey,
+        id:createSearchAttemptId(),
+      }
+    }
+    return searchAttemptRef.current.id
+  }, [activeFilter, analyticsScope, assistantMode, searchFilterKey])
+
+  const trackCurrentSearch = useCallback((query, searchAttemptId) => {
+    if (!searchAttemptId || trackedSearchAttemptsRef.current.has(searchAttemptId)) return
+    trackedSearchAttemptsRef.current.add(searchAttemptId)
+
+    trackSearchEvent({
+      query,
+      scope:assistantMode ? 'pregunta_latido' : analyticsScope,
+      user_id:user?.id || null,
+      metadata:{
+        search_attempt_id:searchAttemptId,
+        results_count:resultPool.length,
+        active_filter:activeFilter || null,
+        search_filters:searchFilters,
+        assistant:assistantMetadata,
+      },
+    })
+
+    if (assistantMode && assistantMetadata) {
+      trackAnalyticsEvent(resultPool.length ? 'natural_search' : 'natural_search_no_results', {
+        user_id:user?.id || null,
+        metadata:{
+          search_attempt_id:searchAttemptId,
+          query:query.slice(0, 120),
+          result_count:resultPool.length,
+          ...assistantMetadata,
+        },
+      })
+    }
+  }, [activeFilter, analyticsScope, assistantMetadata, assistantMode, resultPool.length, searchFilters, user?.id])
 
   const ph = placeholder || (size === 'lg'
     ? (assistantMode ? 'Ej.: piso en Zürich hasta 3.000 CHF' : 'Encuentra lo que buscas')
@@ -1304,6 +1368,12 @@ export default function GlobalSearch({
   }, [searchFilterKey])
 
   useEffect(() => {
+    if (q.trim().length < 2) {
+      searchAttemptRef.current = { key:'', id:'' }
+    }
+  }, [q])
+
+  useEffect(() => {
     if (focused || deferredQuery.trim().length >= 2) {
       ensureDataLoaded()
     }
@@ -1332,45 +1402,12 @@ export default function GlobalSearch({
     if (query.length < 2) return undefined
 
     const timer = window.setTimeout(() => {
-      const assistantMetadata = assistantQuery?.active ? {
-        intent:assistantQuery.scope?.id || 'unknown',
-        category:assistantQuery.category || null,
-        canton:assistantQuery.canton || null,
-        municipality:assistantQuery.municipality || null,
-        postal_code:assistantQuery.postalCode || null,
-        price_min:assistantQuery.priceMin,
-        price_max:assistantQuery.priceMax,
-        rooms_min:assistantQuery.roomsMin,
-        available_on:assistantQuery.dateFrom || null,
-        spanish_required:assistantQuery.spanishRequired,
-        german_level:assistantQuery.germanLevel || null,
-        confidence:assistantQuery.confidence,
-      } : null
-      trackSearchEvent({
-        query,
-        scope: assistantMode ? 'pregunta_latido' : analyticsScope,
-        user_id: user?.id || null,
-        metadata: {
-          results_count: resultPool.length,
-          active_filter: activeFilter || null,
-          search_filters:searchFilters,
-          assistant:assistantMetadata,
-        },
-      })
-      if (assistantMode && assistantMetadata) {
-        trackAnalyticsEvent(resultPool.length ? 'natural_search' : 'natural_search_no_results', {
-          user_id:user?.id || null,
-          metadata:{
-            query:query.slice(0, 120),
-            result_count:resultPool.length,
-            ...assistantMetadata,
-          },
-        })
-      }
+      const searchAttemptId = getSearchAttemptId(query)
+      trackCurrentSearch(query, searchAttemptId)
     }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [activeFilter, analyticsScope, assistantMode, assistantQuery, isAdmin, q, resultPool.length, searchFilterKey, user?.id])
+  }, [getSearchAttemptId, isAdmin, q, trackCurrentSearch])
 
   const goTo = target => {
     const result = typeof target === 'string' ? null : target
@@ -1378,9 +1415,12 @@ export default function GlobalSearch({
     const query = q.trim()
 
     if (!isAdmin && result && query.length >= 2) {
+      const searchAttemptId = getSearchAttemptId(query)
+      trackCurrentSearch(query, searchAttemptId)
       trackAnalyticsEvent('search_result_open', {
         user_id: user?.id || null,
         metadata: {
+          search_attempt_id: searchAttemptId,
           query: query.slice(0, 120),
           result_type: result.type || '',
           result_id: result.id || '',
@@ -1388,6 +1428,16 @@ export default function GlobalSearch({
           search_filters:searchFilters,
           href,
         },
+      })
+
+      rememberSearchResultForResolution({
+        search_attempt_id:searchAttemptId,
+        query,
+        result_id:result.id || '',
+        result_type:result.type || '',
+        result_label:result.label || '',
+        result_href:href,
+        source_path:`${window.location.pathname}${window.location.search}`,
       })
     }
 

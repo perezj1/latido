@@ -24,6 +24,7 @@ import Header from './components/Header'
 import Seo from './components/Seo'
 import CookieConsent from './components/CookieConsent'
 import OfflineNotice from './components/OfflineNotice'
+import SearchResolutionPrompt from './components/SearchResolutionPrompt'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
@@ -706,6 +707,7 @@ export default function App() {
         <Routes>
           <Route path="/*" element={<LazyRouteErrorBoundary><AppShell /></LazyRouteErrorBoundary>} />
         </Routes>
+        <SearchResolutionPrompt />
         <VercelTelemetry />
       </BrowserRouter>
     </AuthProvider>
