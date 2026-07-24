@@ -2,6 +2,10 @@ const VARIANT_MARKER = /-(detail|thumb)(\.[a-z0-9]{2,5})$/i
 
 const IMAGE_URL_REPLACEMENTS = new Map([
   [
+    'https://images.unsplash.com/photo-1571266028243-3716f02d2d50?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
+  ],
+  [
     'https://el-rincon-argentino.ch/images/s2dlogo.jpg',
     'https://img.restaurantguru.com/w550/h367/r18b-El-Rincon-Argentino-design-2024-12-3.jpg',
   ],
@@ -76,10 +80,32 @@ export function getDetailImageUrl(rawUrl) {
   return getImageVariantUrl(rawUrl, 'detail')
 }
 
-export function handleThumbnailImageError(event, originalUrl) {
+export function handleThumbnailImageError(event, originalUrl, fallbackUrl = '/favicon.svg') {
   const image = event?.currentTarget
-  if (!image || !originalUrl || image.dataset.originalFallbackApplied === 'true') return
+  if (!image) return
 
-  image.dataset.originalFallbackApplied = 'true'
-  image.src = resolveImageUrl(originalUrl)
+  const resolvedOriginal = resolveImageUrl(originalUrl)
+  const absoluteOriginal = resolvedOriginal
+    ? new URL(resolvedOriginal, document.baseURI).href
+    : ''
+  const currentUrl = image.currentSrc || image.src
+
+  if (
+    resolvedOriginal
+    && image.dataset.originalFallbackApplied !== 'true'
+    && currentUrl !== absoluteOriginal
+  ) {
+    image.dataset.originalFallbackApplied = 'true'
+    image.src = resolvedOriginal
+    return
+  }
+
+  if (fallbackUrl && image.dataset.genericFallbackApplied !== 'true') {
+    image.dataset.genericFallbackApplied = 'true'
+    image.src = fallbackUrl
+    image.style.objectFit = 'contain'
+    return
+  }
+
+  image.style.display = 'none'
 }

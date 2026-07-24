@@ -593,6 +593,7 @@ export default function Perfil() {
   const [savingConfig, setSavingConfig] = useState(false)
   const [showConfigNewPassword, setShowConfigNewPassword] = useState(false)
   const [showConfigConfirmPassword, setShowConfigConfirmPassword] = useState(false)
+  const configInterestsRef = useRef(null)
 
   // favorites
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
@@ -1297,6 +1298,17 @@ export default function Perfil() {
     if (params.get('editar') !== 'intereses') return
     openConfig()
   }, [location.search])
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (!configOpen || params.get('editar') !== 'intereses') return
+
+    const timer = window.setTimeout(() => {
+      configInterestsRef.current?.scrollIntoView({ behavior:'smooth', block:'start' })
+      configInterestsRef.current?.querySelector('button')?.focus({ preventScroll:true })
+    }, 80)
+    return () => window.clearTimeout(timer)
+  }, [configOpen, location.search])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -2314,7 +2326,7 @@ export default function Perfil() {
           {CANTONS.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}
         </Select>
 
-        <div style={{ margin:'18px 0 6px' }}>
+        <div ref={configInterestsRef} style={{ margin:'18px 0 6px', scrollMarginTop:18 }}>
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px' }}>Tus intereses</p>
           <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 10px', lineHeight:1.5 }}>
             Elige hasta tres. Mi Latido personaliza el orden sin ocultar el resto del contenido.
