@@ -1432,6 +1432,12 @@ export default function Comunidades() {
   const [events, setEvents] = useState(() => comunidadesCache.data?.events ?? MOCK_EVENTOS_LATINOS)
   const [loading, setLoading] = useState(!comunidadesCache.data)
   const [search, setSearch] = useState('')
+  const [resolvedSearch, setResolvedSearch] = useState({
+    active:false,
+    ready:false,
+    query:'',
+    results:[],
+  })
   const [cat, setCat] = useState(() => searchParams.get('cat') || '')
   const [negType, setNegType] = useState('')
   const [eventType, setEventType] = useState('')
@@ -1788,18 +1794,42 @@ export default function Comunidades() {
 
   const searchProfile = useMemo(() => buildSearchProfile(search), [search])
   const hasSearch = searchProfile.normalized.length >= 2
-
-  const filteredComm = communities.filter(group =>
-    (!cat || group.cat === cat) &&
-    (!locationFilter || group.city === locationFilter) &&
-    (!hasSearch || scoreSearchFields(searchProfile, [
-      { value:group.name, weight:6 },
-      { value:group.desc, weight:4 },
-      { value:getCommunityMeta(group.cat)?.label, weight:3 },
-      { value:group.city, weight:2 },
-      { value:'grupo comunidad', weight:1 },
-    ]))
+  const hasResolvedSearch = Boolean(
+    hasSearch
+    && resolvedSearch.active
+    && resolvedSearch.ready
+    && resolvedSearch.query === search.trim()
   )
+  const resolvedSearchRank = useMemo(() => {
+    const ranks = new Map()
+    ;(resolvedSearch.results || []).forEach((result, index) => {
+      ranks.set(`${result.type}:${result.id}`, index)
+    })
+    return ranks
+  }, [resolvedSearch.results])
+
+  const filteredComm = communities
+    .filter(group =>
+      (!cat || group.cat === cat) &&
+      (!locationFilter || group.city === locationFilter) &&
+      (!hasSearch || (
+        hasResolvedSearch
+          ? resolvedSearchRank.has(`community:${group.id}`)
+          : scoreSearchFields(searchProfile, [
+            { value:group.name, weight:6 },
+            { value:group.desc, weight:4 },
+            { value:getCommunityMeta(group.cat)?.label, weight:3 },
+            { value:group.city, weight:2 },
+            { value:'grupo comunidad', weight:1 },
+          ])
+      ))
+    )
+    .sort((a, b) => hasResolvedSearch
+      ? (
+        (resolvedSearchRank.get(`community:${a.id}`) ?? Number.MAX_SAFE_INTEGER)
+        - (resolvedSearchRank.get(`community:${b.id}`) ?? Number.MAX_SAFE_INTEGER)
+      )
+      : 0)
 
   const eligibleBusinesses = businesses.filter(business =>
     business.type !== 'empleo' && business.type !== 'vivienda' &&
@@ -1815,11 +1845,19 @@ export default function Comunidades() {
     { value:business.city, weight:2 },
   ]
   const exactBusinessMatches = hasSearch
-    ? eligibleBusinesses
-      .map(business => ({ business, searchScore:scoreSearchFields(searchProfile, getBusinessSearchFields(business)) }))
-      .filter(item => item.searchScore > 0)
+    ? hasResolvedSearch
+      ? eligibleBusinesses
+        .filter(business => resolvedSearchRank.has(`business:${business.id}`))
+        .map(business => ({
+          business,
+          searchScore:(resolvedSearch.results.length + 1)
+            - resolvedSearchRank.get(`business:${business.id}`),
+        }))
+      : eligibleBusinesses
+        .map(business => ({ business, searchScore:scoreSearchFields(searchProfile, getBusinessSearchFields(business)) }))
+        .filter(item => item.searchScore > 0)
     : eligibleBusinesses.map(business => ({ business, searchScore:0 }))
-  const businessMatches = hasSearch && exactBusinessMatches.length === 0
+  const businessMatches = hasSearch && !hasResolvedSearch && exactBusinessMatches.length === 0
     ? eligibleBusinesses
       .map(business => ({
         business,
@@ -1840,12 +1878,14 @@ export default function Comunidades() {
       return String(b.business.created_at || '').localeCompare(String(a.business.created_at || ''))
     })
     .map(item => item.business)
-  const filteredNeg = BUSINESS_DIRECTORY_PLAN_ORDER.flatMap(plan =>
-    rotateItems(
-      baseOrderedBusinesses.filter(business => getDirectoryBusinessPlan(business) === plan),
-      businessDirectoryRotationBucket,
+  const filteredNeg = hasSearch
+    ? baseOrderedBusinesses
+    : BUSINESS_DIRECTORY_PLAN_ORDER.flatMap(plan =>
+      rotateItems(
+        baseOrderedBusinesses.filter(business => getDirectoryBusinessPlan(business) === plan),
+        businessDirectoryRotationBucket,
+      )
     )
-  )
 
   const filteredEvents = events.filter(event =>
     (!eventType || event.type === eventType) &&
@@ -1951,7 +1991,9 @@ export default function Comunidades() {
               onValueChange={setSearch}
               resultTypes={DIRECTORY_SEARCH_RESULT_TYPES[tab]}
               analyticsScope={tab === 'comunidades' ? 'comunidad_grupos' : 'comunidad_negocios'}
+              assistantMode
               showResultsDropdown={false}
+              onResolvedResultsChange={setResolvedSearch}
               searchFilters={{
                 category:tab === 'comunidades' ? cat : negType,
                 canton:tab === 'negocios' ? locationFilter : '',

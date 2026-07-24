@@ -404,6 +404,7 @@ function normalizeCommunity(group) {
     city: group.city || 'Suiza',
     members: group.members || 0,
     emoji: group.emoji || '👥',
+    rawCategory:group.cat || '',
     category: group.cat === 'mamas' ? 'familia' : (group.cat || ''),
     desc: group.desc || group.description || '',
     image: group.photo_url || '',
@@ -737,7 +738,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
         sub:['Grupo', group.city, `${group.members} miembros`].filter(Boolean).join(metaSeparator),
         href:`/comunidades?openCommunity=${encodeURIComponent(group.id)}`,
         filterMeta:{
-          categories:['grupos', group.category].filter(Boolean),
+          categories:['grupos', group.rawCategory, group.category].filter(Boolean),
           location:group.city,
         },
         searchScore,
@@ -997,6 +998,7 @@ export default function GlobalSearch({
   showResultsDropdown = true,
   searchFilters = EMPTY_SEARCH_FILTERS,
   onSearchFiltersChange,
+  onResolvedResultsChange,
   filtersContent = null,
   endContent = null,
   assistantMode = false,
@@ -1019,7 +1021,6 @@ export default function GlobalSearch({
   const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
   const [loadingData, setLoadingData] = useState(false)
   const [internalQuery, setInternalQuery] = useState('')
-  const [results, setResults] = useState([])
   const [focused, setFocused] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
   const [activeFilter, setActiveFilter] = useState(null)
@@ -1030,9 +1031,10 @@ export default function GlobalSearch({
     setInternalQuery(nextQuery)
     onValueChange?.(nextQuery)
   }, [onValueChange])
+  const resultTypesKey = Array.isArray(resultTypes) ? resultTypes.join('|') : ''
   const allowedResultTypes = useMemo(
-    () => Array.isArray(resultTypes) && resultTypes.length ? new Set(resultTypes) : null,
-    [resultTypes]
+    () => resultTypesKey ? new Set(resultTypesKey.split('|')) : null,
+    [resultTypesKey]
   )
   const hasPageScope = !!allowedResultTypes
 
@@ -1043,6 +1045,19 @@ export default function GlobalSearch({
     [assistantMode, deferredQuery]
   )
   const accessLevel = getCacheKey(isLoggedIn)
+  const searchDatasets = assistantRpc.status === 'ready' && assistantRpc.datasets
+    ? assistantRpc.datasets
+    : (dataReady ? datasets : fallbackDatasets)
+  const results = useMemo(
+    () => searchAll(
+      deferredQuery,
+      searchDatasets,
+      isLoggedIn,
+      hasActiveSearchFilters(searchFilters),
+      assistantQuery,
+    ),
+    [assistantQuery, deferredQuery, isLoggedIn, searchDatasets, searchFilterKey]
+  )
 
   const searchFilteredResults = useMemo(
     () => results.filter(result => (
@@ -1122,11 +1137,14 @@ export default function GlobalSearch({
     german_level:assistantQuery.germanLevel || null,
     confidence:assistantQuery.confidence,
   } : null, [assistantQuery])
+  const resolvedAnalyticsScope = assistantMode && !hasPageScope
+    ? 'pregunta_latido'
+    : analyticsScope
 
   const getSearchAttemptId = useCallback(query => {
     const attemptKey = [
       String(query || '').trim().toLowerCase(),
-      assistantMode ? 'pregunta_latido' : analyticsScope,
+      resolvedAnalyticsScope,
       searchFilterKey,
       activeFilter || '',
     ].join('|')
@@ -1138,7 +1156,7 @@ export default function GlobalSearch({
       }
     }
     return searchAttemptRef.current.id
-  }, [activeFilter, analyticsScope, assistantMode, searchFilterKey])
+  }, [activeFilter, resolvedAnalyticsScope, searchFilterKey])
 
   const trackCurrentSearch = useCallback((query, searchAttemptId) => {
     if (!searchAttemptId || trackedSearchAttemptsRef.current.has(searchAttemptId)) return
@@ -1146,7 +1164,7 @@ export default function GlobalSearch({
 
     trackSearchEvent({
       query,
-      scope:assistantMode ? 'pregunta_latido' : analyticsScope,
+      scope:resolvedAnalyticsScope,
       user_id:user?.id || null,
       metadata:{
         search_attempt_id:searchAttemptId,
@@ -1168,7 +1186,7 @@ export default function GlobalSearch({
         },
       })
     }
-  }, [activeFilter, analyticsScope, assistantMetadata, assistantMode, resultPool.length, searchFilters, user?.id])
+  }, [activeFilter, assistantMetadata, assistantMode, resolvedAnalyticsScope, resultPool.length, searchFilters, user?.id])
 
   const ph = placeholder || (size === 'lg'
     ? (assistantMode ? 'Ej.: piso en Zürich hasta 3.000 CHF' : 'Encuentra lo que buscas')
@@ -1380,20 +1398,35 @@ export default function GlobalSearch({
   }, [deferredQuery, ensureDataLoaded, focused])
 
   useEffect(() => {
-    const baseDatasets = assistantRpc.status === 'ready' && assistantRpc.datasets
-      ? assistantRpc.datasets
-      : (dataReady ? datasets : fallbackDatasets)
-    setResults(searchAll(
-      deferredQuery,
-      baseDatasets,
-      isLoggedIn,
-      hasSearchFilters,
-      assistantQuery,
-    ))
     setActiveIdx(-1)
     setActiveFilter(null)
     setExpandedResults(false)
-  }, [assistantQuery, assistantRpc, dataReady, datasets, deferredQuery, fallbackDatasets, hasSearchFilters, isLoggedIn, searchFilterKey])
+  }, [deferredQuery, searchFilterKey])
+
+  useEffect(() => {
+    if (!onResolvedResultsChange) return
+
+    const normalizedQuery = deferredQuery.trim()
+    const active = normalizedQuery.length >= 2 || hasSearchFilters
+    onResolvedResultsChange({
+      active,
+      ready:dataReady || assistantRpc.status === 'ready',
+      loading:loadingData || assistantLoading,
+      query:normalizedQuery,
+      results:active ? resultPool : [],
+      assistant:assistantMetadata,
+    })
+  }, [
+    assistantLoading,
+    assistantMetadata,
+    assistantRpc.status,
+    dataReady,
+    deferredQuery,
+    hasSearchFilters,
+    loadingData,
+    onResolvedResultsChange,
+    resultPool,
+  ])
 
   useEffect(() => {
     if (isAdmin) return undefined
@@ -1533,7 +1566,9 @@ export default function GlobalSearch({
             onBlur={handleBlur}
             onKeyDown={handleKey}
             autoComplete="off"
-            aria-label={assistantMode ? 'Pregunta a Latido' : (hasPageScope ? 'Buscar en esta sección' : 'Buscar en Latido')}
+            aria-label={assistantMode && !hasPageScope
+              ? 'Pregunta a Latido'
+              : (hasPageScope ? 'Buscar en esta sección' : 'Buscar en Latido')}
           />
           {q && (
             <button onMouseDown={e => e.preventDefault()} onClick={clearSearch} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:C.border, border:'none', borderRadius:'50%', width:20, height:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:C.mid }}>
