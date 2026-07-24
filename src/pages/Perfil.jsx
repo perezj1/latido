@@ -15,6 +15,7 @@ import { normalizeExternalUrl } from '../lib/links'
 import { getBusinessPromotionMeta, isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
 import { canUseWhatsappNumber } from '../lib/businessContact'
+import { INTEREST_OPTIONS, normalizeInterestIds } from '../lib/interests'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -548,7 +549,7 @@ function loadAlertSettings() {
 }
 
 export default function Perfil() {
-  const { isLoggedIn, displayName, userCanton, user, signOut, avatarUrl, updateAvatar, isAdmin } = useAuth()
+  const { isLoggedIn, displayName, userCanton, userInterests, user, signOut, avatarUrl, updateAvatar, isAdmin } = useAuth()
   const { isPWA, canInstall, promptInstall } = usePWA()
   const navigate = useNavigate()
   const location = useLocation()
@@ -1168,10 +1169,26 @@ export default function Perfil() {
   }
 
   const openConfig = () => {
-    setConfigForm({ name: displayName, canton: userCanton, newPassword:'', confirmPassword:'' })
+    setConfigForm({ name: displayName, canton: userCanton, interests:userInterests.slice(0, 3), newPassword:'', confirmPassword:'' })
     setShowConfigNewPassword(false)
     setShowConfigConfirmPassword(false)
     setConfigOpen(true)
+  }
+
+  const toggleConfigInterest = interest => {
+    setConfigForm(prev => {
+      const current = normalizeInterestIds(prev.interests)
+      if (!current.includes(interest) && current.length >= 3) {
+        toast('Puedes elegir hasta tres intereses.')
+        return prev
+      }
+      return {
+        ...prev,
+        interests:current.includes(interest)
+          ? current.filter(item => item !== interest)
+          : [...current, interest],
+      }
+    })
   }
 
   const handleSaveConfig = async () => {
@@ -1180,8 +1197,12 @@ export default function Perfil() {
       const meta = {}
       const newName = configForm.name?.trim()
       const nameChanged = newName && newName !== displayName
+      const cantonChanged = (configForm.canton || '') !== (userCanton || '')
+      const nextInterests = normalizeInterestIds(configForm.interests)
+      const interestsChanged = [...nextInterests].sort().join('|') !== [...userInterests].sort().join('|')
       if (nameChanged) meta.name = newName
-      if (configForm.canton && configForm.canton !== userCanton) meta.canton = configForm.canton
+      if (cantonChanged) meta.canton = configForm.canton || ''
+      if (interestsChanged) meta.interests = nextInterests
       if (Object.keys(meta).length) {
         const { error } = await supabase.auth.updateUser({ data: meta })
         if (error) throw error
@@ -1200,9 +1221,25 @@ export default function Perfil() {
         const { error } = await supabase.auth.updateUser({ password: configForm.newPassword })
         if (error) throw error
       }
+
+      const profileChanges = {}
+      if (nameChanged) profileChanges.name = newName
+      if (cantonChanged) profileChanges.canton = configForm.canton || null
+      if (interestsChanged) profileChanges.interests = nextInterests
+      if (Object.keys(profileChanges).length) {
+        let profileResponse = await supabase.from('profiles').update(profileChanges).eq('id', user.id)
+        if (profileResponse.error && Object.hasOwn(profileChanges, 'interests')) {
+          const compatibleChanges = { ...profileChanges }
+          delete compatibleChanges.interests
+          if (Object.keys(compatibleChanges).length) {
+            profileResponse = await supabase.from('profiles').update(compatibleChanges).eq('id', user.id)
+          }
+        }
+        if (profileResponse.error) console.error('Profile preferences update failed:', profileResponse.error)
+      }
+
       if (nameChanged) {
         await Promise.all([
-          supabase.from('profiles').update({ name: newName }).eq('id', user.id),
           supabase.from('listings').update({ user_name: newName }).eq('user_id', user.id),
           supabase.from('conversations').update({ sender_name: newName }).eq('sender_id', user.id),
           supabase.from('conversations').update({ owner_name: newName }).eq('owner_id', user.id),
@@ -1254,6 +1291,12 @@ export default function Perfil() {
     setProfessionalOpen(false)
     window.setTimeout(() => openEditor(item), 0)
   }
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('editar') !== 'intereses') return
+    openConfig()
+  }, [location.search])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -1690,7 +1733,7 @@ export default function Perfil() {
     {
       title: 'Ajustes',
       items: [
-        { icon:'⚙️', color:'#F1F5F9', label:'Configuración', sub:'Nombre, cantón, idiomas, contraseña', action:openConfig },
+        { icon:'⚙️', color:'#F1F5F9', label:'Configuración', sub:'Nombre, cantón, intereses y contraseña', action:openConfig },
         { icon:'🔗', color:'#F1F5F9', label:'Compartir Latido', sub:'Invita a amigos y familiares a unirse', action:handleShare },
         { icon:'✉️', color:'#F1F5F9', label:'Contactar con Latido', sub:'Preguntas, sugerencias o feedback', action:() => window.location.href = `mailto:info@latido.ch?subject=${encodeURIComponent('Mensaje desde Latido')}` },
       ],
@@ -2270,6 +2313,34 @@ export default function Perfil() {
           <option value="">Seleccionar cantón...</option>
           {CANTONS.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}
         </Select>
+
+        <div style={{ margin:'18px 0 6px' }}>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px' }}>Tus intereses</p>
+          <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 10px', lineHeight:1.5 }}>
+            Elige hasta tres. Mi Latido personaliza el orden sin ocultar el resto del contenido.
+          </p>
+          <p style={{ fontFamily:PP, fontSize:9.5, fontWeight:700, color:C.light, margin:'0 0 8px', letterSpacing:0.45 }}>
+            {normalizeInterestIds(configForm.interests).length}/3 SELECCIONADOS
+          </p>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {INTEREST_OPTIONS.map(option => {
+              const selected = normalizeInterestIds(configForm.interests).includes(option.id)
+              const unavailable = !selected && normalizeInterestIds(configForm.interests).length >= 3
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={selected}
+                  aria-disabled={unavailable}
+                  onClick={() => toggleConfigInterest(option.id)}
+                  style={{ minHeight:42, fontFamily:PP, fontSize:11.5, fontWeight:750, padding:'10px 15px', borderRadius:999, border:`1.5px solid ${selected ? C.primary : C.border}`, background:selected ? C.primary : '#fff', color:selected ? '#fff' : C.mid, cursor:unavailable ? 'not-allowed' : 'pointer', opacity:unavailable ? 0.5 : 1, boxShadow:selected ? '0 5px 12px rgba(37,99,235,0.18)' : '0 2px 6px rgba(15,23,42,0.03)' }}
+                >
+                  {option.emoji} {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
         <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, margin:'16px 0 6px' }}>Cambiar contraseña</p>
         <Input

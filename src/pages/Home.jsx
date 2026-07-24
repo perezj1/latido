@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -8,6 +9,7 @@ import { markAllRead as markAllMessagesRead, markConvRead, useUnreadMessages } f
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import { usePushActivation } from '../hooks/usePushActivation'
+import { useFavorites } from '../hooks/useFavorites'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
@@ -25,6 +27,14 @@ import {
   rotateHomeBusinesses,
 } from '../lib/businessPromotion'
 import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
+import {
+  INTEREST_OPTIONS,
+  buildNearbyFeed,
+  buildPersonalizedFeed,
+  getInterestAffinityIds,
+  recordInterestAffinity,
+  sortRecentFeed,
+} from '../lib/interests'
 import toast from 'react-hot-toast'
 
 const fmtPrice = p => {
@@ -118,6 +128,35 @@ async function fetchHomeProviders() {
   return response
 }
 
+const HOME_FEED_PAGE_SIZE = 500
+
+async function fetchAllHomeFeedRows(table, { publicOnly = false }={}) {
+  const rows = []
+
+  for (let from = 0; ; from += HOME_FEED_PAGE_SIZE) {
+    let query = supabase
+      .from(table)
+      .select('*')
+      .or('active.is.null,active.eq.true')
+      .order('created_at', { ascending:false })
+      .order('id', { ascending:false })
+      .range(from, from + HOME_FEED_PAGE_SIZE - 1)
+
+    if (publicOnly) {
+      query = query.or('privacy.is.null,privacy.eq.public')
+    }
+
+    const response = await query
+    if (response.error) return response
+
+    const page = response.data || []
+    rows.push(...page)
+    if (page.length < HOME_FEED_PAGE_SIZE) {
+      return { data:rows, error:null }
+    }
+  }
+}
+
 function formatTimeAgo(value) {
   if (!value) return 'Ahora'
 
@@ -186,7 +225,11 @@ function SearchFilterSelect({ label, value, options, onChange, flex = 1 }) {
 }
 
 const HOME_CACHE_TTL = 5 * 60 * 1000
-const HOME_RECENT_ITEM_LIMIT = 18
+const MY_LATIDO_MODES = [
+  { id:'for-you', label:'Recomendado' },
+  { id:'nearby', label:'Cerca de ti' },
+  { id:'recent', label:'Más reciente' },
+]
 const SHOW_HOME_BUSINESS_PROMOTION_TASK = false
 const sanitizeHomeBusinessHighlights = businesses => (businesses || []).map(business => ({
   ...business,
@@ -424,7 +467,7 @@ function makeAttentionItem(kind, row, overrides={}) {
 }
 
 export default function Home() {
-  const { displayName, isLoggedIn, user, userCanton } = useAuth()
+  const { displayName, isLoggedIn, user, userCanton, userInterests } = useAuth()
   const navigate = useNavigate()
   const { alertItems, alertCount } = useZoneAlerts()
   const {
@@ -434,6 +477,7 @@ export default function Home() {
     markAllRead:markAllBusinessLeadAlertsRead,
   } = useBusinessLeadAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
+  const { favorites } = useFavorites()
 
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef(null)
@@ -444,26 +488,87 @@ export default function Home() {
   const [businessPromotionPlans, setBusinessPromotionPlans] = useState(() => homeCache?.businessPromotionPlans || [])
   const [recentJobs, setRecentJobs] = useState(() => homeCache?.recentJobs || [])
   const [recentEvents, setRecentEvents] = useState(() => homeCache?.recentEvents || [])
+  const [latidoMode, setLatidoMode] = useState('for-you')
+  const latidoFeedRef = useRef(null)
   const [attentionTasks, setAttentionTasks] = useState([])
   const [loadingAttention, setLoadingAttention] = useState(false)
   const [expandedAttentionTask, setExpandedAttentionTask] = useState('')
-  const attentionCarouselRef = useRef(null)
-  const [activeAttentionSlide, setActiveAttentionSlide] = useState(0)
+  const [attentionPortalElement, setAttentionPortalElement] = useState(null)
   const [promotableBusinesses, setPromotableBusinesses] = useState([])
   const [businessPromotionModalOpen, setBusinessPromotionModalOpen] = useState(false)
   const [loading, setLoading] = useState(() => !homeCache)
   const [activatingPush, setActivatingPush] = useState(false)
   const [searchFilters, setSearchFilters] = useState({ category:'', canton:'', intent:'' })
+  const [searchFiltersOpen, setSearchFiltersOpen] = useState(false)
+  const searchFiltersOpenedManuallyRef = useRef(false)
   const { needsActivation, refresh: refreshPush } = usePushActivation(user?.id)
   const businessRotationBucket = useTimedRotationBucket(BUSINESS_ROTATION_INTERVAL_MS)
   const [selectedGuide, setSelectedGuide] = useState(null)
   useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
 
-  const hasNotif = alertCount > 0 || hasUnread || businessLeadUnreadCount > 0
+  const hasUnreadNotifications = alertCount > 0 || hasUnread || businessLeadUnreadCount > 0
   const rotatedBusinessHighlights = useMemo(
     () => rotateHomeBusinesses(businessHighlights, businessPromotionPlans),
     [businessHighlights, businessPromotionPlans, businessRotationBucket],
   )
+  const activityInterests = useMemo(() => {
+    const favoriteAdIds = new Set((favorites.ads || []).map(String))
+    const favoriteJobIds = new Set((favorites.jobs || []).map(String))
+    const favoriteCategories = recentAds.flatMap(item => {
+      const id = String(item.id || '')
+      const isFavorite = id.startsWith('job_')
+        ? favoriteJobIds.has(id.slice(4))
+        : favoriteAdIds.has(id)
+      return isFavorite && item.cat ? [item.cat] : []
+    })
+
+    return Array.from(new Set([
+      ...favoriteCategories,
+      ...getInterestAffinityIds(user?.id),
+    ]))
+  }, [favorites.ads, favorites.jobs, recentAds, user?.id])
+  const visibleLatidoItems = useMemo(() => {
+    let items
+    if (latidoMode === 'recent') items = sortRecentFeed(recentAds)
+    else if (latidoMode === 'nearby') items = buildNearbyFeed(recentAds, userCanton)
+    else {
+      items = buildPersonalizedFeed(recentAds, {
+        interests:userInterests,
+        canton:userCanton,
+        activityInterests,
+      })
+    }
+    return items
+  }, [activityInterests, latidoMode, recentAds, userCanton, userInterests])
+  useEffect(() => {
+    if (latidoFeedRef.current) latidoFeedRef.current.scrollLeft = 0
+  }, [latidoMode])
+  const personalizedMatchCount = useMemo(() => {
+    if (!userInterests.length) return 0
+    const interestSet = new Set(userInterests)
+    return recentAds.filter(item => interestSet.has(item.cat)).length
+  }, [recentAds, userInterests])
+  const selectedInterestNames = useMemo(() => {
+    const selected = new Set(userInterests)
+    return INTEREST_OPTIONS
+      .filter(option => selected.has(option.id))
+      .map(option => option.label)
+      .join(', ')
+  }, [userInterests])
+  const latidoDescription = useMemo(() => {
+    if (latidoMode === 'recent') return 'Todo el contenido, ordenado por fecha.'
+    if (latidoMode === 'nearby') {
+      return userCanton
+        ? `Primero el cantón ${userCanton}; después el resto de Suiza.`
+        : 'Añade tu cantón en el perfil para ordenar por cercanía.'
+    }
+    if (userInterests.length && personalizedMatchCount === 0) {
+      return `Aún no hay publicaciones de ${selectedInterestNames}; te mostramos opciones cercanas.`
+    }
+    if (userInterests.length) return 'Primero todo lo que coincide con tus intereses; después, el resto sigue disponible.'
+    if (userCanton || activityInterests.length) return 'Recomendaciones por interés, actividad y cercanía.'
+    return 'Elige tus intereses y tu cantón en el perfil para personalizar esta selección.'
+  }, [activityInterests.length, latidoMode, personalizedMatchCount, selectedInterestNames, userCanton, userInterests.length])
   const featuredPromotionAvailability = useMemo(() => {
     const featuredPlan = businessPromotionPlans.find(plan =>
       (plan.plan_key || plan.key) === 'featured'
@@ -516,46 +621,7 @@ export default function Home() {
     })),
   ]
   const showAttentionSection = attentionCarouselCards.length > 0
-  const attentionCarouselCardIds = attentionCarouselCards.map(card => card.id).join('|')
-  const expandedAttentionTaskVisible = !expandedAttentionTask
-    || attentionCarouselCards.some(card => card.id === expandedAttentionTask)
-
-  const updateAttentionSlideFromScroll = useCallback(() => {
-    const scroller = attentionCarouselRef.current
-    if (!scroller) return
-
-    const scrollerLeft = scroller.getBoundingClientRect().left
-    const slides = Array.from(scroller.children)
-    let nextIndex = 0
-    let closestDistance = Number.POSITIVE_INFINITY
-
-    slides.forEach((slide, index) => {
-      const distance = Math.abs(slide.getBoundingClientRect().left - scrollerLeft)
-      if (distance < closestDistance) {
-        closestDistance = distance
-        nextIndex = index
-      }
-    })
-
-    setActiveAttentionSlide(current => current === nextIndex ? current : nextIndex)
-  }, [])
-
-  const scrollAttentionCardTo = useCallback(index => {
-    const scroller = attentionCarouselRef.current
-    const target = scroller?.children?.[index]
-    if (!target) return
-
-    target.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' })
-    setActiveAttentionSlide(index)
-  }, [])
-
-  useEffect(() => {
-    setActiveAttentionSlide(current => Math.min(current, Math.max(attentionCarouselCards.length - 1, 0)))
-
-    if (!expandedAttentionTaskVisible) {
-      setExpandedAttentionTask('')
-    }
-  }, [attentionCarouselCardIds, attentionCarouselCards.length, expandedAttentionTaskVisible])
+  const hasNotificationContent = hasUnreadNotifications || showAttentionSection
 
   async function handleActivatePush() {
     if (activatingPush) return
@@ -598,6 +664,10 @@ export default function Home() {
   const getAdHref = (ad) => String(ad.id).startsWith('job_')
     ? `/tablon?cat=empleo&openJob=${encodeURIComponent(String(ad.id).replace('job_', ''))}`
     : `/tablon?openAd=${encodeURIComponent(ad.id)}`
+  const openLatidoItem = useCallback((ad) => {
+    recordInterestAffinity(ad.cat, user?.id)
+    navigate(getAdHref(ad))
+  }, [navigate, user?.id])
   const getCommunityHref = (group) => `/comunidades?openCommunity=${encodeURIComponent(group.id)}`
   const getBusinessHref = (business) => `/comunidades?view=negocios&openBusiness=${encodeURIComponent(business.id)}`
   const getJobHref = (job) => `/tablon?cat=empleo&openJob=${encodeURIComponent(job.id)}`
@@ -869,13 +939,7 @@ export default function Home() {
   const fetchHomeData = useCallback(async () => {
     try {
       const [adsRes, communitiesRes, providersRes, providerPhotosRes, jobsRes, eventsRes, promotionPlansRes] = await Promise.all([
-        supabase
-          .from('listings')
-          .select('*')
-          .or('active.is.null,active.eq.true')
-          .or('privacy.is.null,privacy.eq.public')
-          .order('created_at', { ascending:false })
-          .limit(HOME_RECENT_ITEM_LIMIT),
+        fetchAllHomeFeedRows('listings', { publicOnly:true }),
 
         fetchHomeCommunities(),
 
@@ -888,12 +952,7 @@ export default function Home() {
           .order('sort_order', { ascending:true })
           .limit(300),
 
-        supabase
-          .from('jobs')
-          .select('*')
-          .or('active.is.null,active.eq.true')
-          .order('created_at', { ascending:false })
-          .limit(HOME_RECENT_ITEM_LIMIT),
+        fetchAllHomeFeedRows('jobs'),
 
         supabase
           .from('events')
@@ -932,6 +991,7 @@ export default function Home() {
         privacy: row.privacy || 'public',
         user: row.user_name || 'Usuario',
         ts: formatTimeAgo(row.created_at),
+        createdAt: row.created_at || '',
         _sort: row.created_at || '',
       }))
 
@@ -946,11 +1006,13 @@ export default function Home() {
           desc: [intent.label, row.company].filter(Boolean).join(' · '),
           img: row.logo_url || '',
           price: row.salary || '',
-          canton: row.city || '',
+          city: row.city || '',
+          canton: row.canton || '',
           plz: '',
           privacy: 'public',
           user: row.company || intent.label,
           ts: formatTimeAgo(row.created_at),
+          createdAt: row.created_at || '',
           _sort: row.created_at || '',
         }
       })
@@ -962,13 +1024,15 @@ export default function Home() {
       }
 
       if (reviewableAdIds.length) {
-        const { data: reviewsData, error: reviewsError } = await supabase
-          .from('listing_reviews')
-          .select('listing_id, stars')
-          .eq('active', true)
-          .in('listing_id', reviewableAdIds)
+        const reviewBatchSize = 100
+        for (let index = 0; index < reviewableAdIds.length; index += reviewBatchSize) {
+          const { data: reviewsData, error: reviewsError } = await supabase
+            .from('listing_reviews')
+            .select('listing_id, stars')
+            .eq('active', true)
+            .in('listing_id', reviewableAdIds.slice(index, index + reviewBatchSize))
 
-        if (!reviewsError && Array.isArray(reviewsData)) {
+          if (reviewsError || !Array.isArray(reviewsData)) continue
           reviewsData.forEach(review => {
             if (!review?.listing_id) return
             adReviewStats[review.listing_id] = [
@@ -992,7 +1056,7 @@ export default function Home() {
       recentItems.sort((a, b) => String(b._sort).localeCompare(String(a._sort)))
 
       const nextRecentAds = []
-      for (const { _sort, ...rest } of recentItems.slice(0, HOME_RECENT_ITEM_LIMIT)) {
+      for (const { _sort, ...rest } of recentItems) {
         nextRecentAds.push(rest)
       }
       setRecentAds(nextRecentAds)
@@ -1182,7 +1246,7 @@ export default function Home() {
                   aria-label="Notificaciones"
                 >
                   🔔
-                  {hasNotif && (
+                  {hasNotificationContent && (
                     <span style={{ position:'absolute', top:7, right:7, width:9, height:9, borderRadius:'50%', background:'#EF4444', border:'2px solid rgba(255,255,255,0.4)' }} />
                   )}
                 </button>
@@ -1195,7 +1259,7 @@ export default function Home() {
                   }}>
                     <div style={{ padding:'14px 16px 10px', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                       <span style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text }}>Notificaciones</span>
-                      {hasNotif ? (
+                      {hasUnreadNotifications ? (
                         <button
                           type="button"
                           onClick={clearAllNotifications}
@@ -1203,12 +1267,25 @@ export default function Home() {
                         >
                           Borrar todas
                         </button>
+                      ) : showAttentionSection ? (
+                        <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary }}>
+                          {attentionCarouselCards.length} {attentionCarouselCards.length === 1 ? 'pendiente' : 'pendientes'}
+                        </span>
                       ) : (
                         <span style={{ fontFamily:PP, fontSize:12, color:C.light }}>Todo al día ✓</span>
                       )}
                     </div>
 
                     <div style={{ overflowY:'auto', flex:1 }}>
+                      {showAttentionSection && (
+                        <section style={{ padding:'10px 14px 8px', borderBottom:`1px solid ${C.borderLight}` }}>
+                          <p style={{ fontFamily:PP, fontWeight:800, fontSize:10.5, color:C.primary, margin:'0 0 7px', letterSpacing:0.55 }}>
+                            NECESITA ATENCIÓN
+                          </p>
+                          <div ref={setAttentionPortalElement} />
+                        </section>
+                      )}
+
                       {/* Messages section */}
                       {hasUnread && (
                         <div style={{ padding:'10px 14px 6px' }}>
@@ -1283,7 +1360,7 @@ export default function Home() {
                         </div>
                       )}
 
-                      {!hasNotif && (
+                      {!hasNotificationContent && (
                         <div style={{ padding:'30px 16px', textAlign:'center' }}>
                           <div style={{ fontSize:36, marginBottom:8 }}>🔔</div>
                           <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>No hay notificaciones nuevas</p>
@@ -1303,8 +1380,77 @@ export default function Home() {
               placeholder="Ej.: busco piso en Zürich hasta 3.000 CHF"
               searchFilters={searchFilters}
               onSearchFiltersChange={setSearchFilters}
-              filtersContent={(
-                <div className="no-scroll" role="group" aria-label="Filtros de búsqueda" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:8 }}>
+              onValueChange={nextQuery => {
+                const normalizedQuery = nextQuery.trim()
+                if (normalizedQuery.length >= 2) {
+                  setSearchFiltersOpen(true)
+                } else if (!normalizedQuery && !searchFiltersOpenedManuallyRef.current) {
+                  setSearchFiltersOpen(false)
+                }
+              }}
+              endContent={(
+                <button
+                  type="button"
+                  onClick={() => setSearchFiltersOpen(open => {
+                    const nextOpen = !open
+                    searchFiltersOpenedManuallyRef.current = nextOpen
+                    return nextOpen
+                  })}
+                  aria-expanded={searchFiltersOpen}
+                  aria-controls="home-search-filters"
+                  style={{
+                    height:54,
+                    border:`1.5px solid ${searchFiltersOpen ? '#fff' : 'rgba(255,255,255,0.72)'}`,
+                    borderRadius:17,
+                    padding:'0 13px',
+                    background:searchFiltersOpen ? '#fff' : 'rgba(255,255,255,0.16)',
+                    color:searchFiltersOpen ? C.primaryDark : '#fff',
+                    boxShadow:searchFiltersOpen ? '0 5px 16px rgba(15,23,42,0.14)' : 'none',
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'center',
+                    gap:7,
+                    fontFamily:PP,
+                    fontSize:11,
+                    fontWeight:850,
+                    cursor:'pointer',
+                    flexShrink:0,
+                    transition:'background 180ms ease, color 180ms ease, box-shadow 180ms ease',
+                  }}
+                >
+                  <span aria-hidden="true" style={{ fontSize:15, lineHeight:1 }}>☷</span>
+                  <span>Filtros</span>
+                  {Object.values(searchFilters).some(Boolean) && (
+                    <span
+                      aria-label={`${Object.values(searchFilters).filter(Boolean).length} filtros activos`}
+                      style={{
+                        minWidth:17,
+                        height:17,
+                        padding:'0 4px',
+                        borderRadius:999,
+                        background:searchFiltersOpen ? C.primary : '#fff',
+                        color:searchFiltersOpen ? '#fff' : C.primaryDark,
+                        display:'inline-flex',
+                        alignItems:'center',
+                        justifyContent:'center',
+                        fontSize:9,
+                        fontWeight:900,
+                        boxSizing:'border-box',
+                      }}
+                    >
+                      {Object.values(searchFilters).filter(Boolean).length}
+                    </span>
+                  )}
+                </button>
+              )}
+              filtersContent={searchFiltersOpen ? (
+                <div
+                  id="home-search-filters"
+                  className="no-scroll"
+                  role="group"
+                  aria-label="Filtros de búsqueda"
+                  style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:8 }}
+                >
                   <div style={{ display:'flex', gap:8, width:'100%', minWidth:340 }}>
                     <SearchFilterSelect
                       label="Categoría"
@@ -1331,60 +1477,32 @@ export default function Home() {
                     />
                   </div>
                 </div>
-              )}
+              ) : null}
             />
           </div>
-        </div>
-      </section>
 
-      {showAttentionSection && (
-        <section style={{ background:'#fff', padding:'12px 0 2px' }}>
-          <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, marginBottom:8 }}>
+          {showAttentionSection && notifOpen && attentionPortalElement && createPortal(
+            <section style={{ margin:0, padding:0 }}>
               <div>
-                <p style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, margin:'0 0 3px', textTransform:'uppercase' }}>
-                  Necesita atención
-                </p>
-                <h2 style={{ fontFamily:PP, fontWeight:900, fontSize:18, color:C.text, margin:0 }}>
-                  Tareas pendientes
-                </h2>
-              </div>
-              {attentionCarouselCards.length > 1 && (
-                <span style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:C.primaryDark, whiteSpace:'nowrap' }}>
-                  {Math.min(activeAttentionSlide + 1, attentionCarouselCards.length)}/{attentionCarouselCards.length}
-                </span>
-              )}
-            </div>
-
             <div
-              ref={attentionCarouselRef}
-              className="no-scroll"
-              onScroll={updateAttentionSlideFromScroll}
               style={{
                 display:'flex',
-                gap:10,
-                margin:'0 -16px',
-                padding:'0 16px 12px',
-                overflowX:'auto',
-                scrollBehavior:'smooth',
-                scrollPaddingInline:16,
-                scrollSnapType:'x mandatory',
-                WebkitOverflowScrolling:'touch',
+                flexDirection:'column',
+                gap:6,
               }}
-              aria-roledescription="carrusel"
-              aria-label="Tareas pendientes"
+              aria-label="Necesita atención"
             >
               {isLoggedIn && needsActivation && (
-                <div style={{ flex:'0 0 100%', minWidth:0, scrollSnapAlign:'start', scrollSnapStop:'always', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:16, overflow:'hidden', boxShadow:'0 10px 24px rgba(37, 99, 235, 0.08)' }}>
-                  <div style={{ padding:'13px 14px', display:'flex', gap:12, alignItems:'center' }}>
-                    <span style={{ width:38, height:38, borderRadius:13, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
+                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
+                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
                       🔔
                     </span>
                     <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:2 }}>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         Activa las notificaciones
                       </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.45 }}>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         Recibe respuestas a tus anuncios y novedades en tu zona.
                       </span>
                     </span>
@@ -1394,12 +1512,12 @@ export default function Home() {
                       style={{
                         fontFamily:PP,
                         fontWeight:800,
-                        fontSize:10,
+                        fontSize:9,
                         color:'#fff',
                         background:C.primary,
                         border:'none',
                         borderRadius:999,
-                        padding:'7px 12px',
+                        padding:'6px 9px',
                         flexShrink:0,
                         cursor:activatingPush ? 'default' : 'pointer',
                         opacity:activatingPush ? 0.65 : 1,
@@ -1412,47 +1530,28 @@ export default function Home() {
                 </div>
               )}
               {showBusinessPromotionTask && (
-                <div style={{ flex:'0 0 100%', minWidth:0, scrollSnapAlign:'start', scrollSnapStop:'always', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, overflow:'hidden', boxShadow:'0 10px 24px rgba(37, 99, 235, 0.08)' }}>
-                  <div style={{ padding:'13px 14px', display:'flex', gap:12, alignItems:'center' }}>
-                    <span style={{ width:38, height:38, borderRadius:13, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                <div style={{ width:'100%', minWidth:0, background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
+                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
+                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
                       ✨
                     </span>
                     <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:2 }}>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         Destaca tu negocio
                       </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.45 }}>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         Consigue más visibilidad entre los usuarios de Latido.
                       </span>
                     </span>
                     <button
-                      onClick={() => setBusinessPromotionModalOpen(true)}
-                      style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'7px 12px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
+                      onClick={() => {
+                        closeNotifPanel()
+                        setBusinessPromotionModalOpen(true)
+                      }}
+                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
                     >
                       Destacar
                     </button>
-                  </div>
-                  <div style={{ padding:'0 14px 13px' }}>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:6 }}>
-                      <span style={{ fontFamily:PP, fontSize:9, fontWeight:700, color:C.primaryDark }}>
-                        Disponibles
-                      </span>
-                      <span style={{ fontFamily:PP, fontSize:9, fontWeight:900, color:C.primaryDark }}>
-                        {featuredPromotionAvailability.availableSlots}/{featuredPromotionAvailability.maxActive}
-                      </span>
-                    </div>
-                    <div style={{ height:5, borderRadius:999, background:C.primaryLight, overflow:'hidden' }}>
-                      <div
-                        style={{
-                          width:`${featuredPromotionAvailability.occupiedPercentage}%`,
-                          minWidth:featuredPromotionAvailability.occupiedPercentage > 0 ? 5 : 0,
-                          height:'100%',
-                          borderRadius:999,
-                          background:C.primary,
-                          transition:'width 220ms ease',
-                        }}
-                      />
-                    </div>
                   </div>
                 </div>
               )}
@@ -1466,13 +1565,11 @@ export default function Home() {
                     style={{
                       background: warn ? C.warnLight : C.primaryLight,
                       border:`1px solid ${warn ? C.warnMid : C.primaryMid}`,
-                      flex:'0 0 100%',
+                      width:'100%',
                       minWidth:0,
-                      scrollSnapAlign:'start',
-                      scrollSnapStop:'always',
-                      borderRadius:16,
+                      borderRadius:12,
                       overflow:'hidden',
-                      boxShadow:'0 10px 24px rgba(37, 99, 235, 0.08)',
+                      boxSizing:'border-box',
                     }}
                   >
                     <button
@@ -1482,25 +1579,25 @@ export default function Home() {
                         textAlign:'left',
                         background:'transparent',
                         border:'none',
-                        padding:'13px 14px',
+                        padding:'10px 12px',
                         display:'flex',
-                        gap:12,
+                        gap:10,
                         alignItems:'center',
                         cursor:'pointer',
                       }}
                     >
-                      <span style={{ width:38, height:38, borderRadius:13, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                      <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
                         {task.emoji}
                       </span>
                       <span style={{ minWidth:0, flex:1 }}>
-                        <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                           {task.title}
                         </span>
-                        <span style={{ display:'block', fontFamily:PP, fontSize:11, color:warn ? '#92400E' : C.primaryDark, lineHeight:1.45 }}>
+                        <span style={{ display:'block', fontFamily:PP, fontSize:11, color:warn ? '#92400E' : C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                           {task.text}
                         </span>
                       </span>
-                      <span style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:warn ? '#92400E' : C.primaryDark, background:'#fff', border:`1px solid ${warn ? C.warnMid : C.primaryMid}`, borderRadius:999, padding:'6px 10px', flexShrink:0, minWidth:54, textAlign:'center' }}>
+                      <span style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:warn ? '#92400E' : C.primaryDark, background:'#fff', border:`1px solid ${warn ? C.warnMid : C.primaryMid}`, borderRadius:999, padding:'5px 8px', flexShrink:0, minWidth:45, textAlign:'center' }}>
                         {expanded ? 'Ocultar' : 'Ver'}
                       </span>
                     </button>
@@ -1528,7 +1625,7 @@ export default function Home() {
                                 </span>
                               </span>
                             </div>
-                            <div style={{ display:'grid', gridTemplateColumns:'minmax(104px, 1.2fr) minmax(72px, .8fr) minmax(70px, .8fr)', gap:6, minWidth:0 }}>
+                            <div style={{ display:'grid', gridTemplateColumns:'minmax(0, 1.25fr) minmax(0, .85fr) minmax(0, .85fr)', gap:6, minWidth:0 }}>
                               <button onClick={() => imageTask ? editAttentionItem(task.id, item) : keepAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:imageTask ? C.primaryDark : '#065F46', background:imageTask ? C.primaryLight : '#D1FAE5', border:`1px solid ${imageTask ? C.primaryMid : '#A7F3D0'}`, borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
                                 {imageTask ? 'Agregar imagen' : 'Mantener'}
                               </button>
@@ -1547,37 +1644,12 @@ export default function Home() {
                 )
               })}
             </div>
-
-            {attentionCarouselCards.length > 1 && (
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, padding:'0 0 5px' }} aria-label="Tarjetas de tareas pendientes">
-                {attentionCarouselCards.map((card, index) => {
-                  const active = activeAttentionSlide === index
-                  return (
-                    <button
-                      key={card.id}
-                      type="button"
-                      onClick={() => scrollAttentionCardTo(index)}
-                      aria-label={`Ver tarea ${index + 1} de ${attentionCarouselCards.length}`}
-                      aria-current={active ? 'true' : undefined}
-                      style={{
-                        width:active ? 18 : 7,
-                        height:7,
-                        padding:0,
-                        border:'none',
-                        borderRadius:999,
-                        background:active ? C.primary : '#CBD5E1',
-                        boxShadow:active ? '0 3px 8px rgba(37, 99, 235, 0.22)' : 'none',
-                        cursor:'pointer',
-                        transition:'width 180ms ease, background 180ms ease, box-shadow 180ms ease',
-                      }}
-                    />
-                  )
-                })}
               </div>
-            )}
-          </div>
-        </section>
-      )}
+            </section>,
+            attentionPortalElement,
+          )}
+        </div>
+      </section>
 
       {/* ── ANUNCIOS RECIENTES ── */}
       <Modal
@@ -1646,9 +1718,31 @@ export default function Home() {
       </Modal>
 
       <section style={{ padding:'24px 0 0' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0, letterSpacing:0 }}>📌 Anuncios recientes</h2>
-          <Link to="/tablon" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todos →</Link>
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0, letterSpacing:0 }}>❤️ Mi Latido</h2>
+          <Link to="/perfil?editar=intereses" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Editar →</Link>
+        </div>
+        <div style={{ maxWidth:1200, margin:'0 auto 12px', padding:'0 16px' }}>
+          <div className="no-scroll" role="tablist" aria-label="Filtros de Mi Latido" style={{ display:'flex', gap:7, overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'2px 0 7px' }}>
+            {MY_LATIDO_MODES.map(mode => {
+              const active = latidoMode === mode.id
+              return (
+                <button
+                  key={mode.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setLatidoMode(mode.id)}
+                  style={{ flexShrink:0, fontFamily:PP, fontSize:10.5, fontWeight:800, color:active ? '#fff' : C.mid, background:active ? C.primary : '#fff', border:`1.5px solid ${active ? C.primary : C.border}`, borderRadius:999, padding:'8px 12px', cursor:'pointer', boxShadow:active ? '0 5px 12px rgba(37,99,235,0.22)' : 'none', transition:'all 160ms ease' }}
+                >
+                  {mode.label}
+                </button>
+              )
+            })}
+          </div>
+          <p aria-live="polite" style={{ fontFamily:PP, fontSize:10.5, color:C.light, margin:'0 2px', lineHeight:1.5 }}>
+            {latidoDescription}
+          </p>
         </div>
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
@@ -1657,12 +1751,12 @@ export default function Home() {
               {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ width:152, height:220, borderRadius:16, flexShrink:0 }} />)}
             </div>
           </div>
-        ) : recentAds.length === 0 ? (
+        ) : visibleLatidoItems.length === 0 ? (
           <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay anuncios publicados." /></div>
         ) : (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+          <div ref={latidoFeedRef} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
-              {recentAds.map(ad => {
+              {visibleLatidoItems.map(ad => {
                 const normalizedCat = getAdCategoryId(ad)
                 const cat = getAdDisplayCat(ad)
                 const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
@@ -1673,9 +1767,9 @@ export default function Home() {
                     key={ad.id}
                     role="link"
                     tabIndex={0}
-                    onClick={() => navigate(getAdHref(ad))}
+                    onClick={() => openLatidoItem(ad)}
                     onKeyDown={event => {
-                      if (event.key === 'Enter') navigate(getAdHref(ad))
+                      if (event.key === 'Enter') openLatidoItem(ad)
                     }}
                     style={{ textDecoration:'none', flexShrink:0, width:172, display:'block', cursor:'pointer' }}
                   >

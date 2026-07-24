@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
 import { Btn, ProgressBar, Input, Select } from '../components/UI'
 import { CANTONS } from '../lib/constants'
+import { INTEREST_OPTIONS } from '../lib/interests'
 import toast from 'react-hot-toast'
 
 function getSafeNextPath(value) {
@@ -74,7 +75,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showRegisterPassword, setShowRegisterPassword] = useState(false)
-  const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[] })
+  const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[], interests:[] })
   const [errors, setErrors] = useState({})
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   const clearFieldError = key => setErrors(prev => {
@@ -88,6 +89,18 @@ export default function Auth() {
     clearFieldError(k)
   }
   const toggleLang = l => s('languages', form.languages.includes(l) ? form.languages.filter(x => x !== l) : [...form.languages, l])
+  const toggleInterest = interest => {
+    if (!form.interests.includes(interest) && form.interests.length >= 3) {
+      toast('Puedes elegir hasta tres intereses.')
+      return
+    }
+    s(
+      'interests',
+      form.interests.includes(interest)
+        ? form.interests.filter(item => item !== interest)
+        : [...form.interests, interest]
+    )
+  }
 
   const showErrors = next => {
     setErrors(next)
@@ -176,7 +189,7 @@ export default function Auth() {
     }
   }
 
-  const handleRegister = async () => {
+  const handleRegister = async (interestsOverride = null) => {
     if (loading) return
     if (!validateRegisterAll()) return
 
@@ -187,6 +200,8 @@ export default function Auth() {
         password: form.password,
         name: form.name,
         canton: form.canton,
+        languages:form.languages,
+        interests:Array.isArray(interestsOverride) ? interestsOverride : form.interests,
       })
 
       if (error) {
@@ -298,6 +313,7 @@ export default function Auth() {
   const REG_STEPS = [
     { title:'Crea tu cuenta', sub:'Gratis · Sin spam · Sin comisiones' },
     { title:'¿Dónde estás en Suiza?', sub:'Para mostrarte anuncios cercanos primero' },
+    { title:'¿Qué te interesa ahora?', sub:'Elige hasta tres o continúa sin elegir' },
   ]
 
   return (
@@ -363,18 +379,63 @@ export default function Auth() {
         </>
       )}
 
+      {step === 2 && (
+        <>
+          <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 13px', marginBottom:16 }}>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.primaryDark, margin:0, lineHeight:1.55 }}>
+              Cuéntanos qué te interesa para mostrarte contenido más relevante para ti.
+            </p>
+          </div>
+          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, margin:'0 0 9px', letterSpacing:0.5 }}>
+            {form.interests.length}/3 SELECCIONADOS
+          </p>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:12 }}>
+            {INTEREST_OPTIONS.map(option => {
+              const selected = form.interests.includes(option.id)
+              const unavailable = !selected && form.interests.length >= 3
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={selected}
+                  aria-disabled={unavailable}
+                  onClick={() => toggleInterest(option.id)}
+                  style={{ fontFamily:PP, fontSize:11, fontWeight:700, padding:'9px 13px', borderRadius:999, border:`1.5px solid ${selected ? C.primary : C.border}`, background:selected ? C.primary : '#fff', color:selected ? '#fff' : C.mid, cursor:unavailable ? 'not-allowed' : 'pointer', opacity:unavailable ? 0.5 : 1, boxShadow:selected ? '0 5px 12px rgba(37,99,235,0.2)' : 'none' }}
+                >
+                  {option.emoji} {option.label}
+                </button>
+              )
+            })}
+          </div>
+          <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 18px', lineHeight:1.55 }}>
+            Es opcional. Podrás cambiar estos intereses cuando quieras desde tu perfil.
+          </p>
+        </>
+      )}
+
       <div style={{ display:'flex', gap:10 }}>
         {step > 0 && <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>}
         {step < REG_STEPS.length - 1 ? (
-          <Btn onClick={() => { if (!validateRegisterStep()) return; setStep(1) }} style={{ flex:1 }}>
+          <Btn onClick={() => { if (!validateRegisterStep()) return; setStep(current => current + 1) }} style={{ flex:1 }}>
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={handleRegister} disabled={loading} style={{ flex:1 }}>
+          <Btn onClick={() => handleRegister()} disabled={loading} style={{ flex:1 }}>
             {loading ? '⏳ Creando cuenta...' : '🎉 Crear cuenta gratis'}
           </Btn>
         )}
       </div>
+
+      {step === 2 && (
+        <button
+          type="button"
+          onClick={() => handleRegister([])}
+          disabled={loading}
+          style={{ width:'100%', fontFamily:PP, fontSize:11, fontWeight:700, color:C.mid, background:'transparent', border:'none', padding:'11px 0 4px', cursor:loading ? 'default' : 'pointer' }}
+        >
+          Omitir por ahora
+        </button>
+      )}
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:24 }}>
         ¿Ya tienes cuenta?{' '}
