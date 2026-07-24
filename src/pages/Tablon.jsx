@@ -109,6 +109,7 @@ function persistTablonCache() {
 }
 const CARD_STACK_GAP = 10
 const TABLON_ROTATION_INTERVAL_MS = 6 * 60 * 60 * 1000
+const TABLON_SEARCH_RESULT_TYPES = ['ad', 'job']
 const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
 const LIST_CARD_STYLE = {
   background:'#fff',
@@ -801,6 +802,12 @@ export default function Tablon() {
   const [employmentPortals, setEmploymentPortals] = useState([])
   const [loading, setLoading] = useState(() => !(TABLON_CACHE.publicAds || TABLON_CACHE.jobs))
   const [search, setSearch] = useState('')
+  const [resolvedSearch, setResolvedSearch] = useState({
+    active:false,
+    ready:false,
+    query:'',
+    results:[],
+  })
   const [showFilters, setShowFilters] = useState(false)
   const [portalsOpen, setPortalsOpen] = useState(false)
   const [selectedAd, setSelectedAd] = useState(null)
@@ -827,6 +834,25 @@ export default function Tablon() {
   const routeJobId = jobSlug ? getIdFromSlug(jobSlug) : ''
   const targetOpenAdId = openAdId || routeAdId
   const targetOpenJobId = openJobId || routeJobId
+  const hasResolvedSearch = Boolean(
+    deferredSearch
+    && resolvedSearch.active
+    && resolvedSearch.ready
+    && resolvedSearch.query === deferredSearch
+  )
+  const resolvedSearchRank = useMemo(() => {
+    const ranks = new Map()
+    ;(resolvedSearch.results || []).forEach((result, index) => {
+      ranks.set(`${result.type}:${result.id}`, index)
+    })
+    return ranks
+  }, [resolvedSearch.results])
+  const getResolvedRank = (typeKey, id) =>
+    resolvedSearchRank.get(`${typeKey}:${id}`) ?? Number.MAX_SAFE_INTEGER
+  const getJobResolvedRank = job => Math.min(
+    getResolvedRank('job', job.id),
+    getResolvedRank('ad', job.id),
+  )
 
   const isEmpleos  = cat === 'empleo'
   const isMercado  = cat === 'venta'
@@ -1109,37 +1135,47 @@ export default function Tablon() {
       .then(({ data }) => { if (data?.length) setEmploymentPortals(data) })
   }, [])
 
-  const filteredAds = useMemo(() => ads.filter(a => {
-    if (!(isLoggedIn || !a.privacy || a.privacy === 'public')) return false
-    if (!cat && getAdCategoryId(a) === 'empleo') return false
-    if (cat && getAdCategoryId(a) !== cat) return false
-    if (type) {
-      const typeMatches = cat === 'venta' && type === 'vende'
-        ? a.type === 'vende' || a.type === 'ofrece'
-        : a.type === type
-      if (!typeMatches) return false
-    }
-    if (canton && a.canton !== canton) return false
-    if (plz && !a.plz?.startsWith(plz)) return false
-    if (privacy && a.privacy !== privacy) return false
-    if (hasPriceFilter) {
-      const range = PRICE_RANGES.find(option => option.id === priceRange)
-      const numericPrice = parseListingPrice(a.price)
-      if (numericPrice === null) return false
-      if (range?.min != null && numericPrice < range.min) return false
-      if (range?.max != null && numericPrice > range.max) return false
-      if (!range && legacyMaxPrice && numericPrice > Number.parseFloat(legacyMaxPrice)) return false
-    }
-    if (deferredSearch && !scoreSearchFields(searchProfile, [
-      { value:a.title, weight:6 },
-      { value:a.desc, weight:4 },
-      { value:a.sub, weight:3 },
-      { value:getAdDisplayCat(a)?.label, weight:2 },
-      { value:a.city, weight:2 },
-      { value:a.canton, weight:1 },
-    ])) return false
-    return true
-  }), [ads, canton, cat, deferredSearch, hasPriceFilter, isLoggedIn, legacyMaxPrice, plz, priceRange, privacy, searchProfile, type])
+  const filteredAds = useMemo(() => {
+    const matches = ads.filter(a => {
+      if (!(isLoggedIn || !a.privacy || a.privacy === 'public')) return false
+      if (!cat && getAdCategoryId(a) === 'empleo') return false
+      if (cat && getAdCategoryId(a) !== cat) return false
+      if (type) {
+        const typeMatches = cat === 'venta' && type === 'vende'
+          ? a.type === 'vende' || a.type === 'ofrece'
+          : a.type === type
+        if (!typeMatches) return false
+      }
+      if (canton && a.canton !== canton) return false
+      if (plz && !a.plz?.startsWith(plz)) return false
+      if (privacy && a.privacy !== privacy) return false
+      if (hasPriceFilter) {
+        const range = PRICE_RANGES.find(option => option.id === priceRange)
+        const numericPrice = parseListingPrice(a.price)
+        if (numericPrice === null) return false
+        if (range?.min != null && numericPrice < range.min) return false
+        if (range?.max != null && numericPrice > range.max) return false
+        if (!range && legacyMaxPrice && numericPrice > Number.parseFloat(legacyMaxPrice)) return false
+      }
+      if (deferredSearch) {
+        if (hasResolvedSearch) {
+          if (!resolvedSearchRank.has(`ad:${a.id}`)) return false
+        } else if (!scoreSearchFields(searchProfile, [
+          { value:a.title, weight:6 },
+          { value:a.desc, weight:4 },
+          { value:a.sub, weight:3 },
+          { value:getAdDisplayCat(a)?.label, weight:2 },
+          { value:a.city, weight:2 },
+          { value:a.canton, weight:1 },
+        ])) return false
+      }
+      return true
+    })
+
+    return hasResolvedSearch
+      ? matches.sort((a, b) => getResolvedRank('ad', a.id) - getResolvedRank('ad', b.id))
+      : matches
+  }, [ads, canton, cat, deferredSearch, hasPriceFilter, hasResolvedSearch, isLoggedIn, legacyMaxPrice, plz, priceRange, privacy, resolvedSearchRank, searchProfile, type])
 
   const communityJobs = useMemo(() => {
     const fromJobs = jobs.filter(j =>
@@ -1147,15 +1183,19 @@ export default function Tablon() {
       (!jobType || j.type === jobType) &&
       (!canton || j.canton === canton) &&
       (!plz || j.plz?.startsWith(plz)) &&
-      (!deferredSearch || scoreSearchFields(searchProfile, [
-        { value:j.title, weight:6 },
-        { value:j.company, weight:4 },
-        { value:j.desc, weight:4 },
-        { value:j.sector || j.category, weight:3 },
-        { value:getJobIntentMeta(j).label, weight:2 },
-        { value:j.type, weight:2 },
-        { value:j.city || j.canton, weight:2 },
-      ]))
+      (!deferredSearch || (
+        hasResolvedSearch
+          ? resolvedSearchRank.has(`job:${j.id}`)
+          : scoreSearchFields(searchProfile, [
+            { value:j.title, weight:6 },
+            { value:j.company, weight:4 },
+            { value:j.desc, weight:4 },
+            { value:j.sector || j.category, weight:3 },
+            { value:getJobIntentMeta(j).label, weight:2 },
+            { value:j.type, weight:2 },
+            { value:j.city || j.canton, weight:2 },
+          ])
+      ))
     )
     const fromAds = []
     for (const a of ads) {
@@ -1166,13 +1206,17 @@ export default function Tablon() {
         (!jobType || a.type === jobType || a.sub === jobType) &&
         (!canton || a.canton === canton) &&
         (!plz || a.plz?.startsWith(plz)) &&
-        (!deferredSearch || scoreSearchFields(searchProfile, [
-          { value:a.title, weight:6 },
-          { value:a.desc, weight:4 },
-          { value:a.sub, weight:3 },
-          { value:getJobIntentMeta(a).label, weight:2 },
-          { value:a.city || a.canton, weight:2 },
-        ]))
+        (!deferredSearch || (
+          hasResolvedSearch
+            ? resolvedSearchRank.has(`ad:${a.id}`)
+            : scoreSearchFields(searchProfile, [
+              { value:a.title, weight:6 },
+              { value:a.desc, weight:4 },
+              { value:a.sub, weight:3 },
+              { value:getJobIntentMeta(a).label, weight:2 },
+              { value:a.city || a.canton, weight:2 },
+            ])
+        ))
       ) {
         fromAds.push({
           id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
@@ -1183,8 +1227,10 @@ export default function Tablon() {
       }
     }
     return [...fromJobs, ...fromAds]
-      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
-  }, [ads, canton, deferredSearch, isLoggedIn, jobIntent, jobType, jobs, plz, searchProfile])
+      .sort((a, b) => hasResolvedSearch
+        ? getJobResolvedRank(a) - getJobResolvedRank(b)
+        : String(b.created_at || '').localeCompare(String(a.created_at || '')))
+  }, [ads, canton, deferredSearch, hasResolvedSearch, isLoggedIn, jobIntent, jobType, jobs, plz, resolvedSearchRank, searchProfile])
 
   const filteredJobs = communityJobs
   const displayedAds = useMemo(
@@ -1213,12 +1259,17 @@ export default function Tablon() {
     const items = [
       ...filteredAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' })),
       ...jobsForCurrentFilters.map(job => ({ kind:'job', item:job, sortDate:job.created_at || '' })),
-    ].sort((a, b) => String(b.sortDate).localeCompare(String(a.sortDate)))
+    ].sort((a, b) => hasResolvedSearch
+      ? (
+        (a.kind === 'job' ? getJobResolvedRank(a.item) : getResolvedRank('ad', a.item.id))
+        - (b.kind === 'job' ? getJobResolvedRank(b.item) : getResolvedRank('ad', b.item.id))
+      )
+      : String(b.sortDate).localeCompare(String(a.sortDate)))
 
     return deferredSearch
       ? items
       : mixRecentWithOlder(items, tablonRotationBucket, entry => entry.sortDate)
-  }, [cat, deferredSearch, displayedAds, filteredAds, filteredJobs, hasPriceFilter, tablonRotationBucket, type])
+  }, [cat, deferredSearch, displayedAds, filteredAds, filteredJobs, hasPriceFilter, hasResolvedSearch, resolvedSearchRank, tablonRotationBucket, type])
 
   const relatedAdsForSelected = useMemo(() => {
     if (!selectedAd) return []
@@ -1372,9 +1423,11 @@ export default function Tablon() {
         placeholder={pageContext.searchPlaceholder}
         value={search}
         onValueChange={setSearch}
-        resultTypes={['ad', 'job']}
+        resultTypes={TABLON_SEARCH_RESULT_TYPES}
         analyticsScope={isEmpleos ? 'empleos' : 'tablon'}
+        assistantMode
         showResultsDropdown={false}
+        onResolvedResultsChange={setResolvedSearch}
         searchFilters={{ category:cat, canton, intent:intentValue }}
         onSearchFiltersChange={clearFilters}
         filtersContent={(
