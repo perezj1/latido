@@ -28,15 +28,18 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(!localUser)
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [profileMeta, setProfileMeta] = useState({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
+  const [profileMetaLoaded, setProfileMetaLoaded] = useState(!localUser)
 
   useEffect(() => {
     if (!user?.id) {
       setAvatarUrl(null)
       setProfileMeta({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
+      setProfileMetaLoaded(true)
       return
     }
 
     let cancelled = false
+    setProfileMetaLoaded(false)
 
     async function loadProfileMeta() {
       let response = await supabase
@@ -62,6 +65,7 @@ export function AuthProvider({ children }) {
         bannedAt: profile.banned_at || null,
         interests: normalizeInterestIds(profile.interests),
       })
+      setProfileMetaLoaded(true)
     }
 
     loadProfileMeta()
@@ -80,6 +84,7 @@ export function AuthProvider({ children }) {
         setUser(null)
         setAvatarUrl(null)
         setProfileMeta({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
+        setProfileMetaLoaded(true)
       } else if (session?.user) {
         // SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED — real session
         setUser(session.user)
@@ -121,6 +126,7 @@ export function AuthProvider({ children }) {
     setUser(null)
     setAvatarUrl(null)
     setProfileMeta({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
+    setProfileMetaLoaded(true)
   }
 
   const updateAvatar = useCallback((url) => setAvatarUrl(url), [])
@@ -136,6 +142,7 @@ export function AuthProvider({ children }) {
         ? user.user_metadata.interests
         : profileMeta.interests
     ),
+    profileMetaLoaded,
     avatarUrl,
     isBanned: profileMeta.banned,
     bannedReason: profileMeta.bannedReason,

@@ -24,7 +24,7 @@ import {
   isBusinessPromotionActive,
   rotateHomeBusinesses,
 } from '../lib/businessPromotion'
-import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
+import { getThumbnailImageUrl, handleThumbnailImageError, resolveImageUrl } from '../lib/imageVariants'
 import {
   INTEREST_OPTIONS,
   buildNearbyFeed,
@@ -115,15 +115,31 @@ async function fetchHomeProviders() {
     .or('active.is.null,active.eq.true')
     .neq('category', 'empleo')
     .neq('category', 'vivienda')
+
+  const recentResponse = await buildQuery(HOME_PROVIDER_SELECT.withPromotion)
     .order('created_at', { ascending:false })
     .limit(100)
-
-  const response = await buildQuery(HOME_PROVIDER_SELECT.withPromotion)
-  const missingColumn = getMissingColumnName(response.error, 'providers')
+  const missingColumn = getMissingColumnName(recentResponse.error, 'providers')
   if (['promotion_plan', 'promotion_starts_at', 'promotion_ends_at'].includes(missingColumn)) {
     return buildQuery(HOME_PROVIDER_SELECT.safe)
+      .order('featured', { ascending:false })
+      .order('created_at', { ascending:false })
+      .limit(100)
   }
-  return response
+  if (recentResponse.error) return recentResponse
+
+  const promotedResponse = await buildQuery(HOME_PROVIDER_SELECT.withPromotion)
+    .or('featured.eq.true,promotion_plan.neq.free')
+    .order('promotion_starts_at', { ascending:false, nullsFirst:false })
+    .order('created_at', { ascending:false })
+    .limit(100)
+  if (promotedResponse.error) return recentResponse
+
+  const providersById = new Map()
+  for (const provider of [...(promotedResponse.data || []), ...(recentResponse.data || [])]) {
+    providersById.set(provider.id, provider)
+  }
+  return { data:[...providersById.values()], error:null }
 }
 
 const HOME_FEED_PAGE_SIZE = 500
@@ -465,7 +481,7 @@ function makeAttentionItem(kind, row, overrides={}) {
 }
 
 export default function Home() {
-  const { displayName, isLoggedIn, user, userCanton, userInterests } = useAuth()
+  const { displayName, isLoggedIn, user, userCanton, userInterests, profileMetaLoaded } = useAuth()
   const navigate = useNavigate()
   const { alertItems, alertCount } = useZoneAlerts()
   const {
@@ -590,7 +606,19 @@ export default function Home() {
   const showBusinessPromotionTask = SHOW_HOME_BUSINESS_PROMOTION_TASK
     && promotableBusinesses.length > 0
     && featuredPromotionAvailability.availableSlots > 0
+  const showInterestSelectionTask = isLoggedIn
+    && profileMetaLoaded
+    && userInterests.length === 0
   const attentionCarouselCards = [
+    ...(showInterestSelectionTask ? [{
+      id:'interest-selection',
+      type:'interests',
+      emoji:'💙',
+      title:'Selecciona tus intereses',
+      text:'Para mostrarte contenido más relevante para ti.',
+      actionLabel:'Elegir',
+      tone:'primary',
+    }] : []),
     ...(isLoggedIn && needsActivation ? [{
       id:'push-activation',
       type:'push',
@@ -1489,6 +1517,33 @@ export default function Home() {
               }}
               aria-label="Necesita atención"
             >
+              {showInterestSelectionTask && (
+                <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
+                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
+                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
+                      💙
+                    </span>
+                    <span style={{ minWidth:0, flex:1 }}>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        Selecciona tus intereses
+                      </span>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        Para mostrarte contenido más relevante para ti.
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeNotifPanel()
+                        navigate('/perfil?editar=intereses')
+                      }}
+                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
+                    >
+                      Elegir
+                    </button>
+                  </div>
+                </div>
+              )}
               {isLoggedIn && needsActivation && (
                 <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
                   <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
@@ -1904,7 +1959,7 @@ export default function Home() {
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                     <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'visible' }}>
                       {business.photo_url
-                        ? <img src={getThumbnailImageUrl(business.photo_url)} alt={business.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                        ? <img src={getThumbnailImageUrl(business.photo_url)} onError={event => handleThumbnailImageError(event, business.photo_url)} alt={business.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{business.emoji || '🏪'}</span>
                       }
                       <span

@@ -277,7 +277,7 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO providers (name,category,city,description,services,price_range,phone,whatsapp,instagram,email,website,photo_url,verified,featured,active)
-SELECT 'DJ Sebastián Vega','dj','Zürich','DJ especializado en salsa, reggaetón y cumbia. 10 años en Suiza.',ARRAY['Salsa','Reggaetón','Cumbia'],'medio','+41791234567','+41791234567','@djsebastianvega','hola@djsebastianvega.ch','djsebastianvega.ch','https://images.unsplash.com/photo-1571266028243-3716f02d2d50?w=400&h=300&fit=crop',TRUE,TRUE,TRUE
+SELECT 'DJ Sebastián Vega','dj','Zürich','DJ especializado en salsa, reggaetón y cumbia. 10 años en Suiza.',ARRAY['Salsa','Reggaetón','Cumbia'],'medio','+41791234567','+41791234567','@djsebastianvega','hola@djsebastianvega.ch','djsebastianvega.ch','https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',TRUE,TRUE,TRUE
 WHERE NOT EXISTS (
   SELECT 1 FROM providers WHERE name = 'DJ Sebastián Vega' AND category = 'dj' AND city = 'Zürich'
 );
