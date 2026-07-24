@@ -65,6 +65,9 @@ const ADMIN_ANALYTICS_EVENT_TYPES = [
   'page_view',
   'search',
   'search_result_open',
+  'search_solution_action',
+  'search_resolution',
+  'search_resolution_reason',
   'partner_card_impression',
   'partner_outbound_click',
   'partner_page_view',
@@ -599,6 +602,30 @@ function topAnalyticsRows(items, labelFn, limit = 8, subFn) {
 function analyticsQuery(event) {
   const metadata = readMetadata(event.metadata)
   return String(metadata.query || '').trim()
+}
+
+function analyticsSearchAttemptKey(event) {
+  const metadata = readMetadata(event.metadata)
+  const attemptId = String(metadata.search_attempt_id || '').trim()
+  if (attemptId) return `attempt:${attemptId}`
+
+  const identity = event.session_id || event.user_id || ''
+  const query = analyticsQuery(event).toLowerCase()
+  return identity && query ? `legacy:${identity}:${query}` : ''
+}
+
+const SEARCH_RESOLUTION_ANSWER_LABELS = {
+  yes:'Resuelta',
+  partial:'Parcial',
+  no:'No resuelta',
+}
+
+const SEARCH_RESOLUTION_REASON_LABELS = {
+  more_information:'Más información',
+  different_location:'Otra ubicación',
+  clearer_price:'Precio más claro',
+  more_options:'Más alternativas',
+  other:'Otro motivo',
 }
 
 function analyticsScope(event) {
@@ -1468,6 +1495,18 @@ export default function Admin() {
     () => analyticsInRange.filter(event => event.event_type === 'search_result_open'),
     [analyticsInRange]
   )
+  const searchSolutionActionEvents = useMemo(
+    () => analyticsInRange.filter(event => event.event_type === 'search_solution_action'),
+    [analyticsInRange]
+  )
+  const searchResolutionEvents = useMemo(
+    () => analyticsInRange.filter(event => event.event_type === 'search_resolution'),
+    [analyticsInRange]
+  )
+  const searchResolutionReasonEvents = useMemo(
+    () => analyticsInRange.filter(event => event.event_type === 'search_resolution_reason'),
+    [analyticsInRange]
+  )
   const partnerAnalyticsEvents = useMemo(
     () => {
       const rows = []
@@ -1616,19 +1655,14 @@ export default function Admin() {
     return ids.size
   }, [pageViewEvents])
   const searchConversion = useMemo(() => {
-    const keyFor = event => {
-      const identity = event.session_id || event.user_id || ''
-      const query = analyticsQuery(event).toLowerCase()
-      return identity && query ? `${identity}:${query}` : ''
-    }
     const searches = new Set()
     for (const event of searchEvents) {
-      const key = keyFor(event)
+      const key = analyticsSearchAttemptKey(event)
       if (key) searches.add(key)
     }
     const opened = new Set()
     for (const event of searchResultEvents) {
-      const key = keyFor(event)
+      const key = analyticsSearchAttemptKey(event)
       if (searches.has(key)) opened.add(key)
     }
     return {
@@ -1638,17 +1672,51 @@ export default function Admin() {
     }
   }, [searchEvents, searchResultEvents])
   const searchActionRate = searchConversion.rate
-  const uniqueSearchTerms = useMemo(
-    () => {
-      const terms = new Set()
-      for (const event of searchEvents) {
-        const term = analyticsQuery(event).toLowerCase()
-        if (term) terms.add(term)
+  const searchResolution = useMemo(() => {
+    const responsesByAttempt = new Map()
+    for (const event of searchResolutionEvents) {
+      const key = analyticsSearchAttemptKey(event)
+      const answer = String(readMetadata(event.metadata).answer || '')
+      if (key && SEARCH_RESOLUTION_ANSWER_LABELS[answer]) {
+        responsesByAttempt.set(key, answer)
       }
-      return terms.size
-    },
-    [searchEvents]
-  )
+    }
+
+    const answers = [...responsesByAttempt.values()]
+    const yes = answers.filter(answer => answer === 'yes').length
+    const partial = answers.filter(answer => answer === 'partial').length
+    const no = answers.filter(answer => answer === 'no').length
+    const total = answers.length
+    return {
+      total,
+      yes,
+      partial,
+      no,
+      confirmedRate:total ? Math.round((yes / total) * 100) : 0,
+      helpfulRate:total ? Math.round(((yes + partial) / total) * 100) : 0,
+      coverage:searchConversion.searches
+        ? Math.min(100, Math.round((total / searchConversion.searches) * 100))
+        : 0,
+    }
+  }, [searchConversion.searches, searchResolutionEvents])
+  const searchSolutionActions = useMemo(() => {
+    const attempts = new Set()
+    for (const event of searchSolutionActionEvents) {
+      const key = analyticsSearchAttemptKey(event)
+      if (key) attempts.add(key)
+    }
+    return attempts.size
+  }, [searchSolutionActionEvents])
+  const searchesWithoutResults = useMemo(() => {
+    const attempts = new Set()
+    for (const event of searchEvents) {
+      const metadata = readMetadata(event.metadata)
+      if (Number(metadata.results_count) !== 0) continue
+      const key = analyticsSearchAttemptKey(event)
+      if (key) attempts.add(key)
+    }
+    return attempts.size
+  }, [searchEvents])
   const topSearchActionRows = useMemo(
     () => topAnalyticsRows(
       searchResultEvents,
@@ -1668,6 +1736,30 @@ export default function Admin() {
       6
     ),
     [searchResultEvents]
+  )
+  const topUnresolvedSearchRows = useMemo(
+    () => topAnalyticsRows(
+      searchResolutionEvents.filter(event => ['partial', 'no'].includes(readMetadata(event.metadata).answer)),
+      analyticsQuery,
+      6,
+      event => {
+        const metadata = readMetadata(event.metadata)
+        return [
+          SEARCH_RESOLUTION_ANSWER_LABELS[metadata.answer],
+          metadata.result_label,
+        ].filter(Boolean).join(' · ')
+      }
+    ),
+    [searchResolutionEvents]
+  )
+  const topResolutionReasonRows = useMemo(
+    () => topAnalyticsRows(
+      searchResolutionReasonEvents,
+      event => SEARCH_RESOLUTION_REASON_LABELS[readMetadata(event.metadata).reason] || 'Otro motivo',
+      6,
+      event => SEARCH_RESOLUTION_ANSWER_LABELS[readMetadata(event.metadata).answer] || ''
+    ),
+    [searchResolutionReasonEvents]
   )
   const pageHourRows = useMemo(() => countByHour(pageViewEvents), [pageViewEvents])
   const searchHourRows = useMemo(() => countByHour(searchEvents), [searchEvents])
@@ -2712,7 +2804,7 @@ export default function Admin() {
   const SECTION_DETAILS = {
     overview: { description: `Rapport de ${overviewRangeText} con señales de crecimiento, actividad, pendientes y recomendaciones.`, color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
     live: { description: 'Online ahora se actualiza en directo; actividad diaria y semanal usa la última consulta a Supabase.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
-    analytics: { description: `Páginas más usadas, búsquedas frecuentes, horarios fuertes y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResultEvents.length} aperturas` },
+    analytics: { description: `Páginas más usadas, búsquedas frecuentes, soluciones confirmadas y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResolution.yes} resueltas` },
     partners: { description: `Salidas reales hacia el colaborador seleccionado, separadas entre landing y app en ${partnerRangeText}.`, color: '#4F46E5', count: partnerClickEvents.length, badge: `${partnerClickEvents.length} salidas · ${partnerLandingClicks.length} landing · ${partnerAppClicks.length} app` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
@@ -2742,6 +2834,7 @@ export default function Admin() {
           { label: `Vistas ${analyticsMetricSuffix}`, value: loading ? '...' : pageViewEvents.length, hint: `${analyticsSessions} sesiones registradas`, color: '#0284C7' },
           { label: `Búsquedas ${analyticsMetricSuffix}`, value: loading ? '...' : searchEvents.length, hint: 'Términos escritos en barras', color: C.primary },
           { label: 'Búsquedas con apertura', value: loading ? '...' : searchConversion.opened, hint: `${searchActionRate}% de búsquedas únicas`, color: '#059669' },
+          { label: 'Solución confirmada', value: loading ? '...' : `${searchResolution.confirmedRate}%`, hint: `${searchResolution.yes} de ${searchResolution.total} respuestas · ${searchResolution.coverage}% cobertura`, color: '#047857' },
           { label: 'Hora fuerte', value: loading ? '...' : strongestTimeLabel(pageHourRows), hint: analyticsUnavailable ? 'Falta tabla analytics_events' : 'Según vistas de página', color: analyticsUnavailable ? '#D97706' : '#0F766E' },
         ]
     : tab === 'partners'
@@ -3249,15 +3342,16 @@ export default function Admin() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
                 <div>
                   <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Embudo de búsqueda</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Mide si las búsquedas acaban abriendo un resultado.</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Desde la consulta hasta una acción útil sobre el resultado.</p>
                 </div>
                 <Tag bg="#ECFDF5" color="#047857">{searchActionRate}% acción</Tag>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(92px, 1fr))', gap: 8 }}>
                 {[
                   { label: 'Búsquedas únicas', value: searchConversion.searches, color: C.primary },
                   { label: 'Con apertura', value: searchConversion.opened, color: '#059669' },
-                  { label: 'Términos', value: uniqueSearchTerms, color: '#0284C7' },
+                  { label: 'Con acción útil', value: searchSolutionActions, color: '#0F766E' },
+                  { label: 'Sin resultados', value: searchesWithoutResults, color: '#DC2626' },
                 ].map(item => (
                   <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '11px 10px', background: '#fff' }}>
                     <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 22, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
@@ -3265,6 +3359,34 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
+            </Card>
+
+            <Card style={{ padding: 16, background: 'linear-gradient(180deg,#FFFFFF,#F3FCF8)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Soluciones encontradas</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Respuesta directa después de revisar un resultado.</p>
+                </div>
+                <Tag bg="#ECFDF5" color="#047857">
+                  {searchResolution.total ? `${searchResolution.confirmedRate}% confirmada` : 'Sin respuestas'}
+                </Tag>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 7 }}>
+                {[
+                  { label: 'Respuestas', value: searchResolution.total, color: C.text },
+                  { label: 'Sí', value: searchResolution.yes, color: '#047857' },
+                  { label: 'Parcial', value: searchResolution.partial, color: '#B45309' },
+                  { label: 'No', value: searchResolution.no, color: '#B91C1C' },
+                ].map(item => (
+                  <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 13, padding: '10px 8px', background: '#fff' }}>
+                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 21, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
+                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 9.5, color: C.light, margin: 0 }}>{item.label}</p>
+                  </div>
+                ))}
+              </div>
+              <p style={{ fontFamily: PP, fontSize: 10.5, color: C.mid, lineHeight: 1.5, margin: '11px 0 0' }}>
+                {searchResolution.helpfulRate}% respondió Sí o Parcialmente · {searchResolution.coverage}% de las búsquedas únicas tiene respuesta.
+              </p>
             </Card>
 
             <InsightBarList
@@ -3276,16 +3398,36 @@ export default function Admin() {
             />
           </div>
 
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
+            <InsightBarList
+              title="Búsquedas que necesitan mejorar"
+              subtitle="Consultas respondidas como Parcialmente o No."
+              rows={topUnresolvedSearchRows}
+              color="#D97706"
+              emptyText="Todavía no hay búsquedas con respuesta negativa o parcial."
+            />
+            <InsightBarList
+              title="Qué faltó"
+              subtitle="Motivos elegidos después de una respuesta parcial o negativa."
+              rows={topResolutionReasonRows}
+              color="#7C3AED"
+              emptyText="Todavía no se han indicado motivos."
+            />
+          </div>
+
           <Card style={{ padding: 16, background: '#fff' }}>
             <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
             <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.55 }}>
-              Esta sección mezcla comportamiento y operación: navegación/búsqueda salen de analytics_events; altas y publicaciones salen de created_at en perfiles, anuncios y empleos.
+              La navegación, las búsquedas y las respuestas salen de analytics_events. Estas métricas representan las sesiones que aceptaron la analítica.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 10 }}>
               {[
                 { label: 'Páginas usadas', note: 'Agrupa rutas como Inicio, Anuncios, Comunidad, Mensajes o Detalle de anuncio.', color: '#0284C7' },
-                { label: 'Búsquedas', note: 'Guarda el término, la sección y filtros como categoría, cantón o tipo de empleo.', color: C.primary },
+                { label: 'Búsquedas', note: 'Cada intento tiene un identificador propio, el término, los filtros y el número de resultados.', color: C.primary },
                 { label: 'Aperturas', note: 'Registra cuando una persona abre un resultado de búsqueda con clic o Enter.', color: '#059669' },
+                { label: 'Acciones útiles', note: 'Detecta llamadas, WhatsApp, email, webs externas y botones para contactar o enviar mensajes.', color: '#0F766E' },
+                { label: 'Resoluciones', note: 'Pregunta si encontró lo necesario y separa respuestas Sí, Parcialmente y No.', color: '#047857' },
+                { label: 'Contenido faltante', note: 'Muestra búsquedas sin resultados y los motivos indicados en respuestas parciales o negativas.', color: '#DC2626' },
                 { label: 'Horarios', note: 'Usa la hora local del created_at para detectar horas y días con más movimiento.', color: '#7C3AED' },
               ].map(item => (
                 <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF' }}>

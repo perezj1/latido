@@ -11,6 +11,11 @@ import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { useFavorites } from '../hooks/useFavorites'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
+import {
+  getLatidoRating,
+  isLatidoRatingDue,
+  LATIDO_RATING_SUBMITTED_EVENT,
+} from '../lib/feedback'
 import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
 import { C, PP } from '../lib/theme'
@@ -510,6 +515,10 @@ export default function Home() {
   const [loadingAttention, setLoadingAttention] = useState(false)
   const [expandedAttentionTask, setExpandedAttentionTask] = useState('')
   const [attentionPortalElement, setAttentionPortalElement] = useState(null)
+  const [latidoRatingStatus, setLatidoRatingStatus] = useState({
+    loaded:false,
+    hasRating:false,
+  })
   const [promotableBusinesses, setPromotableBusinesses] = useState([])
   const [businessPromotionModalOpen, setBusinessPromotionModalOpen] = useState(false)
   const [loading, setLoading] = useState(() => !homeCache)
@@ -612,6 +621,17 @@ export default function Home() {
   const showInterestSelectionTask = isLoggedIn
     && profileMetaLoaded
     && userInterests.length === 0
+  const ratingReminderPreview = import.meta.env.DEV
+    && new URLSearchParams(window.location.search).get('rating-reminder-preview') === '1'
+  const showLatidoRatingTask = isLoggedIn
+    && latidoRatingStatus.loaded
+    && (
+      ratingReminderPreview
+      || (
+        !latidoRatingStatus.hasRating
+        && isLatidoRatingDue(user?.created_at)
+      )
+    )
   const attentionCarouselCards = [
     ...(showInterestSelectionTask ? [{
       id:'interest-selection',
@@ -631,6 +651,15 @@ export default function Home() {
       actionLabel:activatingPush ? 'Activando...' : 'Activar',
       disabled:activatingPush,
       tone:'primary',
+    }] : []),
+    ...(showLatidoRatingTask ? [{
+      id:'latido-rating',
+      type:'rating',
+      emoji:'⭐',
+      title:'Valora Latido',
+      text:'Cuéntanos si encuentras lo que necesitas.',
+      actionLabel:'Valorar',
+      tone:'warn',
     }] : []),
     ...(showBusinessPromotionTask ? [{
       id:'business-promotion',
@@ -1240,6 +1269,39 @@ export default function Home() {
     }
   }, [fetchAttentionTasks])
 
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) {
+      setLatidoRatingStatus({ loaded:false, hasRating:false })
+      return undefined
+    }
+
+    let active = true
+    const loadRatingStatus = async () => {
+      try {
+        const rating = await getLatidoRating(user.id)
+        if (active) {
+          setLatidoRatingStatus({
+            loaded:true,
+            hasRating:Boolean(rating),
+          })
+        }
+      } catch (error) {
+        console.warn('Could not load Latido rating status:', error)
+        if (active) setLatidoRatingStatus({ loaded:false, hasRating:false })
+      }
+    }
+    const handleRatingSubmitted = () => {
+      if (active) setLatidoRatingStatus({ loaded:true, hasRating:true })
+    }
+
+    void loadRatingStatus()
+    window.addEventListener(LATIDO_RATING_SUBMITTED_EVENT, handleRatingSubmitted)
+    return () => {
+      active = false
+      window.removeEventListener(LATIDO_RATING_SUBMITTED_EVENT, handleRatingSubmitted)
+    }
+  }, [isLoggedIn, user?.id])
+
   return (
     <div style={{ background:'#fff' }}>
       <section className="hero-section" style={{ background:'linear-gradient(160deg, #1E40AF 0%, #2563EB 58%, #60A5FA 100%)', position:'relative', overflow:'visible', zIndex:2 }}>
@@ -1580,6 +1642,33 @@ export default function Home() {
                       }}
                     >
                       {activatingPush ? 'Activando...' : 'Activar'}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {showLatidoRatingTask && (
+                <div style={{ width:'100%', minWidth:0, background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
+                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
+                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
+                      ⭐
+                    </span>
+                    <span style={{ minWidth:0, flex:1 }}>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        Valora Latido
+                      </span>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:'#92400E', lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        Cuéntanos si encuentras lo que necesitas.
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeNotifPanel()
+                        navigate('/perfil?rate=1')
+                      }}
+                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:'#D97706', border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
+                    >
+                      Valorar
                     </button>
                   </div>
                 </div>

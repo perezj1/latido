@@ -14,6 +14,9 @@ const DYNAMIC_ROUTES = [
 const VERCEL_EVENT_PROPERTIES = {
   search: ['scope', 'cat', 'category', 'active_filter'],
   search_result_open: ['result_type'],
+  search_solution_action: ['action', 'result_type'],
+  search_resolution: ['answer', 'result_type', 'had_solution_action'],
+  search_resolution_reason: ['answer', 'reason', 'result_type'],
   signup_success: ['method', 'entry_point'],
   login_success: ['method', 'entry_point'],
   publication_created: ['content_type', 'category', 'intent', 'channel', 'moderation_status'],

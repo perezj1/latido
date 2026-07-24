@@ -47,6 +47,19 @@
 
 .fade-up  { animation: fadeUp  .28s ease forwards; }
 .fade-in  { animation: fadeIn  .2s  ease forwards; }
+
+.search-resolution-prompt {
+  right: 12px;
+  bottom: calc(82px + env(safe-area-inset-bottom) + var(--latido-install-banner-lift, 0px));
+}
+
+@media (min-width: 768px) {
+  .search-resolution-prompt {
+    right: 24px;
+    bottom: 24px;
+  }
+}
+
 .share-button:hover {
   background: #EFF6FF !important;
   border-color: #BFDBFE !important;

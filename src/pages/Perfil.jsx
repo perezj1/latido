@@ -16,6 +16,11 @@ import { getBusinessPromotionMeta, isBusinessPromotionActive, PAID_BUSINESS_FEAT
 import { getThumbnailImageUrl } from '../lib/imageVariants'
 import { canUseWhatsappNumber } from '../lib/businessContact'
 import { INTEREST_OPTIONS, normalizeInterestIds } from '../lib/interests'
+import {
+  getLatidoRating,
+  notifyLatidoRatingSubmitted,
+  saveLatidoRating,
+} from '../lib/feedback'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -67,6 +72,11 @@ const ALERT_CATS = [
 ]
 
 const LANGS = ['Español', 'Alemán', 'Francés', 'Italiano', 'Inglés', 'Portugués']
+const EMPTY_LATIDO_RATING = {
+  overallRating:0,
+  usefulnessRating:0,
+  comment:'',
+}
 const PRICE_UNITS = [
   { id:'hora', label:'Por hora' },
   { id:'dia', label:'Por día' },
@@ -548,6 +558,55 @@ function loadAlertSettings() {
   } catch { return { messagesEnabled: true, categories: [] } }
 }
 
+function LatidoStarInput({
+  label,
+  value,
+  onChange,
+  ratingLabels = ['', 'Nada', 'Poco', 'Regular', 'Mucho', 'Excelente'],
+}) {
+  const [hover, setHover] = useState(0)
+  const activeValue = hover || value
+
+  return (
+    <fieldset style={{ border:0, padding:0, margin:'0 0 18px' }}>
+      <legend style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:8 }}>
+        {label} <span style={{ color:'#DC2626' }}>*</span>
+      </legend>
+      <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => onChange(star)}
+            onMouseEnter={() => setHover(star)}
+            onMouseLeave={() => setHover(0)}
+            aria-label={`${star} de 5: ${ratingLabels[star]}`}
+            aria-pressed={value === star}
+            style={{
+              border:0,
+              background:'transparent',
+              color:star <= activeValue ? '#F59E0B' : '#CBD5E1',
+              fontSize:34,
+              lineHeight:1,
+              padding:'0 2px',
+              cursor:'pointer',
+              transition:'color .12s, transform .12s',
+              transform:star <= activeValue ? 'scale(1.04)' : 'scale(1)',
+            }}
+          >
+            ★
+          </button>
+        ))}
+        {activeValue > 0 && (
+          <span style={{ marginLeft:6, fontFamily:PP, fontSize:11, fontWeight:700, color:'#B45309' }}>
+            {ratingLabels[activeValue]}
+          </span>
+        )}
+      </div>
+    </fieldset>
+  )
+}
+
 export default function Perfil() {
   const { isLoggedIn, displayName, userCanton, userInterests, user, signOut, avatarUrl, updateAvatar, isAdmin } = useAuth()
   const { isPWA, canInstall, promptInstall } = usePWA()
@@ -606,6 +665,12 @@ export default function Perfil() {
   const [copied, setCopied] = useState(false)
   const [uploadingPartnerLogo, setUploadingPartnerLogo] = useState(false)
 
+  // Latido rating
+  const [latidoRatingOpen, setLatidoRatingOpen] = useState(false)
+  const [latidoRatingForm, setLatidoRatingForm] = useState(EMPTY_LATIDO_RATING)
+  const [latidoRatingLoading, setLatidoRatingLoading] = useState(false)
+  const [savingLatidoRating, setSavingLatidoRating] = useState(false)
+  const [hasLatidoRating, setHasLatidoRating] = useState(false)
 
   const loadPublications = async () => {
     if (!user?.id) return
@@ -652,6 +717,44 @@ export default function Perfil() {
     if (!isLoggedIn || !user?.id) return
     loadPublications()
   }, [isLoggedIn, user?.id])
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) {
+      setLatidoRatingForm(EMPTY_LATIDO_RATING)
+      setHasLatidoRating(false)
+      return
+    }
+
+    let active = true
+    setLatidoRatingLoading(true)
+    getLatidoRating(user.id)
+      .then(rating => {
+        if (!active) return
+        setHasLatidoRating(Boolean(rating))
+        setLatidoRatingForm(rating ? {
+          overallRating:Number(rating.overall_rating || 0),
+          usefulnessRating:Number(rating.usefulness_rating || 0),
+          comment:rating.comment || '',
+        } : EMPTY_LATIDO_RATING)
+      })
+      .catch(error => {
+        if (active) console.warn('Could not load Latido rating:', error)
+      })
+      .finally(() => {
+        if (active) setLatidoRatingLoading(false)
+      })
+
+    return () => { active = false }
+  }, [isLoggedIn, user?.id])
+
+  useEffect(() => {
+    if (
+      isLoggedIn
+      && new URLSearchParams(location.search).get('rate') === '1'
+    ) {
+      setLatidoRatingOpen(true)
+    }
+  }, [isLoggedIn, location.search])
 
   useEffect(() => {
     if (!user?.id) {
@@ -1706,6 +1809,47 @@ export default function Perfil() {
     }
   }
 
+  const closeLatidoRating = () => {
+    setLatidoRatingOpen(false)
+    const params = new URLSearchParams(location.search)
+    if (!params.has('rate')) return
+
+    params.delete('rate')
+    navigate({
+      pathname:location.pathname,
+      search:params.toString() ? `?${params.toString()}` : '',
+    }, { replace:true })
+  }
+
+  const submitLatidoRating = async () => {
+    if (
+      !user?.id
+      || savingLatidoRating
+      || !latidoRatingForm.overallRating
+      || !latidoRatingForm.usefulnessRating
+    ) return
+
+    setSavingLatidoRating(true)
+    try {
+      const rating = await saveLatidoRating({
+        userId:user.id,
+        overallRating:latidoRatingForm.overallRating,
+        usefulnessRating:latidoRatingForm.usefulnessRating,
+        comment:latidoRatingForm.comment,
+        accountCreatedAt:user.created_at,
+      })
+      setHasLatidoRating(true)
+      notifyLatidoRatingSubmitted(rating)
+      toast.success(hasLatidoRating ? 'Valoración actualizada' : 'Gracias por valorar Latido')
+      closeLatidoRating()
+    } catch (error) {
+      console.error('Could not save Latido rating:', error)
+      toast.error('No pudimos guardar tu valoración. Inténtalo de nuevo.')
+    } finally {
+      setSavingLatidoRating(false)
+    }
+  }
+
   const menuSections = [
     {
       title: 'Mi actividad',
@@ -1746,6 +1890,15 @@ export default function Perfil() {
       title: 'Ajustes',
       items: [
         { icon:'⚙️', color:'#F1F5F9', label:'Configuración', sub:'Nombre, cantón, intereses y contraseña', action:openConfig },
+        {
+          icon:'⭐',
+          color:'#FFFBEB',
+          label:'Valorar Latido',
+          sub:hasLatidoRating
+            ? 'Editar tu valoración y comentario'
+            : 'Cuéntanos qué te parece y si encuentras lo que necesitas',
+          action:() => setLatidoRatingOpen(true),
+        },
         { icon:'🔗', color:'#F1F5F9', label:'Compartir Latido', sub:'Invita a amigos y familiares a unirse', action:handleShare },
         { icon:'✉️', color:'#F1F5F9', label:'Contactar con Latido', sub:'Preguntas, sugerencias o feedback', action:() => window.location.href = `mailto:info@latido.ch?subject=${encodeURIComponent('Mensaje desde Latido')}` },
       ],
@@ -2561,6 +2714,105 @@ export default function Perfil() {
           </>
         )}
       </Sheet>
+
+      <Modal
+        show={latidoRatingOpen}
+        onClose={closeLatidoRating}
+        title="⭐ Valorar Latido"
+        syncHistory={false}
+      >
+        {latidoRatingLoading ? (
+          <div style={{ padding:'28px 0', textAlign:'center', fontFamily:PP, fontSize:13, color:C.mid }}>
+            Cargando tu valoración...
+          </div>
+        ) : (
+          <>
+            <div style={{ background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:16, padding:'13px 14px', marginBottom:20 }}>
+              <p style={{ margin:'0 0 3px', fontFamily:PP, fontWeight:800, fontSize:13, color:'#92400E' }}>
+                Tu opinión es lo más importante
+              </p>
+              <p style={{ margin:0, fontFamily:PP, fontSize:11.5, lineHeight:1.55, color:'#A16207' }}>
+                Guardaremos tu valoración para que puedas modificarla cuando quieras.
+              </p>
+            </div>
+
+            <LatidoStarInput
+              label="¿Qué te parece Latido?"
+              value={latidoRatingForm.overallRating}
+              onChange={overallRating => setLatidoRatingForm(current => ({
+                ...current,
+                overallRating,
+              }))}
+            />
+            <LatidoStarInput
+              label="¿Encuentras en Latido lo que necesitas?"
+              value={latidoRatingForm.usefulnessRating}
+              ratingLabels={[
+                '',
+                'Nunca',
+                'Casi nunca',
+                'A veces',
+                'Casi siempre',
+                'Siempre',
+              ]}
+              onChange={usefulnessRating => setLatidoRatingForm(current => ({
+                ...current,
+                usefulnessRating,
+              }))}
+            />
+
+            <label
+              htmlFor="latido-rating-comment"
+              style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:7 }}
+            >
+              ¿Qué podríamos mejorar? <span style={{ fontWeight:500, color:C.light }}>(opcional)</span>
+            </label>
+            <textarea
+              id="latido-rating-comment"
+              maxLength={2000}
+              value={latidoRatingForm.comment}
+              onChange={event => setLatidoRatingForm(current => ({
+                ...current,
+                comment:event.target.value,
+              }))}
+              placeholder="Cuéntanos qué funciona bien o qué podríamos mejorar..."
+              style={{
+                width:'100%',
+                minHeight:105,
+                boxSizing:'border-box',
+                resize:'vertical',
+                border:`1.5px solid ${C.border}`,
+                borderRadius:14,
+                padding:'11px 12px',
+                background:'#fff',
+                color:C.text,
+                fontFamily:PP,
+                fontSize:12,
+                lineHeight:1.55,
+                outline:'none',
+              }}
+            />
+            <p style={{ margin:'4px 0 16px', textAlign:'right', fontFamily:PP, fontSize:9.5, color:C.light }}>
+              {latidoRatingForm.comment.length} / 2000
+            </p>
+
+            <Btn
+              onClick={submitLatidoRating}
+              disabled={
+                savingLatidoRating
+                || !latidoRatingForm.overallRating
+                || !latidoRatingForm.usefulnessRating
+              }
+            >
+              {savingLatidoRating
+                ? 'Guardando...'
+                : hasLatidoRating
+                ? 'Actualizar valoración'
+                : 'Enviar valoración'}
+            </Btn>
+          </>
+        )}
+      </Modal>
 
       {/* ── Compartir Latido ── */}
       <Sheet show={shareOpen} onClose={() => setShareOpen(false)} title="🔗 Compartir Latido">
