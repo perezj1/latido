@@ -140,11 +140,7 @@ export default function SearchResolutionPrompt() {
     if (timerRef.current) window.clearTimeout(timerRef.current)
     setVisible(false)
 
-    if (
-      isAdmin
-      || !pending
-      || !isRelevantLocation(pending, location)
-    ) return undefined
+    if (!pending || !isRelevantLocation(pending, location)) return undefined
 
     const baseTime = Number(pending.action_recorded_at || pending.opened_at)
     const delay = pending.action_recorded_at ? ACTION_PROMPT_DELAY_MS : PROMPT_DELAY_MS
@@ -166,14 +162,13 @@ export default function SearchResolutionPrompt() {
       if (timerRef.current) window.clearTimeout(timerRef.current)
       document.removeEventListener('visibilitychange', showOnReturn)
     }
-  }, [isAdmin, location, pending])
+  }, [location, pending])
 
   useEffect(() => {
     const handleAction = event => {
       const context = readPendingSearchResolution()
       if (
-        isAdmin
-        || !context
+        !context
         || context.action_recorded_at
         || !isRelevantLocation(context, location)
       ) return
@@ -188,18 +183,20 @@ export default function SearchResolutionPrompt() {
       })
       setPending(nextContext)
 
-      trackAnalyticsEvent('search_solution_action', {
-        user_id:user?.id || null,
-        metadata:{
-          search_attempt_id:context.search_attempt_id,
-          query:context.query,
-          result_id:context.result_id,
-          result_type:context.result_type,
-          result_label:context.result_label,
-          action:action.action,
-          time_to_action_ms:Math.max(0, recordedAt - Number(context.opened_at || recordedAt)),
-        },
-      })
+      if (!isAdmin) {
+        trackAnalyticsEvent('search_solution_action', {
+          user_id:user?.id || null,
+          metadata:{
+            search_attempt_id:context.search_attempt_id,
+            query:context.query,
+            result_id:context.result_id,
+            result_type:context.result_type,
+            result_label:context.result_label,
+            action:action.action,
+            time_to_action_ms:Math.max(0, recordedAt - Number(context.opened_at || recordedAt)),
+          },
+        })
+      }
     }
 
     document.addEventListener('click', handleAction, true)
@@ -231,20 +228,22 @@ export default function SearchResolutionPrompt() {
     if (!pending || step !== 'question') return
 
     setAnswer(nextAnswer)
-    trackAnalyticsEvent('search_resolution', {
-      user_id:user?.id || null,
-      metadata:{
-        search_attempt_id:pending.search_attempt_id,
-        query:pending.query,
-        result_id:pending.result_id,
-        result_type:pending.result_type,
-        result_label:pending.result_label,
-        answer:nextAnswer,
-        had_solution_action:Boolean(pending.action_recorded_at),
-        solution_action:pending.action || '',
-        time_to_feedback_ms:Math.max(0, Date.now() - Number(pending.opened_at || Date.now())),
-      },
-    })
+    if (!isAdmin) {
+      trackAnalyticsEvent('search_resolution', {
+        user_id:user?.id || null,
+        metadata:{
+          search_attempt_id:pending.search_attempt_id,
+          query:pending.query,
+          result_id:pending.result_id,
+          result_type:pending.result_type,
+          result_label:pending.result_label,
+          answer:nextAnswer,
+          had_solution_action:Boolean(pending.action_recorded_at),
+          solution_action:pending.action || '',
+          time_to_feedback_ms:Math.max(0, Date.now() - Number(pending.opened_at || Date.now())),
+        },
+      })
+    }
     saveResponse(pending, nextAnswer)
 
     if (nextAnswer === 'yes') {
@@ -257,18 +256,20 @@ export default function SearchResolutionPrompt() {
   const submitReason = reason => {
     if (!pending || !answer) return
 
-    trackAnalyticsEvent('search_resolution_reason', {
-      user_id:user?.id || null,
-      metadata:{
-        search_attempt_id:pending.search_attempt_id,
-        query:pending.query,
-        result_id:pending.result_id,
-        result_type:pending.result_type,
-        result_label:pending.result_label,
-        answer,
-        reason,
-      },
-    })
+    if (!isAdmin) {
+      trackAnalyticsEvent('search_resolution_reason', {
+        user_id:user?.id || null,
+        metadata:{
+          search_attempt_id:pending.search_attempt_id,
+          query:pending.query,
+          result_id:pending.result_id,
+          result_type:pending.result_type,
+          result_label:pending.result_label,
+          answer,
+          reason,
+        },
+      })
+    }
     saveResponse(pending, answer, reason)
     finish('thanks')
   }
