@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import { supabase } from '../lib/supabase'
 import { isAdminUser } from '../lib/admin'
+import { normalizeInterestIds } from '../lib/interests'
 
 const AuthContext = createContext(null)
 
@@ -26,12 +27,12 @@ export function AuthProvider({ children }) {
   // Only show loading spinner if we have no cached user to show immediately
   const [loading, setLoading] = useState(!localUser)
   const [avatarUrl, setAvatarUrl] = useState(null)
-  const [profileMeta, setProfileMeta] = useState({ banned: false, bannedReason: '', bannedAt: null })
+  const [profileMeta, setProfileMeta] = useState({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
 
   useEffect(() => {
     if (!user?.id) {
       setAvatarUrl(null)
-      setProfileMeta({ banned: false, bannedReason: '', bannedAt: null })
+      setProfileMeta({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
       return
     }
 
@@ -40,7 +41,7 @@ export function AuthProvider({ children }) {
     async function loadProfileMeta() {
       let response = await supabase
         .from('profiles')
-        .select('avatar_url, banned, banned_reason, banned_at')
+        .select('avatar_url, banned, banned_reason, banned_at, interests')
         .eq('id', user.id)
         .maybeSingle()
 
@@ -59,6 +60,7 @@ export function AuthProvider({ children }) {
         banned: profile.banned === true,
         bannedReason: profile.banned_reason || '',
         bannedAt: profile.banned_at || null,
+        interests: normalizeInterestIds(profile.interests),
       })
     }
 
@@ -77,7 +79,7 @@ export function AuthProvider({ children }) {
       if (event === 'SIGNED_OUT') {
         setUser(null)
         setAvatarUrl(null)
-        setProfileMeta({ banned: false, bannedReason: '', bannedAt: null })
+        setProfileMeta({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
       } else if (session?.user) {
         // SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED — real session
         setUser(session.user)
@@ -89,11 +91,18 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signUp = async ({ email, password, name, canton }) => {
+  const signUp = async ({ email, password, name, canton, languages=[], interests=[] }) => {
     const result = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name, canton } },
+      options: {
+        data: {
+          name,
+          canton,
+          languages,
+          interests:normalizeInterestIds(interests),
+        },
+      },
     })
     // Set user from session (immediate login) or from user object (email confirmation flow)
     const u = result.data?.session?.user ?? result.data?.user ?? null
@@ -111,7 +120,7 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
     setUser(null)
     setAvatarUrl(null)
-    setProfileMeta({ banned: false, bannedReason: '', bannedAt: null })
+    setProfileMeta({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
   }
 
   const updateAvatar = useCallback((url) => setAvatarUrl(url), [])
@@ -122,6 +131,11 @@ export function AuthProvider({ children }) {
     isLoggedIn: !!user,
     displayName: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
     userCanton: user?.user_metadata?.canton || '',
+    userInterests: normalizeInterestIds(
+      Array.isArray(user?.user_metadata?.interests)
+        ? user.user_metadata.interests
+        : profileMeta.interests
+    ),
     avatarUrl,
     isBanned: profileMeta.banned,
     bannedReason: profileMeta.bannedReason,

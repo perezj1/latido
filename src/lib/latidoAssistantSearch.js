@@ -175,11 +175,11 @@ const SCOPE_DEFINITIONS = [
   },
   {
     id:'food',
-    label:'Comida y restauración',
+    label:'Comida y restaurantes',
     category:'',
     entityTypes:['business', 'ad'],
-    triggers:['comer', 'comida', 'restaurante', 'catering', 'pastel', 'torta', 'tarta', 'pasteleria', 'reposteria', 'panaderia', 'cupcake', 'postre', 'dulces', 'salsa'],
-    searchTerms:['comida', 'restaurante', 'catering', 'pasteleria', 'reposteria', 'pastel', 'tarta', 'torta', 'panaderia', 'cupcake', 'postre'],
+    triggers:['comer', 'comida', 'restaurante', 'restaurantes', 'catering', 'pastel', 'torta', 'tarta', 'pasteleria', 'reposteria', 'panaderia', 'cupcake', 'postre', 'dulces', 'salsa'],
+    searchTerms:['comida', 'restaurante', 'restaurantes', 'gastronomia', 'catering', 'pasteleria', 'reposteria', 'pastel', 'tarta', 'torta', 'panaderia', 'cupcake', 'postre'],
     semanticSeed:'restaurante',
   },
   {
@@ -592,19 +592,19 @@ function detectScope(normalized) {
 
   const cakeTerms = ['tarta', 'tartas', 'torta', 'tortas', 'pastel', 'pasteles', 'pasteleria', 'reposteria', 'cupcake', 'cupcakes']
   if (hasAnyPhrase(normalized, cakeTerms)) {
-    return focusScope('food', 'tarta', ['tarta', 'torta', 'pastel', 'pasteleria', 'reposteria', 'cupcake'])
+    return focusScope('food', 'tarta', ['tarta', 'tartas', 'torta', 'tortas', 'pastel', 'pasteles', 'pasteleria', 'reposteria', 'cupcake', 'cupcakes'], 'food')
   }
 
   const foodFocuses = [
     { terms:['catering', 'banquete'], seed:'catering' },
     { terms:['panaderia', 'pan', 'bolleria'], seed:'panaderia' },
-    { terms:['restaurante', 'comer fuera'], seed:'restaurante' },
-    { terms:['comida', 'comer', 'cocina', 'gastronomia', 'plato', 'menu'], seed:'comida' },
+    { terms:['restaurante', 'restaurantes', 'comer fuera'], seed:'restaurante' },
+    { terms:['comida', 'comer', 'gastronomia', 'plato', 'platos', 'menu'], seed:'comida' },
     { terms:['salsa'], seed:'salsa' },
   ]
   const foodFocus = foodFocuses.find(focus => hasAnyPhrase(normalized, focus.terms))
   if (foodFocus) {
-    return focusScope('food', foodFocus.seed, foodFocus.terms, foodFocus.seed === 'salsa' ? 'food' : 'terms')
+    return focusScope('food', foodFocus.seed, foodFocus.terms, 'food')
   }
 
   const carTerms = ['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'automoviles']
@@ -896,6 +896,24 @@ function matchesGermanRequirement(meta, level) {
   return order.indexOf(resultLevel) <= order.indexOf(level)
 }
 
+const FOOD_RESULT_CATEGORIES = new Set([
+  'restaurante',
+  'gastronomia',
+  'pasteleria',
+  'panaderia',
+  'catering',
+])
+const FOOD_RESULT_TERMS = [
+  'comida', 'comidas', 'restaurante', 'restaurantes', 'gastronomia',
+  'catering', 'banquete', 'banquetes', 'pasteleria', 'reposteria',
+  'panaderia', 'bolleria', 'pastel', 'pasteles', 'tarta', 'tartas',
+  'torta', 'tortas', 'cupcake', 'cupcakes', 'postre', 'postres',
+  'receta', 'recetas', 'delivery',
+  'take away', 'comida para llevar', 'tortilla', 'picante', 'arepa',
+  'arepas', 'empanada', 'empanadas',
+  'salsa casera', 'salsa picante', 'salsa de tomate',
+]
+
 function matchesScopeFocus(result, scope, allowGeneralFallback = false) {
   if (!scope?.focusKind) return true
   const meta = result?.filterMeta || {}
@@ -920,8 +938,18 @@ function matchesScopeFocus(result, scope, allowGeneralFallback = false) {
   }
 
   if (scope.focusKind === 'food') {
+    const categories = Array.isArray(meta.categories) ? meta.categories : []
+    if (categories.includes('vivienda')) return false
+
+    const isFoodCategory = categories.some(category => FOOD_RESULT_CATEGORIES.has(category))
+    const hasFoodContext = isFoodCategory || hasAnyPhrase(searchText, FOOD_RESULT_TERMS)
+    if (!hasFoodContext) return false
+
+    if (scope.semanticSeed === 'comida') return true
+    if (scope.semanticSeed === 'restaurante') {
+      return isFoodCategory || hasAnyPhrase(searchText, ['restaurante', 'restaurantes'])
+    }
     return hasAnyPhrase(searchText, scope.focusTerms || [])
-      && hasAnyPhrase(searchText, ['comida', 'cocina', 'restaurante', 'tortilla', 'picante', 'receta', 'catering', 'pasteleria', 'panaderia', 'postre'])
   }
 
   if (scope.focusKind === 'gardening') {

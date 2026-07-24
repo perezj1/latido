@@ -106,7 +106,7 @@ const SEARCH_INTENT_LABELS = {
   housing:'Vivienda',
   health:'Salud',
   beauty:'Belleza',
-  food:'Comida y restauración',
+  food:'Comida y restaurantes',
   vehicle:'Vehículos',
   marketplace:'Compra y venta',
 }
@@ -997,6 +997,7 @@ export default function GlobalSearch({
   searchFilters = EMPTY_SEARCH_FILTERS,
   onSearchFiltersChange,
   filtersContent = null,
+  endContent = null,
   assistantMode = false,
   assistantLabelColor = '#fff',
 }) {
@@ -1462,27 +1463,33 @@ export default function GlobalSearch({
           <span style={{ fontSize:13, fontWeight:400 }}>✨ Dile lo que necesitas a Latido</span>
         </div>
       )}
-      <div style={{ position:'relative' }}>
-        <span style={{ position:'absolute', left:size === 'lg' ? 16 : 12, top:'50%', transform:'translateY(-50%)', fontSize:size === 'lg' ? 20 : 15, color:focused ? C.primary : C.light, transition:'color .15s', pointerEvents:'none' }}>
-          🔍
-        </span>
-        <input
-          ref={inputRef}
-          style={inputStyle}
-          placeholder={ph}
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKey}
-          autoComplete="off"
-          aria-label={assistantMode ? 'Pregunta a Latido' : (hasPageScope ? 'Buscar en esta sección' : 'Buscar en Latido')}
-        />
-        {q && (
-          <button onMouseDown={e => e.preventDefault()} onClick={clearSearch} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:C.border, border:'none', borderRadius:'50%', width:20, height:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:C.mid }}>
-            ✕
-          </button>
-        )}
+      <div
+        onFocusCapture={endContent ? handleFocus : undefined}
+        style={{ display:endContent ? 'flex' : 'block', alignItems:'center', gap:endContent ? 8 : 0 }}
+      >
+        <div style={{ position:'relative', flex:endContent ? 1 : undefined, minWidth:0 }}>
+          <span style={{ position:'absolute', left:size === 'lg' ? 16 : 12, top:'50%', transform:'translateY(-50%)', fontSize:size === 'lg' ? 20 : 15, color:focused ? C.primary : C.light, transition:'color .15s', pointerEvents:'none' }}>
+            🔍
+          </span>
+          <input
+            ref={inputRef}
+            style={inputStyle}
+            placeholder={ph}
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onKeyDown={handleKey}
+            autoComplete="off"
+            aria-label={assistantMode ? 'Pregunta a Latido' : (hasPageScope ? 'Buscar en esta sección' : 'Buscar en Latido')}
+          />
+          {q && (
+            <button onMouseDown={e => e.preventDefault()} onClick={clearSearch} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:C.border, border:'none', borderRadius:'50%', width:20, height:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:C.mid }}>
+              ✕
+            </button>
+          )}
+        </div>
+        {endContent}
       </div>
 
       {filtersContent && (

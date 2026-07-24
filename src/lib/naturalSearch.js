@@ -154,9 +154,9 @@ const INTENT_DEFINITIONS = [
   },
   {
     id:'food',
-    triggers:['comer', 'comida', 'restaurante', 'catering', 'pastel', 'torta', 'tarta', 'pasteleria', 'reposteria', 'panaderia', 'cupcake', 'postre'],
+    triggers:['comer', 'comida', 'restaurante', 'restaurantes', 'catering', 'pastel', 'torta', 'tarta', 'pasteleria', 'reposteria', 'panaderia', 'cupcake', 'postre'],
     consumed:['domicilio', 'llevar', 'pasteles', 'tartas', 'tortas', 'cupcakes'],
-    terms:['comida', 'restaurante', 'cocina', 'catering', 'pasteleria', 'reposteria', 'pastel', 'tarta', 'torta', 'panaderia', 'cupcake', 'postre', 'delivery'],
+    terms:['comida', 'restaurante', 'restaurantes', 'gastronomia', 'catering', 'pasteleria', 'reposteria', 'pastel', 'tarta', 'torta', 'panaderia', 'cupcake', 'postre', 'delivery'],
   },
   {
     id:'education',
