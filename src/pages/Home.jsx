@@ -59,6 +59,7 @@ const CAT_COLORS = {
 }
 
 const REVIEWABLE_AD_CATS = new Set(['servicios', 'cuidados'])
+const HOME_CAROUSEL_CARD_SHADOW = '0 2px 8px rgba(0,0,0,0.06)'
 
 const HOME_SEARCH_CATEGORY_OPTIONS = [
   { value:'', label:'Todos' },
@@ -1914,7 +1915,7 @@ export default function Home() {
                     }}
                     style={{ textDecoration:'none', flexShrink:0, width:172, display:'block', cursor:'pointer' }}
                   >
-                    <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 10px 24px rgba(15,23,42,0.07)' }}>
+                    <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:HOME_CAROUSEL_CARD_SHADOW }}>
                       <div style={{ height:132, background:'#F8FAFC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative', borderBottom:`1px solid ${C.borderLight}` }}>
                         {ad.img
                           ? <img src={getThumbnailImageUrl(ad.img)} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
@@ -2045,7 +2046,7 @@ export default function Home() {
                     to={getBusinessHref(business)}
                     style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
                   >
-                    <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+                    <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:HOME_CAROUSEL_CARD_SHADOW }}>
                     <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'visible' }}>
                       {business.photo_url
                         ? <img src={getThumbnailImageUrl(business.photo_url)} onError={event => handleThumbnailImageError(event, business.photo_url)} alt={business.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
