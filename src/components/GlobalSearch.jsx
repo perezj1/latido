@@ -1414,21 +1414,23 @@ export default function GlobalSearch({
     const href = result?.href || target
     const query = q.trim()
 
-    if (!isAdmin && result && query.length >= 2) {
+    if (result && query.length >= 2) {
       const searchAttemptId = getSearchAttemptId(query)
-      trackCurrentSearch(query, searchAttemptId)
-      trackAnalyticsEvent('search_result_open', {
-        user_id: user?.id || null,
-        metadata: {
-          search_attempt_id: searchAttemptId,
-          query: query.slice(0, 120),
-          result_type: result.type || '',
-          result_id: result.id || '',
-          result_label: result.label || '',
-          search_filters:searchFilters,
-          href,
-        },
-      })
+      if (!isAdmin) {
+        trackCurrentSearch(query, searchAttemptId)
+        trackAnalyticsEvent('search_result_open', {
+          user_id: user?.id || null,
+          metadata: {
+            search_attempt_id: searchAttemptId,
+            query: query.slice(0, 120),
+            result_type: result.type || '',
+            result_id: result.id || '',
+            result_label: result.label || '',
+            search_filters:searchFilters,
+            href,
+          },
+        })
+      }
 
       rememberSearchResultForResolution({
         search_attempt_id:searchAttemptId,
