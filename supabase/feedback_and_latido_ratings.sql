@@ -46,6 +46,15 @@ CREATE INDEX IF NOT EXISTS idx_search_resolution_feedback_user_created_at
 ALTER TABLE public.search_resolution_feedback ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON public.search_resolution_feedback FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON public.search_resolution_feedback TO authenticated;
+
+DROP POLICY IF EXISTS "search_resolution_feedback_select_admin"
+  ON public.search_resolution_feedback;
+CREATE POLICY "search_resolution_feedback_select_admin"
+  ON public.search_resolution_feedback
+  FOR SELECT
+  TO authenticated
+  USING (public.is_business_promotion_admin());
 
 CREATE TABLE IF NOT EXISTS public.latido_ratings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -74,11 +83,14 @@ DROP POLICY IF EXISTS "latido_ratings_select_own_or_admin"
   ON public.latido_ratings;
 DROP POLICY IF EXISTS "latido_ratings_select_own"
   ON public.latido_ratings;
-CREATE POLICY "latido_ratings_select_own"
+CREATE POLICY "latido_ratings_select_own_or_admin"
   ON public.latido_ratings
   FOR SELECT
   TO authenticated
-  USING (user_id = auth.uid());
+  USING (
+    user_id = auth.uid()
+    OR public.is_business_promotion_admin()
+  );
 
 DROP POLICY IF EXISTS "latido_ratings_insert_own"
   ON public.latido_ratings;

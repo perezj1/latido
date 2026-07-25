@@ -21,6 +21,7 @@ import {
   PARTNER_ANALYTICS_PARTNERS,
   resolvePartnerAnalyticsId,
 } from '../lib/partnerAnalytics'
+import { INTEREST_OPTIONS, normalizeInterestIds } from '../lib/interests'
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
@@ -80,6 +81,7 @@ const PARTNER_METRICS_EXCLUDED_EMAILS = new Set(['test@g.com'])
 const ADMIN_TAB_DATA_GROUPS = {
   users: ['users'],
   analytics: ['users', 'analytics'],
+  feedback: ['users', 'feedback'],
   partners: ['users', 'businesses', 'analytics'],
   live: ['users', 'analytics'],
   overview: ['users', 'reports', 'moderation', 'contentMetrics', 'businesses', 'analytics', 'messages'],
@@ -558,6 +560,14 @@ function averageTrend(values) {
   return Math.round(valid.reduce((sum, value) => sum + value, 0) / valid.length)
 }
 
+function averageMetricValue(items, key) {
+  const values = items
+    .map(item => Number(item?.[key]))
+    .filter(value => Number.isFinite(value))
+  if (!values.length) return 0
+  return Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1))
+}
+
 function readMetadata(value) {
   if (!value) return {}
   if (typeof value === 'object') return value
@@ -626,6 +636,12 @@ const SEARCH_RESOLUTION_REASON_LABELS = {
   clearer_price:'Precio más claro',
   more_options:'Más alternativas',
   other:'Otro motivo',
+}
+
+const SEARCH_RESOLUTION_ANSWER_META = {
+  yes:{ label:'Sí', color:'#047857', bg:'#ECFDF5' },
+  partial:{ label:'Parcialmente', color:'#B45309', bg:'#FFFBEB' },
+  no:{ label:'No', color:'#B91C1C', bg:'#FEF2F2' },
 }
 
 function analyticsScope(event) {
@@ -1345,6 +1361,8 @@ export default function Admin() {
   const [analyticsEvents, setAnalyticsEvents] = useState([])
   const [analyticsUnavailable, setAnalyticsUnavailable] = useState(false)
   const [analyticsDays, setAnalyticsDays] = useState(7)
+  const [latidoRatings, setLatidoRatings] = useState([])
+  const [searchFeedback, setSearchFeedback] = useState([])
   const [partnerMonthPeriod, setPartnerMonthPeriod] = useState('current')
   const [selectedPartnerId, setSelectedPartnerId] = useState(PARTNER_ANALYTICS_PARTNERS[0]?.id || '')
   const [messageEvents, setMessageEvents] = useState([])
@@ -1374,6 +1392,115 @@ export default function Admin() {
       return ids
     },
     [users]
+  )
+  const metricLatidoRatings = useMemo(
+    () => latidoRatings.filter(rating => !adminUserIds.has(rating.user_id)),
+    [adminUserIds, latidoRatings]
+  )
+  const metricSearchFeedback = useMemo(
+    () => searchFeedback.filter(item => !item.user_id || !adminUserIds.has(item.user_id)),
+    [adminUserIds, searchFeedback]
+  )
+  const usersWithInterests = useMemo(
+    () => metricUsers.filter(profile => normalizeInterestIds(profile.interests).length > 0),
+    [metricUsers]
+  )
+  const interestRows = useMemo(
+    () => INTEREST_OPTIONS
+      .map(option => {
+        const value = metricUsers.filter(profile =>
+          normalizeInterestIds(profile.interests).includes(option.id)
+        ).length
+        return {
+          label:`${option.emoji} ${option.label}`,
+          value,
+          sub:metricUsers.length ? `${Math.round((value / metricUsers.length) * 100)}% de las cuentas` : '',
+        }
+      })
+      .sort((a, b) => b.value - a.value),
+    [metricUsers]
+  )
+  const selectedInterestCount = useMemo(
+    () => metricUsers.reduce(
+      (total, profile) => total + normalizeInterestIds(profile.interests).length,
+      0
+    ),
+    [metricUsers]
+  )
+  const interestCoverage = metricUsers.length
+    ? Math.round((usersWithInterests.length / metricUsers.length) * 100)
+    : 0
+  const overallRatingAverage = useMemo(
+    () => averageMetricValue(metricLatidoRatings, 'overall_rating'),
+    [metricLatidoRatings]
+  )
+  const usefulnessRatingAverage = useMemo(
+    () => averageMetricValue(metricLatidoRatings, 'usefulness_rating'),
+    [metricLatidoRatings]
+  )
+  const overallRatingRows = useMemo(
+    () => [5, 4, 3, 2, 1].map(stars => ({
+      label:`${stars} ${stars === 1 ? 'estrella' : 'estrellas'}`,
+      value:metricLatidoRatings.filter(rating => Number(rating.overall_rating) === stars).length,
+    })),
+    [metricLatidoRatings]
+  )
+  const usefulnessRatingRows = useMemo(
+    () => [5, 4, 3, 2, 1].map(stars => ({
+      label:`${stars} ${stars === 1 ? 'estrella' : 'estrellas'}`,
+      value:metricLatidoRatings.filter(rating => Number(rating.usefulness_rating) === stars).length,
+    })),
+    [metricLatidoRatings]
+  )
+  const directSearchResolution = useMemo(() => {
+    const yes = metricSearchFeedback.filter(item => item.answer === 'yes').length
+    const partial = metricSearchFeedback.filter(item => item.answer === 'partial').length
+    const no = metricSearchFeedback.filter(item => item.answer === 'no').length
+    const total = yes + partial + no
+    return {
+      total,
+      yes,
+      partial,
+      no,
+      confirmedRate:total ? Math.round((yes / total) * 100) : 0,
+      helpfulRate:total ? Math.round(((yes + partial) / total) * 100) : 0,
+    }
+  }, [metricSearchFeedback])
+  const directUnresolvedSearchRows = useMemo(
+    () => topAnalyticsRows(
+      metricSearchFeedback.filter(item => ['partial', 'no'].includes(item.answer)),
+      item => item.query,
+      8,
+      item => SEARCH_RESOLUTION_ANSWER_LABELS[item.answer] || ''
+    ),
+    [metricSearchFeedback]
+  )
+  const directSearchReasonRows = useMemo(
+    () => topAnalyticsRows(
+      metricSearchFeedback.filter(item => item.reason),
+      item => SEARCH_RESOLUTION_REASON_LABELS[item.reason] || 'Otro motivo',
+      8
+    ),
+    [metricSearchFeedback]
+  )
+  const userNamesById = useMemo(
+    () => new Map(users.map(profile => [
+      profile.id,
+      profile.name || profile.email || 'Usuario',
+    ])),
+    [users]
+  )
+  const latestLatidoRatings = useMemo(
+    () => [...metricLatidoRatings]
+      .sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')))
+      .slice(0, 12),
+    [metricLatidoRatings]
+  )
+  const latestSearchFeedback = useMemo(
+    () => [...metricSearchFeedback]
+      .sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')))
+      .slice(0, 12),
+    [metricSearchFeedback]
   )
   const businessPromotionPlans = useMemo(
     () => mergeBusinessPromotionPlans(businessPromotionAvailability),
@@ -1924,7 +2051,18 @@ export default function Admin() {
       const wantsContentMetrics = groups.includes('contentMetrics')
       const contentGroup = wantsContent ? 'content' : 'contentMetrics'
       const skipped = data => ({ data, count: data.length, error: null, skipped: true })
-      const [reportsRes, queueRes, usersRes, listingsRes, jobsRes, providersRes, analyticsRes, messagesRes] = await Promise.all([
+      const [
+        reportsRes,
+        queueRes,
+        usersRes,
+        listingsRes,
+        jobsRes,
+        providersRes,
+        analyticsRes,
+        messagesRes,
+        ratingsRes,
+        searchFeedbackRes,
+      ] = await Promise.all([
         groups.includes('reports') ? fetchAdminReportsDelta({
           cache:dailyRowsCacheRef.current,
           days:requestedDays,
@@ -1935,7 +2073,7 @@ export default function Admin() {
           transformQuery: query => query.eq('status', 'pending'),
         }) : skipped(queue),
         groups.includes('users')
-          ? fetchAllAdminRows({ table: 'profiles', columns: 'id,name,email,canton,banned,banned_reason,banned_at,created_at,last_seen_at' })
+          ? fetchAllAdminRows({ table: 'profiles', columns: 'id,name,email,canton,interests,banned,banned_reason,banned_at,created_at,last_seen_at' })
           : skipped(users),
         wantsContent || wantsContentMetrics
           ? fetchAdminRowsByDayDelta({
@@ -1979,6 +2117,20 @@ export default function Admin() {
           days:requestedDays,
           refreshRecent:force,
         }) : skipped(messageEvents),
+        groups.includes('feedback')
+          ? fetchAllAdminRows({
+              table:'latido_ratings',
+              columns:'id,user_id,overall_rating,usefulness_rating,comment,account_created_at,created_at,updated_at',
+              orderColumn:'updated_at',
+            })
+          : skipped(latidoRatings),
+        groups.includes('feedback')
+          ? fetchAllAdminRows({
+              table:'search_resolution_feedback',
+              columns:'id,search_attempt_id,user_id,query,result_id,result_type,result_label,answer,reason,had_solution_action,solution_action,time_to_feedback_ms,created_at,updated_at',
+              orderColumn:'created_at',
+            })
+          : skipped(searchFeedback),
       ])
 
       const responses = [
@@ -1990,6 +2142,8 @@ export default function Admin() {
         ['businesses', 'negocios', providersRes],
         ['analytics', 'analitica', analyticsRes],
         ['messages', 'mensajes', messagesRes],
+        ['feedback', 'valoraciones de Latido', ratingsRes],
+        ['feedback', 'respuestas de busqueda', searchFeedbackRes],
       ]
       const deltaResponses = []
       for (const [group, label, response] of responses) {
@@ -2025,6 +2179,12 @@ export default function Admin() {
       } else if (groups.includes('messages')) {
         setMessagesUnavailable(true)
         console.warn('Messages activity unavailable:', messagesRes.error.message)
+      }
+      if (groups.includes('feedback') && !ratingsRes.error) {
+        setLatidoRatings(ratingsRes.data)
+      }
+      if (groups.includes('feedback') && !searchFeedbackRes.error) {
+        setSearchFeedback(searchFeedbackRes.data)
       }
 
       const nextReports = groups.includes('reports') && !reportsRes.error ? reportsRes.data : []
@@ -2745,6 +2905,7 @@ export default function Admin() {
   const NAV_ITEMS = [
     { id: 'users', icon: '👥', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
     { id: 'analytics', icon: '📈', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'feedback', icon: '⭐', label: 'Intereses y valoraciones', value: navValue('feedback', `${metricLatidoRatings.length} valoraciones`), color: '#B45309', bg: '#FFFBEB' },
     { id: 'partners', icon: '🚀', label: 'Colaboraciones', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
     { id: 'live', icon: '📡', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
     { id: 'overview', icon: '📊', label: 'Estado general', value: navValue('overview', `${generalScore}/100`), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
@@ -2757,11 +2918,11 @@ export default function Admin() {
   const navById = new Map(NAV_ITEMS.map(item => [item.id, item]))
   const NAV_GROUPS = [
     { label: 'Direccion', hint: 'Estado global y decisiones rapidas', items: ['overview', 'live'] },
-    { label: 'Crecimiento', hint: 'Usuarios, uso real y colaboraciones', items: ['users', 'analytics', 'partners'] },
+    { label: 'Crecimiento', hint: 'Usuarios, intereses, valoraciones y colaboraciones', items: ['users', 'analytics', 'feedback', 'partners'] },
     { label: 'Operacion', hint: 'Negocios, publicaciones y seguridad', items: ['businessVerification', 'content', 'reports', 'moderation'] },
   ]
   const BOTTOM_NAV_ITEMS = []
-  for (const id of ['users', 'analytics', 'partners', 'businessVerification']) {
+  for (const id of ['users', 'analytics', 'feedback', 'businessVerification']) {
     const item = navById.get(id)
     if (item) BOTTOM_NAV_ITEMS.push(item)
   }
@@ -2790,6 +2951,7 @@ export default function Admin() {
     overview: { icon: '📊', label: 'Estado general' },
     live: { icon: '📡', label: 'Live' },
     analytics: { icon: '📈', label: 'Uso de la app' },
+    feedback: { icon: '⭐', label: 'Intereses y valoraciones' },
     partners: { icon: '🚀', label: 'Colaboraciones' },
     moderation: { icon: '⏳', label: 'Revisión manual' },
     reports:    { icon: '🚨', label: 'Reportes pendientes' },
@@ -2805,6 +2967,7 @@ export default function Admin() {
     overview: { description: `Rapport de ${overviewRangeText} con señales de crecimiento, actividad, pendientes y recomendaciones.`, color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
     live: { description: 'Online ahora se actualiza en directo; actividad diaria y semanal usa la última consulta a Supabase.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
     analytics: { description: `Páginas más usadas, búsquedas frecuentes, soluciones confirmadas y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResolution.yes} resueltas` },
+    feedback: { description: 'Preferencias declaradas, valoración general y respuestas directas sobre si las personas encontraron lo que necesitaban.', color: '#B45309', count: metricLatidoRatings.length, badge: `${metricLatidoRatings.length} valoraciones · ${directSearchResolution.total} respuestas` },
     partners: { description: `Salidas reales hacia el colaborador seleccionado, separadas entre landing y app en ${partnerRangeText}.`, color: '#4F46E5', count: partnerClickEvents.length, badge: `${partnerClickEvents.length} salidas · ${partnerLandingClicks.length} landing · ${partnerAppClicks.length} app` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
@@ -2836,6 +2999,14 @@ export default function Admin() {
           { label: 'Búsquedas con apertura', value: loading ? '...' : searchConversion.opened, hint: `${searchActionRate}% de búsquedas únicas`, color: '#059669' },
           { label: 'Solución confirmada', value: loading ? '...' : `${searchResolution.confirmedRate}%`, hint: `${searchResolution.yes} de ${searchResolution.total} respuestas · ${searchResolution.coverage}% cobertura`, color: '#047857' },
           { label: 'Hora fuerte', value: loading ? '...' : strongestTimeLabel(pageHourRows), hint: analyticsUnavailable ? 'Falta tabla analytics_events' : 'Según vistas de página', color: analyticsUnavailable ? '#D97706' : '#0F766E' },
+        ]
+    : tab === 'feedback'
+      ? [
+          { label: 'Con intereses', value: loading ? '...' : `${interestCoverage}%`, hint: `${usersWithInterests.length} de ${metricUsers.length} cuentas`, color: '#7C3AED' },
+          { label: 'Valoración Latido', value: loading ? '...' : (metricLatidoRatings.length ? `${overallRatingAverage}/5` : 'Sin datos'), hint: `${metricLatidoRatings.length} valoraciones`, color: '#B45309' },
+          { label: 'Encuentra lo necesario', value: loading ? '...' : (metricLatidoRatings.length ? `${usefulnessRatingAverage}/5` : 'Sin datos'), hint: 'Media de la segunda pregunta', color: '#047857' },
+          { label: 'Búsquedas resueltas', value: loading ? '...' : `${directSearchResolution.confirmedRate}%`, hint: `${directSearchResolution.yes} Sí de ${directSearchResolution.total}`, color: '#059669' },
+          { label: 'Respuestas útiles', value: loading ? '...' : `${directSearchResolution.helpfulRate}%`, hint: 'Sí o parcialmente', color: '#0284C7' },
         ]
     : tab === 'partners'
       ? [
@@ -3179,6 +3350,178 @@ export default function Admin() {
                     <strong style={{ fontFamily: PP, fontSize: 13, color: item.color }}>{item.value} pend.</strong>
                   </button>
                 ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* -- Intereses y valoraciones ----------------------- */}
+      {tab === 'feedback' && isTabDataReady('feedback') && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
+            <InsightBarList
+              title="Intereses seleccionados"
+              subtitle="Preferencias actuales elegidas durante el registro o desde el perfil."
+              rows={interestRows}
+              color="#7C3AED"
+              emptyText="Todavía no hay intereses seleccionados."
+            />
+
+            <Card style={{ padding: 18, background: 'linear-gradient(180deg,#FFFFFF,#F7F3FF)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Cobertura de intereses</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>Cuántas cuentas han indicado al menos una preferencia.</p>
+                </div>
+                <Tag bg="#F3E8FF" color="#7C3AED">{interestCoverage}%</Tag>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 9 }}>
+                {[
+                  { label:'Con intereses', value:usersWithInterests.length, color:'#7C3AED' },
+                  { label:'Sin intereses', value:Math.max(0, metricUsers.length - usersWithInterests.length), color:'#D97706' },
+                  { label:'Selecciones totales', value:selectedInterestCount, color:C.primary },
+                  { label:'Media por cuenta', value:metricUsers.length ? (selectedInterestCount / metricUsers.length).toFixed(1) : '0.0', color:'#0F766E' },
+                ].map(item => (
+                  <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 11px', background: '#fff' }}>
+                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 23, color: item.color, lineHeight: 1, margin: '0 0 5px' }}>{item.value}</p>
+                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.light, margin: 0 }}>{item.label}</p>
+                  </div>
+                ))}
+              </div>
+              <p style={{ fontFamily: PP, fontSize: 10.5, color: C.mid, lineHeight: 1.5, margin: '13px 0 0' }}>
+                Cada persona puede elegir hasta tres intereses. Los datos se muestran agregados y excluyen la cuenta administradora.
+              </p>
+            </Card>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 14 }}>
+            <InsightBarList
+              title="¿Qué te parece Latido?"
+              subtitle={`Distribución de ${metricLatidoRatings.length} valoraciones · media ${overallRatingAverage || 0}/5.`}
+              rows={overallRatingRows}
+              color="#B45309"
+              emptyText="Todavía no hay valoraciones de Latido."
+            />
+            <InsightBarList
+              title="¿Encuentras en Latido lo que necesitas?"
+              subtitle={`Distribución de respuestas · media ${usefulnessRatingAverage || 0}/5.`}
+              rows={usefulnessRatingRows}
+              color="#047857"
+              emptyText="Todavía no hay respuestas para esta pregunta."
+            />
+          </div>
+
+          <Card style={{ padding: 18, background: 'linear-gradient(180deg,#FFFFFF,#F3FCF8)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 15 }}>
+              <div>
+                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>¿Encontraron lo que buscaban?</p>
+                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>Respuestas guardadas después de una búsqueda, independientemente del consentimiento de métricas.</p>
+              </div>
+              <Tag bg="#ECFDF5" color="#047857">
+                {directSearchResolution.total ? `${directSearchResolution.confirmedRate}% Sí` : 'Sin respuestas'}
+              </Tag>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
+              {[
+                { label:'Total', value:directSearchResolution.total, color:C.text },
+                { label:'Sí', value:directSearchResolution.yes, color:'#047857' },
+                { label:'Parcial', value:directSearchResolution.partial, color:'#B45309' },
+                { label:'No', value:directSearchResolution.no, color:'#B91C1C' },
+              ].map(item => (
+                <div key={item.label} style={{ minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 8px', background: '#fff' }}>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 24, color: item.color, lineHeight: 1, margin: '0 0 5px' }}>{item.value}</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.light, margin: 0 }}>{item.label}</p>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.5, margin: '12px 0 0' }}>
+              {directSearchResolution.helpfulRate}% respondió Sí o Parcialmente.
+            </p>
+          </Card>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
+            <InsightBarList
+              title="Búsquedas que necesitan mejorar"
+              subtitle="Consultas respondidas como Parcialmente o No."
+              rows={directUnresolvedSearchRows}
+              color="#D97706"
+              emptyText="Todavía no hay búsquedas con respuesta negativa o parcial."
+            />
+            <InsightBarList
+              title="Qué podríamos mejorar"
+              subtitle="Motivos indicados después de una respuesta parcial o negativa."
+              rows={directSearchReasonRows}
+              color="#7C3AED"
+              emptyText="Todavía no se han indicado motivos."
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 14 }}>
+            <Card style={{ padding: 16, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Últimas valoraciones</p>
+                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Puntuaciones y comentarios más recientes.</p>
+                </div>
+                <Tag bg="#FFFBEB" color="#B45309">{metricLatidoRatings.length} total</Tag>
+              </div>
+              <div style={{ display: 'grid', gap: 9 }}>
+                {latestLatidoRatings.map(rating => (
+                  <div key={rating.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {userNamesById.get(rating.user_id) || 'Usuario'}
+                        </span>
+                        <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(rating.updated_at || rating.created_at)}</span>
+                      </span>
+                      <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 11, color: '#B45309', whiteSpace: 'nowrap' }}>
+                        ★ {rating.overall_rating}/5 · Encuentra {rating.usefulness_rating}/5
+                      </span>
+                    </div>
+                    <p style={{ fontFamily: PP, fontSize: 11, color: rating.comment ? C.mid : C.light, fontStyle: rating.comment ? 'normal' : 'italic', lineHeight: 1.5, margin: 0, overflowWrap: 'anywhere' }}>
+                      {rating.comment || 'Sin comentario'}
+                    </p>
+                  </div>
+                ))}
+                {!latestLatidoRatings.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Todavía no hay valoraciones.</p>
+                )}
+              </div>
+            </Card>
+
+            <Card style={{ padding: 16, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
+                <div>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Últimas respuestas de búsqueda</p>
+                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Consulta, respuesta y resultado evaluado.</p>
+                </div>
+                <Tag bg="#ECFDF5" color="#047857">{metricSearchFeedback.length} total</Tag>
+              </div>
+              <div style={{ display: 'grid', gap: 9 }}>
+                {latestSearchFeedback.map(item => {
+                  const answerMeta = SEARCH_RESOLUTION_ANSWER_META[item.answer] || SEARCH_RESOLUTION_ANSWER_META.no
+                  return (
+                    <div key={item.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            “{item.query}”
+                          </span>
+                          <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(item.updated_at || item.created_at)}</span>
+                        </span>
+                        <Tag bg={answerMeta.bg} color={answerMeta.color}>{answerMeta.label}</Tag>
+                      </div>
+                      <p style={{ fontFamily: PP, fontSize: 10.5, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}>
+                        {[item.result_label, SEARCH_RESOLUTION_REASON_LABELS[item.reason]].filter(Boolean).join(' · ') || 'Sin detalle adicional'}
+                      </p>
+                    </div>
+                  )
+                })}
+                {!latestSearchFeedback.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Todavía no hay respuestas de búsqueda.</p>
+                )}
               </div>
             </Card>
           </div>
