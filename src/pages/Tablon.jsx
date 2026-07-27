@@ -5,18 +5,24 @@ import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
-import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_INTENTS, JOB_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getJobIntentId, getJobIntentMeta, normalizeAdCat } from '../lib/constants'
-import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, Btn, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
+import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getCategoryIntentMeta, getCategoryIntentViews, getDefaultCategoryIntent, getJobIntentId, getJobIntentMeta, getPublishPathForIntent, normalizeAdCat } from '../lib/constants'
+import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
 import FavoriteButton from '../components/FavoriteButton'
 import DetailActionBar from '../components/DetailActionBar'
-import CompactFilterSelect from '../components/CompactFilterSelect'
 import GlobalSearch from '../components/GlobalSearch'
+import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getThumbnailImageUrl, handleThumbnailImageError } from '../lib/imageVariants'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
-import { mixRecentWithOlder } from '../lib/rotation'
-import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
+import { isPublicationOpen } from '../lib/publicationLifecycle'
+import { EmploymentLevelBadge } from '../components/EmploymentProfileForm'
+import {
+  employmentProfileFromJob,
+  getEmploymentProfileLevel,
+  getEmploymentProfileRows,
+  hasEmploymentProfileData,
+} from '../lib/employmentProfile'
 import toast from 'react-hot-toast'
 
 function fmtPrice(price) {
@@ -108,8 +114,8 @@ function persistTablonCache() {
   })
 }
 const CARD_STACK_GAP = 10
-const TABLON_ROTATION_INTERVAL_MS = 6 * 60 * 60 * 1000
 const TABLON_SEARCH_RESULT_TYPES = ['ad', 'job']
+const FILTER_PARAM_KEYS = ['canton', 'plz', 'privacy', 'jobType', 'employmentLevel', 'priceRange', 'maxPrice', 'sort']
 const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
 const LIST_CARD_STYLE = {
   background:'#fff',
@@ -171,6 +177,50 @@ const PRICE_RANGES = [
   { id:'1000-plus', label:'Más de CHF 1.000', min:1000, max:null },
 ]
 
+const SORT_OPTIONS = [
+  { id:'newest', label:'Más reciente' },
+  { id:'oldest', label:'Más antiguo' },
+  { id:'price_asc', label:'Precio más bajo' },
+  { id:'price_desc', label:'Precio más caro' },
+]
+
+const EMPLOYMENT_LEVEL_FILTER_OPTIONS = [
+  { id:'', label:'Todos los niveles' },
+  { id:'apprentice', label:'Aprendiz' },
+  { id:'intermediate', label:'Nivel medio' },
+  { id:'professional', label:'Profesional' },
+  { id:'unrated', label:'Sin valorar' },
+]
+const EMPLOYMENT_LEVEL_IDS = new Set(
+  EMPLOYMENT_LEVEL_FILTER_OPTIONS.map(option => option.id).filter(Boolean)
+)
+
+function getJobEmploymentLevelId(job={}) {
+  const derivedLevel = getEmploymentProfileLevel(employmentProfileFromJob(job))
+  if (derivedLevel?.id) return derivedLevel.id
+  if (EMPLOYMENT_LEVEL_IDS.has(job.employment_level)) return job.employment_level
+  return 'unrated'
+}
+
+const GENERAL_INTENT_VIEWS = [
+  { id:'ofrece', emoji:'📌', label:'Ofertas', shortLabel:'Ofertas' },
+  { id:'busca', emoji:'🔎', label:'Solicitudes', shortLabel:'Solicitudes' },
+]
+
+const FILTER_CONTROL_STYLE = {
+  width:'100%',
+  boxSizing:'border-box',
+  border:`1.5px solid ${C.border}`,
+  borderRadius:13,
+  padding:'12px 14px',
+  fontFamily:PP,
+  fontSize:13,
+  fontWeight:600,
+  color:C.text,
+  background:'#fff',
+  outline:'none',
+}
+
 function parseListingPrice(value='') {
   if (!value) return null
   if (/gratis/i.test(value)) return 0
@@ -186,6 +236,38 @@ function parseListingPrice(value='') {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function getPublicationPrice(item={}) {
+  const structuredPrice = item.price_amount ?? item.salary_amount
+  if (structuredPrice !== null && structuredPrice !== undefined && structuredPrice !== '') {
+    const parsed = Number(structuredPrice)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return parseListingPrice(item.price || item.salary || '')
+}
+
+function getPublicationTimestamp(item={}) {
+  const parsed = Date.parse(item.created_at || item.createdAt || '')
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function comparePublications(a, b, order='newest') {
+  const first = a?.item || a
+  const second = b?.item || b
+
+  if (order === 'price_asc' || order === 'price_desc') {
+    const firstPrice = getPublicationPrice(first)
+    const secondPrice = getPublicationPrice(second)
+    if (firstPrice === null && secondPrice !== null) return 1
+    if (firstPrice !== null && secondPrice === null) return -1
+    if (firstPrice !== null && secondPrice !== null && firstPrice !== secondPrice) {
+      return order === 'price_asc' ? firstPrice - secondPrice : secondPrice - firstPrice
+    }
+  }
+
+  const dateDifference = getPublicationTimestamp(second) - getPublicationTimestamp(first)
+  return order === 'oldest' ? -dateDifference : dateDifference
+}
+
 function getJobIntentTag(job) {
   const intent = getJobIntentMeta(job)
   return { ...intent, ...(JOB_INTENT_TAG_STYLE[intent.id] || JOB_INTENT_TAG_STYLE.ofrece) }
@@ -194,23 +276,26 @@ function getJobIntentTag(job) {
 function getAdIntentTag(ad={}) {
   const type = AD_TYPES.find(item => item.id === ad.type)
   if (!type) return null
+  const categoryId = getAdCategoryId(ad)
+  const normalizedType = categoryId === 'venta' && ad.type === 'ofrece' ? 'vende' : ad.type
+  const contextual = getCategoryIntentMeta(categoryId, normalizedType)
   return {
     ...type,
-    emoji: AD_TYPE_CARD_EMOJI[type.id] || type.emoji,
-    shortLabel: AD_TYPE_SHORT_LABEL[type.id] || type.label,
+    emoji: contextual?.emoji || AD_TYPE_CARD_EMOJI[type.id] || type.emoji,
+    shortLabel: contextual?.itemLabel || contextual?.shortLabel || AD_TYPE_SHORT_LABEL[type.id] || type.label,
     ...(AD_TYPE_TAG_STYLE[type.id] || AD_TYPE_TAG_STYLE.ofrece),
   }
 }
 
-function getTablonContext(cat='', isEmpleos=false) {
+function getTablonContext(cat='', isEmpleos=false, intentMeta=null) {
   if (isEmpleos) {
     return {
       title:'💼 Empleo',
-      subtitle:'Ofertas de trabajo y perfiles disponibles en la comunidad.',
+      subtitle:intentMeta?.label || 'Ofertas y solicitudes de empleo.',
       resultLabel:'publicaciones de empleo',
-      searchPlaceholder:'Buscar puesto, perfil, empresa o sector...',
-      emptyTitle:'No hay empleos con estos filtros',
-      emptyText:'Prueba otro cantón, otro tipo de empleo o publica una búsqueda.',
+      searchPlaceholder:'Buscar puesto, solicitud, empresa o sector...',
+      emptyTitle:intentMeta?.emptyTitle || 'No hay empleos con estos filtros',
+      emptyText:intentMeta?.emptyText || 'Prueba otro cantón u otro tipo de empleo.',
     }
   }
 
@@ -218,22 +303,91 @@ function getTablonContext(cat='', isEmpleos=false) {
   if (meta) {
     return {
       title:`${meta.emoji} ${meta.label}`,
-      subtitle:meta.desc,
+      subtitle:intentMeta?.label || meta.desc,
       resultLabel:'anuncios',
       searchPlaceholder:`Buscar en ${meta.label.toLowerCase()}...`,
-      emptyTitle:`Sin anuncios de ${meta.label.toLowerCase()}`,
-      emptyText:'Prueba otros filtros o publica el primero.',
+      emptyTitle:intentMeta?.emptyTitle || `Sin anuncios de ${meta.label.toLowerCase()}`,
+      emptyText:intentMeta?.emptyText || 'Prueba otros filtros o publica el primero.',
     }
   }
 
   return {
     title:'📌 Anuncios',
-    subtitle:'Vivienda, servicios, cuidados, mercado y trámites de la comunidad.',
+    subtitle:'Vivienda, empleo, servicios, cuidados, compraventa y trámites.',
     resultLabel:'publicaciones',
     searchPlaceholder:'Buscar vivienda, servicios, productos o trámites...',
     emptyTitle:'Sin resultados',
     emptyText:'Prueba otros filtros o publica lo que buscas.',
   }
+}
+
+function IntentTabs({ views=[], value='', onChange }) {
+  return (
+    <SegmentedTabs
+      items={views}
+      value={value}
+      onChange={onChange}
+      ariaLabel="Tipo de publicación"
+      className="tablon-intent-tabs"
+    />
+  )
+}
+
+function CategoryPills({ categories=[], value='', onChange }) {
+  const options = [{ id:'', emoji:'', label:'Todos' }, ...categories]
+
+  return (
+    <div
+      className="no-scroll"
+      role="tablist"
+      aria-label="Categorías de anuncios"
+      style={{
+        display:'flex',
+        width:'100%',
+        gap:7,
+        overflowX:'auto',
+        WebkitOverflowScrolling:'touch',
+        padding:'2px 1px 4px',
+        boxSizing:'border-box',
+      }}
+    >
+      {options.map(option => {
+        const active = value === option.id
+        return (
+          <button
+            key={option.id || 'all'}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(option.id)}
+            style={{
+              flex:'0 0 auto',
+              minHeight:32,
+              display:'inline-flex',
+              alignItems:'center',
+              justifyContent:'center',
+              gap:5,
+              padding:'6px 11px',
+              border:`1.5px solid ${active ? C.primary : C.border}`,
+              borderRadius:999,
+              background:active ? C.primary : '#fff',
+              color:active ? '#fff' : C.mid,
+              fontFamily:PP,
+              fontSize:10,
+              fontWeight:800,
+              lineHeight:1,
+              whiteSpace:'nowrap',
+              cursor:'pointer',
+              boxShadow:active ? '0 5px 12px rgba(37,99,235,0.18)' : 'none',
+            }}
+          >
+            {option.emoji && <span aria-hidden="true">{option.emoji}</span>}
+            <span>{option.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 function getAdShareText(ad) {
@@ -294,15 +448,11 @@ function RelatedJobCard({ job, onClick }) {
 /* ── Compact ad card (list view) ────────────────────────── */
 function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
-  const normalizedCat = getAdCategoryId(ad)
-  const cat = getAdDisplayCat(ad)
-  const cc  = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
   const dateStr = ad.ts || (ad.created_at ? new Date(ad.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
   const photos = getAdPhotos(ad)
   const coverPhoto = photos[0]
   const location = formatAdLocation(ad)
   const displayEmoji = getAdDisplayEmoji(ad)
-  const subOption = getAdSubOption(normalizedCat, ad.sub)
   const metaBits = [ad.user_name || ad.user || 'Usuario', location || ad.canton, dateStr].filter(Boolean)
   const rating = averageRating(reviews)
   const showReviews = isReviewableAd(ad)
@@ -357,9 +507,6 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
         )}
         <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:7 }}>
           {intent && <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.shortLabel}</Tag>}
-          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
-          <PrivacyTag privacy={ad.privacy}/>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:'auto', minWidth:0 }}>
           <Avatar name={ad.user_name || ad.user} size={18} src={avatarSrc}/>
@@ -447,7 +594,7 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
           {intent && <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.shortLabel}</Tag>}
           <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
+          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{subOption?.label || ad.sub}</Tag>}
           <PrivacyTag privacy={ad.privacy}/>
           {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
         </div>
@@ -476,8 +623,21 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
 
       {ad.price && (
         <div style={{ padding:'18px 20px 14px', borderBottom:`1px solid ${C.border}` }}>
-          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 4px' }}>Precio</p>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 4px' }}>{normalizedCat === 'vivienda' && ad.type === 'busca' ? 'Presupuesto máximo' : normalizedCat === 'vivienda' ? 'Alquiler' : 'Precio'}</p>
           <p style={{ fontFamily:PP, fontWeight:900, fontSize:28, color:C.primary, lineHeight:1.1, margin:0, ...WRAPPING_TEXT }}>{fmtPrice(ad.price)}</p>
+        </div>
+      )}
+
+      {normalizedCat === 'vivienda' && [ad.available_from, ad.rooms, ad.household_size, ad.furnished, ad.pets_allowed].some(value => value !== null && value !== undefined && value !== '') && (
+        <div style={{ padding:'18px 20px', borderBottom:`1px solid ${C.border}` }}>
+          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 12px' }}>Datos de la vivienda</h2>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(135px, 1fr))', gap:9 }}>
+            {ad.available_from && <Tag bg={C.bg} color={C.mid}>📅 Desde {new Date(`${ad.available_from}T00:00:00`).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}</Tag>}
+            {ad.rooms != null && <Tag bg={C.bg} color={C.mid}>🚪 {ad.rooms} habitaciones</Tag>}
+            {ad.household_size != null && <Tag bg={C.bg} color={C.mid}>👥 {ad.household_size} personas</Tag>}
+            {ad.furnished != null && <Tag bg={C.bg} color={C.mid}>🛋️ {ad.furnished ? 'Amueblada' : 'Sin amueblar'}</Tag>}
+            {ad.pets_allowed != null && <Tag bg={C.bg} color={C.mid}>🐾 {ad.type === 'busca' ? (ad.pets_allowed ? 'Con mascota' : 'Sin mascota') : (ad.pets_allowed ? 'Mascotas permitidas' : 'No admite mascotas')}</Tag>}
+          </div>
         </div>
       )}
 
@@ -574,6 +734,7 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
       <DetailActionBar
         primaryLabel={!isOwnAd ? (user ? 'Enviar mensaje' : 'Inicia sesión para contactar') : ''}
         onPrimaryClick={!isOwnAd ? () => navigate(user ? `/mensajes?adId=${ad.id}${recipientName ? `&recipientName=${recipientName}` : ''}` : '/auth') : undefined}
+        ownerLabel={isOwnAd ? 'Este anuncio es tuyo' : ''}
         primaryColor={C.primary}
         share={{
           title:ad.title || 'Anuncio en Latido',
@@ -607,6 +768,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
   const dateStr = job.ts || (job.created_at ? new Date(job.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
   const author = authorName || job.user_name || job.user || 'Usuario'
   const metaBits = [author, job.city || job.canton, dateStr].filter(Boolean)
+  const employmentProfile = isSeekingJob ? employmentProfileFromJob(job) : null
   return (
     <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:122 }}>
       <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight }}>
@@ -621,7 +783,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
         {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, margin:'0 0 7px', ...CLAMP_1 }}>{languages}</p>}
         <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:'auto' }}>
           <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
-          {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
+          {isSeekingJob && <EmploymentLevelBadge profile={employmentProfile} levelId={job.employment_level} />}
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:7, minWidth:0 }}>
           <Avatar name={author} size={18} src={avatarSrc}/>
@@ -642,6 +804,10 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
   const isSeekingJob = intent.id === 'busca'
   const author = authorName || job.user_name || job.user || 'Usuario'
   const dateStr = job.ts || (job.created_at ? new Date(job.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '')
+  const employmentProfile = employmentProfileFromJob(job)
+  const employmentLevel = getEmploymentProfileLevel(employmentProfile)
+  const employmentRows = getEmploymentProfileRows(employmentProfile)
+  const hasProfessionalProfile = isSeekingJob && hasEmploymentProfileData(employmentProfile)
 
   return (
     <div style={{ background:'#fff' }}>
@@ -661,7 +827,7 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
         <div style={{ borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:9 }}>
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{job.title || job.company}</h1>
           {job.company && job.company !== job.title && (
-            <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:C.mid, margin:'6px 0 0', lineHeight:1.4, ...WRAPPING_TEXT }}>{isSeekingJob ? 'Perfil' : 'Empresa'}: {job.company}</p>
+            <p style={{ fontFamily:PP, fontSize:13, fontWeight:700, color:C.mid, margin:'6px 0 0', lineHeight:1.4, ...WRAPPING_TEXT }}>{isSeekingJob ? 'Solicitante' : 'Empresa'}: {job.company}</p>
           )}
         </div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
@@ -687,10 +853,38 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
         </div>
       )}
 
-      {(languages || job.desc || job.description) && (
+      {hasProfessionalProfile && (
+        <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:employmentLevel ? 5 : 12 }}>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:0 }}>Perfil profesional</h2>
+            <EmploymentLevelBadge profile={employmentProfile} levelId={job.employment_level} />
+          </div>
+          {employmentLevel && (
+            <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.5, margin:'0 0 13px' }}>
+              {employmentLevel.shortDescription}
+            </p>
+          )}
+          <dl style={{ margin:0 }}>
+            {employmentRows.map((row, index) => (
+              <div key={row.key} style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:14, padding:'9px 0', borderTop:index ? `1px solid ${C.borderLight}` : 'none' }}>
+                <dt style={{ flexShrink:0, fontFamily:PP, fontSize:11, fontWeight:700, color:C.light }}>{row.label}</dt>
+                <dd style={{ margin:0, fontFamily:PP, fontSize:11, fontWeight:600, color:C.text, textAlign:'right', lineHeight:1.45, ...WRAPPING_TEXT }}>{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p style={{ fontFamily:PP, fontSize:9.5, color:C.light, lineHeight:1.55, margin:'10px 0 0', paddingTop:10, borderTop:`1px solid ${C.borderLight}` }}>
+            Nivel orientativo basado en datos declarados por la persona. Latido no verifica individualmente el perfil ni garantiza la contratación.
+          </p>
+        </div>
+      )}
+
+      {(job.desc || job.description || (!hasProfessionalProfile && (languages || job.experience_years != null || job.available_from || job.driving_license != null))) && (
         <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
           <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 10px' }}>Detalles</h2>
-          {languages && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.6, margin:'0 0 12px', ...WRAPPING_TEXT }}>Idiomas requeridos: {languages}</p>}
+          {!hasProfessionalProfile && languages && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.6, margin:'0 0 8px', ...WRAPPING_TEXT }}>{isSeekingJob ? 'Idiomas' : 'Idiomas requeridos'}: {languages}</p>}
+          {!hasProfessionalProfile && job.experience_years != null && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.6, margin:'0 0 8px', ...WRAPPING_TEXT }}>Experiencia: {job.experience_years} {Number(job.experience_years) === 1 ? 'año' : 'años'}</p>}
+          {!hasProfessionalProfile && job.available_from && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.6, margin:'0 0 8px', ...WRAPPING_TEXT }}>Disponible desde: {new Date(`${job.available_from}T00:00:00`).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}</p>}
+          {!hasProfessionalProfile && job.driving_license != null && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.6, margin:'0 0 8px', ...WRAPPING_TEXT }}>Carnet de conducir: {job.driving_license ? 'Sí' : 'No'}</p>}
       {(job.desc || job.description) && (
             <p style={{ fontFamily:PP, fontSize:14, color:C.mid, lineHeight:1.75, margin:0, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>
           {job.desc || job.description}
@@ -708,6 +902,7 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
       <DetailActionBar
         primaryLabel={!isOwnJob ? (user ? 'Enviar mensaje' : 'Inicia sesión para contactar') : ''}
         onPrimaryClick={!isOwnJob ? () => navigate(user ? `/mensajes?jobId=${job.id}` : '/auth') : undefined}
+        ownerLabel={isOwnJob ? 'Este anuncio es tuyo' : ''}
         primaryColor={C.primary}
         share={{
           title:job.title || job.company || 'Empleo en Latido',
@@ -809,6 +1004,15 @@ export default function Tablon() {
     results:[],
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [filterDraft, setFilterDraft] = useState({
+    canton:'',
+    plz:'',
+    privacy:'',
+    jobType:'',
+    employmentLevel:'',
+    priceRange:'',
+    sort:'newest',
+  })
   const [portalsOpen, setPortalsOpen] = useState(false)
   const [selectedAd, setSelectedAd] = useState(null)
   const [selectedJob, setSelectedJob] = useState(null)
@@ -816,7 +1020,6 @@ export default function Tablon() {
   const [adReviews, setAdReviews] = useState({})
   const deferredSearch = useDeferredValue(search.trim())
   const searchProfile = useMemo(() => buildSearchProfile(deferredSearch), [deferredSearch])
-  const tablonRotationBucket = useTimedRotationBucket(TABLON_ROTATION_INTERVAL_MS)
 
   const cat      = normalizeAdCat(searchParams.get('cat') || '')
   const type     = searchParams.get('type') || ''
@@ -824,10 +1027,16 @@ export default function Tablon() {
   const plz      = searchParams.get('plz') || ''
   const privacy  = searchParams.get('privacy') || ''
   const jobType  = searchParams.get('jobType') || ''
+  const employmentLevel = EMPLOYMENT_LEVEL_IDS.has(searchParams.get('employmentLevel'))
+    ? searchParams.get('employmentLevel')
+    : ''
   const jobIntent = searchParams.get('jobIntent') || ''
   const legacyMaxPrice = searchParams.get('maxPrice') || ''
   const priceRange = searchParams.get('priceRange') || ''
-  const hasPriceFilter = Boolean(priceRange || legacyMaxPrice)
+  const sortOrder = SORT_OPTIONS.some(option => option.id === searchParams.get('sort'))
+    ? searchParams.get('sort')
+    : 'newest'
+  const hasPriceFilter = Boolean(priceRange || legacyMaxPrice) && !employmentLevel
   const openAdId  = searchParams.get('openAd') || ''
   const openJobId = searchParams.get('openJob') || ''
   const routeAdId = adSlug ? getIdFromSlug(adSlug) : ''
@@ -855,7 +1064,25 @@ export default function Tablon() {
   )
 
   const isEmpleos  = cat === 'empleo'
-  const isMercado  = cat === 'venta'
+  const categoryIntentViews = getCategoryIntentViews(cat)
+  const toolbarIntentViews = cat ? categoryIntentViews : GENERAL_INTENT_VIEWS
+  const requestedCategoryIntent = isEmpleos ? jobIntent : type
+  const activeCategoryIntent = cat
+    ? categoryIntentViews.some(view => view.id === requestedCategoryIntent)
+      ? requestedCategoryIntent
+      : getDefaultCategoryIntent(cat)
+    : type
+  const activeToolbarIntent = cat
+    ? activeCategoryIntent
+    : ['busca', 'ofrece'].includes(type) ? type : 'ofrece'
+  const activeJobIntent = isEmpleos
+    ? activeCategoryIntent
+    : ['busca', 'ofrece'].includes(type)
+      ? type
+      : 'ofrece'
+  const canFilterEmploymentLevel = (!cat || isEmpleos) && activeJobIntent === 'busca'
+  const activeAdIntent = !isEmpleos && cat ? activeCategoryIntent : type
+  const activeIntentMeta = getCategoryIntentMeta(cat, activeCategoryIntent)
   const isCleanAdRoute = !!routeAdId
   const isCleanJobRoute = !!routeJobId
 
@@ -863,49 +1090,150 @@ export default function Tablon() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }
 
-  const setFilter = (k, v) => {
-    const p = new URLSearchParams(searchParams)
-    v ? p.set(k, v) : p.delete(k)
-    setSearchParams(p, showFilters ? { replace:true } : undefined)
-  }
-  const setFilterAndScroll = (k, v) => {
-    setFilter(k, v)
+  const setIntentView = value => {
+    const next = new URLSearchParams(searchParams)
+    if (isEmpleos) {
+      next.set('jobIntent', value)
+      next.delete('type')
+    } else {
+      next.set('type', value)
+      next.delete('jobIntent')
+    }
+    if (value !== 'busca') next.delete('employmentLevel')
+    next.delete('openAd')
+    next.delete('openJob')
+    setSearchParams(next)
+    setShowFilters(false)
     scrollPageTop()
   }
-  const setCategoryFilter = value => {
-    const p = new URLSearchParams(searchParams)
-    value ? p.set('cat', value) : p.delete('cat')
 
-    if (value === 'empleo') {
-      if (['busca', 'ofrece'].includes(type)) p.set('jobIntent', type)
-      p.delete('type')
-      p.delete('priceRange')
-      p.delete('maxPrice')
-      p.delete('privacy')
+  const setCategoryView = value => {
+    const nextCategory = normalizeAdCat(value)
+    if (nextCategory === cat) return
+
+    const next = new URLSearchParams(searchParams)
+    if (nextCategory) next.set('cat', nextCategory)
+    else next.delete('cat')
+
+    next.delete('type')
+    next.delete('jobIntent')
+    next.delete('openAd')
+    next.delete('openJob')
+    next.delete('employmentLevel')
+
+    if (nextCategory === 'empleo') {
+      next.set('jobIntent', getDefaultCategoryIntent('empleo'))
+      next.delete('priceRange')
+      next.delete('maxPrice')
+      next.delete('privacy')
     } else {
-      if (['busca', 'ofrece'].includes(jobIntent)) p.set('type', jobIntent)
-      p.delete('jobIntent')
-      p.delete('jobType')
-
-      const nextType = p.get('type') || ''
-      if (value === 'venta' && nextType === 'ofrece') p.delete('type')
-      if (value && value !== 'venta' && ['vende', 'regala'].includes(nextType)) p.delete('type')
+      next.delete('jobType')
+      if (nextCategory) next.set('type', getDefaultCategoryIntent(nextCategory))
     }
 
-    setSearchParams(p)
+    setSearchParams(next)
+    setShowFilters(false)
     scrollPageTop()
   }
-  const setPriceRangeFilter = value => {
-    const p = new URLSearchParams(searchParams)
-    value ? p.set('priceRange', value) : p.delete('priceRange')
-    p.delete('maxPrice')
-    setSearchParams(p)
+
+  const openFilters = () => {
+    setFilterDraft({
+      canton,
+      plz,
+      privacy:isEmpleos ? '' : privacy,
+      jobType:isEmpleos ? jobType : '',
+      employmentLevel:canFilterEmploymentLevel ? employmentLevel : '',
+      priceRange:isEmpleos || employmentLevel ? '' : priceRange,
+      sort:sortOrder,
+    })
+    setShowFilters(true)
+  }
+
+  const toggleFilters = () => {
+    if (showFilters) {
+      setShowFilters(false)
+      return
+    }
+    openFilters()
+  }
+
+  const setSortView = value => {
+    const next = new URLSearchParams(searchParams)
+    if (value && value !== 'newest') next.set('sort', value)
+    else next.delete('sort')
+    next.delete('openAd')
+    next.delete('openJob')
+    setSearchParams(next, { replace:true })
     scrollPageTop()
   }
+
+  const updateFilterDraft = (key, value) => {
+    setFilterDraft(current => {
+      const next = { ...current, [key]:value }
+      if (key === 'employmentLevel' && value) next.priceRange = ''
+      if (key === 'priceRange' && value) next.employmentLevel = ''
+      return next
+    })
+  }
+
+  const applyFilterDraft = () => {
+    const next = new URLSearchParams(searchParams)
+    FILTER_PARAM_KEYS.forEach(key => next.delete(key))
+    next.delete('openAd')
+    next.delete('openJob')
+
+    if (filterDraft.canton) next.set('canton', filterDraft.canton)
+    if (filterDraft.plz) next.set('plz', filterDraft.plz)
+
+    if (isEmpleos) {
+      if (filterDraft.jobType) next.set('jobType', filterDraft.jobType)
+    } else {
+      if (!filterDraft.employmentLevel && filterDraft.priceRange) next.set('priceRange', filterDraft.priceRange)
+      if (isLoggedIn && filterDraft.privacy) next.set('privacy', filterDraft.privacy)
+    }
+    if (canFilterEmploymentLevel && filterDraft.employmentLevel) {
+      next.set('employmentLevel', filterDraft.employmentLevel)
+    }
+
+    if (filterDraft.sort && filterDraft.sort !== 'newest') next.set('sort', filterDraft.sort)
+
+    setSearchParams(next)
+    setShowFilters(false)
+    scrollPageTop()
+  }
+
+  const clearFilterDraft = () => {
+    setFilterDraft({
+      canton:'',
+      plz:'',
+      privacy:'',
+      jobType:'',
+      employmentLevel:'',
+      priceRange:'',
+      sort:'newest',
+    })
+  }
+
   const clearFilters = () => {
-    const p = new URLSearchParams()
-    if (cat) p.set('cat', cat)
-    setSearchParams(p, showFilters ? { replace:true } : undefined)
+    const next = new URLSearchParams(searchParams)
+    FILTER_PARAM_KEYS.forEach(key => next.delete(key))
+    next.delete('openAd')
+    next.delete('openJob')
+    setSearchParams(next, { replace:true })
+    scrollPageTop()
+  }
+
+  const removeAppliedFilter = key => {
+    const next = new URLSearchParams(searchParams)
+    if (key === 'priceRange') {
+      next.delete('priceRange')
+      next.delete('maxPrice')
+    } else {
+      next.delete(key)
+    }
+    next.delete('openAd')
+    next.delete('openJob')
+    setSearchParams(next, { replace:true })
     scrollPageTop()
   }
   const openAdDetails = (ad) => {
@@ -952,10 +1280,63 @@ export default function Tablon() {
     p.delete('openJob')
     setSearchParams(p, { replace:true })
   }
-  const activeCount = isEmpleos
-    ? [jobIntent, jobType, canton, plz].filter(Boolean).length
-    : [type, canton, plz, privacy, hasPriceFilter].filter(Boolean).length
-  const secondaryActiveCount = [plz, privacy].filter(Boolean).length
+  const buildFilterChips = values => {
+    const chips = []
+    const selectedCanton = CANTONS.find(item => item.code === values.canton)
+    const selectedJobType = JOB_TYPES.find(item => item.id === values.jobType)
+    const selectedEmploymentLevel = EMPLOYMENT_LEVEL_FILTER_OPTIONS.find(item => item.id === values.employmentLevel)
+    const selectedPrice = PRICE_RANGES.find(item => item.id === values.priceRange)
+    const selectedSort = SORT_OPTIONS.find(item => item.id === values.sort)
+
+    if (values.canton) chips.push({ key:'canton', label:selectedCanton?.name || values.canton })
+    if (values.plz) chips.push({ key:'plz', label:`CP ${values.plz}` })
+    if (isEmpleos && values.jobType) chips.push({ key:'jobType', label:selectedJobType?.label || values.jobType })
+    if (canFilterEmploymentLevel && values.employmentLevel) {
+      chips.push({ key:'employmentLevel', label:selectedEmploymentLevel?.label || values.employmentLevel })
+    }
+    if (!isEmpleos && !values.employmentLevel && (values.priceRange || values.maxPrice)) {
+      chips.push({
+        key:'priceRange',
+        label:selectedPrice?.label || `Hasta CHF ${values.maxPrice}`,
+      })
+    }
+    if (!isEmpleos && values.privacy) {
+      chips.push({ key:'privacy', label:values.privacy === 'public' ? 'Públicas' : 'Solo usuarios' })
+    }
+    if (values.sort && values.sort !== 'newest') {
+      chips.push({ key:'sort', label:selectedSort?.label || values.sort })
+    }
+    return chips
+  }
+
+  const appliedFilterChips = buildFilterChips({
+    canton,
+    plz,
+    privacy,
+    jobType,
+    employmentLevel,
+    priceRange,
+    maxPrice:legacyMaxPrice,
+    sort:sortOrder,
+  })
+  const visibleFilterChips = appliedFilterChips
+  const activeFilterCount = appliedFilterChips.length
+
+  const removeVisibleFilter = key => {
+    if (showFilters) {
+      updateFilterDraft(key, key === 'sort' ? 'newest' : '')
+      return
+    }
+    removeAppliedFilter(key)
+  }
+
+  const clearVisibleFilters = () => {
+    if (showFilters) {
+      clearFilterDraft()
+      return
+    }
+    clearFilters()
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -1137,13 +1518,19 @@ export default function Tablon() {
 
   const filteredAds = useMemo(() => {
     const matches = ads.filter(a => {
+      if (!isPublicationOpen(a)) return false
       if (!(isLoggedIn || !a.privacy || a.privacy === 'public')) return false
       if (!cat && getAdCategoryId(a) === 'empleo') return false
       if (cat && getAdCategoryId(a) !== cat) return false
-      if (type) {
-        const typeMatches = cat === 'venta' && type === 'vende'
-          ? a.type === 'vende' || a.type === 'ofrece'
-          : a.type === type
+      if (!cat && !activeAdIntent && ['busca', 'compra'].includes(a.type)) return false
+      if (activeAdIntent) {
+        const typeMatches = !cat && activeAdIntent === 'ofrece'
+          ? !['busca', 'compra'].includes(a.type)
+          : !cat && activeAdIntent === 'busca'
+            ? ['busca', 'compra'].includes(a.type)
+            : cat === 'venta' && activeAdIntent === 'vende'
+              ? a.type === 'vende' || a.type === 'ofrece'
+              : a.type === activeAdIntent
         if (!typeMatches) return false
       }
       if (canton && a.canton !== canton) return false
@@ -1175,12 +1562,14 @@ export default function Tablon() {
     return hasResolvedSearch
       ? matches.sort((a, b) => getResolvedRank('ad', a.id) - getResolvedRank('ad', b.id))
       : matches
-  }, [ads, canton, cat, deferredSearch, hasPriceFilter, hasResolvedSearch, isLoggedIn, legacyMaxPrice, plz, priceRange, privacy, resolvedSearchRank, searchProfile, type])
+  }, [activeAdIntent, ads, canton, cat, deferredSearch, hasPriceFilter, hasResolvedSearch, isLoggedIn, legacyMaxPrice, plz, priceRange, privacy, resolvedSearchRank, searchProfile])
 
   const communityJobs = useMemo(() => {
     const fromJobs = jobs.filter(j =>
-      (!jobIntent || getJobIntentId(j) === jobIntent) &&
+      isPublicationOpen(j) &&
+      (!activeJobIntent || getJobIntentId(j) === activeJobIntent) &&
       (!jobType || j.type === jobType) &&
+      (!employmentLevel || getJobEmploymentLevelId(j) === employmentLevel) &&
       (!canton || j.canton === canton) &&
       (!plz || j.plz?.startsWith(plz)) &&
       (!deferredSearch || (
@@ -1201,9 +1590,11 @@ export default function Tablon() {
     for (const a of ads) {
       if (
         getAdCategoryId(a) === 'empleo' &&
+        isPublicationOpen(a) &&
         (isLoggedIn || !a.privacy || a.privacy === 'public') &&
-        (!jobIntent || getJobIntentId(a) === jobIntent) &&
+        (!activeJobIntent || getJobIntentId(a) === activeJobIntent) &&
         (!jobType || a.type === jobType || a.sub === jobType) &&
+        (!employmentLevel || getJobEmploymentLevelId(a) === employmentLevel) &&
         (!canton || a.canton === canton) &&
         (!plz || a.plz?.startsWith(plz)) &&
         (!deferredSearch || (
@@ -1220,9 +1611,11 @@ export default function Tablon() {
       ) {
         fromAds.push({
           id: a.id, title: a.title, company: a.company || a.title, city: a.city || a.canton,
-          canton: a.canton, type: ['busca','ofrece'].includes(a.type) ? (a.sub || '') : a.type, job_intent: getJobIntentId(a), salary: a.salary, emoji: a.emoji || '\u{1F4BC}',
+          canton: a.canton, type: ['busca','ofrece'].includes(a.type) ? (a.sub || '') : a.type, job_intent: getJobIntentId(a), salary: a.salary || a.price, salary_amount:a.salary_amount ?? a.price_amount, emoji: a.emoji || '\u{1F4BC}',
           logo_url: getAdPhotos(a)[0] || '', lang: a.lang, languages: a.languages,
           desc: a.desc, user_id: a.user_id, user_name: a.user_name, user: a.user, created_at: a.created_at,
+          employment_profile:a.employment_profile, employment_level:a.employment_level,
+          experience_years:a.experience_years, available_from:a.available_from, driving_license:a.driving_license,
         })
       }
     }
@@ -1230,24 +1623,21 @@ export default function Tablon() {
       .sort((a, b) => hasResolvedSearch
         ? getJobResolvedRank(a) - getJobResolvedRank(b)
         : String(b.created_at || '').localeCompare(String(a.created_at || '')))
-  }, [ads, canton, deferredSearch, hasResolvedSearch, isLoggedIn, jobIntent, jobType, jobs, plz, resolvedSearchRank, searchProfile])
+  }, [activeJobIntent, ads, canton, deferredSearch, employmentLevel, hasResolvedSearch, isLoggedIn, jobType, jobs, plz, resolvedSearchRank, searchProfile])
 
   const filteredJobs = communityJobs
   const displayedAds = useMemo(
-    () => deferredSearch
-      ? filteredAds
-      : mixRecentWithOlder(filteredAds, tablonRotationBucket),
-    [deferredSearch, filteredAds, tablonRotationBucket]
+    () => [...filteredAds].sort((a, b) => comparePublications(a, b, sortOrder)),
+    [filteredAds, sortOrder]
   )
   const displayedJobs = useMemo(
-    () => deferredSearch
-      ? filteredJobs
-      : mixRecentWithOlder(filteredJobs, tablonRotationBucket),
-    [deferredSearch, filteredJobs, tablonRotationBucket]
+    () => [...filteredJobs].sort((a, b) => comparePublications(a, b, sortOrder)),
+    [filteredJobs, sortOrder]
   )
   const tablonItems = useMemo(() => {
     if (cat) return displayedAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' }))
 
+    const adsForCurrentFilters = employmentLevel ? [] : filteredAds
     const jobsForCurrentFilters = hasPriceFilter
       ? []
       : type
@@ -1257,19 +1647,123 @@ export default function Tablon() {
         : filteredJobs
 
     const items = [
-      ...filteredAds.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' })),
+      ...adsForCurrentFilters.map(ad => ({ kind:'ad', item:ad, sortDate:ad.created_at || '' })),
       ...jobsForCurrentFilters.map(job => ({ kind:'job', item:job, sortDate:job.created_at || '' })),
-    ].sort((a, b) => hasResolvedSearch
-      ? (
-        (a.kind === 'job' ? getJobResolvedRank(a.item) : getResolvedRank('ad', a.item.id))
-        - (b.kind === 'job' ? getJobResolvedRank(b.item) : getResolvedRank('ad', b.item.id))
-      )
-      : String(b.sortDate).localeCompare(String(a.sortDate)))
+    ]
 
-    return deferredSearch
-      ? items
-      : mixRecentWithOlder(items, tablonRotationBucket, entry => entry.sortDate)
-  }, [cat, deferredSearch, displayedAds, filteredAds, filteredJobs, hasPriceFilter, hasResolvedSearch, resolvedSearchRank, tablonRotationBucket, type])
+    return items.sort((a, b) => comparePublications(a, b, sortOrder))
+  }, [cat, displayedAds, employmentLevel, filteredAds, filteredJobs, hasPriceFilter, sortOrder, type])
+
+  const draftResultCount = useMemo(() => {
+    const draftRange = PRICE_RANGES.find(option => option.id === filterDraft.priceRange)
+    const draftHasPrice = Boolean(filterDraft.priceRange) && !filterDraft.employmentLevel
+
+    const matchesAdSearch = ad => {
+      if (!deferredSearch) return true
+      if (hasResolvedSearch) return resolvedSearchRank.has(`ad:${ad.id}`)
+      return Boolean(scoreSearchFields(searchProfile, [
+        { value:ad.title, weight:6 },
+        { value:ad.desc, weight:4 },
+        { value:ad.sub, weight:3 },
+        { value:getAdDisplayCat(ad)?.label, weight:2 },
+        { value:ad.city, weight:2 },
+        { value:ad.canton, weight:1 },
+      ]))
+    }
+
+    const draftAds = ads.filter(ad => {
+      if (!isPublicationOpen(ad)) return false
+      if (!(isLoggedIn || !ad.privacy || ad.privacy === 'public')) return false
+      if (!cat && getAdCategoryId(ad) === 'empleo') return false
+      if (cat && getAdCategoryId(ad) !== cat) return false
+      if (!cat && !activeAdIntent && ['busca', 'compra'].includes(ad.type)) return false
+      if (activeAdIntent) {
+        const typeMatches = !cat && activeAdIntent === 'ofrece'
+          ? !['busca', 'compra'].includes(ad.type)
+          : !cat && activeAdIntent === 'busca'
+            ? ['busca', 'compra'].includes(ad.type)
+            : cat === 'venta' && activeAdIntent === 'vende'
+              ? ad.type === 'vende' || ad.type === 'ofrece'
+              : ad.type === activeAdIntent
+        if (!typeMatches) return false
+      }
+      if (filterDraft.canton && ad.canton !== filterDraft.canton) return false
+      if (filterDraft.plz && !ad.plz?.startsWith(filterDraft.plz)) return false
+      if (!isEmpleos && filterDraft.privacy && ad.privacy !== filterDraft.privacy) return false
+      if (!isEmpleos && draftHasPrice) {
+        const numericPrice = parseListingPrice(ad.price)
+        if (numericPrice === null) return false
+        if (draftRange?.min != null && numericPrice < draftRange.min) return false
+        if (draftRange?.max != null && numericPrice > draftRange.max) return false
+      }
+      return matchesAdSearch(ad)
+    })
+
+    const matchesJobSearch = (job, source='job') => {
+      if (!deferredSearch) return true
+      if (hasResolvedSearch) return resolvedSearchRank.has(`${source}:${job.id}`)
+      return Boolean(scoreSearchFields(searchProfile, [
+        { value:job.title, weight:6 },
+        { value:job.company, weight:4 },
+        { value:job.desc, weight:4 },
+        { value:job.sector || job.category || job.sub, weight:3 },
+        { value:getJobIntentMeta(job).label, weight:2 },
+        { value:job.type, weight:2 },
+        { value:job.city || job.canton, weight:2 },
+      ]))
+    }
+
+    const draftJobsCount = jobs.filter(job =>
+      isPublicationOpen(job) &&
+      (!activeJobIntent || getJobIntentId(job) === activeJobIntent) &&
+      (!filterDraft.jobType || job.type === filterDraft.jobType) &&
+      (!filterDraft.employmentLevel || getJobEmploymentLevelId(job) === filterDraft.employmentLevel) &&
+      (!filterDraft.canton || job.canton === filterDraft.canton) &&
+      (!filterDraft.plz || job.plz?.startsWith(filterDraft.plz)) &&
+      matchesJobSearch(job)
+    ).length
+
+    const draftLegacyJobsCount = ads.filter(ad =>
+      getAdCategoryId(ad) === 'empleo' &&
+      isPublicationOpen(ad) &&
+      (isLoggedIn || !ad.privacy || ad.privacy === 'public') &&
+      (!activeJobIntent || getJobIntentId(ad) === activeJobIntent) &&
+      (!filterDraft.jobType || ad.type === filterDraft.jobType || ad.sub === filterDraft.jobType) &&
+      (!filterDraft.employmentLevel || getJobEmploymentLevelId(ad) === filterDraft.employmentLevel) &&
+      (!filterDraft.canton || ad.canton === filterDraft.canton) &&
+      (!filterDraft.plz || ad.plz?.startsWith(filterDraft.plz)) &&
+      matchesJobSearch(ad, 'ad')
+    ).length
+
+    if (isEmpleos || filterDraft.employmentLevel) return draftJobsCount + draftLegacyJobsCount
+    if (cat || draftHasPrice) return draftAds.length
+    return draftAds.length + draftJobsCount + draftLegacyJobsCount
+  }, [
+    activeAdIntent,
+    activeJobIntent,
+    ads,
+    cat,
+    deferredSearch,
+    filterDraft.canton,
+    filterDraft.employmentLevel,
+    filterDraft.jobType,
+    filterDraft.plz,
+    filterDraft.priceRange,
+    filterDraft.privacy,
+    hasResolvedSearch,
+    isEmpleos,
+    isLoggedIn,
+    jobs,
+    resolvedSearchRank,
+    searchProfile,
+  ])
+
+  const visibleResultCount = isEmpleos
+    ? displayedJobs.length
+    : cat
+      ? displayedAds.length
+      : tablonItems.length
+  const currentSortLabel = SORT_OPTIONS.find(option => option.id === sortOrder)?.label || 'Más reciente'
 
   const relatedAdsForSelected = useMemo(() => {
     if (!selectedAd) return []
@@ -1279,6 +1773,7 @@ export default function Tablon() {
     return ads
       .filter(ad =>
         String(ad.id) !== String(selectedAd.id) &&
+        isPublicationOpen(ad) &&
         (isLoggedIn || !ad.privacy || ad.privacy === 'public') &&
         getAdCategoryId(ad) === selectedCat
       )
@@ -1298,7 +1793,9 @@ export default function Tablon() {
     const jobLikeItems = [
       ...jobs,
       ...ads.flatMap(ad => (
-        getAdCategoryId(ad) === 'empleo' && (isLoggedIn || !ad.privacy || ad.privacy === 'public')
+        getAdCategoryId(ad) === 'empleo'
+          && isPublicationOpen(ad)
+          && (isLoggedIn || !ad.privacy || ad.privacy === 'public')
           ? [{
             id:ad.id,
             title:ad.title,
@@ -1326,6 +1823,7 @@ export default function Tablon() {
     return jobLikeItems
       .filter(job => {
         if (String(job.id) === String(selectedJob.id)) return false
+        if (!isPublicationOpen(job)) return false
         const sector = job.sector || job.category || job.sub || ''
         return (
           (selectedSector && sector === selectedSector) ||
@@ -1350,9 +1848,12 @@ export default function Tablon() {
 
     if (targetOpenJobId) {
       const job = filteredJobs.find(entry => String(entry.id) === targetOpenJobId)
-        || jobs.find(entry => String(entry.id) === targetOpenJobId)
+        || jobs.find(entry => String(entry.id) === targetOpenJobId && isPublicationOpen(entry))
       if (job) {
         setSelectedJob(job)
+        setSelectedAd(null)
+      } else {
+        setSelectedJob(null)
         setSelectedAd(null)
       }
       return
@@ -1365,38 +1866,29 @@ export default function Tablon() {
       return
     }
 
-    const ad = ads.find(entry => String(entry.id) === targetOpenAdId)
-    if (ad) setSelectedAd(ad)
+    const ad = ads.find(entry => String(entry.id) === targetOpenAdId && isPublicationOpen(entry))
+    setSelectedAd(ad || null)
   }, [ads, filteredJobs, jobs, loading, targetOpenAdId, targetOpenJobId])
-
 
   const orderedCats = [...AD_CATS].sort((a, b) => {
     const priority = { vivienda:0, empleo:1, venta:2, servicios:3, cuidados:4, documentos:5 }
     return (priority[a.id] ?? 99) - (priority[b.id] ?? 99)
   })
 
-  const catOptions = [{ id:'', label:'Todos' }, ...orderedCats.map(c => ({ id:c.id, label:`${c.emoji} ${c.label}` }))]
   const cantonOptions = [{ id:'', label:'Toda Suiza' }, ...CANTONS.map(c => ({ id:c.code, label:`${c.code} · ${c.name}` }))]
-  const generalIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.map(t => ({ id:t.id, label:`${t.emoji} ${t.label}` }))]
-  const standardIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.flatMap(t => ['busca', 'ofrece'].includes(t.id) ? [{ id:t.id, label:`${t.emoji} ${t.label}` }] : [])]
-  const marketIntentOptions = [{ id:'', label:'Todas' }, ...AD_TYPES.flatMap(t => ['busca', 'vende', 'regala'].includes(t.id) ? [{ id:t.id, label:`${t.emoji} ${t.label}` }] : [])]
-  const jobIntentOptions = [{ id:'', label:'Todas' }, ...JOB_INTENTS.map(intent => ({ id:intent.id, label:`${intent.emoji} ${intent.label}` }))]
   const jobTypeOptions = [{ id:'', label:'Todos' }, ...JOB_TYPES.map(jobTypeOption => ({ id:jobTypeOption.id, label:`${jobTypeOption.emoji} ${jobTypeOption.label}` }))]
-  const intentOptions = isEmpleos
-    ? jobIntentOptions
-    : isMercado
-      ? marketIntentOptions
-      : cat
-        ? standardIntentOptions
-        : generalIntentOptions
-  const intentValue = isEmpleos ? jobIntent : type
-  const pageContext = getTablonContext(cat, isEmpleos)
+  const intentValue = activeToolbarIntent
+  const pageContext = getTablonContext(cat, isEmpleos, activeIntentMeta)
+  const publishHref = cat
+    ? getPublishPathForIntent(cat, activeCategoryIntent)
+    : '/publicar'
+  const publishLabel = activeIntentMeta?.publishLabel || 'Publicar anuncio'
 
   return (
     <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px 100px' }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'24px 20px 0px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
         <div>
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, letterSpacing:0, marginBottom:4 }}>
             {pageContext.title}
@@ -1416,81 +1908,66 @@ export default function Tablon() {
       </div>
 
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:18, padding:'10px 0 12px' }}>
-        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px' }}>
-          <div className="tablon-toolbar-card" style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
-      <GlobalSearch
-        size="sm"
-        placeholder={pageContext.searchPlaceholder}
-        value={search}
-        onValueChange={setSearch}
-        resultTypes={TABLON_SEARCH_RESULT_TYPES}
-        analyticsScope={isEmpleos ? 'empleos' : 'tablon'}
-        assistantMode
-        showResultsDropdown={false}
-        onResolvedResultsChange={setResolvedSearch}
-        searchFilters={{ category:cat, canton, intent:intentValue }}
-        onSearchFiltersChange={clearFilters}
-        filtersContent={(
-          <div className="tablon-filter-row no-scroll" style={{ marginTop:10 }}>
-            <CompactFilterSelect
-              className="tablon-filter-category"
-              label="Categoría"
-              value={cat}
-              options={catOptions}
-              onChange={setCategoryFilter}
-            />
-            <CompactFilterSelect
-              label="Cantón"
-              value={canton}
-              options={cantonOptions}
-              onChange={value => setFilterAndScroll('canton', value)}
-            />
-            <CompactFilterSelect
-              className="tablon-filter-intent"
-              label="Intención"
-              value={intentValue}
-              options={intentOptions}
-              onChange={value => setFilterAndScroll(isEmpleos ? 'jobIntent' : 'type', value)}
-            />
-            {isEmpleos ? (
-              <CompactFilterSelect
-                className="tablon-filter-context"
-                label="Tipo de empleo"
-                value={jobType}
-                options={jobTypeOptions}
-                onChange={value => setFilterAndScroll('jobType', value)}
-              />
-            ) : (
-              <CompactFilterSelect
-                className="tablon-filter-context"
-                label="Precio"
-                value={priceRange}
-                options={PRICE_RANGES}
-                onChange={setPriceRangeFilter}
-              />
-            )}
-            <button
-              type="button"
-              className={`tablon-more-filter-button ${secondaryActiveCount ? 'is-active' : ''}`}
-              onClick={()=>setShowFilters(true)}
-            >
-              <span>⚙️</span>
-              <span>Más</span>
-              {secondaryActiveCount > 0 && <strong>{secondaryActiveCount}</strong>}
-            </button>
-            {activeCount > 0 && (
-              <button type="button" className="tablon-clear-filter-button" onClick={clearFilters} aria-label="Limpiar todos los filtros">
-                ✕
-              </button>
-            )}
-          </div>
-        )}
+        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px', boxSizing:'border-box' }}>
+          <div className="tablon-toolbar-card" style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)', boxSizing:'border-box' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%', minWidth:0 }}>
+        <div style={{ flex:'1 1 0', minWidth:0 }}>
+          <GlobalSearch
+            size="sm"
+            placeholder={pageContext.searchPlaceholder}
+            value={search}
+            onValueChange={setSearch}
+            resultTypes={TABLON_SEARCH_RESULT_TYPES}
+            analyticsScope={isEmpleos ? 'empleos' : 'tablon'}
+            assistantMode
+            showResultsDropdown={false}
+            onResolvedResultsChange={setResolvedSearch}
+            searchFilters={{ category:cat, canton, intent:intentValue }}
+            onSearchFiltersChange={clearFilters}
+          />
+        </div>
+        <FilterButton
+          count={activeFilterCount}
+          open={showFilters}
+          onClick={toggleFilters}
+        />
+      </div>
+      {visibleFilterChips.length > 0 && (
+        <div style={{ marginTop:9 }}>
+          <FilterChips
+            items={visibleFilterChips}
+            onRemove={removeVisibleFilter}
+            onClear={clearVisibleFilters}
+          />
+        </div>
+      )}
+      <div style={{ marginTop:9 }}>
+        <CategoryPills
+          categories={orderedCats}
+          value={cat}
+          onChange={setCategoryView}
+        />
+      </div>
+      <div style={{ marginTop:11 }}>
+        <IntentTabs
+          views={toolbarIntentViews}
+          value={activeToolbarIntent}
+          onChange={setIntentView}
+        />
+      </div>
+      <FilterResultSummary
+        count={visibleResultCount}
+        sortLabel={currentSortLabel}
+        sortOptions={SORT_OPTIONS}
+        sortValue={sortOrder}
+        onSortChange={setSortView}
       />
           </div>
         </div>
       </div>
 
       {/* Results */}
+      <div key={`${cat || 'all'}-${activeToolbarIntent}`} className="segmented-content-transition">
       {loading ? (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:isEmpleos?122:136, borderRadius:16 }}/>)}
@@ -1517,19 +1994,19 @@ export default function Tablon() {
               <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
               <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
               <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
-              <Link to="/publicar-empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>Publicar empleo</Link>
+              <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
             </div>
           ) : (
             <>
-              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>EMPLEOS DE LA COMUNIDAD</p>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>{activeIntentMeta?.label?.toUpperCase() || 'EMPLEO DE LA COMUNIDAD'}</p>
               <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
                 {displayedJobs.map(j => (
                   <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userProfiles.get(j.user_id)?.avatarUrl} authorName={userProfiles.get(j.user_id)?.name} />
                 ))}
                 <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
-                  <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>¿Buscas u ofreces trabajo?</h3>
-                  <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>Publica gratis y llega a la comunidad hispanohablante en Suiza.</p>
-                  <Link to="/publicar-empleo" style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 22px', borderRadius:13, display:'inline-flex' }}>Publicar empleo gratis</Link>
+                  <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>{activeCategoryIntent === 'busca' ? '¿Quieres que te encuentren empresas y empleadores?' : '¿Necesitas incorporar a alguien?'}</h3>
+                  <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>{activeCategoryIntent === 'busca' ? 'Crea una solicitud de empleo clara y fácil de encontrar.' : 'Publica la oferta gratis para la comunidad hispanohablante en Suiza.'}</p>
+                  <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 22px', borderRadius:13, display:'inline-flex' }}>{publishLabel}</Link>
                 </div>
               </div>
             </>
@@ -1550,11 +2027,18 @@ export default function Tablon() {
               </div>
             )}
           </div>
-          {displayedAds.length > 0 && (
+          {displayedAds.length > 0 ? (
             <>
-              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>ANUNCIOS DE LA COMUNIDAD</p>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>{activeIntentMeta?.label?.toUpperCase() || 'VIVIENDA EN LA COMUNIDAD'}</p>
               <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{displayedAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userProfiles.get(ad.user_id)?.avatarUrl} reviews={adReviews[ad.id] || []} />)}</div>
             </>
+          ) : (
+            <div style={{ textAlign:'center', padding:'50px 20px' }}>
+              <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
+              <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
+              <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
+              <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
+            </div>
           )}
         </>
       ) : tablonItems.length === 0 ? (
@@ -1562,49 +2046,131 @@ export default function Tablon() {
           <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
           <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
           <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:16 }}>{pageContext.emptyText}</p>
-          <Link to={cat && cat !== 'empleo' ? `/publicar?cat=${encodeURIComponent(cat)}` : '/publicar'} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>Publicar anuncio</Link>
+          <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
         </div>
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
-          {tablonItems.map(({ kind, item }) => kind === 'job' ? (
-            <JobCard key={`job-${item.id}`} job={item} onClick={() => openJobDetails(item)} isFav={isFavorite('jobs', item.id)} onToggleFav={() => toggleFavorite('jobs', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} authorName={userProfiles.get(item.user_id)?.name} />
-          ) : (
-            <AdCard key={`ad-${item.id}`} ad={item} onClick={() => openAdDetails(item)} isFav={isFavorite('ads', item.id)} onToggleFav={() => toggleFavorite('ads', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} reviews={adReviews[item.id] || []} />
-          ))}
-        </div>
-      )}
-
-      {/* Filters sheet */}
-      <Sheet show={showFilters} onClose={()=>setShowFilters(false)} title="Más filtros">
-        <div style={{ marginBottom:22 }}>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>PLZ (código postal)</p>
-          <input
-            style={{ width:'100%', border:`1.5px solid ${plz?C.primary:C.border}`, borderRadius:12, padding:'11px 14px', fontSize:13, fontFamily:PP, outline:'none', background:'#fff', color:C.text, boxSizing:'border-box' }}
-            placeholder="Ej: 8001, 3000, 1200..." value={plz} onChange={e=>setFilter('plz',e.target.value)} maxLength={4}
-          />
-        </div>
-
-        {!isEmpleos && isLoggedIn && (
-          <div style={{ marginBottom:22 }}>
-            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>VISIBILIDAD</p>
-            <select
-              value={privacy}
-              onChange={event=>setFilter('privacy', event.target.value)}
-              style={{ width:'100%', fontFamily:PP, fontSize:13, fontWeight:500, color:privacy?C.text:C.light, border:`1.5px solid ${privacy?C.primary:C.border}`, borderRadius:12, padding:'11px 14px', background:'#fff', outline:'none', cursor:'pointer' }}
-            >
-              <option value="">Todas las publicaciones</option>
-              <option value="public">Públicas</option>
-              <option value="private">Solo para usuarios</option>
-            </select>
+        <>
+          {cat && <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>{activeIntentMeta?.label?.toUpperCase()}</p>}
+          <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
+            {tablonItems.map(({ kind, item }) => kind === 'job' ? (
+              <JobCard key={`job-${item.id}`} job={item} onClick={() => openJobDetails(item)} isFav={isFavorite('jobs', item.id)} onToggleFav={() => toggleFavorite('jobs', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} authorName={userProfiles.get(item.user_id)?.name} />
+            ) : (
+              <AdCard key={`ad-${item.id}`} ad={item} onClick={() => openAdDetails(item)} isFav={isFavorite('ads', item.id)} onToggleFav={() => toggleFavorite('ads', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} reviews={adReviews[item.id] || []} />
+            ))}
           </div>
-        )}
+        </>
+      )}
+      </div>
 
-        <Btn onClick={()=>setShowFilters(false)}>Aplicar filtros</Btn>
-        {activeCount > 0 && (
-          <button onClick={()=>{clearFilters();setShowFilters(false);}} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:10, padding:'6px 0' }}>
-            Limpiar todos los filtros
+      <Sheet show={showFilters} onClose={() => setShowFilters(false)} syncHistory={false}>
+        <form
+          className="filter-sheet-content"
+          onSubmit={event => {
+            event.preventDefault()
+            applyFilterDraft()
+          }}
+        >
+          <div className="filter-sheet-heading">
+            <h2>Filtros</h2>
+            <button type="button" onClick={clearFilterDraft}>Restablecer</button>
+          </div>
+
+          <div className="filter-sheet-location-grid">
+            <label>
+              <span style={FILTER_PANEL_TITLE_STYLE}>Cantón</span>
+              <select
+                value={filterDraft.canton}
+                onChange={event => updateFilterDraft('canton', event.target.value)}
+                style={FILTER_CONTROL_STYLE}
+              >
+                {cantonOptions.map(option => <option key={option.id || 'all'} value={option.id}>{option.label}</option>)}
+              </select>
+            </label>
+
+            <label>
+              <span style={FILTER_PANEL_TITLE_STYLE}>Código postal</span>
+              <input
+                inputMode="numeric"
+                placeholder="PLZ"
+                value={filterDraft.plz}
+                onChange={event => updateFilterDraft('plz', event.target.value.replace(/\D/g, '').slice(0, 4))}
+                maxLength={4}
+                style={FILTER_CONTROL_STYLE}
+              />
+            </label>
+          </div>
+
+          <div className="filter-sheet-options-grid">
+            {isEmpleos ? (
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>Tipo de empleo</span>
+                <select
+                  value={filterDraft.jobType}
+                  onChange={event => updateFilterDraft('jobType', event.target.value)}
+                  style={FILTER_CONTROL_STYLE}
+                >
+                  {jobTypeOptions.map(option => <option key={option.id || 'all'} value={option.id}>{option.label}</option>)}
+                </select>
+              </label>
+            ) : (
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>Precio</span>
+                <select
+                  value={filterDraft.priceRange}
+                  onChange={event => updateFilterDraft('priceRange', event.target.value)}
+                  style={FILTER_CONTROL_STYLE}
+                >
+                  {PRICE_RANGES.map(option => <option key={option.id || 'all'} value={option.id}>{option.label}</option>)}
+                </select>
+              </label>
+            )}
+
+            {canFilterEmploymentLevel && (
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>Nivel profesional</span>
+                <select
+                  value={filterDraft.employmentLevel}
+                  onChange={event => updateFilterDraft('employmentLevel', event.target.value)}
+                  style={FILTER_CONTROL_STYLE}
+                >
+                  {EMPLOYMENT_LEVEL_FILTER_OPTIONS.map(option => (
+                    <option key={option.id || 'all'} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {!isEmpleos && isLoggedIn && (
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>Visibilidad</span>
+                <select
+                  value={filterDraft.privacy}
+                  onChange={event => updateFilterDraft('privacy', event.target.value)}
+                  style={FILTER_CONTROL_STYLE}
+                >
+                  <option value="">Todas las publicaciones</option>
+                  <option value="public">Públicas</option>
+                  <option value="private">Solo para usuarios</option>
+                </select>
+              </label>
+            )}
+
+            <label>
+              <span style={FILTER_PANEL_TITLE_STYLE}>Ordenar por</span>
+              <select
+                value={filterDraft.sort}
+                onChange={event => updateFilterDraft('sort', event.target.value)}
+                style={FILTER_CONTROL_STYLE}
+              >
+                {SORT_OPTIONS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <button type="submit" className="filter-show-results filter-sheet-submit">
+            Mostrar {draftResultCount} {draftResultCount === 1 ? 'resultado' : 'resultados'}
           </button>
-        )}
+        </form>
       </Sheet>
 
       {/* Ad detail page */}

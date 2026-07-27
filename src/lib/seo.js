@@ -29,10 +29,10 @@ export const DEFAULT_SEO = {
 
 export const SEARCHABLE_SITE_PAGES = [
   { id:'inicio', icon:'🏠', title:'Inicio', section:'Latido', desc:'Resumen de anuncios, empleos, negocios, eventos y guías.', href:'/' },
-  { id:'tablon', icon:'📌', title:'Anuncios', section:'Anuncios', desc:'Vivienda, servicios, cuidados, mercado y trámites de la comunidad.', href:'/tablon' },
+  { id:'tablon', icon:'📌', title:'Anuncios', section:'Anuncios', desc:'Vivienda, servicios, cuidados, compraventa y trámites de la comunidad.', href:'/tablon' },
   { id:'vivienda', icon:'🏠', title:'Vivienda', section:'Anuncios', desc:'Pisos, habitaciones, compañeros y alquileres temporales.', href:'/tablon?cat=vivienda' },
-  { id:'empleo', icon:'💼', title:'Empleo', section:'Empleo', desc:'Ofertas de trabajo y perfiles que buscan empleo.', href:'/tablon?cat=empleo' },
-  { id:'mercado', icon:'🛍️', title:'Mercado', section:'Anuncios', desc:'Compra, venta, regalos y artículos de segunda mano.', href:'/tablon?cat=venta' },
+  { id:'empleo', icon:'💼', title:'Empleo', section:'Empleo', desc:'Ofertas y solicitudes de empleo.', href:'/tablon?cat=empleo' },
+  { id:'mercado', icon:'🛍️', title:'Compraventa', section:'Anuncios', desc:'Compra, venta, regalos y artículos de segunda mano.', href:'/tablon?cat=venta' },
   { id:'servicios', icon:'🔧', title:'Servicios', section:'Anuncios', desc:'Limpieza, clases, reparaciones, mudanzas y ayuda local.', href:'/tablon?cat=servicios' },
   { id:'cuidados', icon:'❤️', title:'Cuidados', section:'Anuncios', desc:'Cuidado de niños, mayores, au pair y asistencia personal.', href:'/tablon?cat=cuidados' },
   { id:'tramites', icon:'📄', title:'Trámites', section:'Anuncios', desc:'Cartas, traducciones, asesoría y gestiones en Suiza.', href:'/tablon?cat=documentos' },
@@ -60,7 +60,7 @@ const ROUTE_SEO = [
   {
     path:'/tablon',
     title:'Anuncios para hispanohablantes en Suiza | Latido.ch',
-    description:'Encuentra vivienda, servicios, cuidados, trámites y mercado entre la comunidad hispanohablante en Suiza.',
+    description:'Encuentra vivienda, servicios, cuidados, trámites y compraventa entre la comunidad hispanohablante en Suiza.',
   },
   {
     path:'/comunidades',
@@ -131,10 +131,10 @@ const CATEGORY_SEO = {
   },
   empleo:{
     title:'Empleo en Suiza para hispanohablantes | Latido.ch',
-    description:'Ofertas de trabajo y perfiles profesionales de la comunidad hispanohablante en Suiza.',
+    description:'Ofertas y solicitudes de empleo de la comunidad hispanohablante en Suiza.',
   },
   venta:{
-    title:'Mercado latino en Suiza | Latido.ch',
+    title:'Compraventa en Suiza | Latido.ch',
     description:'Compra, vende o regala artículos entre hispanohablantes en Suiza.',
   },
   servicios:{

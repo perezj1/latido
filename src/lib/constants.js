@@ -135,6 +135,7 @@ export const SERVICE_SUBCATS = [
   { label:'Cocina', emoji:'🍳' },
   { label:'Reparaciones', emoji:'🔧' },
   { label:'Mudanza', emoji:'🚚' },
+  { label:'Transporte', emoji:'🚕', aliases:['Taxi', 'Chofer', 'Conductor'] },
   { label:'Clases', emoji:'🎓' },
   { label:'Peluquería', emoji:'💇' },
   { label:'Estética', emoji:'💅' },
@@ -158,20 +159,73 @@ export const AD_CATS = [
     desc:'Pisos, habitaciones, sublets y compañeros',
     types:['busca','ofrece'],
     sub:[
-      { label:'Se busca piso', types:['busca'] },
-      { label:'Se busca habitación', types:['busca'] },
-      { label:'Se ofrece piso', types:['ofrece'] },
-      { label:'Se ofrece habitación', types:['ofrece'] },
-      { label:'Compañero/a piso', types:['busca','ofrece'] },
-      { label:'Sublet temporal', types:['busca','ofrece'] },
+      { label:'Piso o casa', aliases:['Se busca piso','Se ofrece piso','Piso','Casa'] },
+      { label:'Habitación', aliases:['Se busca habitación','Se ofrece habitación'] },
+      { label:'Compartir piso', aliases:['Compañero/a piso','Compañero de piso','Compañera de piso'] },
+      { label:'Alquiler temporal', aliases:['Sublet temporal','Sublet'] },
     ],
   },
   { id:'servicios',  emoji:'🔧', label:'Servicios',   desc:'Ayuda práctica: limpieza, clases, mudanzas y reparaciones', types:['busca','ofrece'], sub:SERVICE_SUBCATS },
   { id:'cuidados',   emoji:'❤️', label:'Cuidados',    desc:'Niños, mayores, au pair y asistencia personal', types:['busca','ofrece'], sub:CARE_SUBCATS },
-  { id:'venta',      emoji:'🛍️', label:'Mercado',     desc:'Objetos para comprar, vender o regalar', types:['busca','vende','regala'], sub:['Electrónica','Ropa','Muebles','Vehículos','Comida','Otro'] },
+  { id:'venta',      emoji:'🛍️', label:'Compraventa', desc:'Artículos para comprar, vender o regalar', types:['busca','vende','regala'], sub:['Electrónica','Ropa','Muebles','Vehículos','Comida','Otro'] },
   { id:'documentos', emoji:'📄', label:'Trámites',    desc:'Cartas, traducciones, permisos y asesoría', types:['busca','ofrece'],      sub:['Cartas','Trámites','Traducción','Asesoría'] },
-  { id:'empleo',     emoji:'💼', label:'Empleo',      desc:'Ofertas y búsquedas de trabajo',     types:['busca','ofrece'],           sub:['Full-time','Part-time','Freelance','Prácticas'] },
+  { id:'empleo',     emoji:'💼', label:'Empleo',      desc:'Ofertas y solicitudes de empleo', types:['busca','ofrece'], sub:['Full-time','Part-time','Freelance','Prácticas'] },
 ]
+
+export const CATEGORY_INTENT_VIEWS = {
+  vivienda: [
+    { id:'ofrece', emoji:'🏠', label:'Ofertas de vivienda', shortLabel:'Ofertas', itemLabel:'Oferta de vivienda', publishLabel:'Ofrecer vivienda', emptyTitle:'Todavía no hay ofertas de vivienda', emptyText:'Prueba otra zona o publica una oferta de vivienda.' },
+    { id:'busca', emoji:'🔎', label:'Solicitudes de vivienda', shortLabel:'Solicitudes', itemLabel:'Solicitud de vivienda', publishLabel:'Solicitar vivienda', emptyTitle:'Todavía no hay solicitudes de vivienda', emptyText:'Sé la primera persona en crear una solicitud de vivienda.' },
+  ],
+  empleo: [
+    { id:'ofrece', emoji:'💼', label:'Ofertas de empleo', shortLabel:'Ofertas', itemLabel:'Oferta de empleo', publishLabel:'Publicar oferta de empleo', emptyTitle:'Todavía no hay ofertas de empleo', emptyText:'Prueba otro cantón o publica una oferta de empleo.' },
+    { id:'busca', emoji:'👤', label:'Solicitudes de empleo', shortLabel:'Solicitudes', itemLabel:'Solicitud de empleo', publishLabel:'Crear solicitud de empleo', emptyTitle:'Todavía no hay solicitudes de empleo', emptyText:'Crea una solicitud de empleo para que empresas y empleadores puedan encontrarte.' },
+  ],
+  servicios: [
+    { id:'ofrece', emoji:'🧰', label:'Ofertas de servicios', shortLabel:'Ofertas', itemLabel:'Oferta de servicios', publishLabel:'Ofrecer servicios', emptyTitle:'Todavía no hay ofertas de servicios', emptyText:'Prueba otra zona o publica una oferta de servicios.' },
+    { id:'busca', emoji:'🔎', label:'Solicitudes de servicios', shortLabel:'Solicitudes', itemLabel:'Solicitud de servicios', publishLabel:'Solicitar servicios', emptyTitle:'Todavía no hay solicitudes de servicios', emptyText:'Publica una solicitud con el servicio que necesitas.' },
+  ],
+  cuidados: [
+    { id:'ofrece', emoji:'❤️', label:'Ofertas de cuidados', shortLabel:'Ofertas', itemLabel:'Oferta de cuidados', publishLabel:'Ofrecer cuidados', emptyTitle:'Todavía no hay ofertas de cuidados', emptyText:'Prueba otra zona o publica una oferta de cuidados.' },
+    { id:'busca', emoji:'🔎', label:'Solicitudes de cuidados', shortLabel:'Solicitudes', itemLabel:'Solicitud de cuidados', publishLabel:'Solicitar cuidados', emptyTitle:'Todavía no hay solicitudes de cuidados', emptyText:'Publica una solicitud con el tipo de cuidados que necesitas.' },
+  ],
+  venta: [
+    { id:'vende', emoji:'🏷️', label:'Artículos en venta', shortLabel:'En venta', itemLabel:'Venta', publishLabel:'Vender artículo', emptyTitle:'Todavía no hay artículos en venta', emptyText:'Prueba otra categoría o publica un artículo.' },
+    { id:'busca', emoji:'🔎', label:'Artículos que busca la comunidad', shortLabel:'Se busca', itemLabel:'Solicitud de compra', publishLabel:'Buscar artículo', emptyTitle:'Todavía no hay solicitudes de compra', emptyText:'Publica el artículo que estás buscando.' },
+    { id:'regala', emoji:'🎁', label:'Artículos gratis', shortLabel:'Gratis', itemLabel:'Regalo', publishLabel:'Regalar artículo', emptyTitle:'Todavía no hay artículos gratis', emptyText:'Publica algo que quieras regalar a la comunidad.' },
+  ],
+  documentos: [
+    { id:'ofrece', emoji:'📄', label:'Ofertas de ayuda', shortLabel:'Ofertas', itemLabel:'Oferta de ayuda', publishLabel:'Ofrecer ayuda', emptyTitle:'Todavía no hay ofertas de ayuda', emptyText:'Publica una oferta de ayuda con trámites, cartas o traducciones.' },
+    { id:'busca', emoji:'🔎', label:'Solicitudes de ayuda', shortLabel:'Solicitudes', itemLabel:'Solicitud de ayuda', publishLabel:'Solicitar ayuda', emptyTitle:'Todavía no hay solicitudes de ayuda', emptyText:'Publica el trámite, carta o traducción con el que necesitas ayuda.' },
+  ],
+}
+
+export function getCategoryIntentViews(cat='') {
+  return CATEGORY_INTENT_VIEWS[normalizeAdCat(cat)] || []
+}
+
+export function getDefaultCategoryIntent(cat='') {
+  return getCategoryIntentViews(cat)[0]?.id || ''
+}
+
+export function getCategoryIntentMeta(cat='', intent='') {
+  const views = getCategoryIntentViews(cat)
+  return views.find(item => item.id === intent) || views[0] || null
+}
+
+export function getPublishPathForIntent(cat='', intent='') {
+  const normalizedCat = normalizeAdCat(cat)
+  const resolvedIntent = intent || getDefaultCategoryIntent(normalizedCat)
+  if (normalizedCat === 'empleo') {
+    return `/publicar-empleo?intent=${encodeURIComponent(resolvedIntent)}`
+  }
+
+  const params = new URLSearchParams()
+  if (normalizedCat) params.set('cat', normalizedCat)
+  if (resolvedIntent) params.set('intent', resolvedIntent)
+  const query = params.toString()
+  return `/publicar${query ? `?${query}` : ''}`
+}
 
 export function normalizeAdCat(cat='') {
   return cat === 'hogar' ? 'servicios' : cat
@@ -238,8 +292,8 @@ export const AD_TYPES = [
 ]
 
 export const JOB_INTENTS = [
-  { id:'ofrece', emoji:'💼', label:'Ofrezco', desc:'Publicas una vacante, puesto o encargo de trabajo' },
-  { id:'busca',  emoji:'🔎', label:'Busco',   desc:'Publicas tu perfil o disponibilidad para trabajar' },
+  { id:'ofrece', emoji:'💼', label:'Oferta de empleo', shortLabel:'Oferta', desc:'Publicas una vacante, puesto o encargo de trabajo' },
+  { id:'busca',  emoji:'👤', label:'Solicitud de empleo', shortLabel:'Solicitud', desc:'Publicas tu experiencia y disponibilidad para trabajar' },
 ]
 
 export const JOB_SECTORS = [
@@ -264,8 +318,42 @@ export const JOB_TYPES = [
   { id:'Prácticas', emoji:'🎓', label:'Prácticas', desc:'Internship o aprendizaje', seekingDesc:'Buscas prácticas o aprendizaje' },
 ]
 
+function normalizeJobIntentText(value='') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function inferJobSeekingIntent(job={}) {
+  const title = normalizeJobIntentText(job.title)
+  const description = normalizeJobIntentText(job.desc || job.description)
+  const text = `${title} ${description}`.trim()
+
+  if (!text) return ''
+
+  const clearSeekingPatterns = [
+    /^(?:busco|buscando|necesito|solicito)\s+(?:un\s+)?(?:trabajo|empleo)\b/,
+    /^(?:puedo|quiero|deseo)\s+trabajar\b/,
+    /\bestoy\s+buscando\s+(?:un\s+)?(?:trabajo|empleo)\b/,
+    /\bdisponible\s+para\s+trabajar\b/,
+    /\b(?:tengo|cuento con)\s+experiencia\b.*\b(?:empezar|comenzar)\s+a\s+trabajar\b/,
+  ]
+
+  return clearSeekingPatterns.some(pattern => pattern.test(text)) ? 'busca' : ''
+}
+
 export function getJobIntentId(job={}) {
   const raw = job.job_intent || job.intent || (job.cat === 'empleo' ? job.type : '')
+  if (raw === 'busca') return raw
+
+  // Algunas publicaciones anteriores al selector de intención recibieron
+  // "ofrece" por defecto. Solo corregimos frases inequívocas de búsqueda.
+  const inferredIntent = inferJobSeekingIntent(job)
+  if (inferredIntent) return inferredIntent
+
   return JOB_INTENTS.some(item => item.id === raw) ? raw : 'ofrece'
 }
 
@@ -447,7 +535,7 @@ export const MOCK_JOBS = [
   { id:'j1', job_intent:'ofrece', emoji:'👨‍🍳', title:'Cocinero/a latino/a',         company:'El Rincón Latino',  city:'ZH', type:'Full-time',  salary:'CHF 4.200–4.800/mes', lang:'Español + alemán básico' },
   { id:'j2', job_intent:'ofrece', emoji:'👶', title:'Cuidadora de niños',           company:'Familia particular', city:'BS', type:'Part-time',  salary:'CHF 25/hora',         lang:'Español' },
   { id:'j3', job_intent:'ofrece', emoji:'💻', title:'Técnico/a IT soporte usuario', company:'Tech Company',       city:'ZH', type:'Full-time',  salary:'CHF 6.000–7.500/mes', lang:'Inglés + alemán' },
-  { id:'j4', job_intent:'busca',  emoji:'💇', title:'Peluquera busca empleo',       company:'Perfil profesional', city:'BE', type:'Full-time',  salary:'CHF 3.500 + comisión', lang:'Español' },
+  { id:'j4', job_intent:'busca',  emoji:'💇', title:'Peluquera busca empleo',       company:'Solicitud de empleo', city:'BE', type:'Full-time',  salary:'CHF 3.500 + comisión', lang:'Español' },
 ]
 
 export const NEGOCIO_TYPES = [

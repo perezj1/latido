@@ -28,6 +28,7 @@ import {
 import { SEARCHABLE_SITE_PAGES, getAdPath, getBusinessPath, getEventPath, getGuidePath, getJobPath } from '../lib/seo'
 import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
 import { buildSearchProfile, normalizeSearchText, profileHasIntent, scoreSearchFields } from '../lib/naturalSearch'
+import { isPublicationOpen } from '../lib/publicationLifecycle'
 import {
   buildLatidoSearchRpcParams,
   matchesLatidoAssistantResult,
@@ -497,6 +498,7 @@ function normalizeAd(ad) {
     availableFrom:ad.available_from || '',
     privacy: ad.privacy || 'public',
     image: getFirstImage(normalizePhotoUrls(ad.photo_urls), ad.img_url, ad.img),
+    open:isPublicationOpen(ad),
   }
 }
 
@@ -507,7 +509,7 @@ function normalizeJob(job) {
   return {
     id: job.id,
     title: job.title || '',
-    company: job.company || (intent.id === 'busca' ? 'Perfil profesional' : 'Empresa'),
+    company: job.company || (intent.id === 'busca' ? 'Solicitud de empleo' : 'Empresa'),
     city: job.city || job.canton || 'Suiza',
     canton: job.canton || '',
     type: job.type || 'Trabajo',
@@ -525,6 +527,7 @@ function normalizeJob(job) {
     intentLabel: intent.label,
     emoji: getJobCategoryEmoji(job),
     image: job.logo_url || job.img || '',
+    open:isPublicationOpen(job),
   }
 }
 
@@ -586,8 +589,14 @@ function buildRpcDatasets(rows, fallbackDatasets) {
   for (const row of rows || []) {
     const payload = row?.payload
     if (!payload || typeof payload !== 'object') continue
-    if (row.entity_type === 'ad') next.ads.push(normalizeAd(payload))
-    else if (row.entity_type === 'job') next.jobs.push(normalizeJob(payload))
+    if (row.entity_type === 'ad') {
+      const ad = normalizeAd(payload)
+      if (ad.open) next.ads.push(ad)
+    }
+    else if (row.entity_type === 'job') {
+      const job = normalizeJob(payload)
+      if (job.open) next.jobs.push(job)
+    }
     else if (row.entity_type === 'community') {
       const community = normalizeCommunity(payload)
       if (community) next.communities.push(community)
@@ -1258,8 +1267,8 @@ export default function GlobalSearch({
         ])
 
         const nextDatasets = {
-          ads: adsRes.error || !adsRes.data?.length ? fallbackDatasets.ads : adsRes.data.map(normalizeAd),
-          jobs: jobsRes.error || !jobsRes.data?.length ? fallbackDatasets.jobs : jobsRes.data.map(normalizeJob),
+          ads: adsRes.error || !adsRes.data?.length ? fallbackDatasets.ads : adsRes.data.map(normalizeAd).filter(item => item.open),
+          jobs: jobsRes.error || !jobsRes.data?.length ? fallbackDatasets.jobs : jobsRes.data.map(normalizeJob).filter(item => item.open),
           communities: communitiesRes.error || !communitiesRes.data?.length
             ? fallbackDatasets.communities
             : communitiesRes.data.map(normalizeCommunity).filter(Boolean),

@@ -21,7 +21,7 @@ import { C, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
+import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import {
@@ -38,6 +38,8 @@ import {
   recordInterestAffinity,
   sortRecentFeed,
 } from '../lib/interests'
+import { isPublicationOpen } from '../lib/publicationLifecycle'
+import { FilterButton, SegmentedTabs } from '../components/FilterWorkspace'
 import toast from 'react-hot-toast'
 
 const fmtPrice = p => {
@@ -68,7 +70,7 @@ const HOME_SEARCH_CATEGORY_OPTIONS = [
   { value:'empleo', label:'Empleo' },
   { value:'servicios', label:'Servicios' },
   { value:'cuidados', label:'Cuidados' },
-  { value:'venta', label:'Mercado' },
+  { value:'venta', label:'Compraventa' },
   { value:'documentos', label:'Trámites' },
   { value:'negocios', label:'Negocios' },
   { value:'grupos', label:'Grupos' },
@@ -217,6 +219,95 @@ function EmptyState({ text }) {
   )
 }
 
+const LATIDO_REQUEST_INTENTS = new Set(['busca', 'compra', 'solicita', 'solicitud'])
+
+function isLatidoRequest(item={}) {
+  return LATIDO_REQUEST_INTENTS.has(String(item.intent || '').trim().toLowerCase())
+}
+
+function MiLatidoCard({ item, onOpen }) {
+  const normalizedCat = getAdCategoryId(item)
+  const category = getAdDisplayCat(item)
+  const colors = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
+  const location = formatAdLocation(item)
+  const displayEmoji = getAdDisplayEmoji(item)
+
+  return (
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => onOpen(item)}
+      onKeyDown={event => {
+        if (event.key === 'Enter') onOpen(item)
+      }}
+      style={{ textDecoration:'none', flexShrink:0, width:172, display:'block', cursor:'pointer' }}
+    >
+      <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:HOME_CAROUSEL_CARD_SHADOW }}>
+        <div style={{ height:132, background:'#F8FAFC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative', borderBottom:`1px solid ${C.borderLight}` }}>
+          {item.img
+            ? <img src={getThumbnailImageUrl(item.img)} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
+            : <span style={{ fontSize:44, lineHeight:1 }}>{displayEmoji}</span>
+          }
+          <span style={{ position:'absolute', top:10, left:10, maxWidth:'calc(100% - 76px)', fontFamily:PP, fontSize:9, fontWeight:800, background:'rgba(255,255,255,0.94)', color:colors.tc, padding:'5px 8px', borderRadius:999, boxShadow:'0 6px 14px rgba(15,23,42,0.08)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            {category?.label}
+          </span>
+          {item.reviewCount > 0 && (
+            <RatingPill
+              rating={item.rating}
+              count={item.reviewCount}
+              style={{ position:'absolute', top:10, right:10, background:'#fff', fontSize:10, padding:'5px 8px', borderColor:'#FDE68A', boxShadow:'none' }}
+            />
+          )}
+        </div>
+        <div style={{ padding:'12px 12px 13px' }}>
+          <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.65em', overflowWrap:'anywhere' }}>
+            {item.title}
+          </p>
+          <p style={{ fontFamily:PP, fontWeight:900, fontSize:14, color:C.primary, margin:'0 0 7px', lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            {fmtPrice(item.price) || '—'}
+          </p>
+          <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            📍 {location || item.canton} · {item.ts}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText, viewAllHref, onOpen }) {
+  return (
+    <section aria-labelledby={`mi-latido-${title.toLowerCase()}`} style={{ marginTop:18 }}>
+      <div style={{ padding:'0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:8 }}>
+        <h3 id={`mi-latido-${title.toLowerCase()}`} style={{ minWidth:0, fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0 }}>
+          {title}
+        </h3>
+        <Link to={viewAllHref} style={{ flexShrink:0, fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>
+          Ver todo →
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+          <div style={{ display:'flex', gap:12, width:'max-content' }}>
+            {[1,2,3].map(index => <div key={index} className="skeleton" style={{ width:172, height:250, borderRadius:18, flexShrink:0 }} />)}
+          </div>
+        </div>
+      ) : items.length === 0 ? (
+        <div style={{ padding:'0 16px 10px' }}>
+          <EmptyState text={emptyText} />
+        </div>
+      ) : (
+        <div ref={feedRef} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+          <div style={{ display:'flex', gap:12, width:'max-content' }}>
+            {items.map(item => <MiLatidoCard key={item.id} item={item} onOpen={onOpen} />)}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function SearchFilterSelect({ label, value, options, onChange, flex = 1 }) {
   const selectedLabel = options.find(o => o.value === value)?.label || label
   const isActive = !!value
@@ -249,6 +340,10 @@ const MY_LATIDO_MODES = [
   { id:'for-you', label:'Recomendado' },
   { id:'nearby', label:'Cerca de ti' },
   { id:'recent', label:'Más reciente' },
+]
+const MY_LATIDO_SECTIONS = [
+  { id:'offers', label:'Ofertas' },
+  { id:'requests', label:'Solicitudes' },
 ]
 const SHOW_HOME_BUSINESS_PROMOTION_TASK = false
 const sanitizeHomeBusinessHighlights = businesses => (businesses || []).map(business => ({
@@ -508,8 +603,10 @@ export default function Home() {
   const [businessPromotionPlans, setBusinessPromotionPlans] = useState(() => homeCache?.businessPromotionPlans || [])
   const [recentJobs, setRecentJobs] = useState(() => homeCache?.recentJobs || [])
   const [recentEvents, setRecentEvents] = useState(() => homeCache?.recentEvents || [])
+  const [latidoSection, setLatidoSection] = useState('offers')
   const [latidoMode, setLatidoMode] = useState('for-you')
-  const latidoFeedRef = useRef(null)
+  const latidoOffersFeedRef = useRef(null)
+  const latidoRequestsFeedRef = useRef(null)
   const [attentionTasks, setAttentionTasks] = useState([])
   const [loadingAttention, setLoadingAttention] = useState(false)
   const [expandedAttentionTask, setExpandedAttentionTask] = useState('')
@@ -550,21 +647,25 @@ export default function Home() {
       ...getInterestAffinityIds(user?.id),
     ]))
   }, [favorites.ads, favorites.jobs, recentAds, user?.id])
-  const visibleLatidoItems = useMemo(() => {
-    let items
-    if (latidoMode === 'recent') items = sortRecentFeed(recentAds)
-    else if (latidoMode === 'nearby') items = buildNearbyFeed(recentAds, userCanton)
-    else {
-      items = buildPersonalizedFeed(recentAds, {
+  const visibleLatidoSections = useMemo(() => {
+    const orderItems = availableItems => {
+      if (latidoMode === 'recent') return sortRecentFeed(availableItems)
+      if (latidoMode === 'nearby') return buildNearbyFeed(availableItems, userCanton)
+      return buildPersonalizedFeed(availableItems, {
         interests:userInterests,
         canton:userCanton,
         activityInterests,
       })
     }
-    return items
+
+    return {
+      offers:orderItems(recentAds.filter(item => !isLatidoRequest(item))),
+      requests:orderItems(recentAds.filter(isLatidoRequest)),
+    }
   }, [activityInterests, latidoMode, recentAds, userCanton, userInterests])
   useEffect(() => {
-    if (latidoFeedRef.current) latidoFeedRef.current.scrollLeft = 0
+    if (latidoOffersFeedRef.current) latidoOffersFeedRef.current.scrollLeft = 0
+    if (latidoRequestsFeedRef.current) latidoRequestsFeedRef.current.scrollLeft = 0
   }, [latidoMode])
   const personalizedMatchCount = useMemo(() => {
     if (!userInterests.length) return 0
@@ -579,7 +680,9 @@ export default function Home() {
       .join(', ')
   }, [userInterests])
   const latidoDescription = useMemo(() => {
-    if (latidoMode === 'recent') return 'Todo el contenido, ordenado por fecha.'
+    if (latidoMode === 'recent') {
+      return `${latidoSection === 'requests' ? 'Solicitudes' : 'Ofertas'} disponibles, ordenadas por fecha.`
+    }
     if (latidoMode === 'nearby') {
       return userCanton
         ? `Primero el cantón ${userCanton}; después el resto de Suiza.`
@@ -591,7 +694,7 @@ export default function Home() {
     if (userInterests.length) return 'Primero todo lo que coincide con tus intereses; después, el resto sigue disponible.'
     if (userCanton || activityInterests.length) return 'Recomendaciones por interés, actividad y cercanía.'
     return 'Elige tus intereses y tu cantón en el perfil para personalizar esta selección.'
-  }, [activityInterests.length, latidoMode, personalizedMatchCount, selectedInterestNames, userCanton, userInterests.length])
+  }, [activityInterests.length, latidoMode, latidoSection, personalizedMatchCount, selectedInterestNames, userCanton, userInterests.length])
   const featuredPromotionAvailability = useMemo(() => {
     const featuredPlan = businessPromotionPlans.find(plan =>
       (plan.plan_key || plan.key) === 'featured'
@@ -1031,26 +1134,30 @@ export default function Home() {
       if (eventsRes.error) console.error('Error loading events:', eventsRes.error)
       if (!promotionPlansRes.error) setBusinessPromotionPlans(promotionPlansRes.data || [])
 
-      const adsNorm = ((adsRes.error ? [] : adsRes.data) || []).map((row) => ({
-        id: row.id,
-        cat: getAdCategoryId(row) || 'servicios',
-        sub: row.sub || '',
-        emoji: row.emoji || '',
-        title: row.title || '',
-        desc: row.desc || '',
-        img: row.img_url || '',
-        price: row.price || '',
-        city: row.city || '',
-        canton: row.canton || '',
-        plz: row.plz || '',
-        privacy: row.privacy || 'public',
-        user: row.user_name || 'Usuario',
-        ts: formatTimeAgo(row.created_at),
-        createdAt: row.created_at || '',
-        _sort: row.created_at || '',
-      }))
+      const adsNorm = ((adsRes.error ? [] : adsRes.data) || []).filter(isPublicationOpen).map((row) => {
+        const category = getAdCategoryId(row) || 'servicios'
+        return {
+          id: row.id,
+          cat: category,
+          sub: row.sub || '',
+          emoji: row.emoji || '',
+          title: row.title || '',
+          desc: row.desc || '',
+          img: row.img_url || '',
+          price: row.price || '',
+          city: row.city || '',
+          canton: row.canton || '',
+          plz: row.plz || '',
+          privacy: row.privacy || 'public',
+          intent: category === 'empleo' ? getJobIntentId({ ...row, cat:category }) : row.type || '',
+          user: row.user_name || 'Usuario',
+          ts: formatTimeAgo(row.created_at),
+          createdAt: row.created_at || '',
+          _sort: row.created_at || '',
+        }
+      })
 
-      const jobsNorm = ((jobsRes.error ? [] : jobsRes.data) || []).map((row) => {
+      const jobsNorm = ((jobsRes.error ? [] : jobsRes.data) || []).filter(isPublicationOpen).map((row) => {
         const intent = getJobIntentMeta(row)
         return {
           id: `job_${row.id}`,
@@ -1065,6 +1172,7 @@ export default function Home() {
           canton: row.canton || '',
           plz: '',
           privacy: 'public',
+          intent: intent.id,
           user: row.company || intent.label,
           ts: formatTimeAgo(row.created_at),
           createdAt: row.created_at || '',
@@ -1169,7 +1277,7 @@ export default function Home() {
           return {
             id: row.id,
             title: row.title || '',
-            company: row.company || (intent.id === 'busca' ? 'Perfil profesional' : 'Empresa'),
+            company: row.company || (intent.id === 'busca' ? 'Solicitud de empleo' : 'Empresa'),
             city: row.city || 'Suiza',
             type: row.type || 'Trabajo',
             job_intent: intent.id,
@@ -1477,59 +1585,16 @@ export default function Home() {
                 }
               }}
               endContent={(
-                <button
-                  type="button"
+                <FilterButton
+                  count={Object.values(searchFilters).filter(Boolean).length}
+                  open={searchFiltersOpen}
                   onClick={() => setSearchFiltersOpen(open => {
                     const nextOpen = !open
                     searchFiltersOpenedManuallyRef.current = nextOpen
                     return nextOpen
                   })}
-                  aria-expanded={searchFiltersOpen}
-                  aria-controls="home-search-filters"
-                  style={{
-                    height:54,
-                    border:`1.5px solid ${searchFiltersOpen ? '#fff' : 'rgba(255,255,255,0.72)'}`,
-                    borderRadius:17,
-                    padding:'0 13px',
-                    background:searchFiltersOpen ? '#fff' : 'rgba(255,255,255,0.16)',
-                    color:searchFiltersOpen ? C.primaryDark : '#fff',
-                    boxShadow:searchFiltersOpen ? '0 5px 16px rgba(15,23,42,0.14)' : 'none',
-                    display:'flex',
-                    alignItems:'center',
-                    justifyContent:'center',
-                    gap:7,
-                    fontFamily:PP,
-                    fontSize:11,
-                    fontWeight:850,
-                    cursor:'pointer',
-                    flexShrink:0,
-                    transition:'background 180ms ease, color 180ms ease, box-shadow 180ms ease',
-                  }}
-                >
-                  <span aria-hidden="true" style={{ fontSize:15, lineHeight:1 }}>☷</span>
-                  <span>Filtros</span>
-                  {Object.values(searchFilters).some(Boolean) && (
-                    <span
-                      aria-label={`${Object.values(searchFilters).filter(Boolean).length} filtros activos`}
-                      style={{
-                        minWidth:17,
-                        height:17,
-                        padding:'0 4px',
-                        borderRadius:999,
-                        background:searchFiltersOpen ? C.primary : '#fff',
-                        color:searchFiltersOpen ? '#fff' : C.primaryDark,
-                        display:'inline-flex',
-                        alignItems:'center',
-                        justifyContent:'center',
-                        fontSize:9,
-                        fontWeight:900,
-                        boxSizing:'border-box',
-                      }}
-                    >
-                      {Object.values(searchFilters).filter(Boolean).length}
-                    </span>
-                  )}
-                </button>
+                  controls="home-search-filters"
+                />
               )}
               filtersContent={searchFiltersOpen ? (
                 <div
@@ -1865,83 +1930,46 @@ export default function Home() {
           <Link to="/perfil?editar=intereses" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Editar →</Link>
         </div>
         <div style={{ maxWidth:1200, margin:'0 auto 12px', padding:'0 16px' }}>
-          <div className="no-scroll" role="tablist" aria-label="Filtros de Mi Latido" style={{ display:'flex', gap:7, overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'2px 0 7px' }}>
-            {MY_LATIDO_MODES.map(mode => {
-              const active = latidoMode === mode.id
-              return (
-                <button
-                  key={mode.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setLatidoMode(mode.id)}
-                  style={{ flexShrink:0, fontFamily:PP, fontSize:10.5, fontWeight:800, color:active ? '#fff' : C.mid, background:active ? C.primary : '#fff', border:`1.5px solid ${active ? C.primary : C.border}`, borderRadius:999, padding:'8px 12px', cursor:'pointer', boxShadow:active ? '0 5px 12px rgba(37,99,235,0.22)' : 'none', transition:'all 160ms ease' }}
-                >
-                  {mode.label}
-                </button>
-              )
-            })}
-          </div>
+          <SegmentedTabs
+            items={MY_LATIDO_SECTIONS}
+            value={latidoSection}
+            onChange={setLatidoSection}
+            ariaLabel="Tipo de publicaciones de Mi Latido"
+            className="mi-latido-section-tabs"
+          />
+          <SegmentedTabs
+            items={MY_LATIDO_MODES}
+            value={latidoMode}
+            onChange={setLatidoMode}
+            ariaLabel="Orden de Mi Latido"
+            className="mi-latido-mode-tabs"
+          />
           <p aria-live="polite" style={{ fontFamily:PP, fontSize:10.5, color:C.light, margin:'0 2px', lineHeight:1.5 }}>
             {latidoDescription}
           </p>
         </div>
-        <div style={{ maxWidth:1200, margin:'0 auto' }}>
-        {loading ? (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'0 16px' }}>
-            <div style={{ display:'flex', gap:12, width:'max-content' }}>
-              {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ width:152, height:220, borderRadius:16, flexShrink:0 }} />)}
-            </div>
-          </div>
-        ) : visibleLatidoItems.length === 0 ? (
-          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay anuncios publicados." /></div>
-        ) : (
-          <div ref={latidoFeedRef} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
-            <div style={{ display:'flex', gap:12, width:'max-content' }}>
-              {visibleLatidoItems.map(ad => {
-                const normalizedCat = getAdCategoryId(ad)
-                const cat = getAdDisplayCat(ad)
-                const cc = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
-                const location = formatAdLocation(ad)
-                const displayEmoji = getAdDisplayEmoji(ad)
-                return (
-                  <div
-                    key={ad.id}
-                    role="link"
-                    tabIndex={0}
-                    onClick={() => openLatidoItem(ad)}
-                    onKeyDown={event => {
-                      if (event.key === 'Enter') openLatidoItem(ad)
-                    }}
-                    style={{ textDecoration:'none', flexShrink:0, width:172, display:'block', cursor:'pointer' }}
-                  >
-                    <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:HOME_CAROUSEL_CARD_SHADOW }}>
-                      <div style={{ height:132, background:'#F8FAFC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative', borderBottom:`1px solid ${C.borderLight}` }}>
-                        {ad.img
-                          ? <img src={getThumbnailImageUrl(ad.img)} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
-                          : <span style={{ fontSize:44, lineHeight:1 }}>{displayEmoji}</span>
-                        }
-                        <span style={{ position:'absolute', top:10, left:10, maxWidth:'calc(100% - 76px)', fontFamily:PP, fontSize:9, fontWeight:800, background:'rgba(255,255,255,0.94)', color:cc.tc, padding:'5px 8px', borderRadius:999, boxShadow:'0 6px 14px rgba(15,23,42,0.08)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{cat?.label}</span>
-                        {ad.reviewCount > 0 && (
-                          <RatingPill
-                            rating={ad.rating}
-                            count={ad.reviewCount}
-                            style={{ position:'absolute', top:10, right:10, background:'#fff', fontSize:10, padding:'5px 8px', borderColor:'#FDE68A', boxShadow:'none' }}
-                          />
-                        )}
-                      </div>
-                      <div style={{ padding:'12px 12px 13px' }}>
-                        <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.65em', overflowWrap:'anywhere' }}>{ad.title}</p>
-                        <p style={{ fontFamily:PP, fontWeight:900, fontSize:14, color:C.primary, margin:'0 0 7px', lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtPrice(ad.price) || '—'}</p>
-                        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>📍 {location || ad.canton} · {ad.ts}</p>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
+        <div key={`${latidoSection}-${latidoMode}`} className="segmented-content-transition" style={{ maxWidth:1200, margin:'0 auto' }}>
+          {latidoSection === 'offers' ? (
+            <MiLatidoSubsection
+              title="Ofertas"
+              items={visibleLatidoSections.offers}
+              loading={loading}
+              feedRef={latidoOffersFeedRef}
+              emptyText="Todavía no hay ofertas disponibles."
+              viewAllHref="/tablon?type=ofrece"
+              onOpen={openLatidoItem}
+            />
+          ) : (
+            <MiLatidoSubsection
+              title="Solicitudes"
+              items={visibleLatidoSections.requests}
+              loading={loading}
+              feedRef={latidoRequestsFeedRef}
+              emptyText="Todavía no hay solicitudes disponibles."
+              viewAllHref="/tablon?type=busca"
+              onOpen={openLatidoItem}
+            />
+          )}
         </div>
       </section>
 
@@ -1957,7 +1985,7 @@ export default function Home() {
           </div>
 
           <Link to="/tablon" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>
-            Ver todos →
+            Ver todo →
           </Link>
         </div>
 
@@ -2012,18 +2040,16 @@ export default function Home() {
       </section> */}
 
       <section style={{ padding:'40px 0 0' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <div>
-            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
-              🏪 Negocios
-            </h2>
-            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
-              Servicios y comercios hispanohablantes cerca de ti.
-            </p>
-          </div>
-          <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>
-            Ver todos →
+        <div style={{ maxWidth:1200, margin:'0 auto 14px', padding:'0 16px', display:'grid', gridTemplateColumns:'minmax(0, 1fr) auto', columnGap:16, rowGap:3, alignItems:'center' }}>
+          <h2 style={{ minWidth:0, fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0 }}>
+            🏪 Negocios
+          </h2>
+          <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>
+            Ver todo →
           </Link>
+          <p style={{ gridColumn:'1 / -1', fontFamily:PP, fontSize:11, lineHeight:1.5, color:C.mid, margin:0 }}>
+            Servicios y comercios hispanohablantes cerca de ti.
+          </p>
         </div>
 
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
@@ -2115,7 +2141,7 @@ export default function Home() {
             </p>
           </div>
           <Link to="/comunidades?view=eventos" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none' }}>
-            Ver todos →
+            Ver todo →
           </Link>
         </div>
 
@@ -2135,7 +2161,7 @@ export default function Home() {
             </p>
           </div>
           <Link to="/comunidades?view=comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>
-            Ver todos →
+            Ver todo →
           </Link>
         </div>
 
@@ -2203,7 +2229,7 @@ export default function Home() {
                 <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>📚 Guías</h2>
                 <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Permisos, trabajo, vivienda, salud y dinero en español.</p>
               </div>
-              <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>Ver todas →</Link>
+              <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>Ver todo →</Link>
             </div>
             <div style={{ maxWidth:1200, margin:'0 auto' }}>
             <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
@@ -2275,7 +2301,7 @@ export default function Home() {
                 </p>
               ))}
               <Link to="/guias" onClick={() => setSelectedGuide(null)} style={{ display:'inline-flex', marginTop:18, fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'12px 22px' }}>
-                Ver todas las guías →
+                Ver todo →
               </Link>
             </div>
           </div>

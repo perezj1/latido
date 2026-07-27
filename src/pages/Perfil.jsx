@@ -10,7 +10,7 @@ import { MAX_PUBLICATION_IMAGES, uploadAvatar, getStorageErrorMessage, uploadPub
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
-import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOptions, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
+import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
 import { getBusinessPromotionMeta, isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
@@ -21,6 +21,20 @@ import {
   notifyLatidoRatingSubmitted,
   saveLatidoRating,
 } from '../lib/feedback'
+import { getLifecycleLabel, getPublicationExpiresAt, isPublicationExpired } from '../lib/publicationLifecycle'
+import EmploymentProfileForm, { EmploymentLevelBadge } from '../components/EmploymentProfileForm'
+import {
+  createEmptyEmploymentProfile,
+  employmentProfileFromJob,
+  getEmploymentAvailabilityDate,
+  getEmploymentDrivingLicense,
+  getEmploymentExperienceYears,
+  getEmploymentProfileLevel,
+  hasEmploymentProfileData,
+  isEmploymentProfileComplete,
+  normalizeEmploymentProfile,
+} from '../lib/employmentProfile'
+import { isLikelySchemaMismatchError, updateWithOptionalColumnsFallback } from '../lib/supabaseCompat'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -65,13 +79,12 @@ const ALERT_CATS = [
   { id:'vivienda', emoji:'🏠', label:'Vivienda' },
   { id:'servicios', emoji:'🔧', label:'Servicios' },
   { id:'empleo', emoji:'💼', label:'Empleo' },
-  { id:'venta', emoji:'🛍️', label:'Mercado' },
+  { id:'venta', emoji:'🛍️', label:'Compraventa' },
   { id:'cuidados', emoji:'❤️', label:'Cuidados' },
   { id:'documentos', emoji:'📄', label:'Trámites' },
   { id:'regalo', emoji:'🎁', label:'Regalos' },
 ]
 
-const LANGS = ['Español', 'Alemán', 'Francés', 'Italiano', 'Inglés', 'Portugués']
 const EMPTY_LATIDO_RATING = {
   overallRating:0,
   usefulnessRating:0,
@@ -379,6 +392,8 @@ function normalizePublication(kind, row) {
       summary: `${type?.label || 'Anuncio'}${row.price ? ` · ${row.price}` : ''}`,
       meta: [formatAdLocation(row), row.privacy === 'private' ? 'Privado' : 'Público'].filter(Boolean).join(' · '),
       active: !!row.active,
+      lifecycleLabel:getLifecycleLabel(row),
+      expired:isPublicationExpired(row),
       createdAt: row.created_at,
       raw: row,
     }
@@ -394,6 +409,8 @@ function normalizePublication(kind, row) {
       summary: [intent.label, row.company, row.type].filter(Boolean).join(' · ') || 'Empleo',
       meta: [row.city || row.canton, row.salary].filter(Boolean).join(' · '),
       active: !!row.active,
+      lifecycleLabel:getLifecycleLabel(row),
+      expired:isPublicationExpired(row),
       createdAt: row.created_at,
       raw: row,
     }
@@ -443,6 +460,21 @@ function normalizePublication(kind, row) {
   }
 }
 
+function isRenewableRequest(item) {
+  if (item?.kind === 'job') return getJobIntentId(item.raw) === 'busca'
+  return item?.kind === 'ad' && item.raw?.type === 'busca'
+}
+
+function getResolutionActionLabel(item) {
+  if (item?.kind === 'job') {
+    return getJobIntentId(item.raw) === 'busca' ? '🎉 Ya encontré trabajo' : '✅ Puesto cubierto'
+  }
+  if (item?.kind === 'ad' && normalizeAdCat(item.raw?.cat) === 'vivienda') {
+    return item.raw?.type === 'busca' ? '🏠 Ya encontré vivienda' : '✅ Ya no está disponible'
+  }
+  return item?.raw?.type === 'busca' ? '✅ Solicitud resuelta' : '✅ Ya no está disponible'
+}
+
 function buildEditorForm(item) {
   const row = item.raw
 
@@ -451,10 +483,7 @@ function buildEditorForm(item) {
     const parsedPrice = parseAdPrice(row)
     const cat = normalizeAdCat(row.cat) || ''
     const type = row.type || ''
-    const sub = getAdSubOptions(cat, type)
-      .some(option => getAdSubLabel(option) === row.sub)
-      ? row.sub
-      : ''
+    const sub = getAdSubOption(cat, row.sub, type)?.label || ''
     return {
       cat,
       sub,
@@ -471,12 +500,17 @@ function buildEditorForm(item) {
       privacy: row.privacy || 'public',
       contactPhone: row.contact_phone || '',
       contactEmail: row.contact_email || '',
+      availableFrom:row.available_from || '',
+      rooms:row.rooms ?? '',
+      householdSize:row.household_size ?? '',
+      furnished:row.furnished == null ? '' : row.furnished ? 'yes' : 'no',
+      petsAllowed:row.pets_allowed == null ? '' : row.pets_allowed ? 'yes' : 'no',
     }
   }
 
   if (item.kind === 'job') {
     return {
-      jobIntent: row.job_intent || 'ofrece',
+      jobIntent: getJobIntentId(row),
       sector: row.sector || row.category || '',
       title: row.title || '',
       company: row.company || '',
@@ -490,6 +524,11 @@ function buildEditorForm(item) {
       contactPhone: row.contact_phone || '',
       contactEmail: row.contact_email || '',
       contactLink: row.contact_link || '',
+      experienceYears:row.experience_years ?? '',
+      availableFrom:row.available_from || '',
+      drivingLicense:row.driving_license == null ? '' : row.driving_license ? 'yes' : 'no',
+      profileVisibility:row.profile_visibility || 'public',
+      employmentProfile:employmentProfileFromJob(row),
     }
   }
 
@@ -620,6 +659,7 @@ export default function Perfil() {
   const [loadingPublications, setLoadingPublications] = useState(false)
   const [issues, setIssues] = useState([])
   const [deletingKey, setDeletingKey] = useState('')
+  const [lifecycleSavingKey, setLifecycleSavingKey] = useState('')
   const [editorItem, setEditorItem] = useState(null)
   const [editorForm, setEditorForm] = useState({})
   const [uploadingEditorImage, setUploadingEditorImage] = useState(false)
@@ -653,6 +693,13 @@ export default function Perfil() {
   const [showConfigNewPassword, setShowConfigNewPassword] = useState(false)
   const [showConfigConfirmPassword, setShowConfigConfirmPassword] = useState(false)
   const configInterestsRef = useRef(null)
+
+  // employment profile
+  const [employmentProfileOpen, setEmploymentProfileOpen] = useState(false)
+  const [employmentProfile, setEmploymentProfile] = useState(createEmptyEmploymentProfile)
+  const [employmentProfileForm, setEmploymentProfileForm] = useState(createEmptyEmploymentProfile)
+  const [employmentProfileLoading, setEmploymentProfileLoading] = useState(false)
+  const [savingEmploymentProfile, setSavingEmploymentProfile] = useState(false)
 
   // favorites
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
@@ -717,6 +764,52 @@ export default function Perfil() {
     if (!isLoggedIn || !user?.id) return
     loadPublications()
   }, [isLoggedIn, user?.id])
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) {
+      setEmploymentProfile(createEmptyEmploymentProfile())
+      setEmploymentProfileForm(createEmptyEmploymentProfile())
+      return undefined
+    }
+
+    let active = true
+    setEmploymentProfileLoading(true)
+
+    const loadEmploymentProfile = async () => {
+      let nextProfile = normalizeEmploymentProfile(user.user_metadata?.employment_profile)
+      const response = await supabase
+        .from('profiles')
+        .select('employment_profile')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!response.error && hasEmploymentProfileData(response.data?.employment_profile)) {
+        nextProfile = normalizeEmploymentProfile(response.data.employment_profile)
+      } else if (response.error && !isLikelySchemaMismatchError(response.error, 'profiles')) {
+        console.error('Could not load employment profile:', response.error)
+      }
+
+      if (!active) return
+      setEmploymentProfile(nextProfile)
+      setEmploymentProfileForm(nextProfile)
+      setEmploymentProfileLoading(false)
+    }
+
+    loadEmploymentProfile()
+    return () => { active = false }
+  }, [isLoggedIn, user?.id])
+
+  useEffect(() => {
+    if (employmentProfileLoading || hasEmploymentProfileData(employmentProfile)) return
+    const existingRequest = publications.find(item =>
+      item.kind === 'job' && getJobIntentId(item.raw) === 'busca'
+    )
+    if (!existingRequest) return
+    const legacyProfile = employmentProfileFromJob(existingRequest.raw)
+    if (!hasEmploymentProfileData(legacyProfile)) return
+    setEmploymentProfile(legacyProfile)
+    setEmploymentProfileForm(legacyProfile)
+  }, [employmentProfile, employmentProfileLoading, publications])
 
   useEffect(() => {
     if (!isLoggedIn || !user?.id) {
@@ -817,6 +910,10 @@ export default function Perfil() {
   const promotableBusinessPublications = useMemo(
     () => businessPublications.filter(item => !isBusinessPromotionActive(item.raw)),
     [businessPublications]
+  )
+  const hasEmploymentRequest = useMemo(
+    () => publications.some(item => item.kind === 'job' && getJobIntentId(item.raw) === 'busca'),
+    [publications]
   )
 
   const activeFilter = PUBLICATION_TABS.find(item => item.id === activeTab)
@@ -1016,7 +1113,7 @@ export default function Perfil() {
     if (!isLoggedIn || !user?.id || loadingPublications || expiredEventsDismissed || !expiredEvents.length) return
     if (!testExpiredEventsPrompt) return
     if (suppressAttentionPrompts) return
-    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || shareOpen || adReminderOpen) return
+    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || adReminderOpen) return
 
     if (!testExpiredEventsPrompt) {
       const key = `latido_attention_expired_events:${user.id}`
@@ -1050,6 +1147,7 @@ export default function Perfil() {
     configOpen,
     favOpen,
     professionalOpen,
+    employmentProfileOpen,
     shareOpen,
     adReminderOpen,
   ])
@@ -1058,7 +1156,7 @@ export default function Perfil() {
     if (!isLoggedIn || !user?.id || loadingPublications || adReminderDismissed || !adReminderItems.length) return
     if (!testAdReminderPrompt) return
     if (suppressAttentionPrompts) return
-    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || shareOpen || expiredEventsOpen) return
+    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || expiredEventsOpen) return
     if (!testAdReminderPrompt && expiredEvents.length) return
 
     if (!testAdReminderPrompt) {
@@ -1095,6 +1193,7 @@ export default function Perfil() {
     configOpen,
     favOpen,
     professionalOpen,
+    employmentProfileOpen,
     shareOpen,
   ])
 
@@ -1355,6 +1454,97 @@ export default function Perfil() {
       toast.error(err?.message || 'Error al guardar')
     } finally {
       setSavingConfig(false)
+    }
+  }
+
+  const openEmploymentProfileEditor = () => {
+    if (!hasEmploymentRequest) return
+    setEmploymentProfileForm(normalizeEmploymentProfile(employmentProfile))
+    setEmploymentProfileOpen(true)
+  }
+
+  const persistEmploymentProfile = async (value, { syncActiveRequests=true }={}) => {
+    const normalized = normalizeEmploymentProfile(value)
+    const level = getEmploymentProfileLevel(normalized)
+    const updatedAt = new Date().toISOString()
+    const profilePayload = {
+      employment_profile:normalized,
+      employment_level:level?.id || null,
+      employment_profile_updated_at:updatedAt,
+    }
+
+    const [profileResult, metadataResult] = await Promise.all([
+      supabase.from('profiles').update(profilePayload).eq('id', user.id),
+      supabase.auth.updateUser({
+        data:{
+          employment_profile:normalized,
+          employment_level:level?.id || null,
+        },
+      }),
+    ])
+
+    if (profileResult.error && !isLikelySchemaMismatchError(profileResult.error, 'profiles')) {
+      console.error('Could not save employment profile row:', profileResult.error)
+    }
+    if (profileResult.error && metadataResult.error) {
+      throw metadataResult.error
+    }
+
+    let requestSyncError = null
+    if (syncActiveRequests) {
+      const requestPayload = {
+        languages:normalized.languages,
+        lang:normalized.languages.join(' · '),
+        experience_years:getEmploymentExperienceYears(normalized),
+        available_from:getEmploymentAvailabilityDate(normalized),
+        driving_license:getEmploymentDrivingLicense(normalized),
+        employment_profile:normalized,
+        employment_level:level?.id || null,
+        updated_at:updatedAt,
+      }
+      const requestResult = await updateWithOptionalColumnsFallback({
+        table:'jobs',
+        payload:requestPayload,
+        optionalColumns:['employment_profile', 'employment_level'],
+        apply:query => query
+          .eq('user_id', user.id)
+          .eq('job_intent', 'busca')
+          .eq('active', true),
+      })
+      requestSyncError = requestResult.error || null
+      if (requestSyncError) console.error('Could not sync employment profile to active requests:', requestSyncError)
+    }
+
+    setEmploymentProfile(normalized)
+    setEmploymentProfileForm(normalized)
+    return { level, requestSyncError }
+  }
+
+  const handleSaveEmploymentProfile = async () => {
+    if (!hasEmploymentRequest) {
+      setEmploymentProfileOpen(false)
+      return
+    }
+    if (!isEmploymentProfileComplete(employmentProfileForm)) {
+      toast.error('Responde las cinco preguntas para guardar el perfil.')
+      return
+    }
+
+    setSavingEmploymentProfile(true)
+    try {
+      const { requestSyncError } = await persistEmploymentProfile(employmentProfileForm)
+      if (requestSyncError) {
+        toast('Perfil guardado. No pudimos actualizar tu solicitud activa automáticamente.')
+      } else {
+        toast.success('Perfil profesional guardado')
+      }
+      setEmploymentProfileOpen(false)
+      await loadPublications()
+    } catch (error) {
+      console.error('Could not save employment profile:', error)
+      toast.error('No pudimos guardar el perfil profesional.')
+    } finally {
+      setSavingEmploymentProfile(false)
     }
   }
 
@@ -1640,6 +1830,54 @@ export default function Perfil() {
     }
   }
 
+  const handlePublicationLifecycle = async (item, action) => {
+    if (!item || !['ad', 'job'].includes(item.kind)) return
+    const table = KIND_META[item.kind].table
+    const key = `${item.kind}-${item.id}-${action}`
+    const intent = item.kind === 'job' ? getJobIntentId(item.raw) : item.raw.type
+    const now = new Date().toISOString()
+    const payload = action === 'renew'
+      ? {
+          active:true,
+          lifecycle_status:'active',
+          resolved_at:null,
+          expires_at:getPublicationExpiresAt({ kind:item.kind === 'job' ? 'job' : 'listing', intent }),
+          updated_at:now,
+        }
+      : {
+          active:false,
+          lifecycle_status:'resolved',
+          resolved_at:now,
+          updated_at:now,
+        }
+
+    setLifecycleSavingKey(key)
+    try {
+      const { data, error } = await supabase
+        .from(table)
+        .update(payload)
+        .eq('id', item.id)
+        .eq('user_id', user.id)
+        .select('*')
+        .maybeSingle()
+      if (error) throw error
+
+      const updated = normalizePublication(item.kind, data || { ...item.raw, ...payload })
+      setPublications(current => current.map(entry =>
+        entry.kind === item.kind && entry.id === item.id ? updated : entry
+      ))
+      setActionItem(updated)
+      toast.success(action === 'renew' ? 'Publicación renovada' : 'Publicación marcada como resuelta')
+    } catch (error) {
+      const duplicate = String(error?.message || '').includes('ACTIVE_')
+      toast.error(duplicate
+        ? 'Ya tienes otra publicación activa de este tipo.'
+        : 'No se pudo actualizar el estado. Comprueba que la migración de ciclo de vida esté aplicada.')
+    } finally {
+      setLifecycleSavingKey('')
+    }
+  }
+
   const openBusinessSubscriptionPortal = async providerId => {
     setOpeningBusinessPortal(true)
 
@@ -1701,13 +1939,29 @@ export default function Perfil() {
         privacy: editorForm.privacy || 'public',
         contact_phone: editorForm.contactPhone?.trim() || null,
         contact_email: editorForm.contactEmail?.trim() || null,
+        property_type:normalizedCat === 'vivienda' && compatibleSub ? editorForm.sub?.trim() || null : null,
+        available_from:normalizedCat === 'vivienda' ? editorForm.availableFrom || null : null,
+        rooms:normalizedCat === 'vivienda' && editorForm.rooms ? Number(String(editorForm.rooms).replace(',', '.')) : null,
+        household_size:normalizedCat === 'vivienda' && editorForm.type === 'busca' && editorForm.householdSize ? Number(editorForm.householdSize) : null,
+        furnished:normalizedCat === 'vivienda' && editorForm.furnished ? editorForm.furnished === 'yes' : null,
+        pets_allowed:normalizedCat === 'vivienda' && editorForm.petsAllowed ? editorForm.petsAllowed === 'yes' : null,
         updated_at: new Date().toISOString(),
       }
       if (!payload.title || !payload.type) { toast.error('Completa al menos el título y el tipo del anuncio'); return }
     }
 
     if (item.kind === 'job') {
-      const languages = splitList(editorForm.langs || '')
+      const requestProfile = editorForm.jobIntent === 'busca'
+        ? normalizeEmploymentProfile(editorForm.employmentProfile)
+        : null
+      if (requestProfile && !isEmploymentProfileComplete(requestProfile)) {
+        toast.error('Responde las cinco preguntas del perfil profesional.')
+        return
+      }
+      const requestLevel = requestProfile ? getEmploymentProfileLevel(requestProfile) : null
+      const languages = requestProfile
+        ? requestProfile.languages
+        : splitList(editorForm.langs || '')
       payload = {
         job_intent: editorForm.jobIntent || 'ofrece',
         sector: editorForm.sector?.trim() || null, category: editorForm.sector?.trim() || null,
@@ -1722,6 +1976,12 @@ export default function Perfil() {
         contact_email: editorForm.contactEmail?.trim() || null,
         contact_link: editorForm.contactLink?.trim() || null,
         contact: editorForm.contactEmail?.trim() || editorForm.contactLink?.trim() || null,
+        experience_years:requestProfile ? getEmploymentExperienceYears(requestProfile) : null,
+        available_from:requestProfile ? getEmploymentAvailabilityDate(requestProfile) : null,
+        driving_license:requestProfile ? getEmploymentDrivingLicense(requestProfile) : null,
+        employment_profile:requestProfile,
+        employment_level:requestLevel?.id || null,
+        profile_visibility:editorForm.jobIntent === 'busca' ? editorForm.profileVisibility || 'public' : 'public',
         updated_at: new Date().toISOString(),
       }
       if (!payload.title || !payload.canton) { toast.error('Completa al menos el título y el cantón del empleo'); return }
@@ -1792,8 +2052,19 @@ export default function Perfil() {
 
     setSaving(true)
     try {
-      const { error } = await supabase.from(table).update(payload).eq('id', item.id).eq('user_id', user.id)
+      const result = item.kind === 'job'
+        ? await updateWithOptionalColumnsFallback({
+            table,
+            payload,
+            optionalColumns:['employment_profile', 'employment_level'],
+            apply:query => query.eq('id', item.id).eq('user_id', user.id),
+          })
+        : await supabase.from(table).update(payload).eq('id', item.id).eq('user_id', user.id)
+      const { error } = result
       if (error) throw error
+      if (item.kind === 'job' && editorForm.jobIntent === 'busca') {
+        await persistEmploymentProfile(editorForm.employmentProfile, { syncActiveRequests:false })
+      }
       await loadPublications()
       toast.success('Cambios guardados')
       closeEditor()
@@ -1850,11 +2121,23 @@ export default function Perfil() {
     }
   }
 
+  const employmentProfileLevel = getEmploymentProfileLevel(employmentProfile)
   const menuSections = [
     {
       title: 'Mi actividad',
       items: [
         { icon:'📌', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
+        ...(hasEmploymentRequest ? [{
+          icon:'💼',
+          color:'#EFF6FF',
+          label:'Perfil profesional',
+          sub:employmentProfileLoading
+            ? 'Cargando datos laborales...'
+            : employmentProfileLevel
+              ? `Nivel orientativo: ${employmentProfileLevel.label} · Editar datos laborales`
+              : 'Créalo con cinco respuestas rápidas',
+          action:openEmploymentProfileEditor,
+        }] : []),
         { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
       ],
     },
@@ -1943,10 +2226,15 @@ export default function Perfil() {
         {/* Name & info */}
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:'#fff', margin:'0 0 4px', letterSpacing:-0.3 }}>{displayName}</h1>
         <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.65)', margin:'0 0 8px' }}>{user?.email}</p>
-        {userCanton && (
-          <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(255,255,255,0.15)', borderRadius:20, padding:'4px 12px', fontFamily:PP, fontSize:11, fontWeight:600, color:'#fff' }}>
-            📍 Cantón {userCanton}
-          </span>
+        {(userCanton || (hasEmploymentRequest && employmentProfileLevel)) && (
+          <div style={{ display:'flex', justifyContent:'center', alignItems:'center', flexWrap:'wrap', gap:7 }}>
+            {userCanton && (
+              <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(255,255,255,0.15)', borderRadius:20, padding:'4px 12px', fontFamily:PP, fontSize:11, fontWeight:600, color:'#fff' }}>
+                📍 Cantón {userCanton}
+              </span>
+            )}
+            {hasEmploymentRequest && employmentProfileLevel && <EmploymentLevelBadge profile={employmentProfile} />}
+          </div>
         )}
 
         {/* Stats */}
@@ -2118,6 +2406,41 @@ export default function Perfil() {
               </div>
             )
           })
+        )}
+      </Sheet>
+
+      <Sheet show={employmentProfileOpen && hasEmploymentRequest} onClose={() => setEmploymentProfileOpen(false)} title="Perfil profesional" syncHistory={false}>
+        {employmentProfileLoading ? (
+          <div className="skeleton" style={{ height:420, borderRadius:18 }} />
+        ) : (
+          <>
+            <EmploymentProfileForm
+              value={employmentProfileForm}
+              onChange={setEmploymentProfileForm}
+              description="Actualiza cinco datos concretos que pueden ayudar a una empresa a valorar tu disponibilidad."
+            />
+            {!isEmploymentProfileComplete(employmentProfileForm) && (
+              <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.5, margin:'10px 2px 0' }}>
+                Completa las cinco respuestas para poder guardar el perfil.
+              </p>
+            )}
+            <div style={{ display:'flex', gap:10, marginTop:16 }}>
+              <button
+                type="button"
+                onClick={() => setEmploymentProfileOpen(false)}
+                style={{ flex:1, fontFamily:PP, fontWeight:700, fontSize:12, background:'#fff', color:C.mid, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 0', cursor:'pointer' }}
+              >
+                Cancelar
+              </button>
+              <Btn
+                onClick={handleSaveEmploymentProfile}
+                disabled={savingEmploymentProfile || !isEmploymentProfileComplete(employmentProfileForm)}
+                style={{ flex:1 }}
+              >
+                {savingEmploymentProfile ? 'Guardando...' : 'Guardar perfil'}
+              </Btn>
+            </div>
+          </>
         )}
       </Sheet>
 
@@ -2578,6 +2901,7 @@ export default function Perfil() {
           filteredPublications.map(item => {
             const deleteKey = `${item.kind}-${item.id}`
             const expiredEvent = isExpiredEventPublication(item, eventReviewConfirmations)
+            const lifecycleExpired = ['ad', 'job'].includes(item.kind) && item.expired
             const adNeedsReview = isAdDueForReview(item, adReviewConfirmations)
             const imageUrl = getPublicationImageUrl(item)
             return (
@@ -2595,8 +2919,8 @@ export default function Perfil() {
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:6 }}>
                       <Tag bg="#DBEAFE" color={C.primaryDark}>{KIND_META[item.kind].label}</Tag>
-                      <Tag bg={expiredEvent ? '#FEF3C7' : item.active ? '#D1FAE5' : '#E5E7EB'} color={expiredEvent ? '#92400E' : item.active ? '#065F46' : '#475569'}>
-                        {expiredEvent ? 'Fecha pasada' : item.active ? 'Activa' : 'Oculta'}
+                      <Tag bg={expiredEvent || lifecycleExpired ? '#FEF3C7' : item.active ? '#D1FAE5' : '#E5E7EB'} color={expiredEvent || lifecycleExpired ? '#92400E' : item.active ? '#065F46' : '#475569'}>
+                        {expiredEvent ? 'Fecha pasada' : lifecycleExpired ? 'Caducada' : item.lifecycleLabel || (item.active ? 'Activa' : 'Oculta')}
                       </Tag>
                       {adNeedsReview && <Tag bg="#FEF3C7" color="#92400E">Revisar</Tag>}
                     </div>
@@ -2647,8 +2971,8 @@ export default function Perfil() {
             <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'12px 14px', marginBottom:14 }}>
               <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:6 }}>
                 <Tag bg="#DBEAFE" color={C.primaryDark}>{KIND_META[actionItem.kind].label}</Tag>
-                <Tag bg={actionItem.active ? '#D1FAE5' : '#E5E7EB'} color={actionItem.active ? '#065F46' : '#475569'}>
-                  {actionItem.active ? 'Activa' : 'Oculta'}
+                <Tag bg={actionItem.expired ? '#FEF3C7' : actionItem.active ? '#D1FAE5' : '#E5E7EB'} color={actionItem.expired ? '#92400E' : actionItem.active ? '#065F46' : '#475569'}>
+                  {actionItem.lifecycleLabel || (actionItem.active ? 'Activa' : 'Oculta')}
                 </Tag>
                 {isAdDueForReview(actionItem, adReviewConfirmations) && <Tag bg="#FEF3C7" color="#92400E">Revisar</Tag>}
               </div>
@@ -2656,6 +2980,26 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
             </div>
             <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
+            {['ad', 'job'].includes(actionItem.kind) && actionItem.active && !actionItem.expired && (
+              <button
+                onClick={() => handlePublicationLifecycle(actionItem, 'resolve')}
+                disabled={lifecycleSavingKey === `${actionItem.kind}-${actionItem.id}-resolve`}
+                style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:13, background:'#ECFDF5', color:'#047857', border:'1.5px solid #A7F3D0', borderRadius:14, padding:'12px 16px', cursor:'pointer', marginBottom:10 }}
+              >
+                {lifecycleSavingKey === `${actionItem.kind}-${actionItem.id}-resolve` ? 'Actualizando...' : getResolutionActionLabel(actionItem)}
+              </button>
+            )}
+            {isRenewableRequest(actionItem) && (actionItem.expired || !actionItem.active) && (
+              <button
+                onClick={() => handlePublicationLifecycle(actionItem, 'renew')}
+                disabled={lifecycleSavingKey === `${actionItem.kind}-${actionItem.id}-renew`}
+                style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:13, background:C.primaryLight, color:C.primaryDark, border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 16px', cursor:'pointer', marginBottom:10 }}
+              >
+                {lifecycleSavingKey === `${actionItem.kind}-${actionItem.id}-renew`
+                  ? 'Renovando...'
+                  : actionItem.kind === 'job' ? '↻ Renovar solicitud 45 días' : '↻ Renovar solicitud 30 días'}
+              </button>
+            )}
             {PAID_BUSINESS_FEATURES_VISIBLE && actionItem.kind === 'business' && (
               <button
                 onClick={() => {
@@ -2916,6 +3260,30 @@ export default function Perfil() {
             <Input label="Título" value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
             <Input label="Descripción" rows={4} value={editorForm.desc || ''} onChange={event => updateEditorField('desc', event.target.value)} />
             <AdPriceEditor form={editorForm} onChange={updateEditorField} />
+            {normalizeAdCat(editorForm.cat) === 'vivienda' && (
+              <>
+                <div className="grid-2" style={{ gap:10 }}>
+                  <Input label={editorForm.type === 'busca' ? 'La necesitas desde' : 'Disponible desde'} type="date" value={editorForm.availableFrom || ''} onChange={event => updateEditorField('availableFrom', event.target.value)} />
+                  {editorForm.type === 'busca' ? (
+                    <Input label="Número de personas" type="number" value={editorForm.householdSize || ''} onChange={event => updateEditorField('householdSize', event.target.value)} />
+                  ) : (
+                    <Input label="Número de habitaciones" value={editorForm.rooms || ''} onChange={event => updateEditorField('rooms', event.target.value)} />
+                  )}
+                </div>
+                <div className="grid-2" style={{ gap:10 }}>
+                  <Select label="Amueblada" value={editorForm.furnished || ''} onChange={event => updateEditorField('furnished', event.target.value)}>
+                    <option value="">Sin indicar</option>
+                    <option value="yes">Sí</option>
+                    <option value="no">No</option>
+                  </Select>
+                  <Select label="Mascotas" value={editorForm.petsAllowed || ''} onChange={event => updateEditorField('petsAllowed', event.target.value)}>
+                    <option value="">Sin indicar</option>
+                    <option value="yes">{editorForm.type === 'busca' ? 'Tengo mascota' : 'Permitidas'}</option>
+                    <option value="no">{editorForm.type === 'busca' ? 'No tengo mascota' : 'No permitidas'}</option>
+                  </Select>
+                </div>
+              </>
+            )}
             <div className="grid-2" style={{ gap:10 }}>
               <Select label="Cantón" value={editorForm.canton || ''} onChange={event => updateEditorField('canton', event.target.value)}>
                 <option value="">Seleccionar...</option>
@@ -2932,7 +3300,7 @@ export default function Perfil() {
 
         {editorItem?.kind === 'job' && (
           <>
-            <Select label="Busco / ofrezco" value={editorForm.jobIntent || 'ofrece'} onChange={event => updateEditorField('jobIntent', event.target.value)}>
+            <Select label="Tipo de publicación" value={editorForm.jobIntent || 'ofrece'} onChange={event => updateEditorField('jobIntent', event.target.value)}>
               {JOB_INTENTS.map(intent => <option key={intent.id} value={intent.id}>{intent.label}</option>)}
             </Select>
             <ImageUploadField
@@ -2952,7 +3320,7 @@ export default function Perfil() {
               {JOB_SECTORS.map(sector => <option key={sector.id} value={sector.id}>{sector.emoji} {sector.label}</option>)}
             </Select>
             <Input label={editorForm.jobIntent === 'busca' ? 'Puesto o trabajo que buscas' : 'Título del puesto'} value={editorForm.title || ''} onChange={event => updateEditorField('title', event.target.value)} />
-            <Input label={editorForm.jobIntent === 'busca' ? 'Nombre o perfil profesional (opcional)' : 'Empresa o empleador (opcional)'} value={editorForm.company || ''} onChange={event => updateEditorField('company', event.target.value)} />
+            <Input label={editorForm.jobIntent === 'busca' ? 'Nombre o presentación (opcional)' : 'Empresa o empleador (opcional)'} value={editorForm.company || ''} onChange={event => updateEditorField('company', event.target.value)} />
             <Select label={editorForm.jobIntent === 'busca' ? 'Tipo de contrato o disponibilidad' : 'Tipo de contrato'} value={editorForm.type || ''} onChange={event => updateEditorField('type', event.target.value)}>
               <option value="">Seleccionar...</option>
               {editorForm.type && !JOB_TYPES.some(type => type.id === editorForm.type) && (
@@ -2960,6 +3328,22 @@ export default function Perfil() {
               )}
               {JOB_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
             </Select>
+            {editorForm.jobIntent === 'busca' && (
+              <div style={{ marginBottom:16 }}>
+                <EmploymentProfileForm
+                  value={editorForm.employmentProfile}
+                  onChange={value => updateEditorField('employmentProfile', value)}
+                  title="Perfil profesional vinculado"
+                  description="Estos datos también se mostrarán en tu perfil profesional."
+                />
+                <div style={{ marginTop:14 }}>
+                  <Select label="Visibilidad de la solicitud" value={editorForm.profileVisibility || 'public'} onChange={event => updateEditorField('profileVisibility', event.target.value)}>
+                    <option value="public">Toda la comunidad</option>
+                    <option value="verified_employers">Solo empresas verificadas</option>
+                  </Select>
+                </div>
+              </div>
+            )}
             <div className="grid-2" style={{ gap:10 }}>
               <Input label="Ciudad" value={editorForm.city || ''} onChange={event => updateEditorField('city', event.target.value)} />
               <Select label="Cantón" value={editorForm.canton || ''} onChange={event => updateEditorField('canton', event.target.value)}>
@@ -2968,7 +3352,9 @@ export default function Perfil() {
               </Select>
             </div>
             <Input label="Salario" value={editorForm.salary || ''} onChange={event => updateEditorField('salary', event.target.value)} />
-            <Input label="Idiomas (separados por coma)" value={editorForm.langs || ''} onChange={event => updateEditorField('langs', event.target.value)} />
+            {editorForm.jobIntent !== 'busca' && (
+              <Input label="Idiomas requeridos (separados por coma)" value={editorForm.langs || ''} onChange={event => updateEditorField('langs', event.target.value)} />
+            )}
             <Input label="Descripción" rows={4} value={editorForm.desc || ''} onChange={event => updateEditorField('desc', event.target.value)} />
           </>
         )}

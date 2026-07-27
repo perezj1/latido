@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS profiles (
   languages  TEXT[],
   interests  TEXT[] NOT NULL DEFAULT '{}',
   avatar_url TEXT,
+  employment_profile JSONB NOT NULL DEFAULT '{}'::JSONB,
+  employment_level TEXT,
+  employment_profile_updated_at TIMESTAMPTZ,
   last_seen_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -149,6 +152,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   contact_link TEXT,
   logo_url   TEXT,
   languages  TEXT[],
+  employment_profile JSONB,
+  employment_level TEXT,
   active     BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

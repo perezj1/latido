@@ -510,16 +510,28 @@ export function PillFilters({ options, value, onChange, className='' }) {
 
 // ── Segmented tabs ─────────────────────────────────────────────
 export function SegmentedTabs({ tabs, value, onChange }) {
+  const activeIndex = Math.max(0, tabs.findIndex(tab => tab.id === value))
+
   return (
-    <div style={{ display:'flex', gap:3, background:C.border, borderRadius:14, padding:4, marginBottom:16 }}>
+    <div
+      className="ui-segmented-tabs"
+      role="tablist"
+      aria-label="Secciones"
+      style={{
+        '--ui-segment-count':tabs.length,
+        '--ui-active-segment':activeIndex,
+      }}
+    >
+      <span className="ui-segmented-tabs__indicator" aria-hidden="true" />
       {tabs.map(t => (
-        <button key={t.id} onClick={() => onChange(t.id)} style={{
-          flex:1, fontFamily:PP, fontSize:10, fontWeight:700, padding:'8px 4px', borderRadius:10,
-          border:'none', cursor:'pointer',
-          background: value===t.id ? '#fff' : 'transparent',
-          color: value===t.id ? C.primary : C.mid,
-          boxShadow: value===t.id ? '0 1px 6px rgba(0,0,0,0.1)' : 'none', transition:'all .2s',
-        }}>
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={value === t.id}
+          className={value === t.id ? 'is-active' : ''}
+          onClick={() => onChange(t.id)}
+        >
           {t.label}
         </button>
       ))}

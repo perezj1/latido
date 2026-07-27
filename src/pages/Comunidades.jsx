@@ -18,10 +18,11 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Tag, EmptyState, SegmentedTabs, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal } from '../components/UI'
+import { Tag, EmptyState, SegmentedTabs, Sheet, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CompactFilterSelect from '../components/CompactFilterSelect'
 import GlobalSearch from '../components/GlobalSearch'
+import { FilterButton, FilterChips, FilterResultSummary, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
 import { buildShareUrl } from '../components/ShareButton'
 import DetailActionBar from '../components/DetailActionBar'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
@@ -203,6 +204,33 @@ const DIRECTORY_SEARCH_RESULT_TYPES = {
   comunidades:['community'],
 }
 
+const BUSINESS_SORT_OPTIONS = [
+  { id:'recommended', label:'Recomendados' },
+  { id:'newest', label:'Más recientes' },
+  { id:'oldest', label:'Más antiguos' },
+  { id:'rating', label:'Mejor valorados' },
+]
+
+const COMMUNITY_SORT_OPTIONS = [
+  { id:'newest', label:'Más recientes' },
+  { id:'oldest', label:'Más antiguos' },
+  { id:'members', label:'Más miembros' },
+]
+
+const DIRECTORY_FILTER_CONTROL_STYLE = {
+  width:'100%',
+  boxSizing:'border-box',
+  border:`1.5px solid ${C.border}`,
+  borderRadius:13,
+  padding:'12px 14px',
+  fontFamily:PP,
+  fontSize:13,
+  fontWeight:600,
+  color:C.text,
+  background:'#fff',
+  outline:'none',
+}
+
 const COMMUNITY_OPTIONS = []
 for (const item of COMMUNITY_CATS) {
   if (item.id === 'fe') continue
@@ -261,7 +289,53 @@ function normalizeCommunity(group) {
     desc: group.desc || group.description || '',
     contact: group.contact || '',
     photo_url: group.photo_url || '',
+    created_at: group.created_at || '',
   }
+}
+
+function DirectoryCategoryPills({ options=[], value='', onChange, label='Categorías' }) {
+  return (
+    <div
+      className="no-scroll"
+      role="tablist"
+      aria-label={label}
+      style={{ display:'flex', width:'100%', gap:7, overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'2px 1px 4px', boxSizing:'border-box' }}
+    >
+      {options.map(option => {
+        const active = value === option.id
+        return (
+          <button
+            key={option.id || 'all'}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(option.id)}
+            style={{
+              flex:'0 0 auto',
+              minHeight:32,
+              display:'inline-flex',
+              alignItems:'center',
+              justifyContent:'center',
+              padding:'6px 11px',
+              border:`1.5px solid ${active ? C.primary : C.border}`,
+              borderRadius:999,
+              background:active ? C.primary : '#fff',
+              color:active ? '#fff' : C.mid,
+              fontFamily:PP,
+              fontSize:10,
+              fontWeight:800,
+              lineHeight:1,
+              whiteSpace:'nowrap',
+              cursor:'pointer',
+              boxShadow:active ? '0 5px 12px rgba(37,99,235,0.18)' : 'none',
+            }}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 function formatRelativeDate(value) {
@@ -653,30 +727,7 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
   const planLabel = getDirectoryBusinessPlanLabel(business)
   const rating = averageRating(reviews)
   const cover = photos[0] || business.photo_url
-  const contactMethods = getBusinessContactMethods(business)
-  const locationContacts = getLocationContacts(business)
-  const hasContact = locationContacts ? locationContacts.length > 0 : contactMethods.length > 0
   const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [showContacts, setShowContacts] = useState(false)
-  const contactMenuRef = useRef(null)
-
-  useEffect(() => {
-    if (!showContacts) return undefined
-
-    const closeOnOutsidePress = event => {
-      if (!contactMenuRef.current?.contains(event.target)) setShowContacts(false)
-    }
-    const closeOnEscape = event => {
-      if (event.key === 'Escape') setShowContacts(false)
-    }
-
-    document.addEventListener('pointerdown', closeOnOutsidePress)
-    window.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsidePress)
-      window.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [showContacts])
 
   return (
     <div
@@ -740,57 +791,14 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{business.desc}</p>
       </div>
 
-      <div style={{ gridColumn:'1 / -1', display:'flex', flexDirection:'column', gap:8, minWidth:0, marginTop:planLabel ? 6 : 0 }}>
-        {services.length > 0 && (
+      {services.length > 0 && (
+        <div style={{ gridColumn:'1 / -1', minWidth:0, marginTop:planLabel ? 6 : 0 }}>
           <div style={{ display:'flex', flexWrap:'wrap', gap:5, minWidth:0, overflow:'hidden' }}>
             {services.slice(0, 4).map(service => <Tag key={service} bg={C.bg} color={C.mid} title={service}>{service}</Tag>)}
             {services.length > 4 && <Tag bg={C.bg} color={C.mid} style={{ flexShrink:0 }}>+{services.length - 4}</Tag>}
           </div>
-        )}
-        <div ref={contactMenuRef} style={{ display:'flex', flexDirection:'column', gap:8 }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, borderTop:`1px solid ${C.borderLight}`, paddingTop:10, marginTop:2 }}>
-          <span style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, flexShrink:0 }}>Ver perfil</span>
-          {hasContact && (
-            <button
-              onClick={e => { e.stopPropagation(); setShowContacts(v => !v) }}
-              style={{ fontFamily:PP, fontWeight:700, fontSize:11, background:showContacts ? C.primaryDark : C.primaryLight, color:showContacts ? '#fff' : C.primary, border:'none', padding:'7px 11px', borderRadius:999, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}
-            >
-              Contactar
-            </button>
-          )}
         </div>
-        {showContacts && (
-          <div onClick={e => e.stopPropagation()}>
-            {locationContacts ? (
-              <LocationContactsPanel locations={locationContacts} />
-            ) : (
-              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:8, display:'flex', flexDirection:'column', gap:6 }}>
-                {contactMethods.map(method => (
-                  <a
-                    key={method.id}
-                    href={method.href}
-                    target={method.external ? '_blank' : undefined}
-                    rel={method.external ? 'noreferrer' : undefined}
-                    style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, textDecoration:'none' }}
-                  >
-                    <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
-                      <span style={{ fontSize:15, flexShrink:0 }}>{method.icon}</span>
-                      <div style={{ minWidth:0 }}>
-                        <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 1px' }}>{method.label}</p>
-                        <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
-                      </div>
-                    </div>
-                    <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, flexShrink:0 }}>
-                      {method.external ? 'Abrir ↗' : 'Abrir →'}
-                    </span>
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -1442,6 +1450,13 @@ export default function Comunidades() {
   const [negType, setNegType] = useState('')
   const [eventType, setEventType] = useState('')
   const [locationFilter, setLocationFilter] = useState('')
+  const [businessSort, setBusinessSort] = useState('recommended')
+  const [communitySort, setCommunitySort] = useState('newest')
+  const [showDirectoryFilters, setShowDirectoryFilters] = useState(false)
+  const [directoryFilterDraft, setDirectoryFilterDraft] = useState({
+    location:'',
+    sort:'recommended',
+  })
   const [selectedCommunity, setSelectedCommunity] = useState(null)
   const [selectedBusiness, setSelectedBusiness] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -1686,6 +1701,9 @@ export default function Comunidades() {
     setNegType('')
     setEventType('')
     setLocationFilter('')
+    setBusinessSort('recommended')
+    setCommunitySort('newest')
+    setShowDirectoryFilters(false)
     scrollPageTop()
   }
 
@@ -1756,15 +1774,54 @@ export default function Comunidades() {
 
   const handleCommunityCategoryChange = nextCat => {
     setCat(nextCat)
+    setShowDirectoryFilters(false)
     scrollPageTop()
   }
 
   const handleBusinessTypeChange = nextType => {
     setNegType(nextType)
+    setShowDirectoryFilters(false)
     scrollPageTop()
   }
 
-  const catOptions = useMemo(() => [{ id:'', label:'Todas' }, ...COMMUNITY_OPTIONS.map(item => ({ id:item.id, label:`${item.emoji} ${item.label}` }))], [])
+  const openDirectoryFilters = () => {
+    setDirectoryFilterDraft({
+      location:locationFilter,
+      sort:tab === 'negocios' ? businessSort : communitySort,
+    })
+    setShowDirectoryFilters(true)
+  }
+
+  const toggleDirectoryFilters = () => {
+    if (showDirectoryFilters) {
+      setShowDirectoryFilters(false)
+      return
+    }
+    openDirectoryFilters()
+  }
+
+  const handleDirectorySortChange = value => {
+    if (tab === 'negocios') setBusinessSort(value || 'recommended')
+    else setCommunitySort(value || 'newest')
+    scrollPageTop()
+  }
+
+  const applyDirectoryFilters = () => {
+    setLocationFilter(directoryFilterDraft.location)
+    if (tab === 'negocios') setBusinessSort(directoryFilterDraft.sort || 'recommended')
+    else setCommunitySort(directoryFilterDraft.sort || 'newest')
+    setShowDirectoryFilters(false)
+    scrollPageTop()
+  }
+
+  const clearDirectoryFilterDraft = () => {
+    setDirectoryFilterDraft({
+      location:'',
+      sort:tab === 'negocios' ? 'recommended' : 'newest',
+    })
+  }
+
+  const catOptions = useMemo(() => [{ id:'', label:'Todos' }, ...COMMUNITY_OPTIONS.map(item => ({ id:item.id, label:`${item.emoji} ${item.label}` }))], [])
   const cantonOptions = useMemo(() => [
     { id:'', label:'Toda Suiza' },
     ...CANTONS.map(cantonOption => ({ id:cantonOption.code, label:`${cantonOption.code} · ${cantonOption.name}` })),
@@ -1778,18 +1835,74 @@ export default function Comunidades() {
     return [{ id:'', label:'Todas las ciudades' }, ...cities.map(city => ({ id:city, label:`\u{1F4CD} ${city}` }))]
   }, [communities])
   const eventTypeOptions = useMemo(() => EVENTO_TYPES.map(item => ({ id:item.id, label:item.label })), [])
-  const activeDirectoryFilters = tab === 'negocios'
-    ? [negType, locationFilter].filter(Boolean).length
-    : tab === 'comunidades'
-      ? [cat, locationFilter].filter(Boolean).length
-      : [eventType, locationFilter].filter(Boolean).length
+
+  const buildDirectoryFilterChips = values => {
+    const chips = []
+    const sortOptions = tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS
+    const defaultSort = tab === 'negocios' ? 'recommended' : 'newest'
+    const selectedSort = sortOptions.find(option => option.id === values.sort)
+
+    if (values.location) {
+      const canton = tab === 'negocios'
+        ? CANTONS.find(item => item.code === values.location)
+        : null
+      chips.push({ key:'location', label:canton?.name || values.location })
+    }
+    if (values.sort && values.sort !== defaultSort) {
+      chips.push({ key:'sort', label:selectedSort?.label || values.sort })
+    }
+    return chips
+  }
+
+  const appliedDirectoryFilterChips = tab === 'eventos'
+    ? []
+    : buildDirectoryFilterChips({
+        location:locationFilter,
+        sort:tab === 'negocios' ? businessSort : communitySort,
+      })
+  const visibleDirectoryFilterChips = appliedDirectoryFilterChips
+  const activeDirectoryFilters = tab === 'eventos'
+    ? [eventType, locationFilter].filter(Boolean).length
+    : appliedDirectoryFilterChips.length
 
   const clearDirectoryFilters = () => {
-    setCat('')
-    setNegType('')
-    setEventType('')
     setLocationFilter('')
+    if (tab === 'eventos') setEventType('')
+    if (tab === 'negocios') setBusinessSort('recommended')
+    if (tab === 'comunidades') setCommunitySort('newest')
     scrollPageTop()
+  }
+
+  const removeVisibleDirectoryFilter = key => {
+    const defaultSort = tab === 'negocios' ? 'recommended' : 'newest'
+    if (showDirectoryFilters) {
+      setDirectoryFilterDraft(current => ({
+        ...current,
+        [key]:key === 'sort' ? defaultSort : '',
+      }))
+      return
+    }
+
+    if (key === 'location') setLocationFilter('')
+    if (key === 'sort') {
+      if (tab === 'negocios') setBusinessSort('recommended')
+      if (tab === 'comunidades') setCommunitySort('newest')
+    }
+    scrollPageTop()
+  }
+
+  const clearVisibleDirectoryFilters = () => {
+    if (showDirectoryFilters) {
+      clearDirectoryFilterDraft()
+      return
+    }
+    clearDirectoryFilters()
+  }
+
+  const clearAllDirectoryFilters = () => {
+    clearDirectoryFilters()
+    if (tab === 'negocios') setNegType('')
+    if (tab === 'comunidades') setCat('')
   }
 
   const searchProfile = useMemo(() => buildSearchProfile(search), [search])
@@ -1824,12 +1937,23 @@ export default function Comunidades() {
           ])
       ))
     )
-    .sort((a, b) => hasResolvedSearch
-      ? (
-        (resolvedSearchRank.get(`community:${a.id}`) ?? Number.MAX_SAFE_INTEGER)
-        - (resolvedSearchRank.get(`community:${b.id}`) ?? Number.MAX_SAFE_INTEGER)
-      )
-      : 0)
+    .sort((a, b) => {
+      if (communitySort === 'members') {
+        const memberDiff = Number(b.members || 0) - Number(a.members || 0)
+        if (memberDiff) return memberDiff
+      }
+
+      const dateDiff = String(b.created_at || '').localeCompare(String(a.created_at || ''))
+      if (dateDiff) return communitySort === 'oldest' ? -dateDiff : dateDiff
+
+      if (hasResolvedSearch) {
+        return (
+          (resolvedSearchRank.get(`community:${a.id}`) ?? Number.MAX_SAFE_INTEGER)
+          - (resolvedSearchRank.get(`community:${b.id}`) ?? Number.MAX_SAFE_INTEGER)
+        )
+      }
+      return String(a.name || '').localeCompare(String(b.name || ''), 'es')
+    })
 
   const eligibleBusinesses = businesses.filter(business =>
     business.type !== 'empleo' && business.type !== 'vivienda' &&
@@ -1878,14 +2002,94 @@ export default function Comunidades() {
       return String(b.business.created_at || '').localeCompare(String(a.business.created_at || ''))
     })
     .map(item => item.business)
-  const filteredNeg = hasSearch
-    ? baseOrderedBusinesses
-    : BUSINESS_DIRECTORY_PLAN_ORDER.flatMap(plan =>
-      rotateItems(
-        baseOrderedBusinesses.filter(business => getDirectoryBusinessPlan(business) === plan),
-        businessDirectoryRotationBucket,
+  const filteredNeg = businessSort === 'recommended'
+    ? hasSearch
+      ? baseOrderedBusinesses
+      : BUSINESS_DIRECTORY_PLAN_ORDER.flatMap(plan =>
+        rotateItems(
+          baseOrderedBusinesses.filter(business => getDirectoryBusinessPlan(business) === plan),
+          businessDirectoryRotationBucket,
+        )
       )
+    : [...baseOrderedBusinesses].sort((a, b) => {
+      if (businessSort === 'rating') {
+        const ratingDiff = (averageRating(businessReviews[b.id] || []) ?? -1) - (averageRating(businessReviews[a.id] || []) ?? -1)
+        if (ratingDiff) return ratingDiff
+        const recommendationDiff = (businessRecommendations[b.id] || 0) - (businessRecommendations[a.id] || 0)
+        if (recommendationDiff) return recommendationDiff
+      }
+
+      const dateDiff = String(b.created_at || '').localeCompare(String(a.created_at || ''))
+      if (dateDiff) return businessSort === 'oldest' ? -dateDiff : dateDiff
+      return String(a.name || '').localeCompare(String(b.name || ''), 'es')
+    })
+
+  const draftDirectoryResultCount = useMemo(() => {
+    if (tab === 'comunidades') {
+      return communities.filter(group =>
+        (!cat || group.cat === cat) &&
+        (!directoryFilterDraft.location || group.city === directoryFilterDraft.location) &&
+        (!hasSearch || (
+          hasResolvedSearch
+            ? resolvedSearchRank.has(`community:${group.id}`)
+            : scoreSearchFields(searchProfile, [
+              { value:group.name, weight:6 },
+              { value:group.desc, weight:4 },
+              { value:getCommunityMeta(group.cat)?.label, weight:3 },
+              { value:group.city, weight:2 },
+              { value:'grupo comunidad', weight:1 },
+            ])
+        ))
+      ).length
+    }
+
+    const eligible = businesses.filter(business =>
+      business.type !== 'empleo' &&
+      business.type !== 'vivienda' &&
+      (!negType || normalizeNegocioType(business.type) === negType) &&
+      (!directoryFilterDraft.location || business.canton === directoryFilterDraft.location)
     )
+    if (!hasSearch) return eligible.length
+    if (hasResolvedSearch) {
+      return eligible.filter(business => resolvedSearchRank.has(`business:${business.id}`)).length
+    }
+
+    const exact = eligible.filter(business => scoreSearchFields(searchProfile, [
+      { value:business.name, weight:6 },
+      { value:(businessServices[business.id] || business.services || []).join(' '), weight:5 },
+      { value:business.desc, weight:4 },
+      { value:getNegocioTypeMeta(business.type)?.label, weight:3 },
+      { value:business.type, weight:2 },
+      { value:business.city, weight:2 },
+    ]) > 0)
+    if (exact.length) return exact.length
+
+    return eligible.filter(business => scoreSearchFields(searchProfile, [
+      { value:business.name, weight:6 },
+      { value:(businessServices[business.id] || business.services || []).join(' '), weight:5 },
+      { value:business.desc, weight:4 },
+      { value:getNegocioTypeMeta(business.type)?.label, weight:3 },
+      { value:business.type, weight:2 },
+      { value:business.city, weight:2 },
+    ], { allowIntentFallback:true }) > 0).length
+  }, [
+    businessServices,
+    businesses,
+    cat,
+    communities,
+    directoryFilterDraft.location,
+    hasResolvedSearch,
+    hasSearch,
+    negType,
+    resolvedSearchRank,
+    searchProfile,
+    tab,
+  ])
+
+  const visibleDirectoryResultCount = tab === 'negocios' ? filteredNeg.length : filteredComm.length
+  const activeDirectorySort = tab === 'negocios' ? businessSort : communitySort
+  const currentDirectorySortLabel = (tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS)
+    .find(option => option.id === activeDirectorySort)?.label || 'Más recientes'
 
   const filteredEvents = events.filter(event =>
     (!eventType || event.type === eventType) &&
@@ -1980,81 +2184,75 @@ export default function Comunidades() {
       </div>
 
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:16, padding:'10px 0 12px' }}>
-        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px' }}>
-          <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)' }}>
+        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px', boxSizing:'border-box' }}>
+          <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)', boxSizing:'border-box' }}>
           <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />
           {tab !== 'eventos' && (
-            <GlobalSearch
-              size="sm"
-              placeholder={TAB_COPY[tab].search}
-              value={search}
-              onValueChange={setSearch}
-              resultTypes={DIRECTORY_SEARCH_RESULT_TYPES[tab]}
-              analyticsScope={tab === 'comunidades' ? 'comunidad_grupos' : 'comunidad_negocios'}
-              assistantMode
-              showResultsDropdown={false}
-              onResolvedResultsChange={setResolvedSearch}
-              searchFilters={{
-                category:tab === 'comunidades' ? cat : negType,
-                canton:tab === 'negocios' ? locationFilter : '',
-                location:tab === 'comunidades' ? locationFilter : '',
-                intent:'',
-              }}
-              onSearchFiltersChange={clearDirectoryFilters}
-              filtersContent={(
-                <div className="community-filter-row no-scroll" style={{ marginTop:10 }}>
-                  {tab === 'negocios' && (
-                    <CompactFilterSelect
-                      className="community-filter-control"
-                      label="Categoría"
-                      value={negType}
-                      options={VISIBLE_NEGOCIO_TYPES}
-                      onChange={handleBusinessTypeChange}
-                    />
-                  )}
-                  {tab === 'comunidades' && (
-                    <CompactFilterSelect
-                      className="community-filter-control"
-                      label="Categoría"
-                      value={cat}
-                      options={catOptions}
-                      onChange={handleCommunityCategoryChange}
-                    />
-                  )}
-                  <CompactFilterSelect
-                    className="community-filter-control community-filter-location"
-                    label={tab === 'comunidades' ? 'Ciudad' : 'Cantón'}
-                    value={locationFilter}
-                    options={tab === 'comunidades' ? communityCityOptions : cantonOptions}
-                    onChange={value => {
-                      setLocationFilter(value)
-                      scrollPageTop()
+            <div key={`${tab}-directory-toolbar`} className="segmented-content-transition">
+              <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%', minWidth:0, marginTop:10 }}>
+                <div style={{ flex:'1 1 0', minWidth:0 }}>
+                  <GlobalSearch
+                    size="sm"
+                    placeholder={TAB_COPY[tab].search}
+                    value={search}
+                    onValueChange={setSearch}
+                    resultTypes={DIRECTORY_SEARCH_RESULT_TYPES[tab]}
+                    analyticsScope={tab === 'comunidades' ? 'comunidad_grupos' : 'comunidad_negocios'}
+                    assistantMode
+                    showResultsDropdown={false}
+                    onResolvedResultsChange={setResolvedSearch}
+                    searchFilters={{
+                      category:tab === 'comunidades' ? cat : negType,
+                      canton:tab === 'negocios' ? locationFilter : '',
+                      location:tab === 'comunidades' ? locationFilter : '',
+                      intent:'',
                     }}
+                    onSearchFiltersChange={clearDirectoryFilters}
                   />
-                  {activeDirectoryFilters > 0 && (
-                    <button
-                      type="button"
-                      className="tablon-clear-filter-button"
-                      onClick={clearDirectoryFilters}
-                      aria-label="Limpiar filtros"
-                    >
-                      ✕
-                    </button>
-                  )}
+                </div>
+                <FilterButton
+                  count={activeDirectoryFilters}
+                  open={showDirectoryFilters}
+                  onClick={toggleDirectoryFilters}
+                />
+              </div>
+              {visibleDirectoryFilterChips.length > 0 && (
+                <div style={{ marginTop:9 }}>
+                  <FilterChips
+                    items={visibleDirectoryFilterChips}
+                    onRemove={removeVisibleDirectoryFilter}
+                    onClear={clearVisibleDirectoryFilters}
+                  />
                 </div>
               )}
-            />
+              <div style={{ marginTop:9 }}>
+                <DirectoryCategoryPills
+                  options={tab === 'negocios' ? VISIBLE_NEGOCIO_TYPES : catOptions}
+                  value={tab === 'negocios' ? negType : cat}
+                  onChange={tab === 'negocios' ? handleBusinessTypeChange : handleCommunityCategoryChange}
+                  label={tab === 'negocios' ? 'Categorías de negocios' : 'Categorías de grupos'}
+                />
+              </div>
+              <FilterResultSummary
+                count={visibleDirectoryResultCount}
+                sortLabel={currentDirectorySortLabel}
+                sortOptions={tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS}
+                sortValue={activeDirectorySort}
+                onSortChange={handleDirectorySortChange}
+              />
+            </div>
           )}
           </div>
         </div>
       </div>
 
+      <div key={`${tab}-directory-results`} className="segmented-content-transition">
       {tab === 'comunidades' && (
         <>
           {loading ? (
             <div className="skeleton" style={{ height:200, borderRadius:20 }} />
           ) : filteredComm.length === 0 ? (
-            <EmptyState emoji="👥" title={TAB_COPY.comunidades.emptyTitle} sub={TAB_COPY.comunidades.emptyText} action="Ver todos" onAction={() => { clearDirectoryFilters(); setSearch('') }} />
+            <EmptyState emoji="👥" title={TAB_COPY.comunidades.emptyTitle} sub={TAB_COPY.comunidades.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
               {filteredComm.map(group => (
@@ -2076,7 +2274,7 @@ export default function Comunidades() {
           {loading ? (
             <div className="skeleton" style={{ height:260, borderRadius:20 }} />
           ) : filteredNeg.length === 0 ? (
-            <EmptyState emoji="🏪" title={TAB_COPY.negocios.emptyTitle} sub={TAB_COPY.negocios.emptyText} action="Ver todos" onAction={() => { clearDirectoryFilters(); setSearch('') }} />
+            <EmptyState emoji="🏪" title={TAB_COPY.negocios.emptyTitle} sub={TAB_COPY.negocios.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
               {filteredNeg.map(business => (
@@ -2191,6 +2389,58 @@ export default function Comunidades() {
             <Link to="/publicar-evento" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Publicar evento</Link>
           </div>
         </>
+      )}
+      </div>
+
+      {tab !== 'eventos' && (
+        <Sheet show={showDirectoryFilters} onClose={() => setShowDirectoryFilters(false)} syncHistory={false}>
+          <form
+            className="filter-sheet-content"
+            onSubmit={event => {
+              event.preventDefault()
+              applyDirectoryFilters()
+            }}
+          >
+            <div className="filter-sheet-heading">
+              <h2>Filtros</h2>
+              <button type="button" onClick={clearDirectoryFilterDraft}>Restablecer</button>
+            </div>
+
+            <div className="filter-sheet-options-grid">
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>
+                  {tab === 'negocios' ? 'Cantón' : 'Ciudad'}
+                </span>
+                <select
+                  value={directoryFilterDraft.location}
+                  onChange={event => setDirectoryFilterDraft(current => ({ ...current, location:event.target.value }))}
+                  style={DIRECTORY_FILTER_CONTROL_STYLE}
+                >
+                  {(tab === 'negocios' ? cantonOptions : communityCityOptions).map(option => (
+                    <option key={option.id || 'all'} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>Ordenar por</span>
+                <select
+                  value={directoryFilterDraft.sort}
+                  onChange={event => setDirectoryFilterDraft(current => ({ ...current, sort:event.target.value }))}
+                  style={DIRECTORY_FILTER_CONTROL_STYLE}
+                >
+                  {(tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS).map(option => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <button type="submit" className="filter-show-results filter-sheet-submit">
+              Mostrar {draftDirectoryResultCount} {draftDirectoryResultCount === 1 ? 'resultado' : 'resultados'}
+            </button>
+          </form>
+        </Sheet>
       )}
 
       <CommunityDetail

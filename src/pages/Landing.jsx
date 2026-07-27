@@ -18,7 +18,7 @@ const STATS = [
 ]
 
 const FEATURES = [
-  { icon: '📌', color: '#DBEAFE', title: 'Anuncios claros',  desc: 'Vivienda, cuidados, servicios, trámites y mercado de segunda mano. Todo en tu cantón, en tu idioma.' },
+  { icon: '📌', color: '#DBEAFE', title: 'Anuncios claros',  desc: 'Vivienda, cuidados, servicios, trámites y compraventa. Todo en tu cantón, en tu idioma.' },
   { icon: '👥', color: '#D1FAE5', title: 'Grupos',              desc: 'Grupos de venezolanos en Zúrich, colombianos en Ginebra, familias en Berna. Encuentra a los tuyos donde vives.' },
   { icon: '🏪', color: '#FCE7F3', title: 'Negocios',            desc: 'Restaurantes, peluquerías, tiendas y servicios de nuestra comunidad. Apoya a quien habla tu idioma.' },
   { icon: '📚', color: '#EDE9FE', title: 'Guías de trámites',   desc: 'Krankenkasse, Quellensteuer, permiso B/C/L, buscador de trabajo. La burocracia suiza explicada paso a paso en español.' },
@@ -93,8 +93,8 @@ const LANDING_COLLABORATOR_LOGOS = [
 
 const AD_CATS_PREVIEW = [
   { emoji: '🏠', label: 'Vivienda',  color: '#DBEAFE', tc: '#1D4ED8', desc: 'Pisos, habitaciones, alquileres', to: '/tablon?cat=vivienda' },
-  { emoji: '💼', label: 'Empleo',    color: '#D1FAE5', tc: '#065F46', desc: 'Ofertas para hispanohablantes',  to: '/tablon?cat=empleo'  },
-  { emoji: '🛍️', label: 'Mercado',   color: '#FEF3C7', tc: '#92400E', desc: 'Compra, venta y regalos',        to: '/tablon?cat=venta'   },
+  { emoji: '💼', label: 'Empleo',    color: '#D1FAE5', tc: '#065F46', desc: 'Ofertas y solicitudes de empleo', to: '/tablon?cat=empleo'  },
+  { emoji: '🛍️', label: 'Compraventa', color: '#FEF3C7', tc: '#92400E', desc: 'Compra, venta y regalos',      to: '/tablon?cat=venta'   },
   { emoji: '🏪', label: 'Negocios',  color: '#CCFBF1', tc: '#0F766E', desc: 'Directorio de negocios', to: '/comunidades' },
   { emoji: '🎉', label: 'Eventos',   color: '#FCE7F3', tc: '#9D174D', desc: 'Lo que pasa en Suiza',           to: '/comunidades?view=eventos' },
   { emoji: '✨', label: 'Y más...',  color: '#F1F5F9', tc: '#475569', desc: 'Servicios, guías y mucho más',    to: '/' },
@@ -107,7 +107,7 @@ const LANDING_SEARCH_CATEGORY_OPTIONS = [
   { value:'empleo', label:'Empleo' },
   { value:'servicios', label:'Servicios' },
   { value:'cuidados', label:'Cuidados' },
-  { value:'venta', label:'Mercado' },
+  { value:'venta', label:'Compraventa' },
   { value:'documentos', label:'Trámites' },
   { value:'negocios', label:'Negocios' },
   { value:'grupos', label:'Grupos' },

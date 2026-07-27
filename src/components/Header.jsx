@@ -6,8 +6,8 @@ import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
 
 const PUBLISH_OPTIONS = [
-  { emoji:'📌', label:'Anuncio',   sub:'Vivienda, servicios, cuidados, mercado o trámites', to:'/publicar' },
-  { emoji:'💼', label:'Empleo',    sub:'Oferta de trabajo o perfil buscando empleo', to:'/publicar-empleo' },
+  { emoji:'📌', label:'Anuncio',   sub:'Vivienda, servicios, cuidados, compraventa o trámites', to:'/publicar' },
+  { emoji:'💼', label:'Empleo',    sub:'Oferta o solicitud de empleo', to:'/publicar-empleo' },
   { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
   { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
   { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },

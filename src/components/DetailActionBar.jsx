@@ -60,6 +60,7 @@ export default function DetailActionBar({
   primaryExternal=false,
   primaryColor=C.primary,
   onPrimaryClick,
+  ownerLabel='',
   onMenuOpen,
   onExpandedClose,
   expandedContent=null,
@@ -96,7 +97,7 @@ export default function DetailActionBar({
     }
   }, [expandedContent, menuOpen, onExpandedClose])
 
-  if (!primaryLabel && !hasMenu && !expandedContent) return null
+  if (!primaryLabel && !ownerLabel && !hasMenu && !expandedContent) return null
 
   const handlePrimaryClick = event => {
     setMenuOpen(false)
@@ -280,6 +281,34 @@ export default function DetailActionBar({
               {primaryLabel}
             </button>
           ))}
+
+          {!primaryLabel && ownerLabel && (
+            <div
+              role="status"
+              style={{
+                flex:1,
+                minWidth:0,
+                minHeight:52,
+                display:'flex',
+                alignItems:'center',
+                justifyContent:'center',
+                gap:8,
+                padding:'12px 16px',
+                border:`1.5px solid ${C.primaryMid}`,
+                borderRadius:16,
+                background:C.primaryLight,
+                color:C.primaryDark,
+                boxSizing:'border-box',
+                fontFamily:PP,
+                fontSize:12,
+                fontWeight:800,
+                textAlign:'center',
+              }}
+            >
+              <span aria-hidden="true">✓</span>
+              <span>{ownerLabel}</span>
+            </div>
+          )}
 
           {hasMenu && (
             <button
