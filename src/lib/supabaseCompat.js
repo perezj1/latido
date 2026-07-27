@@ -53,3 +53,27 @@ export async function insertWithOptionalColumnsFallback({ table, payload, option
     strippedColumns.push(missingColumn)
   }
 }
+
+export async function updateWithOptionalColumnsFallback({
+  table,
+  payload,
+  optionalColumns=[],
+  apply,
+}) {
+  const nextPayload = { ...payload }
+  const removable = new Set(optionalColumns)
+  const strippedColumns = []
+
+  while (true) {
+    const result = await apply(supabase.from(table).update(nextPayload))
+    if (!result.error) return { ...result, strippedColumns }
+
+    const missingColumn = getMissingColumnName(result.error, table)
+    if (!missingColumn || !removable.has(missingColumn) || !(missingColumn in nextPayload)) {
+      return { ...result, strippedColumns }
+    }
+
+    delete nextPayload[missingColumn]
+    strippedColumns.push(missingColumn)
+  }
+}

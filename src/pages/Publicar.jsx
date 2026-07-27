@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, normalizeAdCat } from '../lib/constants'
+import { AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, getCategoryIntentMeta, getCategoryIntentViews, normalizeAdCat } from '../lib/constants'
 import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, SearchBeforePublishNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { MAX_PUBLICATION_IMAGES, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
@@ -13,33 +13,13 @@ import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
+import { getPublicationExpiresAt, isPublicationOpen } from '../lib/publicationLifecycle'
 import toast from 'react-hot-toast'
 
 const STEPS = [
-  { title:'¿Qué tipo de anuncio es?', sub:'Primero elige la intención y después la categoría correcta' },
+  { title:'¿Qué quieres publicar?', sub:'Elige una categoría y después la acción que mejor describe tu anuncio' },
   { title:'Detalles del anuncio', sub:'Título, subcategoría y descripción clara' },
   { title:'Fotos, precio y zona', sub:'Revisa cómo se verá antes de publicarlo' },
-]
-
-const PUBLISH_INTENTS = [
-  {
-    id:'busca',
-    emoji:'🔍',
-    title:'Busco o necesito',
-    desc:'Vivienda, ayuda, cuidados, servicios, trámites o algún artículo',
-  },
-  {
-    id:'ofrece_vende',
-    emoji:'🏷️',
-    title:'Ofrezco o vendo',
-    desc:'Servicios, vivienda, cuidados, ayuda con trámites o un objeto en venta',
-  },
-  {
-    id:'regala',
-    emoji:'🎁',
-    title:'Regalo',
-    desc:'Das algo gratis para que otra persona lo aproveche',
-  },
 ]
 
 const TYPE_DESC_BY_CAT = {
@@ -73,16 +53,21 @@ const PRICE_UNITS = [
   { id:'once', label:'Total' },
 ]
 
-const OPTIONAL_AD_INSERT_COLUMNS = ['city', 'price_amount', 'price_unit', 'contact_via_app', 'contact_phone', 'contact_email', 'photo_urls', 'emoji']
+const OPTIONAL_AD_INSERT_COLUMNS = [
+  'city', 'price_amount', 'price_unit', 'contact_via_app', 'contact_phone',
+  'contact_email', 'photo_urls', 'emoji', 'property_type', 'available_from',
+  'rooms', 'household_size', 'furnished', 'pets_allowed', 'expires_at',
+  'lifecycle_status',
+]
 const MULTI_PHOTO_CATS = new Set(['vivienda', 'venta'])
 
 function resolveTypeForCategory(intent, catId) {
-  if (intent === 'ofrece_vende') return catId === 'venta' ? 'vende' : 'ofrece'
+  if (intent === 'ofrece_vende' || intent === 'ofrece') return catId === 'venta' ? 'vende' : 'ofrece'
   return intent || ''
 }
 
 function getCompatibleCategories(intent) {
-  const compatibleTypes = intent === 'ofrece_vende'
+  const compatibleTypes = ['ofrece_vende', 'ofrece'].includes(intent)
     ? ['ofrece', 'vende']
     : intent
       ? [intent]
@@ -96,8 +81,8 @@ function getCompatibleCategories(intent) {
 
 function getTitlePlaceholder(intent, catId) {
   if (intent === 'busca') return 'Ej: Busco habitación en Zürich / Necesito mudanza'
-  if (intent === 'ofrece_vende' && catId === 'venta') return 'Ej: Vendo iPhone 13 en buen estado'
-  if (intent === 'ofrece_vende') return 'Ej: Ofrezco limpieza de pisos / Habitación disponible'
+  if (['ofrece_vende', 'ofrece', 'vende'].includes(intent) && catId === 'venta') return 'Ej: Vendo iPhone 13 en buen estado'
+  if (['ofrece_vende', 'ofrece'].includes(intent)) return 'Ej: Ofrezco limpieza de pisos / Habitación disponible'
   if (intent === 'regala') return 'Ej: Regalo sofá en Bern'
   return 'Ej: Busco habitación en Zürich / Ofrezco limpieza de pisos'
 }
@@ -115,6 +100,7 @@ export default function Publicar() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const presetCat = normalizeAdCat(searchParams.get('cat') || '')
+  const presetIntent = searchParams.get('intent') || ''
   const presetHandledRef = useRef(false)
 
   const [step, setStep] = useState(0)
@@ -140,6 +126,11 @@ export default function Publicar() {
     canton:'',
     plz:'',
     privacy:'public',
+    availableFrom:'',
+    rooms:'',
+    householdSize:'1',
+    furnished:'',
+    petsAllowed:'',
   })
 
   const [errors, setErrors] = useState({})
@@ -159,17 +150,29 @@ export default function Publicar() {
   const selectedSubOption = getAdSubOption(form.cat, form.sub, form.type)
   const compatibleSubcategories = getAdSubOptions(form.cat, form.type)
   const selectedAdEmoji = getAdDisplayEmoji({ cat:form.cat, sub:form.sub })
-  const selectedIntent = PUBLISH_INTENTS.find(intent => intent.id === form.intent)
-  const compatibleCats = getCompatibleCategories(form.intent)
+  const selectedIntent = getCategoryIntentMeta(form.cat, form.type)
+  const categoryIntentViews = getCategoryIntentViews(form.cat)
   const allSwitzerland = !form.canton
   const getStepErrors = targetStep => {
     const next = {}
     if (targetStep === 0) {
-      if (!form.intent) next.intent = 'Elige qué quieres publicar.'
       if (!form.cat) next.cat = 'Elige una categoría.'
+      if (!form.intent) next.intent = 'Elige qué quieres publicar en esta categoría.'
     }
-    if (targetStep === 1 && !form.title.trim()) {
-      next.title = 'Escribe un título para el anuncio.'
+    if (targetStep === 1) {
+      if (form.cat === 'vivienda' && !form.sub) next.sub = 'Elige el tipo de vivienda.'
+      if (!form.title.trim()) next.title = 'Escribe un título para el anuncio.'
+    }
+    if (targetStep === 2 && form.cat === 'vivienda') {
+      if (!form.priceValue) next.priceValue = form.type === 'busca'
+        ? 'Indica tu presupuesto máximo.'
+        : 'Indica el alquiler mensual.'
+      if (!form.availableFrom) next.availableFrom = 'Indica desde qué fecha.'
+      if (!form.canton) next.canton = 'Elige el cantón.'
+      if (form.type === 'busca' && !form.householdSize) next.householdSize = 'Indica cuántas personas sois.'
+      if (form.type === 'ofrece' && !form.img_url && form.photo_urls.length === 0) {
+        next.img_url = 'Añade al menos una fotografía real de la vivienda.'
+      }
     }
     return next
   }
@@ -187,11 +190,12 @@ export default function Publicar() {
     return Object.keys(next).length === 0
   }
   const validateBeforePublish = () => {
-    const next = { ...getStepErrors(0), ...getStepErrors(1) }
+    const next = { ...getStepErrors(0), ...getStepErrors(1), ...getStepErrors(2) }
     setErrors(next)
     if (Object.keys(next).length === 0) return true
     if (next.intent || next.cat) setStep(0)
-    else setStep(1)
+    else if (next.sub || next.title) setStep(1)
+    else setStep(2)
     scrollToFirstError(next)
     return false
   }
@@ -217,22 +221,18 @@ export default function Publicar() {
 
   const selectIntent = (intent) => {
     clearFieldError('intent')
-    const nextCats = getCompatibleCategories(intent)
     setForm(prev => {
-      const catStillFits = nextCats.some(cat => cat.id === prev.cat)
-      const nextCat = catStillFits ? prev.cat : (nextCats.length === 1 ? nextCats[0].id : '')
-      const nextType = resolveTypeForCategory(intent, nextCat)
-      const subStillFits = catStillFits && getAdSubOptions(nextCat, nextType)
+      const nextType = resolveTypeForCategory(intent, prev.cat)
+      const subStillFits = getAdSubOptions(prev.cat, nextType)
         .some(option => getAdSubLabel(option) === prev.sub)
       return {
         ...prev,
         intent,
         type: nextType,
-        cat: nextCat,
         sub: subStillFits ? prev.sub : '',
+        priceUnit:prev.cat === 'vivienda' ? 'mes' : prev.priceUnit,
       }
     })
-    // Don't advance step — categories appear below on same screen
   }
 
   const selectCategory = (catId) => {
@@ -240,8 +240,10 @@ export default function Publicar() {
     setForm(prev => ({
       ...prev,
       cat: catId,
-      type: resolveTypeForCategory(prev.intent, catId),
+      intent:'',
+      type:'',
       sub: '',
+      priceUnit:catId === 'vivienda' ? 'mes' : prev.priceUnit,
     }))
   }
 
@@ -253,14 +255,23 @@ export default function Publicar() {
     if (!presetCat) return
 
     if (presetCat === 'empleo') {
-      navigate('/publicar-empleo', { replace:true })
+      navigate(`/publicar-empleo${presetIntent ? `?intent=${encodeURIComponent(presetIntent)}` : ''}`, { replace:true })
       return
     }
 
     if (!AD_CATS.some(cat => cat.id === presetCat)) return
 
-    setForm(prev => ({ ...prev, cat:presetCat }))
-  }, [navigate, presetCat])
+    const validIntent = getCategoryIntentViews(presetCat).some(item => item.id === presetIntent)
+      ? presetIntent
+      : ''
+    setForm(prev => ({
+      ...prev,
+      cat:presetCat,
+      intent:validIntent,
+      type:resolveTypeForCategory(validIntent, presetCat),
+      priceUnit:presetCat === 'vivienda' ? 'mes' : prev.priceUnit,
+    }))
+  }, [navigate, presetCat, presetIntent])
 
   const getFormattedPrice = () => {
     const value = String(form.priceValue || '').trim()
@@ -369,6 +380,10 @@ export default function Publicar() {
 
         <button
           onClick={() => {
+            if (form.cat === 'vivienda' && form.type === 'busca') {
+              navigate('/perfil')
+              return
+            }
             setDone(false)
             setPublishedForReview(false)
             setErrors({})
@@ -388,6 +403,11 @@ export default function Publicar() {
               canton:'',
               plz:'',
               privacy:'public',
+              availableFrom:'',
+              rooms:'',
+              householdSize:'1',
+              furnished:'',
+              petsAllowed:'',
             })
           }}
           style={{
@@ -403,7 +423,9 @@ export default function Publicar() {
             padding:'6px 0'
           }}
         >
-          Publicar otro anuncio
+          {form.cat === 'vivienda' && form.type === 'busca'
+            ? 'Gestionar mi solicitud'
+            : 'Publicar otro anuncio'}
         </button>
       </div>
     )
@@ -419,6 +441,23 @@ export default function Publicar() {
     if (!getCompatibleCategories(form.intent).some(category => category.id === form.cat)) {
       toast.error('Elige una categoría compatible con el tipo de anuncio')
       return
+    }
+
+    if (form.cat === 'vivienda' && resolvedType === 'busca') {
+      const { data: existingRequests, error: existingRequestError } = await supabase
+        .from('listings')
+        .select('id,title,active,expires_at,lifecycle_status')
+        .eq('user_id', user?.id)
+        .eq('cat', 'vivienda')
+        .eq('type', 'busca')
+        .eq('active', true)
+        .limit(10)
+
+      if (!existingRequestError && (existingRequests || []).some(item => isPublicationOpen(item))) {
+        toast.error('Ya tienes una solicitud de vivienda activa. Puedes editarla o cerrarla desde tu perfil.')
+        navigate('/perfil')
+        return
+      }
     }
 
     const moderation = analyzeContent(form.title, form.desc)
@@ -475,6 +514,14 @@ export default function Publicar() {
         user_id: user?.id,
         active: !needsReview,
         user_name: ownProfile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
+        property_type:form.cat === 'vivienda' ? resolvedSub : null,
+        available_from:form.cat === 'vivienda' && form.availableFrom ? form.availableFrom : null,
+        rooms:form.cat === 'vivienda' && form.rooms ? Number(String(form.rooms).replace(',', '.')) : null,
+        household_size:form.cat === 'vivienda' && resolvedType === 'busca' ? Number(form.householdSize) : null,
+        furnished:form.cat === 'vivienda' && form.furnished ? form.furnished === 'yes' : null,
+        pets_allowed:form.cat === 'vivienda' && form.petsAllowed ? form.petsAllowed === 'yes' : null,
+        expires_at:getPublicationExpiresAt({ kind:'listing', intent:resolvedType }),
+        lifecycle_status:'active',
       }
 
       const { error, strippedColumns } = await insertWithOptionalColumnsFallback({
@@ -511,7 +558,10 @@ export default function Publicar() {
       setDone(true)
     } catch (error) {
       console.error('Publish ad failed:', error)
-      if (isLikelySchemaMismatchError(error, 'ads')) {
+      if (String(error?.message || '').includes('ACTIVE_HOUSING_REQUEST_EXISTS')) {
+        toast.error('Ya tienes una solicitud de vivienda activa. Puedes editarla o cerrarla desde tu perfil.')
+        navigate('/perfil')
+      } else if (isLikelySchemaMismatchError(error, 'ads')) {
         toast.error('No pudimos publicar el anuncio ahora. Inténtalo de nuevo más tarde.')
       } else {
         toast.error(error?.message || 'No se pudo publicar el anuncio')
@@ -610,75 +660,77 @@ export default function Publicar() {
       {/* Step 0 — Intención + Categoría */}
       {step === 0 && (
         <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-          <div data-error-field="intent" style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {PUBLISH_INTENTS.map(intent => (
-              <button
-                key={intent.id}
-                onClick={() => selectIntent(intent.id)}
-                style={{
-                  background:form.intent === intent.id ? C.primaryLight : '#fff',
-                  border:`2px solid ${form.intent === intent.id ? C.primary : C.border}`,
-                  borderRadius:14, padding:'14px 16px',
-                  display:'flex', gap:12, alignItems:'center',
-                  cursor:'pointer', textAlign:'left', transition:'all .15s'
-                }}
-              >
-                <span style={{ fontSize:26 }}>{intent.emoji}</span>
-                <div>
-                  <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:form.intent === intent.id ? C.primary : C.text, marginBottom:2 }}>
-                    {intent.title}
-                  </p>
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.5, margin:0 }}>
-                    {intent.desc}
-                  </p>
-                </div>
-              </button>
-            ))}
+          <div>
+            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>
+              ELIGE LA CATEGORÍA
+            </p>
+            <div data-error-field="cat" style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {AD_CATS.filter(cat => cat.id !== 'empleo').map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => selectCategory(cat.id)}
+                  style={{
+                    background:form.cat === cat.id ? C.primary : '#fff',
+                    borderRadius:14, padding:'13px 14px', minHeight:76,
+                    display:'flex', alignItems:'center', gap:11,
+                    border:`2px solid ${form.cat === cat.id ? C.primary : C.border}`,
+                    cursor:'pointer', textAlign:'left', transition:'all .15s'
+                  }}
+                >
+                  <span style={{ fontSize:25, width:30, flex:'0 0 30px', textAlign:'center' }}>{cat.emoji}</span>
+                  <span style={{ minWidth:0 }}>
+                    <span style={{ display:'block', fontFamily:PP, fontWeight:700, fontSize:13, color:form.cat === cat.id ? '#fff' : C.text, margin:'0 0 2px' }}>
+                      {cat.label}
+                    </span>
+                    <span style={{ display:'block', fontFamily:PP, fontSize:10, color:form.cat === cat.id ? 'rgba(255,255,255,0.78)' : C.light, lineHeight:1.35 }}>
+                      {cat.desc}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            {errors.cat && <p style={errorTextStyle}>{errors.cat}</p>}
           </div>
-          {errors.intent && <p style={{ ...errorTextStyle, marginTop:-12 }}>{errors.intent}</p>}
 
-          {form.intent === 'busca' && (
+          {form.cat && (
+            <div data-error-field="intent">
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>
+                ¿QUÉ QUIERES HACER?
+              </p>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {categoryIntentViews.map(intent => (
+                  <button
+                    key={intent.id}
+                    onClick={() => selectIntent(intent.id)}
+                    style={{
+                      background:form.type === intent.id ? C.primaryLight : '#fff',
+                      border:`2px solid ${form.type === intent.id ? C.primary : C.border}`,
+                      borderRadius:14, padding:'14px 16px',
+                      display:'flex', gap:12, alignItems:'center',
+                      cursor:'pointer', textAlign:'left', transition:'all .15s'
+                    }}
+                  >
+                    <span style={{ fontSize:26 }}>{intent.emoji}</span>
+                    <span>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:700, fontSize:14, color:form.type === intent.id ? C.primary : C.text, marginBottom:2 }}>
+                        {intent.publishLabel}
+                      </span>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.5 }}>
+                        {TYPE_DESC_BY_CAT[form.cat]?.[intent.id] || intent.label}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {errors.intent && <p style={errorTextStyle}>{errors.intent}</p>}
+            </div>
+          )}
+
+          {form.type === 'busca' && (
             <SearchBeforePublishNotice
               kind="ad"
               onSearch={searchBeforePublishing}
             />
-          )}
-
-          {form.intent && (
-            <div>
-              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>
-                ELIGE LA CATEGORÍA
-              </p>
-              <div data-error-field="cat" style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                {compatibleCats.map(cat => {
-                  const categoryType = resolveTypeForCategory(form.intent, cat.id)
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => selectCategory(cat.id)}
-                      style={{
-                        background:form.cat === cat.id ? C.primary : '#fff',
-                        borderRadius:14, padding:'14px 16px',
-                        display:'flex', alignItems:'center', gap:14,
-                        border:`2px solid ${form.cat === cat.id ? C.primary : C.border}`,
-                        cursor:'pointer', textAlign:'left', transition:'all .15s'
-                      }}
-                    >
-                      <span style={{ fontSize:26, width:32, flex:'0 0 32px', textAlign:'center' }}>{cat.emoji}</span>
-                      <div style={{ minWidth:0 }}>
-                        <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:form.cat === cat.id ? '#fff' : C.text, margin:'0 0 2px' }}>
-                          {cat.label}
-                        </p>
-                        <p style={{ fontFamily:PP, fontSize:11, color:form.cat === cat.id ? 'rgba(255,255,255,0.78)' : C.light, margin:0, lineHeight:1.4 }}>
-                          {TYPE_DESC_BY_CAT[cat.id]?.[categoryType] ?? cat.desc}
-                        </p>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-              {errors.cat && <p style={errorTextStyle}>{errors.cat}</p>}
-            </div>
           )}
         </div>
       )}
@@ -689,7 +741,7 @@ export default function Publicar() {
           {compatibleSubcategories.length > 0 && (
             <div style={{ marginBottom:20 }}>
               <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>
-                SUBCATEGORÍA (OPCIONAL)
+                {form.cat === 'vivienda' ? 'TIPO DE VIVIENDA' : 'SUBCATEGORÍA (OPCIONAL)'}
               </p>
               <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                 {compatibleSubcategories.map(option => {
@@ -715,6 +767,7 @@ export default function Publicar() {
                   )
                 })}
               </div>
+              {errors.sub && <p data-error-field="sub" style={errorTextStyle}>{errors.sub}</p>}
             </div>
           )}
           <Input
@@ -739,8 +792,70 @@ export default function Publicar() {
       {/* Step 2 — Foto + precio inline + zona + resumen */}
       {step === 2 && (
         <>
+          {form.cat === 'vivienda' && (
+            <div style={{ background:'#F8FAFC', border:`1px solid ${C.border}`, borderRadius:16, padding:14, marginBottom:18 }}>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.light, letterSpacing:1, margin:'0 0 12px' }}>
+                DATOS DE LA VIVIENDA
+              </p>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(145px, 1fr))', gap:10 }}>
+                <label data-error-field="availableFrom" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.text }}>
+                  {form.type === 'busca' ? 'La necesitas desde' : 'Disponible desde'}
+                  <input
+                    type="date"
+                    value={form.availableFrom}
+                    onChange={event => s('availableFrom', event.target.value)}
+                    style={{ display:'block', width:'100%', boxSizing:'border-box', marginTop:7, border:`1.5px solid ${errors.availableFrom ? '#DC2626' : C.border}`, borderRadius:12, padding:'11px 12px', fontFamily:PP, color:C.text, background:'#fff' }}
+                  />
+                  {errors.availableFrom && <span style={{ ...errorTextStyle, display:'block' }}>{errors.availableFrom}</span>}
+                </label>
+                {form.type === 'busca' ? (
+                  <label data-error-field="householdSize" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.text }}>
+                    Número de personas
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={form.householdSize}
+                      onChange={event => s('householdSize', event.target.value)}
+                      style={{ display:'block', width:'100%', boxSizing:'border-box', marginTop:7, border:`1.5px solid ${errors.householdSize ? '#DC2626' : C.border}`, borderRadius:12, padding:'11px 12px', fontFamily:PP, color:C.text, background:'#fff' }}
+                    />
+                    {errors.householdSize && <span style={{ ...errorTextStyle, display:'block' }}>{errors.householdSize}</span>}
+                  </label>
+                ) : (
+                  <label style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.text }}>
+                    Número de habitaciones
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ej: 2.5"
+                      value={form.rooms}
+                      onChange={event => s('rooms', event.target.value.replace(/[^0-9.,]/g, ''))}
+                      style={{ display:'block', width:'100%', boxSizing:'border-box', marginTop:7, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 12px', fontFamily:PP, color:C.text, background:'#fff' }}
+                    />
+                  </label>
+                )}
+                <label style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.text }}>
+                  Amueblada
+                  <select value={form.furnished} onChange={event => s('furnished', event.target.value)} style={{ display:'block', width:'100%', marginTop:7, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 12px', fontFamily:PP, color:C.text, background:'#fff' }}>
+                    <option value="">Sin indicar</option>
+                    <option value="yes">Sí</option>
+                    <option value="no">No</option>
+                  </select>
+                </label>
+                <label style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.text }}>
+                  Mascotas
+                  <select value={form.petsAllowed} onChange={event => s('petsAllowed', event.target.value)} style={{ display:'block', width:'100%', marginTop:7, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 12px', fontFamily:PP, color:C.text, background:'#fff' }}>
+                    <option value="">Sin indicar</option>
+                    <option value="yes">{form.type === 'busca' ? 'Tengo mascota' : 'Permitidas'}</option>
+                    <option value="no">{form.type === 'busca' ? 'No tengo mascota' : 'No permitidas'}</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          )}
+
           <ImageUploadField
-            label="Imagen del anuncio (opcional)"
+            label={form.cat === 'vivienda' && form.type === 'ofrece' ? 'Fotografías reales de la vivienda' : 'Imagen del anuncio (opcional)'}
             previewUrl={form.img_url}
             previewUrls={supportsMultiplePhotos(form.cat) ? form.photo_urls : []}
             uploading={uploadingImage}
@@ -757,10 +872,13 @@ export default function Publicar() {
               ? `Puedes añadir hasta ${MAX_PUBLICATION_IMAGES} fotos para mostrar mejor el piso, habitación o producto.`
               : 'Ideal para pisos, productos o servicios. En móvil puedes tomar la foto al momento.'}
           />
+          {errors.img_url && <p data-error-field="img_url" style={{ ...errorTextStyle, marginBottom:16 }}>{errors.img_url}</p>}
 
-          <div style={{ marginBottom:16 }}>
+          <div data-error-field="priceValue" style={{ marginBottom:16 }}>
             <label style={{ display:'block', fontFamily:PP, fontSize:12, fontWeight:700, color:C.text, marginBottom:8 }}>
-              Precio (opcional)
+              {form.cat === 'vivienda'
+                ? form.type === 'busca' ? 'Presupuesto máximo al mes' : 'Alquiler mensual'
+                : 'Precio (opcional)'}
             </label>
             <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
               <div style={{ display:'flex', border:`1.5px solid ${C.border}`, borderRadius:14, overflow:'hidden', flex:1, background:'#fff' }}>
@@ -776,14 +894,17 @@ export default function Publicar() {
                   style={{ flex:1, border:'none', outline:'none', background:'transparent', padding:'13px 14px', fontFamily:PP, fontSize:13, color:C.text }}
                 />
               </div>
-              <select
-                value={form.priceUnit}
-                onChange={e => s('priceUnit', e.target.value)}
-                style={{ border:`1.5px solid ${C.border}`, borderRadius:14, padding:'0 12px', fontFamily:PP, fontSize:12, color:C.text, background:'#fff', cursor:'pointer', minWidth:90 }}
-              >
-                {PRICE_UNITS.map(unit => <option key={unit.id} value={unit.id}>{unit.label}</option>)}
-              </select>
+              {form.cat !== 'vivienda' && (
+                <select
+                  value={form.priceUnit}
+                  onChange={e => s('priceUnit', e.target.value)}
+                  style={{ border:`1.5px solid ${C.border}`, borderRadius:14, padding:'0 12px', fontFamily:PP, fontSize:12, color:C.text, background:'#fff', cursor:'pointer', minWidth:90 }}
+                >
+                  {PRICE_UNITS.map(unit => <option key={unit.id} value={unit.id}>{unit.label}</option>)}
+                </select>
+              )}
             </div>
+            {errors.priceValue && <p style={errorTextStyle}>{errors.priceValue}</p>}
             {form.priceValue && (
               <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'8px 0 0', background:C.primaryLight, padding:'8px 12px', borderRadius:10 }}>
                 Se mostrará como: <strong>{getFormattedPrice()}</strong>
@@ -796,9 +917,13 @@ export default function Publicar() {
             city={form.city}
             onCantonChange={handleCantonChange}
             onCityChange={value => s('city', value)}
-            allowAllSwitzerland
+            allowAllSwitzerland={form.cat !== 'vivienda'}
+            cantonRequired={form.cat === 'vivienda'}
+            cantonError={errors.canton}
             cantonLabel="Alcance"
-            hint="Elige un cantón o deja “Todos los cantones” para que el anuncio aparezca en toda Suiza."
+            hint={form.cat === 'vivienda'
+              ? 'Elige el cantón donde está o donde buscas la vivienda.'
+              : 'Elige un cantón o deja “Todos los cantones” para que el anuncio aparezca en toda Suiza.'}
           />
 
           {!allSwitzerland && <div style={{ marginBottom:10 }}>
@@ -826,6 +951,11 @@ export default function Publicar() {
                       {selectedCat.label}
                     </span>
                   )}
+                  {selectedIntent && (
+                    <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:form.type === 'busca' ? '#FEF3C7' : '#E0F2FE', color:form.type === 'busca' ? '#92400E' : '#0369A1' }}>
+                      {selectedIntent.emoji} {selectedIntent.itemLabel || selectedIntent.shortLabel}
+                    </span>
+                  )}
                   {form.sub && (
                     <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>
                       {selectedSubOption?.emoji ? `${selectedSubOption.emoji} ` : ''}{form.sub}
@@ -846,7 +976,7 @@ export default function Publicar() {
       )}
 
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
-        Anuncios de vivienda, servicios, cuidados, mercado y trámites. Empleo, negocios, grupos y eventos tienen su propio formulario.
+        Anuncios de vivienda, servicios, cuidados, compraventa y trámites. Empleo, negocios, grupos y eventos tienen su propio formulario.
       </p>
 
       <StickyFormActions>

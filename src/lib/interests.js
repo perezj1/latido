@@ -3,7 +3,7 @@ export const INTEREST_OPTIONS = [
   { id:'empleo', emoji:'💼', label:'Empleo' },
   { id:'servicios', emoji:'🛠️', label:'Servicios' },
   { id:'cuidados', emoji:'❤️', label:'Cuidados' },
-  { id:'venta', emoji:'🛍️', label:'Mercado' },
+  { id:'venta', emoji:'🛍️', label:'Compraventa' },
   { id:'documentos', emoji:'📄', label:'Trámites' },
   { id:'regalo', emoji:'🎁', label:'Regalos' },
 ]

@@ -437,7 +437,7 @@ const CAT_LINKS = [
   { emoji:'📌', label:'Anuncios',    to:'/tablon' },
   { emoji:'🏠', label:'Vivienda',    to:'/tablon?cat=vivienda' },
   { emoji:'💼', label:'Empleo',      to:'/tablon?cat=empleo' },
-  { emoji:'🛍️', label:'Mercado',     to:'/tablon?cat=venta' },
+  { emoji:'🛍️', label:'Compraventa', to:'/tablon?cat=venta' },
   { emoji:'🔧', label:'Servicios',   to:'/tablon?cat=servicios' },
   { emoji:'❤️', label:'Cuidados',    to:'/tablon?cat=cuidados' },
   { emoji:'🤝', label:'Comunidad',   to:'/comunidades' },

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
 import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, SearchBeforePublishNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
@@ -12,15 +13,28 @@ import { addModerationQueueItem } from '../lib/reports'
 import { JOB_INTENTS, JOB_SECTORS, JOB_TYPES } from '../lib/constants'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
+import { getPublicationExpiresAt, isPublicationOpen } from '../lib/publicationLifecycle'
+import EmploymentProfileForm from '../components/EmploymentProfileForm'
+import {
+  EMPLOYMENT_LANGUAGES,
+  createEmptyEmploymentProfile,
+  getEmploymentAvailabilityDate,
+  getEmploymentDrivingLicense,
+  getEmploymentExperienceYears,
+  getEmploymentProfileLevel,
+  hasEmploymentProfileData,
+  isEmploymentProfileComplete,
+  normalizeEmploymentProfile,
+} from '../lib/employmentProfile'
 import toast from 'react-hot-toast'
 
 const STEPS = [
-  { title:'¿Qué publicación de empleo es?', sub:'Elige si publicas una oferta o tu perfil buscando trabajo' },
+  { title:'¿Qué publicación de empleo es?', sub:'Elige si publicas una oferta o una solicitud de empleo' },
   { title:'Datos principales', sub:'Puesto, disponibilidad, ubicación y salario' },
-  { title:'Detalles y revisión', sub:'Idiomas, descripción y resumen final antes de publicar' },
+  { title:'Detalles y revisión', sub:'Imagen, descripción y resumen final antes de publicar' },
 ]
 
-const LANG_OPTIONS = ['Español', 'Alemán', 'Francés', 'Italiano', 'Inglés']
+const LANG_OPTIONS = EMPLOYMENT_LANGUAGES
 const SALARY_UNITS = [
   { id:'hora', label:'Por hora' },
   { id:'dia', label:'Por día' },
@@ -30,16 +44,24 @@ const SALARY_UNITS = [
   { id:'once', label:'Pago único' },
 ]
 
-const OPTIONAL_JOB_INSERT_COLUMNS = ['job_intent', 'sector', 'languages', 'contact_via_app', 'contact_phone', 'contact_email', 'contact_link', 'logo_url']
+const OPTIONAL_JOB_INSERT_COLUMNS = [
+  'job_intent', 'sector', 'languages', 'contact_via_app', 'contact_phone',
+  'contact_email', 'contact_link', 'logo_url', 'experience_years',
+  'available_from', 'driving_license', 'profile_visibility', 'expires_at',
+  'lifecycle_status', 'employment_profile', 'employment_level',
+]
 
 const createInitialForm = () => ({
   jobIntent:'', sector:'', title:'', company:'', jobType:'',
   city:'', canton:'', salaryValue:'', salaryUnit:'mes', langs:[], desc:'', logoUrl:'',
+  employmentProfile:createEmptyEmploymentProfile(), profileVisibility:'public',
 })
 
 export default function PublicarEmpleo() {
   const { isLoggedIn, user, isBanned, bannedReason } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const presetIntent = searchParams.get('intent') || ''
   const [step, setStep] = useState(0)
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
@@ -49,6 +71,37 @@ export default function PublicarEmpleo() {
   const [pushModalOpen, setPushModalOpen] = useState(false)
   const [form, setForm] = useState(createInitialForm)
   const [errors, setErrors] = useState({})
+  useEffect(() => {
+    if (!JOB_INTENTS.some(intent => intent.id === presetIntent)) return
+    setForm(current => current.jobIntent ? current : { ...current, jobIntent:presetIntent })
+  }, [presetIntent])
+  useEffect(() => {
+    if (!user?.id) return undefined
+
+    let cancelled = false
+    const loadEmploymentProfile = async () => {
+      let storedProfile = normalizeEmploymentProfile(user.user_metadata?.employment_profile)
+      const response = await supabase
+        .from('profiles')
+        .select('employment_profile')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!response.error && hasEmploymentProfileData(response.data?.employment_profile)) {
+        storedProfile = normalizeEmploymentProfile(response.data.employment_profile)
+      } else if (response.error && !isLikelySchemaMismatchError(response.error, 'profiles')) {
+        console.error('Could not load employment profile:', response.error)
+      }
+
+      if (cancelled || !hasEmploymentProfileData(storedProfile)) return
+      setForm(current => hasEmploymentProfileData(current.employmentProfile)
+        ? current
+        : { ...current, employmentProfile:storedProfile })
+    }
+
+    loadEmploymentProfile()
+    return () => { cancelled = true }
+  }, [user?.id])
   const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'6px 2px 0', lineHeight:1.45 }
   const clearFieldError = key => setErrors(prev => {
     if (!prev[key]) return prev
@@ -76,6 +129,9 @@ export default function PublicarEmpleo() {
       if (!form.title.trim()) next.title = 'Añade el título del puesto.'
       if (!form.jobType) next.jobType = 'Selecciona el tipo de contrato.'
       if (!form.canton) next.canton = 'Selecciona el cantón.'
+      if (isSeekingJob && !isEmploymentProfileComplete(form.employmentProfile)) {
+        next.employmentProfile = 'Responde las cinco preguntas para crear tu perfil profesional básico.'
+      }
     }
     return next
   }
@@ -144,7 +200,13 @@ export default function PublicarEmpleo() {
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>💼</div>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Publicación enviada a revisión' : '¡Empleo publicado!'}</h1>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>
+        {publishedForReview
+          ? 'Publicación enviada a revisión'
+          : isSeekingJob
+            ? '¡Solicitud de empleo publicada!'
+            : '¡Oferta publicada!'}
+      </h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
         {publishedForReview
           ? 'Tu publicación quedó pendiente para aprobarla desde administración antes de mostrarse.'
@@ -152,9 +214,21 @@ export default function PublicarEmpleo() {
             ? 'Tu búsqueda ya está visible para la comunidad. Las personas interesadas podrán escribirte por mensaje dentro de Latido.'
             : 'Tu oferta ya está visible para miles de personas en Suiza. Los candidatos te escribirán por mensaje dentro de Latido.'}
       </p>
-      <Btn onClick={() => navigate('/tablon?cat=empleo')}>Ver empleos →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setErrors({}); setStep(0); setForm(createInitialForm()); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
-        Publicar otro empleo
+      <Btn onClick={() => navigate(`/tablon?cat=empleo&jobIntent=${encodeURIComponent(form.jobIntent || 'ofrece')}`)}>
+        {isSeekingJob ? 'Ver solicitudes de empleo →' : 'Ver ofertas de empleo →'}
+      </Btn>
+      <button onClick={() => {
+        if (isSeekingJob) {
+          navigate('/perfil')
+          return
+        }
+        setDone(false)
+        setPublishedForReview(false)
+        setErrors({})
+        setStep(0)
+        setForm({ ...createInitialForm(), jobIntent:JOB_INTENTS.some(intent => intent.id === presetIntent) ? presetIntent : '' })
+      }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+        {isSeekingJob ? 'Gestionar mi solicitud de empleo' : 'Publicar otra oferta'}
       </button>
     </div>
   )
@@ -164,6 +238,23 @@ export default function PublicarEmpleo() {
     if (!form.jobIntent) { toast.error('Elige si buscas u ofreces empleo'); return }
     if (!form.sector) { toast.error('Elige el sector del empleo'); return }
     if (!form.title || !form.canton) { toast.error('Completa el título y el cantón'); return }
+
+    if (form.jobIntent === 'busca') {
+      const { data: existingProfiles, error: existingProfileError } = await supabase
+        .from('jobs')
+        .select('id,title,active,expires_at,lifecycle_status')
+        .eq('user_id', user?.id)
+        .eq('job_intent', 'busca')
+        .eq('active', true)
+        .limit(10)
+
+      if (!existingProfileError && (existingProfiles || []).some(item => isPublicationOpen(item))) {
+        toast.error('Ya tienes una solicitud de empleo activa. Puedes editarla o cerrarla desde tu perfil.')
+        navigate('/perfil')
+        return
+      }
+    }
+
     const moderation = analyzeContent(form.title, form.company, form.desc)
     if (moderation.action === 'block') {
       toast.error(getContentFilterMessage(moderation))
@@ -178,6 +269,15 @@ export default function PublicarEmpleo() {
       const salaryAmount = form.salaryValue
         ? Number(String(form.salaryValue).replace(',', '.'))
         : null
+      const employmentProfile = isSeekingJob
+        ? normalizeEmploymentProfile(form.employmentProfile)
+        : null
+      const employmentLevel = employmentProfile
+        ? getEmploymentProfileLevel(employmentProfile)
+        : null
+      const jobLanguages = isSeekingJob
+        ? employmentProfile.languages
+        : form.langs
       const payload = {
         ...(jobId ? { id: jobId } : {}),
         user_id: user?.id,
@@ -191,8 +291,8 @@ export default function PublicarEmpleo() {
         salary: finalSalary,
         salary_amount: Number.isNaN(salaryAmount) ? null : salaryAmount,
         salary_unit: form.salaryValue ? form.salaryUnit : null,
-        lang: form.langs.length ? form.langs.join(' · ') : null,
-        languages: form.langs.length ? form.langs : null,
+        lang: jobLanguages.length ? jobLanguages.join(' · ') : null,
+        languages: jobLanguages.length ? jobLanguages : null,
         category: form.sector || null,
         emoji: selectedSector?.emoji || '💼',
         desc: form.desc.trim() || null,
@@ -203,6 +303,14 @@ export default function PublicarEmpleo() {
         contact_link: null,
         logo_url: form.logoUrl.trim() || null,
         active: !needsReview,
+        experience_years:isSeekingJob ? getEmploymentExperienceYears(employmentProfile) : null,
+        available_from:isSeekingJob ? getEmploymentAvailabilityDate(employmentProfile) : null,
+        driving_license:isSeekingJob ? getEmploymentDrivingLicense(employmentProfile) : null,
+        employment_profile:isSeekingJob ? employmentProfile : null,
+        employment_level:isSeekingJob ? employmentLevel?.id || null : null,
+        profile_visibility:form.jobIntent === 'busca' ? form.profileVisibility : 'public',
+        expires_at:getPublicationExpiresAt({ kind:'job', intent:form.jobIntent }),
+        lifecycle_status:'active',
       }
 
       const { error } = await insertWithOptionalColumnsFallback({
@@ -211,6 +319,29 @@ export default function PublicarEmpleo() {
         optionalColumns: OPTIONAL_JOB_INSERT_COLUMNS,
       })
       if (error) throw error
+      if (isSeekingJob) {
+        const profilePayload = {
+          employment_profile:employmentProfile,
+          employment_level:employmentLevel?.id || null,
+          employment_profile_updated_at:new Date().toISOString(),
+        }
+        const [profileResult, metadataResult] = await Promise.all([
+          supabase.from('profiles').update(profilePayload).eq('id', user.id),
+          supabase.auth.updateUser({
+            data:{
+              employment_profile:employmentProfile,
+              employment_level:employmentLevel?.id || null,
+            },
+          }),
+        ])
+        if (profileResult.error && !isLikelySchemaMismatchError(profileResult.error, 'profiles')) {
+          console.error('Could not save employment profile row:', profileResult.error)
+        }
+        if (metadataResult.error && profileResult.error) {
+          console.error('Could not save employment profile metadata:', metadataResult.error)
+          toast('La solicitud se publicó, pero no pudimos guardar el perfil para reutilizarlo.')
+        }
+      }
       if (needsReview && jobId) {
         await addModerationQueueItem({
           contentType: 'job',
@@ -233,7 +364,10 @@ export default function PublicarEmpleo() {
       setDone(true)
     } catch (error) {
       console.error('Publish job failed:', error)
-      if (isLikelySchemaMismatchError(error, 'jobs')) {
+      if (String(error?.message || '').includes('ACTIVE_JOB_PROFILE_EXISTS')) {
+        toast.error('Ya tienes una solicitud de empleo activa. Puedes editarla o cerrarla desde tu perfil.')
+        navigate('/perfil')
+      } else if (isLikelySchemaMismatchError(error, 'jobs')) {
         toast.error('No pudimos publicar la oferta ahora. Inténtalo de nuevo más tarde.')
       } else {
         toast.error(error?.message || 'No se pudo publicar la oferta de empleo')
@@ -351,11 +485,21 @@ export default function PublicarEmpleo() {
             errorKey="title"
           />
           <Input
-            label={isSeekingJob ? 'Nombre o perfil profesional (opcional)' : 'Empresa o nombre del empleador (opcional)'}
+            label={isSeekingJob ? 'Nombre o presentación (opcional)' : 'Empresa o nombre del empleador (opcional)'}
             placeholder={isSeekingJob ? 'Ej: María, cuidadora con experiencia' : 'Ej: Restaurante El Rincón, Familia particular'}
             value={form.company}
             onChange={e=>s('company',e.target.value)}
           />
+
+          {isSeekingJob && (
+            <div data-error-field="employmentProfile" style={{ marginBottom:20 }}>
+              <EmploymentProfileForm
+                value={form.employmentProfile}
+                onChange={value => s('employmentProfile', value)}
+                error={errors.employmentProfile}
+              />
+            </div>
+          )}
 
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>{isSeekingJob ? 'TIPO DE CONTRATO O DISPONIBILIDAD' : 'TIPO DE CONTRATO'}</p>
           <div data-error-field="jobType" style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:errors.jobType ? 6 : 20 }}>
@@ -419,8 +563,35 @@ export default function PublicarEmpleo() {
       {/* Step 2 — Logo, idiomas, descripción, resumen y publicar */}
       {step === 2 && (
         <>
+          {isSeekingJob && (
+            <div style={{ marginBottom:20 }}>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.light, letterSpacing:1, margin:'0 0 9px' }}>
+                VISIBILIDAD DE LA SOLICITUD DE EMPLEO
+              </p>
+              <div style={{ display:'grid', gap:8 }}>
+                {[
+                  { id:'public', emoji:'🌐', title:'Visible para la comunidad', desc:'Cualquier usuario podrá encontrar tu solicitud y escribirte dentro de Latido.' },
+                  { id:'verified_employers', emoji:'🛡️', title:'Solo empresas verificadas', desc:'Tu solicitud solo aparecerá a cuentas que gestionen una empresa verificada.' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => s('profileVisibility', option.id)}
+                    style={{ display:'flex', alignItems:'center', gap:11, textAlign:'left', background:form.profileVisibility === option.id ? C.primaryLight : '#fff', border:`1.5px solid ${form.profileVisibility === option.id ? C.primary : C.border}`, borderRadius:14, padding:'12px 14px', cursor:'pointer' }}
+                  >
+                    <span style={{ fontSize:23 }}>{option.emoji}</span>
+                    <span>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:12.5, color:form.profileVisibility === option.id ? C.primary : C.text, marginBottom:2 }}>{option.title}</span>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.4 }}>{option.desc}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <ImageUploadField
-            label={isSeekingJob ? 'Foto o imagen de perfil (opcional)' : 'Logo o imagen de la empresa (opcional)'}
+            label={isSeekingJob ? 'Foto personal (opcional)' : 'Logo o imagen de la empresa (opcional)'}
             previewUrl={form.logoUrl}
             uploading={uploadingLogo}
             onFilesSelected={handleLogoUpload}
@@ -428,18 +599,24 @@ export default function PublicarEmpleo() {
             hint={isSeekingJob ? 'Se mostrará en la tarjeta y detalle de tu búsqueda.' : 'Se mostrará en la tarjeta y detalle de la oferta.'}
           />
 
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>IDIOMAS REQUERIDOS (OPCIONAL)</p>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:20 }}>
-            {LANG_OPTIONS.map(lang => (
-              <button key={lang} onClick={() => toggleLang(lang)}
-                style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${form.langs.includes(lang)?C.primary:C.border}`, background:form.langs.includes(lang)?C.primary:'#fff', color:form.langs.includes(lang)?'#fff':C.mid, cursor:'pointer', transition:'all .12s' }}>
-                {lang}
-              </button>
-            ))}
-          </div>
+          {!isSeekingJob && (
+            <>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>
+                IDIOMAS REQUERIDOS (OPCIONAL)
+              </p>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:20 }}>
+                {LANG_OPTIONS.map(lang => (
+                  <button key={lang} onClick={() => toggleLang(lang)}
+                    style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'7px 14px', borderRadius:20, border:`1.5px solid ${form.langs.includes(lang)?C.primary:C.border}`, background:form.langs.includes(lang)?C.primary:'#fff', color:form.langs.includes(lang)?'#fff':C.mid, cursor:'pointer', transition:'all .12s' }}>
+                    {lang}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           <Input
-            label={isSeekingJob ? 'Descripción de tu perfil (EN ESPAÑOL)' : 'Descripción del puesto (EN ESPAÑOL)'}
+            label={isSeekingJob ? 'Descripción de tu solicitud de empleo (EN ESPAÑOL)' : 'Descripción del puesto (EN ESPAÑOL)'}
             placeholder={isSeekingJob ? 'Cuenta tu experiencia, disponibilidad, permisos, idiomas y el tipo de trabajo que buscas...' : 'Qué hará el candidato, requisitos, experiencia necesaria, condiciones...'}
             rows={4}
             value={form.desc}
@@ -469,7 +646,7 @@ export default function PublicarEmpleo() {
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>
             <p style={{ fontFamily:PP, fontSize:11, color:'#7C2D12', lineHeight:1.7, margin:0 }}>
               {isSeekingJob
-                ? 'Al publicar confirmas que la información sobre tu perfil y disponibilidad es real. Latido no se hace responsable de los acuerdos laborales entre usuarios.'
+                ? 'Al publicar confirmas que la información de tu solicitud y disponibilidad es real. Latido no se hace responsable de los acuerdos laborales entre usuarios.'
                 : 'Al publicar confirmas que la oferta es real y que tienes autorización para contratar. Latido no se hace responsable de las condiciones laborales ofrecidas.'}
             </p>
           </div>
@@ -478,7 +655,7 @@ export default function PublicarEmpleo() {
       )}
 
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:12 }}>
-        Empleo está separado de los anuncios normales para distinguir ofertas de trabajo y perfiles disponibles.
+        Empleo está separado de los anuncios normales para distinguir ofertas y solicitudes de empleo.
       </p>
       <StickyFormActions>
         {step === 0 ? (

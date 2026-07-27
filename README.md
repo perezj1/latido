@@ -24,6 +24,16 @@ npm run dev       # → http://localhost:8080
    - `Project URL`
    - `anon public key`
 
+Para activar la estructura contextual de vivienda y empleo, y el ciclo de vida
+de las solicitudes, ejecuta también
+`supabase/publication_structure_and_lifecycle.sql` después de
+`supabase/publications_schema_v4.sql` y `supabase/pregunta_latido_search.sql`.
+Para guardar y sincronizar el perfil profesional básico de quienes solicitan
+empleo, ejecuta a continuación `supabase/employment_profiles.sql`.
+En proyectos que ya contienen las publicaciones antiguas verificadas, ejecuta
+después `supabase/correct_legacy_publication_categories.sql` para trasladar la
+oferta de taxi a Servicios y corregir las solicitudes de empleo verificadas.
+
 ### 3. Crear `.env.local` en la raíz
 
 ```env

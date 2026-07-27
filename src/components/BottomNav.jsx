@@ -8,8 +8,8 @@ import { C, PP } from '../lib/theme'
 import { getPublishTarget } from '../lib/publishTargets'
 
 const PUBLISH_OPTIONS = [
-  { emoji:'📌', label:'Anuncio',   sub:'Vivienda, servicios, cuidados, mercado o trámites', to:'/publicar' },
-  { emoji:'💼', label:'Empleo',    sub:'Oferta de trabajo o perfil buscando empleo', to:'/publicar-empleo' },
+  { emoji:'📌', label:'Anuncio',   sub:'Vivienda, servicios, cuidados, compraventa o trámites', to:'/publicar' },
+  { emoji:'💼', label:'Empleo',    sub:'Oferta o solicitud de empleo', to:'/publicar-empleo' },
   { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
   { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
   { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
@@ -83,6 +83,9 @@ export default function BottomNav() {
   const hideFab = isAdminPage || isPromotionCheckoutPage || NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const fab = hideFab ? null : getPublishTarget()
   const hideMobileNav = isAdminPage || isPublishFlow || (pathname.startsWith('/mensajes') && messagesChatOpen)
+  const activeTabIndex = TABS.findIndex(tab =>
+    tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
+  )
 
   return (
     <>
@@ -153,7 +156,16 @@ export default function BottomNav() {
         </div>
       )}
 
-      {!hideMobileNav && <nav className="safe-bottom hide-md" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'rgba(255,255,255,0.96)', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', minHeight:68, boxShadow:'0 -8px 26px rgba(15,23,42,0.08)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', transform: keyboardVisible && pathname.startsWith('/mensajes') ? 'translateY(100%)' : 'translateZ(0)', transition:'transform 0.12s ease' }}>
+      {!hideMobileNav && <nav className="safe-bottom hide-md bottom-nav" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'rgba(255,255,255,0.96)', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', minHeight:68, boxShadow:'0 -8px 26px rgba(15,23,42,0.08)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', transform: keyboardVisible && pathname.startsWith('/mensajes') ? 'translateY(100%)' : 'translateZ(0)', transition:'transform 0.12s ease' }}>
+        {activeTabIndex >= 0 && (
+          <span
+            className="bottom-nav-active-indicator"
+            aria-hidden="true"
+            style={{ '--bottom-nav-active-index':activeTabIndex }}
+          >
+            <span />
+          </span>
+        )}
         {TABS.map(tab => {
           const active = tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
           const needsNotificationDot = tab.path === '/perfil' && needsPushActivation
@@ -163,9 +175,10 @@ export default function BottomNav() {
             <Link
               key={tab.path}
               to={to}
-              style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'8px 0 10px', gap:2, textDecoration:'none', color: active ? C.primary : C.light, transition:'color .15s' }}
+              className={`bottom-nav-item${active ? ' is-active' : ''}`}
+              style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'8px 0 10px', gap:2, textDecoration:'none', color: active ? C.primary : C.light }}
             >
-              <span style={{ position:'relative', display:'inline-flex' }}>
+              <span className="bottom-nav-icon" style={{ position:'relative', display:'inline-flex' }}>
                 {tab.path === '/perfil' && isLoggedIn
                   ? <Avatar name={displayName} size={24} src={avatarUrl} />
                   : <span style={{ fontSize:20, lineHeight:1 }}>{tab.emoji}</span>
@@ -177,8 +190,8 @@ export default function BottomNav() {
                   <span style={{ position:'absolute', top:-4, right:-5, minWidth:9, height:9, borderRadius:5, background:'#EF4444', border:'1.5px solid #fff', boxShadow:'0 0 0 2px rgba(239,68,68,0.14)' }} />
                 )}
               </span>
-              <span style={{ fontFamily:PP, fontSize:9, fontWeight: active ? 700 : 500 }}>{tab.label}</span>
-              {active && <span style={{ width:20, height:3, background:C.primary, borderRadius:2 }} />}
+              <span className="bottom-nav-label" style={{ fontFamily:PP, fontSize:9, fontWeight: active ? 700 : 500 }}>{tab.label}</span>
+              <span aria-hidden="true" style={{ width:20, height:3 }} />
             </Link>
           )
         })}
