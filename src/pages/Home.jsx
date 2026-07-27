@@ -33,7 +33,6 @@ import {
 } from '../lib/businessPromotion'
 import { getThumbnailImageUrl, handleThumbnailImageError, resolveImageUrl } from '../lib/imageVariants'
 import {
-  INTEREST_OPTIONS,
   buildNearbyFeed,
   buildPersonalizedFeed,
   getInterestAffinityIds,
@@ -675,34 +674,6 @@ export default function Home() {
     if (latidoOffersFeedRef.current) latidoOffersFeedRef.current.scrollLeft = 0
     if (latidoRequestsFeedRef.current) latidoRequestsFeedRef.current.scrollLeft = 0
   }, [latidoMode])
-  const personalizedMatchCount = useMemo(() => {
-    if (!userInterests.length) return 0
-    const interestSet = new Set(userInterests)
-    return recentAds.filter(item => interestSet.has(item.cat)).length
-  }, [recentAds, userInterests])
-  const selectedInterestNames = useMemo(() => {
-    const selected = new Set(userInterests)
-    return INTEREST_OPTIONS
-      .filter(option => selected.has(option.id))
-      .map(option => option.label)
-      .join(', ')
-  }, [userInterests])
-  const latidoDescription = useMemo(() => {
-    if (latidoMode === 'recent') {
-      return `${latidoSection === 'requests' ? 'Solicitudes' : 'Ofertas'} disponibles, ordenadas por fecha.`
-    }
-    if (latidoMode === 'nearby') {
-      return userCanton
-        ? `Primero el cantón ${userCanton}; después el resto de Suiza.`
-        : 'Añade tu cantón en el perfil para ordenar por cercanía.'
-    }
-    if (userInterests.length && personalizedMatchCount === 0) {
-      return `Aún no hay publicaciones de ${selectedInterestNames}; te mostramos opciones cercanas.`
-    }
-    if (userInterests.length) return 'Primero todo lo que coincide con tus intereses; después, el resto sigue disponible.'
-    if (userCanton || activityInterests.length) return 'Recomendaciones por interés, actividad y cercanía.'
-    return 'Elige tus intereses y tu cantón en el perfil para personalizar esta selección.'
-  }, [activityInterests.length, latidoMode, latidoSection, personalizedMatchCount, selectedInterestNames, userCanton, userInterests.length])
   const featuredPromotionAvailability = useMemo(() => {
     const featuredPlan = businessPromotionPlans.find(plan =>
       (plan.plan_key || plan.key) === 'featured'
@@ -1997,11 +1968,16 @@ export default function Home() {
       </Modal>
 
       <section style={{ padding:'24px 0 0' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0, letterSpacing:0 }}>❤️ Mi Latido</h2>
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+          <div>
+            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px', letterSpacing:0 }}>❤️ Mi Latido</h2>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
+              Ofertas y solicitudes seleccionadas para ti.
+            </p>
+          </div>
           <Link to="/perfil?editar=intereses" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Editar →</Link>
         </div>
-        <div style={{ maxWidth:1200, margin:'0 auto 12px', padding:'0 16px' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px' }}>
           <SegmentedTabs
             items={MY_LATIDO_SECTIONS}
             value={latidoSection}
@@ -2016,9 +1992,6 @@ export default function Home() {
             ariaLabel="Orden de Mi Latido"
             className="mi-latido-mode-tabs"
           />
-          <p aria-live="polite" style={{ fontFamily:PP, fontSize:10.5, color:C.light, margin:'0 2px', lineHeight:1.5 }}>
-            {latidoDescription}
-          </p>
         </div>
         <div key={`${latidoSection}-${latidoMode}`} className="segmented-content-transition" style={{ maxWidth:1200, margin:'0 auto' }}>
           {latidoSection === 'offers' ? (

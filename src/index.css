@@ -2682,7 +2682,7 @@ img[data-latido-img-state="loaded"] {
 .mi-latido-mode-tabs {
   padding: 0;
   margin-top: 8px;
-  margin-bottom: 7px;
+  margin-bottom: 0;
   border: 0;
   border-bottom: 1px solid #DCE4F0;
   border-radius: 0;
