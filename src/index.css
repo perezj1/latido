@@ -2680,14 +2680,37 @@ img[data-latido-img-state="loaded"] {
 }
 
 .mi-latido-mode-tabs {
+  padding: 0;
   margin-top: 8px;
   margin-bottom: 7px;
+  border: 0;
+  border-bottom: 1px solid #DCE4F0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.mi-latido-mode-tabs .joined-segmented-tabs__indicator {
+  top: auto;
+  right: auto;
+  bottom: -1px;
+  left: 0;
+  width: calc(100% / var(--segment-count));
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(#2864F0, #2864F0) center / 48px 3px no-repeat;
+  box-shadow: none;
 }
 
 .mi-latido-mode-tabs > button {
-  min-height: 32px;
-  padding-block: 5px;
+  min-height: 35px;
+  padding: 6px 4px 9px;
+  border-radius: 0;
+  color: #607089;
   font-size: 10px;
+}
+
+.mi-latido-mode-tabs > button.is-active {
+  color: #2864F0;
 }
 
 .segmented-content-transition {
