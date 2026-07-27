@@ -39,6 +39,10 @@ import {
   sortRecentFeed,
 } from '../lib/interests'
 import { isPublicationOpen } from '../lib/publicationLifecycle'
+import {
+  employmentProfileFromJob,
+  isEmploymentProfileComplete,
+} from '../lib/employmentProfile'
 import { FilterButton, SegmentedTabs } from '../components/FilterWorkspace'
 import toast from 'react-hot-toast'
 
@@ -610,6 +614,7 @@ export default function Home() {
   const [attentionTasks, setAttentionTasks] = useState([])
   const [loadingAttention, setLoadingAttention] = useState(false)
   const [expandedAttentionTask, setExpandedAttentionTask] = useState('')
+  const [needsEmploymentProfile, setNeedsEmploymentProfile] = useState(false)
   const [attentionPortalElement, setAttentionPortalElement] = useState(null)
   const [latidoRatingStatus, setLatidoRatingStatus] = useState({
     loaded:false,
@@ -722,6 +727,9 @@ export default function Home() {
   const showInterestSelectionTask = isLoggedIn
     && profileMetaLoaded
     && userInterests.length === 0
+  const employmentProfileReminderPreview = import.meta.env.DEV
+    && new URLSearchParams(window.location.search).get('employment-profile-reminder-preview') === '1'
+  const showEmploymentProfileReminder = needsEmploymentProfile || employmentProfileReminderPreview
   const ratingReminderPreview = import.meta.env.DEV
     && new URLSearchParams(window.location.search).get('rating-reminder-preview') === '1'
   const showLatidoRatingTask = isLoggedIn
@@ -741,6 +749,14 @@ export default function Home() {
       title:'Selecciona tus intereses',
       text:'Para mostrarte contenido más relevante para ti.',
       actionLabel:'Elegir',
+      tone:'primary',
+    }] : []),
+    ...(showEmploymentProfileReminder ? [{
+      id:'employment-profile',
+      type:'employment-profile',
+      title:'Completa tu perfil',
+      text:'Crea tu perfil profesional con cinco respuestas.',
+      actionLabel:'Completar',
       tone:'primary',
     }] : []),
     ...(isLoggedIn && needsActivation ? [{
@@ -780,6 +796,10 @@ export default function Home() {
   ]
   const showAttentionSection = attentionCarouselCards.length > 0
   const hasNotificationContent = hasUnreadNotifications || showAttentionSection
+
+  useEffect(() => {
+    if (employmentProfileReminderPreview) setNotifOpen(true)
+  }, [employmentProfileReminderPreview])
 
   async function handleActivatePush() {
     if (activatingPush) return
@@ -834,12 +854,13 @@ export default function Home() {
     if (!isLoggedIn || !user?.id) {
       setAttentionTasks([])
       setPromotableBusinesses([])
+      setNeedsEmploymentProfile(false)
       return
     }
 
     setLoadingAttention(true)
     try {
-      const [eventsRes, listingsRes, jobsRes, providersRes, communitiesRes] = await Promise.all([
+      const [eventsRes, listingsRes, jobsRes, providersRes, communitiesRes, employmentProfileRes] = await Promise.all([
         supabase
           .from('events')
           .select('*')
@@ -875,6 +896,11 @@ export default function Home() {
           .eq('active', true)
           .order('created_at', { ascending:false })
           .limit(40),
+        supabase
+          .from('profiles')
+          .select('employment_profile')
+          .eq('id', user.id)
+          .maybeSingle(),
       ])
 
       if (eventsRes.error) console.error('Error loading attention events:', eventsRes.error)
@@ -882,6 +908,21 @@ export default function Home() {
       if (jobsRes.error) console.error('Error loading attention jobs:', jobsRes.error)
       if (providersRes.error) console.error('Error loading attention providers:', providersRes.error)
       if (communitiesRes.error) console.error('Error loading attention communities:', communitiesRes.error)
+      if (employmentProfileRes.error && !getMissingColumnName(employmentProfileRes.error, 'profiles')) {
+        console.error('Error loading employment profile attention status:', employmentProfileRes.error)
+      }
+
+      const activeJobs = (jobsRes.error ? [] : jobsRes.data) || []
+      const employmentRequests = activeJobs.filter(row => getJobIntentId(row) === 'busca')
+      const employmentProfileCandidates = [
+        employmentProfileRes.error ? null : employmentProfileRes.data?.employment_profile,
+        user.user_metadata?.employment_profile,
+        ...employmentRequests.map(employmentProfileFromJob),
+      ]
+      setNeedsEmploymentProfile(
+        employmentRequests.length > 0
+        && !employmentProfileCandidates.some(isEmploymentProfileComplete)
+      )
 
       const loadConfirmations = key => {
         try {
@@ -900,7 +941,7 @@ export default function Home() {
 
       const expiredEvents = ((eventsRes.error ? [] : eventsRes.data) || []).filter(row => isExpiredEventDueForReview(row, eventConfirmations))
       const adsToReview = ((listingsRes.error ? [] : listingsRes.data) || []).filter(row => isPublicationDueForReview(row, adConfirmations))
-      const jobsToReview = ((jobsRes.error ? [] : jobsRes.data) || []).filter(row => isPublicationDueForReview(row, jobConfirmations))
+      const jobsToReview = activeJobs.filter(row => isPublicationDueForReview(row, jobConfirmations))
       const businessesToReview = ((providersRes.error ? [] : providersRes.data) || []).filter(row => isPublicationDueForReview(row, businessConfirmations))
       const communitiesToReview = ((communitiesRes.error ? [] : communitiesRes.data) || []).filter(row => isPublicationDueForReview(row, communityConfirmations))
       const missingImageItems = []
@@ -1021,6 +1062,7 @@ export default function Home() {
       console.error('Error loading attention tasks:', error)
       setAttentionTasks([])
       setPromotableBusinesses([])
+      setNeedsEmploymentProfile(false)
     } finally {
       setLoadingAttention(false)
     }
@@ -1668,6 +1710,33 @@ export default function Home() {
                       style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
                     >
                       Elegir
+                    </button>
+                  </div>
+                </div>
+              )}
+              {showEmploymentProfileReminder && (
+                <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
+                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
+                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontWeight:900, fontSize:10, color:C.primary, flexShrink:0 }}>
+                      CV
+                    </span>
+                    <span style={{ minWidth:0, flex:1 }}>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        Completa tu perfil
+                      </span>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        Crea tu perfil profesional con cinco respuestas.
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeNotifPanel()
+                        navigate('/perfil?perfil-profesional=1')
+                      }}
+                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
+                    >
+                      Completar
                     </button>
                   </div>
                 </div>

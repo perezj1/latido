@@ -1463,6 +1463,31 @@ export default function Perfil() {
     setEmploymentProfileOpen(true)
   }
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (
+      params.get('perfil-profesional') !== '1'
+      || !hasEmploymentRequest
+      || employmentProfileLoading
+    ) return
+
+    setEmploymentProfileForm(normalizeEmploymentProfile(employmentProfile))
+    setEmploymentProfileOpen(true)
+    params.delete('perfil-profesional')
+    const nextSearch = params.toString()
+    navigate({
+      pathname:location.pathname,
+      search:nextSearch ? `?${nextSearch}` : '',
+    }, { replace:true })
+  }, [
+    employmentProfile,
+    employmentProfileLoading,
+    hasEmploymentRequest,
+    location.pathname,
+    location.search,
+    navigate,
+  ])
+
   const persistEmploymentProfile = async (value, { syncActiveRequests=true }={}) => {
     const normalized = normalizeEmploymentProfile(value)
     const level = getEmploymentProfileLevel(normalized)
