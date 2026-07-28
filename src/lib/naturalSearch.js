@@ -6,7 +6,7 @@ const SEARCH_STOP_WORDS = new Set([
   'favor', 'gustaria', 'habla', 'hablar', 'hable', 'hacer', 'hay', 'informacion', 'la',
   'las', 'lo', 'los', 'me', 'mi', 'mis', 'necesito', 'negocio', 'obtener', 'ofrecer',
   'ofrezca', 'para', 'persona', 'por', 'profesional', 'pueda', 'puede', 'pueden', 'que',
-  'quien', 'quiero', 'quisiera', 'sacar', 'se', 'servicio', 'servicios', 'sobre', 'su',
+  'quien', 'quiero', 'quisiera', 'sacar', 'se', 'sobre', 'su',
   'sus', 'tema', 'tenga', 'un', 'una', 'unas', 'uno', 'unos', 'urgente', 'ya',
   'busca', 'buscando', 'buscar', 'busco', 'comprar', 'compro', 'contratar', 'contrato',
   'curar', 'curarme', 'encargar', 'encargo', 'pedir', 'pido', 'reservar', 'reservo',
@@ -21,15 +21,24 @@ const HOME_SERVICE_EXCLUDED_TERMS = [
 const INTENT_DEFINITIONS = [
   {
     id:'employment',
-    triggers:['empleo', 'trabajo', 'trabajar', 'chamba', 'curro', 'vacante'],
+    triggers:[
+      'empleo', 'trabajo', 'trabajar', 'chamba', 'curro', 'vacante',
+      'emprego', 'trabalho', 'trabalhar', 'stelle', 'arbeit', 'emploi', 'lavoro',
+    ],
     consumed:['laboral', 'oferta', 'oportunidad', 'puesto'],
-    terms:['empleo', 'trabajo', 'vacante', 'oferta laboral', 'puesto', 'job', 'reclutamiento'],
+    terms:['empleo', 'trabajo', 'vacante', 'oferta laboral', 'puesto', 'job', 'reclutamiento', 'emprego', 'trabalho', 'stelle', 'arbeit', 'emploi', 'lavoro'],
+  },
+  {
+    id:'construction',
+    triggers:['construccion', 'obra', 'albanil', 'maestro de obra', 'bau', 'baustelle', 'construction'],
+    consumed:['trabajo', 'empleo', 'puesto', 'sector'],
+    terms:['construccion', 'obra', 'albanil', 'reformas', 'bau', 'baustelle', 'construction'],
   },
   {
     id:'cleaning',
-    triggers:['limpiar', 'limpieza', 'aseo', 'fregar', 'barrer', 'reinigung', 'cleaning'],
+    triggers:['limpiar', 'limpieza', 'aseo', 'fregar', 'barrer', 'reinigung', 'cleaning', 'limpeza', 'nettoyage', 'pulizia'],
     consumed:['apartamento', 'bano', 'casa', 'cocina', 'cristal', 'oficina', 'piso', 'suelo', 'ventana'],
-    terms:['limpieza', 'limpiar', 'aseo', 'servicio domestico', 'cleaning', 'reinigung', 'hauswartung'],
+    terms:['limpieza', 'limpiar', 'aseo', 'servicio domestico', 'cleaning', 'reinigung', 'hauswartung', 'limpeza', 'nettoyage', 'pulizia'],
   },
   {
     id:'translation',
@@ -39,9 +48,9 @@ const INTENT_DEFINITIONS = [
   },
   {
     id:'moving',
-    triggers:['mudanza', 'mudar', 'traslado', 'umzug'],
+    triggers:['mudanza', 'mudar', 'traslado', 'umzug', 'mudanca', 'demenagement', 'trasloco'],
     consumed:['casa', 'mueble', 'piso'],
-    terms:['mudanza', 'mudanzas', 'traslado', 'transporte de muebles', 'umzug'],
+    terms:['mudanza', 'mudanzas', 'traslado', 'transporte de muebles', 'umzug', 'mudanca', 'demenagement', 'trasloco'],
   },
   {
     id:'plumbing',
@@ -130,9 +139,9 @@ const INTENT_DEFINITIONS = [
   },
   {
     id:'housing',
-    triggers:['alquiler', 'alquilar', 'arrendar', 'habitacion', 'apartamento', 'vivienda', 'sublet'],
+    triggers:['alquiler', 'alquilar', 'arrendar', 'habitacion', 'apartamento', 'departamento', 'vivienda', 'sublet', 'wohnung', 'zimmer', 'logement', 'moradia'],
     consumed:['casa', 'piso', 'cuarto'],
-    terms:['alquiler', 'alquilar', 'habitacion', 'apartamento', 'vivienda', 'piso', 'sublet'],
+    terms:['alquiler', 'alquilar', 'habitacion', 'apartamento', 'departamento', 'vivienda', 'piso', 'sublet', 'wohnung', 'zimmer', 'logement', 'moradia'],
   },
   {
     id:'health',
@@ -172,9 +181,9 @@ const INTENT_DEFINITIONS = [
   },
   {
     id:'transport',
-    triggers:['taxi', 'chofer', 'conductor', 'aeropuerto', 'transporte de personas'],
+    triggers:['taxi', 'chofer', 'conductor', 'chauffeur', 'motorista', 'aeropuerto', 'transporte de personas'],
     consumed:['llevar', 'recoger', 'traslado'],
-    terms:['taxi', 'chofer', 'conductor', 'aeropuerto', 'transporte', 'traslado'],
+    terms:['taxi', 'chofer', 'conductor', 'chauffeur', 'motorista', 'aeropuerto', 'transporte', 'traslado'],
   },
   {
     id:'marketplace',
@@ -184,38 +193,114 @@ const INTENT_DEFINITIONS = [
   },
 ]
 
+const NORMALIZED_TEXT_CACHE = new Map()
+const SEARCH_WORDS_CACHE = new Map()
+const SEARCH_WORD_PROFILE_CACHE = new Map()
+const RELATED_WORDS_CACHE = new Map()
+const TEXT_CACHE_LIMIT = 12_000
+const RELATED_WORDS_CACHE_LIMIT = 30_000
+
+function rememberInCache(cache, key, value, limit) {
+  if (cache.size >= limit) {
+    cache.delete(cache.keys().next().value)
+  }
+  cache.set(key, value)
+  return value
+}
+
 export function normalizeSearchText(value = '') {
-  return String(value || '')
+  const rawValue = String(value || '')
+  const cached = NORMALIZED_TEXT_CACHE.get(rawValue)
+  if (cached !== undefined) return cached
+
+  const normalized = rawValue
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
     .replace(/\s+/g, ' ')
+
+  return rememberInCache(NORMALIZED_TEXT_CACHE, rawValue, normalized, TEXT_CACHE_LIMIT)
 }
 
 function getWords(value) {
   const normalized = normalizeSearchText(value)
-  return normalized ? normalized.split(' ') : []
+  if (!normalized) return []
+
+  const cached = SEARCH_WORDS_CACHE.get(normalized)
+  if (cached) return cached
+
+  return rememberInCache(SEARCH_WORDS_CACHE, normalized, normalized.split(' '), TEXT_CACHE_LIMIT)
 }
 
-function wordsAreRelated(left, right) {
+function getWordForms(word) {
+  return [
+    word,
+    ...(word.endsWith('s') ? [word.slice(0, -1)] : []),
+    ...(word.endsWith('es') ? [word.slice(0, -2)] : []),
+  ]
+}
+
+function getWordProfile(value) {
+  const normalized = normalizeSearchText(value)
+  if (!normalized) return null
+
+  const cached = SEARCH_WORD_PROFILE_CACHE.get(normalized)
+  if (cached) return cached
+
+  const words = getWords(normalized)
+  const forms = new Set()
+  const byPrefix = new Map()
+  for (const word of words) {
+    getWordForms(word).forEach(form => forms.add(form))
+    const prefix = word.slice(0, 2)
+    const prefixedWords = byPrefix.get(prefix)
+    if (prefixedWords) prefixedWords.push(word)
+    else byPrefix.set(prefix, [word])
+  }
+
+  return rememberInCache(
+    SEARCH_WORD_PROFILE_CACHE,
+    normalized,
+    { words, forms, byPrefix },
+    TEXT_CACHE_LIMIT,
+  )
+}
+
+function boundedEditDistance(left, right, limit) {
+  if (left === right) return 0
+  if (Math.abs(left.length - right.length) > limit) return limit + 1
+
+  let previous = Array.from({ length:right.length + 1 }, (_, index) => index)
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex]
+    let rowMinimum = current[0]
+
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const substitution = previous[rightIndex - 1] + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1)
+      const insertion = current[rightIndex - 1] + 1
+      const deletion = previous[rightIndex] + 1
+      current[rightIndex] = Math.min(substitution, insertion, deletion)
+      rowMinimum = Math.min(rowMinimum, current[rightIndex])
+    }
+
+    if (rowMinimum > limit) return limit + 1
+    previous = current
+  }
+
+  return previous[right.length]
+}
+
+function computeWordsAreRelated(left, right) {
   if (!left || !right) return false
   if (left === right) return true
 
   const shortestLength = Math.min(left.length, right.length)
   if (shortestLength < 4) return false
 
-  const leftForms = new Set([
-    left,
-    ...(left.endsWith('s') ? [left.slice(0, -1)] : []),
-    ...(left.endsWith('es') ? [left.slice(0, -2)] : []),
-  ])
-  const rightForms = new Set([
-    right,
-    ...(right.endsWith('s') ? [right.slice(0, -1)] : []),
-    ...(right.endsWith('es') ? [right.slice(0, -2)] : []),
-  ])
+  const leftForms = new Set(getWordForms(left))
+  const rightForms = new Set(getWordForms(right))
   if ([...leftForms].some(form => rightForms.has(form))) return true
 
   const canonicalLeft = left.replace(/^traduz/, 'traduc')
@@ -235,8 +320,32 @@ function wordsAreRelated(left, right) {
     return false
   }
 
+  const fuzzyLimit = shortestLength >= 9 ? 2 : shortestLength >= 6 ? 1 : 0
+  if (
+    fuzzyLimit > 0
+    && canonicalLeft.slice(0, 2) === canonicalRight.slice(0, 2)
+    && boundedEditDistance(canonicalLeft, canonicalRight, fuzzyLimit) <= fuzzyLimit
+  ) {
+    return true
+  }
+
   return shortestLength >= 6 && (
     canonicalLeft.startsWith(canonicalRight) || canonicalRight.startsWith(canonicalLeft)
+  )
+}
+
+function wordsAreRelated(left, right) {
+  if (!left || !right) return false
+  if (left === right) return true
+
+  const cacheKey = left < right ? `${left}\u0000${right}` : `${right}\u0000${left}`
+  if (RELATED_WORDS_CACHE.has(cacheKey)) return RELATED_WORDS_CACHE.get(cacheKey)
+
+  return rememberInCache(
+    RELATED_WORDS_CACHE,
+    cacheKey,
+    computeWordsAreRelated(left, right),
+    RELATED_WORDS_CACHE_LIMIT,
   )
 }
 
@@ -244,9 +353,16 @@ function valueMatchesTerm(value, term) {
   const normalizedTerm = normalizeSearchText(term)
   if (!value || !normalizedTerm) return false
 
-  const valueWords = value.split(' ')
-  const termWords = normalizedTerm.split(' ')
-  return termWords.every(termWord => valueWords.some(valueWord => wordsAreRelated(termWord, valueWord)))
+  const valueProfile = getWordProfile(value)
+  if (!valueProfile) return false
+
+  const termWords = getWords(normalizedTerm)
+  return termWords.every(termWord => {
+    if (getWordForms(termWord).some(form => valueProfile.forms.has(form))) return true
+
+    const candidates = valueProfile.byPrefix.get(termWord.slice(0, 2)) || []
+    return candidates.some(valueWord => wordsAreRelated(termWord, valueWord))
+  })
 }
 
 function tokenMatchesAny(token, values) {
@@ -293,8 +409,15 @@ export function scoreSearchFields(profile, fields, { allowIntentFallback = false
   if (!normalizedFields.length) return 0
 
   const directWeights = profile.tokens.map(token => getBestMatchWeight(token, normalizedFields))
+  const directWeightByToken = new Map(
+    profile.tokens.map((token, index) => [token, directWeights[index]])
+  )
   const directMatches = directWeights.filter(Boolean).length
-  const requiredMatches = profile.requiredTokens.filter(token => getBestMatchWeight(token, normalizedFields) > 0).length
+  const requiredMatches = profile.requiredTokens.filter(token => (
+    (directWeightByToken.has(token)
+      ? directWeightByToken.get(token)
+      : getBestMatchWeight(token, normalizedFields)) > 0
+  )).length
   const exactIntentWeights = profile.intents.map(intent => (
     Math.max(...intent.terms.map(term => getBestMatchWeight(term, normalizedFields)), 0)
   ))
@@ -312,8 +435,8 @@ export function scoreSearchFields(profile, fields, { allowIntentFallback = false
   if (hasExcludedIntentTerm) return 0
 
   if (profile.intents.length > 0 && matchedIntents < profile.intents.length) return 0
-  if (profile.requiredTokens.length > 0 && requiredMatches < Math.ceil(profile.requiredTokens.length * 0.6)) return 0
-  if (profile.intents.length === 0 && directMatches < Math.max(1, Math.ceil(profile.tokens.length * 0.6))) return 0
+  if (profile.requiredTokens.length > 0 && requiredMatches < Math.ceil(profile.requiredTokens.length * 0.7)) return 0
+  if (profile.intents.length === 0 && directMatches < Math.max(1, Math.ceil(profile.tokens.length * 0.7))) return 0
   if (profile.tokens.length === 0 && matchedIntents === 0) return 0
 
   let score = 0

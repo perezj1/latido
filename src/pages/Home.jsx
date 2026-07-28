@@ -22,7 +22,7 @@ import { C, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
+import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import {
@@ -44,7 +44,7 @@ import {
   employmentProfileFromJob,
   isEmploymentProfileComplete,
 } from '../lib/employmentProfile'
-import { FilterButton, SegmentedTabs } from '../components/FilterWorkspace'
+import { SegmentedTabs } from '../components/FilterWorkspace'
 import toast from 'react-hot-toast'
 
 const fmtPrice = p => {
@@ -67,29 +67,6 @@ const CAT_COLORS = {
 
 const REVIEWABLE_AD_CATS = new Set(['servicios', 'cuidados'])
 const HOME_CAROUSEL_CARD_SHADOW = '0 2px 8px rgba(0,0,0,0.06)'
-
-const HOME_SEARCH_CATEGORY_OPTIONS = [
-  { value:'', label:'Todos' },
-  { value:'anuncios', label:'Anuncios' },
-  { value:'vivienda', label:'Vivienda' },
-  { value:'empleo', label:'Empleo' },
-  { value:'servicios', label:'Servicios' },
-  { value:'cuidados', label:'Cuidados' },
-  { value:'venta', label:'Compraventa' },
-  { value:'documentos', label:'Trámites' },
-  { value:'negocios', label:'Negocios' },
-  { value:'grupos', label:'Grupos' },
-  { value:'eventos', label:'Eventos' },
-  { value:'guias', label:'Guías' },
-]
-
-const HOME_SEARCH_INTENT_OPTIONS = [
-  { value:'', label:'Todas' },
-  { value:'busca', label:'Busco o necesito' },
-  { value:'ofrece', label:'Ofrezco' },
-  { value:'vende', label:'Vendo' },
-  { value:'regala', label:'Regalo' },
-]
 
 function averageRating(reviews) {
   if (!reviews?.length) return null
@@ -310,33 +287,6 @@ function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText
         </div>
       )}
     </section>
-  )
-}
-
-function SearchFilterSelect({ label, value, options, onChange, flex = 1 }) {
-  const selectedLabel = options.find(o => o.value === value)?.label || label
-  const isActive = !!value
-  const defaultValue = options[0]?.value || ''
-  const isDefault = value === defaultValue
-
-  return (
-    <label style={{ position:'relative', display:'flex', alignItems:'center', minWidth:0, flex:`${flex} 1 0`, height:40, paddingLeft:12, border:`1.5px solid ${isActive ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.32)'}`, borderRadius:12, background:isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)', overflow:'hidden', backdropFilter:'blur(6px)', transition:'all .15s' }}>
-      <span style={{ position:'absolute', top:0, left:0, right:0, bottom:0, display:'flex', alignItems:'center', gap:6, paddingLeft:12, paddingRight:32, fontFamily:PP, fontSize:9.5, fontWeight:900, color:isActive ? '#fff' : 'rgba(255,255,255,0.72)', cursor:'pointer', pointerEvents:'none', whiteSpace:'nowrap', overflow:'hidden', minWidth:0, textTransform:'uppercase', letterSpacing:0.5 }}>
-        {label}
-        {isActive && !isDefault && (
-          <span aria-hidden="true" style={{ width:4, height:4, borderRadius:'50%', background:'#fff', flexShrink:0, marginLeft:'auto' }} />
-        )}
-      </span>
-      <select
-        aria-label={label}
-        value={value}
-        onChange={onChange}
-        style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none', outline:'none', appearance:'none', WebkitAppearance:'none', background:'transparent', padding:'0 32px 0 12px', fontFamily:PP, fontSize:10.5, fontWeight:700, color:'rgba(255,255,255,0)', cursor:'pointer' }}
-      >
-        {options.map(option => <option key={option.value || 'all'} value={option.value} style={{ color:C.text, background:'#fff' }}>{option.label}</option>)}
-      </select>
-      <span aria-hidden="true" style={{ position:'absolute', right:10, top:'50%', width:5, height:5, borderRight:`1.5px solid ${isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.8)'}`, borderBottom:`1.5px solid ${isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.8)'}`, transform:'translateY(-50%) rotate(45deg)', pointerEvents:'none', flexShrink:0 }} />
-    </label>
   )
 }
 
@@ -625,9 +575,6 @@ export default function Home() {
   const [businessPromotionModalOpen, setBusinessPromotionModalOpen] = useState(false)
   const [loading, setLoading] = useState(() => !homeCache)
   const [activatingPush, setActivatingPush] = useState(false)
-  const [searchFilters, setSearchFilters] = useState({ category:'', canton:'', intent:'' })
-  const [searchFiltersOpen, setSearchFiltersOpen] = useState(false)
-  const searchFiltersOpenedManuallyRef = useRef(false)
   const { needsActivation, refresh: refreshPush } = usePushActivation(user?.id)
   const businessRotationBucket = useTimedRotationBucket(BUSINESS_ROTATION_INTERVAL_MS)
   const [selectedGuide, setSelectedGuide] = useState(null)
@@ -1589,64 +1536,11 @@ export default function Home() {
             <GlobalSearch
               size="lg"
               assistantMode
-              placeholder="Ej.: busco piso en Zürich hasta 3.000 CHF"
-              searchFilters={searchFilters}
-              onSearchFiltersChange={setSearchFilters}
-              onValueChange={nextQuery => {
-                const normalizedQuery = nextQuery.trim()
-                if (normalizedQuery.length >= 2) {
-                  setSearchFiltersOpen(true)
-                } else if (!normalizedQuery && !searchFiltersOpenedManuallyRef.current) {
-                  setSearchFiltersOpen(false)
-                }
-              }}
-              endContent={(
-                <FilterButton
-                  count={Object.values(searchFilters).filter(Boolean).length}
-                  open={searchFiltersOpen}
-                  onClick={() => setSearchFiltersOpen(open => {
-                    const nextOpen = !open
-                    searchFiltersOpenedManuallyRef.current = nextOpen
-                    return nextOpen
-                  })}
-                  controls="home-search-filters"
-                />
-              )}
-              filtersContent={searchFiltersOpen ? (
-                <div
-                  id="home-search-filters"
-                  className="no-scroll"
-                  role="group"
-                  aria-label="Filtros de búsqueda"
-                  style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:8 }}
-                >
-                  <div style={{ display:'flex', gap:8, width:'100%', minWidth:340 }}>
-                    <SearchFilterSelect
-                      label="Categoría"
-                      value={searchFilters.category}
-                      options={HOME_SEARCH_CATEGORY_OPTIONS}
-                      onChange={event => setSearchFilters(current => ({ ...current, category:event.target.value }))}
-                    />
-                    <SearchFilterSelect
-                      label="Cantón"
-                      value={searchFilters.canton}
-                      flex={1.1}
-                      options={[
-                        { value:'', label:'Suiza' },
-                        ...CANTONS.map(canton => ({ value:canton.code, label:`${canton.code} · ${canton.name}` })),
-                      ]}
-                      onChange={event => setSearchFilters(current => ({ ...current, canton:event.target.value }))}
-                    />
-                    <SearchFilterSelect
-                      label="Intención"
-                      value={searchFilters.intent}
-                      flex={1.05}
-                      options={HOME_SEARCH_INTENT_OPTIONS}
-                      onChange={event => setSearchFilters(current => ({ ...current, intent:event.target.value }))}
-                    />
-                  </div>
-                </div>
-              ) : null}
+              immersive
+              searchEmoji="🔎"
+              placeholder="Buscar en Latido"
+              clearOnClose
+              showImmersiveFilterButton={false}
             />
           </div>
 

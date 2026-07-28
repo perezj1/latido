@@ -115,6 +115,20 @@ function persistTablonCache() {
 }
 const CARD_STACK_GAP = 10
 const TABLON_SEARCH_RESULT_TYPES = ['ad', 'job']
+const TABLON_DATA_PAGE_SIZE = 500
+
+async function fetchAllTablonRows(buildQuery) {
+  const rows = []
+
+  for (let from = 0; ; from += TABLON_DATA_PAGE_SIZE) {
+    const response = await buildQuery().range(from, from + TABLON_DATA_PAGE_SIZE - 1)
+    if (response.error) return response
+
+    const page = response.data || []
+    rows.push(...page)
+    if (page.length < TABLON_DATA_PAGE_SIZE) return { data:rows, error:null }
+  }
+}
 const FILTER_PARAM_KEYS = ['canton', 'plz', 'privacy', 'jobType', 'employmentLevel', 'priceRange', 'maxPrice', 'sort']
 const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
 const LIST_CARD_STYLE = {
@@ -202,6 +216,16 @@ function getJobEmploymentLevelId(job={}) {
   return 'unrated'
 }
 
+function getJobProfessionalSearchText(job={}) {
+  const profile = employmentProfileFromJob(job)
+  const rows = getEmploymentProfileRows(profile)
+  const level = getEmploymentProfileLevel(profile)
+  return [
+    level?.label,
+    ...rows.flatMap(row => [row.label, row.value]),
+  ].filter(Boolean).join(' ')
+}
+
 const GENERAL_INTENT_VIEWS = [
   { id:'ofrece', emoji:'📌', label:'Ofertas', shortLabel:'Ofertas' },
   { id:'busca', emoji:'🔎', label:'Solicitudes', shortLabel:'Solicitudes' },
@@ -253,6 +277,8 @@ function getPublicationTimestamp(item={}) {
 function comparePublications(a, b, order='newest') {
   const first = a?.item || a
   const second = b?.item || b
+
+  if (order === 'relevance') return 0
 
   if (order === 'price_asc' || order === 'price_desc') {
     const firstPrice = getPublicationPrice(first)
@@ -1036,6 +1062,12 @@ export default function Tablon() {
   const sortOrder = SORT_OPTIONS.some(option => option.id === searchParams.get('sort'))
     ? searchParams.get('sort')
     : 'newest'
+  useEffect(() => {
+    if (searchParams.get('sort') !== 'relevance') return
+    const next = new URLSearchParams(searchParams)
+    next.delete('sort')
+    setSearchParams(next, { replace:true })
+  }, [searchParams, setSearchParams])
   const hasPriceFilter = Boolean(priceRange || legacyMaxPrice) && !employmentLevel
   const openAdId  = searchParams.get('openAd') || ''
   const openJobId = searchParams.get('openJob') || ''
@@ -1286,7 +1318,6 @@ export default function Tablon() {
     const selectedJobType = JOB_TYPES.find(item => item.id === values.jobType)
     const selectedEmploymentLevel = EMPLOYMENT_LEVEL_FILTER_OPTIONS.find(item => item.id === values.employmentLevel)
     const selectedPrice = PRICE_RANGES.find(item => item.id === values.priceRange)
-    const selectedSort = SORT_OPTIONS.find(item => item.id === values.sort)
 
     if (values.canton) chips.push({ key:'canton', label:selectedCanton?.name || values.canton })
     if (values.plz) chips.push({ key:'plz', label:`CP ${values.plz}` })
@@ -1302,9 +1333,6 @@ export default function Tablon() {
     }
     if (!isEmpleos && values.privacy) {
       chips.push({ key:'privacy', label:values.privacy === 'public' ? 'Públicas' : 'Solo usuarios' })
-    }
-    if (values.sort && values.sort !== 'newest') {
-      chips.push({ key:'sort', label:selectedSort?.label || values.sort })
     }
     return chips
   }
@@ -1349,7 +1377,12 @@ export default function Tablon() {
       }
 
       try {
-        const { data, error } = await supabase.from('jobs').select('*').or('active.is.null,active.eq.true').order('created_at', { ascending:false }).limit(150)
+        const { data, error } = await fetchAllTablonRows(() => supabase
+          .from('jobs')
+          .select('*')
+          .or('active.is.null,active.eq.true')
+          .order('created_at', { ascending:false })
+          .order('id', { ascending:false }))
         const nextJobs = error
           ? (TABLON_CACHE.jobs || MOCK_JOBS)
           : (data?.length ? data : MOCK_JOBS)
@@ -1377,9 +1410,16 @@ export default function Tablon() {
       }
 
       try {
-        let query = supabase.from('listings').select('*').or('active.is.null,active.eq.true').order('created_at', { ascending:false }).limit(150)
-        if (!isLoggedIn) query = query.or('privacy.is.null,privacy.eq.public')
-        const { data, error } = await query
+        const { data, error } = await fetchAllTablonRows(() => {
+          let query = supabase
+            .from('listings')
+            .select('*')
+            .or('active.is.null,active.eq.true')
+            .order('created_at', { ascending:false })
+            .order('id', { ascending:false })
+          if (!isLoggedIn) query = query.or('privacy.is.null,privacy.eq.public')
+          return query
+        })
         const fallbackAds = cachedAds || MOCK_ADS.filter(ad => isLoggedIn || !ad.privacy || ad.privacy === 'public')
         const nextAds = error ? fallbackAds : (data?.length ? data : fallbackAds)
 
@@ -1583,6 +1623,7 @@ export default function Tablon() {
             { value:getJobIntentMeta(j).label, weight:2 },
             { value:j.type, weight:2 },
             { value:j.city || j.canton, weight:2 },
+            { value:getJobProfessionalSearchText(j), weight:4 },
           ])
       ))
     )
@@ -1606,6 +1647,7 @@ export default function Tablon() {
               { value:a.sub, weight:3 },
               { value:getJobIntentMeta(a).label, weight:2 },
               { value:a.city || a.canton, weight:2 },
+              { value:getJobProfessionalSearchText(a), weight:4 },
             ])
         ))
       ) {
@@ -1651,8 +1693,13 @@ export default function Tablon() {
       ...jobsForCurrentFilters.map(job => ({ kind:'job', item:job, sortDate:job.created_at || '' })),
     ]
 
-    return items.sort((a, b) => comparePublications(a, b, sortOrder))
-  }, [cat, displayedAds, employmentLevel, filteredAds, filteredJobs, hasPriceFilter, sortOrder, type])
+    return items.sort((a, b) => {
+      if (sortOrder === 'relevance' && hasResolvedSearch) {
+        return getResolvedRank(a.kind, a.item.id) - getResolvedRank(b.kind, b.item.id)
+      }
+      return comparePublications(a, b, sortOrder)
+    })
+  }, [cat, displayedAds, employmentLevel, filteredAds, filteredJobs, hasPriceFilter, hasResolvedSearch, resolvedSearchRank, sortOrder, type])
 
   const draftResultCount = useMemo(() => {
     const draftRange = PRICE_RANGES.find(option => option.id === filterDraft.priceRange)
@@ -1710,6 +1757,7 @@ export default function Tablon() {
         { value:getJobIntentMeta(job).label, weight:2 },
         { value:job.type, weight:2 },
         { value:job.city || job.canton, weight:2 },
+        { value:getJobProfessionalSearchText(job), weight:4 },
       ]))
     }
 
@@ -1877,7 +1925,7 @@ export default function Tablon() {
 
   const cantonOptions = [{ id:'', label:'Toda Suiza' }, ...CANTONS.map(c => ({ id:c.code, label:`${c.code} · ${c.name}` }))]
   const jobTypeOptions = [{ id:'', label:'Todos' }, ...JOB_TYPES.map(jobTypeOption => ({ id:jobTypeOption.id, label:`${jobTypeOption.emoji} ${jobTypeOption.label}` }))]
-  const intentValue = activeToolbarIntent
+  const intentValue = cat ? activeToolbarIntent : type
   const pageContext = getTablonContext(cat, isEmpleos, activeIntentMeta)
   const publishHref = cat
     ? getPublishPathForIntent(cat, activeCategoryIntent)
@@ -1924,6 +1972,8 @@ export default function Tablon() {
             onResolvedResultsChange={setResolvedSearch}
             searchFilters={{ category:cat, canton, intent:intentValue }}
             onSearchFiltersChange={clearFilters}
+            filterCount={activeFilterCount}
+            onFiltersRequest={openFilters}
           />
         </div>
         <FilterButton

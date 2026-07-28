@@ -41,6 +41,11 @@ ALTER TABLE public.jobs
   ADD COLUMN IF NOT EXISTS spanish_supported BOOLEAN,
   ADD COLUMN IF NOT EXISTS workload_min SMALLINT,
   ADD COLUMN IF NOT EXISTS workload_max SMALLINT,
+  ADD COLUMN IF NOT EXISTS experience_years SMALLINT,
+  ADD COLUMN IF NOT EXISTS available_from DATE,
+  ADD COLUMN IF NOT EXISTS driving_license BOOLEAN,
+  ADD COLUMN IF NOT EXISTS employment_profile JSONB,
+  ADD COLUMN IF NOT EXISTS employment_level TEXT,
   ADD COLUMN IF NOT EXISTS driving_license_required BOOLEAN,
   ADD COLUMN IF NOT EXISTS accommodation_available BOOLEAN;
 
@@ -307,7 +312,21 @@ AS $$
       to_jsonb(job),
       1,
       public.latido_search_term_score(
-        concat_ws(' ', job.title, job.company, job."desc", job.sector, job.category, job.type, job.city, job.canton, job.lang, array_to_string(job.languages, ' ')),
+        concat_ws(
+          ' ',
+          job.title,
+          job.company,
+          job."desc",
+          job.sector,
+          job.category,
+          job.type,
+          job.city,
+          job.canton,
+          job.lang,
+          array_to_string(job.languages, ' '),
+          job.employment_level,
+          job.employment_profile::TEXT
+        ),
         p_terms
       ),
       job.created_at
