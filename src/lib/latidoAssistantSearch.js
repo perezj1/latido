@@ -70,8 +70,8 @@ const SCOPE_DEFINITIONS = [
     label:'Empleo',
     category:'',
     entityTypes:['job', 'business', 'ad'],
-    triggers:['empleo', 'trabajo', 'trabajar', 'vacante', 'puesto laboral', 'curro', 'chamba'],
-    searchTerms:['empleo', 'trabajo', 'vacante', 'puesto', 'oferta laboral'],
+    triggers:['empleo', 'trabajo', 'trabajar', 'vacante', 'puesto laboral', 'curro', 'chamba', 'emprego', 'trabalho', 'stelle', 'arbeit', 'emploi', 'lavoro'],
+    searchTerms:['empleo', 'trabajo', 'vacante', 'puesto', 'oferta laboral', 'emprego', 'trabalho', 'stelle', 'arbeit', 'emploi', 'lavoro'],
     semanticSeed:'empleo',
   },
   {
@@ -79,8 +79,8 @@ const SCOPE_DEFINITIONS = [
     label:'Limpieza',
     category:'servicios',
     entityTypes:['business', 'ad'],
-    triggers:['limpiar', 'limpieza', 'aseo', 'fregar', 'barrer', 'reinigung', 'cleaning'],
-    searchTerms:['limpieza', 'limpiar', 'aseo', 'reinigung', 'cleaning'],
+    triggers:['limpiar', 'limpieza', 'aseo', 'fregar', 'barrer', 'reinigung', 'cleaning', 'limpeza', 'nettoyage', 'pulizia'],
+    searchTerms:['limpieza', 'limpiar', 'aseo', 'reinigung', 'cleaning', 'limpeza', 'nettoyage', 'pulizia'],
     semanticSeed:'limpieza',
   },
   {
@@ -97,8 +97,8 @@ const SCOPE_DEFINITIONS = [
     label:'Mudanzas',
     category:'servicios',
     entityTypes:['business', 'ad'],
-    triggers:['mudanza', 'mudar', 'traslado', 'transportar muebles', 'umzug'],
-    searchTerms:['mudanza', 'mudanzas', 'traslado', 'transporte muebles', 'umzug'],
+    triggers:['mudanza', 'mudar', 'traslado', 'transportar muebles', 'umzug', 'mudanca', 'demenagement', 'trasloco'],
+    searchTerms:['mudanza', 'mudanzas', 'traslado', 'transporte muebles', 'umzug', 'mudanca', 'demenagement', 'trasloco'],
     semanticSeed:'mudanza',
   },
   {
@@ -545,16 +545,25 @@ function detectHomeRepairFocus(normalized) {
 }
 
 function detectScope(normalized) {
-  const hasEmploymentContext = ['empleo', 'trabajo', 'trabajar', 'vacante', 'puesto laboral', 'curro', 'chamba']
+  const hiringContext = [
+    'para mi empresa', 'para nuestra empresa', 'contratar', 'contratamos',
+    'necesito personal', 'busco personal', 'busco trabajador', 'busco trabajadora',
+    'busco empleado', 'busco empleada', 'busco candidato', 'busco candidata',
+  ].some(term => includesPhrase(normalized, term))
+  const hasEmploymentContext = [
+    'empleo', 'trabajo', 'trabajar', 'vacante', 'puesto laboral', 'curro', 'chamba',
+    'emprego', 'trabalho', 'trabalhar', 'stelle', 'arbeit', 'emploi', 'lavoro',
+  ]
     .some(term => includesPhrase(normalized, term))
   const hasConstruction = ['construccion', 'obra', 'albanil', 'encofrador', 'yesero']
     .some(term => includesPhrase(normalized, term))
 
-  if (hasEmploymentContext) {
+  if (hasEmploymentContext || hiringContext) {
     const employment = getScopeDefinition('employment')
+    const scopedEmployment = hiringContext ? { ...employment, seekingWorkers:true } : employment
     return hasConstruction
-      ? { ...employment, searchTerms:[...employment.searchTerms, 'construccion', 'obra', 'albanil'], semanticSeed:'empleo' }
-      : employment
+      ? { ...scopedEmployment, searchTerms:[...employment.searchTerms, 'construccion', 'obra', 'albanil'], semanticSeed:'empleo' }
+      : scopedEmployment
   }
 
   const hasHousing = ['piso', 'apartamento', 'vivienda', 'habitacion', 'cuarto', 'alquiler', 'sublet', 'estudio']
@@ -666,24 +675,25 @@ function detectScope(normalized) {
 }
 
 function detectResultIntents(normalized, scope) {
-  const offering = ['ofrezco', 'ofrecemos', 'vendo', 'regalo', 'disponible']
+  const offering = ['ofrezco', 'ofrecemos', 'vendo', 'regalo', 'disponible', 'ofereco', 'oferecemos', 'vendo']
     .some(term => includesPhrase(normalized, term))
-  const seeking = ['busco', 'buscando', 'necesito', 'quiero', 'compro', 'encontrar']
+  const seeking = ['busco', 'buscando', 'necesito', 'quiero', 'compro', 'encontrar', 'procuro', 'preciso', 'quero']
     .some(term => includesPhrase(normalized, term))
 
+  if (scope?.seekingWorkers) return ['busca']
   if (scope?.marketplaceVehicle) {
     if (offering && !seeking) return ['busca']
-    return ['vende', 'regala']
+    if (seeking) return ['vende', 'regala']
+    return []
   }
   if (scope?.id === 'marketplace') {
     if (includesPhrase(normalized, 'vendo')) return ['busca']
     if (includesPhrase(normalized, 'regalo')) return ['busca']
-    return ['vende', 'regala', 'ofrece']
+    if (seeking) return ['vende', 'regala', 'ofrece']
+    return []
   }
   if (offering && !seeking) return ['busca']
-  const providesSomething = scope?.id !== 'marketplace'
-    && scope?.entityTypes?.some(type => ['business', 'ad', 'job'].includes(type))
-  if (scope && (seeking || providesSomething)) {
+  if (scope && seeking) {
     return ['ofrece']
   }
   return []
@@ -741,6 +751,7 @@ function buildCriteria(parsed) {
   const criteria = []
   if (parsed.scope) criteria.push({ key:'scope', icon:'✨', label:parsed.scope.label })
   if (parsed.resultIntents.includes('ofrece')) criteria.push({ key:'result-intent', icon:'✓', label:'Ofertas disponibles' })
+  else if (parsed.resultIntents.includes('busca')) criteria.push({ key:'result-intent', icon:'✓', label:'Solicitudes disponibles' })
   else if (parsed.scope?.marketplaceVehicle && parsed.resultIntents.some(intent => ['vende', 'regala'].includes(intent))) {
     criteria.push({ key:'result-intent', icon:'✓', label:'Anuncios disponibles' })
   }

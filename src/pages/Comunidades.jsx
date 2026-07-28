@@ -135,16 +135,27 @@ async function fetchProvidersForDirectory() {
 }
 
 async function fetchCommunitiesForDirectory() {
-  const buildQuery = columns => supabase
-    .from('communities')
-    .select(columns)
-    .eq('active', true)
-    .order('created_at', { ascending:false })
-    .limit(80)
+  const fetchAllRows = async columns => {
+    const rows = []
+    for (let from = 0; ; from += PROVIDER_DIRECTORY_PAGE_SIZE) {
+      const response = await supabase
+        .from('communities')
+        .select(columns)
+        .eq('active', true)
+        .order('created_at', { ascending:false })
+        .order('id', { ascending:false })
+        .range(from, from + PROVIDER_DIRECTORY_PAGE_SIZE - 1)
 
-  const response = await buildQuery(COMMUNITY_SELECT.withPhoto)
+      if (response.error) return response
+      const page = response.data || []
+      rows.push(...page)
+      if (page.length < PROVIDER_DIRECTORY_PAGE_SIZE) return { data:rows, error:null }
+    }
+  }
+
+  const response = await fetchAllRows(COMMUNITY_SELECT.withPhoto)
   if (getMissingColumnName(response.error, 'communities') === 'photo_url') {
-    return buildQuery(COMMUNITY_SELECT.safe)
+    return fetchAllRows(COMMUNITY_SELECT.safe)
   }
   return response
 }
@@ -1838,18 +1849,12 @@ export default function Comunidades() {
 
   const buildDirectoryFilterChips = values => {
     const chips = []
-    const sortOptions = tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS
-    const defaultSort = tab === 'negocios' ? 'recommended' : 'newest'
-    const selectedSort = sortOptions.find(option => option.id === values.sort)
 
     if (values.location) {
       const canton = tab === 'negocios'
         ? CANTONS.find(item => item.code === values.location)
         : null
       chips.push({ key:'location', label:canton?.name || values.location })
-    }
-    if (values.sort && values.sort !== defaultSort) {
-      chips.push({ key:'sort', label:selectedSort?.label || values.sort })
     }
     return chips
   }
@@ -1938,6 +1943,23 @@ export default function Comunidades() {
       ))
     )
     .sort((a, b) => {
+      if (communitySort === 'relevance' && hasSearch) {
+        if (hasResolvedSearch) {
+          return (
+            (resolvedSearchRank.get(`community:${a.id}`) ?? Number.MAX_SAFE_INTEGER)
+            - (resolvedSearchRank.get(`community:${b.id}`) ?? Number.MAX_SAFE_INTEGER)
+          )
+        }
+        const getScore = group => scoreSearchFields(searchProfile, [
+          { value:group.name, weight:6 },
+          { value:group.desc, weight:4 },
+          { value:getCommunityMeta(group.cat)?.label, weight:3 },
+          { value:group.city, weight:2 },
+          { value:'grupo comunidad', weight:1 },
+        ])
+        const relevanceDifference = getScore(b) - getScore(a)
+        if (relevanceDifference) return relevanceDifference
+      }
       if (communitySort === 'members') {
         const memberDiff = Number(b.members || 0) - Number(a.members || 0)
         if (memberDiff) return memberDiff
@@ -2208,6 +2230,8 @@ export default function Comunidades() {
                       intent:'',
                     }}
                     onSearchFiltersChange={clearDirectoryFilters}
+                    filterCount={activeDirectoryFilters}
+                    onFiltersRequest={openDirectoryFilters}
                   />
                 </div>
                 <FilterButton
