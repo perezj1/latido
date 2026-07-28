@@ -2185,11 +2185,11 @@ export default function GlobalSearch({
   return (
     <>
     <div style={{ position:'relative', width:'100%', zIndex:showDropdown ? 80 : 1 }}>
-      {assistantMode && size === 'lg' && (
+      {/* {assistantMode && size === 'lg' && (
         <div style={{ display:'flex', alignItems:'baseline', flexWrap:'wrap', gap:'3px 8px', margin:'0 2px 8px', color:assistantLabelColor, fontFamily:PP }}>
           <span style={{ fontSize:13, fontWeight:400 }}>✨ Dile lo que necesitas a Latido</span>
         </div>
-      )}
+      )} */}
       <div
         onFocusCapture={!immersive && endContent ? handleFocus : undefined}
         style={{ display:endContent ? 'flex' : 'block', alignItems:'center', gap:endContent ? 8 : 0 }}
