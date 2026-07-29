@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { C, PP } from '../lib/theme'
+import { HOME_CAROUSEL_CARD_WIDTH } from '../lib/homeCarousel'
 import {
   buildEventfrogEmbedUrl,
   EVENTFROG_EMBED_KEY,
@@ -298,7 +299,7 @@ function CarouselEventCard({ event }) {
       href={event.link}
       target="_blank"
       rel="noreferrer"
-      style={{ textDecoration:'none', flexShrink:0, width:168, display:'block' }}
+      style={{ textDecoration:'none', flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, display:'block' }}
     >
       <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
         <div style={{ height:120, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, position:'relative' }}>
@@ -509,7 +510,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
                 <CarouselEventCard key={event.id} event={event} />
               ))}
               {loading && [1, 2].map(item => (
-                <div key={`loading-${item}`} className="skeleton" style={{ flexShrink:0, width:168, height:226, borderRadius:16 }} />
+                <div key={`loading-${item}`} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226, borderRadius:16 }} />
               ))}
             </div>
           </div>
@@ -517,7 +518,7 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {[1, 2, 3, 4].map(item => (
-                <div key={item} className="skeleton" style={{ flexShrink:0, width:168, height:226, borderRadius:16 }} />
+                <div key={item} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226, borderRadius:16 }} />
               ))}
             </div>
           </div>

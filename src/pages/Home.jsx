@@ -45,6 +45,7 @@ import {
   isEmploymentProfileComplete,
 } from '../lib/employmentProfile'
 import { SegmentedTabs } from '../components/FilterWorkspace'
+import { HOME_CAROUSEL_CARD_WIDTH } from '../lib/homeCarousel'
 import toast from 'react-hot-toast'
 
 const fmtPrice = p => {
@@ -222,7 +223,7 @@ function MiLatidoCard({ item, onOpen }) {
       onKeyDown={event => {
         if (event.key === 'Enter') onOpen(item)
       }}
-      style={{ textDecoration:'none', flexShrink:0, width:172, display:'block', cursor:'pointer' }}
+      style={{ textDecoration:'none', flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, display:'block', cursor:'pointer' }}
     >
       <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:HOME_CAROUSEL_CARD_SHADOW }}>
         <div style={{ height:132, background:'#F8FAFC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative', borderBottom:`1px solid ${C.borderLight}` }}>
@@ -272,7 +273,7 @@ function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText
       {loading ? (
         <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
           <div style={{ display:'flex', gap:12, width:'max-content' }}>
-            {[1,2,3].map(index => <div key={index} className="skeleton" style={{ width:172, height:250, borderRadius:18, flexShrink:0 }} />)}
+            {[1,2,3].map(index => <div key={index} className="skeleton" style={{ width:HOME_CAROUSEL_CARD_WIDTH, height:250, borderRadius:18, flexShrink:0 }} />)}
           </div>
         </div>
       ) : items.length === 0 ? (
@@ -1994,7 +1995,7 @@ export default function Home() {
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
           <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
-            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
+            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:190, borderRadius:16 }}/>)}
           </div>
         ) : rotatedBusinessHighlights.length === 0 ? (
           <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay negocios publicados." /></div>
@@ -2009,7 +2010,7 @@ export default function Home() {
                   <Link
                     key={business.id}
                     to={getBusinessHref(business)}
-                    style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
+                    style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, display:'block', textDecoration:'none' }}
                   >
                     <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:HOME_CAROUSEL_CARD_SHADOW }}>
                     <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'visible' }}>
