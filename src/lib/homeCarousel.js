@@ -1,0 +1,1 @@
+export const HOME_CAROUSEL_CARD_WIDTH = 152
