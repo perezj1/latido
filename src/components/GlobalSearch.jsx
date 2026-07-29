@@ -165,6 +165,14 @@ function HighlightSearchText({ text: value, tokens }) {
 }
 
 function PremiumPartnerSearchList({ partners, onOpen, highlightTokens, horizontal=false }) {
+  const trackRef = useRef(null)
+  const firstPartnerId = partners[0]?.id
+
+  useEffect(() => {
+    if (!horizontal || !trackRef.current) return
+    trackRef.current.scrollLeft = 0
+  }, [firstPartnerId, horizontal])
+
   return (
     <section className={`latido-search-partners${horizontal ? ' is-horizontal' : ''}`}>
       <div className="latido-search-partners__heading">
@@ -175,7 +183,7 @@ function PremiumPartnerSearchList({ partners, onOpen, highlightTokens, horizonta
           {partners.length} recomendados
         </small>
       </div>
-      <div className="latido-search-partners__track">
+      <div ref={trackRef} className="latido-search-partners__track">
         {partners.map(partner => (
           <div
             key={`premium-partner-${partner.id}`}
@@ -1305,6 +1313,7 @@ export default function GlobalSearch({
   const [expandedResults, setExpandedResults] = useState(false)
   const [assistantRpc, setAssistantRpc] = useState({ status:'idle', datasets:null })
   const [premiumRotationOffset, setPremiumRotationOffset] = useState(0)
+  const [startPartnerRotationOffset, setStartPartnerRotationOffset] = useState(0)
   const [immersiveOpen, setImmersiveOpen] = useState(false)
   const [immersiveView, setImmersiveView] = useState('start')
   const [immersiveSort, setImmersiveSort] = useState('relevance')
@@ -1515,7 +1524,10 @@ export default function GlobalSearch({
 
     return entries
   }, [datasets.businesses])
-  const startPartnerEntries = allPartnerEntries
+  const startPartnerEntries = useMemo(
+    () => rotateItems(allPartnerEntries, startPartnerRotationOffset),
+    [allPartnerEntries, startPartnerRotationOffset]
+  )
   const matchingPartnerEntries = useMemo(() => {
     const query = deferredQuery.trim()
     if (!query) return []
@@ -1854,6 +1866,17 @@ export default function GlobalSearch({
     blurCloseTimerRef.current = null
   }, [])
 
+  const dismissImmersiveKeyboard = useCallback(event => {
+    const input = overlayInputRef.current
+    if (!input || document.activeElement !== input) return
+    if (
+      event?.type === 'pointerdown'
+      && event.target?.closest?.('.latido-search-experience__form')
+    ) return
+
+    input.blur()
+  }, [])
+
   const closeImmersive = useCallback(() => {
     setImmersiveOpen(false)
     setImmersiveFiltersOpen(false)
@@ -1868,13 +1891,26 @@ export default function GlobalSearch({
     setFocused(true)
     ensureDataLoaded()
     if (immersive) {
+      if (!immersiveOpen && allPartnerEntries.length > 1) {
+        setStartPartnerRotationOffset(
+          takeNextRotationOffset('global-search-start-partners', allPartnerEntries.length)
+        )
+      }
       setRecentSearches(readRecentSearches(analyticsScope))
       setImmersiveView(q.trim().length > 0 ? 'preview' : 'start')
       setImmersiveLimit(FULL_SEARCH_PAGE_SIZE)
       setImmersiveFiltersOpen(false)
       setImmersiveOpen(true)
     }
-  }, [analyticsScope, cancelBlurClose, ensureDataLoaded, immersive, q])
+  }, [
+    allPartnerEntries.length,
+    analyticsScope,
+    cancelBlurClose,
+    ensureDataLoaded,
+    immersive,
+    immersiveOpen,
+    q,
+  ])
 
   const handleBlur = useCallback(() => {
     cancelBlurClose()
@@ -2454,7 +2490,15 @@ export default function GlobalSearch({
       )}
     </div>
     {immersiveOpen && typeof document !== 'undefined' && createPortal(
-      <div className="latido-search-experience" role="dialog" aria-modal="true" aria-label="Buscar en Latido">
+      <div
+        className="latido-search-experience"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Buscar en Latido"
+        onPointerDownCapture={dismissImmersiveKeyboard}
+        onTouchMoveCapture={dismissImmersiveKeyboard}
+        onScrollCapture={dismissImmersiveKeyboard}
+      >
         <div className="latido-search-experience__shell">
           <header className="latido-search-experience__header">
             <button
