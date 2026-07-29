@@ -231,9 +231,13 @@ function MiLatidoCard({ item, onOpen }) {
             ? <img src={getThumbnailImageUrl(item.img)} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
             : <span style={{ fontSize:44, lineHeight:1 }}>{displayEmoji}</span>
           }
-          <span style={{ position:'absolute', top:10, left:10, maxWidth:'calc(100% - 76px)', fontFamily:PP, fontSize:9, fontWeight:800, background:'rgba(255,255,255,0.94)', color:colors.tc, padding:'5px 8px', borderRadius:999, boxShadow:'0 6px 14px rgba(15,23,42,0.08)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+          <Tag
+            bg="rgba(255,255,255,0.94)"
+            color={colors.tc}
+            style={{ position:'absolute', top:10, left:10, maxWidth:item.reviewCount > 0 ? 'calc(100% - 76px)' : 'calc(100% - 20px)', boxShadow:'0 6px 14px rgba(15,23,42,0.08)' }}
+          >
             {category?.label}
-          </span>
+          </Tag>
           {item.reviewCount > 0 && (
             <RatingPill
               rating={item.rating}
