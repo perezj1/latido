@@ -2869,6 +2869,20 @@ img[data-latido-img-state="loaded"] {
   box-sizing: border-box;
 }
 
+.filter-sheet-control {
+  font-size: 12px !important;
+  line-height: 1.3;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+}
+
+.filter-sheet-control option {
+  color: #0F172A;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .employment-profile-form {
   box-sizing: border-box;
   width: 100%;

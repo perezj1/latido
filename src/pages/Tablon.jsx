@@ -238,11 +238,17 @@ const FILTER_CONTROL_STYLE = {
   borderRadius:13,
   padding:'12px 14px',
   fontFamily:PP,
-  fontSize:13,
+  fontSize:12,
   fontWeight:600,
-  color:C.text,
   background:'#fff',
   outline:'none',
+}
+
+function getFilterControlStyle(value, defaultValue='') {
+  return {
+    ...FILTER_CONTROL_STYLE,
+    color:String(value ?? '') === String(defaultValue ?? '') ? C.light : C.text,
+  }
 }
 
 function parseListingPrice(value='') {
@@ -2112,7 +2118,7 @@ export default function Tablon() {
       )}
       </div>
 
-      <Sheet show={showFilters} onClose={() => setShowFilters(false)} syncHistory={false}>
+      <Sheet show={showFilters} onClose={() => setShowFilters(false)}>
         <form
           className="filter-sheet-content"
           onSubmit={event => {
@@ -2129,9 +2135,10 @@ export default function Tablon() {
             <label>
               <span style={FILTER_PANEL_TITLE_STYLE}>Cantón</span>
               <select
+                className="filter-sheet-control"
                 value={filterDraft.canton}
                 onChange={event => updateFilterDraft('canton', event.target.value)}
-                style={FILTER_CONTROL_STYLE}
+                style={getFilterControlStyle(filterDraft.canton)}
               >
                 {cantonOptions.map(option => <option key={option.id || 'all'} value={option.id}>{option.label}</option>)}
               </select>
@@ -2140,12 +2147,13 @@ export default function Tablon() {
             <label>
               <span style={FILTER_PANEL_TITLE_STYLE}>Código postal</span>
               <input
+                className="filter-sheet-control"
                 inputMode="numeric"
                 placeholder="PLZ"
                 value={filterDraft.plz}
                 onChange={event => updateFilterDraft('plz', event.target.value.replace(/\D/g, '').slice(0, 4))}
                 maxLength={4}
-                style={FILTER_CONTROL_STYLE}
+                style={getFilterControlStyle(filterDraft.plz)}
               />
             </label>
           </div>
@@ -2155,9 +2163,10 @@ export default function Tablon() {
               <label>
                 <span style={FILTER_PANEL_TITLE_STYLE}>Tipo de empleo</span>
                 <select
+                  className="filter-sheet-control"
                   value={filterDraft.jobType}
                   onChange={event => updateFilterDraft('jobType', event.target.value)}
-                  style={FILTER_CONTROL_STYLE}
+                  style={getFilterControlStyle(filterDraft.jobType)}
                 >
                   {jobTypeOptions.map(option => <option key={option.id || 'all'} value={option.id}>{option.label}</option>)}
                 </select>
@@ -2166,9 +2175,10 @@ export default function Tablon() {
               <label>
                 <span style={FILTER_PANEL_TITLE_STYLE}>Precio</span>
                 <select
+                  className="filter-sheet-control"
                   value={filterDraft.priceRange}
                   onChange={event => updateFilterDraft('priceRange', event.target.value)}
-                  style={FILTER_CONTROL_STYLE}
+                  style={getFilterControlStyle(filterDraft.priceRange)}
                 >
                   {PRICE_RANGES.map(option => <option key={option.id || 'all'} value={option.id}>{option.label}</option>)}
                 </select>
@@ -2179,9 +2189,10 @@ export default function Tablon() {
               <label>
                 <span style={FILTER_PANEL_TITLE_STYLE}>Nivel profesional</span>
                 <select
+                  className="filter-sheet-control"
                   value={filterDraft.employmentLevel}
                   onChange={event => updateFilterDraft('employmentLevel', event.target.value)}
-                  style={FILTER_CONTROL_STYLE}
+                  style={getFilterControlStyle(filterDraft.employmentLevel)}
                 >
                   {EMPLOYMENT_LEVEL_FILTER_OPTIONS.map(option => (
                     <option key={option.id || 'all'} value={option.id}>{option.label}</option>
@@ -2194,9 +2205,10 @@ export default function Tablon() {
               <label>
                 <span style={FILTER_PANEL_TITLE_STYLE}>Visibilidad</span>
                 <select
+                  className="filter-sheet-control"
                   value={filterDraft.privacy}
                   onChange={event => updateFilterDraft('privacy', event.target.value)}
-                  style={FILTER_CONTROL_STYLE}
+                  style={getFilterControlStyle(filterDraft.privacy)}
                 >
                   <option value="">Todas las publicaciones</option>
                   <option value="public">Públicas</option>
@@ -2208,9 +2220,10 @@ export default function Tablon() {
             <label>
               <span style={FILTER_PANEL_TITLE_STYLE}>Ordenar por</span>
               <select
+                className="filter-sheet-control"
                 value={filterDraft.sort}
                 onChange={event => updateFilterDraft('sort', event.target.value)}
-                style={FILTER_CONTROL_STYLE}
+                style={getFilterControlStyle(filterDraft.sort, 'newest')}
               >
                 {SORT_OPTIONS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
               </select>

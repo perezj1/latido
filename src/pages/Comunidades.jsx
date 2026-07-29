@@ -235,11 +235,17 @@ const DIRECTORY_FILTER_CONTROL_STYLE = {
   borderRadius:13,
   padding:'12px 14px',
   fontFamily:PP,
-  fontSize:13,
+  fontSize:12,
   fontWeight:600,
-  color:C.text,
   background:'#fff',
   outline:'none',
+}
+
+function getDirectoryFilterControlStyle(value, defaultValue='') {
+  return {
+    ...DIRECTORY_FILTER_CONTROL_STYLE,
+    color:String(value ?? '') === String(defaultValue ?? '') ? C.light : C.text,
+  }
 }
 
 const COMMUNITY_OPTIONS = []
@@ -2417,7 +2423,7 @@ export default function Comunidades() {
       </div>
 
       {tab !== 'eventos' && (
-        <Sheet show={showDirectoryFilters} onClose={() => setShowDirectoryFilters(false)} syncHistory={false}>
+        <Sheet show={showDirectoryFilters} onClose={() => setShowDirectoryFilters(false)}>
           <form
             className="filter-sheet-content"
             onSubmit={event => {
@@ -2436,9 +2442,10 @@ export default function Comunidades() {
                   {tab === 'negocios' ? 'Cantón' : 'Ciudad'}
                 </span>
                 <select
+                  className="filter-sheet-control"
                   value={directoryFilterDraft.location}
                   onChange={event => setDirectoryFilterDraft(current => ({ ...current, location:event.target.value }))}
-                  style={DIRECTORY_FILTER_CONTROL_STYLE}
+                  style={getDirectoryFilterControlStyle(directoryFilterDraft.location)}
                 >
                   {(tab === 'negocios' ? cantonOptions : communityCityOptions).map(option => (
                     <option key={option.id || 'all'} value={option.id}>{option.label}</option>
@@ -2449,9 +2456,13 @@ export default function Comunidades() {
               <label>
                 <span style={FILTER_PANEL_TITLE_STYLE}>Ordenar por</span>
                 <select
+                  className="filter-sheet-control"
                   value={directoryFilterDraft.sort}
                   onChange={event => setDirectoryFilterDraft(current => ({ ...current, sort:event.target.value }))}
-                  style={DIRECTORY_FILTER_CONTROL_STYLE}
+                  style={getDirectoryFilterControlStyle(
+                    directoryFilterDraft.sort,
+                    tab === 'negocios' ? 'recommended' : 'newest'
+                  )}
                 >
                   {(tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS).map(option => (
                     <option key={option.id} value={option.id}>{option.label}</option>
