@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
       dedupe: ['react', 'react-dom'],
     },
     server: {
+      host: '127.0.0.1',
       port: 8080,
       watch: {
         // Windows + Deno's node-compat fs watcher can crash when Vite tries to
