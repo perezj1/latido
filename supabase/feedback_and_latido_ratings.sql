@@ -59,9 +59,46 @@ CREATE POLICY "search_resolution_feedback_select_admin"
 CREATE TABLE IF NOT EXISTS public.latido_ratings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  overall_rating SMALLINT NOT NULL CHECK (overall_rating BETWEEN 1 AND 5),
-  usefulness_rating SMALLINT NOT NULL CHECK (usefulness_rating BETWEEN 1 AND 5),
+  overall_rating SMALLINT CHECK (overall_rating BETWEEN 1 AND 5),
+  usefulness_rating SMALLINT CHECK (usefulness_rating BETWEEN 1 AND 5),
   comment TEXT CHECK (comment IS NULL OR char_length(comment) <= 2000),
+  usefulness_answer TEXT CHECK (
+    usefulness_answer IS NULL
+    OR usefulness_answer IN ('yes', 'partial', 'no')
+  ),
+  usefulness_detail TEXT CHECK (
+    usefulness_detail IS NULL
+    OR usefulness_detail IN (
+      'jobs',
+      'housing',
+      'businesses',
+      'events',
+      'community',
+      'found_what_needed',
+      'contacted_someone',
+      'discovered_nearby',
+      'published_got_responses',
+      'found_useful_information',
+      'connected_with_community',
+      'more_offers',
+      'clearer_information',
+      'more_relevant_results',
+      'more_nearby_content',
+      'better_filters',
+      'new_content_alerts',
+      'cannot_find',
+      'few_offers',
+      'irrelevant_content',
+      'unclear_how_it_works',
+      'not_used_enough',
+      'other'
+    )
+  ),
+  usefulness_comment TEXT CHECK (
+    usefulness_comment IS NULL
+    OR char_length(usefulness_comment) <= 150
+  ),
+  usefulness_answered_at TIMESTAMPTZ,
   account_created_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

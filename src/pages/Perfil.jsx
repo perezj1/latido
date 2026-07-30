@@ -823,7 +823,10 @@ export default function Perfil() {
     getLatidoRating(user.id)
       .then(rating => {
         if (!active) return
-        setHasLatidoRating(Boolean(rating))
+        setHasLatidoRating(Boolean(
+          Number(rating?.overall_rating) >= 1
+          && Number(rating?.usefulness_rating) >= 1
+        ))
         setLatidoRatingForm(rating ? {
           overallRating:Number(rating.overall_rating || 0),
           usefulnessRating:Number(rating.usefulness_rating || 0),

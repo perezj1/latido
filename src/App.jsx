@@ -25,6 +25,7 @@ import Seo from './components/Seo'
 import CookieConsent from './components/CookieConsent'
 import OfflineNotice from './components/OfflineNotice'
 import SearchResolutionPrompt from './components/SearchResolutionPrompt'
+import LatidoUsefulnessBanner from './components/LatidoUsefulnessBanner'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
@@ -166,7 +167,7 @@ function VercelTelemetry() {
   )
 }
 
-function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
+function PWAInstallBanner({ canInstall, promptInstall, isPWA, onVisibilityChange }) {
   const { isLoggedIn } = useAuth()
   const navigate = useNavigate()
   const bannerRef = useRef(null)
@@ -199,6 +200,12 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA }) {
   }
 
   const shouldShow = isLoggedIn && !isPWA && !dismissed && !installed && (canInstall || isIOS)
+
+  useEffect(() => {
+    onVisibilityChange?.(shouldShow)
+  }, [onVisibilityChange, shouldShow])
+
+  useEffect(() => () => onVisibilityChange?.(false), [onVisibilityChange])
 
   useLayoutEffect(() => {
     if (!shouldShow) {
@@ -479,6 +486,7 @@ function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPage, setMenuPage] = useState(null)
   const [messagesChatOpen, setMessagesChatOpen] = useState(false)
+  const [installBannerVisible, setInstallBannerVisible] = useState(false)
   const analyticsConsent = useAnalyticsConsent()
 
   const isRoot = pathname === '/'
@@ -685,7 +693,13 @@ function AppShell() {
         </Suspense>
       </main>
       <BottomNav />
-      <PWAInstallBanner canInstall={canInstall} promptInstall={promptInstall} isPWA={isPWA} />
+      <PWAInstallBanner
+        canInstall={canInstall}
+        promptInstall={promptInstall}
+        isPWA={isPWA}
+        onVisibilityChange={setInstallBannerVisible}
+      />
+      <LatidoUsefulnessBanner blocked={installBannerVisible} />
     </>
   )
 }
