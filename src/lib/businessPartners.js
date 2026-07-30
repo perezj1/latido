@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import { normalizeExternalUrl } from './links'
 import { getBusinessLandingPath } from './seo'
 import { getBusinessPhone, getBusinessWhatsapp, getNavigationUrl, getPhoneDigits } from './businessContact'
+import { getBusinessPartnerCardDestinationOverride } from './businessPartnerOverrides'
 
 const ACTIVE_PARTNER_PLANS = new Set(['basic', 'premium'])
 const PLAN_ORDER = { premium:0, basic:1 }
@@ -164,6 +165,9 @@ function getBusinessPartnerContactActions(provider = {}) {
 }
 
 export function getBusinessPartnerDestination(provider = {}) {
+  const destinationOverride = getBusinessPartnerCardDestinationOverride(provider.id)
+  if (destinationOverride) return destinationOverride
+
   if (hasActiveBusinessLanding(provider)) {
     return {
       href:getBusinessLandingPath(provider),
