@@ -30,7 +30,7 @@ import { getBusinessPath, getEventPath, getIdFromSlug } from '../lib/seo'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import { normalizeExternalUrl } from '../lib/links'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
-import { BUSINESS_ROTATION_INTERVAL_MS, getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
+import { BUSINESS_ROTATION_INTERVAL_MS, getBusinessPromotionDisplayLabel, getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import { getThumbnailImageUrl, handleThumbnailImageError, resolveImageUrl } from '../lib/imageVariants'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import { rotateItems } from '../lib/rotation'
@@ -431,10 +431,7 @@ function getDirectoryBusinessPriority(business) {
 
 function getDirectoryBusinessPlanLabel(business) {
   const plan = getDirectoryBusinessPlan(business)
-  if (plan === 'premium') return 'Premium'
-  if (plan === 'basic') return 'Básico'
-  if (plan === 'featured') return 'Destacado'
-  return ''
+  return getBusinessPromotionDisplayLabel(business, plan)
 }
 
 function normalizeEvent(event) {
