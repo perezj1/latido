@@ -733,9 +733,8 @@ function CommunityCard({ group, onClick }) {
   )
 }
 
-function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, recommendationCount=0 }) {
+function BusinessCard({ business, onClick, photosMap, reviewsMap, recommendationCount=0 }) {
   const category = getNegocioTypeMeta(business.type)
-  const services = servicesMap[business.id] || business.services || []
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
   const reviews = reviewsMap[business.id] || []
   const planLabel = getDirectoryBusinessPlanLabel(business)
@@ -805,14 +804,6 @@ function BusinessCard({ business, onClick, servicesMap, photosMap, reviewsMap, r
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{business.desc}</p>
       </div>
 
-      {services.length > 0 && (
-        <div style={{ gridColumn:'1 / -1', minWidth:0, marginTop:planLabel ? 6 : 0 }}>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:5, minWidth:0, overflow:'hidden' }}>
-            {services.slice(0, 4).map(service => <Tag key={service} bg={C.bg} color={C.mid} title={service}>{service}</Tag>)}
-            {services.length > 4 && <Tag bg={C.bg} color={C.mid} style={{ flexShrink:0 }}>+{services.length - 4}</Tag>}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -2309,7 +2300,6 @@ export default function Comunidades() {
                   key={business.id}
                   business={business}
                   onClick={() => openBusinessDetails(business)}
-                  servicesMap={businessServices}
                   photosMap={businessPhotos}
                   reviewsMap={businessReviews}
                   recommendationCount={businessRecommendations[business.id] || 0}

@@ -20,7 +20,7 @@ const THANK_YOU_DELAY_MS = 1_500
 const ANSWERS = [
   { id:'yes', label:'Sí', icon:'✓', color:'#047857', background:'#ECFDF5', border:'#A7F3D0' },
   { id:'partial', label:'Parcialmente', icon:'◐', color:'#B45309', background:'#FFFBEB', border:'#FDE68A' },
-  { id:'no', label:'No', icon:'×', color:'#B91C1C', background:'#FEF2F2', border:'#FECACA' },
+  { id:'no', label:'Todavía no', icon:'×', color:'#B91C1C', background:'#FEF2F2', border:'#FECACA' },
 ]
 
 const REASONS = [
