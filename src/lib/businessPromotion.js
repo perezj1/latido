@@ -1,5 +1,6 @@
 const HOUR_MS = 60 * 60 * 1000
 const NEW_FREE_BUSINESS_WINDOW_MS = 72 * HOUR_MS
+const JOBLI_PROVIDER_ID = 'eb01f0b2-101c-4634-8909-b432981d37eb'
 export const BUSINESS_ROTATION_INTERVAL_MS = 6 * HOUR_MS
 
 // TEMPORAL: planes y extras de pago ocultos hasta el lunes 6 de julio de 2026.
@@ -167,8 +168,19 @@ function getRotationBucket(now) {
   return Math.floor(now / BUSINESS_ROTATION_INTERVAL_MS)
 }
 
+function getBusinessPromotionRotationPlanKey(business, planKey) {
+  if (business?.id === JOBLI_PROVIDER_ID && planKey === 'premium') return 'featured'
+  return planKey
+}
+
 export function getBusinessPromotionMeta(planKey) {
   return PLAN_BY_KEY.get(planKey) || PLAN_BY_KEY.get('free')
+}
+
+export function getBusinessPromotionDisplayLabel(business, planKey) {
+  if (!planKey || planKey === 'free') return ''
+  if (business?.id === JOBLI_PROVIDER_ID && planKey === 'premium') return 'Destacado'
+  return getBusinessPromotionMeta(planKey).shortLabel
 }
 
 export function getEffectiveBusinessPromotionPlan(business, now = Date.now()) {
@@ -219,8 +231,9 @@ export function rotateHomeBusinesses(businesses = [], planRows = [], now = Date.
   const bucket = getRotationBucket(now)
   const enriched = businesses.map(business => {
     const planKey = getEffectiveBusinessPromotionPlan(business, now)
-    const plan = planByKey.get(planKey) || getBusinessPromotionMeta(planKey)
-    const unit = deterministicUnit(`${bucket}:${business.id}:${planKey}`)
+    const rotationPlanKey = getBusinessPromotionRotationPlanKey(business, planKey)
+    const plan = planByKey.get(rotationPlanKey) || getBusinessPromotionMeta(rotationPlanKey)
+    const unit = deterministicUnit(`${bucket}:${business.id}:${rotationPlanKey}`)
     const weightedScore = -Math.log(unit) / Math.max(1, plan.rotationWeight || 1)
 
     return {

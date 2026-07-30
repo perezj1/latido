@@ -27,6 +27,7 @@ import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import {
   BUSINESS_ROTATION_INTERVAL_MS,
+  getBusinessPromotionDisplayLabel,
   getBusinessPromotionMeta,
   isBusinessPromotionActive,
   rotateHomeBusinesses,
@@ -2009,6 +2010,7 @@ export default function Home() {
               {rotatedBusinessHighlights.map(business => {
                 const promotionMeta = getBusinessPromotionMeta(business.effectivePromotionPlan)
                 const hasPromotion = promotionMeta.key !== 'free'
+                const promotionLabel = getBusinessPromotionDisplayLabel(business, promotionMeta.key)
 
                 return (
                   <Link
@@ -2050,7 +2052,7 @@ export default function Home() {
                       </div>
                       {hasPromotion && (
                         <span style={{ position:'absolute', left:'50%', bottom:-12, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5, fontFamily:PP, fontSize:9, fontWeight:800, color:promotionMeta.color, background:'#fff', border:`1.5px solid ${promotionMeta.color}`, borderRadius:999, padding:'6px 10px', boxShadow:'0 8px 18px rgba(15,23,42,0.14)', whiteSpace:'nowrap' }}>
-                          {promotionMeta.shortLabel}
+                          {promotionLabel}
                         </span>
                       )}
                     </div>
