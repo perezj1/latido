@@ -10,6 +10,12 @@ const SERVICE_COLORS = [
   ['#EF3340', '#FFF1F2'],
 ]
 
+const PARTNER_CARD_SERVICE_LABELS = {
+  'CV y carta de motivación al estándar suizo':'CV + Carta',
+  'Estrategia personal de búsqueda de empleo':'Estrategia personal',
+  'Brújula Laboral: documentos + estrategia + lista de empresas':'Brújula laboral',
+}
+
 export default function DynamicBusinessPartnerCard({
   partner,
   placement,
@@ -30,7 +36,8 @@ export default function DynamicBusinessPartnerCard({
   if (!partner) return null
 
   const visibleServices = partner.services.slice(0, 3).map(service => ({
-    label:service,
+    label:PARTNER_CARD_SERVICE_LABELS[service] || service,
+    originalLabel:service,
     href:partner.destination.href,
     external:partner.destination.external,
   }))
@@ -38,8 +45,9 @@ export default function DynamicBusinessPartnerCard({
   const services = visibleServices.map((service, index) => {
     const [color, tint] = SERVICE_COLORS[index % SERVICE_COLORS.length]
     return {
-      id:`${partner.id}-${service.label}`,
+      id:`${partner.id}-${service.originalLabel}`,
       label:service.label,
+      originalLabel:service.originalLabel,
       href:service.href,
       external:service.external || /^(tel|mailto):/i.test(service.href || ''),
       color,
@@ -82,7 +90,7 @@ export default function DynamicBusinessPartnerCard({
             partnerId:partner.analyticsId,
             placement,
             action:'service',
-            service:service.label,
+            service:service.originalLabel,
             destination:service.href,
           })
         }}
