@@ -1,6 +1,7 @@
+import { JOBLI_PROVIDER_ID } from './businessPartnerOverrides.js'
+
 const HOUR_MS = 60 * 60 * 1000
 const NEW_FREE_BUSINESS_WINDOW_MS = 72 * HOUR_MS
-const JOBLI_PROVIDER_ID = 'eb01f0b2-101c-4634-8909-b432981d37eb'
 export const BUSINESS_ROTATION_INTERVAL_MS = 6 * HOUR_MS
 
 // TEMPORAL: planes y extras de pago ocultos hasta el lunes 6 de julio de 2026.

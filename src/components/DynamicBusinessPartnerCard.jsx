@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import PartnerCard from './PartnerCard'
 import BusinessPartnerContactModal from './BusinessPartnerContactModal'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
+import { getBusinessPartnerCardServiceLabel } from '../lib/businessPartnerOverrides'
 
 const SERVICE_COLORS = [
   ['#2563EB', '#EFF6FF'],
@@ -9,12 +10,6 @@ const SERVICE_COLORS = [
   ['#7C3AED', '#F3E8FF'],
   ['#EF3340', '#FFF1F2'],
 ]
-
-const PARTNER_CARD_SERVICE_LABELS = {
-  'CV y carta de motivación al estándar suizo':'CV + Carta',
-  'Estrategia personal de búsqueda de empleo':'Estrategia personal',
-  'Brújula Laboral: documentos + estrategia + lista de empresas':'Brújula laboral',
-}
 
 export default function DynamicBusinessPartnerCard({
   partner,
@@ -36,7 +31,7 @@ export default function DynamicBusinessPartnerCard({
   if (!partner) return null
 
   const visibleServices = partner.services.slice(0, 3).map(service => ({
-    label:PARTNER_CARD_SERVICE_LABELS[service] || service,
+    label:getBusinessPartnerCardServiceLabel(partner.id, service),
     originalLabel:service,
     href:partner.destination.href,
     external:partner.destination.external,
@@ -67,6 +62,21 @@ export default function DynamicBusinessPartnerCard({
   const className = variant === 'public-featured'
     ? `public-partner-tile partner-card--business partner-card--business-${partner.planKey}`
     : `partner-card--business partner-card--business-${partner.planKey}`
+  const hasDirectCta = partner.destination?.direct === true
+
+  const handleCtaClick = () => {
+    if (!hasDirectCta) {
+      setContactOpen(true)
+      return
+    }
+
+    trackPartnerInteraction('partner_outbound_click', {
+      partnerId:partner.analyticsId,
+      placement,
+      action:'contact',
+      destination:partner.destination.href,
+    })
+  }
 
   return (
     <>
@@ -80,10 +90,16 @@ export default function DynamicBusinessPartnerCard({
         title={partner.title}
         description={partner.description}
         services={services}
-        cta={{
-          label:'Contactar',
-          button:true,
-        }}
+        cta={hasDirectCta
+          ? {
+            label:'Contactar',
+            href:partner.destination.href,
+            external:partner.destination.external,
+          }
+          : {
+            label:'Contactar',
+            button:true,
+          }}
         accent={partner.accent}
         onServiceClick={service => {
           trackPartnerInteraction('partner_service_click', {
@@ -94,7 +110,7 @@ export default function DynamicBusinessPartnerCard({
             destination:service.href,
           })
         }}
-        onCtaClick={() => setContactOpen(true)}
+        onCtaClick={handleCtaClick}
       />
 
       <BusinessPartnerContactModal
