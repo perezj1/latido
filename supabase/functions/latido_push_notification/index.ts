@@ -26,6 +26,37 @@ type PushPayload = {
   data?: Record<string, unknown>
 }
 
+type SavedSearchRow = {
+  id: string
+  user_id: string
+  name: string
+  query: string
+  entity_kinds: string[]
+  category: string | null
+  intent: string | null
+  canton: string | null
+  city: string | null
+  plz: string | null
+  filters: Record<string, unknown> | null
+  result_path: string
+  push_enabled: boolean
+  last_delivery_attempt_at: string | null
+  last_notified_at: string | null
+}
+
+type SavedSearchMatch = {
+  id: string
+  saved_search_id: string
+  user_id: string
+  entity_kind: string
+  entity_id: string
+  search_name: string
+  result_title: string
+  result_location: string | null
+  result_path: string
+  matched_at: string
+}
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') || ''
@@ -227,8 +258,9 @@ async function sendOne(subscription: PushSubscriptionRow, payload: PushPayload) 
 
     return { ok: response.statusCode >= 200 && response.statusCode < 300, status: response.statusCode }
   } catch (error) {
-    const status = Number(error?.statusCode || error?.status || 0)
-    const responseText = String(error?.body || error?.message || '')
+    const pushError = error as { statusCode?: number, status?: number, body?: string, message?: string }
+    const status = Number(pushError.statusCode || pushError.status || 0)
+    const responseText = String(pushError.body || pushError.message || '')
     const isInvalidSubscription = [404, 410].includes(status)
       || (status === 403 && /VAPID credentials/i.test(responseText))
 
@@ -279,12 +311,205 @@ function normalizeCategory(value: unknown) {
   return map[raw] || raw
 }
 
+function normalizeSearchText(value: unknown) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+const SEARCH_STOP_WORDS = new Set([
+  'con', 'del', 'desde', 'el', 'en', 'la', 'las', 'los', 'para', 'por', 'que', 'una', 'uno', 'unos', 'unas',
+])
+
+function queryMatches(query: string, record: Record<string, unknown>) {
+  const tokens = normalizeSearchText(query)
+    .split(' ')
+    .filter(token => token.length >= 2 && !SEARCH_STOP_WORDS.has(token))
+  if (!tokens.length) return true
+
+  const haystack = normalizeSearchText([
+    record.title,
+    record.name,
+    record.company,
+    record.desc,
+    record.description,
+    record.services,
+    record.sector,
+    record.category,
+    record.cat,
+    record.sub,
+    record.type,
+    record.city,
+    record.canton,
+    record.venue,
+    record.host,
+  ].flat().filter(Boolean).join(' '))
+
+  return tokens.every(token => {
+    const stems = [token]
+    if (token.length > 4 && token.endsWith('es')) stems.push(token.slice(0, -2))
+    if (token.length > 3 && token.endsWith('s')) stems.push(token.slice(0, -1))
+    return stems.some(stem => stem.length >= 2 && haystack.includes(stem))
+  })
+}
+
+function isNationwide(value: unknown) {
+  const normalized = normalizeSearchText(value)
+  return ['suiza', 'toda suiza', 'toda la suiza', 'todo suiza'].includes(normalized)
+}
+
+function locationMatches(search: SavedSearchRow, record: Record<string, unknown>) {
+  const preferredCanton = normalizeSearchText(search.canton)
+  const preferredCity = normalizeSearchText(search.city)
+  const preferredPlz = normalizeSearchText(search.plz)
+  if (!preferredCanton && !preferredCity && !preferredPlz) return true
+
+  const publicationCanton = normalizeSearchText(record.canton)
+  const publicationCity = normalizeSearchText(record.city)
+  const publicationPlz = normalizeSearchText(record.plz)
+  const publicationAddress = normalizeSearchText(record.address)
+  if (
+    isNationwide(record.canton)
+    || isNationwide(record.city)
+    || isNationwide(record.address)
+  ) return true
+
+  if (preferredPlz && publicationPlz !== preferredPlz && !publicationAddress.includes(preferredPlz)) {
+    return false
+  }
+  if (
+    preferredCanton
+    && publicationCanton !== preferredCanton
+    && !publicationCity.split(' ').includes(preferredCanton)
+    && !publicationAddress.split(' ').includes(preferredCanton)
+  ) return false
+  if (
+    preferredCity
+    && !publicationCity.includes(preferredCity)
+    && !publicationAddress.includes(preferredCity)
+    && publicationCanton !== preferredCity
+  ) return false
+
+  return true
+}
+
+function exactNormalizedMatch(expected: unknown, values: unknown[]) {
+  const normalizedExpected = normalizeSearchText(expected)
+  if (!normalizedExpected) return true
+  return values.some(value => {
+    const normalizedValue = normalizeSearchText(value)
+    return normalizedValue === normalizedExpected
+      || normalizedValue.split(' ').includes(normalizedExpected)
+      || normalizedExpected.split(' ').includes(normalizedValue)
+  })
+}
+
+function priceRangeMatches(range: unknown, record: Record<string, unknown>) {
+  const id = text(range)
+  if (!id) return true
+
+  const amount = Number(record.price_amount ?? record.salary_amount)
+  if (!Number.isFinite(amount)) return false
+  if (id === '0-50') return amount <= 50
+  if (id === '50-150') return amount >= 50 && amount <= 150
+  if (id === '150-500') return amount >= 150 && amount <= 500
+  if (id === '500-1000') return amount >= 500 && amount <= 1000
+  if (id === '1000-plus') return amount >= 1000
+  return true
+}
+
+function filtersMatch(search: SavedSearchRow, record: Record<string, unknown>) {
+  const filters = search.filters || {}
+  if (!exactNormalizedMatch(filters.jobType, [record.type])) return false
+  if (!exactNormalizedMatch(filters.employmentLevel, [record.employment_level])) return false
+  if (!exactNormalizedMatch(filters.businessType, [record.category])) return false
+  if (!exactNormalizedMatch(filters.communityCategory, [record.cat])) return false
+  if (!exactNormalizedMatch(filters.eventType, [record.type])) return false
+  if (!exactNormalizedMatch(filters.sub, [record.sub, record.sector, record.category])) return false
+  if (!exactNormalizedMatch(filters.privacy, [record.privacy])) return false
+  return priceRangeMatches(filters.priceRange, record)
+}
+
+function entityKindForTable(table: string) {
+  if (['listings', 'ads'].includes(table)) return 'listing'
+  if (table === 'jobs') return 'job'
+  if (table === 'providers') return 'provider'
+  if (table === 'events') return 'event'
+  if (table === 'communities') return 'community'
+  return ''
+}
+
+function publicationCategory(table: string, record: Record<string, unknown>) {
+  if (table === 'jobs') return 'empleo'
+  if (table === 'providers') return 'servicios'
+  if (table === 'events') return 'eventos'
+  if (table === 'communities') return 'comunidad'
+  return normalizeCategory(record.cat || record.category)
+}
+
+function publicationIntent(table: string, record: Record<string, unknown>) {
+  if (table === 'jobs') return text(record.job_intent, 'ofrece')
+  if (['listings', 'ads'].includes(table)) return text(record.type)
+  return ''
+}
+
+function savedSearchMatchesPublication(
+  search: SavedSearchRow,
+  table: string,
+  record: Record<string, unknown>,
+) {
+  const kind = entityKindForTable(table)
+  if (!kind || !search.entity_kinds?.includes(kind)) return false
+  if (text(record.user_id) === search.user_id) return false
+  if (search.category && normalizeCategory(search.category) !== normalizeCategory(publicationCategory(table, record))) {
+    return false
+  }
+  if (search.intent && !exactNormalizedMatch(search.intent, [publicationIntent(table, record)])) return false
+  if (!locationMatches(search, record)) return false
+  if (!filtersMatch(search, record)) return false
+  return queryMatches(search.query, record)
+}
+
+function appendSearchParam(path: string, key: string, value: string) {
+  if (!value) return path
+  const separator = path.includes('?') ? '&' : '?'
+  return `${path}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+}
+
+function savedSearchResultPath(table: string, record: Record<string, unknown>) {
+  const id = text(record.id)
+  if (table === 'jobs') return `/tablon?cat=empleo&openJob=${encodeURIComponent(id)}`
+  if (table === 'providers') return `/comunidades?view=negocios&openBusiness=${encodeURIComponent(id)}`
+  if (table === 'events') return `/comunidades?view=eventos&openEvent=${encodeURIComponent(id)}`
+  if (table === 'communities') return `/comunidades?view=comunidades&openCommunity=${encodeURIComponent(id)}`
+  return `/tablon?openAd=${encodeURIComponent(id)}`
+}
+
+function savedSearchResultTitle(record: Record<string, unknown>) {
+  return text(record.title || record.name || record.company, 'Nuevo resultado')
+}
+
+function savedSearchResultLocation(record: Record<string, unknown>) {
+  return text(record.city || record.canton || record.plz)
+}
+
+function deliveryIsDue(search: SavedSearchRow) {
+  const last = search.last_delivery_attempt_at
+  if (!last) return true
+  const lastTime = new Date(last).getTime()
+  return !Number.isFinite(lastTime) || Date.now() - lastTime >= 24 * 60 * 60 * 1000
+}
+
 function categoryMatches(table: string, record: Record<string, unknown>, categories: string[] = []) {
   const normalizedCategories = [...new Set(categories.map(normalizeCategory).filter(Boolean))]
   if (!normalizedCategories.length) return true
   if (table === 'jobs') return normalizedCategories.includes('empleo')
   if (table === 'providers') return normalizedCategories.includes('servicios')
   if (table === 'events') return normalizedCategories.includes('eventos')
+  if (table === 'communities') return normalizedCategories.includes('comunidad')
 
   const publicationCategory = normalizeCategory(record.cat || record.category)
   const publicationType = normalizeCategory(record.type)
@@ -296,6 +521,7 @@ function categoryMatches(table: string, record: Record<string, unknown>, categor
 function cantonMatches(preferredCanton: string, publicationCanton: string) {
   if (!preferredCanton) return true
   if (!publicationCanton) return true
+  if (isNationwide(publicationCanton)) return true
   return preferredCanton === publicationCanton
 }
 
@@ -334,6 +560,17 @@ function zonePushPayload(table: string, record: Record<string, unknown>): PushPa
       url: `/comunidades?view=eventos&openEvent=${encodeURIComponent(id)}`,
       tag: `event:${id}`,
       data: { kind: 'event', id },
+    }
+  }
+
+  if (table === 'communities') {
+    const body = truncate([record.name, record.city || canton].map(value => text(value)).filter(Boolean).join(' - '))
+    return {
+      title: 'Nuevo grupo para la comunidad',
+      body: body || 'Hay un nuevo grupo que puede interesarte.',
+      url: `/comunidades?view=comunidades&openCommunity=${encodeURIComponent(id)}`,
+      tag: `community:${id}`,
+      data: { kind: 'community', id },
     }
   }
 
@@ -389,6 +626,232 @@ async function notifySubscriptions(subscriptions: PushSubscriptionRow[], payload
     statuses,
   })
   return { sent, attempted: subscriptions.length, failed, statuses }
+}
+
+function isMissingSavedSearchSchema(error: unknown) {
+  const message = String((error as { message?: string })?.message || error || '')
+  return /saved_search|schema cache|does not exist|42P01/i.test(message)
+}
+
+function savedSearchSpecificity(search: SavedSearchRow) {
+  return normalizeSearchText(search.query).length
+    + Object.values(search.filters || {}).filter(Boolean).length * 8
+    + [search.canton, search.city, search.plz, search.category, search.intent].filter(Boolean).length * 4
+}
+
+async function findSavedSearchMatches(table: string, record: Record<string, unknown>) {
+  const entityKind = entityKindForTable(table)
+  if (!entityKind) return { recipientIds:[] as string[], matches:[] as Array<{ search:SavedSearchRow, match:SavedSearchMatch }> }
+
+  const { data, error } = await supabase
+    .from('saved_searches')
+    .select('id,user_id,name,query,entity_kinds,category,intent,canton,city,plz,filters,result_path,push_enabled,last_delivery_attempt_at,last_notified_at')
+    .eq('active', true)
+    .eq('in_app_enabled', true)
+    .contains('entity_kinds', [entityKind])
+
+  if (error) {
+    if (isMissingSavedSearchSchema(error)) {
+      console.warn('saved_search_schema_unavailable', { message:error.message })
+      return { recipientIds:[] as string[], matches:[] as Array<{ search:SavedSearchRow, match:SavedSearchMatch }> }
+    }
+    throw error
+  }
+
+  const matching = ((data || []) as SavedSearchRow[])
+    .filter(search => savedSearchMatchesPublication(search, table, record))
+  const recipientIds = [...new Set(matching.map(search => search.user_id))]
+
+  // Una misma publicación puede coincidir con varias búsquedas de la misma
+  // persona. Conservamos solo la más específica para no duplicar avisos.
+  const bestByUser = new Map<string, SavedSearchRow>()
+  for (const search of matching) {
+    const current = bestByUser.get(search.user_id)
+    if (
+      !current
+      || (deliveryIsDue(search) && !deliveryIsDue(current))
+      || (deliveryIsDue(search) === deliveryIsDue(current) && savedSearchSpecificity(search) > savedSearchSpecificity(current))
+    ) {
+      bestByUser.set(search.user_id, search)
+    }
+  }
+
+  const created: Array<{ search:SavedSearchRow, match:SavedSearchMatch }> = []
+  for (const search of bestByUser.values()) {
+    const resultPath = savedSearchResultPath(table, record)
+    const { data: match, error: insertError } = await supabase
+      .from('saved_search_matches')
+      .insert({
+        saved_search_id:search.id,
+        user_id:search.user_id,
+        entity_kind:entityKind,
+        entity_id:text(record.id),
+        search_name:search.name,
+        result_title:savedSearchResultTitle(record),
+        result_location:savedSearchResultLocation(record) || null,
+        result_path:resultPath,
+      })
+      .select('id,saved_search_id,user_id,entity_kind,entity_id,search_name,result_title,result_location,result_path,matched_at')
+      .maybeSingle()
+
+    if (insertError) {
+      if (insertError.code === '23505') continue
+      throw insertError
+    }
+    if (match) created.push({ search, match:match as SavedSearchMatch })
+  }
+
+  return { recipientIds, matches:created }
+}
+
+async function deliverImmediateSavedSearchMatches(
+  pairs: Array<{ search:SavedSearchRow, match:SavedSearchMatch }>,
+) {
+  const duePairs = pairs.filter(pair => pair.search.push_enabled && deliveryIsDue(pair.search))
+  if (!duePairs.length) return { attempted:0, sent:0 }
+
+  let attempted = 0
+  let sent = 0
+  for (const { search, match } of duePairs) {
+    const now = new Date().toISOString()
+    const subscriptions = await fetchActiveSubscriptions([search.user_id])
+    const path = appendSearchParam(
+      appendSearchParam(match.result_path, 'savedSearch', search.id),
+      'savedMatch',
+      match.id,
+    )
+    const result = await notifySubscriptions(subscriptions, {
+      title:`Nuevo resultado para ${truncate(search.name, 70)}`,
+      body:truncate([match.result_title, match.result_location].filter(Boolean).join(' - '), 140),
+      url:path,
+      tag:`saved-search:${search.id}`,
+      data:{
+        kind:'saved_search',
+        savedSearchId:search.id,
+        savedMatchId:match.id,
+        entityKind:match.entity_kind,
+        entityId:match.entity_id,
+      },
+    })
+
+    attempted += result.attempted
+    sent += result.sent
+    await Promise.all([
+      supabase
+        .from('saved_search_matches')
+        .update({
+          notified_at:now,
+          push_sent_at:result.sent > 0 ? now : null,
+        })
+        .eq('id', match.id),
+      supabase
+        .from('saved_searches')
+        .update({
+          last_delivery_attempt_at:now,
+          ...(result.sent > 0 ? { last_notified_at:now } : {}),
+        })
+        .eq('id', search.id),
+    ])
+  }
+
+  return { attempted, sent }
+}
+
+async function handleSavedSearchDigest(req: Request) {
+  const { data: pending, error: pendingError } = await supabase
+    .from('saved_search_matches')
+    .select('id,saved_search_id,user_id,entity_kind,entity_id,search_name,result_title,result_location,result_path,matched_at')
+    .is('notified_at', null)
+    .order('matched_at', { ascending:true })
+    .limit(500)
+
+  if (pendingError) throw pendingError
+  if (!pending?.length) return json(req, { ok:true, kind:'saved_search_digest', searches:0, matches:0, sent:0 })
+
+  const searchIds = [...new Set(pending.map(match => match.saved_search_id))]
+  const { data: searches, error: searchError } = await supabase
+    .from('saved_searches')
+    .select('id,user_id,name,query,entity_kinds,category,intent,canton,city,plz,filters,result_path,push_enabled,last_delivery_attempt_at,last_notified_at')
+    .in('id', searchIds)
+    .eq('active', true)
+    .eq('push_enabled', true)
+
+  if (searchError) throw searchError
+  const searchMap = new Map(((searches || []) as SavedSearchRow[]).map(search => [search.id, search]))
+  const dueMatches = (pending as SavedSearchMatch[]).filter(match => {
+    const search = searchMap.get(match.saved_search_id)
+    return Boolean(search && deliveryIsDue(search))
+  })
+
+  const bySearch = new Map<string, SavedSearchMatch[]>()
+  for (const match of dueMatches) {
+    const matches = bySearch.get(match.saved_search_id) || []
+    matches.push(match)
+    bySearch.set(match.saved_search_id, matches)
+  }
+
+  let sent = 0
+  let attempted = 0
+  for (const [searchId, matches] of bySearch) {
+    const search = searchMap.get(searchId)
+    if (!search) continue
+    const now = new Date().toISOString()
+    const first = matches[0]
+    const subscriptions = await fetchActiveSubscriptions([search.user_id])
+    const result = await notifySubscriptions(subscriptions, {
+      title:matches.length === 1
+        ? `Nuevo resultado para ${truncate(search.name, 70)}`
+        : `${matches.length} nuevos resultados para ti`,
+      body:matches.length === 1
+        ? truncate([first.result_title, first.result_location].filter(Boolean).join(' - '), 140)
+        : truncate(`${search.name}. Abre Latido para ver las novedades.`, 140),
+      url:matches.length === 1
+        ? appendSearchParam(
+            appendSearchParam(first.result_path, 'savedSearch', search.id),
+            'savedMatch',
+            first.id,
+          )
+        : appendSearchParam(search.result_path, 'savedSearch', search.id),
+      tag:`saved-search:${search.id}`,
+      data:{ kind:'saved_search_digest', savedSearchId:search.id, count:matches.length },
+    })
+
+    sent += result.sent
+    attempted += result.attempted
+    const matchIds = matches.map(match => match.id)
+    await Promise.all([
+      supabase
+        .from('saved_search_matches')
+        .update({
+          notified_at:now,
+          push_sent_at:result.sent > 0 ? now : null,
+        })
+        .in('id', matchIds),
+      supabase
+        .from('saved_searches')
+        .update({
+          last_delivery_attempt_at:now,
+          ...(result.sent > 0 ? { last_notified_at:now } : {}),
+        })
+        .eq('id', search.id),
+    ])
+  }
+
+  console.log('saved_search_digest', {
+    pending:pending.length,
+    due:dueMatches.length,
+    searches:bySearch.size,
+    attempted,
+    sent,
+  })
+  return json(req, {
+    ok:true,
+    kind:'saved_search_digest',
+    matches:dueMatches.length,
+    searches:bySearch.size,
+    attempted,
+    sent,
+  })
 }
 
 async function handleTest(req: Request, record: Record<string, unknown>) {
@@ -492,7 +955,11 @@ async function handlePublication(req: Request, table: string, payload: WebhookPa
   const notification = zonePushPayload(table, record)
   if (!notification) return json(req, { ok: true, skipped: 'unsupported_publication' })
 
-  const publicationCanton = text(record.canton)
+  const savedSearchResult = await findSavedSearchMatches(table, record)
+  const savedSearchDelivery = await deliverImmediateSavedSearchMatches(savedSearchResult.matches)
+  const specificRecipients = new Set(savedSearchResult.recipientIds)
+
+  const publicationCanton = text(record.canton || record.city)
   const authorId = text(record.user_id)
 
   const { data: preferences, error } = await supabase
@@ -516,7 +983,7 @@ async function handlePublication(req: Request, table: string, payload: WebhookPa
   const recipients: string[] = []
   for (const preference of categoryMatched) {
     const recipientId = text(preference.user_id)
-    if (recipientId !== authorId) recipients.push(recipientId)
+    if (recipientId !== authorId && !specificRecipients.has(recipientId)) recipients.push(recipientId)
   }
 
   const subscriptions = await fetchActiveSubscriptions(recipients)
@@ -531,9 +998,19 @@ async function handlePublication(req: Request, table: string, payload: WebhookPa
     categoryMatched: categoryMatched.length,
     recipients: recipients.length,
     subscriptions: subscriptions.length,
+    savedSearchRecipients:specificRecipients.size,
+    savedSearchMatches:savedSearchResult.matches.length,
   })
   const result = await notifySubscriptions(subscriptions, notification)
-  return json(req, { ok: true, kind: 'publication', table, ...result })
+  return json(req, {
+    ok:true,
+    kind:'publication',
+    table,
+    ...result,
+    savedSearchMatches:savedSearchResult.matches.length,
+    savedSearchAttempted:savedSearchDelivery.attempted,
+    savedSearchSent:savedSearchDelivery.sent,
+  })
 }
 
 Deno.serve(async req => {
@@ -567,8 +1044,9 @@ Deno.serve(async req => {
     })
 
     if (table === 'test') return handleTest(req, record)
+    if (table === 'saved_search_digest') return handleSavedSearchDigest(req)
     if (table === 'messages' && payload.type === 'INSERT') return handleMessage(req, record)
-    if (['listings', 'ads', 'jobs', 'providers', 'events'].includes(table)) {
+    if (['listings', 'ads', 'jobs', 'providers', 'events', 'communities'].includes(table)) {
       return handlePublication(req, table, payload)
     }
 

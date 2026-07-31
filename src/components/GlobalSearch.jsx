@@ -44,6 +44,7 @@ import {
   getEmploymentProfileLevel,
 } from '../lib/employmentProfile'
 import { FilterIcon } from './FilterWorkspace'
+import SavedSearchButton from './SavedSearchButton'
 import {
   buildLatidoSearchRpcParams,
   matchesLatidoAssistantResult,
@@ -102,6 +103,26 @@ const TYPE_COLORS = {
   event:{ bg:'#FCE7F3', color:'#9D174D', label:'Evento' },
   guide:{ bg:'#EDE9FE', color:'#6D28D9', label:'Guía' },
   page:{ bg:'#F1F5F9', color:'#475569', label:'Página' },
+}
+
+const SAVED_SEARCH_KIND_BY_RESULT_TYPE = Object.freeze({
+  ad:'listing',
+  job:'job',
+  business:'provider',
+  event:'event',
+  community:'community',
+})
+const DEFAULT_SAVED_SEARCH_RESULT_TYPES = Object.freeze([
+  'ad',
+  'job',
+  'business',
+  'event',
+  'community',
+])
+
+function normalizeSavedSearchCategory(value) {
+  if (value === 'grupos') return 'comunidad'
+  return value || ''
 }
 
 const SEARCH_INTENT_LABELS = {
@@ -1288,8 +1309,10 @@ export default function GlobalSearch({
   filterCount = 0,
   clearOnClose = false,
   showImmersiveFilterButton = true,
+  initialQuery = '',
+  openResultsOnMount = false,
 }) {
-  const { isLoggedIn, user, isAdmin } = useAuth()
+  const { isLoggedIn, user, isAdmin, userCanton } = useAuth()
   const navigate = useNavigate()
   const inputRef = useRef(null)
   const overlayInputRef = useRef(null)
@@ -1306,7 +1329,13 @@ export default function GlobalSearch({
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
   const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
   const [loadingData, setLoadingData] = useState(false)
-  const [internalQuery, setInternalQuery] = useState('')
+  const initialSearchQuery = String(initialQuery || '')
+  const shouldOpenInitialResults = Boolean(
+    immersive
+    && openResultsOnMount
+    && (initialSearchQuery.trim().length >= 2 || hasActiveSearchFilters(searchFilters)),
+  )
+  const [internalQuery, setInternalQuery] = useState(initialSearchQuery)
   const [focused, setFocused] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
   const [activeFilter, setActiveFilter] = useState(null)
@@ -1314,8 +1343,8 @@ export default function GlobalSearch({
   const [assistantRpc, setAssistantRpc] = useState({ status:'idle', datasets:null })
   const [premiumRotationOffset, setPremiumRotationOffset] = useState(0)
   const [startPartnerRotationOffset, setStartPartnerRotationOffset] = useState(0)
-  const [immersiveOpen, setImmersiveOpen] = useState(false)
-  const [immersiveView, setImmersiveView] = useState('start')
+  const [immersiveOpen, setImmersiveOpen] = useState(shouldOpenInitialResults)
+  const [immersiveView, setImmersiveView] = useState(shouldOpenInitialResults ? 'results' : 'start')
   const [immersiveSort, setImmersiveSort] = useState('relevance')
   const [immersiveLimit, setImmersiveLimit] = useState(FULL_SEARCH_PAGE_SIZE)
   const [immersiveFiltersOpen, setImmersiveFiltersOpen] = useState(false)
@@ -1648,6 +1677,104 @@ export default function GlobalSearch({
   ].filter(Boolean)
   const showingRelatedAlternatives = resultPool.length > 0
     && resultPool.every(result => String(result.matchReason || '').includes('(alternativa)'))
+  const savedSearchDraft = useMemo(() => {
+    const cleanQuery = q.trim()
+    if (cleanQuery.length < 2 && !hasSearchFilters && !activeFilter) return null
+
+    const assistantResultTypes = (assistantQuery?.entityTypes || [])
+      .filter(type => SAVED_SEARCH_KIND_BY_RESULT_TYPE[type])
+    const scopedResultTypes = activeFilter
+      ? [activeFilter]
+      : resultTypesKey
+        ? resultTypesKey.split('|')
+        : assistantResultTypes.length
+          ? assistantResultTypes
+          : DEFAULT_SAVED_SEARCH_RESULT_TYPES
+    const entityKinds = Array.from(new Set(
+      scopedResultTypes
+        .map(type => SAVED_SEARCH_KIND_BY_RESULT_TYPE[type])
+        .filter(Boolean),
+    )).sort()
+    if (!entityKinds.length) return null
+
+    const parsedCity = assistantQuery?.municipality || ''
+    const selectedLocation = effectiveSearchFilters.location || parsedCity
+    const locationCanton = selectedLocation ? getCantonForCity(selectedLocation) : ''
+    const savedCanton = effectiveSearchFilters.canton
+      || assistantQuery?.canton
+      || locationCanton
+      || userCanton
+      || ''
+    const savedCity = effectiveSearchFilters.location
+      ? (locationCanton ? effectiveSearchFilters.location : '')
+      : parsedCity
+    const savedPlz = assistantQuery?.postalCode || ''
+    const assistantIntent = assistantQuery?.resultIntents?.length === 1
+      ? assistantQuery.resultIntents[0]
+      : ''
+    const savedIntent = effectiveSearchFilters.intent || assistantIntent
+    const savedCategory = normalizeSavedSearchCategory(
+      effectiveSearchFilters.category || assistantQuery?.category,
+    )
+
+    const params = new URLSearchParams()
+    if (cleanQuery.length >= 2) params.set('q', cleanQuery)
+    if (savedCanton) params.set('canton', savedCanton)
+    if (savedCity) params.set('location', savedCity)
+    if (savedPlz) params.set('plz', savedPlz)
+    if (savedCategory) params.set('cat', savedCategory)
+    if (savedIntent) params.set('intent', savedIntent)
+    if (activeFilter) params.set('resultType', activeFilter)
+
+    let resultPath
+    if (entityKinds.length === 1 && entityKinds[0] === 'job') {
+      params.set('cat', 'empleo')
+      if (savedIntent) params.set('jobIntent', savedIntent)
+      params.delete('intent')
+      params.delete('resultType')
+      resultPath = `/tablon?${params.toString()}`
+    } else if (entityKinds.length === 1 && entityKinds[0] === 'listing') {
+      if (savedIntent) params.set('type', savedIntent)
+      params.delete('intent')
+      params.delete('resultType')
+      resultPath = `/tablon?${params.toString()}`
+    } else if (entityKinds.length === 1 && ['provider', 'event', 'community'].includes(entityKinds[0])) {
+      const view = entityKinds[0] === 'provider'
+        ? 'negocios'
+        : entityKinds[0] === 'event'
+          ? 'eventos'
+          : 'comunidades'
+      params.set('view', view)
+      params.delete('intent')
+      params.delete('resultType')
+      resultPath = `/comunidades?${params.toString()}`
+    } else {
+      params.set('search', 'results')
+      resultPath = `/?${params.toString()}`
+    }
+
+    const locationLabel = savedCity || savedCanton || savedPlz
+    return {
+      name:`Búsqueda: “${cleanQuery || 'Novedades'}”${locationLabel ? ` · ${locationLabel}` : ''}`.slice(0, 100),
+      query:cleanQuery,
+      entityKinds,
+      category:savedCategory,
+      intent:savedIntent,
+      canton:savedCanton,
+      city:savedCity,
+      plz:savedPlz,
+      filters:{},
+      resultPath,
+    }
+  }, [
+    activeFilter,
+    assistantQuery,
+    effectiveSearchFilters,
+    hasSearchFilters,
+    q,
+    resultTypesKey,
+    userCanton,
+  ])
 
   const getSearchAttemptId = useCallback(query => {
     const attemptKey = [
@@ -2755,41 +2882,49 @@ export default function GlobalSearch({
             ) : (
               <div className="latido-search-results-page">
                 <div className="latido-search-results-toolbar">
-                  <div className="latido-search-results-toolbar__summary">
-                    <strong>{immersiveResultCount} resultado{immersiveResultCount === 1 ? '' : 's'}</strong>
-                  </div>
-                  <div className="latido-search-results-toolbar__actions">
-                    <button
-                      type="button"
-                      className={immersiveResultFiltersOpen ? 'is-active' : ''}
-                      aria-expanded={immersiveResultFiltersOpen}
-                      onClick={() => {
-                        if (filtersContent || onFiltersRequest) {
-                          handleImmersiveFilters()
-                        } else {
-                          setImmersiveResultFiltersOpen(open => !open)
-                        }
-                      }}
-                    >
-                      <FilterIcon size={14} />
-                      Filtrar
-                    </button>
-                    <label className="latido-search-sort-control">
-                      <span className="sr-only">Ordenar resultados</span>
-                      <SortGlyph size={15} />
-                      <select
-                        value={immersiveSort}
-                        onChange={event => {
-                          setImmersiveSort(event.target.value)
-                          setImmersiveLimit(FULL_SEARCH_PAGE_SIZE)
+                  <div className="latido-search-results-toolbar__main">
+                    <div className="latido-search-results-toolbar__summary">
+                      <strong>{immersiveResultCount} resultado{immersiveResultCount === 1 ? '' : 's'}</strong>
+                    </div>
+                    <div className="latido-search-results-toolbar__actions">
+                      <button
+                        type="button"
+                        className={immersiveResultFiltersOpen ? 'is-active' : ''}
+                        aria-expanded={immersiveResultFiltersOpen}
+                        onClick={() => {
+                          if (filtersContent || onFiltersRequest) {
+                            handleImmersiveFilters()
+                          } else {
+                            setImmersiveResultFiltersOpen(open => !open)
+                          }
                         }}
                       >
-                        {SEARCH_SORT_OPTIONS.map(option => (
-                          <option key={option.id} value={option.id}>{option.label}</option>
-                        ))}
-                      </select>
-                    </label>
+                        <FilterIcon size={14} />
+                        Filtrar
+                      </button>
+                      <label className="latido-search-sort-control">
+                        <span className="sr-only">Ordenar resultados</span>
+                        <SortGlyph size={15} />
+                        <select
+                          value={immersiveSort}
+                          onChange={event => {
+                            setImmersiveSort(event.target.value)
+                            setImmersiveLimit(FULL_SEARCH_PAGE_SIZE)
+                          }}
+                        >
+                          {SEARCH_SORT_OPTIONS.map(option => (
+                            <option key={option.id} value={option.id}>{option.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
                   </div>
+                  {savedSearchDraft && (
+                    <div className="latido-search-results-toolbar__save">
+                      <span>Avísame cuando haya nuevos resultados.</span>
+                      <SavedSearchButton draft={savedSearchDraft} compact />
+                    </div>
+                  )}
                 </div>
 
                 {immersiveResultFiltersOpen && (availableTypes.length > 1 || appliedSearchChips.length > 0 || assistantCriteria.length > 0) && (

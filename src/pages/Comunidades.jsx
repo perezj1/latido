@@ -23,6 +23,7 @@ import { Tag, EmptyState, SegmentedTabs, Sheet, FullPageOverlay, InfoBanner, Sta
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CompactFilterSelect from '../components/CompactFilterSelect'
 import GlobalSearch from '../components/GlobalSearch'
+import SavedSearchButton from '../components/SavedSearchButton'
 import { FilterButton, FilterChips, FilterResultSummary, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
 import { buildShareUrl } from '../components/ShareButton'
 import DetailActionBar from '../components/DetailActionBar'
@@ -47,6 +48,7 @@ import {
   isLikelySwissMobilePhone,
 } from '../lib/businessContact'
 import toast from 'react-hot-toast'
+import { markSavedSearchDigestOpened, markSavedSearchMatchOpened } from '../lib/savedSearches'
 
 const MAIN_TABS = [
   { id:'negocios', label:'🏪 Negocios' },
@@ -1465,6 +1467,8 @@ export default function Comunidades() {
   const requestedCanton = CANTONS.some(item => item.code === searchParams.get('canton'))
     ? searchParams.get('canton')
     : ''
+  const requestedLocation = searchParams.get('location') || requestedCanton
+  const requestedSearch = searchParams.get('q') || ''
   const [communities, setCommunities] = useState(() => comunidadesCache.data?.communities ?? [])
   const [businesses, setBusinesses] = useState(() => comunidadesCache.data?.businesses ?? MOCK_NEGOCIOS)
   const [businessServices, setBusinessServices] = useState(() => comunidadesCache.data?.businessServices ?? MOCK_NEGOCIO_SERVICES)
@@ -1472,7 +1476,7 @@ export default function Comunidades() {
   const [businessReviews, setBusinessReviews] = useState(() => comunidadesCache.data?.businessReviews ?? MOCK_NEGOCIO_REVIEWS)
   const [events, setEvents] = useState(() => comunidadesCache.data?.events ?? MOCK_EVENTOS_LATINOS)
   const [loading, setLoading] = useState(!comunidadesCache.data)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(requestedSearch)
   const [resolvedSearch, setResolvedSearch] = useState({
     active:false,
     ready:false,
@@ -1480,9 +1484,9 @@ export default function Comunidades() {
     results:[],
   })
   const [cat, setCat] = useState(() => searchParams.get('cat') || '')
-  const [negType, setNegType] = useState('')
-  const [eventType, setEventType] = useState('')
-  const [locationFilter, setLocationFilter] = useState(() => requestedCanton)
+  const [negType, setNegType] = useState(() => searchParams.get('businessType') || '')
+  const [eventType, setEventType] = useState(() => searchParams.get('eventType') || '')
+  const [locationFilter, setLocationFilter] = useState(() => requestedLocation)
   const [businessSort, setBusinessSort] = useState('recommended')
   const [communitySort, setCommunitySort] = useState('newest')
   const [showDirectoryFilters, setShowDirectoryFilters] = useState(false)
@@ -1516,11 +1520,23 @@ export default function Comunidades() {
   const routeEventId = eventSlug ? getIdFromSlug(eventSlug) : ''
   const targetOpenBusinessId = openBusinessId || routeBusinessId
   const targetOpenEventId = openEventId || routeEventId
+  const savedMatchId = searchParams.get('savedMatch') || ''
+  const savedSearchId = searchParams.get('savedSearch') || ''
   const routeView = routeBusinessId ? 'negocios' : routeEventId ? 'eventos' : ''
   const view = searchParams.get('view') || routeView || (openCommunityId || searchParams.get('cat') ? 'comunidades' : 'negocios')
   const tab = MAIN_TABS.some(item => item.id === view) ? view : 'negocios'
   const isCleanBusinessRoute = !!routeBusinessId
   const isCleanEventRoute = !!routeEventId
+
+  useEffect(() => {
+    if (requestedSearch) setSearch(requestedSearch)
+  }, [requestedSearch])
+
+  useEffect(() => {
+    if (!user?.id) return
+    if (savedMatchId) void markSavedSearchMatchOpened(savedMatchId, user.id)
+    else if (savedSearchId) void markSavedSearchDigestOpened(savedSearchId, user.id)
+  }, [savedMatchId, savedSearchId, user?.id])
 
   useEffect(() => {
     let cancelled = false
@@ -2144,6 +2160,50 @@ export default function Comunidades() {
     (!eventType || event.type === eventType) &&
     matchesCantonOrNationwide(event, locationFilter)
   )
+  const savedSearchDraft = useMemo(() => {
+    const cleanQuery = search.trim()
+    const hasUsefulContext = Boolean(
+      cleanQuery.length >= 2
+      || locationFilter
+      || (tab === 'negocios' && negType)
+      || (tab === 'comunidades' && cat)
+      || (tab === 'eventos' && eventType),
+    )
+    if (!hasUsefulContext) return null
+
+    const params = new URLSearchParams({ view:tab })
+    if (cleanQuery.length >= 2 && tab !== 'eventos') params.set('q', cleanQuery)
+    if (tab === 'negocios' && negType) params.set('businessType', negType)
+    if (tab === 'comunidades' && cat) params.set('cat', cat)
+    if (tab === 'eventos' && eventType) params.set('eventType', eventType)
+    if (locationFilter) {
+      if (CANTONS.some(item => item.code === locationFilter)) params.set('canton', locationFilter)
+      else params.set('location', locationFilter)
+    }
+
+    const section = tab === 'negocios'
+      ? 'Negocios'
+      : tab === 'comunidades'
+        ? 'Grupos'
+        : 'Eventos'
+    const subject = cleanQuery.length >= 2 ? `“${cleanQuery}”` : section
+    return {
+      name:`${section}: ${subject}${locationFilter ? ` · ${locationFilter}` : ''}`.slice(0, 100),
+      query:tab !== 'eventos' && cleanQuery.length >= 2 ? cleanQuery : '',
+      entityKinds:[
+        tab === 'negocios' ? 'provider' : tab === 'comunidades' ? 'community' : 'event',
+      ],
+      category:tab === 'negocios' ? 'servicios' : tab === 'comunidades' ? 'comunidad' : 'eventos',
+      canton:tab === 'comunidades' ? '' : locationFilter,
+      city:tab === 'comunidades' ? locationFilter : '',
+      filters:{
+        businessType:tab === 'negocios' ? negType : '',
+        communityCategory:tab === 'comunidades' ? cat : '',
+        eventType:tab === 'eventos' ? eventType : '',
+      },
+      resultPath:`/comunidades?${params.toString()}`,
+    }
+  }, [cat, eventType, locationFilter, negType, search, tab])
 
   const relatedCommunitiesForSelected = useMemo(() => {
     if (!selectedCommunity) return []
@@ -2290,6 +2350,7 @@ export default function Comunidades() {
                 sortOptions={tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS}
                 sortValue={activeDirectorySort}
                 onSortChange={handleDirectorySortChange}
+                action={savedSearchDraft ? <SavedSearchButton draft={savedSearchDraft} compact /> : null}
               />
             </div>
           )}
@@ -2392,6 +2453,14 @@ export default function Comunidades() {
                 </button>
               )}
             </div>
+            {savedSearchDraft && (
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'10px 0 12px' }}>
+                <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.light }}>
+                  {filteredEvents.length} {filteredEvents.length === 1 ? 'resultado' : 'resultados'}
+                </span>
+                <SavedSearchButton draft={savedSearchDraft} compact />
+              </div>
+            )}
             {loading ? (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 {[1,2].map(i => <div key={i} className="skeleton" style={{ height:120, borderRadius:16 }} />)}

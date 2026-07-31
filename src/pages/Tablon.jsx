@@ -10,6 +10,7 @@ import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, PhotoGallery, ImageLig
 import FavoriteButton from '../components/FavoriteButton'
 import DetailActionBar from '../components/DetailActionBar'
 import GlobalSearch from '../components/GlobalSearch'
+import SavedSearchButton from '../components/SavedSearchButton'
 import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
@@ -25,6 +26,7 @@ import {
   hasEmploymentProfileData,
 } from '../lib/employmentProfile'
 import toast from 'react-hot-toast'
+import { markSavedSearchDigestOpened, markSavedSearchMatchOpened } from '../lib/savedSearches'
 
 function fmtPrice(price) {
   if (!price) return ''
@@ -1029,7 +1031,8 @@ export default function Tablon() {
   const [housingPortals, setHousingPortals] = useState([])
   const [employmentPortals, setEmploymentPortals] = useState([])
   const [loading, setLoading] = useState(() => !(TABLON_CACHE.publicAds || TABLON_CACHE.jobs))
-  const [search, setSearch] = useState('')
+  const requestedSearch = searchParams.get('q') || ''
+  const [search, setSearch] = useState(requestedSearch)
   const [resolvedSearch, setResolvedSearch] = useState({
     active:false,
     ready:false,
@@ -1082,6 +1085,8 @@ export default function Tablon() {
   const routeJobId = jobSlug ? getIdFromSlug(jobSlug) : ''
   const targetOpenAdId = openAdId || routeAdId
   const targetOpenJobId = openJobId || routeJobId
+  const savedMatchId = searchParams.get('savedMatch') || ''
+  const savedSearchId = searchParams.get('savedSearch') || ''
   const hasResolvedSearch = Boolean(
     deferredSearch
     && resolvedSearch.active
@@ -1124,6 +1129,16 @@ export default function Tablon() {
   const activeIntentMeta = getCategoryIntentMeta(cat, activeCategoryIntent)
   const isCleanAdRoute = !!routeAdId
   const isCleanJobRoute = !!routeJobId
+
+  useEffect(() => {
+    if (requestedSearch) setSearch(requestedSearch)
+  }, [requestedSearch])
+
+  useEffect(() => {
+    if (!user?.id) return
+    if (savedMatchId) void markSavedSearchMatchOpened(savedMatchId, user.id)
+    else if (savedSearchId) void markSavedSearchDigestOpened(savedSearchId, user.id)
+  }, [savedMatchId, savedSearchId, user?.id])
 
   const scrollPageTop = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
@@ -1819,6 +1834,66 @@ export default function Tablon() {
       ? displayedAds.length
       : tablonItems.length
   const currentSortLabel = SORT_OPTIONS.find(option => option.id === sortOrder)?.label || 'Más reciente'
+  const savedSearchDraft = useMemo(() => {
+    const savedCanton = canton || (plz ? '' : userCanton) || ''
+    const hasUsefulContext = Boolean(
+      deferredSearch.length >= 2
+      || cat
+      || savedCanton
+      || plz
+      || jobType
+      || employmentLevel
+      || priceRange
+      || privacy,
+    )
+    if (!hasUsefulContext) return null
+
+    const params = new URLSearchParams()
+    if (cat) params.set('cat', cat)
+    if (deferredSearch.length >= 2) params.set('q', deferredSearch)
+    if (savedCanton) params.set('canton', savedCanton)
+    if (plz) params.set('plz', plz)
+    if (jobType) params.set('jobType', jobType)
+    if (employmentLevel) params.set('employmentLevel', employmentLevel)
+    if (priceRange) params.set('priceRange', priceRange)
+    if (isEmpleos) params.set('jobIntent', activeJobIntent)
+    else if (activeAdIntent) params.set('type', activeAdIntent)
+
+    const categoryLabel = AD_CATS.find(item => item.id === cat)?.label
+      || (cat === 'empleo' ? 'Empleo' : 'Anuncios')
+    const searchLabel = deferredSearch.length >= 2 ? `“${deferredSearch}”` : categoryLabel
+    const locationLabel = savedCanton || plz
+
+    return {
+      name:`${categoryLabel}: ${searchLabel}${locationLabel ? ` · ${locationLabel}` : ''}`.slice(0, 100),
+      query:deferredSearch.length >= 2 ? deferredSearch : '',
+      entityKinds:isEmpleos ? ['job', 'listing'] : cat ? ['listing'] : ['listing', 'job'],
+      category:cat,
+      intent:isEmpleos ? activeJobIntent : activeAdIntent,
+      canton:savedCanton,
+      plz,
+      filters:{
+        jobType,
+        employmentLevel,
+        priceRange,
+        privacy,
+      },
+      resultPath:`/tablon${params.size ? `?${params.toString()}` : ''}`,
+    }
+  }, [
+    activeAdIntent,
+    activeJobIntent,
+    canton,
+    cat,
+    deferredSearch,
+    employmentLevel,
+    isEmpleos,
+    jobType,
+    plz,
+    priceRange,
+    privacy,
+    userCanton,
+  ])
 
   const relatedAdsForSelected = useMemo(() => {
     if (!selectedAd) return []
@@ -2019,6 +2094,12 @@ export default function Tablon() {
         sortValue={sortOrder}
         onSortChange={setSortView}
       />
+      {savedSearchDraft && (
+        <div className="saved-search-prompt saved-search-prompt--toolbar">
+          <span>Avísame cuando haya nuevos resultados.</span>
+          <SavedSearchButton draft={savedSearchDraft} compact />
+        </div>
+      )}
           </div>
         </div>
       </div>

@@ -122,6 +122,7 @@ export function FilterResultSummary({
   sortOptions=[],
   sortValue='',
   onSortChange,
+  action=null,
 }) {
   const [openMenu, setOpenMenu] = useState('')
   const menusRef = useRef(null)
@@ -159,6 +160,7 @@ export function FilterResultSummary({
     <div className="filter-result-summary" aria-live="polite">
       <span>{resultText}</span>
       <div className="filter-result-actions" ref={menusRef}>
+        {action}
         {filterLabel && filterOptions.length > 0 && (
           <div className="filter-sort-wrap">
             <button

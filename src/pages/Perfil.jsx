@@ -36,6 +36,13 @@ import {
   normalizeEmploymentProfile,
 } from '../lib/employmentProfile'
 import { isLikelySchemaMismatchError, updateWithOptionalColumnsFallback } from '../lib/supabaseCompat'
+import {
+  deleteSavedSearch,
+  getSavedSearchSummary,
+  listSavedSearches,
+  SAVED_SEARCHES_CHANGED_EVENT,
+  setSavedSearchActive,
+} from '../lib/savedSearches'
 import toast from 'react-hot-toast'
 
 const PUBLICATION_TABS = [
@@ -685,6 +692,9 @@ export default function Perfil() {
   const [alertSettings, setAlertSettings] = useState(loadAlertSettings)
   const [pushStatus, setPushStatus] = useState({ supported: false, permission: 'default', subscribed: false })
   const [savingPush, setSavingPush] = useState(false)
+  const [savedSearches, setSavedSearches] = useState([])
+  const [loadingSavedSearches, setLoadingSavedSearches] = useState(false)
+  const [updatingSavedSearchId, setUpdatingSavedSearchId] = useState('')
   const needsPushActivation = pushStatus.supported && !pushStatus.subscribed
 
   // config
@@ -1243,6 +1253,35 @@ export default function Perfil() {
     refreshPushStatus()
   }, [alertsOpen, refreshPushStatus])
 
+  const refreshSavedSearches = useCallback(async () => {
+    if (!user?.id) {
+      setSavedSearches([])
+      return
+    }
+
+    setLoadingSavedSearches(true)
+    try {
+      setSavedSearches(await listSavedSearches(user.id))
+    } catch (error) {
+      if (!/saved_searches|schema cache|does not exist/i.test(error?.message || '')) {
+        console.warn('Saved searches could not be loaded:', error)
+      }
+    } finally {
+      setLoadingSavedSearches(false)
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!alertsOpen) return
+    void refreshSavedSearches()
+  }, [alertsOpen, refreshSavedSearches])
+
+  useEffect(() => {
+    const refresh = () => { void refreshSavedSearches() }
+    window.addEventListener(SAVED_SEARCHES_CHANGED_EVENT, refresh)
+    return () => window.removeEventListener(SAVED_SEARCHES_CHANGED_EVENT, refresh)
+  }, [refreshSavedSearches])
+
   useEffect(() => {
     if (!isLoggedIn) return
     refreshPushStatus()
@@ -1347,6 +1386,36 @@ export default function Perfil() {
   const toggleZoneAlerts = async () => {
     const next = { ...alertSettings, enabled: !alertSettings.enabled, messagesEnabled: true }
     await saveAlerts(next)
+  }
+
+  const toggleSavedSearch = async search => {
+    if (!user?.id || updatingSavedSearchId) return
+    setUpdatingSavedSearchId(search.id)
+    try {
+      await setSavedSearchActive(user.id, search.id, !search.active)
+      setSavedSearches(current => current.map(item => (
+        item.id === search.id ? { ...item, active:!item.active } : item
+      )))
+      toast.success(search.active ? 'Alerta pausada' : 'Alerta activada')
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo actualizar la alerta')
+    } finally {
+      setUpdatingSavedSearchId('')
+    }
+  }
+
+  const removeSavedSearch = async search => {
+    if (!user?.id || updatingSavedSearchId) return
+    setUpdatingSavedSearchId(search.id)
+    try {
+      await deleteSavedSearch(user.id, search.id)
+      setSavedSearches(current => current.filter(item => item.id !== search.id))
+      toast.success('Búsqueda eliminada')
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo eliminar la búsqueda')
+    } finally {
+      setUpdatingSavedSearchId('')
+    }
   }
 
   const toggleAlertCat = cat => {
@@ -2569,7 +2638,7 @@ export default function Perfil() {
 
       <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones">
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.6 }}>
-          Recibe una alerta cuando te escriban o cuando aparezca un anuncio de tu interés en la zona que elijas.
+          Recibe una alerta cuando te escriban o cuando aparezca un resultado relacionado con tus búsquedas.
         </p>
 
         {needsPushActivation && (
@@ -2612,10 +2681,81 @@ export default function Perfil() {
           )}
         </div>
 
+        <div style={{ marginBottom:14 }}>
+          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:10, marginBottom:8 }}>
+            <div>
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px' }}>
+                Búsquedas guardadas
+              </p>
+              <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
+                Email y push, con un máximo diario por búsqueda.
+              </p>
+            </div>
+            {savedSearches.length > 0 && (
+              <span style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary }}>
+                {savedSearches.filter(search => search.active).length} activas
+              </span>
+            )}
+          </div>
+
+          {loadingSavedSearches ? (
+            <div className="skeleton" style={{ height:68, borderRadius:14 }} />
+          ) : savedSearches.length === 0 ? (
+            <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px' }}>
+              <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.5 }}>
+                Cuando filtres o busques algo, pulsa «Crear alerta» para recibir solo novedades relacionadas.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {savedSearches.map(search => (
+                <div
+                  key={search.id}
+                  style={{ display:'flex', alignItems:'center', gap:9, background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'10px 10px 10px 12px', opacity:search.active ? 1 : 0.68 }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAlertsOpen(false)
+                      navigate(search.result_path)
+                    }}
+                    style={{ flex:1, minWidth:0, border:'none', background:'none', padding:0, textAlign:'left', cursor:'pointer' }}
+                  >
+                    <p style={{ fontFamily:PP, fontWeight:750, fontSize:12, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      🔔 {search.name}
+                    </p>
+                    <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {getSavedSearchSummary(search)} · Email activo
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleSavedSearch(search)}
+                    disabled={updatingSavedSearchId === search.id}
+                    aria-label={search.active ? 'Pausar alerta' : 'Activar alerta'}
+                    style={{ width:38, height:22, borderRadius:12, border:'none', cursor:'pointer', background:search.active ? C.primary : '#D1D5DB', position:'relative', flexShrink:0 }}
+                  >
+                    <span style={{ position:'absolute', top:2, left:search.active ? 18 : 2, width:18, height:18, borderRadius:'50%', background:'#fff', transition:'left .2s', boxShadow:'0 1px 3px rgba(0,0,0,0.18)' }} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeSavedSearch(search)}
+                    disabled={updatingSavedSearchId === search.id}
+                    aria-label={`Eliminar ${search.name}`}
+                    style={{ width:28, height:28, borderRadius:10, border:'none', background:'#FEF2F2', color:'#B91C1C', fontFamily:PP, fontWeight:800, fontSize:13, cursor:'pointer', flexShrink:0 }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px', marginBottom:14 }}>
           <div>
-            <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, margin:'0 0 2px' }}>Alertas de zona</p>
-            <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Actívalo para recibir avisos de anuncios de tu interés en tu zona.</p>
+            <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.text, margin:'0 0 2px' }}>Alertas generales por zona</p>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Opcional: novedades amplias por categoría y cantón.</p>
           </div>
           <button
             onClick={toggleZoneAlerts}
