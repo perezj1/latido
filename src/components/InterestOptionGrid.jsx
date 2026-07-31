@@ -60,7 +60,7 @@ export default function InterestOptionGrid({
             >
               {option.emoji}
             </span>
-            <span style={{ minWidth:0, fontSize:11, fontWeight:700, lineHeight:1.25, overflowWrap:'anywhere' }}>
+            <span style={{ minWidth:0, fontSize:11, fontWeight:700, lineHeight:1.25, overflowWrap:'normal', wordBreak:'normal' }}>
               {option.label}
             </span>
             <span

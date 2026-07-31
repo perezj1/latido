@@ -2254,7 +2254,6 @@ export default function Perfil() {
     {
       title: 'Descubrir',
       items: [
-        { icon:'📚', color:'#F1F5F9', label:'Guías', sub:'Trámites y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
         {
           icon:'🔔',
           color:'#F1F5F9',
@@ -2265,6 +2264,7 @@ export default function Perfil() {
           attention: needsPushActivation,
           action:() => setAlertsOpen(true),
         },
+        { icon:'📚', color:'#F1F5F9', label:'Guías', sub:'Trámites y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
       ],
     },
     {
@@ -2681,6 +2681,8 @@ export default function Perfil() {
           )}
         </div>
 
+        <div aria-hidden="true" style={{ height:1, background:C.border, margin:'2px 0 14px' }} />
+
         <div style={{ marginBottom:14 }}>
           <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:10, marginBottom:8 }}>
             <div>
@@ -2780,20 +2782,13 @@ export default function Perfil() {
             </Select>
 
             <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, margin:'14px 0 8px' }}>Categorías</p>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
-              {ALERT_CATS.map(cat => {
-                const active = (alertSettings.categories || []).includes(cat.id)
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => toggleAlertCat(cat.id)}
-                    style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'6px 12px', borderRadius:20, border:`1.5px solid ${active ? C.primary : C.border}`, background: active ? C.primaryLight : '#fff', color: active ? C.primaryDark : C.mid, cursor:'pointer', transition:'all .15s' }}
-                  >
-                    {cat.emoji} {cat.label}
-                  </button>
-                )
-              })}
-            </div>
+            <InterestOptionGrid
+              options={ALERT_CATS}
+              selectedIds={alertSettings.categories || []}
+              onToggle={toggleAlertCat}
+              maxSelected={ALERT_CATS.length}
+              style={{ marginBottom:16 }}
+            />
 
           </>
         )}
