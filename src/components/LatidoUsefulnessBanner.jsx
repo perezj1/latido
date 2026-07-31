@@ -359,21 +359,6 @@ export default function LatidoUsefulnessBanner({ blocked = false }) {
                     {option.icon}
                   </span>
                   <span style={{ flex:1, minWidth:0 }}>{option.label}</span>
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width:15,
-                      height:15,
-                      display:'grid',
-                      placeItems:'center',
-                      flexShrink:0,
-                      border:`1.5px solid ${detail === option.id ? C.primary : '#C7D2E4'}`,
-                      borderRadius:'50%',
-                      background:detail === option.id ? C.primary : '#fff',
-                    }}
-                  >
-                    {detail === option.id && <span style={{ width:5, height:5, borderRadius:'50%', background:'#fff' }} />}
-                  </span>
                 </button>
               ))}
             </div>

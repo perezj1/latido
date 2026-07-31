@@ -2688,7 +2688,7 @@ export default function Perfil() {
                 Búsquedas guardadas
               </p>
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-                Email y push, con un máximo diario por búsqueda.
+                Te avisaremos cuando haya coincidencias.
               </p>
             </div>
             {savedSearches.length > 0 && (
@@ -2751,6 +2751,8 @@ export default function Perfil() {
             </div>
           )}
         </div>
+
+        <div aria-hidden="true" style={{ height:1, background:C.border, margin:'2px 0 14px' }} />
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px', marginBottom:14 }}>
           <div>

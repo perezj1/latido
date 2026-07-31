@@ -1839,7 +1839,8 @@ export default function Tablon() {
     const hasUsefulContext = Boolean(
       deferredSearch.length >= 2
       || cat
-      || savedCanton
+      || canton
+      || activeAdIntent
       || plz
       || jobType
       || employmentLevel
