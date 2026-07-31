@@ -2350,8 +2350,13 @@ export default function Comunidades() {
                 sortOptions={tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS}
                 sortValue={activeDirectorySort}
                 onSortChange={handleDirectorySortChange}
-                action={savedSearchDraft ? <SavedSearchButton draft={savedSearchDraft} compact /> : null}
               />
+              {savedSearchDraft && (
+                <div className="saved-search-prompt saved-search-prompt--toolbar">
+                  <span>Avísame cuando haya nuevos resultados.</span>
+                  <SavedSearchButton draft={savedSearchDraft} compact />
+                </div>
+              )}
             </div>
           )}
           </div>
