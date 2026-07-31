@@ -33,6 +33,7 @@ import { normalizeExternalUrl } from '../lib/links'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { BUSINESS_ROTATION_INTERVAL_MS, getBusinessPromotionDisplayLabel, getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import { getThumbnailImageUrl, handleThumbnailImageError, resolveImageUrl } from '../lib/imageVariants'
+import { isNationwideLocation, matchesCantonOrNationwide } from '../lib/locationScope'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import { rotateItems } from '../lib/rotation'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
@@ -321,6 +322,7 @@ function normalizeDirectoryPlace(value='') {
 
 function communityMatchesLocation(group={}, location='') {
   if (!location) return true
+  if (isNationwideLocation(group)) return true
 
   const canton = CANTONS.find(item => item.code === location)
   if (!canton) return normalizeDirectoryPlace(group.city) === normalizeDirectoryPlace(location)
@@ -2005,7 +2007,7 @@ export default function Comunidades() {
   const eligibleBusinesses = businesses.filter(business =>
     business.type !== 'empleo' && business.type !== 'vivienda' &&
     (!negType || normalizeNegocioType(business.type) === negType) &&
-    (!locationFilter || business.canton === locationFilter)
+    matchesCantonOrNationwide(business, locationFilter)
   )
   const getBusinessSearchFields = business => [
     { value:business.name, weight:6 },
@@ -2094,7 +2096,7 @@ export default function Comunidades() {
       business.type !== 'empleo' &&
       business.type !== 'vivienda' &&
       (!negType || normalizeNegocioType(business.type) === negType) &&
-      (!directoryFilterDraft.location || business.canton === directoryFilterDraft.location)
+      matchesCantonOrNationwide(business, directoryFilterDraft.location)
     )
     if (!hasSearch) return eligible.length
     if (hasResolvedSearch) {
@@ -2140,7 +2142,7 @@ export default function Comunidades() {
 
   const filteredEvents = events.filter(event =>
     (!eventType || event.type === eventType) &&
-    (!locationFilter || event.canton === locationFilter)
+    matchesCantonOrNationwide(event, locationFilter)
   )
 
   const relatedCommunitiesForSelected = useMemo(() => {

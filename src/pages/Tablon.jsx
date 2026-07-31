@@ -14,6 +14,7 @@ import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_P
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getThumbnailImageUrl, handleThumbnailImageError } from '../lib/imageVariants'
+import { matchesCantonOrNationwide } from '../lib/locationScope'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import { isPublicationOpen } from '../lib/publicationLifecycle'
 import { EmploymentLevelBadge } from '../components/EmploymentProfileForm'
@@ -1579,7 +1580,7 @@ export default function Tablon() {
               : a.type === activeAdIntent
         if (!typeMatches) return false
       }
-      if (canton && a.canton !== canton) return false
+      if (!matchesCantonOrNationwide(a, canton)) return false
       if (plz && !a.plz?.startsWith(plz)) return false
       if (privacy && a.privacy !== privacy) return false
       if (hasPriceFilter) {
@@ -1616,7 +1617,7 @@ export default function Tablon() {
       (!activeJobIntent || getJobIntentId(j) === activeJobIntent) &&
       (!jobType || j.type === jobType) &&
       (!employmentLevel || getJobEmploymentLevelId(j) === employmentLevel) &&
-      (!canton || j.canton === canton) &&
+      matchesCantonOrNationwide(j, canton) &&
       (!plz || j.plz?.startsWith(plz)) &&
       (!deferredSearch || (
         hasResolvedSearch
@@ -1642,7 +1643,7 @@ export default function Tablon() {
         (!activeJobIntent || getJobIntentId(a) === activeJobIntent) &&
         (!jobType || a.type === jobType || a.sub === jobType) &&
         (!employmentLevel || getJobEmploymentLevelId(a) === employmentLevel) &&
-        (!canton || a.canton === canton) &&
+        matchesCantonOrNationwide(a, canton) &&
         (!plz || a.plz?.startsWith(plz)) &&
         (!deferredSearch || (
           hasResolvedSearch
@@ -1740,7 +1741,7 @@ export default function Tablon() {
               : ad.type === activeAdIntent
         if (!typeMatches) return false
       }
-      if (filterDraft.canton && ad.canton !== filterDraft.canton) return false
+      if (!matchesCantonOrNationwide(ad, filterDraft.canton)) return false
       if (filterDraft.plz && !ad.plz?.startsWith(filterDraft.plz)) return false
       if (!isEmpleos && filterDraft.privacy && ad.privacy !== filterDraft.privacy) return false
       if (!isEmpleos && draftHasPrice) {
@@ -1772,7 +1773,7 @@ export default function Tablon() {
       (!activeJobIntent || getJobIntentId(job) === activeJobIntent) &&
       (!filterDraft.jobType || job.type === filterDraft.jobType) &&
       (!filterDraft.employmentLevel || getJobEmploymentLevelId(job) === filterDraft.employmentLevel) &&
-      (!filterDraft.canton || job.canton === filterDraft.canton) &&
+      matchesCantonOrNationwide(job, filterDraft.canton) &&
       (!filterDraft.plz || job.plz?.startsWith(filterDraft.plz)) &&
       matchesJobSearch(job)
     ).length
@@ -1784,7 +1785,7 @@ export default function Tablon() {
       (!activeJobIntent || getJobIntentId(ad) === activeJobIntent) &&
       (!filterDraft.jobType || ad.type === filterDraft.jobType || ad.sub === filterDraft.jobType) &&
       (!filterDraft.employmentLevel || getJobEmploymentLevelId(ad) === filterDraft.employmentLevel) &&
-      (!filterDraft.canton || ad.canton === filterDraft.canton) &&
+      matchesCantonOrNationwide(ad, filterDraft.canton) &&
       (!filterDraft.plz || ad.plz?.startsWith(filterDraft.plz)) &&
       matchesJobSearch(ad, 'ad')
     ).length

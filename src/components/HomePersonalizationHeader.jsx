@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { CANTONS, CITIES_BY_CANTON } from '../lib/constants'
+import { isNationwideLocation } from '../lib/locationScope'
 import { C, PP } from '../lib/theme'
 
 const DEFAULT_INTERESTS = ['empleo', 'vivienda', 'servicios', 'comunidad', 'eventos']
@@ -49,6 +50,7 @@ function isInCanton(item={}, canton='') {
   const normalizedCanton = String(canton || '').trim().toUpperCase()
   if (!normalizedCanton) return true
   if (String(item.canton || '').trim().toUpperCase() === normalizedCanton) return true
+  if (isNationwideLocation(item)) return true
 
   const city = normalizePlace(item.city)
   if (!city) return false

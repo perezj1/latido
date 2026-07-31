@@ -1,3 +1,5 @@
+import { isNationwideLocation } from './locationScope'
+
 export const ONBOARDING_INTEREST_OPTIONS = [
   { id:'empleo', emoji:'💼', label:'Empleo' },
   { id:'vivienda', emoji:'🏠', label:'Vivienda' },
@@ -49,11 +51,6 @@ export function normalizeInterestIds(value) {
 
 function normalizePlace(value) {
   return String(value || '').trim().toLocaleUpperCase('de-CH')
-}
-
-function isNationwide(item={}) {
-  const place = `${item.city || ''} ${item.canton || ''}`.toLowerCase()
-  return place.includes('toda suiza') || place.includes('suiza')
 }
 
 function isNearby(item, canton) {
@@ -158,7 +155,7 @@ export function buildNearbyFeed(items=[], canton='') {
     .map((item, index) => ({
       item,
       index,
-      distanceRank:isNearby(item, canton) ? 0 : isNationwide(item) ? 1 : 2,
+      distanceRank:isNearby(item, canton) ? 0 : isNationwideLocation(item) ? 1 : 2,
     }))
     .sort((a, b) => a.distanceRank - b.distanceRank || a.index - b.index)
     .map(entry => entry.item)
@@ -182,7 +179,7 @@ export function buildPersonalizedFeed(items=[], {
     const matchesInterest = interestSet.has(category)
     const matchesActivity = activitySet.has(category)
     const sameCanton = isNearby(item, canton)
-    const nationwide = isNationwide(item)
+    const nationwide = isNationwideLocation(item)
     const recencyScore = getRecencyScore(item?.createdAt, now)
     const qualityScore = getQualityScore(item)
     const recommendationScore =
