@@ -2826,6 +2826,12 @@ export default function GlobalSearch({
                     <div className="latido-search-matches-heading">
                       <strong>Coincidencias</strong>
                     </div>
+                    {(immersiveResultCount === 0 || showingRelatedAlternatives) && savedSearchDraft && (
+                      <div className="saved-search-prompt saved-search-prompt--toolbar latido-search-no-results-alert">
+                        <span>Guarda esta búsqueda y te avisaremos cuando haya coincidencias.</span>
+                        <SavedSearchButton draft={savedSearchDraft} compact />
+                      </div>
+                    )}
                     {showingRelatedAlternatives && (
                       <div className="latido-search-related-note">
                         <strong>No hay coincidencias exactas.</strong>

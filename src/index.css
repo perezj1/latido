@@ -4107,6 +4107,11 @@ img[data-latido-img-state="loaded"] {
   font: 400 11px/1.55 'Poppins', sans-serif;
 }
 
+.latido-search-no-results-alert {
+  margin: 0 16px 12px;
+  text-align: left;
+}
+
 .latido-search-result {
   width: 100%;
   min-width: 0;
