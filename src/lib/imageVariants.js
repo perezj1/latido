@@ -46,6 +46,10 @@ const IMAGE_URL_REPLACEMENTS = new Map([
     '',
   ],
   [
+    'https://www.anwalt-luzern.ch/images/Logo/logo-text7.png',
+    '',
+  ],
+  [
     'https://lh7-us.googleusercontent.com/sitesv-images-rt/ACHe0d2_86HnaElxnBQ191yIdMHFvkR-rGwa9R5LALC0rvd-yRd-oOxunSQSM6A0PAy62HBsSZLFo8Qg9jE7cFvxAVHdmeU5AbDEuCiW9aZFg_5JREKUPb58aAxRMKFmllriu-ZO6fWS_Zghcmoe-Kwl7j-Q2k1gjg_MkleBLZg4N5Oswei48pwST2k8=w16383',
     '',
   ],
