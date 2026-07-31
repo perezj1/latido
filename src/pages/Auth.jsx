@@ -64,6 +64,74 @@ function PasswordVisibilityButton({ visible, onToggle }) {
   )
 }
 
+function AuthModeSwitch({ mode, onChange }) {
+  const options = [
+    { value:'register', label:'Crear cuenta' },
+    { value:'login', label:'Iniciar sesión' },
+  ]
+
+  return (
+    <div
+      role="group"
+      aria-label="Elige cómo acceder"
+      style={{
+        position:'relative',
+        display:'grid',
+        gridTemplateColumns:'repeat(2, minmax(0, 1fr))',
+        padding:4,
+        marginBottom:26,
+        border:`1px solid ${C.border}`,
+        borderRadius:16,
+        background:'#E8EFF9',
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position:'absolute',
+          top:4,
+          bottom:4,
+          left:4,
+          width:'calc(50% - 4px)',
+          borderRadius:12,
+          background:C.primary,
+          boxShadow:'0 4px 12px rgba(37,99,235,0.24)',
+          transform:mode === 'login' ? 'translateX(100%)' : 'translateX(0)',
+          transition:'transform .24s ease',
+        }}
+      />
+      {options.map(option => {
+        const active = mode === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(option.value)}
+            style={{
+              position:'relative',
+              zIndex:1,
+              minWidth:0,
+              padding:'10px 8px',
+              border:'none',
+              borderRadius:12,
+              background:'transparent',
+              color:active ? '#fff' : C.mid,
+              fontFamily:PP,
+              fontSize:12,
+              fontWeight:700,
+              cursor:'pointer',
+              transition:'color .2s ease',
+            }}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function Auth() {
   const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
@@ -88,6 +156,10 @@ export default function Auth() {
   const s = (k, v) => {
     setForm(f => ({ ...f, [k]:v }))
     clearFieldError(k)
+  }
+  const changeAuthMode = nextMode => {
+    setErrors({})
+    setMode(nextMode)
   }
   const toggleLang = l => s('languages', form.languages.includes(l) ? form.languages.filter(x => x !== l) : [...form.languages, l])
   const toggleInterest = interest => {
@@ -250,7 +322,9 @@ export default function Auth() {
   }
 
   if (mode === 'login') return (
-    <div style={{ maxWidth:440, margin:'60px auto', padding:'0 24px' }}>
+    <div style={{ maxWidth:440, margin:'32px auto 48px', padding:'0 24px' }}>
+      <AuthModeSwitch mode={mode} onChange={changeAuthMode} />
+
       <div style={{ textAlign:'center', marginBottom:28 }}>
         <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🌎</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Bienvenido/a</h1>
@@ -285,13 +359,6 @@ export default function Auth() {
       </div>
 
       <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
-
-      <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:24 }}>
-        ¿Sin cuenta?{' '}
-        <button onClick={() => { setErrors({}); setMode('register') }} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
-          Regístrate gratis
-        </button>
-      </p>
     </div>
   )
 
@@ -322,7 +389,9 @@ export default function Auth() {
   ]
 
   return (
-    <div style={{ maxWidth:440, margin:'48px auto', padding:'0 24px' }}>
+    <div style={{ maxWidth:440, margin:'32px auto 48px', padding:'0 24px' }}>
+      <AuthModeSwitch mode={mode} onChange={changeAuthMode} />
+
       <ProgressBar step={step} total={REG_STEPS.length} />
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4 }}>{REG_STEPS[step].title}</h1>
       <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:22 }}>{REG_STEPS[step].sub}</p>
@@ -424,13 +493,6 @@ export default function Auth() {
           Omitir por ahora
         </button>
       )}
-
-      <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:24 }}>
-        ¿Ya tienes cuenta?{' '}
-        <button onClick={() => { setErrors({}); setMode('login') }} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
-          Iniciar sesión
-        </button>
-      </p>
     </div>
   )
 }
