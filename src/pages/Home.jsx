@@ -16,7 +16,8 @@ import { C, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
-import { MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
+import HomePersonalizationHeader from '../components/HomePersonalizationHeader'
+import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import {
@@ -38,7 +39,7 @@ import {
   employmentProfileFromJob,
   isEmploymentProfileComplete,
 } from '../lib/employmentProfile'
-import { SegmentedTabs } from '../components/FilterWorkspace'
+import { FilterResultSummary, SegmentedTabs } from '../components/FilterWorkspace'
 import { HOME_CAROUSEL_CARD_WIDTH } from '../lib/homeCarousel'
 import toast from 'react-hot-toast'
 
@@ -62,6 +63,31 @@ const CAT_COLORS = {
 
 const REVIEWABLE_AD_CATS = new Set(['servicios', 'cuidados'])
 const HOME_CAROUSEL_CARD_SHADOW = '0 2px 8px rgba(0,0,0,0.06)'
+const HOME_CAROUSEL_CARD_HEIGHT = 204
+const HOME_CAROUSEL_CARD_STYLE = {
+  height:'100%',
+  overflow:'hidden',
+  background:'#fff',
+  border:`1px solid ${C.border}`,
+  borderRadius:18,
+  boxShadow:HOME_CAROUSEL_CARD_SHADOW,
+}
+const HOME_CAROUSEL_MEDIA_STYLE = {
+  position:'relative',
+  width:'100%',
+  aspectRatio:'4 / 3',
+  display:'flex',
+  alignItems:'center',
+  justifyContent:'center',
+  overflow:'hidden',
+  background:'#fff',
+  borderBottom:`1px solid ${C.borderLight}`,
+}
+const HOME_CAROUSEL_BODY_STYLE = {
+  height:88,
+  padding:'12px 12px 13px',
+  boxSizing:'border-box',
+}
 
 function averageRating(reviews) {
   if (!reviews?.length) return null
@@ -74,12 +100,25 @@ const COMMUNITY_HOME_SELECT = {
 }
 
 async function fetchHomeCommunities() {
-  const buildQuery = columns => supabase
-    .from('communities')
-    .select(columns)
-    .or('active.is.null,active.eq.true')
-    .order('created_at', { ascending:false })
-    .limit(12)
+  const buildQuery = async columns => {
+    const rows = []
+    const pageSize = 500
+
+    for (let from = 0; ; from += pageSize) {
+      const response = await supabase
+        .from('communities')
+        .select(columns)
+        .eq('active', true)
+        .order('created_at', { ascending:false })
+        .order('id', { ascending:false })
+        .range(from, from + pageSize - 1)
+
+      if (response.error) return response
+      const page = response.data || []
+      rows.push(...page)
+      if (page.length < pageSize) return { data:rows, error:null }
+    }
+  }
 
   const response = await buildQuery(COMMUNITY_HOME_SELECT.withPhoto)
   if (getMissingColumnName(response.error, 'communities') === 'photo_url') {
@@ -208,6 +247,9 @@ function MiLatidoCard({ item, onOpen }) {
   const colors = CAT_COLORS[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
   const location = formatAdLocation(item)
   const displayEmoji = getAdDisplayEmoji(item)
+  const formattedPrice = fmtPrice(item.price)
+  const priceLabel = formattedPrice || 'Precio a consultar'
+  const hasPrice = Boolean(formattedPrice)
 
   return (
     <div
@@ -219,8 +261,8 @@ function MiLatidoCard({ item, onOpen }) {
       }}
       style={{ textDecoration:'none', flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, display:'block', cursor:'pointer' }}
     >
-      <div style={{ background:'#fff', borderRadius:18, border:`1px solid ${C.border}`, overflow:'hidden', height:'100%', boxShadow:HOME_CAROUSEL_CARD_SHADOW }}>
-        <div style={{ height:132, background:'#F8FAFC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, position:'relative', borderBottom:`1px solid ${C.borderLight}` }}>
+      <div style={HOME_CAROUSEL_CARD_STYLE}>
+        <div style={{ ...HOME_CAROUSEL_MEDIA_STYLE, fontSize:44 }}>
           {item.img
             ? <img src={getThumbnailImageUrl(item.img)} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', position:'absolute', inset:0 }} />
             : <span style={{ fontSize:44, lineHeight:1 }}>{displayEmoji}</span>
@@ -240,12 +282,12 @@ function MiLatidoCard({ item, onOpen }) {
             />
           )}
         </div>
-        <div style={{ padding:'12px 12px 13px' }}>
-          <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.65em', overflowWrap:'anywhere' }}>
+        <div style={HOME_CAROUSEL_BODY_STYLE}>
+          <p title={item.title} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             {item.title}
           </p>
-          <p style={{ fontFamily:PP, fontWeight:900, fontSize:14, color:C.primary, margin:'0 0 7px', lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-            {fmtPrice(item.price) || '—'}
+          <p style={{ fontFamily:PP, fontWeight:hasPrice ? 900 : 700, fontSize:hasPrice ? 14 : 10.5, color:C.primary, margin:'0 0 7px', lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            {priceLabel}
           </p>
           <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             📍 {location || item.canton} · {item.ts}
@@ -256,22 +298,24 @@ function MiLatidoCard({ item, onOpen }) {
   )
 }
 
-function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText, viewAllHref, onOpen }) {
+function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText, viewAllHref, onOpen, hideHeader=false }) {
   return (
-    <section aria-labelledby={`mi-latido-${title.toLowerCase()}`} style={{ marginTop:18 }}>
-      <div style={{ padding:'0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:8 }}>
-        <h3 id={`mi-latido-${title.toLowerCase()}`} style={{ minWidth:0, fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0 }}>
-          {title}
-        </h3>
-        <Link to={viewAllHref} style={{ flexShrink:0, fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>
-          Ver todo →
-        </Link>
-      </div>
+    <section aria-label={title} style={{ marginTop:hideHeader ? 10 : 18 }}>
+      {!hideHeader && (
+        <div style={{ padding:'0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:8 }}>
+          <h3 style={{ minWidth:0, fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0 }}>
+            {title}
+          </h3>
+          <Link to={viewAllHref} style={{ flexShrink:0, fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>
+            Ver todo →
+          </Link>
+        </div>
+      )}
 
       {loading ? (
         <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
           <div style={{ display:'flex', gap:12, width:'max-content' }}>
-            {[1,2,3].map(index => <div key={index} className="skeleton" style={{ width:HOME_CAROUSEL_CARD_WIDTH, height:250, borderRadius:18, flexShrink:0 }} />)}
+            {[1,2,3].map(index => <div key={index} className="skeleton" style={{ width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, borderRadius:18, flexShrink:0 }} />)}
           </div>
         </div>
       ) : items.length === 0 ? (
@@ -557,6 +601,7 @@ export default function Home() {
   const [businessPromotionPlans, setBusinessPromotionPlans] = useState(() => homeCache?.businessPromotionPlans || [])
   const [recentJobs, setRecentJobs] = useState(() => homeCache?.recentJobs || [])
   const [recentEvents, setRecentEvents] = useState(() => homeCache?.recentEvents || [])
+  const [eventfrogEvents, setEventfrogEvents] = useState([])
   const [latidoSection, setLatidoSection] = useState('offers')
   const [latidoMode, setLatidoMode] = useState('for-you')
   const latidoOffersFeedRef = useRef(null)
@@ -570,6 +615,7 @@ export default function Home() {
   const [businessPromotionModalOpen, setBusinessPromotionModalOpen] = useState(false)
   const [loading, setLoading] = useState(() => !homeCache)
   const [activatingPush, setActivatingPush] = useState(false)
+  const [savingCanton, setSavingCanton] = useState(false)
   const { needsActivation, refresh: refreshPush } = usePushActivation(user?.id)
   const [selectedGuide, setSelectedGuide] = useState(null)
   useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
@@ -611,10 +657,17 @@ export default function Home() {
       requests:orderItems(recentAds.filter(isLatidoRequest)),
     }
   }, [activityInterests, latidoMode, recentAds, userCanton, userInterests])
+  const visibleLatidoItems = latidoSection === 'offers'
+    ? visibleLatidoSections.offers
+    : visibleLatidoSections.requests
+  const overviewEvents = useMemo(
+    () => [...recentEvents, ...eventfrogEvents],
+    [eventfrogEvents, recentEvents],
+  )
   useEffect(() => {
     if (latidoOffersFeedRef.current) latidoOffersFeedRef.current.scrollLeft = 0
     if (latidoRequestsFeedRef.current) latidoRequestsFeedRef.current.scrollLeft = 0
-  }, [latidoMode])
+  }, [latidoMode, latidoSection])
   const featuredPromotionAvailability = useMemo(() => {
     const featuredPlan = businessPromotionPlans.find(plan =>
       (plan.plan_key || plan.key) === 'featured'
@@ -712,6 +765,32 @@ export default function Home() {
     }
   }
 
+  async function handleHomeCantonChange(event) {
+    const nextCanton = event.target.value
+    if (!user?.id || !nextCanton || nextCanton === userCanton || savingCanton) return
+
+    setSavingCanton(true)
+    try {
+      const [authResponse, profileResponse] = await Promise.all([
+        supabase.auth.updateUser({ data:{ canton:nextCanton } }),
+        supabase
+          .from('profiles')
+          .update({ canton:nextCanton })
+          .eq('id', user.id),
+      ])
+
+      if (authResponse.error) throw authResponse.error
+      if (profileResponse.error) {
+        console.error('Home canton profile update failed:', profileResponse.error)
+      }
+      toast.success('Cantón actualizado')
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo actualizar el cantón')
+    } finally {
+      setSavingCanton(false)
+    }
+  }
+
   // Close panel on outside click
   function closeNotifPanel() {
     setNotifOpen(false)
@@ -733,6 +812,7 @@ export default function Home() {
   }, [notifOpen])
 
   const firstName = (displayName || 'amigo').split(' ')[0]
+  const selectedCantonName = CANTONS.find(canton => canton.code === userCanton)?.name || userCanton || 'Cantón'
 
   const getAdHref = (ad) => String(ad.id).startsWith('job_')
     ? `/tablon?cat=empleo&openJob=${encodeURIComponent(String(ad.id).replace('job_', ''))}`
@@ -1051,10 +1131,10 @@ export default function Home() {
 
         supabase
           .from('events')
-          .select('id, title, day, month, year, city, venue, price, img_url, created_at, active')
+          .select('id, title, day, month, year, city, canton, venue, price, img_url, created_at, active')
           .or('active.is.null,active.eq.true')
           .order('created_at', { ascending:false })
-          .limit(12),
+          .limit(60),
 
         supabase.rpc('get_business_promotion_availability'),
       ])
@@ -1171,6 +1251,7 @@ export default function Home() {
           desc: row.desc || '',
           contact: row.contact || '',
           photo_url: row.photo_url || '',
+          createdAt: row.created_at || '',
         }))
       )
 
@@ -1194,6 +1275,7 @@ export default function Home() {
           typeLabel,
           emoji: typeEmoji,
           city: row.city || row.canton || 'Suiza',
+          canton: row.canton || '',
           desc: row.description || '',
           services: Array.isArray(row.services) ? row.services : [],
           photo_url: resolveImageUrl(row.photo_url || providerPhotoMap[row.id]?.[0]),
@@ -1204,6 +1286,7 @@ export default function Home() {
           promotion_plan: row.promotion_plan,
           promotion_starts_at: row.promotion_starts_at,
           promotion_ends_at: row.promotion_ends_at,
+          createdAt: row.created_at || '',
         })
       }
       setBusinessHighlights(nextBusinessHighlights)
@@ -1242,16 +1325,18 @@ export default function Home() {
       upcomingEvents.sort((a, b) => toEventDate(a) - toEventDate(b))
 
       const nextRecentEvents = []
-      for (const row of upcomingEvents.slice(0, 3)) {
+      for (const row of upcomingEvents) {
         nextRecentEvents.push({
           id: row.id,
           title: row.title || '',
           day: row.day || '',
           month: row.month || '',
           city: row.city || 'Suiza',
+          canton: row.canton || '',
           venue: row.venue || '',
           price: row.price || '',
           img: row.img_url || '',
+          createdAt: row.created_at || '',
         })
       }
       setRecentEvents(nextRecentEvents)
@@ -1324,15 +1409,35 @@ export default function Home() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:18 }}>
             <div style={{ flex:1, minWidth:0 }}>
               <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:'clamp(28px,5.5vw,44px)', lineHeight:1.15, letterSpacing:-0.6, color:'#fff', margin:'0 0 4px' }}>
-                Hola {firstName}.
+                Hola, {firstName}
               </h1>
-              <h2 style={{ fontFamily:PP, fontWeight:500, fontSize:'clamp(16px,4vw,22px)', lineHeight:1.3, letterSpacing:-0.2, color:'rgba(255,255,255,0.85)', margin:0 }}>
-                ¡Te estábamos esperando!
-              </h2>
-
-              {/* <p style={{ fontFamily:PP, fontSize:14, color:'rgba(255,255,255,0.82)', lineHeight:1.7, maxWidth:520, margin:0 }}>
-                Encuentra información, servicios, empleos y apoyo real en una plataforma creada para ti y para los tuyos.
-              </p> */}
+              {isLoggedIn ? (
+                <label style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:4, color:'rgba(255,255,255,0.92)', fontFamily:PP, fontSize:13, fontWeight:400, cursor:savingCanton ? 'wait' : 'pointer', opacity:savingCanton ? 0.7 : 1 }}>
+                  <span aria-hidden="true">📍</span>
+                  <span>{selectedCantonName}</span>
+                  <svg aria-hidden="true" viewBox="0 0 10 6" width="10" height="6" style={{ display:'block', flexShrink:0, marginLeft:1 }}>
+                    <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <select
+                    aria-label="Cambiar cantón"
+                    value={userCanton || ''}
+                    onChange={handleHomeCantonChange}
+                    disabled={savingCanton}
+                    style={{ position:'absolute', inset:0, width:'100%', height:'100%', appearance:'none', WebkitAppearance:'none', border:0, opacity:0, cursor:savingCanton ? 'wait' : 'pointer' }}
+                  >
+                    <option value="" disabled style={{ color:C.text }}>Seleccionar cantón</option>
+                    {CANTONS.map(canton => (
+                      <option key={canton.code} value={canton.code} style={{ color:C.text }}>
+                        {canton.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <Link to="/auth" style={{ display:'inline-flex', alignItems:'center', gap:5, color:'rgba(255,255,255,0.92)', fontFamily:PP, fontSize:13, fontWeight:600, textDecoration:'none' }}>
+                  <span aria-hidden="true">📍</span> Selecciona tu cantón
+                </Link>
+              )}
             </div>
 
             {isLoggedIn && (
@@ -1776,15 +1881,14 @@ export default function Home() {
       </Modal>
 
       <section style={{ padding:'24px 0 0' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
-          <div>
-            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px', letterSpacing:0 }}>❤️ Mi Latido</h2>
-            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
-              Ofertas y solicitudes seleccionadas para ti.
-            </p>
-          </div>
-          <Link to="/perfil?editar=intereses" style={{ fontFamily:PP, fontSize:12, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>Editar →</Link>
-        </div>
+        <HomePersonalizationHeader
+          ads={recentAds}
+          businesses={businessHighlights}
+          events={overviewEvents}
+          communities={communityHighlights}
+          canton={userCanton}
+          loading={loading}
+        />
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px' }}>
           <SegmentedTabs
             items={MY_LATIDO_SECTIONS}
@@ -1793,13 +1897,15 @@ export default function Home() {
             ariaLabel="Tipo de publicaciones de Mi Latido"
             className="mi-latido-section-tabs"
           />
-          <SegmentedTabs
-            items={MY_LATIDO_MODES}
-            value={latidoMode}
-            onChange={setLatidoMode}
-            ariaLabel="Orden de Mi Latido"
-            className="mi-latido-mode-tabs"
-          />
+          <div className="mi-latido-result-summary">
+            <FilterResultSummary
+              count={visibleLatidoItems.length}
+              sortLabel={MY_LATIDO_MODES.find(mode => mode.id === latidoMode)?.label || 'Recomendado'}
+              sortOptions={MY_LATIDO_MODES}
+              sortValue={latidoMode}
+              onSortChange={setLatidoMode}
+            />
+          </div>
         </div>
         <div key={`${latidoSection}-${latidoMode}`} className="segmented-content-transition" style={{ maxWidth:1200, margin:'0 auto' }}>
           {latidoSection === 'offers' ? (
@@ -1811,6 +1917,7 @@ export default function Home() {
               emptyText="Todavía no hay ofertas disponibles."
               viewAllHref="/tablon?type=ofrece"
               onOpen={openLatidoItem}
+              hideHeader
             />
           ) : (
             <MiLatidoSubsection
@@ -1821,6 +1928,7 @@ export default function Home() {
               emptyText="Todavía no hay solicitudes disponibles."
               viewAllHref="/tablon?type=busca"
               onOpen={openLatidoItem}
+              hideHeader
             />
           )}
         </div>
@@ -1908,7 +2016,7 @@ export default function Home() {
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
           <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
-            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:190, borderRadius:16 }}/>)}
+            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, borderRadius:18 }}/>)}
           </div>
         ) : rotatedBusinessHighlights.length === 0 ? (
           <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay negocios publicados." /></div>
@@ -1926,8 +2034,8 @@ export default function Home() {
                     to={getBusinessHref(business)}
                     style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, display:'block', textDecoration:'none' }}
                   >
-                    <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:HOME_CAROUSEL_CARD_SHADOW }}>
-                    <div style={{ position:'relative', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'visible' }}>
+                    <div style={HOME_CAROUSEL_CARD_STYLE}>
+                    <div style={{ ...HOME_CAROUSEL_MEDIA_STYLE, fontSize:44, overflow:'visible' }}>
                       {business.photo_url
                         ? <img src={getThumbnailImageUrl(business.photo_url)} onError={event => handleThumbnailImageError(event, business.photo_url)} alt={business.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{business.emoji || '🏪'}</span>
@@ -1964,8 +2072,8 @@ export default function Home() {
                         </span>
                       )}
                     </div>
-                    <div style={{ padding:hasPromotion ? '18px 10px 12px' : '10px 10px 12px' }}>
-                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em', overflowWrap:'anywhere' }}>
+                    <div style={{ ...HOME_CAROUSEL_BODY_STYLE, padding:hasPromotion ? '18px 12px 13px' : HOME_CAROUSEL_BODY_STYLE.padding }}>
+                      <p title={business.name} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         {business.name}
                       </p>
                       <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
@@ -2000,7 +2108,12 @@ export default function Home() {
         </div>
 
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
-          <EventfrogCalendar compact layout="carousel" maxEvents={60} />
+          <EventfrogCalendar
+            compact
+            layout="carousel"
+            maxEvents={60}
+            onEventsChange={setEventfrogEvents}
+          />
         </div>
       </section>
 
@@ -2022,28 +2135,28 @@ export default function Home() {
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
           <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
-            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:152, height:190, borderRadius:16 }}/>)}
+            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, borderRadius:18 }}/>)}
           </div>
         ) : communityHighlights.length === 0 ? (
           <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay grupos publicados." /></div>
         ) : (
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
-              {communityHighlights.map(group => (
+              {communityHighlights.slice(0, 12).map(group => (
                 <Link
                   key={group.id}
                   to={getCommunityHref(group)}
-                  style={{ flexShrink:0, width:152, display:'block', textDecoration:'none' }}
+                  style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, display:'block', textDecoration:'none' }}
                 >
-                  <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-                    <div style={{ height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, overflow:'hidden' }}>
+                  <div style={HOME_CAROUSEL_CARD_STYLE}>
+                    <div style={{ ...HOME_CAROUSEL_MEDIA_STYLE, fontSize:44 }}>
                       {group.photo_url
                         ? <img src={getThumbnailImageUrl(group.photo_url)} alt={group.name} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{group.emoji || '👥'}</span>
                       }
                     </div>
-                    <div style={{ padding:'10px 10px 12px' }}>
-                      <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
+                    <div style={HOME_CAROUSEL_BODY_STYLE}>
+                      <p title={group.name} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         {group.name}
                       </p>
                       <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
@@ -2091,13 +2204,13 @@ export default function Home() {
                 {MOCK_DOCS.map(doc => {
                   const gc = GUIDE_COLORS[doc.cat] || { bg:C.bg, tc:C.primary }
                   return (
-                    <div key={doc.id} onClick={() => setSelectedGuide(doc)} style={{ flexShrink:0, width:152, cursor:'pointer' }}>
-                      <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-                        <div style={{ position:'relative', height:120, background:gc.bg, overflow:'hidden' }}>
+                    <div key={doc.id} onClick={() => setSelectedGuide(doc)} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, cursor:'pointer' }}>
+                      <div style={HOME_CAROUSEL_CARD_STYLE}>
+                        <div style={HOME_CAROUSEL_MEDIA_STYLE}>
                           {doc.img ? (
-                            <img src={doc.img} alt={doc.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                            <img src={doc.img} alt={doc.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
                           ) : (
-                            <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
+                            <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:gc.bg, fontSize:44 }}>
                               {doc.emoji}
                             </div>
                           )}
@@ -2105,8 +2218,8 @@ export default function Home() {
                             {doc.emoji}
                           </span>
                         </div>
-                        <div style={{ padding:'10px 10px 12px' }}>
-                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 6px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.35, minHeight:'2.7em' }}>
+                        <div style={HOME_CAROUSEL_BODY_STYLE}>
+                          <p title={doc.title} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                             {doc.title}
                           </p>
                           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>

@@ -113,23 +113,28 @@ export function FilterChips({ items=[], onRemove, onClear, clearLabel='Limpiar t
 
 export function FilterResultSummary({
   count=0,
+  filterLabel='',
+  filterOptions=[],
+  filterValue='',
+  filterAriaLabel='Filtrar resultados',
+  onFilterChange,
   sortLabel='',
   sortOptions=[],
   sortValue='',
   onSortChange,
 }) {
-  const [showSortMenu, setShowSortMenu] = useState(false)
-  const sortMenuRef = useRef(null)
+  const [openMenu, setOpenMenu] = useState('')
+  const menusRef = useRef(null)
   const resultText = `${count} ${count === 1 ? 'resultado' : 'resultados'}`
 
   useEffect(() => {
-    if (!showSortMenu) return undefined
+    if (!openMenu) return undefined
 
     const closeOnOutsideClick = event => {
-      if (!sortMenuRef.current?.contains(event.target)) setShowSortMenu(false)
+      if (!menusRef.current?.contains(event.target)) setOpenMenu('')
     }
     const closeOnEscape = event => {
-      if (event.key === 'Escape') setShowSortMenu(false)
+      if (event.key === 'Escape') setOpenMenu('')
     }
 
     document.addEventListener('pointerdown', closeOnOutsideClick)
@@ -138,50 +143,99 @@ export function FilterResultSummary({
       document.removeEventListener('pointerdown', closeOnOutsideClick)
       window.removeEventListener('keydown', closeOnEscape)
     }
-  }, [showSortMenu])
+  }, [openMenu])
 
   const selectSort = value => {
     onSortChange?.(value)
-    setShowSortMenu(false)
+    setOpenMenu('')
+  }
+
+  const selectFilter = value => {
+    onFilterChange?.(value)
+    setOpenMenu('')
   }
 
   return (
     <div className="filter-result-summary" aria-live="polite">
       <span>{resultText}</span>
-      {sortLabel && sortOptions.length > 0 && (
-        <div className="filter-sort-wrap" ref={sortMenuRef}>
-          <button
-            type="button"
-            className="filter-result-sort"
-            onClick={() => setShowSortMenu(current => !current)}
-            aria-haspopup="menu"
-            aria-expanded={showSortMenu}
-          >
-            <span aria-hidden="true">⇅</span>
-            <span>{sortLabel}</span>
-          </button>
-          {showSortMenu && (
-            <div className="filter-sort-menu" role="menu" aria-label="Ordenar resultados">
-              {sortOptions.map(option => {
-                const isActive = option.id === sortValue
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={isActive}
-                    className={`filter-sort-option${isActive ? ' is-active' : ''}`}
-                    onClick={() => selectSort(option.id)}
-                  >
-                    <span>{option.label}</span>
-                    {isActive && <span className="filter-sort-option-check" aria-hidden="true">✓</span>}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
+      <div className="filter-result-actions" ref={menusRef}>
+        {filterLabel && filterOptions.length > 0 && (
+          <div className="filter-sort-wrap">
+            <button
+              type="button"
+              className="filter-result-sort filter-result-filter"
+              onClick={() => setOpenMenu(current => current === 'filter' ? '' : 'filter')}
+              aria-haspopup="menu"
+              aria-expanded={openMenu === 'filter'}
+            >
+              <svg className="filter-result-control-icon" aria-hidden="true" viewBox="0 0 20 20" width="16" height="16">
+                <path d="M4 6h12M6.5 10h7M8.5 14h3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                <circle cx="8" cy="6" r="1.4" fill="#fff" stroke="currentColor" strokeWidth="1.4" />
+                <circle cx="11.5" cy="10" r="1.4" fill="#fff" stroke="currentColor" strokeWidth="1.4" />
+                <circle cx="10" cy="14" r="1.4" fill="#fff" stroke="currentColor" strokeWidth="1.4" />
+              </svg>
+              <span>{filterLabel}</span>
+            </button>
+            {openMenu === 'filter' && (
+              <div className="filter-sort-menu" role="menu" aria-label={filterAriaLabel}>
+                {filterOptions.map(option => {
+                  const isActive = option.id === filterValue
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={isActive}
+                      className={`filter-sort-option${isActive ? ' is-active' : ''}`}
+                      onClick={() => selectFilter(option.id)}
+                    >
+                      <span>{option.label}</span>
+                      {isActive && <span className="filter-sort-option-check" aria-hidden="true">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+        {sortLabel && sortOptions.length > 0 && (
+          <div className="filter-sort-wrap">
+            <button
+              type="button"
+              className="filter-result-sort"
+              onClick={() => setOpenMenu(current => current === 'sort' ? '' : 'sort')}
+              aria-haspopup="menu"
+              aria-expanded={openMenu === 'sort'}
+            >
+              <span aria-hidden="true">⇅</span>
+              <span>{sortLabel}</span>
+              <svg className="filter-result-chevron" aria-hidden="true" viewBox="0 0 10 6" width="10" height="6">
+                <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {openMenu === 'sort' && (
+              <div className="filter-sort-menu" role="menu" aria-label="Ordenar resultados">
+                {sortOptions.map(option => {
+                  const isActive = option.id === sortValue
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={isActive}
+                      className={`filter-sort-option${isActive ? ' is-active' : ''}`}
+                      onClick={() => selectSort(option.id)}
+                    >
+                      <span>{option.label}</span>
+                      {isActive && <span className="filter-sort-option-check" aria-hidden="true">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

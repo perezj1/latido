@@ -5,8 +5,9 @@ import { trackAnalyticsEvent } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
 import { Btn, ProgressBar, Input, Select } from '../components/UI'
+import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
-import { INTEREST_OPTIONS } from '../lib/interests'
+import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import toast from 'react-hot-toast'
 
 function getSafeNextPath(value) {
@@ -235,7 +236,11 @@ export default function Auth() {
 
       trackAnalyticsEvent('signup_success', {
         user_id:data.user.id,
-        metadata: { method:'email', entry_point:authEntryPoint },
+        metadata: {
+          method:'email',
+          entry_point:authEntryPoint,
+          interest_count:(Array.isArray(interestsOverride) ? interestsOverride : form.interests).length,
+        },
       })
       toast.success('¡Cuenta creada! Bienvenido/a 🎉')
       navigate(nextPath)
@@ -313,7 +318,7 @@ export default function Auth() {
   const REG_STEPS = [
     { title:'Crea tu cuenta', sub:'Gratis · Sin spam · Sin comisiones' },
     { title:'¿Dónde estás en Suiza?', sub:'Para mostrarte anuncios cercanos primero' },
-    { title:'¿Qué te interesa ahora?', sub:'Elige hasta tres o continúa sin elegir' },
+    { title:'¿Qué buscas en Latido?', sub:'Elige hasta tres para personalizar tu inicio' },
   ]
 
   return (
@@ -381,32 +386,15 @@ export default function Auth() {
 
       {step === 2 && (
         <>
-          <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 13px', marginBottom:16 }}>
-            <p style={{ fontFamily:PP, fontSize:11, color:C.primaryDark, margin:0, lineHeight:1.55 }}>
-              Cuéntanos qué te interesa para mostrarte contenido más relevante para ti.
-            </p>
-          </div>
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, margin:'0 0 9px', letterSpacing:0.5 }}>
             {form.interests.length}/3 SELECCIONADOS
           </p>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:12 }}>
-            {INTEREST_OPTIONS.map(option => {
-              const selected = form.interests.includes(option.id)
-              const unavailable = !selected && form.interests.length >= 3
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={selected}
-                  aria-disabled={unavailable}
-                  onClick={() => toggleInterest(option.id)}
-                  style={{ fontFamily:PP, fontSize:11, fontWeight:700, padding:'9px 13px', borderRadius:999, border:`1.5px solid ${selected ? C.primary : C.border}`, background:selected ? C.primary : '#fff', color:selected ? '#fff' : C.mid, cursor:unavailable ? 'not-allowed' : 'pointer', opacity:unavailable ? 0.5 : 1, boxShadow:selected ? '0 5px 12px rgba(37,99,235,0.2)' : 'none' }}
-                >
-                  {option.emoji} {option.label}
-                </button>
-              )
-            })}
-          </div>
+          <InterestOptionGrid
+            options={ONBOARDING_INTEREST_OPTIONS}
+            selectedIds={form.interests}
+            onToggle={toggleInterest}
+            style={{ marginBottom:12 }}
+          />
           <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 18px', lineHeight:1.55 }}>
             Es opcional. Podrás cambiar estos intereses cuando quieras desde tu perfil.
           </p>
