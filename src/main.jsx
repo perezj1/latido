@@ -257,7 +257,10 @@ scheduleImageConnections()
 installImageLoadingPlaceholders()
 
 function cleanupDevServiceWorkers() {
-  if (import.meta.env.PROD || !('serviceWorker' in navigator)) return
+  const localPushTesting = import.meta.env.DEV
+    && window.location.hostname === 'localhost'
+    && Boolean(import.meta.env.VITE_VAPID_PUBLIC_KEY)
+  if (import.meta.env.PROD || localPushTesting || !('serviceWorker' in navigator)) return
 
   window.addEventListener('load', async () => {
     const hadController = Boolean(navigator.serviceWorker.controller)

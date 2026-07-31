@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useZoneAlerts, dismissZoneAlert, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { useBusinessLeadAlerts } from '../hooks/useBusinessLeadAlerts'
+import { useSavedSearchAlerts } from '../hooks/useSavedSearchAlerts'
 import { markAllRead as markAllMessagesRead, markConvRead, useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { usePushActivation } from '../hooks/usePushActivation'
@@ -582,13 +583,21 @@ function makeAttentionItem(kind, row, overrides={}) {
 export default function Home() {
   const { displayName, isLoggedIn, user, userCanton, userInterests, profileMetaLoaded } = useAuth()
   const navigate = useNavigate()
-  const { alertItems, alertCount } = useZoneAlerts()
+  const [searchParams] = useSearchParams()
+  const { alertItems } = useZoneAlerts()
   const {
     alerts:businessLeadAlerts,
     unreadCount:businessLeadUnreadCount,
     markRead:markBusinessLeadAlertRead,
     markAllRead:markAllBusinessLeadAlertsRead,
   } = useBusinessLeadAlerts()
+  const {
+    alerts:savedSearchAlerts,
+    unreadCount:savedSearchUnreadCount,
+    markRead:markSavedSearchAlertRead,
+    markAllRead:markAllSavedSearchAlertsRead,
+    getAlertPath:getSavedSearchAlertPath,
+  } = useSavedSearchAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
   const { favorites } = useFavorites()
 
@@ -620,7 +629,22 @@ export default function Home() {
   const [selectedGuide, setSelectedGuide] = useState(null)
   useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
 
-  const hasUnreadNotifications = alertCount > 0 || hasUnread || businessLeadUnreadCount > 0
+  const savedSearchEntityKeys = useMemo(() => new Set(savedSearchAlerts.map(alert => {
+    const kind = alert.entity_kind === 'listing'
+      ? 'ad'
+      : alert.entity_kind === 'provider'
+        ? 'business'
+        : alert.entity_kind
+    return `${kind}:${alert.entity_id}`
+  })), [savedSearchAlerts])
+  const visibleZoneAlerts = useMemo(
+    () => alertItems.filter(alert => !savedSearchEntityKeys.has(alert.key)),
+    [alertItems, savedSearchEntityKeys],
+  )
+  const hasUnreadNotifications = visibleZoneAlerts.length > 0
+    || hasUnread
+    || businessLeadUnreadCount > 0
+    || savedSearchUnreadCount > 0
   const rotatedBusinessHighlights = useMemo(
     () => rotateHomeBusinesses(businessHighlights, businessPromotionPlans),
     [businessHighlights, businessPromotionPlans],
@@ -800,6 +824,7 @@ export default function Home() {
     markAllMessagesRead()
     dismissZoneAlerts()
     void markAllBusinessLeadAlertsRead()
+    void markAllSavedSearchAlertsRead()
   }
 
   useEffect(() => {
@@ -813,6 +838,14 @@ export default function Home() {
 
   const firstName = (displayName || 'amigo').split(' ')[0]
   const selectedCantonName = CANTONS.find(canton => canton.code === userCanton)?.name || userCanton || 'Cantón'
+  const initialGlobalSearchQuery = searchParams.get('q') || ''
+  const reopenSavedGlobalSearch = searchParams.get('search') === 'results'
+  const initialGlobalSearchFilters = useMemo(() => ({
+    category:searchParams.get('cat') || '',
+    canton:searchParams.get('canton') || '',
+    location:searchParams.get('location') || '',
+    intent:searchParams.get('intent') || '',
+  }), [searchParams])
 
   const getAdHref = (ad) => String(ad.id).startsWith('job_')
     ? `/tablon?cat=empleo&openJob=${encodeURIComponent(String(ad.id).replace('job_', ''))}`
@@ -1542,12 +1575,42 @@ export default function Home() {
                         </div>
                       )}
 
+                      {savedSearchAlerts.length > 0 && (
+                        <div style={{ padding:'10px 14px 6px' }}>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>NUEVOS PARA TI</p>
+                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                            {savedSearchAlerts.map(alert => (
+                              <button
+                                key={alert.id}
+                                onClick={() => {
+                                  void markSavedSearchAlertRead(alert.id)
+                                  closeNotifPanel()
+                                  navigate(getSavedSearchAlertPath(alert))
+                                }}
+                                style={{ width:'100%', background:'#F5F3FF', border:'1px solid #DDD6FE', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
+                              >
+                                <span style={{ fontSize:18, marginTop:1 }}>🔔</span>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <p style={{ fontFamily:PP, fontWeight:750, fontSize:13, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                    {alert.result_title}
+                                  </p>
+                                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                    {alert.search_name}{alert.result_location ? ` · ${alert.result_location}` : ''}
+                                  </p>
+                                </div>
+                                <span style={{ color:C.primary, fontSize:16 }}>›</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Zone alerts section */}
-                      {alertItems.length > 0 && (
+                      {visibleZoneAlerts.length > 0 && (
                         <div style={{ padding:'10px 14px 10px' }}>
                           <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>ALERTAS DE ZONA</p>
                           <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                            {alertItems.map(item => (
+                            {visibleZoneAlerts.map(item => (
                               <button
                                 key={item.key}
                                 onClick={() => { dismissZoneAlert(item.key); closeNotifPanel(); navigate(item.href) }}
@@ -1587,6 +1650,9 @@ export default function Home() {
               placeholder="Buscar en Latido"
               clearOnClose
               showImmersiveFilterButton={false}
+              initialQuery={initialGlobalSearchQuery}
+              openResultsOnMount={reopenSavedGlobalSearch}
+              searchFilters={initialGlobalSearchFilters}
             />
           </div>
 

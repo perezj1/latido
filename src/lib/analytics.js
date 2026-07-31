@@ -25,6 +25,9 @@ const VERCEL_EVENT_PROPERTIES = {
   partner_service_click: ['partner_id', 'placement', 'service'],
   partner_cross_click: ['partner_id', 'placement'],
   partner_outbound_click: ['partner_id', 'placement', 'action', 'service'],
+  saved_search_created: ['entity_kind', 'category', 'has_query', 'has_location'],
+  saved_search_push_enabled: ['source'],
+  saved_search_result_open: ['source'],
 }
 let lastEventKey = ''
 let lastEventAt = 0

@@ -1,6 +1,9 @@
+import dns from 'node:dns'
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+
+dns.setDefaultResultOrder('verbatim')
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -41,7 +44,7 @@ export default defineConfig(({ mode }) => {
       dedupe: ['react', 'react-dom'],
     },
     server: {
-      host: '127.0.0.1',
+      host: 'localhost',
       port: 8080,
       watch: {
         // Windows + Deno's node-compat fs watcher can crash when Vite tries to

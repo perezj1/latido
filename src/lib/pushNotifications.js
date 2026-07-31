@@ -8,7 +8,10 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 const VAPID_KEY_STORAGE_KEY = 'latido_vapid_public_key'
 const PUSH_MANUAL_DISABLED_KEY = 'latido_push_manual_disabled'
 const PUSH_USER_STORAGE_KEY = 'latido_push_user_id'
-const SERVICE_WORKER_ENABLED = import.meta.env.PROD
+const LOCAL_PUSH_ENABLED = import.meta.env.DEV
+  && typeof window !== 'undefined'
+  && window.location.hostname === 'localhost'
+const SERVICE_WORKER_ENABLED = import.meta.env.PROD || LOCAL_PUSH_ENABLED
 
 export function notifyPushStatusChanged() {
   if (typeof window !== 'undefined') {

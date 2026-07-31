@@ -12,6 +12,7 @@ const SUPABASE_STORAGE_RENDER_SEGMENT = '/storage/v1/render/image/public/'
 const RASTER_IMAGE_EXTENSIONS = new Set(['avif', 'jpeg', 'jpg', 'png', 'webp'])
 const DEFAULT_OPTIMIZED_IMAGE_WIDTH = 960
 const DEFAULT_OPTIMIZED_IMAGE_QUALITY = 72
+const LOCAL_DEVELOPMENT = self.location.hostname === 'localhost'
 const PUBLIC_TABLES = new Set([
   'business_promotion_plans',
   'communities',
@@ -252,6 +253,13 @@ self.addEventListener('fetch', event => {
   const { request } = event
   if (request.method !== 'GET') return
   if (request.cache === 'only-if-cached' && request.mode !== 'same-origin') return
+
+  // En localhost el service worker se usa para probar push, pero Vite debe
+  // seguir sirviendo siempre los módulos y el HMR directamente desde red.
+  if (LOCAL_DEVELOPMENT) {
+    event.respondWith(fetch(request))
+    return
+  }
 
   if (request.headers.has('range') || request.destination === 'video' || request.destination === 'audio') {
     return
