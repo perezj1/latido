@@ -17,7 +17,7 @@ const VERCEL_EVENT_PROPERTIES = {
   search_solution_action: ['action', 'result_type'],
   search_resolution: ['answer', 'result_type', 'had_solution_action'],
   search_resolution_reason: ['answer', 'reason', 'result_type'],
-  signup_success: ['method', 'entry_point'],
+  signup_success: ['method', 'entry_point', 'interest_count'],
   login_success: ['method', 'entry_point'],
   publication_created: ['content_type', 'category', 'intent', 'channel', 'moderation_status'],
   partner_card_impression: ['partner_id', 'placement'],

@@ -23,6 +23,7 @@ import {
 } from '../lib/feedback'
 import { getLifecycleLabel, getPublicationExpiresAt, isPublicationExpired } from '../lib/publicationLifecycle'
 import EmploymentProfileForm, { EmploymentLevelBadge } from '../components/EmploymentProfileForm'
+import InterestOptionGrid from '../components/InterestOptionGrid'
 import {
   createEmptyEmploymentProfile,
   employmentProfileFromJob,
@@ -2838,24 +2839,11 @@ export default function Perfil() {
           <p style={{ fontFamily:PP, fontSize:9.5, fontWeight:700, color:C.light, margin:'0 0 8px', letterSpacing:0.45 }}>
             {normalizeInterestIds(configForm.interests).length}/3 SELECCIONADOS
           </p>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-            {INTEREST_OPTIONS.map(option => {
-              const selected = normalizeInterestIds(configForm.interests).includes(option.id)
-              const unavailable = !selected && normalizeInterestIds(configForm.interests).length >= 3
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={selected}
-                  aria-disabled={unavailable}
-                  onClick={() => toggleConfigInterest(option.id)}
-                  style={{ minHeight:42, fontFamily:PP, fontSize:11.5, fontWeight:750, padding:'10px 15px', borderRadius:999, border:`1.5px solid ${selected ? C.primary : C.border}`, background:selected ? C.primary : '#fff', color:selected ? '#fff' : C.mid, cursor:unavailable ? 'not-allowed' : 'pointer', opacity:unavailable ? 0.5 : 1, boxShadow:selected ? '0 5px 12px rgba(37,99,235,0.18)' : '0 2px 6px rgba(15,23,42,0.03)' }}
-                >
-                  {option.emoji} {option.label}
-                </button>
-              )
-            })}
-          </div>
+          <InterestOptionGrid
+            options={INTEREST_OPTIONS}
+            selectedIds={normalizeInterestIds(configForm.interests)}
+            onToggle={toggleConfigInterest}
+          />
         </div>
 
         <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, margin:'16px 0 6px' }}>Cambiar contraseña</p>

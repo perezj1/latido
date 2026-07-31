@@ -339,13 +339,20 @@ function CarouselEventCard({ event }) {
   )
 }
 
-export default function EventfrogCalendar({ compact = false, maxEvents = 60, showEmbedFallback = true, layout = 'list' }) {
+export default function EventfrogCalendar({
+  compact = false,
+  maxEvents = 60,
+  showEmbedFallback = true,
+  layout = 'list',
+  initialCanton = '',
+  onEventsChange,
+}) {
   const initialVisibleCount = getInitialVisibleCount(layout, compact)
   const visibleStep = getVisibleStep(layout, compact)
   const [rangeKey, setRangeKey] = useState('week')
   const [customDate, setCustomDate] = useState(() => toISODate(new Date()))
   const [filterId, setFilterId] = useState('latino')
-  const [cantonFilter, setCantonFilter] = useState(ALL_CANTONS)
+  const [cantonFilter, setCantonFilter] = useState(() => normalizeCanton(initialCanton) || ALL_CANTONS)
   const [events, setEvents] = useState([])
   const [visibleCount, setVisibleCount] = useState(initialVisibleCount)
   const [loading, setLoading] = useState(false)
@@ -395,10 +402,16 @@ export default function EventfrogCalendar({ compact = false, maxEvents = 60, sho
   }
 
   useEffect(() => {
+    onEventsChange?.(uniqueEvents)
+  }, [onEventsChange, uniqueEvents])
+
+  useEffect(() => {
+    if (loading) return
+    if (uniqueEvents.length === 0) return
     if (cantonFilter === ALL_CANTONS) return
     if (cantonOptions.some(option => option.id === cantonFilter)) return
     setCantonFilter(ALL_CANTONS)
-  }, [cantonFilter, cantonOptions])
+  }, [cantonFilter, cantonOptions, loading, uniqueEvents.length])
 
   useEffect(() => {
     const controller = new AbortController()

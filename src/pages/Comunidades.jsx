@@ -11,6 +11,7 @@ import {
   MOCK_NEGOCIO_SERVICES,
   MOCK_EVENTOS_LATINOS,
   CANTONS,
+  CITIES_BY_CANTON,
   COMMUNITY_CATS,
   VISIBLE_NEGOCIO_TYPES,
   getNegocioTypeMeta,
@@ -308,6 +309,28 @@ function normalizeCommunity(group) {
     photo_url: group.photo_url || '',
     created_at: group.created_at || '',
   }
+}
+
+function normalizeDirectoryPlace(value='') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+}
+
+function communityMatchesLocation(group={}, location='') {
+  if (!location) return true
+
+  const canton = CANTONS.find(item => item.code === location)
+  if (!canton) return normalizeDirectoryPlace(group.city) === normalizeDirectoryPlace(location)
+
+  const groupCity = normalizeDirectoryPlace(group.city)
+  if (!groupCity) return false
+  if (groupCity === normalizeDirectoryPlace(canton.name)) return true
+
+  return (CITIES_BY_CANTON[canton.code] || [])
+    .some(city => normalizeDirectoryPlace(city) === groupCity)
 }
 
 function DirectoryCategoryPills({ options=[], value='', onChange, label='Categorías' }) {
@@ -1437,6 +1460,9 @@ export default function Comunidades() {
   const { businessSlug, eventSlug } = useParams()
   const { isLoggedIn, user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const requestedCanton = CANTONS.some(item => item.code === searchParams.get('canton'))
+    ? searchParams.get('canton')
+    : ''
   const [communities, setCommunities] = useState(() => comunidadesCache.data?.communities ?? [])
   const [businesses, setBusinesses] = useState(() => comunidadesCache.data?.businesses ?? MOCK_NEGOCIOS)
   const [businessServices, setBusinessServices] = useState(() => comunidadesCache.data?.businessServices ?? MOCK_NEGOCIO_SERVICES)
@@ -1454,12 +1480,12 @@ export default function Comunidades() {
   const [cat, setCat] = useState(() => searchParams.get('cat') || '')
   const [negType, setNegType] = useState('')
   const [eventType, setEventType] = useState('')
-  const [locationFilter, setLocationFilter] = useState('')
+  const [locationFilter, setLocationFilter] = useState(() => requestedCanton)
   const [businessSort, setBusinessSort] = useState('recommended')
   const [communitySort, setCommunitySort] = useState('newest')
   const [showDirectoryFilters, setShowDirectoryFilters] = useState(false)
   const [directoryFilterDraft, setDirectoryFilterDraft] = useState({
-    location:'',
+    location:requestedCanton,
     sort:'recommended',
   })
   const [selectedCommunity, setSelectedCommunity] = useState(null)
@@ -1837,17 +1863,22 @@ export default function Comunidades() {
       if (group.city && group.city !== 'Suiza') citySet.add(group.city)
     }
     const cities = [...citySet].sort((a, b) => a.localeCompare(b, 'es'))
-    return [{ id:'', label:'Todas las ciudades' }, ...cities.map(city => ({ id:city, label:`\u{1F4CD} ${city}` }))]
-  }, [communities])
+    const requestedCantonMeta = CANTONS.find(item => item.code === requestedCanton)
+    return [
+      { id:'', label:'Todas las ciudades' },
+      ...(requestedCantonMeta
+        ? [{ id:requestedCantonMeta.code, label:`📍 Cerca de ti · ${requestedCantonMeta.name}` }]
+        : []),
+      ...cities.map(city => ({ id:city, label:`\u{1F4CD} ${city}` })),
+    ]
+  }, [communities, requestedCanton])
   const eventTypeOptions = useMemo(() => EVENTO_TYPES.map(item => ({ id:item.id, label:item.label })), [])
 
   const buildDirectoryFilterChips = values => {
     const chips = []
 
     if (values.location) {
-      const canton = tab === 'negocios'
-        ? CANTONS.find(item => item.code === values.location)
-        : null
+      const canton = CANTONS.find(item => item.code === values.location)
       chips.push({ key:'location', label:canton?.name || values.location })
     }
     return chips
@@ -1923,7 +1954,7 @@ export default function Comunidades() {
   const filteredComm = communities
     .filter(group =>
       (!cat || group.cat === cat) &&
-      (!locationFilter || group.city === locationFilter) &&
+      communityMatchesLocation(group, locationFilter) &&
       (!hasSearch || (
         hasResolvedSearch
           ? resolvedSearchRank.has(`community:${group.id}`)
@@ -2044,7 +2075,7 @@ export default function Comunidades() {
     if (tab === 'comunidades') {
       return communities.filter(group =>
         (!cat || group.cat === cat) &&
-        (!directoryFilterDraft.location || group.city === directoryFilterDraft.location) &&
+        communityMatchesLocation(group, directoryFilterDraft.location) &&
         (!hasSearch || (
           hasResolvedSearch
             ? resolvedSearchRank.has(`community:${group.id}`)
@@ -2327,7 +2358,7 @@ export default function Comunidades() {
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, margin:0 }}>EVENTOS EN SUIZA</p>
               <span style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, letterSpacing:0, textTransform:'none' }}>{eventfrogOpen ? 'Ocultar' : 'Mostrar'}</span>
             </button>
-            {eventfrogOpen && <EventfrogCalendar />}
+            {eventfrogOpen && <EventfrogCalendar initialCanton={requestedCanton} />}
           </div>
 
           {/* Eventos de la comunidad */}
@@ -2426,7 +2457,7 @@ export default function Comunidades() {
             <div className="filter-sheet-options-grid">
               <label>
                 <span style={FILTER_PANEL_TITLE_STYLE}>
-                  {tab === 'negocios' ? 'Cantón' : 'Ciudad'}
+                  {tab === 'negocios' ? 'Cantón' : 'Ubicación'}
                 </span>
                 <select
                   className="filter-sheet-control"
