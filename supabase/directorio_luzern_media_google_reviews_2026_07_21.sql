@@ -76,7 +76,7 @@ WITH media (name, website, photo_url) AS (
     (
       'Thomas Wüthrich, Rechtsanwalt',
       'https://www.anwalt-luzern.ch',
-      'https://www.anwalt-luzern.ch/images/Logo/logo-text7.png'
+      NULL
     ),
     (
       'Cosmetic Institute Beauty Rocío',
