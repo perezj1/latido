@@ -12,6 +12,7 @@ import {
   removeRecentSearch,
 } from '../lib/searchHistory'
 import { C, PP } from '../lib/theme'
+import { Sheet } from './UI'
 import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import {
@@ -43,7 +44,7 @@ import {
   getEmploymentProfileRows,
   getEmploymentProfileLevel,
 } from '../lib/employmentProfile'
-import { FilterIcon } from './FilterWorkspace'
+import { FilterIcon, FILTER_PANEL_TITLE_STYLE } from './FilterWorkspace'
 import SavedSearchButton from './SavedSearchButton'
 import {
   buildLatidoSearchRpcParams,
@@ -94,6 +95,49 @@ const SEARCH_CACHE = {
 }
 
 const EMPTY_SEARCH_FILTERS = Object.freeze({ category:'', canton:'', location:'', intent:'' })
+const EMPTY_IMMERSIVE_EXTRA_FILTERS = Object.freeze({ postalCode:'', priceRange:'', privacy:'' })
+const EMPTY_IMMERSIVE_FILTER_DRAFT = Object.freeze({
+  resultType:'',
+  category:'',
+  intent:'',
+  canton:'',
+  postalCode:'',
+  priceRange:'',
+  privacy:'',
+})
+const SEARCH_INTENT_FILTER_OPTIONS = [
+  { id:'', label:'Ofertas y solicitudes' },
+  { id:'ofrece', label:'Ofertas' },
+  { id:'busca', label:'Solicitudes' },
+]
+const SEARCH_PRICE_FILTER_OPTIONS = [
+  { id:'', label:'Cualquier precio' },
+  { id:'free', label:'Gratis' },
+  { id:'under_100', label:'Hasta CHF 100' },
+  { id:'100_500', label:'CHF 100–500' },
+  { id:'500_2000', label:'CHF 500–2.000' },
+  { id:'over_2000', label:'Más de CHF 2.000' },
+]
+const SEARCH_FILTER_CONTROL_STYLE = {
+  width:'100%',
+  boxSizing:'border-box',
+  minHeight:50,
+  border:`1.5px solid ${C.border}`,
+  borderRadius:13,
+  padding:'12px 14px',
+  fontFamily:PP,
+  fontSize:12,
+  fontWeight:600,
+  background:'#fff',
+  outline:'none',
+}
+
+function getSearchFilterControlStyle(value) {
+  return {
+    ...SEARCH_FILTER_CONTROL_STYLE,
+    color:value ? C.text : C.light,
+  }
+}
 
 const TYPE_COLORS = {
   ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Anuncio' },
@@ -295,18 +339,45 @@ function matchesCanton(filterMeta, cantonCode) {
   )
 }
 
+function isRequestSearchIntent(value) {
+  return ['busca', 'compra'].includes(value)
+}
+
+function matchesSearchIntent(value, selectedIntent) {
+  if (!selectedIntent) return true
+  if (!value) return false
+  return selectedIntent === 'busca'
+    ? isRequestSearchIntent(value)
+    : !isRequestSearchIntent(value)
+}
+
 function matchesSearchFilters(result, filters) {
   const meta = result.filterMeta || {}
   if (filters?.category && !meta.categories?.includes(filters.category)) return false
   if (filters?.canton && !matchesCanton(meta, filters.canton)) return false
   if (filters?.location && normalizeSearchText(meta.location) !== normalizeSearchText(filters.location)) return false
-  if (filters?.intent) {
-    const intentMatches = filters.intent === 'ofrece'
-      ? !['busca', 'compra'].includes(meta.intent)
-      : filters.intent === 'busca'
-        ? ['busca', 'compra'].includes(meta.intent)
-        : meta.intent === filters.intent
-    if (!intentMatches) return false
+  if (!matchesSearchIntent(meta.intent, filters?.intent)) return false
+  return true
+}
+
+function matchesSearchPrice(value, priceRange) {
+  if (!priceRange) return true
+  if (value === null) return false
+  if (priceRange === 'free') return value === 0
+  if (priceRange === 'under_100') return value > 0 && value <= 100
+  if (priceRange === '100_500') return value >= 100 && value <= 500
+  if (priceRange === '500_2000') return value >= 500 && value <= 2000
+  if (priceRange === 'over_2000') return value > 2000
+  return true
+}
+
+function matchesImmersiveExtraFilters(result, filters) {
+  const postalCode = String(filters?.postalCode || '').trim()
+  if (postalCode && !String(result?.filterMeta?.postalCode || '').startsWith(postalCode)) return false
+  if (!matchesSearchPrice(getSearchResultPrice(result), filters?.priceRange)) return false
+  if (filters?.privacy) {
+    const privacy = result?.privacy || 'public'
+    if (privacy !== filters.privacy) return false
   }
   return true
 }
@@ -1347,14 +1418,19 @@ export default function GlobalSearch({
   const [immersiveLimit, setImmersiveLimit] = useState(FULL_SEARCH_PAGE_SIZE)
   const [immersiveFiltersOpen, setImmersiveFiltersOpen] = useState(false)
   const [immersiveResultFiltersOpen, setImmersiveResultFiltersOpen] = useState(false)
+  const [immersiveSearchFilterOverrides, setImmersiveSearchFilterOverrides] = useState({})
+  const [immersiveExtraFilters, setImmersiveExtraFilters] = useState(EMPTY_IMMERSIVE_EXTRA_FILTERS)
+  const [immersiveFilterDraft, setImmersiveFilterDraft] = useState(EMPTY_IMMERSIVE_FILTER_DRAFT)
   const [dismissedIntentForQuery, setDismissedIntentForQuery] = useState(null)
   const [recentSearches, setRecentSearches] = useState([])
   const q = value === undefined ? internalQuery : String(value || '')
+  const baseSearchFilterKey = `${searchFilters.category || ''}|${searchFilters.canton || ''}|${searchFilters.location || ''}|${searchFilters.intent || ''}`
+  const overriddenSearchFilters = { ...searchFilters, ...immersiveSearchFilterOverrides }
   const intentDismissed = dismissedIntentForQuery !== null
     && dismissedIntentForQuery === q.trim()
   const effectiveSearchFilters = intentDismissed
-    ? { ...searchFilters, intent:'' }
-    : searchFilters
+    ? { ...overriddenSearchFilters, intent:'' }
+    : overriddenSearchFilters
   const searchFilterKey = `${effectiveSearchFilters.category || ''}|${effectiveSearchFilters.canton || ''}|${effectiveSearchFilters.location || ''}|${effectiveSearchFilters.intent || ''}`
   const setQ = useCallback(nextQuery => {
     setInternalQuery(nextQuery)
@@ -1415,15 +1491,19 @@ export default function GlobalSearch({
   const availableTypes = useMemo(() => {
     const seen = new Set()
     const types = []
-    for (const r of searchFilteredResults) {
+    for (const r of results) {
+      if (allowedResultTypes && !allowedResultTypes.has(r.type)) continue
       if (!seen.has(r.type)) { seen.add(r.type); types.push(r.type) }
     }
     return types
-  }, [searchFilteredResults])
+  }, [allowedResultTypes, results])
 
   const resultPool = useMemo(
-    () => activeFilter ? searchFilteredResults.filter(r => r.type === activeFilter) : searchFilteredResults,
-    [activeFilter, searchFilteredResults]
+    () => searchFilteredResults.filter(result => (
+      (!activeFilter || result.type === activeFilter)
+      && matchesImmersiveExtraFilters(result, immersiveExtraFilters)
+    )),
+    [activeFilter, immersiveExtraFilters, searchFilteredResults]
   )
   const partnerService = useMemo(
     () => getPartnerServiceMatch(deferredQuery),
@@ -1519,6 +1599,13 @@ export default function GlobalSearch({
         ].filter(Boolean).join(' '),
         locationText:[business.city, business.canton].filter(Boolean).join(' '),
         aliasesText:editorialPartner?.aliases?.join(' ') || '',
+        filterMeta:{
+          categories:getBusinessCategoryKeys(business),
+          canton:business.canton,
+          city:business.city,
+          location:business.city,
+          intent:'ofrece',
+        },
       })
     }
 
@@ -1542,6 +1629,13 @@ export default function GlobalSearch({
         ].filter(Boolean).join(' '),
         locationText:[partner.city, partner.canton].filter(Boolean).join(' '),
         aliasesText:partner.aliases.join(' '),
+        filterMeta:{
+          categories:partner.categories,
+          canton:partner.canton,
+          city:partner.city,
+          location:partner.city,
+          intent:'ofrece',
+        },
       })
     }
 
@@ -1608,9 +1702,17 @@ export default function GlobalSearch({
     () => sortImmersiveResults(resultPool, immersiveSort),
     [immersiveSort, resultPool]
   )
-  const immersivePartnerEntries = useMemo(
+  const baseImmersivePartnerEntries = useMemo(
     () => deferredQuery.trim() ? matchingPartnerEntries : startPartnerEntries,
     [deferredQuery, matchingPartnerEntries, startPartnerEntries]
+  )
+  const immersivePartnerEntries = useMemo(
+    () => baseImmersivePartnerEntries.filter(partner => (
+      (!activeFilter || activeFilter === 'business')
+      && matchesSearchFilters(partner, effectiveSearchFilters)
+      && matchesImmersiveExtraFilters(partner, immersiveExtraFilters)
+    )),
+    [activeFilter, baseImmersivePartnerEntries, immersiveExtraFilters, searchFilterKey]
   )
   const previewPartnerEntries = useMemo(
     () => immersivePartnerEntries.slice(0, 2),
@@ -1631,6 +1733,63 @@ export default function GlobalSearch({
     [immersiveLimit, immersiveOrganicResults]
   )
   const immersiveResultCount = immersivePartnerEntries.length + immersiveOrganicResults.length
+  const immersiveFilterDraftResultCount = useMemo(() => {
+    if (!immersiveResultFiltersOpen) return immersiveResultCount
+
+    const draftSearchFilters = {
+      ...effectiveSearchFilters,
+      category:immersiveFilterDraft.category,
+      canton:immersiveFilterDraft.canton,
+      location:'',
+      intent:immersiveFilterDraft.intent,
+    }
+    const draftExtraFilters = {
+      postalCode:immersiveFilterDraft.postalCode,
+      priceRange:immersiveFilterDraft.priceRange,
+      privacy:immersiveFilterDraft.privacy,
+    }
+    const parsedDraftAssistantQuery = assistantMode
+      ? parseLatidoAssistantQuery(deferredQuery)
+      : null
+    const draftAssistantQuery = parsedDraftAssistantQuery?.active && immersiveFilterDraft.intent
+      ? { ...parsedDraftAssistantQuery, resultIntents:[immersiveFilterDraft.intent] }
+      : parsedDraftAssistantQuery
+    const draftResults = searchAll(
+      deferredQuery,
+      searchDatasets,
+      isLoggedIn,
+      hasActiveSearchFilters(draftSearchFilters),
+      draftAssistantQuery,
+    ).filter(result => (
+      (!allowedResultTypes || allowedResultTypes.has(result.type))
+      && (!immersiveFilterDraft.resultType || result.type === immersiveFilterDraft.resultType)
+      && matchesSearchFilters(result, draftSearchFilters)
+      && matchesImmersiveExtraFilters(result, draftExtraFilters)
+    ))
+    const draftPartners = baseImmersivePartnerEntries.filter(partner => (
+      (!immersiveFilterDraft.resultType || immersiveFilterDraft.resultType === 'business')
+      && matchesSearchFilters(partner, draftSearchFilters)
+      && matchesImmersiveExtraFilters(partner, draftExtraFilters)
+    ))
+    const partnerIds = new Set(draftPartners.map(partner => String(partner.id)))
+    const organicCount = draftResults.filter(result => !(
+      result.type === 'business'
+      && result.partnerPlan === 'premium'
+      && partnerIds.has(String(result.id))
+    )).length
+    return draftPartners.length + organicCount
+  }, [
+    allowedResultTypes,
+    assistantMode,
+    baseImmersivePartnerEntries,
+    deferredQuery,
+    immersiveFilterDraft,
+    immersiveResultCount,
+    immersiveResultFiltersOpen,
+    isLoggedIn,
+    searchDatasets,
+    searchFilterKey,
+  ])
   const blockingSearchLoad = (
     (loadingData && !dataReady)
     || assistantLoading
@@ -1654,21 +1813,41 @@ export default function GlobalSearch({
   const appliedSearchChips = [
     effectiveSearchFilters.category && {
       key:'category',
-      label:AD_CATS.find(category => category.id === effectiveSearchFilters.category)?.label
+      label:`Categoría: ${AD_CATS.find(category => category.id === effectiveSearchFilters.category)?.label
         || getNegocioTypeMeta(effectiveSearchFilters.category)?.label
-        || effectiveSearchFilters.category,
+        || effectiveSearchFilters.category}`,
     },
     (effectiveSearchFilters.canton || effectiveSearchFilters.location) && {
       key:effectiveSearchFilters.canton ? 'canton' : 'location',
-      label:CANTONS.find(canton => canton.code === effectiveSearchFilters.canton)?.name
+      label:`Zona: ${CANTONS.find(canton => canton.code === effectiveSearchFilters.canton)?.name
         || effectiveSearchFilters.location
-        || effectiveSearchFilters.canton,
+        || effectiveSearchFilters.canton}`,
     },
     effectiveSearchFilters.intent && {
       key:'intent',
-      label:['busca', 'compra'].includes(effectiveSearchFilters.intent) ? 'Solicitudes' : 'Ofertas',
+      label:`Publicación: ${isRequestSearchIntent(effectiveSearchFilters.intent) ? 'Solicitud' : 'Oferta'}`,
     },
   ].filter(Boolean)
+  const immersiveExtraFilterChips = [
+    activeFilter && {
+      key:'resultType',
+      label:`Tipo: ${(TYPE_COLORS[activeFilter] || TYPE_COLORS.ad).label}`,
+    },
+    immersiveExtraFilters.postalCode && {
+      key:'postalCode',
+      label:`Código postal: ${immersiveExtraFilters.postalCode}`,
+    },
+    immersiveExtraFilters.priceRange && {
+      key:'priceRange',
+      label:`Precio: ${SEARCH_PRICE_FILTER_OPTIONS.find(option => option.id === immersiveExtraFilters.priceRange)?.label || immersiveExtraFilters.priceRange}`,
+    },
+    immersiveExtraFilters.privacy && {
+      key:'privacy',
+      label:`Visibilidad: ${immersiveExtraFilters.privacy === 'private' ? 'Solo usuarios' : 'Públicas'}`,
+    },
+  ].filter(Boolean)
+  const allImmersiveResultFilterChips = [...appliedSearchChips, ...immersiveExtraFilterChips]
+  const immersiveActiveFilterCount = allImmersiveResultFilterChips.length
   const showingRelatedAlternatives = resultPool.length > 0
     && resultPool.every(result => String(result.matchReason || '').includes('(alternativa)'))
   const savedSearchDraft = useMemo(() => {
@@ -2001,6 +2180,7 @@ export default function GlobalSearch({
   const closeImmersive = useCallback(() => {
     setImmersiveOpen(false)
     setImmersiveFiltersOpen(false)
+    setImmersiveResultFiltersOpen(false)
     setFocused(false)
     setActiveIdx(-1)
     if (clearOnClose) setQ('')
@@ -2069,10 +2249,15 @@ export default function GlobalSearch({
   }, [immersiveOpen])
 
   useEffect(() => {
+    setImmersiveSearchFilterOverrides({})
+    setImmersiveExtraFilters(EMPTY_IMMERSIVE_EXTRA_FILTERS)
+  }, [baseSearchFilterKey])
+
+  useEffect(() => {
     setActiveFilter(null)
     setActiveIdx(-1)
     setExpandedResults(false)
-  }, [searchFilterKey])
+  }, [baseSearchFilterKey])
 
   useEffect(() => {
     if (q.trim().length < 2) {
@@ -2090,7 +2275,7 @@ export default function GlobalSearch({
     setActiveIdx(-1)
     setActiveFilter(null)
     setExpandedResults(false)
-  }, [deferredQuery, searchFilterKey])
+  }, [baseSearchFilterKey, deferredQuery])
 
   useEffect(() => {
     if (!onResolvedResultsChange) return
@@ -2248,7 +2433,65 @@ export default function GlobalSearch({
   const showDropdown = !immersiveOpen && showResultsDropdown && focused && (q.length >= 2 || hasSearchFilters)
 
   const removeSearchFilter = key => {
-    onSearchFiltersChange?.({ ...searchFilters, [key]:'' })
+    const clearedFilters = { [key]:'' }
+    if (key === 'canton') clearedFilters.location = ''
+    if (key === 'location') clearedFilters.canton = ''
+    setImmersiveSearchFilterOverrides(previous => ({ ...previous, ...clearedFilters }))
+    onSearchFiltersChange?.({ ...searchFilters, ...clearedFilters })
+    setImmersiveLimit(FULL_SEARCH_PAGE_SIZE)
+  }
+
+  const removeImmersiveResultFilter = key => {
+    if (key === 'resultType') {
+      setActiveFilter(null)
+    } else if (Object.hasOwn(EMPTY_IMMERSIVE_EXTRA_FILTERS, key)) {
+      setImmersiveExtraFilters(previous => ({ ...previous, [key]:'' }))
+    } else {
+      removeSearchFilter(key)
+    }
+    setImmersiveLimit(FULL_SEARCH_PAGE_SIZE)
+  }
+
+  const openImmersiveResultFilters = () => {
+    setImmersiveFilterDraft({
+      resultType:activeFilter || '',
+      category:effectiveSearchFilters.category || '',
+      intent:effectiveSearchFilters.intent
+        ? (isRequestSearchIntent(effectiveSearchFilters.intent) ? 'busca' : 'ofrece')
+        : '',
+      canton:effectiveSearchFilters.canton || '',
+      postalCode:immersiveExtraFilters.postalCode || '',
+      priceRange:immersiveExtraFilters.priceRange || '',
+      privacy:immersiveExtraFilters.privacy || '',
+    })
+    setImmersiveResultFiltersOpen(true)
+  }
+
+  const updateImmersiveFilterDraft = (key, value) => {
+    setImmersiveFilterDraft(previous => ({ ...previous, [key]:value }))
+  }
+
+  const resetImmersiveFilterDraft = () => {
+    setImmersiveFilterDraft({ ...EMPTY_IMMERSIVE_FILTER_DRAFT })
+  }
+
+  const applyImmersiveFilterDraft = () => {
+    setActiveFilter(immersiveFilterDraft.resultType || null)
+    setImmersiveSearchFilterOverrides(previous => ({
+      ...previous,
+      category:immersiveFilterDraft.category,
+      canton:immersiveFilterDraft.canton,
+      location:'',
+      intent:immersiveFilterDraft.intent,
+    }))
+    setImmersiveExtraFilters({
+      postalCode:immersiveFilterDraft.postalCode,
+      priceRange:immersiveFilterDraft.priceRange,
+      privacy:immersiveFilterDraft.privacy,
+    })
+    setImmersiveLimit(FULL_SEARCH_PAGE_SIZE)
+    setActiveIdx(-1)
+    setImmersiveResultFiltersOpen(false)
   }
 
   const removeAssistantCriterion = criterionKey => {
@@ -2753,7 +2996,7 @@ export default function GlobalSearch({
               </div>
             ) : immersiveView === 'preview' ? (
               <div className="latido-search-preview">
-                {assistantCriteria.length > 0 && (
+                {(assistantCriteria.length > 0 || appliedSearchChips.length > 0) && (
                   <section className="latido-search-understood" aria-label="Interpretación de la búsqueda">
                     <div>
                       <strong>Latido ha entendido</strong>
@@ -2877,18 +3120,13 @@ export default function GlobalSearch({
                     <div className="latido-search-results-toolbar__actions">
                       <button
                         type="button"
-                        className={immersiveResultFiltersOpen ? 'is-active' : ''}
+                        className={(immersiveResultFiltersOpen || immersiveActiveFilterCount > 0) ? 'is-active' : ''}
                         aria-expanded={immersiveResultFiltersOpen}
-                        onClick={() => {
-                          if (filtersContent || onFiltersRequest) {
-                            handleImmersiveFilters()
-                          } else {
-                            setImmersiveResultFiltersOpen(open => !open)
-                          }
-                        }}
+                        aria-label={`Filtrar resultados${immersiveActiveFilterCount ? `, ${immersiveActiveFilterCount} activos` : ''}`}
+                        onClick={openImmersiveResultFilters}
                       >
                         <FilterIcon size={14} />
-                        Filtrar
+                        <span>Filtrar{immersiveActiveFilterCount ? ` (${immersiveActiveFilterCount})` : ''}</span>
                       </button>
                       <label className="latido-search-sort-control">
                         <span className="sr-only">Ordenar resultados</span>
@@ -2915,25 +3153,8 @@ export default function GlobalSearch({
                   )}
                 </div>
 
-                {immersiveResultFiltersOpen && (availableTypes.length > 1 || appliedSearchChips.length > 0 || assistantCriteria.length > 0) && (
+                {(allImmersiveResultFilterChips.length > 0 || assistantCriteria.length > 0) && (
                   <div className="latido-search-result-filters">
-                    {availableTypes.length > 1 && (
-                      <div className="latido-search-type-tabs" role="tablist" aria-label="Tipo de resultado">
-                        <button type="button" className={!activeFilter ? 'is-active' : ''} onClick={() => setActiveFilter(null)}>Todos</button>
-                        {availableTypes.map(type => (
-                          <button
-                            type="button"
-                            role="tab"
-                            aria-selected={activeFilter === type}
-                            className={activeFilter === type ? 'is-active' : ''}
-                            key={type}
-                            onClick={() => setActiveFilter(type)}
-                          >
-                            {(TYPE_COLORS[type] || TYPE_COLORS.ad).label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                     <div className="latido-search-chips">
                       {assistantCriteria.map(criterion => (
                         <button
@@ -2946,8 +3167,8 @@ export default function GlobalSearch({
                           {criterion.key !== 'scope' && <CloseGlyph size={13} />}
                         </button>
                       ))}
-                      {appliedSearchChips.map(chip => (
-                        <button key={chip.key} type="button" onClick={() => removeSearchFilter(chip.key)}>
+                      {allImmersiveResultFilterChips.map(chip => (
+                        <button key={chip.key} type="button" onClick={() => removeImmersiveResultFilter(chip.key)}>
                           <span>{chip.label}</span>
                           <CloseGlyph size={13} />
                         </button>
@@ -3029,6 +3250,140 @@ export default function GlobalSearch({
               </div>
             )}
           </main>
+
+          <Sheet
+            show={immersiveResultFiltersOpen}
+            onClose={() => setImmersiveResultFiltersOpen(false)}
+            syncHistory={false}
+            zIndex={1100}
+            lockBody={false}
+          >
+            <form
+              className="filter-sheet-content"
+              onSubmit={event => {
+                event.preventDefault()
+                applyImmersiveFilterDraft()
+              }}
+            >
+              <div className="filter-sheet-heading">
+                <h2>Filtros</h2>
+                <button type="button" onClick={resetImmersiveFilterDraft}>Restablecer</button>
+              </div>
+
+              <div className="filter-sheet-options-grid" style={{ marginTop:0 }}>
+                <label>
+                  <span style={FILTER_PANEL_TITLE_STYLE}>Tipo de resultado</span>
+                  <select
+                    className="filter-sheet-control"
+                    value={immersiveFilterDraft.resultType}
+                    onChange={event => updateImmersiveFilterDraft('resultType', event.target.value)}
+                    style={getSearchFilterControlStyle(immersiveFilterDraft.resultType)}
+                  >
+                    <option value="">Todos los tipos</option>
+                    {availableTypes.map(type => (
+                      <option key={type} value={type}>{(TYPE_COLORS[type] || TYPE_COLORS.ad).label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span style={FILTER_PANEL_TITLE_STYLE}>Categoría</span>
+                  <select
+                    className="filter-sheet-control"
+                    value={immersiveFilterDraft.category}
+                    onChange={event => updateImmersiveFilterDraft('category', event.target.value)}
+                    style={getSearchFilterControlStyle(immersiveFilterDraft.category)}
+                  >
+                    <option value="">Todas las categorías</option>
+                    {AD_CATS.map(category => (
+                      <option key={category.id} value={category.id}>{category.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span style={FILTER_PANEL_TITLE_STYLE}>Publicación</span>
+                  <select
+                    className="filter-sheet-control"
+                    value={immersiveFilterDraft.intent}
+                    onChange={event => updateImmersiveFilterDraft('intent', event.target.value)}
+                    style={getSearchFilterControlStyle(immersiveFilterDraft.intent)}
+                  >
+                    {SEARCH_INTENT_FILTER_OPTIONS.map(option => (
+                      <option key={option.id || 'all'} value={option.id}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="filter-sheet-location-grid" style={{ marginTop:16 }}>
+                <label>
+                  <span style={FILTER_PANEL_TITLE_STYLE}>Cantón</span>
+                  <select
+                    className="filter-sheet-control"
+                    value={immersiveFilterDraft.canton}
+                    onChange={event => updateImmersiveFilterDraft('canton', event.target.value)}
+                    style={getSearchFilterControlStyle(immersiveFilterDraft.canton)}
+                  >
+                    <option value="">Toda Suiza</option>
+                    {CANTONS.map(canton => (
+                      <option key={canton.code} value={canton.code}>{canton.code} · {canton.name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span style={FILTER_PANEL_TITLE_STYLE}>Código postal</span>
+                  <input
+                    className="filter-sheet-control"
+                    inputMode="numeric"
+                    placeholder="PLZ"
+                    value={immersiveFilterDraft.postalCode}
+                    onChange={event => updateImmersiveFilterDraft('postalCode', event.target.value.replace(/\D/g, '').slice(0, 4))}
+                    maxLength={4}
+                    style={getSearchFilterControlStyle(immersiveFilterDraft.postalCode)}
+                  />
+                </label>
+              </div>
+
+              <div className="filter-sheet-options-grid">
+                <label>
+                  <span style={FILTER_PANEL_TITLE_STYLE}>Precio</span>
+                  <select
+                    className="filter-sheet-control"
+                    value={immersiveFilterDraft.priceRange}
+                    onChange={event => updateImmersiveFilterDraft('priceRange', event.target.value)}
+                    style={getSearchFilterControlStyle(immersiveFilterDraft.priceRange)}
+                  >
+                    {SEARCH_PRICE_FILTER_OPTIONS.map(option => (
+                      <option key={option.id || 'all'} value={option.id}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                {isLoggedIn && (
+                  <label>
+                    <span style={FILTER_PANEL_TITLE_STYLE}>Visibilidad</span>
+                    <select
+                      className="filter-sheet-control"
+                      value={immersiveFilterDraft.privacy}
+                      onChange={event => updateImmersiveFilterDraft('privacy', event.target.value)}
+                      style={getSearchFilterControlStyle(immersiveFilterDraft.privacy)}
+                    >
+                      <option value="">Todas las publicaciones</option>
+                      <option value="public">Públicas</option>
+                      <option value="private">Solo para usuarios</option>
+                    </select>
+                  </label>
+                )}
+
+              </div>
+
+              <button type="submit" className="filter-show-results filter-sheet-submit">
+                Mostrar {immersiveFilterDraftResultCount} {immersiveFilterDraftResultCount === 1 ? 'resultado' : 'resultados'}
+              </button>
+            </form>
+          </Sheet>
         </div>
       </div>,
       document.body
