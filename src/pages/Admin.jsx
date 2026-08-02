@@ -568,6 +568,52 @@ function averageMetricValue(items, key) {
   return Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1))
 }
 
+function feedbackPercentage(value, total) {
+  return total ? Math.round((value / total) * 100) : 0
+}
+
+function ratingFeedbackTone(rating) {
+  const values = [rating?.overall_rating, rating?.usefulness_rating]
+    .map(Number)
+    .filter(value => Number.isFinite(value) && value >= 1)
+  if (!values.length) return 'partial'
+  const average = values.reduce((sum, value) => sum + value, 0) / values.length
+  if (average >= 4) return 'positive'
+  if (average < 3) return 'negative'
+  return 'partial'
+}
+
+function feedbackToneMatches(filter, tone, hasComment = false) {
+  if (filter === 'all') return true
+  if (filter === 'comments') return hasComment
+  return filter === tone
+}
+
+function feedbackSearchMatches(query, ...values) {
+  if (!query) return true
+  return values.some(value => String(value || '').toLocaleLowerCase('es').includes(query))
+}
+
+function formatFeedbackDuration(value) {
+  const milliseconds = Number(value)
+  if (!Number.isFinite(milliseconds) || milliseconds < 0) return 'Sin tiempo registrado'
+  const seconds = Math.round(milliseconds / 1000)
+  if (seconds < 60) return `${seconds} s`
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  if (minutes < 60) return remainingSeconds ? `${minutes} min ${remainingSeconds} s` : `${minutes} min`
+  const hours = Math.floor(minutes / 60)
+  return `${hours} h ${minutes % 60} min`
+}
+
+function humanizeFeedbackValue(value) {
+  const clean = String(value || '').trim()
+  if (!clean) return ''
+  return clean
+    .replace(/[_-]+/g, ' ')
+    .replace(/^./, character => character.toUpperCase())
+}
+
 function readMetadata(value) {
   if (!value) return {}
   if (typeof value === 'object') return value
@@ -1099,7 +1145,7 @@ function InsightBarList({ title, subtitle, rows, color = C.primary, emptyText = 
               <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color, flexShrink: 0 }}>{row.value}</span>
             </div>
             <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
-              <div style={{ width: `${Math.max(8, Math.round((row.value / max) * 100))}%`, height: '100%', borderRadius: 999, background: color }} />
+              <div style={{ width: row.value ? `${Math.max(8, Math.round((row.value / max) * 100))}%` : 0, height: '100%', borderRadius: 999, background: color }} />
             </div>
           </div>
         ))}
@@ -1395,6 +1441,8 @@ export default function Admin() {
   const [analyticsDays, setAnalyticsDays] = useState(7)
   const [latidoRatings, setLatidoRatings] = useState([])
   const [searchFeedback, setSearchFeedback] = useState([])
+  const [feedbackSearch, setFeedbackSearch] = useState('')
+  const [feedbackToneFilter, setFeedbackToneFilter] = useState('all')
   const [partnerMonthPeriod, setPartnerMonthPeriod] = useState('current')
   const [selectedPartnerId, setSelectedPartnerId] = useState(PARTNER_ANALYTICS_PARTNERS[0]?.id || '')
   const [messageEvents, setMessageEvents] = useState([])
@@ -1484,33 +1532,58 @@ export default function Admin() {
     [metricStarRatings]
   )
   const overallRatingRows = useMemo(
-    () => [5, 4, 3, 2, 1].map(stars => ({
-      label:`${stars} ${stars === 1 ? 'estrella' : 'estrellas'}`,
-      value:metricStarRatings.filter(rating => Number(rating.overall_rating) === stars).length,
-    })),
+    () => [5, 4, 3, 2, 1].map(stars => {
+      const value = metricStarRatings.filter(rating => Number(rating.overall_rating) === stars).length
+      return {
+        label:`${stars} ${stars === 1 ? 'estrella' : 'estrellas'}`,
+        value,
+        sub:`${feedbackPercentage(value, metricStarRatings.length)}% de las valoraciones`,
+      }
+    }),
     [metricStarRatings]
   )
   const usefulnessRatingRows = useMemo(
-    () => [5, 4, 3, 2, 1].map(stars => ({
-      label:`${stars} ${stars === 1 ? 'estrella' : 'estrellas'}`,
-      value:metricStarRatings.filter(rating => Number(rating.usefulness_rating) === stars).length,
-    })),
+    () => [5, 4, 3, 2, 1].map(stars => {
+      const value = metricStarRatings.filter(rating => Number(rating.usefulness_rating) === stars).length
+      return {
+        label:`${stars} ${stars === 1 ? 'estrella' : 'estrellas'}`,
+        value,
+        sub:`${feedbackPercentage(value, metricStarRatings.length)}% de las valoraciones`,
+      }
+    }),
     [metricStarRatings]
   )
   const usefulnessAnswerRows = useMemo(
-    () => ['yes', 'partial', 'no'].map(answer => ({
-      label:LATIDO_USEFULNESS_ANSWER_META[answer].label,
-      value:metricUsefulnessFeedback.filter(rating => rating.usefulness_answer === answer).length,
+    () => ['yes', 'partial', 'no'].map(answer => {
+      const value = metricUsefulnessFeedback.filter(rating => rating.usefulness_answer === answer).length
+      return {
+        label:LATIDO_USEFULNESS_ANSWER_META[answer].label,
+        value,
+        sub:`${feedbackPercentage(value, metricUsefulnessFeedback.length)}% de las respuestas`,
+      }
+    }),
+    [metricUsefulnessFeedback]
+  )
+  const positiveUsefulnessDetailRows = useMemo(
+    () => topAnalyticsRows(
+      metricUsefulnessFeedback.filter(rating => rating.usefulness_answer === 'yes' && rating.usefulness_detail),
+      rating => LATIDO_USEFULNESS_DETAIL_LABELS[rating.usefulness_detail] || rating.usefulness_detail,
+      10
+    ).map(row => ({
+      ...row,
+      sub:`${feedbackPercentage(row.value, metricUsefulnessFeedback.filter(rating => rating.usefulness_answer === 'yes').length)}% de las respuestas positivas`,
     })),
     [metricUsefulnessFeedback]
   )
-  const usefulnessDetailRows = useMemo(
+  const improvementUsefulnessDetailRows = useMemo(
     () => topAnalyticsRows(
-      metricUsefulnessFeedback.filter(rating => rating.usefulness_detail),
+      metricUsefulnessFeedback.filter(rating => ['partial', 'no'].includes(rating.usefulness_answer) && rating.usefulness_detail),
       rating => LATIDO_USEFULNESS_DETAIL_LABELS[rating.usefulness_detail] || rating.usefulness_detail,
-      10,
-      rating => LATIDO_USEFULNESS_ANSWER_META[rating.usefulness_answer]?.label || ''
-    ),
+      10
+    ).map(row => ({
+      ...row,
+      sub:`${feedbackPercentage(row.value, metricUsefulnessFeedback.filter(rating => ['partial', 'no'].includes(rating.usefulness_answer)).length)}% de las respuestas a mejorar`,
+    })),
     [metricUsefulnessFeedback]
   )
   const directSearchResolution = useMemo(() => {
@@ -1541,33 +1614,125 @@ export default function Admin() {
       metricSearchFeedback.filter(item => item.reason),
       item => SEARCH_RESOLUTION_REASON_LABELS[item.reason] || 'Otro motivo',
       8
-    ),
+    ).map(row => ({
+      ...row,
+      sub:`${feedbackPercentage(row.value, metricSearchFeedback.filter(item => ['partial', 'no'].includes(item.answer)).length)}% de las respuestas a mejorar`,
+    })),
     [metricSearchFeedback]
   )
-  const userNamesById = useMemo(
-    () => new Map(users.map(profile => [
-      profile.id,
-      profile.name || profile.email || 'Usuario',
-    ])),
-    [users]
+  const userProfilesById = useMemo(
+    () => new Map(metricUsers.map(profile => [profile.id, profile])),
+    [metricUsers]
   )
-  const latestLatidoRatings = useMemo(
+  const sortedLatidoRatings = useMemo(
     () => [...metricStarRatings]
-      .sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')))
-      .slice(0, 12),
+      .sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''))),
     [metricStarRatings]
   )
-  const latestUsefulnessFeedback = useMemo(
+  const sortedUsefulnessFeedback = useMemo(
     () => [...metricUsefulnessFeedback]
-      .sort((a, b) => String(b.usefulness_answered_at || b.updated_at || b.created_at || '').localeCompare(String(a.usefulness_answered_at || a.updated_at || a.created_at || '')))
-      .slice(0, 12),
+      .sort((a, b) => String(b.usefulness_answered_at || b.updated_at || b.created_at || '').localeCompare(String(a.usefulness_answered_at || a.updated_at || a.created_at || ''))),
     [metricUsefulnessFeedback]
   )
-  const latestSearchFeedback = useMemo(
+  const sortedSearchFeedback = useMemo(
     () => [...metricSearchFeedback]
-      .sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')))
-      .slice(0, 12),
+      .sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''))),
     [metricSearchFeedback]
+  )
+  const identifiedFeedbackUserIds = useMemo(() => new Set([
+    ...metricStarRatings.map(item => item.user_id).filter(Boolean),
+    ...metricUsefulnessFeedback.map(item => item.user_id).filter(Boolean),
+    ...metricSearchFeedback.map(item => item.user_id).filter(Boolean),
+  ]), [metricSearchFeedback, metricStarRatings, metricUsefulnessFeedback])
+  const starRatingPeople = useMemo(
+    () => new Set(metricStarRatings.map(item => item.user_id).filter(Boolean)).size,
+    [metricStarRatings]
+  )
+  const usefulnessFeedbackPeople = useMemo(
+    () => new Set(metricUsefulnessFeedback.map(item => item.user_id).filter(Boolean)).size,
+    [metricUsefulnessFeedback]
+  )
+  const searchFeedbackPeople = useMemo(
+    () => new Set(metricSearchFeedback.map(item => item.user_id).filter(Boolean)).size,
+    [metricSearchFeedback]
+  )
+  const anonymousSearchResponses = useMemo(
+    () => metricSearchFeedback.filter(item => !item.user_id).length,
+    [metricSearchFeedback]
+  )
+  const writtenFeedbackComments = useMemo(
+    () => metricStarRatings.filter(item => String(item.comment || '').trim()).length
+      + metricUsefulnessFeedback.filter(item => String(item.usefulness_comment || '').trim()).length,
+    [metricStarRatings, metricUsefulnessFeedback]
+  )
+  const positiveFeedbackSignals = useMemo(
+    () => metricStarRatings.filter(item => ratingFeedbackTone(item) === 'positive').length
+      + metricUsefulnessFeedback.filter(item => item.usefulness_answer === 'yes').length
+      + metricSearchFeedback.filter(item => item.answer === 'yes').length,
+    [metricSearchFeedback, metricStarRatings, metricUsefulnessFeedback]
+  )
+  const feedbackSignalsToReview = useMemo(
+    () => metricStarRatings.filter(item => ratingFeedbackTone(item) === 'negative').length
+      + metricUsefulnessFeedback.filter(item => ['partial', 'no'].includes(item.usefulness_answer)).length
+      + metricSearchFeedback.filter(item => ['partial', 'no'].includes(item.answer)).length,
+    [metricSearchFeedback, metricStarRatings, metricUsefulnessFeedback]
+  )
+  const totalFeedbackResponses = metricStarRatings.length + metricUsefulnessFeedback.length + metricSearchFeedback.length
+  const identifiedFeedbackCoverage = metricUsers.length
+    ? Math.min(100, feedbackPercentage(identifiedFeedbackUserIds.size, metricUsers.length))
+    : 0
+  const normalizedFeedbackSearch = feedbackSearch.trim().toLocaleLowerCase('es')
+  const filteredLatidoRatings = useMemo(
+    () => sortedLatidoRatings.filter(rating => {
+      const profile = userProfilesById.get(rating.user_id)
+      if (!feedbackToneMatches(feedbackToneFilter, ratingFeedbackTone(rating), Boolean(String(rating.comment || '').trim()))) return false
+      return feedbackSearchMatches(
+        normalizedFeedbackSearch,
+        profile?.name,
+        profile?.email,
+        profile?.canton,
+        rating.comment,
+        rating.overall_rating,
+        rating.usefulness_rating
+      )
+    }),
+    [feedbackToneFilter, normalizedFeedbackSearch, sortedLatidoRatings, userProfilesById]
+  )
+  const filteredUsefulnessFeedback = useMemo(
+    () => sortedUsefulnessFeedback.filter(rating => {
+      const profile = userProfilesById.get(rating.user_id)
+      const tone = rating.usefulness_answer === 'yes' ? 'positive' : rating.usefulness_answer === 'no' ? 'negative' : 'partial'
+      if (!feedbackToneMatches(feedbackToneFilter, tone, Boolean(String(rating.usefulness_comment || '').trim()))) return false
+      return feedbackSearchMatches(
+        normalizedFeedbackSearch,
+        profile?.name,
+        profile?.email,
+        profile?.canton,
+        rating.usefulness_comment,
+        LATIDO_USEFULNESS_DETAIL_LABELS[rating.usefulness_detail],
+        LATIDO_USEFULNESS_ANSWER_META[rating.usefulness_answer]?.label
+      )
+    }),
+    [feedbackToneFilter, normalizedFeedbackSearch, sortedUsefulnessFeedback, userProfilesById]
+  )
+  const filteredSearchFeedback = useMemo(
+    () => sortedSearchFeedback.filter(item => {
+      const profile = userProfilesById.get(item.user_id)
+      const tone = item.answer === 'yes' ? 'positive' : item.answer === 'no' ? 'negative' : 'partial'
+      if (!feedbackToneMatches(feedbackToneFilter, tone, false)) return false
+      return feedbackSearchMatches(
+        normalizedFeedbackSearch,
+        profile?.name,
+        profile?.email,
+        profile?.canton,
+        item.query,
+        item.result_label,
+        item.result_type,
+        SEARCH_RESOLUTION_REASON_LABELS[item.reason],
+        item.solution_action
+      )
+    }),
+    [feedbackToneFilter, normalizedFeedbackSearch, sortedSearchFeedback, userProfilesById]
   )
   const businessPromotionPlans = useMemo(
     () => mergeBusinessPromotionPlans(businessPromotionAvailability),
@@ -2972,7 +3137,7 @@ export default function Admin() {
   const NAV_ITEMS = [
     { id: 'users', icon: '👥', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
     { id: 'analytics', icon: '📈', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'feedback', icon: '⭐', label: 'Intereses y valoraciones', value: navValue('feedback', `${metricLatidoRatings.length} valoraciones`), color: '#B45309', bg: '#FFFBEB' },
+    { id: 'feedback', icon: '⭐', label: 'Intereses y valoraciones', value: navValue('feedback', `${totalFeedbackResponses} respuestas`), color: '#B45309', bg: '#FFFBEB' },
     { id: 'partners', icon: '🚀', label: 'Colaboraciones', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
     { id: 'live', icon: '📡', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
     { id: 'overview', icon: '📊', label: 'Estado general', value: navValue('overview', `${generalScore}/100`), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
@@ -3034,7 +3199,7 @@ export default function Admin() {
     overview: { description: `Rapport de ${overviewRangeText} con señales de crecimiento, actividad, pendientes y recomendaciones.`, color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
     live: { description: 'Online ahora se actualiza en directo; actividad diaria y semanal usa la última consulta a Supabase.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
     analytics: { description: `Páginas más usadas, búsquedas frecuentes, soluciones confirmadas y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResolution.yes} resueltas` },
-    feedback: { description: 'Preferencias declaradas, valoración general y respuestas directas sobre si las personas encontraron lo que necesitaban.', color: '#B45309', count: metricLatidoRatings.length, badge: `${metricLatidoRatings.length} valoraciones · ${directSearchResolution.total} respuestas` },
+    feedback: { description: 'Personas participantes, preferencias, valoraciones, votos de utilidad, búsquedas evaluadas y comentarios completos.', color: '#B45309', count: totalFeedbackResponses, badge: `${identifiedFeedbackUserIds.size} personas · ${totalFeedbackResponses} respuestas` },
     partners: { description: `Salidas reales hacia el colaborador seleccionado, separadas entre landing y app en ${partnerRangeText}.`, color: '#4F46E5', count: partnerClickEvents.length, badge: `${partnerClickEvents.length} salidas · ${partnerLandingClicks.length} landing · ${partnerAppClicks.length} app` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
@@ -3070,8 +3235,9 @@ export default function Admin() {
     : tab === 'feedback'
       ? [
           { label: 'Con intereses', value: loading ? '...' : `${interestCoverage}%`, hint: `${usersWithInterests.length} de ${metricUsers.length} cuentas`, color: '#7C3AED' },
-          { label: 'Valoración Latido', value: loading ? '...' : (metricLatidoRatings.length ? `${overallRatingAverage}/5` : 'Sin datos'), hint: `${metricLatidoRatings.length} valoraciones`, color: '#B45309' },
-          { label: 'Encuentra lo necesario', value: loading ? '...' : (metricLatidoRatings.length ? `${usefulnessRatingAverage}/5` : 'Sin datos'), hint: 'Media de la segunda pregunta', color: '#047857' },
+          { label: 'Personas participantes', value: loading ? '...' : identifiedFeedbackUserIds.size, hint: `${identifiedFeedbackCoverage}% de las cuentas · ${anonymousSearchResponses} respuestas anónimas`, color: C.primary },
+          { label: 'Valoración Latido', value: loading ? '...' : (metricStarRatings.length ? `${overallRatingAverage}/5` : 'Sin datos'), hint: `${starRatingPeople} personas valoraron`, color: '#B45309' },
+          { label: 'Encuentra lo necesario', value: loading ? '...' : (metricStarRatings.length ? `${usefulnessRatingAverage}/5` : 'Sin datos'), hint: 'Media de la segunda pregunta', color: '#047857' },
           { label: 'Búsquedas resueltas', value: loading ? '...' : `${directSearchResolution.confirmedRate}%`, hint: `${directSearchResolution.yes} Sí de ${directSearchResolution.total}`, color: '#059669' },
           { label: 'Respuestas útiles', value: loading ? '...' : `${directSearchResolution.helpfulRate}%`, hint: 'Sí o parcialmente', color: '#0284C7' },
         ]
@@ -3426,6 +3592,37 @@ export default function Admin() {
       {/* -- Intereses y valoraciones ----------------------- */}
       {tab === 'feedback' && isTabDataReady('feedback') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Card style={{ padding: 18, background: 'linear-gradient(135deg,#FFFFFF 0%,#F7FAFF 55%,#FFF9EC 100%)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+              <div>
+                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 17, color: C.text, margin: '0 0 4px' }}>Participación y opinión general</p>
+                <p style={{ fontFamily: PP, fontSize: 11.5, color: C.light, lineHeight: 1.5, margin: 0 }}>Quién responde, cuántas respuestas hay y qué señales requieren atención.</p>
+              </div>
+              <Tag bg={identifiedFeedbackCoverage >= 20 ? '#ECFDF5' : '#FFFBEB'} color={identifiedFeedbackCoverage >= 20 ? '#047857' : '#B45309'}>
+                {identifiedFeedbackCoverage}% de participación identificada
+              </Tag>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 145px), 1fr))', gap: 9 }}>
+              {[
+                { label:'Personas identificadas', value:identifiedFeedbackUserIds.size, hint:`de ${metricUsers.length} cuentas`, color:C.primary },
+                { label:'Valoraron Latido', value:starRatingPeople, hint:`${metricStarRatings.length} valoraciones`, color:'#B45309' },
+                { label:'Votaron utilidad', value:usefulnessFeedbackPeople, hint:`${metricUsefulnessFeedback.length} respuestas`, color:'#047857' },
+                { label:'Evaluaron búsquedas', value:searchFeedbackPeople, hint:`${metricSearchFeedback.length} votos · ${anonymousSearchResponses} anónimos`, color:'#0284C7' },
+                { label:'Comentarios escritos', value:writtenFeedbackComments, hint:'En valoración o utilidad', color:'#7C3AED' },
+                { label:'Señales a revisar', value:feedbackSignalsToReview, hint:`Frente a ${positiveFeedbackSignals} positivas`, color:'#B91C1C' },
+              ].map(item => (
+                <div key={item.label} style={{ minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 11px', background: 'rgba(255,255,255,0.92)' }}>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 24, color: item.color, lineHeight: 1, margin: '0 0 6px' }}>{item.value}</p>
+                  <p style={{ fontFamily: PP, fontWeight: 850, fontSize: 10.5, color: C.text, margin: '0 0 3px' }}>{item.label}</p>
+                  <p style={{ fontFamily: PP, fontSize: 9.5, color: C.light, lineHeight: 1.35, margin: 0 }}>{item.hint}</p>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontFamily: PP, fontSize: 10, color: C.light, lineHeight: 1.5, margin: '12px 1px 0' }}>
+              “Personas identificadas” cuenta una sola vez a cada cuenta aunque haya respondido en varios apartados. Las respuestas anónimas de búsqueda se contabilizan aparte y la cuenta administradora está excluida.
+            </p>
+          </Card>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
             <InsightBarList
               title="Intereses seleccionados"
@@ -3462,7 +3659,7 @@ export default function Admin() {
             </Card>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 14 }}>
             <InsightBarList
               title="¿Te parece útil Latido?"
               subtitle={`${metricUsefulnessFeedback.length} respuestas al nuevo banner de inicio.`}
@@ -3471,11 +3668,18 @@ export default function Admin() {
               emptyText="Todavía no hay respuestas al banner."
             />
             <InsightBarList
-              title="Qué funciona y qué falta"
-              subtitle="Opciones elegidas en la segunda pregunta."
-              rows={usefulnessDetailRows}
-              color="#7C3AED"
-              emptyText="Todavía no se han elegido opciones."
+              title="Lo que más valoran"
+              subtitle="Qué ayudó a quienes respondieron que Latido sí les resulta útil."
+              rows={positiveUsefulnessDetailRows}
+              color="#047857"
+              emptyText="Todavía no hay motivos positivos seleccionados."
+            />
+            <InsightBarList
+              title="Lo que echan en falta"
+              subtitle="Necesidades indicadas en respuestas parciales o negativas."
+              rows={improvementUsefulnessDetailRows}
+              color="#B91C1C"
+              emptyText="Todavía no hay aspectos a mejorar seleccionados."
             />
           </div>
 
@@ -3506,7 +3710,7 @@ export default function Admin() {
                 {directSearchResolution.total ? `${directSearchResolution.confirmedRate}% Sí` : 'Sin respuestas'}
               </Tag>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 8 }}>
               {[
                 { label:'Total', value:directSearchResolution.total, color:C.text },
                 { label:'Sí', value:directSearchResolution.yes, color:'#047857' },
@@ -3541,44 +3745,77 @@ export default function Admin() {
             />
           </div>
 
+          <Card style={{ padding: 16, background: '#F8FAFF' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 11 }}>
+              <div>
+                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Explorar todas las respuestas</p>
+                <p style={{ fontFamily: PP, fontSize: 11, color: C.light, lineHeight: 1.45, margin: 0 }}>Busca por persona, email, comentario, motivo, consulta o resultado.</p>
+              </div>
+              <Tag bg="#E0F2FE" color="#0369A1">
+                {filteredLatidoRatings.length + filteredUsefulnessFeedback.length + filteredSearchFeedback.length} de {totalFeedbackResponses} visibles
+              </Tag>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'stretch', gap: 9, flexWrap: 'wrap' }}>
+              <AdminFilterInput
+                value={feedbackSearch}
+                onChange={setFeedbackSearch}
+                placeholder="Buscar persona, comentario o búsqueda..."
+              />
+              <div style={{ flex: '0 1 220px', minWidth: 'min(100%, 180px)' }}>
+                <AdminFilterSelect value={feedbackToneFilter} onChange={setFeedbackToneFilter} label="Filtrar respuestas por tipo">
+                  <option value="all">Todas las respuestas</option>
+                  <option value="positive">Positivas</option>
+                  <option value="partial">Intermedias</option>
+                  <option value="negative">Negativas</option>
+                  <option value="comments">Con comentario escrito</option>
+                </AdminFilterSelect>
+              </div>
+              {(feedbackSearch || feedbackToneFilter !== 'all') && (
+                <AdminButton onClick={() => { setFeedbackSearch(''); setFeedbackToneFilter('all') }}>Limpiar filtros</AdminButton>
+              )}
+            </div>
+          </Card>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 14 }}>
             <Card style={{ padding: 16, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Últimas respuestas de utilidad</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Respuesta, motivo y comentario opcional.</p>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Votos de utilidad</p>
+                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Todas las personas, motivos y comentarios.</p>
                 </div>
-                <Tag bg="#ECFDF5" color="#047857">{metricUsefulnessFeedback.length} total</Tag>
+                <Tag bg="#ECFDF5" color="#047857">{filteredUsefulnessFeedback.length}/{metricUsefulnessFeedback.length}</Tag>
               </div>
-              <div style={{ display: 'grid', gap: 9 }}>
-                {latestUsefulnessFeedback.map(rating => {
+              <div role="region" aria-label="Listado completo de votos de utilidad" tabIndex={0} style={{ display: 'grid', gap: 9, maxHeight: 560, overflowY: 'auto', paddingRight: 4, scrollbarGutter: 'stable' }}>
+                {filteredUsefulnessFeedback.map(rating => {
                   const answerMeta = LATIDO_USEFULNESS_ANSWER_META[rating.usefulness_answer]
+                  const profile = userProfilesById.get(rating.user_id)
+                  const profileMeta = [profile?.email, profile?.canton ? `Cantón ${profile.canton}` : ''].filter(Boolean).join(' · ')
                   return (
                     <div key={rating.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 9 }}>
                         <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {userNamesById.get(rating.user_id) || 'Usuario'}
+                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>
+                            {profile?.name || profile?.email || 'Usuario sin perfil'}
                           </span>
-                          <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>
-                            {fmtDate(rating.usefulness_answered_at || rating.updated_at || rating.created_at)}
-                          </span>
+                          {profileMeta && <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.mid, marginTop: 2, overflowWrap: 'anywhere' }}>{profileMeta}</span>}
+                          <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(rating.usefulness_answered_at || rating.updated_at || rating.created_at)}</span>
                         </span>
                         <Tag bg={answerMeta.bg} color={answerMeta.color}>{answerMeta.label}</Tag>
                       </div>
-                      <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 750, color: C.mid, lineHeight: 1.45, margin: '0 0 4px', overflowWrap: 'anywhere' }}>
-                        {LATIDO_USEFULNESS_DETAIL_LABELS[rating.usefulness_detail] || 'Sin opción adicional'}
-                      </p>
-                      {rating.usefulness_comment && (
-                        <p style={{ fontFamily: PP, fontSize: 10.5, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}>
-                          “{rating.usefulness_comment}”
+                      <div style={{ borderRadius: 11, padding: '9px 10px', background: '#fff', border: `1px solid ${C.border}`, marginBottom: 7 }}>
+                        <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 900, letterSpacing: 0.55, color: C.light, margin: '0 0 3px', textTransform: 'uppercase' }}>Qué indicó</p>
+                        <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 750, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}>
+                          {LATIDO_USEFULNESS_DETAIL_LABELS[rating.usefulness_detail] || 'Sin opción adicional'}
                         </p>
-                      )}
+                      </div>
+                      <p style={{ fontFamily: PP, fontSize: 10.5, color: rating.usefulness_comment ? C.text : C.light, fontStyle: rating.usefulness_comment ? 'normal' : 'italic', lineHeight: 1.5, margin: 0, padding: rating.usefulness_comment ? '8px 10px' : 0, borderRadius: 10, background: rating.usefulness_comment ? '#FFF' : 'transparent', overflowWrap: 'anywhere' }}>
+                        {rating.usefulness_comment ? `“${rating.usefulness_comment}”` : 'Sin comentario escrito'}
+                      </p>
                     </div>
                   )
                 })}
-                {!latestUsefulnessFeedback.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Todavía no hay respuestas al banner.</p>
+                {!filteredUsefulnessFeedback.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>{metricUsefulnessFeedback.length ? 'Ningún voto coincide con los filtros.' : 'Todavía no hay respuestas al banner.'}</p>
                 )}
               </div>
             </Card>
@@ -3586,32 +3823,49 @@ export default function Admin() {
             <Card style={{ padding: 16, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Últimas valoraciones</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Puntuaciones y comentarios más recientes.</p>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Valoraciones de Latido</p>
+                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Las dos puntuaciones y el comentario completo.</p>
                 </div>
-                <Tag bg="#FFFBEB" color="#B45309">{metricStarRatings.length} total</Tag>
+                <Tag bg="#FFFBEB" color="#B45309">{filteredLatidoRatings.length}/{metricStarRatings.length}</Tag>
               </div>
-              <div style={{ display: 'grid', gap: 9 }}>
-                {latestLatidoRatings.map(rating => (
-                  <div key={rating.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-                      <span style={{ minWidth: 0 }}>
-                        <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {userNamesById.get(rating.user_id) || 'Usuario'}
+              <div role="region" aria-label="Listado completo de valoraciones de Latido" tabIndex={0} style={{ display: 'grid', gap: 9, maxHeight: 560, overflowY: 'auto', paddingRight: 4, scrollbarGutter: 'stable' }}>
+                {filteredLatidoRatings.map(rating => {
+                  const profile = userProfilesById.get(rating.user_id)
+                  const profileMeta = [profile?.email, profile?.canton ? `Cantón ${profile.canton}` : ''].filter(Boolean).join(' · ')
+                  const tone = ratingFeedbackTone(rating)
+                  const toneMeta = tone === 'positive'
+                    ? { label:'Positiva', color:'#047857', bg:'#ECFDF5' }
+                    : tone === 'negative'
+                      ? { label:'A revisar', color:'#B91C1C', bg:'#FEF2F2' }
+                      : { label:'Intermedia', color:'#B45309', bg:'#FFFBEB' }
+                  return (
+                    <div key={rating.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 9 }}>
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>{profile?.name || profile?.email || 'Usuario sin perfil'}</span>
+                          {profileMeta && <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.mid, marginTop: 2, overflowWrap: 'anywhere' }}>{profileMeta}</span>}
+                          <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(rating.updated_at || rating.created_at)}</span>
                         </span>
-                        <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(rating.updated_at || rating.created_at)}</span>
-                      </span>
-                      <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 11, color: '#B45309', whiteSpace: 'nowrap' }}>
-                        ★ {rating.overall_rating}/5 · Encuentra {rating.usefulness_rating}/5
-                      </span>
+                        <Tag bg={toneMeta.bg} color={toneMeta.color}>{toneMeta.label}</Tag>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 7, marginBottom: 8 }}>
+                        <div style={{ borderRadius: 11, padding: '9px 8px', background: '#fff', border: `1px solid ${C.border}` }}>
+                          <p style={{ fontFamily: PP, fontSize: 9, color: C.light, fontWeight: 850, margin: '0 0 3px' }}>LATIDO</p>
+                          <p style={{ fontFamily: PP, fontSize: 14, color: '#B45309', fontWeight: 900, margin: 0 }}>★ {rating.overall_rating}/5</p>
+                        </div>
+                        <div style={{ borderRadius: 11, padding: '9px 8px', background: '#fff', border: `1px solid ${C.border}` }}>
+                          <p style={{ fontFamily: PP, fontSize: 9, color: C.light, fontWeight: 850, margin: '0 0 3px' }}>ENCUENTRA LO NECESARIO</p>
+                          <p style={{ fontFamily: PP, fontSize: 14, color: '#047857', fontWeight: 900, margin: 0 }}>★ {rating.usefulness_rating}/5</p>
+                        </div>
+                      </div>
+                      <p style={{ fontFamily: PP, fontSize: 10.5, color: rating.comment ? C.text : C.light, fontStyle: rating.comment ? 'normal' : 'italic', lineHeight: 1.5, margin: 0, padding: rating.comment ? '8px 10px' : 0, borderRadius: 10, background: rating.comment ? '#FFF' : 'transparent', overflowWrap: 'anywhere' }}>
+                        {rating.comment ? `“${rating.comment}”` : 'Sin comentario escrito'}
+                      </p>
                     </div>
-                    <p style={{ fontFamily: PP, fontSize: 11, color: rating.comment ? C.mid : C.light, fontStyle: rating.comment ? 'normal' : 'italic', lineHeight: 1.5, margin: 0, overflowWrap: 'anywhere' }}>
-                      {rating.comment || 'Sin comentario'}
-                    </p>
-                  </div>
-                ))}
-                {!latestLatidoRatings.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Todavía no hay valoraciones.</p>
+                  )
+                })}
+                {!filteredLatidoRatings.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>{metricStarRatings.length ? 'Ninguna valoración coincide con los filtros.' : 'Todavía no hay valoraciones.'}</p>
                 )}
               </div>
             </Card>
@@ -3619,33 +3873,43 @@ export default function Admin() {
             <Card style={{ padding: 16, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Últimas respuestas de búsqueda</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Consulta, respuesta y resultado evaluado.</p>
+                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Votos sobre búsquedas</p>
+                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Persona, consulta, resultado, motivo y acción.</p>
                 </div>
-                <Tag bg="#ECFDF5" color="#047857">{metricSearchFeedback.length} total</Tag>
+                <Tag bg="#E0F2FE" color="#0369A1">{filteredSearchFeedback.length}/{metricSearchFeedback.length}</Tag>
               </div>
-              <div style={{ display: 'grid', gap: 9 }}>
-                {latestSearchFeedback.map(item => {
+              <div role="region" aria-label="Listado completo de votos sobre búsquedas" tabIndex={0} style={{ display: 'grid', gap: 9, maxHeight: 560, overflowY: 'auto', paddingRight: 4, scrollbarGutter: 'stable' }}>
+                {filteredSearchFeedback.map(item => {
                   const answerMeta = SEARCH_RESOLUTION_ANSWER_META[item.answer] || SEARCH_RESOLUTION_ANSWER_META.no
+                  const profile = userProfilesById.get(item.user_id)
+                  const profileMeta = [profile?.email, profile?.canton ? `Cantón ${profile.canton}` : ''].filter(Boolean).join(' · ')
                   return (
                     <div key={item.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 9 }}>
                         <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            “{item.query}”
-                          </span>
+                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>{profile?.name || profile?.email || 'Respuesta anónima'}</span>
+                          {profileMeta && <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.mid, marginTop: 2, overflowWrap: 'anywhere' }}>{profileMeta}</span>}
                           <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(item.updated_at || item.created_at)}</span>
                         </span>
                         <Tag bg={answerMeta.bg} color={answerMeta.color}>{answerMeta.label}</Tag>
                       </div>
-                      <p style={{ fontFamily: PP, fontSize: 10.5, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}>
-                        {[item.result_label, SEARCH_RESOLUTION_REASON_LABELS[item.reason]].filter(Boolean).join(' · ') || 'Sin detalle adicional'}
-                      </p>
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        <div style={{ borderRadius: 11, padding: '9px 10px', background: '#fff', border: `1px solid ${C.border}` }}>
+                          <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 900, letterSpacing: 0.55, color: C.light, margin: '0 0 3px', textTransform: 'uppercase' }}>Búsqueda</p>
+                          <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 850, color: C.text, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}>“{item.query}”</p>
+                        </div>
+                        <div style={{ display: 'grid', gap: 3, padding: '2px 1px' }}>
+                          <p style={{ fontFamily: PP, fontSize: 10, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}><strong>Resultado:</strong> {[item.result_label, humanizeFeedbackValue(item.result_type)].filter(Boolean).join(' · ') || 'Sin resultado identificado'}</p>
+                          <p style={{ fontFamily: PP, fontSize: 10, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}><strong>Motivo:</strong> {SEARCH_RESOLUTION_REASON_LABELS[item.reason] || 'No indicó motivo'}</p>
+                          <p style={{ fontFamily: PP, fontSize: 10, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}><strong>Acción previa:</strong> {item.had_solution_action ? (humanizeFeedbackValue(item.solution_action) || 'Acción registrada') : 'Ninguna'}</p>
+                          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, lineHeight: 1.45, margin: 0 }}><strong>Tiempo hasta votar:</strong> {formatFeedbackDuration(item.time_to_feedback_ms)}</p>
+                        </div>
+                      </div>
                     </div>
                   )
                 })}
-                {!latestSearchFeedback.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Todavía no hay respuestas de búsqueda.</p>
+                {!filteredSearchFeedback.length && (
+                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>{metricSearchFeedback.length ? 'Ningún voto de búsqueda coincide con los filtros.' : 'Todavía no hay respuestas de búsqueda.'}</p>
                 )}
               </div>
             </Card>
