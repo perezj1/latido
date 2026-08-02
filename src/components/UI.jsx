@@ -347,19 +347,19 @@ export function ImageUploadField({
   )
 }
 
-export function Sheet({ show, onClose, title, children, syncHistory=true }) {
+export function Sheet({ show, onClose, title, children, syncHistory=true, zIndex=80, lockBody=true }) {
   useOverlayHistory(show, onClose, syncHistory)
 
   useEffect(() => {
-    if (!show) return
+    if (!show || !lockBody) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
-  }, [show])
+  }, [lockBody, show])
 
   if (!show) return null
   return (
-    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex:80, display:'flex', flexDirection:'column', justifyContent:'flex-end', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}
+    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex, display:'flex', flexDirection:'column', justifyContent:'flex-end', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.4)' }} onClick={onClose} />
       <div className="fade-up no-scroll" onClick={e => e.stopPropagation()}
