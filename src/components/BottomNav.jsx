@@ -13,6 +13,7 @@ const PUBLISH_OPTIONS = [
   { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
   { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
   { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
+  { emoji:'🎙️', label:'Contenido', sub:'Publica desde tu perfil de creador', to:'/creadores/mi-perfil' },
 ]
 
 const TABS = [
@@ -23,8 +24,8 @@ const TABS = [
   { path:'/perfil',      emoji:'👤', label:'Perfil' },
 ]
 
-const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
-const NO_FAB = [...PUBLISH_FLOW_PATHS, '/mensajes', '/perfil']
+const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad', '/creadores/alta']
+const NO_FAB = [...PUBLISH_FLOW_PATHS, '/mensajes', '/perfil', '/creadores/mi-perfil']
 
 export default function BottomNav() {
   const { pathname, search } = useLocation()

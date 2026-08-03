@@ -19,6 +19,7 @@ import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import HomePersonalizationHeader from '../components/HomePersonalizationHeader'
+import CreatorHomeSection from '../components/CreatorHomeSection'
 import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
@@ -2246,6 +2247,8 @@ export default function Home() {
         ...
       </section>
       */}
+
+      <CreatorHomeSection />
 
       {/* ── GUÍAS ── */}
       {(() => {

@@ -11,11 +11,13 @@ const PUBLISH_OPTIONS = [
   { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
   { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
   { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
+  { emoji:'🎙️', label:'Contenido', sub:'Publica desde tu perfil de creador', to:'/creadores/mi-perfil' },
 ]
 const NAV_GUEST = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
+  { href:'/creadores', label:'🎙️ Creadores' },
   { href:'/colaboraciones', label:'🚀 Para Empresas' },
 ]
 
@@ -24,6 +26,7 @@ const NAV_USER = [
   { href:'/tablon', label:'📌 Anuncios' },
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
+  { href:'/comunidades?view=creadores', label:'🎙️ Creadores' },
   { href:'/colaboraciones', label:'🚀 Para Empresas' },
   { href:'/mensajes', label:'💬 Mensajes' },
 ]

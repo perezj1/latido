@@ -15,6 +15,8 @@ export default function ReportButton({
   metadata = {},
   compact = false,
   style = {},
+  onOpen,
+  allowOwnContent = false,
 }) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
@@ -23,7 +25,7 @@ export default function ReportButton({
   const [sending, setSending] = useState(false)
   const dialogRef = useRef(null)
 
-  const isOwnContent = user?.id && ownerId && user.id === ownerId
+  const isOwnContent = !allowOwnContent && user?.id && ownerId && user.id === ownerId
 
   useEffect(() => {
     if (!open) return
@@ -48,6 +50,7 @@ export default function ReportButton({
     if (isOwnContent) return
     setReason('')
     setNotes('')
+    onOpen?.()
     setOpen(true)
   }
 

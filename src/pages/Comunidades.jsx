@@ -21,6 +21,7 @@ import {
 import { C, PP } from '../lib/theme'
 import { Tag, EmptyState, SegmentedTabs, Sheet, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
+import CreatorCommunityView, { CreatorCommunityToolbar } from '../components/CreatorCommunityView'
 import CompactFilterSelect from '../components/CompactFilterSelect'
 import GlobalSearch from '../components/GlobalSearch'
 import SavedSearchButton from '../components/SavedSearchButton'
@@ -54,6 +55,7 @@ const MAIN_TABS = [
   { id:'negocios', label:'🏪 Negocios' },
   { id:'comunidades', label:'👥 Grupos' },
   { id:'eventos', label:'🎉 Eventos' },
+  { id:'creadores', label:'🎙️ Creadores' },
 ]
 
 const TAB_COPY = {
@@ -76,6 +78,13 @@ const TAB_COPY = {
     subtitle:'Actividades con fecha: conciertos, fiestas, quedadas y planes familiares.',
     emptyTitle:'Sin eventos de la comunidad aún',
     emptyText:'Publica el primer evento para que otros puedan encontrarlo.',
+  },
+  creadores:{
+    title:'🎙️ Creadores',
+    subtitle:'Personas, profesionales y negocios que comparten sobre Suiza en sus redes.',
+    search:'Buscar perfil, tema o ciudad...',
+    emptyTitle:'Todavía no hay creadores',
+    emptyText:'Crea el primer perfil y conecta tus redes con la comunidad.',
   },
 }
 
@@ -1489,6 +1498,12 @@ export default function Comunidades() {
   const [locationFilter, setLocationFilter] = useState(() => requestedLocation)
   const [businessSort, setBusinessSort] = useState('recommended')
   const [communitySort, setCommunitySort] = useState('newest')
+  const [creatorSearch, setCreatorSearch] = useState('')
+  const [creatorTopic, setCreatorTopic] = useState('')
+  const [creatorPlatform, setCreatorPlatform] = useState('')
+  const [creatorLocation, setCreatorLocation] = useState('')
+  const [creatorSort, setCreatorSort] = useState('newest')
+  const [creatorResultCount, setCreatorResultCount] = useState(0)
   const [showDirectoryFilters, setShowDirectoryFilters] = useState(false)
   const [directoryFilterDraft, setDirectoryFilterDraft] = useState({
     location:requestedCanton,
@@ -1752,6 +1767,11 @@ export default function Comunidades() {
     setLocationFilter('')
     setBusinessSort('recommended')
     setCommunitySort('newest')
+    setCreatorSearch('')
+    setCreatorTopic('')
+    setCreatorPlatform('')
+    setCreatorLocation('')
+    setCreatorSort('newest')
     setShowDirectoryFilters(false)
     scrollPageTop()
   }
@@ -2295,8 +2315,10 @@ export default function Comunidades() {
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:16, padding:'10px 0 12px' }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px', boxSizing:'border-box' }}>
           <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)', boxSizing:'border-box' }}>
-          <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />
-          {tab !== 'eventos' && (
+          <div className="community-main-tabs">
+            <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />
+          </div>
+          {tab !== 'eventos' && tab !== 'creadores' && (
             <div key={`${tab}-directory-toolbar`} className="segmented-content-transition">
               <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%', minWidth:0, marginTop:10 }}>
                 <div style={{ flex:'1 1 0', minWidth:0 }}>
@@ -2359,6 +2381,21 @@ export default function Comunidades() {
               )}
             </div>
           )}
+          {tab === 'creadores' && (
+            <CreatorCommunityToolbar
+              search={creatorSearch}
+              onSearchChange={setCreatorSearch}
+              topic={creatorTopic}
+              onTopicChange={setCreatorTopic}
+              platform={creatorPlatform}
+              onPlatformChange={setCreatorPlatform}
+              location={creatorLocation}
+              onLocationChange={setCreatorLocation}
+              sort={creatorSort}
+              onSortChange={setCreatorSort}
+              resultCount={creatorResultCount}
+            />
+          )}
           </div>
         </div>
       </div>
@@ -2413,6 +2450,17 @@ export default function Comunidades() {
             <Link to="/registrar-negocio" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Registrar negocio</Link>
           </div>
         </>
+      )}
+
+      {tab === 'creadores' && (
+        <CreatorCommunityView
+          search={creatorSearch}
+          topic={creatorTopic}
+          platform={creatorPlatform}
+          location={creatorLocation}
+          sort={creatorSort}
+          onResultCountChange={setCreatorResultCount}
+        />
       )}
 
       {tab === 'eventos' && (
@@ -2516,7 +2564,7 @@ export default function Comunidades() {
       )}
       </div>
 
-      {tab !== 'eventos' && (
+      {(tab === 'negocios' || tab === 'comunidades') && (
         <Sheet show={showDirectoryFilters} onClose={() => setShowDirectoryFilters(false)}>
           <form
             className="filter-sheet-content"

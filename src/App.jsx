@@ -35,6 +35,10 @@ const Publicar = lazy(() => import('./pages/Publicar'))
 const Comunidades = lazy(() => import('./pages/Comunidades'))
 const Colaboraciones = lazy(() => import('./pages/Colaboraciones'))
 const Guias = lazy(() => import('./pages/Guias'))
+const Creadores = lazy(() => import('./pages/Creadores'))
+const CreadorPerfil = lazy(() => import('./pages/CreadorPerfil'))
+const CreadorAlta = lazy(() => import('./pages/CreadorAlta'))
+const CreadorPanel = lazy(() => import('./pages/CreadorPanel'))
 const Perfil = lazy(() => import('./pages/Perfil'))
 const Auth = lazy(() => import('./pages/Auth'))
 const PublicarEvento = lazy(() => import('./pages/PublicarEvento'))
@@ -450,6 +454,7 @@ const CAT_LINKS = [
   { emoji:'🤝', label:'Comunidad',   to:'/comunidades' },
   { emoji:'🎉', label:'Eventos',     to:'/comunidades?view=eventos' },
   { emoji:'📚', label:'Guías',       to:'/guias' },
+  { emoji:'🎙️', label:'Creadores',   to:'/comunidades?view=creadores' },
 ]
 
 function CategoryBar() {
@@ -524,6 +529,7 @@ function AppShell() {
     const MENU_ITEMS = [
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
+      { id:'creadores', label:'Creadores', to:'/creadores' },
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
@@ -669,6 +675,10 @@ function AppShell() {
             <Route path="/eventos/:eventSlug" element={<Comunidades />} />
             <Route path="/guias/:guideSlug" element={<Guias />} />
             <Route path="/guias" element={<Guias />} />
+            <Route path="/creadores" element={<Creadores />} />
+            <Route path="/creadores/alta" element={<ProtectedRoute><CreadorAlta /></ProtectedRoute>} />
+            <Route path="/creadores/mi-perfil" element={<ProtectedRoute><CreadorPanel /></ProtectedRoute>} />
+            <Route path="/creadores/:creatorSlug" element={<CreadorPerfil />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
             <Route path="/auth" element={<AuthRoute />} />
             <Route path="/publicar-evento" element={<ProtectedRoute><PublicarEvento /></ProtectedRoute>} />

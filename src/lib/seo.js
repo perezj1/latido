@@ -10,6 +10,7 @@ import {
   getJobIntentMeta,
   getNegocioTypeMeta,
 } from './constants.js'
+import { getCreatorBySlug } from './creators.js'
 
 export const SITE_URL = (import.meta.env?.VITE_SITE_URL || 'https://latido.ch').replace(/\/$/, '')
 export const SITE_NAME = 'Latido.ch'
@@ -40,6 +41,7 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'negocios', icon:'🏪', title:'Negocios latinos', section:'Comunidad', desc:'Directorio de restaurantes, tiendas, belleza, salud y servicios.', href:'/comunidades?view=negocios' },
   { id:'eventos', icon:'🎉', title:'Eventos latinos', section:'Comunidad', desc:'Conciertos, fiestas, quedadas, networking y planes familiares.', href:'/comunidades?view=eventos' },
   { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
+  { id:'creadores', icon:'🎙️', title:'Creadores sobre Suiza', section:'Comunidad', desc:'Personas, profesionales y negocios que comparten experiencias, información y proyectos sobre Suiza.', href:'/comunidades?view=creadores' },
   { id:'servicios-suiza', icon:'🇨🇭', title:'Servicios para vivir en Suiza', section:'Servicios', desc:'Seguro médico, tercer pilar y preparación para llegar a Suiza, con orientación en español.', href:'/servicios-suiza' },
   { id:'servicios-virtus360', icon:'360', title:'Gestoría y finanzas con Virtus360', section:'Servicios', desc:'Trámites, impuestos, seguros, mudanza y contabilidad en colaboración con Virtus360.', href:'/servicios-virtus360' },
   { id:'perfil', icon:'👤', title:'Perfil', section:'Cuenta', desc:'Datos personales, avatar, preferencias y configuración.', href:'/perfil' },
@@ -71,6 +73,11 @@ const ROUTE_SEO = [
     path:'/guias',
     title:'Guías para vivir en Suiza | Latido.ch',
     description:'Guías prácticas sobre permisos, trabajo, vivienda, salud, bancos e impuestos para vivir en Suiza.',
+  },
+  {
+    path:'/creadores',
+    title:'Personas y creadores que comparten sobre Suiza | Latido.ch',
+    description:'Descubre personas, profesionales, trabajadores, proyectos y negocios que comparten experiencias e información sobre Suiza en sus redes.',
   },
   {
     path:'/servicios-suiza',
@@ -121,6 +128,8 @@ const PRIVATE_PATHS = [
   '/publicar-evento',
   '/registrar-negocio',
   '/registrar-comunidad',
+  '/creadores/alta',
+  '/creadores/mi-perfil',
   '/reset-password',
 ]
 
@@ -159,6 +168,10 @@ const COMMUNITY_VIEW_SEO = {
   eventos:{
     title:'Eventos latinos en Suiza | Latido.ch',
     description:'Conciertos, fiestas, quedadas, networking y planes familiares para hispanohablantes en Suiza.',
+  },
+  creadores:{
+    title:'Personas y creadores que comparten sobre Suiza | Latido.ch',
+    description:'Perfiles y publicaciones de personas, profesionales y negocios que comparten su vida, trabajo y proyectos en Suiza.',
   },
 }
 
@@ -456,6 +469,18 @@ export function getSeoForLocation(location = {}) {
   if (pathname.startsWith('/guias/')) {
     const guide = getGuideBySlug(pathname.replace('/guias/', ''))
     if (guide) return getGuideSeo(guide)
+  }
+
+  if (pathname.startsWith('/creadores/') && pathname !== '/creadores/alta' && pathname !== '/creadores/mi-perfil') {
+    const creator = getCreatorBySlug(pathname.replace('/creadores/', ''))
+    if (creator?.status === 'published') {
+      return withDefaults({
+        path:pathname,
+        title:`${creator.name} · Perfil sobre Suiza | Latido.ch`,
+        description:truncate(creator.tagline || creator.bio),
+        type:'profile',
+      })
+    }
   }
 
   if (pathname.startsWith('/anuncios/')) {
@@ -1009,7 +1034,9 @@ export function getPublicSeoPages() {
     '/comunidades',
     '/comunidades?view=negocios',
     '/comunidades?view=eventos',
+    '/comunidades?view=creadores',
     '/guias',
+    '/creadores',
     '/servicios-suiza',
     '/servicios-virtus360',
     '/impressum',
