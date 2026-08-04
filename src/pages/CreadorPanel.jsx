@@ -22,7 +22,6 @@ import {
   removeCreatorContent,
   resetCreatorPrototype,
   saveCreatorContent,
-  setCreatorContentStatus,
   subscribeCreatorInteractions,
 } from '../lib/creators'
 import { C, PP } from '../lib/theme'
@@ -311,13 +310,6 @@ export default function CreadorPanel() {
     toast.success(direction === 'up' ? 'Publicación movida hacia arriba' : 'Publicación movida hacia abajo')
   }
 
-  const toggleStatus = content => {
-    const nextStatus = content.status === 'published' ? 'draft' : 'published'
-    setCreatorContentStatus(user.id, content.id, nextStatus)
-    refresh()
-    toast.success(nextStatus === 'published' ? 'Publicación visible en el perfil' : 'Publicación movida a borrador')
-  }
-
   const removeContent = content => {
     if (!window.confirm(`¿Eliminar “${content.title}”? Esta acción solo afecta al prototipo guardado en este navegador.`)) return
     removeCreatorContent(user.id, content.id)
@@ -523,14 +515,13 @@ export default function CreadorPanel() {
                     <p>{content.summary}</p>
                     <span className="creator-studio-item__metrics">{contentMetrics.impressions} impresiones · {contentMetrics.clicks} clics ({contentMetrics.clickRate}%) · {contentMetrics.helpful} Me ayudó</span>
                   </div>
-                  <div className="creator-studio-item__order" aria-label={`Posición ${index + 1} de ${contents.length}`}>
-                    <button type="button" onClick={() => moveContent(content, 'up')} disabled={index === 0} aria-label="Mover hacia arriba">↑</button>
-                    <button type="button" onClick={() => moveContent(content, 'down')} disabled={index === contents.length - 1} aria-label="Mover hacia abajo">↓</button>
-                  </div>
                   <div className="creator-studio-item__actions">
                     <button type="button" onClick={() => startEditContent(content)}>Editar</button>
-                    <button type="button" onClick={() => toggleStatus(content)}>{content.status === 'published' ? 'Pasar a borrador' : 'Publicar'}</button>
                     <button type="button" className="is-danger" onClick={() => removeContent(content)}>Eliminar</button>
+                    <div className="creator-studio-item__reorder" role="group" aria-label={`Cambiar posición ${index + 1} de ${contents.length}`}>
+                      <button type="button" onClick={() => moveContent(content, 'up')} disabled={index === 0} aria-label="Subir publicación">↑</button>
+                      <button type="button" onClick={() => moveContent(content, 'down')} disabled={index === contents.length - 1} aria-label="Bajar publicación">↓</button>
+                    </div>
                   </div>
                 </article>
               )

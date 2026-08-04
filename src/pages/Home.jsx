@@ -2162,6 +2162,8 @@ export default function Home() {
 
       <PartnersSection />
 
+      <CreatorHomeSection />
+
       <section style={{ padding:'40px 0 0' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:0 }}>
           <div>
@@ -2247,8 +2249,6 @@ export default function Home() {
         ...
       </section>
       */}
-
-      <CreatorHomeSection />
 
       {/* ── GUÍAS ── */}
       {(() => {

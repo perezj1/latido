@@ -659,21 +659,6 @@
 }
 
 
-.creator-content-card__play {
-  position: absolute;
-  display: grid;
-  width: 45px;
-  height: 45px;
-  padding-left: 3px;
-  color: #fff;
-  background: rgba(15, 23, 42, .83);
-  border: 3px solid rgba(255, 255, 255, .9);
-  border-radius: 50%;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, .25);
-  place-items: center;
-  font-size: 14px;
-}
-
 .creator-content-card__body { padding: 15px; }
 .creator-content-card__creator {
   display: flex;
@@ -802,7 +787,7 @@
   display: flex;
   overflow: hidden;
   width: 152px;
-  height: 240px;
+  height: 254px;
   padding: 0;
   flex: 0 0 152px;
   flex-direction: column;
@@ -853,27 +838,12 @@
 }
 
 .creator-app-content-card__emoji { font-size: 62px; filter: drop-shadow(0 7px 12px rgba(15,23,42,.12)); }
-.creator-app-content-card__play {
-  position: absolute;
-  display: grid;
-  width: 32px;
-  height: 32px;
-  padding-left: 2px;
-  color: #fff;
-  background: rgba(15, 23, 42, .82);
-  border: 2px solid #fff;
-  border-radius: 50%;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, .22);
-  place-items: center;
-  font-size: 9px;
-}
-
-
 .creator-app-content-card__body {
   display: flex;
   min-width: 0;
-  height: 102px;
+  min-height: 0;
   padding: 9px 10px 10px;
+  flex: 1;
   flex-direction: column;
 }
 
@@ -918,6 +888,21 @@
   border-bottom: 1px solid #e2e8f0;
   font-size: 7px;
   font-weight: 700;
+}
+
+.creator-app-content-card__view {
+  display: grid;
+  min-height: 30px;
+  margin: 0 10px 10px;
+  flex: 0 0 30px;
+  color: #fff;
+  background: #2563eb;
+  border-radius: 10px;
+  box-shadow: 0 5px 12px rgba(37, 99, 235, .2);
+  place-items: center;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: .04em;
 }
 
 .creator-home-scroll {
@@ -1248,7 +1233,7 @@
 .creator-studio-list { display: grid; gap: 10px; }
 .creator-studio-item {
   display: grid;
-  grid-template-columns: 110px minmax(0, 1fr) auto auto;
+  grid-template-columns: 110px minmax(0, 1fr) minmax(245px, auto);
   gap: 14px;
   align-items: center;
   padding: 12px;
@@ -1269,12 +1254,13 @@
 .creator-studio-item__status--published { color: #047857; background: #ecfdf5; }
 .creator-studio-item__status--draft { color: #92400e; background: #fef3c7; }
 .creator-studio-item__date { color: #94a3b8; font-size: 8px; }
-.creator-studio-item__order { display: grid; grid-template-columns: 1fr; gap: 5px; }
-.creator-studio-item__order button { display: grid; width: 31px; height: 31px; padding: 0; color: #1d4ed8; background: #eff6ff; border: 0; border-radius: 9px; place-items: center; font-size: 14px; font-weight: 900; cursor: pointer; }
-.creator-studio-item__order button:disabled { opacity: .32; cursor: not-allowed; }
-.creator-studio-item__actions { display: flex; flex-direction: column; gap: 5px; }
-.creator-studio-item__actions button { min-width: 115px; padding: 7px 9px; color: #1d4ed8; background: #eff6ff; border: 0; border-radius: 9px; font: 700 8.5px 'Poppins', system-ui, sans-serif; cursor: pointer; }
+.creator-studio-item__actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.creator-studio-item__actions button { min-width: 0; min-height: 34px; padding: 7px 9px; color: #1d4ed8; background: #eff6ff; border: 0; border-radius: 9px; font: 700 8.5px 'Poppins', system-ui, sans-serif; cursor: pointer; }
 .creator-studio-item__actions button.is-danger { color: #dc2626; background: #fef2f2; }
+.creator-studio-item__reorder { display: grid; overflow: hidden; grid-template-columns: 1fr 1fr; background: #eff6ff; border-radius: 9px; }
+.creator-studio-item__reorder button { min-height: 34px; padding: 0; border-radius: 0; font-size: 13px; font-weight: 900; }
+.creator-studio-item__reorder button + button { border-left: 1px solid #dbeafe; }
+.creator-studio-item__reorder button:disabled { color: #94a3b8; background: #f8fafc; cursor: not-allowed; opacity: .5; }
 
 .creator-studio-how { margin-top: 30px; padding: 22px; background: #102a5c; border-radius: 23px; }
 .creator-studio-how h2 { margin: 0 0 15px; color: #fff; font-size: 17px; }
@@ -1522,8 +1508,6 @@
   .creator-publish-form { padding: 17px 16px; }
   .creator-studio-item { grid-template-columns: 82px minmax(0,1fr); }
   .creator-studio-item__visual { height: 70px; }
-  .creator-studio-item__order { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
-  .creator-studio-item__order button { width: 100%; }
   .creator-studio-item__actions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); }
   .creator-studio-item__actions button { min-width: 0; }
   .creator-studio-how > div { grid-template-columns: 1fr 1fr; }

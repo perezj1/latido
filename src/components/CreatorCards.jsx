@@ -360,7 +360,6 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
         <span className="creator-content-card__emoji">{topic.emoji}</span>
         {thumbnailUrl && <img className="creator-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
         <span className="creator-content-card__platform"><CreatorPlatformBadge platformId={content.platform} /></span>
-        <span className="creator-content-card__play">▶</span>
       </button>
 
       <div className="creator-content-card__body">
@@ -380,7 +379,7 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
           <span>{helpful.count} Me ayudó</span>
         </div>
         <button type="button" className="creator-content-card__cta" onClick={handleOpen}>
-          {content.demo ? 'Probar vista previa' : `Abrir en ${getCreatorPlatform(content.platform).label}`} →
+          VER
         </button>
       </div>
     </article>
@@ -412,7 +411,6 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
           <span className="creator-app-content-card__emoji">{topic.emoji}</span>
           {thumbnailUrl && <img className="creator-app-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
           <span className="creator-app-content-card__platform" style={{ color:platform.color, background:platform.bg }}>{platform.short}</span>
-          <span className="creator-app-content-card__play">▶</span>
         </span>
         <span className="creator-app-content-card__metrics">{helpful.active ? '❤️' : '🤍'} {helpful.count} Me ayudó</span>
         <span className="creator-app-content-card__body">
@@ -423,6 +421,7 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
           </span>
           <strong>{content.title}</strong>
         </span>
+        <span className="creator-app-content-card__view">VER</span>
       </button>
     </article>
   )
