@@ -694,6 +694,7 @@ export default function Perfil() {
   const [savingPush, setSavingPush] = useState(false)
   const [savedSearches, setSavedSearches] = useState([])
   const [loadingSavedSearches, setLoadingSavedSearches] = useState(false)
+  const [savedSearchesError, setSavedSearchesError] = useState('')
   const [updatingSavedSearchId, setUpdatingSavedSearchId] = useState('')
   const needsPushActivation = pushStatus.supported && !pushStatus.subscribed
 
@@ -1253,21 +1254,22 @@ export default function Perfil() {
     refreshPushStatus()
   }, [alertsOpen, refreshPushStatus])
 
-  const refreshSavedSearches = useCallback(async () => {
+  const refreshSavedSearches = useCallback(async ({ silent = false } = {}) => {
     if (!user?.id) {
       setSavedSearches([])
+      setSavedSearchesError('')
       return
     }
 
-    setLoadingSavedSearches(true)
+    if (!silent) setLoadingSavedSearches(true)
+    setSavedSearchesError('')
     try {
       setSavedSearches(await listSavedSearches(user.id))
     } catch (error) {
-      if (!/saved_searches|schema cache|does not exist/i.test(error?.message || '')) {
-        console.warn('Saved searches could not be loaded:', error)
-      }
+      console.warn('Saved searches could not be loaded:', error)
+      setSavedSearchesError('No pudimos cargar tus búsquedas guardadas.')
     } finally {
-      setLoadingSavedSearches(false)
+      if (!silent) setLoadingSavedSearches(false)
     }
   }, [user?.id])
 
@@ -1277,10 +1279,20 @@ export default function Perfil() {
   }, [alertsOpen, refreshSavedSearches])
 
   useEffect(() => {
-    const refresh = () => { void refreshSavedSearches() }
+    const refresh = event => {
+      const savedSearch = event.detail?.search
+      if (savedSearch?.id && savedSearch.user_id === user?.id) {
+        setSavedSearches(current => [
+          savedSearch,
+          ...current.filter(search => search.id !== savedSearch.id),
+        ])
+        setSavedSearchesError('')
+      }
+      void refreshSavedSearches({ silent:true })
+    }
     window.addEventListener(SAVED_SEARCHES_CHANGED_EVENT, refresh)
     return () => window.removeEventListener(SAVED_SEARCHES_CHANGED_EVENT, refresh)
-  }, [refreshSavedSearches])
+  }, [refreshSavedSearches, user?.id])
 
   useEffect(() => {
     if (!isLoggedIn) return
@@ -2702,10 +2714,23 @@ export default function Perfil() {
 
           {loadingSavedSearches ? (
             <div className="skeleton" style={{ height:68, borderRadius:14 }} />
+          ) : savedSearchesError ? (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:14, padding:'12px 14px' }}>
+              <p style={{ fontFamily:PP, fontSize:11, color:'#991B1B', margin:0, lineHeight:1.5 }}>
+                {savedSearchesError}
+              </p>
+              <button
+                type="button"
+                onClick={() => refreshSavedSearches()}
+                style={{ flexShrink:0, border:'1px solid #FCA5A5', borderRadius:10, background:'#fff', color:'#B91C1C', padding:'7px 10px', fontFamily:PP, fontWeight:800, fontSize:10.5, cursor:'pointer' }}
+              >
+                Reintentar
+              </button>
+            </div>
           ) : savedSearches.length === 0 ? (
             <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px' }}>
               <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.5 }}>
-                Cuando filtres o busques algo, pulsa «Crear alerta» para recibir solo novedades relacionadas.
+                  Cuando filtres o busques algo, pulsa «Activar alerta» para recibir solo novedades relacionadas.
               </p>
             </div>
           ) : (

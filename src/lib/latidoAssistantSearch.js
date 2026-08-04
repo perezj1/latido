@@ -70,8 +70,8 @@ const SCOPE_DEFINITIONS = [
     label:'Empleo',
     category:'',
     entityTypes:['job', 'business', 'ad'],
-    triggers:['empleo', 'trabajo', 'trabajar', 'vacante', 'puesto laboral', 'curro', 'chamba', 'emprego', 'trabalho', 'stelle', 'arbeit', 'emploi', 'lavoro'],
-    searchTerms:['empleo', 'trabajo', 'vacante', 'puesto', 'oferta laboral', 'emprego', 'trabalho', 'stelle', 'arbeit', 'emploi', 'lavoro'],
+    triggers:['empleo', 'trabajo', 'trabajar', 'vacante', 'puesto laboral', 'curro', 'chamba', 'job', 'jobs', 'work', 'treball', 'traball', 'travail', 'emprego', 'trabalho', 'stelle', 'arbeit', 'emploi', 'lavoro'],
+    searchTerms:['empleo', 'trabajo', 'vacante', 'puesto', 'oferta laboral', 'job', 'jobs', 'work', 'treball', 'traball', 'travail', 'emprego', 'trabalho', 'stelle', 'arbeit', 'emploi', 'lavoro'],
     semanticSeed:'empleo',
   },
   {

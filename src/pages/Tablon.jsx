@@ -11,12 +11,13 @@ import FavoriteButton from '../components/FavoriteButton'
 import DetailActionBar from '../components/DetailActionBar'
 import GlobalSearch from '../components/GlobalSearch'
 import SavedSearchButton from '../components/SavedSearchButton'
+import SearchRecoveryEmptyState from '../components/SearchRecoveryEmptyState'
 import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getThumbnailImageUrl, handleThumbnailImageError } from '../lib/imageVariants'
 import { matchesCantonOrNationwide } from '../lib/locationScope'
-import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
+import { buildSearchProfile, profileHasIntent, scoreSearchFields } from '../lib/naturalSearch'
 import { isPublicationOpen } from '../lib/publicationLifecycle'
 import { EmploymentLevelBadge } from '../components/EmploymentProfileForm'
 import {
@@ -1277,6 +1278,31 @@ export default function Tablon() {
     scrollPageTop()
   }
 
+  const expandJobSearch = () => {
+    const next = new URLSearchParams(searchParams)
+    ;['q', 'canton', 'plz', 'jobType', 'employmentLevel', 'sort', 'openAd', 'openJob'].forEach(key => next.delete(key))
+    next.set('cat', 'empleo')
+    next.set('jobIntent', 'ofrece')
+    next.delete('type')
+    setSearch('')
+    setResolvedSearch({ active:false, ready:false, query:'', results:[] })
+    setSearchParams(next, { replace:true })
+    setShowFilters(false)
+    scrollPageTop()
+    toast.success('Mostrando más profesiones en toda Suiza')
+  }
+
+  const expandGeneralSearch = () => {
+    const next = new URLSearchParams(searchParams)
+    ;['q', 'canton', 'plz', 'jobType', 'employmentLevel', 'priceRange', 'maxPrice', 'privacy', 'sort', 'openAd', 'openJob'].forEach(key => next.delete(key))
+    setSearch('')
+    setResolvedSearch({ active:false, ready:false, query:'', results:[] })
+    setSearchParams(next, { replace:true })
+    setShowFilters(false)
+    scrollPageTop()
+    toast.success(cat ? 'Mostrando todas las opciones de esta sección' : 'Mostrando todas las publicaciones')
+  }
+
   const removeAppliedFilter = key => {
     const next = new URLSearchParams(searchParams)
     if (key === 'priceRange') {
@@ -1895,6 +1921,20 @@ export default function Tablon() {
     privacy,
     userCanton,
   ])
+  const isEmploymentQuery = isEmpleos || (
+    !cat && (
+      profileHasIntent(searchProfile, 'employment')
+      || resolvedSearch.assistant?.intent === 'employment'
+    )
+  )
+  const showJobSeekerEmptyState = isEmploymentQuery
+    && activeJobIntent === 'ofrece'
+    && visibleResultCount === 0
+  const showSearchRecovery = visibleResultCount === 0 && (
+    showJobSeekerEmptyState
+    || deferredSearch.length >= 2
+    || activeFilterCount > 0
+  )
 
   const relatedAdsForSelected = useMemo(() => {
     if (!selectedAd) return []
@@ -2095,7 +2135,7 @@ export default function Tablon() {
         sortValue={sortOrder}
         onSortChange={setSortView}
       />
-      {savedSearchDraft && (
+      {savedSearchDraft && !showSearchRecovery && (
         <div className="saved-search-prompt saved-search-prompt--toolbar">
           <span>Avísame cuando haya nuevos resultados.</span>
           <SavedSearchButton draft={savedSearchDraft} compact />
@@ -2129,12 +2169,20 @@ export default function Tablon() {
             </div>
           )}
           {displayedJobs.length === 0 ? (
-            <div style={{ textAlign:'center', padding:'60px 20px' }}>
-              <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
-              <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
-              <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
-              <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
-            </div>
+            showJobSeekerEmptyState ? (
+              <SearchRecoveryEmptyState
+                employment
+                savedSearchDraft={savedSearchDraft}
+                onExpandSearch={expandJobSearch}
+              />
+            ) : (
+              <div style={{ textAlign:'center', padding:'60px 20px' }}>
+                <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
+                <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
+                <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
+                <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
+              </div>
+            )
           ) : (
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>{activeIntentMeta?.label?.toUpperCase() || 'EMPLEO DE LA COMUNIDAD'}</p>
@@ -2172,21 +2220,41 @@ export default function Tablon() {
               <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{displayedAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userProfiles.get(ad.user_id)?.avatarUrl} reviews={adReviews[ad.id] || []} />)}</div>
             </>
           ) : (
-            <div style={{ textAlign:'center', padding:'50px 20px' }}>
-              <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
-              <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
-              <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
-              <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
-            </div>
+            showSearchRecovery ? (
+              <SearchRecoveryEmptyState
+                employment={showJobSeekerEmptyState}
+                savedSearchDraft={savedSearchDraft}
+                onExpandSearch={showJobSeekerEmptyState ? expandJobSearch : expandGeneralSearch}
+                publishHref={showJobSeekerEmptyState ? '' : publishHref}
+                publishLabel={showJobSeekerEmptyState ? '' : publishLabel}
+              />
+            ) : (
+              <div style={{ textAlign:'center', padding:'50px 20px' }}>
+                <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
+                <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
+                <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
+                <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
+              </div>
+            )
           )}
         </>
       ) : tablonItems.length === 0 ? (
-        <div style={{ textAlign:'center', padding:'60px 20px' }}>
-          <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
-          <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
-          <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:16 }}>{pageContext.emptyText}</p>
-          <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
-        </div>
+        showSearchRecovery ? (
+          <SearchRecoveryEmptyState
+            employment={showJobSeekerEmptyState}
+            savedSearchDraft={savedSearchDraft}
+            onExpandSearch={showJobSeekerEmptyState ? expandJobSearch : expandGeneralSearch}
+            publishHref={showJobSeekerEmptyState ? '' : publishHref}
+            publishLabel={showJobSeekerEmptyState ? '' : publishLabel}
+          />
+        ) : (
+          <div style={{ textAlign:'center', padding:'60px 20px' }}>
+            <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
+            <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
+            <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:16 }}>{pageContext.emptyText}</p>
+            <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
+          </div>
+        )
       ) : (
         <>
           {cat && <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>{activeIntentMeta?.label?.toUpperCase()}</p>}
