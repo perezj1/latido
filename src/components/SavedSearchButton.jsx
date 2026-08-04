@@ -15,7 +15,7 @@ import {
   subscribeToPushNotifications,
 } from '../lib/pushNotifications'
 
-export default function SavedSearchButton({ draft, compact = false }) {
+export default function SavedSearchButton({ draft, compact = false, idleLabel = '', prominent = false }) {
   const { isLoggedIn, user, userCanton } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -73,7 +73,9 @@ export default function SavedSearchButton({ draft, compact = false }) {
     try {
       const saved = await saveSavedSearch(user.id, draft)
       setExisting({ id:saved.id, active:true, push_enabled:true })
-      toast.success(existing ? 'Alerta reactivada' : 'Búsqueda guardada; te avisaremos por email')
+      toast.success(existing
+        ? 'Alerta reactivada. Te avisaremos cuando haya una publicación relacionada.'
+        : 'Has guardado tu búsqueda. Te avisaremos cuando haya una publicación relacionada.')
       await requestPushIfUseful()
     } catch (error) {
       toast.error(error?.message || 'No se pudo guardar la búsqueda')
@@ -106,10 +108,12 @@ export default function SavedSearchButton({ draft, compact = false }) {
     : checking
       ? 'Comprobando...'
       : isSaved
-        ? 'Alerta guardada'
+        ? 'Alerta activa'
         : existing
           ? 'Reactivar alerta'
-          : compact
+          : idleLabel
+            ? idleLabel
+            : compact
             ? 'Activar'
             : 'Avísame de nuevos resultados'
 
@@ -125,20 +129,22 @@ export default function SavedSearchButton({ draft, compact = false }) {
           alignItems:'center',
           justifyContent:'center',
           gap:6,
-          minHeight:34,
+          width:prominent ? '100%' : undefined,
+          minHeight:prominent ? 44 : 34,
           maxWidth:'100%',
           padding:compact ? '7px 11px' : '8px 13px',
-          borderRadius:12,
+          borderRadius:prominent ? 14 : 12,
           border:`1px solid ${isSaved ? '#86EFAC' : C.primaryMid}`,
-          background:isSaved ? '#ECFDF5' : '#fff',
-          color:isSaved ? '#047857' : C.primary,
+          background:isSaved ? '#ECFDF5' : prominent ? C.primary : '#fff',
+          color:isSaved ? '#047857' : prominent ? '#fff' : C.primary,
           fontFamily:PP,
           fontWeight:800,
-          fontSize:11,
+          fontSize:prominent ? 12.5 : 11,
           lineHeight:1.2,
           cursor:saving || checking || isSaved ? 'default' : 'pointer',
           opacity:saving || checking ? 0.7 : 1,
           whiteSpace:'nowrap',
+          boxShadow:prominent && !isSaved ? '0 8px 18px rgba(37,99,235,.2)' : 'none',
         }}
       >
         <span aria-hidden="true">{isSaved ? '✓' : '🔔'}</span>

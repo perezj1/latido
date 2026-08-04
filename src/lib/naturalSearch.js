@@ -23,10 +23,11 @@ const INTENT_DEFINITIONS = [
     id:'employment',
     triggers:[
       'empleo', 'trabajo', 'trabajar', 'chamba', 'curro', 'vacante',
+      'job', 'jobs', 'work', 'treball', 'traball', 'travail',
       'emprego', 'trabalho', 'trabalhar', 'stelle', 'arbeit', 'emploi', 'lavoro',
     ],
     consumed:['laboral', 'oferta', 'oportunidad', 'puesto'],
-    terms:['empleo', 'trabajo', 'vacante', 'oferta laboral', 'puesto', 'job', 'reclutamiento', 'emprego', 'trabalho', 'stelle', 'arbeit', 'emploi', 'lavoro'],
+    terms:['empleo', 'trabajo', 'vacante', 'oferta laboral', 'puesto', 'job', 'jobs', 'work', 'treball', 'traball', 'travail', 'reclutamiento', 'emprego', 'trabalho', 'stelle', 'arbeit', 'emploi', 'lavoro'],
   },
   {
     id:'construction',
