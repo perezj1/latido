@@ -78,9 +78,11 @@ export function getSavedSearchFingerprint(draft) {
   }))
 }
 
-export function notifySavedSearchesChanged() {
+export function notifySavedSearchesChanged(search = null) {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(SAVED_SEARCHES_CHANGED_EVENT))
+    window.dispatchEvent(new CustomEvent(SAVED_SEARCHES_CHANGED_EVENT, {
+      detail:search ? { search } : null,
+    }))
   }
 }
 
@@ -132,7 +134,7 @@ export async function saveSavedSearch(userId, draft) {
     .single()
 
   if (error) throw error
-  notifySavedSearchesChanged()
+  notifySavedSearchesChanged(data)
   void trackAnalyticsEvent('saved_search_created', {
     user_id:userId,
     metadata:{

@@ -46,6 +46,7 @@ import {
 } from '../lib/employmentProfile'
 import { FilterIcon, FILTER_PANEL_TITLE_STYLE } from './FilterWorkspace'
 import SavedSearchButton from './SavedSearchButton'
+import SearchRecoveryEmptyState from './SearchRecoveryEmptyState'
 import {
   buildLatidoSearchRpcParams,
   matchesLatidoAssistantResult,
@@ -1733,6 +1734,12 @@ export default function GlobalSearch({
     [immersiveLimit, immersiveOrganicResults]
   )
   const immersiveResultCount = immersivePartnerEntries.length + immersiveOrganicResults.length
+  const isEmploymentSearch = (
+    analyticsScope === 'empleos'
+    || effectiveSearchFilters.category === 'empleo'
+    || assistantQuery?.scope?.id === 'employment'
+    || profileHasIntent(currentSearchProfile, 'employment')
+  )
   const immersiveFilterDraftResultCount = useMemo(() => {
     if (!immersiveResultFiltersOpen) return immersiveResultCount
 
@@ -2352,6 +2359,55 @@ export default function GlobalSearch({
       window.setTimeout(() => overlayInputRef.current?.focus(), 0)
     }
   }, [saveCurrentSearch, setQ])
+
+  const expandEmploymentSearch = useCallback(() => {
+    setImmersiveSearchFilterOverrides(previous => ({
+      ...previous,
+      category:'',
+      canton:'',
+      location:'',
+      intent:'ofrece',
+    }))
+    onSearchFiltersChange?.({
+      ...searchFilters,
+      category:'',
+      canton:'',
+      location:'',
+      intent:'ofrece',
+    })
+    setImmersiveExtraFilters({ ...EMPTY_IMMERSIVE_EXTRA_FILTERS })
+    setActiveFilter('job')
+    setQ('trabajo')
+    setImmersiveView('results')
+    setImmersiveLimit(FULL_SEARCH_PAGE_SIZE)
+    setImmersiveFiltersOpen(false)
+    setImmersiveResultFiltersOpen(false)
+  }, [onSearchFiltersChange, searchFilters, setQ])
+
+  const expandGeneralSearch = useCallback(() => {
+    const broaderQuery = assistantQuery?.scope?.label || ''
+    setImmersiveSearchFilterOverrides(previous => ({
+      ...previous,
+      category:'',
+      canton:'',
+      location:'',
+      intent:'',
+    }))
+    onSearchFiltersChange?.({
+      ...searchFilters,
+      category:'',
+      canton:'',
+      location:'',
+      intent:'',
+    })
+    setImmersiveExtraFilters({ ...EMPTY_IMMERSIVE_EXTRA_FILTERS })
+    setActiveFilter(null)
+    setQ(broaderQuery)
+    setImmersiveView(broaderQuery ? 'results' : 'start')
+    setImmersiveLimit(FULL_SEARCH_PAGE_SIZE)
+    setImmersiveFiltersOpen(false)
+    setImmersiveResultFiltersOpen(false)
+  }, [assistantQuery?.scope?.label, onSearchFiltersChange, searchFilters, setQ])
 
   const goTo = target => {
     const result = typeof target === 'string' ? null : target
@@ -3051,7 +3107,7 @@ export default function GlobalSearch({
                     <div className="latido-search-matches-heading">
                       <strong>Coincidencias</strong>
                     </div>
-                    {(immersiveResultCount === 0 || showingRelatedAlternatives) && savedSearchDraft && (
+                    {showingRelatedAlternatives && savedSearchDraft && (
                       <div className="saved-search-prompt saved-search-prompt--toolbar latido-search-no-results-alert">
                         <span>Guarda esta búsqueda y te avisaremos cuando haya coincidencias.</span>
                         <SavedSearchButton draft={savedSearchDraft} compact />
@@ -3101,11 +3157,11 @@ export default function GlobalSearch({
                         <span>{immersiveResultCount}</span>
                       </button>
                     ) : (
-                      <div className="latido-search-empty">
-                        <SearchGlyph size={28} />
-                        <strong>No encontramos resultados exactos</strong>
-                        <p>Elige una sugerencia de arriba o prueba una ubicación más amplia.</p>
-                      </div>
+                      <SearchRecoveryEmptyState
+                        employment={isEmploymentSearch}
+                        savedSearchDraft={savedSearchDraft}
+                        onExpandSearch={isEmploymentSearch ? expandEmploymentSearch : expandGeneralSearch}
+                      />
                     )}
                   </>
                 )}
@@ -3145,7 +3201,7 @@ export default function GlobalSearch({
                       </label>
                     </div>
                   </div>
-                  {savedSearchDraft && (
+                  {savedSearchDraft && immersiveResultCount > 0 && (
                     <div className="latido-search-results-toolbar__save">
                       <span>Avísame cuando haya nuevos resultados.</span>
                       <SavedSearchButton draft={savedSearchDraft} compact />
@@ -3231,21 +3287,11 @@ export default function GlobalSearch({
                 )}
 
                 {immersiveResultCount === 0 && (
-                  <div className="latido-search-empty">
-                    <SearchGlyph size={28} />
-                    <strong>No hay resultados con estos criterios</strong>
-                    <p>Quita algún filtro o prueba una búsqueda diferente.</p>
-                    <div className="latido-search-quick is-centered" aria-label="Búsquedas sugeridas">
-                      {(recoverySuggestions.length
-                        ? recoverySuggestions
-                        : quickSearches.slice(0, 3).map(label => ({ label }))
-                      ).map(suggestion => (
-                        <button key={suggestion.label} type="button" onClick={() => selectSearchSuggestion(suggestion.label)}>
-                          {suggestion.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <SearchRecoveryEmptyState
+                    employment={isEmploymentSearch}
+                      savedSearchDraft={savedSearchDraft}
+                    onExpandSearch={isEmploymentSearch ? expandEmploymentSearch : expandGeneralSearch}
+                  />
                 )}
               </div>
             )}
