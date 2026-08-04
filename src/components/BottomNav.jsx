@@ -24,8 +24,8 @@ const TABS = [
   { path:'/perfil',      emoji:'👤', label:'Perfil' },
 ]
 
-const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad', '/creadores/alta']
-const NO_FAB = [...PUBLISH_FLOW_PATHS, '/mensajes', '/perfil', '/creadores/mi-perfil']
+const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
+const NO_FAB = [...PUBLISH_FLOW_PATHS, '/mensajes', '/perfil', '/creadores/alta', '/creadores/mi-perfil']
 
 export default function BottomNav() {
   const { pathname, search } = useLocation()
@@ -81,12 +81,16 @@ export default function BottomNav() {
   const isAdminPage = pathname === '/admin-latido' || pathname.startsWith('/admin-latido/')
   const isPublishFlow = PUBLISH_FLOW_PATHS.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const isPromotionCheckoutPage = /^\/negocios\/[^/]+\/destacar\/?$/.test(pathname)
+  const isCreatorProfileArea = pathname === '/creadores/alta' || pathname.startsWith('/creadores/mi-perfil')
   const hideFab = isAdminPage || isPromotionCheckoutPage || NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const fab = hideFab ? null : getPublishTarget()
   const hideMobileNav = isAdminPage || isPublishFlow || (pathname.startsWith('/mensajes') && messagesChatOpen)
-  const activeTabIndex = TABS.findIndex(tab =>
-    tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
-  )
+  const isTabActive = tab => tab.path === '/'
+    ? pathname === '/'
+    : tab.path === '/perfil'
+      ? pathname.startsWith('/perfil') || isCreatorProfileArea
+      : pathname.startsWith(tab.path)
+  const activeTabIndex = TABS.findIndex(isTabActive)
 
   return (
     <>
@@ -168,7 +172,7 @@ export default function BottomNav() {
           </span>
         )}
         {TABS.map(tab => {
-          const active = tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
+          const active = isTabActive(tab)
           const needsNotificationDot = tab.path === '/perfil' && needsPushActivation
           const to = (!isLoggedIn && (tab.path === '/mensajes' || tab.path === '/perfil')) ? '/auth' : tab.path
 

@@ -41,7 +41,7 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'negocios', icon:'🏪', title:'Negocios latinos', section:'Comunidad', desc:'Directorio de restaurantes, tiendas, belleza, salud y servicios.', href:'/comunidades?view=negocios' },
   { id:'eventos', icon:'🎉', title:'Eventos latinos', section:'Comunidad', desc:'Conciertos, fiestas, quedadas, networking y planes familiares.', href:'/comunidades?view=eventos' },
   { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
-  { id:'creadores', icon:'🎙️', title:'Creadores sobre Suiza', section:'Comunidad', desc:'Personas, profesionales y negocios que comparten experiencias, información y proyectos sobre Suiza.', href:'/comunidades?view=creadores' },
+  { id:'creadores', icon:'🎙️', title:'Creadores', section:'Comunidad', desc:'Personas, profesionales y negocios que comparten experiencias, información y proyectos sobre Suiza.', href:'/comunidades?view=creadores' },
   { id:'servicios-suiza', icon:'🇨🇭', title:'Servicios para vivir en Suiza', section:'Servicios', desc:'Seguro médico, tercer pilar y preparación para llegar a Suiza, con orientación en español.', href:'/servicios-suiza' },
   { id:'servicios-virtus360', icon:'360', title:'Gestoría y finanzas con Virtus360', section:'Servicios', desc:'Trámites, impuestos, seguros, mudanza y contabilidad en colaboración con Virtus360.', href:'/servicios-virtus360' },
   { id:'perfil', icon:'👤', title:'Perfil', section:'Cuenta', desc:'Datos personales, avatar, preferencias y configuración.', href:'/perfil' },

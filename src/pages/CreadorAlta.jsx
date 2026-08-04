@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useId, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { Btn, Input, ProgressBar, Select, StickyFormActions } from '../components/UI'
@@ -7,8 +7,11 @@ import { CreatorAvatar, CreatorTopicPill } from '../components/CreatorCards'
 import { CANTONS } from '../lib/constants'
 import {
   CREATOR_PLATFORMS,
+  CREATOR_FOLLOWER_RANGES,
   CREATOR_TOPICS,
   getCreatorForUser,
+  isCreatorHandleAvailable,
+  getCreatorTopicsFromInterests,
   normalizeCreatorUrl,
   saveCreatorProfile,
 } from '../lib/creators'
@@ -38,29 +41,69 @@ function focusFirstError(errors) {
   }, 40)
 }
 
-function initialForm(existing, displayName, userCanton) {
+function prepareLocalAvatar(file) {
+  return new Promise((resolve, reject) => {
+    if (!file?.type?.startsWith('image/')) {
+      reject(new Error('Selecciona una imagen JPG, PNG o WebP.'))
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      reject(new Error('La imagen pesa más de 10 MB. Elige una más ligera.'))
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(file)
+    const image = new Image()
+    image.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 360
+      canvas.height = 360
+      const context = canvas.getContext('2d')
+      const scale = Math.max(canvas.width / image.width, canvas.height / image.height)
+      const width = image.width * scale
+      const height = image.height * scale
+      context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height)
+      URL.revokeObjectURL(objectUrl)
+      resolve(canvas.toDataURL('image/webp', .8))
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('No se pudo leer la imagen seleccionada.'))
+    }
+    image.src = objectUrl
+  })
+}
+
+function initialForm(existing, displayName, userCanton, userInterests = []) {
   const socialMap = Object.fromEntries((existing?.socials || []).map(social => [social.platform, social.url]))
+  const followerMap = Object.fromEntries((existing?.socials || []).map(social => [social.platform, social.follower_range || '']))
   return {
     name:existing?.name || displayName || '',
-    handle:existing?.handle || '',
+    avatar_url:existing?.avatar_url || '',
+    handle:existing?.handle ? `@${String(existing.handle).replace(/^@+/, '')}` : '',
     tagline:existing?.tagline || '',
     bio:existing?.bio || '',
     city:existing?.city || '',
     canton:existing?.canton || userCanton || '',
     reach:existing?.reach || 'Toda Suiza',
-    topics:existing?.topics || [],
+    topics:existing ? (existing.topics || []) : getCreatorTopicsFromInterests(userInterests),
     socials:Object.fromEntries(CREATOR_PLATFORMS.map(platform => [platform.id, socialMap[platform.id] || ''])),
+    followers:Object.fromEntries(CREATOR_PLATFORMS.map(platform => [platform.id, followerMap[platform.id] || ''])),
     accepted:false,
   }
 }
 
 export default function CreadorAlta() {
   const navigate = useNavigate()
-  const { user, displayName, userCanton } = useAuth()
+  const location = useLocation()
+  const avatarDeviceId = useId()
+  const avatarCameraId = useId()
+  const { user, displayName, userCanton, userInterests } = useAuth()
   const existing = useMemo(() => getCreatorForUser(user?.id), [user?.id])
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState(() => initialForm(existing, displayName, userCanton))
+  const [processingAvatar, setProcessingAvatar] = useState(false)
+  const [form, setForm] = useState(() => initialForm(existing, displayName, userCanton, userInterests))
   const [errors, setErrors] = useState({})
 
   useEffect(() => {
@@ -84,7 +127,20 @@ export default function CreadorAlta() {
       ...current,
       socials:{ ...current.socials, [platform]:value },
     }))
-    clearErrors(`social_${platform}`, 'socials')
+    clearErrors(`social_${platform}`, `followers_${platform}`, 'socials')
+  }
+
+  const updateHandle = value => {
+    const raw = String(value || '')
+    update('handle', raw ? `@${raw.replace(/^@+/, '')}` : '')
+  }
+
+  const updateFollowerRange = (platform, value) => {
+    setForm(current => ({
+      ...current,
+      followers:{ ...current.followers, [platform]:value },
+    }))
+    clearErrors(`followers_${platform}`)
   }
 
   const toggleTopic = topicId => {
@@ -114,8 +170,11 @@ export default function CreadorAlta() {
       else if (nameLength < PROFILE_LIMITS.name.min) nextErrors.name = `El nombre necesita al menos ${PROFILE_LIMITS.name.min} caracteres (llevas ${nameLength}).`
       else if (nameLength > PROFILE_LIMITS.name.max) nextErrors.name = `El nombre admite como máximo ${PROFILE_LIMITS.name.max} caracteres (llevas ${nameLength}).`
 
-      if (handle && handle.replace(/^@/, '').length < 3) nextErrors.handle = 'El usuario necesita al menos 3 caracteres, sin contar la @.'
-      else if (handle && !/^@?[a-zA-Z0-9._-]+$/.test(handle)) nextErrors.handle = 'Usa solo letras, números, punto, guion o guion bajo.'
+      if (!handle) nextErrors.handle = 'Crea un usuario para identificar tu perfil, por ejemplo @joseensuiza.'
+      else if (!handle.startsWith('@')) nextErrors.handle = 'El usuario debe comenzar por @.'
+      else if (handle.slice(1).length < 3) nextErrors.handle = `El usuario necesita al menos 3 caracteres después de la @ (llevas ${handle.slice(1).length}).`
+      else if (!/^@[a-zA-Z0-9._-]+$/.test(handle)) nextErrors.handle = 'Después de la @ usa solo letras, números, punto, guion o guion bajo; no incluyas espacios.'
+      else if (!isCreatorHandleAvailable(handle, user?.id)) nextErrors.handle = 'Ese usuario ya está siendo utilizado por otro creador. Elige uno diferente.'
 
       if (!taglineLength) nextErrors.tagline = 'Resume en una frase qué compartes o qué aportas.'
       else if (taglineLength < PROFILE_LIMITS.tagline.min) nextErrors.tagline = `La frase necesita al menos ${PROFILE_LIMITS.tagline.min} caracteres (llevas ${taglineLength}).`
@@ -131,6 +190,10 @@ export default function CreadorAlta() {
       if (!socialEntries.length) nextErrors.socials = 'Añade al menos una red social, canal o página web.'
       socialEntries.forEach(([platform, value]) => {
         if (!normalizeCreatorUrl(value)) nextErrors[`social_${platform}`] = 'Introduce una dirección válida que empiece, por ejemplo, por https://'
+        const platformConfig = CREATOR_PLATFORMS.find(item => item.id === platform)
+        if (platformConfig?.hasFollowerRange && !form.followers[platform]) {
+          nextErrors[`followers_${platform}`] = 'Selecciona un rango aproximado. Es un dato privado para la revisión de Latido.'
+        }
       })
     }
     if (step === 3 && !form.accepted) nextErrors.accepted = 'Marca esta casilla para confirmar que representas el perfil y puedes compartir estos enlaces.'
@@ -152,7 +215,7 @@ export default function CreadorAlta() {
     setSaving(true)
     try {
       const socials = CREATOR_PLATFORMS
-        .map(platform => ({ platform:platform.id, url:form.socials[platform.id], label:platform.label }))
+        .map(platform => ({ platform:platform.id, url:form.socials[platform.id], label:platform.label, follower_range:form.followers[platform.id] }))
         .filter(social => social.url.trim())
       saveCreatorProfile(user.id, { ...form, socials, status:'published' })
       toast.success(existing ? 'Perfil actualizado' : 'Perfil de prueba creado')
@@ -164,8 +227,48 @@ export default function CreadorAlta() {
     }
   }
 
+  const handleAvatarFiles = async event => {
+    const [file] = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (!file) return
+
+    setProcessingAvatar(true)
+    try {
+      const avatarUrl = await prepareLocalAvatar(file)
+      update('avatar_url', avatarUrl)
+      toast.success('Foto de perfil preparada')
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo preparar la foto')
+    } finally {
+      setProcessingAvatar(false)
+    }
+  }
+
+  const cancelCreatorFlow = () => {
+    setErrors({})
+    const returnPath = typeof location.state?.from === 'string' ? location.state.from : ''
+    const safeReturnPath = returnPath.startsWith('/') && !returnPath.startsWith('//') && !returnPath.startsWith('/auth')
+      ? returnPath
+      : ''
+
+    if (safeReturnPath) {
+      navigate(safeReturnPath, { replace:true })
+      return
+    }
+    if (new URLSearchParams(location.search).get('from') === 'onboarding') {
+      navigate('/perfil', { replace:true })
+      return
+    }
+    if (Number(window.history.state?.idx) > 0) {
+      navigate(-1)
+      return
+    }
+    navigate(existing ? '/creadores/mi-perfil' : '/perfil', { replace:true })
+  }
+
   const previewCreator = {
     name:form.name || 'Tu nombre o proyecto',
+    avatar_url:form.avatar_url,
     handle:form.handle || '@tuusuario',
     tagline:form.tagline || 'Aquí aparecerá lo que compartes sobre Suiza.',
     city:form.city,
@@ -193,7 +296,27 @@ export default function CreadorAlta() {
           {step === 0 && (
             <>
               <Input label="NOMBRE DEL PERFIL, PROYECTO O NEGOCIO" required error={errors.name} errorKey="name" value={form.name} onChange={event => update('name', event.target.value)} placeholder="Ej. Lucía en Suiza · Taller García · Enfermera en Zúrich" />
-              <Input label="USUARIO O NOMBRE CORTO" error={errors.handle} errorKey="handle" value={form.handle} onChange={event => update('handle', event.target.value)} placeholder="Ej. @luciaensuiza" />
+              <div className="creator-avatar-upload">
+                <span className="creator-avatar-upload__label">FOTO DE PERFIL · OPCIONAL</span>
+                <div className="creator-avatar-upload__body">
+                  <CreatorAvatar creator={previewCreator} size={82} />
+                  <div className="creator-avatar-upload__controls">
+                    <strong>{processingAvatar ? 'Preparando la foto…' : form.avatar_url ? 'Tu foto está lista' : 'Elige una foto que te represente'}</strong>
+                    <small>Se recortará en formato cuadrado y se mostrará en círculo.</small>
+                    <div>
+                      <label className="creator-avatar-upload__button is-primary" htmlFor={avatarDeviceId}>
+                        🖼 {form.avatar_url ? 'Cambiar' : 'Elegir foto'}
+                      </label>
+                      <label className="creator-avatar-upload__button" htmlFor={avatarCameraId}>📷 Cámara</label>
+                      {form.avatar_url && <button type="button" onClick={() => update('avatar_url', '')}>Quitar</button>}
+                    </div>
+                    <input id={avatarDeviceId} type="file" accept="image/*" onChange={handleAvatarFiles} disabled={processingAvatar} />
+                    <input id={avatarCameraId} type="file" accept="image/*" capture="user" onChange={handleAvatarFiles} disabled={processingAvatar} />
+                  </div>
+                </div>
+              </div>
+              <Input label="USUARIO O ALIAS" required error={errors.handle} errorKey="handle" leftElement={<span aria-hidden="true">@</span>} value={form.handle.replace(/^@/, '')} onChange={event => updateHandle(event.target.value)} placeholder="joseensuiza" />
+              <p className="creator-field-help">Identificador corto de tu perfil.</p>
               <Input label="QUÉ COMPARTES EN UNA FRASE" required error={errors.tagline} errorKey="tagline" value={form.tagline} onChange={event => update('tagline', event.target.value)} placeholder="Ej. Mi experiencia trabajando en Suiza y consejos para recién llegados." />
               <p className={`creator-field-count${errors.tagline ? ' is-error' : ''}`}>{form.tagline.trim().length}/{PROFILE_LIMITS.tagline.max} caracteres · mínimo {PROFILE_LIMITS.tagline.min}</p>
               <Input label="SOBRE TI, TU TRABAJO O PROYECTO" required rows={5} error={errors.bio} errorKey="bio" value={form.bio} onChange={event => update('bio', event.target.value)} placeholder="¿Quién eres o qué proyecto representas? ¿Qué compartes en redes? ¿Vives, trabajas o tienes un negocio en Suiza?" />
@@ -243,10 +366,10 @@ export default function CreadorAlta() {
           {step === 2 && (
             <>
               <div style={{ marginBottom:18, padding:'12px 14px', color:'#1E3A8A', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:13, fontFamily:PP, fontSize:10.5, lineHeight:1.65 }}>
-                Añade al menos una red social, canal o web. Latido mostrará botones de visita y medirá únicamente los clics enviados; nunca solicitará tus contraseñas ni estadísticas privadas.
+                Añade al menos una red social, canal o web. El rango aproximado de audiencia es privado: ayuda a Latido a revisar el alta, pero no se muestra en tu perfil ni influye en el orden.
               </div>
               {CREATOR_PLATFORMS.map(platform => (
-                <div key={platform.id} data-error-field={`social_${platform.id}`} style={{ display:'grid', gridTemplateColumns:'90px minmax(0,1fr)', gap:10, alignItems:'center', marginBottom:errors[`social_${platform.id}`] ? 4 : 10 }}>
+                <div key={platform.id} data-error-field={errors[`social_${platform.id}`] ? `social_${platform.id}` : errors[`followers_${platform.id}`] ? `followers_${platform.id}` : undefined} className="creator-social-field">
                   <span style={{ color:platform.color, fontFamily:PP, fontSize:10, fontWeight:900 }}>{platform.short} · {platform.label}</span>
                   <div>
                     <input
@@ -259,6 +382,21 @@ export default function CreadorAlta() {
                       aria-invalid={Boolean(errors[`social_${platform.id}`]) || undefined}
                     />
                     {errors[`social_${platform.id}`] && <p className="creator-inline-error">{errors[`social_${platform.id}`]}</p>}
+                    {platform.hasFollowerRange && form.socials[platform.id].trim() && (
+                      <>
+                        <select
+                          className={`creator-form-control creator-private-range${errors[`followers_${platform.id}`] ? ' is-error' : ''}`}
+                          value={form.followers[platform.id]}
+                          onChange={event => updateFollowerRange(platform.id, event.target.value)}
+                          aria-label={`Rango privado de audiencia en ${platform.label}`}
+                          aria-invalid={Boolean(errors[`followers_${platform.id}`]) || undefined}
+                        >
+                          <option value="">Rango aproximado · privado</option>
+                          {CREATOR_FOLLOWER_RANGES.map(range => <option key={range.id} value={range.id}>{range.label}</option>)}
+                        </select>
+                        {errors[`followers_${platform.id}`] && <p className="creator-inline-error">{errors[`followers_${platform.id}`]}</p>}
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -310,7 +448,7 @@ export default function CreadorAlta() {
       <StickyFormActions>
         <Btn variant="secondary" onClick={() => {
           setErrors({})
-          if (step === 0) navigate(existing ? '/creadores/mi-perfil' : '/creadores')
+          if (step === 0) cancelCreatorFlow()
           else setStep(current => current - 1)
         }} style={{ flex:'0 0 125px' }}>
           {step === 0 ? 'Cancelar' : '← Atrás'}

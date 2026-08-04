@@ -2,24 +2,28 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
-import { Btn, ImageUploadField, Input, Select } from '../components/UI'
-import { CreatorAvatar, CreatorTopicPill } from '../components/CreatorCards'
-import { CANTONS } from '../lib/constants'
+import { Btn, ImageUploadField, Input } from '../components/UI'
+import { CreatorAvatar, CreatorProfileTabs } from '../components/CreatorCards'
 import {
   CREATOR_MAX_CONTENTS,
-  CREATOR_PLATFORMS,
   CREATOR_TOPICS,
   detectCreatorPlatform,
+  formatCreatorHandle,
   getCreatorForUser,
   getCreatorMetrics,
+  getCreatorOEmbedMetadata,
   getCreatorPlatform,
+  getCreatorProfileCompleteness,
   getCreatorThumbnailUrl,
   getCreatorTopic,
+  getOrderedCreatorContents,
+  moveCreatorContent,
   normalizeCreatorUrl,
   removeCreatorContent,
   resetCreatorPrototype,
   saveCreatorContent,
   setCreatorContentStatus,
+  subscribeCreatorInteractions,
 } from '../lib/creators'
 import { C, PP } from '../lib/theme'
 import './Creators.css'
@@ -35,13 +39,24 @@ const EMPTY_CONTENT = {
   canton:'Toda Suiza',
   duration:'',
   thumbnail_url:'',
+  thumbnail_kind:'',
+  position:1,
   status:'published',
 }
 
 const CONTENT_LIMITS = {
   title:{ min:15, max:100 },
   summary:{ min:40, max:300 },
-  duration:{ max:20 },
+}
+
+function detectCreatorFormat(value, platform) {
+  const url = String(value || '').toLowerCase()
+  if (platform === 'tiktok') return 'reel'
+  if (platform === 'instagram') return url.includes('/reel') ? 'reel' : 'publicacion'
+  if (platform === 'spotify') return 'podcast'
+  if (platform === 'web') return 'artículo'
+  if (platform === 'facebook' || platform === 'linkedin') return 'publicacion'
+  return 'video'
 }
 
 function focusFirstError(errors) {
@@ -102,16 +117,70 @@ export default function CreadorPanel() {
   const [saving, setSaving] = useState(false)
   const [contentErrors, setContentErrors] = useState({})
   const [processingThumbnail, setProcessingThumbnail] = useState(false)
+  const [fetchingMetadata, setFetchingMetadata] = useState(false)
+  const [metricsVersion, setMetricsVersion] = useState(0)
 
   const refresh = () => setCreator(getCreatorForUser(user?.id))
-  const metrics = useMemo(() => getCreatorMetrics(creator), [creator])
-  const contents = creator?.contents || []
+  const metrics = useMemo(() => getCreatorMetrics(creator), [creator, metricsVersion])
+  const completeness = useMemo(() => getCreatorProfileCompleteness(creator), [creator])
+  const contents = getOrderedCreatorContents(creator)
+  const publishPlatform = getCreatorPlatform(contentForm.platform)
+  const publishTopic = getCreatorTopic(contentForm.topic)
+  const publishThumbnail = getCreatorThumbnailUrl(contentForm)
+  const hasValidContentUrl = Boolean(normalizeCreatorUrl(contentForm.url))
 
   useEffect(() => {
     if (searchParams.get('created') === '1') {
       toast('Tu perfil ya aparece en el directorio de este navegador. Ahora añade tu primera publicación.', { icon:'🎉', duration:5000 })
     }
   }, [searchParams])
+
+  useEffect(() => subscribeCreatorInteractions(() => setMetricsVersion(current => current + 1)), [])
+
+  useEffect(() => {
+    const platform = detectCreatorPlatform(contentForm.url)
+    if (!formOpen || !['youtube', 'tiktok'].includes(platform)) return undefined
+    const normalizedUrl = normalizeCreatorUrl(contentForm.url)
+    if (!normalizedUrl) return undefined
+
+    const controller = new AbortController()
+    const timer = window.setTimeout(async () => {
+      setFetchingMetadata(true)
+      try {
+        const metadata = await getCreatorOEmbedMetadata(normalizedUrl, { signal:controller.signal })
+        if (!metadata) return
+        setContentForm(current => {
+          if (current.url !== contentForm.url) return current
+          const next = { ...current }
+          if (!current.title.trim() && metadata.title) next.title = metadata.title.slice(0, CONTENT_LIMITS.title.max)
+          if (current.thumbnail_kind !== 'custom' && metadata.thumbnail_url) {
+            next.thumbnail_url = metadata.thumbnail_url
+            next.thumbnail_kind = 'auto'
+          }
+          return next
+        })
+        if (metadata.title && !contentForm.title.trim()) {
+          setContentErrors(current => {
+            if (!current.title) return current
+            const next = { ...current }
+            delete next.title
+            return next
+          })
+        }
+      } catch (error) {
+        if (error?.name !== 'AbortError') {
+          setContentForm(current => current.thumbnail_kind === 'auto' ? { ...current, thumbnail_url:'', thumbnail_kind:'' } : current)
+        }
+      } finally {
+        if (!controller.signal.aborted) setFetchingMetadata(false)
+      }
+    }, 550)
+
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [contentForm.url, formOpen])
 
   if (!creator) {
     return (
@@ -121,7 +190,7 @@ export default function CreadorPanel() {
           <span className="creator-demo-label">ESPACIO DEL CREADOR · PROTOTIPO</span>
           <h1 style={{ margin:'16px 0 8px', color:'#102A5C', fontFamily:PP, fontSize:24, letterSpacing:-.5 }}>Crea primero tu perfil público</h1>
           <p style={{ margin:'0 auto 20px', maxWidth:430, color:C.mid, fontFamily:PP, fontSize:11.5, lineHeight:1.7 }}>El alta tarda unos minutos. Puedes participar como persona, profesional, proyecto o negocio si compartes sobre Suiza en redes.</p>
-          <Link className="creators-primary-action" to="/creadores/alta">Crear mi perfil →</Link>
+          <Link className="creators-primary-action" to="/creadores/alta" state={{ from:'/creadores/mi-perfil' }}>Crear mi perfil →</Link>
           <Link to="/creadores" style={{ display:'block', marginTop:14, color:C.primary, fontFamily:PP, fontSize:10.5, fontWeight:700, textDecoration:'none' }}>Ver antes el directorio</Link>
         </section>
       </div>
@@ -133,14 +202,15 @@ export default function CreadorPanel() {
       toast.error(`Ya estás usando los ${CREATOR_MAX_CONTENTS} espacios. Puedes editar o eliminar uno.`)
       return
     }
-    setContentForm(EMPTY_CONTENT)
+    setContentForm({ ...EMPTY_CONTENT, position:contents.length + 1 })
     setContentErrors({})
     setFormOpen(true)
     window.setTimeout(() => document.getElementById('creator-content-form')?.scrollIntoView({ behavior:'smooth', block:'start' }), 40)
   }
 
   const startEditContent = content => {
-    setContentForm({ ...EMPTY_CONTENT, ...content })
+    const position = Math.max(1, contents.findIndex(item => item.id === content.id) + 1)
+    setContentForm({ ...EMPTY_CONTENT, ...content, position })
     setContentErrors({})
     setFormOpen(true)
     window.setTimeout(() => document.getElementById('creator-content-form')?.scrollIntoView({ behavior:'smooth', block:'start' }), 40)
@@ -149,7 +219,14 @@ export default function CreadorPanel() {
   const updateContent = (key, value) => {
     setContentForm(current => {
       const next = { ...current, [key]:value }
-      if (key === 'url' && value.trim()) next.platform = detectCreatorPlatform(value)
+      if (key === 'url' && value.trim()) {
+        next.platform = detectCreatorPlatform(value)
+        next.format = detectCreatorFormat(value, next.platform)
+        if (current.thumbnail_kind === 'auto') {
+          next.thumbnail_url = ''
+          next.thumbnail_kind = ''
+        }
+      }
       return next
     })
     setContentErrors(current => {
@@ -164,8 +241,12 @@ export default function CreadorPanel() {
     const errors = {}
     const titleLength = contentForm.title.trim().length
     const summaryLength = contentForm.summary.trim().length
-    const durationLength = contentForm.duration.trim().length
     const isDraft = status === 'draft'
+
+    if (!isDraft || contentForm.url.trim()) {
+      if (!contentForm.url.trim()) errors.url = 'Añade el enlace a la publicación original.'
+      else if (!normalizeCreatorUrl(contentForm.url)) errors.url = 'Introduce una dirección válida, por ejemplo https://youtube.com/watch?v=…'
+    }
 
     if (!titleLength) errors.title = 'Escribe un título para identificar esta publicación.'
     else if (titleLength < (isDraft ? 3 : CONTENT_LIMITS.title.min)) errors.title = isDraft
@@ -173,21 +254,13 @@ export default function CreadorPanel() {
       : `El título necesita al menos ${CONTENT_LIMITS.title.min} caracteres (llevas ${titleLength}).`
     else if (titleLength > CONTENT_LIMITS.title.max) errors.title = `El título admite como máximo ${CONTENT_LIMITS.title.max} caracteres (llevas ${titleLength}).`
 
-    if (!isDraft || contentForm.url.trim()) {
-      if (!contentForm.url.trim()) errors.url = 'Añade el enlace a la publicación original.'
-      else if (!normalizeCreatorUrl(contentForm.url)) errors.url = 'Introduce una dirección válida, por ejemplo https://youtube.com/watch?v=…'
-    }
-
     if (!isDraft || summaryLength) {
       if (!summaryLength) errors.summary = 'Explica brevemente qué encontrará la persona al abrir la publicación.'
       else if (summaryLength < CONTENT_LIMITS.summary.min) errors.summary = `El resumen necesita al menos ${CONTENT_LIMITS.summary.min} caracteres (llevas ${summaryLength}).`
       else if (summaryLength > CONTENT_LIMITS.summary.max) errors.summary = `El resumen admite como máximo ${CONTENT_LIMITS.summary.max} caracteres (llevas ${summaryLength}).`
     }
 
-    if (!contentForm.platform) errors.platform = 'Selecciona la plataforma donde está publicado.'
     if (!contentForm.topic) errors.topic = 'Selecciona el tema principal.'
-    if (!contentForm.format) errors.format = 'Selecciona el formato de la publicación.'
-    if (durationLength > CONTENT_LIMITS.duration.max) errors.duration = `La duración admite como máximo ${CONTENT_LIMITS.duration.max} caracteres (llevas ${durationLength}).`
 
     setContentErrors(errors)
     focusFirstError(errors)
@@ -218,13 +291,21 @@ export default function CreadorPanel() {
     setProcessingThumbnail(true)
     try {
       const thumbnailUrl = await prepareLocalThumbnail(file)
-      updateContent('thumbnail_url', thumbnailUrl)
+      setContentForm(current => ({ ...current, thumbnail_url:thumbnailUrl, thumbnail_kind:'custom' }))
       toast.success('Miniatura preparada')
     } catch (error) {
       toast.error(error?.message || 'No se pudo preparar la miniatura')
     } finally {
       setProcessingThumbnail(false)
     }
+  }
+
+  const clearThumbnail = () => setContentForm(current => ({ ...current, thumbnail_url:'', thumbnail_kind:'' }))
+
+  const moveContent = (content, direction) => {
+    moveCreatorContent(user.id, content.id, direction)
+    refresh()
+    toast.success(direction === 'up' ? 'Publicación movida hacia arriba' : 'Publicación movida hacia abajo')
   }
 
   const toggleStatus = content => {
@@ -249,19 +330,43 @@ export default function CreadorPanel() {
   }
 
   return (
-    <div className="creators-page creator-app-form-page">
-      <div className="creator-studio-shell" style={{ paddingTop:28 }}>
-        <div className="creator-studio-heading">
+    <div className="creators-page creator-dashboard-page">
+      <div className="creator-studio-shell creator-dashboard-shell">
+        <section className="creator-dashboard-hero">
+          <span className="creator-dashboard-hero__orb creator-dashboard-hero__orb--top" />
+          <span className="creator-dashboard-hero__orb creator-dashboard-hero__orb--bottom" />
+          <CreatorProfileTabs active="creator" creator={creator} compact />
+
+          <CreatorAvatar creator={creator} size={88} />
+          <h1>{creator.name}</h1>
+          {creator.handle && <p className="creator-dashboard-hero__handle">{formatCreatorHandle(creator.handle)}</p>}
+          <p className="creator-dashboard-hero__tagline">{creator.tagline}</p>
+          <div className="creator-dashboard-hero__location">
+            📍 {creator.city || creator.reach}{creator.canton ? ` · ${creator.canton}` : ''}
+          </div>
+
+          <div className="creator-dashboard-hero__stats" aria-label="Resumen del perfil de creador">
+            <div><strong>{contents.length}</strong><span>🎬 Publicaciones</span></div>
+            <div><strong>{metrics.profileViews}</strong><span>👁️ Visitas</span></div>
+            <div><strong>{metrics.helpfulReceived}</strong><span>❤️ Me ayudó</span></div>
+          </div>
+        </section>
+
+        <section className="creator-dashboard-actions">
+          <p>MI PERFIL DE CREADOR</p>
           <div>
-            <span className="creators-eyebrow">MI PERFIL EN LATIDO · PRUEBA LOCAL</span>
-            <h1>Hola, {creator.name}</h1>
-            <p>Gestiona cómo te presentas y qué publicaciones de tus redes quieres mostrar a la comunidad.</p>
+            <Link to="/creadores/alta" state={{ from:'/creadores/mi-perfil' }}>
+              <span>✏️</span>
+              <span><strong>Editar perfil</strong><small>Foto, presentación, temas y redes sociales</small></span>
+              <b>›</b>
+            </Link>
+            <Link to={`/creadores/${creator.slug}`}>
+              <span>👁️</span>
+              <span><strong>Ver perfil público</strong><small>Comprueba cómo te ve la comunidad</small></span>
+              <b>›</b>
+            </Link>
           </div>
-          <div className="creator-studio-heading__actions">
-            <Link className="creators-secondary-action" to={`/creadores/${creator.slug}`}>Ver perfil público ↗</Link>
-            <Link className="creators-primary-action" to="/creadores/alta">Editar perfil</Link>
-          </div>
-        </div>
+        </section>
 
         <div className="creator-prototype-notice">
           <span>🧪</span>
@@ -271,36 +376,33 @@ export default function CreadorPanel() {
           </div>
         </div>
 
-        <section className="creator-studio-profile">
-          <CreatorAvatar creator={creator} size={78} />
-          <div style={{ minWidth:0 }}>
-            <div style={{ display:'flex', gap:7, alignItems:'center', flexWrap:'wrap' }}>
-              <h2>{creator.name}</h2>
-              <span className="creator-studio-status">VISIBLE EN LA PRUEBA</span>
-            </div>
-            <p>{creator.tagline}</p>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginTop:9 }}>
-              {creator.topics.map(topic => <CreatorTopicPill key={topic} topicId={topic} compact />)}
-            </div>
-          </div>
-          <div className="creator-studio-profile__meta">
-            <span>📍 {creator.city || creator.reach}{creator.canton ? ` · ${creator.canton}` : ''}</span>
-            <span>🔗 {creator.socials.length} redes o canales conectados</span>
-          </div>
-        </section>
-
+        <p className="creator-dashboard-section-label">ESTADÍSTICAS PRIVADAS</p>
         <section className="creator-studio-metrics" aria-label="Métricas del perfil">
           <div><span>Visitas al perfil</span><strong>{metrics.profileViews}</strong><small>registradas en esta prueba</small></div>
-          <div><span>Clics a publicaciones</span><strong>{metrics.contentClicks}</strong><small>hacia tus enlaces originales</small></div>
+          <div><span>Impresiones</span><strong>{metrics.contentImpressions}</strong><small>veces que apareció tu selección</small></div>
+          <div><span>Clics a publicaciones</span><strong>{metrics.contentClicks}</strong><small>{metrics.clickRate}% de las impresiones</small></div>
+          <div><span>Me ayudó</span><strong>{metrics.helpfulReceived}</strong><small>en tu perfil y publicaciones</small></div>
+          <div><span>Seguimientos</span><strong>{metrics.saved}</strong><small>solo visible en tu panel</small></div>
           <div><span>Clics a redes</span><strong>{metrics.socialClicks}</strong><small>desde tu perfil público</small></div>
-          <div><span>Espacios usados</span><strong>{contents.length}/{CREATOR_MAX_CONTENTS}</strong><small>publicados y borradores</small></div>
+        </section>
+
+        <section className="creator-profile-completeness" aria-label="Estado del perfil">
+          <div>
+            <span>PERFIL {completeness.percent}% COMPLETO</span>
+            <strong>{completeness.percent === 100 ? 'Tu perfil está listo para que Latido lo revise' : 'Completa tu perfil para generar más confianza'}</strong>
+            <small>Los rangos de audiencia que indiques son privados y nunca se muestran en tu perfil.</small>
+          </div>
+          <div className="creator-profile-completeness__progress"><span style={{ width:`${completeness.percent}%` }} /></div>
+          <ul>
+            {completeness.checks.map(check => <li key={check.id} className={check.done ? 'is-done' : ''}>{check.done ? '✓' : '○'} {check.label}</li>)}
+          </ul>
         </section>
 
         <section className="creator-studio-content-section">
           <div className="creators-section__heading">
             <div>
-              <h2>Tus publicaciones destacadas</h2>
-              <p>Elige hasta seis enlaces que representen tu experiencia, trabajo, proyecto o negocio.</p>
+              <h2>Los 6: tu selección personal</h2>
+              <p>Elige y ordena hasta seis enlaces que representen tu experiencia, trabajo, proyecto o negocio.</p>
             </div>
             <button type="button" className="creators-primary-action" onClick={startNewContent} disabled={contents.length >= CREATOR_MAX_CONTENTS}>+ Añadir publicación</button>
           </div>
@@ -315,68 +417,98 @@ export default function CreadorPanel() {
                 <button type="button" onClick={() => setFormOpen(false)} aria-label="Cerrar formulario">×</button>
               </div>
 
-              <div className="creator-publish-form__grid">
-                <div className="creator-publish-form__main">
+              <div className="creator-publish-form__body">
+                <section className="creator-publish-step" aria-labelledby="creator-link-step">
+                  <div className="creator-publish-step__heading">
+                    <span>1</span>
+                    <div><strong id="creator-link-step">Pega el enlace</strong><small>Latido detectará la plataforma y la portada.</small></div>
+                  </div>
+                  <Input label="ENLACE DE LA PUBLICACIÓN" required type="url" error={contentErrors.url} errorKey="url" value={contentForm.url} onChange={event => updateContent('url', event.target.value)} placeholder="https://youtube.com/watch?v=…" />
+
+                  {hasValidContentUrl && (
+                    <div className="creator-publish-preview" aria-live="polite">
+                      <div className="creator-publish-preview__media" style={{ '--preview-bg':publishTopic.bg }}>
+                        <span>{publishTopic.emoji}</span>
+                        {publishThumbnail && <img src={publishThumbnail} alt="Portada detectada" onError={event => event.currentTarget.remove()} />}
+                      </div>
+                      <div className="creator-publish-preview__copy">
+                        <span style={{ color:publishPlatform.color, background:publishPlatform.bg }}>{publishPlatform.short} · {publishPlatform.label}</span>
+                        <strong>{contentForm.title.trim() || 'Completa el título para Latido'}</strong>
+                        <small>{fetchingMetadata ? 'Leyendo el enlace…' : publishThumbnail ? 'Portada preparada' : 'Añade una portada'}</small>
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                <section className="creator-publish-step" aria-labelledby="creator-details-step">
+                  <div className="creator-publish-step__heading">
+                    <span>2</span>
+                    <div><strong id="creator-details-step">Completa lo esencial</strong><small>Un título claro, el tema principal y un resumen útil.</small></div>
+                  </div>
+
                   <Input label="TÍTULO PARA LATIDO" required error={contentErrors.title} errorKey="title" value={contentForm.title} onChange={event => updateContent('title', event.target.value)} placeholder="Ej. Cómo preparar la solicitud del permiso B" />
                   <p className={`creator-field-count${contentErrors.title ? ' is-error' : ''}`}>{contentForm.title.trim().length}/{CONTENT_LIMITS.title.max} caracteres · mínimo {CONTENT_LIMITS.title.min} para publicar</p>
-                  <Input label="ENLACE ORIGINAL" required type="url" error={contentErrors.url} errorKey="url" value={contentForm.url} onChange={event => updateContent('url', event.target.value)} placeholder="https://youtube.com/watch?v=…" />
-                  <ImageUploadField
-                    label="MINIATURA"
-                    hint={getCreatorThumbnailUrl(contentForm)
-                      ? (contentForm.thumbnail_url ? 'Imagen personalizada. Puedes cambiarla o quitarla.' : 'Miniatura detectada automáticamente desde YouTube. También puedes subir otra imagen.')
-                      : 'YouTube se detecta automáticamente. Para las demás redes, podcasts o webs, sube una imagen horizontal.'}
-                    previewUrl={getCreatorThumbnailUrl(contentForm)}
-                    uploading={processingThumbnail}
-                    onFilesSelected={handleThumbnail}
-                    onRemove={contentForm.thumbnail_url ? () => updateContent('thumbnail_url', '') : undefined}
-                  />
-                  <Input label="RESUMEN ÚTIL" required rows={4} error={contentErrors.summary} errorKey="summary" value={contentForm.summary} onChange={event => updateContent('summary', event.target.value)} placeholder="Explica en pocas palabras qué encontrará la persona y por qué puede ayudarle." />
+
+                  <div className="creator-publish-thumbnail">
+                    <ImageUploadField
+                      label="IMAGEN / MINIATURA"
+                      hint={publishThumbnail
+                        ? (contentForm.thumbnail_kind === 'custom' ? 'Imagen seleccionada. Puedes cambiarla o quitarla.' : 'Portada detectada automáticamente. Puedes sustituirla si lo necesitas.')
+                        : fetchingMetadata ? 'Buscando la portada…' : 'Para Instagram y plataformas sin portada automática, selecciona una imagen horizontal.'}
+                      previewUrl={publishThumbnail}
+                      uploading={processingThumbnail || fetchingMetadata}
+                      onFilesSelected={handleThumbnail}
+                      onRemove={contentForm.thumbnail_url ? clearThumbnail : undefined}
+                      compact
+                    />
+                  </div>
+
+                  <div data-error-field="topic" className={`creator-topic-selector${contentErrors.topic ? ' is-error' : ''}`}>
+                    <label>TEMA PRINCIPAL *</label>
+                    <div>
+                      {CREATOR_TOPICS.map(topic => (
+                        <button
+                          key={topic.id}
+                          type="button"
+                          className={contentForm.topic === topic.id ? 'is-active' : ''}
+                          onClick={() => updateContent('topic', topic.id)}
+                          aria-pressed={contentForm.topic === topic.id}
+                          style={{ '--topic-color':topic.color, '--topic-bg':topic.bg }}
+                        >
+                          <span>{topic.emoji}</span>{topic.label}
+                        </button>
+                      ))}
+                    </div>
+                    {contentErrors.topic && <p>{contentErrors.topic}</p>}
+                  </div>
+
+                  <Input label="RESUMEN ÚTIL" required rows={3} error={contentErrors.summary} errorKey="summary" value={contentForm.summary} onChange={event => updateContent('summary', event.target.value)} placeholder="Explica brevemente qué encontrará la persona y por qué puede ayudarle." />
                   <p className={`creator-field-count${contentErrors.summary ? ' is-error' : ''}`}>{contentForm.summary.trim().length}/{CONTENT_LIMITS.summary.max} caracteres · mínimo {CONTENT_LIMITS.summary.min} para publicar</p>
-                </div>
-                <div>
-                  <Select label="PLATAFORMA DETECTADA" error={contentErrors.platform} errorKey="platform" value={contentForm.platform} onChange={event => updateContent('platform', event.target.value)}>
-                    {CREATOR_PLATFORMS.map(platform => <option key={platform.id} value={platform.id}>{platform.label}</option>)}
-                  </Select>
-                  <Select label="TEMA" error={contentErrors.topic} errorKey="topic" value={contentForm.topic} onChange={event => updateContent('topic', event.target.value)}>
-                    {CREATOR_TOPICS.map(topic => <option key={topic.id} value={topic.id}>{topic.emoji} {topic.label}</option>)}
-                  </Select>
-                  <Select label="FORMATO" error={contentErrors.format} errorKey="format" value={contentForm.format} onChange={event => updateContent('format', event.target.value)}>
-                    <option value="video">Vídeo</option>
-                    <option value="reel">Reel / vídeo corto</option>
-                    <option value="publicacion">Publicación / foto</option>
-                    <option value="carrusel">Carrusel</option>
-                    <option value="podcast">Podcast</option>
-                    <option value="artículo">Artículo</option>
-                  </Select>
-                  <Select label="UBICACIÓN" value={contentForm.canton} onChange={event => updateContent('canton', event.target.value)}>
-                    <option value="Toda Suiza">Toda Suiza</option>
-                    {CANTONS.map(canton => <option key={canton.code} value={canton.code}>{canton.code} · {canton.name}</option>)}
-                  </Select>
-                  <Input label="DURACIÓN / LECTURA" error={contentErrors.duration} errorKey="duration" value={contentForm.duration} onChange={event => updateContent('duration', event.target.value)} placeholder="Ej. 8 min" />
-                </div>
+                </section>
               </div>
 
               <div className="creator-publish-form__explanation">
-                <strong>¿Qué publica Latido?</strong>
-                <span>Solo esta ficha, tu resumen, la miniatura y el enlace. La publicación completa continúa alojada en tu red social, canal o web.</span>
+                <span>ℹ️ Latido muestra esta ficha y abre la publicación completa en tu plataforma.</span>
               </div>
               <div className="creator-publish-form__actions">
                 <Btn variant="secondary" disabled={saving} onClick={() => handleContentSave('draft')}>Guardar borrador</Btn>
-                <Btn disabled={saving} onClick={() => handleContentSave('published')}>{saving ? 'Guardando…' : 'Publicar en mi perfil'}</Btn>
+                <Btn disabled={saving} onClick={() => handleContentSave('published')}>{saving ? 'Guardando…' : contentForm.id ? 'Guardar cambios' : 'Publicar'}</Btn>
               </div>
             </div>
           )}
 
           <div className="creator-studio-list">
-            {contents.map(content => {
+            {contents.map((content, index) => {
               const topic = getCreatorTopic(content.topic)
               const platform = getCreatorPlatform(content.platform)
+              const contentMetrics = metrics.byContent[content.id] || { impressions:0, clicks:0, helpful:0, clickRate:0 }
               return (
                 <article key={content.id} className="creator-studio-item">
                   <div className="creator-studio-item__visual" style={{ color:topic.color, background:`linear-gradient(145deg,${topic.bg},#fff)` }}>
                     <span>{topic.emoji}</span>
                     {getCreatorThumbnailUrl(content) && <img src={getCreatorThumbnailUrl(content)} alt="" onError={event => event.currentTarget.remove()} />}
                     <small>{platform.short}</small>
+                    <b>#{index + 1}</b>
                   </div>
                   <div className="creator-studio-item__copy">
                     <div style={{ display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
@@ -385,6 +517,11 @@ export default function CreadorPanel() {
                     </div>
                     <h3>{content.title}</h3>
                     <p>{content.summary}</p>
+                    <span className="creator-studio-item__metrics">{contentMetrics.impressions} impresiones · {contentMetrics.clicks} clics ({contentMetrics.clickRate}%) · {contentMetrics.helpful} Me ayudó</span>
+                  </div>
+                  <div className="creator-studio-item__order" aria-label={`Posición ${index + 1} de ${contents.length}`}>
+                    <button type="button" onClick={() => moveContent(content, 'up')} disabled={index === 0} aria-label="Mover hacia arriba">↑</button>
+                    <button type="button" onClick={() => moveContent(content, 'down')} disabled={index === contents.length - 1} aria-label="Mover hacia abajo">↓</button>
                   </div>
                   <div className="creator-studio-item__actions">
                     <button type="button" onClick={() => startEditContent(content)}>Editar</button>

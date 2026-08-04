@@ -1,17 +1,21 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import {
   getAllCreators,
   getCreatorBySlug,
+  formatCreatorHandle,
+  getOrderedCreatorContents,
   getCreatorPlatform,
   trackCreatorMetric,
 } from '../lib/creators'
 import {
   CreatorAvatar,
+  CreatorAppContentCard,
   CreatorCard,
-  CreatorContentCard,
+  CreatorFollowButton,
+  CreatorProfileHelpfulButton,
   CreatorTopicPill,
   DemoContentModal,
 } from '../components/CreatorCards'
@@ -19,17 +23,57 @@ import { C, PP } from '../lib/theme'
 import ReportButton from '../components/ReportButton'
 import './Creators.css'
 
+function CreatorNetworkIcon({ platformId }) {
+  if (platformId === 'youtube') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="4" fill="currentColor" /><path d="m10 9 5 3-5 3Z" fill="#fff" /></svg>
+  }
+  if (platformId === 'instagram') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="15" height="15" rx="4.5" fill="none" stroke="currentColor" strokeWidth="2" /><circle cx="12" cy="12" r="3.4" fill="none" stroke="currentColor" strokeWidth="2" /><circle cx="17.1" cy="6.9" r="1.1" fill="currentColor" /></svg>
+  }
+  if (platformId === 'facebook') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.6 21v-7h2.7l.4-3h-3.1V9.1c0-.9.3-1.5 1.6-1.5H17V4.9c-.5-.1-1.4-.2-2.4-.2-2.5 0-4.2 1.5-4.2 4.3v2H7.6v3h2.8v7Z" fill="currentColor" /></svg>
+  }
+  if (platformId === 'tiktok') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.4 4.2c.5 2.2 1.7 3.6 4 4.1v3.1a8.4 8.4 0 0 1-4-1.2v5.3a5.7 5.7 0 1 1-5.7-5.7h.8V13a2.6 2.6 0 1 0 1.7 2.5V4.2Z" fill="currentColor" /></svg>
+  }
+  if (platformId === 'linkedin') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9.5" width="3.3" height="10.5" rx=".6" fill="currentColor" /><circle cx="5.65" cy="5.8" r="1.9" fill="currentColor" /><path d="M10 9.5h3.2v1.4c.8-1.1 2-1.8 3.6-1.8 3 0 3.7 2 3.7 4.7V20h-3.3v-5.5c0-1.3 0-2.9-1.8-2.9s-2.1 1.4-2.1 2.8V20H10Z" fill="currentColor" /></svg>
+  }
+  if (platformId === 'spotify') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9.2c4.7-1.4 10.3-.9 14.1 1.2M6.1 13c3.9-1.1 8.7-.7 11.9 1M7.1 16.6c3.2-.8 7-.5 9.6.8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+  }
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="M4.5 12h15M12 4c2.3 2.2 3.5 4.9 3.5 8S14.3 17.8 12 20c-2.3-2.2-3.5-4.9-3.5-8S9.7 6.2 12 4Z" fill="none" stroke="currentColor" strokeWidth="1.8" /></svg>
+}
+
 export default function CreadorPerfil() {
   const { creatorSlug } = useParams()
   const { user } = useAuth()
   const [creator, setCreator] = useState(() => getCreatorBySlug(creatorSlug))
   const [preview, setPreview] = useState(null)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const profileMenuRef = useRef(null)
 
   useEffect(() => {
     const current = getCreatorBySlug(creatorSlug)
     setCreator(current)
     if (current) trackCreatorMetric(current.id, 'profile_view')
   }, [creatorSlug])
+
+  useEffect(() => {
+    if (!profileMenuOpen) return undefined
+    const closeOutside = event => {
+      if (!profileMenuRef.current?.contains(event.target)) setProfileMenuOpen(false)
+    }
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setProfileMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside)
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [profileMenuOpen])
 
   const relatedCreators = useMemo(() => {
     if (!creator) return []
@@ -51,7 +95,7 @@ export default function CreadorPerfil() {
     )
   }
 
-  const publishedContents = (creator.contents || []).filter(content => content.status === 'published')
+  const publishedContents = getOrderedCreatorContents(creator, { publishedOnly:true })
   const isOwner = Boolean(user?.id && creator.owner_id === user.id)
 
   const handleSocialClick = (event, social) => {
@@ -78,79 +122,102 @@ export default function CreadorPerfil() {
   return (
     <div className="creators-page creator-app-form-page">
       <div className="creator-public-shell" style={{ paddingTop:22 }}>
-        <Link className="creator-public-back" to="/comunidades?view=creadores" style={{ display:'inline-flex', marginBottom:18, color:C.primary, fontFamily:PP, fontSize:11, fontWeight:800, textDecoration:'none' }}>← Creadores</Link>
-
-        <section className="creator-public-profile" style={{ overflow:'hidden', background:'#fff', border:`1px solid ${C.border}`, borderRadius:24, boxShadow:'0 8px 24px rgba(15,23,42,.06)' }}>
-          <div style={{ position:'relative', height:150, background:`linear-gradient(125deg, ${creator.accent || C.primary}, #102A5C)` }}>
-            <div style={{ position:'absolute', width:220, height:220, right:-30, top:-80, border:'30px solid rgba(255,255,255,.09)', borderRadius:'50%' }} />
-            <div style={{ position:'absolute', width:110, height:110, left:'35%', bottom:-70, border:'18px solid rgba(255,255,255,.08)', borderRadius:'50%' }} />
-            <span style={{ position:'absolute', top:20, left:22, display:'inline-flex', padding:'6px 10px', color:'#fff', background:'rgba(255,255,255,.17)', border:'1px solid rgba(255,255,255,.24)', borderRadius:999, fontFamily:PP, fontWeight:800, fontSize:9, letterSpacing:.8 }}>
-              CREADOR EN LATIDO
-            </span>
-            {creator.demo && <span style={{ position:'absolute', top:20, right:22, display:'inline-flex', padding:'6px 10px', color:'#102A5C', background:'#fff', borderRadius:999, fontFamily:PP, fontWeight:800, fontSize:9 }}>PERFIL FICTICIO · DEMO</span>}
+        <section className="creator-social-profile" style={{ '--creator-accent':creator.accent || C.primary }}>
+          <div className="creator-social-profile__topbar">
+            <Link to="/comunidades?view=creadores" aria-label="Volver a Creadores">←</Link>
+            <div>
+              <strong>{formatCreatorHandle(creator.handle) || creator.name}</strong>
+              <span>{creator.demo ? 'Perfil ficticio · demo' : 'Perfil en Latido'}</span>
+            </div>
+            {!isOwner && (
+              <div ref={profileMenuRef} className="creator-profile-menu">
+                <button type="button" className="creator-profile-menu__trigger" onClick={() => setProfileMenuOpen(current => !current)} aria-label="Más opciones del perfil" aria-haspopup="menu" aria-expanded={profileMenuOpen}>⋮</button>
+                <div className={`creator-profile-menu__popover${profileMenuOpen ? ' is-open' : ''}`} role="menu" aria-hidden={!profileMenuOpen}>
+                  <ReportButton
+                    contentType="creator_profile"
+                    contentId={creator.id}
+                    ownerId={creator.owner_id}
+                    title="Reportar este perfil"
+                    label="Reportar perfil"
+                    icon={<span aria-hidden="true">!</span>}
+                    compact
+                    onOpen={() => setProfileMenuOpen(false)}
+                    metadata={{ creator_name:creator.name, creator_slug:creator.slug, creator_handle:creator.handle, demo:Boolean(creator.demo) }}
+                    style={{ width:'100%', justifyContent:'flex-start', padding:'9px 10px', color:'#DC2626', background:'transparent', border:'none', borderRadius:9, fontSize:10.5 }}
+                  />
+                </div>
+              </div>
+            )}
+            {isOwner && <span className="creator-social-profile__menu-spacer" />}
           </div>
 
-          <div className="creator-public-profile__body" style={{ position:'relative', display:'grid', gridTemplateColumns:'minmax(0,1fr) auto', gap:24, padding:'0 26px 26px' }}>
-            <div style={{ minWidth:0 }}>
-              <div style={{ transform:'translateY(-48px)', marginBottom:-34 }}>
-                <CreatorAvatar creator={creator} size={100} />
-              </div>
-              <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                <h1 style={{ margin:0, fontFamily:PP, fontSize:28, lineHeight:1.2, letterSpacing:-.8, color:'#102A5C' }}>{creator.name}</h1>
-                {creator.verified && <span className="creator-confirmed" title="Perfil confirmado por su responsable">✓</span>}
-              </div>
-              <p style={{ margin:'4px 0 12px', color:C.light, fontFamily:PP, fontWeight:600, fontSize:11 }}>{creator.handle} · 📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</p>
-              <p style={{ maxWidth:720, margin:'0 0 12px', color:C.text, fontFamily:PP, fontWeight:700, fontSize:14, lineHeight:1.6 }}>{creator.tagline}</p>
-              <p style={{ maxWidth:780, margin:0, color:C.mid, fontFamily:PP, fontSize:11.5, lineHeight:1.75 }}>{creator.bio}</p>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:16 }}>
-                {(creator.topics || []).map(topic => <CreatorTopicPill key={topic} topicId={topic} />)}
-              </div>
+          <div className="creator-social-profile__identity">
+            <div className="creator-social-profile__avatar"><CreatorAvatar creator={creator} size={98} /></div>
+            <div className="creator-social-profile__name">
+              <h1>{creator.name}</h1>
+              {creator.verified && <span className="creator-confirmed" title="Perfil confirmado por su responsable">✓</span>}
+            </div>
+            <p className="creator-social-profile__location">{formatCreatorHandle(creator.handle)} · 📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</p>
+            <strong className="creator-social-profile__tagline">{creator.tagline}</strong>
+            <p className="creator-social-profile__bio">{creator.bio}</p>
+
+            <div className="creator-social-profile__topics">
+              {(creator.topics || []).map(topic => <CreatorTopicPill key={topic} topicId={topic} />)}
             </div>
 
-            <div className="creator-public-profile__socials" style={{ display:'flex', minWidth:190, paddingTop:22, flexDirection:'column', gap:8 }}>
-              {(creator.socials || []).map(social => {
-                const platform = getCreatorPlatform(social.platform)
-                return (
-                  <a
-                    key={`${social.platform}-${social.url}`}
-                    href={social.url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    onClick={event => handleSocialClick(event, social)}
-                    style={{ display:'flex', minHeight:42, padding:'0 13px', alignItems:'center', gap:9, color:platform.color, background:platform.bg, border:`1px solid ${platform.color}22`, borderRadius:12, fontFamily:PP, fontSize:10.5, fontWeight:800, textDecoration:'none' }}
-                  >
-                    <span style={{ minWidth:28 }}>{platform.short}</span>
-                    <span>{social.label || platform.label}</span>
-                    <span style={{ marginLeft:'auto' }}>↗</span>
-                  </a>
-                )
-              })}
-              <button type="button" onClick={handleShare} style={{ minHeight:42, color:C.primary, background:'#fff', border:`1px solid ${C.primaryMid}`, borderRadius:12, fontFamily:PP, fontSize:10.5, fontWeight:800, cursor:'pointer' }}>Compartir perfil</button>
-              <ReportButton
-                contentType="creator_profile"
-                contentId={creator.id}
-                ownerId={creator.owner_id}
-                  title="Reportar este perfil"
-                label="Reportar perfil"
-                metadata={{ creator_name:creator.name, creator_slug:creator.slug, creator_handle:creator.handle, demo:Boolean(creator.demo) }}
-                style={{ minHeight:42, width:'100%', fontSize:10.5 }}
-              />
-              {isOwner && <Link to="/creadores/mi-perfil" style={{ display:'flex', minHeight:42, alignItems:'center', justifyContent:'center', color:'#fff', background:C.text, borderRadius:12, fontFamily:PP, fontSize:10.5, fontWeight:800, textDecoration:'none' }}>Gestionar mi perfil</Link>}
+            <div className="creator-social-profile__stats" aria-label="Datos del perfil">
+              <span><strong>{publishedContents.length}</strong><small>Publicaciones</small></span>
+              <span><strong>{creator.topics?.length || 0}</strong><small>Temas</small></span>
+              <span><strong>{creator.socials?.length || 0}</strong><small>Redes</small></span>
             </div>
+
+            <div className={`creator-social-profile__main-action${isOwner ? ' is-owner' : ''}`}>
+              {!isOwner ? <CreatorFollowButton creator={creator} /> : <Link to="/creadores/mi-perfil">Gestionar mi perfil</Link>}
+              {!isOwner && <CreatorProfileHelpfulButton creator={creator} />}
+              <button type="button" className="creator-profile-share" onClick={handleShare}><span aria-hidden="true">📤</span><span>Compartir</span></button>
+            </div>
+
+            {(creator.socials || []).length > 0 && (
+              <section className="creator-social-profile__networks" aria-labelledby="creator-profile-networks-title">
+                <h2 id="creator-profile-networks-title">Redes</h2>
+                <div className="creator-social-profile__network-list">
+                  {(creator.socials || []).map(social => {
+                    const platform = getCreatorPlatform(social.platform)
+                    return (
+                      <a
+                        key={`${social.platform}-${social.url}`}
+                        href={social.url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        onClick={event => handleSocialClick(event, social)}
+                        className="creator-network-link"
+                        style={{ '--social-color':platform.color, '--social-bg':platform.bg }}
+                        aria-label={`Abrir ${social.label || platform.label}`}
+                      >
+                        <span className={`creator-network-link__icon is-${platform.id}`}>
+                          <CreatorNetworkIcon platformId={platform.id} />
+                        </span>
+                        <span>{social.label || platform.label}</span>
+                      </a>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
           </div>
         </section>
 
         <section className="creators-section" style={{ paddingTop:36 }}>
           <div className="creators-section__heading">
             <div>
-              <h2>Publicaciones destacadas</h2>
-              <p>Enlaces elegidos por este perfil. Cada visita se abre en la red social o página original.</p>
+              <h2>Los 6 de {creator.name}</h2>
+              <p>Su selección personal. La primera publicación es su carta de presentación y aparece siempre arriba.</p>
             </div>
             <span className="creators-results-count">{publishedContents.length} de 6 espacios utilizados</span>
           </div>
-          <div className="creator-content-grid">
+          <div className="creator-profile-six-grid">
             {publishedContents.map(content => (
-              <CreatorContentCard
+              <CreatorAppContentCard
                 key={content.id}
                 content={content}
                 creator={creator}

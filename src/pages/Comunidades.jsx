@@ -53,9 +53,9 @@ import { markSavedSearchDigestOpened, markSavedSearchMatchOpened } from '../lib/
 
 const MAIN_TABS = [
   { id:'negocios', label:'🏪 Negocios' },
-  { id:'comunidades', label:'👥 Grupos' },
-  { id:'eventos', label:'🎉 Eventos' },
   { id:'creadores', label:'🎙️ Creadores' },
+  { id:'eventos', label:'🎉 Eventos' },
+  { id:'comunidades', label:'👥 Grupos' },
 ]
 
 const TAB_COPY = {

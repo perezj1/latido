@@ -1,42 +1,46 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { useAuth } from '../hooks/useAuth'
 import {
+  getCreatorInteractionState,
+  formatCreatorHandle,
   getCreatorPlatform,
   getCreatorThumbnailUrl,
   getCreatorTopic,
+  subscribeCreatorInteractions,
+  toggleCreatorInteraction,
+  trackCreatorImpression,
   trackCreatorMetric,
 } from '../lib/creators'
 import { C, PP } from '../lib/theme'
 import ReportButton from './ReportButton'
 
-const CREATOR_LIKES_KEY = 'latido_creator_content_likes_v1'
-const CREATOR_LIKES_EVENT = 'latido:creator-likes-updated'
+function useCreatorInteraction({ action, targetType, targetId, baseCount = 0 }) {
+  const { user } = useAuth()
+  const actorId = user?.id || ''
+  const readState = () => getCreatorInteractionState({ action, targetType, targetId, actorId, baseCount })
+  const [state, setState] = useState(readState)
 
-function readCreatorLikes() {
-  if (typeof window === 'undefined') return []
-  try {
-    const stored = JSON.parse(window.localStorage.getItem(CREATOR_LIKES_KEY) || '[]')
-    return Array.isArray(stored) ? stored.map(String) : []
-  } catch {
-    return []
+  useEffect(() => {
+    const sync = () => setState(readState())
+    sync()
+    return subscribeCreatorInteractions(sync)
+  }, [action, actorId, baseCount, targetId, targetType])
+
+  const toggle = () => {
+    const next = toggleCreatorInteraction({ action, targetType, targetId, actorId, baseCount })
+    setState(next)
+    return next
   }
+
+  return { ...state, toggle }
 }
 
 function CreatorContentMenu({ content, creator, className='' }) {
   const menuRef = useRef(null)
   const [open, setOpen] = useState(false)
-  const [liked, setLiked] = useState(() => readCreatorLikes().includes(String(content.id)))
-
-  useEffect(() => {
-    const syncLike = () => setLiked(readCreatorLikes().includes(String(content.id)))
-    window.addEventListener('storage', syncLike)
-    window.addEventListener(CREATOR_LIKES_EVENT, syncLike)
-    return () => {
-      window.removeEventListener('storage', syncLike)
-      window.removeEventListener(CREATOR_LIKES_EVENT, syncLike)
-    }
-  }, [content.id])
+  const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
 
   useEffect(() => {
     if (!open) return undefined
@@ -54,18 +58,12 @@ function CreatorContentMenu({ content, creator, className='' }) {
     }
   }, [open])
 
-  const toggleLike = () => {
-    const contentId = String(content.id)
-    const current = readCreatorLikes()
-    const next = current.includes(contentId)
-      ? current.filter(id => id !== contentId)
-      : [...current, contentId]
+  const toggleHelpful = () => {
     try {
-      window.localStorage.setItem(CREATOR_LIKES_KEY, JSON.stringify(next))
-      window.dispatchEvent(new CustomEvent(CREATOR_LIKES_EVENT))
+      helpful.toggle()
       setOpen(false)
     } catch {
-      toast.error('No se pudo guardar el Me gusta')
+      toast.error('No se pudo guardar esta valoración')
     }
   }
 
@@ -103,12 +101,12 @@ function CreatorContentMenu({ content, creator, className='' }) {
       </button>
       <div className={`creator-content-menu__popover${open ? ' is-open' : ''}`} role="menu" aria-hidden={!open}>
           <button type="button" role="menuitem" onClick={shareContent}>
-            <span aria-hidden="true">↗</span>
+            <span aria-hidden="true">📤</span>
             <span>Compartir</span>
           </button>
-          <button type="button" role="menuitem" className={liked ? 'is-active' : ''} onClick={toggleLike}>
-            <span aria-hidden="true">{liked ? '♥' : '♡'}</span>
-            <span>{liked ? 'Te gusta' : 'Me gusta'}</span>
+          <button type="button" role="menuitem" className={helpful.active ? 'is-active' : ''} onClick={toggleHelpful}>
+            <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
+            <span>Me ayudó</span>
           </button>
           <span className="creator-content-menu__divider" role="separator" />
           <ReportButton
@@ -129,6 +127,88 @@ function CreatorContentMenu({ content, creator, className='' }) {
   )
 }
 
+function CreatorHelpfulButton({ content, compact = false }) {
+  const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
+  return (
+    <button
+      type="button"
+      className={`creator-helpful-button${helpful.active ? ' is-active' : ''}${compact ? ' is-compact' : ''}`}
+      onClick={event => {
+        event.stopPropagation()
+        helpful.toggle()
+      }}
+      aria-pressed={helpful.active}
+    >
+      <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
+      <span>Me ayudó</span>
+      {helpful.count > 0 && <strong>{helpful.count}</strong>}
+    </button>
+  )
+}
+
+export function CreatorFollowButton({ creator }) {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const saved = useCreatorInteraction({ action:'saved', targetType:'creator', targetId:creator.id, baseCount:creator.saved_count })
+
+  const handleFollow = () => {
+    if (!user?.id) {
+      toast('Inicia sesión para seguir creadores y encontrarlos después en tu perfil.', { icon:'+' })
+      navigate(`/auth?next=${encodeURIComponent(`/creadores/${creator.slug}`)}`)
+      return
+    }
+    const next = saved.toggle()
+    toast.success(next.active ? `Ahora sigues a ${creator.name}` : `Has dejado de seguir a ${creator.name}`)
+  }
+
+  return (
+    <button type="button" className={`creator-follow-button${saved.active ? ' is-active' : ''}`} onClick={handleFollow} aria-pressed={saved.active}>
+      <span aria-hidden="true">{saved.active ? '✓' : '+'}</span>
+      <span>{saved.active ? 'Siguiendo' : 'Seguir'}</span>
+    </button>
+  )
+}
+
+export function CreatorProfileHelpfulButton({ creator }) {
+  const helpful = useCreatorInteraction({ action:'helpful', targetType:'creator', targetId:creator.id, baseCount:creator.helpful_count })
+  return (
+    <button type="button" className={`creator-profile-helpful${helpful.active ? ' is-active' : ''}`} onClick={helpful.toggle} aria-pressed={helpful.active}>
+      <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
+      <span>Me ayudó</span>
+      {helpful.count > 0 && <strong>{helpful.count}</strong>}
+    </button>
+  )
+}
+
+export function CreatorProfileTabs({ active = 'personal', creator = null, compact = false }) {
+  const location = useLocation()
+  const creatorTarget = creator ? '/creadores/mi-perfil' : '/creadores/alta'
+  const creatorState = creator ? undefined : { from:`${location.pathname}${location.search}${location.hash}` }
+
+  return (
+    <nav className={`creator-profile-tabs${compact ? ' is-compact' : ''}`} aria-label="Cambiar tipo de perfil">
+      <Link
+        to="/perfil"
+        className={active === 'personal' ? 'is-active' : ''}
+        aria-current={active === 'personal' ? 'page' : undefined}
+      >
+        <span aria-hidden="true">👤</span>
+        <span>Mi perfil</span>
+      </Link>
+      <Link
+        to={creatorTarget}
+        state={creatorState}
+        className={active === 'creator' ? 'is-active' : ''}
+        aria-current={active === 'creator' ? 'page' : undefined}
+      >
+        <span aria-hidden="true">🎙️</span>
+        <span>Perfil de creador</span>
+        {!creator && <small>Crear</small>}
+      </Link>
+    </nav>
+  )
+}
+
 export function CreatorAvatar({ creator, size = 72 }) {
   const initials = String(creator?.name || '?')
     .split(/\s+/)
@@ -139,6 +219,7 @@ export function CreatorAvatar({ creator, size = 72 }) {
 
   return (
     <div
+      role="img"
       aria-label={creator?.name || 'Creador'}
       style={{
         width:size,
@@ -155,9 +236,13 @@ export function CreatorAvatar({ creator, size = 72 }) {
         background:`linear-gradient(145deg, ${creator?.accent || C.primary}, #0F172A)`,
         border:'3px solid #fff',
         boxShadow:'0 8px 22px rgba(15,23,42,.16)',
+        overflow:'hidden',
       }}
     >
-      {initials || '?'}
+      {creator?.avatar_url
+        ? <img src={creator.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+        : initials || '?'
+      }
     </div>
   )
 }
@@ -169,12 +254,12 @@ export function CreatorTopicPill({ topicId, compact = false }) {
       style={{
         display:'inline-flex',
         alignItems:'center',
-        gap:5,
         maxWidth:'100%',
-        padding:compact ? '4px 8px' : '6px 10px',
-        borderRadius:999,
-        background:topic.bg,
-        color:topic.color,
+        padding:compact ? '5px 8px' : '7px 11px',
+        color:'#1E3A8A',
+        background:'#EEF2FF',
+        border:'1px solid #E0E7FF',
+        borderRadius:compact ? 8 : 10,
         fontFamily:PP,
         fontWeight:700,
         fontSize:compact ? 9 : 10,
@@ -182,7 +267,6 @@ export function CreatorTopicPill({ topicId, compact = false }) {
         whiteSpace:'nowrap',
       }}
     >
-      <span>{topic.emoji}</span>
       <span style={{ overflow:'hidden', textOverflow:'ellipsis' }}>{topic.label}</span>
     </span>
   )
@@ -207,38 +291,60 @@ function formatDate(value) {
 
 export function CreatorCard({ creator }) {
   const publishedCount = (creator.contents || []).filter(content => content.status === 'published').length
+  const visibleTopics = (creator.topics || []).slice(0, 1)
+  const remainingTopics = Math.max(0, (creator.topics || []).length - visibleTopics.length)
+
+  useEffect(() => {
+    trackCreatorImpression(creator.id, 'profile', creator.id)
+  }, [creator.id])
 
   return (
-    <Link className="creator-profile-card" to={`/creadores/${creator.slug}`}>
-      <div className="creator-profile-card__top" style={{ '--creator-accent':creator.accent || C.primary }}>
-        <CreatorAvatar creator={creator} size={70} />
-        <div className="creator-profile-card__identity">
-          <div style={{ display:'flex', alignItems:'center', gap:6, minWidth:0 }}>
-            <h3>{creator.name}</h3>
-            {creator.verified && <span className="creator-confirmed" title="Perfil confirmado por su responsable">✓</span>}
-          </div>
-          <p>{creator.handle}</p>
-        </div>
-        <span className="creator-profile-card__arrow" aria-hidden="true">→</span>
-      </div>
+    <article className="creator-community-card creator-directory-card">
+      <Link className="creator-community-card__open" to={`/creadores/${creator.slug}`}>
+        <span className="creator-community-card__media">
+          {creator.avatar_url ? (
+            <img src={creator.avatar_url} alt="" loading="lazy" decoding="async" />
+          ) : (
+            <span className="creator-community-card__fallback">
+              <CreatorAvatar creator={creator} size={88} />
+            </span>
+          )}
+          {creator.demo && <small>DEMO</small>}
+        </span>
 
-      <p className="creator-profile-card__tagline">{creator.tagline}</p>
+        <span className="creator-community-card__body">
+          <span className="creator-community-card__name">
+            <strong>{creator.name}</strong>
+            {creator.verified && <span className="creator-community-card__verification" title="Perfil verificado por Latido" aria-label="Perfil verificado por Latido">✓</span>}
+          </span>
+          <span className="creator-community-card__handle">{formatCreatorHandle(creator.handle)}</span>
+          <span className="creator-community-card__tagline">{creator.tagline}</span>
 
-      <div className="creator-profile-card__topics">
-        {(creator.topics || []).slice(0, 3).map(topic => <CreatorTopicPill key={topic} topicId={topic} compact />)}
-      </div>
+          <span className="creator-community-card__topics">
+            {visibleTopics.map(topicId => <span key={topicId}>{getCreatorTopic(topicId).label}</span>)}
+            {remainingTopics > 0 && <small>+{remainingTopics}</small>}
+          </span>
 
-      <div className="creator-profile-card__meta">
-        <span>📍 {creator.city || creator.reach || 'Toda Suiza'}{creator.canton ? ` · ${creator.canton}` : ''}</span>
-        <span>{publishedCount} {publishedCount === 1 ? 'publicación' : 'publicaciones'}</span>
-      </div>
-    </Link>
+          <span className="creator-community-card__location">
+            📍 {creator.city || creator.reach || 'Toda Suiza'}{creator.canton ? `, ${creator.canton}` : ''}
+          </span>
+        </span>
+      </Link>
+
+      <span className="creator-community-card__footer">
+        <span title={`${publishedCount} ${publishedCount === 1 ? 'publicación' : 'publicaciones'}`}>🎬 {publishedCount}</span>
+        <CreatorFollowButton creator={creator} />
+      </span>
+    </article>
   )
 }
 
 export function CreatorContentCard({ content, creator, onDemoOpen, compact = false }) {
   const topic = getCreatorTopic(content.topic)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
+  useEffect(() => {
+    trackCreatorImpression(creator.id, 'content', content.id)
+  }, [content.id, creator.id])
   const handleOpen = () => {
     if (content.demo) {
       onDemoOpen?.(content, creator)
@@ -259,13 +365,10 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
         onClick={handleOpen}
         aria-label={`Ver ${content.title}`}
       >
-        <span className="creator-content-card__orb creator-content-card__orb--one" />
-        <span className="creator-content-card__orb creator-content-card__orb--two" />
         <span className="creator-content-card__emoji">{topic.emoji}</span>
         {thumbnailUrl && <img className="creator-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
         <span className="creator-content-card__platform"><CreatorPlatformBadge platformId={content.platform} /></span>
         <span className="creator-content-card__play">▶</span>
-        <span className="creator-content-card__duration">{content.duration || content.format}</span>
       </button>
 
       <div className="creator-content-card__body">
@@ -278,6 +381,7 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
         {!compact && <p>{content.summary}</p>}
         <div className="creator-content-card__footer">
           <CreatorTopicPill topicId={content.topic} compact />
+          <CreatorHelpfulButton content={content} compact />
           <span>{formatDate(content.published_at)}</span>
         </div>
         <button type="button" className="creator-content-card__cta" onClick={handleOpen}>
@@ -292,6 +396,10 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
   const topic = getCreatorTopic(content.topic)
   const platform = getCreatorPlatform(content.platform)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
+  const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
+  useEffect(() => {
+    trackCreatorImpression(creator.id, 'content', content.id)
+  }, [content.id, creator.id])
   const handleOpen = () => {
     if (content.demo) {
       onDemoOpen?.(content, creator)
@@ -310,7 +418,6 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
           {thumbnailUrl && <img className="creator-app-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
           <span className="creator-app-content-card__platform" style={{ color:platform.color, background:platform.bg }}>{platform.short}</span>
           <span className="creator-app-content-card__play">▶</span>
-          <span className="creator-app-content-card__duration">{content.duration || content.format}</span>
         </span>
         <span className="creator-app-content-card__body">
           <span className="creator-app-content-card__creator">
@@ -319,6 +426,7 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
             {creator.verified && <span className="creator-confirmed creator-confirmed--tiny">✓</span>}
           </span>
           <strong>{content.title}</strong>
+          <span className="creator-app-content-card__helpful">{helpful.active ? '❤️' : '🤍'} {helpful.count} Me ayudó</span>
         </span>
       </button>
     </article>
@@ -349,7 +457,7 @@ export function DemoContentModal({ content, creator, onClose }) {
             <CreatorAvatar creator={creator} size={42} />
             <div>
               <strong>{creator.name}</strong>
-              <span>{creator.handle} · {getCreatorPlatform(content.platform).label}</span>
+              <span>{formatCreatorHandle(creator.handle)} · {getCreatorPlatform(content.platform).label}</span>
             </div>
           </div>
           <div className="creator-preview-modal__notice">

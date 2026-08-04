@@ -24,6 +24,14 @@ import {
 import { getLifecycleLabel, getPublicationExpiresAt, isPublicationExpired } from '../lib/publicationLifecycle'
 import EmploymentProfileForm, { EmploymentLevelBadge } from '../components/EmploymentProfileForm'
 import InterestOptionGrid from '../components/InterestOptionGrid'
+import { CreatorAvatar, CreatorProfileTabs, CreatorTopicPill } from '../components/CreatorCards'
+import {
+  getAllCreators,
+  getCreatorForUser,
+  getFollowedCreatorIds,
+  subscribeCreatorInteractions,
+  toggleCreatorInteraction,
+} from '../lib/creators'
 import {
   createEmptyEmploymentProfile,
   employmentProfileFromJob,
@@ -44,6 +52,7 @@ import {
   setSavedSearchActive,
 } from '../lib/savedSearches'
 import toast from 'react-hot-toast'
+import './Creators.css'
 
 const PUBLICATION_TABS = [
   { id:'all', label:'Todo' },
@@ -718,6 +727,17 @@ export default function Perfil() {
   const [favOpen, setFavOpen] = useState(false)
   const [favItems, setFavItems] = useState([])
   const [loadingFavs, setLoadingFavs] = useState(false)
+
+  // followed creators
+  const [followedCreatorsOpen, setFollowedCreatorsOpen] = useState(false)
+  const [followedCreatorsVersion, setFollowedCreatorsVersion] = useState(0)
+  const followedCreators = useMemo(() => {
+    const followedIds = new Set(getFollowedCreatorIds(user?.id))
+    return getAllCreators().filter(creator => followedIds.has(String(creator.id)))
+  }, [followedCreatorsVersion, user?.id])
+  const creatorProfile = useMemo(() => getCreatorForUser(user?.id), [user?.id])
+
+  useEffect(() => subscribeCreatorInteractions(() => setFollowedCreatorsVersion(current => current + 1)), [])
 
   // share
   const [shareOpen, setShareOpen] = useState(false)
@@ -2249,6 +2269,7 @@ export default function Perfil() {
           action:openEmploymentProfileEditor,
         }] : []),
         { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
+        { icon:'🎙️', color:'#EFF6FF', label:'Creadores seguidos', sub:followedCreators.length ? `${followedCreators.length} ${followedCreators.length === 1 ? 'creador seguido' : 'creadores seguidos'}` : 'Sigue perfiles para encontrarlos fácilmente', action:() => setFollowedCreatorsOpen(true) },
       ],
     },
     ...(PAID_BUSINESS_FEATURES_VISIBLE ? [{
@@ -2320,6 +2341,8 @@ export default function Perfil() {
       <div style={{ background:'linear-gradient(135deg,#1D4ED8,#2563EB)', borderRadius:24, padding:'28px 20px 24px', marginBottom:20, position:'relative', overflow:'hidden', textAlign:'center' }}>
         <div style={{ position:'absolute', top:-30, right:-30, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
         <div style={{ position:'absolute', bottom:-20, left:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
+
+        <CreatorProfileTabs active="personal" creator={creatorProfile} compact />
 
         {/* Avatar with camera overlay */}
         <div
@@ -2516,6 +2539,43 @@ export default function Perfil() {
               </div>
             )
           })
+        )}
+      </Sheet>
+
+      <Sheet show={followedCreatorsOpen} onClose={() => setFollowedCreatorsOpen(false)} title="🎙️ Creadores seguidos">
+        {!followedCreators.length ? (
+          <div className="profile-followed-creators-empty">
+            <div>🎙️</div>
+            <strong>Aún no sigues a ningún creador</strong>
+            <p>Cuando pulses «Seguir» en un perfil, aparecerá aquí para que puedas volver fácilmente.</p>
+            <button type="button" onClick={() => { setFollowedCreatorsOpen(false); navigate('/comunidades?view=creadores') }}>Descubrir creadores</button>
+          </div>
+        ) : (
+          <div className="profile-followed-creators-list">
+            {followedCreators.map(creator => (
+              <article key={creator.id} className="profile-followed-creator-card">
+                <button type="button" className="profile-followed-creator-card__open" onClick={() => { setFollowedCreatorsOpen(false); navigate(`/creadores/${creator.slug}`) }}>
+                  <CreatorAvatar creator={creator} size={52} />
+                  <span>
+                    <strong>{creator.name}</strong>
+                    <small>{creator.handle} · 📍 {creator.canton || creator.reach}</small>
+                    <span>{creator.tagline}</span>
+                    <span className="profile-followed-creator-card__topics">{(creator.topics || []).slice(0, 2).map(topic => <CreatorTopicPill key={topic} topicId={topic} compact />)}</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="profile-followed-creator-card__remove"
+                  onClick={() => {
+                    toggleCreatorInteraction({ action:'saved', targetType:'creator', targetId:creator.id, actorId:user.id, baseCount:creator.saved_count })
+                    toast.success(`Has dejado de seguir a ${creator.name}`)
+                  }}
+                >
+                  Siguiendo ✓
+                </button>
+              </article>
+            ))}
+          </div>
         )}
       </Sheet>
 

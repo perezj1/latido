@@ -177,7 +177,7 @@ export function PrivacyTag({ privacy }) {
 }
 
 // ── Input ──────────────────────────────────────────────────────
-export function Input({ label, placeholder, value, onChange, type='text', rows, required, style={}, rightElement, error, errorKey }) {
+export function Input({ label, placeholder, value, onChange, type='text', rows, required, style={}, leftElement, rightElement, error, errorKey }) {
   const hasError = Boolean(error)
   const base = {
     width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12,
@@ -192,12 +192,19 @@ export function Input({ label, placeholder, value, onChange, type='text', rows, 
       {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
       {rows
         ? <textarea aria-invalid={hasError || undefined} style={{ ...controlStyle, resize:'none', minHeight: rows*24 }} placeholder={placeholder} value={value} onChange={onChange} rows={rows} />
-        : rightElement ? (
+        : leftElement || rightElement ? (
           <div style={{ position:'relative' }}>
-            <input aria-invalid={hasError || undefined} style={{ ...controlStyle, paddingRight:46 }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
-            <div style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', display:'flex', alignItems:'center' }}>
-              {rightElement}
-            </div>
+            {leftElement && (
+              <div style={{ position:'absolute', zIndex:1, left:13, top:'50%', transform:'translateY(-50%)', display:'flex', alignItems:'center', color:C.text, fontFamily:PP, fontSize:13, pointerEvents:'none' }}>
+                {leftElement}
+              </div>
+            )}
+            <input aria-invalid={hasError || undefined} style={{ ...controlStyle, ...(leftElement ? { paddingLeft:31 } : {}), ...(rightElement ? { paddingRight:46 } : {}) }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
+            {rightElement && (
+              <div style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', display:'flex', alignItems:'center' }}>
+                {rightElement}
+              </div>
+            )}
           </div>
         ) : <input aria-invalid={hasError || undefined} style={controlStyle} type={type} placeholder={placeholder} value={value} onChange={onChange} />
       }
@@ -261,6 +268,7 @@ export function ImageUploadField({
   onRemove,
   onRemoveAt,
   onReplaceAt,
+  compact=false,
 }) {
   const deviceId = useId()
   const cameraId = useId()
@@ -291,8 +299,8 @@ export function ImageUploadField({
           {previews.map((url, index) => {
             const replaceId = `${deviceId}-replace-${index}`
             return (
-              <div key={`${url}-${index}`} style={{ position:'relative', borderRadius:14, overflow:'visible', border:`1px solid ${C.border}`, background:'#fff', minHeight: multiple ? 88 : 180, display:'flex', alignItems:'center', justifyContent:'center', padding:multiple ? 4 : 8, boxSizing:'border-box' }}>
-                <img src={url} alt="Vista previa" style={{ width:'100%', height:'auto', maxHeight:multiple ? 160 : 280, objectFit:'contain', display:'block' }} />
+              <div key={`${url}-${index}`} style={{ position:'relative', borderRadius:14, overflow:'visible', border:`1px solid ${C.border}`, background:'#fff', minHeight:multiple ? 88 : compact ? 108 : 180, display:'flex', alignItems:'center', justifyContent:'center', padding:multiple ? 4 : compact ? 5 : 8, boxSizing:'border-box' }}>
+                <img src={url} alt="Vista previa" style={{ width:'100%', height:'auto', maxHeight:multiple ? 160 : compact ? 160 : 280, objectFit:'contain', display:'block' }} />
                 {(multiple ? onRemoveAt : onRemove) && (
                   <button
                     type="button"
@@ -316,8 +324,8 @@ export function ImageUploadField({
         </div>
       )}
 
-      <div style={{ border:`1.5px dashed ${uploading ? C.primary : C.border}`, borderRadius:16, padding:'14px 14px 12px', background:uploading ? C.primaryLight : '#fff' }}>
-        <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 4px' }}>
+      <div style={{ border:`1.5px dashed ${uploading ? C.primary : C.border}`, borderRadius:16, padding:compact ? '10px' : '14px 14px 12px', background:uploading ? C.primaryLight : '#fff' }}>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 11.5 : 13, color:C.text, margin:'0 0 4px' }}>
           {uploading
             ? 'Subiendo imagen...'
             : atImageLimit
@@ -326,16 +334,16 @@ export function ImageUploadField({
                 ? 'Añade fotos desde tu dispositivo o la cámara'
                 : 'Añade una imagen desde tu dispositivo o la cámara'}
         </p>
-        <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 0 12px', lineHeight:1.6 }}>
+        <p style={{ fontFamily:PP, fontSize:compact ? 9.5 : 11, color:C.light, margin:`0 0 ${compact ? 8 : 12}px`, lineHeight:1.6 }}>
           {hint || (multiple ? 'En móvil puedes abrir la cámara o seleccionar varias fotos de la galería.' : 'En móvil puedes tomar una foto al momento o elegir una desde la galería.')}
           {hasImageLimit && ` (${imageCount}/${maxImages})`}
         </p>
 
         <div style={{ display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', gap:8 }}>
-          <label htmlFor={deviceId} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', borderRadius:12, padding:'11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
+          <label htmlFor={deviceId} style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 10.5 : 12, background:C.primary, color:'#fff', borderRadius:12, padding:compact ? '9px 8px' : '11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
             🖼 Desde dispositivo
           </label>
-          <label htmlFor={cameraId} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.bg, color:C.primary, border:`1.5px solid ${C.primaryMid}`, borderRadius:12, padding:'11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
+          <label htmlFor={cameraId} style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 10.5 : 12, background:C.bg, color:C.primary, border:`1.5px solid ${C.primaryMid}`, borderRadius:12, padding:compact ? '9px 8px' : '11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
             📷 Usar cámara
           </label>
         </div>

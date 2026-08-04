@@ -6,6 +6,7 @@ import {
   CREATOR_TOPICS,
   getAllCreators,
   getCreatorForUser,
+  getOrderedCreatorContents,
   subscribeCreatorUpdates,
 } from '../lib/creators'
 import {
@@ -64,7 +65,7 @@ export default function Creadores() {
   const featuredContents = useMemo(() => {
     const query = normalizeSearch(search)
     return filteredCreators
-    .flatMap(creator => (creator.contents || [])
+      .flatMap(creator => getOrderedCreatorContents(creator, { publishedOnly:true })
       .filter(content => {
         const searchable = normalizeSearch([content.title, content.summary, creator.name, creator.handle].join(' '))
         return content.status === 'published'
@@ -73,8 +74,8 @@ export default function Creadores() {
           && (!platform || content.platform === platform)
           && (!canton || content.canton === canton || content.canton === 'Toda Suiza')
       })
-      .map(content => ({ content, creator })))
-    .sort((a, b) => new Date(b.content.published_at) - new Date(a.content.published_at))
+      .map((content, selectionIndex) => ({ content, creator, selectionIndex })))
+    .sort((a, b) => a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at))
     .slice(0, 6)
   }, [canton, filteredCreators, platform, search, topic])
 
@@ -91,9 +92,9 @@ export default function Creadores() {
               Personas, profesionales y negocios que publican experiencias, información y proyectos en sus redes. Latido los organiza por tema y lugar y envía cada visita a la publicación original.
             </p>
             <div className="creators-hero__actions">
-              <a className="creators-primary-action" href="#contenidos">Explorar publicaciones ↓</a>
+              <a className="creators-primary-action" href="#contenidos">Explorar</a>
               <Link className="creators-secondary-action" to={isLoggedIn ? creatorCta : `/auth?next=${encodeURIComponent('/creadores/alta')}`}>
-                {ownCreator ? 'Abrir mi espacio' : 'Quiero mostrar mis redes'}
+                Publicar
               </Link>
             </div>
           </div>

@@ -5,14 +5,16 @@ import { CANTONS } from '../lib/constants'
 import {
   CREATOR_PLATFORMS,
   CREATOR_TOPICS,
+  formatCreatorHandle,
   getAllCreators,
   getCreatorForUser,
+  getOrderedCreatorContents,
   subscribeCreatorUpdates,
 } from '../lib/creators'
 import {
   CreatorAppContentCard,
   CreatorAvatar,
-  CreatorTopicPill,
+  CreatorFollowButton,
   DemoContentModal,
 } from './CreatorCards'
 import { Sheet } from './UI'
@@ -195,14 +197,15 @@ export default function CreatorCommunityView({
   }), [creators, location, platform, query, sort, topic])
 
   const contents = useMemo(() => filteredCreators
-    .flatMap(creator => (creator.contents || [])
-      .filter(content => content.status === 'published'
+    .flatMap(creator => getOrderedCreatorContents(creator, { publishedOnly:true })
+      .filter(content =>
+        content.status === 'published'
         && (!topic || content.topic === topic)
         && (!platform || content.platform === platform)
         && (!location || content.canton === location || content.canton === 'Toda Suiza'))
-      .map(content => ({ content, creator })))
+      .map((content, selectionIndex) => ({ content, creator, selectionIndex })))
     .filter(({ content, creator }) => !query || normalize(`${content.title} ${content.summary} ${creator.name} ${creator.handle}`).includes(query))
-    .sort((a, b) => new Date(b.content.published_at) - new Date(a.content.published_at))
+    .sort((a, b) => a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at))
     .slice(0, 12), [filteredCreators, location, platform, query, topic])
 
   useEffect(() => {
@@ -250,27 +253,53 @@ export default function CreatorCommunityView({
         <div className="creator-community-list">
           {filteredCreators.map(creator => {
             const publishedCount = (creator.contents || []).filter(content => content.status === 'published').length
+            const visibleTopics = (creator.topics || []).slice(0, 1)
+            const remainingTopics = Math.max(0, (creator.topics || []).length - visibleTopics.length)
             return (
-              <Link key={creator.id} to={`/creadores/${creator.slug}`} className="creator-community-card">
-                <CreatorAvatar creator={creator} size={62} />
-                <span className="creator-community-card__copy">
-                  <span className="creator-community-card__name">
-                    <strong>{creator.name}</strong>
-                    {creator.verified && <span className="creator-confirmed creator-confirmed--small">✓</span>}
+              <article key={creator.id} className="creator-community-card">
+                <Link to={`/creadores/${creator.slug}`} className="creator-community-card__open">
+                  <span className="creator-community-card__media">
+                    {creator.avatar_url ? (
+                      <img src={creator.avatar_url} alt="" loading="lazy" decoding="async" />
+                    ) : (
+                      <span className="creator-community-card__fallback">
+                        <CreatorAvatar creator={creator} size={88} />
+                      </span>
+                    )}
                     {creator.demo && <small>DEMO</small>}
                   </span>
-                  <span className="creator-community-card__handle">{creator.handle} · 📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</span>
-                  <span className="creator-community-card__tagline">{creator.tagline}</span>
-                  <span className="creator-community-card__topics">
-                    {(creator.topics || []).slice(0, 2).map(item => <CreatorTopicPill key={item} topicId={item} compact />)}
+
+                  <span className="creator-community-card__body">
+                    <span className="creator-community-card__name">
+                      <strong>{creator.name}</strong>
+                      {creator.verified && (
+                        <span className="creator-community-card__verification" title="Perfil verificado por Latido" aria-label="Perfil verificado por Latido">✓</span>
+                      )}
+                    </span>
+                    <span className="creator-community-card__handle">{formatCreatorHandle(creator.handle)}</span>
+                    <span className="creator-community-card__tagline">{creator.tagline}</span>
+
+                    <span className="creator-community-card__topics">
+                      {visibleTopics.map(topicId => {
+                        const topic = CREATOR_TOPICS.find(item => item.id === topicId)
+                        return topic ? <span key={topicId}>{topic.label}</span> : null
+                      })}
+                      {remainingTopics > 0 && <small>+{remainingTopics}</small>}
+                    </span>
+
+                    <span className="creator-community-card__location" title={`${creator.city || creator.reach}${creator.canton ? `, ${creator.canton}` : ''}`}>
+                      📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}
+                    </span>
                   </span>
+                </Link>
+
+                <span className="creator-community-card__footer">
+                  <span title={`${publishedCount} ${publishedCount === 1 ? 'publicación' : 'publicaciones'}`}>
+                    🎬 {publishedCount}
+                  </span>
+                  <CreatorFollowButton creator={creator} />
                 </span>
-                <span className="creator-community-card__meta">
-                  <strong>{publishedCount}</strong>
-                  <small>publicaciones</small>
-                  <span>›</span>
-                </span>
-              </Link>
+              </article>
             )
           })}
           {!filteredCreators.length && (

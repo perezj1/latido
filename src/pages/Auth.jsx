@@ -142,6 +142,7 @@ export default function Auth() {
   const [mode, setMode] = useState('register')
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [registrationIntent, setRegistrationIntent] = useState('')
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showRegisterPassword, setShowRegisterPassword] = useState(false)
   const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[], interests:[] })
@@ -262,10 +263,11 @@ export default function Auth() {
     }
   }
 
-  const handleRegister = async (interestsOverride = null) => {
+  const handleRegister = async (interestsOverride = null, destination = nextPath, intent = 'standard') => {
     if (loading) return
     if (!validateRegisterAll()) return
 
+    setRegistrationIntent(intent)
     setLoading(true)
     try {
       const { data, error } = await signUp({
@@ -312,12 +314,14 @@ export default function Auth() {
           method:'email',
           entry_point:authEntryPoint,
           interest_count:(Array.isArray(interestsOverride) ? interestsOverride : form.interests).length,
+          creator_onboarding:intent === 'creator',
         },
       })
       toast.success('¡Cuenta creada! Bienvenido/a 🎉')
-      navigate(nextPath)
+      navigate(destination)
     } finally {
       setLoading(false)
+      setRegistrationIntent('')
     }
   }
 
@@ -464,6 +468,24 @@ export default function Auth() {
             onToggle={toggleInterest}
             style={{ marginBottom:12 }}
           />
+          <section style={{ display:'grid', gridTemplateColumns:'auto minmax(0,1fr)', gap:11, margin:'4px 0 14px', padding:'14px', background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:16, boxShadow:'0 6px 18px rgba(37,99,235,.07)' }}>
+            <span aria-hidden="true" style={{ display:'grid', width:42, height:42, placeItems:'center', background:C.primaryLight, borderRadius:13, fontSize:22 }}>🎙️</span>
+            <div style={{ minWidth:0 }}>
+              <strong style={{ display:'block', color:C.text, fontFamily:PP, fontSize:12.5, lineHeight:1.4 }}>¿Eres creador de contenido?</strong>
+              <p style={{ margin:'4px 0 10px', color:C.mid, fontFamily:PP, fontSize:10.5, lineHeight:1.6 }}>
+                Si tienes redes sociales donde hablas de Suiza y quieres llegar a más personas, crea tu perfil de creador en Latido.
+              </p>
+              <button
+                type="button"
+                onClick={() => handleRegister(null, '/creadores/alta?from=onboarding', 'creator')}
+                disabled={loading}
+                style={{ minHeight:38, padding:'0 13px', color:'#fff', background:C.primary, border:0, borderRadius:11, fontFamily:PP, fontSize:10.5, fontWeight:800, cursor:loading ? 'default' : 'pointer', opacity:loading && registrationIntent !== 'creator' ? .55 : 1 }}
+              >
+                {loading && registrationIntent === 'creator' ? 'Creando tu cuenta…' : 'Crear perfil de creador'}
+              </button>
+              <small style={{ display:'block', marginTop:7, color:C.light, fontFamily:PP, fontSize:8.5, lineHeight:1.45 }}>Primero crearemos tu cuenta y después completarás el perfil.</small>
+            </div>
+          </section>
           <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 18px', lineHeight:1.55 }}>
             Es opcional. Podrás cambiar estos intereses cuando quieras desde tu perfil.
           </p>
