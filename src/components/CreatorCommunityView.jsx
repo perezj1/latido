@@ -15,6 +15,8 @@ import {
   CreatorAppContentCard,
   CreatorAvatar,
   CreatorFollowButton,
+  CreatorProfileHelpfulButton,
+  CreatorProfileHelpfulMetric,
   DemoContentModal,
 } from './CreatorCards'
 import { Sheet } from './UI'
@@ -252,7 +254,6 @@ export default function CreatorCommunityView({
         </div>
         <div className="creator-community-list">
           {filteredCreators.map(creator => {
-            const publishedCount = (creator.contents || []).filter(content => content.status === 'published').length
             const visibleTopics = (creator.topics || []).slice(0, 1)
             const remainingTopics = Math.max(0, (creator.topics || []).length - visibleTopics.length)
             return (
@@ -268,6 +269,7 @@ export default function CreatorCommunityView({
                     )}
                     {creator.demo && <small>DEMO</small>}
                   </span>
+                  <CreatorProfileHelpfulMetric creator={creator} />
 
                   <span className="creator-community-card__body">
                     <span className="creator-community-card__name">
@@ -294,9 +296,7 @@ export default function CreatorCommunityView({
                 </Link>
 
                 <span className="creator-community-card__footer">
-                  <span title={`${publishedCount} ${publishedCount === 1 ? 'publicación' : 'publicaciones'}`}>
-                    🎬 {publishedCount}
-                  </span>
+                  <CreatorProfileHelpfulButton creator={creator} />
                   <CreatorFollowButton creator={creator} />
                 </span>
               </article>

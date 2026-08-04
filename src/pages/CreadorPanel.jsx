@@ -110,7 +110,7 @@ function formatDate(value) {
 
 export default function CreadorPanel() {
   const { user } = useAuth()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [creator, setCreator] = useState(() => getCreatorForUser(user?.id))
   const [contentForm, setContentForm] = useState(EMPTY_CONTENT)
   const [formOpen, setFormOpen] = useState(false)
@@ -131,9 +131,12 @@ export default function CreadorPanel() {
 
   useEffect(() => {
     if (searchParams.get('created') === '1') {
-      toast('Tu perfil ya aparece en el directorio de este navegador. Ahora añade tu primera publicación.', { icon:'🎉', duration:5000 })
+      toast('Tu perfil ya aparece en el directorio de este navegador. Ahora añade tu primera publicación.', { id:'creator-profile-created', icon:'🎉', duration:5000 })
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('created')
+      setSearchParams(nextParams, { replace:true })
     }
-  }, [searchParams])
+  }, [searchParams, setSearchParams])
 
   useEffect(() => subscribeCreatorInteractions(() => setMetricsVersion(current => current + 1)), [])
 
@@ -335,7 +338,6 @@ export default function CreadorPanel() {
         <section className="creator-dashboard-hero">
           <span className="creator-dashboard-hero__orb creator-dashboard-hero__orb--top" />
           <span className="creator-dashboard-hero__orb creator-dashboard-hero__orb--bottom" />
-          <CreatorProfileTabs active="creator" creator={creator} compact />
 
           <CreatorAvatar creator={creator} size={88} />
           <h1>{creator.name}</h1>
@@ -350,6 +352,8 @@ export default function CreadorPanel() {
             <div><strong>{metrics.profileViews}</strong><span>👁️ Visitas</span></div>
             <div><strong>{metrics.helpfulReceived}</strong><span>❤️ Me ayudó</span></div>
           </div>
+
+          <CreatorProfileTabs active="creator" creator={creator} compact />
         </section>
 
         <section className="creator-dashboard-actions">

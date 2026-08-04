@@ -100,6 +100,7 @@ export default function CreadorAlta() {
   const avatarCameraId = useId()
   const { user, displayName, userCanton, userInterests } = useAuth()
   const existing = useMemo(() => getCreatorForUser(user?.id), [user?.id])
+  const isEditing = Boolean(existing)
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [processingAvatar, setProcessingAvatar] = useState(false)
@@ -158,9 +159,10 @@ export default function CreadorAlta() {
     })
   }
 
-  const validateStep = () => {
+  const validateStep = (stepsToValidate = [step]) => {
+    const activeSteps = new Set(Array.isArray(stepsToValidate) ? stepsToValidate : [stepsToValidate])
     const nextErrors = {}
-    if (step === 0) {
+    if (activeSteps.has(0)) {
       const nameLength = form.name.trim().length
       const handle = form.handle.trim()
       const taglineLength = form.tagline.trim().length
@@ -184,8 +186,8 @@ export default function CreadorAlta() {
       else if (bioLength < PROFILE_LIMITS.bio.min) nextErrors.bio = `La descripción necesita al menos ${PROFILE_LIMITS.bio.min} caracteres (llevas ${bioLength}).`
       else if (bioLength > PROFILE_LIMITS.bio.max) nextErrors.bio = `La descripción admite como máximo ${PROFILE_LIMITS.bio.max} caracteres (llevas ${bioLength}).`
     }
-    if (step === 1 && !form.topics.length) nextErrors.topics = 'Elige al menos un tema principal para que podamos recomendar tu perfil.'
-    if (step === 2) {
+    if (activeSteps.has(1) && !form.topics.length) nextErrors.topics = 'Elige al menos un tema principal para que podamos recomendar tu perfil.'
+    if (activeSteps.has(2)) {
       const socialEntries = Object.entries(form.socials).filter(([, value]) => value.trim())
       if (!socialEntries.length) nextErrors.socials = 'Añade al menos una red social, canal o página web.'
       socialEntries.forEach(([platform, value]) => {
@@ -196,7 +198,7 @@ export default function CreadorAlta() {
         }
       })
     }
-    if (step === 3 && !form.accepted) nextErrors.accepted = 'Marca esta casilla para confirmar que representas el perfil y puedes compartir estos enlaces.'
+    if (activeSteps.has(3) && !form.accepted) nextErrors.accepted = 'Marca esta casilla para confirmar que representas el perfil y puedes compartir estos enlaces.'
 
     setErrors(nextErrors)
     focusFirstError(nextErrors)
@@ -210,7 +212,7 @@ export default function CreadorAlta() {
   }
 
   const handleSave = () => {
-    if (!validateStep()) return
+    if (!validateStep(isEditing ? [0, 1, 2] : [step])) return
 
     setSaving(true)
     try {
@@ -219,7 +221,7 @@ export default function CreadorAlta() {
         .filter(social => social.url.trim())
       saveCreatorProfile(user.id, { ...form, socials, status:'published' })
       toast.success(existing ? 'Perfil actualizado' : 'Perfil de prueba creado')
-      navigate('/creadores/mi-perfil?created=1')
+      navigate(existing ? '/creadores/mi-perfil' : '/creadores/mi-perfil?created=1')
     } catch (error) {
       toast.error(error?.message || 'No se pudo guardar el perfil')
     } finally {
@@ -281,11 +283,11 @@ export default function CreadorAlta() {
   return (
     <div className="creators-page creator-app-form-page">
       <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
-        <ProgressBar step={step} total={STEPS.length} />
-        <h1 style={{ margin:'0 0 4px', color:C.text, fontFamily:PP, fontWeight:800, fontSize:22, letterSpacing:-.3 }}>{STEPS[step].title}</h1>
-        <p style={{ margin:'0 0 18px', color:C.light, fontFamily:PP, fontSize:12, lineHeight:1.6 }}>{STEPS[step].sub}</p>
+        {!isEditing && <ProgressBar step={step} total={STEPS.length} />}
+        <h1 style={{ margin:'0 0 4px', color:C.text, fontFamily:PP, fontWeight:800, fontSize:22, letterSpacing:-.3 }}>{isEditing ? 'Editar perfil de creador' : STEPS[step].title}</h1>
+        <p style={{ margin:'0 0 18px', color:C.light, fontFamily:PP, fontSize:12, lineHeight:1.6 }}>{isEditing ? 'Actualiza los campos que necesites y guarda los cambios en cualquier momento.' : STEPS[step].sub}</p>
 
-        {step === 0 && (
+        {!isEditing && step === 0 && (
           <div style={{ display:'flex', gap:9, alignItems:'flex-start', marginBottom:16, padding:'11px 13px', color:'#1E3A8A', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:14, fontFamily:PP, fontSize:10.5, lineHeight:1.6 }}>
             <span>🧪</span>
             <span>Este espacio es para personas, profesionales y negocios que comparten sobre Suiza en redes. No hace falta dedicarse profesionalmente a crear contenido. Durante la prueba, el perfil se guarda solo en este navegador.</span>
@@ -293,8 +295,9 @@ export default function CreadorAlta() {
         )}
 
         <div>
-          {step === 0 && (
+          {(isEditing || step === 0) && (
             <>
+              {isEditing && <div className="creator-edit-section-heading"><strong>Información del perfil</strong><span>Nombre, foto y presentación pública.</span></div>}
               <Input label="NOMBRE DEL PERFIL, PROYECTO O NEGOCIO" required error={errors.name} errorKey="name" value={form.name} onChange={event => update('name', event.target.value)} placeholder="Ej. Lucía en Suiza · Taller García · Enfermera en Zúrich" />
               <div className="creator-avatar-upload">
                 <span className="creator-avatar-upload__label">FOTO DE PERFIL · OPCIONAL</span>
@@ -324,8 +327,9 @@ export default function CreadorAlta() {
             </>
           )}
 
-          {step === 1 && (
+          {(isEditing || step === 1) && (
             <>
+              {isEditing && <div className="creator-edit-section-heading"><strong>Temas y ubicación</strong><span>Ayudan a recomendar tu perfil a las personas adecuadas.</span></div>}
               <p style={{ margin:'0 0 10px', color:C.light, fontFamily:PP, fontSize:10, fontWeight:800, letterSpacing:.8 }}>TEMAS PRINCIPALES · ELIGE HASTA 4</p>
               <div data-error-field="topics" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:8, marginBottom:errors.topics ? 6 : 22, padding:errors.topics ? 8 : 0, background:errors.topics ? '#FFF7F7' : 'transparent', border:errors.topics ? '1.5px solid #EF4444' : '1.5px solid transparent', borderRadius:16 }}>
                 {CREATOR_TOPICS.map(topic => {
@@ -363,8 +367,9 @@ export default function CreadorAlta() {
             </>
           )}
 
-          {step === 2 && (
+          {(isEditing || step === 2) && (
             <>
+              {isEditing && <div className="creator-edit-section-heading"><strong>Redes y enlaces</strong><span>Cambia, añade o elimina los destinos de tu perfil.</span></div>}
               <div style={{ marginBottom:18, padding:'12px 14px', color:'#1E3A8A', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:13, fontFamily:PP, fontSize:10.5, lineHeight:1.65 }}>
                 Añade al menos una red social, canal o web. El rango aproximado de audiencia es privado: ayuda a Latido a revisar el alta, pero no se muestra en tu perfil ni influye en el orden.
               </div>
@@ -407,7 +412,7 @@ export default function CreadorAlta() {
             </>
           )}
 
-          {step === 3 && (
+          {!isEditing && step === 3 && (
             <>
               <div style={{ display:'flex', gap:14, alignItems:'center', marginBottom:18 }}>
                 <CreatorAvatar creator={previewCreator} size={72} />
@@ -448,12 +453,16 @@ export default function CreadorAlta() {
       <StickyFormActions>
         <Btn variant="secondary" onClick={() => {
           setErrors({})
-          if (step === 0) cancelCreatorFlow()
+          if (isEditing || step === 0) cancelCreatorFlow()
           else setStep(current => current - 1)
         }} style={{ flex:'0 0 125px' }}>
-          {step === 0 ? 'Cancelar' : '← Atrás'}
+          {isEditing || step === 0 ? 'Cancelar' : '← Atrás'}
         </Btn>
-        {step < STEPS.length - 1 ? (
+        {isEditing ? (
+          <Btn variant="success" disabled={saving || processingAvatar} onClick={handleSave} style={{ flex:1 }}>
+            {saving ? 'Guardando…' : 'Guardar cambios'}
+          </Btn>
+        ) : step < STEPS.length - 1 ? (
           <Btn onClick={next} style={{ flex:1 }}>Continuar →</Btn>
         ) : (
           <Btn variant="success" disabled={saving} onClick={handleSave} style={{ flex:1 }}>

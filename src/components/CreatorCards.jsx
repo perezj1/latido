@@ -127,25 +127,6 @@ function CreatorContentMenu({ content, creator, className='' }) {
   )
 }
 
-function CreatorHelpfulButton({ content, compact = false }) {
-  const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
-  return (
-    <button
-      type="button"
-      className={`creator-helpful-button${helpful.active ? ' is-active' : ''}${compact ? ' is-compact' : ''}`}
-      onClick={event => {
-        event.stopPropagation()
-        helpful.toggle()
-      }}
-      aria-pressed={helpful.active}
-    >
-      <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
-      <span>Me ayudó</span>
-      {helpful.count > 0 && <strong>{helpful.count}</strong>}
-    </button>
-  )
-}
-
 export function CreatorFollowButton({ creator }) {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -177,6 +158,16 @@ export function CreatorProfileHelpfulButton({ creator }) {
       <span>Me ayudó</span>
       {helpful.count > 0 && <strong>{helpful.count}</strong>}
     </button>
+  )
+}
+
+export function CreatorProfileHelpfulMetric({ creator }) {
+  const helpful = useCreatorInteraction({ action:'helpful', targetType:'creator', targetId:creator.id, baseCount:creator.helpful_count })
+  return (
+    <span className="creator-community-card__helpful-metric">
+      <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
+      <span>{helpful.count} Me ayudó</span>
+    </span>
   )
 }
 
@@ -290,7 +281,6 @@ function formatDate(value) {
 }
 
 export function CreatorCard({ creator }) {
-  const publishedCount = (creator.contents || []).filter(content => content.status === 'published').length
   const visibleTopics = (creator.topics || []).slice(0, 1)
   const remainingTopics = Math.max(0, (creator.topics || []).length - visibleTopics.length)
 
@@ -311,6 +301,7 @@ export function CreatorCard({ creator }) {
           )}
           {creator.demo && <small>DEMO</small>}
         </span>
+        <CreatorProfileHelpfulMetric creator={creator} />
 
         <span className="creator-community-card__body">
           <span className="creator-community-card__name">
@@ -332,7 +323,7 @@ export function CreatorCard({ creator }) {
       </Link>
 
       <span className="creator-community-card__footer">
-        <span title={`${publishedCount} ${publishedCount === 1 ? 'publicación' : 'publicaciones'}`}>🎬 {publishedCount}</span>
+        <CreatorProfileHelpfulButton creator={creator} />
         <CreatorFollowButton creator={creator} />
       </span>
     </article>
@@ -342,6 +333,7 @@ export function CreatorCard({ creator }) {
 export function CreatorContentCard({ content, creator, onDemoOpen, compact = false }) {
   const topic = getCreatorTopic(content.topic)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
+  const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
   useEffect(() => {
     trackCreatorImpression(creator.id, 'content', content.id)
   }, [content.id, creator.id])
@@ -381,8 +373,11 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
         {!compact && <p>{content.summary}</p>}
         <div className="creator-content-card__footer">
           <CreatorTopicPill topicId={content.topic} compact />
-          <CreatorHelpfulButton content={content} compact />
           <span>{formatDate(content.published_at)}</span>
+        </div>
+        <div className="creator-content-card__metrics">
+          <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
+          <span>{helpful.count} Me ayudó</span>
         </div>
         <button type="button" className="creator-content-card__cta" onClick={handleOpen}>
           {content.demo ? 'Probar vista previa' : `Abrir en ${getCreatorPlatform(content.platform).label}`} →
@@ -419,6 +414,7 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
           <span className="creator-app-content-card__platform" style={{ color:platform.color, background:platform.bg }}>{platform.short}</span>
           <span className="creator-app-content-card__play">▶</span>
         </span>
+        <span className="creator-app-content-card__metrics">{helpful.active ? '❤️' : '🤍'} {helpful.count} Me ayudó</span>
         <span className="creator-app-content-card__body">
           <span className="creator-app-content-card__creator">
             <CreatorAvatar creator={creator} size={20} />
@@ -426,7 +422,6 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
             {creator.verified && <span className="creator-confirmed creator-confirmed--tiny">✓</span>}
           </span>
           <strong>{content.title}</strong>
-          <span className="creator-app-content-card__helpful">{helpful.active ? '❤️' : '🤍'} {helpful.count} Me ayudó</span>
         </span>
       </button>
     </article>

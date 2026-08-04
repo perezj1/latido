@@ -2269,7 +2269,7 @@ export default function Perfil() {
           action:openEmploymentProfileEditor,
         }] : []),
         { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
-        { icon:'🎙️', color:'#EFF6FF', label:'Creadores seguidos', sub:followedCreators.length ? `${followedCreators.length} ${followedCreators.length === 1 ? 'creador seguido' : 'creadores seguidos'}` : 'Sigue perfiles para encontrarlos fácilmente', action:() => setFollowedCreatorsOpen(true) },
+        { icon:'🎙️', color:'#EFF6FF', label:'Siguiendo', sub:followedCreators.length ? `${followedCreators.length} ${followedCreators.length === 1 ? 'creador seguido' : 'creadores seguidos'}` : 'Sigue perfiles para encontrarlos fácilmente', action:() => setFollowedCreatorsOpen(true) },
       ],
     },
     ...(PAID_BUSINESS_FEATURES_VISIBLE ? [{
@@ -2342,8 +2342,6 @@ export default function Perfil() {
         <div style={{ position:'absolute', top:-30, right:-30, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
         <div style={{ position:'absolute', bottom:-20, left:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
 
-        <CreatorProfileTabs active="personal" creator={creatorProfile} compact />
-
         {/* Avatar with camera overlay */}
         <div
           style={{ position:'relative', display:'inline-block', marginBottom:12, cursor:'pointer' }}
@@ -2383,6 +2381,8 @@ export default function Perfil() {
             </div>
           ))}
         </div>
+
+        <CreatorProfileTabs active="personal" creator={creatorProfile} compact />
       </div>
 
       {/* Twint promo banner */}
@@ -2542,7 +2542,7 @@ export default function Perfil() {
         )}
       </Sheet>
 
-      <Sheet show={followedCreatorsOpen} onClose={() => setFollowedCreatorsOpen(false)} title="🎙️ Creadores seguidos">
+      <Sheet show={followedCreatorsOpen} onClose={() => setFollowedCreatorsOpen(false)} title="🎙️ Creadores">
         {!followedCreators.length ? (
           <div className="profile-followed-creators-empty">
             <div>🎙️</div>
