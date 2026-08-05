@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { VISIBLE_NEGOCIO_TYPES } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField, Modal, PublicationLegalNotice, StickyFormActions } from '../components/UI'
+import { Btn, ChevronLeftIcon, ProgressBar, Input, ImageUploadField, Modal, PublicationLegalNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { calculateBusinessVerification } from '../lib/businessVerification'
 import { insertWithOptionalColumnsFallback } from '../lib/supabaseCompat'
@@ -806,9 +806,9 @@ export default function RegistrarNegocio() {
       </p>
       <StickyFormActions>
         {step === 0 ? (
-          <Btn onClick={() => navigate('/comunidades?view=negocios')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}>← Cancelar</Btn>
+          <Btn onClick={() => navigate('/comunidades?view=negocios')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}><ChevronLeftIcon size={16} /> Cancelar</Btn>
         ) : (
-          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}>← Atrás</Btn>
+          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}><ChevronLeftIcon size={16} /> Atrás</Btn>
         )}
         {step < STEPS.length - 1 ? (
           <Btn onClick={() => {

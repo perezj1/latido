@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
-import { Btn, ProgressBar, Input, Select } from '../components/UI'
+import { Btn, ChevronLeftIcon, ProgressBar, Input, Select } from '../components/UI'
 import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
@@ -375,8 +375,8 @@ export default function Auth() {
       <Btn onClick={handleForgot} disabled={loading}>{loading ? '⏳ Enviando...' : 'Enviar enlace'}</Btn>
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:14 }}>
-        <button onClick={() => { setErrors({}); setMode('login') }} style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
-          ← Volver al inicio de sesión
+        <button onClick={() => { setErrors({}); setMode('login') }} style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
+          <ChevronLeftIcon size={15} /> Volver al inicio de sesión
         </button>
       </p>
     </div>
@@ -471,7 +471,7 @@ export default function Auth() {
       )}
 
       <div style={{ display:'flex', gap:10 }}>
-        {step > 0 && <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}>← Atrás</Btn>}
+        {step > 0 && <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}><ChevronLeftIcon size={16} /> Atrás</Btn>}
         {step < REG_STEPS.length - 1 ? (
           <Btn onClick={() => { if (!validateRegisterStep()) return; setStep(current => current + 1) }} style={{ flex:1 }}>
             Continuar →

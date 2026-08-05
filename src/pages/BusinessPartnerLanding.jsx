@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { normalizeExternalUrl } from '../lib/links'
@@ -122,7 +123,7 @@ function UnavailableLanding() {
           <span>Latido</span>
         </Link>
         <Link className="see-cobar-back" to="/">
-          <span className="see-cobar-back-icon" aria-hidden="true">←</span>
+          <span className="see-cobar-back-icon" aria-hidden="true"><ChevronLeftIcon size={18} /></span>
           <span className="see-cobar-back-full">Volver a Latido</span>
           <span className="see-cobar-back-short">Volver</span>
         </Link>
@@ -251,7 +252,7 @@ export default function BusinessPartnerLanding() {
           </span>
         </div>
         <Link className="see-cobar-back" to="/">
-          <span className="see-cobar-back-icon" aria-hidden="true">←</span>
+          <span className="see-cobar-back-icon" aria-hidden="true"><ChevronLeftIcon size={18} /></span>
           <span className="see-cobar-back-full">Volver a Latido</span>
           <span className="see-cobar-back-short">Volver</span>
         </Link>

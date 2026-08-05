@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { ChevronLeftIcon } from '../components/UI'
 import { supabase } from '../lib/supabase'
 import { AD_CATS, CANTONS } from '../lib/constants'
 import { C, PP } from '../lib/theme'
@@ -212,7 +213,7 @@ export default function AlertasClientesPotenciales() {
 
   return (
     <main style={{ maxWidth:760, margin:'0 auto', padding:'24px 16px 64px' }}>
-      <button onClick={() => navigate('/perfil')} style={backStyle}>← Volver al perfil</button>
+      <button onClick={() => navigate('/perfil')} style={backStyle}><ChevronLeftIcon size={16} /> Volver al perfil</button>
       <section style={{ background:'linear-gradient(135deg,#EFF6FF,#fff)', border:`1px solid ${C.primaryMid}`, borderRadius:24, padding:'24px 22px', marginTop:14 }}>
         <p style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:C.primary, letterSpacing:.8, margin:'0 0 8px' }}>ALERTAS DE CLIENTES POTENCIALES</p>
         <h1 style={{ fontFamily:PP, fontSize:25, lineHeight:1.2, color:C.text, margin:'0 0 9px' }}>{status.provider.name}</h1>
@@ -280,4 +281,4 @@ const chipStyle = { fontFamily:PP, fontSize:11, fontWeight:700, border:'1px soli
 const primaryButton = { fontFamily:PP, fontWeight:800, fontSize:13, background:C.primary, color:'#fff', border:'none', borderRadius:13, padding:'12px 16px', cursor:'pointer' }
 const secondaryButton = { fontFamily:PP, fontWeight:800, fontSize:12, background:C.primaryLight, color:C.primaryDark, border:`1px solid ${C.primaryMid}`, borderRadius:12, padding:'11px 13px', cursor:'pointer' }
 const dangerButton = { fontFamily:PP, fontWeight:800, fontSize:12, background:'#FFF7ED', color:'#C2410C', border:'1px solid #FDBA74', borderRadius:12, padding:'11px 13px', cursor:'pointer' }
-const backStyle = { fontFamily:PP, fontSize:12, fontWeight:700, color:C.mid, background:'#fff', border:`1px solid ${C.border}`, borderRadius:11, padding:'8px 11px', cursor:'pointer' }
+const backStyle = { display:'inline-flex', alignItems:'center', gap:5, fontFamily:PP, fontSize:12, fontWeight:700, color:C.mid, background:'#fff', border:`1px solid ${C.border}`, borderRadius:11, padding:'8px 11px', cursor:'pointer' }

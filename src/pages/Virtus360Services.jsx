@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
 import './PartnerServices.css'
@@ -126,7 +127,7 @@ export default function Virtus360Services() {
           </a>
         </div>
         <Link className="see-cobar-back" to="/">
-          <span className="see-cobar-back-icon" aria-hidden="true">←</span>
+          <span className="see-cobar-back-icon" aria-hidden="true"><ChevronLeftIcon size={18} /></span>
           <span className="see-cobar-back-full">Volver a Latido</span>
           <span className="see-cobar-back-short">Volver</span>
         </Link>
