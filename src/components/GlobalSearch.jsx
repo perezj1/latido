@@ -1716,8 +1716,11 @@ export default function GlobalSearch({
     [activeFilter, baseImmersivePartnerEntries, immersiveExtraFilters, searchFilterKey]
   )
   const previewPartnerEntries = useMemo(
-    () => immersivePartnerEntries.slice(0, 2),
-    [immersivePartnerEntries]
+    () => immersivePartnerEntries.slice(
+      0,
+      profileHasIntent(currentSearchProfile, 'employment') ? 3 : 2,
+    ),
+    [currentSearchProfile, immersivePartnerEntries]
   )
   const immersiveOrganicResults = useMemo(() => {
     if (!immersivePartnerEntries.length) return immersiveResults
