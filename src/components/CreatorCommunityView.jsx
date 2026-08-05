@@ -5,7 +5,6 @@ import { CANTONS } from '../lib/constants'
 import {
   CREATOR_PLATFORMS,
   CREATOR_TOPICS,
-  formatCreatorHandle,
   getAllCreators,
   getCreatorForUser,
   getOrderedCreatorContents,
@@ -278,7 +277,6 @@ export default function CreatorCommunityView({
                         <span className="creator-community-card__verification" title="Perfil verificado por Latido" aria-label="Perfil verificado por Latido">✓</span>
                       )}
                     </span>
-                    <span className="creator-community-card__handle">{formatCreatorHandle(creator.handle)}</span>
                     <span className="creator-community-card__tagline">{creator.tagline}</span>
 
                     <span className="creator-community-card__topics">

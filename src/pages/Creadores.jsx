@@ -15,6 +15,8 @@ import {
   CreatorContentCard,
   DemoContentModal,
 } from '../components/CreatorCards'
+import { FilterButton, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
+import { Sheet } from '../components/UI'
 import './Creators.css'
 
 function normalizeSearch(value = '') {
@@ -33,6 +35,8 @@ export default function Creadores() {
   const [canton, setCanton] = useState('')
   const [platform, setPlatform] = useState('')
   const [preview, setPreview] = useState(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [draftFilters, setDraftFilters] = useState({ topic:'', canton:'', platform:'' })
 
   useEffect(() => subscribeCreatorUpdates(() => setCreators(getAllCreators())), [])
 
@@ -80,27 +84,37 @@ export default function Creadores() {
   }, [canton, filteredCreators, platform, search, topic])
 
   const creatorCta = ownCreator ? '/creadores/mi-perfil' : '/creadores/alta'
+  const activeFilterCount = Number(Boolean(topic)) + Number(Boolean(canton)) + Number(Boolean(platform))
+  const openFilters = () => {
+    setDraftFilters({ topic, canton, platform })
+    setShowFilters(true)
+  }
 
   return (
     <div className="creators-page">
       <header className="creators-hero">
         <div className="creators-shell creators-hero__grid">
           <div>
-            <span className="creators-eyebrow">PERSONAS Y PROYECTOS · SUIZA</span>
-            <h1>Descubre a quienes comparten su <em>vida, trabajo y proyectos en Suiza</em></h1>
+            <span className="creators-eyebrow">PARA CREADORES</span>
+            <h1>Haz que más personas descubran <em>lo que compartes sobre Suiza</em></h1>
             <p className="creators-hero__lead">
-              Personas, profesionales y negocios que publican experiencias, información y proyectos en sus redes. Latido los organiza por tema y lugar y envía cada visita a la publicación original.
+              Crea gratis tu perfil de creador en Latido, conecta tus redes y elige hasta seis publicaciones para presentarte. Cada visita abre el contenido original en tu plataforma.
             </p>
+            <div className="creators-hero__benefits" aria-label="Ventajas para creadores">
+              <span>✓ Perfil gratuito</span>
+              <span>✓ Tus 6 destacados</span>
+              <span>✓ Visitas a tus redes</span>
+            </div>
             <div className="creators-hero__actions">
-              <a className="creators-primary-action" href="#contenidos">Explorar</a>
-              <Link className="creators-secondary-action" to={isLoggedIn ? creatorCta : `/auth?next=${encodeURIComponent('/creadores/alta')}`}>
-                Publicar
+              <Link className="creators-primary-action" to={isLoggedIn ? creatorCta : `/auth?next=${encodeURIComponent('/creadores/alta')}`}>
+                {ownCreator ? 'Gestionar mi perfil' : 'Crear mi perfil'}
               </Link>
+              <a className="creators-secondary-action" href="#perfiles">Explorar perfiles</a>
             </div>
           </div>
 
           <div className="creators-hero__sample" aria-hidden="true">
-            <span className="creators-hero__float creators-hero__float--one">📍 Filtrado por cantón</span>
+            <span className="creators-hero__float creators-hero__float--one">✓ Perfil gratuito en Latido</span>
             <div className="creators-hero__phone">
               <div className="creators-hero__phone-screen">
                 <span>LATIDO · CREADORES</span>
@@ -111,35 +125,71 @@ export default function Creadores() {
                 </div>
               </div>
             </div>
-            <span className="creators-hero__float creators-hero__float--two">▶ Las visitas llegan a sus redes</span>
+            <span className="creators-hero__float creators-hero__float--two">↗ Visitas directas a tus redes</span>
           </div>
         </div>
       </header>
 
       <main className="creators-shell">
         <div className="creators-toolbar" aria-label="Filtros de creadores">
-          <input
-            type="search"
-            value={search}
-            onChange={event => setSearch(event.target.value)}
-            placeholder="Buscar perfil, ciudad o tema…"
-            aria-label="Buscar creadores"
-          />
-          <select value={topic} onChange={event => setTopic(event.target.value)} aria-label="Filtrar por tema">
-            <option value="">Todos los temas</option>
-            {CREATOR_TOPICS.map(item => <option key={item.id} value={item.id}>{item.emoji} {item.label}</option>)}
-          </select>
-          <select value={canton} onChange={event => setCanton(event.target.value)} aria-label="Filtrar por cantón">
-            <option value="">Toda Suiza</option>
-            {cantons.map(item => <option key={item} value={item}>Cantón {item}</option>)}
-          </select>
-          <select value={platform} onChange={event => setPlatform(event.target.value)} aria-label="Filtrar por plataforma">
-            <option value="">Todas las plataformas</option>
-            {CREATOR_PLATFORMS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-          </select>
+          <div className="creators-toolbar__search">
+            <span aria-hidden="true">🔍</span>
+            <input
+              type="search"
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+              placeholder="Buscar perfil, ciudad o tema…"
+              aria-label="Buscar creadores"
+            />
+            {search && <button type="button" onClick={() => setSearch('')} aria-label="Limpiar búsqueda">×</button>}
+          </div>
+          <FilterButton count={activeFilterCount} open={showFilters} onClick={openFilters} controls="creators-filter-sheet" />
         </div>
 
-        <section className="creators-section" aria-labelledby="creators-directory-title">
+        <Sheet show={showFilters} onClose={() => setShowFilters(false)}>
+          <form
+            id="creators-filter-sheet"
+            className="filter-sheet-content"
+            onSubmit={event => {
+              event.preventDefault()
+              setTopic(draftFilters.topic)
+              setCanton(draftFilters.canton)
+              setPlatform(draftFilters.platform)
+              setShowFilters(false)
+            }}
+          >
+            <div className="filter-sheet-heading">
+              <h2>Filtros</h2>
+              <button type="button" onClick={() => setDraftFilters({ topic:'', canton:'', platform:'' })}>Restablecer</button>
+            </div>
+            <div className="filter-sheet-options-grid">
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>Tema</span>
+                <select className="filter-sheet-control" value={draftFilters.topic} onChange={event => setDraftFilters(current => ({ ...current, topic:event.target.value }))}>
+                  <option value="">Todos los temas</option>
+                  {CREATOR_TOPICS.map(item => <option key={item.id} value={item.id}>{item.emoji} {item.label}</option>)}
+                </select>
+              </label>
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>Cantón</span>
+                <select className="filter-sheet-control" value={draftFilters.canton} onChange={event => setDraftFilters(current => ({ ...current, canton:event.target.value }))}>
+                  <option value="">Toda Suiza</option>
+                  {cantons.map(item => <option key={item} value={item}>Cantón {item}</option>)}
+                </select>
+              </label>
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>Plataforma</span>
+                <select className="filter-sheet-control" value={draftFilters.platform} onChange={event => setDraftFilters(current => ({ ...current, platform:event.target.value }))}>
+                  <option value="">Todas las plataformas</option>
+                  {CREATOR_PLATFORMS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+                </select>
+              </label>
+            </div>
+            <button type="submit" className="filter-show-results filter-sheet-submit">Mostrar resultados</button>
+          </form>
+        </Sheet>
+
+        <section id="perfiles" className="creators-section" aria-labelledby="creators-directory-title">
           <div className="creators-section__heading">
             <div>
               <h2 id="creators-directory-title">Perfiles para seguir</h2>
@@ -162,7 +212,7 @@ export default function Creadores() {
           <div className="creators-section__heading">
             <div>
               <h2 id="creators-content-title">Publicaciones para descubrir</h2>
-              <p>Experiencias, información y trabajo compartidos desde sus redes y páginas originales.</p>
+              <p>Información, experiencias y opiniones compartidas desde sus redes y páginas originales.</p>
             </div>
             <span className="creators-results-count">Actualizado recientemente</span>
           </div>
@@ -183,15 +233,15 @@ export default function Creadores() {
           </div>
         </section>
 
-        <section className="creators-section" style={{ paddingBottom:30 }}>
-          <div style={{ position:'relative', overflow:'hidden', display:'grid', gridTemplateColumns:'minmax(0,1fr) auto', gap:24, alignItems:'center', padding:'28px', color:'#fff', background:'linear-gradient(135deg,#102A5C,#2563EB)', borderRadius:26 }}>
-            <div style={{ position:'relative', zIndex:1 }}>
-              <span style={{ display:'block', marginBottom:7, fontSize:10, fontWeight:800, letterSpacing:1, opacity:.7 }}>PARA QUIENES COMPARTEN SOBRE SUIZA</span>
-              <h2 style={{ margin:'0 0 7px', fontSize:22, lineHeight:1.25 }}>Haz que más personas descubran lo que compartes</h2>
-              <p style={{ maxWidth:650, margin:0, color:'rgba(255,255,255,.78)', fontSize:11.5, lineHeight:1.7 }}>Conecta tus redes y destaca hasta seis publicaciones sobre tu experiencia, profesión, trabajo, proyecto o negocio. No necesitas dedicarte profesionalmente a crear contenido.</p>
+        <section className="creators-section creator-directory-cta-section">
+          <div className="creator-directory-cta">
+            <div className="creator-directory-cta__copy">
+              <span>PARA QUIENES COMPARTEN SOBRE SUIZA</span>
+              <h2>Haz que más personas descubran lo que compartes</h2>
+              <p>Conecta tus redes y destaca hasta seis publicaciones sobre tu experiencia, profesión, trabajo, proyecto o negocio. No necesitas dedicarte profesionalmente a crear contenido.</p>
             </div>
-            <Link className="creators-secondary-action" to={isLoggedIn ? creatorCta : `/auth?next=${encodeURIComponent('/creadores/alta')}`} style={{ position:'relative', zIndex:1, whiteSpace:'nowrap' }}>
-              {ownCreator ? 'Gestionar mi perfil' : 'Crear perfil de prueba'}
+            <Link className="creators-secondary-action creator-directory-cta__button" to={isLoggedIn ? creatorCta : `/auth?next=${encodeURIComponent('/creadores/alta')}`}>
+              {ownCreator ? 'Gestionar mi perfil' : 'Crear mi perfil'}
             </Link>
           </div>
         </section>

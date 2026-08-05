@@ -104,7 +104,9 @@ function prepareLocalThumbnail(file) {
 function formatDate(value) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return 'Sin fecha'
-  return date.toLocaleDateString('es-CH', { day:'2-digit', month:'short', year:'numeric' })
+  const options = { day:'numeric', month:'short' }
+  if (date.getFullYear() !== new Date().getFullYear()) options.year = 'numeric'
+  return date.toLocaleDateString('es-CH', options).replace('.', '')
 }
 
 export default function CreadorPanel() {
@@ -123,6 +125,7 @@ export default function CreadorPanel() {
   const metrics = useMemo(() => getCreatorMetrics(creator), [creator, metricsVersion])
   const completeness = useMemo(() => getCreatorProfileCompleteness(creator), [creator])
   const contents = getOrderedCreatorContents(creator)
+  const remainingContentSlots = Math.max(0, CREATOR_MAX_CONTENTS - contents.length)
   const publishPlatform = getCreatorPlatform(contentForm.platform)
   const publishTopic = getCreatorTopic(contentForm.topic)
   const publishThumbnail = getCreatorThumbnailUrl(contentForm)
@@ -395,13 +398,31 @@ export default function CreadorPanel() {
         </section>
 
         <section className="creator-studio-content-section">
-          <div className="creators-section__heading">
-            <div>
-              <h2>Los 6: tu selección personal</h2>
-              <p>Elige y ordena hasta seis enlaces que representen tu experiencia, trabajo, proyecto o negocio.</p>
-            </div>
-            <button type="button" className="creators-primary-action" onClick={startNewContent} disabled={contents.length >= CREATOR_MAX_CONTENTS}>+ Añadir publicación</button>
+          <div className="creator-six-heading">
+            <h2>Los 6: tu selección personal</h2>
+            <p>Ordena hasta seis enlaces que representen tu experiencia, trabajo o proyecto. El primero es el que verá casi todo el mundo.</p>
           </div>
+
+          <div className="creator-six-progress" aria-label={`${contents.length} de ${CREATOR_MAX_CONTENTS} espacios ocupados`}>
+            <div>
+              {Array.from({ length:CREATOR_MAX_CONTENTS }).map((_, index) => (
+                <span key={index} className={index < contents.length ? 'is-filled' : ''} />
+              ))}
+            </div>
+            <strong>{contents.length}/{CREATOR_MAX_CONTENTS}</strong>
+          </div>
+
+          <button
+            type="button"
+            className="creator-six-add"
+            onClick={startNewContent}
+            disabled={!remainingContentSlots}
+          >
+            <span aria-hidden="true">＋</span>
+            {remainingContentSlots
+              ? `Añadir publicación · ${remainingContentSlots} ${remainingContentSlots === 1 ? 'libre' : 'libres'}`
+              : 'Selección completa · 6/6'}
+          </button>
 
           {formOpen && (
             <div id="creator-content-form" className="creator-publish-form">
@@ -487,7 +508,6 @@ export default function CreadorPanel() {
                 <span>ℹ️ Latido muestra esta ficha y abre la publicación completa en tu plataforma.</span>
               </div>
               <div className="creator-publish-form__actions">
-                <Btn variant="secondary" disabled={saving} onClick={() => handleContentSave('draft')}>Guardar borrador</Btn>
                 <Btn disabled={saving} onClick={() => handleContentSave('published')}>{saving ? 'Guardando…' : contentForm.id ? 'Guardar cambios' : 'Publicar'}</Btn>
               </div>
             </div>
@@ -498,41 +518,54 @@ export default function CreadorPanel() {
               const topic = getCreatorTopic(content.topic)
               const platform = getCreatorPlatform(content.platform)
               const contentMetrics = metrics.byContent[content.id] || { impressions:0, clicks:0, helpful:0, clickRate:0 }
+              const linkUnavailable = content.link_status === 'broken' || content.link_status === 'unavailable' || content.link_unavailable
               return (
                 <article key={content.id} className="creator-studio-item">
-                  <div className="creator-studio-item__visual" style={{ color:topic.color, background:`linear-gradient(145deg,${topic.bg},#fff)` }}>
-                    <span>{topic.emoji}</span>
-                    {getCreatorThumbnailUrl(content) && <img src={getCreatorThumbnailUrl(content)} alt="" onError={event => event.currentTarget.remove()} />}
-                    <small>{platform.short}</small>
-                    <b>#{index + 1}</b>
-                  </div>
-                  <div className="creator-studio-item__copy">
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
-                      <span className={`creator-studio-item__status creator-studio-item__status--${content.status}`}>{content.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}</span>
+                  <div className="creator-studio-item__top">
+                    <div className="creator-studio-item__visual" style={{ color:topic.color, background:topic.bg }}>
+                      <span>{topic.emoji}</span>
+                      {getCreatorThumbnailUrl(content) && <img src={getCreatorThumbnailUrl(content)} alt="" onError={event => event.currentTarget.remove()} />}
+                      <small style={{ color:platform.color, background:platform.bg }}>{platform.short}</small>
+                      <b>{index + 1}</b>
+                    </div>
+                    <div className="creator-studio-item__copy">
+                      <h3>{content.title}</h3>
+                      <p>{content.summary}</p>
                       <span className="creator-studio-item__date">{platform.label} · {formatDate(content.published_at)}</span>
                     </div>
-                    <h3>{content.title}</h3>
-                    <p>{content.summary}</p>
-                    <span className="creator-studio-item__metrics">{contentMetrics.impressions} impresiones · {contentMetrics.clicks} clics ({contentMetrics.clickRate}%) · {contentMetrics.helpful} Me ayudó</span>
+                    <details className="creator-studio-item__menu">
+                      <summary aria-label={`Más opciones para ${content.title}`}>•••</summary>
+                      <div>
+                        <button type="button" onClick={() => removeContent(content)}>Eliminar publicación</button>
+                      </div>
+                    </details>
                   </div>
+
+                  {linkUnavailable && <div className="creator-studio-item__warning">⚠ El enlace ya no responde. Revísalo.</div>}
+
+                  <span className="creator-studio-item__metrics">
+                    {contentMetrics.impressions} {contentMetrics.impressions === 1 ? 'impresión' : 'impresiones'} · {contentMetrics.clicks} {contentMetrics.clicks === 1 ? 'clic' : 'clics'} ({contentMetrics.clickRate}%) · {contentMetrics.helpful} me ayudó
+                  </span>
+
                   <div className="creator-studio-item__actions">
-                    <button type="button" onClick={() => startEditContent(content)}>Editar</button>
-                    <button type="button" className="is-danger" onClick={() => removeContent(content)}>Eliminar</button>
                     <div className="creator-studio-item__reorder" role="group" aria-label={`Cambiar posición ${index + 1} de ${contents.length}`}>
-                      <button type="button" onClick={() => moveContent(content, 'up')} disabled={index === 0} aria-label="Subir publicación">↑</button>
-                      <button type="button" onClick={() => moveContent(content, 'down')} disabled={index === contents.length - 1} aria-label="Bajar publicación">↓</button>
+                      <button type="button" onClick={() => moveContent(content, 'up')} disabled={index === 0} aria-label="Subir publicación"><span className="creator-order-chevron creator-order-chevron--up" aria-hidden="true" /></button>
+                      <button type="button" onClick={() => moveContent(content, 'down')} disabled={index === contents.length - 1} aria-label="Bajar publicación"><span className="creator-order-chevron creator-order-chevron--down" aria-hidden="true" /></button>
                     </div>
+                    <button type="button" className="creator-studio-item__edit" onClick={() => startEditContent(content)}><span aria-hidden="true">✎</span> Editar</button>
                   </div>
                 </article>
               )
             })}
-            {!contents.length && (
-              <div className="creators-empty">
-                <div style={{ marginBottom:8, fontSize:32 }}>🎬</div>
-                <strong>Tu escaparate todavía está vacío.</strong>
-                <br />Añade una publicación de cualquiera de tus redes, un podcast, un blog o la web de tu proyecto para ver cómo aparecerá.
-              </div>
-            )}
+            {Array.from({ length:remainingContentSlots }).map((_, index) => {
+              const slot = contents.length + index + 1
+              return (
+                <button key={slot} type="button" className="creator-six-empty-slot" onClick={startNewContent}>
+                  <span aria-hidden="true">＋</span>
+                  <span><strong>Espacio {slot} libre</strong><small>Pega el enlace de tu publicación</small></span>
+                </button>
+              )
+            })}
           </div>
         </section>
 

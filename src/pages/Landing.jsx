@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
 import PublicPartnersSection from '../components/PublicPartnersSection'
+import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 
@@ -862,7 +863,12 @@ const isIOS = typeof navigator !== 'undefined' &&
 const isAndroid = typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent)
 
 export default function Landing({ onInstall, menuPage, setMenuPage }) {
+  const { isLoggedIn } = useAuth()
   const [cols, setCols] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 500 ? 2 : 3))
+  const creatorsAppPath = '/comunidades?view=creadores'
+  const creatorsEntryPath = isLoggedIn
+    ? creatorsAppPath
+    : `/auth?next=${encodeURIComponent(creatorsAppPath)}`
 
   useEffect(() => {
     const fn = () => setCols(window.innerWidth < 500 ? 2 : 3)
@@ -958,6 +964,53 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
           display: block;
           filter: drop-shadow(0 18px 34px rgba(0,0,0,0.22));
         }
+        .latido-creators-intro {
+          position: relative;
+          isolation: isolate;
+          display: grid;
+          overflow: hidden;
+          padding: 30px;
+          grid-template-columns: minmax(0,1.2fr) minmax(250px,.8fr);
+          align-items: center;
+          gap: 30px;
+          background: linear-gradient(145deg,#F0F6FF,#E8F0FF);
+          border: 1px solid #D7E6FB;
+          border-radius: 28px;
+          box-shadow: 0 18px 44px rgba(30,64,175,.08);
+        }
+        .latido-creators-intro::after {
+          position: absolute;
+          z-index: -1;
+          top: -90px;
+          right: -60px;
+          width: 240px;
+          height: 240px;
+          content: '';
+          background: rgba(37,99,235,.07);
+          border-radius: 50%;
+        }
+        .latido-creators-intro__eyebrow {
+          display: inline-flex;
+          margin-bottom: 12px;
+          padding: 6px 10px;
+          align-items: center;
+          gap: 6px;
+          color: #1D4ED8;
+          background: #fff;
+          border: 1px solid #DBEAFE;
+          border-radius: 999px;
+          font-family: 'Poppins',sans-serif;
+          font-size: 9px;
+          font-weight: 800;
+        }
+        .latido-creators-intro__copy h2 { margin: 0 0 10px; color: #102A5C; font-family: 'Poppins',sans-serif; font-size: clamp(22px,3.5vw,30px); font-weight: 900; line-height: 1.2; letter-spacing: -.5px; }
+        .latido-creators-intro__copy p { max-width: 540px; margin: 0 0 18px; color: #52627A; font-family: 'Poppins',sans-serif; font-size: 12.5px; line-height: 1.7; }
+        .latido-creators-intro__link { display: inline-flex; min-height: 42px; padding: 0 16px; align-items: center; justify-content: center; color: #fff; background: #2563EB; border-radius: 12px; box-shadow: 0 8px 20px rgba(37,99,235,.2); font-family: 'Poppins',sans-serif; font-size: 11px; font-weight: 800; text-decoration: none; }
+        .latido-creators-intro__preview { display: grid; padding: 13px; gap: 8px; background: rgba(255,255,255,.82); border: 1px solid rgba(255,255,255,.95); border-radius: 20px; box-shadow: 0 12px 30px rgba(30,64,175,.1); }
+        .latido-creators-intro__item { display: grid; min-width: 0; padding: 10px; grid-template-columns: 40px minmax(0,1fr); align-items: center; gap: 10px; background: #fff; border: 1px solid #E2EAF4; border-radius: 14px; }
+        .latido-creators-intro__item > span { display: grid; width: 40px; height: 40px; background: #EEF4FF; border-radius: 12px; place-items: center; font-size: 19px; }
+        .latido-creators-intro__item strong { display: block; color: #102A5C; font-family: 'Poppins',sans-serif; font-size: 10.5px; }
+        .latido-creators-intro__item small { display: block; margin-top: 2px; color: #7A8BA6; font-family: 'Poppins',sans-serif; font-size: 8.5px; line-height: 1.4; }
         @media (max-width: 640px) {
           .latido-testimonial-arrow { display: none; }
           .latido-testimonial-header { padding: 0 20px 20px !important; }
@@ -1027,6 +1080,15 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             width: 104px;
             height: 104px;
           }
+          .latido-creators-intro { padding: 22px 18px; grid-template-columns: 1fr; gap: 18px; border-radius: 22px; }
+          .latido-creators-intro__copy h2 { font-size: 21px; }
+          .latido-creators-intro__copy p { margin-bottom: 16px; font-size: 11px; }
+          .latido-creators-intro__link { width: 100%; box-sizing: border-box; }
+          .latido-creators-intro__preview { grid-template-columns: repeat(3,minmax(0,1fr)); padding: 8px; gap: 6px; }
+          .latido-creators-intro__item { display: flex; padding: 8px 5px; flex-direction: column; gap: 6px; text-align: center; }
+          .latido-creators-intro__item > span { width: 34px; height: 34px; border-radius: 10px; font-size: 16px; }
+          .latido-creators-intro__item strong { font-size: 8px; }
+          .latido-creators-intro__item small { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
           .latido-enter-1, .latido-enter-2, .latido-enter-3, .latido-enter-4, .latido-enter-5,
@@ -1154,6 +1216,24 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             </Reveal>
           ))}
         </div>
+      </section>
+
+      <section style={{ maxWidth: 900, margin: '0 auto', padding: '52px 24px 0' }} aria-labelledby="landing-creators-title">
+        <Reveal>
+          <div className="latido-creators-intro">
+            <div className="latido-creators-intro__copy">
+              <span className="latido-creators-intro__eyebrow">🎙️ CREADORES EN LATIDO</span>
+              <h2 id="landing-creators-title">Información sobre Suiza contada por quienes la viven</h2>
+              <p>Encuentra experiencias, consejos y opiniones de creadores en español. Explora por tema y abre cada publicación en su red original.</p>
+              <Link className="latido-creators-intro__link" to={creatorsEntryPath}>Descubrir creadores</Link>
+            </div>
+            <div className="latido-creators-intro__preview" aria-hidden="true">
+              <div className="latido-creators-intro__item"><span>💬</span><div><strong>Experiencias</strong><small>Vida real en Suiza</small></div></div>
+              <div className="latido-creators-intro__item"><span>💡</span><div><strong>Consejos</strong><small>Trabajo, vivienda y trámites</small></div></div>
+              <div className="latido-creators-intro__item"><span>🎙️</span><div><strong>Opiniones</strong><small>Distintas voces y proyectos</small></div></div>
+            </div>
+          </div>
+        </Reveal>
       </section>
 
       <Reveal className="public-partner-reveal">
