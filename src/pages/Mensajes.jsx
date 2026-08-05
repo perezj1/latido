@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useUnreadMessages, markConvRead } from '../hooks/useUnreadMessages'
 import { unreadStore } from '../lib/unreadStore'
 import { C, PP } from '../lib/theme'
-import { Avatar } from '../components/UI'
+import { Avatar, ChevronLeftIcon } from '../components/UI'
 import ReportButton from '../components/ReportButton'
 import { fetchAvatarsByIds, fetchLastSeenByIds } from '../lib/profiles'
 import { subscribeToOnlineUsers } from '../lib/presence'
@@ -1143,7 +1143,7 @@ export default function Mensajes() {
             <div style={{ flex: 1, minHeight:0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: mobileChatOpen ? '#E9EEF7' : '#fff' }}>
               <div style={{ padding: mobileChatOpen ? '8px 10px' : '12px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: mobileChatOpen ? 9 : 12, background:'#fff', boxShadow: mobileChatOpen ? '0 2px 10px rgba(15,23,42,0.06)' : 'none', zIndex:1 }}>
                 {isMobile && (
-                  <button onClick={() => setShowList(true)} style={{ width:34, height:34, borderRadius:17, background: C.bg, border: `1px solid ${C.border}`, cursor: 'pointer', padding: 0, fontSize: 18, color: C.text, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>←</button>
+                  <button onClick={() => setShowList(true)} aria-label="Volver a las conversaciones" style={{ width:34, height:34, borderRadius:17, background: C.bg, border: `1px solid ${C.border}`, cursor: 'pointer', padding: 0, color: C.text, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><ChevronLeftIcon size={20} /></button>
                 )}
                 <span style={{ position:'relative', flexShrink:0 }}>
                   <Avatar name={activeOtherName} size={mobileChatOpen ? 38 : 36} src={activeOtherAvatar} />

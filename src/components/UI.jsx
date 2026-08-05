@@ -5,6 +5,14 @@ import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDispla
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
 
+export function ChevronLeftIcon({ size=22 }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  )
+}
+
 // ── Button ─────────────────────────────────────────────────────
 export function Btn({ children, onClick, variant='primary', size='md', disabled=false, style={}, className='' }) {
   const sizes = { sm:'10px 16px', md:'12px 20px', lg:'14px 24px' }
@@ -425,7 +433,7 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
               aria-label="Volver"
               style={{ ...headerButtonStyle, pointerEvents:'auto' }}
             >
-              ←
+              <ChevronLeftIcon />
             </button>
             {actions && <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0, pointerEvents:'auto' }}>{actions}</div>}
           </div>
@@ -439,7 +447,7 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
               aria-label="Volver"
               style={{ width:38, height:38, borderRadius:'50%', border:`1px solid ${C.border}`, background:'#fff', color:C.text, cursor:'pointer', fontSize:20, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
             >
-              ←
+              <ChevronLeftIcon />
             </button>
             <div style={{ minWidth:0, flex:1 }}>
               {eyebrow && <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:0.8, margin:'0 0 1px', textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eyebrow}</p>}
