@@ -242,7 +242,6 @@ export default function DetailActionBar({
                 <ReportButton
                   {...report}
                   label="Reportar"
-                  icon={<MenuIcon danger>❗</MenuIcon>}
                   style={{ ...MENU_ITEM_STYLE, color:'#DC2626' }}
                 />
               )}

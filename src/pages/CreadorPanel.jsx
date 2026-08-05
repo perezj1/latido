@@ -449,7 +449,7 @@ export default function CreadorPanel() {
                         {publishThumbnail && <img src={publishThumbnail} alt="Portada detectada" onError={event => event.currentTarget.remove()} />}
                       </div>
                       <div className="creator-publish-preview__copy">
-                        <span style={{ color:publishPlatform.color, background:publishPlatform.bg }}>{publishPlatform.short} · {publishPlatform.label}</span>
+                        <span style={{ color:publishPlatform.color, background:publishPlatform.bg }}>{publishPlatform.label}</span>
                         <strong>{contentForm.title.trim() || 'Completa el título para Latido'}</strong>
                         <small>{fetchingMetadata ? 'Leyendo el enlace…' : publishThumbnail ? 'Portada preparada' : 'Añade una portada'}</small>
                       </div>
@@ -525,7 +525,7 @@ export default function CreadorPanel() {
                     <div className="creator-studio-item__visual" style={{ color:topic.color, background:topic.bg }}>
                       <span>{topic.emoji}</span>
                       {getCreatorThumbnailUrl(content) && <img src={getCreatorThumbnailUrl(content)} alt="" onError={event => event.currentTarget.remove()} />}
-                      <small style={{ color:platform.color, background:platform.bg }}>{platform.short}</small>
+                      <small style={{ color:platform.color, background:platform.bg }}>{platform.label}</small>
                       <b>{index + 1}</b>
                     </div>
                     <div className="creator-studio-item__copy">

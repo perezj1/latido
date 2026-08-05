@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { ChevronLeftIcon } from '../components/UI'
 import { C, PP } from '../lib/theme'
 
 const DOCS = [
@@ -786,7 +787,7 @@ export default function Legal() {
   return (
     <div style={{ maxWidth:780, margin:'0 auto', padding:'32px 24px 100px' }}>
       <Link to="/" style={{ fontFamily:PP, fontSize:12, color:C.primary, textDecoration:'none', display:'inline-flex', alignItems:'center', gap:4, marginBottom:20 }}>
-        ← Volver
+        <ChevronLeftIcon size={16} /> Volver
       </Link>
 
       {/* Tab nav */}

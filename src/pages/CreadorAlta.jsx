@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
-import { Btn, Input, ProgressBar, Select, StickyFormActions } from '../components/UI'
+import { Btn, ChevronLeftIcon, Input, ProgressBar, Select, StickyFormActions } from '../components/UI'
 import { CreatorAvatar, CreatorTopicPill } from '../components/CreatorCards'
 import { CANTONS } from '../lib/constants'
 import {
@@ -375,7 +375,7 @@ export default function CreadorAlta() {
               </div>
               {CREATOR_PLATFORMS.map(platform => (
                 <div key={platform.id} data-error-field={errors[`social_${platform.id}`] ? `social_${platform.id}` : errors[`followers_${platform.id}`] ? `followers_${platform.id}` : undefined} className="creator-social-field">
-                  <span style={{ color:platform.color, fontFamily:PP, fontSize:10, fontWeight:900 }}>{platform.short} · {platform.label}</span>
+                  <span style={{ color:platform.color, fontFamily:PP, fontSize:10, fontWeight:900 }}>{platform.label}</span>
                   <div>
                     <input
                       className={`creator-form-control${errors[`social_${platform.id}`] ? ' is-error' : ''}`}
@@ -432,7 +432,7 @@ export default function CreadorAlta() {
               </div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:7, padding:'13px', background:C.bgAlt, borderRadius:14 }}>
                 {CREATOR_PLATFORMS.filter(platform => form.socials[platform.id].trim()).map(platform => (
-                  <span key={platform.id} style={{ padding:'6px 9px', color:platform.color, background:platform.bg, borderRadius:999, fontFamily:PP, fontSize:9, fontWeight:800 }}>{platform.short} · {platform.label}</span>
+                  <span key={platform.id} style={{ padding:'6px 9px', color:platform.color, background:platform.bg, borderRadius:999, fontFamily:PP, fontSize:9, fontWeight:800 }}>{platform.label}</span>
                 ))}
               </div>
 
@@ -456,7 +456,7 @@ export default function CreadorAlta() {
           if (isEditing || step === 0) cancelCreatorFlow()
           else setStep(current => current - 1)
         }} style={{ flex:'0 0 125px' }}>
-          {isEditing || step === 0 ? 'Cancelar' : '← Atrás'}
+          {isEditing || step === 0 ? 'Cancelar' : <><ChevronLeftIcon size={16} /> Atrás</>}
         </Btn>
         {isEditing ? (
           <Btn variant="success" disabled={saving || processingAvatar} onClick={handleSave} style={{ flex:1 }}>

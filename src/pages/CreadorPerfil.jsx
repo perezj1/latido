@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import {
   getAllCreators,
@@ -124,7 +125,7 @@ export default function CreadorPerfil() {
       <div className="creator-public-shell" style={{ paddingTop:22 }}>
         <section className="creator-social-profile" style={{ '--creator-accent':creator.accent || C.primary }}>
           <div className="creator-social-profile__topbar">
-            <Link to="/comunidades?view=creadores" aria-label="Volver a Creadores">←</Link>
+            <Link to="/comunidades?view=creadores" aria-label="Volver a Creadores"><ChevronLeftIcon size={20} /></Link>
             <div>
               <strong>{formatCreatorHandle(creator.handle) || creator.name}</strong>
               <span>{creator.demo ? 'Perfil ficticio · demo' : 'Perfil en Latido'}</span>
@@ -139,7 +140,6 @@ export default function CreadorPerfil() {
                     ownerId={creator.owner_id}
                     title="Reportar este perfil"
                     label="Reportar perfil"
-                    icon={<span aria-hidden="true">!</span>}
                     compact
                     onOpen={() => setProfileMenuOpen(false)}
                     metadata={{ creator_name:creator.name, creator_slug:creator.slug, creator_handle:creator.handle, demo:Boolean(creator.demo) }}

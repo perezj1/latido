@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { AD_CATS, formatAdLocation, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, getCategoryIntentMeta, getCategoryIntentViews, normalizeAdCat } from '../lib/constants'
-import { Btn, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, SearchBeforePublishNotice, StickyFormActions } from '../components/UI'
+import { Btn, ChevronLeftIcon, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, SearchBeforePublishNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { MAX_PUBLICATION_IMAGES, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { insertWithOptionalColumnsFallback, isLikelySchemaMismatchError } from '../lib/supabaseCompat'
@@ -981,9 +981,9 @@ export default function Publicar() {
 
       <StickyFormActions>
         {step === 0 ? (
-          <Btn onClick={() => navigate('/tablon')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}>← Cancelar</Btn>
+          <Btn onClick={() => navigate('/tablon')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}><ChevronLeftIcon size={16} /> Cancelar</Btn>
         ) : (
-          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}>← Atrás</Btn>
+          <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}><ChevronLeftIcon size={16} /> Atrás</Btn>
         )}
         {step === 0 ? (
           <Btn onClick={() => {

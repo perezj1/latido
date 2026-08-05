@@ -37,10 +37,79 @@ function useCreatorInteraction({ action, targetType, targetId, baseCount = 0 }) 
   return { ...state, toggle }
 }
 
+function ProfileOutlineIcon() {
+  return (
+    <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5.5 20v-1.2a6.5 6.5 0 0 1 13 0V20" />
+    </svg>
+  )
+}
+
+function HeartOutlineIcon({ active=false }) {
+  return (
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />
+    </svg>
+  )
+}
+
+function ShareOutlineIcon() {
+  return (
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="19" r="2.5" />
+      <path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" />
+    </svg>
+  )
+}
+
+async function shareCreatorContent(content, creator) {
+  const profileUrl = `${window.location.origin}/creadores/${creator.slug}`
+  const shareUrl = content.demo ? profileUrl : content.url || profileUrl
+  const data = { title:content.title, text:`${content.title} · ${creator.name}`, url:shareUrl }
+
+  try {
+    if (navigator.share) await navigator.share(data)
+    else {
+      await navigator.clipboard.writeText(shareUrl)
+      toast.success('Enlace copiado')
+    }
+  } catch (error) {
+    if (error?.name !== 'AbortError') toast.error('No se pudo compartir el contenido')
+  }
+}
+
+function CreatorContentActions({ helpful, content, creator, onOpen }) {
+  const toggleHelpful = () => {
+    try {
+      helpful.toggle()
+    } catch {
+      toast.error('No se pudo guardar esta valoración')
+    }
+  }
+
+  return (
+    <div className="creator-content-actions">
+      <button type="button" className={`creator-content-actions__helpful${helpful.active ? ' is-active' : ''}`} onClick={toggleHelpful} aria-label="Me ayudó" aria-pressed={helpful.active}>
+        <HeartOutlineIcon active={helpful.active} />
+        {helpful.count > 0 && <span>{helpful.count}</span>}
+      </button>
+      <button type="button" className="creator-content-actions__share" onClick={() => shareCreatorContent(content, creator)} aria-label="Compartir">
+        <ShareOutlineIcon />
+      </button>
+      <button type="button" className="creator-content-actions__open" onClick={onOpen} aria-label={`Abrir ${content.title}`}>
+        VER
+      </button>
+    </div>
+  )
+}
+
 function CreatorContentMenu({ content, creator, className='' }) {
   const menuRef = useRef(null)
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
 
   useEffect(() => {
     if (!open) return undefined
@@ -58,35 +127,6 @@ function CreatorContentMenu({ content, creator, className='' }) {
     }
   }, [open])
 
-  const toggleHelpful = () => {
-    try {
-      helpful.toggle()
-      setOpen(false)
-    } catch {
-      toast.error('No se pudo guardar esta valoración')
-    }
-  }
-
-  const shareContent = async () => {
-    const profileUrl = `${window.location.origin}/creadores/${creator.slug}`
-    const shareUrl = content.demo ? profileUrl : content.url || profileUrl
-    const data = {
-      title:content.title,
-      text:`${content.title} · ${creator.name}`,
-      url:shareUrl,
-    }
-    setOpen(false)
-    try {
-      if (navigator.share) await navigator.share(data)
-      else {
-        await navigator.clipboard.writeText(shareUrl)
-        toast.success('Enlace copiado')
-      }
-    } catch (error) {
-      if (error?.name !== 'AbortError') toast.error('No se pudo compartir el contenido')
-    }
-  }
-
   return (
     <div ref={menuRef} className={`creator-content-menu${className ? ` ${className}` : ''}`}>
       <button
@@ -100,13 +140,12 @@ function CreatorContentMenu({ content, creator, className='' }) {
         <span aria-hidden="true">⋮</span>
       </button>
       <div className={`creator-content-menu__popover${open ? ' is-open' : ''}`} role="menu" aria-hidden={!open}>
-          <button type="button" role="menuitem" onClick={shareContent}>
-            <span aria-hidden="true">📤</span>
-            <span>Compartir</span>
-          </button>
-          <button type="button" role="menuitem" className={helpful.active ? 'is-active' : ''} onClick={toggleHelpful}>
-            <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
-            <span>Me ayudó</span>
+          <button type="button" role="menuitem" onClick={() => {
+            setOpen(false)
+            navigate(`/creadores/${creator.slug}`)
+          }}>
+            <span><ProfileOutlineIcon /></span>
+            <span>Ver perfil</span>
           </button>
           <span className="creator-content-menu__divider" role="separator" />
           <ReportButton
@@ -115,7 +154,6 @@ function CreatorContentMenu({ content, creator, className='' }) {
             ownerId={creator.owner_id}
             title="Reportar esta publicación"
             label="Reportar"
-            icon={<span aria-hidden="true">!</span>}
             compact
             allowOwnContent
             onOpen={() => setOpen(false)}
@@ -266,8 +304,7 @@ export function CreatorTopicPill({ topicId, compact = false }) {
 export function CreatorPlatformBadge({ platformId }) {
   const platform = getCreatorPlatform(platformId)
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 8px', borderRadius:999, background:platform.bg, color:platform.color, fontFamily:PP, fontWeight:800, fontSize:9, lineHeight:1 }}>
-      <span>{platform.short}</span>
+    <span style={{ display:'inline-flex', alignItems:'center', padding:'5px 8px', borderRadius:999, background:platform.bg, color:platform.color, fontFamily:PP, fontWeight:800, fontSize:9, lineHeight:1 }}>
       <span>{platform.label}</span>
     </span>
   )
@@ -362,24 +399,18 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
       </button>
 
       <div className="creator-content-card__body">
+        <h3>{content.title}</h3>
         <div className="creator-content-card__creator">
           <CreatorAvatar creator={creator} size={28} />
           <span>{creator.name}</span>
           {creator.verified && <span className="creator-confirmed creator-confirmed--small">✓</span>}
         </div>
-        <h3>{content.title}</h3>
         {!compact && <p>{content.summary}</p>}
         <div className="creator-content-card__footer">
           <CreatorTopicPill topicId={content.topic} compact />
           <span>{formatDate(content.published_at)}</span>
         </div>
-        <div className="creator-content-card__metrics">
-          <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
-          <span>{helpful.count} Me ayudó</span>
-        </div>
-        <button type="button" className="creator-content-card__cta" onClick={handleOpen}>
-          VER
-        </button>
+        <CreatorContentActions helpful={helpful} content={content} creator={creator} onOpen={handleOpen} />
       </div>
     </article>
   )
@@ -387,7 +418,6 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
 
 export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
   const topic = getCreatorTopic(content.topic)
-  const platform = getCreatorPlatform(content.platform)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
   const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
   useEffect(() => {
@@ -405,23 +435,20 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
   return (
     <article className="creator-app-content-card">
       <CreatorContentMenu content={content} creator={creator} className="creator-content-menu--app" />
-      <button type="button" className="creator-app-content-card__open" onClick={handleOpen} aria-label={`Ver ${content.title}`}>
-        <span className="creator-app-content-card__media" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
+      <button type="button" className="creator-app-content-card__media" style={{ '--content-color':topic.color, '--content-bg':topic.bg }} onClick={handleOpen} aria-label={`Ver ${content.title}`}>
           <span className="creator-app-content-card__emoji">{topic.emoji}</span>
           {thumbnailUrl && <img className="creator-app-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
-          <span className="creator-app-content-card__platform" style={{ color:platform.color, background:platform.bg }}>{platform.short}</span>
-        </span>
-        <span className="creator-app-content-card__metrics">{helpful.active ? '❤️' : '🤍'} {helpful.count} Me ayudó</span>
-        <span className="creator-app-content-card__body">
-          <span className="creator-app-content-card__creator">
-            <CreatorAvatar creator={creator} size={20} />
-            <span>{creator.name}</span>
-            {creator.verified && <span className="creator-confirmed creator-confirmed--tiny">✓</span>}
-          </span>
-          <strong>{content.title}</strong>
-        </span>
-        <span className="creator-app-content-card__view">VER</span>
+          <span className="creator-app-content-card__platform"><CreatorPlatformBadge platformId={content.platform} /></span>
       </button>
+      <div className="creator-app-content-card__body">
+        <strong>{content.title}</strong>
+        <span className="creator-app-content-card__creator">
+          <CreatorAvatar creator={creator} size={20} />
+          <span>{creator.name}</span>
+          {creator.verified && <span className="creator-confirmed creator-confirmed--tiny">✓</span>}
+        </span>
+        <CreatorContentActions helpful={helpful} content={content} creator={creator} onOpen={handleOpen} />
+      </div>
     </article>
   )
 }
