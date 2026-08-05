@@ -19,7 +19,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Tag, EmptyState, SegmentedTabs, Sheet, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal } from '../components/UI'
+import { Tag, EmptyState, SegmentedTabs, Sheet, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal, ChevronLeftIcon } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CompactFilterSelect from '../components/CompactFilterSelect'
 import GlobalSearch from '../components/GlobalSearch'
@@ -994,7 +994,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
             aria-label="Volver"
             style={{ ...floatingButtonStyle, position:'absolute', top:'calc(16px + env(safe-area-inset-top))', left:16, cursor:'pointer', fontSize:20, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', padding:0 }}
           >
-            ←
+            <ChevronLeftIcon size={22} />
           </button>
           {planLabel && (
             <span style={{ position:'absolute', left:'50%', bottom:14, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 14px', boxShadow:'0 10px 22px rgba(37,99,235,0.16)', whiteSpace:'nowrap' }}>

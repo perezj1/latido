@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
 import PublicPartnersSection from '../components/PublicPartnersSection'
+import { ChevronLeftIcon } from '../components/UI'
 import { C, PP } from '../lib/theme'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 
@@ -836,7 +837,7 @@ function MenuPanel({ menuPage, setMenuPage }) {
           onClick={() => setMenuPage(null)}
           style={{ display: 'flex', alignItems: 'center', gap: 6, background: C.bg, border: 'none', borderRadius: 10, padding: '8px 14px', cursor: 'pointer', fontFamily: PP, fontWeight: 600, fontSize: 13, color: C.mid }}
         >
-          ← Volver
+          <ChevronLeftIcon size={17} /> Volver
         </button>
         <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 16, color: C.text }}>{title}</span>
       </div>

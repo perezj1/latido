@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
 
@@ -67,7 +68,7 @@ export default function PartnerContact() {
         </div>
 
         <Link to="/" className="mira-contact-back">
-          &lt;- Volver a Latido
+          <ChevronLeftIcon size={16} /> Volver a Latido
         </Link>
       </section>
     </div>
