@@ -3939,9 +3939,10 @@ img[data-latido-img-state="loaded"] {
   border-radius: 30px;
 }
 
-/* El fondo va en un pseudo-elemento para poder recortarle la muesca central sin
-   afectar a los iconos. drop-shadow sigue el alfa, asi el borde y la sombra
-   acompanan a la curva; border-top no puede hacerlo. */
+/* El fondo va en un pseudo-elemento aparte para no afectar a los iconos.
+   La separacion del fondo la da la sombra, no un borde: tres capas con radios
+   y opacidades crecientes leen como profundidad, mientras que una linea gris
+   plana marca un canto duro. */
 .bottom-nav::before {
   content: '';
   position: absolute;
@@ -3949,12 +3950,10 @@ img[data-latido-img-state="loaded"] {
   inset: 0;
   border-radius: inherit;
   background: #fff;
-  /* Sin recorte: un hueco transparente dejaba ver la pagina por detras. El aro
-     alrededor de Publicar lo dibuja el propio boton con un collar opaco. */
-  border: 1px solid #BCCDE8;
   box-shadow:
-    0 12px 30px rgba(15, 23, 42, .22),
-    0 3px 8px rgba(15, 23, 42, .12);
+    0 1px 3px rgba(23, 43, 92, .07),
+    0 8px 18px rgba(23, 43, 92, .10),
+    0 20px 44px rgba(23, 43, 92, .16);
 }
 
 .bottom-nav-item {
