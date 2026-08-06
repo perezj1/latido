@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import {
   getCreatorInteractionState,
@@ -38,31 +39,15 @@ function useCreatorInteraction({ action, targetType, targetId, baseCount = 0 }) 
 }
 
 function ProfileOutlineIcon() {
-  return (
-    <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5.5 20v-1.2a6.5 6.5 0 0 1 13 0V20" />
-    </svg>
-  )
+  return <UserRound aria-hidden="true" size={17} strokeWidth={1.8} />
 }
 
 function HeartOutlineIcon({ active=false }) {
-  return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />
-    </svg>
-  )
+  return <Heart aria-hidden="true" size={18} strokeWidth={1.8} fill={active ? 'currentColor' : 'none'} />
 }
 
 function ShareOutlineIcon() {
-  return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="18" cy="5" r="2.5" />
-      <circle cx="6" cy="12" r="2.5" />
-      <circle cx="18" cy="19" r="2.5" />
-      <path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" />
-    </svg>
-  )
+  return <Share2 aria-hidden="true" size={18} strokeWidth={1.8} />
 }
 
 async function shareCreatorContent(content, creator) {
@@ -106,7 +91,7 @@ function CreatorContentActions({ helpful, content, creator, onOpen }) {
   )
 }
 
-function CreatorContentMenu({ content, creator, className='' }) {
+function CreatorContentMenu({ content, creator, className='', inline=false }) {
   const menuRef = useRef(null)
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -131,13 +116,15 @@ function CreatorContentMenu({ content, creator, className='' }) {
     <div ref={menuRef} className={`creator-content-menu${className ? ` ${className}` : ''}`}>
       <button
         type="button"
-        className="creator-content-menu__trigger"
+        className={`creator-content-menu__trigger${inline ? ' is-inline' : ''}`}
         onClick={() => setOpen(current => !current)}
         aria-label="Más opciones"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span aria-hidden="true">⋮</span>
+        {inline
+          ? <Ellipsis aria-hidden="true" size={19} strokeWidth={2} />
+          : <EllipsisVertical aria-hidden="true" size={19} strokeWidth={2} />}
       </button>
       <div className={`creator-content-menu__popover${open ? ' is-open' : ''}`} role="menu" aria-hidden={!open}>
           <button type="button" role="menuitem" onClick={() => {
@@ -161,6 +148,29 @@ function CreatorContentMenu({ content, creator, className='' }) {
             style={{ width:'100%', justifyContent:'flex-start', padding:'9px 10px', color:'#DC2626', background:'transparent', border:'none', borderRadius:9, fontSize:10.5 }}
           />
       </div>
+    </div>
+  )
+}
+
+function CreatorHomeContentActions({ helpful, content, creator }) {
+  const toggleHelpful = () => {
+    try {
+      helpful.toggle()
+    } catch {
+      toast.error('No se pudo guardar esta valoración')
+    }
+  }
+
+  return (
+    <div className="creator-home-content-actions">
+      <button type="button" className={`creator-home-content-actions__helpful${helpful.active ? ' is-active' : ''}`} onClick={toggleHelpful} aria-label="Me ayudó" aria-pressed={helpful.active}>
+        <HeartOutlineIcon active={helpful.active} />
+        {helpful.count > 0 && <span>{helpful.count}</span>}
+      </button>
+      <button type="button" onClick={() => shareCreatorContent(content, creator)} aria-label="Compartir">
+        <ShareOutlineIcon />
+      </button>
+      <CreatorContentMenu content={content} creator={creator} className="creator-content-menu--home" inline />
     </div>
   )
 }
@@ -238,7 +248,7 @@ export function CreatorProfileTabs({ active = 'personal', creator = null, compac
   )
 }
 
-export function CreatorAvatar({ creator, size = 72 }) {
+export function CreatorAvatar({ creator, size = 72, compact = false }) {
   const initials = String(creator?.name || '?')
     .split(/\s+/)
     .filter(Boolean)
@@ -263,8 +273,8 @@ export function CreatorAvatar({ creator, size = 72 }) {
         fontSize:size * 0.3,
         letterSpacing:-1,
         background:`linear-gradient(145deg, ${creator?.accent || C.primary}, #0F172A)`,
-        border:'3px solid #fff',
-        boxShadow:'0 8px 22px rgba(15,23,42,.16)',
+        border:compact ? '1.5px solid #fff' : '3px solid #fff',
+        boxShadow:compact ? '0 2px 6px rgba(15,23,42,.14)' : '0 8px 22px rgba(15,23,42,.16)',
         overflow:'hidden',
       }}
     >
@@ -416,8 +426,9 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
   )
 }
 
-export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
+export function CreatorAppContentCard({ content, creator, onDemoOpen, discovery=false }) {
   const topic = getCreatorTopic(content.topic)
+  const platform = getCreatorPlatform(content.platform)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
   const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
   useEffect(() => {
@@ -430,6 +441,32 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen }) {
     }
     trackCreatorMetric(creator.id, 'content_click', content.id)
     window.open(content.url, '_blank', 'noopener,noreferrer')
+  }
+
+  if (discovery) {
+    return (
+      <article className="creator-app-content-card creator-app-content-card--home">
+        <button type="button" className="creator-home-content-card__main" onClick={handleOpen} aria-label={`Ver ${content.title}`}>
+          <span className="creator-home-content-card__media" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
+            <span className="creator-home-content-card__emoji">{topic.emoji}</span>
+            {thumbnailUrl && <img className="creator-home-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
+            {content.duration && <span className="creator-home-content-card__duration">{content.duration}</span>}
+          </span>
+          <span className="creator-home-content-card__copy">
+            <strong>{content.title}</strong>
+            <span className="creator-home-content-card__byline">
+              <CreatorAvatar creator={creator} size={18} compact />
+              <span className="creator-home-content-card__identity">
+                <span>{creator.name}</span>
+                <span aria-hidden="true"> · </span>
+                <span style={{ color:platform.color }}>{platform.label}</span>
+              </span>
+            </span>
+          </span>
+        </button>
+        <CreatorHomeContentActions helpful={helpful} content={content} creator={creator} />
+      </article>
+    )
   }
 
   return (

@@ -29,6 +29,7 @@ export default function CreatorHomeSection() {
               <CreatorAppContentCard
                 content={content}
                 creator={creator}
+                discovery
                 onDemoOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
               />
             </div>

@@ -233,6 +233,7 @@ export default function CreatorCommunityView({
                   key={content.id}
                   content={content}
                   creator={creator}
+                  discovery
                   onDemoOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
                 />
               ))}
