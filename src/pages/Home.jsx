@@ -1486,6 +1486,8 @@ export default function Home() {
                   }}
                   style={{ position:'relative', background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:46, height:46, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, cursor:'pointer', marginTop:0 }}
                   aria-label="Notificaciones"
+                  aria-expanded={notifOpen}
+                  aria-haspopup="dialog"
                 >
                   🔔
                   {hasNotificationContent && (
@@ -1494,7 +1496,7 @@ export default function Home() {
                 </button>
 
                 {notifOpen && (
-                  <div style={{
+                  <div className="latido-notification-menu" role="dialog" aria-label="Notificaciones" style={{
                     position:'absolute', top:56, right:0, width:320, maxHeight:'70vh',
                     background:'#fff', borderRadius:18, boxShadow:'0 8px 40px rgba(0,0,0,0.18)',
                     zIndex:200, overflow:'hidden', display:'flex', flexDirection:'column',

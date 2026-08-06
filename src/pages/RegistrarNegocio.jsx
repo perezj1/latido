@@ -664,7 +664,7 @@ export default function RegistrarNegocio() {
           </div>
 
           {professionalOptionsOpen && (
-            <div style={{ borderTop:`1px solid ${C.border}`, padding:'0 14px 16px' }}>
+            <div className="latido-expand-panel" style={{ borderTop:`1px solid ${C.border}`, padding:'0 14px 16px' }}>
               <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.6, margin:'14px 2px 12px' }}>
                 Elige un plan para dar más visibilidad a tu empresa. El cobro se realizará de forma segura en Stripe después de publicar.
               </p>

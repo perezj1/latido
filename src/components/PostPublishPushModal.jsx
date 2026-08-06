@@ -78,6 +78,7 @@ export default function PostPublishPushModal({
 
   return createPortal(
     <div
+      className="latido-overlay-backdrop"
       role="dialog"
       aria-modal="true"
       aria-labelledby="post-publish-push-title"
@@ -95,6 +96,7 @@ export default function PostPublishPushModal({
       }}
     >
       <div
+        className="latido-modal-panel"
         onClick={event => event.stopPropagation()}
         style={{
           width:'100%',

@@ -99,13 +99,15 @@ export default function Header({ transparent }) {
             <div style={{ padding:2, borderRadius:22, background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)', boxShadow:'0 2px 12px rgba(37,99,235,0.35)' }}>
               <button
                 onClick={() => setPublishOpen(v => !v)}
+                aria-expanded={publishOpen}
+                aria-haspopup="menu"
                 style={{ height:36, borderRadius:20, background:'#fff', color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, border:'none', cursor:'pointer', padding:'0 16px', whiteSpace:'nowrap', letterSpacing:-0.2, fontFamily:PP }}
               >
                 ✏️ Publicar
               </button>
             </div>
             {publishOpen && (
-              <div style={{ position:'absolute', top:'calc(100% + 10px)', left:0, background:'#fff', borderRadius:16, boxShadow:'0 8px 32px rgba(15,23,42,0.16)', border:`1px solid ${C.border}`, padding:'8px', zIndex:200, minWidth:280 }}>
+              <div className="latido-menu-popover" role="menu" style={{ position:'absolute', top:'calc(100% + 10px)', left:0, background:'#fff', borderRadius:16, boxShadow:'0 8px 32px rgba(15,23,42,0.16)', border:`1px solid ${C.border}`, padding:'8px', zIndex:200, minWidth:280 }}>
                 {PUBLISH_OPTIONS.map(opt => (
                   <button
                     key={opt.to}

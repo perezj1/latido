@@ -374,11 +374,11 @@ export function Sheet({ show, onClose, title, children, syncHistory=true, zIndex
   }, [lockBody, show])
 
   if (!show) return null
-  return (
-    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex, display:'flex', flexDirection:'column', justifyContent:'flex-end', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}
+  const sheet = (
+    <div className="fade-in latido-overlay-backdrop" style={{ position:'fixed', inset:0, zIndex, display:'flex', flexDirection:'column', justifyContent:'flex-end', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.4)' }} onClick={onClose} />
-      <div className="fade-up no-scroll" onClick={e => e.stopPropagation()}
+      <div className="fade-up latido-sheet-panel no-scroll" onClick={e => e.stopPropagation()}
         style={{ position:'relative', background:C.surface, borderRadius:'24px 24px 0 0', padding:'4px 20px calc(40px + env(safe-area-inset-bottom))', maxHeight:'88vh', overflowY:'auto', scrollbarWidth:'none', msOverflowStyle:'none' }}>
         <div style={{ width:36, height:4, background:C.border, borderRadius:4, margin:'12px auto 16px' }} />
         {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:14 }}>{title}</p>}
@@ -386,6 +386,7 @@ export function Sheet({ show, onClose, title, children, syncHistory=true, zIndex
       </div>
     </div>
   )
+  return typeof document !== 'undefined' ? createPortal(sheet, document.body) : sheet
 }
 
 // ── Modal (centered) ───────────────────────────────────────────
@@ -423,8 +424,8 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
   }, [show, title])
 
   if (!show) return null
-  return (
-    <div ref={scrollerRef} className="fade-in no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', overflowX:'hidden', scrollbarWidth:'none', msOverflowStyle:'none', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}>
+  const overlay = (
+    <div ref={scrollerRef} className="fade-in latido-fullpage-enter no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', overflowX:'hidden', scrollbarWidth:'none', msOverflowStyle:'none', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}>
       {floatingHeader && (
         <div style={{ position:'sticky', top:0, zIndex:30, height:0, pointerEvents:'none' }}>
           <div style={{ maxWidth:760, margin:'0 auto', padding:'calc(16px + env(safe-area-inset-top)) 16px 0', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
@@ -462,6 +463,7 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
       </div>
     </div>
   )
+  return typeof document !== 'undefined' ? createPortal(overlay, document.body) : overlay
 }
 
 export function Modal({ show, onClose, title, children, syncHistory=true, zIndex=80 }) {
@@ -475,10 +477,10 @@ export function Modal({ show, onClose, title, children, syncHistory=true, zIndex
   }, [show])
 
   if (!show) return null
-  return (
-    <div className="fade-in" style={{ position:'fixed', inset:0, zIndex, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))', boxSizing:'border-box' }}>
+  const modal = (
+    <div className="fade-in latido-overlay-backdrop" style={{ position:'fixed', inset:0, zIndex, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))', boxSizing:'border-box' }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)' }} onClick={onClose} />
-      <div className="fade-up" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'calc(100vh - 32px)', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
+      <div className="fade-up latido-modal-panel" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'calc(100vh - 32px)', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
         <div style={{ flexShrink:0, position:'relative', zIndex:2, background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'24px 24px 0 0' }}>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:0 }}>{title}</p>
           <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:C.bg, border:'none', cursor:'pointer', fontSize:14, color:C.mid }}>✕</button>
@@ -487,6 +489,7 @@ export function Modal({ show, onClose, title, children, syncHistory=true, zIndex
       </div>
     </div>
   )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
 }
 
 // ── Progress steps ─────────────────────────────────────────────

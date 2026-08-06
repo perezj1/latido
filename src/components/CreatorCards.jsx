@@ -459,10 +459,10 @@ export function DemoContentModal({ content, creator, onClose }) {
   const thumbnailUrl = getCreatorThumbnailUrl(content)
 
   return (
-    <div className="creator-modal-backdrop" role="presentation" onMouseDown={event => {
+    <div className="creator-modal-backdrop latido-overlay-backdrop" role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) onClose?.()
     }}>
-      <section className="creator-preview-modal" role="dialog" aria-modal="true" aria-labelledby="creator-preview-title">
+      <section className="creator-preview-modal latido-modal-panel" role="dialog" aria-modal="true" aria-labelledby="creator-preview-title">
         <button className="creator-modal-close" type="button" onClick={onClose} aria-label="Cerrar">×</button>
         <div className="creator-preview-modal__visual" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
           <span>{topic.emoji}</span>
