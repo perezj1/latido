@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { Component, lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Analytics } from '@vercel/analytics/react'
@@ -361,6 +361,15 @@ function AppLoading() {
   )
 }
 
+function getAppRoutePosition(pathname='') {
+  if (pathname === '/') return 0
+  if (/^\/(?:tablon|anuncios|empleos)(?:\/|$)/.test(pathname)) return 1
+  if (/^\/mensajes(?:\/|$)/.test(pathname)) return 3
+  if (/^\/(?:perfil|creadores\/(?:alta|mi-perfil))(?:\/|$)/.test(pathname)) return 4
+  if (/^\/(?:comunidades|negocios|eventos|guias|creadores)(?:\/|$)/.test(pathname)) return 2
+  return null
+}
+
 function getSafeNextPath(search, fallback = '/') {
   const next = new URLSearchParams(search).get('next')
   return next && next.startsWith('/') && !next.startsWith('//') ? next : fallback
@@ -480,6 +489,7 @@ function CategoryBar() {
 
 function AppShell() {
   const location = useLocation()
+  const navigationType = useNavigationType()
   const { pathname } = location
   const { isPWA, canInstall, promptInstall } = usePWA()
   const { isLoggedIn, loading, user, isAdmin } = useAuth()
@@ -488,7 +498,11 @@ function AppShell() {
   const [messagesChatOpen, setMessagesChatOpen] = useState(false)
   const [installBannerVisible, setInstallBannerVisible] = useState(false)
   const routeViewRef = useRef(null)
-  const routeHistoryRef = useRef({ pathname, index:Number(window.history.state?.idx) })
+  const routeHistoryRef = useRef({
+    pathname,
+    index:Number(window.history.state?.idx),
+    position:getAppRoutePosition(pathname),
+  })
   const analyticsConsent = useAnalyticsConsent()
 
   const isRoot = pathname === '/'
@@ -499,25 +513,37 @@ function AppShell() {
 
   useLayoutEffect(() => {
     const view = routeViewRef.current
+    const previous = routeHistoryRef.current
+    const currentIndex = Number(window.history.state?.idx)
+    const currentPosition = getAppRoutePosition(pathname)
+    const hasHistoryDirection = Number.isFinite(previous.index) && Number.isFinite(currentIndex)
+    const movingBack = hasHistoryDirection
+      ? currentIndex < previous.index
+      : navigationType === 'POP' && previous.pathname !== pathname
+    const hasSpatialDirection = Number.isFinite(previous.position)
+      && Number.isFinite(currentPosition)
+      && previous.position !== currentPosition
+    const spatialDirection = hasSpatialDirection
+      ? Math.sign(currentPosition - previous.position)
+      : 0
+
+    routeHistoryRef.current = { pathname, index:currentIndex, position:currentPosition }
+
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     if (!view?.animate || reduceMotion) return undefined
 
-    const previous = routeHistoryRef.current
-    const currentIndex = Number(window.history.state?.idx)
-    const hasHistoryDirection = Number.isFinite(previous.index) && Number.isFinite(currentIndex)
-    const movingBack = hasHistoryDirection && currentIndex < previous.index
     const isDetailRoute = /^\/(?:anuncios|empleos|negocios|eventos|guias|creadores)\/[^/]+\/?$/.test(pathname)
     const isRaisedRoute = /^\/(?:publicar(?:-empleo|-evento)?|registrar-(?:negocio|comunidad)|auth|reset-password|creadores\/(?:alta|mi-perfil))(?:\/|$)/.test(pathname)
       || /^\/negocios\/[^/]+\/(?:destacar|alertas)\/?$/.test(pathname)
-    const origin = movingBack
-      ? { opacity:.76, transform:'translate3d(-14px, 0, 0)' }
-      : isRaisedRoute
-        ? { opacity:.74, transform:'translate3d(0, 16px, 0)' }
-        : isDetailRoute
-          ? { opacity:.76, transform:'translate3d(14px, 0, 0)' }
-          : { opacity:.72, transform:'translate3d(0, 7px, 0)' }
-
-    routeHistoryRef.current = { pathname, index:currentIndex }
+    const origin = hasSpatialDirection
+      ? { opacity:.8, transform:`translate3d(${spatialDirection > 0 ? 22 : -22}px, 0, 0)` }
+      : movingBack
+        ? { opacity:.78, transform:'translate3d(-18px, 0, 0)' }
+        : isRaisedRoute
+          ? { opacity:.74, transform:'translate3d(0, 16px, 0)' }
+          : isDetailRoute
+            ? { opacity:.78, transform:'translate3d(18px, 0, 0)' }
+            : { opacity:.72, transform:'translate3d(0, 7px, 0)' }
 
     const animation = view.animate([
       origin,
