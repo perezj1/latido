@@ -87,6 +87,7 @@ export default function ReportButton({
 
   const modal = open && typeof document !== 'undefined' ? createPortal(
     <div
+      className="latido-overlay-backdrop"
       ref={dialogRef}
       role="dialog"
       aria-modal="true"
@@ -107,6 +108,7 @@ export default function ReportButton({
       }}
     >
       <div
+        className="latido-sheet-panel"
         onClick={event => event.stopPropagation()}
         style={{
           width: '100%',

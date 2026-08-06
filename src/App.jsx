@@ -341,7 +341,7 @@ function UserPresenceSync() {
 
 function ScrollToTop() {
   const { pathname } = useLocation()
-  useEffect(() => {
+  useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }, [pathname])
   return null
@@ -349,9 +349,9 @@ function ScrollToTop() {
 
 function AppLoading() {
   return (
-    <div style={{ minHeight:'100vh', display:'grid', placeItems:'center', background:`linear-gradient(180deg, ${C.bg} 0%, #fff 100%)`, padding:'24px' }}>
-      <div style={{ textAlign:'center' }}>
-        <div style={{ width:68, height:68, margin:'0 auto 16px', borderRadius:20, background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color:'#fff', display:'grid', placeItems:'center', fontSize:30, boxShadow:'0 12px 30px rgba(37,99,235,0.22)' }}>
+    <div className="latido-loading-screen" style={{ minHeight:'100vh', display:'grid', placeItems:'center', background:`linear-gradient(180deg, ${C.bg} 0%, #fff 100%)`, padding:'24px' }}>
+      <div className="latido-loading-screen__content" style={{ textAlign:'center' }}>
+        <div className="latido-loading-screen__mark" style={{ width:68, height:68, margin:'0 auto 16px', borderRadius:20, background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color:'#fff', display:'grid', placeItems:'center', fontSize:30, boxShadow:'0 12px 30px rgba(37,99,235,0.22)' }}>
           🌎
         </div>
         <p style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>Cargando tu espacio</p>
@@ -487,6 +487,8 @@ function AppShell() {
   const [menuPage, setMenuPage] = useState(null)
   const [messagesChatOpen, setMessagesChatOpen] = useState(false)
   const [installBannerVisible, setInstallBannerVisible] = useState(false)
+  const routeViewRef = useRef(null)
+  const routeHistoryRef = useRef({ pathname, index:Number(window.history.state?.idx) })
   const analyticsConsent = useAnalyticsConsent()
 
   const isRoot = pathname === '/'
@@ -494,6 +496,40 @@ function AppShell() {
   const isVirtus360Services = pathname === '/servicios-virtus360'
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
+
+  useLayoutEffect(() => {
+    const view = routeViewRef.current
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (!view?.animate || reduceMotion) return undefined
+
+    const previous = routeHistoryRef.current
+    const currentIndex = Number(window.history.state?.idx)
+    const hasHistoryDirection = Number.isFinite(previous.index) && Number.isFinite(currentIndex)
+    const movingBack = hasHistoryDirection && currentIndex < previous.index
+    const isDetailRoute = /^\/(?:anuncios|empleos|negocios|eventos|guias|creadores)\/[^/]+\/?$/.test(pathname)
+    const isRaisedRoute = /^\/(?:publicar(?:-empleo|-evento)?|registrar-(?:negocio|comunidad)|auth|reset-password|creadores\/(?:alta|mi-perfil))(?:\/|$)/.test(pathname)
+      || /^\/negocios\/[^/]+\/(?:destacar|alertas)\/?$/.test(pathname)
+    const origin = movingBack
+      ? { opacity:.76, transform:'translate3d(-14px, 0, 0)' }
+      : isRaisedRoute
+        ? { opacity:.74, transform:'translate3d(0, 16px, 0)' }
+        : isDetailRoute
+          ? { opacity:.76, transform:'translate3d(14px, 0, 0)' }
+          : { opacity:.72, transform:'translate3d(0, 7px, 0)' }
+
+    routeHistoryRef.current = { pathname, index:currentIndex }
+
+    const animation = view.animate([
+      origin,
+      { opacity:1, transform:'translate3d(0, 0, 0)' },
+    ], {
+      duration:260,
+      easing:'cubic-bezier(.22, 1, .36, 1)',
+      fill:'none',
+    })
+
+    return () => animation.cancel()
+  }, [pathname])
 
   useEffect(() => {
     if (isAdmin) return
@@ -575,7 +611,7 @@ function AppShell() {
         </nav>
         {/* Hamburger dropdown */}
         {menuOpen && (
-          <div style={{ position:'fixed', top:57, left:0, right:0, zIndex:99, background:'#fff', borderBottom:`1px solid ${C.border}`, boxShadow:'0 8px 24px rgba(0,0,0,0.08)', padding:'8px 0' }}>
+          <div className="latido-nav-menu" style={{ position:'fixed', top:57, left:0, right:0, zIndex:99, background:'#fff', borderBottom:`1px solid ${C.border}`, boxShadow:'0 8px 24px rgba(0,0,0,0.08)', padding:'8px 0' }}>
             {MENU_ITEMS.map(item => (
               item.to ? (
                 <Link
@@ -598,7 +634,7 @@ function AppShell() {
             ))}
           </div>
         )}
-        <main style={{ background:'#fff' }}>
+        <main ref={routeViewRef} className="latido-route-view" style={{ background:'#fff' }}>
           <Suspense fallback={<AppLoading />}>
             <Landing
               onInstall={promptInstall || (() => alert('Para instalar: en el menú de tu navegador busca "Instalar app" o "Añadir a pantalla de inicio"'))}
@@ -627,9 +663,11 @@ function AppShell() {
     return (
       <>
         <CookieConsent />
-        <Suspense fallback={<AppLoading />}>
-          <Virtus360Services />
-        </Suspense>
+        <div ref={routeViewRef} className="latido-route-view latido-route-view--standalone">
+          <Suspense fallback={<AppLoading />}>
+            <Virtus360Services />
+          </Suspense>
+        </div>
       </>
     )
   }
@@ -638,11 +676,13 @@ function AppShell() {
     return (
       <>
         <CookieConsent />
-        <Suspense fallback={<AppLoading />}>
-          <Routes>
-            <Route path="/latido-x/:businessSlug" element={<BusinessPartnerLanding />} />
-          </Routes>
-        </Suspense>
+        <div ref={routeViewRef} className="latido-route-view latido-route-view--standalone">
+          <Suspense fallback={<AppLoading />}>
+            <Routes>
+              <Route path="/latido-x/:businessSlug" element={<BusinessPartnerLanding />} />
+            </Routes>
+          </Suspense>
+        </div>
       </>
     )
   }
@@ -653,7 +693,7 @@ function AppShell() {
       <Header />
       <PushRegistrationSync />
       <UserPresenceSync />
-      <main style={{ minHeight:'100vh', paddingBottom:messagesChatOpen ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:isRoot ? '#fff' : undefined }}>
+      <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:isRoot ? '#fff' : undefined }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
