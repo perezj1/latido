@@ -761,3 +761,39 @@ export function resetCreatorPrototype(userId) {
   const creators = readLocalCreators().filter(creator => creator.owner_id !== userId)
   writeLocalCreators(creators)
 }
+
+// Reduce la imagen hasta el tamano maximo indicado conservando su proporcion
+// original. El archivo resultante no se fuerza a un lienzo cuadrado o 16:9:
+// las cards se encargan de centrarlo con object-fit: contain.
+export function prepareLocalImage(file, { width, height, quality = .8 } = {}) {
+  return new Promise((resolve, reject) => {
+    if (!file?.type?.startsWith('image/')) {
+      reject(new Error('Selecciona una imagen JPG, PNG o WebP.'))
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      reject(new Error('La imagen pesa más de 10 MB. Elige una más ligera.'))
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(file)
+    const image = new Image()
+    image.onload = () => {
+      const canvas = document.createElement('canvas')
+      const scale = Math.min(width / image.width, height / image.height)
+      const drawWidth = image.width * scale
+      const drawHeight = image.height * scale
+      canvas.width = Math.max(1, Math.round(drawWidth))
+      canvas.height = Math.max(1, Math.round(drawHeight))
+      const context = canvas.getContext('2d')
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(objectUrl)
+      resolve(canvas.toDataURL('image/webp', quality))
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('No se pudo leer la imagen seleccionada.'))
+    }
+    image.src = objectUrl
+  })
+}

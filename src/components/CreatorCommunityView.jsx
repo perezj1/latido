@@ -12,7 +12,7 @@ import {
 } from '../lib/creators'
 import {
   CreatorAppContentCard,
-  CreatorAvatar,
+  getCreatorInitials,
   CreatorFollowButton,
   CreatorProfileHelpfulButton,
   CreatorProfileHelpfulMetric,
@@ -274,10 +274,27 @@ export default function CreatorCommunityView({
                 <Link to={`/creadores/${creator.slug}`} className="creator-community-card__open">
                   <span className="creator-community-card__media">
                     {creator.avatar_url ? (
-                      <img src={creator.avatar_url} alt="" loading="lazy" decoding="async" />
+                      <img
+                        src={creator.avatar_url}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          width:'100%',
+                          height:'100%',
+                          objectFit:'contain',
+                          objectPosition:'center',
+                          display:'block',
+                        }}
+                      />
                     ) : (
-                      <span className="creator-community-card__fallback">
-                        <CreatorAvatar creator={creator} size={88} />
+                      <span
+                        className="creator-community-card__fallback"
+                        style={{ '--creator-card-accent':creator.accent || C.primary }}
+                        role="img"
+                        aria-label={creator.name}
+                      >
+                        {getCreatorInitials(creator)}
                       </span>
                     )}
                     {creator.demo && <small>DEMO</small>}

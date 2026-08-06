@@ -13,6 +13,7 @@ import {
   isCreatorHandleAvailable,
   getCreatorTopicsFromInterests,
   normalizeCreatorUrl,
+  prepareLocalImage,
   saveCreatorProfile,
 } from '../lib/creators'
 import { C, PP } from '../lib/theme'
@@ -24,6 +25,21 @@ const STEPS = [
   { title:'Conecta tus redes', sub:'Las visitas llegarán siempre a tus perfiles, publicaciones y páginas originales.' },
   { title:'Revisa tu perfil', sub:'En este prototipo se publicará inmediatamente para que puedas probarlo.' },
 ]
+
+// Al editar se reutiliza `step` como seccion activa: los tres primeros pasos del
+// alta son exactamente los tres bloques del formulario.
+const EDIT_SECTIONS = [
+  { step:0, emoji:'📝', label:'Información' },
+  { step:1, emoji:'🏷️', label:'Temas' },
+  { step:2, emoji:'🔗', label:'Redes' },
+]
+
+function getErrorSection(key='') {
+  if (key === 'topics') return 1
+  if (key === 'socials' || key.startsWith('social_') || key.startsWith('followers_')) return 2
+  if (key === 'accepted') return 3
+  return 0
+}
 
 const PROFILE_LIMITS = {
   name:{ min:2, max:60 },
@@ -41,38 +57,7 @@ function focusFirstError(errors) {
   }, 40)
 }
 
-function prepareLocalAvatar(file) {
-  return new Promise((resolve, reject) => {
-    if (!file?.type?.startsWith('image/')) {
-      reject(new Error('Selecciona una imagen JPG, PNG o WebP.'))
-      return
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      reject(new Error('La imagen pesa más de 10 MB. Elige una más ligera.'))
-      return
-    }
-
-    const objectUrl = URL.createObjectURL(file)
-    const image = new Image()
-    image.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = 360
-      canvas.height = 360
-      const context = canvas.getContext('2d')
-      const scale = Math.max(canvas.width / image.width, canvas.height / image.height)
-      const width = image.width * scale
-      const height = image.height * scale
-      context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height)
-      URL.revokeObjectURL(objectUrl)
-      resolve(canvas.toDataURL('image/webp', .8))
-    }
-    image.onerror = () => {
-      URL.revokeObjectURL(objectUrl)
-      reject(new Error('No se pudo leer la imagen seleccionada.'))
-    }
-    image.src = objectUrl
-  })
-}
+const prepareLocalAvatar = file => prepareLocalImage(file, { width:360, height:360, quality:.8 })
 
 function initialForm(existing, displayName, userCanton, userInterests = []) {
   const socialMap = Object.fromEntries((existing?.socials || []).map(social => [social.platform, social.url]))
@@ -201,6 +186,12 @@ export default function CreadorAlta() {
     if (activeSteps.has(3) && !form.accepted) nextErrors.accepted = 'Marca esta casilla para confirmar que representas el perfil y puedes compartir estos enlaces.'
 
     setErrors(nextErrors)
+
+    // Al editar, el campo con error puede estar en una seccion que no se ve:
+    // abrimos la suya antes de intentar enfocarlo.
+    const firstErrorKey = Object.keys(nextErrors)[0]
+    if (isEditing && firstErrorKey) setStep(getErrorSection(firstErrorKey))
+
     focusFirstError(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
@@ -287,6 +278,27 @@ export default function CreadorAlta() {
         <h1 style={{ margin:'0 0 4px', color:C.text, fontFamily:PP, fontWeight:800, fontSize:22, letterSpacing:-.3 }}>{isEditing ? 'Editar perfil de creador' : STEPS[step].title}</h1>
         <p style={{ margin:'0 0 18px', color:C.light, fontFamily:PP, fontSize:12, lineHeight:1.6 }}>{isEditing ? 'Actualiza los campos que necesites y guarda los cambios en cualquier momento.' : STEPS[step].sub}</p>
 
+        {isEditing && (
+          <nav className="latido-section-tabs creator-edit-tabs" aria-label="Secciones del perfil">
+            {EDIT_SECTIONS.map(section => {
+              const hasErrors = Object.keys(errors).some(key => getErrorSection(key) === section.step)
+              return (
+                <button
+                  key={section.step}
+                  type="button"
+                  className={`latido-section-tab${step === section.step ? ' is-active' : ''}`}
+                  aria-current={step === section.step ? 'true' : undefined}
+                  onClick={() => setStep(section.step)}
+                >
+                  <span aria-hidden="true">{section.emoji}</span>
+                  <span>{section.label}</span>
+                  {hasErrors && <span className="creator-edit-tabs__alert" aria-label="Tiene campos por revisar" />}
+                </button>
+              )
+            })}
+          </nav>
+        )}
+
         {!isEditing && step === 0 && (
           <div style={{ display:'flex', gap:9, alignItems:'flex-start', marginBottom:16, padding:'11px 13px', color:'#1E3A8A', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:14, fontFamily:PP, fontSize:10.5, lineHeight:1.6 }}>
             <span>🧪</span>
@@ -295,7 +307,7 @@ export default function CreadorAlta() {
         )}
 
         <div>
-          {(isEditing || step === 0) && (
+          {step === 0 && (
             <>
               {isEditing && <div className="creator-edit-section-heading"><strong>Información del perfil</strong><span>Nombre, foto y presentación pública.</span></div>}
               <Input label="NOMBRE DEL PERFIL, PROYECTO O NEGOCIO" required error={errors.name} errorKey="name" value={form.name} onChange={event => update('name', event.target.value)} placeholder="Ej. Lucía en Suiza · Taller García · Enfermera en Zúrich" />
@@ -305,7 +317,7 @@ export default function CreadorAlta() {
                   <CreatorAvatar creator={previewCreator} size={82} />
                   <div className="creator-avatar-upload__controls">
                     <strong>{processingAvatar ? 'Preparando la foto…' : form.avatar_url ? 'Tu foto está lista' : 'Elige una foto que te represente'}</strong>
-                    <small>Se recortará en formato cuadrado y se mostrará en círculo.</small>
+                    <small>Conservamos su proporción original para mostrarla completa.</small>
                     <div>
                       <label className="creator-avatar-upload__button is-primary" htmlFor={avatarDeviceId}>
                         🖼 {form.avatar_url ? 'Cambiar' : 'Elegir foto'}
@@ -327,7 +339,7 @@ export default function CreadorAlta() {
             </>
           )}
 
-          {(isEditing || step === 1) && (
+          {step === 1 && (
             <>
               {isEditing && <div className="creator-edit-section-heading"><strong>Temas y ubicación</strong><span>Ayudan a recomendar tu perfil a las personas adecuadas.</span></div>}
               <p style={{ margin:'0 0 10px', color:C.light, fontFamily:PP, fontSize:10, fontWeight:800, letterSpacing:.8 }}>TEMAS PRINCIPALES · ELIGE HASTA 4</p>
@@ -367,7 +379,7 @@ export default function CreadorAlta() {
             </>
           )}
 
-          {(isEditing || step === 2) && (
+          {step === 2 && (
             <>
               {isEditing && <div className="creator-edit-section-heading"><strong>Redes y enlaces</strong><span>Cambia, añade o elimina los destinos de tu perfil.</span></div>}
               <div style={{ marginBottom:18, padding:'12px 14px', color:'#1E3A8A', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:13, fontFamily:PP, fontSize:10.5, lineHeight:1.65 }}>

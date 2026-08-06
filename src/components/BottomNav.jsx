@@ -24,7 +24,9 @@ const TABS = [
   { id:'perfil',   path:'/perfil',   emoji:'👤', label:'Perfil' },
 ]
 
-const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
+// Flujos de alta/edicion con acciones fijas abajo: la barra estorbaria y se
+// solaparia con ellas. /creadores/alta es tambien el editor del perfil.
+const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad', '/creadores/alta']
 
 export default function BottomNav() {
   const { pathname, search } = useLocation()

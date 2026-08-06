@@ -248,13 +248,17 @@ export function CreatorProfileTabs({ active = 'personal', creator = null, compac
   )
 }
 
-export function CreatorAvatar({ creator, size = 72, compact = false }) {
-  const initials = String(creator?.name || '?')
+export function getCreatorInitials(creator) {
+  return String(creator?.name || '?')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map(part => part[0]?.toUpperCase())
-    .join('')
+    .join('') || '?'
+}
+
+export function CreatorAvatar({ creator, size = 72, compact = false }) {
+  const initials = getCreatorInitials(creator)
 
   return (
     <div
@@ -340,7 +344,19 @@ export function CreatorCard({ creator }) {
       <Link className="creator-community-card__open" to={`/creadores/${creator.slug}`}>
         <span className="creator-community-card__media">
           {creator.avatar_url ? (
-            <img src={creator.avatar_url} alt="" loading="lazy" decoding="async" />
+            <img
+              src={creator.avatar_url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              style={{
+                width:'100%',
+                height:'100%',
+                objectFit:'contain',
+                objectPosition:'center',
+                display:'block',
+              }}
+            />
           ) : (
             <span className="creator-community-card__fallback">
               <CreatorAvatar creator={creator} size={88} />

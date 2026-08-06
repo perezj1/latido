@@ -18,6 +18,7 @@ import {
   getCreatorTopic,
   getOrderedCreatorContents,
   moveCreatorContent,
+  prepareLocalImage,
   normalizeCreatorUrl,
   removeCreatorContent,
   resetCreatorPrototype,
@@ -68,38 +69,7 @@ function focusFirstError(errors) {
   }, 40)
 }
 
-function prepareLocalThumbnail(file) {
-  return new Promise((resolve, reject) => {
-    if (!file?.type?.startsWith('image/')) {
-      reject(new Error('Selecciona una imagen JPG, PNG o WebP.'))
-      return
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      reject(new Error('La imagen pesa más de 10 MB. Elige una más ligera.'))
-      return
-    }
-
-    const objectUrl = URL.createObjectURL(file)
-    const image = new Image()
-    image.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = 960
-      canvas.height = 540
-      const context = canvas.getContext('2d')
-      const scale = Math.max(canvas.width / image.width, canvas.height / image.height)
-      const width = image.width * scale
-      const height = image.height * scale
-      context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height)
-      URL.revokeObjectURL(objectUrl)
-      resolve(canvas.toDataURL('image/webp', .76))
-    }
-    image.onerror = () => {
-      URL.revokeObjectURL(objectUrl)
-      reject(new Error('No se pudo leer la imagen seleccionada.'))
-    }
-    image.src = objectUrl
-  })
-}
+const prepareLocalThumbnail = file => prepareLocalImage(file, { width:960, height:540, quality:.76 })
 
 function formatDate(value) {
   const date = new Date(value)
