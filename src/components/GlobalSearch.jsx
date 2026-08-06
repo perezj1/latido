@@ -1383,6 +1383,12 @@ export default function GlobalSearch({
   showImmersiveFilterButton = true,
   initialQuery = '',
   openResultsOnMount = false,
+  // pageMode: la experiencia inmersiva ES la pantalla (Explorar), no un overlay
+  // que se abre al enfocar. No se cierra: el paso atras vuelve al inicio.
+  pageMode = false,
+  pageTitle = '',
+  startSections = null,
+  startExtras = null,
 }) {
   const { isLoggedIn, user, isAdmin, userCanton } = useAuth()
   const navigate = useNavigate()
@@ -1415,7 +1421,7 @@ export default function GlobalSearch({
   const [assistantRpc, setAssistantRpc] = useState({ status:'idle', datasets:null })
   const [premiumRotationOffset, setPremiumRotationOffset] = useState(0)
   const [startPartnerRotationOffset, setStartPartnerRotationOffset] = useState(0)
-  const [immersiveOpen, setImmersiveOpen] = useState(shouldOpenInitialResults)
+  const [immersiveOpen, setImmersiveOpen] = useState(shouldOpenInitialResults || (immersive && pageMode))
   const [immersiveView, setImmersiveView] = useState(shouldOpenInitialResults ? 'results' : 'start')
   const [immersiveSort, setImmersiveSort] = useState('relevance')
   const [immersiveLimit, setImmersiveLimit] = useState(FULL_SEARCH_PAGE_SIZE)
@@ -2194,14 +2200,22 @@ export default function GlobalSearch({
   }, [])
 
   const closeImmersive = useCallback(() => {
-    setImmersiveOpen(false)
     setImmersiveFiltersOpen(false)
     setImmersiveResultFiltersOpen(false)
-    setFocused(false)
     setActiveIdx(-1)
+
+    // En pageMode la pantalla no se puede cerrar: se vuelve a su estado inicial.
+    if (pageMode) {
+      setQ('')
+      setImmersiveView('start')
+      return
+    }
+
+    setImmersiveOpen(false)
+    setFocused(false)
     if (clearOnClose) setQ('')
     onClose?.()
-  }, [clearOnClose, onClose, setQ])
+  }, [clearOnClose, onClose, pageMode, setQ])
 
   const handleFocus = useCallback(() => {
     cancelBlurClose()
@@ -2252,17 +2266,19 @@ export default function GlobalSearch({
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    const focusTimer = window.setTimeout(() => {
+
+    // En pageMode no robamos el foco: abrir Explorar no debe levantar el teclado.
+    const focusTimer = pageMode ? null : window.setTimeout(() => {
       overlayInputRef.current?.focus()
       const valueLength = overlayInputRef.current?.value?.length || 0
       overlayInputRef.current?.setSelectionRange(valueLength, valueLength)
     }, 40)
 
     return () => {
-      window.clearTimeout(focusTimer)
+      if (focusTimer) window.clearTimeout(focusTimer)
       document.body.style.overflow = previousOverflow
     }
-  }, [immersiveOpen])
+  }, [immersiveOpen, pageMode])
 
   useEffect(() => {
     setImmersiveSearchFilterOverrides({})
@@ -2920,31 +2936,36 @@ export default function GlobalSearch({
     </div>
     {immersiveOpen && typeof document !== 'undefined' && createPortal(
       <div
-        className="latido-search-experience"
-        role="dialog"
-        aria-modal="true"
+        className={`latido-search-experience${pageMode ? ' latido-search-experience--page' : ''}`}
+        role={pageMode ? undefined : 'dialog'}
+        aria-modal={pageMode ? undefined : 'true'}
         aria-label="Buscar en Latido"
         onPointerDownCapture={dismissImmersiveKeyboard}
         onTouchMoveCapture={dismissImmersiveKeyboard}
         onScrollCapture={dismissImmersiveKeyboard}
       >
         <div className="latido-search-experience__shell">
-          <header className="latido-search-experience__header">
-            <button
-              type="button"
-              className="latido-search-experience__back"
-              onClick={() => {
-                if (immersiveView === 'results') {
-                  setImmersiveView(q.trim().length > 0 ? 'preview' : 'start')
-                  window.setTimeout(() => overlayInputRef.current?.focus(), 0)
-                } else {
-                  closeImmersive()
-                }
-              }}
-              aria-label={immersiveView === 'results' ? 'Volver a las sugerencias' : 'Cerrar búsqueda'}
-            >
-              <BackGlyph />
-            </button>
+          <header className={`latido-search-experience__header${pageMode && immersiveView === 'start' ? ' is-page-start' : ''}`}>
+            {pageMode && pageTitle && immersiveView === 'start' && (
+              <p className="latido-search-experience__page-title">{pageTitle}</p>
+            )}
+            {(!pageMode || immersiveView !== 'start') && (
+              <button
+                type="button"
+                className="latido-search-experience__back"
+                onClick={() => {
+                  if (immersiveView === 'results') {
+                    setImmersiveView(q.trim().length > 0 ? 'preview' : 'start')
+                    window.setTimeout(() => overlayInputRef.current?.focus(), 0)
+                  } else {
+                    closeImmersive()
+                  }
+                }}
+                aria-label={immersiveView === 'results' ? 'Volver a las sugerencias' : 'Cerrar búsqueda'}
+              >
+                <BackGlyph />
+              </button>
+            )}
 
             <form
               className="latido-search-experience__form"
@@ -3002,6 +3023,29 @@ export default function GlobalSearch({
           <main className="latido-search-experience__content">
             {immersiveView === 'start' ? (
               <div className="latido-search-start">
+                {startSections?.length > 0 && (
+                  <section className="latido-search-section" aria-label="Secciones de Latido">
+                    <div className="explore-grid">
+                      {startSections.map(section => (
+                        <button
+                          key={section.id}
+                          type="button"
+                          className="explore-card"
+                          style={{ '--explore-card-bg':section.gradient, '--explore-card-glow':section.glow }}
+                          onClick={() => {
+                            if (!pageMode) setImmersiveOpen(false)
+                            navigate(section.to)
+                          }}
+                        >
+                          <span className="explore-card__label">{section.label}</span>
+                          <span className="explore-card__desc">{section.desc}</span>
+                          <span className="explore-card__mark" aria-hidden="true">{section.emoji}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 {startPartnerEntries.length > 0 && (
                   <section className="latido-search-section" aria-labelledby="search-partners-title">
                     <div className="latido-search-section__heading">
@@ -3054,22 +3098,54 @@ export default function GlobalSearch({
                   </section>
                 )}
 
-                <section className="latido-search-section" aria-labelledby="quick-searches-title">
-                  <div className="latido-search-section__heading">
-                    <div>
-                      <h2 id="quick-searches-title">Explora rápidamente</h2>
-                      <p>Sugerencias habituales en esta sección.</p>
+                {!startSections?.length && (
+                  <section className="latido-search-section" aria-labelledby="quick-searches-title">
+                    <div className="latido-search-section__heading">
+                      <div>
+                        <h2 id="quick-searches-title">Explora rápidamente</h2>
+                        <p>Sugerencias habituales en esta sección.</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="latido-search-quick">
-                    {quickSearches.map(suggestion => (
-                      <button key={suggestion} type="button" onClick={() => selectSearchSuggestion(suggestion)}>
-                        <SearchGlyph size={17} />
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </section>
+                    <div className="latido-search-quick">
+                      {quickSearches.map(suggestion => (
+                        <button key={suggestion} type="button" onClick={() => selectSearchSuggestion(suggestion)}>
+                          <SearchGlyph size={17} />
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {startExtras?.length > 0 && (
+                  <section className="latido-search-section" aria-labelledby="explore-extras-title">
+                    <div className="latido-search-section__heading">
+                      <div>
+                        <h2 id="explore-extras-title">También en Latido</h2>
+                      </div>
+                    </div>
+                    <div className="explore-extras">
+                      {startExtras.map(extra => (
+                        <button
+                          key={extra.id}
+                          type="button"
+                          className="explore-extra"
+                          onClick={() => {
+                            if (!pageMode) setImmersiveOpen(false)
+                            navigate(extra.to)
+                          }}
+                        >
+                          <span className="explore-extra__mark" aria-hidden="true">{extra.emoji}</span>
+                          <span className="explore-extra__text">
+                            <span className="explore-extra__label">{extra.label}</span>
+                            <span className="explore-extra__desc">{extra.desc}</span>
+                          </span>
+                          <span className="explore-extra__chevron" aria-hidden="true">›</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
             ) : immersiveView === 'preview' ? (
               <div className="latido-search-preview">

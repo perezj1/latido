@@ -19,10 +19,11 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Tag, EmptyState, SegmentedTabs, Sheet, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal, ChevronLeftIcon } from '../components/UI'
+import { Tag, EmptyState, Sheet, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal, ChevronLeftIcon } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CreatorCommunityView, { CreatorCommunityToolbar } from '../components/CreatorCommunityView'
 import CompactFilterSelect from '../components/CompactFilterSelect'
+import SectionTabs from '../components/SectionTabs'
 import GlobalSearch from '../components/GlobalSearch'
 import SavedSearchButton from '../components/SavedSearchButton'
 import { FilterButton, FilterChips, FilterResultSummary, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
@@ -1540,6 +1541,7 @@ export default function Comunidades() {
   const routeView = routeBusinessId ? 'negocios' : routeEventId ? 'eventos' : ''
   const view = searchParams.get('view') || routeView || (openCommunityId || searchParams.get('cat') ? 'comunidades' : 'negocios')
   const tab = MAIN_TABS.some(item => item.id === view) ? view : 'negocios'
+  const previousTabRef = useRef(tab)
   const isCleanBusinessRoute = !!routeBusinessId
   const isCleanEventRoute = !!routeEventId
 
@@ -1751,31 +1753,6 @@ export default function Comunidades() {
     }
   }
 
-  const handleTabChange = nextTab => {
-    const params = new URLSearchParams(searchParams)
-    if (nextTab === 'negocios') params.delete('view')
-    else params.set('view', nextTab)
-    params.delete('openCommunity')
-    params.delete('openBusiness')
-    params.delete('openEvent')
-    params.delete('cat')
-    setSearchParams(params, { replace:true })
-    setSearch('')
-    setCat('')
-    setNegType('')
-    setEventType('')
-    setLocationFilter('')
-    setBusinessSort('recommended')
-    setCommunitySort('newest')
-    setCreatorSearch('')
-    setCreatorTopic('')
-    setCreatorPlatform('')
-    setCreatorLocation('')
-    setCreatorSort('newest')
-    setShowDirectoryFilters(false)
-    scrollPageTop()
-  }
-
   const updateOpenState = (key, value, nextView='comunidades', replace=true) => {
     const params = new URLSearchParams(searchParams)
     params.delete('openCommunity')
@@ -1840,6 +1817,30 @@ export default function Comunidades() {
   const scrollPageTop = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }
+
+  // SectionTabs navega con enlaces, asi que la pagina no se desmonta al cambiar
+  // de seccion. Limpiamos aqui los filtros de la anterior para que no se peguen,
+  // igual que hacia handleTabChange. Se ignora el primer render para respetar
+  // los enlaces profundos (?cat, ?businessType, ?canton...).
+  useEffect(() => {
+    if (previousTabRef.current === tab) return
+    previousTabRef.current = tab
+
+    setSearch('')
+    setCat('')
+    setNegType('')
+    setEventType('')
+    setLocationFilter('')
+    setBusinessSort('recommended')
+    setCommunitySort('newest')
+    setCreatorSearch('')
+    setCreatorTopic('')
+    setCreatorPlatform('')
+    setCreatorLocation('')
+    setCreatorSort('newest')
+    setShowDirectoryFilters(false)
+    scrollPageTop()
+  }, [tab])
 
   const handleCommunityCategoryChange = nextCat => {
     setCat(nextCat)
@@ -2304,8 +2305,10 @@ export default function Comunidades() {
     <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px 100px' }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'24px 24px 0' }}>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:0 }}>{tabCopy.title}</h1>
-      <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:isLoggedIn ? 14 : 20 }}>{tabCopy.subtitle}</p>
+      <div className="section-page-head">
+        <h1>{tabCopy.title}</h1>
+        <p>{tabCopy.subtitle}</p>
+      </div>
 
 
       {/* Search bar — hidden in eventos tab */}
@@ -2315,9 +2318,7 @@ export default function Comunidades() {
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:16, padding:'10px 0 12px' }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px', boxSizing:'border-box' }}>
           <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)', boxSizing:'border-box' }}>
-          <div className="community-main-tabs">
-            <SegmentedTabs tabs={MAIN_TABS} value={tab} onChange={handleTabChange} />
-          </div>
+          <SectionTabs />
           {tab !== 'eventos' && tab !== 'creadores' && (
             <div key={`${tab}-directory-toolbar`} className="segmented-content-transition">
               <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%', minWidth:0, marginTop:10 }}>

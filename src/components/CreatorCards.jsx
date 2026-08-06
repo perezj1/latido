@@ -450,7 +450,6 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen, discovery=
           <span className="creator-home-content-card__media" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
             <span className="creator-home-content-card__emoji">{topic.emoji}</span>
             {thumbnailUrl && <img className="creator-home-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
-            {content.duration && <span className="creator-home-content-card__duration">{content.duration}</span>}
           </span>
           <span className="creator-home-content-card__copy">
             <strong>{content.title}</strong>

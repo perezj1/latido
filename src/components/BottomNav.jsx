@@ -5,7 +5,7 @@ import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { Avatar } from './UI'
 import { C, PP } from '../lib/theme'
-import { getPublishTarget } from '../lib/publishTargets'
+import { isCreatorProfileRoute, isExploreRoute } from '../lib/sections'
 
 const PUBLISH_OPTIONS = [
   { emoji:'📌', label:'Anuncio',   sub:'Vivienda, servicios, cuidados, compraventa o trámites', to:'/publicar' },
@@ -17,15 +17,14 @@ const PUBLISH_OPTIONS = [
 ]
 
 const TABS = [
-  { path:'/',            emoji:'🏠', label:'Inicio' },
-  { path:'/tablon',      emoji:'📌', label:'Anuncios' },
-  { path:'/comunidades', emoji:'🤝', label:'Comunidad' },
-  { path:'/mensajes',    emoji:'💬', label:'Mensajes' },
-  { path:'/perfil',      emoji:'👤', label:'Perfil' },
+  { id:'inicio',   path:'/',         emoji:'🏠', label:'Inicio' },
+  { id:'explorar', path:'/explorar', emoji:'🔎', label:'Explorar' },
+  { id:'publicar', action:'publish', emoji:'✏️', label:'Publicar' },
+  { id:'mensajes', path:'/mensajes', emoji:'💬', label:'Mensajes' },
+  { id:'perfil',   path:'/perfil',   emoji:'👤', label:'Perfil' },
 ]
 
 const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad']
-const NO_FAB = [...PUBLISH_FLOW_PATHS, '/mensajes', '/perfil', '/creadores/alta', '/creadores/mi-perfil']
 
 export default function BottomNav() {
   const { pathname, search } = useLocation()
@@ -80,57 +79,19 @@ export default function BottomNav() {
 
   const isAdminPage = pathname === '/admin-latido' || pathname.startsWith('/admin-latido/')
   const isPublishFlow = PUBLISH_FLOW_PATHS.some(path => pathname === path || pathname.startsWith(`${path}/`))
-  const isPromotionCheckoutPage = /^\/negocios\/[^/]+\/destacar\/?$/.test(pathname)
-  const isCreatorProfileArea = pathname === '/creadores/alta' || pathname.startsWith('/creadores/mi-perfil')
-  const hideFab = isAdminPage || isPromotionCheckoutPage || NO_FAB.some(path => pathname === path || pathname.startsWith(`${path}/`))
-  const fab = hideFab ? null : getPublishTarget()
+  const isCreatorProfileArea = isCreatorProfileRoute(pathname)
   const hideMobileNav = isAdminPage || isPublishFlow || (pathname.startsWith('/mensajes') && messagesChatOpen)
-  const isTabActive = tab => tab.path === '/'
-    ? pathname === '/'
-    : tab.path === '/perfil'
-      ? pathname.startsWith('/perfil') || isCreatorProfileArea
-      : pathname.startsWith(tab.path)
+  const isTabActive = tab => {
+    if (tab.action) return false
+    if (tab.id === 'inicio') return pathname === '/'
+    if (tab.id === 'perfil') return pathname.startsWith('/perfil') || isCreatorProfileArea
+    if (tab.id === 'explorar') return isExploreRoute(pathname)
+    return pathname.startsWith(tab.path)
+  }
   const activeTabIndex = TABS.findIndex(isTabActive)
 
   return (
     <>
-      {fab && (
-        <div className="publish-fab" style={{
-          position:'fixed', bottom:'calc(88px + env(safe-area-inset-bottom) + var(--latido-install-banner-lift, 0px))', right:'calc(18px + env(safe-area-inset-right))', zIndex:60,
-          padding:2.5, borderRadius:26,
-          background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)',
-          boxShadow:'0 4px 20px rgba(37,99,235,0.45)',
-          transform:'translateZ(0)', transition:'bottom .18s ease',
-        }}>
-          {fab.showPicker ? (
-            <button
-              onClick={() => setPickerOpen(true)}
-              style={{
-                height:46, borderRadius:23, background:'#fff',
-                color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:13, fontWeight:700, border:'none', cursor:'pointer',
-                padding:'0 20px', whiteSpace:'nowrap', letterSpacing:-0.2,
-              }}
-            >
-              ✏️ {fab.label}
-            </button>
-          ) : (
-            <Link
-              to={fab.to}
-              style={{
-                height:46, borderRadius:23, background:'#fff',
-                color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:13, fontWeight:700, textDecoration:'none',
-                padding:'0 20px', whiteSpace:'nowrap', letterSpacing:-0.2,
-              }}
-              aria-label={fab.label}
-            >
-              {fab.label}
-            </Link>
-          )}
-        </div>
-      )}
-
       {/* Publish picker sheet */}
       {pickerOpen && (
         <div
@@ -163,7 +124,7 @@ export default function BottomNav() {
         </div>
       )}
 
-      {!hideMobileNav && <nav className="safe-bottom hide-md bottom-nav" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:50, background:'rgba(255,255,255,0.96)', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', minHeight:68, boxShadow:'0 -8px 26px rgba(15,23,42,0.08)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', transform: keyboardVisible && pathname.startsWith('/mensajes') ? 'translateY(100%)' : 'translateZ(0)', transition:'transform 0.12s ease' }}>
+      {!hideMobileNav && <nav className="hide-md bottom-nav" style={{ transform: keyboardVisible && pathname.startsWith('/mensajes') ? 'translateY(calc(100% + 24px))' : 'translateZ(0)', transition:'transform 0.12s ease' }}>
         {activeTabIndex >= 0 && (
           <span
             className="bottom-nav-active-indicator"
@@ -175,22 +136,42 @@ export default function BottomNav() {
         )}
         {TABS.map(tab => {
           const active = isTabActive(tab)
-          const needsNotificationDot = tab.path === '/perfil' && needsPushActivation
-          const to = (!isLoggedIn && (tab.path === '/mensajes' || tab.path === '/perfil')) ? '/auth' : tab.path
+          const needsNotificationDot = tab.id === 'perfil' && needsPushActivation
+          const to = (!isLoggedIn && (tab.id === 'mensajes' || tab.id === 'perfil')) ? '/auth' : tab.path
+
+          if (tab.action === 'publish') {
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="bottom-nav-item bottom-nav-publish"
+                aria-haspopup="dialog"
+                aria-expanded={pickerOpen}
+                aria-label="Publicar"
+              >
+                <span className="bottom-nav-publish-mark" aria-hidden="true">
+                  <span>{tab.emoji}</span>
+                </span>
+                <span className="bottom-nav-label" style={{ fontFamily:PP, fontSize:9, fontWeight:500 }}>{tab.label}</span>
+                <span aria-hidden="true" style={{ width:20, height:3 }} />
+              </button>
+            )
+          }
 
           return (
             <Link
-              key={tab.path}
+              key={tab.id}
               to={to}
               className={`bottom-nav-item${active ? ' is-active' : ''}`}
               style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'8px 0 10px', gap:2, textDecoration:'none', color: active ? C.primary : C.light }}
             >
               <span className="bottom-nav-icon" style={{ position:'relative', display:'inline-flex' }}>
-                {tab.path === '/perfil' && isLoggedIn
+                {tab.id === 'perfil' && isLoggedIn
                   ? <Avatar name={displayName} size={24} src={avatarUrl} />
                   : <span style={{ fontSize:20, lineHeight:1 }}>{tab.emoji}</span>
                 }
-                {tab.path === '/mensajes' && hasUnread && (
+                {tab.id === 'mensajes' && hasUnread && (
                   <span style={{ position:'absolute', top:-2, right:-4, minWidth:8, height:8, borderRadius:4, background:'#EF4444', border:'1.5px solid #fff' }} />
                 )}
                 {needsNotificationDot && (

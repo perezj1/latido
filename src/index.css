@@ -73,10 +73,6 @@
   from { opacity:.72; transform:translate3d(16px, 0, 0); }
   to { opacity:1; transform:translate3d(0, 0, 0); }
 }
-@keyframes latido-fab-in {
-  from { opacity:0; transform:translate3d(0, 12px, 0) scale(.92); }
-  to { opacity:1; transform:translate3d(0, 0, 0) scale(1); }
-}
 @keyframes latido-option-in {
   from { opacity:0; transform:translate3d(0, 5px, 0); }
   to { opacity:1; transform:translate3d(0, 0, 0); }
@@ -121,11 +117,6 @@
 .latido-notification-menu {
   transform-origin: top right;
   animation: latido-menu-in var(--latido-motion-base) var(--latido-ease-emphasized) both;
-}
-
-.publish-fab {
-  animation: latido-fab-in 280ms var(--latido-ease-emphasized) both;
-  transform-origin: bottom right;
 }
 
 .latido-publish-picker__panel {
@@ -2583,10 +2574,204 @@ img[data-latido-img-state="loaded"] {
 .cat-bar { position: sticky; top: 0; z-index: 40; }
 @media (min-width: 768px) { .cat-bar { top: 57px; } }
 
-/* ── Publish FAB: hidden on desktop (button moved to header nav) ── */
-@media (min-width: 768px) {
-  .publish-fab { display: none !important; }
+/* ── Encabezado de seccion ──
+   Altura fija en todas las pantallas: el subtitulo reserva siempre dos lineas,
+   asi la barra de filtros arranca al mismo alto tenga el texto una linea o dos. */
+.section-page-head {
+  padding-bottom: 14px;
 }
+
+.section-page-head h1 {
+  margin: 0 0 6px;
+  color: #0F172A;
+  font: 800 26px/1.2 'Poppins', sans-serif;
+  letter-spacing: -0.4px;
+}
+
+.section-page-head p {
+  min-height: 41px;
+  margin: 0;
+  color: #94A3B8;
+  font: 400 13px/1.55 'Poppins', sans-serif;
+}
+
+/* ── Atajo entre secciones dentro de una lista ──
+   Mismo aspecto que .ui-segmented-tabs, pero desplazable: no caben seis
+   segmentos fijos, y el indicador absoluto no sobrevive al scroll. */
+.latido-section-tabs {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  padding: 4px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: #D7E0EE;
+  box-sizing: border-box;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.latido-section-tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: #111C36;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background .22s ease, box-shadow .22s ease, transform .18s ease;
+}
+
+.latido-section-tab.is-active {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .12);
+}
+
+.latido-section-tab:active {
+  transform: scale(.98);
+}
+
+/* ── Explorar: las seis secciones ── */
+.explore-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.explore-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 118px;
+  padding: 15px 15px 14px;
+  border: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  isolation: isolate;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--explore-card-bg);
+  box-shadow: 0 10px 22px var(--explore-card-glow);
+  transition: transform .2s cubic-bezier(.22, 1, .36, 1), box-shadow .2s ease;
+}
+
+.explore-card:active {
+  transform: scale(.975);
+  box-shadow: 0 6px 14px var(--explore-card-glow);
+}
+
+.explore-card__label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+  color: #fff;
+}
+
+.explore-card__desc {
+  margin-top: 5px;
+  max-width: 76%;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.42;
+  color: rgba(255, 255, 255, .84);
+}
+
+/* La tarjeta ladeada de la esquina, al estilo de una caratula. */
+.explore-card__mark {
+  position: absolute;
+  right: -12px;
+  bottom: -12px;
+  width: 62px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .93);
+  font-size: 29px;
+  line-height: 1;
+  transform: rotate(24deg);
+  box-shadow: -6px 6px 16px rgba(15, 23, 42, .22);
+}
+
+.explore-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.explore-extra {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #E2EAF4;
+  border-radius: 16px;
+  background: #fff;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.explore-extra__mark {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #EFF6FF;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.explore-extra__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.explore-extra__label {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.explore-extra__desc {
+  display: block;
+  margin-top: 1px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.explore-extra__chevron {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: #94A3B8;
+}
+
+@media (min-width: 768px) {
+  .explore-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .explore-card { min-height: 132px; }
+  .explore-extras { flex-direction: row; }
+  .explore-extra { flex: 1; }
+}
+
 .sticky-toolbar-shell {
   background: #F0F6FF;
   backdrop-filter: none;
@@ -3738,15 +3923,42 @@ img[data-latido-img-state="loaded"] {
   padding-bottom: max(14px, calc(env(safe-area-inset-bottom) + 8px));
 }
 
+/* Pill flotante: no llega a los bordes de la pantalla. */
 .bottom-nav {
   --bottom-nav-items: 5;
+  position: fixed;
+  z-index: 50;
+  right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 12px;
+  align-items: center;
+  min-height: 64px;
+  border-radius: 30px;
+}
+
+/* El fondo va en un pseudo-elemento para poder recortarle la muesca central sin
+   afectar a los iconos. drop-shadow sigue el alfa, asi el borde y la sombra
+   acompanan a la curva; border-top no puede hacerlo. */
+.bottom-nav::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: #fff;
+  /* Sin recorte: un hueco transparente dejaba ver la pagina por detras. El aro
+     alrededor de Publicar lo dibuja el propio boton con un collar opaco. */
+  border: 1px solid #BCCDE8;
+  box-shadow:
+    0 12px 30px rgba(15, 23, 42, .22),
+    0 3px 8px rgba(15, 23, 42, .12);
 }
 
 .bottom-nav-active-indicator {
   position: absolute;
   z-index: 1;
   left: 0;
-  bottom: calc(max(14px, calc(env(safe-area-inset-bottom) + 8px)) + 10px);
+  bottom: 10px;
   width: calc(100% / var(--bottom-nav-items));
   height: 3px;
   display: flex;
@@ -3782,6 +3994,49 @@ img[data-latido-img-state="loaded"] {
 
 .bottom-nav-label {
   transition: font-weight .2s ease, color .22s ease;
+}
+
+/* ── Publicar: accion central de la barra (sustituye al FAB flotante) ── */
+.bottom-nav-publish {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 10px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: #94A3B8;
+}
+
+.bottom-nav-publish-mark {
+  width: 48px;
+  height: 48px;
+  margin-top: -26px;
+  margin-bottom: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  display: inline-flex;
+  box-sizing: border-box;
+  background: conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .22);
+  transition: transform .24s cubic-bezier(.22, 1, .36, 1);
+}
+
+.bottom-nav-publish-mark > span {
+  flex: 1;
+  border-radius: 999px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.bottom-nav-publish:active .bottom-nav-publish-mark {
+  transform: scale(.94);
 }
 
 .sticky-form-actions {
@@ -3946,6 +4201,43 @@ img[data-latido-img-state="loaded"] {
   background: transparent;
   color: #101B34;
   font: 500 15px/1.4 'Poppins', sans-serif;
+}
+
+/* ── Modo pantalla (Explorar) ──
+   Va despues del bloque original a proposito: comparte especificidad y necesita
+   ganar el z-index para que la barra de navegacion inferior siga visible. */
+.latido-search-experience--page {
+  z-index: 30;
+}
+
+.latido-search-experience--page .latido-search-experience__shell {
+  box-shadow: none;
+}
+
+.latido-search-experience--page .latido-search-experience__content {
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
+}
+
+/* Vista inicial: titulo de pagina y buscador ocupando el ancho de contenido,
+   alineado con el padding lateral de .latido-search-section. */
+.latido-search-experience__header.is-page-start {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding-top: max(24px, calc(env(safe-area-inset-top) + 10px));
+  padding-right: 20px;
+  padding-bottom: 14px;
+  padding-left: 20px;
+}
+
+/* Mismo formato que el titulo de Mensajes. */
+.latido-search-experience__page-title {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  color: #0F172A;
 }
 
 .latido-search-experience__form input::placeholder {

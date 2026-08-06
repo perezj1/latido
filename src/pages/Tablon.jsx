@@ -13,6 +13,7 @@ import GlobalSearch from '../components/GlobalSearch'
 import SavedSearchButton from '../components/SavedSearchButton'
 import SearchRecoveryEmptyState from '../components/SearchRecoveryEmptyState'
 import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
+import SectionTabs from '../components/SectionTabs'
 import { getAdPath, getIdFromSlug, getJobPath } from '../lib/seo'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { getThumbnailImageUrl, handleThumbnailImageError } from '../lib/imageVariants'
@@ -327,7 +328,7 @@ function getTablonContext(cat='', isEmpleos=false, intentMeta=null) {
   if (isEmpleos) {
     return {
       title:'💼 Empleo',
-      subtitle:intentMeta?.label || 'Ofertas y solicitudes de empleo.',
+      subtitle:'Ofertas y solicitudes de empleo en un solo lugar.',
       resultLabel:'publicaciones de empleo',
       searchPlaceholder:'Buscar puesto, solicitud, empresa o sector...',
       emptyTitle:intentMeta?.emptyTitle || 'No hay empleos con estos filtros',
@@ -2041,8 +2042,9 @@ export default function Tablon() {
     setSelectedAd(ad || null)
   }, [ads, filteredJobs, jobs, loading, targetOpenAdId, targetOpenJobId])
 
-  const orderedCats = [...AD_CATS].sort((a, b) => {
-    const priority = { vivienda:0, empleo:1, venta:2, servicios:3, cuidados:4, documentos:5 }
+  // Empleo sale de las pildoras: ya es una seccion propia en SectionTabs.
+  const orderedCats = AD_CATS.filter(item => item.id !== 'empleo').sort((a, b) => {
+    const priority = { vivienda:0, venta:2, servicios:3, cuidados:4, documentos:5 }
     return (priority[a.id] ?? 99) - (priority[b.id] ?? 99)
   })
 
@@ -2059,20 +2061,9 @@ export default function Tablon() {
     <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px 100px' }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'24px 20px 0px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
-        <div>
-          <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, letterSpacing:0, marginBottom:4 }}>
-            {pageContext.title}
-          </h1>
-          <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.55, margin:'0 0 3px' }}>
-            {pageContext.subtitle}
-          </p>
-          {canton && (
-            <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>
-              📍 Cantón {canton}
-            </p>
-          )}
-        </div>
+      <div className="section-page-head">
+        <h1>{pageContext.title}</h1>
+        <p>{pageContext.subtitle}</p>
       </div>
 
         </div>
@@ -2081,6 +2072,7 @@ export default function Tablon() {
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:18, padding:'10px 0 12px' }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px', boxSizing:'border-box' }}>
           <div className="tablon-toolbar-card" style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)', boxSizing:'border-box' }}>
+      <SectionTabs />
       <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%', minWidth:0 }}>
         <div style={{ flex:'1 1 0', minWidth:0 }}>
           <GlobalSearch
@@ -2114,13 +2106,15 @@ export default function Tablon() {
           />
         </div>
       )}
-      <div style={{ marginTop:9 }}>
-        <CategoryPills
-          categories={orderedCats}
-          value={cat}
-          onChange={setCategoryView}
-        />
-      </div>
+      {!isEmpleos && (
+        <div style={{ marginTop:9 }}>
+          <CategoryPills
+            categories={orderedCats}
+            value={cat}
+            onChange={setCategoryView}
+          />
+        </div>
+      )}
       <div style={{ marginTop:11 }}>
         <IntentTabs
           views={toolbarIntentViews}
