@@ -18,7 +18,7 @@ import {
   CreatorProfileHelpfulMetric,
   DemoContentModal,
 } from './CreatorCards'
-import { Sheet } from './UI'
+import { EmptyState, Sheet } from './UI'
 import { FilterButton, FilterChips, FilterResultSummary, FILTER_PANEL_TITLE_STYLE } from './FilterWorkspace'
 import { C, PP } from '../lib/theme'
 import '../pages/Creators.css'
@@ -162,6 +162,7 @@ export default function CreatorCommunityView({
   location='',
   sort='newest',
   onResultCountChange,
+  onClearFilters,
 }) {
   const { user, isLoggedIn } = useAuth()
   const [creators, setCreators] = useState(() => getAllCreators())
@@ -214,6 +215,9 @@ export default function CreatorCommunityView({
   }, [filteredCreators.length, onResultCountChange])
 
   const creatorCta = ownCreator ? '/creadores/mi-perfil' : '/creadores/alta'
+  // Solo ofrecemos "Ver todo" si hay algo que limpiar; si el directorio esta
+  // vacio de verdad, el boton no llevaria a ningun sitio.
+  const hasFilters = Boolean(search || topic || platform || location)
 
   return (
     <div className="creator-community-view">
@@ -240,7 +244,15 @@ export default function CreatorCommunityView({
             </div>
           </div>
         ) : (
-          <div className="creator-community-empty">No hay publicaciones que coincidan con esta búsqueda.</div>
+          <EmptyState
+            emoji="🎬"
+            title={hasFilters ? 'No hay publicaciones con estos filtros' : 'Todavía no hay publicaciones'}
+            sub={hasFilters
+              ? 'Prueba otro tema o quita algún filtro.'
+              : 'Cuando los creadores publiquen, aparecerán aquí.'}
+            action={hasFilters ? 'Ver todo' : undefined}
+            onAction={hasFilters ? onClearFilters : undefined}
+          />
         )}
       </section>
 
@@ -252,8 +264,9 @@ export default function CreatorCommunityView({
           </div>
           <strong>{filteredCreators.length}</strong>
         </div>
-        <div className="creator-community-list">
-          {filteredCreators.map(creator => {
+        {filteredCreators.length ? (
+          <div className="creator-community-list">
+            {filteredCreators.map(creator => {
             const visibleTopics = (creator.topics || []).slice(0, 1)
             const remainingTopics = Math.max(0, (creator.topics || []).length - visibleTopics.length)
             return (
@@ -300,11 +313,19 @@ export default function CreatorCommunityView({
                 </span>
               </article>
             )
-          })}
-          {!filteredCreators.length && (
-            <div className="creator-community-empty">No encontramos perfiles con estos filtros.</div>
-          )}
-        </div>
+            })}
+          </div>
+        ) : (
+          <EmptyState
+            emoji="🎙️"
+            title={hasFilters ? 'No hay creadores con estos filtros' : 'Todavía no hay creadores'}
+            sub={hasFilters
+              ? 'Prueba otro tema, plataforma o cantón.'
+              : 'Crea el primer perfil y conecta tus redes con la comunidad.'}
+            action={hasFilters ? 'Ver todo' : undefined}
+            onAction={hasFilters ? onClearFilters : undefined}
+          />
+        )}
       </section>
 
       <div className="creator-community-cta">

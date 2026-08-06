@@ -88,7 +88,6 @@ export default function BottomNav() {
     if (tab.id === 'explorar') return isExploreRoute(pathname)
     return pathname.startsWith(tab.path)
   }
-  const activeTabIndex = TABS.findIndex(isTabActive)
 
   return (
     <>
@@ -125,15 +124,6 @@ export default function BottomNav() {
       )}
 
       {!hideMobileNav && <nav className="hide-md bottom-nav" style={{ transform: keyboardVisible && pathname.startsWith('/mensajes') ? 'translateY(calc(100% + 24px))' : 'translateZ(0)', transition:'transform 0.12s ease' }}>
-        {activeTabIndex >= 0 && (
-          <span
-            className="bottom-nav-active-indicator"
-            aria-hidden="true"
-            style={{ '--bottom-nav-active-index':activeTabIndex }}
-          >
-            <span />
-          </span>
-        )}
         {TABS.map(tab => {
           const active = isTabActive(tab)
           const needsNotificationDot = tab.id === 'perfil' && needsPushActivation
@@ -154,7 +144,6 @@ export default function BottomNav() {
                   <span>{tab.emoji}</span>
                 </span>
                 <span className="bottom-nav-label" style={{ fontFamily:PP, fontSize:9, fontWeight:500 }}>{tab.label}</span>
-                <span aria-hidden="true" style={{ width:20, height:3 }} />
               </button>
             )
           }
@@ -179,7 +168,6 @@ export default function BottomNav() {
                 )}
               </span>
               <span className="bottom-nav-label" style={{ fontFamily:PP, fontSize:9, fontWeight: active ? 700 : 500 }}>{tab.label}</span>
-              <span aria-hidden="true" style={{ width:20, height:3 }} />
             </Link>
           )
         })}

@@ -35,6 +35,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { SEARCHABLE_SITE_PAGES, getAdPath, getBusinessPath, getEventPath, getGuidePath, getJobPath } from '../lib/seo'
+import { getAllCreators, getCreatorPlatform, getCreatorThumbnailUrl, getCreatorTopic } from '../lib/creators'
 import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
 import { rotateItems, takeNextRotationOffset } from '../lib/rotation'
 import { buildSearchProfile, normalizeSearchText, profileHasIntent, scoreSearchFields } from '../lib/naturalSearch'
@@ -87,6 +88,7 @@ const EMPTY_DATASETS = Object.freeze({
   businesses:[],
   events:[],
   guides:[],
+  creators:[],
   pages:[],
 })
 
@@ -147,6 +149,8 @@ const TYPE_COLORS = {
   business:{ bg:'#FEF3C7', color:'#92400E', label:'Negocio' },
   event:{ bg:'#FCE7F3', color:'#9D174D', label:'Evento' },
   guide:{ bg:'#EDE9FE', color:'#6D28D9', label:'Guía' },
+  creator:{ bg:'#EDE9FE', color:'#7C3AED', label:'Creador' },
+  creator_content:{ bg:'#F3E8FF', color:'#6D28D9', label:'Publicación' },
   page:{ bg:'#F1F5F9', color:'#475569', label:'Página' },
 }
 
@@ -900,6 +904,7 @@ function buildFallbackData(isLoggedIn) {
     businesses: MOCK_NEGOCIOS.map(normalizeBusiness),
     events: MOCK_EVENTOS_LATINOS.map(normalizeEvent),
     guides: MOCK_DOCS.map(normalizeGuide),
+    creators: getAllCreators(),
     pages: SEARCHABLE_SITE_PAGES,
   }
 }
@@ -912,6 +917,7 @@ function buildRpcDatasets(rows, fallbackDatasets) {
     businesses:[],
     events:[],
     guides:fallbackDatasets.guides,
+    creators:fallbackDatasets.creators,
     pages:fallbackDatasets.pages,
   }
 
@@ -1294,6 +1300,80 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
         href:getGuidePath(guide),
         filterMeta:{ categories:['guias'] },
         searchScore,
+      })
+    }
+  }
+
+  for (const creator of datasets.creators || []) {
+    const topics = (creator.topics || [])
+      .map(topicId => getCreatorTopic(topicId)?.label)
+      .filter(Boolean)
+    const publishedContents = (creator.contents || []).filter(content => content.status === 'published')
+    const place = creator.city || creator.reach
+    const searchScore = getSearchScore([
+      { value:creator.name, weight:6 },
+      { value:creator.handle, weight:5 },
+      { value:creator.tagline, weight:4 },
+      { value:topics.join(' '), weight:3 },
+      { value:creator.bio, weight:2 },
+      { value:place, weight:2 },
+      { value:publishedContents.map(content => `${content.title} ${content.summary}`).join(' '), weight:2 },
+      { value:creator.canton, weight:1 },
+      { value:'creador creadores contenido redes', weight:1 },
+    ])
+    if (searchScore) {
+      results.push({
+        type:'creator',
+        id:creator.id,
+        icon:'\u{1F399}\u{FE0F}',
+        image:creator.avatar_url,
+        imageFit:'cover',
+        label:creator.name,
+        sub:['Creador', topics[0], place].filter(Boolean).join(metaSeparator),
+        href:`/creadores/${creator.slug}`,
+        filterMeta:{
+          categories:['creadores'],
+          canton:creator.canton,
+          location:creator.city,
+        },
+        searchScore,
+      })
+    }
+
+    // Las publicaciones se indexan aparte del perfil: al buscar el tema de un
+    // video se espera llegar al video, no a la ficha de quien lo publico.
+    for (const content of publishedContents) {
+      const topic = getCreatorTopic(content.topic)
+      const platform = getCreatorPlatform(content.platform)
+      const contentScore = getSearchScore([
+        { value:content.title, weight:6 },
+        { value:content.summary, weight:4 },
+        { value:topic?.label, weight:3 },
+        { value:creator.name, weight:2 },
+        { value:creator.handle, weight:2 },
+        { value:platform?.label, weight:1 },
+        { value:content.canton, weight:1 },
+        { value:'publicacion contenido creador', weight:1 },
+      ])
+      if (!contentScore) continue
+
+      // El destino natural es la publicacion original; las demo no salen de la app.
+      const externalUrl = !content.demo && /^https?:\/\//i.test(content.url || '') ? content.url : ''
+      results.push({
+        type:'creator_content',
+        id:content.id,
+        icon:topic?.emoji || '\u{1F399}\u{FE0F}',
+        image:getCreatorThumbnailUrl(content),
+        imageFit:'cover',
+        label:content.title,
+        sub:['Publicación', creator.name, platform?.label].filter(Boolean).join(metaSeparator),
+        href:externalUrl || `/creadores/${creator.slug}`,
+        filterMeta:{
+          categories:['creadores'],
+          canton:content.canton,
+          location:creator.city,
+        },
+        searchScore:contentScore,
       })
     }
   }
@@ -2100,6 +2180,7 @@ export default function GlobalSearch({
             ? fallbackDatasets.events
             : eventsRes.data.map(normalizeEvent),
           guides: fallbackDatasets.guides,
+          creators: fallbackDatasets.creators,
           pages: fallbackDatasets.pages,
         }
 
@@ -3031,7 +3112,7 @@ export default function GlobalSearch({
                           key={section.id}
                           type="button"
                           className="explore-card"
-                          style={{ '--explore-card-bg':section.gradient, '--explore-card-glow':section.glow }}
+                          style={{ '--explore-card-bg':section.gradient }}
                           onClick={() => {
                             if (!pageMode) setImmersiveOpen(false)
                             navigate(section.to)

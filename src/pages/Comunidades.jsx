@@ -2461,6 +2461,12 @@ export default function Comunidades() {
           location={creatorLocation}
           sort={creatorSort}
           onResultCountChange={setCreatorResultCount}
+          onClearFilters={() => {
+            setCreatorSearch('')
+            setCreatorTopic('')
+            setCreatorPlatform('')
+            setCreatorLocation('')
+          }}
         />
       )}
 

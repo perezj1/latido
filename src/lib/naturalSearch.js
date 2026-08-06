@@ -312,7 +312,7 @@ function computeWordsAreRelated(left, right) {
   }
 
   const isProfessionalSuffixExtension = (longer, shorter) => (
-    shorter.length >= 5
+    shorter.length >= 4
     && longer.startsWith(shorter)
     && ['ero', 'era', 'eria'].some(suffix => longer.endsWith(suffix))
   )
@@ -330,7 +330,10 @@ function computeWordsAreRelated(left, right) {
     return true
   }
 
-  return shortestLength >= 6 && (
+  // Prefijo: escribir "poke" debe llegar a "pokemon". El minimo son 4 letras
+  // para que fragmentos muy cortos no arrastren medio catalogo; la guarda de
+  // sufijo profesional de arriba evita los casos tipo "cama" -> "camarero".
+  return shortestLength >= 4 && (
     canonicalLeft.startsWith(canonicalRight) || canonicalRight.startsWith(canonicalLeft)
   )
 }

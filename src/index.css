@@ -140,6 +140,13 @@
   transition-timing-function: var(--latido-ease-standard);
 }
 
+/* Chrome pinta su propia X en input[type=search]; estos campos ya tienen la suya. */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 :where(input, textarea, select) {
   transition: border-color var(--latido-motion-fast) ease, box-shadow var(--latido-motion-fast) ease, background-color var(--latido-motion-fast) ease;
 }
@@ -2659,13 +2666,11 @@ img[data-latido-img-state="loaded"] {
   text-decoration: none;
   cursor: pointer;
   background: var(--explore-card-bg);
-  box-shadow: 0 10px 22px var(--explore-card-glow);
-  transition: transform .2s cubic-bezier(.22, 1, .36, 1), box-shadow .2s ease;
+  transition: transform .2s cubic-bezier(.22, 1, .36, 1);
 }
 
 .explore-card:active {
   transform: scale(.975);
-  box-shadow: 0 6px 14px var(--explore-card-glow);
 }
 
 .explore-card__label {
@@ -3694,7 +3699,6 @@ img[data-latido-img-state="loaded"] {
   .joined-segmented-tabs > button,
   .ui-segmented-tabs__indicator,
   .ui-segmented-tabs > button,
-  .bottom-nav-active-indicator,
   .bottom-nav-item,
   .bottom-nav-icon,
   .bottom-nav-label {
@@ -3925,7 +3929,6 @@ img[data-latido-img-state="loaded"] {
 
 /* Pill flotante: no llega a los bordes de la pantalla. */
 .bottom-nav {
-  --bottom-nav-items: 5;
   position: fixed;
   z-index: 50;
   right: 12px;
@@ -3952,28 +3955,6 @@ img[data-latido-img-state="loaded"] {
   box-shadow:
     0 12px 30px rgba(15, 23, 42, .22),
     0 3px 8px rgba(15, 23, 42, .12);
-}
-
-.bottom-nav-active-indicator {
-  position: absolute;
-  z-index: 1;
-  left: 0;
-  bottom: 10px;
-  width: calc(100% / var(--bottom-nav-items));
-  height: 3px;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-  transform: translateX(calc(var(--bottom-nav-active-index) * 100%));
-  transition: transform .32s cubic-bezier(.22, 1, .36, 1);
-}
-
-.bottom-nav-active-indicator > span {
-  width: 20px;
-  height: 3px;
-  border-radius: 999px;
-  background: #2864F0;
-  box-shadow: 0 2px 5px rgba(40, 100, 240, .22);
 }
 
 .bottom-nav-item {
@@ -4010,17 +3991,18 @@ img[data-latido-img-state="loaded"] {
   color: #94A3B8;
 }
 
+/* Alto en el flujo fijo en 24px (54 - 32 + 2), el mismo que el avatar de Perfil,
+   para que las cinco etiquetas sigan alineadas al crecer el circulo. */
 .bottom-nav-publish-mark {
-  width: 48px;
-  height: 48px;
-  margin-top: -26px;
+  width: 54px;
+  height: 54px;
+  margin-top: -32px;
   margin-bottom: 2px;
-  padding: 3px;
+  padding: 3.5px;
   border-radius: 999px;
   display: inline-flex;
   box-sizing: border-box;
   background: conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, .22);
   transition: transform .24s cubic-bezier(.22, 1, .36, 1);
 }
 
@@ -4031,7 +4013,7 @@ img[data-latido-img-state="loaded"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 19px;
+  font-size: 20px;
   line-height: 1;
 }
 

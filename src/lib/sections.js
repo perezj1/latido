@@ -8,7 +8,6 @@ export const EXPLORE_SECTIONS = [
     desc:'Vivienda, servicios, compraventa y trámites',
     to:'/tablon',
     gradient:'linear-gradient(150deg, #4C8DFF 0%, #1D4ED8 100%)',
-    glow:'rgba(37, 99, 235, .28)',
   },
   {
     id:'empleo',
@@ -17,7 +16,6 @@ export const EXPLORE_SECTIONS = [
     desc:'Ofertas y solicitudes de trabajo',
     to:'/tablon?cat=empleo',
     gradient:'linear-gradient(150deg, #34D6A4 0%, #0E9C74 100%)',
-    glow:'rgba(29, 189, 138, .28)',
   },
   {
     id:'negocios',
@@ -26,7 +24,6 @@ export const EXPLORE_SECTIONS = [
     desc:'Comercios y profesionales hispanohablantes',
     to:'/comunidades?view=negocios',
     gradient:'linear-gradient(150deg, #FFB84D 0%, #E08706 100%)',
-    glow:'rgba(245, 166, 35, .3)',
   },
   {
     id:'eventos',
@@ -35,7 +32,6 @@ export const EXPLORE_SECTIONS = [
     desc:'Conciertos, fiestas y quedadas con fecha',
     to:'/comunidades?view=eventos',
     gradient:'linear-gradient(150deg, #FF6F68 0%, #D22B24 100%)',
-    glow:'rgba(232, 64, 58, .28)',
   },
   {
     id:'grupos',
@@ -44,7 +40,6 @@ export const EXPLORE_SECTIONS = [
     desc:'Comunidades y chats por ciudad o interés',
     to:'/comunidades?view=comunidades',
     gradient:'linear-gradient(150deg, #3FD3E8 0%, #0296AB 100%)',
-    glow:'rgba(0, 188, 212, .28)',
   },
   {
     id:'creadores',
@@ -53,7 +48,6 @@ export const EXPLORE_SECTIONS = [
     desc:'Voces que cuentan Suiza en español',
     to:'/comunidades?view=creadores',
     gradient:'linear-gradient(150deg, #A78BFA 0%, #6D28D9 100%)',
-    glow:'rgba(124, 58, 237, .28)',
   },
 ]
 
