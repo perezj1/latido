@@ -5134,6 +5134,7 @@ export default function Admin() {
         <>
           <button
             type="button"
+            className="latido-overlay-backdrop latido-backdrop-hitbox"
             aria-label="Cerrar menú CRM"
             onClick={() => setCrmMenuOpen(false)}
             style={{
@@ -5146,6 +5147,7 @@ export default function Admin() {
             }}
           />
           <div
+            className="latido-sheet-panel"
             role="dialog"
             aria-label="Control CRM Latido"
             style={{

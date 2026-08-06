@@ -155,7 +155,7 @@ export default function DetailActionBar({
           <div
             role="menu"
             aria-label="Más opciones"
-            className={menuOpen ? 'fade-up' : ''}
+            className={menuOpen ? 'fade-up latido-action-menu' : 'latido-action-menu'}
             style={{
               display:menuOpen ? 'block' : 'none',
               position:'absolute',
@@ -251,7 +251,7 @@ export default function DetailActionBar({
         )}
 
         {expandedContent && (
-          <div style={{ background:C.bg, borderTop:`1px solid ${C.border}`, padding:'10px 16px', maxHeight:'60vh', overflowY:'auto' }}>
+          <div className="latido-expand-panel" style={{ background:C.bg, borderTop:`1px solid ${C.border}`, padding:'10px 16px', maxHeight:'60vh', overflowY:'auto' }}>
             {expandedContent}
           </div>
         )}

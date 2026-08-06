@@ -83,11 +83,11 @@ export default function BusinessPartnerContactModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby={`business-partner-contact-${partner.id}`}
-      className="business-partner-contact-overlay"
+      className="business-partner-contact-overlay latido-overlay-backdrop"
       onClick={onClose}
     >
       <section
-        className="mira-contact-card business-partner-contact-dialog"
+        className="mira-contact-card business-partner-contact-dialog latido-modal-panel"
         onClick={event => event.stopPropagation()}
       >
         <button

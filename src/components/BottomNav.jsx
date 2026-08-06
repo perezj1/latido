@@ -129,19 +129,21 @@ export default function BottomNav() {
       {/* Publish picker sheet */}
       {pickerOpen && (
         <div
+          className="latido-overlay-backdrop latido-publish-picker"
           onClick={() => window.history.back()}
           style={{ position:'fixed', inset:0, zIndex:260, background:'rgba(0,0,0,0.45)', display:'flex', flexDirection:'column', justifyContent:'flex-end' }}
         >
-          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:'24px 24px 0 0', padding:'16px 20px 40px' }}>
+          <div className="latido-sheet-panel latido-publish-picker__panel" onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:'24px 24px 0 0', padding:'16px 20px 40px' }}>
             <div style={{ width:36, height:4, background:'#E2EAF4', borderRadius:4, margin:'0 auto 20px' }} />
             <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:'#0F172A', marginBottom:6 }}>¿Qué quieres publicar?</p>
             <p style={{ fontFamily:PP, fontSize:12, color:'#64748B', marginBottom:20 }}>Elige el tipo de publicación</p>
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              {PUBLISH_OPTIONS.map(opt => (
+              {PUBLISH_OPTIONS.map((opt, index) => (
                 <button
                   key={opt.to}
+                  className="latido-publish-picker__option"
                   onClick={() => { setPickerOpen(false); navigate(opt.to) }}
-                  style={{ display:'flex', alignItems:'center', gap:14, background:'#F8FAFF', border:'1px solid #E2EAF4', borderRadius:16, padding:'14px 16px', cursor:'pointer', textAlign:'left' }}
+                  style={{ '--publish-option-index':index, display:'flex', alignItems:'center', gap:14, background:'#F8FAFF', border:'1px solid #E2EAF4', borderRadius:16, padding:'14px 16px', cursor:'pointer', textAlign:'left' }}
                 >
                   <div style={{ width:44, height:44, background:'#EFF6FF', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>{opt.emoji}</div>
                   <div>
