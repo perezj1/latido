@@ -294,14 +294,14 @@ export default function CreatorCommunityView({
         <>
           {contentRow(
             'community-creators-helpful-title',
-            activeTopic ? `🔥 LO QUE MÁS AYUDA EN ${activeTopic.label.toUpperCase()}` : '🔥 CONTENIDO QUE ESTÁ AYUDANDO',
+            activeTopic ? `🔥 LO QUE MÁS AYUDA EN ${activeTopic.label.toUpperCase()}` : '🔥 PUBLICACIONES QUE ESTÁN AYUDANDO',
             'Lo que más gente ha marcado como útil.',
             helpfulContents,
           )}
 
           {contentRow(
             'community-creators-latest-title',
-            'ÚLTIMOS CONTENIDOS',
+            'PUBLICACIONES RECIENTES',
             'Lo más reciente que ha publicado la comunidad.',
             latestContents,
           )}
@@ -347,18 +347,16 @@ export default function CreatorCommunityView({
           <strong>{contents.length}</strong>
         </div>
         {contents.length ? (
-          <div className="creator-community-content no-scroll">
-            <div>
-              {contents.map(({ content, creator }) => (
-                <CreatorAppContentCard
-                  key={content.id}
-                  content={content}
-                  creator={creator}
-                  discovery
-                  onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
-                />
-              ))}
-            </div>
+          <div className="creator-community-grid">
+            {contents.map(({ content, creator }) => (
+              <CreatorAppContentCard
+                key={content.id}
+                content={content}
+                creator={creator}
+                discovery
+                onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+              />
+            ))}
           </div>
         ) : (
           <EmptyState

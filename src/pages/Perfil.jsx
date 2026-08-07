@@ -2571,6 +2571,7 @@ export default function Perfil() {
           <div className="profile-followed-creators-list">
             {followedCreators.map(creator => (
               <article key={creator.id} className="profile-followed-creator-card">
+                <span className="profile-followed-creator-card__state">Siguiendo ✓</span>
                 <button type="button" className="profile-followed-creator-card__open" onClick={() => { setFollowedCreatorsOpen(false); navigate(`/creadores/${creator.slug}`) }}>
                   <CreatorAvatar creator={creator} size={52} />
                   <span>
@@ -2588,7 +2589,7 @@ export default function Perfil() {
                     toast.success(`Has dejado de seguir a ${creator.name}`)
                   }}
                 >
-                  Siguiendo ✓
+                  Dejar de seguir
                 </button>
               </article>
             ))}

@@ -1952,14 +1952,16 @@
 .creator-community-note strong { flex: 0 0 auto; color: #0f172a; }
 
 .profile-followed-creators-list { display: grid; gap: 9px; }
-.profile-followed-creator-card { display: grid; padding: 12px; grid-template-columns: minmax(0,1fr) auto; gap: 9px; align-items: center; background: #fff; border: 1px solid #dce6f2; border-radius: 17px; }
+.profile-followed-creator-card { position: relative; display: grid; padding: 12px; grid-template-columns: minmax(0,1fr) auto; gap: 9px; align-items: center; background: #fff; border: 1px solid #dce6f2; border-radius: 17px; }
+/* El estado va como pastilla en la esquina; el boton de abajo es la accion. */
+.profile-followed-creator-card__state { position: absolute; top: 10px; right: 11px; padding: 4px 8px; color: #0f766e; background: #ecfdf5; border: 1px solid #99f6e4; border-radius: 999px; font: 800 7.5px/1 'Poppins', system-ui, sans-serif; }
 .profile-followed-creator-card__open { display: flex; min-width: 0; padding: 0; align-items: center; gap: 11px; color: inherit; background: transparent; border: 0; text-align: left; cursor: pointer; }
 .profile-followed-creator-card__open > span { display: flex; min-width: 0; flex-direction: column; }
-.profile-followed-creator-card__open > span > strong { overflow: hidden; color: #102a5c; font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
+.profile-followed-creator-card__open > span > strong { overflow: hidden; padding-right: 66px; color: #102a5c; font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
 .profile-followed-creator-card__open > span > small { margin-top: 2px; color: #94a3b8; font-size: 7.5px; }
 .profile-followed-creator-card__open > span > span:not(.profile-followed-creator-card__topics) { display: -webkit-box; overflow: hidden; margin-top: 4px; color: #64748b; font-size: 8.5px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .profile-followed-creator-card__topics { display: flex; margin-top: 6px; flex-wrap: wrap; gap: 4px; }
-.profile-followed-creator-card__remove { min-height: 34px; padding: 0 10px; color: #0f766e; background: #ecfdf5; border: 1px solid #99f6e4; border-radius: 10px; font: 800 8px/1.2 'Poppins', system-ui, sans-serif; cursor: pointer; }
+.profile-followed-creator-card__remove { min-height: 34px; padding: 0 12px; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; font: 800 8px/1.2 'Poppins', system-ui, sans-serif; cursor: pointer; }
 .profile-followed-creators-empty { padding: 36px 18px; text-align: center; }
 .profile-followed-creators-empty > div { margin-bottom: 9px; font-size: 42px; }
 .profile-followed-creators-empty strong { display: block; color: #102a5c; font-size: 14px; }
@@ -2235,3 +2237,46 @@
 
 .creator-impact-help > strong,
 .creator-impact-rank > strong { font-size: 13px; font-weight: 900; }
+
+/* Play sobre la miniatura, como en el reproductor. Va encima de la imagen pero
+   por debajo de la etiqueta DEMO, que sigue mandando en la esquina. */
+.creator-home-content-card__play {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(15, 23, 42, .55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, .3);
+  font-size: 12px;
+  line-height: 1;
+  padding-left: 2px;
+}
+
+/* La lista completa de publicaciones va en rejilla, no en carrusel: aquí puede
+   haber muchas y desplazarlas de lado a lado esconde la mayoría. Las filas de
+   descubrimiento de arriba sí siguen siendo carrusel, porque están limitadas. */
+.creator-community-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.creator-community-grid .creator-app-content-card {
+  width: 100%;
+  height: auto;
+  min-height: 211px;
+  flex: none;
+}
+
+@media (min-width: 681px) {
+  .creator-community-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+}

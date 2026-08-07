@@ -19,6 +19,8 @@ import {
 import { C, PP } from '../lib/theme'
 import ReportButton from './ReportButton'
 
+const PLAYABLE_CONTENT_PLATFORMS = new Set(['youtube', 'tiktok', 'instagram', 'spotify'])
+
 function useCreatorInteraction({ action, targetType, targetId, baseCount = 0 }) {
   const { user } = useAuth()
   const actorId = user?.id || ''
@@ -449,6 +451,9 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
   const topic = getCreatorTopic(content.topic)
   const platform = getCreatorPlatform(content.platform)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
+  // Play solo en plataformas de video o audio. Una web o un articulo abren su
+  // pagina, y ponerles play prometeria una reproduccion que no ocurre.
+  const isPlayable = PLAYABLE_CONTENT_PLATFORMS.has(content.platform)
   const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
   useEffect(() => {
     if (!editor) trackCreatorImpression(creator.id, 'content', content.id)
@@ -469,6 +474,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
           <span className="creator-home-content-card__media" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
             <span className="creator-home-content-card__emoji">{topic.emoji}</span>
             {thumbnailUrl && <img className="creator-home-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
+            {isPlayable && <span className="creator-home-content-card__play" aria-hidden="true">▶</span>}
           </span>
           <span className="creator-home-content-card__copy">
             <strong>{content.title}</strong>
