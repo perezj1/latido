@@ -66,10 +66,10 @@ export default function SynaPartnerContact() {
         </div>
 
         <div className="mira-contact-actions">
-          <ContactAction href={WHATSAPP_HREF} icon="WA" label="WhatsApp" value={PHONE_DISPLAY} external onClick={() => trackContactClick('whatsapp', WHATSAPP_HREF)} />
-          <ContactAction href={PHONE_HREF} icon="Tel" label="Llamadas" value={PHONE_DISPLAY} onClick={() => trackContactClick('phone', PHONE_HREF)} />
-          <ContactAction href={`mailto:${EMAIL}`} icon="@" label="Email" value={EMAIL} onClick={() => trackContactClick('email', `mailto:${EMAIL}`)} />
-          <ContactAction href={WEBSITE} icon="Web" label="Web" value="syna.ch/luzern" external onClick={() => trackContactClick('website', WEBSITE)} />
+          <ContactAction href={WHATSAPP_HREF} icon="💬" label="WhatsApp" value={PHONE_DISPLAY} external onClick={() => trackContactClick('whatsapp', WHATSAPP_HREF)} />
+          <ContactAction href={PHONE_HREF} icon="📞" label="Llamadas" value={PHONE_DISPLAY} onClick={() => trackContactClick('phone', PHONE_HREF)} />
+          <ContactAction href={`mailto:${EMAIL}`} icon="✉️" label="Email" value={EMAIL} onClick={() => trackContactClick('email', `mailto:${EMAIL}`)} />
+          <ContactAction href={WEBSITE} icon="🌐" label="Web" value="syna.ch/luzern" external onClick={() => trackContactClick('website', WEBSITE)} />
         </div>
 
         <Link to="/" className="mira-contact-back">

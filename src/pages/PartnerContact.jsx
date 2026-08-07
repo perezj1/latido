@@ -63,8 +63,8 @@ export default function PartnerContact() {
         </div>
 
         <div className="mira-contact-actions">
-          <ContactAction href={PHONE_HREF} icon="Tel" label="Teléfono" value={PHONE_DISPLAY} onClick={() => trackContactClick('phone', PHONE_HREF)} />
-          <ContactAction href={`mailto:${EMAIL}`} icon="@" label="Email" value={EMAIL} onClick={() => trackContactClick('email', `mailto:${EMAIL}`)} />
+          <ContactAction href={PHONE_HREF} icon="📞" label="Teléfono" value={PHONE_DISPLAY} onClick={() => trackContactClick('phone', PHONE_HREF)} />
+          <ContactAction href={`mailto:${EMAIL}`} icon="✉️" label="Email" value={EMAIL} onClick={() => trackContactClick('email', `mailto:${EMAIL}`)} />
         </div>
 
         <Link to="/" className="mira-contact-back">
