@@ -105,7 +105,11 @@
 .latido-overlay-backdrop { animation: fadeIn 180ms ease-out both; }
 .latido-sheet-panel { animation: latido-sheet-in 300ms var(--latido-ease-emphasized) both; }
 .latido-modal-panel { animation: latido-modal-in 240ms var(--latido-ease-emphasized) both; }
-.latido-fullpage-enter { animation: latido-page-right-in 260ms var(--latido-ease-emphasized) both; }
+/* `backwards` y no `both`: con `both` el transform final quedaba aplicado de
+   forma permanente, y un ancestro con transform pasa a ser el bloque contenedor
+   de sus hijos `position: fixed`. La barra de acciones dejaba de anclarse al
+   viewport y se desplazaba con el contenido. */
+.latido-fullpage-enter { animation: latido-page-right-in 260ms var(--latido-ease-emphasized) backwards; }
 .latido-nav-menu,
 .latido-action-menu,
 .latido-expand-panel {
