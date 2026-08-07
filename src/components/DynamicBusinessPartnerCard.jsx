@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import PartnerCard from './PartnerCard'
 import BusinessPartnerContactModal from './BusinessPartnerContactModal'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
-import { getBusinessPartnerCardServiceLabel } from '../lib/businessPartnerOverrides'
+import { getBusinessPartnerCardServiceLabel, hasBusinessPartnerBareLogo } from '../lib/businessPartnerOverrides'
 
 const SERVICE_COLORS = [
   ['#2563EB', '#EFF6FF'],
@@ -86,6 +86,7 @@ export default function DynamicBusinessPartnerCard({
         brand={{
           partnerName:partner.name,
           partnerLogo:partner.logoUrl,
+          logoBare:hasBusinessPartnerBareLogo(partner.id),
         }}
         title={partner.title}
         description={partner.description}
