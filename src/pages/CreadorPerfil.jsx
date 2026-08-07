@@ -67,9 +67,13 @@ export default function CreadorPerfil() {
 
   useEffect(() => {
     if (!creator || !requestedContentId) return
-    const content = getCreatorContentsNewestFirst(creator, { publishedOnly:true })
-      .find(item => String(item.id) === requestedContentId)
-    if (content) setPreview({ content, creator })
+    const contents = getCreatorContentsNewestFirst(creator, { publishedOnly:true })
+    const content = contents.find(item => String(item.id) === requestedContentId)
+    if (content) setPreview({
+      content,
+      creator,
+      playlist:contents.map(item => ({ content:item, creator })),
+    })
   }, [creator, requestedContentId])
 
   useEffect(() => {
@@ -265,7 +269,11 @@ export default function CreadorPerfil() {
                       content={content}
                       creator={creator}
                       discovery
-                      onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                      onContentOpen={(selectedContent, selectedCreator) => setPreview({
+                        content:selectedContent,
+                        creator:selectedCreator,
+                        playlist:featuredContents.map(item => ({ content:item, creator })),
+                      })}
                     />
                   </div>
                 ))}
@@ -294,7 +302,11 @@ export default function CreadorPerfil() {
                   content={content}
                   creator={creator}
                   discovery
-                  onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                  onContentOpen={(selectedContent, selectedCreator) => setPreview({
+                    content:selectedContent,
+                    creator:selectedCreator,
+                    playlist:publishedContents.map(item => ({ content:item, creator })),
+                  })}
                 />
               ))}
             </div>
@@ -324,7 +336,12 @@ export default function CreadorPerfil() {
         </section>
       </div>
 
-      <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={closePreview} />
+      <CreatorContentModal
+        content={preview?.content}
+        creator={preview?.creator}
+        playlist={preview?.playlist}
+        onClose={closePreview}
+      />
     </div>
   )
 }

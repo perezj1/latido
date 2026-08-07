@@ -307,14 +307,18 @@ export default function CreadorPanel() {
     )
   }
 
-  const renderContentCard = content => (
+  const renderContentCard = (content, contents) => (
     <CreatorAppContentCard
       content={content}
       creator={creator}
       discovery
       editor
       managementActions={managementActions(content)}
-      onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+      onContentOpen={(selectedContent, selectedCreator) => setPreview({
+        content:selectedContent,
+        creator:selectedCreator,
+        playlist:contents.map(item => ({ content:item, creator })),
+      })}
     />
   )
 
@@ -386,7 +390,7 @@ export default function CreadorPanel() {
           {featuredContents.length ? (
             <div className="creator-home-scroll no-scroll">
               <div className="creator-home-scroll__track">
-                {featuredContents.map(content => <div key={content.id} className="creator-home-scroll__item">{renderContentCard(content)}</div>)}
+                {featuredContents.map(content => <div key={content.id} className="creator-home-scroll__item">{renderContentCard(content, featuredContents)}</div>)}
               </div>
             </div>
           ) : <div className="creators-empty">Marca una publicación como destacada desde la sección Todos.</div>}
@@ -399,7 +403,7 @@ export default function CreadorPanel() {
           </div>
           {publishedContents.length ? (
             <div className="creator-profile-six-grid">
-              {publishedContents.map(content => <div key={content.id} className="creator-editor-grid-item">{renderContentCard(content)}</div>)}
+              {publishedContents.map(content => <div key={content.id} className="creator-editor-grid-item">{renderContentCard(content, publishedContents)}</div>)}
             </div>
           ) : (
             <button type="button" className="creator-editor-empty-content" onClick={() => navigate('/publicar-contenido')}>＋ Añadir mi primera publicación</button>
@@ -462,7 +466,12 @@ export default function CreadorPanel() {
           <button type="button" onClick={resetPrototype}>Reiniciar mi prueba</button>
         </div>
       </div>
-      <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
+      <CreatorContentModal
+        content={preview?.content}
+        creator={preview?.creator}
+        playlist={preview?.playlist}
+        onClose={() => setPreview(null)}
+      />
     </div>
   )
 }

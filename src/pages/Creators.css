@@ -1400,6 +1400,43 @@
   overflow: hidden;
 }
 
+/* Los embeds externos capturan sus propios gestos. Estas dos franjas estrechas
+   permiten iniciar el deslizamiento vertical desde el borde sin tapar los controles del
+   reproductor; el teclado sigue disponible como alternativa. */
+.creator-video-modal__edge-swipe {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  touch-action: none;
+}
+.creator-video-modal__edge-swipe.is-left { left: 0; }
+.creator-video-modal__edge-swipe.is-right { right: 0; }
+
+.creator-video-modal__carousel-arrow {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  color: #fff;
+  background: rgba(15,23,42,.72);
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 50%;
+  box-shadow: 0 5px 16px rgba(0,0,0,.28);
+  transform: translateY(-50%);
+  cursor: pointer;
+  place-items: center;
+  backdrop-filter: blur(5px);
+}
+.creator-video-modal__carousel-arrow.is-previous { left: 8px; }
+.creator-video-modal__carousel-arrow.is-next { right: 8px; }
+.creator-video-modal__carousel-arrow:disabled { visibility: hidden; }
+.creator-video-modal__carousel-arrow:not(:disabled):active { transform: translateY(-50%) scale(.94); }
+
 .creator-video-modal__loading span {
   color: #fff;
   font: 700 11px/1.5 'Poppins', system-ui, sans-serif;
@@ -1416,15 +1453,17 @@
   display: flex;
   padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
   flex: 0 0 auto;
+  align-items: center;
   justify-content: center;
   background: #fff;
   border-top: 1px solid #e2e8f0;
 }
 
-.creator-video-modal__footer > div {
+.creator-video-modal__footer-actions {
   display: grid;
   width: min(480px, 100%);
-  grid-template-columns: 1fr 1fr;
+  /* Los tres secundarios ocupan lo justo; abrir la red se lleva el resto. */
+  grid-template-columns: auto auto auto minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -1441,6 +1480,7 @@
 }
 
 .creator-video-modal__footer a {
+  gap: 7px;
   color: #fff;
   background: #2563eb;
   border: 1px solid #2563eb;
@@ -1452,6 +1492,26 @@
   background: #fff;
   border: 1px solid #bfdbfe;
 }
+
+/* Los secundarios son cuadrados, para que el primario tenga sitio. */
+.creator-video-modal__back,
+.creator-video-modal__profile,
+.creator-video-modal__helpful {
+  width: 48px;
+  min-width: 48px;
+  gap: 5px;
+  padding: 0;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.creator-video-modal__helpful { width: auto; min-width: 56px; padding: 0 11px; }
+
+.creator-video-modal__profile {
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.creator-video-modal__helpful.is-active { color: #e11d48 !important; border-color: #fecdd3 !important; }
 
 .creator-video-modal__fallback::after {
   position: absolute;

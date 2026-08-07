@@ -280,7 +280,11 @@ export default function CreatorCommunityView({
               content={content}
               creator={creator}
               discovery
-              onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+              onContentOpen={(selectedContent, selectedCreator) => setPreview({
+                content:selectedContent,
+                creator:selectedCreator,
+                playlist:entries,
+              })}
             />
           ))}
         </div>
@@ -354,7 +358,11 @@ export default function CreatorCommunityView({
                 content={content}
                 creator={creator}
                 discovery
-                onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                onContentOpen={(selectedContent, selectedCreator) => setPreview({
+                  content:selectedContent,
+                  creator:selectedCreator,
+                  playlist:contents,
+                })}
               />
             ))}
           </div>
@@ -467,7 +475,12 @@ export default function CreatorCommunityView({
         <span>Los vídeos compatibles se reproducen en Latido. Siempre puedes abrir la publicación en su plataforma original.</span>
       </div>
 
-      <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
+      <CreatorContentModal
+        content={preview?.content}
+        creator={preview?.creator}
+        playlist={preview?.playlist}
+        onClose={() => setPreview(null)}
+      />
     </div>
   )
 }

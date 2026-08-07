@@ -77,13 +77,22 @@ export default function CreatorHomeSection() {
                     content={content}
                     creator={creator}
                     discovery
-                    onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                    onContentOpen={(selectedContent, selectedCreator) => setPreview({
+                      content:selectedContent,
+                      creator:selectedCreator,
+                      playlist:featured,
+                    })}
                   />
                 </div>
               ))}
             </div>
           </div>
-          <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
+          <CreatorContentModal
+            content={preview?.content}
+            creator={preview?.creator}
+            playlist={preview?.playlist}
+            onClose={() => setPreview(null)}
+          />
         </section>
       )}
 

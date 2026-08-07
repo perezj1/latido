@@ -222,7 +222,11 @@ export default function Creadores() {
                 key={content.id}
                 content={content}
                 creator={creator}
-                onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                onContentOpen={(selectedContent, selectedCreator) => setPreview({
+                  content:selectedContent,
+                  creator:selectedCreator,
+                  playlist:featuredContents,
+                })}
               />
             ))}
             {!featuredContents.length && (
@@ -247,7 +251,12 @@ export default function Creadores() {
         </section>
       </main>
 
-      <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
+      <CreatorContentModal
+        content={preview?.content}
+        creator={preview?.creator}
+        playlist={preview?.playlist}
+        onClose={() => setPreview(null)}
+      />
     </div>
   )
 }

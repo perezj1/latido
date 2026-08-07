@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
+import { ChevronRight, Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import {
   getCreatorInteractionState,
@@ -17,9 +17,39 @@ import {
   trackCreatorMetric,
 } from '../lib/creators'
 import { C, PP } from '../lib/theme'
+import { ChevronLeftIcon } from './UI'
 import ReportButton from './ReportButton'
 
 const PLAYABLE_CONTENT_PLATFORMS = new Set(['youtube', 'tiktok', 'instagram', 'spotify'])
+const VIDEO_CAROUSEL_PLATFORMS = new Set(['youtube', 'tiktok', 'instagram'])
+
+function getCreatorContentEntryKey(content, creator) {
+  return `${creator?.id || creator?.slug || ''}:${content?.id || ''}`
+}
+
+function normalizeCreatorVideoPlaylist(playlist, content, creator) {
+  const fallback = content && creator ? [{ content, creator }] : []
+  const candidates = Array.isArray(playlist) && playlist.length ? playlist : fallback
+  const uniqueEntries = []
+  const seen = new Set()
+
+  candidates.forEach(entry => {
+    const normalized = entry?.content && entry?.creator
+      ? { ...entry, content:entry.content, creator:entry.creator }
+      : entry?.id && creator ? { content:entry, creator } : null
+    if (!normalized?.content || !normalized?.creator) return
+    const key = getCreatorContentEntryKey(normalized.content, normalized.creator)
+    if (seen.has(key)) return
+    seen.add(key)
+    uniqueEntries.push(normalized)
+  })
+
+  const videos = uniqueEntries.filter(entry => VIDEO_CAROUSEL_PLATFORMS.has(entry.content.platform))
+  const selectedKey = getCreatorContentEntryKey(content, creator)
+  return videos.some(entry => getCreatorContentEntryKey(entry.content, entry.creator) === selectedKey)
+    ? videos
+    : fallback
+}
 
 function useCreatorInteraction({ action, targetType, targetId, baseCount = 0 }) {
   const { user } = useAuth()
@@ -514,26 +544,63 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
   )
 }
 
-export function CreatorContentModal({ content, creator, onClose }) {
+export function CreatorContentModal({ content, creator, playlist=[], onClose }) {
   const closeRef = useRef(null)
-  const topic = getCreatorTopic(content?.topic)
-  const thumbnailUrl = getCreatorThumbnailUrl(content)
-  const directEmbed = content?.demo ? null : getCreatorVideoEmbed(content)
+  const swipeStartRef = useRef(null)
+  const playlistEntries = useMemo(
+    () => normalizeCreatorVideoPlaylist(playlist, content, creator),
+    [content, creator, playlist],
+  )
+  const [activeIndex, setActiveIndex] = useState(0)
+  const activeEntry = playlistEntries[activeIndex] || playlistEntries[0] || { content, creator }
+  const activeContent = activeEntry?.content
+  const activeCreator = activeEntry?.creator
+  const topic = getCreatorTopic(activeContent?.topic)
+  const thumbnailUrl = getCreatorThumbnailUrl(activeContent)
+  const directEmbed = activeContent?.demo ? null : getCreatorVideoEmbed(activeContent)
   const [resolvedEmbed, setResolvedEmbed] = useState(null)
   const [resolvingEmbed, setResolvingEmbed] = useState(false)
   const embed = directEmbed || resolvedEmbed
-  const platform = getCreatorPlatform(embed?.platform || content?.platform)
+  const platform = getCreatorPlatform(embed?.platform || activeContent?.platform)
+  const hasPrevious = activeIndex > 0
+  const hasNext = activeIndex < playlistEntries.length - 1
+  const hasPlaylist = playlistEntries.length > 1
+  // Va antes del return temprano de abajo para no romper el orden de hooks.
+  const helpful = useCreatorInteraction({
+    action:'helpful',
+    targetType:'content',
+    targetId:activeContent?.id,
+    baseCount:activeContent?.helpful_count,
+  })
+
+  const goToIndex = nextIndex => {
+    if (nextIndex < 0 || nextIndex >= playlistEntries.length || nextIndex === activeIndex) return
+    const nextEntry = playlistEntries[nextIndex]
+    if (!nextEntry?.content || !nextEntry?.creator) return
+    if (!nextEntry.content.demo) trackCreatorMetric(nextEntry.creator.id, 'content_click', nextEntry.content.id)
+    trackCreatorImpression(nextEntry.creator.id, 'content', nextEntry.content.id)
+    setActiveIndex(nextIndex)
+  }
+
+  useEffect(() => {
+    if (!content || !creator) return
+    const selectedKey = getCreatorContentEntryKey(content, creator)
+    const selectedIndex = playlistEntries.findIndex(entry => (
+      getCreatorContentEntryKey(entry.content, entry.creator) === selectedKey
+    ))
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0)
+  }, [content, creator, playlistEntries])
 
   useEffect(() => {
     setResolvedEmbed(null)
-    if (!content || content.demo || directEmbed) {
+    if (!activeContent || activeContent.demo || directEmbed) {
       setResolvingEmbed(false)
       return undefined
     }
 
     const controller = new AbortController()
     setResolvingEmbed(true)
-    resolveCreatorVideoEmbed(content, { signal:controller.signal })
+    resolveCreatorVideoEmbed(activeContent, { signal:controller.signal })
       .then(result => {
         if (result) setResolvedEmbed(result)
       })
@@ -545,7 +612,7 @@ export function CreatorContentModal({ content, creator, onClose }) {
       })
 
     return () => controller.abort()
-  }, [content, directEmbed?.src])
+  }, [activeContent, directEmbed?.src])
 
   useEffect(() => {
     if (!content || !creator) return undefined
@@ -562,21 +629,51 @@ export function CreatorContentModal({ content, creator, onClose }) {
     }
   }, [content, creator, onClose])
 
-  if (!content || !creator) return null
+  useEffect(() => {
+    if (!hasPlaylist) return undefined
+    const navigateWithKeyboard = event => {
+      if (event.key === 'ArrowDown') goToIndex(activeIndex - 1)
+      if (event.key === 'ArrowUp') goToIndex(activeIndex + 1)
+    }
+    window.addEventListener('keydown', navigateWithKeyboard)
+    return () => window.removeEventListener('keydown', navigateWithKeyboard)
+  }, [activeIndex, hasPlaylist, playlistEntries])
+
+  const handleTouchStart = event => {
+    const touch = event.touches?.[0]
+    if (!touch) return
+    swipeStartRef.current = { x:touch.clientX, y:touch.clientY, at:Date.now() }
+  }
+
+  const handleTouchEnd = event => {
+    const start = swipeStartRef.current
+    const touch = event.changedTouches?.[0]
+    swipeStartRef.current = null
+    if (!start || !touch || Date.now() - start.at > 900) return
+    const deltaY = touch.clientY - start.y
+    const deltaX = touch.clientX - start.x
+    if (Math.abs(deltaY) < 44 || Math.abs(deltaY) <= Math.abs(deltaX) * 1.15) return
+    if (deltaY < 0) goToIndex(activeIndex + 1)
+    else goToIndex(activeIndex - 1)
+  }
+
+  if (!activeContent || !activeCreator) return null
 
   return (
-    <div className={`creator-modal-backdrop latido-overlay-backdrop${content.demo ? '' : ' creator-modal-backdrop--video'}`} role="presentation" onMouseDown={event => {
+    <div className={`creator-modal-backdrop latido-overlay-backdrop${activeContent.demo ? '' : ' creator-modal-backdrop--video'}`} role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) onClose?.()
     }}>
       <section
-        className={`creator-preview-modal latido-modal-panel${content.demo ? '' : ' creator-video-modal'}`}
+        className={`creator-preview-modal latido-modal-panel${activeContent.demo ? '' : ' creator-video-modal'}${hasPlaylist ? ' has-playlist' : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={content.demo ? 'creator-preview-title' : undefined}
-        aria-label={content.demo ? undefined : `${content.title} en ${platform.label}`}
+        aria-labelledby={activeContent.demo ? 'creator-preview-title' : undefined}
+        aria-label={activeContent.demo ? undefined : `${activeContent.title} en ${platform.label}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        {content.demo && <button ref={closeRef} className="creator-modal-close" type="button" onClick={onClose} aria-label="Cerrar">×</button>}
-        {content.demo ? (
+        {activeContent.demo && <button ref={closeRef} className="creator-modal-close" type="button" onClick={onClose} aria-label="Cerrar">×</button>}
+        {activeContent.demo ? (
           <div className="creator-preview-modal__visual" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
             <span>{topic.emoji}</span>
             {thumbnailUrl && <img className="creator-preview-modal__thumbnail" src={thumbnailUrl} alt="" onError={event => event.currentTarget.remove()} />}
@@ -584,20 +681,44 @@ export function CreatorContentModal({ content, creator, onClose }) {
           </div>
         ) : resolvingEmbed ? (
           <div className="creator-video-modal__player creator-video-modal__loading" role="status">
-            <span>Preparando vídeo de TikTok…</span>
+            <span>Preparando vídeo de {platform.label}…</span>
           </div>
         ) : embed ? (
           <div className={`creator-video-modal__player${embed.vertical ? ' is-vertical' : ''} is-${embed.platform}`}>
             <iframe
               key={embed.src}
               src={embed.src}
-              title={`${content.title} en ${platform.label}`}
+              title={`${activeContent.title} en ${platform.label}`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               lang="es"
               referrerPolicy="strict-origin-when-cross-origin"
               scrolling="no"
             />
+            {hasPlaylist && (
+              <>
+                <button
+                  type="button"
+                  className="creator-video-modal__carousel-arrow is-previous"
+                  onClick={() => goToIndex(activeIndex - 1)}
+                  disabled={!hasPrevious}
+                  aria-label="Vídeo anterior"
+                >
+                  <ChevronLeftIcon size={19} />
+                </button>
+                <button
+                  type="button"
+                  className="creator-video-modal__carousel-arrow is-next"
+                  onClick={() => goToIndex(activeIndex + 1)}
+                  disabled={!hasNext}
+                  aria-label="Vídeo siguiente"
+                >
+                  <ChevronRight aria-hidden="true" size={19} strokeWidth={2.2} />
+                </button>
+                <span className="creator-video-modal__edge-swipe is-left" aria-hidden="true" />
+                <span className="creator-video-modal__edge-swipe is-right" aria-hidden="true" />
+              </>
+            )}
           </div>
         ) : (
           <div className="creator-preview-modal__visual creator-video-modal__fallback" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
@@ -606,31 +727,70 @@ export function CreatorContentModal({ content, creator, onClose }) {
             <span className="creator-preview-modal__play">▶</span>
           </div>
         )}
-        {content.demo ? (
+        {activeContent.demo ? (
           <div className="creator-preview-modal__body">
             <span className="creator-demo-label">DEMOSTRACIÓN INTERACTIVA</span>
-            <h2 id="creator-preview-title">{content.title}</h2>
-            {content.summary && <p>{content.summary}</p>}
+            <h2 id="creator-preview-title">{activeContent.title}</h2>
+            {activeContent.summary && <p>{activeContent.summary}</p>}
             <div className="creator-preview-modal__byline">
-              <CreatorAvatar creator={creator} size={42} />
+              <CreatorAvatar creator={activeCreator} size={42} />
               <div>
-                <strong>{creator.name}</strong>
-                <span>{formatCreatorHandle(creator.handle)} · {platform.label}</span>
+                <strong>{activeCreator.name}</strong>
+                <span>{formatCreatorHandle(activeCreator.handle)} · {platform.label}</span>
               </div>
             </div>
             <div className="creator-preview-modal__notice">
               Esta ficha simula una publicación externa. Los vídeos reales compatibles se reproducen aquí sin salir de Latido.
             </div>
             <div className="creator-preview-modal__actions">
-              <Link to={`/creadores/${creator.slug}`} onClick={onClose}>Ver perfil completo</Link>
+              <Link to={`/creadores/${activeCreator.slug}`} onClick={onClose}>Ver perfil completo</Link>
               <button type="button" onClick={onClose}>Cerrar</button>
             </div>
           </div>
         ) : (
           <div className="creator-video-modal__footer">
-            <div>
-              <button ref={closeRef} type="button" onClick={onClose}>Volver</button>
-              <a href={content.url} target="_blank" rel="noopener noreferrer">Abrir en {platform.label}</a>
+            <div className="creator-video-modal__footer-actions">
+              <button
+                ref={closeRef}
+                type="button"
+                className="creator-video-modal__back"
+                onClick={onClose}
+                aria-label="Volver"
+              >
+                <ChevronLeftIcon size={18} />
+              </button>
+              <button
+                type="button"
+                className={`creator-video-modal__helpful${helpful.active ? ' is-active' : ''}`}
+                onClick={() => {
+                  try {
+                    helpful.toggle()
+                  } catch {
+                    toast.error('No se pudo guardar esta valoración')
+                  }
+                }}
+                aria-label="Me ayudó"
+                aria-pressed={helpful.active}
+              >
+                <HeartOutlineIcon active={helpful.active} />
+                {helpful.count > 0 && <span>{helpful.count}</span>}
+              </button>
+              <Link
+                className="creator-video-modal__profile"
+                to={`/creadores/${activeCreator.slug}`}
+                onClick={onClose}
+                aria-label={`Ver el perfil de ${activeCreator.name} en Latido`}
+              >
+                <ProfileOutlineIcon />
+              </Link>
+              <a
+                className="creator-video-modal__open"
+                href={activeContent.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Ver en {platform.label}
+              </a>
             </div>
           </div>
         )}
