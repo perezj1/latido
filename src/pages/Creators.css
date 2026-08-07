@@ -1602,14 +1602,26 @@
   overflow: hidden;
   width: 100%;
   aspect-ratio: 4 / 3;
-  background: #e6ebf2;
-  border-bottom: 1px solid #f1f5f9;
+  /* Gris claro neutro: es lo que se ve alrededor cuando la imagen no llena
+     la caja, que es lo normal con `contain`. */
+  background: #f1f5f9;
+  border-bottom: 1px solid #e8eef6;
   border-radius: 21px 21px 0 0;
   place-items: center;
 }
-/* Mismo formato que la miniatura de las publicaciones: contain, para que un
-   logo no se recorte ni se deforme al rellenar la caja. */
-.creator-community-card__media > img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+/* Misma receta que .creator-home-content-card__thumbnail, que es la que se ve
+   bien: absoluta cubriendo la caja y `contain`. Como hijo de grid centrado la
+   imagen no siempre respetaba la caja y acababa rellenandola. */
+.creator-community-card__media > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  background: #f1f5f9;
+}
 .creator-community-card__media > small { position: absolute; top: 8px; left: 8px; padding: 4px 7px; color: #92400e; background: rgba(254,243,199,.94); border-radius: 999px; font-size: 6.5px; font-weight: 900; }
 /* Sin foto: iniciales a sangre, sin circulo ni borde blanco. */
 .creator-community-card__fallback {

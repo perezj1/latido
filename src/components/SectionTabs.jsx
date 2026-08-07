@@ -31,6 +31,7 @@ export default function SectionTabs() {
             ref={isActive ? activeRef : undefined}
             to={section.to}
             className={`latido-section-tab${isActive ? ' is-active' : ''}`}
+            style={{ '--section-color':section.color, '--section-ink':section.ink }}
             aria-current={isActive ? 'page' : undefined}
           >
             <span aria-hidden="true">{section.emoji}</span>

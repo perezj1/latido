@@ -1,5 +1,11 @@
 // Las seis secciones de Explorar. Un unico sitio donde se declara que hay en
 // Latido, a donde va cada cosa y con que color se pinta.
+//
+// Este array manda en el orden de las dos superficies: la fila de pestanas y la
+// rejilla de tarjetas de Explorar.
+//   color    tono de la seccion. Tine el fondo claro de la pestana activa.
+//   ink      version oscura del mismo tono, para el texto sobre ese fondo claro.
+//   gradient degradado de la tarjeta de Explorar.
 export const EXPLORE_SECTIONS = [
   {
     id:'anuncios',
@@ -7,6 +13,8 @@ export const EXPLORE_SECTIONS = [
     label:'Anuncios',
     desc:'Vivienda, servicios, compraventa y trámites',
     to:'/tablon',
+    color:'#4C8DFF',
+    ink:'#1D4ED8',
     gradient:'linear-gradient(150deg, #4C8DFF 0%, #1D4ED8 100%)',
   },
   {
@@ -15,6 +23,8 @@ export const EXPLORE_SECTIONS = [
     label:'Empleo',
     desc:'Ofertas y solicitudes de trabajo',
     to:'/tablon?cat=empleo',
+    color:'#34D6A4',
+    ink:'#0E9C74',
     gradient:'linear-gradient(150deg, #34D6A4 0%, #0E9C74 100%)',
   },
   {
@@ -23,7 +33,19 @@ export const EXPLORE_SECTIONS = [
     label:'Negocios',
     desc:'Comercios y profesionales hispanohablantes',
     to:'/comunidades?view=negocios',
+    color:'#FFB84D',
+    ink:'#B26A05',
     gradient:'linear-gradient(150deg, #FFB84D 0%, #E08706 100%)',
+  },
+  {
+    id:'creadores',
+    emoji:'🎙️',
+    label:'Creadores',
+    desc:'Voces que cuentan Suiza en español',
+    to:'/comunidades?view=creadores',
+    color:'#A78BFA',
+    ink:'#6D28D9',
+    gradient:'linear-gradient(150deg, #A78BFA 0%, #6D28D9 100%)',
   },
   {
     id:'eventos',
@@ -31,6 +53,8 @@ export const EXPLORE_SECTIONS = [
     label:'Eventos',
     desc:'Conciertos, fiestas y quedadas con fecha',
     to:'/comunidades?view=eventos',
+    color:'#FF6F68',
+    ink:'#D22B24',
     gradient:'linear-gradient(150deg, #FF6F68 0%, #D22B24 100%)',
   },
   {
@@ -39,15 +63,9 @@ export const EXPLORE_SECTIONS = [
     label:'Grupos',
     desc:'Comunidades y chats por ciudad o interés',
     to:'/comunidades?view=comunidades',
+    color:'#3FD3E8',
+    ink:'#0296AB',
     gradient:'linear-gradient(150deg, #3FD3E8 0%, #0296AB 100%)',
-  },
-  {
-    id:'creadores',
-    emoji:'🎙️',
-    label:'Creadores',
-    desc:'Voces que cuentan Suiza en español',
-    to:'/comunidades?view=creadores',
-    gradient:'linear-gradient(150deg, #A78BFA 0%, #6D28D9 100%)',
   },
 ]
 

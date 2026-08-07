@@ -274,19 +274,7 @@ export default function CreatorCommunityView({
                 <Link to={`/creadores/${creator.slug}`} className="creator-community-card__open">
                   <span className="creator-community-card__media">
                     {creator.avatar_url ? (
-                      <img
-                        src={creator.avatar_url}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        style={{
-                          width:'100%',
-                          height:'100%',
-                          objectFit:'contain',
-                          objectPosition:'center',
-                          display:'block',
-                        }}
-                      />
+                      <img src={creator.avatar_url} alt="" loading="lazy" decoding="async" />
                     ) : (
                       <span
                         className="creator-community-card__fallback"
