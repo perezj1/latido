@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { Btn, ImageUploadField, Input } from '../components/UI'
@@ -7,6 +7,7 @@ import { CreatorAvatar, CreatorProfileTabs } from '../components/CreatorCards'
 import {
   CREATOR_MAX_CONTENTS,
   CREATOR_TOPICS,
+  detectCreatorFormat,
   detectCreatorPlatform,
   formatCreatorHandle,
   getCreatorForUser,
@@ -53,16 +54,6 @@ const CONTENT_LIMITS = {
   summary:{ min:40, max:300 },
 }
 
-function detectCreatorFormat(value, platform) {
-  const url = String(value || '').toLowerCase()
-  if (platform === 'tiktok') return 'reel'
-  if (platform === 'instagram') return url.includes('/reel') ? 'reel' : 'publicacion'
-  if (platform === 'spotify') return 'podcast'
-  if (platform === 'web') return 'artículo'
-  if (platform === 'facebook' || platform === 'linkedin') return 'publicacion'
-  return 'video'
-}
-
 function focusFirstError(errors) {
   const firstKey = Object.keys(errors)[0]
   if (!firstKey) return
@@ -85,6 +76,7 @@ function formatDate(value) {
 
 export default function CreadorPanel() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [creator, setCreator] = useState(() => getCreatorForUser(user?.id))
   const [contentForm, setContentForm] = useState(EMPTY_CONTENT)
@@ -179,15 +171,14 @@ export default function CreadorPanel() {
     )
   }
 
+  // Crear va a la pagina de publicar, como el resto de altas de la app. Editar
+  // sigue abriendo el formulario en linea, que ya trae los datos cargados.
   const startNewContent = () => {
     if (contents.length >= CREATOR_MAX_CONTENTS) {
       toast.error(`Ya estás usando los ${CREATOR_MAX_CONTENTS} espacios. Puedes editar o eliminar uno.`)
       return
     }
-    setContentForm({ ...EMPTY_CONTENT, position:contents.length + 1 })
-    setContentErrors({})
-    setFormOpen(true)
-    window.setTimeout(() => document.getElementById('creator-content-form')?.scrollIntoView({ behavior:'smooth', block:'start' }), 40)
+    navigate('/publicar-contenido')
   }
 
   const startEditContent = content => {

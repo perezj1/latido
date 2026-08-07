@@ -47,6 +47,7 @@ const PublicarEvento = lazy(() => import('./pages/PublicarEvento'))
 const RegistrarNegocio = lazy(() => import('./pages/RegistrarNegocio'))
 const RegistrarComunidad = lazy(() => import('./pages/RegistrarComunidad'))
 const PublicarEmpleo = lazy(() => import('./pages/PublicarEmpleo'))
+const PublicarContenido = lazy(() => import('./pages/PublicarContenido'))
 const Legal = lazy(() => import('./pages/Legal'))
 const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
@@ -716,6 +717,7 @@ function AppShell() {
             <Route path="/registrar-negocio" element={<ProtectedRoute><RegistrarNegocio /></ProtectedRoute>} />
             <Route path="/registrar-comunidad" element={<ProtectedRoute><RegistrarComunidad /></ProtectedRoute>} />
             <Route path="/publicar-empleo" element={<ProtectedRoute><PublicarEmpleo /></ProtectedRoute>} />
+            <Route path="/publicar-contenido" element={<ProtectedRoute><PublicarContenido /></ProtectedRoute>} />
             <Route path="/mensajes" element={<ProtectedRoute><Mensajes /></ProtectedRoute>} />
             <Route path="/colaboradores/mira" element={<ProtectedRoute><PartnerContact /></ProtectedRoute>} />
             <Route path="/colaboradores/bellini" element={<ProtectedRoute><BelliniPartnerContact /></ProtectedRoute>} />
@@ -748,7 +750,7 @@ function AppShell() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition:true, v7_relativeSplatPath:true }}>
         <Seo />
         <ScrollToTop />
         <OfflineNotice />

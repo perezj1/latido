@@ -11,7 +11,7 @@ const PUBLISH_OPTIONS = [
   { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
   { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
   { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
-  { emoji:'🎙️', label:'Contenido', sub:'Publica desde tu perfil de creador', to:'/creadores/mi-perfil' },
+  { emoji:'🎙️', label:'Contenido', sub:'Un vídeo, artículo o publicación tuya', to:'/publicar-contenido' },
 ]
 const NAV_GUEST = [
   { href:'/tablon', label:'📌 Anuncios' },

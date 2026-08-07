@@ -950,3 +950,15 @@ export function prepareLocalImage(file, { width, height, quality = .8 } = {}) {
     image.src = objectUrl
   })
 }
+
+// Formato editorial deducido del enlace. La usan el panel del creador y la
+// pagina de publicar contenido, asi que vive aqui y no en una de las dos.
+export function detectCreatorFormat(value, platform) {
+  const url = String(value || '').toLowerCase()
+  if (platform === 'tiktok') return 'reel'
+  if (platform === 'instagram') return url.includes('/reel') ? 'reel' : 'publicacion'
+  if (platform === 'spotify') return 'podcast'
+  if (platform === 'web') return 'artículo'
+  if (platform === 'facebook' || platform === 'linkedin') return 'publicacion'
+  return 'video'
+}

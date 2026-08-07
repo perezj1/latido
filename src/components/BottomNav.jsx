@@ -13,7 +13,7 @@ const PUBLISH_OPTIONS = [
   { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
   { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
   { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
-  { emoji:'🎙️', label:'Contenido', sub:'Publica desde tu perfil de creador', to:'/creadores/mi-perfil' },
+  { emoji:'🎙️', label:'Contenido', sub:'Un vídeo, artículo o publicación tuya', to:'/publicar-contenido' },
 ]
 
 const TABS = [
@@ -26,7 +26,7 @@ const TABS = [
 
 // Flujos de alta/edicion con acciones fijas abajo: la barra estorbaria y se
 // solaparia con ellas. /creadores/alta es tambien el editor del perfil.
-const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad', '/creadores/alta']
+const PUBLISH_FLOW_PATHS = ['/publicar', '/publicar-empleo', '/publicar-evento', '/registrar-negocio', '/registrar-comunidad', '/publicar-contenido', '/creadores/alta']
 
 export default function BottomNav() {
   const { pathname, search } = useLocation()
