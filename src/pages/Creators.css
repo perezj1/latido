@@ -1137,7 +1137,11 @@
   background: transparent;
 }
 
-.creator-home-content-actions__helpful.is-active {
+/* El :hover de arriba lleva un selector de elemento, asi que ganaba a .is-active
+   y en tactil el hover se queda pegado tras pulsar: el corazon activo salia azul.
+   Repetirlo con :hover le da la especificidad que faltaba. */
+.creator-home-content-actions__helpful.is-active,
+.creator-home-content-actions__helpful.is-active:hover {
   color: #e11d48;
 }
 
