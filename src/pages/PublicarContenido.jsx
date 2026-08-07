@@ -4,7 +4,6 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { Btn, ChevronLeftIcon, ImageUploadField, Input, ProgressBar, StickyFormActions } from '../components/UI'
 import {
-  CREATOR_MAX_CONTENTS,
   CREATOR_TOPICS,
   detectCreatorFormat,
   detectCreatorPlatform,
@@ -53,7 +52,6 @@ export default function PublicarContenido() {
   const { isLoggedIn, user } = useAuth()
   const creator = useMemo(() => getCreatorForUser(user?.id), [user?.id])
   const contents = useMemo(() => getOrderedCreatorContents(creator), [creator])
-  const freeSlots = Math.max(0, CREATOR_MAX_CONTENTS - contents.length)
 
   const [step, setStep] = useState(0)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -237,17 +235,6 @@ export default function PublicarContenido() {
     </div>
   )
 
-  if (!freeSlots) return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ fontSize:52, marginBottom:16 }}>📦</div>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Has usado tus {CREATOR_MAX_CONTENTS} espacios</h1>
-      <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
-        Tu perfil muestra una selección de {CREATOR_MAX_CONTENTS} publicaciones. Edita o elimina una para dejar sitio.
-      </p>
-      <Btn onClick={() => navigate('/creadores/mi-perfil')}>Gestionar mis publicaciones →</Btn>
-    </div>
-  )
-
   const platform = getCreatorPlatform(form.platform)
   const topic = getCreatorTopic(form.topic)
   const previewThumbnail = getCreatorThumbnailUrl(form)
@@ -366,14 +353,14 @@ export default function PublicarContenido() {
           <div style={{ background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:14, padding:'14px 16px' }}>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#1E3A8A', margin:'0 0 6px' }}>Cómo funciona</p>
             <p style={{ fontFamily:PP, fontSize:11, color:'#1E3A8A', lineHeight:1.7, margin:0 }}>
-              Latido muestra esta ficha y envía las visitas a la publicación original. Ocupará uno de tus {CREATOR_MAX_CONTENTS} espacios y podrás editarla o quitarla cuando quieras desde tu perfil.
+              Latido muestra esta ficha y envía las visitas a la publicación original. Si todavía tienes menos de seis destacados, se añadirá automáticamente; después podrás cambiar la selección desde tu perfil.
             </p>
           </div>
         </>
       )}
 
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:14 }}>
-        Gratuito · Te quedan {freeSlots} {freeSlots === 1 ? 'espacio libre' : 'espacios libres'} de {CREATOR_MAX_CONTENTS}
+        Gratuito · Puedes gestionar todas tus publicaciones y elegir hasta seis destacadas
       </p>
 
       <StickyFormActions>

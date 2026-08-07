@@ -1504,6 +1504,7 @@ export default function Comunidades() {
   const [creatorPlatform, setCreatorPlatform] = useState('')
   const [creatorLocation, setCreatorLocation] = useState('')
   const [creatorSort, setCreatorSort] = useState('newest')
+  const [creatorView, setCreatorView] = useState('contenidos')
   const [creatorResultCount, setCreatorResultCount] = useState(0)
   const [showDirectoryFilters, setShowDirectoryFilters] = useState(false)
   const [directoryFilterDraft, setDirectoryFilterDraft] = useState({
@@ -2395,6 +2396,8 @@ export default function Comunidades() {
               sort={creatorSort}
               onSortChange={setCreatorSort}
               resultCount={creatorResultCount}
+              view={creatorView}
+              onViewChange={setCreatorView}
             />
           )}
           </div>
@@ -2460,6 +2463,7 @@ export default function Comunidades() {
           platform={creatorPlatform}
           location={creatorLocation}
           sort={creatorSort}
+          view={creatorView}
           onResultCountChange={setCreatorResultCount}
           onClearFilters={() => {
             setCreatorSearch('')

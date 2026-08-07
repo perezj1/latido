@@ -31,19 +31,22 @@ globalThis.window = {
 }
 
 const {
+  CREATOR_FEATURED_CONTENTS,
   formatCreatorHandle,
   getAutomaticCreatorThumbnail,
   getCreatorVideoEmbed,
+  getCreatorContentsNewestFirst,
   getCreatorForUser,
+  getFeaturedCreatorContents,
   isCreatorHandleAvailable,
   getFollowedCreatorIds,
   getCreatorInteractionState,
   getCreatorOEmbedMetadata,
   getCreatorTopicsFromInterests,
   getOrderedCreatorContents,
-  moveCreatorContent,
   saveCreatorContent,
   saveCreatorProfile,
+  setCreatorContentFeatured,
   toggleCreatorInteraction,
 } = await import('../src/lib/creators.js')
 const { resolveTikTokLink } = await import('../api/tiktok-resolve.js')
@@ -105,17 +108,31 @@ const third = saveCreatorContent(userId, {
 
 let creator = getCreatorForUser(userId)
 assert.deepEqual(
-  getOrderedCreatorContents(creator).map(content => content.id),
-  [second.id, third.id, first.id],
-  'La posición elegida debe ordenar Los 6.',
+  getCreatorContentsNewestFirst(creator, { publishedOnly:true }).map(content => content.id),
+  [third.id, second.id, first.id],
+  'La publicación añadida más recientemente debe aparecer primero.',
 )
 
-moveCreatorContent(userId, first.id, 'up')
+assert.deepEqual(
+  getFeaturedCreatorContents(creator).map(content => content.id),
+  [third.id, second.id, first.id],
+  'Los nuevos destacados deben aparecer primero.',
+)
+
+setCreatorContentFeatured(userId, first.id, false)
 creator = getCreatorForUser(userId)
 assert.deepEqual(
-  getOrderedCreatorContents(creator).map(content => content.id),
-  [second.id, first.id, third.id],
-  'El panel debe permitir reordenar la selección.',
+  getFeaturedCreatorContents(creator).map(content => content.id),
+  [third.id, second.id],
+  'El creador debe poder retirar una publicación de Destacados.',
+)
+
+setCreatorContentFeatured(userId, first.id, true)
+creator = getCreatorForUser(userId)
+assert.deepEqual(
+  getFeaturedCreatorContents(creator).map(content => content.id),
+  [first.id, third.id, second.id],
+  'La publicación destacada más recientemente debe aparecer primero.',
 )
 
 assert.equal(
@@ -174,6 +191,26 @@ const savedShortTikTok = saveCreatorContent(userId, {
 })
 assert.equal(savedShortTikTok.url, shortTikTokUrl, 'La publicación debe conservar el enlace corto original.')
 assert.equal(savedShortTikTok.video_id, resolvedTikTok.video_id, 'La publicación debe guardar el ID resuelto una sola vez.')
+
+const extraContents = Array.from({ length:3 }, (_, index) => saveCreatorContent(userId, {
+  title:`Publicación adicional ${index + 1}`,
+  summary:'Contenido adicional para comprobar el límite independiente de destacados.',
+  url:`https://example.com/publicacion-${index + 1}`,
+  platform:'web',
+  topic:'trabajo',
+}))
+creator = getCreatorForUser(userId)
+assert.equal(getFeaturedCreatorContents(creator).length, CREATOR_FEATURED_CONTENTS, 'Destacados debe admitir como máximo seis publicaciones.')
+assert.equal(
+  getFeaturedCreatorContents(creator).some(content => content.id === extraContents.at(-1).id),
+  false,
+  'Las publicaciones posteriores deben seguir publicándose sin entrar automáticamente cuando Destacados está completo.',
+)
+assert.throws(
+  () => setCreatorContentFeatured(userId, extraContents.at(-1).id, true),
+  /máximo de 6/,
+  'Para destacar otra publicación primero debe retirarse una de la selección.',
+)
 
 assert.deepEqual(
   getCreatorVideoEmbed({ url:'https://www.instagram.com/reel/ABC_123/?utm_source=share' }),

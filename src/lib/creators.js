@@ -1,4 +1,9 @@
-export const CREATOR_MAX_CONTENTS = 6
+// Seis destacados, no un tope: el creador elige que seis encabezan su perfil y
+// el resto se sigue publicando y aparece en "Ultimos contenidos".
+export const CREATOR_FEATURED_CONTENTS = 6
+// Se conserva por compatibilidad con consumidores antiguos. La interfaz ya no
+// presenta los destacados como un limite para publicar contenido.
+export const CREATOR_MAX_CONTENTS = Number.MAX_SAFE_INTEGER
 
 export const CREATOR_FOLLOWER_RANGES = [
   { id:'menos_1k', label:'Menos de 1 K', short:'< 1 K' },
@@ -545,9 +550,40 @@ function applyContentOrder(contents = []) {
   return (Array.isArray(contents) ? contents : []).map((content, index) => ({ ...content, sort_order:index + 1 }))
 }
 
+function getNextCreatorPublishedAt(contents = []) {
+  const latestTimestamp = (Array.isArray(contents) ? contents : []).reduce((latest, content) => {
+    const timestamp = new Date(content?.published_at || 0).getTime()
+    return Number.isFinite(timestamp) ? Math.max(latest, timestamp) : latest
+  }, 0)
+  return new Date(Math.max(Date.now(), latestTimestamp + 1)).toISOString()
+}
+
 export function getOrderedCreatorContents(creator, { publishedOnly = false } = {}) {
   const contents = normalizeContentOrder(creator?.contents)
   return publishedOnly ? contents.filter(content => content.status === 'published') : contents
+}
+
+export function getCreatorContentsNewestFirst(creator, { publishedOnly = false } = {}) {
+  return getOrderedCreatorContents(creator, { publishedOnly })
+    .sort((first, second) => {
+      const dateDiff = new Date(second.published_at || second.created_at || 0).getTime()
+        - new Date(first.published_at || first.created_at || 0).getTime()
+      return dateDiff || (Number(second.sort_order) || 0) - (Number(first.sort_order) || 0)
+    })
+}
+
+export function getCreatorFeaturedContentIds(creator) {
+  const publishedContents = getCreatorContentsNewestFirst(creator, { publishedOnly:true })
+  const publishedIds = new Set(publishedContents.map(content => String(content.id)))
+
+  if (!Array.isArray(creator?.featured_content_ids)) {
+    return publishedContents
+      .slice(0, CREATOR_FEATURED_CONTENTS)
+      .map(content => String(content.id))
+  }
+
+  return [...new Set(creator.featured_content_ids.map(id => String(id || '')).filter(id => publishedIds.has(id)))]
+    .slice(0, CREATOR_FEATURED_CONTENTS)
 }
 
 export function getCreatorProfileCompleteness(creator) {
@@ -562,7 +598,12 @@ export function getCreatorProfileCompleteness(creator) {
 }
 
 function normalizeCreatorRecord(creator) {
-  return { ...creator, contents:normalizeContentOrder(creator?.contents) }
+  const contents = normalizeContentOrder(creator?.contents)
+  return {
+    ...creator,
+    contents,
+    featured_content_ids:getCreatorFeaturedContentIds({ ...creator, contents }),
+  }
 }
 
 export function getAllCreators({ includeUnpublished = false } = {}) {
@@ -576,7 +617,8 @@ export function getCreatorBySlug(slug = '') {
 
 export function getCreatorForUser(userId) {
   if (!userId) return null
-  return readLocalCreators().find(creator => creator.owner_id === userId) || null
+  const creator = readLocalCreators().find(item => item.owner_id === userId)
+  return creator ? normalizeCreatorRecord(creator) : null
 }
 
 export function normalizeCreatorHandle(value = '') {
@@ -648,6 +690,7 @@ export function saveCreatorProfile(userId, input = {}) {
     updated_at:new Date().toISOString(),
     selection_updated_at:existing?.selection_updated_at || '',
     contents:normalizeContentOrder(existing?.contents),
+    featured_content_ids:existing ? getCreatorFeaturedContentIds(existing) : [],
   }
 
   if (existingIndex >= 0) creators[existingIndex] = profile
@@ -664,9 +707,6 @@ export function saveCreatorContent(userId, input = {}) {
   const creator = creators[creatorIndex]
   const contents = normalizeContentOrder(creator.contents)
   const existingIndex = input.id ? contents.findIndex(content => content.id === input.id) : -1
-  if (existingIndex < 0 && contents.length >= CREATOR_MAX_CONTENTS) {
-    throw new Error(`El prototipo permite hasta ${CREATOR_MAX_CONTENTS} publicaciones por perfil.`)
-  }
 
   const url = normalizeCreatorUrl(input.url)
   if (!url) throw new Error('Añade un enlace válido que empiece por https://')
@@ -697,7 +737,7 @@ export function saveCreatorContent(userId, input = {}) {
     thumbnail_url:normalizeCreatorThumbnail(input.thumbnail_url),
     thumbnail_kind:input.thumbnail_kind === 'auto' ? 'auto' : input.thumbnail_url ? 'custom' : '',
     status:input.status === 'draft' ? 'draft' : 'published',
-    published_at:existing?.published_at || new Date().toISOString(),
+    published_at:existing?.published_at || getNextCreatorPublishedAt(contents),
     updated_at:new Date().toISOString(),
     demo:false,
   }
@@ -710,8 +750,21 @@ export function saveCreatorContent(userId, input = {}) {
   const targetIndex = Math.max(0, Math.min(withoutCurrent.length, requestedPosition - 1))
   withoutCurrent.splice(targetIndex, 0, content)
   const orderedContents = applyContentOrder(withoutCurrent)
+  const currentFeaturedIds = getCreatorFeaturedContentIds(creator)
+  const featuredWithoutCurrent = currentFeaturedIds.filter(id => id !== content.id)
+  const nextFeaturedIds = content.status !== 'published'
+    ? featuredWithoutCurrent
+    : existingIndex < 0 && featuredWithoutCurrent.length < CREATOR_FEATURED_CONTENTS
+      ? [content.id, ...featuredWithoutCurrent]
+      : currentFeaturedIds
   const now = new Date().toISOString()
-  creators[creatorIndex] = { ...creator, contents:orderedContents, selection_updated_at:now, updated_at:now }
+  creators[creatorIndex] = {
+    ...creator,
+    contents:orderedContents,
+    featured_content_ids:nextFeaturedIds,
+    selection_updated_at:now,
+    updated_at:now,
+  }
   writeLocalCreators(creators)
   return orderedContents[targetIndex]
 }
@@ -745,8 +798,40 @@ export function setCreatorContentStatus(userId, contentId, status) {
   const contents = normalizeContentOrder(creator.contents).map(content => (
     content.id === contentId ? { ...content, status:status === 'draft' ? 'draft' : 'published', updated_at:new Date().toISOString() } : content
   ))
+  const currentFeaturedIds = getCreatorFeaturedContentIds(creator).filter(id => id !== contentId)
+  const nextFeaturedIds = status === 'draft' || currentFeaturedIds.length >= CREATOR_FEATURED_CONTENTS
+    ? currentFeaturedIds
+    : [contentId, ...currentFeaturedIds]
   const now = new Date().toISOString()
-  creators[creatorIndex] = { ...creator, contents, selection_updated_at:now, updated_at:now }
+  creators[creatorIndex] = { ...creator, contents, featured_content_ids:nextFeaturedIds, selection_updated_at:now, updated_at:now }
+  writeLocalCreators(creators)
+  return creators[creatorIndex]
+}
+
+export function setCreatorContentFeatured(userId, contentId, featured) {
+  const creators = readLocalCreators()
+  const creatorIndex = creators.findIndex(creator => creator.owner_id === userId)
+  if (creatorIndex < 0) return null
+
+  const creator = creators[creatorIndex]
+  const content = getOrderedCreatorContents(creator).find(item => item.id === contentId)
+  if (!content || content.status !== 'published') {
+    throw new Error('Solo puedes destacar publicaciones publicadas.')
+  }
+
+  const currentFeaturedIds = getCreatorFeaturedContentIds(creator)
+  const withoutCurrent = currentFeaturedIds.filter(id => id !== contentId)
+  if (featured && withoutCurrent.length >= CREATOR_FEATURED_CONTENTS) {
+    throw new Error(`Puedes destacar un máximo de ${CREATOR_FEATURED_CONTENTS} publicaciones.`)
+  }
+
+  const now = new Date().toISOString()
+  creators[creatorIndex] = {
+    ...creator,
+    featured_content_ids:featured ? [contentId, ...withoutCurrent] : withoutCurrent,
+    selection_updated_at:now,
+    updated_at:now,
+  }
   writeLocalCreators(creators)
   return creators[creatorIndex]
 }
@@ -760,6 +845,7 @@ export function removeCreatorContent(userId, contentId) {
   creators[creatorIndex] = {
     ...creator,
     contents:applyContentOrder(normalizeContentOrder(creator.contents).filter(content => content.id !== contentId)),
+    featured_content_ids:getCreatorFeaturedContentIds(creator).filter(id => id !== contentId),
     selection_updated_at:new Date().toISOString(),
     updated_at:new Date().toISOString(),
   }
@@ -802,9 +888,30 @@ function getInteractionKey(action, targetType, targetId) {
   return `${action}:${targetType}:${targetId}`
 }
 
+// Los votos se guardaban como lista de actores sin fecha, asi que no habia
+// forma de saber si un "me ayudo" era de hoy o del ano pasado. Ahora se guarda
+// { actor, at }, y se sigue leyendo el formato viejo tratandolo como sin fecha.
+function readInteractionEntries(action, targetType, targetId) {
+  const stored = readInteractions()[getInteractionKey(action, targetType, targetId)]
+  if (!Array.isArray(stored)) return []
+  return stored.map(entry => (
+    entry && typeof entry === 'object'
+      ? { actor:String(entry.actor || ''), at:Number(entry.at) || 0 }
+      : { actor:String(entry), at:0 }
+  )).filter(entry => entry.actor)
+}
+
 function getInteractionActors(action, targetType, targetId) {
-  const actors = readInteractions()[getInteractionKey(action, targetType, targetId)]
-  return Array.isArray(actors) ? actors.map(String) : []
+  return readInteractionEntries(action, targetType, targetId).map(entry => entry.actor)
+}
+
+// Votos dentro de una ventana temporal. Los sin fecha (los previos al cambio)
+// quedan fuera: no podemos afirmar que sean recientes.
+function countRecentInteractions(action, targetType, targetId, sinceMs) {
+  if (!sinceMs) return readInteractionEntries(action, targetType, targetId).length
+  return readInteractionEntries(action, targetType, targetId)
+    .filter(entry => entry.at >= sinceMs)
+    .length
 }
 
 function getInteractionActor(actorId = '') {
@@ -826,8 +933,10 @@ export function toggleCreatorInteraction({ action, targetType, targetId, actorId
   const store = readInteractions()
   const key = getInteractionKey(action, targetType, targetId)
   const actor = getInteractionActor(actorId)
-  const current = Array.isArray(store[key]) ? store[key].map(String) : []
-  store[key] = current.includes(actor) ? current.filter(item => item !== actor) : [...current, actor]
+  const current = readInteractionEntries(action, targetType, targetId)
+  store[key] = current.some(entry => entry.actor === actor)
+    ? current.filter(entry => entry.actor !== actor)
+    : [...current, { actor, at:Date.now() }]
   window.localStorage.setItem(CREATOR_INTERACTIONS_KEY, JSON.stringify(store))
   window.dispatchEvent(new CustomEvent(CREATOR_INTERACTIONS_EVENT))
   return getCreatorInteractionState({ action, targetType, targetId, actorId, baseCount })
@@ -838,7 +947,11 @@ export function getFollowedCreatorIds(actorId = '') {
   const actor = getInteractionActor(actorId)
   const prefix = 'saved:creator:'
   return Object.entries(readInteractions())
-    .filter(([key, actors]) => key.startsWith(prefix) && Array.isArray(actors) && actors.map(String).includes(actor))
+    .filter(([key, stored]) => {
+      if (!key.startsWith(prefix) || !Array.isArray(stored)) return false
+      // Entradas nuevas { actor, at } y antiguas (solo el actor como texto).
+      return stored.some(entry => (entry && typeof entry === 'object' ? String(entry.actor) : String(entry)) === actor)
+    })
     .map(([key]) => key.slice(prefix.length))
 }
 
@@ -961,4 +1074,85 @@ export function detectCreatorFormat(value, platform) {
   if (platform === 'web') return 'artículo'
   if (platform === 'facebook' || platform === 'linkedin') return 'publicacion'
   return 'video'
+}
+
+// ── Descubrimiento por tema y por utilidad ─────────────────────
+// El directorio deja de ser "creador -> sus videos" para poder responder
+// "que necesito saber de Suiza -> quien lo ha explicado bien".
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+export function getContentHelpfulCount(content, { days = 0 } = {}) {
+  const base = Math.max(0, Number(content?.helpful_count) || 0)
+  const since = days ? Date.now() - days * DAY_MS : 0
+  // La base historica solo cuenta cuando no se pide ventana temporal.
+  return (since ? 0 : base) + countRecentInteractions('helpful', 'content', content?.id, since)
+}
+
+export function getCreatorHelpfulCount(creator, { days = 0 } = {}) {
+  const since = days ? Date.now() - days * DAY_MS : 0
+  const profile = (since ? 0 : Math.max(0, Number(creator?.helpful_count) || 0))
+    + countRecentInteractions('helpful', 'creator', creator?.id, since)
+  const contents = getOrderedCreatorContents(creator, { publishedOnly:true })
+    .reduce((total, content) => total + getContentHelpfulCount(content, { days }), 0)
+  return profile + contents
+}
+
+// Todas las publicaciones publicadas, con su creador al lado.
+export function getAllCreatorContents({ topic = '' } = {}) {
+  return getAllCreators().flatMap(creator => (
+    getOrderedCreatorContents(creator, { publishedOnly:true })
+      .filter(content => !topic || content.topic === topic)
+      .map(content => ({ content, creator }))
+  ))
+}
+
+export function getMostHelpfulContents({ topic = '', days = 0, limit = 8 } = {}) {
+  return getAllCreatorContents({ topic })
+    .map(entry => ({ ...entry, helpful:getContentHelpfulCount(entry.content, { days }) }))
+    .filter(entry => entry.helpful > 0)
+    .sort((first, second) => second.helpful - first.helpful
+      || new Date(second.content.published_at) - new Date(first.content.published_at))
+    .slice(0, limit)
+}
+
+export function getLatestContents({ topic = '', limit = 8 } = {}) {
+  return getAllCreatorContents({ topic })
+    .sort((first, second) => new Date(second.content.published_at) - new Date(first.content.published_at))
+    .slice(0, limit)
+}
+
+export function getTopHelpfulCreators({ topic = '', days = 0, limit = 5 } = {}) {
+  return getAllCreators()
+    .filter(creator => !topic || (creator.topics || []).includes(topic))
+    .map(creator => ({ creator, helpful:getCreatorHelpfulCount(creator, { days }) }))
+    .filter(entry => entry.helpful > 0)
+    .sort((first, second) => second.helpful - first.helpful
+      || String(first.creator.name).localeCompare(String(second.creator.name), 'es'))
+    .slice(0, limit)
+}
+
+// Posicion del creador dentro de un tema, para el "#3 en Trabajo" del perfil.
+// Sin tema devuelve la posicion global; con tema, la de ese tema.
+export function getCreatorHelpRank(creator, { topic = '' } = {}) {
+  if (!creator) return 0
+  const ranking = getTopHelpfulCreators({ topic, limit:Number.MAX_SAFE_INTEGER })
+  const position = ranking.findIndex(entry => entry.creator.id === creator.id)
+  return position < 0 ? 0 : position + 1
+}
+
+export function getCreatorTopicRank(creator, topic) {
+  return topic ? getCreatorHelpRank(creator, { topic }) : 0
+}
+
+// Los seis que encabezan el perfil. El resto sigue publicado y aparece en "Todos".
+export function getFeaturedCreatorContents(creator) {
+  const publishedById = new Map(
+    getCreatorContentsNewestFirst(creator, { publishedOnly:true })
+      .map(content => [String(content.id), content]),
+  )
+  return getCreatorFeaturedContentIds(creator)
+    .map(id => publishedById.get(String(id)))
+    .filter(Boolean)
+    .slice(0, CREATOR_FEATURED_CONTENTS)
 }

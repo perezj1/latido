@@ -7,7 +7,11 @@ import {
   CREATOR_TOPICS,
   getAllCreators,
   getCreatorForUser,
+  getCreatorTopic,
+  getLatestContents,
+  getMostHelpfulContents,
   getOrderedCreatorContents,
+  getTopHelpfulCreators,
   subscribeCreatorUpdates,
 } from '../lib/creators'
 import {
@@ -19,7 +23,7 @@ import {
   CreatorContentModal,
 } from './CreatorCards'
 import { EmptyState, Sheet } from './UI'
-import { FilterButton, FilterChips, FilterResultSummary, FILTER_PANEL_TITLE_STYLE } from './FilterWorkspace'
+import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE } from './FilterWorkspace'
 import { C, PP } from '../lib/theme'
 import '../pages/Creators.css'
 
@@ -27,6 +31,11 @@ const CREATOR_SORT_OPTIONS = [
   { id:'newest', label:'Más recientes' },
   { id:'contents', label:'Más publicaciones' },
   { id:'name', label:'Nombre A–Z' },
+]
+
+export const CREATOR_VIEW_TABS = [
+  { id:'contenidos', label:'Publicaciones' },
+  { id:'creadores', label:'Creadores' },
 ]
 
 function normalize(value = '') {
@@ -49,6 +58,8 @@ export function CreatorCommunityToolbar({
   sort,
   onSortChange,
   resultCount=0,
+  view='contenidos',
+  onViewChange,
 }) {
   const [showFilters, setShowFilters] = useState(false)
   const [draft, setDraft] = useState({ platform:'', location:'' })
@@ -103,6 +114,18 @@ export function CreatorCommunityToolbar({
             {item.emoji} {item.label}
           </button>
         ))}
+      </div>
+
+      {/* Debajo de las categorias: primero eliges el tema y despues si quieres
+          ver publicaciones o creadores de ese tema. */}
+      <div className="creator-community-view-tabs">
+        <SegmentedTabs
+          items={CREATOR_VIEW_TABS}
+          value={view}
+          onChange={onViewChange}
+          ariaLabel="Qué quieres ver"
+          className="creator-view-tabs"
+        />
       </div>
 
       <FilterResultSummary
@@ -161,6 +184,7 @@ export default function CreatorCommunityView({
   platform='',
   location='',
   sort='newest',
+  view='contenidos',
   onResultCountChange,
   onClearFilters,
 }) {
@@ -219,12 +243,105 @@ export default function CreatorCommunityView({
   // vacio de verdad, el boton no llevaria a ningun sitio.
   const hasFilters = Boolean(search || topic || platform || location)
 
+  // Con el directorio "en limpio" mandan las secciones de descubrimiento: que
+  // esta ayudando, quien ayuda mas y que hay nuevo. En cuanto buscas o filtras,
+  // pasan a estorbar y se muestra solo el resultado de tu busqueda.
+  const browsing = !search && !platform && !location
+  const showContents = view === 'contenidos'
+  const showCreators = view === 'creadores'
+  const helpfulContents = useMemo(
+    () => browsing ? getMostHelpfulContents({ topic, limit:8 }) : [],
+    [browsing, topic, creators],
+  )
+  const latestContents = useMemo(
+    () => browsing ? getLatestContents({ topic, limit:8 }) : [],
+    [browsing, topic, creators],
+  )
+  const topCreators = useMemo(
+    () => browsing ? getTopHelpfulCreators({ topic, limit:5 }) : [],
+    [browsing, topic, creators],
+  )
+  const activeTopic = topic ? getCreatorTopic(topic) : null
+
+  const contentRow = (id, label, hint, entries) => entries.length > 0 && (
+    <section className="creator-community-section" aria-labelledby={id}>
+      <div className="creator-community-section__heading">
+        <div>
+          <p id={id}>{label}</p>
+          <span>{hint}</span>
+        </div>
+        <strong>{entries.length}</strong>
+      </div>
+      <div className="creator-community-content no-scroll">
+        <div>
+          {entries.map(({ content, creator }) => (
+            <CreatorAppContentCard
+              key={content.id}
+              content={content}
+              creator={creator}
+              discovery
+              onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+
   return (
     <div className="creator-community-view">
+      {browsing && showContents && (
+        <>
+          {contentRow(
+            'community-creators-helpful-title',
+            activeTopic ? `🔥 LO QUE MÁS AYUDA EN ${activeTopic.label.toUpperCase()}` : '🔥 CONTENIDO QUE ESTÁ AYUDANDO',
+            'Lo que más gente ha marcado como útil.',
+            helpfulContents,
+          )}
+
+          {contentRow(
+            'community-creators-latest-title',
+            'ÚLTIMOS CONTENIDOS',
+            'Lo más reciente que ha publicado la comunidad.',
+            latestContents,
+          )}
+
+        </>
+      )}
+
+        {browsing && showCreators && topCreators.length > 0 && (
+          <section className="creator-community-section" aria-labelledby="community-top-creators-title">
+            <div className="creator-community-section__heading">
+              <div>
+                <p id="community-top-creators-title">🏆 CREADORES QUE MÁS AYUDAN</p>
+                <span>{activeTopic ? `Ranking en ${activeTopic.label}.` : 'Según los “me ayudó” de la comunidad.'}</span>
+              </div>
+            </div>
+            <div className="creator-rank-list">
+              {topCreators.map((entry, index) => (
+                <Link key={entry.creator.id} to={`/creadores/${entry.creator.slug}`} className="creator-rank-row">
+                  <span className="creator-rank-row__position">#{index + 1}</span>
+                  <span className="creator-rank-row__avatar" style={{ '--creator-card-accent':entry.creator.accent || C.primary }}>
+                    {entry.creator.avatar_url
+                      ? <img src={entry.creator.avatar_url} alt="" loading="lazy" decoding="async" />
+                      : getCreatorInitials(entry.creator)}
+                  </span>
+                  <span className="creator-rank-row__body">
+                    <strong>{entry.creator.name}</strong>
+                    <span>{entry.creator.tagline}</span>
+                  </span>
+                  <span className="creator-rank-row__score">❤️ {entry.helpful}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+      {showContents && (
       <section className="creator-community-section" aria-labelledby="community-creators-content-title">
         <div className="creator-community-section__heading">
           <div>
-            <p>PUBLICACIONES PARA DESCUBRIR</p>
+            <p id="community-creators-content-title">PUBLICACIONES PARA DESCUBRIR</p>
             <span>Vídeos y publicaciones para descubrir sin salir de Latido.</span>
           </div>
           <strong>{contents.length}</strong>
@@ -256,6 +373,9 @@ export default function CreatorCommunityView({
         )}
       </section>
 
+      )}
+
+      {showCreators && (
       <section className="creator-community-section" aria-labelledby="community-creators-profiles-title">
         <div className="creator-community-section__heading">
           <div>
@@ -332,6 +452,8 @@ export default function CreatorCommunityView({
           />
         )}
       </section>
+
+      )}
 
       <div className="creator-community-cta">
         <span>🎙️</span>

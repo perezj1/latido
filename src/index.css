@@ -3149,12 +3149,14 @@ img[data-latido-img-state="loaded"] {
 }
 
 .tablon-intent-tabs,
+.creator-view-tabs,
 .mi-latido-section-tabs,
 .mi-latido-mode-tabs {
   padding: 3px;
 }
 
 .tablon-intent-tabs .joined-segmented-tabs__indicator,
+.creator-view-tabs .joined-segmented-tabs__indicator,
 .mi-latido-section-tabs .joined-segmented-tabs__indicator,
 .mi-latido-mode-tabs .joined-segmented-tabs__indicator {
   top: 3px;
@@ -3164,6 +3166,7 @@ img[data-latido-img-state="loaded"] {
 }
 
 .tablon-intent-tabs > button,
+.creator-view-tabs > button,
 .mi-latido-section-tabs > button {
   min-height: 35px;
   padding-block: 6px;

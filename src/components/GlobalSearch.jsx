@@ -1357,8 +1357,8 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
       ])
       if (!contentScore) continue
 
-      // El destino natural es la publicacion original; las demo no salen de la app.
-      const externalUrl = !content.demo && /^https?:\/\//i.test(content.url || '') ? content.url : ''
+      // Las publicaciones se abren primero en el reproductor interno de Latido.
+      // Desde el propio reproductor sigue disponible el enlace a la red original.
       results.push({
         type:'creator_content',
         id:content.id,
@@ -1367,7 +1367,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
         imageFit:'cover',
         label:content.title,
         sub:['Publicación', creator.name, platform?.label].filter(Boolean).join(metaSeparator),
-        href:externalUrl || `/creadores/${creator.slug}`,
+        href:`/creadores/${creator.slug}?contenido=${encodeURIComponent(content.id)}`,
         filterMeta:{
           categories:['creadores'],
           canton:content.canton,

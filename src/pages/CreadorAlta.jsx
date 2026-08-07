@@ -34,6 +34,12 @@ const EDIT_SECTIONS = [
   { step:2, emoji:'🔗', label:'Redes' },
 ]
 
+const EDIT_SECTION_BY_QUERY = {
+  info:0,
+  topics:1,
+  networks:2,
+}
+
 function getErrorSection(key='') {
   if (key === 'topics') return 1
   if (key === 'socials' || key.startsWith('social_') || key.startsWith('followers_')) return 2
@@ -86,7 +92,8 @@ export default function CreadorAlta() {
   const { user, displayName, userCanton, userInterests } = useAuth()
   const existing = useMemo(() => getCreatorForUser(user?.id), [user?.id])
   const isEditing = Boolean(existing)
-  const [step, setStep] = useState(0)
+  const requestedSection = new URLSearchParams(location.search).get('section')
+  const [step, setStep] = useState(() => isEditing ? EDIT_SECTION_BY_QUERY[requestedSection] ?? 0 : 0)
   const [saving, setSaving] = useState(false)
   const [processingAvatar, setProcessingAvatar] = useState(false)
   const [form, setForm] = useState(() => initialForm(existing, displayName, userCanton, userInterests))

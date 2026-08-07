@@ -395,6 +395,7 @@ export function CreatorCard({ creator }) {
 }
 
 export function CreatorContentCard({ content, creator, onContentOpen, compact = false }) {
+  const navigate = useNavigate()
   const topic = getCreatorTopic(content.topic)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
   const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
@@ -407,7 +408,7 @@ export function CreatorContentCard({ content, creator, onContentOpen, compact = 
       onContentOpen(content, creator)
       return
     }
-    if (!content.demo) window.open(content.url, '_blank', 'noopener,noreferrer')
+    navigate(`/creadores/${creator.slug}?contenido=${encodeURIComponent(content.id)}`)
   }
 
   return (
@@ -443,21 +444,22 @@ export function CreatorContentCard({ content, creator, onContentOpen, compact = 
   )
 }
 
-export function CreatorAppContentCard({ content, creator, onContentOpen, discovery=false }) {
+export function CreatorAppContentCard({ content, creator, onContentOpen, discovery=false, editor=false, managementActions=null }) {
+  const navigate = useNavigate()
   const topic = getCreatorTopic(content.topic)
   const platform = getCreatorPlatform(content.platform)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
   const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
   useEffect(() => {
-    trackCreatorImpression(creator.id, 'content', content.id)
-  }, [content.id, creator.id])
+    if (!editor) trackCreatorImpression(creator.id, 'content', content.id)
+  }, [content.id, creator.id, editor])
   const handleOpen = () => {
     if (!content.demo) trackCreatorMetric(creator.id, 'content_click', content.id)
     if (onContentOpen) {
       onContentOpen(content, creator)
       return
     }
-    if (!content.demo) window.open(content.url, '_blank', 'noopener,noreferrer')
+    navigate(`/creadores/${creator.slug}?contenido=${encodeURIComponent(content.id)}`)
   }
 
   if (discovery) {
@@ -480,7 +482,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
             </span>
           </span>
         </button>
-        <CreatorHomeContentActions helpful={helpful} content={content} creator={creator} />
+        {managementActions || <CreatorHomeContentActions helpful={helpful} content={content} creator={creator} />}
       </article>
     )
   }
@@ -500,7 +502,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
           <span>{creator.name}</span>
           {creator.verified && <span className="creator-confirmed creator-confirmed--tiny">✓</span>}
         </span>
-        <CreatorContentActions helpful={helpful} content={content} creator={creator} onOpen={handleOpen} />
+        {managementActions || <CreatorContentActions helpful={helpful} content={content} creator={creator} onOpen={handleOpen} />}
       </div>
     </article>
   )

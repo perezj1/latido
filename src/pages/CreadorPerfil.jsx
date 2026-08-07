@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
@@ -7,7 +7,10 @@ import {
   getAllCreators,
   getCreatorBySlug,
   formatCreatorHandle,
-  getOrderedCreatorContents,
+  getCreatorHelpfulCount,
+  getCreatorHelpRank,
+  getCreatorContentsNewestFirst,
+  getFeaturedCreatorContents,
   getCreatorPlatform,
   trackCreatorMetric,
 } from '../lib/creators'
@@ -48,6 +51,8 @@ function CreatorNetworkIcon({ platformId }) {
 
 export default function CreadorPerfil() {
   const { creatorSlug } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedContentId = searchParams.get('contenido')
   const { user } = useAuth()
   const [creator, setCreator] = useState(() => getCreatorBySlug(creatorSlug))
   const [preview, setPreview] = useState(null)
@@ -59,6 +64,13 @@ export default function CreadorPerfil() {
     setCreator(current)
     if (current) trackCreatorMetric(current.id, 'profile_view')
   }, [creatorSlug])
+
+  useEffect(() => {
+    if (!creator || !requestedContentId) return
+    const content = getCreatorContentsNewestFirst(creator, { publishedOnly:true })
+      .find(item => String(item.id) === requestedContentId)
+    if (content) setPreview({ content, creator })
+  }, [creator, requestedContentId])
 
   useEffect(() => {
     if (!profileMenuOpen) return undefined
@@ -96,7 +108,10 @@ export default function CreadorPerfil() {
     )
   }
 
-  const publishedContents = getOrderedCreatorContents(creator, { publishedOnly:true })
+  const publishedContents = getCreatorContentsNewestFirst(creator, { publishedOnly:true })
+  const featuredContents = getFeaturedCreatorContents(creator)
+  const helpfulCount = getCreatorHelpfulCount(creator)
+  const helpRank = getCreatorHelpRank(creator)
   const isOwner = Boolean(user?.id && creator.owner_id === user.id)
 
   const handleSocialClick = (event, social) => {
@@ -118,6 +133,14 @@ export default function CreadorPerfil() {
         toast.success('Enlace copiado')
       }
     } catch {}
+  }
+
+  const closePreview = () => {
+    setPreview(null)
+    if (!requestedContentId) return
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('contenido')
+    setSearchParams(nextParams, { replace:true })
   }
 
   return (
@@ -165,6 +188,24 @@ export default function CreadorPerfil() {
               {(creator.topics || []).map(topic => <CreatorTopicPill key={topic} topicId={topic} />)}
             </div>
 
+            {/* Lo que mide de verdad a un creador en Latido: a cuánta gente ha
+                ayudado y qué puesto ocupa por ello. */}
+            <div className="creator-social-profile__impact">
+              <span
+                className="creator-impact-help"
+                title={`${helpfulCount} ${helpfulCount === 1 ? 'persona ayudada' : 'personas ayudadas'}`}
+              >
+                <span aria-hidden="true">❤️</span>
+                <strong>{helpfulCount.toLocaleString('es-CH')}</strong>
+              </span>
+              {helpRank > 0 && (
+                <span className="creator-impact-rank" title="Puesto en Creadores que más ayudan">
+                  <span aria-hidden="true">🏆</span>
+                  <strong>#{helpRank}</strong>
+                </span>
+              )}
+            </div>
+
             <div className="creator-social-profile__stats" aria-label="Datos del perfil">
               <span><strong>{publishedContents.length}</strong><small>Publicaciones</small></span>
               <span><strong>{creator.topics?.length || 0}</strong><small>Temas</small></span>
@@ -207,27 +248,58 @@ export default function CreadorPerfil() {
           </div>
         </section>
 
-        <section className="creators-section" style={{ paddingTop:36 }}>
+        <section className="creators-section creator-profile-content-section creator-profile-featured-section">
           <div className="creators-section__heading">
             <div>
-              <h2>Los 6 de {creator.name}</h2>
-              <p>Su selección personal. La primera publicación es su carta de presentación y aparece siempre arriba.</p>
+              <h2>Destacados</h2>
+              <p>La selección personal de {creator.name}.</p>
             </div>
-            <span className="creators-results-count">{publishedContents.length} de 6 espacios utilizados</span>
+            <span className="creators-results-count">{featuredContents.length} destacados</span>
           </div>
-          <div className="creator-profile-six-grid">
-            {publishedContents.map(content => (
-              <CreatorAppContentCard
-                key={content.id}
-                content={content}
-                creator={creator}
-                discovery
-                onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
-              />
-            ))}
-            {!publishedContents.length && <div className="creators-empty">Este perfil todavía no ha añadido publicaciones.</div>}
-          </div>
+          {featuredContents.length ? (
+            <div className="creator-home-scroll no-scroll">
+              <div className="creator-home-scroll__track">
+                {featuredContents.map(content => (
+                  <div key={content.id} className="creator-home-scroll__item">
+                    <CreatorAppContentCard
+                      content={content}
+                      creator={creator}
+                      discovery
+                      onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="creators-empty">Este perfil todavía no ha añadido publicaciones.</div>
+          )}
         </section>
+
+        {/* Los destacados son una seleccion, no un limite: aqui esta todo lo publicado,
+            en rejilla y sin desplazamiento lateral. */}
+        {publishedContents.length > 0 && (
+          <section className="creators-section creator-profile-content-section creator-profile-all-section">
+            <div className="creators-section__heading">
+              <div>
+                <h2>Todos</h2>
+                <p>Todas las publicaciones de {creator.name} en Latido.</p>
+              </div>
+              <span className="creators-results-count">{publishedContents.length} en total</span>
+            </div>
+            <div className="creator-profile-six-grid">
+              {publishedContents.map(content => (
+                <CreatorAppContentCard
+                  key={content.id}
+                  content={content}
+                  creator={creator}
+                  discovery
+                  onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {relatedCreators.length > 0 && (
           <section className="creators-section">
@@ -252,7 +324,7 @@ export default function CreadorPerfil() {
         </section>
       </div>
 
-      <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
+      <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={closePreview} />
     </div>
   )
 }
