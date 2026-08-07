@@ -10,11 +10,13 @@ import { MAX_PUBLICATION_IMAGES, uploadAvatar, getStorageErrorMessage, uploadPub
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
+import BusinessPartnerContactsEditor from '../components/BusinessPartnerContactsEditor'
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
 import { getBusinessPromotionMeta, isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
 import { canUseWhatsappNumber } from '../lib/businessContact'
+import { getPartnerContactOptionHref, normalizePartnerContactOptions } from '../lib/businessPartnerContacts'
 import { INTEREST_OPTIONS, normalizeInterestIds } from '../lib/interests'
 import {
   getLatidoRating,
@@ -580,6 +582,7 @@ function buildEditorForm(item) {
       partner_card_description: row.partner_card_description || '',
       partner_cta_label: row.partner_cta_label || '',
       partner_cta_url: row.partner_cta_url || '',
+      partner_contact_options: normalizePartnerContactOptions(row.partner_contact_options),
       partner_published: row.partner_published !== false,
     }
   }
@@ -2119,6 +2122,17 @@ export default function Perfil() {
 
     if (item.kind === 'business') {
       const services = splitList(editorForm.services || '').slice(0, 3)
+      const incompletePartnerContact = (editorForm.partner_contact_options || [])
+        .find(option => !String(option?.value || '').trim())
+      if (incompletePartnerContact) {
+        toast.error('Completa o elimina los contactos adicionales vacíos')
+        return
+      }
+      const partnerContactOptions = normalizePartnerContactOptions(editorForm.partner_contact_options)
+      if (partnerContactOptions.some(option => !getPartnerContactOptionHref(option))) {
+        toast.error('Revisa los datos de los contactos adicionales')
+        return
+      }
       const partnerCtaUrl = normalizeExternalUrl(editorForm.partner_cta_url)
       if (editorForm.partner_cta_url?.trim() && !partnerCtaUrl) {
         toast.error('Añade un enlace válido para la tarjeta de colaborador')
@@ -2142,6 +2156,9 @@ export default function Perfil() {
         partner_cta_url: partnerCtaUrl || null,
         partner_published: editorForm.partner_published !== false,
         updated_at: new Date().toISOString(),
+      }
+      if (partnerContactOptions.length || Object.prototype.hasOwnProperty.call(item.raw, 'partner_contact_options')) {
+        payload.partner_contact_options = partnerContactOptions
       }
       if (!payload.name || !payload.canton) { toast.error('Completa al menos el nombre y el cantón del negocio'); return }
       if (![payload.phone, payload.email, payload.instagram].some(Boolean)) { toast.error('Añade al menos un método de contacto para el negocio'); return }
@@ -3635,6 +3652,10 @@ export default function Perfil() {
                 <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.55, margin:'0 0 12px' }}>
                   Si dejas estos campos vacíos, Latido usará automáticamente la información principal del negocio.
                 </p>
+                <BusinessPartnerContactsEditor
+                  options={editorForm.partner_contact_options || []}
+                  onChange={options => updateEditorField('partner_contact_options', options)}
+                />
                 <ImageUploadField
                   label="Logo para la tarjeta"
                   previewUrl={editorForm.partner_logo_url || ''}

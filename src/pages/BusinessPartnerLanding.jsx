@@ -3,12 +3,12 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
-import { normalizeExternalUrl } from '../lib/links'
 import { getNegocioTypeMeta } from '../lib/constants'
 import { getIdFromSlug } from '../lib/seo'
-import { getBusinessPartnerAnalyticsId, hasActiveBusinessLanding } from '../lib/businessPartners'
+import { getBusinessPartnerAnalyticsId, getBusinessPartnerContactActions, hasActiveBusinessLanding } from '../lib/businessPartners'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
-import { getBusinessPhone, getBusinessWhatsapp, getNavigationUrl, getPhoneDigits } from '../lib/businessContact'
+import { getBusinessPhone, getPhoneDigits } from '../lib/businessContact'
+import { getMissingColumnName } from '../lib/supabaseCompat'
 import './PartnerServices.css'
 
 const FALLBACK_LOGO = '/favicon.svg'
@@ -27,72 +27,9 @@ function getPhoneDisplay(value = '') {
   return String(value || `+${digits}`).trim()
 }
 
-function getUrlDisplay(value = '') {
-  try {
-    const url = new URL(normalizeExternalUrl(value) || value)
-    return `${url.hostname.replace(/^www\./, '')}${url.pathname === '/' ? '' : url.pathname}`.replace(/\/$/, '')
-  } catch {
-    return String(value || '').replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '')
-  }
-}
-
-function getInstagramUrl(value = '') {
-  const text = String(value || '').trim()
-  if (!text) return ''
-  return normalizeExternalUrl(text) || `https://instagram.com/${text.replace(/^@/, '')}`
-}
-
 function normalizeServices(value) {
   if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean)
   return String(value || '').split(',').map(item => item.trim()).filter(Boolean)
-}
-
-function buildActions(provider = {}) {
-  const actions = []
-  const phone = getBusinessPhone(provider)
-  const whatsapp = getBusinessWhatsapp(provider)
-  const phoneDigits = getPhoneDigits(phone)
-  const whatsappDigits = getPhoneDigits(whatsapp)
-  const phoneDisplay = getPhoneDisplay(phone)
-  const email = String(provider.email || '').trim()
-  const website = normalizeExternalUrl(provider.website)
-  const instagram = getInstagramUrl(provider.instagram)
-  const custom = normalizeExternalUrl(provider.partner_cta_url)
-
-  if (whatsappDigits) {
-    actions.push({ id:'whatsapp', label:'WhatsApp', value:getPhoneDisplay(whatsapp), href:`https://wa.me/${whatsappDigits}`, external:true })
-  }
-  if (phoneDigits) {
-    actions.push({ id:'phone', label:'Llamar', value:phoneDisplay, href:`tel:+${phoneDigits}`, external:false })
-  }
-  if (provider.address) {
-    actions.push({
-      id:'address',
-      label:'Dirección',
-      value:provider.address,
-      href:getNavigationUrl(provider.address, provider.city, provider.canton),
-      external:true,
-    })
-  }
-  if (email) actions.push({ id:'email', label:'Email', value:email, href:`mailto:${email}`, external:false })
-  if (website) actions.push({ id:'website', label:'Web', value:getUrlDisplay(website), href:website, external:true })
-  if (instagram) {
-    const instagramLabel = String(provider.instagram || '').startsWith('@')
-      ? provider.instagram
-      : `@${String(provider.instagram || '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/$/, '')}`
-    actions.push({ id:'instagram', label:'Instagram', value:instagramLabel, href:instagram, external:true })
-  }
-  if (custom && !actions.some(action => action.href === custom)) {
-    actions.push({
-      id:'custom',
-      label:cleanText(provider.partner_cta_label, 'Contactar'),
-      value:getUrlDisplay(custom),
-      href:custom,
-      external:true,
-    })
-  }
-
-  return actions
 }
 
 function trackBusinessLanding(eventType, provider, payload = {}) {
@@ -153,9 +90,7 @@ export default function BusinessPartnerLanding() {
 
     const loadProvider = async () => {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('providers')
-        .select(`
+      const withContactOptions = `
           id,
           name,
           category,
@@ -165,6 +100,7 @@ export default function BusinessPartnerLanding() {
           services,
           website,
           address,
+          partner_contact_options,
           phone,
           whatsapp,
           instagram,
@@ -180,9 +116,20 @@ export default function BusinessPartnerLanding() {
           partner_landing_starts_at,
           partner_landing_ends_at,
           partner_landing_published_at
-        `)
+        `
+      const withoutContactOptions = withContactOptions.replace(/\s*partner_contact_options,/, '')
+      const fetchProvider = columns => supabase
+        .from('providers')
+        .select(columns)
         .eq('id', providerId)
         .maybeSingle()
+
+      let { data, error } = await fetchProvider(withContactOptions)
+      if (getMissingColumnName(error, 'providers') === 'partner_contact_options') {
+        const compatibleResult = await fetchProvider(withoutContactOptions)
+        data = compatibleResult.data
+        error = compatibleResult.error
+      }
 
       if (!active) return
       if (error) {
@@ -203,7 +150,7 @@ export default function BusinessPartnerLanding() {
   }, [providerId])
 
   const services = useMemo(() => normalizeServices(provider?.services), [provider?.services])
-  const actions = useMemo(() => buildActions(provider || {}), [provider])
+  const actions = useMemo(() => getBusinessPartnerContactActions(provider || {}), [provider])
   const primaryAction = actions[0] || null
   const logoUrl = cleanText(provider?.partner_logo_url, cleanText(provider?.photo_url, FALLBACK_LOGO))
   const category = getNegocioTypeMeta(provider?.category)?.label || 'Negocio'

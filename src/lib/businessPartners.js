@@ -3,6 +3,13 @@ import { normalizeExternalUrl } from './links'
 import { getBusinessLandingPath } from './seo'
 import { getBusinessPhone, getBusinessWhatsapp, getNavigationUrl, getPhoneDigits } from './businessContact'
 import { getBusinessPartnerCardDestinationOverride } from './businessPartnerOverrides'
+import { getMissingColumnName } from './supabaseCompat'
+import {
+  getPartnerContactOptionHref,
+  getPartnerContactType,
+  isPartnerContactExternal,
+  normalizePartnerContactOptions,
+} from './businessPartnerContacts'
 
 const ACTIVE_PARTNER_PLANS = new Set(['basic', 'premium'])
 const PLAN_ORDER = { premium:0, basic:1 }
@@ -104,7 +111,7 @@ function getTikTokAction(value = '') {
   }
 }
 
-function getBusinessPartnerContactActions(provider = {}) {
+export function getBusinessPartnerContactActions(provider = {}) {
   const actions = []
   const phone = getBusinessPhone(provider)
   const whatsapp = getBusinessWhatsapp(provider)
@@ -141,7 +148,7 @@ function getBusinessPartnerContactActions(provider = {}) {
       id:'phone',
       type:'phone',
       icon:'📞',
-      label:'Llamadas',
+      label:'Teléfono',
       value:phoneDisplay,
       href:`tel:+${phoneDigits}`,
       external:false,
@@ -190,7 +197,34 @@ function getBusinessPartnerContactActions(provider = {}) {
   const tiktokAction = getTikTokAction(tiktokUrl)
   if (tiktokAction) actions.push(tiktokAction)
 
+  normalizePartnerContactOptions(provider.partner_contact_options).forEach(option => {
+    const href = getPartnerContactOptionHref(option)
+    if (!href) return
+    const type = getPartnerContactType(option.type)
+    actions.push({
+      id:`extra-${option.id}`,
+      type:option.type,
+      label:type.label,
+      optionLabel:option.label || 'Contacto adicional',
+      isAdditional:true,
+      value:option.value,
+      href,
+      external:isPartnerContactExternal(option.type),
+    })
+  })
+
+  const seen = new Set()
   return actions
+    .map(action => ({
+      ...action,
+      optionLabel:action.optionLabel || provider.city || provider.canton || '',
+    }))
+    .filter(action => {
+      const key = `${action.type}|${String(action.href || action.value).toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
 }
 
 export function getBusinessPartnerDestination(provider = {}) {
@@ -286,9 +320,7 @@ export async function fetchActiveBusinessPartners({
   if (!allowedPlans.length) return []
 
   const now = new Date().toISOString()
-  const { data, error } = await supabase
-    .from('providers')
-    .select(`
+  const withContactOptions = `
       id,
       name,
       category,
@@ -298,6 +330,7 @@ export async function fetchActiveBusinessPartners({
       services,
       website,
       address,
+      partner_contact_options,
       phone,
       whatsapp,
       instagram,
@@ -315,7 +348,11 @@ export async function fetchActiveBusinessPartners({
       partner_landing_starts_at,
       partner_landing_ends_at,
       partner_published
-    `)
+    `
+  const withoutContactOptions = withContactOptions.replace(/\s*partner_contact_options,/, '')
+  const buildQuery = columns => supabase
+    .from('providers')
+    .select(columns)
     .eq('active', true)
     .eq('partner_published', true)
     .in('promotion_plan', allowedPlans)
@@ -324,6 +361,13 @@ export async function fetchActiveBusinessPartners({
     .order('promotion_plan', { ascending:false })
     .order('name', { ascending:true })
     .limit(limit)
+
+  let { data, error } = await buildQuery(withContactOptions)
+  if (getMissingColumnName(error, 'providers') === 'partner_contact_options') {
+    const compatibleResult = await buildQuery(withoutContactOptions)
+    data = compatibleResult.data
+    error = compatibleResult.error
+  }
 
   if (error) {
     console.warn('Could not load business partners:', error.message)

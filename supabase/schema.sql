@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS providers (
   city        TEXT,
   canton      TEXT,
   address     TEXT,
+  partner_contact_options JSONB NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(partner_contact_options) = 'array'),
   description TEXT,
   services    TEXT[],
   price_range TEXT,
