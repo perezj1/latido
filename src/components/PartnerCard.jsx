@@ -23,7 +23,7 @@ export default function PartnerCard({
     >
       <div className="partner-card-brand" aria-label={brand.partnerName}>
         <span className="partner-card-brand-unit">
-          <span className={`partner-card-logo${brand.logoWide ? ' partner-card-logo--wide' : ''}`}>
+          <span className={`partner-card-logo${brand.logoWide ? ' partner-card-logo--wide' : ''}${brand.logoBare ? ' partner-card-logo--bare' : ''}`}>
             <img src={brand.partnerLogo} alt="" />
           </span>
           {brand.showName !== false && (

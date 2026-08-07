@@ -19,6 +19,12 @@ export function getBusinessPartnerCardDestinationOverride(providerId) {
   }
 }
 
+// Su logo ya trae fondo y forma propios, asi que el recuadro blanco de la
+// tarjeta lo encajonaba y lo dejaba mas pequeno de lo necesario.
+export function hasBusinessPartnerBareLogo(providerId) {
+  return String(providerId || '') === JOBLI_PROVIDER_ID
+}
+
 export function getBusinessPartnerCardServiceLabel(providerId, service) {
   const originalLabel = String(service || '')
   if (String(providerId || '') !== JOBLI_PROVIDER_ID) return originalLabel

@@ -911,6 +911,15 @@ a[href]:active { opacity:.82; }
   height: 34px;
 }
 
+.public-partner-tile .partner-card-logo--bare {
+  box-shadow: none;
+}
+
+.public-partner-tile .partner-card-logo--bare img {
+  width: 100%;
+  height: 100%;
+}
+
 .public-partner-tile .partner-card-logo--wide {
   width: 104px;
   flex-basis: 104px;
@@ -1406,6 +1415,27 @@ a[href]:active { opacity:.82; }
   width: 29px;
   height: 29px;
   object-fit: contain;
+}
+
+/* Logo sin recuadro que ocupa toda la ranura. Se ve mas grande que dentro de
+   la caja, donde perdia el aire del borde, pero el hueco mide lo mismo, asi
+   que ni la tarjeta ni la cabecera cambian de alto. */
+.partner-card-logo--bare {
+  overflow: visible;
+  border-color: transparent;
+  background: transparent;
+  /* El logo escalado invade el gap del brand-unit, porque transform no ocupa
+     espacio. Este margen devuelve la separacion con el titulo. */
+  margin-right: 14px;
+}
+
+/* El escalado va por transform y no por width: asi el logo crece sin ocupar
+   mas hueco, y la cabecera mantiene su alto. `overflow: visible` arriba deja
+   que sobresalga. */
+.partner-card-logo--bare img {
+  width: 100%;
+  height: 100%;
+  transform: scale(1.6);
 }
 
 .partner-card-logo--wide {
