@@ -155,7 +155,7 @@ assert.deepEqual(
   getCreatorVideoEmbed({ url:'https://www.tiktok.com/@latido/video/123456789' }),
   {
     platform:'tiktok',
-    src:'https://www.tiktok.com/player/v1/123456789?autoplay=0&loop=0',
+    src:'https://www.tiktok.com/player/v1/123456789?autoplay=0&loop=0&fullscreen_button=0',
     vertical:true,
   },
   'Los vídeos de TikTok deben abrirse en el reproductor vertical integrado.',
@@ -174,7 +174,7 @@ assert.deepEqual(
   getCreatorVideoEmbed({ url:shortTikTokUrl, video_id:resolvedTikTok.video_id, resolved_url:resolvedTikTok.resolved_url }),
   {
     platform:'tiktok',
-    src:'https://www.tiktok.com/player/v1/7670562387044470038?autoplay=0&loop=0',
+    src:'https://www.tiktok.com/player/v1/7670562387044470038?autoplay=0&loop=0&fullscreen_button=0',
     vertical:true,
   },
   'Un enlace corto guardado debe reproducirse con el ID resuelto.',

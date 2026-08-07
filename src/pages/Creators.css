@@ -1735,10 +1735,6 @@
   padding-top: 8px;
 }
 
-.creator-profile-featured-section .creator-home-scroll {
-  padding-bottom: 8px;
-}
-
 /* La rejilla usa la misma tarjeta que el carrusel de Inicio (variante --home).
    Aqui solo se suelta el alto fijo del carrusel para que las celdas crezcan
    con el titulo; el resto del aspecto lo pone la propia tarjeta. */

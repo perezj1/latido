@@ -29,12 +29,12 @@ import '../pages/Creators.css'
 
 const CREATOR_SORT_OPTIONS = [
   { id:'newest', label:'Más recientes' },
-  { id:'contents', label:'Más publicaciones' },
+  { id:'contents', label:'Más contenido' },
   { id:'name', label:'Nombre A–Z' },
 ]
 
 export const CREATOR_VIEW_TABS = [
-  { id:'contenidos', label:'Publicaciones' },
+  { id:'contenidos', label:'Contenido' },
   { id:'creadores', label:'Creadores' },
 ]
 
@@ -117,7 +117,7 @@ export function CreatorCommunityToolbar({
       </div>
 
       {/* Debajo de las categorias: primero eliges el tema y despues si quieres
-          ver publicaciones o creadores de ese tema. */}
+          ver contenido o creadores de ese tema. */}
       <div className="creator-community-view-tabs">
         <SegmentedTabs
           items={CREATOR_VIEW_TABS}
@@ -298,14 +298,14 @@ export default function CreatorCommunityView({
         <>
           {contentRow(
             'community-creators-helpful-title',
-            activeTopic ? `🔥 LO QUE MÁS AYUDA EN ${activeTopic.label.toUpperCase()}` : '🔥 PUBLICACIONES QUE ESTÁN AYUDANDO',
+            activeTopic ? `🔥 LO QUE MÁS AYUDA EN ${activeTopic.label.toUpperCase()}` : '🔥 CONTENIDO QUE ESTÁ AYUDANDO',
             'Lo que más gente ha marcado como útil.',
             helpfulContents,
           )}
 
           {contentRow(
             'community-creators-latest-title',
-            'PUBLICACIONES RECIENTES',
+            'CONTENIDO RECIENTE',
             'Lo más reciente que ha publicado la comunidad.',
             latestContents,
           )}
@@ -345,8 +345,8 @@ export default function CreatorCommunityView({
       <section className="creator-community-section" aria-labelledby="community-creators-content-title">
         <div className="creator-community-section__heading">
           <div>
-            <p id="community-creators-content-title">PUBLICACIONES PARA DESCUBRIR</p>
-            <span>Vídeos y publicaciones para descubrir sin salir de Latido.</span>
+            <p id="community-creators-content-title">CONTENIDO PARA DESCUBRIR</p>
+            <span>Vídeos y contenido para descubrir sin salir de Latido.</span>
           </div>
           <strong>{contents.length}</strong>
         </div>
@@ -369,7 +369,7 @@ export default function CreatorCommunityView({
         ) : (
           <EmptyState
             emoji="🎬"
-            title={hasFilters ? 'No hay publicaciones con estos filtros' : 'Todavía no hay publicaciones'}
+            title={hasFilters ? 'No hay contenido con estos filtros' : 'Todavía no hay contenido'}
             sub={hasFilters
               ? 'Prueba otro tema o quita algún filtro.'
               : 'Cuando los creadores publiquen, aparecerán aquí.'}
@@ -463,8 +463,8 @@ export default function CreatorCommunityView({
 
       <div className="creator-community-cta">
         <span>🎙️</span>
-        <h3>{ownCreator ? 'Gestiona tu perfil y tus publicaciones' : '¿Compartes algo sobre Suiza en redes?'}</h3>
-        <p>{ownCreator ? 'Actualiza cómo te presentas y elige qué publicaciones mostrar.' : 'Tu experiencia, trabajo, proyecto o negocio puede interesar a la comunidad hispanohablante.'}</p>
+        <h3>{ownCreator ? 'Gestiona tu perfil y tu contenido' : '¿Compartes algo sobre Suiza en redes?'}</h3>
+        <p>{ownCreator ? 'Actualiza cómo te presentas y elige qué contenido mostrar.' : 'Tu experiencia, trabajo, proyecto o negocio puede interesar a la comunidad hispanohablante.'}</p>
         <Link to={isLoggedIn ? creatorCta : `/auth?next=${encodeURIComponent('/creadores/alta')}`}>
           {ownCreator ? 'Abrir mi espacio' : 'Crear mi perfil'}
         </Link>
@@ -472,7 +472,7 @@ export default function CreatorCommunityView({
 
       <div className="creator-community-note">
         <strong>Cómo funciona</strong>
-        <span>Los vídeos compatibles se reproducen en Latido. Siempre puedes abrir la publicación en su plataforma original.</span>
+        <span>Los vídeos compatibles se reproducen en Latido. Siempre puedes abrir el contenido en su plataforma original.</span>
       </div>
 
       <CreatorContentModal

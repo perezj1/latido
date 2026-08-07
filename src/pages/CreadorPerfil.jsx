@@ -261,21 +261,20 @@ export default function CreadorPerfil() {
             <span className="creators-results-count">{featuredContents.length} destacados</span>
           </div>
           {featuredContents.length ? (
-            <div className="creator-home-scroll no-scroll">
-              <div className="creator-home-scroll__track">
+            <div className="creator-community-content creator-profile-featured-carousel no-scroll">
+              <div>
                 {featuredContents.map(content => (
-                  <div key={content.id} className="creator-home-scroll__item">
-                    <CreatorAppContentCard
-                      content={content}
-                      creator={creator}
-                      discovery
-                      onContentOpen={(selectedContent, selectedCreator) => setPreview({
-                        content:selectedContent,
-                        creator:selectedCreator,
-                        playlist:featuredContents.map(item => ({ content:item, creator })),
-                      })}
-                    />
-                  </div>
+                  <CreatorAppContentCard
+                    key={content.id}
+                    content={content}
+                    creator={creator}
+                    discovery
+                    onContentOpen={(selectedContent, selectedCreator) => setPreview({
+                      content:selectedContent,
+                      creator:selectedCreator,
+                      playlist:featuredContents.map(item => ({ content:item, creator })),
+                    })}
+                  />
                 ))}
               </div>
             </div>

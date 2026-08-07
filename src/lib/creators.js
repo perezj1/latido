@@ -449,7 +449,7 @@ export function getCreatorVideoEmbed(content = {}) {
     if (!videoId) return null
     return {
       platform,
-      src:`https://www.tiktok.com/player/v1/${videoId}?autoplay=0&loop=0`,
+      src:`https://www.tiktok.com/player/v1/${videoId}?autoplay=0&loop=0&fullscreen_button=0`,
       vertical:true,
     }
   }
@@ -475,7 +475,7 @@ export async function resolveCreatorVideoEmbed(content = {}, { signal } = {}) {
   const resolved = await resolveTikTokVideo(content.url, { signal })
   return {
     platform:'tiktok',
-    src:`${resolved.embed_url}?autoplay=0&loop=0`,
+    src:`${resolved.embed_url}?autoplay=0&loop=0&fullscreen_button=0`,
     vertical:true,
   }
 }

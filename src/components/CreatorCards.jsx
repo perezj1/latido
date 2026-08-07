@@ -690,7 +690,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
               src={embed.src}
               title={`${activeContent.title} en ${platform.label}`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
+              allowFullScreen={embed.platform !== 'tiktok'}
               lang="es"
               referrerPolicy="strict-origin-when-cross-origin"
               scrolling="no"

@@ -98,7 +98,7 @@ export default function Creadores() {
             <span className="creators-eyebrow">PARA CREADORES</span>
             <h1>Haz que más personas descubran <em>lo que compartes sobre Suiza</em></h1>
             <p className="creators-hero__lead">
-              Crea gratis tu perfil de creador en Latido, conecta tus redes y elige hasta seis publicaciones para presentarte. Cada visita abre el contenido original en tu plataforma.
+              Crea gratis tu perfil de creador en Latido, conecta tus redes y elige hasta seis contenidos para presentarte. Cada visita abre el contenido original en tu plataforma.
             </p>
             <div className="creators-hero__benefits" aria-label="Ventajas para creadores">
               <span>✓ Perfil gratuito</span>
@@ -211,7 +211,7 @@ export default function Creadores() {
         <section id="contenidos" className="creators-section" aria-labelledby="creators-content-title">
           <div className="creators-section__heading">
             <div>
-              <h2 id="creators-content-title">Publicaciones para descubrir</h2>
+              <h2 id="creators-content-title">Contenido para descubrir</h2>
               <p>Información, experiencias y opiniones compartidas desde sus redes y páginas originales.</p>
             </div>
             <span className="creators-results-count">Actualizado recientemente</span>
@@ -231,7 +231,7 @@ export default function Creadores() {
             ))}
             {!featuredContents.length && (
               <div className="creators-empty">
-                No hay publicaciones que coincidan con estos filtros.
+                No hay contenido que coincida con estos filtros.
               </div>
             )}
           </div>
@@ -242,7 +242,7 @@ export default function Creadores() {
             <div className="creator-directory-cta__copy">
               <span>PARA QUIENES COMPARTEN SOBRE SUIZA</span>
               <h2>Haz que más personas descubran lo que compartes</h2>
-              <p>Conecta tus redes y destaca hasta seis publicaciones sobre tu experiencia, profesión, trabajo, proyecto o negocio. No necesitas dedicarte profesionalmente a crear contenido.</p>
+              <p>Conecta tus redes y destaca hasta seis contenidos sobre tu experiencia, profesión, trabajo, proyecto o negocio. No necesitas dedicarte profesionalmente a crear contenido.</p>
             </div>
             <Link className="creators-secondary-action creator-directory-cta__button" to={isLoggedIn ? creatorCta : `/auth?next=${encodeURIComponent('/creadores/alta')}`}>
               {ownCreator ? 'Gestionar mi perfil' : 'Crear mi perfil'}

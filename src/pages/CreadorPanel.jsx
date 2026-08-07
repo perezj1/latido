@@ -309,6 +309,7 @@ export default function CreadorPanel() {
 
   const renderContentCard = (content, contents) => (
     <CreatorAppContentCard
+      key={content.id}
       content={content}
       creator={creator}
       discovery
@@ -388,9 +389,9 @@ export default function CreadorPanel() {
             <span className="creators-results-count">{featuredContents.length}/{CREATOR_FEATURED_CONTENTS}</span>
           </div>
           {featuredContents.length ? (
-            <div className="creator-home-scroll no-scroll">
-              <div className="creator-home-scroll__track">
-                {featuredContents.map(content => <div key={content.id} className="creator-home-scroll__item">{renderContentCard(content, featuredContents)}</div>)}
+            <div className="creator-community-content creator-profile-featured-carousel no-scroll">
+              <div>
+                {featuredContents.map(content => renderContentCard(content, featuredContents))}
               </div>
             </div>
           ) : <div className="creators-empty">Marca una publicación como destacada desde la sección Todos.</div>}
