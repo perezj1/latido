@@ -148,7 +148,7 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
   }, [hasSinglePartner, totalPartners])
 
   return (
-    <section className="public-partner-section" aria-labelledby="public-partners-title">
+    <section className="public-partner-section" aria-labelledby="public-partners-title" data-nosnippet>
       <div className="public-partner-vip-star" aria-hidden="true">⭐</div>
       <div className="public-partner-heading">
         <div className="public-partner-heading-title">
