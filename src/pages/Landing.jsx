@@ -1225,7 +1225,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             <div className="latido-creators-intro__copy">
               <span className="latido-creators-intro__eyebrow">🎙️ CREADORES EN LATIDO</span>
               <h2 id="landing-creators-title">Información sobre Suiza contada por quienes la viven</h2>
-              <p>Encuentra experiencias, consejos y opiniones de creadores en español. Explora por tema y abre cada publicación en su red original.</p>
+              <p>Encuentra experiencias, consejos y opiniones de creadores en español. Explora por tema y reproduce vídeos sin salir de Latido.</p>
               <Link className="latido-creators-intro__link" to={creatorsEntryPath}>Descubrir creadores</Link>
             </div>
             <div className="latido-creators-intro__preview" aria-hidden="true">

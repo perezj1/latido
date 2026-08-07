@@ -56,6 +56,8 @@ const CREATOR_INTERACTIONS_KEY = 'latido_creator_interactions_v1'
 const CREATOR_IMPRESSIONS_SESSION_KEY = 'latido_creator_impressions_v1'
 const CREATOR_UPDATE_EVENT = 'latido:creators-updated'
 const CREATOR_INTERACTIONS_EVENT = 'latido:creator-interactions-updated'
+const TIKTOK_RESOLVE_ENDPOINT = '/api/tiktok-resolve'
+const tiktokResolutionCache = new Map()
 
 const DEMO_CREATORS = [
   {
@@ -342,6 +344,137 @@ export function getYouTubeVideoId(value = '') {
   }
 }
 
+export function getTikTokVideoId(value = '') {
+  const normalized = normalizeCreatorUrl(value)
+  if (!normalized) return ''
+
+  try {
+    const url = new URL(normalized)
+    const host = url.hostname.toLowerCase().replace(/^www\./, '')
+    if (host !== 'tiktok.com' && !host.endsWith('.tiktok.com')) return ''
+    return url.pathname.match(/\/video\/(\d+)/i)?.[1] || ''
+  } catch {
+    return ''
+  }
+}
+
+function normalizeTikTokVideoId(value = '') {
+  return String(value || '').trim().match(/^\d{6,}$/)?.[0] || ''
+}
+
+function getTikTokEmbedUrl(videoId) {
+  return videoId ? `https://www.tiktok.com/player/v1/${videoId}` : ''
+}
+
+export async function resolveTikTokVideo(value = '', { signal } = {}) {
+  const originalUrl = normalizeCreatorUrl(value)
+  if (!originalUrl || detectCreatorPlatform(originalUrl) !== 'tiktok') {
+    throw new Error('Añade un enlace válido de TikTok.')
+  }
+
+  const directVideoId = getTikTokVideoId(originalUrl)
+  if (directVideoId) {
+    return {
+      original_url:originalUrl,
+      resolved_url:originalUrl,
+      video_id:directVideoId,
+      embed_url:getTikTokEmbedUrl(directVideoId),
+    }
+  }
+
+  if (tiktokResolutionCache.has(originalUrl)) return tiktokResolutionCache.get(originalUrl)
+
+  const response = await fetch(`${TIKTOK_RESOLVE_ENDPOINT}?url=${encodeURIComponent(originalUrl)}`, {
+    signal,
+    headers:{ Accept:'application/json' },
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(data?.error || 'No se pudo resolver el enlace corto de TikTok.')
+
+  const videoId = normalizeTikTokVideoId(data?.video_id)
+  const resolvedUrl = normalizeCreatorUrl(data?.resolved_url)
+  if (!videoId || getTikTokVideoId(resolvedUrl) !== videoId) {
+    throw new Error('TikTok no devolvió un vídeo válido para este enlace.')
+  }
+
+  const result = {
+    original_url:originalUrl,
+    resolved_url:resolvedUrl,
+    video_id:videoId,
+    embed_url:getTikTokEmbedUrl(videoId),
+  }
+  tiktokResolutionCache.set(originalUrl, result)
+  return result
+}
+
+export function getInstagramPostPath(value = '') {
+  const normalized = normalizeCreatorUrl(value)
+  if (!normalized) return ''
+
+  try {
+    const url = new URL(normalized)
+    const host = url.hostname.toLowerCase().replace(/^www\./, '')
+    if (host !== 'instagram.com' && !host.endsWith('.instagram.com')) return ''
+    const match = url.pathname.match(/^\/(p|reel|tv)\/([a-zA-Z0-9_-]+)/i)
+    return match ? `${match[1].toLowerCase()}/${match[2]}` : ''
+  } catch {
+    return ''
+  }
+}
+
+export function getCreatorVideoEmbed(content = {}) {
+  const url = normalizeCreatorUrl(content.url)
+  const platform = detectCreatorPlatform(url)
+  if (!url) return null
+
+  if (platform === 'youtube') {
+    const videoId = getYouTubeVideoId(url)
+    if (!videoId) return null
+    return {
+      platform,
+      src:`https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1&rel=0&hl=es`,
+      vertical:false,
+    }
+  }
+
+  if (platform === 'tiktok') {
+    const videoId = getTikTokVideoId(url)
+      || normalizeTikTokVideoId(content.video_id)
+      || getTikTokVideoId(content.resolved_url)
+    if (!videoId) return null
+    return {
+      platform,
+      src:`https://www.tiktok.com/player/v1/${videoId}?autoplay=0&loop=0`,
+      vertical:true,
+    }
+  }
+
+  if (platform === 'instagram') {
+    const postPath = getInstagramPostPath(url)
+    if (!postPath) return null
+    return {
+      platform,
+      src:`https://www.instagram.com/${postPath}/embed/?locale=es`,
+      vertical:true,
+    }
+  }
+
+  return null
+}
+
+export async function resolveCreatorVideoEmbed(content = {}, { signal } = {}) {
+  const existingEmbed = getCreatorVideoEmbed(content)
+  if (existingEmbed) return existingEmbed
+  if (detectCreatorPlatform(content.url) !== 'tiktok') return null
+
+  const resolved = await resolveTikTokVideo(content.url, { signal })
+  return {
+    platform:'tiktok',
+    src:`${resolved.embed_url}?autoplay=0&loop=0`,
+    vertical:true,
+  }
+}
+
 export function getAutomaticCreatorThumbnail(value = '', platform = '') {
   const detectedPlatform = platform || detectCreatorPlatform(value)
   if (detectedPlatform !== 'youtube') return ''
@@ -354,15 +487,23 @@ export async function getCreatorOEmbedMetadata(value = '', { signal } = {}) {
   const platform = detectCreatorPlatform(url)
   if (!url || !['youtube', 'tiktok'].includes(platform)) return null
 
+  const tiktokResolution = platform === 'tiktok'
+    ? await resolveTikTokVideo(url, { signal })
+    : null
+  const metadataUrl = tiktokResolution?.resolved_url || url
+
   const endpoint = platform === 'youtube'
     ? `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
-    : `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
+    : `https://www.tiktok.com/oembed?url=${encodeURIComponent(metadataUrl)}`
   const response = await fetch(endpoint, { signal })
   if (!response.ok) throw new Error('No se han podido leer los datos de este enlace.')
   const data = await response.json()
   return {
     title:String(data?.title || '').trim(),
     thumbnail_url:normalizeCreatorThumbnail(data?.thumbnail_url),
+    video_id:tiktokResolution?.video_id || '',
+    resolved_url:tiktokResolution?.resolved_url || '',
+    embed_url:tiktokResolution?.embed_url || '',
   }
 }
 
@@ -531,12 +672,24 @@ export function saveCreatorContent(userId, input = {}) {
   if (!url) throw new Error('Añade un enlace válido que empiece por https://')
   const platform = input.platform || detectCreatorPlatform(url)
   const existing = existingIndex >= 0 ? contents[existingIndex] : null
+  const suppliedResolvedUrl = normalizeCreatorUrl(input.resolved_url || existing?.resolved_url)
+  const tiktokVideoId = platform === 'tiktok'
+    ? getTikTokVideoId(url)
+      || normalizeTikTokVideoId(input.video_id || existing?.video_id)
+      || getTikTokVideoId(suppliedResolvedUrl)
+    : ''
+  const resolvedUrl = tiktokVideoId && getTikTokVideoId(suppliedResolvedUrl) === tiktokVideoId
+    ? suppliedResolvedUrl
+    : tiktokVideoId && getTikTokVideoId(url) === tiktokVideoId ? url : ''
   const content = {
     id:existing?.id || makeId('content'),
     title:String(input.title || '').trim(),
     summary:String(input.summary || '').trim(),
     url,
     platform,
+    video_id:tiktokVideoId,
+    resolved_url:resolvedUrl,
+    embed_url:getTikTokEmbedUrl(tiktokVideoId),
     format:String(input.format || 'video').trim(),
     topic:String(input.topic || '').trim(),
     canton:String(input.canton || 'Toda Suiza').trim(),

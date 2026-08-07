@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CreatorAppContentCard, DemoContentModal, getCreatorInitials } from './CreatorCards'
+import { CreatorAppContentCard, CreatorContentModal, getCreatorInitials } from './CreatorCards'
 import { getAllCreators, getOrderedCreatorContents } from '../lib/creators'
 import { C, PP } from '../lib/theme'
 import '../pages/Creators.css'
@@ -77,13 +77,13 @@ export default function CreatorHomeSection() {
                     content={content}
                     creator={creator}
                     discovery
-                    onDemoOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                    onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
                   />
                 </div>
               ))}
             </div>
           </div>
-          <DemoContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
+          <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
         </section>
       )}
 

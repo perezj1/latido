@@ -33,6 +33,7 @@ globalThis.window = {
 const {
   formatCreatorHandle,
   getAutomaticCreatorThumbnail,
+  getCreatorVideoEmbed,
   getCreatorForUser,
   isCreatorHandleAvailable,
   getFollowedCreatorIds,
@@ -45,6 +46,7 @@ const {
   saveCreatorProfile,
   toggleCreatorInteraction,
 } = await import('../src/lib/creators.js')
+const { resolveTikTokLink } = await import('../api/tiktok-resolve.js')
 
 assert.equal(formatCreatorHandle('perfilantiguo'), '@perfilantiguo', 'Los alias antiguos también deben mostrarse con @.')
 
@@ -120,6 +122,73 @@ assert.equal(
   getAutomaticCreatorThumbnail('https://www.youtube.com/watch?v=abcdefghijk'),
   'https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg',
   'YouTube debe generar una miniatura desde el ID del vídeo.',
+)
+
+assert.deepEqual(
+  getCreatorVideoEmbed({ url:'https://www.youtube.com/shorts/abcdefghijk' }),
+  {
+    platform:'youtube',
+    src:'https://www.youtube-nocookie.com/embed/abcdefghijk?playsinline=1&rel=0&hl=es',
+    vertical:false,
+  },
+  'Los vídeos de YouTube deben abrirse en el reproductor integrado.',
+)
+
+assert.deepEqual(
+  getCreatorVideoEmbed({ url:'https://www.tiktok.com/@latido/video/123456789' }),
+  {
+    platform:'tiktok',
+    src:'https://www.tiktok.com/player/v1/123456789?autoplay=0&loop=0',
+    vertical:true,
+  },
+  'Los vídeos de TikTok deben abrirse en el reproductor vertical integrado.',
+)
+
+const shortTikTokUrl = 'https://vm.tiktok.com/ZN8Re8hNH/'
+const resolvedTikTokUrl = 'https://www.tiktok.com/@/video/7670562387044470038?_r=1'
+const resolvedTikTok = await resolveTikTokLink(shortTikTokUrl, {
+  fetchImpl:async () => ({ ok:true, url:resolvedTikTokUrl }),
+})
+
+assert.equal(resolvedTikTok.video_id, '7670562387044470038', 'El backend debe seguir la redirección y extraer el ID del vídeo.')
+assert.equal(resolvedTikTok.embed_url, 'https://www.tiktok.com/player/v1/7670562387044470038', 'El backend debe generar la URL oficial del player.')
+
+assert.deepEqual(
+  getCreatorVideoEmbed({ url:shortTikTokUrl, video_id:resolvedTikTok.video_id, resolved_url:resolvedTikTok.resolved_url }),
+  {
+    platform:'tiktok',
+    src:'https://www.tiktok.com/player/v1/7670562387044470038?autoplay=0&loop=0',
+    vertical:true,
+  },
+  'Un enlace corto guardado debe reproducirse con el ID resuelto.',
+)
+
+const savedShortTikTok = saveCreatorContent(userId, {
+  title:'Vídeo corto de TikTok resuelto',
+  summary:'Este contenido comprueba que el enlace original se conserva junto con los datos del reproductor.',
+  url:shortTikTokUrl,
+  platform:'tiktok',
+  video_id:resolvedTikTok.video_id,
+  resolved_url:resolvedTikTok.resolved_url,
+  topic:'trabajo',
+})
+assert.equal(savedShortTikTok.url, shortTikTokUrl, 'La publicación debe conservar el enlace corto original.')
+assert.equal(savedShortTikTok.video_id, resolvedTikTok.video_id, 'La publicación debe guardar el ID resuelto una sola vez.')
+
+assert.deepEqual(
+  getCreatorVideoEmbed({ url:'https://www.instagram.com/reel/ABC_123/?utm_source=share' }),
+  {
+    platform:'instagram',
+    src:'https://www.instagram.com/reel/ABC_123/embed/?locale=es',
+    vertical:true,
+  },
+  'Los reels de Instagram deben abrirse mediante el enlace de inserción oficial.',
+)
+
+assert.equal(
+  getCreatorVideoEmbed({ url:'https://www.instagram.com/latido_ch/' }),
+  null,
+  'Los perfiles sociales deben conservar la apertura externa como respaldo.',
 )
 
 assert.deepEqual(

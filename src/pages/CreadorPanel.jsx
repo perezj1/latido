@@ -22,6 +22,7 @@ import {
   normalizeCreatorUrl,
   removeCreatorContent,
   resetCreatorPrototype,
+  resolveTikTokVideo,
   saveCreatorContent,
   subscribeCreatorInteractions,
 } from '../lib/creators'
@@ -33,6 +34,9 @@ const EMPTY_CONTENT = {
   title:'',
   summary:'',
   url:'',
+  video_id:'',
+  resolved_url:'',
+  embed_url:'',
   platform:'youtube',
   format:'video',
   topic:'tramites',
@@ -132,6 +136,9 @@ export default function CreadorPanel() {
             next.thumbnail_url = metadata.thumbnail_url
             next.thumbnail_kind = 'auto'
           }
+          if (metadata.video_id) next.video_id = metadata.video_id
+          if (metadata.resolved_url) next.resolved_url = metadata.resolved_url
+          if (metadata.embed_url) next.embed_url = metadata.embed_url
           return next
         })
         if (metadata.title && !contentForm.title.trim()) {
@@ -197,6 +204,9 @@ export default function CreadorPanel() {
       if (key === 'url' && value.trim()) {
         next.platform = detectCreatorPlatform(value)
         next.format = detectCreatorFormat(value, next.platform)
+        next.video_id = ''
+        next.resolved_url = ''
+        next.embed_url = ''
         if (current.thumbnail_kind === 'auto') {
           next.thumbnail_url = ''
           next.thumbnail_kind = ''
@@ -242,12 +252,18 @@ export default function CreadorPanel() {
     return Object.keys(errors).length === 0
   }
 
-  const handleContentSave = status => {
+  const handleContentSave = async status => {
     if (!validateContent(status)) return
 
     setSaving(true)
     try {
-      saveCreatorContent(user.id, { ...contentForm, status })
+      let contentToSave = { ...contentForm, status }
+      if (detectCreatorPlatform(contentForm.url) === 'tiktok' && !contentForm.video_id) {
+        const resolved = await resolveTikTokVideo(contentForm.url)
+        contentToSave = { ...contentToSave, ...resolved }
+        setContentForm(current => ({ ...current, ...resolved }))
+      }
+      saveCreatorContent(user.id, contentToSave)
       refresh()
       setFormOpen(false)
       setContentForm(EMPTY_CONTENT)
@@ -408,7 +424,7 @@ export default function CreadorPanel() {
                 <section className="creator-publish-step" aria-labelledby="creator-link-step">
                   <div className="creator-publish-step__heading">
                     <span>1</span>
-                    <div><strong id="creator-link-step">Pega el enlace</strong><small>Latido detectará la plataforma y la portada.</small></div>
+                    <div><strong id="creator-link-step">Pega el enlace</strong><small>Los vídeos de YouTube, TikTok e Instagram se reproducirán dentro de Latido.</small></div>
                   </div>
                   <Input label="ENLACE DE LA PUBLICACIÓN" required type="url" error={contentErrors.url} errorKey="url" value={contentForm.url} onChange={event => updateContent('url', event.target.value)} placeholder="https://youtube.com/watch?v=…" />
 

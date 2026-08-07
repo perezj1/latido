@@ -18,7 +18,7 @@ import {
   CreatorFollowButton,
   CreatorProfileHelpfulButton,
   CreatorTopicPill,
-  DemoContentModal,
+  CreatorContentModal,
 } from '../components/CreatorCards'
 import { C, PP } from '../lib/theme'
 import ReportButton from '../components/ReportButton'
@@ -222,7 +222,7 @@ export default function CreadorPerfil() {
                 content={content}
                 creator={creator}
                 discovery
-                onDemoOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
               />
             ))}
             {!publishedContents.length && <div className="creators-empty">Este perfil todavía no ha añadido publicaciones.</div>}
@@ -252,7 +252,7 @@ export default function CreadorPerfil() {
         </section>
       </div>
 
-      <DemoContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
+      <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
     </div>
   )
 }

@@ -16,7 +16,7 @@ import {
   CreatorFollowButton,
   CreatorProfileHelpfulButton,
   CreatorProfileHelpfulMetric,
-  DemoContentModal,
+  CreatorContentModal,
 } from './CreatorCards'
 import { EmptyState, Sheet } from './UI'
 import { FilterButton, FilterChips, FilterResultSummary, FILTER_PANEL_TITLE_STYLE } from './FilterWorkspace'
@@ -225,7 +225,7 @@ export default function CreatorCommunityView({
         <div className="creator-community-section__heading">
           <div>
             <p>PUBLICACIONES PARA DESCUBRIR</p>
-            <span>Experiencias, información y proyectos en sus redes originales.</span>
+            <span>Vídeos y publicaciones para descubrir sin salir de Latido.</span>
           </div>
           <strong>{contents.length}</strong>
         </div>
@@ -238,7 +238,7 @@ export default function CreatorCommunityView({
                   content={content}
                   creator={creator}
                   discovery
-                  onDemoOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                  onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
                 />
               ))}
             </div>
@@ -344,10 +344,10 @@ export default function CreatorCommunityView({
 
       <div className="creator-community-note">
         <strong>Cómo funciona</strong>
-        <span>Latido muestra una ficha y envía las visitas a la red social, canal o web donde se publicó originalmente.</span>
+        <span>Los vídeos compatibles se reproducen en Latido. Siempre puedes abrir la publicación en su plataforma original.</span>
       </div>
 
-      <DemoContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
+      <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
     </div>
   )
 }

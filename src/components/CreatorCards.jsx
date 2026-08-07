@@ -6,9 +6,11 @@ import { useAuth } from '../hooks/useAuth'
 import {
   getCreatorInteractionState,
   formatCreatorHandle,
+  getCreatorVideoEmbed,
   getCreatorPlatform,
   getCreatorThumbnailUrl,
   getCreatorTopic,
+  resolveCreatorVideoEmbed,
   subscribeCreatorInteractions,
   toggleCreatorInteraction,
   trackCreatorImpression,
@@ -392,7 +394,7 @@ export function CreatorCard({ creator }) {
   )
 }
 
-export function CreatorContentCard({ content, creator, onDemoOpen, compact = false }) {
+export function CreatorContentCard({ content, creator, onContentOpen, compact = false }) {
   const topic = getCreatorTopic(content.topic)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
   const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
@@ -400,13 +402,12 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
     trackCreatorImpression(creator.id, 'content', content.id)
   }, [content.id, creator.id])
   const handleOpen = () => {
-    if (content.demo) {
-      onDemoOpen?.(content, creator)
+    if (!content.demo) trackCreatorMetric(creator.id, 'content_click', content.id)
+    if (onContentOpen) {
+      onContentOpen(content, creator)
       return
     }
-
-    trackCreatorMetric(creator.id, 'content_click', content.id)
-    window.open(content.url, '_blank', 'noopener,noreferrer')
+    if (!content.demo) window.open(content.url, '_blank', 'noopener,noreferrer')
   }
 
   return (
@@ -442,7 +443,7 @@ export function CreatorContentCard({ content, creator, onDemoOpen, compact = fal
   )
 }
 
-export function CreatorAppContentCard({ content, creator, onDemoOpen, discovery=false }) {
+export function CreatorAppContentCard({ content, creator, onContentOpen, discovery=false }) {
   const topic = getCreatorTopic(content.topic)
   const platform = getCreatorPlatform(content.platform)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
@@ -451,12 +452,12 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen, discovery=
     trackCreatorImpression(creator.id, 'content', content.id)
   }, [content.id, creator.id])
   const handleOpen = () => {
-    if (content.demo) {
-      onDemoOpen?.(content, creator)
+    if (!content.demo) trackCreatorMetric(creator.id, 'content_click', content.id)
+    if (onContentOpen) {
+      onContentOpen(content, creator)
       return
     }
-    trackCreatorMetric(creator.id, 'content_click', content.id)
-    window.open(content.url, '_blank', 'noopener,noreferrer')
+    if (!content.demo) window.open(content.url, '_blank', 'noopener,noreferrer')
   }
 
   if (discovery) {
@@ -505,41 +506,126 @@ export function CreatorAppContentCard({ content, creator, onDemoOpen, discovery=
   )
 }
 
-export function DemoContentModal({ content, creator, onClose }) {
-  if (!content || !creator) return null
-  const topic = getCreatorTopic(content.topic)
+export function CreatorContentModal({ content, creator, onClose }) {
+  const closeRef = useRef(null)
+  const topic = getCreatorTopic(content?.topic)
   const thumbnailUrl = getCreatorThumbnailUrl(content)
+  const directEmbed = content?.demo ? null : getCreatorVideoEmbed(content)
+  const [resolvedEmbed, setResolvedEmbed] = useState(null)
+  const [resolvingEmbed, setResolvingEmbed] = useState(false)
+  const embed = directEmbed || resolvedEmbed
+  const platform = getCreatorPlatform(embed?.platform || content?.platform)
+
+  useEffect(() => {
+    setResolvedEmbed(null)
+    if (!content || content.demo || directEmbed) {
+      setResolvingEmbed(false)
+      return undefined
+    }
+
+    const controller = new AbortController()
+    setResolvingEmbed(true)
+    resolveCreatorVideoEmbed(content, { signal:controller.signal })
+      .then(result => {
+        if (result) setResolvedEmbed(result)
+      })
+      .catch(error => {
+        if (error?.name !== 'AbortError') setResolvedEmbed(null)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setResolvingEmbed(false)
+      })
+
+    return () => controller.abort()
+  }, [content, directEmbed?.src])
+
+  useEffect(() => {
+    if (!content || !creator) return undefined
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') onClose?.()
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', closeOnEscape)
+    closeRef.current?.focus()
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [content, creator, onClose])
+
+  if (!content || !creator) return null
 
   return (
-    <div className="creator-modal-backdrop latido-overlay-backdrop" role="presentation" onMouseDown={event => {
+    <div className={`creator-modal-backdrop latido-overlay-backdrop${content.demo ? '' : ' creator-modal-backdrop--video'}`} role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) onClose?.()
     }}>
-      <section className="creator-preview-modal latido-modal-panel" role="dialog" aria-modal="true" aria-labelledby="creator-preview-title">
-        <button className="creator-modal-close" type="button" onClick={onClose} aria-label="Cerrar">×</button>
-        <div className="creator-preview-modal__visual" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
-          <span>{topic.emoji}</span>
-          {thumbnailUrl && <img className="creator-preview-modal__thumbnail" src={thumbnailUrl} alt="" onError={event => event.currentTarget.remove()} />}
-          <span className="creator-preview-modal__play">▶</span>
-        </div>
-        <div className="creator-preview-modal__body">
-          <span className="creator-demo-label">DEMOSTRACIÓN INTERACTIVA</span>
-          <h2 id="creator-preview-title">{content.title}</h2>
-          <p>{content.summary}</p>
-          <div className="creator-preview-modal__byline">
-            <CreatorAvatar creator={creator} size={42} />
-            <div>
-              <strong>{creator.name}</strong>
-              <span>{formatCreatorHandle(creator.handle)} · {getCreatorPlatform(content.platform).label}</span>
+      <section
+        className={`creator-preview-modal latido-modal-panel${content.demo ? '' : ' creator-video-modal'}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={content.demo ? 'creator-preview-title' : undefined}
+        aria-label={content.demo ? undefined : `${content.title} en ${platform.label}`}
+      >
+        {content.demo && <button ref={closeRef} className="creator-modal-close" type="button" onClick={onClose} aria-label="Cerrar">×</button>}
+        {content.demo ? (
+          <div className="creator-preview-modal__visual" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
+            <span>{topic.emoji}</span>
+            {thumbnailUrl && <img className="creator-preview-modal__thumbnail" src={thumbnailUrl} alt="" onError={event => event.currentTarget.remove()} />}
+            <span className="creator-preview-modal__play">▶</span>
+          </div>
+        ) : resolvingEmbed ? (
+          <div className="creator-video-modal__player creator-video-modal__loading" role="status">
+            <span>Preparando vídeo de TikTok…</span>
+          </div>
+        ) : embed ? (
+          <div className={`creator-video-modal__player${embed.vertical ? ' is-vertical' : ''} is-${embed.platform}`}>
+            <iframe
+              key={embed.src}
+              src={embed.src}
+              title={`${content.title} en ${platform.label}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              lang="es"
+              referrerPolicy="strict-origin-when-cross-origin"
+              scrolling="no"
+            />
+          </div>
+        ) : (
+          <div className="creator-preview-modal__visual creator-video-modal__fallback" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
+            <span>{topic.emoji}</span>
+            {thumbnailUrl && <img className="creator-preview-modal__thumbnail" src={thumbnailUrl} alt="" onError={event => event.currentTarget.remove()} />}
+            <span className="creator-preview-modal__play">▶</span>
+          </div>
+        )}
+        {content.demo ? (
+          <div className="creator-preview-modal__body">
+            <span className="creator-demo-label">DEMOSTRACIÓN INTERACTIVA</span>
+            <h2 id="creator-preview-title">{content.title}</h2>
+            {content.summary && <p>{content.summary}</p>}
+            <div className="creator-preview-modal__byline">
+              <CreatorAvatar creator={creator} size={42} />
+              <div>
+                <strong>{creator.name}</strong>
+                <span>{formatCreatorHandle(creator.handle)} · {platform.label}</span>
+              </div>
+            </div>
+            <div className="creator-preview-modal__notice">
+              Esta ficha simula una publicación externa. Los vídeos reales compatibles se reproducen aquí sin salir de Latido.
+            </div>
+            <div className="creator-preview-modal__actions">
+              <Link to={`/creadores/${creator.slug}`} onClick={onClose}>Ver perfil completo</Link>
+              <button type="button" onClick={onClose}>Cerrar</button>
             </div>
           </div>
-          <div className="creator-preview-modal__notice">
-            Esta ficha simula una publicación externa. Cuando una persona, profesional o negocio añada un enlace real, este botón abrirá la publicación original y Latido medirá la visita enviada.
+        ) : (
+          <div className="creator-video-modal__footer">
+            <div>
+              <button ref={closeRef} type="button" onClick={onClose}>Volver</button>
+              <a href={content.url} target="_blank" rel="noopener noreferrer">Abrir en {platform.label}</a>
+            </div>
           </div>
-          <div className="creator-preview-modal__actions">
-            <Link to={`/creadores/${creator.slug}`} onClick={onClose}>Ver perfil completo</Link>
-            <button type="button" onClick={onClose}>Cerrar prueba</button>
-          </div>
-        </div>
+        )}
       </section>
     </div>
   )

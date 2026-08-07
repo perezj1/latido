@@ -13,7 +13,7 @@ import {
   CreatorAvatar,
   CreatorCard,
   CreatorContentCard,
-  DemoContentModal,
+  CreatorContentModal,
 } from '../components/CreatorCards'
 import { FilterButton, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
 import { Sheet } from '../components/UI'
@@ -222,7 +222,7 @@ export default function Creadores() {
                 key={content.id}
                 content={content}
                 creator={creator}
-                onDemoOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
+                onContentOpen={(selectedContent, selectedCreator) => setPreview({ content:selectedContent, creator:selectedCreator })}
               />
             ))}
             {!featuredContents.length && (
@@ -247,7 +247,7 @@ export default function Creadores() {
         </section>
       </main>
 
-      <DemoContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
+      <CreatorContentModal content={preview?.content} creator={preview?.creator} onClose={() => setPreview(null)} />
     </div>
   )
 }
