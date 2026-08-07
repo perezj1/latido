@@ -2,10 +2,22 @@ import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 
+const CONTACT_ACTION_ICONS = {
+  address:'📍',
+  phone:'📞',
+  email:'✉️',
+  instagram:'📸',
+  tiktok:'🎵',
+  whatsapp:'💬',
+  website:'🌐',
+  profile:'🏪',
+}
+
 function ContactAction({ action, onClick }) {
+  const icon = CONTACT_ACTION_ICONS[action.type || action.id] || action.icon
   const content = (
     <>
-      <span className="mira-contact-action-icon" aria-hidden="true">{action.icon}</span>
+      <span className="mira-contact-action-icon" aria-hidden="true">{icon}</span>
       <span>
         <small>{action.label}</small>
         <strong>{action.value}</strong>
@@ -71,7 +83,7 @@ export default function BusinessPartnerContactModal({
     : [{
       id:'profile',
       type:'profile',
-      icon:'Lat',
+      icon:'🏪',
       label:'Perfil en Latido',
       value:'Ver negocio',
       href:`/negocios/${partner.id}`,

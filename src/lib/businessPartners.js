@@ -75,8 +75,29 @@ function getInstagramAction(value = '') {
   return {
     id:'instagram',
     type:'instagram',
-    icon:'IG',
+    icon:'📸',
     label:'Instagram',
+    value:valueLabel,
+    href,
+    external:true,
+  }
+}
+
+function getTikTokAction(value = '') {
+  const text = String(value || '').trim()
+  if (!text) return null
+
+  const href = normalizeExternalUrl(text)
+    || `https://tiktok.com/@${text.replace(/^@/, '')}`
+  const valueLabel = text.startsWith('http')
+    ? getUrlDisplay(text)
+    : text.startsWith('@') ? text : `@${text}`
+
+  return {
+    id:'tiktok',
+    type:'tiktok',
+    icon:'🎵',
+    label:'TikTok',
     value:valueLabel,
     href,
     external:true,
@@ -93,8 +114,13 @@ function getBusinessPartnerContactActions(provider = {}) {
   const email = String(provider.email || '').trim()
   const websiteUrl = normalizeExternalUrl(provider.website)
   const customUrl = normalizeExternalUrl(provider.partner_cta_url)
+  const tiktokUrl = normalizeExternalUrl(provider.tiktok)
+    || (customUrl.includes('tiktok.com') ? customUrl : '')
   const webUrl = websiteUrl || (
-    customUrl && !customUrl.includes('wa.me') && !customUrl.startsWith('mailto:')
+    customUrl
+      && !customUrl.includes('wa.me')
+      && !customUrl.includes('tiktok.com')
+      && !customUrl.startsWith('mailto:')
       ? customUrl
       : ''
   )
@@ -103,7 +129,7 @@ function getBusinessPartnerContactActions(provider = {}) {
     actions.push({
       id:'whatsapp',
       type:'whatsapp',
-      icon:'WA',
+      icon:'💬',
       label:'WhatsApp',
       value:getPhoneDisplay(whatsapp),
       href:`https://wa.me/${whatsappDigits}`,
@@ -114,7 +140,7 @@ function getBusinessPartnerContactActions(provider = {}) {
     actions.push({
       id:'phone',
       type:'phone',
-      icon:'Tel',
+      icon:'📞',
       label:'Llamadas',
       value:phoneDisplay,
       href:`tel:+${phoneDigits}`,
@@ -126,7 +152,7 @@ function getBusinessPartnerContactActions(provider = {}) {
     actions.push({
       id:'address',
       type:'address',
-      icon:'Map',
+      icon:'📍',
       label:'Dirección',
       value:provider.address,
       href:getNavigationUrl(provider.address, provider.city, provider.canton),
@@ -138,7 +164,7 @@ function getBusinessPartnerContactActions(provider = {}) {
     actions.push({
       id:'email',
       type:'email',
-      icon:'@',
+      icon:'✉️',
       label:'Email',
       value:email,
       href:`mailto:${email}`,
@@ -150,7 +176,7 @@ function getBusinessPartnerContactActions(provider = {}) {
     actions.push({
       id:'website',
       type:'website',
-      icon:'Web',
+      icon:'🌐',
       label:'Web',
       value:getUrlDisplay(webUrl),
       href:webUrl,
@@ -160,6 +186,9 @@ function getBusinessPartnerContactActions(provider = {}) {
 
   const instagramAction = getInstagramAction(provider.instagram)
   if (instagramAction) actions.push(instagramAction)
+
+  const tiktokAction = getTikTokAction(tiktokUrl)
+  if (tiktokAction) actions.push(tiktokAction)
 
   return actions
 }
