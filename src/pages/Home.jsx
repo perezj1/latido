@@ -239,6 +239,26 @@ function EmptyState({ text }) {
   )
 }
 
+// Fila del panel de notificaciones: icono con emoji, titulo, texto y una accion
+// en forma de enlace. Sustituye a las tarjetas con fondo de color y boton pildora.
+function AttentionRow({ emoji, title, text, actionLabel, onAction, tone='info', showDot=true }) {
+  return (
+    <div className="latido-notif-row">
+      <span className="latido-notif-row__icon" data-tone={tone} data-dot={showDot ? 'on' : 'off'} aria-hidden="true">
+        {emoji}
+      </span>
+      <span>
+        <span className="latido-notif-row__title">{title}</span>
+        <span className="latido-notif-row__text">{text}</span>
+        <button type="button" className="latido-notif-row__action" data-tone={tone} onClick={onAction}>
+          {actionLabel}
+          <span aria-hidden="true">›</span>
+        </button>
+      </span>
+    </div>
+  )
+}
+
 const LATIDO_REQUEST_INTENTS = new Set(['busca', 'compra', 'solicita', 'solicitud'])
 
 function isLatidoRequest(item={}) {
@@ -1520,11 +1540,14 @@ export default function Home() {
                       )}
                     </div>
 
-                    <div style={{ overflowY:'auto', flex:1 }}>
+                    <div className="latido-notification-scroll">
                       {showAttentionSection && (
-                        <section style={{ padding:'10px 14px 8px', borderBottom:`1px solid ${C.borderLight}` }}>
-                          <p style={{ fontFamily:PP, fontWeight:800, fontSize:10.5, color:C.primary, margin:'0 0 7px', letterSpacing:0.55 }}>
-                            NECESITA ATENCIÓN
+                        <section style={{ borderBottom:`1px solid ${C.borderLight}` }}>
+                          <p style={{ display:'flex', alignItems:'center', gap:7, fontFamily:PP, fontWeight:800, fontSize:10.5, color:C.light, margin:0, padding:'13px 16px 8px', letterSpacing:0.55 }}>
+                            NECESITA TU ATENCIÓN
+                            <span style={{ display:'grid', minWidth:18, height:18, padding:'0 5px', placeItems:'center', color:C.primaryDark, background:C.primaryLight, borderRadius:999, fontSize:10, fontWeight:800 }}>
+                              {attentionCarouselCards.length}
+                            </span>
                           </p>
                           <div ref={setAttentionPortalElement} />
                         </section>
@@ -1666,179 +1689,71 @@ export default function Home() {
             <section style={{ margin:0, padding:0 }}>
               <div>
             <div
-              style={{
-                display:'flex',
-                flexDirection:'column',
-                gap:6,
-              }}
+              style={{ display:'flex', flexDirection:'column' }}
               aria-label="Necesita atención"
             >
               {showInterestSelectionTask && (
-                <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
-                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
-                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
-                      💙
-                    </span>
-                    <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Selecciona tus intereses
-                      </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Para mostrarte contenido más relevante para ti.
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeNotifPanel()
-                        navigate('/perfil?editar=intereses')
-                      }}
-                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
-                    >
-                      Elegir
-                    </button>
-                  </div>
-                </div>
+                <AttentionRow
+                  emoji="💙"
+                  title="Selecciona tus intereses"
+                  text="Para mostrarte contenido más relevante para ti."
+                  actionLabel="Elegir"
+                  onAction={() => {
+                    closeNotifPanel()
+                    navigate('/perfil?editar=intereses')
+                  }}
+                />
               )}
               {showEmploymentProfileReminder && (
-                <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
-                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
-                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontWeight:900, fontSize:10, color:C.primary, flexShrink:0 }}>
-                      CV
-                    </span>
-                    <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Completa tu perfil
-                      </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Crea tu perfil profesional con cinco respuestas.
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeNotifPanel()
-                        navigate('/perfil?perfil-profesional=1')
-                      }}
-                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
-                    >
-                      Completar
-                    </button>
-                  </div>
-                </div>
+                <AttentionRow
+                  emoji="📄"
+                  title="Completa tu perfil"
+                  text="Crea tu perfil profesional con cinco respuestas."
+                  actionLabel="Completar"
+                  onAction={() => {
+                    closeNotifPanel()
+                    navigate('/perfil?perfil-profesional=1')
+                  }}
+                />
               )}
               {isLoggedIn && needsActivation && (
-                <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
-                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
-                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
-                      🔔
-                    </span>
-                    <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Activa las notificaciones
-                      </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Recibe respuestas a tus anuncios y novedades en tu zona.
-                      </span>
-                    </span>
-                    <button
-                      onClick={handleActivatePush}
-                      disabled={activatingPush}
-                      style={{
-                        fontFamily:PP,
-                        fontWeight:800,
-                        fontSize:9,
-                        color:'#fff',
-                        background:C.primary,
-                        border:'none',
-                        borderRadius:999,
-                        padding:'6px 9px',
-                        flexShrink:0,
-                        cursor:activatingPush ? 'default' : 'pointer',
-                        opacity:activatingPush ? 0.65 : 1,
-                        whiteSpace:'nowrap',
-                      }}
-                    >
-                      {activatingPush ? 'Activando...' : 'Activar'}
-                    </button>
-                  </div>
-                </div>
+                <AttentionRow
+                  emoji="🔔"
+                  title="Activa las notificaciones"
+                  text="Recibe respuestas a tus anuncios y novedades en tu zona."
+                  actionLabel={activatingPush ? 'Activando…' : 'Activar'}
+                  onAction={activatingPush ? undefined : handleActivatePush}
+                />
               )}
               {showBusinessPromotionTask && (
-                <div style={{ width:'100%', minWidth:0, background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
-                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
-                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
-                      ✨
-                    </span>
-                    <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Destaca tu negocio
-                      </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Consigue más visibilidad entre los usuarios de Latido.
-                      </span>
-                    </span>
-                    <button
-                      onClick={() => {
-                        closeNotifPanel()
-                        setBusinessPromotionModalOpen(true)
-                      }}
-                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
-                    >
-                      Destacar
-                    </button>
-                  </div>
-                </div>
+                <AttentionRow
+                  emoji="✨"
+                  title="Destaca tu negocio"
+                  text="Consigue más visibilidad entre los usuarios de Latido."
+                  actionLabel="Destacar"
+                  onAction={() => {
+                    closeNotifPanel()
+                    setBusinessPromotionModalOpen(true)
+                  }}
+                />
               )}
               {visibleAttentionTasks.map(task => {
                 const warn = task.tone === 'warn'
                 const expanded = expandedAttentionTask === task.id
                 const imageTask = task.mode === 'image'
                 return (
-                  <div
-                    key={task.id}
-                    style={{
-                      background: warn ? C.warnLight : C.primaryLight,
-                      border:`1px solid ${warn ? C.warnMid : C.primaryMid}`,
-                      width:'100%',
-                      minWidth:0,
-                      borderRadius:12,
-                      overflow:'hidden',
-                      boxSizing:'border-box',
-                    }}
-                  >
-                    <button
-                      onClick={() => setExpandedAttentionTask(current => current === task.id ? '' : task.id)}
-                      style={{
-                        width:'100%',
-                        textAlign:'left',
-                        background:'transparent',
-                        border:'none',
-                        padding:'10px 12px',
-                        display:'flex',
-                        gap:10,
-                        alignItems:'center',
-                        cursor:'pointer',
-                      }}
-                    >
-                      <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
-                        {task.emoji}
-                      </span>
-                      <span style={{ minWidth:0, flex:1 }}>
-                        <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                          {task.title}
-                        </span>
-                        <span style={{ display:'block', fontFamily:PP, fontSize:11, color:warn ? '#92400E' : C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                          {task.text}
-                        </span>
-                      </span>
-                      <span style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:warn ? '#92400E' : C.primaryDark, background:'#fff', border:`1px solid ${warn ? C.warnMid : C.primaryMid}`, borderRadius:999, padding:'5px 8px', flexShrink:0, minWidth:45, textAlign:'center' }}>
-                        {expanded ? 'Ocultar' : 'Ver'}
-                      </span>
-                    </button>
+                  <div key={task.id} style={{ width:'100%', minWidth:0, boxSizing:'border-box' }}>
+                    <AttentionRow
+                      emoji={task.emoji}
+                      title={task.title}
+                      text={task.text}
+                      tone={warn ? 'warn' : 'info'}
+                      actionLabel={expanded ? 'Ocultar' : 'Revisar'}
+                      onAction={() => setExpandedAttentionTask(current => current === task.id ? '' : task.id)}
+                    />
 
                     {expanded && (
-                      <div style={{ borderTop:`1px solid ${warn ? C.warnMid : C.primaryMid}`, padding:'8px 8px 10px', display:'grid', gap:8 }}>
+                      <div style={{ background:warn ? C.warnLight : C.primaryLight, borderBottom:`1px solid ${C.borderLight}`, padding:'10px 16px 12px', display:'grid', gap:8 }}>
                         {task.items.map(item => (
                           <div key={item.id} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:10, boxSizing:'border-box', overflow:'hidden' }}>
                             <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:10, minWidth:0 }}>

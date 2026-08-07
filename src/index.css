@@ -123,6 +123,101 @@
   animation: latido-menu-in var(--latido-motion-base) var(--latido-ease-emphasized) both;
 }
 
+/* ── Panel de notificaciones ── */
+/* El CSS global oculta todas las barras de scroll; aqui se reactiva una fina
+   en azul, porque el panel se desborda y no habia forma de saberlo. */
+.latido-notification-scroll {
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: #2563EB transparent;
+  overscroll-behavior: contain;
+}
+
+.latido-notification-scroll::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+  height: 4px;
+}
+
+.latido-notification-scroll::-webkit-scrollbar-track {
+  margin: 6px 0;
+  background: transparent;
+}
+
+.latido-notification-scroll::-webkit-scrollbar-thumb {
+  background: #2563EB;
+  border-radius: 999px;
+}
+
+.latido-notif-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #EEF2F8;
+  text-align: left;
+}
+
+.latido-notif-row:last-child { border-bottom: 0; }
+
+.latido-notif-row__icon {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 13px;
+  background: #EFF6FF;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.latido-notif-row__icon[data-tone="warn"] { background: #FFFBEB; }
+
+/* Punto de aviso, como en el diseno de referencia. */
+.latido-notif-row__icon::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #EF4444;
+}
+
+.latido-notif-row__icon[data-dot="off"]::after { display: none; }
+
+.latido-notif-row__title {
+  display: block;
+  color: #0F172A;
+  font: 800 14px/1.35 'Poppins', system-ui, sans-serif;
+}
+
+.latido-notif-row__text {
+  display: block;
+  margin-top: 3px;
+  color: #64748B;
+  font: 400 12px/1.5 'Poppins', system-ui, sans-serif;
+}
+
+.latido-notif-row__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2563EB;
+  font: 700 12.5px/1 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.latido-notif-row__action[data-tone="warn"] { color: #B45309; }
+
 .latido-publish-picker__panel {
   width: 100%;
   max-height: min(88dvh, 760px);
