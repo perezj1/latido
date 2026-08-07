@@ -1805,6 +1805,63 @@ a[href]:active { opacity:.82; }
   font-weight: 800;
 }
 
+.mira-contact-action-group {
+  display: grid;
+  gap: 8px;
+}
+
+.mira-contact-action--toggle {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mira-contact-action--toggle:hover,
+.mira-contact-action--toggle[aria-expanded="true"] {
+  box-shadow: none;
+  transform: none;
+}
+
+.mira-contact-action-chevron {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #2563EB;
+  background: #FFFFFF;
+  border: 1px solid #D6E4F7;
+  border-radius: 50%;
+  transition: transform .18s ease, background-color .18s ease, border-color .18s ease;
+}
+
+.mira-contact-action-chevron svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mira-contact-action-chevron.is-expanded {
+  transform: rotate(180deg);
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+
+.mira-contact-action-options {
+  display: grid;
+  gap: 7px;
+  padding-left: 14px;
+}
+
+.mira-contact-action--nested {
+  min-height: 58px;
+  background: #FFFFFF;
+  border-left: 3px solid #BFDBFE;
+}
+
 .mira-contact-back {
   display: inline-flex;
   margin-top: 18px;
