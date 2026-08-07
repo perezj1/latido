@@ -955,10 +955,12 @@
 .creator-app-content-card .creator-content-actions button { min-width: 29px; height: 29px; padding: 0 5px; }
 .creator-content-menu--app .creator-content-menu__popover { width: 140px; }
 
+/* 211px y no 204: el filete separador de las acciones anade unos pixeles y con
+   el alto anterior la fila de botones quedaba justa. */
 .creator-app-content-card--home {
   overflow: visible;
-  height: 204px;
-  min-height: 204px;
+  height: 211px;
+  min-height: 211px;
   color: #0f172a;
   background: #fff;
   border: 1px solid #e2eaf4;
@@ -1055,7 +1057,12 @@
   display: flex;
   min-height: 30px;
   margin-top: auto;
-  padding: 0 7px 2px;
+  /* Filete claro que separa las acciones del texto. Va con margen lateral para
+     que no toque los bordes redondeados de la tarjeta. */
+  margin-right: 10px;
+  margin-left: 10px;
+  padding: 4px 0 2px;
+  border-top: 1px solid #eef2f8;
   align-items: center;
   gap: 4px;
 }
@@ -1156,6 +1163,100 @@
 .creator-home-scroll__item {
   width: 152px;
   flex: 0 0 152px;
+}
+
+/* Tarjeta de perfil del carrusel de Inicio. Misma caja de imagen que las de
+   publicacion para que las dos filas se lean como una familia. */
+.creator-home-profile-card {
+  display: flex;
+  overflow: hidden;
+  height: 100%;
+  flex-direction: column;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #e2eaf4;
+  border-radius: 17px;
+  box-shadow: 0 8px 22px rgba(30, 64, 175, .07);
+  text-decoration: none;
+}
+
+.creator-home-profile-card__media {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e8eef6;
+  place-items: center;
+}
+
+.creator-home-profile-card__media > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  background: #f1f5f9;
+}
+
+.creator-home-profile-card__fallback {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(145deg, var(--creator-card-accent, #2563eb), #0f172a);
+  font: 900 26px/1 'Poppins', system-ui, sans-serif;
+  letter-spacing: -1px;
+}
+
+.creator-home-profile-card__media > small {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  padding: 3px 6px;
+  color: #92400e;
+  background: rgba(254, 243, 199, .94);
+  border-radius: 999px;
+  font-size: 6.5px;
+  font-weight: 900;
+}
+
+.creator-home-profile-card__copy { display: block; padding: 9px 10px 11px; }
+
+.creator-home-profile-card__copy > strong {
+  display: block;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.creator-home-profile-card__tagline {
+  display: -webkit-box;
+  overflow: hidden;
+  min-height: 25px;
+  margin-top: 4px;
+  color: #475569;
+  font-size: 8.5px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.creator-home-profile-card__place {
+  display: block;
+  overflow: hidden;
+  margin-top: 6px;
+  color: #94a3b8;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .creator-content-card--compact .creator-content-card__body h3 { min-height: 41px; }
@@ -1397,9 +1498,10 @@
   justify-content: center;
 }
 
-.creator-profile-six-grid .creator-app-content-card { width: 100%; height: auto; min-height: 218px; flex: none; }
-.creator-profile-six-grid .creator-app-content-card__media { height: auto; aspect-ratio: 16 / 9; flex-basis: auto; }
-.creator-profile-six-grid .creator-app-content-card__body { height: 102px; }
+/* La rejilla usa la misma tarjeta que el carrusel de Inicio (variante --home).
+   Aqui solo se suelta el alto fijo del carrusel para que las celdas crezcan
+   con el titulo; el resto del aspecto lo pone la propia tarjeta. */
+.creator-profile-six-grid .creator-app-content-card { width: 100%; height: auto; min-height: 211px; flex: none; }
 .creator-profile-six-grid > .creators-empty { grid-column: 1 / -1; }
 
 .creator-profile-completeness > div:first-child { display: flex; flex-direction: column; gap: 3px; }
