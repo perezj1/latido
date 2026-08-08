@@ -73,7 +73,6 @@ export const EXPLORE_SECTIONS = [
 // ninguna via para llegar a ellas.
 export const EXPLORE_EXTRAS = [
   { id:'guias', emoji:'📚', label:'Guías', desc:'Permisos, trabajo, salud y dinero', to:'/guias' },
-  { id:'empresas', emoji:'🚀', label:'Para Empresas', desc:'Da a conocer tu negocio en Latido', to:'/colaboraciones' },
 ]
 
 // Rutas que pertenecen a Explorar. El area de perfil de creador (/creadores/alta
