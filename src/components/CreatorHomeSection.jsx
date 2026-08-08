@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CreatorAppContentCard, CreatorContentModal, getCreatorInitials } from './CreatorCards'
-import { getAllCreators, getOrderedCreatorContents } from '../lib/creators'
+import { getAllCreators, getOrderedCreatorContents, subscribeCreatorUpdates } from '../lib/creators'
 import { C, PP } from '../lib/theme'
 import '../pages/Creators.css'
 
@@ -32,7 +32,6 @@ function CreatorProfileMiniCard({ creator }) {
             {getCreatorInitials(creator)}
           </span>
         )}
-        {creator.demo && <small>DEMO</small>}
       </span>
       <span className="creator-home-profile-card__copy">
         <strong>{creator.name}</strong>
@@ -45,7 +44,9 @@ function CreatorProfileMiniCard({ creator }) {
 
 export default function CreatorHomeSection() {
   const [preview, setPreview] = useState(null)
-  const creators = useMemo(() => getAllCreators(), [])
+  const [creators, setCreators] = useState(() => getAllCreators())
+
+  useEffect(() => subscribeCreatorUpdates(() => setCreators(getAllCreators())), [])
 
   const featured = useMemo(() => creators
     .flatMap(creator => getOrderedCreatorContents(creator, { publishedOnly:true })
@@ -65,7 +66,7 @@ export default function CreatorHomeSection() {
         <section style={{ padding:'40px 0 0' }} aria-labelledby="home-creator-contents-title">
           <SectionHeading
             id="home-creator-contents-title"
-            title="🎬 Publicaciones"
+            title="🎬 Contenido"
             subtitle="Experiencias, consejos, trabajo y proyectos compartidos en español desde Suiza."
             to="/comunidades?view=creadores"
           />

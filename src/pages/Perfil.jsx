@@ -32,6 +32,7 @@ import {
   getCreatorForUser,
   getFollowedCreatorIds,
   subscribeCreatorInteractions,
+  subscribeCreatorUpdates,
   toggleCreatorInteraction,
 } from '../lib/creators'
 import {
@@ -734,13 +735,15 @@ export default function Perfil() {
   // followed creators
   const [followedCreatorsOpen, setFollowedCreatorsOpen] = useState(false)
   const [followedCreatorsVersion, setFollowedCreatorsVersion] = useState(0)
+  const [creatorDirectoryVersion, setCreatorDirectoryVersion] = useState(0)
   const followedCreators = useMemo(() => {
     const followedIds = new Set(getFollowedCreatorIds(user?.id))
     return getAllCreators().filter(creator => followedIds.has(String(creator.id)))
-  }, [followedCreatorsVersion, user?.id])
-  const creatorProfile = useMemo(() => getCreatorForUser(user?.id), [user?.id])
+  }, [creatorDirectoryVersion, followedCreatorsVersion, user?.id])
+  const creatorProfile = useMemo(() => getCreatorForUser(user?.id), [creatorDirectoryVersion, user?.id])
 
   useEffect(() => subscribeCreatorInteractions(() => setFollowedCreatorsVersion(current => current + 1)), [])
+  useEffect(() => subscribeCreatorUpdates(() => setCreatorDirectoryVersion(current => current + 1)), [])
 
   // share
   const [shareOpen, setShareOpen] = useState(false)
@@ -955,14 +958,6 @@ export default function Perfil() {
   )
 
   const activeFilter = PUBLICATION_TABS.find(item => item.id === activeTab)
-  const testExpiredEventsPrompt = useMemo(() => {
-    const params = new URLSearchParams(location.search)
-    return params.get('probarModalEventos') === '1'
-  }, [location.search])
-  const testAdReminderPrompt = useMemo(() => {
-    const params = new URLSearchParams(location.search)
-    return params.get('probarModalAnuncios') === '1'
-  }, [location.search])
   const suppressAttentionPrompts = useMemo(() => {
     const params = new URLSearchParams(location.search)
     return params.has('atencion') || params.has('editar')
@@ -988,27 +983,7 @@ export default function Perfil() {
     () => publications.filter(item => isExpiredEventPublication(item, eventReviewConfirmations)),
     [eventReviewConfirmations, publications]
   )
-  const expiredEvents = useMemo(() => {
-    if (realExpiredEvents.length || !testExpiredEventsPrompt) return realExpiredEvents
-    return [{
-      id:'demo-expired-event',
-      kind:'event',
-      icon:'🎉',
-      title:'Evento demo caducado',
-      summary:'Vista de prueba',
-      meta:'Zürich · fecha pasada',
-      active:true,
-      createdAt:new Date().toISOString(),
-      raw:{
-        day:'12',
-        month:'MAY',
-        year:String(new Date().getFullYear() - 1),
-        time:'19:00',
-        city:'Zürich',
-        canton:'ZH',
-      },
-    }]
-  }, [realExpiredEvents, testExpiredEventsPrompt])
+  const expiredEvents = realExpiredEvents
   const expiredEventsSignature = useMemo(
     () => expiredEvents.map(item => item.id).sort().join('|'),
     [expiredEvents]
@@ -1018,27 +993,7 @@ export default function Perfil() {
     () => publications.filter(item => isAdDueForReview(item, adReviewConfirmations)),
     [adReviewConfirmations, publications]
   )
-  const adReminderItems = useMemo(() => {
-    if (realAdReminderItems.length || !testAdReminderPrompt) return realAdReminderItems
-    return [{
-      id:'demo-ad-reminder',
-      kind:'ad',
-      icon:'📌',
-      title:'Anuncio demo para revisar',
-      summary:'Servicios · CHF 30 / hora',
-      meta:'ZH · Público',
-      active:true,
-      createdAt:new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-      raw:{
-        id:'demo-ad-reminder',
-        title:'Anuncio demo para revisar',
-        price:'CHF 30 / hora',
-        canton:'ZH',
-        privacy:'public',
-        created_at:new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    }]
-  }, [realAdReminderItems, testAdReminderPrompt])
+  const adReminderItems = realAdReminderItems
   const adReminderItem = adReminderItems[0]
   const adReminderSignature = useMemo(
     () => adReminderItems.map(item => item.id).sort().join('|'),
@@ -1046,14 +1001,14 @@ export default function Perfil() {
   )
 
   const rememberExpiredEventsDismissal = useCallback(() => {
-    if (!testExpiredEventsPrompt && user?.id && expiredEventsSignature) {
+    if (user?.id && expiredEventsSignature) {
       localStorage.setItem(`latido_attention_expired_events:${user.id}`, JSON.stringify({
         signature: expiredEventsSignature,
         dismissedAt: new Date().toISOString(),
       }))
     }
     setExpiredEventsDismissed(true)
-  }, [expiredEventsSignature, testExpiredEventsPrompt, user?.id])
+  }, [expiredEventsSignature, user?.id])
 
   const closeExpiredEventsPrompt = useCallback(() => {
     rememberExpiredEventsDismissal()
@@ -1094,14 +1049,14 @@ export default function Perfil() {
   }, [user?.id])
 
   const rememberAdReminderDismissal = useCallback(() => {
-    if (!testAdReminderPrompt && user?.id && adReminderSignature) {
+    if (user?.id && adReminderSignature) {
       localStorage.setItem(`latido_attention_ad_review:${user.id}`, JSON.stringify({
         signature: adReminderSignature,
         dismissedAt: new Date().toISOString(),
       }))
     }
     setAdReminderDismissed(true)
-  }, [adReminderSignature, testAdReminderPrompt, user?.id])
+  }, [adReminderSignature, user?.id])
 
   const closeAdReminderPrompt = useCallback(() => {
     rememberAdReminderDismissal()
@@ -1127,10 +1082,6 @@ export default function Perfil() {
 
   const editAdReminder = () => {
     if (!adReminderItem) return
-    if (testAdReminderPrompt && adReminderItem.id === 'demo-ad-reminder') {
-      toast.success('En un anuncio real se abriría el editor')
-      return
-    }
     rememberAdReminderDismissal()
     setAdReminderOpen(false)
     openEditor(adReminderItem)
@@ -1138,10 +1089,6 @@ export default function Perfil() {
 
   const deleteAdReminder = () => {
     if (!adReminderItem) return
-    if (testAdReminderPrompt && adReminderItem.id === 'demo-ad-reminder') {
-      toast.success('En un anuncio real Latido pediría confirmación antes de borrar')
-      return
-    }
     rememberAdReminderDismissal()
     setAdReminderOpen(false)
     handleDeletePublication(adReminderItem)
@@ -1149,23 +1096,20 @@ export default function Perfil() {
 
   useEffect(() => {
     if (!isLoggedIn || !user?.id || loadingPublications || expiredEventsDismissed || !expiredEvents.length) return
-    if (!testExpiredEventsPrompt) return
     if (suppressAttentionPrompts) return
     if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || adReminderOpen) return
 
-    if (!testExpiredEventsPrompt) {
-      const key = `latido_attention_expired_events:${user.id}`
-      let stored = {}
-      try {
-        stored = JSON.parse(localStorage.getItem(key) || '{}')
-      } catch {
-        stored = {}
-      }
-
-      const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
-      const snoozed = stored.signature === expiredEventsSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
-      if (snoozed) return
+    const key = `latido_attention_expired_events:${user.id}`
+    let stored = {}
+    try {
+      stored = JSON.parse(localStorage.getItem(key) || '{}')
+    } catch {
+      stored = {}
     }
+
+    const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
+    const snoozed = stored.signature === expiredEventsSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
+    if (snoozed) return
 
     const timer = setTimeout(() => setExpiredEventsOpen(true), 900)
     return () => clearTimeout(timer)
@@ -1176,7 +1120,6 @@ export default function Perfil() {
     expiredEventsDismissed,
     expiredEvents.length,
     expiredEventsSignature,
-    testExpiredEventsPrompt,
     suppressAttentionPrompts,
     manageOpen,
     editorItem,
@@ -1192,24 +1135,21 @@ export default function Perfil() {
 
   useEffect(() => {
     if (!isLoggedIn || !user?.id || loadingPublications || adReminderDismissed || !adReminderItems.length) return
-    if (!testAdReminderPrompt) return
     if (suppressAttentionPrompts) return
     if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || expiredEventsOpen) return
-    if (!testAdReminderPrompt && expiredEvents.length) return
+    if (expiredEvents.length) return
 
-    if (!testAdReminderPrompt) {
-      const key = `latido_attention_ad_review:${user.id}`
-      let stored = {}
-      try {
-        stored = JSON.parse(localStorage.getItem(key) || '{}')
-      } catch {
-        stored = {}
-      }
-
-      const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
-      const snoozed = stored.signature === adReminderSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
-      if (snoozed) return
+    const key = `latido_attention_ad_review:${user.id}`
+    let stored = {}
+    try {
+      stored = JSON.parse(localStorage.getItem(key) || '{}')
+    } catch {
+      stored = {}
     }
+
+    const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
+    const snoozed = stored.signature === adReminderSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
+    if (snoozed) return
 
     const timer = setTimeout(() => setAdReminderOpen(true), 1100)
     return () => clearTimeout(timer)
@@ -1220,7 +1160,6 @@ export default function Perfil() {
     adReminderDismissed,
     adReminderItems.length,
     adReminderSignature,
-    testAdReminderPrompt,
     suppressAttentionPrompts,
     expiredEvents.length,
     expiredEventsOpen,
@@ -2584,9 +2523,13 @@ export default function Perfil() {
                 <button
                   type="button"
                   className="profile-followed-creator-card__remove"
-                  onClick={() => {
-                    toggleCreatorInteraction({ action:'saved', targetType:'creator', targetId:creator.id, actorId:user.id, baseCount:creator.saved_count })
-                    toast.success(`Has dejado de seguir a ${creator.name}`)
+                  onClick={async () => {
+                    try {
+                      await toggleCreatorInteraction({ action:'saved', targetType:'creator', targetId:creator.id, actorId:user.id, baseCount:creator.saved_count })
+                      toast.success(`Has dejado de seguir a ${creator.name}`)
+                    } catch (error) {
+                      toast.error(error?.message || 'No se pudo actualizar el seguimiento')
+                    }
                   }}
                 >
                   Dejar de seguir

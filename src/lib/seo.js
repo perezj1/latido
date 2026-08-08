@@ -126,6 +126,7 @@ const PRIVATE_PATHS = [
   '/publicar',
   '/publicar-empleo',
   '/publicar-evento',
+  '/publicar-contenido',
   '/registrar-negocio',
   '/registrar-comunidad',
   '/creadores/alta',
@@ -171,7 +172,7 @@ const COMMUNITY_VIEW_SEO = {
   },
   creadores:{
     title:'Personas y creadores que comparten sobre Suiza | Latido.ch',
-    description:'Perfiles y publicaciones de personas, profesionales y negocios que comparten su vida, trabajo y proyectos en Suiza.',
+    description:'Perfiles y contenido de personas, profesionales y negocios que comparten su vida, trabajo y proyectos en Suiza.',
   },
 }
 
@@ -473,12 +474,13 @@ export function getSeoForLocation(location = {}) {
 
   if (pathname.startsWith('/creadores/') && pathname !== '/creadores/alta' && pathname !== '/creadores/mi-perfil') {
     const creator = getCreatorBySlug(pathname.replace('/creadores/', ''))
-    if (creator?.status === 'published') {
+    if (creator?.status === 'published' && creator.active !== false) {
       return withDefaults({
         path:pathname,
         title:`${creator.name} · Perfil sobre Suiza | Latido.ch`,
         description:truncate(creator.tagline || creator.bio),
         type:'profile',
+        image:creator.avatar_url || DEFAULT_IMAGE,
       })
     }
   }

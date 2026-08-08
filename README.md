@@ -8,8 +8,10 @@ PWA + Web con landing page, tablón de anuncios con privacidad configurable, com
 
 ### 1. Instalar y abrir en VS Code
 
+Requiere Node.js 20.19 o una versión posterior.
+
 ```bash
-cd latinosuiza2
+cd latido
 npm install
 code .            # abre VS Code
 npm run dev       # → http://localhost:8080
@@ -33,6 +35,9 @@ empleo, ejecuta a continuación `supabase/employment_profiles.sql`.
 En proyectos que ya contienen las publicaciones antiguas verificadas, ejecuta
 después `supabase/correct_legacy_publication_categories.sql` para trasladar la
 oferta de taxi a Servicios y corregir las solicitudes de empleo verificadas.
+Para activar los perfiles, contenidos, interacciones y métricas compartidas de
+Creadores, ejecuta `supabase/creator_platform.sql`. Esta migración también
+configura RLS, moderación y actualizaciones en tiempo real.
 
 ### 3. Crear `.env.local` en la raíz
 
@@ -41,7 +46,7 @@ VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGci...
 ```
 
-> Sin Supabase la app funciona con datos mock. Conectarla activa persistencia real.
+> Supabase es obligatorio para las funciones que guardan o sincronizan datos.
 
 ### 4. Deploy en Vercel
 
@@ -69,6 +74,9 @@ En [vercel.com](https://vercel.com):
 /tablon          ← Tablón de anuncios con filtros
 /publicar        ← Formulario de publicación (requiere cuenta)
 /comunidades     ← Grupos de latinos en Suiza
+/comunidades?view=creadores ← Contenido y perfiles de creadores
+/creadores/:slug ← Perfil público de creador
+/creadores/mi-perfil ← Gestión del perfil y sus contenidos
 /guias           ← Guías para vivir en Suiza
 /tablon?cat=empleo ← Ofertas de trabajo dentro del tablón
 /perfil          ← Perfil de usuario
@@ -187,6 +195,8 @@ Al instalar, el `manifest.json` configura `start_url: "/?pwa=1"` para que la app
 npm run dev      # Servidor local en localhost:8080
 npm run build    # Build optimizado para producción
 npm run preview  # Preview del build
+npm run test:creators # Integridad de enlaces, embeds y orden de Creadores
+npm run test:search   # Calidad del buscador global
 ```
 
 ## 🔧 Stack

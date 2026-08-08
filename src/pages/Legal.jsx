@@ -133,7 +133,7 @@ function Privacidad() {
   return (
     <>
       <P style={{ fontStyle:'italic', fontSize:12, color:C.light }}>
-        Última actualización: junio de 2026 · Conforme a la nDSG (nueva Ley federal suiza de
+        Última actualización: agosto de 2026 · Conforme a la nDSG (nueva Ley federal suiza de
         protección de datos, en vigor desde el 1 de septiembre de 2023).
       </P>
 
@@ -152,7 +152,7 @@ function Privacidad() {
         ]} />
         <P><strong>Al usar la plataforma:</strong></P>
         <Ul items={[
-          'Contenidos que publicas (anuncios, reseñas, datos de contacto que decides incluir).',
+          'Contenidos que publicas (anuncios, reseñas, perfiles de creador, enlaces a redes y datos de contacto que decides incluir).',
           'Datos de uso: páginas visitadas, interacciones con la app (almacenados de forma anonimizada).',
           'Dirección IP y agente de usuario (browser), retenidos brevemente por razones de seguridad.',
         ]} />
@@ -162,7 +162,7 @@ function Privacidad() {
 
       <Section title="3. Datos visibles públicamente">
         <P>
-          Si publicas anuncios, empleos, eventos, negocios, grupos, reseñas, fotos, logos o datos
+          Si publicas anuncios, empleos, eventos, negocios, grupos, perfiles de creador, enlaces, fotos, logos o datos
           de contacto, esa información puede ser visible para otros usuarios o visitantes, indexarse
           técnicamente por buscadores si el contenido es público, y ser compartida mediante enlaces.
         </P>
@@ -199,6 +199,7 @@ function Privacidad() {
         <Ul items={[
           'Supabase Inc. — proveedor de base de datos y autenticación (servidores UE, con garantías adecuadas conforme a la nDSG).',
           'Vercel Inc. — proveedor de alojamiento de la aplicación (servidores UE).',
+          'YouTube/Google, Instagram/Meta y TikTok — solo cuando autorizas y cargas sus reproductores externos integrados.',
           'Autoridades suizas, cuando exista obligación legal.',
         ]} />
       </Section>
@@ -216,7 +217,7 @@ function Privacidad() {
         <P>
           Latido.ch utiliza almacenamiento local y de sesión para prestar el servicio, mantener
           la autenticación, recordar funciones solicitadas y conservar tu elección de privacidad.
-          La analítica propia, Vercel Web Analytics y Vercel Speed Insights solo se activan si das tu consentimiento.
+          La analítica propia, Vercel Web Analytics, Vercel Speed Insights y los reproductores externos solo se activan si das tu consentimiento para su categoría.
           No utilizamos publicidad comportamental ni vendemos datos de navegación.
         </P>
         <P>
@@ -332,12 +333,27 @@ function Cookies() {
       purpose:'Mide, con consentimiento, interacciones con servicios colaboradores y la campaña de origen.',
       duration:'Hasta retirar el consentimiento o borrar los datos del navegador; eventos, máximo 12 meses.',
     },
+    {
+      name:'Estadísticas de Creadores',
+      provider:'Latido.ch / Supabase',
+      purpose:'Cuenta, con consentimiento, impresiones de contenido, aperturas de perfiles y clics para ofrecer métricas agregadas al creador.',
+      duration:'Datos agregados mientras el perfil permanezca activo; se eliminan al borrar el perfil.',
+    },
+  ]
+
+  const externalMediaRows = [
+    {
+      name:'Reproductores integrados',
+      provider:'YouTube, Instagram y TikTok',
+      purpose:'Reproduce dentro de Latido el contenido que eliges abrir y enlaza al perfil o publicación original.',
+      duration:'Según las políticas del proveedor externo. Latido solo carga el reproductor después de tu consentimiento.',
+    },
   ]
 
   return (
     <>
       <P style={{ fontStyle:'italic', fontSize:12, color:C.light }}>
-        Última actualización: 13 de junio de 2026 · Versión de consentimiento: 2026-06-13.
+        Última actualización: 8 de agosto de 2026 · Versión de consentimiento: 2026-08-08.
       </P>
 
       <Section title="1. Alcance">
@@ -362,6 +378,9 @@ function Cookies() {
         <P><strong>Analítica opcional.</strong> Se basa en tu consentimiento. Está desactivada
         por defecto y rechazarla no limita el acceso a Latido. No usamos categorías de publicidad
         comportamental ni creamos perfiles publicitarios.</P>
+        <P><strong>Contenido externo opcional.</strong> Permite cargar reproductores de YouTube,
+        Instagram y TikTok. Está desactivado por defecto; puedes seguir abriendo el enlace original
+        aunque no autorices la reproducción integrada.</P>
       </Section>
 
       <Section title="4. Tecnologías necesarias y funcionales">
@@ -393,11 +412,17 @@ function Cookies() {
           de Suiza y del EEE conforme a sus contratos, medidas de seguridad y mecanismos de
           transferencia aplicables. La información ampliada figura en la Política de Privacidad.
         </P>
+        <StorageTable rows={externalMediaRows} />
+        <P>
+          Al permitir contenido externo, tu dirección IP, navegador, página de origen e interacciones
+          con el reproductor pueden comunicarse al proveedor correspondiente, que aplica sus propias
+          condiciones y política de privacidad.
+        </P>
       </Section>
 
       <Section title="7. Cómo decidir o retirar el consentimiento">
         <P>
-          En la primera visita a la landing pública puedes aceptar la analítica, rechazarla o
+          En la primera visita a la landing pública puedes aceptar las categorías opcionales, rechazarlas o
           configurar tu selección. Puedes cambiarla en cualquier momento, sin justificar tu decisión
           y sin perder acceso al servicio. La retirada no afecta al tratamiento realizado lícitamente
           antes de retirarla.
@@ -433,7 +458,7 @@ function Terminos() {
   return (
     <>
       <P style={{ fontStyle:'italic' }}>
-        Última actualización: junio de 2026 · Legislación aplicable: derecho suizo.
+        Última actualización: agosto de 2026 · Legislación aplicable: derecho suizo.
       </P>
 
       <Section title="1. Aceptación de los términos">
@@ -449,7 +474,8 @@ function Terminos() {
         <P>
           Latido.ch es una <strong>plataforma de intermediación y contacto</strong> para
           hispanohablantes residentes en Suiza. Facilita la publicación y consulta de anuncios,
-          la conexión con grupos, la búsqueda de empleo y el acceso a guías de trámites.
+          la conexión con grupos, la búsqueda de empleo, el acceso a guías y el descubrimiento de
+          creadores y contenido alojado en sus redes sociales.
         </P>
         <P>
           <strong>Latido.ch actúa exclusivamente como intermediario técnico.</strong> No es parte
@@ -485,7 +511,7 @@ function Terminos() {
       <Section title="5. Responsabilidad sobre los contenidos publicados">
         <P>
           <strong>Cada usuario es el único y exclusivo responsable de los contenidos que publica</strong>
-          en Latido.ch (anuncios, mensajes, reseñas, datos de contacto, imágenes, etc.).
+          en Latido.ch (anuncios, mensajes, reseñas, perfiles de creador, enlaces, datos de contacto, imágenes, etc.).
         </P>
         <P>
           Al publicar un contenido, el usuario declara y garantiza que:
@@ -723,9 +749,10 @@ function Descargo() {
 
       <Section title="8. Enlaces externos">
         <P>
-          Latido.ch puede contener enlaces a sitios web de terceros. Dichos enlaces se proporcionan
-          únicamente como recurso informativo. El operador no controla ni asume responsabilidad
-          alguna por el contenido, la política de privacidad ni las prácticas de sitios externos.
+          Latido.ch puede contener enlaces y reproductores integrados de sitios de terceros. Se
+          proporcionan como recurso informativo y el contenido continúa alojado y atribuido a la
+          plataforma y al creador originales. El operador no controla ni asume responsabilidad por
+          el contenido, disponibilidad, métricas, política de privacidad ni prácticas de esos servicios.
         </P>
       </Section>
 

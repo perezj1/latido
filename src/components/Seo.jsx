@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { DEFAULT_SEO, getEnhancedStructuredData, getSeoForLocation, SITE_NAME } from '../lib/seo'
+import { subscribeCreatorUpdates } from '../lib/creators'
 
 function upsertMeta(selector, attrs) {
   let tag = document.head.querySelector(selector)
@@ -68,7 +69,9 @@ export default function Seo() {
   const location = useLocation()
 
   useEffect(() => {
-    applySeo(getSeoForLocation(location))
+    const update = () => applySeo(getSeoForLocation(location))
+    update()
+    return subscribeCreatorUpdates(update)
   }, [location])
 
   return null

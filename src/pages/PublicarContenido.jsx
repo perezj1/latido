@@ -7,6 +7,7 @@ import {
   CREATOR_TOPICS,
   detectCreatorFormat,
   detectCreatorPlatform,
+  getCreatorDirectoryState,
   getCreatorForUser,
   getCreatorOEmbedMetadata,
   getCreatorPlatform,
@@ -14,14 +15,17 @@ import {
   getCreatorTopic,
   getOrderedCreatorContents,
   normalizeCreatorUrl,
-  prepareLocalImage,
   resolveTikTokVideo,
   saveCreatorContent,
+  subscribeCreatorUpdates,
 } from '../lib/creators'
+import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
+import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { addModerationQueueItem } from '../lib/reports'
 import { C, PP } from '../lib/theme'
 
 const STEPS = [
-  { title:'¿Dónde está tu publicación?', sub:'Pega el enlace original. Latido lleva las visitas hasta allí.' },
+  { title:'¿Dónde está tu contenido?', sub:'Pega el enlace original. Latido lleva las visitas hasta allí.' },
   { title:'Cuéntala en Latido',          sub:'Un título claro, el tema principal y un resumen útil.' },
   { title:'Revisa y publica',            sub:'Así se verá en tu perfil y en el resto de la app.' },
 ]
@@ -50,7 +54,8 @@ const EMPTY_FORM = {
 export default function PublicarContenido() {
   const navigate = useNavigate()
   const { isLoggedIn, user } = useAuth()
-  const creator = useMemo(() => getCreatorForUser(user?.id), [user?.id])
+  const [creator, setCreator] = useState(() => getCreatorForUser(user?.id))
+  const [directoryState, setDirectoryState] = useState(getCreatorDirectoryState)
   const contents = useMemo(() => getOrderedCreatorContents(creator), [creator])
 
   const [step, setStep] = useState(0)
@@ -59,6 +64,15 @@ export default function PublicarContenido() {
   const [saving, setSaving] = useState(false)
   const [processingThumbnail, setProcessingThumbnail] = useState(false)
   const [fetchingMetadata, setFetchingMetadata] = useState(false)
+
+  useEffect(() => {
+    const sync = () => {
+      setCreator(getCreatorForUser(user?.id))
+      setDirectoryState(getCreatorDirectoryState())
+    }
+    sync()
+    return subscribeCreatorUpdates(sync)
+  }, [user?.id])
 
   useEffect(() => { window.scrollTo({ top:0, left:0, behavior:'instant' }) }, [step])
 
@@ -134,18 +148,18 @@ export default function PublicarContenido() {
   const getStepErrors = targetStep => {
     const next = {}
     if (targetStep === 0) {
-      if (!form.url.trim()) next.url = 'Añade el enlace a la publicación original.'
+      if (!form.url.trim()) next.url = 'Añade el enlace al contenido original.'
       else if (!normalizeCreatorUrl(form.url)) next.url = 'Introduce una dirección válida, por ejemplo https://youtube.com/watch?v=…'
     }
     if (targetStep === 1) {
       const titleLength = form.title.trim().length
       const summaryLength = form.summary.trim().length
 
-      if (!titleLength) next.title = 'Escribe un título para identificar esta publicación.'
+      if (!titleLength) next.title = 'Escribe un título para identificar este contenido.'
       else if (titleLength < LIMITS.title.min) next.title = `El título necesita al menos ${LIMITS.title.min} caracteres (llevas ${titleLength}).`
       else if (titleLength > LIMITS.title.max) next.title = `El título admite como máximo ${LIMITS.title.max} caracteres (llevas ${titleLength}).`
 
-      if (!summaryLength) next.summary = 'Explica brevemente qué encontrará la persona al abrir la publicación.'
+      if (!summaryLength) next.summary = 'Explica brevemente qué encontrará la persona al abrir el contenido.'
       else if (summaryLength < LIMITS.summary.min) next.summary = `El resumen necesita al menos ${LIMITS.summary.min} caracteres (llevas ${summaryLength}).`
       else if (summaryLength > LIMITS.summary.max) next.summary = `El resumen admite como máximo ${LIMITS.summary.max} caracteres (llevas ${summaryLength}).`
 
@@ -183,11 +197,11 @@ export default function PublicarContenido() {
     if (!file) return
     setProcessingThumbnail(true)
     try {
-      const thumbnailUrl = await prepareLocalImage(file, { width:960, height:540, quality:.76 })
+      const thumbnailUrl = await uploadPublicationImage({ file, userId:user.id, folder:'creator-content' })
       setForm(current => ({ ...current, thumbnail_url:thumbnailUrl, thumbnail_kind:'custom' }))
-      toast.success('Miniatura preparada')
+      toast.success('Miniatura subida')
     } catch (error) {
-      toast.error(error?.message || 'No se pudo preparar la miniatura')
+      toast.error(getStorageErrorMessage(error))
     } finally {
       setProcessingThumbnail(false)
     }
@@ -196,18 +210,35 @@ export default function PublicarContenido() {
   const handlePublish = async () => {
     if (saving) return
     if (!validateBeforePublish()) return
+    const moderation = analyzeContent(form.title, form.summary, form.url)
+    if (moderation.action === 'block') {
+      toast.error(getContentFilterMessage(moderation))
+      return
+    }
 
     setSaving(true)
     try {
-      let contentToSave = { ...form, position:contents.length + 1, status:'published' }
+      const needsReview = moderation.action === 'review'
+      let contentToSave = { ...form, position:contents.length + 1, status:'published', active:!needsReview }
       if (detectCreatorPlatform(form.url) === 'tiktok') {
         contentToSave = { ...contentToSave, ...(await resolveTikTokVideo(form.url)) }
       }
-      saveCreatorContent(user.id, contentToSave)
-      toast.success('Publicación añadida a tu perfil')
+      const savedContent = await saveCreatorContent(user.id, contentToSave)
+      if (needsReview && savedContent?.id) {
+        await addModerationQueueItem({
+          contentType:'creator_content',
+          contentId:savedContent.id,
+          authorId:user.id,
+          reason:'Filtro automático',
+          excerpt:[form.title, form.summary].filter(Boolean).join('\n\n').slice(0, 700),
+          matchedTerm:moderation.matchedTerm,
+          metadata:{ creator_id:creator.id, platform:contentToSave.platform, external_url:contentToSave.url },
+        })
+      }
+      toast.success(needsReview ? 'Contenido enviado a revisión' : 'Contenido añadido a tu perfil')
       navigate('/creadores/mi-perfil')
     } catch (error) {
-      toast.error(error?.message || 'No se pudo guardar la publicación')
+      toast.error(error?.message || 'No se pudo guardar el contenido')
     } finally {
       setSaving(false)
     }
@@ -224,12 +255,24 @@ export default function PublicarContenido() {
     </div>
   )
 
+  if (!directoryState.loaded || directoryState.loading) return (
+    <div style={{ minHeight:'70vh', display:'grid', placeItems:'center', color:C.mid, fontFamily:PP }}>Cargando tu perfil…</div>
+  )
+
+  if (directoryState.error) return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text }}>No pudimos cargar tu perfil</h1>
+      <p style={{ fontFamily:PP, color:C.mid }}>Comprueba tu conexión e inténtalo de nuevo.</p>
+      <Btn onClick={() => window.location.reload()}>Reintentar</Btn>
+    </div>
+  )
+
   if (!creator) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>🎙️</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Crea primero tu perfil de creador</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
-        Tus publicaciones se muestran dentro de tu perfil, así que necesitamos crearlo antes. Tarda unos minutos.
+        Tu contenido se muestra dentro de tu perfil, así que necesitamos crearlo antes. Tarda unos minutos.
       </p>
       <Btn onClick={() => navigate('/creadores/alta', { state:{ from:'/publicar-contenido' } })}>Crear mi perfil →</Btn>
     </div>
@@ -248,7 +291,7 @@ export default function PublicarContenido() {
       {step === 0 && (
         <>
           <Input
-            label="Enlace de la publicación"
+            label="Enlace del contenido"
             required
             placeholder="https://youtube.com/watch?v=…"
             value={form.url}
@@ -264,7 +307,7 @@ export default function PublicarContenido() {
               <span style={{ fontSize:18 }}>{fetchingMetadata ? '⏳' : '🔗'}</span>
               <span style={{ fontFamily:PP, fontSize:11.5, color:C.mid, lineHeight:1.5 }}>
                 {fetchingMetadata
-                  ? 'Leyendo los datos de la publicación…'
+                  ? 'Leyendo los datos del contenido…'
                   : <>Detectado: <strong style={{ color:C.text }}>{platform?.label || 'Web'}</strong> · {form.format}</>}
               </span>
             </div>
@@ -353,14 +396,14 @@ export default function PublicarContenido() {
           <div style={{ background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:14, padding:'14px 16px' }}>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#1E3A8A', margin:'0 0 6px' }}>Cómo funciona</p>
             <p style={{ fontFamily:PP, fontSize:11, color:'#1E3A8A', lineHeight:1.7, margin:0 }}>
-              Latido muestra esta ficha y envía las visitas a la publicación original. Si todavía tienes menos de seis destacados, se añadirá automáticamente; después podrás cambiar la selección desde tu perfil.
+              Latido muestra esta ficha y envía las visitas al contenido original. Si todavía tienes menos de seis destacados, se añadirá automáticamente; después podrás cambiar la selección desde tu perfil.
             </p>
           </div>
         </>
       )}
 
       <p style={{ fontFamily:PP, fontSize:11, color:C.light, textAlign:'center', marginTop:14 }}>
-        Gratuito · Puedes gestionar todas tus publicaciones y elegir hasta seis destacadas
+        Gratuito · Puedes gestionar todo tu contenido y elegir hasta seis destacados
       </p>
 
       <StickyFormActions>

@@ -6,12 +6,14 @@ import { useAuth } from '../hooks/useAuth'
 import {
   getAllCreators,
   getCreatorBySlug,
+  getCreatorDirectoryState,
   formatCreatorHandle,
   getCreatorHelpfulCount,
   getCreatorHelpRank,
   getCreatorContentsNewestFirst,
   getFeaturedCreatorContents,
   getCreatorPlatform,
+  subscribeCreatorUpdates,
   trackCreatorMetric,
 } from '../lib/creators'
 import {
@@ -55,15 +57,23 @@ export default function CreadorPerfil() {
   const requestedContentId = searchParams.get('contenido')
   const { user } = useAuth()
   const [creator, setCreator] = useState(() => getCreatorBySlug(creatorSlug))
+  const [directoryState, setDirectoryState] = useState(getCreatorDirectoryState)
   const [preview, setPreview] = useState(null)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const profileMenuRef = useRef(null)
 
   useEffect(() => {
-    const current = getCreatorBySlug(creatorSlug)
-    setCreator(current)
-    if (current) trackCreatorMetric(current.id, 'profile_view')
+    const sync = () => {
+      setCreator(getCreatorBySlug(creatorSlug))
+      setDirectoryState(getCreatorDirectoryState())
+    }
+    sync()
+    return subscribeCreatorUpdates(sync)
   }, [creatorSlug])
+
+  useEffect(() => {
+    if (creator?.id) trackCreatorMetric(creator.id, 'profile_view')
+  }, [creator?.id])
 
   useEffect(() => {
     if (!creator || !requestedContentId) return
@@ -99,7 +109,11 @@ export default function CreadorPerfil() {
       .slice(0, 2)
   }, [creator])
 
-  if (!creator || creator.status !== 'published') {
+  if (!directoryState.loaded || directoryState.loading) {
+    return <div className="creators-page" style={{ minHeight:'70vh', display:'grid', placeItems:'center', color:C.mid, fontFamily:PP }}>Cargando perfil…</div>
+  }
+
+  if (!creator || creator.status !== 'published' || creator.active === false) {
     return (
       <div className="creators-page" style={{ display:'grid', minHeight:'70vh', placeItems:'center', padding:'30px' }}>
         <div style={{ maxWidth:480, padding:28, textAlign:'center', background:'#fff', border:`1px solid ${C.border}`, borderRadius:24 }}>
@@ -118,12 +132,7 @@ export default function CreadorPerfil() {
   const helpRank = getCreatorHelpRank(creator)
   const isOwner = Boolean(user?.id && creator.owner_id === user.id)
 
-  const handleSocialClick = (event, social) => {
-    if (creator.demo) {
-      event.preventDefault()
-      toast('En un perfil real se abriría su red social o página original.', { icon:'🧪' })
-      return
-    }
+  const handleSocialClick = (_event, social) => {
     trackCreatorMetric(creator.id, 'social_click', social.platform)
   }
 
@@ -155,7 +164,7 @@ export default function CreadorPerfil() {
             <Link to="/comunidades?view=creadores" aria-label="Volver a Creadores"><ChevronLeftIcon size={20} /></Link>
             <div>
               <strong>{formatCreatorHandle(creator.handle) || creator.name}</strong>
-              <span>{creator.demo ? 'Perfil ficticio · demo' : 'Perfil en Latido'}</span>
+              <span>Perfil en Latido</span>
             </div>
             {!isOwner && (
               <div ref={profileMenuRef} className="creator-profile-menu">
@@ -169,7 +178,7 @@ export default function CreadorPerfil() {
                     label="Reportar perfil"
                     compact
                     onOpen={() => setProfileMenuOpen(false)}
-                    metadata={{ creator_name:creator.name, creator_slug:creator.slug, creator_handle:creator.handle, demo:Boolean(creator.demo) }}
+                    metadata={{ creator_name:creator.name, creator_slug:creator.slug, creator_handle:creator.handle }}
                     style={{ width:'100%', justifyContent:'flex-start', padding:'9px 10px', color:'#DC2626', background:'transparent', border:'none', borderRadius:9, fontSize:10.5 }}
                   />
                 </div>
@@ -211,7 +220,7 @@ export default function CreadorPerfil() {
             </div>
 
             <div className="creator-social-profile__stats" aria-label="Datos del perfil">
-              <span><strong>{publishedContents.length}</strong><small>Publicaciones</small></span>
+              <span><strong>{publishedContents.length}</strong><small>Contenidos</small></span>
               <span><strong>{creator.topics?.length || 0}</strong><small>Temas</small></span>
               <span><strong>{creator.socials?.length || 0}</strong><small>Redes</small></span>
             </div>
@@ -279,7 +288,7 @@ export default function CreadorPerfil() {
               </div>
             </div>
           ) : (
-            <div className="creators-empty">Este perfil todavía no ha añadido publicaciones.</div>
+            <div className="creators-empty">Este perfil todavía no ha añadido contenido.</div>
           )}
         </section>
 
@@ -290,7 +299,7 @@ export default function CreadorPerfil() {
             <div className="creators-section__heading">
               <div>
                 <h2>Todos</h2>
-                <p>Todas las publicaciones de {creator.name} en Latido.</p>
+                <p>Todo el contenido de {creator.name} en Latido.</p>
               </div>
               <span className="creators-results-count">{publishedContents.length} en total</span>
             </div>

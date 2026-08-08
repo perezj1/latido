@@ -6,6 +6,7 @@ import {
   CREATOR_PLATFORMS,
   CREATOR_TOPICS,
   getAllCreators,
+  getCreatorDirectoryState,
   getCreatorForUser,
   getCreatorTopic,
   getLatestContents,
@@ -190,9 +191,13 @@ export default function CreatorCommunityView({
 }) {
   const { user, isLoggedIn } = useAuth()
   const [creators, setCreators] = useState(() => getAllCreators())
+  const [directoryState, setDirectoryState] = useState(getCreatorDirectoryState)
   const [preview, setPreview] = useState(null)
 
-  useEffect(() => subscribeCreatorUpdates(() => setCreators(getAllCreators())), [])
+  useEffect(() => subscribeCreatorUpdates(() => {
+    setCreators(getAllCreators())
+    setDirectoryState(getCreatorDirectoryState())
+  }), [])
 
   const ownCreator = getCreatorForUser(user?.id)
   const query = normalize(search)
@@ -291,6 +296,19 @@ export default function CreatorCommunityView({
       </div>
     </section>
   )
+
+  if ((!directoryState.loaded || directoryState.loading) && !creators.length) {
+    return <div className="creator-community-view creators-empty">Cargando Creadores…</div>
+  }
+
+  if (directoryState.error && !creators.length) {
+    return (
+      <div className="creator-community-view creators-empty">
+        <p>No pudimos cargar Creadores. Comprueba tu conexión e inténtalo de nuevo.</p>
+        <button type="button" onClick={() => window.location.reload()}>Reintentar</button>
+      </div>
+    )
+  }
 
   return (
     <div className="creator-community-view">
@@ -411,7 +429,6 @@ export default function CreatorCommunityView({
                         {getCreatorInitials(creator)}
                       </span>
                     )}
-                    {creator.demo && <small>DEMO</small>}
                   </span>
                   <CreatorProfileHelpfulMetric creator={creator} />
 

@@ -307,6 +307,8 @@ async function fetchAdminContentForItems(items = []) {
     events,
     providers,
     communities,
+    creatorProfiles,
+    creatorContents,
   ] = await Promise.all([
     fetchAdminRowsByIds('listings', 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at', idsFor(['listing'])),
     fetchAdminRowsByIds('jobs', 'id,title,company,desc,sector,active,user_id,canton,city,created_at', idsFor(['job'])),
@@ -315,6 +317,8 @@ async function fetchAdminContentForItems(items = []) {
     fetchAdminRowsByIds('events', '*', idsFor(['event'])),
     fetchAdminRowsByIds('providers', '*', idsFor(['provider', 'business'])),
     fetchAdminRowsByIds('communities', '*', idsFor(['community'])),
+    fetchAdminRowsByIds('creator_profiles', 'id,owner_id,name,handle,tagline,status,active,created_at', idsFor(['creator_profile'])),
+    fetchAdminRowsByIds('creator_contents', 'id,creator_id,title,summary,url,status,active,created_at', idsFor(['creator_content'])),
   ])
 
   const entries = []
@@ -328,6 +332,8 @@ async function fetchAdminContentForItems(items = []) {
     entries.push([`business:${item.id}`, item])
   })
   ;(communities.data || []).forEach(item => entries.push([`community:${item.id}`, item]))
+  ;(creatorProfiles.data || []).forEach(item => entries.push([`creator_profile:${item.id}`, item]))
+  ;(creatorContents.data || []).forEach(item => entries.push([`creator_content:${item.id}`, item]))
 
   const errors = []
   for (const [label, response] of [
@@ -338,6 +344,8 @@ async function fetchAdminContentForItems(items = []) {
     ['eventos relacionados', events],
     ['negocios relacionados', providers],
     ['comunidades relacionadas', communities],
+    ['perfiles de creadores relacionados', creatorProfiles],
+    ['contenidos de creadores relacionados', creatorContents],
   ]) {
     if (response.error) errors.push(`${label}: ${response.error.message}`)
   }
@@ -397,6 +405,8 @@ const MODERATED_CONTENT_TABLES = {
   provider: 'providers',
   business: 'providers',
   community: 'communities',
+  creator_profile: 'creator_profiles',
+  creator_content: 'creator_contents',
 }
 
 function canToggleContent(type) {
@@ -2575,6 +2585,10 @@ export default function Admin() {
     if (item.content_type === 'profile') return item.content_id
     const content = contentByKey.get(`${item.content_type}:${item.content_id}`)
     if (item.content_type === 'message' && content?.sender_id) return content.sender_id
+    if (item.content_type === 'creator_profile' && content?.owner_id) return content.owner_id
+    if (item.content_type === 'creator_content' && content?.creator_id) {
+      return contentByKey.get(`creator_profile:${content.creator_id}`)?.owner_id || item.author_id || metadataOwnerId(item)
+    }
     if (canToggleContent(item.content_type) && content?.user_id) return content.user_id
     return item.author_id || metadataOwnerId(item)
   }
@@ -2919,7 +2933,7 @@ export default function Admin() {
           {content.title || content.name || content.company || content.host || 'Sin titulo'}
         </p>
         <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.5, margin: 0 }}>
-          {(content.desc || content.description || (Array.isArray(content.services) ? content.services.join(', ') : '') || content.contact || '').slice(0, 200)}
+          {(content.desc || content.description || content.summary || content.tagline || (Array.isArray(content.services) ? content.services.join(', ') : '') || content.contact || '').slice(0, 200)}
         </p>
       </div>
     )

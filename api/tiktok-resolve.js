@@ -40,28 +40,41 @@ export async function resolveTikTokLink(value, { fetchImpl=fetch, signal } = {})
     }
   }
 
-  const response = await fetchImpl(originalUrl, {
-    method:'HEAD',
-    redirect:'follow',
-    signal:signal || AbortSignal.timeout(10000),
-    headers:{
-      Accept:'text/html,application/xhtml+xml',
-      'User-Agent':'Mozilla/5.0 (compatible; Latido.ch/1.0)',
-    },
-  })
+  const requestSignal = signal || AbortSignal.timeout(10000)
+  let currentUrl = originalUrl
+  for (let redirects = 0; redirects <= 5; redirects += 1) {
+    const response = await fetchImpl(currentUrl, {
+      method:'HEAD',
+      redirect:'manual',
+      signal:requestSignal,
+      headers:{
+        Accept:'text/html,application/xhtml+xml',
+        'User-Agent':'Mozilla/5.0 (compatible; Latido.ch/1.0)',
+      },
+    })
+    const location = response.headers?.get?.('location')
+    if (response.status >= 300 && response.status < 400) {
+      if (!location) throw httpError('TikTok returned an invalid redirect', 502)
+      currentUrl = parseTikTokUrl(new URL(location, currentUrl).href)
+      continue
+    }
+    if (!response.ok) throw httpError('TikTok could not resolve this link', 502)
 
-  if (!response.ok) throw httpError('TikTok could not resolve this link', 502)
+    // `response.url` also keeps dependency-injected fetch implementations and
+    // platforms that resolve internally compatible with this helper.
+    const resolvedUrl = parseTikTokUrl(response.url || currentUrl.href)
+    const videoId = getTikTokIdFromUrl(resolvedUrl.href)
+    if (!videoId) throw httpError('TikTok did not return a video URL', 422)
 
-  const resolvedUrl = parseTikTokUrl(response.url)
-  const videoId = getTikTokIdFromUrl(resolvedUrl.href)
-  if (!videoId) throw httpError('TikTok did not return a video URL', 422)
-
-  return {
-    original_url:originalUrl.href,
-    resolved_url:resolvedUrl.href,
-    video_id:videoId,
-    embed_url:`https://www.tiktok.com/player/v1/${videoId}`,
+    return {
+      original_url:originalUrl.href,
+      resolved_url:resolvedUrl.href,
+      video_id:videoId,
+      embed_url:`https://www.tiktok.com/player/v1/${videoId}`,
+    }
   }
+
+  throw httpError('TikTok returned too many redirects', 502)
 }
 
 export default async function handler(req, res) {
@@ -79,7 +92,7 @@ export default async function handler(req, res) {
   }
 
   const requestedUrl = Array.isArray(req.query.url) ? req.query.url[0] : req.query.url
-  if (!requestedUrl) {
+  if (!requestedUrl || String(requestedUrl).length > 2048) {
     res.status(400).json({ error:'Missing TikTok URL' })
     return
   }

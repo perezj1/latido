@@ -27,7 +27,7 @@ function tiktokResolverPlugin() {
         }
 
         const requestedUrl = new URL(req.url || '/', 'http://localhost').searchParams.get('url')
-        if (!requestedUrl) {
+        if (!requestedUrl || requestedUrl.length > 2048) {
           res.statusCode = 400
           res.end(JSON.stringify({ error:'Missing TikTok URL' }))
           return

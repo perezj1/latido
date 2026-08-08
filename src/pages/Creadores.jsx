@@ -5,6 +5,7 @@ import {
   CREATOR_PLATFORMS,
   CREATOR_TOPICS,
   getAllCreators,
+  getCreatorDirectoryState,
   getCreatorForUser,
   getOrderedCreatorContents,
   subscribeCreatorUpdates,
@@ -30,6 +31,7 @@ function normalizeSearch(value = '') {
 export default function Creadores() {
   const { user, isLoggedIn } = useAuth()
   const [creators, setCreators] = useState(() => getAllCreators())
+  const [directoryState, setDirectoryState] = useState(getCreatorDirectoryState)
   const [search, setSearch] = useState('')
   const [topic, setTopic] = useState('')
   const [canton, setCanton] = useState('')
@@ -38,7 +40,10 @@ export default function Creadores() {
   const [showFilters, setShowFilters] = useState(false)
   const [draftFilters, setDraftFilters] = useState({ topic:'', canton:'', platform:'' })
 
-  useEffect(() => subscribeCreatorUpdates(() => setCreators(getAllCreators())), [])
+  useEffect(() => subscribeCreatorUpdates(() => {
+    setCreators(getAllCreators())
+    setDirectoryState(getCreatorDirectoryState())
+  }), [])
 
   const ownCreator = getCreatorForUser(user?.id)
   const cantons = useMemo(() => (
@@ -88,6 +93,10 @@ export default function Creadores() {
   const openFilters = () => {
     setDraftFilters({ topic, canton, platform })
     setShowFilters(true)
+  }
+
+  if ((!directoryState.loaded || directoryState.loading) && !creators.length) {
+    return <div className="creators-page" style={{ minHeight:'70vh', display:'grid', placeItems:'center', fontFamily:'Poppins, sans-serif', color:'#64748B' }}>Cargando Creadores…</div>
   }
 
   return (

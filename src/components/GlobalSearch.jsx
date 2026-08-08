@@ -35,7 +35,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { SEARCHABLE_SITE_PAGES, getAdPath, getBusinessPath, getEventPath, getGuidePath, getJobPath } from '../lib/seo'
-import { getAllCreators, getCreatorPlatform, getCreatorThumbnailUrl, getCreatorTopic } from '../lib/creators'
+import { getAllCreators, getCreatorPlatform, getCreatorThumbnailUrl, getCreatorTopic, subscribeCreatorUpdates } from '../lib/creators'
 import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
 import { rotateItems, takeNextRotationOffset } from '../lib/rotation'
 import { buildSearchProfile, normalizeSearchText, profileHasIntent, scoreSearchFields } from '../lib/naturalSearch'
@@ -150,7 +150,7 @@ const TYPE_COLORS = {
   event:{ bg:'#FCE7F3', color:'#9D174D', label:'Evento' },
   guide:{ bg:'#EDE9FE', color:'#6D28D9', label:'Guía' },
   creator:{ bg:'#EDE9FE', color:'#7C3AED', label:'Creador' },
-  creator_content:{ bg:'#F3E8FF', color:'#6D28D9', label:'Publicación' },
+  creator_content:{ bg:'#F3E8FF', color:'#6D28D9', label:'Contenido' },
   page:{ bg:'#F1F5F9', color:'#475569', label:'Página' },
 }
 
@@ -1366,7 +1366,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
         image:getCreatorThumbnailUrl(content),
         imageFit:'cover',
         label:content.title,
-        sub:['Publicación', creator.name, platform?.label].filter(Boolean).join(metaSeparator),
+        sub:['Contenido', creator.name, platform?.label].filter(Boolean).join(metaSeparator),
         href:`/creadores/${creator.slug}?contenido=${encodeURIComponent(content.id)}`,
         filterMeta:{
           categories:['creadores'],
@@ -1487,6 +1487,7 @@ export default function GlobalSearch({
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
   const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
   const [loadingData, setLoadingData] = useState(false)
+  const [creatorDataVersion, setCreatorDataVersion] = useState(0)
   const initialSearchQuery = String(initialQuery || '')
   const shouldOpenInitialResults = Boolean(
     immersive
@@ -1533,7 +1534,7 @@ export default function GlobalSearch({
   const hasPageScope = !!allowedResultTypes
 
   const deferredQuery = useDeferredValue(q)
-  const fallbackDatasets = useMemo(() => buildFallbackData(isLoggedIn), [isLoggedIn])
+  const fallbackDatasets = useMemo(() => buildFallbackData(isLoggedIn), [creatorDataVersion, isLoggedIn])
   const assistantQuery = useMemo(() => {
     if (!assistantMode) return null
     const parsed = parseLatidoAssistantQuery(deferredQuery)
@@ -2124,6 +2125,15 @@ export default function GlobalSearch({
     setLoadingData(false)
     loadPromiseRef.current = null
   }, [isLoggedIn])
+
+  useEffect(() => subscribeCreatorUpdates(() => {
+    const creators = getAllCreators()
+    for (const key of Object.keys(SEARCH_CACHE)) {
+      if (SEARCH_CACHE[key]) SEARCH_CACHE[key] = { ...SEARCH_CACHE[key], creators }
+    }
+    setDatasets(current => ({ ...current, creators }))
+    setCreatorDataVersion(current => current + 1)
+  }), [])
 
   const ensureDataLoaded = useCallback(async () => {
     const cached = getCachedSearchData(isLoggedIn)

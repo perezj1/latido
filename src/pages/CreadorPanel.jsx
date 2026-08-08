@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Trash2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, ChevronUp, Trash2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { Btn, ChevronLeftIcon, ImageUploadField, Input } from '../components/UI'
 import {
@@ -18,20 +18,24 @@ import {
   formatCreatorHandle,
   getCreatorContentsNewestFirst,
   getCreatorFeaturedContentIds,
+  getCreatorDirectoryState,
   getCreatorForUser,
   getCreatorOEmbedMetadata,
   getCreatorPlatform,
+  getCreatorProfileCompleteness,
   getCreatorThumbnailUrl,
   getCreatorTopic,
   getFeaturedCreatorContents,
   normalizeCreatorUrl,
-  prepareLocalImage,
   removeCreatorContent,
-  resetCreatorPrototype,
   resolveTikTokVideo,
   saveCreatorContent,
   setCreatorContentFeatured,
+  subscribeCreatorUpdates,
 } from '../lib/creators'
+import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
+import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { addModerationQueueItem } from '../lib/reports'
 import { C, PP } from '../lib/theme'
 import './Creators.css'
 
@@ -59,8 +63,6 @@ const CONTENT_LIMITS = {
   summary:{ min:40, max:300 },
 }
 
-const prepareLocalThumbnail = file => prepareLocalImage(file, { width:960, height:540, quality:.76 })
-
 function focusFirstError(errors) {
   const firstKey = Object.keys(errors)[0]
   if (!firstKey) return
@@ -76,6 +78,7 @@ export default function CreadorPanel() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [creator, setCreator] = useState(() => getCreatorForUser(user?.id))
+  const [directoryState, setDirectoryState] = useState(getCreatorDirectoryState)
   const [contentForm, setContentForm] = useState(EMPTY_CONTENT)
   const [formOpen, setFormOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -83,20 +86,33 @@ export default function CreadorPanel() {
   const [processingThumbnail, setProcessingThumbnail] = useState(false)
   const [fetchingMetadata, setFetchingMetadata] = useState(false)
   const [preview, setPreview] = useState(null)
+  const [completedChecksOpen, setCompletedChecksOpen] = useState(false)
 
   const refresh = () => setCreator(getCreatorForUser(user?.id))
-  const publishedContents = getCreatorContentsNewestFirst(creator, { publishedOnly:true })
+  const publishedContents = getCreatorContentsNewestFirst(creator).filter(content => content.status === 'published')
   const featuredContents = getFeaturedCreatorContents(creator)
   const featuredContentIds = getCreatorFeaturedContentIds(creator)
   const featuredContentIdSet = new Set(featuredContentIds)
+  const completeness = getCreatorProfileCompleteness(creator)
+  const completedProfileChecks = completeness.checks.filter(check => check.done)
+  const pendingProfileChecks = completeness.checks.filter(check => !check.done)
   const publishPlatform = getCreatorPlatform(contentForm.platform)
   const publishTopic = getCreatorTopic(contentForm.topic)
   const publishThumbnail = getCreatorThumbnailUrl(contentForm)
   const hasValidContentUrl = Boolean(normalizeCreatorUrl(contentForm.url))
 
   useEffect(() => {
+    const sync = () => {
+      setCreator(getCreatorForUser(user?.id))
+      setDirectoryState(getCreatorDirectoryState())
+    }
+    sync()
+    return subscribeCreatorUpdates(sync)
+  }, [user?.id])
+
+  useEffect(() => {
     if (searchParams.get('created') !== '1') return
-    toast('Tu perfil ya aparece en el directorio de este navegador. Ahora añade tu primera publicación.', {
+    toast('Tu perfil ya aparece en el directorio. Ahora añade tu primer contenido.', {
       id:'creator-profile-created',
       icon:'🎉',
       duration:5000,
@@ -162,13 +178,29 @@ export default function CreadorPanel() {
     }
   }, [formOpen, saving])
 
+  if (!directoryState.loaded || directoryState.loading) {
+    return <div className="creators-page" style={{ minHeight:'70vh', display:'grid', placeItems:'center', color:C.mid, fontFamily:PP }}>Cargando tu perfil…</div>
+  }
+
+  if (directoryState.error) {
+    return (
+      <div className="creators-page" style={{ display:'grid', minHeight:'70vh', placeItems:'center', padding:28 }}>
+        <section style={{ width:'min(540px,100%)', padding:30, background:'#fff', border:`1px solid ${C.border}`, borderRadius:26, textAlign:'center' }}>
+          <h1 style={{ margin:'0 0 8px', color:C.text, fontFamily:PP, fontSize:22 }}>No pudimos cargar tu perfil</h1>
+          <p style={{ color:C.mid, fontFamily:PP, fontSize:12, lineHeight:1.7 }}>Comprueba tu conexión e inténtalo de nuevo.</p>
+          <Btn onClick={() => window.location.reload()}>Reintentar</Btn>
+        </section>
+      </div>
+    )
+  }
+
   if (!creator) {
     return (
       <div className="creators-page" style={{ display:'grid', minHeight:'78vh', placeItems:'center', padding:28 }}>
         <section style={{ width:'min(540px,100%)', padding:30, background:'#fff', border:`1px solid ${C.border}`, borderRadius:26, textAlign:'center' }}>
           <div style={{ fontSize:44 }}>🎙️</div>
           <h1 style={{ margin:'14px 0 8px', color:C.text, fontFamily:PP, fontSize:22 }}>Crea primero tu perfil público</h1>
-          <p style={{ margin:'0 auto 20px', maxWidth:430, color:C.mid, fontFamily:PP, fontSize:11.5, lineHeight:1.7 }}>Después podrás editar cada zona y gestionar tus publicaciones desde una vista igual a tu perfil.</p>
+          <p style={{ margin:'0 auto 20px', maxWidth:430, color:C.mid, fontFamily:PP, fontSize:11.5, lineHeight:1.7 }}>Después podrás editar cada zona y gestionar tu contenido desde una vista igual a tu perfil.</p>
           <Link className="creators-primary-action" to="/creadores/alta" state={{ from:'/creadores/mi-perfil' }}>Crear mi perfil →</Link>
         </section>
       </div>
@@ -209,7 +241,7 @@ export default function CreadorPanel() {
     const errors = {}
     const titleLength = contentForm.title.trim().length
     const summaryLength = contentForm.summary.trim().length
-    if (!contentForm.url.trim()) errors.url = 'Añade el enlace a la publicación original.'
+    if (!contentForm.url.trim()) errors.url = 'Añade el enlace al contenido original.'
     else if (!normalizeCreatorUrl(contentForm.url)) errors.url = 'Introduce una dirección válida que empiece por https://'
     if (titleLength < CONTENT_LIMITS.title.min) errors.title = `El título necesita al menos ${CONTENT_LIMITS.title.min} caracteres.`
     else if (titleLength > CONTENT_LIMITS.title.max) errors.title = `El título admite como máximo ${CONTENT_LIMITS.title.max} caracteres.`
@@ -223,19 +255,36 @@ export default function CreadorPanel() {
 
   const handleContentSave = async () => {
     if (!validateContent()) return
+    const moderation = analyzeContent(contentForm.title, contentForm.summary, contentForm.url)
+    if (moderation.action === 'block') {
+      toast.error(getContentFilterMessage(moderation))
+      return
+    }
     setSaving(true)
     try {
-      let contentToSave = { ...contentForm, status:'published' }
+      const needsReview = moderation.action === 'review' || contentForm.active === false
+      let contentToSave = { ...contentForm, status:'published', active:!needsReview }
       if (detectCreatorPlatform(contentForm.url) === 'tiktok' && !contentForm.video_id) {
         contentToSave = { ...contentToSave, ...(await resolveTikTokVideo(contentForm.url)) }
       }
-      saveCreatorContent(user.id, contentToSave)
+      const savedContent = await saveCreatorContent(user.id, contentToSave)
+      if (needsReview && savedContent?.id) {
+        await addModerationQueueItem({
+          contentType:'creator_content',
+          contentId:savedContent.id,
+          authorId:user.id,
+          reason:'Filtro automático',
+          excerpt:[contentForm.title, contentForm.summary].filter(Boolean).join('\n\n').slice(0, 700),
+          matchedTerm:moderation.matchedTerm,
+          metadata:{ creator_id:creator.id, platform:contentToSave.platform, external_url:contentToSave.url },
+        })
+      }
       refresh()
       setFormOpen(false)
       setContentForm(EMPTY_CONTENT)
-      toast.success('Publicación actualizada')
+      toast.success(needsReview ? 'Contenido enviado a revisión' : 'Contenido actualizado')
     } catch (error) {
-      toast.error(error?.message || 'No se pudo guardar la publicación')
+      toast.error(error?.message || 'No se pudo guardar el contenido')
     } finally {
       setSaving(false)
     }
@@ -246,61 +295,59 @@ export default function CreadorPanel() {
     if (!file) return
     setProcessingThumbnail(true)
     try {
-      const thumbnailUrl = await prepareLocalThumbnail(file)
+      const thumbnailUrl = await uploadPublicationImage({ file, userId:user.id, folder:'creator-content' })
       setContentForm(current => ({ ...current, thumbnail_url:thumbnailUrl, thumbnail_kind:'custom' }))
-      toast.success('Miniatura preparada')
+      toast.success('Miniatura subida')
     } catch (error) {
-      toast.error(error?.message || 'No se pudo preparar la miniatura')
+      toast.error(getStorageErrorMessage(error))
     } finally {
       setProcessingThumbnail(false)
     }
   }
 
-  const toggleFeaturedContent = content => {
+  const toggleFeaturedContent = async content => {
     const currentlyFeatured = featuredContentIdSet.has(String(content.id))
     try {
-      setCreatorContentFeatured(user.id, content.id, !currentlyFeatured)
+      await setCreatorContentFeatured(user.id, content.id, !currentlyFeatured)
       refresh()
-      toast.success(currentlyFeatured ? 'Publicación retirada de destacados' : 'Publicación añadida a destacados')
+      toast.success(currentlyFeatured ? 'Contenido retirado de destacados' : 'Contenido añadido a destacados')
     } catch (error) {
       toast.error(error?.message || 'No se pudo cambiar la selección')
     }
   }
 
-  const removeContent = content => {
+  const removeContent = async content => {
     if (!window.confirm(`¿Eliminar “${content.title}”?`)) return
-    removeCreatorContent(user.id, content.id)
-    refresh()
-    toast.success('Publicación eliminada')
-  }
-
-  const resetPrototype = () => {
-    if (!window.confirm('¿Borrar tu perfil y todas sus publicaciones de prueba de este navegador?')) return
-    resetCreatorPrototype(user.id)
-    setCreator(null)
-    toast.success('Prototipo reiniciado')
+    try {
+      await removeCreatorContent(user.id, content.id)
+      refresh()
+      toast.success('Contenido eliminado')
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo eliminar el contenido')
+    }
   }
 
   const managementActions = content => {
     const featured = featuredContentIdSet.has(String(content.id))
     return (
       <div className="creator-card-management-actions">
+        {content.active === false && <span style={{ color:'#92400E', fontSize:9, fontWeight:800 }}>En revisión</span>}
         <button
           type="button"
           className={featured ? 'is-featured' : ''}
           onClick={() => toggleFeaturedContent(content)}
-          disabled={!featured && featuredContentIds.length >= CREATOR_FEATURED_CONTENTS}
-          aria-label={featured ? 'Quitar de destacados' : 'Destacar publicación'}
+          disabled={content.active === false || (!featured && featuredContentIds.length >= CREATOR_FEATURED_CONTENTS)}
+          aria-label={featured ? 'Quitar de destacados' : 'Destacar contenido'}
           aria-pressed={featured}
           title={featured ? 'Quitar de destacados' : 'Destacar'}
         >
           <span aria-hidden="true">{featured ? '★' : '☆'}</span>
           <small>{featured ? 'Destacada' : 'Destacar'}</small>
         </button>
-        <button type="button" onClick={() => startEditContent(content)} aria-label="Editar publicación" title="Editar">
+        <button type="button" onClick={() => startEditContent(content)} aria-label="Editar contenido" title="Editar">
           <span aria-hidden="true">✎</span>
         </button>
-        <button type="button" className="is-danger" onClick={() => removeContent(content)} aria-label="Eliminar publicación" title="Eliminar">
+        <button type="button" className="is-danger" onClick={() => removeContent(content)} aria-label="Eliminar contenido" title="Eliminar">
           <Trash2 size={16} strokeWidth={2.4} aria-hidden="true" />
         </button>
       </div>
@@ -336,6 +383,12 @@ export default function CreadorPanel() {
             <Link className="creator-editor-public-link" to={`/creadores/${creator.slug}`} aria-label="Ver perfil público">👁</Link>
           </div>
 
+          {creator.active === false && (
+            <p style={{ margin:'12px 20px 0', padding:'10px 12px', color:'#92400E', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, fontFamily:PP, fontSize:10.5, lineHeight:1.55 }}>
+              Tu perfil está en revisión y todavía no es visible públicamente.
+            </p>
+          )}
+
           <div className="creator-social-profile__identity">
             <Link className="creator-inline-edit-button creator-inline-edit-button--identity" to="/creadores/alta?section=info">✎ Editar</Link>
             <div className="creator-social-profile__avatar"><CreatorAvatar creator={creator} size={98} /></div>
@@ -353,13 +406,13 @@ export default function CreadorPanel() {
             </div>
 
             <div className="creator-social-profile__stats" aria-label="Datos del perfil">
-              <span><strong>{publishedContents.length}</strong><small>Publicaciones</small></span>
+              <span><strong>{publishedContents.length}</strong><small>Contenidos</small></span>
               <span><strong>{creator.topics?.length || 0}</strong><small>Temas</small></span>
               <span><strong>{creator.socials?.length || 0}</strong><small>Redes</small></span>
             </div>
 
             <div className="creator-editor-main-actions">
-              <button type="button" onClick={() => navigate('/publicar-contenido')}>＋ Añadir publicación</button>
+              <button type="button" onClick={() => navigate('/publicar-contenido')}>＋ Añadir contenido</button>
               <Link to={`/creadores/${creator.slug}`}>Ver perfil público</Link>
             </div>
 
@@ -383,9 +436,67 @@ export default function CreadorPanel() {
           </div>
         </section>
 
+        <section className="creator-profile-completeness" aria-labelledby="creator-profile-completeness-title">
+          <header className="creator-profile-completeness__heading">
+            <h2 id="creator-profile-completeness-title">Completa tu perfil</h2>
+            <strong>{completedProfileChecks.length} de {completeness.checks.length}</strong>
+          </header>
+          <div
+            className="creator-profile-completeness__progress"
+            role="progressbar"
+            aria-label="Progreso del perfil"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={completeness.percent}
+          >
+            {completeness.checks.map(check => <span key={check.id} className={check.done ? 'is-done' : ''} />)}
+          </div>
+          <div className="creator-profile-completeness__actions">
+            {pendingProfileChecks.map(check => (
+              <Link key={check.id} to={check.to}>
+                <span className="creator-profile-completeness__status" aria-hidden="true">
+                </span>
+                <span>
+                  <strong>{check.label}</strong>
+                  <small>{check.detail}</small>
+                </span>
+                <ChevronRight size={17} aria-hidden="true" />
+              </Link>
+            ))}
+            {completedProfileChecks.length > 0 && (
+              <button
+                type="button"
+                className="creator-profile-completeness__completed-toggle"
+                onClick={() => setCompletedChecksOpen(open => !open)}
+                aria-expanded={completedChecksOpen}
+                aria-controls="creator-profile-completed-checks"
+              >
+                <Check size={17} strokeWidth={2.6} aria-hidden="true" />
+                <span>{completedProfileChecks.length} completado{completedProfileChecks.length === 1 ? '' : 's'}</span>
+                {completedChecksOpen
+                  ? <ChevronUp size={16} aria-hidden="true" />
+                  : <ChevronDown size={16} aria-hidden="true" />}
+              </button>
+            )}
+            {completedChecksOpen && completedProfileChecks.length > 0 && (
+              <div id="creator-profile-completed-checks" className="creator-profile-completeness__completed-list">
+                {completedProfileChecks.map(check => (
+                  <Link key={check.id} to={check.to} className="is-done">
+                    <span className="creator-profile-completeness__status" aria-hidden="true">
+                      <Check size={17} strokeWidth={2.6} />
+                    </span>
+                    <span><strong>{check.label}</strong></span>
+                    <ChevronRight size={17} aria-hidden="true" />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
         <section className="creators-section creator-profile-content-section creator-profile-featured-section creator-editor-content-section">
           <div className="creators-section__heading">
-            <div><h2>Destacados</h2><p>La última publicación que destaques aparecerá primero.</p></div>
+            <div><h2>Destacados</h2><p>El último contenido que destaques aparecerá primero.</p></div>
             <span className="creators-results-count">{featuredContents.length}/{CREATOR_FEATURED_CONTENTS}</span>
           </div>
           {featuredContents.length ? (
@@ -394,12 +505,12 @@ export default function CreadorPanel() {
                 {featuredContents.map(content => renderContentCard(content, featuredContents))}
               </div>
             </div>
-          ) : <div className="creators-empty">Marca una publicación como destacada desde la sección Todos.</div>}
+          ) : <div className="creators-empty">Marca un contenido como destacado desde la sección Todos.</div>}
         </section>
 
         <section className="creators-section creator-profile-content-section creator-profile-all-section creator-editor-content-section">
           <div className="creators-section__heading">
-            <div><h2>Todos</h2><p>La publicación añadida más recientemente aparece primero.</p></div>
+            <div><h2>Todos</h2><p>El contenido añadido más recientemente aparece primero.</p></div>
             <span className="creators-results-count">{publishedContents.length} en total</span>
           </div>
           {publishedContents.length ? (
@@ -407,7 +518,7 @@ export default function CreadorPanel() {
               {publishedContents.map(content => <div key={content.id} className="creator-editor-grid-item">{renderContentCard(content, publishedContents)}</div>)}
             </div>
           ) : (
-            <button type="button" className="creator-editor-empty-content" onClick={() => navigate('/publicar-contenido')}>＋ Añadir mi primera publicación</button>
+            <button type="button" className="creator-editor-empty-content" onClick={() => navigate('/publicar-contenido')}>＋ Añadir mi primer contenido</button>
           )}
         </section>
 
@@ -421,11 +532,11 @@ export default function CreadorPanel() {
               aria-labelledby="creator-editor-publication-title"
             >
               <div className="creator-publish-form__heading">
-                <div><span>EDITAR PUBLICACIÓN</span><h3 id="creator-editor-publication-title">Actualiza el vídeo o su información</h3></div>
+                <div><span>EDITAR CONTENIDO</span><h3 id="creator-editor-publication-title">Actualiza el vídeo o su información</h3></div>
                 <button type="button" onClick={() => setFormOpen(false)} disabled={saving} aria-label="Cerrar formulario">×</button>
               </div>
               <div className="creator-publish-form__body">
-                <Input label="ENLACE DE LA PUBLICACIÓN" required type="url" error={contentErrors.url} errorKey="url" value={contentForm.url} onChange={event => updateContent('url', event.target.value)} placeholder="https://youtube.com/watch?v=…" />
+                <Input label="ENLACE DEL CONTENIDO" required type="url" error={contentErrors.url} errorKey="url" value={contentForm.url} onChange={event => updateContent('url', event.target.value)} placeholder="https://youtube.com/watch?v=…" />
                 {hasValidContentUrl && (
                   <div className="creator-publish-preview" aria-live="polite">
                     <div className="creator-publish-preview__media" style={{ '--preview-bg':publishTopic.bg }}>
@@ -434,7 +545,7 @@ export default function CreadorPanel() {
                     </div>
                     <div className="creator-publish-preview__copy">
                       <span style={{ color:publishPlatform.color, background:publishPlatform.bg }}>{publishPlatform.label}</span>
-                      <strong>{contentForm.title.trim() || 'Título de la publicación'}</strong>
+                      <strong>{contentForm.title.trim() || 'Título del contenido'}</strong>
                       <small>{fetchingMetadata ? 'Leyendo el enlace…' : 'Vista previa preparada'}</small>
                     </div>
                   </div>
@@ -461,11 +572,6 @@ export default function CreadorPanel() {
             </section>
           </div>
         )}
-
-        <div className="creator-editor-footer">
-          <span>Los cambios de esta prueba se guardan únicamente en este navegador.</span>
-          <button type="button" onClick={resetPrototype}>Reiniciar mi prueba</button>
-        </div>
       </div>
       <CreatorContentModal
         content={preview?.content}

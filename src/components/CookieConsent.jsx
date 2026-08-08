@@ -40,7 +40,7 @@ function CookieBanner({ onAccept, onReject, onConfigure }) {
         <h2 id={titleId}>Tu privacidad, con claridad</h2>
         <p id={`${titleId}-description`}>
           Usamos almacenamiento necesario para que Latido funcione. Con tu permiso, activamos
-          analítica para entender qué secciones ayudan más y mejorar la plataforma. No usamos
+          analítica para mejorar la plataforma y contenido externo de vídeo cuando lo autorizas. No usamos
           publicidad comportamental ni vendemos tus datos.{' '}
           <Link to="/cookies">Ver política de cookies</Link>.
         </p>
@@ -69,8 +69,9 @@ function PreferenceRow({ title, description, checked, disabled, onChange, badge 
   )
 }
 
-function CookiePreferences({ initialAnalytics, hasExistingChoice, onClose, onSave, onAccept, onReject }) {
+function CookiePreferences({ initialAnalytics, initialExternalMedia, hasExistingChoice, onClose, onSave, onAccept, onReject }) {
   const [analytics, setAnalytics] = useState(initialAnalytics)
+  const [externalMedia, setExternalMedia] = useState(initialExternalMedia)
   const titleId = useId()
   const closeRef = useRef(null)
 
@@ -101,8 +102,9 @@ function CookiePreferences({ initialAnalytics, hasExistingChoice, onClose, onSav
         </div>
 
         <p className="cookie-preferences-intro">
-          Puedes decidir sobre la analítica sin perder acceso a Latido. Las tecnologías necesarias
-          permanecen activas porque hacen posible la sesión, la seguridad y las funciones que solicitas.
+          Puedes decidir sobre la analítica y el contenido externo sin perder acceso a Latido. Las
+          tecnologías necesarias permanecen activas porque hacen posible la sesión, la seguridad y
+          las funciones que solicitas.
         </p>
 
         <div className="cookie-preferences-list">
@@ -120,6 +122,13 @@ function CookiePreferences({ initialAnalytics, hasExistingChoice, onClose, onSav
             onChange={setAnalytics}
             description="Mide visitas, interacciones y rendimiento técnico mediante Latido y Vercel para mejorar el servicio. Se activa únicamente con tu consentimiento."
           />
+          <PreferenceRow
+            title="Contenido externo"
+            badge="Opcional"
+            checked={externalMedia}
+            onChange={setExternalMedia}
+            description="Permite reproducir dentro de Latido vídeos alojados por YouTube, Instagram o TikTok. Estos proveedores pueden recibir datos técnicos y usar sus propias tecnologías."
+          />
         </div>
 
         <p className="cookie-preferences-legal">
@@ -128,11 +137,11 @@ function CookiePreferences({ initialAnalytics, hasExistingChoice, onClose, onSav
         </p>
 
         <div className="cookie-preferences-actions">
-          <button type="button" className="cookie-consent-button cookie-consent-button--primary" onClick={() => onSave(analytics)}>
+          <button type="button" className="cookie-consent-button cookie-consent-button--primary" onClick={() => onSave(analytics, externalMedia)}>
             Guardar selección
           </button>
           <button type="button" className="cookie-consent-button cookie-consent-button--secondary" onClick={onReject}>
-            Rechazar analítica
+            Solo necesarias
           </button>
           <button type="button" className="cookie-consent-button cookie-consent-button--text" onClick={onAccept}>
             Aceptar todo
@@ -174,8 +183,8 @@ export default function CookieConsent({ showBanner = true }) {
     window.history.replaceState(window.history.state, '', window.location.pathname)
   }
 
-  const choose = analytics => {
-    const next = saveCookieConsent({ analytics })
+  const choose = (analytics, externalMedia) => {
+    const next = saveCookieConsent({ analytics, externalMedia })
     setConsent(next)
     setView(null)
     clearSettingsParam()
@@ -187,22 +196,23 @@ export default function CookieConsent({ showBanner = true }) {
     return (
       <CookiePreferences
         initialAnalytics={consent?.categories.analytics === true}
+        initialExternalMedia={consent?.categories.externalMedia === true}
         hasExistingChoice={Boolean(consent)}
         onClose={() => {
           setView(null)
           clearSettingsParam()
         }}
         onSave={choose}
-        onAccept={() => choose(true)}
-        onReject={() => choose(false)}
+        onAccept={() => choose(true, true)}
+        onReject={() => choose(false, false)}
       />
     )
   }
 
   return (
     <CookieBanner
-      onAccept={() => choose(true)}
-      onReject={() => choose(false)}
+      onAccept={() => choose(true, true)}
+      onReject={() => choose(false, false)}
       onConfigure={() => setView('preferences')}
     />
   )

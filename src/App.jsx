@@ -16,6 +16,7 @@ import {
 import { startEmailNotificationPresence } from './lib/emailNotificationPresence'
 import { PARTNER_LANDING_URL, trackPartnerInteraction } from './lib/partnerAttribution'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
+import { startCreatorDirectorySync } from './lib/creators'
 import { C, PP } from './lib/theme'
 
 import Footer from './components/Footer'
@@ -172,6 +173,17 @@ function VercelTelemetry() {
       />
     </>
   )
+}
+
+function CreatorDirectorySync() {
+  const { user, loading } = useAuth()
+
+  useEffect(() => {
+    if (loading) return undefined
+    return startCreatorDirectorySync(user?.id || '')
+  }, [loading, user?.id])
+
+  return null
 }
 
 function PWAInstallBanner({ canInstall, promptInstall, isPWA, onVisibilityChange }) {
@@ -750,8 +762,9 @@ function AppShell() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter future={{ v7_startTransition:true, v7_relativeSplatPath:true }}>
+      <BrowserRouter>
         <Seo />
+        <CreatorDirectorySync />
         <ScrollToTop />
         <OfflineNotice />
         <Toaster

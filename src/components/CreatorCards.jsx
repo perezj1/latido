@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { ChevronRight, Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
+import { ChevronRight, Ellipsis, EllipsisVertical, Heart, Play, Share2, UserRound } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import {
   getCreatorInteractionState,
-  formatCreatorHandle,
   getCreatorVideoEmbed,
   getCreatorPlatform,
   getCreatorThumbnailUrl,
@@ -17,6 +16,7 @@ import {
   trackCreatorMetric,
 } from '../lib/creators'
 import { C, PP } from '../lib/theme'
+import { getCookieConsent, hasExternalMediaConsent, saveCookieConsent, subscribeCookieConsent } from '../lib/cookieConsent'
 import { ChevronLeftIcon } from './UI'
 import ReportButton from './ReportButton'
 
@@ -56,6 +56,7 @@ function useCreatorInteraction({ action, targetType, targetId, baseCount = 0 }) 
   const actorId = user?.id || ''
   const readState = () => getCreatorInteractionState({ action, targetType, targetId, actorId, baseCount })
   const [state, setState] = useState(readState)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     const sync = () => setState(readState())
@@ -63,13 +64,26 @@ function useCreatorInteraction({ action, targetType, targetId, baseCount = 0 }) 
     return subscribeCreatorInteractions(sync)
   }, [action, actorId, baseCount, targetId, targetType])
 
-  const toggle = () => {
-    const next = toggleCreatorInteraction({ action, targetType, targetId, actorId, baseCount })
-    setState(next)
-    return next
+  const toggle = async () => {
+    if (!actorId) {
+      toast('Inicia sesión para guardar esta valoración.', { icon:'🔐' })
+      return state
+    }
+    if (busy) return state
+    setBusy(true)
+    try {
+      const next = await toggleCreatorInteraction({ action, targetType, targetId, actorId, baseCount })
+      setState(next)
+      return next
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo guardar esta valoración')
+      return state
+    } finally {
+      setBusy(false)
+    }
   }
 
-  return { ...state, toggle }
+  return { ...state, busy, toggle }
 }
 
 function ProfileOutlineIcon() {
@@ -86,7 +100,7 @@ function ShareOutlineIcon() {
 
 async function shareCreatorContent(content, creator) {
   const profileUrl = `${window.location.origin}/creadores/${creator.slug}`
-  const shareUrl = content.demo ? profileUrl : content.url || profileUrl
+  const shareUrl = content.url || profileUrl
   const data = { title:content.title, text:`${content.title} · ${creator.name}`, url:shareUrl }
 
   try {
@@ -173,12 +187,12 @@ function CreatorContentMenu({ content, creator, className='', inline=false }) {
             contentType="creator_content"
             contentId={content.id}
             ownerId={creator.owner_id}
-            title="Reportar esta publicación"
+            title="Reportar este contenido"
             label="Reportar"
             compact
             allowOwnContent
             onOpen={() => setOpen(false)}
-            metadata={{ creator_id:creator.id, creator_name:creator.name, content_title:content.title, external_url:content.url, demo:Boolean(content.demo) }}
+            metadata={{ creator_id:creator.id, creator_name:creator.name, content_title:content.title, external_url:content.url }}
             style={{ width:'100%', justifyContent:'flex-start', padding:'9px 10px', color:'#DC2626', background:'transparent', border:'none', borderRadius:9, fontSize:10.5 }}
           />
       </div>
@@ -214,13 +228,15 @@ export function CreatorFollowButton({ creator }) {
   const navigate = useNavigate()
   const saved = useCreatorInteraction({ action:'saved', targetType:'creator', targetId:creator.id, baseCount:creator.saved_count })
 
-  const handleFollow = () => {
+  const handleFollow = async () => {
     if (!user?.id) {
       toast('Inicia sesión para seguir creadores y encontrarlos después en tu perfil.', { icon:'+' })
       navigate(`/auth?next=${encodeURIComponent(`/creadores/${creator.slug}`)}`)
       return
     }
-    const next = saved.toggle()
+    const wasFollowing = saved.active
+    const next = await saved.toggle()
+    if (next.active === wasFollowing) return
     toast.success(next.active ? `Ahora sigues a ${creator.name}` : `Has dejado de seguir a ${creator.name}`)
   }
 
@@ -396,7 +412,6 @@ export function CreatorCard({ creator }) {
               <CreatorAvatar creator={creator} size={88} />
             </span>
           )}
-          {creator.demo && <small>DEMO</small>}
         </span>
         <CreatorProfileHelpfulMetric creator={creator} />
 
@@ -435,7 +450,7 @@ export function CreatorContentCard({ content, creator, onContentOpen, compact = 
     trackCreatorImpression(creator.id, 'content', content.id)
   }, [content.id, creator.id])
   const handleOpen = () => {
-    if (!content.demo) trackCreatorMetric(creator.id, 'content_click', content.id)
+    trackCreatorMetric(creator.id, 'content_click', content.id)
     if (onContentOpen) {
       onContentOpen(content, creator)
       return
@@ -489,7 +504,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
     if (!editor) trackCreatorImpression(creator.id, 'content', content.id)
   }, [content.id, creator.id, editor])
   const handleOpen = () => {
-    if (!content.demo) trackCreatorMetric(creator.id, 'content_click', content.id)
+    trackCreatorMetric(creator.id, 'content_click', content.id)
     if (onContentOpen) {
       onContentOpen(content, creator)
       return
@@ -557,9 +572,10 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
   const activeCreator = activeEntry?.creator
   const topic = getCreatorTopic(activeContent?.topic)
   const thumbnailUrl = getCreatorThumbnailUrl(activeContent)
-  const directEmbed = activeContent?.demo ? null : getCreatorVideoEmbed(activeContent)
+  const directEmbed = getCreatorVideoEmbed(activeContent)
   const [resolvedEmbed, setResolvedEmbed] = useState(null)
   const [resolvingEmbed, setResolvingEmbed] = useState(false)
+  const [externalMediaAllowed, setExternalMediaAllowed] = useState(hasExternalMediaConsent)
   const embed = directEmbed || resolvedEmbed
   const platform = getCreatorPlatform(embed?.platform || activeContent?.platform)
   const hasPrevious = activeIndex > 0
@@ -573,11 +589,13 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
     baseCount:activeContent?.helpful_count,
   })
 
+  useEffect(() => subscribeCookieConsent(() => setExternalMediaAllowed(hasExternalMediaConsent())), [])
+
   const goToIndex = nextIndex => {
     if (nextIndex < 0 || nextIndex >= playlistEntries.length || nextIndex === activeIndex) return
     const nextEntry = playlistEntries[nextIndex]
     if (!nextEntry?.content || !nextEntry?.creator) return
-    if (!nextEntry.content.demo) trackCreatorMetric(nextEntry.creator.id, 'content_click', nextEntry.content.id)
+    trackCreatorMetric(nextEntry.creator.id, 'content_click', nextEntry.content.id)
     trackCreatorImpression(nextEntry.creator.id, 'content', nextEntry.content.id)
     setActiveIndex(nextIndex)
   }
@@ -593,7 +611,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
 
   useEffect(() => {
     setResolvedEmbed(null)
-    if (!activeContent || activeContent.demo || directEmbed) {
+    if (!activeContent || !externalMediaAllowed || directEmbed) {
       setResolvingEmbed(false)
       return undefined
     }
@@ -612,7 +630,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
       })
 
     return () => controller.abort()
-  }, [activeContent, directEmbed?.src])
+  }, [activeContent, directEmbed?.src, externalMediaAllowed])
 
   useEffect(() => {
     if (!content || !creator) return undefined
@@ -660,24 +678,26 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
   if (!activeContent || !activeCreator) return null
 
   return (
-    <div className={`creator-modal-backdrop latido-overlay-backdrop${activeContent.demo ? '' : ' creator-modal-backdrop--video'}`} role="presentation" onMouseDown={event => {
+    <div className="creator-modal-backdrop latido-overlay-backdrop creator-modal-backdrop--video" role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) onClose?.()
     }}>
       <section
-        className={`creator-preview-modal latido-modal-panel${activeContent.demo ? '' : ' creator-video-modal'}${hasPlaylist ? ' has-playlist' : ''}`}
+        className={`creator-preview-modal latido-modal-panel creator-video-modal${hasPlaylist ? ' has-playlist' : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={activeContent.demo ? 'creator-preview-title' : undefined}
-        aria-label={activeContent.demo ? undefined : `${activeContent.title} en ${platform.label}`}
+        aria-label={`${activeContent.title} en ${platform.label}`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {activeContent.demo && <button ref={closeRef} className="creator-modal-close" type="button" onClick={onClose} aria-label="Cerrar">×</button>}
-        {activeContent.demo ? (
-          <div className="creator-preview-modal__visual" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
-            <span>{topic.emoji}</span>
-            {thumbnailUrl && <img className="creator-preview-modal__thumbnail" src={thumbnailUrl} alt="" onError={event => event.currentTarget.remove()} />}
-            <span className="creator-preview-modal__play">▶</span>
+        {!externalMediaAllowed ? (
+          <div className="creator-video-modal__player creator-video-modal__loading creator-video-modal__consent">
+            {thumbnailUrl && <img src={thumbnailUrl} alt="" />}
+            <button type="button" aria-label={`Reproducir vídeo de ${platform.label}`} onClick={() => {
+              const consent = getCookieConsent()
+              saveCookieConsent({ analytics:consent?.categories.analytics === true, externalMedia:true })
+            }}>
+              <Play size={28} fill="currentColor" aria-hidden="true" />
+            </button>
           </div>
         ) : resolvingEmbed ? (
           <div className="creator-video-modal__player creator-video-modal__loading" role="status">
@@ -727,73 +747,45 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
             <span className="creator-preview-modal__play">▶</span>
           </div>
         )}
-        {activeContent.demo ? (
-          <div className="creator-preview-modal__body">
-            <span className="creator-demo-label">DEMOSTRACIÓN INTERACTIVA</span>
-            <h2 id="creator-preview-title">{activeContent.title}</h2>
-            {activeContent.summary && <p>{activeContent.summary}</p>}
-            <div className="creator-preview-modal__byline">
-              <CreatorAvatar creator={activeCreator} size={42} />
-              <div>
-                <strong>{activeCreator.name}</strong>
-                <span>{formatCreatorHandle(activeCreator.handle)} · {platform.label}</span>
-              </div>
-            </div>
-            <div className="creator-preview-modal__notice">
-              Esta ficha simula una publicación externa. Los vídeos reales compatibles se reproducen aquí sin salir de Latido.
-            </div>
-            <div className="creator-preview-modal__actions">
-              <Link to={`/creadores/${activeCreator.slug}`} onClick={onClose}>Ver perfil completo</Link>
-              <button type="button" onClick={onClose}>Cerrar</button>
-            </div>
+        <div className="creator-video-modal__footer">
+          <div className="creator-video-modal__footer-actions">
+            <button
+              ref={closeRef}
+              type="button"
+              className="creator-video-modal__back"
+              onClick={onClose}
+              aria-label="Volver"
+            >
+              <ChevronLeftIcon size={18} />
+            </button>
+            <button
+              type="button"
+              className={`creator-video-modal__helpful${helpful.active ? ' is-active' : ''}`}
+              onClick={helpful.toggle}
+              aria-label="Me ayudó"
+              aria-pressed={helpful.active}
+            >
+              <HeartOutlineIcon active={helpful.active} />
+              {helpful.count > 0 && <span>{helpful.count}</span>}
+            </button>
+            <Link
+              className="creator-video-modal__profile"
+              to={`/creadores/${activeCreator.slug}`}
+              onClick={onClose}
+              aria-label={`Ver el perfil de ${activeCreator.name} en Latido`}
+            >
+              <ProfileOutlineIcon />
+            </Link>
+            <a
+              className="creator-video-modal__open"
+              href={activeContent.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Ver en {platform.label}
+            </a>
           </div>
-        ) : (
-          <div className="creator-video-modal__footer">
-            <div className="creator-video-modal__footer-actions">
-              <button
-                ref={closeRef}
-                type="button"
-                className="creator-video-modal__back"
-                onClick={onClose}
-                aria-label="Volver"
-              >
-                <ChevronLeftIcon size={18} />
-              </button>
-              <button
-                type="button"
-                className={`creator-video-modal__helpful${helpful.active ? ' is-active' : ''}`}
-                onClick={() => {
-                  try {
-                    helpful.toggle()
-                  } catch {
-                    toast.error('No se pudo guardar esta valoración')
-                  }
-                }}
-                aria-label="Me ayudó"
-                aria-pressed={helpful.active}
-              >
-                <HeartOutlineIcon active={helpful.active} />
-                {helpful.count > 0 && <span>{helpful.count}</span>}
-              </button>
-              <Link
-                className="creator-video-modal__profile"
-                to={`/creadores/${activeCreator.slug}`}
-                onClick={onClose}
-                aria-label={`Ver el perfil de ${activeCreator.name} en Latido`}
-              >
-                <ProfileOutlineIcon />
-              </Link>
-              <a
-                className="creator-video-modal__open"
-                href={activeContent.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Ver en {platform.label}
-              </a>
-            </div>
-          </div>
-        )}
+        </div>
       </section>
     </div>
   )

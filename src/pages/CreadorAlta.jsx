@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
@@ -9,13 +9,17 @@ import {
   CREATOR_PLATFORMS,
   CREATOR_FOLLOWER_RANGES,
   CREATOR_TOPICS,
+  getCreatorDirectoryState,
   getCreatorForUser,
   isCreatorHandleAvailable,
   getCreatorTopicsFromInterests,
   normalizeCreatorUrl,
-  prepareLocalImage,
   saveCreatorProfile,
+  subscribeCreatorUpdates,
 } from '../lib/creators'
+import { getStorageErrorMessage, uploadAvatar } from '../lib/storage'
+import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
+import { addModerationQueueItem } from '../lib/reports'
 import { C, PP } from '../lib/theme'
 import './Creators.css'
 
@@ -23,7 +27,7 @@ const STEPS = [
   { title:'Tu perfil y lo que compartes', sub:'Puedes presentarte como persona, profesional, proyecto o negocio.' },
   { title:'¿Qué compartes sobre Suiza?', sub:'Experiencias, información, trabajo, servicios o proyectos: elige los temas que mejor te representan.' },
   { title:'Conecta tus redes', sub:'Las visitas llegarán siempre a tus perfiles, publicaciones y páginas originales.' },
-  { title:'Revisa tu perfil', sub:'En este prototipo se publicará inmediatamente para que puedas probarlo.' },
+  { title:'Revisa tu perfil', sub:'Comprueba cómo se verá antes de publicarlo en Latido.' },
 ]
 
 // Al editar se reutiliza `step` como seccion activa: los tres primeros pasos del
@@ -63,8 +67,6 @@ function focusFirstError(errors) {
   }, 40)
 }
 
-const prepareLocalAvatar = file => prepareLocalImage(file, { width:360, height:360, quality:.8 })
-
 function initialForm(existing, displayName, userCanton, userInterests = []) {
   const socialMap = Object.fromEntries((existing?.socials || []).map(social => [social.platform, social.url]))
   const followerMap = Object.fromEntries((existing?.socials || []).map(social => [social.platform, social.follower_range || '']))
@@ -90,7 +92,9 @@ export default function CreadorAlta() {
   const avatarDeviceId = useId()
   const avatarCameraId = useId()
   const { user, displayName, userCanton, userInterests } = useAuth()
-  const existing = useMemo(() => getCreatorForUser(user?.id), [user?.id])
+  const [existing, setExisting] = useState(() => getCreatorForUser(user?.id))
+  const [directoryState, setDirectoryState] = useState(getCreatorDirectoryState)
+  const hydratedOwnerRef = useRef('')
   const isEditing = Boolean(existing)
   const requestedSection = new URLSearchParams(location.search).get('section')
   const [step, setStep] = useState(() => isEditing ? EDIT_SECTION_BY_QUERY[requestedSection] ?? 0 : 0)
@@ -98,6 +102,22 @@ export default function CreadorAlta() {
   const [processingAvatar, setProcessingAvatar] = useState(false)
   const [form, setForm] = useState(() => initialForm(existing, displayName, userCanton, userInterests))
   const [errors, setErrors] = useState({})
+
+  useEffect(() => {
+    const sync = () => {
+      setExisting(getCreatorForUser(user?.id))
+      setDirectoryState(getCreatorDirectoryState())
+    }
+    sync()
+    return subscribeCreatorUpdates(sync)
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!existing || hydratedOwnerRef.current === String(existing.owner_id)) return
+    hydratedOwnerRef.current = String(existing.owner_id)
+    setForm(initialForm(existing, displayName, userCanton, userInterests))
+    setStep(EDIT_SECTION_BY_QUERY[requestedSection] ?? 0)
+  }, [displayName, existing, requestedSection, userCanton, userInterests])
 
   useEffect(() => {
     window.scrollTo({ top:0, left:0, behavior:'smooth' })
@@ -209,16 +229,34 @@ export default function CreadorAlta() {
     setStep(current => Math.min(current + 1, STEPS.length - 1))
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateStep(isEditing ? [0, 1, 2] : [step])) return
+
+    const moderation = analyzeContent(form.name, form.handle, form.tagline, form.bio)
+    if (moderation.action === 'block') {
+      toast.error(getContentFilterMessage(moderation))
+      return
+    }
 
     setSaving(true)
     try {
       const socials = CREATOR_PLATFORMS
         .map(platform => ({ platform:platform.id, url:form.socials[platform.id], label:platform.label, follower_range:form.followers[platform.id] }))
         .filter(social => social.url.trim())
-      saveCreatorProfile(user.id, { ...form, socials, status:'published' })
-      toast.success(existing ? 'Perfil actualizado' : 'Perfil de prueba creado')
+      const needsReview = moderation.action === 'review' || existing?.active === false
+      const savedProfile = await saveCreatorProfile(user.id, { ...form, socials, status:'published', active:!needsReview })
+      if (needsReview && savedProfile?.id) {
+        await addModerationQueueItem({
+          contentType:'creator_profile',
+          contentId:savedProfile.id,
+          authorId:user.id,
+          reason:'Filtro automático',
+          excerpt:[form.name, form.tagline, form.bio].filter(Boolean).join('\n\n').slice(0, 700),
+          matchedTerm:moderation.matchedTerm,
+          metadata:{ handle:form.handle, canton:form.canton },
+        })
+      }
+      toast.success(needsReview ? 'Perfil enviado a revisión' : existing ? 'Perfil actualizado' : 'Perfil publicado')
       navigate(existing ? '/creadores/mi-perfil' : '/creadores/mi-perfil?created=1')
     } catch (error) {
       toast.error(error?.message || 'No se pudo guardar el perfil')
@@ -234,11 +272,11 @@ export default function CreadorAlta() {
 
     setProcessingAvatar(true)
     try {
-      const avatarUrl = await prepareLocalAvatar(file)
+      const avatarUrl = await uploadAvatar({ file, userId:user.id })
       update('avatar_url', avatarUrl)
-      toast.success('Foto de perfil preparada')
+      toast.success('Foto de perfil subida')
     } catch (error) {
-      toast.error(error?.message || 'No se pudo preparar la foto')
+      toast.error(getStorageErrorMessage(error))
     } finally {
       setProcessingAvatar(false)
     }
@@ -264,6 +302,22 @@ export default function CreadorAlta() {
       return
     }
     navigate(existing ? '/creadores/mi-perfil' : '/perfil', { replace:true })
+  }
+
+  if (!directoryState.loaded || directoryState.loading) {
+    return <div className="creators-page" style={{ minHeight:'70vh', display:'grid', placeItems:'center', color:C.mid, fontFamily:PP }}>Cargando tu perfil…</div>
+  }
+
+  if (directoryState.error) {
+    return (
+      <div className="creators-page" style={{ display:'grid', minHeight:'70vh', placeItems:'center', padding:28 }}>
+        <section style={{ width:'min(520px,100%)', padding:30, background:'#fff', border:`1px solid ${C.border}`, borderRadius:26, textAlign:'center' }}>
+          <h1 style={{ margin:'0 0 8px', color:C.text, fontFamily:PP, fontSize:22 }}>No pudimos cargar Creadores</h1>
+          <p style={{ color:C.mid, fontFamily:PP, fontSize:12, lineHeight:1.7 }}>Comprueba tu conexión e inténtalo de nuevo.</p>
+          <Btn onClick={() => window.location.reload()}>Reintentar</Btn>
+        </section>
+      </div>
+    )
   }
 
   const previewCreator = {
@@ -308,8 +362,8 @@ export default function CreadorAlta() {
 
         {!isEditing && step === 0 && (
           <div style={{ display:'flex', gap:9, alignItems:'flex-start', marginBottom:16, padding:'11px 13px', color:'#1E3A8A', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:14, fontFamily:PP, fontSize:10.5, lineHeight:1.6 }}>
-            <span>🧪</span>
-            <span>Este espacio es para personas, profesionales y negocios que comparten sobre Suiza en redes. No hace falta dedicarse profesionalmente a crear contenido. Durante la prueba, el perfil se guarda solo en este navegador.</span>
+            <span>🎙️</span>
+            <span>Este espacio es para personas, profesionales y negocios que comparten sobre Suiza en redes. No hace falta dedicarse profesionalmente a crear contenido.</span>
           </div>
         )}
 
@@ -323,7 +377,7 @@ export default function CreadorAlta() {
                 <div className="creator-avatar-upload__body">
                   <CreatorAvatar creator={previewCreator} size={82} />
                   <div className="creator-avatar-upload__controls">
-                    <strong>{processingAvatar ? 'Preparando la foto…' : form.avatar_url ? 'Tu foto está lista' : 'Elige una foto que te represente'}</strong>
+                    <strong>{processingAvatar ? 'Subiendo la foto…' : form.avatar_url ? 'Tu foto está lista' : 'Elige una foto que te represente'}</strong>
                     <small>Conservamos su proporción original para mostrarla completa.</small>
                     <div>
                       <label className="creator-avatar-upload__button is-primary" htmlFor={avatarDeviceId}>
@@ -462,7 +516,7 @@ export default function CreadorAlta() {
               {errors.accepted && <p className="creator-inline-error">{errors.accepted}</p>}
 
               <div style={{ marginTop:14, padding:'12px 14px', color:'#1E3A8A', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:13, fontFamily:PP, fontSize:10, lineHeight:1.6 }}>
-                <strong>Durante la prueba:</strong> el perfil se guarda solo en este navegador y aparece inmediatamente en el directorio. En producción pasaría primero por revisión de Latido.
+                Tu perfil se publicará en el directorio de Creadores. Latido podrá revisarlo u ocultarlo si incumple las normas de la comunidad.
               </div>
             </>
           )}
@@ -485,7 +539,7 @@ export default function CreadorAlta() {
           <Btn onClick={next} style={{ flex:1 }}>Continuar →</Btn>
         ) : (
           <Btn variant="success" disabled={saving} onClick={handleSave} style={{ flex:1 }}>
-            {saving ? 'Guardando…' : existing ? 'Guardar cambios' : 'Publicar perfil de prueba'}
+            {saving ? 'Guardando…' : existing ? 'Guardar cambios' : 'Publicar perfil'}
           </Btn>
         )}
       </StickyFormActions>
