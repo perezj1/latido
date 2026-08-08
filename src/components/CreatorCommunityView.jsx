@@ -487,11 +487,6 @@ export default function CreatorCommunityView({
         </Link>
       </div>
 
-      <div className="creator-community-note">
-        <strong>Cómo funciona</strong>
-        <span>Los vídeos compatibles se reproducen en Latido. Siempre puedes abrir el contenido en su plataforma original.</span>
-      </div>
-
       <CreatorContentModal
         content={preview?.content}
         creator={preview?.creator}

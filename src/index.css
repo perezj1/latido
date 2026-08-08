@@ -2848,8 +2848,8 @@ img[data-latido-img-state="loaded"] {
   flex-direction: column;
   justify-content: flex-start;
   width: 100%;
-  min-height: 118px;
-  padding: 15px 15px 14px;
+  min-height: 100px;
+  padding: 13px 14px 12px;
   border: 0;
   border-radius: 20px;
   overflow: hidden;
@@ -2964,7 +2964,7 @@ img[data-latido-img-state="loaded"] {
 
 @media (min-width: 768px) {
   .explore-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-  .explore-card { min-height: 132px; }
+  .explore-card { min-height: 112px; }
   .explore-extras { flex-direction: row; }
   .explore-extra { flex: 1; }
 }
