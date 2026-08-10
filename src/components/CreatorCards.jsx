@@ -334,7 +334,7 @@ export function CreatorAvatar({ creator, size = 72, compact = false }) {
       }}
     >
       {creator?.avatar_url
-        ? <img src={creator.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+        ? <img src={creator.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'contain', objectPosition:'center', display:'block' }} />
         : initials || '?'
       }
     </div>
