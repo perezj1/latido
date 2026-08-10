@@ -217,7 +217,7 @@ async function getWeeklyActivity():Promise<WeeklyActivity> {
 
   if (creatorContentCount > 0) {
     items.push({
-      emoji:'▶️',
+      emoji:'🎬',
       count:creatorContentCount,
       label:`${creatorContentCount} ${singularPlural(creatorContentCount, 'nuevo contenido de creadores', 'nuevos contenidos de creadores')}`,
       href:`${APP_URL}/comunidades?view=creadores`,
