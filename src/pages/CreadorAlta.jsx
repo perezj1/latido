@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { Btn, ChevronLeftIcon, Input, ProgressBar, Select, StickyFormActions } from '../components/UI'
 import { CreatorAvatar, CreatorTopicPill } from '../components/CreatorCards'
+import CreatorAvatarEditor from '../components/CreatorAvatarEditor'
 import CreatorCelebrationModal from '../components/CreatorCelebrationModal'
 import { CANTONS } from '../lib/constants'
 import {
@@ -56,6 +57,7 @@ const PROFILE_LIMITS = {
   tagline:{ min:20, max:120 },
   bio:{ min:80, max:600 },
 }
+const MAX_AVATAR_SOURCE_BYTES = 6 * 1024 * 1024
 
 function focusFirstError(errors) {
   const firstKey = Object.keys(errors)[0]
@@ -93,6 +95,7 @@ export default function CreadorAlta() {
   const location = useLocation()
   const avatarDeviceId = useId()
   const avatarCameraId = useId()
+  const avatarEditorUrlRef = useRef('')
   const { user, displayName, userCanton, userInterests } = useAuth()
   const [existing, setExisting] = useState(() => getCreatorForUser(user?.id))
   const [directoryState, setDirectoryState] = useState(getCreatorDirectoryState)
@@ -102,6 +105,7 @@ export default function CreadorAlta() {
   const [step, setStep] = useState(() => isEditing ? EDIT_SECTION_BY_QUERY[requestedSection] ?? 0 : 0)
   const [saving, setSaving] = useState(false)
   const [processingAvatar, setProcessingAvatar] = useState(false)
+  const [avatarEditor, setAvatarEditor] = useState(null)
   const [form, setForm] = useState(() => initialForm(existing, displayName, userCanton, userInterests))
   const [errors, setErrors] = useState({})
   const [publishResult, setPublishResult] = useState(null)
@@ -125,6 +129,10 @@ export default function CreadorAlta() {
   useEffect(() => {
     window.scrollTo({ top:0, left:0, behavior:'smooth' })
   }, [step])
+
+  useEffect(() => () => {
+    if (avatarEditorUrlRef.current) URL.revokeObjectURL(avatarEditorUrlRef.current)
+  }, [])
 
   const clearErrors = (...keys) => setErrors(current => {
     if (!keys.some(key => current[key])) return current
@@ -260,15 +268,62 @@ export default function CreadorAlta() {
     }
   }
 
-  const handleAvatarFiles = async event => {
+  const closeAvatarEditor = () => {
+    if (processingAvatar) return
+    if (avatarEditorUrlRef.current) URL.revokeObjectURL(avatarEditorUrlRef.current)
+    avatarEditorUrlRef.current = ''
+    setAvatarEditor(null)
+  }
+
+  const openAvatarEditor = (blob, name = 'avatar') => {
+    if (avatarEditorUrlRef.current) URL.revokeObjectURL(avatarEditorUrlRef.current)
+    const source = URL.createObjectURL(blob)
+    avatarEditorUrlRef.current = source
+    setAvatarEditor({ source, name })
+  }
+
+  const handleAvatarFiles = event => {
     const [file] = Array.from(event.target.files || [])
     event.target.value = ''
     if (!file) return
 
+    if (!file.type?.startsWith('image/')) {
+      toast.error('Selecciona un archivo de imagen válido')
+      return
+    }
+    if (file.size > MAX_AVATAR_SOURCE_BYTES) {
+      toast.error('La imagen es demasiado grande. Máximo 6 MB.')
+      return
+    }
+
+    openAvatarEditor(file, file.name)
+  }
+
+  const editCurrentAvatar = async () => {
+    if (!form.avatar_url || processingAvatar) return
+
+    setProcessingAvatar(true)
+    try {
+      const response = await fetch(form.avatar_url)
+      if (!response.ok) throw new Error('No se pudo cargar la foto actual')
+      const blob = await response.blob()
+      if (!blob.type?.startsWith('image/')) throw new Error('La foto actual no tiene un formato válido')
+      openAvatarEditor(blob, 'avatar-actual')
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo abrir la foto para editarla')
+    } finally {
+      setProcessingAvatar(false)
+    }
+  }
+
+  const saveAvatarCrop = async file => {
     setProcessingAvatar(true)
     try {
       const avatarUrl = await uploadAvatar({ file, userId:user.id })
       update('avatar_url', avatarUrl)
+      if (avatarEditorUrlRef.current) URL.revokeObjectURL(avatarEditorUrlRef.current)
+      avatarEditorUrlRef.current = ''
+      setAvatarEditor(null)
       toast.success('Foto de perfil subida')
     } catch (error) {
       toast.error(getStorageErrorMessage(error))
@@ -383,12 +438,13 @@ export default function CreadorAlta() {
                   <CreatorAvatar creator={previewCreator} size={82} />
                   <div className="creator-avatar-upload__controls">
                     <strong>{processingAvatar ? 'Subiendo la foto…' : form.avatar_url ? 'Tu foto está lista' : 'Elige una foto que te represente'}</strong>
-                    <small>Conservamos su proporción original para mostrarla completa.</small>
+                    <small>Podrás centrarla y ajustar el zoom antes de guardarla.</small>
                     <div>
                       <label className="creator-avatar-upload__button is-primary" htmlFor={avatarDeviceId}>
                         🖼 {form.avatar_url ? 'Cambiar' : 'Elegir foto'}
                       </label>
                       <label className="creator-avatar-upload__button" htmlFor={avatarCameraId}>📷 Cámara</label>
+                      {form.avatar_url && <button type="button" className="creator-avatar-upload__button" onClick={editCurrentAvatar} disabled={processingAvatar}>✂ Editar</button>}
                       {form.avatar_url && <button type="button" onClick={() => update('avatar_url', '')}>Quitar</button>}
                     </div>
                     <input id={avatarDeviceId} type="file" accept="image/*" onChange={handleAvatarFiles} disabled={processingAvatar} />
@@ -564,6 +620,14 @@ export default function CreadorAlta() {
           : 'Ahora formas parte de la comunidad de creadores de Latido. Comparte tu contenido y llega a más personas.'}
         primaryLabel="Publicar contenido"
         onPrimary={publishFirstContent}
+      />
+      <CreatorAvatarEditor
+        show={Boolean(avatarEditor)}
+        source={avatarEditor?.source || ''}
+        sourceName={avatarEditor?.name || ''}
+        saving={processingAvatar}
+        onCancel={closeAvatarEditor}
+        onSave={saveAvatarCrop}
       />
     </div>
   )
