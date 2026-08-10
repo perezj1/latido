@@ -1374,32 +1374,12 @@
   place-items: center;
 }
 
-.creator-video-modal__stage {
-  position: relative;
-  display: grid;
-  width: 100%;
-  min-height: 0;
-  flex: 1;
-  overflow: hidden;
-  background: #000;
-  isolation: isolate;
-}
-
-.creator-video-modal__stage > .creator-video-modal__player {
-  height: 100%;
-  flex: none;
-}
-
 .creator-video-modal__player iframe {
-  position: relative;
-  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
   background: #000;
   border: 0;
-  pointer-events: auto;
-  touch-action: auto;
 }
 
 .creator-video-modal__player.is-vertical {
@@ -1418,6 +1398,20 @@
   aspect-ratio: 9 / 16;
   overflow: hidden;
 }
+
+/* Los embeds externos capturan sus propios gestos. Estas dos franjas estrechas
+   permiten iniciar el deslizamiento vertical desde el borde sin tapar los controles del
+   reproductor; el teclado sigue disponible como alternativa. */
+.creator-video-modal__edge-swipe {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  touch-action: none;
+}
+.creator-video-modal__edge-swipe.is-left { left: 0; }
+.creator-video-modal__edge-swipe.is-right { right: 0; }
 
 .creator-video-modal__carousel-arrow {
   position: absolute;
@@ -1446,38 +1440,6 @@
   color: #fff;
   font: 700 11px/1.5 'Poppins', system-ui, sans-serif;
 }
-
-.creator-video-modal__consent {
-  align-content: center;
-}
-.creator-video-modal__consent > img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  opacity: .3;
-}
-.creator-video-modal__consent > button {
-  position: relative;
-  z-index: 1;
-}
-.creator-video-modal__consent > button {
-  display: grid;
-  width: 64px;
-  height: 64px;
-  padding: 0 0 0 3px;
-  place-items: center;
-  color: #fff;
-  background: rgba(15, 23, 42, .72);
-  border: 2px solid rgba(255, 255, 255, .9);
-  border-radius: 50%;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .32);
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-.creator-video-modal__consent > button:active { transform: scale(.94); }
 
 .creator-video-modal > .creator-preview-modal__visual {
   min-height: 0;

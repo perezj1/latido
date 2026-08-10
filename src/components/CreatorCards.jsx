@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { ChevronRight, Ellipsis, EllipsisVertical, Heart, Play, Share2, UserRound } from 'lucide-react'
+import { ChevronRight, Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import {
   getCreatorInteractionState,
@@ -16,7 +16,6 @@ import {
   trackCreatorMetric,
 } from '../lib/creators'
 import { C, PP } from '../lib/theme'
-import { getCookieConsent, hasExternalMediaConsent, saveCookieConsent, subscribeCookieConsent } from '../lib/cookieConsent'
 import { ChevronLeftIcon } from './UI'
 import ReportButton from './ReportButton'
 
@@ -561,6 +560,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
 
 export function CreatorContentModal({ content, creator, playlist=[], onClose }) {
   const closeRef = useRef(null)
+  const swipeStartRef = useRef(null)
   const playlistEntries = useMemo(
     () => normalizeCreatorVideoPlaylist(playlist, content, creator),
     [content, creator, playlist],
@@ -574,7 +574,6 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
   const directEmbed = getCreatorVideoEmbed(activeContent)
   const [resolvedEmbed, setResolvedEmbed] = useState(null)
   const [resolvingEmbed, setResolvingEmbed] = useState(false)
-  const [externalMediaAllowed, setExternalMediaAllowed] = useState(hasExternalMediaConsent)
   const embed = directEmbed || resolvedEmbed
   const platform = getCreatorPlatform(embed?.platform || activeContent?.platform)
   const hasPrevious = activeIndex > 0
@@ -587,10 +586,6 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
     targetId:activeContent?.id,
     baseCount:activeContent?.helpful_count,
   })
-
-  useEffect(() => subscribeCookieConsent(consent => {
-    setExternalMediaAllowed(consent?.categories.externalMedia === true)
-  }), [])
 
   const goToIndex = nextIndex => {
     if (nextIndex < 0 || nextIndex >= playlistEntries.length || nextIndex === activeIndex) return
@@ -612,7 +607,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
 
   useEffect(() => {
     setResolvedEmbed(null)
-    if (!activeContent || !externalMediaAllowed || directEmbed) {
+    if (!activeContent || directEmbed) {
       setResolvingEmbed(false)
       return undefined
     }
@@ -631,7 +626,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
       })
 
     return () => controller.abort()
-  }, [activeContent, directEmbed?.src, externalMediaAllowed])
+  }, [activeContent, directEmbed?.src])
 
   useEffect(() => {
     if (!content || !creator) return undefined
@@ -651,12 +646,30 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
   useEffect(() => {
     if (!hasPlaylist) return undefined
     const navigateWithKeyboard = event => {
-      if (event.key === 'ArrowDown') goToIndex(activeIndex + 1)
-      if (event.key === 'ArrowUp') goToIndex(activeIndex - 1)
+      if (event.key === 'ArrowDown') goToIndex(activeIndex - 1)
+      if (event.key === 'ArrowUp') goToIndex(activeIndex + 1)
     }
     window.addEventListener('keydown', navigateWithKeyboard)
     return () => window.removeEventListener('keydown', navigateWithKeyboard)
   }, [activeIndex, hasPlaylist, playlistEntries])
+
+  const handleTouchStart = event => {
+    const touch = event.touches?.[0]
+    if (!touch) return
+    swipeStartRef.current = { x:touch.clientX, y:touch.clientY, at:Date.now() }
+  }
+
+  const handleTouchEnd = event => {
+    const start = swipeStartRef.current
+    const touch = event.changedTouches?.[0]
+    swipeStartRef.current = null
+    if (!start || !touch || Date.now() - start.at > 900) return
+    const deltaY = touch.clientY - start.y
+    const deltaX = touch.clientX - start.x
+    if (Math.abs(deltaY) < 44 || Math.abs(deltaY) <= Math.abs(deltaX) * 1.15) return
+    if (deltaY < 0) goToIndex(activeIndex + 1)
+    else goToIndex(activeIndex - 1)
+  }
 
   if (!activeContent || !activeCreator) return null
 
@@ -665,40 +678,29 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
       if (event.target === event.currentTarget) onClose?.()
     }}>
       <section
-        className="creator-preview-modal latido-modal-panel creator-video-modal"
+        className={`creator-preview-modal latido-modal-panel creator-video-modal${hasPlaylist ? ' has-playlist' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={`${activeContent.title} en ${platform.label}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        {!externalMediaAllowed ? (
-          <div className="creator-video-modal__player creator-video-modal__loading creator-video-modal__consent">
-            {thumbnailUrl && <img src={thumbnailUrl} alt="" />}
-            <button type="button" aria-label={`Reproducir vídeo de ${platform.label}`} onClick={() => {
-              const consent = getCookieConsent()
-              const savedConsent = saveCookieConsent({ analytics:consent?.categories.analytics === true, externalMedia:true })
-              setExternalMediaAllowed(savedConsent?.categories.externalMedia === true)
-            }}>
-              <Play size={28} fill="currentColor" aria-hidden="true" />
-            </button>
-          </div>
-        ) : resolvingEmbed ? (
+        {resolvingEmbed ? (
           <div className="creator-video-modal__player creator-video-modal__loading" role="status">
             <span>Preparando vídeo de {platform.label}…</span>
           </div>
         ) : embed ? (
-          <div className="creator-video-modal__stage">
-            <div className={`creator-video-modal__player${embed.vertical ? ' is-vertical' : ''} is-${embed.platform}`}>
-              <iframe
-                key={`${getCreatorContentEntryKey(activeContent, activeCreator)}:${embed.src}`}
-                src={embed.src}
-                title={`${activeContent.title} en ${platform.label}`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen={embed.platform !== 'tiktok'}
-                lang="es"
-                referrerPolicy="strict-origin-when-cross-origin"
-                scrolling="no"
-              />
-            </div>
+          <div className={`creator-video-modal__player${embed.vertical ? ' is-vertical' : ''} is-${embed.platform}`}>
+            <iframe
+              key={embed.src}
+              src={embed.src}
+              title={`${activeContent.title} en ${platform.label}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen={embed.platform !== 'tiktok'}
+              lang="es"
+              referrerPolicy="strict-origin-when-cross-origin"
+              scrolling="no"
+            />
             {hasPlaylist && (
               <>
                 <button
@@ -719,6 +721,8 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
                 >
                   <ChevronRight aria-hidden="true" size={19} strokeWidth={2.2} />
                 </button>
+                <span className="creator-video-modal__edge-swipe is-left" aria-hidden="true" />
+                <span className="creator-video-modal__edge-swipe is-right" aria-hidden="true" />
               </>
             )}
           </div>
