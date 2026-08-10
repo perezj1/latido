@@ -304,7 +304,9 @@ export default function CreadorAlta() {
 
     setProcessingAvatar(true)
     try {
-      const response = await fetch(form.avatar_url)
+      // Force a network refresh so an installed PWA cannot reuse an opaque
+      // image response previously stored by the service worker.
+      const response = await fetch(form.avatar_url, { cache:'reload' })
       if (!response.ok) throw new Error('No se pudo cargar la foto actual')
       const blob = await response.blob()
       if (!blob.type?.startsWith('image/')) throw new Error('La foto actual no tiene un formato válido')

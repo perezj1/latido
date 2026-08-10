@@ -175,11 +175,22 @@ async function refreshImageCache(cacheKey, fetchRequest = cacheKey) {
   return response
 }
 
+function canServeCachedImage(request, response) {
+  if (!response) return false
+  return response.type !== 'opaque' || request.mode === 'no-cors'
+}
+
 async function imageCacheFirst(request) {
   const url = new URL(request.url)
   const fetchRequest = getOptimizedImageRequest(request, url)
   const cache = await caches.open(IMAGE_CACHE)
-  const cached = await cache.match(request, { ignoreVary:true })
+  const cachedResponse = await cache.match(request, { ignoreVary:true })
+  const cached = canServeCachedImage(request, cachedResponse) ? cachedResponse : null
+
+  // A cross-origin <img> can be cached as an opaque response. Reusing that
+  // response for a later CORS fetch (for example, editing an avatar in a
+  // canvas) is rejected by iOS WebKit when the app runs as an installed PWA.
+  if (cachedResponse && !cached) await cache.delete(request, { ignoreVary:true })
 
   if (cached && request.cache !== 'reload') return cached
 
