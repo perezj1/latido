@@ -184,7 +184,7 @@
 .creator-owner-content-metrics > span svg { flex: 0 0 auto; }
 .creator-owner-content-metrics > span { color: #e11d48; }
 .creator-owner-content-metrics > span small { color: #71829d; font: inherit; }
-.creator-owner-content-menu { position: relative; z-index: 10; top: auto; right: auto; margin-left: 4px; flex: 0 0 auto; }
+.creator-content-menu.creator-owner-content-menu { position: relative; z-index: 10; top: auto; right: auto; margin-left: auto; flex: 0 0 auto; }
 .creator-owner-content-menu .creator-content-menu__trigger { width: 28px; min-width: 28px; height: 28px; color: #71829d; background: transparent; border: 0; border-radius: 8px; box-shadow: none; }
 .creator-owner-content-menu .creator-content-menu__trigger:hover { color: #2563eb; background: #eff6ff; }
 .creator-owner-content-menu .creator-content-menu__popover { top: 34px; right: 0; bottom: auto; width: 180px; transform-origin: top right; }

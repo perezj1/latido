@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { EllipsisVertical, Heart, Pencil, Star, Trash2 } from 'lucide-react'
+import { Ellipsis, Heart, Pencil, Star, Trash2 } from 'lucide-react'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import {
@@ -94,7 +94,7 @@ function CreatorOwnerContentControls({
           aria-haspopup="menu"
           aria-expanded={open}
         >
-          <EllipsisVertical size={18} strokeWidth={2.2} aria-hidden="true" />
+          <Ellipsis size={19} strokeWidth={2.2} aria-hidden="true" />
         </button>
         <div className={`creator-content-menu__popover${open ? ' is-open' : ''}`} role="menu" aria-hidden={!open}>
           <button type="button" role="menuitem" onClick={() => runAction(onEdit)}>
