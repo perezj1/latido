@@ -297,9 +297,9 @@ export default function PublicarContenido() {
   if (!creator) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>🎙️</div>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Crea primero tu perfil de creador</h1>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Empieza a compartir tu contenido</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
-        Tu contenido se muestra dentro de tu perfil, así que necesitamos crearlo antes. Tarda unos minutos.
+        Crea tu perfil de creador y reúne tus publicaciones y redes sociales en un solo lugar. Llega a más personas y haz crecer tu comunidad.
       </p>
       <Btn onClick={() => navigate('/creadores/alta', { state:{ from:'/publicar-contenido' } })}>Crear mi perfil →</Btn>
     </div>
