@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CANTONS, CITIES_BY_CANTON } from '../lib/constants'
+import { getAllCreatorContents, getAllCreators, subscribeCreatorUpdates } from '../lib/creators'
 import { isNationwideLocation } from '../lib/locationScope'
 import { C, PP } from '../lib/theme'
 
-const DEFAULT_INTERESTS = ['empleo', 'vivienda', 'servicios', 'comunidad', 'eventos']
+const DEFAULT_INTERESTS = ['empleo', 'vivienda', 'servicios', 'contenido_creadores', 'creadores', 'comunidad', 'eventos']
 const OVERVIEW_INTERESTS = {
   vivienda:{
     emoji:'🏠',
@@ -23,6 +24,18 @@ const OVERVIEW_INTERESTS = {
     href:'/comunidades?view=negocios',
     label:'Negocios',
     records:({ businesses }) => businesses,
+  },
+  contenido_creadores:{
+    emoji:'🎬',
+    href:'/comunidades?view=creadores&creatorView=contenidos',
+    label:'Contenido',
+    records:({ creatorContents }) => creatorContents,
+  },
+  creadores:{
+    emoji:'🎙️',
+    href:'/comunidades?view=creadores&creatorView=creadores',
+    label:'Creadores',
+    records:({ creators }) => creators,
   },
   eventos:{
     emoji:'🎉',
@@ -85,11 +98,13 @@ function countEntries({
 export function buildHomePersonalizationOverview({
   ads=[],
   businesses=[],
+  creatorContents=[],
+  creators=[],
   events=[],
   communities=[],
   canton='',
 }) {
-  const sources = { ads, businesses, events, communities }
+  const sources = { ads, businesses, creatorContents, creators, events, communities }
   const localEntries = countEntries({
     interestIds:DEFAULT_INTERESTS,
     sources,
@@ -118,15 +133,36 @@ export default function HomePersonalizationHeader({
   canton='',
   loading=false,
 }) {
+  const [creatorContents, setCreatorContents] = useState(() => getAllCreatorContents())
+  const [creators, setCreators] = useState(() => getAllCreators())
+
+  useEffect(() => subscribeCreatorUpdates(() => {
+    setCreatorContents(getAllCreatorContents())
+    setCreators(getAllCreators())
+  }), [])
+
+  const locatedCreatorContents = useMemo(() => creatorContents.map(({ content, creator }) => ({
+    ...content,
+    canton:creator?.canton || '',
+    city:creator?.city || '',
+    location:creator?.reach || '',
+  })), [creatorContents])
+  const locatedCreators = useMemo(() => creators.map(creator => ({
+    ...creator,
+    location:creator.reach || '',
+  })), [creators])
+
   const overview = useMemo(
     () => buildHomePersonalizationOverview({
       ads,
       businesses,
+      creatorContents:locatedCreatorContents,
+      creators:locatedCreators,
       events,
       communities,
       canton,
     }),
-    [ads, businesses, canton, communities, events],
+    [ads, businesses, canton, communities, events, locatedCreatorContents, locatedCreators],
   )
   const cantonName = CANTONS.find(item => item.code === canton)?.name || canton
   const locationLabel = overview.scope === 'local' && cantonName

@@ -187,7 +187,7 @@
 .creator-content-menu.creator-owner-content-menu { position: relative; z-index: 10; top: auto; right: auto; margin-left: auto; flex: 0 0 auto; }
 .creator-owner-content-menu .creator-content-menu__trigger { width: 28px; min-width: 28px; height: 28px; color: #71829d; background: transparent; border: 0; border-radius: 8px; box-shadow: none; }
 .creator-owner-content-menu .creator-content-menu__trigger:hover { color: #2563eb; background: #eff6ff; }
-.creator-owner-content-menu .creator-content-menu__popover { top: 34px; right: 0; bottom: auto; width: 180px; transform-origin: top right; }
+.creator-owner-content-menu .creator-content-menu__popover { top: auto; right: 0; bottom: 34px; width: 180px; transform-origin: bottom right; }
 .creator-owner-content-menu .creator-content-menu__popover > button.is-featured { color: #1d4ed8; }
 .creator-owner-content-menu .creator-content-menu__popover > button.is-danger { color: #dc2626; }
 .creator-owner-content-menu .creator-content-menu__popover > button:disabled { color: #94a3b8; cursor: not-allowed; opacity: .6; }
@@ -202,7 +202,7 @@
 .creator-editor-footer { display: flex; margin: 22px 0 30px; padding-top: 16px; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid #e2e8f0; }
 .creator-editor-footer > span { color: #94a3b8; font-size: 9px; }
 .creator-editor-footer > button { flex: 0 0 auto; color: #dc2626; background: transparent; border: 0; font: 800 9px/1 'Poppins',system-ui,sans-serif; cursor: pointer; }
-.creator-social-profile__network-list { display: flex; overflow-x: auto; padding: 1px 2px 5px; gap: 14px; scrollbar-width: none; }
+.creator-social-profile__network-list { display: flex; overflow-x: auto; padding: 5px 2px 5px; gap: 14px; scrollbar-width: none; }
 .creator-social-profile__network-list::-webkit-scrollbar { display: none; }
 .creator-network-link { display: flex; width: 58px; min-width: 58px; align-items: center; flex-direction: column; gap: 6px; color: #475569; font-size: 7.5px; font-weight: 700; text-align: center; text-decoration: none; }
 .creator-network-link__icon { display: grid; width: 48px; height: 48px; color: var(--social-color); background: var(--social-bg); border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #cbd5e1, 0 5px 12px rgba(15,23,42,.12); place-items: center; transition: transform .15s ease, box-shadow .15s ease; }

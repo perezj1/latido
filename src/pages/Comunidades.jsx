@@ -1479,6 +1479,9 @@ export default function Comunidades() {
     : ''
   const requestedLocation = searchParams.get('location') || requestedCanton
   const requestedSearch = searchParams.get('q') || ''
+  const requestedCreatorView = ['contenidos', 'creadores'].includes(searchParams.get('creatorView'))
+    ? searchParams.get('creatorView')
+    : 'contenidos'
   const [communities, setCommunities] = useState(() => comunidadesCache.data?.communities ?? [])
   const [businesses, setBusinesses] = useState(() => comunidadesCache.data?.businesses ?? MOCK_NEGOCIOS)
   const [businessServices, setBusinessServices] = useState(() => comunidadesCache.data?.businessServices ?? MOCK_NEGOCIO_SERVICES)
@@ -1504,7 +1507,7 @@ export default function Comunidades() {
   const [creatorPlatform, setCreatorPlatform] = useState('')
   const [creatorLocation, setCreatorLocation] = useState('')
   const [creatorSort, setCreatorSort] = useState('newest')
-  const [creatorView, setCreatorView] = useState('contenidos')
+  const [creatorView, setCreatorView] = useState(requestedCreatorView)
   const [creatorResultCount, setCreatorResultCount] = useState(0)
   const [showDirectoryFilters, setShowDirectoryFilters] = useState(false)
   const [directoryFilterDraft, setDirectoryFilterDraft] = useState({
@@ -1549,6 +1552,10 @@ export default function Comunidades() {
   useEffect(() => {
     if (requestedSearch) setSearch(requestedSearch)
   }, [requestedSearch])
+
+  useEffect(() => {
+    setCreatorView(requestedCreatorView)
+  }, [requestedCreatorView])
 
   useEffect(() => {
     if (!user?.id) return
@@ -1765,6 +1772,14 @@ export default function Comunidades() {
 
     if (value) params.set(key, value)
     setSearchParams(params, { replace })
+  }
+
+  const handleCreatorViewChange = nextCreatorView => {
+    setCreatorView(nextCreatorView)
+    const params = new URLSearchParams(searchParams)
+    params.set('view', 'creadores')
+    params.set('creatorView', nextCreatorView)
+    setSearchParams(params, { replace:true })
   }
 
   const openCommunityDetails = (community) => {
@@ -2397,7 +2412,7 @@ export default function Comunidades() {
               onSortChange={setCreatorSort}
               resultCount={creatorResultCount}
               view={creatorView}
-              onViewChange={setCreatorView}
+              onViewChange={handleCreatorViewChange}
             />
           )}
           </div>
