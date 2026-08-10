@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth'
 import {
   getCreatorInteractionState,
   getCreatorVideoEmbed,
+  CREATOR_VIDEO_IFRAME_PERMISSIONS,
   getCreatorPlatform,
   getCreatorThumbnailUrl,
   getCreatorTopic,
@@ -560,7 +561,6 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
 
 export function CreatorContentModal({ content, creator, playlist=[], onClose }) {
   const closeRef = useRef(null)
-  const swipeStartRef = useRef(null)
   const playlistEntries = useMemo(
     () => normalizeCreatorVideoPlaylist(playlist, content, creator),
     [content, creator, playlist],
@@ -646,30 +646,12 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
   useEffect(() => {
     if (!hasPlaylist) return undefined
     const navigateWithKeyboard = event => {
-      if (event.key === 'ArrowDown') goToIndex(activeIndex - 1)
-      if (event.key === 'ArrowUp') goToIndex(activeIndex + 1)
+      if (event.key === 'ArrowDown') goToIndex(activeIndex + 1)
+      if (event.key === 'ArrowUp') goToIndex(activeIndex - 1)
     }
     window.addEventListener('keydown', navigateWithKeyboard)
     return () => window.removeEventListener('keydown', navigateWithKeyboard)
   }, [activeIndex, hasPlaylist, playlistEntries])
-
-  const handleTouchStart = event => {
-    const touch = event.touches?.[0]
-    if (!touch) return
-    swipeStartRef.current = { x:touch.clientX, y:touch.clientY, at:Date.now() }
-  }
-
-  const handleTouchEnd = event => {
-    const start = swipeStartRef.current
-    const touch = event.changedTouches?.[0]
-    swipeStartRef.current = null
-    if (!start || !touch || Date.now() - start.at > 900) return
-    const deltaY = touch.clientY - start.y
-    const deltaX = touch.clientX - start.x
-    if (Math.abs(deltaY) < 44 || Math.abs(deltaY) <= Math.abs(deltaX) * 1.15) return
-    if (deltaY < 0) goToIndex(activeIndex + 1)
-    else goToIndex(activeIndex - 1)
-  }
 
   if (!activeContent || !activeCreator) return null
 
@@ -678,12 +660,10 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
       if (event.target === event.currentTarget) onClose?.()
     }}>
       <section
-        className={`creator-preview-modal latido-modal-panel creator-video-modal${hasPlaylist ? ' has-playlist' : ''}`}
+        className="creator-preview-modal latido-modal-panel creator-video-modal"
         role="dialog"
         aria-modal="true"
         aria-label={`${activeContent.title} en ${platform.label}`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
       >
         {resolvingEmbed ? (
           <div className="creator-video-modal__player creator-video-modal__loading" role="status">
@@ -695,8 +675,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
               key={embed.src}
               src={embed.src}
               title={`${activeContent.title} en ${platform.label}`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen={embed.platform !== 'tiktok'}
+              {...CREATOR_VIDEO_IFRAME_PERMISSIONS}
               lang="es"
               referrerPolicy="strict-origin-when-cross-origin"
               scrolling="no"
@@ -721,8 +700,6 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
                 >
                   <ChevronRight aria-hidden="true" size={19} strokeWidth={2.2} />
                 </button>
-                <span className="creator-video-modal__edge-swipe is-left" aria-hidden="true" />
-                <span className="creator-video-modal__edge-swipe is-right" aria-hidden="true" />
               </>
             )}
           </div>

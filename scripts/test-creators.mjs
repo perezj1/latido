@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 
 const {
   CREATOR_FEATURED_CONTENTS,
+  CREATOR_VIDEO_IFRAME_PERMISSIONS,
   detectCreatorPlatform,
   formatCreatorHandle,
   getAutomaticCreatorThumbnail,
@@ -60,6 +61,14 @@ assert.deepEqual(
   'Los destacados deben respetar la selección persistida.',
 )
 assert.equal(CREATOR_FEATURED_CONTENTS, 6)
+assert.deepEqual(
+  CREATOR_VIDEO_IFRAME_PERMISSIONS,
+  {
+    allow:'accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture; web-share',
+    allowFullScreen:true,
+  },
+  'Los reproductores externos deben recibir permisos de reproducción y pantalla completa.',
+)
 assert.equal(
   getSeoForLocation({ pathname:'/publicar-contenido', search:'' }).robots,
   'noindex, nofollow',

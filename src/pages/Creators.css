@@ -1380,6 +1380,8 @@
   height: 100%;
   background: #000;
   border: 0;
+  pointer-events: auto;
+  touch-action: auto;
 }
 
 .creator-video-modal__player.is-vertical {
@@ -1398,20 +1400,6 @@
   aspect-ratio: 9 / 16;
   overflow: hidden;
 }
-
-/* Los embeds externos capturan sus propios gestos. Estas dos franjas estrechas
-   permiten iniciar el deslizamiento vertical desde el borde sin tapar los controles del
-   reproductor; el teclado sigue disponible como alternativa. */
-.creator-video-modal__edge-swipe {
-  position: absolute;
-  z-index: 3;
-  top: 0;
-  bottom: 0;
-  width: 22px;
-  touch-action: none;
-}
-.creator-video-modal__edge-swipe.is-left { left: 0; }
-.creator-video-modal__edge-swipe.is-right { right: 0; }
 
 .creator-video-modal__carousel-arrow {
   position: absolute;

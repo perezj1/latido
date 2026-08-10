@@ -4,6 +4,15 @@ import { hasAnalyticsConsent } from './cookieConsent.js'
 // Seis destacados, no un tope: el creador elige que seis encabezan su perfil y
 // el resto se sigue publicando y aparece en "Ultimos contenidos".
 export const CREATOR_FEATURED_CONTENTS = 6
+
+// TikTok requires the fullscreen feature policy even when its fullscreen button is
+// hidden. Without it, the player can render normally but fail as soon as playback
+// starts. Keep the iframe permissions shared and tested so every social player gets
+// the same interactive capabilities.
+export const CREATOR_VIDEO_IFRAME_PERMISSIONS = Object.freeze({
+  allow:'accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture; web-share',
+  allowFullScreen:true,
+})
 // Se conserva por compatibilidad con consumidores antiguos. La interfaz ya no
 // presenta los destacados como un limite para publicar contenido.
 export const CREATOR_MAX_CONTENTS = Number.MAX_SAFE_INTEGER
