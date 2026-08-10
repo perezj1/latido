@@ -8,6 +8,7 @@ const {
   getAutomaticCreatorThumbnail,
   getCreatorContentsNewestFirst,
   getCreatorInteractionState,
+  getCreatorMetrics,
   getCreatorOEmbedMetadata,
   getCreatorTopicsFromInterests,
   getCreatorVideoEmbed,
@@ -135,6 +136,11 @@ assert.deepEqual(
 assert.deepEqual(
   getCreatorInteractionState({ action:'helpful', targetType:'content', targetId:'content-1', actorId:'user-1', baseCount:12 }),
   { active:false, count:12 },
+)
+assert.deepEqual(
+  getCreatorMetrics(creator).byContent['content-1'],
+  { impressions:0, clicks:0, helpful:0, shares:0, clickRate:0 },
+  'Las métricas por contenido deben exponer visualizaciones, ayudas y compartidos.',
 )
 
 const originalFetch = globalThis.fetch

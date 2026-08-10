@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppNotifications } from '../hooks/useAppNotifications'
 
-const ALERT_DURATION_MS = 2800
+const ALERT_DURATION_MS = 3000
 const SWIPE_THRESHOLD_PX = 38
 
 export default function InAppNotificationAlert() {

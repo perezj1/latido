@@ -234,7 +234,6 @@ export default function Auth() {
         trackAnalyticsEvent('login_success', {
           metadata: { method:'email', entry_point:authEntryPoint },
         })
-        toast.success('¡Bienvenido/a!')
         navigate(nextPath)
       }
     } finally {

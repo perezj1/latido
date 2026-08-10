@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Trash2 } from 'lucide-react'
+import { EllipsisVertical, Heart, Pencil, Star, Trash2 } from 'lucide-react'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import {
@@ -11,6 +11,7 @@ import {
   getCreatorFeaturedContentIds,
   getCreatorDirectoryState,
   getCreatorForUser,
+  getCreatorMetrics,
   formatCreatorHandle,
   getCreatorHelpfulCount,
   getCreatorHelpRank,
@@ -34,6 +35,92 @@ import {
 import { C, PP } from '../lib/theme'
 import ReportButton from '../components/ReportButton'
 import './Creators.css'
+
+const creatorMetricFormatter = new Intl.NumberFormat('es-CH', {
+  notation:'compact',
+  maximumFractionDigits:1,
+})
+
+function CreatorOwnerContentControls({
+  content,
+  metrics,
+  featured,
+  featureDisabled,
+  onEdit,
+  onToggleFeatured,
+  onRemove,
+}) {
+  const menuRef = useRef(null)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) return undefined
+    const closeOutside = event => {
+      if (!menuRef.current?.contains(event.target)) setOpen(false)
+    }
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside)
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+
+  const helpful = Math.max(0, Number(metrics?.helpful) || 0)
+  const runAction = action => {
+    setOpen(false)
+    action()
+  }
+
+  return (
+    <div className="creator-card-management-actions">
+      {content.active === false && <span className="creator-card-management-actions__review">En revisión</span>}
+      <div className="creator-owner-content-metrics" aria-label={`${helpful} personas indicaron que este contenido les ayudó`}>
+        <span title={`${helpful.toLocaleString('es-CH')} Me ayudó`}>
+          <Heart size={14} strokeWidth={2} aria-hidden="true" />
+          <strong>{creatorMetricFormatter.format(helpful)}</strong>
+          <small>Me ayudó</small>
+        </span>
+      </div>
+      <div ref={menuRef} className="creator-content-menu creator-owner-content-menu">
+        <button
+          type="button"
+          className="creator-content-menu__trigger is-inline"
+          onClick={() => setOpen(current => !current)}
+          aria-label="Gestionar contenido"
+          aria-haspopup="menu"
+          aria-expanded={open}
+        >
+          <EllipsisVertical size={18} strokeWidth={2.2} aria-hidden="true" />
+        </button>
+        <div className={`creator-content-menu__popover${open ? ' is-open' : ''}`} role="menu" aria-hidden={!open}>
+          <button type="button" role="menuitem" onClick={() => runAction(onEdit)}>
+            <span><Pencil size={15} strokeWidth={2} aria-hidden="true" /></span>
+            <span>Editar</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className={featured ? 'is-featured' : ''}
+            onClick={() => runAction(onToggleFeatured)}
+            disabled={featureDisabled}
+          >
+            <span><Star size={15} strokeWidth={2} fill={featured ? 'currentColor' : 'none'} aria-hidden="true" /></span>
+            <span>{featured ? 'Quitar de destacados' : 'Destacar'}</span>
+          </button>
+          <span className="creator-content-menu__divider" role="separator" />
+          <button type="button" role="menuitem" className="is-danger" onClick={() => runAction(onRemove)}>
+            <span><Trash2 size={15} strokeWidth={2.2} aria-hidden="true" /></span>
+            <span>Borrar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function CreatorNetworkIcon({ platformId }) {
   if (platformId === 'youtube') {
@@ -79,8 +166,8 @@ export default function CreadorPerfil() {
   }, [creatorSlug])
 
   useEffect(() => {
-    if (creator?.id) trackCreatorMetric(creator.id, 'profile_view')
-  }, [creator?.id])
+    if (creator?.id && creator.owner_id !== user?.id) trackCreatorMetric(creator.id, 'profile_view')
+  }, [creator?.id, creator?.owner_id, user?.id])
 
   useEffect(() => {
     if (!creator || !requestedContentId) return
@@ -141,6 +228,7 @@ export default function CreadorPerfil() {
   const helpRank = getCreatorHelpRank(creator)
   const viewerCreator = getCreatorForUser(user?.id)
   const isOwner = Boolean(user?.id && creator.owner_id === user.id)
+  const creatorMetrics = getCreatorMetrics(creator)
 
   const handleSocialClick = (_event, social) => {
     trackCreatorMetric(creator.id, 'social_click', social.platform)
@@ -191,27 +279,15 @@ export default function CreadorPerfil() {
   const managementActions = content => {
     const featured = featuredContentIdSet.has(String(content.id))
     return (
-      <div className="creator-card-management-actions">
-        {content.active === false && <span style={{ color:'#92400E', fontSize:9, fontWeight:800 }}>En revisión</span>}
-        <button
-          type="button"
-          className={featured ? 'is-featured' : ''}
-          onClick={() => toggleFeaturedContent(content)}
-          disabled={content.active === false || (!featured && featuredContentIds.length >= CREATOR_FEATURED_CONTENTS)}
-          aria-label={featured ? 'Quitar de destacados' : 'Destacar contenido'}
-          aria-pressed={featured}
-          title={featured ? 'Quitar de destacados' : 'Destacar'}
-        >
-          <span aria-hidden="true">{featured ? '★' : '☆'}</span>
-          <small>{featured ? 'Destacada' : 'Destacar'}</small>
-        </button>
-        <button type="button" onClick={() => navigate(`/creadores/mi-perfil?editContent=${encodeURIComponent(content.id)}`)} aria-label="Editar contenido" title="Editar">
-          <span aria-hidden="true">✎</span>
-        </button>
-        <button type="button" className="is-danger" onClick={() => removeContent(content)} aria-label="Eliminar contenido" title="Eliminar">
-          <Trash2 size={16} strokeWidth={2.4} aria-hidden="true" />
-        </button>
-      </div>
+      <CreatorOwnerContentControls
+        content={content}
+        metrics={creatorMetrics.byContent[content.id]}
+        featured={featured}
+        featureDisabled={content.active === false || (!featured && featuredContentIds.length >= CREATOR_FEATURED_CONTENTS)}
+        onEdit={() => navigate(`/creadores/mi-perfil?editContent=${encodeURIComponent(content.id)}`)}
+        onToggleFeatured={() => toggleFeaturedContent(content)}
+        onRemove={() => removeContent(content)}
+      />
     )
   }
 

@@ -1010,6 +1010,10 @@ export function getCreatorMetrics(creator) {
     (total, content) => total + Number(metrics[`${creator.id}:content_impression:${content.id}`] || 0),
     0,
   )
+  const contentShares = contents.reduce(
+    (total, content) => total + Number(metrics[`${creator.id}:content_share:${content.id}`] || 0),
+    0,
+  )
   const socialClicks = (creator?.socials || []).reduce(
     (total, social) => total + Number(metrics[`${creator.id}:social_click:${social.platform}`] || 0),
     0,
@@ -1022,14 +1026,16 @@ export function getCreatorMetrics(creator) {
   const byContent = Object.fromEntries(contents.map(content => {
     const impressions = Number(metrics[`${creator.id}:content_impression:${content.id}`] || 0)
     const clicks = Number(metrics[`${creator.id}:content_click:${content.id}`] || 0)
+    const shares = Number(metrics[`${creator.id}:content_share:${content.id}`] || 0)
     const helpful = Math.max(0, Number(content.helpful_count) || 0)
-    return [content.id, { impressions, clicks, helpful, clickRate:impressions ? Math.round((clicks / impressions) * 100) : 0 }]
+    return [content.id, { impressions, clicks, helpful, shares, clickRate:impressions ? Math.round((clicks / impressions) * 100) : 0 }]
   }))
 
   return {
     profileViews:Number(metrics[`${creator?.id}:profile_view`] || 0),
     contentClicks,
     contentImpressions,
+    contentShares,
     clickRate:contentImpressions ? Math.round((contentClicks / contentImpressions) * 100) : 0,
     socialClicks,
     profileHelpful,

@@ -109,6 +109,7 @@ async function shareCreatorContent(content, creator) {
       await navigator.clipboard.writeText(shareUrl)
       toast.success('Enlace copiado')
     }
+    trackCreatorMetric(creator.id, 'content_share', content.id)
   } catch (error) {
     if (error?.name !== 'AbortError') toast.error('No se pudo compartir el contenido')
   }
@@ -504,7 +505,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
     if (!editor) trackCreatorImpression(creator.id, 'content', content.id)
   }, [content.id, creator.id, editor])
   const handleOpen = () => {
-    trackCreatorMetric(creator.id, 'content_click', content.id)
+    if (!editor) trackCreatorMetric(creator.id, 'content_click', content.id)
     if (onContentOpen) {
       onContentOpen(content, creator)
       return

@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS public.creator_metrics (
   count BIGINT NOT NULL DEFAULT 0 CHECK (count >= 0),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (creator_id, metric, content_id),
-  CONSTRAINT creator_metrics_metric_check CHECK (metric IN ('profile_view', 'content_click', 'content_impression', 'social_click'))
+  CONSTRAINT creator_metrics_metric_check CHECK (metric IN ('profile_view', 'content_click', 'content_impression', 'content_share', 'social_click'))
 );
 
 CREATE OR REPLACE FUNCTION public.touch_creator_updated_at()
@@ -462,13 +462,13 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF p_metric NOT IN ('profile_view', 'content_click', 'content_impression', 'social_click') THEN
+  IF p_metric NOT IN ('profile_view', 'content_click', 'content_impression', 'content_share', 'social_click') THEN
     RETURN;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM public.creator_profiles WHERE id = p_creator_id AND active AND status = 'published') THEN
     RETURN;
   END IF;
-  IF p_metric IN ('content_click', 'content_impression') AND NOT EXISTS (
+  IF p_metric IN ('content_click', 'content_impression', 'content_share') AND NOT EXISTS (
     SELECT 1
     FROM public.creator_contents
     WHERE id = COALESCE(p_content_id, '')
