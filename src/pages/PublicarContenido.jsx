@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
-import { Btn, ChevronLeftIcon, ImageUploadField, Input, Modal, ProgressBar, StickyFormActions } from '../components/UI'
+import { Btn, ChevronLeftIcon, ImageUploadField, Input, ProgressBar, StickyFormActions } from '../components/UI'
+import CreatorCelebrationModal from '../components/CreatorCelebrationModal'
 import {
   CREATOR_TOPICS,
   detectCreatorFormat,
@@ -23,10 +24,9 @@ import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
 import { C, PP } from '../lib/theme'
-import './PublicarContenido.css'
 
 const STEPS = [
-  { title:'¿Dónde está tu contenido?', sub:'Pega el enlace original. Latido lleva las visitas hasta allí.' },
+  { title:'¿Dónde está tu contenido?', sub:'Pega el enlace de tu contenido en TikTok, Instagram, YouTube u otra plataforma.' },
   { title:'Detalles',          sub:'Un título claro, el tema principal y un resumen útil.' },
   { title:'Revisa y publica',            sub:'Así se verá en tu perfil y en el resto de la app.' },
 ]
@@ -51,18 +51,6 @@ const EMPTY_FORM = {
   thumbnail_kind:'',
   status:'published',
 }
-
-const CONFETTI_PIECES = [
-  { left:'7%', color:'#2563EB', delay:'-.15s', duration:'2.4s', rotate:'18deg' },
-  { left:'16%', color:'#F59E0B', delay:'-.8s', duration:'2.8s', rotate:'-24deg' },
-  { left:'27%', color:'#EC4899', delay:'-.35s', duration:'2.6s', rotate:'42deg' },
-  { left:'38%', color:'#10B981', delay:'-1.1s', duration:'3s', rotate:'-12deg' },
-  { left:'49%', color:'#8B5CF6', delay:'-.55s', duration:'2.5s', rotate:'31deg' },
-  { left:'60%', color:'#EF4444', delay:'-1.35s', duration:'2.9s', rotate:'-38deg' },
-  { left:'71%', color:'#0EA5E9', delay:'-.25s', duration:'2.7s', rotate:'16deg' },
-  { left:'82%', color:'#F97316', delay:'-.95s', duration:'2.45s', rotate:'-30deg' },
-  { left:'91%', color:'#22C55E', delay:'-1.55s', duration:'3.1s', rotate:'45deg' },
-]
 
 export default function PublicarContenido() {
   const navigate = useNavigate()
@@ -445,45 +433,16 @@ export default function PublicarContenido() {
         )}
       </StickyFormActions>
 
-      <Modal
+      <CreatorCelebrationModal
         show={Boolean(publishResult)}
         onClose={closePublishSuccess}
         title={publishResult?.needsReview ? 'Contenido enviado' : 'Contenido publicado'}
-        syncHistory={false}
-        zIndex={620}
-      >
-        <div className="creator-publish-success">
-          <div className="creator-publish-success__confetti" aria-hidden="true">
-            {CONFETTI_PIECES.map((piece, index) => (
-              <span
-                key={index}
-                style={{
-                  '--confetti-left':piece.left,
-                  '--confetti-color':piece.color,
-                  '--confetti-delay':piece.delay,
-                  '--confetti-duration':piece.duration,
-                  '--confetti-rotate':piece.rotate,
-                }}
-              />
-            ))}
-          </div>
-          <div className="creator-publish-success__icon" aria-hidden="true">🎉</div>
-          <h2>¡Enhorabuena!</h2>
-          <p>
-            {publishResult?.needsReview
-              ? 'Tu contenido se ha enviado a revisión. Te avisaremos cuando esté visible.'
-              : 'Tu contenido llegará ahora a más personas.'}
-          </p>
-          <div className="creator-publish-success__actions">
-            <button type="button" className="creator-publish-success__more" onClick={publishMoreContent}>
-              Publicar más contenido
-            </button>
-            <button type="button" className="creator-publish-success__close" onClick={closePublishSuccess}>
-              Cerrar
-            </button>
-          </div>
-        </div>
-      </Modal>
+        message={publishResult?.needsReview
+          ? 'Tu contenido se ha enviado a revisión. Te avisaremos cuando esté visible.'
+          : 'Tu contenido llegará ahora a más personas.'}
+        primaryLabel="Publicar más contenido"
+        onPrimary={publishMoreContent}
+      />
     </div>
   )
 }

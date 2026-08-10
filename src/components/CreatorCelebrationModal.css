@@ -1,11 +1,11 @@
-.creator-publish-success {
+.creator-celebration {
   position: relative;
   overflow: hidden;
   padding: 14px 2px 2px;
   text-align: center;
 }
 
-.creator-publish-success__confetti {
+.creator-celebration__confetti {
   position: absolute;
   z-index: 0;
   inset: -18px 0 auto;
@@ -14,7 +14,7 @@
   pointer-events: none;
 }
 
-.creator-publish-success__confetti span {
+.creator-celebration__confetti span {
   position: absolute;
   top: -24px;
   left: var(--confetti-left);
@@ -28,17 +28,17 @@
   animation-delay: var(--confetti-delay);
 }
 
-.creator-publish-success__confetti span:nth-child(3n) {
+.creator-celebration__confetti span:nth-child(3n) {
   width: 12px;
   height: 8px;
   border-radius: 50%;
 }
 
-.creator-publish-success__confetti span:nth-child(even) {
+.creator-celebration__confetti span:nth-child(even) {
   animation-timing-function: cubic-bezier(.24,.7,.48,1);
 }
 
-.creator-publish-success__icon {
+.creator-celebration__icon {
   position: relative;
   z-index: 1;
   display: grid;
@@ -54,7 +54,7 @@
   animation: creator-success-pop .55s cubic-bezier(.2,.85,.32,1.28) both;
 }
 
-.creator-publish-success h2 {
+.creator-celebration h2 {
   position: relative;
   z-index: 1;
   margin: 0 0 8px;
@@ -62,7 +62,7 @@
   font: 900 23px/1.2 'Poppins', system-ui, sans-serif;
 }
 
-.creator-publish-success > p {
+.creator-celebration > p {
   position: relative;
   z-index: 1;
   max-width: 340px;
@@ -71,14 +71,14 @@
   font: 500 13px/1.7 'Poppins', system-ui, sans-serif;
 }
 
-.creator-publish-success__actions {
+.creator-celebration__actions {
   position: relative;
   z-index: 1;
   display: grid;
   gap: 10px;
 }
 
-.creator-publish-success__actions button {
+.creator-celebration__actions button {
   min-height: 48px;
   padding: 0 16px;
   border-radius: 14px;
@@ -86,20 +86,20 @@
   cursor: pointer;
 }
 
-.creator-publish-success__more {
+.creator-celebration__primary {
   color: #fff;
   background: #2563eb;
   border: 1px solid #2563eb;
   box-shadow: 0 10px 22px rgba(37, 99, 235, .2);
 }
 
-.creator-publish-success__close {
+.creator-celebration__secondary {
   color: #334155;
   background: #fff;
   border: 1px solid #cbd5e1;
 }
 
-.creator-publish-success__actions button:active {
+.creator-celebration__actions button:active {
   transform: scale(.98);
 }
 
@@ -115,13 +115,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .creator-publish-success__confetti span,
-  .creator-publish-success__icon {
+  .creator-celebration__confetti span,
+  .creator-celebration__icon {
     animation: none;
     opacity: 1;
   }
 
-  .creator-publish-success__confetti span {
+  .creator-celebration__confetti span {
     transform: translateY(70px) rotate(var(--confetti-rotate));
   }
 }

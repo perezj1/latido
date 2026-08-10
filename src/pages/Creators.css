@@ -141,6 +141,8 @@
 .creator-social-profile__stats small { margin-top: 2px; color: #94a3b8; font-size: 7.5px; font-weight: 700; }
 .creator-social-profile__main-action { display: grid; max-width: 500px; margin: 0 auto; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
 .creator-social-profile__main-action.is-owner { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.creator-social-profile__main-action.is-owner .creator-owner-add-content { grid-column: 1 / -1; gap: 6px; box-shadow: 0 10px 22px rgba(37,99,235,.2); }
+.creator-social-profile__main-action > a.creator-owner-edit-profile { gap: 6px; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; }
 .creator-social-profile__main-action .creator-follow-button,
 .creator-social-profile__main-action .creator-profile-helpful,
 .creator-social-profile__main-action .creator-profile-share { box-sizing: border-box; width: 100%; min-width: 0; padding-right: 6px; padding-left: 6px; }
@@ -150,7 +152,6 @@
 
 .creator-profile-editor-shell { padding-top: 22px; }
 .creator-social-profile--editor .creator-social-profile__identity { position: relative; }
-.creator-editor-public-link { font-size: 14px !important; text-decoration: none; }
 .creator-inline-edit-button,
 .creator-editor-block-heading > a { display: inline-flex; min-height: 30px; padding: 0 10px; align-items: center; justify-content: center; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 9px; font: 800 8.5px/1 'Poppins',system-ui,sans-serif; text-decoration: none; }
 .creator-inline-edit-button--identity { position: absolute; z-index: 3; top: 12px; right: 18px; }
@@ -158,7 +159,7 @@
 .creator-editor-block-heading > strong,
 .creator-editor-block-heading > h2 { margin: 0 !important; color: #102a5c; font-size: 12px; font-weight: 800; }
 .creator-social-profile--editor .creator-social-profile__topics { margin-top: 9px; justify-content: flex-start; }
-.creator-editor-main-actions { display: grid; max-width: 500px; margin: 0 auto; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.creator-editor-main-actions { display: grid; max-width: 500px; margin: 0 auto; grid-template-columns: 1fr; gap: 8px; }
 .creator-editor-main-actions > button,
 .creator-editor-main-actions > a { display: flex; min-height: 44px; box-sizing: border-box; align-items: center; justify-content: center; color: #fff; background: #2563eb; border: 1px solid #2563eb; border-radius: 14px; font: 800 9.5px/1.2 'Poppins',system-ui,sans-serif; text-decoration: none; cursor: pointer; }
 .creator-editor-main-actions > a { color: #475569; background: #f8fafc; border-color: #dce6f2; }

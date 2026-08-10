@@ -123,6 +123,25 @@ export default function CreadorPanel() {
   }, [searchParams, setSearchParams])
 
   useEffect(() => {
+    const contentId = searchParams.get('editContent')
+    if (!creator || !contentId) return
+
+    const content = getCreatorContentsNewestFirst(creator).find(item => String(item.id) === contentId)
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('editContent')
+    setSearchParams(nextParams, { replace:true })
+
+    if (!content) {
+      toast.error('No se encontró el contenido que quieres editar')
+      return
+    }
+
+    setContentForm({ ...EMPTY_CONTENT, ...content, position:content.sort_order || 1 })
+    setContentErrors({})
+    setFormOpen(true)
+  }, [creator, searchParams, setSearchParams])
+
+  useEffect(() => {
     const platform = detectCreatorPlatform(contentForm.url)
     if (!formOpen || !['youtube', 'tiktok'].includes(platform)) return undefined
     const normalizedUrl = normalizeCreatorUrl(contentForm.url)
@@ -380,7 +399,7 @@ export default function CreadorPanel() {
               <strong>{formatCreatorHandle(creator.handle) || creator.name}</strong>
               <span>Editor del perfil</span>
             </div>
-            <Link className="creator-editor-public-link" to={`/creadores/${creator.slug}`} aria-label="Ver perfil público">👁</Link>
+            <span aria-hidden="true" />
           </div>
 
           {creator.active === false && (
@@ -413,7 +432,6 @@ export default function CreadorPanel() {
 
             <div className="creator-editor-main-actions">
               <button type="button" onClick={() => navigate('/publicar-contenido')}>＋ Añadir contenido</button>
-              <Link to={`/creadores/${creator.slug}`}>Ver perfil público</Link>
             </div>
 
             <section className="creator-social-profile__networks" aria-labelledby="creator-editor-networks-title">

@@ -4,10 +4,10 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { Btn, ChevronLeftIcon, Input, ProgressBar, Select, StickyFormActions } from '../components/UI'
 import { CreatorAvatar, CreatorTopicPill } from '../components/CreatorCards'
+import CreatorCelebrationModal from '../components/CreatorCelebrationModal'
 import { CANTONS } from '../lib/constants'
 import {
   CREATOR_PLATFORMS,
-  CREATOR_FOLLOWER_RANGES,
   CREATOR_TOPICS,
   getCreatorDirectoryState,
   getCreatorForUser,
@@ -26,7 +26,7 @@ import './Creators.css'
 const STEPS = [
   { title:'Tu perfil y lo que compartes', sub:'Puedes presentarte como persona, profesional, proyecto o negocio.' },
   { title:'¿Qué compartes sobre Suiza?', sub:'Experiencias, información, trabajo, servicios o proyectos: elige los temas que mejor te representan.' },
-  { title:'Conecta tus redes', sub:'Las visitas llegarán siempre a tus perfiles, publicaciones y páginas originales.' },
+  { title:'Conecta tus redes', sub:'Muestra a los usuarios de latido tus perfiles, publicaciones y páginas originales.' },
   { title:'Revisa tu perfil', sub:'Comprueba cómo se verá antes de publicarlo en Latido.' },
 ]
 
@@ -46,7 +46,7 @@ const EDIT_SECTION_BY_QUERY = {
 
 function getErrorSection(key='') {
   if (key === 'topics') return 1
-  if (key === 'socials' || key.startsWith('social_') || key.startsWith('followers_')) return 2
+  if (key === 'socials' || key.startsWith('social_')) return 2
   if (key === 'accepted') return 3
   return 0
 }
@@ -81,6 +81,8 @@ function initialForm(existing, displayName, userCanton, userInterests = []) {
     reach:existing?.reach || 'Toda Suiza',
     topics:existing ? (existing.topics || []) : getCreatorTopicsFromInterests(userInterests),
     socials:Object.fromEntries(CREATOR_PLATFORMS.map(platform => [platform.id, socialMap[platform.id] || ''])),
+    // Ya no se pide en el formulario, pero se arrastra el valor guardado para
+    // no borrarlo al editar un perfil que si lo tenia.
     followers:Object.fromEntries(CREATOR_PLATFORMS.map(platform => [platform.id, followerMap[platform.id] || ''])),
     accepted:false,
   }
@@ -102,6 +104,7 @@ export default function CreadorAlta() {
   const [processingAvatar, setProcessingAvatar] = useState(false)
   const [form, setForm] = useState(() => initialForm(existing, displayName, userCanton, userInterests))
   const [errors, setErrors] = useState({})
+  const [publishResult, setPublishResult] = useState(null)
 
   useEffect(() => {
     const sync = () => {
@@ -140,20 +143,12 @@ export default function CreadorAlta() {
       ...current,
       socials:{ ...current.socials, [platform]:value },
     }))
-    clearErrors(`social_${platform}`, `followers_${platform}`, 'socials')
+    clearErrors(`social_${platform}`, 'socials')
   }
 
   const updateHandle = value => {
     const raw = String(value || '')
     update('handle', raw ? `@${raw.replace(/^@+/, '')}` : '')
-  }
-
-  const updateFollowerRange = (platform, value) => {
-    setForm(current => ({
-      ...current,
-      followers:{ ...current.followers, [platform]:value },
-    }))
-    clearErrors(`followers_${platform}`)
   }
 
   const toggleTopic = topicId => {
@@ -184,7 +179,7 @@ export default function CreadorAlta() {
       else if (nameLength < PROFILE_LIMITS.name.min) nextErrors.name = `El nombre necesita al menos ${PROFILE_LIMITS.name.min} caracteres (llevas ${nameLength}).`
       else if (nameLength > PROFILE_LIMITS.name.max) nextErrors.name = `El nombre admite como máximo ${PROFILE_LIMITS.name.max} caracteres (llevas ${nameLength}).`
 
-      if (!handle) nextErrors.handle = 'Crea un usuario para identificar tu perfil, por ejemplo @joseensuiza.'
+      if (!handle) nextErrors.handle = 'Crea un usuario para identificar tu perfil, por ejemplo @yoensuiza.'
       else if (!handle.startsWith('@')) nextErrors.handle = 'El usuario debe comenzar por @.'
       else if (handle.slice(1).length < 3) nextErrors.handle = `El usuario necesita al menos 3 caracteres después de la @ (llevas ${handle.slice(1).length}).`
       else if (!/^@[a-zA-Z0-9._-]+$/.test(handle)) nextErrors.handle = 'Después de la @ usa solo letras, números, punto, guion o guion bajo; no incluyas espacios.'
@@ -204,10 +199,6 @@ export default function CreadorAlta() {
       if (!socialEntries.length) nextErrors.socials = 'Añade al menos una red social, canal o página web.'
       socialEntries.forEach(([platform, value]) => {
         if (!normalizeCreatorUrl(value)) nextErrors[`social_${platform}`] = 'Introduce una dirección válida que empiece, por ejemplo, por https://'
-        const platformConfig = CREATOR_PLATFORMS.find(item => item.id === platform)
-        if (platformConfig?.hasFollowerRange && !form.followers[platform]) {
-          nextErrors[`followers_${platform}`] = 'Selecciona un rango aproximado. Es un dato privado para la revisión de Latido.'
-        }
       })
     }
     if (activeSteps.has(3) && !form.accepted) nextErrors.accepted = 'Marca esta casilla para confirmar que representas el perfil y puedes compartir estos enlaces.'
@@ -256,8 +247,12 @@ export default function CreadorAlta() {
           metadata:{ handle:form.handle, canton:form.canton },
         })
       }
-      toast.success(needsReview ? 'Perfil enviado a revisión' : existing ? 'Perfil actualizado' : 'Perfil publicado')
-      navigate(existing ? '/creadores/mi-perfil' : '/creadores/mi-perfil?created=1')
+      if (existing) {
+        toast.success(needsReview ? 'Perfil enviado a revisión' : 'Perfil actualizado')
+        navigate('/creadores/mi-perfil')
+      } else {
+        setPublishResult({ needsReview })
+      }
     } catch (error) {
       toast.error(error?.message || 'No se pudo guardar el perfil')
     } finally {
@@ -280,6 +275,16 @@ export default function CreadorAlta() {
     } finally {
       setProcessingAvatar(false)
     }
+  }
+
+  const closePublishSuccess = () => {
+    setPublishResult(null)
+    navigate('/creadores/mi-perfil?created=1')
+  }
+
+  const publishFirstContent = () => {
+    setPublishResult(null)
+    navigate('/publicar-contenido')
   }
 
   const cancelCreatorFlow = () => {
@@ -391,7 +396,7 @@ export default function CreadorAlta() {
                   </div>
                 </div>
               </div>
-              <Input label="USUARIO O ALIAS" required error={errors.handle} errorKey="handle" leftElement={<span aria-hidden="true">@</span>} value={form.handle.replace(/^@/, '')} onChange={event => updateHandle(event.target.value)} placeholder="joseensuiza" />
+              <Input label="USUARIO O ALIAS" required error={errors.handle} errorKey="handle" leftElement={<span aria-hidden="true">@</span>} value={form.handle.replace(/^@/, '')} onChange={event => updateHandle(event.target.value)} placeholder="yoensuiza" />
               <p className="creator-field-help">Identificador corto de tu perfil.</p>
               <Input label="QUÉ COMPARTES EN UNA FRASE" required error={errors.tagline} errorKey="tagline" value={form.tagline} onChange={event => update('tagline', event.target.value)} placeholder="Ej. Mi experiencia trabajando en Suiza y consejos para recién llegados." />
               <p className={`creator-field-count${errors.tagline ? ' is-error' : ''}`}>{form.tagline.trim().length}/{PROFILE_LIMITS.tagline.max} caracteres · mínimo {PROFILE_LIMITS.tagline.min}</p>
@@ -412,11 +417,32 @@ export default function CreadorAlta() {
                       key={topic.id}
                       type="button"
                       onClick={() => toggleTopic(topic.id)}
+                      aria-pressed={selected}
                       style={{ display:'flex', minHeight:54, padding:'10px 12px', alignItems:'center', gap:10, color:selected ? topic.color : C.mid, background:selected ? topic.bg : '#fff', border:`1.5px solid ${selected ? topic.color : C.border}`, borderRadius:14, fontFamily:PP, fontSize:10.5, fontWeight:800, textAlign:'left', cursor:'pointer' }}
                     >
                       <span style={{ fontSize:22 }}>{topic.emoji}</span>
                       <span>{topic.label}</span>
-                      <span style={{ marginLeft:'auto' }}>{selected ? '✓' : '+'}</span>
+                      {/* Círculo de selección: vacío al desmarcar, relleno con
+                          el color del tema al marcar. */}
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          display:'grid',
+                          width:20,
+                          height:20,
+                          marginLeft:'auto',
+                          flex:'0 0 20px',
+                          placeItems:'center',
+                          borderRadius:'50%',
+                          border:`1.5px solid ${selected ? topic.color : C.border}`,
+                          background:selected ? topic.color : '#fff',
+                          color:'#fff',
+                          fontSize:11,
+                          lineHeight:1,
+                        }}
+                      >
+                        {selected ? '✓' : ''}
+                      </span>
                     </button>
                   )
                 })}
@@ -444,10 +470,10 @@ export default function CreadorAlta() {
             <>
               {isEditing && <div className="creator-edit-section-heading"><strong>Redes y enlaces</strong><span>Cambia, añade o elimina los destinos de tu perfil.</span></div>}
               <div style={{ marginBottom:18, padding:'12px 14px', color:'#1E3A8A', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:13, fontFamily:PP, fontSize:10.5, lineHeight:1.65 }}>
-                Añade al menos una red social, canal o web. El rango aproximado de audiencia es privado: ayuda a Latido a revisar el alta, pero no se muestra en tu perfil ni influye en el orden.
+                Añade al menos una red social, canal o web.
               </div>
               {CREATOR_PLATFORMS.map(platform => (
-                <div key={platform.id} data-error-field={errors[`social_${platform.id}`] ? `social_${platform.id}` : errors[`followers_${platform.id}`] ? `followers_${platform.id}` : undefined} className="creator-social-field">
+                <div key={platform.id} data-error-field={errors[`social_${platform.id}`] ? `social_${platform.id}` : undefined} className="creator-social-field">
                   <span style={{ color:platform.color, fontFamily:PP, fontSize:10, fontWeight:900 }}>{platform.label}</span>
                   <div>
                     <input
@@ -460,21 +486,6 @@ export default function CreadorAlta() {
                       aria-invalid={Boolean(errors[`social_${platform.id}`]) || undefined}
                     />
                     {errors[`social_${platform.id}`] && <p className="creator-inline-error">{errors[`social_${platform.id}`]}</p>}
-                    {platform.hasFollowerRange && form.socials[platform.id].trim() && (
-                      <>
-                        <select
-                          className={`creator-form-control creator-private-range${errors[`followers_${platform.id}`] ? ' is-error' : ''}`}
-                          value={form.followers[platform.id]}
-                          onChange={event => updateFollowerRange(platform.id, event.target.value)}
-                          aria-label={`Rango privado de audiencia en ${platform.label}`}
-                          aria-invalid={Boolean(errors[`followers_${platform.id}`]) || undefined}
-                        >
-                          <option value="">Rango aproximado · privado</option>
-                          {CREATOR_FOLLOWER_RANGES.map(range => <option key={range.id} value={range.id}>{range.label}</option>)}
-                        </select>
-                        {errors[`followers_${platform.id}`] && <p className="creator-inline-error">{errors[`followers_${platform.id}`]}</p>}
-                      </>
-                    )}
                   </div>
                 </div>
               ))}
@@ -538,11 +549,22 @@ export default function CreadorAlta() {
         ) : step < STEPS.length - 1 ? (
           <Btn onClick={next} style={{ flex:1 }}>Continuar →</Btn>
         ) : (
-          <Btn variant="success" disabled={saving} onClick={handleSave} style={{ flex:1 }}>
+          <Btn variant="success" disabled={saving || !form.accepted} onClick={handleSave} style={{ flex:1 }}>
             {saving ? 'Guardando…' : existing ? 'Guardar cambios' : 'Publicar perfil'}
           </Btn>
         )}
       </StickyFormActions>
+
+      <CreatorCelebrationModal
+        show={Boolean(publishResult)}
+        onClose={closePublishSuccess}
+        title={publishResult?.needsReview ? 'Perfil enviado' : 'Perfil publicado'}
+        message={publishResult?.needsReview
+          ? 'Tu perfil se ha enviado a revisión. Te avisaremos cuando esté visible en la comunidad de creadores de Latido.'
+          : 'Ahora formas parte de la comunidad de creadores de Latido. Comparte tu contenido y llega a más personas.'}
+        primaryLabel="Publicar contenido"
+        onPrimary={publishFirstContent}
+      />
     </div>
   )
 }

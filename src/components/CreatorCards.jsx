@@ -271,7 +271,7 @@ export function CreatorProfileHelpfulMetric({ creator }) {
 
 export function CreatorProfileTabs({ active = 'personal', creator = null, compact = false }) {
   const location = useLocation()
-  const creatorTarget = creator ? '/creadores/mi-perfil' : '/creadores/alta'
+  const creatorTarget = creator?.slug ? `/creadores/${creator.slug}` : '/creadores/alta'
   const creatorState = creator ? undefined : { from:`${location.pathname}${location.search}${location.hash}` }
 
   return (
@@ -282,7 +282,7 @@ export function CreatorProfileTabs({ active = 'personal', creator = null, compac
         aria-current={active === 'personal' ? 'page' : undefined}
       >
         <span aria-hidden="true">👤</span>
-        <span>Mi perfil</span>
+        <span>Perfil de Latido</span>
       </Link>
       <Link
         to={creatorTarget}

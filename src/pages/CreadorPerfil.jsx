@@ -1,18 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { Trash2 } from 'lucide-react'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import {
+  CREATOR_FEATURED_CONTENTS,
   getAllCreators,
   getCreatorBySlug,
+  getCreatorFeaturedContentIds,
   getCreatorDirectoryState,
+  getCreatorForUser,
   formatCreatorHandle,
   getCreatorHelpfulCount,
   getCreatorHelpRank,
   getCreatorContentsNewestFirst,
   getFeaturedCreatorContents,
   getCreatorPlatform,
+  removeCreatorContent,
+  setCreatorContentFeatured,
   subscribeCreatorUpdates,
   trackCreatorMetric,
 } from '../lib/creators'
@@ -53,6 +59,7 @@ function CreatorNetworkIcon({ platformId }) {
 
 export default function CreadorPerfil() {
   const { creatorSlug } = useParams()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedContentId = searchParams.get('contenido')
   const { user } = useAuth()
@@ -128,8 +135,11 @@ export default function CreadorPerfil() {
 
   const publishedContents = getCreatorContentsNewestFirst(creator, { publishedOnly:true })
   const featuredContents = getFeaturedCreatorContents(creator)
+  const featuredContentIds = getCreatorFeaturedContentIds(creator)
+  const featuredContentIdSet = new Set(featuredContentIds)
   const helpfulCount = getCreatorHelpfulCount(creator)
   const helpRank = getCreatorHelpRank(creator)
+  const viewerCreator = getCreatorForUser(user?.id)
   const isOwner = Boolean(user?.id && creator.owner_id === user.id)
 
   const handleSocialClick = (_event, social) => {
@@ -155,6 +165,71 @@ export default function CreadorPerfil() {
     nextParams.delete('contenido')
     setSearchParams(nextParams, { replace:true })
   }
+
+  const toggleFeaturedContent = async content => {
+    const currentlyFeatured = featuredContentIdSet.has(String(content.id))
+    try {
+      await setCreatorContentFeatured(user.id, content.id, !currentlyFeatured)
+      setCreator(getCreatorBySlug(creatorSlug))
+      toast.success(currentlyFeatured ? 'Contenido retirado de destacados' : 'Contenido añadido a destacados')
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo cambiar la selección')
+    }
+  }
+
+  const removeContent = async content => {
+    if (!window.confirm(`¿Eliminar “${content.title}”?`)) return
+    try {
+      await removeCreatorContent(user.id, content.id)
+      setCreator(getCreatorBySlug(creatorSlug))
+      toast.success('Contenido eliminado')
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo eliminar el contenido')
+    }
+  }
+
+  const managementActions = content => {
+    const featured = featuredContentIdSet.has(String(content.id))
+    return (
+      <div className="creator-card-management-actions">
+        {content.active === false && <span style={{ color:'#92400E', fontSize:9, fontWeight:800 }}>En revisión</span>}
+        <button
+          type="button"
+          className={featured ? 'is-featured' : ''}
+          onClick={() => toggleFeaturedContent(content)}
+          disabled={content.active === false || (!featured && featuredContentIds.length >= CREATOR_FEATURED_CONTENTS)}
+          aria-label={featured ? 'Quitar de destacados' : 'Destacar contenido'}
+          aria-pressed={featured}
+          title={featured ? 'Quitar de destacados' : 'Destacar'}
+        >
+          <span aria-hidden="true">{featured ? '★' : '☆'}</span>
+          <small>{featured ? 'Destacada' : 'Destacar'}</small>
+        </button>
+        <button type="button" onClick={() => navigate(`/creadores/mi-perfil?editContent=${encodeURIComponent(content.id)}`)} aria-label="Editar contenido" title="Editar">
+          <span aria-hidden="true">✎</span>
+        </button>
+        <button type="button" className="is-danger" onClick={() => removeContent(content)} aria-label="Eliminar contenido" title="Eliminar">
+          <Trash2 size={16} strokeWidth={2.4} aria-hidden="true" />
+        </button>
+      </div>
+    )
+  }
+
+  const renderContentCard = (content, contents) => (
+    <CreatorAppContentCard
+      key={content.id}
+      content={content}
+      creator={creator}
+      discovery
+      editor={isOwner}
+      managementActions={isOwner ? managementActions(content) : null}
+      onContentOpen={(selectedContent, selectedCreator) => setPreview({
+        content:selectedContent,
+        creator:selectedCreator,
+        playlist:contents.map(item => ({ content:item, creator })),
+      })}
+    />
+  )
 
   return (
     <div className="creators-page creator-app-form-page">
@@ -226,7 +301,8 @@ export default function CreadorPerfil() {
             </div>
 
             <div className={`creator-social-profile__main-action${isOwner ? ' is-owner' : ''}`}>
-              {!isOwner ? <CreatorFollowButton creator={creator} /> : <Link to="/creadores/mi-perfil">Gestionar mi perfil</Link>}
+              {!isOwner ? <CreatorFollowButton creator={creator} /> : <Link className="creator-owner-add-content" to="/publicar-contenido"><span aria-hidden="true">➕</span> Añadir contenido</Link>}
+              {isOwner && <Link className="creator-owner-edit-profile" to="/creadores/mi-perfil"><span aria-hidden="true">✏️</span> Editar mi perfil</Link>}
               {!isOwner && <CreatorProfileHelpfulButton creator={creator} />}
               <button type="button" className="creator-profile-share" onClick={handleShare}><span aria-hidden="true">📤</span><span>Compartir</span></button>
             </div>
@@ -272,19 +348,7 @@ export default function CreadorPerfil() {
           {featuredContents.length ? (
             <div className="creator-community-content creator-profile-featured-carousel no-scroll">
               <div>
-                {featuredContents.map(content => (
-                  <CreatorAppContentCard
-                    key={content.id}
-                    content={content}
-                    creator={creator}
-                    discovery
-                    onContentOpen={(selectedContent, selectedCreator) => setPreview({
-                      content:selectedContent,
-                      creator:selectedCreator,
-                      playlist:featuredContents.map(item => ({ content:item, creator })),
-                    })}
-                  />
-                ))}
+                {featuredContents.map(content => renderContentCard(content, featuredContents))}
               </div>
             </div>
           ) : (
@@ -304,19 +368,7 @@ export default function CreadorPerfil() {
               <span className="creators-results-count">{publishedContents.length} en total</span>
             </div>
             <div className="creator-profile-six-grid">
-              {publishedContents.map(content => (
-                <CreatorAppContentCard
-                  key={content.id}
-                  content={content}
-                  creator={creator}
-                  discovery
-                  onContentOpen={(selectedContent, selectedCreator) => setPreview({
-                    content:selectedContent,
-                    creator:selectedCreator,
-                    playlist:publishedContents.map(item => ({ content:item, creator })),
-                  })}
-                />
-              ))}
+              {publishedContents.map(content => renderContentCard(content, publishedContents))}
             </div>
           </section>
         )}
@@ -335,13 +387,15 @@ export default function CreadorPerfil() {
           </section>
         )}
 
-        <section className="creator-public-profile__cta creator-public-section-inset" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:20, marginTop:10, padding:'22px 24px', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:22 }}>
-          <div>
-            <strong style={{ display:'block', marginBottom:4, fontFamily:PP, color:'#102A5C', fontSize:14 }}>¿También compartes sobre Suiza en tus redes?</strong>
-            <span style={{ fontFamily:PP, color:C.mid, fontSize:10.5 }}>Puedes mostrar experiencias, información, tu profesión, trabajo, proyecto o negocio. No hace falta ser creador profesional.</span>
-          </div>
-          <Link className="creators-primary-action" to="/creadores/alta" style={{ flexShrink:0 }}>Crear mi perfil</Link>
-        </section>
+        {!viewerCreator && (
+          <section className="creator-public-profile__cta creator-public-section-inset" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:20, marginTop:10, padding:'22px 24px', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:22 }}>
+            <div>
+              <strong style={{ display:'block', marginBottom:4, fontFamily:PP, color:'#102A5C', fontSize:14 }}>¿También compartes sobre Suiza en tus redes?</strong>
+              <span style={{ fontFamily:PP, color:C.mid, fontSize:10.5 }}>Puedes mostrar experiencias, información, tu profesión, trabajo, proyecto o negocio. No hace falta ser creador profesional.</span>
+            </div>
+            <Link className="creators-primary-action" to="/creadores/alta" style={{ flexShrink:0 }}>Crear mi perfil</Link>
+          </section>
+        )}
       </div>
 
       <CreatorContentModal
