@@ -2,7 +2,7 @@ export const COOKIE_CONSENT_STORAGE_KEY = 'latido_cookie_consent'
 export const COOKIE_CONSENT_EVENT = 'latido:cookie-consent-changed'
 export const OPEN_COOKIE_SETTINGS_EVENT = 'latido:open-cookie-settings'
 
-const POLICY_VERSION = '2026-06-13'
+const POLICY_VERSION = '2026-08-08'
 const CONSENT_MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000
 const ANALYTICS_SESSION_KEY = 'latido_analytics_session_id'
 
@@ -10,6 +10,7 @@ function isValidConsent(value) {
   if (!value || value.policyVersion !== POLICY_VERSION) return false
   if (!value.expiresAt || Date.parse(value.expiresAt) <= Date.now()) return false
   return typeof value.categories?.analytics === 'boolean'
+    && typeof value.categories?.externalMedia === 'boolean'
 }
 
 export function getCookieConsent() {
@@ -30,6 +31,10 @@ export function hasAnalyticsConsent() {
   return getCookieConsent()?.categories.analytics === true
 }
 
+export function hasExternalMediaConsent() {
+  return getCookieConsent()?.categories.externalMedia === true
+}
+
 export function clearAnalyticsStorage() {
   if (typeof window === 'undefined') return
 
@@ -43,7 +48,7 @@ export function clearAnalyticsStorage() {
   }
 }
 
-export function saveCookieConsent({ analytics }) {
+export function saveCookieConsent({ analytics, externalMedia }) {
   if (typeof window === 'undefined') return null
 
   const savedAt = new Date()
@@ -54,6 +59,7 @@ export function saveCookieConsent({ analytics }) {
     categories: {
       necessary: true,
       analytics: analytics === true,
+      externalMedia: externalMedia === true,
     },
   }
 

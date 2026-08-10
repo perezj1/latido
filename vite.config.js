@@ -2,8 +2,50 @@ import dns from 'node:dns'
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { resolveTikTokLink } from './api/tiktok-resolve.js'
 
 dns.setDefaultResultOrder('verbatim')
+
+function tiktokResolverPlugin() {
+  return {
+    name:'latido-tiktok-resolver',
+    configureServer(server) {
+      server.middlewares.use('/api/tiktok-resolve', async (req, res) => {
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+          res.end()
+          return
+        }
+
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        if (req.method !== 'GET') {
+          res.statusCode = 405
+          res.setHeader('Allow', 'GET, OPTIONS')
+          res.end(JSON.stringify({ error:'Method not allowed' }))
+          return
+        }
+
+        const requestedUrl = new URL(req.url || '/', 'http://localhost').searchParams.get('url')
+        if (!requestedUrl || requestedUrl.length > 2048) {
+          res.statusCode = 400
+          res.end(JSON.stringify({ error:'Missing TikTok URL' }))
+          return
+        }
+
+        try {
+          const result = await resolveTikTokLink(requestedUrl)
+          res.statusCode = 200
+          res.setHeader('Cache-Control', 'no-store')
+          res.end(JSON.stringify(result))
+        } catch (error) {
+          res.statusCode = error?.statusCode || 502
+          res.end(JSON.stringify({ error:error?.message || 'TikTok link resolution failed' }))
+        }
+      })
+    },
+  }
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -35,7 +77,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react()],
+    plugins: [react(), tiktokResolverPlugin()],
     resolve: {
       alias: {
         react: path.resolve(process.cwd(), 'node_modules/react'),

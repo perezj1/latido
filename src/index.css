@@ -73,10 +73,6 @@
   from { opacity:.72; transform:translate3d(16px, 0, 0); }
   to { opacity:1; transform:translate3d(0, 0, 0); }
 }
-@keyframes latido-fab-in {
-  from { opacity:0; transform:translate3d(0, 12px, 0) scale(.92); }
-  to { opacity:1; transform:translate3d(0, 0, 0) scale(1); }
-}
 @keyframes latido-option-in {
   from { opacity:0; transform:translate3d(0, 5px, 0); }
   to { opacity:1; transform:translate3d(0, 0, 0); }
@@ -127,9 +123,238 @@
   animation: latido-menu-in var(--latido-motion-base) var(--latido-ease-emphasized) both;
 }
 
-.publish-fab {
-  animation: latido-fab-in 280ms var(--latido-ease-emphasized) both;
-  transform-origin: bottom right;
+/* ── Panel de notificaciones ── */
+/* El CSS global oculta todas las barras de scroll; aqui se reactiva una fina
+   en azul, porque el panel se desborda y no habia forma de saberlo. */
+.latido-notification-scroll {
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: #2563EB transparent;
+  overscroll-behavior: contain;
+}
+
+.latido-notification-scroll::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+  height: 4px;
+}
+
+.latido-notification-scroll::-webkit-scrollbar-track {
+  margin: 6px 0;
+  background: transparent;
+}
+
+.latido-notification-scroll::-webkit-scrollbar-thumb {
+  background: #2563EB;
+  border-radius: 999px;
+}
+
+.latido-notif-row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 16px;
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid #EEF2F8;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--latido-motion-fast) ease;
+}
+
+.latido-notif-row:last-child { border-bottom: 0; }
+.latido-notif-row:hover { background: #F8FAFC; }
+.latido-notif-row:active { background: #EFF6FF; }
+.latido-notif-row:focus-visible { position: relative; z-index: 1; outline: 2px solid #2563EB; outline-offset: -2px; }
+.latido-notif-row:disabled { cursor: wait; opacity: .72; }
+
+.latido-notif-row__copy { min-width: 0; }
+
+.latido-notif-row__icon {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 13px;
+  background: #EFF6FF;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.latido-notif-row__icon[data-tone="warn"] { background: #FFFBEB; }
+
+/* Punto de aviso, como en el diseno de referencia. */
+.latido-notif-row__icon::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #EF4444;
+}
+
+.latido-notif-row__icon[data-dot="off"]::after { display: none; }
+
+.latido-notif-row__title {
+  display: block;
+  color: #0F172A;
+  font: 800 14px/1.35 'Poppins', system-ui, sans-serif;
+}
+
+.latido-notif-row__text {
+  display: block;
+  margin-top: 3px;
+  color: #64748B;
+  font: 400 12px/1.5 'Poppins', system-ui, sans-serif;
+}
+
+.latido-notif-row__chevron {
+  display: grid;
+  width: 24px;
+  height: 32px;
+  place-items: center;
+  color: #2563EB;
+  font: 700 24px/1 system-ui, sans-serif;
+}
+
+.latido-notif-row__chevron[data-tone="warn"] { color: #B45309; }
+
+/* Alerta de actividad dentro de la app. Se inspira en una notificacion nativa,
+   pero mantiene el gesto y el estado dentro de Latido. */
+@keyframes latido-alert-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.latido-alert-stack {
+  position: fixed;
+  top: max(10px, calc(env(safe-area-inset-top) + 8px));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.latido-in-app-alert {
+  position: relative;
+  width: min(430px, 100%);
+  min-height: 76px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .82);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 16px 44px rgba(15, 23, 42, .22), 0 2px 8px rgba(37, 99, 235, .1);
+  backdrop-filter: blur(18px) saturate(1.18);
+  -webkit-backdrop-filter: blur(18px) saturate(1.18);
+  touch-action: pan-x;
+  user-select: none;
+  pointer-events: auto;
+  will-change: transform, opacity;
+}
+
+.latido-in-app-alert__content {
+  display: grid;
+  width: 100%;
+  min-height: 76px;
+  grid-template-columns: 43px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  padding: 11px 42px 12px 12px;
+  border: 0;
+  background: transparent;
+  color: #0F172A;
+  text-align: left;
+  cursor: pointer;
+}
+
+.latido-in-app-alert__icon {
+  display: grid;
+  width: 43px;
+  height: 43px;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #EFF6FF, #DBEAFE);
+  font-size: 21px;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .08);
+}
+
+.latido-in-app-alert__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.latido-in-app-alert__brand {
+  margin-bottom: 1px;
+  color: #2563EB;
+  font: 800 9px/1.2 'Poppins', system-ui, sans-serif;
+  letter-spacing: .75px;
+}
+
+.latido-in-app-alert__copy strong {
+  overflow: hidden;
+  color: #0F172A;
+  font: 800 13px/1.35 'Poppins', system-ui, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.latido-in-app-alert__copy > span:last-child {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 2px;
+  color: #64748B;
+  font: 500 10.5px/1.35 'Poppins', system-ui, sans-serif;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.latido-in-app-alert__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(226, 232, 240, .72);
+  color: #475569;
+  font: 500 19px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.latido-in-app-alert__progress {
+  position: absolute;
+  right: 10px;
+  bottom: 0;
+  left: 10px;
+  height: 2px;
+  border-radius: 999px;
+  background: #2563EB;
+  transform-origin: left;
+  animation: latido-alert-progress linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .latido-in-app-alert,
+  .latido-in-app-alert__progress {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 .latido-publish-picker__panel {
@@ -151,6 +376,13 @@
   transition-property: color, background-color, border-color, box-shadow, opacity, transform;
   transition-duration: var(--latido-motion-fast);
   transition-timing-function: var(--latido-ease-standard);
+}
+
+/* Chrome pinta su propia X en input[type=search]; estos campos ya tienen la suya. */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 :where(input, textarea, select) {
@@ -2674,10 +2906,208 @@ img[data-latido-img-state="loaded"] {
 .cat-bar { position: sticky; top: 0; z-index: 40; }
 @media (min-width: 768px) { .cat-bar { top: 57px; } }
 
-/* ── Publish FAB: hidden on desktop (button moved to header nav) ── */
-@media (min-width: 768px) {
-  .publish-fab { display: none !important; }
+/* ── Encabezado de seccion ──
+   Altura fija en todas las pantallas: el subtitulo reserva siempre dos lineas,
+   asi la barra de filtros arranca al mismo alto tenga el texto una linea o dos. */
+.section-page-head {
+  padding-bottom: 14px;
 }
+
+.section-page-head h1 {
+  margin: 0 0 6px;
+  color: #0F172A;
+  font: 800 26px/1.2 'Poppins', sans-serif;
+  letter-spacing: -0.4px;
+}
+
+.section-page-head p {
+  min-height: 41px;
+  margin: 0;
+  color: #94A3B8;
+  font: 400 13px/1.55 'Poppins', sans-serif;
+}
+
+/* ── Atajo entre secciones dentro de una lista ──
+   Mismo aspecto que .ui-segmented-tabs, pero desplazable: no caben seis
+   segmentos fijos, y el indicador absoluto no sobrevive al scroll. */
+.latido-section-tabs {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  padding: 4px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: #D7E0EE;
+  box-sizing: border-box;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.latido-section-tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 10px;
+  color: #111C36;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background .22s ease, box-shadow .22s ease, transform .18s ease;
+}
+
+/* La activa se tine con el color de su seccion, pero muy rebajado sobre blanco:
+   asi se lee el texto y el emoji no compite con un fondo saturado. */
+.latido-section-tab.is-active {
+  background: color-mix(in srgb, var(--section-color, #2563EB) 15%, #fff);
+  color: var(--section-ink, #1D4ED8);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .12);
+}
+
+.latido-section-tab:active {
+  transform: scale(.98);
+}
+
+/* ── Explorar: las seis secciones ── */
+.explore-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.explore-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 100px;
+  padding: 13px 14px 12px;
+  border: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  isolation: isolate;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--explore-card-bg);
+  transition: transform .2s cubic-bezier(.22, 1, .36, 1);
+}
+
+.explore-card:active {
+  transform: scale(.975);
+}
+
+.explore-card__label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+  color: #fff;
+}
+
+.explore-card__desc {
+  margin-top: 5px;
+  max-width: 76%;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.42;
+  color: rgba(255, 255, 255, .84);
+}
+
+/* La tarjeta ladeada de la esquina, al estilo de una caratula. */
+.explore-card__mark {
+  position: absolute;
+  right: -12px;
+  bottom: -12px;
+  width: 62px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .93);
+  font-size: 29px;
+  line-height: 1;
+  transform: rotate(24deg);
+  box-shadow: -6px 6px 16px rgba(15, 23, 42, .22);
+}
+
+.explore-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.explore-extra {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #E2EAF4;
+  border-radius: 16px;
+  background: #fff;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.explore-extra__mark {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #EFF6FF;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.explore-extra__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.explore-extra__label {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.explore-extra__desc {
+  display: block;
+  margin-top: 1px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.explore-extra__chevron {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: #94A3B8;
+}
+
+@media (min-width: 768px) {
+  .explore-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .explore-card { min-height: 112px; }
+  .explore-extras { flex-direction: row; }
+  .explore-extra { flex: 1; }
+}
+
 .sticky-toolbar-shell {
   background: #F0F6FF;
   backdrop-filter: none;
@@ -2858,12 +3288,14 @@ img[data-latido-img-state="loaded"] {
 }
 
 .tablon-intent-tabs,
+.creator-view-tabs,
 .mi-latido-section-tabs,
 .mi-latido-mode-tabs {
   padding: 3px;
 }
 
 .tablon-intent-tabs .joined-segmented-tabs__indicator,
+.creator-view-tabs .joined-segmented-tabs__indicator,
 .mi-latido-section-tabs .joined-segmented-tabs__indicator,
 .mi-latido-mode-tabs .joined-segmented-tabs__indicator {
   top: 3px;
@@ -2873,40 +3305,11 @@ img[data-latido-img-state="loaded"] {
 }
 
 .tablon-intent-tabs > button,
+.creator-view-tabs > button,
 .mi-latido-section-tabs > button {
   min-height: 35px;
   padding-block: 6px;
   font-size: 10.5px;
-}
-
-.mi-latido-section-tabs {
-  padding: 3px;
-  border: 1px solid #D7E0EE;
-  border-radius: 999px;
-  background: #F1F5F9;
-}
-
-.mi-latido-section-tabs .joined-segmented-tabs__indicator {
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: calc((100% - 6px) / var(--segment-count));
-  height: auto;
-  border-radius: 999px;
-  background: #2864F0;
-  box-shadow: 0 5px 14px rgba(40, 100, 240, .24);
-}
-
-.mi-latido-section-tabs > button {
-  min-height: 39px;
-  padding: 6px 4px;
-  border-radius: 999px;
-  color: #52627A;
-  font-size: 12px;
-}
-
-.mi-latido-section-tabs > button.is-active {
-  color: #fff;
 }
 
 .mi-latido-result-summary .filter-result-sort,
@@ -3600,7 +4003,6 @@ img[data-latido-img-state="loaded"] {
   .joined-segmented-tabs > button,
   .ui-segmented-tabs__indicator,
   .ui-segmented-tabs > button,
-  .bottom-nav-active-indicator,
   .bottom-nav-item,
   .bottom-nav-icon,
   .bottom-nav-label {
@@ -3829,30 +4231,33 @@ img[data-latido-img-state="loaded"] {
   padding-bottom: max(14px, calc(env(safe-area-inset-bottom) + 8px));
 }
 
+/* Pill flotante: no llega a los bordes de la pantalla. */
 .bottom-nav {
-  --bottom-nav-items: 5;
+  position: fixed;
+  z-index: 50;
+  right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 12px;
+  align-items: center;
+  min-height: 64px;
+  border-radius: 30px;
 }
 
-.bottom-nav-active-indicator {
+/* El fondo va en un pseudo-elemento aparte para no afectar a los iconos.
+   La separacion del fondo la da la sombra, no un borde: tres capas con radios
+   y opacidades crecientes leen como profundidad, mientras que una linea gris
+   plana marca un canto duro. */
+.bottom-nav::before {
+  content: '';
   position: absolute;
-  z-index: 1;
-  left: 0;
-  bottom: calc(max(14px, calc(env(safe-area-inset-bottom) + 8px)) + 10px);
-  width: calc(100% / var(--bottom-nav-items));
-  height: 3px;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-  transform: translateX(calc(var(--bottom-nav-active-index) * 100%));
-  transition: transform .32s cubic-bezier(.22, 1, .36, 1);
-}
-
-.bottom-nav-active-indicator > span {
-  width: 20px;
-  height: 3px;
-  border-radius: 999px;
-  background: #2864F0;
-  box-shadow: 0 2px 5px rgba(40, 100, 240, .22);
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: #fff;
+  box-shadow:
+    0 1px 3px rgba(23, 43, 92, .07),
+    0 8px 18px rgba(23, 43, 92, .10),
+    0 20px 44px rgba(23, 43, 92, .16);
 }
 
 .bottom-nav-item {
@@ -3873,6 +4278,50 @@ img[data-latido-img-state="loaded"] {
 
 .bottom-nav-label {
   transition: font-weight .2s ease, color .22s ease;
+}
+
+/* ── Publicar: accion central de la barra (sustituye al FAB flotante) ── */
+.bottom-nav-publish {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 10px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: #94A3B8;
+}
+
+/* Alto en el flujo fijo en 24px (54 - 32 + 2), el mismo que el avatar de Perfil,
+   para que las cinco etiquetas sigan alineadas al crecer el circulo. */
+.bottom-nav-publish-mark {
+  width: 54px;
+  height: 54px;
+  margin-top: -32px;
+  margin-bottom: 2px;
+  padding: 3.5px;
+  border-radius: 999px;
+  display: inline-flex;
+  box-sizing: border-box;
+  background: conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A);
+  transition: transform .24s cubic-bezier(.22, 1, .36, 1);
+}
+
+.bottom-nav-publish-mark > span {
+  flex: 1;
+  border-radius: 999px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bottom-nav-publish:active .bottom-nav-publish-mark {
+  transform: scale(.94);
 }
 
 .sticky-form-actions {
@@ -4037,6 +4486,43 @@ img[data-latido-img-state="loaded"] {
   background: transparent;
   color: #101B34;
   font: 500 15px/1.4 'Poppins', sans-serif;
+}
+
+/* ── Modo pantalla (Explorar) ──
+   Va despues del bloque original a proposito: comparte especificidad y necesita
+   ganar el z-index para que la barra de navegacion inferior siga visible. */
+.latido-search-experience--page {
+  z-index: 30;
+}
+
+.latido-search-experience--page .latido-search-experience__shell {
+  box-shadow: none;
+}
+
+.latido-search-experience--page .latido-search-experience__content {
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
+}
+
+/* Vista inicial: titulo de pagina y buscador ocupando el ancho de contenido,
+   alineado con el padding lateral de .latido-search-section. */
+.latido-search-experience__header.is-page-start {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding-top: max(24px, calc(env(safe-area-inset-top) + 10px));
+  padding-right: 20px;
+  padding-bottom: 14px;
+  padding-left: 20px;
+}
+
+/* Mismo formato que el titulo de Mensajes. */
+.latido-search-experience__page-title {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  color: #0F172A;
 }
 
 .latido-search-experience__form input::placeholder {

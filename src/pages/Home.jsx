@@ -3,14 +3,13 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { useZoneAlerts, dismissZoneAlert, dismissZoneAlerts } from '../hooks/useZoneAlerts'
-import { useBusinessLeadAlerts } from '../hooks/useBusinessLeadAlerts'
-import { useSavedSearchAlerts } from '../hooks/useSavedSearchAlerts'
+import { dismissZoneAlert, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { markAllRead as markAllMessagesRead, markConvRead, useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { useFavorites } from '../hooks/useFavorites'
+import { useAppNotifications } from '../hooks/useAppNotifications'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
@@ -19,6 +18,7 @@ import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import HomePersonalizationHeader from '../components/HomePersonalizationHeader'
+import CreatorHomeSection from '../components/CreatorHomeSection'
 import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
@@ -235,6 +235,23 @@ function EmptyState({ text }) {
         {text}
       </p>
     </div>
+  )
+}
+
+// Toda la fila abre su destino; la flecha lateral comunica la navegacion sin
+// repetir acciones como "Revisar", "Activar" o "Elegir" debajo del texto.
+function AttentionRow({ emoji, title, text, onAction, tone='info', showDot=true }) {
+  return (
+    <button type="button" className="latido-notif-row" onClick={onAction} disabled={!onAction}>
+      <span className="latido-notif-row__icon" data-tone={tone} data-dot={showDot ? 'on' : 'off'} aria-hidden="true">
+        {emoji}
+      </span>
+      <span className="latido-notif-row__copy">
+        <span className="latido-notif-row__title">{title}</span>
+        <span className="latido-notif-row__text">{text}</span>
+      </span>
+      <span className="latido-notif-row__chevron" data-tone={tone} aria-hidden="true">›</span>
+    </button>
   )
 }
 
@@ -586,21 +603,27 @@ export default function Home() {
   const { displayName, isLoggedIn, user, userCanton, userInterests, profileMetaLoaded } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { alertItems } = useZoneAlerts()
-  const {
-    alerts:businessLeadAlerts,
-    unreadCount:businessLeadUnreadCount,
-    markRead:markBusinessLeadAlertRead,
-    markAllRead:markAllBusinessLeadAlertsRead,
-  } = useBusinessLeadAlerts()
-  const {
-    alerts:savedSearchAlerts,
-    unreadCount:savedSearchUnreadCount,
-    markRead:markSavedSearchAlertRead,
-    markAllRead:markAllSavedSearchAlertsRead,
-    getAlertPath:getSavedSearchAlertPath,
-  } = useSavedSearchAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
+  const {
+    groups:appNotificationGroups,
+    unreadCount:appNotificationUnreadCount,
+    markGroupRead:markAppNotificationGroupRead,
+    markAllRead:markAllAppNotificationsRead,
+    zoneAlerts:{ alertItems },
+    businessLeadAlerts:{
+      alerts:businessLeadAlerts,
+      unreadCount:businessLeadUnreadCount,
+      markRead:markBusinessLeadAlertRead,
+      markAllRead:markAllBusinessLeadAlertsRead,
+    },
+    savedSearchAlerts:{
+      alerts:savedSearchAlerts,
+      unreadCount:savedSearchUnreadCount,
+      markRead:markSavedSearchAlertRead,
+      markAllRead:markAllSavedSearchAlertsRead,
+      getAlertPath:getSavedSearchAlertPath,
+    },
+  } = useAppNotifications()
   const { favorites } = useFavorites()
 
   const [notifOpen, setNotifOpen] = useState(false)
@@ -646,8 +669,12 @@ export default function Home() {
   )
   const hasUnreadNotifications = visibleZoneAlerts.length > 0
     || hasUnread
+    || appNotificationUnreadCount > 0
     || businessLeadUnreadCount > 0
     || savedSearchUnreadCount > 0
+  const visibleAppNotificationGroups = appNotificationGroups.filter(group => (
+    group.source === 'app' && (group.kind !== 'message' || !hasUnread)
+  ))
   const rotatedBusinessHighlights = useMemo(
     () => rotateHomeBusinesses(businessHighlights, businessPromotionPlans),
     [businessHighlights, businessPromotionPlans, businessRotationBucket],
@@ -732,7 +759,6 @@ export default function Home() {
       emoji:'💙',
       title:'Selecciona tus intereses',
       text:'Para mostrarte contenido más relevante para ti.',
-      actionLabel:'Elegir',
       tone:'primary',
     }] : []),
     ...(showEmploymentProfileReminder ? [{
@@ -740,7 +766,6 @@ export default function Home() {
       type:'employment-profile',
       title:'Completa tu perfil',
       text:'Crea tu perfil profesional con cinco respuestas.',
-      actionLabel:'Completar',
       tone:'primary',
     }] : []),
     ...(isLoggedIn && needsActivation ? [{
@@ -749,7 +774,6 @@ export default function Home() {
       emoji:'🔔',
       title:'Activa las notificaciones',
       text:'Recibe respuestas a tus anuncios y novedades en tu zona.',
-      actionLabel:activatingPush ? 'Activando...' : 'Activar',
       disabled:activatingPush,
       tone:'primary',
     }] : []),
@@ -759,13 +783,11 @@ export default function Home() {
       emoji:'✨',
       title:'Destaca tu negocio',
       text:'Consigue más visibilidad entre los usuarios de Latido.',
-      actionLabel:'Destacar',
       tone:'primary',
     }] : []),
     ...visibleAttentionTasks.map(task => ({
       ...task,
       type:'review',
-      actionLabel:expandedAttentionTask === task.id ? 'Ocultar' : 'Ver',
       count:task.items.length,
     })),
   ]
@@ -826,6 +848,7 @@ export default function Home() {
   function clearAllNotifications() {
     markAllMessagesRead()
     dismissZoneAlerts()
+    void markAllAppNotificationsRead()
     void markAllBusinessLeadAlertsRead()
     void markAllSavedSearchAlertsRead()
   }
@@ -1519,11 +1542,14 @@ export default function Home() {
                       )}
                     </div>
 
-                    <div style={{ overflowY:'auto', flex:1 }}>
+                    <div className="latido-notification-scroll">
                       {showAttentionSection && (
-                        <section style={{ padding:'10px 14px 8px', borderBottom:`1px solid ${C.borderLight}` }}>
-                          <p style={{ fontFamily:PP, fontWeight:800, fontSize:10.5, color:C.primary, margin:'0 0 7px', letterSpacing:0.55 }}>
-                            NECESITA ATENCIÓN
+                        <section style={{ borderBottom:`1px solid ${C.borderLight}` }}>
+                          <p style={{ display:'flex', alignItems:'center', gap:7, fontFamily:PP, fontWeight:800, fontSize:10.5, color:C.light, margin:0, padding:'13px 16px 8px', letterSpacing:0.55 }}>
+                            NECESITA TU ATENCIÓN
+                            <span style={{ display:'grid', minWidth:18, height:18, padding:'0 5px', placeItems:'center', color:C.primaryDark, background:C.primaryLight, borderRadius:999, fontSize:10, fontWeight:800 }}>
+                              {attentionCarouselCards.length}
+                            </span>
                           </p>
                           <div ref={setAttentionPortalElement} />
                         </section>
@@ -1552,6 +1578,33 @@ export default function Home() {
                                   <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0 }}>Toca para abrir esta conversación</p>
                                 </div>
                                 <span style={{ color:C.primary, fontSize:16 }}>›</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {visibleAppNotificationGroups.length > 0 && (
+                        <div style={{ padding:'10px 14px 6px' }}>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>ACTIVIDAD</p>
+                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                            {visibleAppNotificationGroups.map(group => (
+                              <button
+                                key={group.kind}
+                                type="button"
+                                onClick={() => {
+                                  void markAppNotificationGroupRead(group)
+                                  closeNotifPanel()
+                                  navigate(group.href)
+                                }}
+                                style={{ width:'100%', background:'#F8FAFC', border:`1px solid ${C.border}`, borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
+                              >
+                                <span style={{ display:'grid', width:34, height:34, flexShrink:0, placeItems:'center', borderRadius:11, background:C.primaryLight, fontSize:18 }} aria-hidden="true">{group.icon}</span>
+                                <span style={{ flex:1, minWidth:0 }}>
+                                  <span style={{ display:'block', fontFamily:PP, fontWeight:750, fontSize:12.5, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.title}</span>
+                                  <span style={{ display:'block', fontFamily:PP, fontSize:10.5, lineHeight:1.45, color:C.light }}>{group.body}</span>
+                                </span>
+                                <span style={{ color:C.primary, fontSize:16, lineHeight:'34px' }} aria-hidden="true">›</span>
                               </button>
                             ))}
                           </div>
@@ -1665,179 +1718,66 @@ export default function Home() {
             <section style={{ margin:0, padding:0 }}>
               <div>
             <div
-              style={{
-                display:'flex',
-                flexDirection:'column',
-                gap:6,
-              }}
+              style={{ display:'flex', flexDirection:'column' }}
               aria-label="Necesita atención"
             >
               {showInterestSelectionTask && (
-                <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
-                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
-                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
-                      💙
-                    </span>
-                    <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Selecciona tus intereses
-                      </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Para mostrarte contenido más relevante para ti.
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeNotifPanel()
-                        navigate('/perfil?editar=intereses')
-                      }}
-                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
-                    >
-                      Elegir
-                    </button>
-                  </div>
-                </div>
+                <AttentionRow
+                  emoji="💙"
+                  title="Selecciona tus intereses"
+                  text="Para mostrarte contenido más relevante para ti."
+                  onAction={() => {
+                    closeNotifPanel()
+                    navigate('/perfil?editar=intereses')
+                  }}
+                />
               )}
               {showEmploymentProfileReminder && (
-                <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
-                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
-                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontWeight:900, fontSize:10, color:C.primary, flexShrink:0 }}>
-                      CV
-                    </span>
-                    <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Completa tu perfil
-                      </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Crea tu perfil profesional con cinco respuestas.
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeNotifPanel()
-                        navigate('/perfil?perfil-profesional=1')
-                      }}
-                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
-                    >
-                      Completar
-                    </button>
-                  </div>
-                </div>
+                <AttentionRow
+                  emoji="📄"
+                  title="Completa tu perfil"
+                  text="Crea tu perfil profesional con cinco respuestas."
+                  onAction={() => {
+                    closeNotifPanel()
+                    navigate('/perfil?perfil-profesional=1')
+                  }}
+                />
               )}
               {isLoggedIn && needsActivation && (
-                <div style={{ width:'100%', minWidth:0, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
-                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
-                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
-                      🔔
-                    </span>
-                    <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Activa las notificaciones
-                      </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Recibe respuestas a tus anuncios y novedades en tu zona.
-                      </span>
-                    </span>
-                    <button
-                      onClick={handleActivatePush}
-                      disabled={activatingPush}
-                      style={{
-                        fontFamily:PP,
-                        fontWeight:800,
-                        fontSize:9,
-                        color:'#fff',
-                        background:C.primary,
-                        border:'none',
-                        borderRadius:999,
-                        padding:'6px 9px',
-                        flexShrink:0,
-                        cursor:activatingPush ? 'default' : 'pointer',
-                        opacity:activatingPush ? 0.65 : 1,
-                        whiteSpace:'nowrap',
-                      }}
-                    >
-                      {activatingPush ? 'Activando...' : 'Activar'}
-                    </button>
-                  </div>
-                </div>
+                <AttentionRow
+                  emoji="🔔"
+                  title="Activa las notificaciones"
+                  text="Recibe respuestas a tus anuncios y novedades en tu zona."
+                  onAction={activatingPush ? undefined : handleActivatePush}
+                />
               )}
               {showBusinessPromotionTask && (
-                <div style={{ width:'100%', minWidth:0, background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:12, overflow:'hidden', boxSizing:'border-box' }}>
-                  <div style={{ padding:'10px 12px', display:'flex', gap:10, alignItems:'center' }}>
-                    <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
-                      ✨
-                    </span>
-                    <span style={{ minWidth:0, flex:1 }}>
-                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Destaca tu negocio
-                      </span>
-                      <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        Consigue más visibilidad entre los usuarios de Latido.
-                      </span>
-                    </span>
-                    <button
-                      onClick={() => {
-                        closeNotifPanel()
-                        setBusinessPromotionModalOpen(true)
-                      }}
-                      style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:'#fff', background:C.primary, border:'none', borderRadius:999, padding:'6px 9px', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap' }}
-                    >
-                      Destacar
-                    </button>
-                  </div>
-                </div>
+                <AttentionRow
+                  emoji="✨"
+                  title="Destaca tu negocio"
+                  text="Consigue más visibilidad entre los usuarios de Latido."
+                  onAction={() => {
+                    closeNotifPanel()
+                    setBusinessPromotionModalOpen(true)
+                  }}
+                />
               )}
               {visibleAttentionTasks.map(task => {
                 const warn = task.tone === 'warn'
                 const expanded = expandedAttentionTask === task.id
                 const imageTask = task.mode === 'image'
                 return (
-                  <div
-                    key={task.id}
-                    style={{
-                      background: warn ? C.warnLight : C.primaryLight,
-                      border:`1px solid ${warn ? C.warnMid : C.primaryMid}`,
-                      width:'100%',
-                      minWidth:0,
-                      borderRadius:12,
-                      overflow:'hidden',
-                      boxSizing:'border-box',
-                    }}
-                  >
-                    <button
-                      onClick={() => setExpandedAttentionTask(current => current === task.id ? '' : task.id)}
-                      style={{
-                        width:'100%',
-                        textAlign:'left',
-                        background:'transparent',
-                        border:'none',
-                        padding:'10px 12px',
-                        display:'flex',
-                        gap:10,
-                        alignItems:'center',
-                        cursor:'pointer',
-                      }}
-                    >
-                      <span style={{ width:32, height:32, borderRadius:10, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>
-                        {task.emoji}
-                      </span>
-                      <span style={{ minWidth:0, flex:1 }}>
-                        <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, marginBottom:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                          {task.title}
-                        </span>
-                        <span style={{ display:'block', fontFamily:PP, fontSize:11, color:warn ? '#92400E' : C.primaryDark, lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                          {task.text}
-                        </span>
-                      </span>
-                      <span style={{ fontFamily:PP, fontWeight:800, fontSize:9, color:warn ? '#92400E' : C.primaryDark, background:'#fff', border:`1px solid ${warn ? C.warnMid : C.primaryMid}`, borderRadius:999, padding:'5px 8px', flexShrink:0, minWidth:45, textAlign:'center' }}>
-                        {expanded ? 'Ocultar' : 'Ver'}
-                      </span>
-                    </button>
+                  <div key={task.id} style={{ width:'100%', minWidth:0, boxSizing:'border-box' }}>
+                    <AttentionRow
+                      emoji={task.emoji}
+                      title={task.title}
+                      text={task.text}
+                      tone={warn ? 'warn' : 'info'}
+                      onAction={() => setExpandedAttentionTask(current => current === task.id ? '' : task.id)}
+                    />
 
                     {expanded && (
-                      <div style={{ borderTop:`1px solid ${warn ? C.warnMid : C.primaryMid}`, padding:'8px 8px 10px', display:'grid', gap:8 }}>
+                      <div style={{ background:warn ? C.warnLight : C.primaryLight, borderBottom:`1px solid ${C.borderLight}`, padding:'10px 16px 12px', display:'grid', gap:8 }}>
                         {task.items.map(item => (
                           <div key={item.id} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:10, boxSizing:'border-box', overflow:'hidden' }}>
                             <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:10, minWidth:0 }}>
@@ -2162,6 +2102,8 @@ export default function Home() {
       </section>
 
       <PartnersSection />
+
+      <CreatorHomeSection />
 
       <section style={{ padding:'40px 0 0' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:0 }}>

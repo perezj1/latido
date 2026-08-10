@@ -5,6 +5,30 @@ import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { REPORT_REASONS, reportContent } from '../lib/reports'
 
+function ReportAlertIcon() {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display:'grid',
+        width:16,
+        height:16,
+        flex:'0 0 16px',
+        placeItems:'center',
+        color:'currentColor',
+        border:'1.5px solid currentColor',
+        borderRadius:'50%',
+        fontFamily:PP,
+        fontSize:10,
+        fontWeight:900,
+        lineHeight:1,
+      }}
+    >
+      !
+    </span>
+  )
+}
+
 export default function ReportButton({
   contentType,
   contentId,
@@ -15,6 +39,8 @@ export default function ReportButton({
   metadata = {},
   compact = false,
   style = {},
+  onOpen,
+  allowOwnContent = false,
 }) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
@@ -23,7 +49,7 @@ export default function ReportButton({
   const [sending, setSending] = useState(false)
   const dialogRef = useRef(null)
 
-  const isOwnContent = user?.id && ownerId && user.id === ownerId
+  const isOwnContent = !allowOwnContent && user?.id && ownerId && user.id === ownerId
 
   useEffect(() => {
     if (!open) return
@@ -48,6 +74,7 @@ export default function ReportButton({
     if (isOwnContent) return
     setReason('')
     setNotes('')
+    onOpen?.()
     setOpen(true)
   }
 
@@ -309,7 +336,7 @@ export default function ReportButton({
           ...style,
         }}
       >
-        {icon}
+        {icon ?? <ReportAlertIcon />}
         {label}
       </button>
       {modal}

@@ -140,6 +140,46 @@ function getSitemapXml(pages) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
 }
 
+async function getCreatorSeoPages() {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseKey) return []
+
+  try {
+    const endpoint = new URL('/rest/v1/creator_profiles', supabaseUrl)
+    endpoint.searchParams.set('select', 'slug,name,tagline,bio,avatar_url')
+    endpoint.searchParams.set('status', 'eq.published')
+    endpoint.searchParams.set('active', 'eq.true')
+    const response = await fetch(endpoint, {
+      headers:{ apikey:supabaseKey, Authorization:`Bearer ${supabaseKey}` },
+    })
+    if (!response.ok) return []
+    const rows = await response.json()
+
+    return (Array.isArray(rows) ? rows : []).filter(row => row.slug && row.name).map(row => {
+      const pathName = `/creadores/${encodeURIComponent(row.slug)}`
+      const description = String(row.tagline || row.bio || '').trim().slice(0, 155)
+      let image = `${SITE_URL}/og-image.png`
+      try {
+        const candidate = new URL(row.avatar_url || '', SITE_URL)
+        if (['http:', 'https:'].includes(candidate.protocol)) image = candidate.href
+      } catch {}
+      return {
+        path:pathName,
+        title:`${row.name} · Perfil sobre Suiza | Latido.ch`,
+        description:description || 'Perfil de creador en Latido.ch.',
+        socialDescription:description || 'Perfil de creador en Latido.ch.',
+        canonical:`${SITE_URL}${pathName}`,
+        image,
+        robots:'index, follow',
+        type:'profile',
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
 async function injectServiceWorkerPrecache() {
   const serviceWorkerPath = path.join(distDir, 'sw.js')
   const html = await readFile(distIndex, 'utf8')
@@ -186,7 +226,7 @@ async function injectServiceWorkerPrecache() {
 }
 
 const baseHtml = await readFile(distIndex, 'utf8')
-const pages = getPublicSeoPages()
+const pages = [...getPublicSeoPages(), ...await getCreatorSeoPages()]
 
 for (const seo of pages) {
   const url = new URL(seo.canonical)

@@ -87,6 +87,8 @@ async function getWeeklyActivity():Promise<WeeklyActivity> {
     seekingHelpCount,
     eventCount,
     communityCount,
+    creatorCount,
+    creatorContentCount,
   ] = await Promise.all([
     countRows('listings', query => query
       .or('active.is.null,active.eq.true')
@@ -126,6 +128,16 @@ async function getWeeklyActivity():Promise<WeeklyActivity> {
     countRows('communities', query => query
       .or('active.is.null,active.eq.true')
       .gte('created_at', since)),
+
+    countRows('creator_profiles', query => query
+      .eq('active', true)
+      .eq('status', 'published')
+      .gte('created_at', since)),
+
+    countRows('creator_contents', query => query
+      .eq('active', true)
+      .eq('status', 'published')
+      .gte('published_at', since)),
   ])
 
   const serviceAndBusinessCount = serviceOfferCount + businessCount
@@ -194,6 +206,24 @@ async function getWeeklyActivity():Promise<WeeklyActivity> {
     })
   }
 
+  if (creatorCount > 0) {
+    items.push({
+      emoji:'🎙️',
+      count:creatorCount,
+      label:`${creatorCount} ${singularPlural(creatorCount, 'nuevo perfil de creador', 'nuevos perfiles de creadores')}`,
+      href:`${APP_URL}/comunidades?view=creadores`,
+    })
+  }
+
+  if (creatorContentCount > 0) {
+    items.push({
+      emoji:'🎬',
+      count:creatorContentCount,
+      label:`${creatorContentCount} ${singularPlural(creatorContentCount, 'nuevo contenido de creadores', 'nuevos contenidos de creadores')}`,
+      href:`${APP_URL}/comunidades?view=creadores`,
+    })
+  }
+
   return {
     since,
     total:items.reduce((sum, item) => sum + item.count, 0),
@@ -220,7 +250,7 @@ function buildWeeklyDigestEmail(name:string | null | undefined, activity:WeeklyA
     '',
     `Entra aquí: ${APP_URL}`,
     '',
-    'Y recuerda: también puedes publicar gratis si buscas algo, vendes algo, ofreces un servicio o quieres dar a conocer tu negocio.',
+    'Y recuerda: también puedes publicar gratis si buscas algo, vendes algo, ofreces un servicio, quieres dar a conocer tu negocio o compartir contenido desde tu perfil de creador.',
     '',
     'Latido crece contigo.',
   ].join('\n')
@@ -284,7 +314,7 @@ function buildWeeklyDigestEmail(name:string | null | undefined, activity:WeeklyA
             <tr>
               <td style="padding:26px 28px 30px;font-size:13px;line-height:1.65;color:#64748B">
                 <p style="margin:0 0 12px">
-                  También puedes publicar gratis si buscas algo, vendes algo, ofreces un servicio o quieres dar a conocer tu negocio.
+                  También puedes publicar gratis si buscas algo, vendes algo, ofreces un servicio, quieres dar a conocer tu negocio o compartir contenido desde tu perfil de creador.
                 </p>
                 <p style="margin:0;font-weight:800;color:#0F172A">Latido crece contigo.</p>
               </td>

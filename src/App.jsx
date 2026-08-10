@@ -16,31 +16,41 @@ import {
 import { startEmailNotificationPresence } from './lib/emailNotificationPresence'
 import { PARTNER_LANDING_URL, trackPartnerInteraction } from './lib/partnerAttribution'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
+import { startCreatorDirectorySync } from './lib/creators'
 import { C, PP } from './lib/theme'
 
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
+import { isExploreRoute } from './lib/sections'
 import Header from './components/Header'
 import Seo from './components/Seo'
 import CookieConsent from './components/CookieConsent'
 import OfflineNotice from './components/OfflineNotice'
 import SearchResolutionPrompt from './components/SearchResolutionPrompt'
 import LatidoUsefulnessBanner from './components/LatidoUsefulnessBanner'
+import InAppNotificationAlert from './components/InAppNotificationAlert'
+import { AppNotificationsProvider } from './hooks/useAppNotifications'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Home = lazy(() => import('./pages/Home'))
+const Explorar = lazy(() => import('./pages/Explorar'))
 const Tablon = lazy(() => import('./pages/Tablon'))
 const Publicar = lazy(() => import('./pages/Publicar'))
 const Comunidades = lazy(() => import('./pages/Comunidades'))
 const Colaboraciones = lazy(() => import('./pages/Colaboraciones'))
 const Guias = lazy(() => import('./pages/Guias'))
+const Creadores = lazy(() => import('./pages/Creadores'))
+const CreadorPerfil = lazy(() => import('./pages/CreadorPerfil'))
+const CreadorAlta = lazy(() => import('./pages/CreadorAlta'))
+const CreadorPanel = lazy(() => import('./pages/CreadorPanel'))
 const Perfil = lazy(() => import('./pages/Perfil'))
 const Auth = lazy(() => import('./pages/Auth'))
 const PublicarEvento = lazy(() => import('./pages/PublicarEvento'))
 const RegistrarNegocio = lazy(() => import('./pages/RegistrarNegocio'))
 const RegistrarComunidad = lazy(() => import('./pages/RegistrarComunidad'))
 const PublicarEmpleo = lazy(() => import('./pages/PublicarEmpleo'))
+const PublicarContenido = lazy(() => import('./pages/PublicarContenido'))
 const Legal = lazy(() => import('./pages/Legal'))
 const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
@@ -167,6 +177,17 @@ function VercelTelemetry() {
   )
 }
 
+function CreatorDirectorySync() {
+  const { user, loading } = useAuth()
+
+  useEffect(() => {
+    if (loading) return undefined
+    return startCreatorDirectorySync(user?.id || '')
+  }, [loading, user?.id])
+
+  return null
+}
+
 function PWAInstallBanner({ canInstall, promptInstall, isPWA, onVisibilityChange }) {
   const { isLoggedIn } = useAuth()
   const navigate = useNavigate()
@@ -240,7 +261,7 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA, onVisibilityChange
   if (!shouldShow) return null
 
   return (
-    <div ref={bannerRef} style={{ position:'fixed', bottom:'calc(96px + env(safe-area-inset-bottom))', left:'env(safe-area-inset-left)', right:'env(safe-area-inset-right)', zIndex:200, padding:'0 12px', pointerEvents:'none' }}>
+    <div ref={bannerRef} style={{ position:'fixed', bottom:'calc(112px + env(safe-area-inset-bottom))', left:'env(safe-area-inset-left)', right:'env(safe-area-inset-right)', zIndex:200, padding:'0 12px', pointerEvents:'none' }}>
       <div style={{ background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius:18, padding:'14px 16px', boxShadow:'0 8px 32px rgba(37,99,235,0.35)', display:'flex', gap:12, alignItems:'flex-start', pointerEvents:'all', maxWidth:480, margin:'0 auto' }}>
         <div style={{ fontSize:28, flexShrink:0, marginTop:2 }}>📲</div>
         <div style={{ flex:1, minWidth:0 }}>
@@ -361,12 +382,13 @@ function AppLoading() {
   )
 }
 
+// Posiciones de las ranuras de BottomNav: Inicio, Explorar, Publicar, Mensajes, Perfil.
+// Se usan para dar direccion a la transicion entre pantallas.
 function getAppRoutePosition(pathname='') {
   if (pathname === '/') return 0
-  if (/^\/(?:tablon|anuncios|empleos)(?:\/|$)/.test(pathname)) return 1
   if (/^\/mensajes(?:\/|$)/.test(pathname)) return 3
   if (/^\/(?:perfil|creadores\/(?:alta|mi-perfil))(?:\/|$)/.test(pathname)) return 4
-  if (/^\/(?:comunidades|negocios|eventos|guias|creadores)(?:\/|$)/.test(pathname)) return 2
+  if (isExploreRoute(pathname)) return 1
   return null
 }
 
@@ -447,44 +469,6 @@ function AdminRoute({ children }) {
   if (!isAdmin) return <Navigate to="/" replace />
 
   return children
-}
-
-const CAT_LINKS = [
-  { emoji:'📌', label:'Anuncios',    to:'/tablon' },
-  { emoji:'🏠', label:'Vivienda',    to:'/tablon?cat=vivienda' },
-  { emoji:'💼', label:'Empleo',      to:'/tablon?cat=empleo' },
-  { emoji:'🛍️', label:'Compraventa', to:'/tablon?cat=venta' },
-  { emoji:'🔧', label:'Servicios',   to:'/tablon?cat=servicios' },
-  { emoji:'❤️', label:'Cuidados',    to:'/tablon?cat=cuidados' },
-  { emoji:'🤝', label:'Comunidad',   to:'/comunidades' },
-  { emoji:'🎉', label:'Eventos',     to:'/comunidades?view=eventos' },
-  { emoji:'📚', label:'Guías',       to:'/guias' },
-]
-
-function CategoryBar() {
-  const { pathname, search } = useLocation()
-  const full = pathname + search
-  const isLanding = pathname === '/'
-  if (isLanding) return null
-  return (
-    <div className="cat-bar no-scroll show-md" style={{ background:'#fff', borderBottom:`1px solid ${C.border}`, overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
-      <div style={{ display:'flex', gap:4, padding:'8px 16px', width:'max-content' }}>
-        {CAT_LINKS.map(cat => {
-          const active = full === cat.to || full.startsWith(cat.to + '&') || full.startsWith(cat.to.split('?')[0] + '?cat=' + cat.to.split('cat=')[1])
-          return (
-            <Link
-              key={cat.label}
-              to={cat.to}
-              style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'7px 14px', borderRadius:999, fontFamily:PP, fontWeight:600, fontSize:12, textDecoration:'none', whiteSpace:'nowrap', background: active ? C.primary : C.bg, color: active ? '#fff' : C.mid, border:`1.5px solid ${active ? C.primary : C.border}`, transition:'all .15s' }}
-            >
-              <span style={{ fontSize:14 }}>{cat.emoji}</span>
-              {cat.label}
-            </Link>
-          )
-        })}
-      </div>
-    </div>
-  )
 }
 
 function AppShell() {
@@ -586,6 +570,7 @@ function AppShell() {
     const MENU_ITEMS = [
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
+      { id:'creadores', label:'Creadores', to:'/creadores' },
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
@@ -723,6 +708,7 @@ function AppShell() {
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/explorar" element={<Explorar />} />
             <Route path="/tablon" element={<Tablon />} />
             <Route path="/anuncios/:adSlug" element={<Tablon />} />
             <Route path="/empleos/:jobSlug" element={<Tablon />} />
@@ -735,12 +721,17 @@ function AppShell() {
             <Route path="/eventos/:eventSlug" element={<Comunidades />} />
             <Route path="/guias/:guideSlug" element={<Guias />} />
             <Route path="/guias" element={<Guias />} />
+            <Route path="/creadores" element={<Creadores />} />
+            <Route path="/creadores/alta" element={<ProtectedRoute><CreadorAlta /></ProtectedRoute>} />
+            <Route path="/creadores/mi-perfil" element={<ProtectedRoute><CreadorPanel /></ProtectedRoute>} />
+            <Route path="/creadores/:creatorSlug" element={<CreadorPerfil />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
             <Route path="/auth" element={<AuthRoute />} />
             <Route path="/publicar-evento" element={<ProtectedRoute><PublicarEvento /></ProtectedRoute>} />
             <Route path="/registrar-negocio" element={<ProtectedRoute><RegistrarNegocio /></ProtectedRoute>} />
             <Route path="/registrar-comunidad" element={<ProtectedRoute><RegistrarComunidad /></ProtectedRoute>} />
             <Route path="/publicar-empleo" element={<ProtectedRoute><PublicarEmpleo /></ProtectedRoute>} />
+            <Route path="/publicar-contenido" element={<ProtectedRoute><PublicarContenido /></ProtectedRoute>} />
             <Route path="/mensajes" element={<ProtectedRoute><Mensajes /></ProtectedRoute>} />
             <Route path="/colaboradores/mira" element={<ProtectedRoute><PartnerContact /></ProtectedRoute>} />
             <Route path="/colaboradores/bellini" element={<ProtectedRoute><BelliniPartnerContact /></ProtectedRoute>} />
@@ -774,21 +765,25 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Seo />
-        <ScrollToTop />
-        <OfflineNotice />
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            style: { fontFamily:PP, borderRadius:14, fontSize:13, boxShadow:'0 8px 32px rgba(0,0,0,0.12)' },
-            success: { iconTheme: { primary:C.primary, secondary:'#fff' } },
-          }}
-        />
-        <Routes>
-          <Route path="/*" element={<LazyRouteErrorBoundary><AppShell /></LazyRouteErrorBoundary>} />
-        </Routes>
-        <SearchResolutionPrompt />
-        <VercelTelemetry />
+        <AppNotificationsProvider>
+          <Seo />
+          <CreatorDirectorySync />
+          <ScrollToTop />
+          <OfflineNotice />
+          <InAppNotificationAlert />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: { fontFamily:PP, borderRadius:14, fontSize:13, boxShadow:'0 8px 32px rgba(0,0,0,0.12)' },
+              success: { iconTheme: { primary:C.primary, secondary:'#fff' } },
+            }}
+          />
+          <Routes>
+            <Route path="/*" element={<LazyRouteErrorBoundary><AppShell /></LazyRouteErrorBoundary>} />
+          </Routes>
+          <SearchResolutionPrompt />
+          <VercelTelemetry />
+        </AppNotificationsProvider>
       </BrowserRouter>
     </AuthProvider>
   )

@@ -222,7 +222,7 @@ export default function LatidoUsefulnessBanner({ blocked = false }) {
       ref={bannerRef}
       style={{
         position:'fixed',
-        bottom:'calc(96px + env(safe-area-inset-bottom))',
+        bottom:'calc(112px + env(safe-area-inset-bottom))',
         left:'env(safe-area-inset-left)',
         right:'env(safe-area-inset-right)',
         zIndex:200,

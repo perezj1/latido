@@ -35,6 +35,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { SEARCHABLE_SITE_PAGES, getAdPath, getBusinessPath, getEventPath, getGuidePath, getJobPath } from '../lib/seo'
+import { getAllCreators, getCreatorPlatform, getCreatorThumbnailUrl, getCreatorTopic, subscribeCreatorUpdates } from '../lib/creators'
 import { getThumbnailImageUrl, resolveImageUrl } from '../lib/imageVariants'
 import { rotateItems, takeNextRotationOffset } from '../lib/rotation'
 import { buildSearchProfile, normalizeSearchText, profileHasIntent, scoreSearchFields } from '../lib/naturalSearch'
@@ -87,6 +88,7 @@ const EMPTY_DATASETS = Object.freeze({
   businesses:[],
   events:[],
   guides:[],
+  creators:[],
   pages:[],
 })
 
@@ -147,6 +149,8 @@ const TYPE_COLORS = {
   business:{ bg:'#FEF3C7', color:'#92400E', label:'Negocio' },
   event:{ bg:'#FCE7F3', color:'#9D174D', label:'Evento' },
   guide:{ bg:'#EDE9FE', color:'#6D28D9', label:'Guía' },
+  creator:{ bg:'#EDE9FE', color:'#7C3AED', label:'Creador' },
+  creator_content:{ bg:'#F3E8FF', color:'#6D28D9', label:'Contenido' },
   page:{ bg:'#F1F5F9', color:'#475569', label:'Página' },
 }
 
@@ -900,6 +904,7 @@ function buildFallbackData(isLoggedIn) {
     businesses: MOCK_NEGOCIOS.map(normalizeBusiness),
     events: MOCK_EVENTOS_LATINOS.map(normalizeEvent),
     guides: MOCK_DOCS.map(normalizeGuide),
+    creators: getAllCreators(),
     pages: SEARCHABLE_SITE_PAGES,
   }
 }
@@ -912,6 +917,7 @@ function buildRpcDatasets(rows, fallbackDatasets) {
     businesses:[],
     events:[],
     guides:fallbackDatasets.guides,
+    creators:fallbackDatasets.creators,
     pages:fallbackDatasets.pages,
   }
 
@@ -1298,6 +1304,80 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
     }
   }
 
+  for (const creator of datasets.creators || []) {
+    const topics = (creator.topics || [])
+      .map(topicId => getCreatorTopic(topicId)?.label)
+      .filter(Boolean)
+    const publishedContents = (creator.contents || []).filter(content => content.status === 'published')
+    const place = creator.city || creator.reach
+    const searchScore = getSearchScore([
+      { value:creator.name, weight:6 },
+      { value:creator.handle, weight:5 },
+      { value:creator.tagline, weight:4 },
+      { value:topics.join(' '), weight:3 },
+      { value:creator.bio, weight:2 },
+      { value:place, weight:2 },
+      { value:publishedContents.map(content => `${content.title} ${content.summary}`).join(' '), weight:2 },
+      { value:creator.canton, weight:1 },
+      { value:'creador creadores contenido redes', weight:1 },
+    ])
+    if (searchScore) {
+      results.push({
+        type:'creator',
+        id:creator.id,
+        icon:'\u{1F399}\u{FE0F}',
+        image:creator.avatar_url,
+        imageFit:'cover',
+        label:creator.name,
+        sub:['Creador', topics[0], place].filter(Boolean).join(metaSeparator),
+        href:`/creadores/${creator.slug}`,
+        filterMeta:{
+          categories:['creadores'],
+          canton:creator.canton,
+          location:creator.city,
+        },
+        searchScore,
+      })
+    }
+
+    // Las publicaciones se indexan aparte del perfil: al buscar el tema de un
+    // video se espera llegar al video, no a la ficha de quien lo publico.
+    for (const content of publishedContents) {
+      const topic = getCreatorTopic(content.topic)
+      const platform = getCreatorPlatform(content.platform)
+      const contentScore = getSearchScore([
+        { value:content.title, weight:6 },
+        { value:content.summary, weight:4 },
+        { value:topic?.label, weight:3 },
+        { value:creator.name, weight:2 },
+        { value:creator.handle, weight:2 },
+        { value:platform?.label, weight:1 },
+        { value:content.canton, weight:1 },
+        { value:'publicacion contenido creador', weight:1 },
+      ])
+      if (!contentScore) continue
+
+      // Las publicaciones se abren primero en el reproductor interno de Latido.
+      // Desde el propio reproductor sigue disponible el enlace a la red original.
+      results.push({
+        type:'creator_content',
+        id:content.id,
+        icon:topic?.emoji || '\u{1F399}\u{FE0F}',
+        image:getCreatorThumbnailUrl(content),
+        imageFit:'cover',
+        label:content.title,
+        sub:['Contenido', creator.name, platform?.label].filter(Boolean).join(metaSeparator),
+        href:`/creadores/${creator.slug}?contenido=${encodeURIComponent(content.id)}`,
+        filterMeta:{
+          categories:['creadores'],
+          canton:content.canton,
+          location:creator.city,
+        },
+        searchScore:contentScore,
+      })
+    }
+  }
+
   for (const page of datasets.pages || []) {
     const searchScore = getSearchScore([
       { value:page.title, weight:6 },
@@ -1383,6 +1463,12 @@ export default function GlobalSearch({
   showImmersiveFilterButton = true,
   initialQuery = '',
   openResultsOnMount = false,
+  // pageMode: la experiencia inmersiva ES la pantalla (Explorar), no un overlay
+  // que se abre al enfocar. No se cierra: el paso atras vuelve al inicio.
+  pageMode = false,
+  pageTitle = '',
+  startSections = null,
+  startExtras = null,
 }) {
   const { isLoggedIn, user, isAdmin, userCanton } = useAuth()
   const navigate = useNavigate()
@@ -1401,6 +1487,7 @@ export default function GlobalSearch({
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
   const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
   const [loadingData, setLoadingData] = useState(false)
+  const [creatorDataVersion, setCreatorDataVersion] = useState(0)
   const initialSearchQuery = String(initialQuery || '')
   const shouldOpenInitialResults = Boolean(
     immersive
@@ -1415,7 +1502,7 @@ export default function GlobalSearch({
   const [assistantRpc, setAssistantRpc] = useState({ status:'idle', datasets:null })
   const [premiumRotationOffset, setPremiumRotationOffset] = useState(0)
   const [startPartnerRotationOffset, setStartPartnerRotationOffset] = useState(0)
-  const [immersiveOpen, setImmersiveOpen] = useState(shouldOpenInitialResults)
+  const [immersiveOpen, setImmersiveOpen] = useState(shouldOpenInitialResults || (immersive && pageMode))
   const [immersiveView, setImmersiveView] = useState(shouldOpenInitialResults ? 'results' : 'start')
   const [immersiveSort, setImmersiveSort] = useState('relevance')
   const [immersiveLimit, setImmersiveLimit] = useState(FULL_SEARCH_PAGE_SIZE)
@@ -1447,7 +1534,7 @@ export default function GlobalSearch({
   const hasPageScope = !!allowedResultTypes
 
   const deferredQuery = useDeferredValue(q)
-  const fallbackDatasets = useMemo(() => buildFallbackData(isLoggedIn), [isLoggedIn])
+  const fallbackDatasets = useMemo(() => buildFallbackData(isLoggedIn), [creatorDataVersion, isLoggedIn])
   const assistantQuery = useMemo(() => {
     if (!assistantMode) return null
     const parsed = parseLatidoAssistantQuery(deferredQuery)
@@ -2039,6 +2126,15 @@ export default function GlobalSearch({
     loadPromiseRef.current = null
   }, [isLoggedIn])
 
+  useEffect(() => subscribeCreatorUpdates(() => {
+    const creators = getAllCreators()
+    for (const key of Object.keys(SEARCH_CACHE)) {
+      if (SEARCH_CACHE[key]) SEARCH_CACHE[key] = { ...SEARCH_CACHE[key], creators }
+    }
+    setDatasets(current => ({ ...current, creators }))
+    setCreatorDataVersion(current => current + 1)
+  }), [])
+
   const ensureDataLoaded = useCallback(async () => {
     const cached = getCachedSearchData(isLoggedIn)
     if (cached) {
@@ -2094,6 +2190,7 @@ export default function GlobalSearch({
             ? fallbackDatasets.events
             : eventsRes.data.map(normalizeEvent),
           guides: fallbackDatasets.guides,
+          creators: fallbackDatasets.creators,
           pages: fallbackDatasets.pages,
         }
 
@@ -2194,14 +2291,22 @@ export default function GlobalSearch({
   }, [])
 
   const closeImmersive = useCallback(() => {
-    setImmersiveOpen(false)
     setImmersiveFiltersOpen(false)
     setImmersiveResultFiltersOpen(false)
-    setFocused(false)
     setActiveIdx(-1)
+
+    // En pageMode la pantalla no se puede cerrar: se vuelve a su estado inicial.
+    if (pageMode) {
+      setQ('')
+      setImmersiveView('start')
+      return
+    }
+
+    setImmersiveOpen(false)
+    setFocused(false)
     if (clearOnClose) setQ('')
     onClose?.()
-  }, [clearOnClose, onClose, setQ])
+  }, [clearOnClose, onClose, pageMode, setQ])
 
   const handleFocus = useCallback(() => {
     cancelBlurClose()
@@ -2252,17 +2357,19 @@ export default function GlobalSearch({
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    const focusTimer = window.setTimeout(() => {
+
+    // En pageMode no robamos el foco: abrir Explorar no debe levantar el teclado.
+    const focusTimer = pageMode ? null : window.setTimeout(() => {
       overlayInputRef.current?.focus()
       const valueLength = overlayInputRef.current?.value?.length || 0
       overlayInputRef.current?.setSelectionRange(valueLength, valueLength)
     }, 40)
 
     return () => {
-      window.clearTimeout(focusTimer)
+      if (focusTimer) window.clearTimeout(focusTimer)
       document.body.style.overflow = previousOverflow
     }
-  }, [immersiveOpen])
+  }, [immersiveOpen, pageMode])
 
   useEffect(() => {
     setImmersiveSearchFilterOverrides({})
@@ -2920,31 +3027,36 @@ export default function GlobalSearch({
     </div>
     {immersiveOpen && typeof document !== 'undefined' && createPortal(
       <div
-        className="latido-search-experience"
-        role="dialog"
-        aria-modal="true"
+        className={`latido-search-experience${pageMode ? ' latido-search-experience--page' : ''}`}
+        role={pageMode ? undefined : 'dialog'}
+        aria-modal={pageMode ? undefined : 'true'}
         aria-label="Buscar en Latido"
         onPointerDownCapture={dismissImmersiveKeyboard}
         onTouchMoveCapture={dismissImmersiveKeyboard}
         onScrollCapture={dismissImmersiveKeyboard}
       >
         <div className="latido-search-experience__shell">
-          <header className="latido-search-experience__header">
-            <button
-              type="button"
-              className="latido-search-experience__back"
-              onClick={() => {
-                if (immersiveView === 'results') {
-                  setImmersiveView(q.trim().length > 0 ? 'preview' : 'start')
-                  window.setTimeout(() => overlayInputRef.current?.focus(), 0)
-                } else {
-                  closeImmersive()
-                }
-              }}
-              aria-label={immersiveView === 'results' ? 'Volver a las sugerencias' : 'Cerrar búsqueda'}
-            >
-              <BackGlyph />
-            </button>
+          <header className={`latido-search-experience__header${pageMode && immersiveView === 'start' ? ' is-page-start' : ''}`}>
+            {pageMode && pageTitle && immersiveView === 'start' && (
+              <p className="latido-search-experience__page-title">{pageTitle}</p>
+            )}
+            {(!pageMode || immersiveView !== 'start') && (
+              <button
+                type="button"
+                className="latido-search-experience__back"
+                onClick={() => {
+                  if (immersiveView === 'results') {
+                    setImmersiveView(q.trim().length > 0 ? 'preview' : 'start')
+                    window.setTimeout(() => overlayInputRef.current?.focus(), 0)
+                  } else {
+                    closeImmersive()
+                  }
+                }}
+                aria-label={immersiveView === 'results' ? 'Volver a las sugerencias' : 'Cerrar búsqueda'}
+              >
+                <BackGlyph />
+              </button>
+            )}
 
             <form
               className="latido-search-experience__form"
@@ -3002,6 +3114,29 @@ export default function GlobalSearch({
           <main className="latido-search-experience__content">
             {immersiveView === 'start' ? (
               <div className="latido-search-start">
+                {startSections?.length > 0 && (
+                  <section className="latido-search-section" aria-label="Secciones de Latido">
+                    <div className="explore-grid">
+                      {startSections.map(section => (
+                        <button
+                          key={section.id}
+                          type="button"
+                          className="explore-card"
+                          style={{ '--explore-card-bg':section.gradient }}
+                          onClick={() => {
+                            if (!pageMode) setImmersiveOpen(false)
+                            navigate(section.to)
+                          }}
+                        >
+                          <span className="explore-card__label">{section.label}</span>
+                          <span className="explore-card__desc">{section.desc}</span>
+                          <span className="explore-card__mark" aria-hidden="true">{section.emoji}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 {startPartnerEntries.length > 0 && (
                   <section className="latido-search-section" aria-labelledby="search-partners-title">
                     <div className="latido-search-section__heading">
@@ -3054,22 +3189,54 @@ export default function GlobalSearch({
                   </section>
                 )}
 
-                <section className="latido-search-section" aria-labelledby="quick-searches-title">
-                  <div className="latido-search-section__heading">
-                    <div>
-                      <h2 id="quick-searches-title">Explora rápidamente</h2>
-                      <p>Sugerencias habituales en esta sección.</p>
+                {!startSections?.length && (
+                  <section className="latido-search-section" aria-labelledby="quick-searches-title">
+                    <div className="latido-search-section__heading">
+                      <div>
+                        <h2 id="quick-searches-title">Explora rápidamente</h2>
+                        <p>Sugerencias habituales en esta sección.</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="latido-search-quick">
-                    {quickSearches.map(suggestion => (
-                      <button key={suggestion} type="button" onClick={() => selectSearchSuggestion(suggestion)}>
-                        <SearchGlyph size={17} />
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </section>
+                    <div className="latido-search-quick">
+                      {quickSearches.map(suggestion => (
+                        <button key={suggestion} type="button" onClick={() => selectSearchSuggestion(suggestion)}>
+                          <SearchGlyph size={17} />
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {startExtras?.length > 0 && (
+                  <section className="latido-search-section" aria-labelledby="explore-extras-title">
+                    <div className="latido-search-section__heading">
+                      <div>
+                        <h2 id="explore-extras-title">También en Latido</h2>
+                      </div>
+                    </div>
+                    <div className="explore-extras">
+                      {startExtras.map(extra => (
+                        <button
+                          key={extra.id}
+                          type="button"
+                          className="explore-extra"
+                          onClick={() => {
+                            if (!pageMode) setImmersiveOpen(false)
+                            navigate(extra.to)
+                          }}
+                        >
+                          <span className="explore-extra__mark" aria-hidden="true">{extra.emoji}</span>
+                          <span className="explore-extra__text">
+                            <span className="explore-extra__label">{extra.label}</span>
+                            <span className="explore-extra__desc">{extra.desc}</span>
+                          </span>
+                          <span className="explore-extra__chevron" aria-hidden="true">›</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
             ) : immersiveView === 'preview' ? (
               <div className="latido-search-preview">

@@ -26,6 +26,15 @@ import {
 import { getLifecycleLabel, getPublicationExpiresAt, isPublicationExpired } from '../lib/publicationLifecycle'
 import EmploymentProfileForm, { EmploymentLevelBadge } from '../components/EmploymentProfileForm'
 import InterestOptionGrid from '../components/InterestOptionGrid'
+import { CreatorAvatar, CreatorProfileTabs, CreatorTopicPill } from '../components/CreatorCards'
+import {
+  getAllCreators,
+  getCreatorForUser,
+  getFollowedCreatorIds,
+  subscribeCreatorInteractions,
+  subscribeCreatorUpdates,
+  toggleCreatorInteraction,
+} from '../lib/creators'
 import {
   createEmptyEmploymentProfile,
   employmentProfileFromJob,
@@ -46,6 +55,7 @@ import {
   setSavedSearchActive,
 } from '../lib/savedSearches'
 import toast from 'react-hot-toast'
+import './Creators.css'
 
 const PUBLICATION_TABS = [
   { id:'all', label:'Todo' },
@@ -722,6 +732,19 @@ export default function Perfil() {
   const [favItems, setFavItems] = useState([])
   const [loadingFavs, setLoadingFavs] = useState(false)
 
+  // followed creators
+  const [followedCreatorsOpen, setFollowedCreatorsOpen] = useState(false)
+  const [followedCreatorsVersion, setFollowedCreatorsVersion] = useState(0)
+  const [creatorDirectoryVersion, setCreatorDirectoryVersion] = useState(0)
+  const followedCreators = useMemo(() => {
+    const followedIds = new Set(getFollowedCreatorIds(user?.id))
+    return getAllCreators().filter(creator => followedIds.has(String(creator.id)))
+  }, [creatorDirectoryVersion, followedCreatorsVersion, user?.id])
+  const creatorProfile = useMemo(() => getCreatorForUser(user?.id), [creatorDirectoryVersion, user?.id])
+
+  useEffect(() => subscribeCreatorInteractions(() => setFollowedCreatorsVersion(current => current + 1)), [])
+  useEffect(() => subscribeCreatorUpdates(() => setCreatorDirectoryVersion(current => current + 1)), [])
+
   // share
   const [shareOpen, setShareOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -935,14 +958,6 @@ export default function Perfil() {
   )
 
   const activeFilter = PUBLICATION_TABS.find(item => item.id === activeTab)
-  const testExpiredEventsPrompt = useMemo(() => {
-    const params = new URLSearchParams(location.search)
-    return params.get('probarModalEventos') === '1'
-  }, [location.search])
-  const testAdReminderPrompt = useMemo(() => {
-    const params = new URLSearchParams(location.search)
-    return params.get('probarModalAnuncios') === '1'
-  }, [location.search])
   const suppressAttentionPrompts = useMemo(() => {
     const params = new URLSearchParams(location.search)
     return params.has('atencion') || params.has('editar')
@@ -968,27 +983,7 @@ export default function Perfil() {
     () => publications.filter(item => isExpiredEventPublication(item, eventReviewConfirmations)),
     [eventReviewConfirmations, publications]
   )
-  const expiredEvents = useMemo(() => {
-    if (realExpiredEvents.length || !testExpiredEventsPrompt) return realExpiredEvents
-    return [{
-      id:'demo-expired-event',
-      kind:'event',
-      icon:'🎉',
-      title:'Evento demo caducado',
-      summary:'Vista de prueba',
-      meta:'Zürich · fecha pasada',
-      active:true,
-      createdAt:new Date().toISOString(),
-      raw:{
-        day:'12',
-        month:'MAY',
-        year:String(new Date().getFullYear() - 1),
-        time:'19:00',
-        city:'Zürich',
-        canton:'ZH',
-      },
-    }]
-  }, [realExpiredEvents, testExpiredEventsPrompt])
+  const expiredEvents = realExpiredEvents
   const expiredEventsSignature = useMemo(
     () => expiredEvents.map(item => item.id).sort().join('|'),
     [expiredEvents]
@@ -998,27 +993,7 @@ export default function Perfil() {
     () => publications.filter(item => isAdDueForReview(item, adReviewConfirmations)),
     [adReviewConfirmations, publications]
   )
-  const adReminderItems = useMemo(() => {
-    if (realAdReminderItems.length || !testAdReminderPrompt) return realAdReminderItems
-    return [{
-      id:'demo-ad-reminder',
-      kind:'ad',
-      icon:'📌',
-      title:'Anuncio demo para revisar',
-      summary:'Servicios · CHF 30 / hora',
-      meta:'ZH · Público',
-      active:true,
-      createdAt:new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-      raw:{
-        id:'demo-ad-reminder',
-        title:'Anuncio demo para revisar',
-        price:'CHF 30 / hora',
-        canton:'ZH',
-        privacy:'public',
-        created_at:new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    }]
-  }, [realAdReminderItems, testAdReminderPrompt])
+  const adReminderItems = realAdReminderItems
   const adReminderItem = adReminderItems[0]
   const adReminderSignature = useMemo(
     () => adReminderItems.map(item => item.id).sort().join('|'),
@@ -1026,14 +1001,14 @@ export default function Perfil() {
   )
 
   const rememberExpiredEventsDismissal = useCallback(() => {
-    if (!testExpiredEventsPrompt && user?.id && expiredEventsSignature) {
+    if (user?.id && expiredEventsSignature) {
       localStorage.setItem(`latido_attention_expired_events:${user.id}`, JSON.stringify({
         signature: expiredEventsSignature,
         dismissedAt: new Date().toISOString(),
       }))
     }
     setExpiredEventsDismissed(true)
-  }, [expiredEventsSignature, testExpiredEventsPrompt, user?.id])
+  }, [expiredEventsSignature, user?.id])
 
   const closeExpiredEventsPrompt = useCallback(() => {
     rememberExpiredEventsDismissal()
@@ -1074,14 +1049,14 @@ export default function Perfil() {
   }, [user?.id])
 
   const rememberAdReminderDismissal = useCallback(() => {
-    if (!testAdReminderPrompt && user?.id && adReminderSignature) {
+    if (user?.id && adReminderSignature) {
       localStorage.setItem(`latido_attention_ad_review:${user.id}`, JSON.stringify({
         signature: adReminderSignature,
         dismissedAt: new Date().toISOString(),
       }))
     }
     setAdReminderDismissed(true)
-  }, [adReminderSignature, testAdReminderPrompt, user?.id])
+  }, [adReminderSignature, user?.id])
 
   const closeAdReminderPrompt = useCallback(() => {
     rememberAdReminderDismissal()
@@ -1107,10 +1082,6 @@ export default function Perfil() {
 
   const editAdReminder = () => {
     if (!adReminderItem) return
-    if (testAdReminderPrompt && adReminderItem.id === 'demo-ad-reminder') {
-      toast.success('En un anuncio real se abriría el editor')
-      return
-    }
     rememberAdReminderDismissal()
     setAdReminderOpen(false)
     openEditor(adReminderItem)
@@ -1118,10 +1089,6 @@ export default function Perfil() {
 
   const deleteAdReminder = () => {
     if (!adReminderItem) return
-    if (testAdReminderPrompt && adReminderItem.id === 'demo-ad-reminder') {
-      toast.success('En un anuncio real Latido pediría confirmación antes de borrar')
-      return
-    }
     rememberAdReminderDismissal()
     setAdReminderOpen(false)
     handleDeletePublication(adReminderItem)
@@ -1129,23 +1096,20 @@ export default function Perfil() {
 
   useEffect(() => {
     if (!isLoggedIn || !user?.id || loadingPublications || expiredEventsDismissed || !expiredEvents.length) return
-    if (!testExpiredEventsPrompt) return
     if (suppressAttentionPrompts) return
     if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || adReminderOpen) return
 
-    if (!testExpiredEventsPrompt) {
-      const key = `latido_attention_expired_events:${user.id}`
-      let stored = {}
-      try {
-        stored = JSON.parse(localStorage.getItem(key) || '{}')
-      } catch {
-        stored = {}
-      }
-
-      const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
-      const snoozed = stored.signature === expiredEventsSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
-      if (snoozed) return
+    const key = `latido_attention_expired_events:${user.id}`
+    let stored = {}
+    try {
+      stored = JSON.parse(localStorage.getItem(key) || '{}')
+    } catch {
+      stored = {}
     }
+
+    const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
+    const snoozed = stored.signature === expiredEventsSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
+    if (snoozed) return
 
     const timer = setTimeout(() => setExpiredEventsOpen(true), 900)
     return () => clearTimeout(timer)
@@ -1156,7 +1120,6 @@ export default function Perfil() {
     expiredEventsDismissed,
     expiredEvents.length,
     expiredEventsSignature,
-    testExpiredEventsPrompt,
     suppressAttentionPrompts,
     manageOpen,
     editorItem,
@@ -1172,24 +1135,21 @@ export default function Perfil() {
 
   useEffect(() => {
     if (!isLoggedIn || !user?.id || loadingPublications || adReminderDismissed || !adReminderItems.length) return
-    if (!testAdReminderPrompt) return
     if (suppressAttentionPrompts) return
     if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || expiredEventsOpen) return
-    if (!testAdReminderPrompt && expiredEvents.length) return
+    if (expiredEvents.length) return
 
-    if (!testAdReminderPrompt) {
-      const key = `latido_attention_ad_review:${user.id}`
-      let stored = {}
-      try {
-        stored = JSON.parse(localStorage.getItem(key) || '{}')
-      } catch {
-        stored = {}
-      }
-
-      const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
-      const snoozed = stored.signature === adReminderSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
-      if (snoozed) return
+    const key = `latido_attention_ad_review:${user.id}`
+    let stored = {}
+    try {
+      stored = JSON.parse(localStorage.getItem(key) || '{}')
+    } catch {
+      stored = {}
     }
+
+    const dismissedAt = stored.dismissedAt ? new Date(stored.dismissedAt).getTime() : 0
+    const snoozed = stored.signature === adReminderSignature && dismissedAt && Date.now() - dismissedAt < ATTENTION_SNOOZE_MS
+    if (snoozed) return
 
     const timer = setTimeout(() => setAdReminderOpen(true), 1100)
     return () => clearTimeout(timer)
@@ -1200,7 +1160,6 @@ export default function Perfil() {
     adReminderDismissed,
     adReminderItems.length,
     adReminderSignature,
-    testAdReminderPrompt,
     suppressAttentionPrompts,
     expiredEvents.length,
     expiredEventsOpen,
@@ -2266,6 +2225,7 @@ export default function Perfil() {
           action:openEmploymentProfileEditor,
         }] : []),
         { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
+        { icon:'🎙️', color:'#EFF6FF', label:'Siguiendo', sub:followedCreators.length ? `${followedCreators.length} ${followedCreators.length === 1 ? 'creador seguido' : 'creadores seguidos'}` : 'Sigue perfiles para encontrarlos fácilmente', action:() => setFollowedCreatorsOpen(true) },
       ],
     },
     ...(PAID_BUSINESS_FEATURES_VISIBLE ? [{
@@ -2331,12 +2291,16 @@ export default function Perfil() {
   )
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
+    <div style={{ maxWidth:600, margin:'0 auto', padding:'0 24px 100px' }}>
 
-      {/* Avatar + header card */}
-      <div style={{ background:'linear-gradient(135deg,#1D4ED8,#2563EB)', borderRadius:24, padding:'28px 20px 24px', marginBottom:20, position:'relative', overflow:'hidden', textAlign:'center' }}>
+      {/* Cabecera a sangre: se sale del contenedor de 600px para ocupar todo el
+          ancho de la pantalla, como una portada. */}
+      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:'linear-gradient(135deg,#1D4ED8,#2563EB)', padding:'34px 24px 26px', marginBottom:24, position:'relative', overflow:'hidden', textAlign:'center' }}>
         <div style={{ position:'absolute', top:-30, right:-30, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
         <div style={{ position:'absolute', bottom:-20, left:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
+
+        {/* El fondo va a sangre, pero el contenido se queda centrado y legible. */}
+        <div style={{ maxWidth:600, margin:'0 auto', position:'relative' }}>
 
         {/* Avatar with camera overlay */}
         <div
@@ -2376,6 +2340,9 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontSize:10, color:'rgba(255,255,255,0.6)', margin:0 }}>{icon} {label}</p>
             </div>
           ))}
+        </div>
+
+        <CreatorProfileTabs active="personal" creator={creatorProfile} compact />
         </div>
       </div>
 
@@ -2533,6 +2500,48 @@ export default function Perfil() {
               </div>
             )
           })
+        )}
+      </Sheet>
+
+      <Sheet show={followedCreatorsOpen} onClose={() => setFollowedCreatorsOpen(false)} title="🎙️ Creadores">
+        {!followedCreators.length ? (
+          <div className="profile-followed-creators-empty">
+            <div>🎙️</div>
+            <strong>Aún no sigues a ningún creador</strong>
+            <p>Cuando pulses «Seguir» en un perfil, aparecerá aquí para que puedas volver fácilmente.</p>
+            <button type="button" onClick={() => { setFollowedCreatorsOpen(false); navigate('/comunidades?view=creadores') }}>Descubrir creadores</button>
+          </div>
+        ) : (
+          <div className="profile-followed-creators-list">
+            {followedCreators.map(creator => (
+              <article key={creator.id} className="profile-followed-creator-card">
+                <span className="profile-followed-creator-card__state">Siguiendo ✓</span>
+                <button type="button" className="profile-followed-creator-card__open" onClick={() => { setFollowedCreatorsOpen(false); navigate(`/creadores/${creator.slug}`) }}>
+                  <CreatorAvatar creator={creator} size={52} />
+                  <span>
+                    <strong>{creator.name}</strong>
+                    <small>{creator.handle} · 📍 {creator.canton || creator.reach}</small>
+                    <span>{creator.tagline}</span>
+                    <span className="profile-followed-creator-card__topics">{(creator.topics || []).slice(0, 2).map(topic => <CreatorTopicPill key={topic} topicId={topic} compact />)}</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="profile-followed-creator-card__remove"
+                  onClick={async () => {
+                    try {
+                      await toggleCreatorInteraction({ action:'saved', targetType:'creator', targetId:creator.id, actorId:user.id, baseCount:creator.saved_count })
+                      toast.success(`Has dejado de seguir a ${creator.name}`)
+                    } catch (error) {
+                      toast.error(error?.message || 'No se pudo actualizar el seguimiento')
+                    }
+                  }}
+                >
+                  Dejar de seguir
+                </button>
+              </article>
+            ))}
+          </div>
         )}
       </Sheet>
 
