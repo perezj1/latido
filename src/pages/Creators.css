@@ -1374,12 +1374,32 @@
   place-items: center;
 }
 
+.creator-video-modal__stage {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  background: #000;
+  isolation: isolate;
+}
+
+.creator-video-modal__stage > .creator-video-modal__player {
+  height: 100%;
+  flex: none;
+}
+
 .creator-video-modal__player iframe {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
   background: #000;
   border: 0;
+  pointer-events: auto;
+  touch-action: auto;
 }
 
 .creator-video-modal__player.is-vertical {
@@ -1399,19 +1419,12 @@
   overflow: hidden;
 }
 
-/* Los embeds externos capturan sus propios gestos. Estas dos franjas estrechas
-   permiten iniciar el deslizamiento vertical desde el borde sin tapar los controles del
-   reproductor; el teclado sigue disponible como alternativa. */
-.creator-video-modal__edge-swipe {
+.creator-video-modal__carousel-controls {
   position: absolute;
-  z-index: 3;
-  top: 0;
-  bottom: 0;
-  width: 22px;
-  touch-action: none;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
 }
-.creator-video-modal__edge-swipe.is-left { left: 0; }
-.creator-video-modal__edge-swipe.is-right { right: 0; }
 
 .creator-video-modal__carousel-arrow {
   position: absolute;
@@ -1429,6 +1442,7 @@
   transform: translateY(-50%);
   cursor: pointer;
   place-items: center;
+  pointer-events: auto;
   backdrop-filter: blur(5px);
 }
 .creator-video-modal__carousel-arrow.is-previous { left: 8px; }
