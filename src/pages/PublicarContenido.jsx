@@ -27,7 +27,7 @@ import './PublicarContenido.css'
 
 const STEPS = [
   { title:'¿Dónde está tu contenido?', sub:'Pega el enlace original. Latido lleva las visitas hasta allí.' },
-  { title:'Cuéntala en Latido',          sub:'Un título claro, el tema principal y un resumen útil.' },
+  { title:'Detalles',          sub:'Un título claro, el tema principal y un resumen útil.' },
   { title:'Revisa y publica',            sub:'Así se verá en tu perfil y en el resto de la app.' },
 ]
 
@@ -326,9 +326,6 @@ export default function PublicarContenido() {
             error={errors.url}
             errorKey="url"
           />
-          <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 0 14px', lineHeight:1.6 }}>
-            Los vídeos de YouTube, TikTok e Instagram se reproducen dentro de Latido. El resto abre la página original.
-          </p>
           {form.url.trim() && (
             <div style={{ display:'flex', alignItems:'center', gap:9, padding:'12px 14px', background:C.bgAlt, border:`1px solid ${C.border}`, borderRadius:14 }}>
               <span style={{ fontSize:18 }}>{fetchingMetadata ? '⏳' : '🔗'}</span>
@@ -420,12 +417,6 @@ export default function PublicarContenido() {
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, lineHeight:1.65 }}>{form.summary}</p>
           </div>
 
-          <div style={{ background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:14, padding:'14px 16px' }}>
-            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#1E3A8A', margin:'0 0 6px' }}>Cómo funciona</p>
-            <p style={{ fontFamily:PP, fontSize:11, color:'#1E3A8A', lineHeight:1.7, margin:0 }}>
-              Latido muestra esta ficha y envía las visitas al contenido original. Si todavía tienes menos de seis destacados, se añadirá automáticamente; después podrás cambiar la selección desde tu perfil.
-            </p>
-          </div>
         </>
       )}
 

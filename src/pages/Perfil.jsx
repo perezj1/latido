@@ -2291,12 +2291,16 @@ export default function Perfil() {
   )
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 100px' }}>
+    <div style={{ maxWidth:600, margin:'0 auto', padding:'0 24px 100px' }}>
 
-      {/* Avatar + header card */}
-      <div style={{ background:'linear-gradient(135deg,#1D4ED8,#2563EB)', borderRadius:24, padding:'28px 20px 24px', marginBottom:20, position:'relative', overflow:'hidden', textAlign:'center' }}>
+      {/* Cabecera a sangre: se sale del contenedor de 600px para ocupar todo el
+          ancho de la pantalla, como una portada. */}
+      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:'linear-gradient(135deg,#1D4ED8,#2563EB)', padding:'34px 24px 26px', marginBottom:24, position:'relative', overflow:'hidden', textAlign:'center' }}>
         <div style={{ position:'absolute', top:-30, right:-30, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
         <div style={{ position:'absolute', bottom:-20, left:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
+
+        {/* El fondo va a sangre, pero el contenido se queda centrado y legible. */}
+        <div style={{ maxWidth:600, margin:'0 auto', position:'relative' }}>
 
         {/* Avatar with camera overlay */}
         <div
@@ -2339,6 +2343,7 @@ export default function Perfil() {
         </div>
 
         <CreatorProfileTabs active="personal" creator={creatorProfile} compact />
+        </div>
       </div>
 
       {/* Twint promo banner */}
