@@ -160,6 +160,8 @@ const SAVED_SEARCH_KIND_BY_RESULT_TYPE = Object.freeze({
   business:'provider',
   event:'event',
   community:'community',
+  creator:'creator',
+  creator_content:'creator_content',
 })
 const DEFAULT_SAVED_SEARCH_RESULT_TYPES = Object.freeze([
   'ad',
@@ -167,6 +169,8 @@ const DEFAULT_SAVED_SEARCH_RESULT_TYPES = Object.freeze([
   'business',
   'event',
   'community',
+  'creator',
+  'creator_content',
 ])
 
 function normalizeSavedSearchCategory(value) {
@@ -2024,6 +2028,12 @@ export default function GlobalSearch({
       params.delete('intent')
       params.delete('resultType')
       resultPath = `/comunidades?${params.toString()}`
+    } else if (entityKinds.length === 1 && ['creator', 'creator_content'].includes(entityKinds[0])) {
+      params.set('view', 'creadores')
+      params.set('creatorView', entityKinds[0] === 'creator' ? 'creadores' : 'contenidos')
+      params.delete('intent')
+      params.delete('resultType')
+      resultPath = `/comunidades?${params.toString()}`
     } else {
       params.set('search', 'results')
       resultPath = `/?${params.toString()}`
@@ -3612,6 +3622,14 @@ export default function GlobalSearch({
                 )}
 
               </div>
+
+              {savedSearchDraft && (
+                <SavedSearchButton
+                  draft={savedSearchDraft}
+                  idleLabel="Guardar esta búsqueda y avisarme"
+                  panel
+                />
+              )}
 
               <button type="submit" className="filter-show-results filter-sheet-submit">
                 Mostrar {immersiveFilterDraftResultCount} {immersiveFilterDraftResultCount === 1 ? 'resultado' : 'resultados'}

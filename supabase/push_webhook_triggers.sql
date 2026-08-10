@@ -101,6 +101,22 @@ BEGIN
       function_url, 'POST', headers::text, '{}'::text, '5000'
     );
   END IF;
+
+  IF to_regclass('public.creator_profiles') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS latido_push_creator_profiles_insert_update ON public.creator_profiles;
+    EXECUTE format(
+      'CREATE TRIGGER latido_push_creator_profiles_insert_update AFTER INSERT OR UPDATE ON public.creator_profiles FOR EACH ROW EXECUTE FUNCTION supabase_functions.http_request(%L, %L, %L, %L, %L)',
+      function_url, 'POST', headers::text, '{}'::text, '5000'
+    );
+  END IF;
+
+  IF to_regclass('public.creator_contents') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS latido_push_creator_contents_insert_update ON public.creator_contents;
+    EXECUTE format(
+      'CREATE TRIGGER latido_push_creator_contents_insert_update AFTER INSERT OR UPDATE ON public.creator_contents FOR EACH ROW EXECUTE FUNCTION supabase_functions.http_request(%L, %L, %L, %L, %L)',
+      function_url, 'POST', headers::text, '{}'::text, '5000'
+    );
+  END IF;
 END $$;
 
 -- Diagnóstico de llamadas webhook:

@@ -336,6 +336,11 @@ function queryMatches(query: string, record: Record<string, unknown>) {
     record.company,
     record.desc,
     record.description,
+    record.summary,
+    record.tagline,
+    record.bio,
+    record.handle,
+    record.creator_name,
     record.services,
     record.sector,
     record.category,
@@ -346,6 +351,11 @@ function queryMatches(query: string, record: Record<string, unknown>) {
     record.canton,
     record.venue,
     record.host,
+    record.topic,
+    record.topics,
+    record.platform,
+    record.reach,
+    record.socials ? JSON.stringify(record.socials) : '',
   ].flat().filter(Boolean).join(' '))
 
   return tokens.every(token => {
@@ -375,6 +385,8 @@ function locationMatches(search: SavedSearchRow, record: Record<string, unknown>
     isNationwide(record.canton)
     || isNationwide(record.city)
     || isNationwide(record.address)
+    || isNationwide(record.reach)
+    || isNationwide(record.creator_reach)
   ) return true
 
   if (preferredPlz && publicationPlz !== preferredPlz && !publicationAddress.includes(preferredPlz)) {
@@ -423,11 +435,27 @@ function priceRangeMatches(range: unknown, record: Record<string, unknown>) {
 
 function filtersMatch(search: SavedSearchRow, record: Record<string, unknown>) {
   const filters = search.filters || {}
+  const creatorTopics = [
+    record.topic,
+    ...(Array.isArray(record.topics) ? record.topics : []),
+  ]
+  const creatorPlatforms = [
+    record.platform,
+    ...(Array.isArray(record.socials)
+      ? record.socials.map(social => (
+          social && typeof social === 'object'
+            ? (social as Record<string, unknown>).platform
+            : social
+        ))
+      : []),
+  ]
   if (!exactNormalizedMatch(filters.jobType, [record.type])) return false
   if (!exactNormalizedMatch(filters.employmentLevel, [record.employment_level])) return false
   if (!exactNormalizedMatch(filters.businessType, [record.category])) return false
   if (!exactNormalizedMatch(filters.communityCategory, [record.cat])) return false
   if (!exactNormalizedMatch(filters.eventType, [record.type])) return false
+  if (!exactNormalizedMatch(filters.creatorTopic, creatorTopics)) return false
+  if (!exactNormalizedMatch(filters.creatorPlatform, creatorPlatforms)) return false
   if (!exactNormalizedMatch(filters.sub, [record.sub, record.sector, record.category])) return false
   if (!exactNormalizedMatch(filters.privacy, [record.privacy])) return false
   return priceRangeMatches(filters.priceRange, record)
@@ -439,6 +467,8 @@ function entityKindForTable(table: string) {
   if (table === 'providers') return 'provider'
   if (table === 'events') return 'event'
   if (table === 'communities') return 'community'
+  if (table === 'creator_profiles') return 'creator'
+  if (table === 'creator_contents') return 'creator_content'
   return ''
 }
 
@@ -447,6 +477,7 @@ function publicationCategory(table: string, record: Record<string, unknown>) {
   if (table === 'providers') return 'servicios'
   if (table === 'events') return 'eventos'
   if (table === 'communities') return 'comunidad'
+  if (['creator_profiles', 'creator_contents'].includes(table)) return 'creadores'
   return normalizeCategory(record.cat || record.category)
 }
 
@@ -463,7 +494,7 @@ function savedSearchMatchesPublication(
 ) {
   const kind = entityKindForTable(table)
   if (!kind || !search.entity_kinds?.includes(kind)) return false
-  if (text(record.user_id) === search.user_id) return false
+  if (text(record.user_id || record.owner_id) === search.user_id) return false
   if (search.category && normalizeCategory(search.category) !== normalizeCategory(publicationCategory(table, record))) {
     return false
   }
@@ -485,6 +516,13 @@ function savedSearchResultPath(table: string, record: Record<string, unknown>) {
   if (table === 'providers') return `/comunidades?view=negocios&openBusiness=${encodeURIComponent(id)}`
   if (table === 'events') return `/comunidades?view=eventos&openEvent=${encodeURIComponent(id)}`
   if (table === 'communities') return `/comunidades?view=comunidades&openCommunity=${encodeURIComponent(id)}`
+  if (table === 'creator_profiles') return `/creadores/${encodeURIComponent(text(record.slug, id))}`
+  if (table === 'creator_contents') {
+    const creatorSlug = text(record.creator_slug)
+    return creatorSlug
+      ? `/creadores/${encodeURIComponent(creatorSlug)}`
+      : '/comunidades?view=creadores&creatorView=contenidos'
+  }
   return `/tablon?openAd=${encodeURIComponent(id)}`
 }
 
@@ -505,6 +543,9 @@ function deliveryIsDue(search: SavedSearchRow) {
 
 function categoryMatches(table: string, record: Record<string, unknown>, categories: string[] = []) {
   const normalizedCategories = [...new Set(categories.map(normalizeCategory).filter(Boolean))]
+  if (['creator_profiles', 'creator_contents'].includes(table)) {
+    return normalizedCategories.includes('creadores')
+  }
   if (!normalizedCategories.length) return true
   if (table === 'jobs') return normalizedCategories.includes('empleo')
   if (table === 'providers') return normalizedCategories.includes('servicios')
@@ -574,6 +615,32 @@ function zonePushPayload(table: string, record: Record<string, unknown>): PushPa
     }
   }
 
+  if (table === 'creator_profiles') {
+    const body = truncate([record.name, record.tagline, record.city || canton].map(value => text(value)).filter(Boolean).join(' - '))
+    const slug = text(record.slug, id)
+    return {
+      title: 'Nuevo creador en Latido',
+      body: body || 'Hay un nuevo creador que puede interesarte.',
+      url: `/creadores/${encodeURIComponent(slug)}`,
+      tag: `creator:${id}`,
+      data: { kind: 'creator', id },
+    }
+  }
+
+  if (table === 'creator_contents') {
+    const body = truncate([record.title, record.creator_name, canton].map(value => text(value)).filter(Boolean).join(' - '))
+    const creatorSlug = text(record.creator_slug)
+    return {
+      title: 'Nuevo contenido de un creador',
+      body: body || 'Hay nuevo contenido que puede interesarte.',
+      url: creatorSlug
+        ? `/creadores/${encodeURIComponent(creatorSlug)}`
+        : '/comunidades?view=creadores&creatorView=contenidos',
+      tag: `creator-content:${id}`,
+      data: { kind: 'creator_content', id },
+    }
+  }
+
   const body = truncate([record.title, canton].map(value => text(value)).filter(Boolean).join(' - '))
   return {
     title: 'Nuevo anuncio en tu zona',
@@ -584,10 +651,15 @@ function zonePushPayload(table: string, record: Record<string, unknown>): PushPa
   }
 }
 
+function isVisiblePublication(record: Record<string, unknown> | null | undefined) {
+  if (!record || record.active === false) return false
+  return !Object.prototype.hasOwnProperty.call(record, 'status') || text(record.status) === 'published'
+}
+
 function shouldNotifyPublication(payload: WebhookPayload) {
   if (!payload.record) return false
-  if (payload.type === 'INSERT') return payload.record.active !== false
-  if (payload.type === 'UPDATE') return payload.old_record?.active !== true && payload.record.active === true
+  if (payload.type === 'INSERT') return isVisiblePublication(payload.record)
+  if (payload.type === 'UPDATE') return !isVisiblePublication(payload.old_record) && isVisiblePublication(payload.record)
   return false
 }
 
@@ -948,9 +1020,32 @@ async function handleMessage(req: Request, record: Record<string, unknown>) {
   return json(req, { ok: true, kind: 'message', conversationId, recipientId, ...result })
 }
 
+async function enrichPublicationRecord(table: string, record: Record<string, unknown>) {
+  if (table !== 'creator_contents' || !record.creator_id) return record
+
+  const { data: creator, error } = await supabase
+    .from('creator_profiles')
+    .select('owner_id,slug,name,city,canton,reach')
+    .eq('id', text(record.creator_id))
+    .maybeSingle()
+
+  if (error) throw error
+  if (!creator) return record
+  return {
+    ...record,
+    owner_id:creator.owner_id,
+    creator_slug:creator.slug,
+    creator_name:creator.name,
+    creator_city:creator.city,
+    creator_canton:creator.canton,
+    creator_reach:creator.reach,
+  }
+}
+
 async function handlePublication(req: Request, table: string, payload: WebhookPayload) {
-  const record = payload.record || {}
+  const rawRecord = payload.record || {}
   if (!shouldNotifyPublication(payload)) return json(req, { ok: true, skipped: 'not_active_publication' })
+  const record = await enrichPublicationRecord(table, rawRecord)
 
   const notification = zonePushPayload(table, record)
   if (!notification) return json(req, { ok: true, skipped: 'unsupported_publication' })
@@ -960,7 +1055,7 @@ async function handlePublication(req: Request, table: string, payload: WebhookPa
   const specificRecipients = new Set(savedSearchResult.recipientIds)
 
   const publicationCanton = text(record.canton || record.city)
-  const authorId = text(record.user_id)
+  const authorId = text(record.user_id || record.owner_id)
 
   const { data: preferences, error } = await supabase
     .from('push_notification_preferences')
@@ -1046,7 +1141,7 @@ Deno.serve(async req => {
     if (table === 'test') return handleTest(req, record)
     if (table === 'saved_search_digest') return handleSavedSearchDigest(req)
     if (table === 'messages' && payload.type === 'INSERT') return handleMessage(req, record)
-    if (['listings', 'ads', 'jobs', 'providers', 'events', 'communities'].includes(table)) {
+    if (['listings', 'ads', 'jobs', 'providers', 'events', 'communities', 'creator_profiles', 'creator_contents'].includes(table)) {
       return handlePublication(req, table, payload)
     }
 

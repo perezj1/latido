@@ -2910,21 +2910,21 @@ img[data-latido-img-state="loaded"] {
    Altura fija en todas las pantallas: el subtitulo reserva siempre dos lineas,
    asi la barra de filtros arranca al mismo alto tenga el texto una linea o dos. */
 .section-page-head {
-  padding-bottom: 14px;
+  padding-bottom: 10px;
 }
 
 .section-page-head h1 {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: #0F172A;
-  font: 800 26px/1.2 'Poppins', sans-serif;
-  letter-spacing: -0.4px;
+  font: 800 22px/1.2 'Poppins', sans-serif;
+  letter-spacing: -0.3px;
 }
 
 .section-page-head p {
-  min-height: 41px;
+  min-height: 34px;
   margin: 0;
   color: #94A3B8;
-  font: 400 13px/1.55 'Poppins', sans-serif;
+  font: 400 11.5px/1.48 'Poppins', sans-serif;
 }
 
 /* ── Atajo entre secciones dentro de una lista ──

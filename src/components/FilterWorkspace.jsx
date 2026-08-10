@@ -250,3 +250,24 @@ export const FILTER_PANEL_TITLE_STYLE = {
   color:C.text,
   margin:'0 0 7px',
 }
+
+const FILTER_PANEL_CONTROL_STYLE = {
+  width:'100%',
+  minHeight:56,
+  boxSizing:'border-box',
+  border:`1.5px solid ${C.border}`,
+  borderRadius:14,
+  padding:'12px 16px',
+  background:'#fff',
+  fontFamily:PP,
+  fontSize:12,
+  fontWeight:600,
+  outline:'none',
+}
+
+export function getFilterPanelControlStyle(value, defaultValue='') {
+  return {
+    ...FILTER_PANEL_CONTROL_STYLE,
+    color:String(value ?? '') === String(defaultValue ?? '') ? C.light : C.text,
+  }
+}

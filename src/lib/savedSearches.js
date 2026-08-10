@@ -3,7 +3,15 @@ import { trackAnalyticsEvent } from './analytics'
 
 export const SAVED_SEARCHES_CHANGED_EVENT = 'latido_saved_searches_changed'
 
-const ENTITY_KINDS = new Set(['listing', 'job', 'provider', 'event', 'community'])
+const ENTITY_KINDS = new Set([
+  'listing',
+  'job',
+  'provider',
+  'event',
+  'community',
+  'creator',
+  'creator_content',
+])
 
 function cleanText(value, max = 160) {
   return String(value || '').trim().replace(/\s+/g, ' ').slice(0, max)

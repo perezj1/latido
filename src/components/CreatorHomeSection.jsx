@@ -68,7 +68,7 @@ export default function CreatorHomeSection() {
             id="home-creator-contents-title"
             title="🎬 Contenido"
             subtitle="Experiencias, consejos, trabajo y proyectos compartidos en español desde Suiza."
-            to="/comunidades?view=creadores"
+            to="/comunidades?view=creadores&creatorView=contenidos"
           />
           <div className="creator-home-scroll no-scroll">
             <div className="creator-home-scroll__track">
@@ -103,7 +103,7 @@ export default function CreatorHomeSection() {
             id="home-creators-title"
             title="🎙️ Creadores"
             subtitle="Personas, profesionales y negocios que cuentan Suiza en español."
-            to="/comunidades?view=creadores"
+            to="/comunidades?view=creadores&creatorView=creadores"
           />
           <div className="creator-home-scroll no-scroll">
             <div className="creator-home-scroll__track">

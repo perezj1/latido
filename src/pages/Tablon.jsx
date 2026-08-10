@@ -370,63 +370,6 @@ function IntentTabs({ views=[], value='', onChange }) {
   )
 }
 
-function CategoryPills({ categories=[], value='', onChange }) {
-  const options = [{ id:'', emoji:'', label:'Todos' }, ...categories]
-
-  return (
-    <div
-      className="no-scroll"
-      role="tablist"
-      aria-label="Categorías de anuncios"
-      style={{
-        display:'flex',
-        width:'100%',
-        gap:7,
-        overflowX:'auto',
-        WebkitOverflowScrolling:'touch',
-        padding:'2px 1px 4px',
-        boxSizing:'border-box',
-      }}
-    >
-      {options.map(option => {
-        const active = value === option.id
-        return (
-          <button
-            key={option.id || 'all'}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onChange(option.id)}
-            style={{
-              flex:'0 0 auto',
-              minHeight:32,
-              display:'inline-flex',
-              alignItems:'center',
-              justifyContent:'center',
-              gap:5,
-              padding:'6px 11px',
-              border:`1.5px solid ${active ? C.primary : C.border}`,
-              borderRadius:999,
-              background:active ? C.primary : '#fff',
-              color:active ? '#fff' : C.mid,
-              fontFamily:PP,
-              fontSize:10,
-              fontWeight:800,
-              lineHeight:1,
-              whiteSpace:'nowrap',
-              cursor:'pointer',
-              boxShadow:active ? '0 5px 12px rgba(37,99,235,0.18)' : 'none',
-            }}
-          >
-            {option.emoji && <span aria-hidden="true">{option.emoji}</span>}
-            <span>{option.label}</span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 function getAdShareText(ad) {
   const meta = [fmtPrice(ad.price), formatAdLocation(ad) || ad.canton].filter(Boolean).join(' - ')
   return ['Mira este anuncio en Latido.', meta].filter(Boolean).join('\n')
@@ -1043,6 +986,7 @@ export default function Tablon() {
   })
   const [showFilters, setShowFilters] = useState(false)
   const [filterDraft, setFilterDraft] = useState({
+    category:'',
     canton:'',
     plz:'',
     privacy:'',
@@ -1163,37 +1107,9 @@ export default function Tablon() {
     scrollPageTop()
   }
 
-  const setCategoryView = value => {
-    const nextCategory = normalizeAdCat(value)
-    if (nextCategory === cat) return
-
-    const next = new URLSearchParams(searchParams)
-    if (nextCategory) next.set('cat', nextCategory)
-    else next.delete('cat')
-
-    next.delete('type')
-    next.delete('jobIntent')
-    next.delete('openAd')
-    next.delete('openJob')
-    next.delete('employmentLevel')
-
-    if (nextCategory === 'empleo') {
-      next.set('jobIntent', getDefaultCategoryIntent('empleo'))
-      next.delete('priceRange')
-      next.delete('maxPrice')
-      next.delete('privacy')
-    } else {
-      next.delete('jobType')
-      if (nextCategory) next.set('type', getDefaultCategoryIntent(nextCategory))
-    }
-
-    setSearchParams(next)
-    setShowFilters(false)
-    scrollPageTop()
-  }
-
   const openFilters = () => {
     setFilterDraft({
+      category:cat,
       canton,
       plz,
       privacy:isEmpleos ? '' : privacy,
@@ -1234,14 +1150,29 @@ export default function Tablon() {
 
   const applyFilterDraft = () => {
     const next = new URLSearchParams(searchParams)
+    const nextCategory = normalizeAdCat(filterDraft.category)
+    const categoryChanged = nextCategory !== cat
     FILTER_PARAM_KEYS.forEach(key => next.delete(key))
     next.delete('openAd')
     next.delete('openJob')
 
+    if (nextCategory) next.set('cat', nextCategory)
+    else next.delete('cat')
+
+    if (categoryChanged) {
+      next.delete('type')
+      next.delete('jobIntent')
+      if (nextCategory === 'empleo') {
+        next.set('jobIntent', getDefaultCategoryIntent('empleo'))
+      } else if (nextCategory) {
+        next.set('type', getDefaultCategoryIntent(nextCategory))
+      }
+    }
+
     if (filterDraft.canton) next.set('canton', filterDraft.canton)
     if (filterDraft.plz) next.set('plz', filterDraft.plz)
 
-    if (isEmpleos) {
+    if (nextCategory === 'empleo') {
       if (filterDraft.jobType) next.set('jobType', filterDraft.jobType)
     } else {
       if (!filterDraft.employmentLevel && filterDraft.priceRange) next.set('priceRange', filterDraft.priceRange)
@@ -1260,6 +1191,7 @@ export default function Tablon() {
 
   const clearFilterDraft = () => {
     setFilterDraft({
+      category:isEmpleos ? cat : '',
       canton:'',
       plz:'',
       privacy:'',
@@ -1273,6 +1205,10 @@ export default function Tablon() {
   const clearFilters = () => {
     const next = new URLSearchParams(searchParams)
     FILTER_PARAM_KEYS.forEach(key => next.delete(key))
+    if (!isEmpleos) {
+      next.delete('cat')
+      next.delete('type')
+    }
     next.delete('openAd')
     next.delete('openJob')
     setSearchParams(next, { replace:true })
@@ -1397,7 +1333,7 @@ export default function Tablon() {
     sort:sortOrder,
   })
   const visibleFilterChips = appliedFilterChips
-  const activeFilterCount = appliedFilterChips.length
+  const activeFilterCount = appliedFilterChips.length + Number(Boolean(cat && !isEmpleos))
 
   const removeVisibleFilter = key => {
     if (showFilters) {
@@ -1751,6 +1687,13 @@ export default function Tablon() {
   }, [cat, displayedAds, employmentLevel, filteredAds, filteredJobs, hasPriceFilter, hasResolvedSearch, resolvedSearchRank, sortOrder, type])
 
   const draftResultCount = useMemo(() => {
+    const draftCategory = normalizeAdCat(filterDraft.category)
+    const draftCategoryChanged = draftCategory !== cat
+    const draftIsEmpleos = draftCategory === 'empleo'
+    const draftAdIntent = draftCategoryChanged
+      ? draftCategory ? getDefaultCategoryIntent(draftCategory) : 'ofrece'
+      : activeAdIntent
+    const draftJobIntent = draftCategoryChanged ? 'ofrece' : activeJobIntent
     const draftRange = PRICE_RANGES.find(option => option.id === filterDraft.priceRange)
     const draftHasPrice = Boolean(filterDraft.priceRange) && !filterDraft.employmentLevel
 
@@ -1770,23 +1713,23 @@ export default function Tablon() {
     const draftAds = ads.filter(ad => {
       if (!isPublicationOpen(ad)) return false
       if (!(isLoggedIn || !ad.privacy || ad.privacy === 'public')) return false
-      if (!cat && getAdCategoryId(ad) === 'empleo') return false
-      if (cat && getAdCategoryId(ad) !== cat) return false
-      if (!cat && !activeAdIntent && ['busca', 'compra'].includes(ad.type)) return false
-      if (activeAdIntent) {
-        const typeMatches = !cat && activeAdIntent === 'ofrece'
+      if (!draftCategory && getAdCategoryId(ad) === 'empleo') return false
+      if (draftCategory && getAdCategoryId(ad) !== draftCategory) return false
+      if (!draftCategory && !draftAdIntent && ['busca', 'compra'].includes(ad.type)) return false
+      if (draftAdIntent) {
+        const typeMatches = !draftCategory && draftAdIntent === 'ofrece'
           ? !['busca', 'compra'].includes(ad.type)
-          : !cat && activeAdIntent === 'busca'
+          : !draftCategory && draftAdIntent === 'busca'
             ? ['busca', 'compra'].includes(ad.type)
-            : cat === 'venta' && activeAdIntent === 'vende'
+            : draftCategory === 'venta' && draftAdIntent === 'vende'
               ? ad.type === 'vende' || ad.type === 'ofrece'
-              : ad.type === activeAdIntent
+              : ad.type === draftAdIntent
         if (!typeMatches) return false
       }
       if (!matchesCantonOrNationwide(ad, filterDraft.canton)) return false
       if (filterDraft.plz && !ad.plz?.startsWith(filterDraft.plz)) return false
-      if (!isEmpleos && filterDraft.privacy && ad.privacy !== filterDraft.privacy) return false
-      if (!isEmpleos && draftHasPrice) {
+      if (!draftIsEmpleos && filterDraft.privacy && ad.privacy !== filterDraft.privacy) return false
+      if (!draftIsEmpleos && draftHasPrice) {
         const numericPrice = parseListingPrice(ad.price)
         if (numericPrice === null) return false
         if (draftRange?.min != null && numericPrice < draftRange.min) return false
@@ -1812,7 +1755,7 @@ export default function Tablon() {
 
     const draftJobsCount = jobs.filter(job =>
       isPublicationOpen(job) &&
-      (!activeJobIntent || getJobIntentId(job) === activeJobIntent) &&
+      (!draftJobIntent || getJobIntentId(job) === draftJobIntent) &&
       (!filterDraft.jobType || job.type === filterDraft.jobType) &&
       (!filterDraft.employmentLevel || getJobEmploymentLevelId(job) === filterDraft.employmentLevel) &&
       matchesCantonOrNationwide(job, filterDraft.canton) &&
@@ -1824,7 +1767,7 @@ export default function Tablon() {
       getAdCategoryId(ad) === 'empleo' &&
       isPublicationOpen(ad) &&
       (isLoggedIn || !ad.privacy || ad.privacy === 'public') &&
-      (!activeJobIntent || getJobIntentId(ad) === activeJobIntent) &&
+      (!draftJobIntent || getJobIntentId(ad) === draftJobIntent) &&
       (!filterDraft.jobType || ad.type === filterDraft.jobType || ad.sub === filterDraft.jobType) &&
       (!filterDraft.employmentLevel || getJobEmploymentLevelId(ad) === filterDraft.employmentLevel) &&
       matchesCantonOrNationwide(ad, filterDraft.canton) &&
@@ -1832,8 +1775,8 @@ export default function Tablon() {
       matchesJobSearch(ad, 'ad')
     ).length
 
-    if (isEmpleos || filterDraft.employmentLevel) return draftJobsCount + draftLegacyJobsCount
-    if (cat || draftHasPrice) return draftAds.length
+    if (draftIsEmpleos || filterDraft.employmentLevel) return draftJobsCount + draftLegacyJobsCount
+    if (draftCategory || draftHasPrice) return draftAds.length
     return draftAds.length + draftJobsCount + draftLegacyJobsCount
   }, [
     activeAdIntent,
@@ -1842,13 +1785,13 @@ export default function Tablon() {
     cat,
     deferredSearch,
     filterDraft.canton,
+    filterDraft.category,
     filterDraft.employmentLevel,
     filterDraft.jobType,
     filterDraft.plz,
     filterDraft.priceRange,
     filterDraft.privacy,
     hasResolvedSearch,
-    isEmpleos,
     isLoggedIn,
     jobs,
     resolvedSearchRank,
@@ -1921,6 +1864,59 @@ export default function Tablon() {
     priceRange,
     privacy,
     userCanton,
+  ])
+  const filterSavedSearchDraft = useMemo(() => {
+    const draftCategory = normalizeAdCat(filterDraft.category)
+    const draftIsEmployment = draftCategory === 'empleo'
+    const draftIntent = draftCategory === cat
+      ? draftIsEmployment ? activeJobIntent : activeAdIntent
+      : draftCategory ? getDefaultCategoryIntent(draftCategory) : ''
+    const cleanQuery = deferredSearch.length >= 2 ? deferredSearch : ''
+    const params = new URLSearchParams()
+
+    if (draftCategory) params.set('cat', draftCategory)
+    if (cleanQuery) params.set('q', cleanQuery)
+    if (filterDraft.canton) params.set('canton', filterDraft.canton)
+    if (filterDraft.plz) params.set('plz', filterDraft.plz)
+    if (filterDraft.sort && filterDraft.sort !== 'newest') params.set('sort', filterDraft.sort)
+
+    if (draftIsEmployment) {
+      if (draftIntent) params.set('jobIntent', draftIntent)
+      if (filterDraft.jobType) params.set('jobType', filterDraft.jobType)
+      if (filterDraft.employmentLevel) params.set('employmentLevel', filterDraft.employmentLevel)
+    } else {
+      if (draftIntent) params.set('type', draftIntent)
+      if (filterDraft.priceRange) params.set('priceRange', filterDraft.priceRange)
+      if (filterDraft.privacy) params.set('privacy', filterDraft.privacy)
+    }
+
+    const categoryLabel = AD_CATS.find(item => item.id === draftCategory)?.label
+      || (draftIsEmployment ? 'Empleo' : 'Anuncios')
+    const subject = cleanQuery ? `“${cleanQuery}”` : categoryLabel
+    const locationLabel = filterDraft.canton || filterDraft.plz
+
+    return {
+      name:`${categoryLabel}: ${subject}${locationLabel ? ` · ${locationLabel}` : ''}`.slice(0, 100),
+      query:cleanQuery,
+      entityKinds:draftIsEmployment ? ['job', 'listing'] : draftCategory ? ['listing'] : ['listing', 'job'],
+      category:draftCategory,
+      intent:draftIntent,
+      canton:filterDraft.canton,
+      plz:filterDraft.plz,
+      filters:{
+        jobType:draftIsEmployment ? filterDraft.jobType : '',
+        employmentLevel:draftIsEmployment ? filterDraft.employmentLevel : '',
+        priceRange:draftIsEmployment ? '' : filterDraft.priceRange,
+        privacy:draftIsEmployment ? '' : filterDraft.privacy,
+      },
+      resultPath:`/tablon${params.size ? `?${params.toString()}` : ''}`,
+    }
+  }, [
+    activeAdIntent,
+    activeJobIntent,
+    cat,
+    deferredSearch,
+    filterDraft,
   ])
   const isEmploymentQuery = isEmpleos || (
     !cat && (
@@ -2060,7 +2056,7 @@ export default function Tablon() {
   return (
     <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px 100px' }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
-        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'24px 20px 0px' }}>
+        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'16px 20px 0' }}>
       <div className="section-page-head">
         <h1>{pageContext.title}</h1>
         <p>{pageContext.subtitle}</p>
@@ -2103,15 +2099,6 @@ export default function Tablon() {
             items={visibleFilterChips}
             onRemove={removeVisibleFilter}
             onClear={clearVisibleFilters}
-          />
-        </div>
-      )}
-      {!isEmpleos && (
-        <div style={{ marginTop:9 }}>
-          <CategoryPills
-            categories={orderedCats}
-            value={cat}
-            onChange={setCategoryView}
           />
         </div>
       )}
@@ -2304,6 +2291,23 @@ export default function Tablon() {
           </div>
 
           <div className="filter-sheet-options-grid">
+            {!isEmpleos && (
+              <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>Categoría</span>
+                <select
+                  className="filter-sheet-control"
+                  value={filterDraft.category}
+                  onChange={event => updateFilterDraft('category', event.target.value)}
+                  style={getFilterControlStyle(filterDraft.category)}
+                >
+                  <option value="">Todos los anuncios</option>
+                  {orderedCats.map(option => (
+                    <option key={option.id} value={option.id}>{option.emoji} {option.label}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             {isEmpleos ? (
               <label>
                 <span style={FILTER_PANEL_TITLE_STYLE}>Tipo de empleo</span>
@@ -2374,6 +2378,12 @@ export default function Tablon() {
               </select>
             </label>
           </div>
+
+          <SavedSearchButton
+            draft={filterSavedSearchDraft}
+            idleLabel="Guardar esta búsqueda y avisarme"
+            panel
+          />
 
           <button type="submit" className="filter-show-results filter-sheet-submit">
             Mostrar {draftResultCount} {draftResultCount === 1 ? 'resultado' : 'resultados'}

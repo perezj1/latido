@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public.saved_searches (
   CONSTRAINT saved_searches_entity_kinds_not_empty
     CHECK (cardinality(entity_kinds) > 0),
   CONSTRAINT saved_searches_entity_kinds_valid
-    CHECK (entity_kinds <@ ARRAY['listing', 'job', 'provider', 'event', 'community']::TEXT[]),
+    CHECK (entity_kinds <@ ARRAY['listing', 'job', 'provider', 'event', 'community', 'creator', 'creator_content']::TEXT[]),
   CONSTRAINT saved_searches_result_path_internal
     CHECK (result_path LIKE '/%'),
   UNIQUE (user_id, fingerprint)
@@ -45,8 +45,7 @@ CREATE TABLE IF NOT EXISTS public.saved_search_matches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   saved_search_id UUID NOT NULL REFERENCES public.saved_searches(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  entity_kind TEXT NOT NULL
-    CHECK (entity_kind IN ('listing', 'job', 'provider', 'event', 'community')),
+  entity_kind TEXT NOT NULL,
   entity_id TEXT NOT NULL,
   search_name TEXT NOT NULL,
   result_title TEXT NOT NULL,
@@ -64,10 +63,29 @@ CREATE TABLE IF NOT EXISTS public.saved_search_matches (
   email_error TEXT,
   read_at TIMESTAMPTZ,
   opened_at TIMESTAMPTZ,
+  CONSTRAINT saved_search_matches_entity_kind_valid
+    CHECK (entity_kind IN ('listing', 'job', 'provider', 'event', 'community', 'creator', 'creator_content')),
   CONSTRAINT saved_search_matches_result_path_internal
     CHECK (result_path LIKE '/%'),
   UNIQUE (saved_search_id, entity_kind, entity_id)
 );
+
+-- CREATE TABLE IF NOT EXISTS no actualiza restricciones ya desplegadas.
+-- Las recreamos para que las instalaciones existentes acepten alertas de
+-- perfiles y contenidos de creadores.
+ALTER TABLE public.saved_searches
+  DROP CONSTRAINT IF EXISTS saved_searches_entity_kinds_valid;
+ALTER TABLE public.saved_searches
+  ADD CONSTRAINT saved_searches_entity_kinds_valid
+  CHECK (entity_kinds <@ ARRAY['listing', 'job', 'provider', 'event', 'community', 'creator', 'creator_content']::TEXT[]);
+
+ALTER TABLE public.saved_search_matches
+  DROP CONSTRAINT IF EXISTS saved_search_matches_entity_kind_check;
+ALTER TABLE public.saved_search_matches
+  DROP CONSTRAINT IF EXISTS saved_search_matches_entity_kind_valid;
+ALTER TABLE public.saved_search_matches
+  ADD CONSTRAINT saved_search_matches_entity_kind_valid
+  CHECK (entity_kind IN ('listing', 'job', 'provider', 'event', 'community', 'creator', 'creator_content'));
 
 ALTER TABLE public.saved_searches
   ADD COLUMN IF NOT EXISTS email_enabled BOOLEAN NOT NULL DEFAULT TRUE,

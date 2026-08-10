@@ -22,7 +22,6 @@ import { C, PP } from '../lib/theme'
 import { Tag, EmptyState, Sheet, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal, ChevronLeftIcon } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CreatorCommunityView, { CreatorCommunityToolbar } from '../components/CreatorCommunityView'
-import CompactFilterSelect from '../components/CompactFilterSelect'
 import SectionTabs from '../components/SectionTabs'
 import GlobalSearch from '../components/GlobalSearch'
 import SavedSearchButton from '../components/SavedSearchButton'
@@ -345,51 +344,6 @@ function communityMatchesLocation(group={}, location='') {
 
   return (CITIES_BY_CANTON[canton.code] || [])
     .some(city => normalizeDirectoryPlace(city) === groupCity)
-}
-
-function DirectoryCategoryPills({ options=[], value='', onChange, label='Categorías' }) {
-  return (
-    <div
-      className="no-scroll"
-      role="tablist"
-      aria-label={label}
-      style={{ display:'flex', width:'100%', gap:7, overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'2px 1px 4px', boxSizing:'border-box' }}
-    >
-      {options.map(option => {
-        const active = value === option.id
-        return (
-          <button
-            key={option.id || 'all'}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onChange(option.id)}
-            style={{
-              flex:'0 0 auto',
-              minHeight:32,
-              display:'inline-flex',
-              alignItems:'center',
-              justifyContent:'center',
-              padding:'6px 11px',
-              border:`1.5px solid ${active ? C.primary : C.border}`,
-              borderRadius:999,
-              background:active ? C.primary : '#fff',
-              color:active ? '#fff' : C.mid,
-              fontFamily:PP,
-              fontSize:10,
-              fontWeight:800,
-              lineHeight:1,
-              whiteSpace:'nowrap',
-              cursor:'pointer',
-              boxShadow:active ? '0 5px 12px rgba(37,99,235,0.18)' : 'none',
-            }}
-          >
-            {option.label}
-          </button>
-        )
-      })}
-    </div>
-  )
 }
 
 function formatRelativeDate(value) {
@@ -1482,6 +1436,8 @@ export default function Comunidades() {
   const requestedCreatorView = ['contenidos', 'creadores'].includes(searchParams.get('creatorView'))
     ? searchParams.get('creatorView')
     : 'contenidos'
+  const requestedCreatorTopic = searchParams.get('creatorTopic') || ''
+  const requestedCreatorPlatform = searchParams.get('creatorPlatform') || ''
   const [communities, setCommunities] = useState(() => comunidadesCache.data?.communities ?? [])
   const [businesses, setBusinesses] = useState(() => comunidadesCache.data?.businesses ?? MOCK_NEGOCIOS)
   const [businessServices, setBusinessServices] = useState(() => comunidadesCache.data?.businessServices ?? MOCK_NEGOCIO_SERVICES)
@@ -1502,15 +1458,16 @@ export default function Comunidades() {
   const [locationFilter, setLocationFilter] = useState(() => requestedLocation)
   const [businessSort, setBusinessSort] = useState('recommended')
   const [communitySort, setCommunitySort] = useState('newest')
-  const [creatorSearch, setCreatorSearch] = useState('')
-  const [creatorTopic, setCreatorTopic] = useState('')
-  const [creatorPlatform, setCreatorPlatform] = useState('')
-  const [creatorLocation, setCreatorLocation] = useState('')
+  const [creatorSearch, setCreatorSearch] = useState(requestedSearch)
+  const [creatorTopic, setCreatorTopic] = useState(requestedCreatorTopic)
+  const [creatorPlatform, setCreatorPlatform] = useState(requestedCreatorPlatform)
+  const [creatorLocation, setCreatorLocation] = useState(requestedCanton)
   const [creatorSort, setCreatorSort] = useState('newest')
   const [creatorView, setCreatorView] = useState(requestedCreatorView)
   const [creatorResultCount, setCreatorResultCount] = useState(0)
   const [showDirectoryFilters, setShowDirectoryFilters] = useState(false)
   const [directoryFilterDraft, setDirectoryFilterDraft] = useState({
+    category:'',
     location:requestedCanton,
     sort:'recommended',
   })
@@ -1556,6 +1513,14 @@ export default function Comunidades() {
   useEffect(() => {
     setCreatorView(requestedCreatorView)
   }, [requestedCreatorView])
+
+  useEffect(() => {
+    if (tab !== 'creadores') return
+    setCreatorSearch(requestedSearch)
+    setCreatorTopic(requestedCreatorTopic)
+    setCreatorPlatform(requestedCreatorPlatform)
+    setCreatorLocation(requestedCanton)
+  }, [requestedCanton, requestedCreatorPlatform, requestedCreatorTopic, requestedSearch, tab])
 
   useEffect(() => {
     if (!user?.id) return
@@ -1858,20 +1823,9 @@ export default function Comunidades() {
     scrollPageTop()
   }, [tab])
 
-  const handleCommunityCategoryChange = nextCat => {
-    setCat(nextCat)
-    setShowDirectoryFilters(false)
-    scrollPageTop()
-  }
-
-  const handleBusinessTypeChange = nextType => {
-    setNegType(nextType)
-    setShowDirectoryFilters(false)
-    scrollPageTop()
-  }
-
   const openDirectoryFilters = () => {
     setDirectoryFilterDraft({
+      category:tab === 'negocios' ? negType : tab === 'eventos' ? eventType : cat,
       location:locationFilter,
       sort:tab === 'negocios' ? businessSort : communitySort,
     })
@@ -1893,15 +1847,19 @@ export default function Comunidades() {
   }
 
   const applyDirectoryFilters = () => {
+    if (tab === 'negocios') setNegType(directoryFilterDraft.category)
+    if (tab === 'comunidades') setCat(directoryFilterDraft.category)
+    if (tab === 'eventos') setEventType(directoryFilterDraft.category)
     setLocationFilter(directoryFilterDraft.location)
     if (tab === 'negocios') setBusinessSort(directoryFilterDraft.sort || 'recommended')
-    else setCommunitySort(directoryFilterDraft.sort || 'newest')
+    if (tab === 'comunidades') setCommunitySort(directoryFilterDraft.sort || 'newest')
     setShowDirectoryFilters(false)
     scrollPageTop()
   }
 
   const clearDirectoryFilterDraft = () => {
     setDirectoryFilterDraft({
+      category:'',
       location:'',
       sort:tab === 'negocios' ? 'recommended' : 'newest',
     })
@@ -1948,13 +1906,19 @@ export default function Comunidades() {
   const visibleDirectoryFilterChips = appliedDirectoryFilterChips
   const activeDirectoryFilters = tab === 'eventos'
     ? [eventType, locationFilter].filter(Boolean).length
-    : appliedDirectoryFilterChips.length
+    : appliedDirectoryFilterChips.length + Number(Boolean(tab === 'negocios' ? negType : cat))
 
   const clearDirectoryFilters = () => {
     setLocationFilter('')
     if (tab === 'eventos') setEventType('')
-    if (tab === 'negocios') setBusinessSort('recommended')
-    if (tab === 'comunidades') setCommunitySort('newest')
+    if (tab === 'negocios') {
+      setNegType('')
+      setBusinessSort('recommended')
+    }
+    if (tab === 'comunidades') {
+      setCat('')
+      setCommunitySort('newest')
+    }
     scrollPageTop()
   }
 
@@ -1986,8 +1950,6 @@ export default function Comunidades() {
 
   const clearAllDirectoryFilters = () => {
     clearDirectoryFilters()
-    if (tab === 'negocios') setNegType('')
-    if (tab === 'comunidades') setCat('')
   }
 
   const searchProfile = useMemo(() => buildSearchProfile(search), [search])
@@ -2127,9 +2089,16 @@ export default function Comunidades() {
     })
 
   const draftDirectoryResultCount = useMemo(() => {
+    if (tab === 'eventos') {
+      return events.filter(event =>
+        (!directoryFilterDraft.category || event.type === directoryFilterDraft.category) &&
+        matchesCantonOrNationwide(event, directoryFilterDraft.location)
+      ).length
+    }
+
     if (tab === 'comunidades') {
       return communities.filter(group =>
-        (!cat || group.cat === cat) &&
+        (!directoryFilterDraft.category || group.cat === directoryFilterDraft.category) &&
         communityMatchesLocation(group, directoryFilterDraft.location) &&
         (!hasSearch || (
           hasResolvedSearch
@@ -2148,7 +2117,7 @@ export default function Comunidades() {
     const eligible = businesses.filter(business =>
       business.type !== 'empleo' &&
       business.type !== 'vivienda' &&
-      (!negType || normalizeNegocioType(business.type) === negType) &&
+      (!directoryFilterDraft.category || normalizeNegocioType(business.type) === directoryFilterDraft.category) &&
       matchesCantonOrNationwide(business, directoryFilterDraft.location)
     )
     if (!hasSearch) return eligible.length
@@ -2177,12 +2146,12 @@ export default function Comunidades() {
   }, [
     businessServices,
     businesses,
-    cat,
     communities,
+    directoryFilterDraft.category,
     directoryFilterDraft.location,
+    events,
     hasResolvedSearch,
     hasSearch,
-    negType,
     resolvedSearchRank,
     searchProfile,
     tab,
@@ -2204,7 +2173,7 @@ export default function Comunidades() {
       || locationFilter
       || (tab === 'negocios' && negType)
       || (tab === 'comunidades' && cat)
-      || (tab === 'eventos' && eventType),
+      || (tab === 'eventos' && eventType)
     )
     if (!hasUsefulContext) return null
 
@@ -2227,9 +2196,7 @@ export default function Comunidades() {
     return {
       name:`${section}: ${subject}${locationFilter ? ` · ${locationFilter}` : ''}`.slice(0, 100),
       query:tab !== 'eventos' && cleanQuery.length >= 2 ? cleanQuery : '',
-      entityKinds:[
-        tab === 'negocios' ? 'provider' : tab === 'comunidades' ? 'community' : 'event',
-      ],
+      entityKinds:[tab === 'negocios' ? 'provider' : tab === 'comunidades' ? 'community' : 'event'],
       category:tab === 'negocios' ? 'servicios' : tab === 'comunidades' ? 'comunidad' : 'eventos',
       canton:tab === 'comunidades' ? '' : locationFilter,
       city:tab === 'comunidades' ? locationFilter : '',
@@ -2241,6 +2208,44 @@ export default function Comunidades() {
       resultPath:`/comunidades?${params.toString()}`,
     }
   }, [cat, eventType, locationFilter, negType, search, tab])
+  const filterSavedSearchDraft = useMemo(() => {
+    const cleanQuery = search.trim()
+    const category = directoryFilterDraft.category
+    const location = directoryFilterDraft.location
+
+    const params = new URLSearchParams({ view:tab })
+    if (cleanQuery.length >= 2 && tab !== 'eventos') params.set('q', cleanQuery)
+    if (tab === 'negocios' && category) params.set('businessType', category)
+    if (tab === 'comunidades' && category) params.set('cat', category)
+    if (tab === 'eventos' && category) params.set('eventType', category)
+    if (location) {
+      if (CANTONS.some(item => item.code === location)) params.set('canton', location)
+      else params.set('location', location)
+    }
+
+    const section = tab === 'negocios'
+      ? 'Negocios'
+      : tab === 'comunidades'
+        ? 'Grupos'
+        : 'Eventos'
+    const subject = cleanQuery.length >= 2 ? `“${cleanQuery}”` : section
+    return {
+      name:`${section}: ${subject}${location ? ` · ${location}` : ''}`.slice(0, 100),
+      query:tab !== 'eventos' && cleanQuery.length >= 2 ? cleanQuery : '',
+      entityKinds:[
+        tab === 'negocios' ? 'provider' : tab === 'comunidades' ? 'community' : 'event',
+      ],
+      category:tab === 'negocios' ? 'servicios' : tab === 'comunidades' ? 'comunidad' : 'eventos',
+      canton:tab === 'comunidades' ? '' : location,
+      city:tab === 'comunidades' ? location : '',
+      filters:{
+        businessType:tab === 'negocios' ? category : '',
+        communityCategory:tab === 'comunidades' ? category : '',
+        eventType:tab === 'eventos' ? category : '',
+      },
+      resultPath:`/comunidades?${params.toString()}`,
+    }
+  }, [directoryFilterDraft.category, directoryFilterDraft.location, search, tab])
 
   const relatedCommunitiesForSelected = useMemo(() => {
     if (!selectedCommunity) return []
@@ -2320,7 +2325,7 @@ export default function Comunidades() {
   return (
     <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px 100px' }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
-        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'24px 24px 0' }}>
+        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'16px 24px 0' }}>
       <div className="section-page-head">
         <h1>{tabCopy.title}</h1>
         <p>{tabCopy.subtitle}</p>
@@ -2375,14 +2380,6 @@ export default function Comunidades() {
                   />
                 </div>
               )}
-              <div style={{ marginTop:9 }}>
-                <DirectoryCategoryPills
-                  options={tab === 'negocios' ? VISIBLE_NEGOCIO_TYPES : catOptions}
-                  value={tab === 'negocios' ? negType : cat}
-                  onChange={tab === 'negocios' ? handleBusinessTypeChange : handleCommunityCategoryChange}
-                  label={tab === 'negocios' ? 'Categorías de negocios' : 'Categorías de grupos'}
-                />
-              </div>
               <FilterResultSummary
                 count={visibleDirectoryResultCount}
                 sortLabel={currentDirectorySortLabel}
@@ -2390,6 +2387,27 @@ export default function Comunidades() {
                 sortValue={activeDirectorySort}
                 onSortChange={handleDirectorySortChange}
               />
+              {savedSearchDraft && (
+                <div className="saved-search-prompt saved-search-prompt--toolbar">
+                  <span>Avísame cuando haya nuevos resultados.</span>
+                  <SavedSearchButton draft={savedSearchDraft} compact />
+                </div>
+              )}
+            </div>
+          )}
+          {tab === 'eventos' && (
+            <div className="segmented-content-transition" style={{ marginTop:10 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+                <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.light }}>
+                  {filteredEvents.length} {filteredEvents.length === 1 ? 'resultado' : 'resultados'}
+                </span>
+                <FilterButton
+                  count={activeDirectoryFilters}
+                  open={showDirectoryFilters}
+                  onClick={toggleDirectoryFilters}
+                  controls="event-filter-sheet"
+                />
+              </div>
               {savedSearchDraft && (
                 <div className="saved-search-prompt saved-search-prompt--toolbar">
                   <span>Avísame cuando haya nuevos resultados.</span>
@@ -2506,40 +2524,6 @@ export default function Comunidades() {
           {/* Eventos de la comunidad */}
           <div style={{ marginBottom:24 }}>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:12 }}>EVENTOS DE LA COMUNIDAD</p>
-            <div className="community-filter-row community-event-filter-row no-scroll">
-              <CompactFilterSelect
-                className="community-filter-control"
-                label="Tipo de evento"
-                value={eventType}
-                options={eventTypeOptions}
-                onChange={value => setEventType(value)}
-              />
-              <CompactFilterSelect
-                className="community-filter-control community-filter-location"
-                label="Cantón"
-                value={locationFilter}
-                options={cantonOptions}
-                onChange={value => setLocationFilter(value)}
-              />
-              {activeDirectoryFilters > 0 && (
-                <button
-                  type="button"
-                  className="tablon-clear-filter-button"
-                  onClick={clearDirectoryFilters}
-                  aria-label="Limpiar filtros de eventos"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            {savedSearchDraft && (
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'10px 0 12px' }}>
-                <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.light }}>
-                  {filteredEvents.length} {filteredEvents.length === 1 ? 'resultado' : 'resultados'}
-                </span>
-                <SavedSearchButton draft={savedSearchDraft} compact />
-              </div>
-            )}
             {loading ? (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 {[1,2].map(i => <div key={i} className="skeleton" style={{ height:120, borderRadius:16 }} />)}
@@ -2590,9 +2574,10 @@ export default function Comunidades() {
       )}
       </div>
 
-      {(tab === 'negocios' || tab === 'comunidades') && (
+      {(tab === 'negocios' || tab === 'comunidades' || tab === 'eventos') && (
         <Sheet show={showDirectoryFilters} onClose={() => setShowDirectoryFilters(false)}>
           <form
+            id={tab === 'eventos' ? 'event-filter-sheet' : 'directory-filter-sheet'}
             className="filter-sheet-content"
             onSubmit={event => {
               event.preventDefault()
@@ -2606,8 +2591,22 @@ export default function Comunidades() {
 
             <div className="filter-sheet-options-grid">
               <label>
+                <span style={FILTER_PANEL_TITLE_STYLE}>{tab === 'eventos' ? 'Tipo de evento' : 'Categoría'}</span>
+                <select
+                  className="filter-sheet-control"
+                  value={directoryFilterDraft.category}
+                  onChange={event => setDirectoryFilterDraft(current => ({ ...current, category:event.target.value }))}
+                  style={getDirectoryFilterControlStyle(directoryFilterDraft.category)}
+                >
+                  {(tab === 'negocios' ? VISIBLE_NEGOCIO_TYPES : tab === 'eventos' ? eventTypeOptions : catOptions).map(option => (
+                    <option key={option.id || 'all'} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
                 <span style={FILTER_PANEL_TITLE_STYLE}>
-                  {tab === 'negocios' ? 'Cantón' : 'Ubicación'}
+                  {tab === 'comunidades' ? 'Ubicación' : 'Cantón'}
                 </span>
                 <select
                   className="filter-sheet-control"
@@ -2615,29 +2614,37 @@ export default function Comunidades() {
                   onChange={event => setDirectoryFilterDraft(current => ({ ...current, location:event.target.value }))}
                   style={getDirectoryFilterControlStyle(directoryFilterDraft.location)}
                 >
-                  {(tab === 'negocios' ? cantonOptions : communityCityOptions).map(option => (
+                  {(tab === 'comunidades' ? communityCityOptions : cantonOptions).map(option => (
                     <option key={option.id || 'all'} value={option.id}>{option.label}</option>
                   ))}
                 </select>
               </label>
 
-              <label>
-                <span style={FILTER_PANEL_TITLE_STYLE}>Ordenar por</span>
-                <select
-                  className="filter-sheet-control"
-                  value={directoryFilterDraft.sort}
-                  onChange={event => setDirectoryFilterDraft(current => ({ ...current, sort:event.target.value }))}
-                  style={getDirectoryFilterControlStyle(
-                    directoryFilterDraft.sort,
-                    tab === 'negocios' ? 'recommended' : 'newest'
-                  )}
-                >
-                  {(tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS).map(option => (
-                    <option key={option.id} value={option.id}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
+              {tab !== 'eventos' && (
+                <label>
+                  <span style={FILTER_PANEL_TITLE_STYLE}>Ordenar por</span>
+                  <select
+                    className="filter-sheet-control"
+                    value={directoryFilterDraft.sort}
+                    onChange={event => setDirectoryFilterDraft(current => ({ ...current, sort:event.target.value }))}
+                    style={getDirectoryFilterControlStyle(
+                      directoryFilterDraft.sort,
+                      tab === 'negocios' ? 'recommended' : 'newest'
+                    )}
+                  >
+                    {(tab === 'negocios' ? BUSINESS_SORT_OPTIONS : COMMUNITY_SORT_OPTIONS).map(option => (
+                      <option key={option.id} value={option.id}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
+
+            <SavedSearchButton
+              draft={filterSavedSearchDraft}
+              idleLabel="Guardar esta búsqueda y avisarme"
+              panel
+            />
 
             <button type="submit" className="filter-show-results filter-sheet-submit">
               Mostrar {draftDirectoryResultCount} {draftDirectoryResultCount === 1 ? 'resultado' : 'resultados'}

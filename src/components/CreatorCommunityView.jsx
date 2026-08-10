@@ -24,7 +24,8 @@ import {
   CreatorContentModal,
 } from './CreatorCards'
 import { EmptyState, Sheet } from './UI'
-import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE } from './FilterWorkspace'
+import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE, getFilterPanelControlStyle } from './FilterWorkspace'
+import SavedSearchButton from './SavedSearchButton'
 import { C, PP } from '../lib/theme'
 import '../pages/Creators.css'
 
@@ -63,19 +64,69 @@ export function CreatorCommunityToolbar({
   onViewChange,
 }) {
   const [showFilters, setShowFilters] = useState(false)
-  const [draft, setDraft] = useState({ platform:'', location:'' })
-  const filterCount = Number(Boolean(platform)) + Number(Boolean(location))
+  const [draft, setDraft] = useState({ topic:'', platform:'', location:'' })
+  const filterCount = Number(Boolean(topic)) + Number(Boolean(platform)) + Number(Boolean(location))
+  const filterSavedSearchDraft = useMemo(() => {
+    const cleanQuery = search.trim().length >= 2 ? search.trim() : ''
+    const params = new URLSearchParams({ view:'creadores', creatorView:view })
+    if (cleanQuery) params.set('q', cleanQuery)
+    if (draft.topic) params.set('creatorTopic', draft.topic)
+    if (draft.platform) params.set('creatorPlatform', draft.platform)
+    if (draft.location) params.set('canton', draft.location)
+
+    const section = view === 'creadores' ? 'Creadores' : 'Contenido de creadores'
+    const topicLabel = CREATOR_TOPICS.find(item => item.id === draft.topic)?.label
+    const subject = cleanQuery ? `“${cleanQuery}”` : topicLabel || section
+
+    return {
+      name:`${section}: ${subject}${draft.location ? ` · ${draft.location}` : ''}`.slice(0, 100),
+      query:cleanQuery,
+      entityKinds:[view === 'creadores' ? 'creator' : 'creator_content'],
+      category:'creadores',
+      canton:draft.location,
+      filters:{
+        creatorTopic:draft.topic,
+        creatorPlatform:draft.platform,
+      },
+      resultPath:`/comunidades?${params.toString()}`,
+    }
+  }, [draft, search, view])
+  const savedSearchDraft = useMemo(() => {
+    const cleanQuery = search.trim().length >= 2 ? search.trim() : ''
+    if (!cleanQuery && !topic && !platform && !location) return null
+
+    const params = new URLSearchParams({ view:'creadores', creatorView:view })
+    if (cleanQuery) params.set('q', cleanQuery)
+    if (topic) params.set('creatorTopic', topic)
+    if (platform) params.set('creatorPlatform', platform)
+    if (location) params.set('canton', location)
+
+    const section = view === 'creadores' ? 'Creadores' : 'Contenido de creadores'
+    const topicLabel = CREATOR_TOPICS.find(item => item.id === topic)?.label
+    const subject = cleanQuery ? `“${cleanQuery}”` : topicLabel || section
+    return {
+      name:`${section}: ${subject}${location ? ` · ${location}` : ''}`.slice(0, 100),
+      query:cleanQuery,
+      entityKinds:[view === 'creadores' ? 'creator' : 'creator_content'],
+      category:'creadores',
+      canton:location,
+      filters:{ creatorTopic:topic, creatorPlatform:platform },
+      resultPath:`/comunidades?${params.toString()}`,
+    }
+  }, [location, platform, search, topic, view])
   const chips = [
+    topic && { key:'topic', label:CREATOR_TOPICS.find(item => item.id === topic)?.label || topic },
     platform && { key:'platform', label:getPlatformLabel(platform) },
     location && { key:'location', label:`Cantón ${location}` },
   ].filter(Boolean)
 
   const openFilters = () => {
-    setDraft({ platform, location })
+    setDraft({ topic, platform, location })
     setShowFilters(true)
   }
 
   const clearFilter = key => {
+    if (key === 'topic') onTopicChange('')
     if (key === 'platform') onPlatformChange('')
     if (key === 'location') onLocationChange('')
   }
@@ -102,23 +153,13 @@ export function CreatorCommunityToolbar({
           items={chips}
           onRemove={clearFilter}
           onClear={() => {
+            onTopicChange('')
             onPlatformChange('')
             onLocationChange('')
           }}
         />
       )}
 
-      <div className="creator-community-topics no-scroll" aria-label="Temas de creadores">
-        <button type="button" className={!topic ? 'is-active' : ''} onClick={() => onTopicChange('')}>Todos</button>
-        {CREATOR_TOPICS.map(item => (
-          <button key={item.id} type="button" className={topic === item.id ? 'is-active' : ''} onClick={() => onTopicChange(topic === item.id ? '' : item.id)}>
-            {item.emoji} {item.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Debajo de las categorias: primero eliges el tema y despues si quieres
-          ver contenido o creadores de ese tema. */}
       <div className="creator-community-view-tabs">
         <SegmentedTabs
           items={CREATOR_VIEW_TABS}
@@ -136,6 +177,12 @@ export function CreatorCommunityToolbar({
         sortValue={sort}
         onSortChange={onSortChange}
       />
+      {savedSearchDraft && (
+        <div className="saved-search-prompt saved-search-prompt--toolbar">
+          <span>Avísame cuando haya nuevos resultados.</span>
+          <SavedSearchButton draft={savedSearchDraft} compact />
+        </div>
+      )}
 
       <Sheet show={showFilters} onClose={() => setShowFilters(false)}>
         <form
@@ -143,6 +190,7 @@ export function CreatorCommunityToolbar({
           className="filter-sheet-content"
           onSubmit={event => {
             event.preventDefault()
+            onTopicChange(draft.topic)
             onPlatformChange(draft.platform)
             onLocationChange(draft.location)
             setShowFilters(false)
@@ -150,24 +198,36 @@ export function CreatorCommunityToolbar({
         >
           <div className="filter-sheet-heading">
             <h2>Filtros</h2>
-            <button type="button" onClick={() => setDraft({ platform:'', location:'' })}>Restablecer</button>
+            <button type="button" onClick={() => setDraft({ topic:'', platform:'', location:'' })}>Restablecer</button>
           </div>
           <div className="filter-sheet-options-grid">
             <label>
+              <span style={FILTER_PANEL_TITLE_STYLE}>Tema</span>
+              <select className="filter-sheet-control" value={draft.topic} onChange={event => setDraft(current => ({ ...current, topic:event.target.value }))} style={getFilterPanelControlStyle(draft.topic)}>
+                <option value="">Todos los temas</option>
+                {CREATOR_TOPICS.map(item => <option key={item.id} value={item.id}>{item.emoji} {item.label}</option>)}
+              </select>
+            </label>
+            <label>
               <span style={FILTER_PANEL_TITLE_STYLE}>Plataforma</span>
-              <select className="filter-sheet-control" value={draft.platform} onChange={event => setDraft(current => ({ ...current, platform:event.target.value }))}>
+              <select className="filter-sheet-control" value={draft.platform} onChange={event => setDraft(current => ({ ...current, platform:event.target.value }))} style={getFilterPanelControlStyle(draft.platform)}>
                 <option value="">Todas las plataformas</option>
                 {CREATOR_PLATFORMS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
               </select>
             </label>
             <label>
               <span style={FILTER_PANEL_TITLE_STYLE}>Cantón</span>
-              <select className="filter-sheet-control" value={draft.location} onChange={event => setDraft(current => ({ ...current, location:event.target.value }))}>
+              <select className="filter-sheet-control" value={draft.location} onChange={event => setDraft(current => ({ ...current, location:event.target.value }))} style={getFilterPanelControlStyle(draft.location)}>
                 <option value="">Toda Suiza</option>
                 {CANTONS.map(canton => <option key={canton.code} value={canton.code}>{canton.code} · {canton.name}</option>)}
               </select>
             </label>
           </div>
+          <SavedSearchButton
+            draft={filterSavedSearchDraft}
+            idleLabel="Guardar esta búsqueda y avisarme"
+            panel
+          />
           <button type="submit" className="filter-show-results filter-sheet-submit">Mostrar resultados</button>
         </form>
       </Sheet>
@@ -216,7 +276,7 @@ export default function CreatorCommunityView({
     return (!query || searchable.includes(query))
       && (!topic || creator.topics?.includes(topic))
       && (!platform || publishedContents.some(content => content.platform === platform) || creator.socials?.some(social => social.platform === platform))
-      && (!location || creator.canton === location || publishedContents.some(content => content.canton === location || content.canton === 'Toda Suiza'))
+      && (!location || creator.canton === location)
   }).sort((first, second) => {
     if (sort === 'name') return first.name.localeCompare(second.name, 'es')
     if (sort === 'contents') {
@@ -227,21 +287,21 @@ export default function CreatorCommunityView({
     return new Date(second.created_at) - new Date(first.created_at)
   }), [creators, location, platform, query, sort, topic])
 
-  const contents = useMemo(() => filteredCreators
+  const contents = useMemo(() => creators
     .flatMap(creator => getOrderedCreatorContents(creator, { publishedOnly:true })
       .filter(content =>
         content.status === 'published'
         && (!topic || content.topic === topic)
         && (!platform || content.platform === platform)
-        && (!location || content.canton === location || content.canton === 'Toda Suiza'))
+        && (!location || content.canton === location))
       .map((content, selectionIndex) => ({ content, creator, selectionIndex })))
     .filter(({ content, creator }) => !query || normalize(`${content.title} ${content.summary} ${creator.name} ${creator.handle}`).includes(query))
     .sort((a, b) => a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at))
-    .slice(0, 12), [filteredCreators, location, platform, query, topic])
+    .slice(0, 12), [creators, location, platform, query, topic])
 
   useEffect(() => {
-    onResultCountChange?.(filteredCreators.length)
-  }, [filteredCreators.length, onResultCountChange])
+    onResultCountChange?.(view === 'contenidos' ? contents.length : filteredCreators.length)
+  }, [contents.length, filteredCreators.length, onResultCountChange, view])
 
   const creatorCta = ownCreator ? '/creadores/mi-perfil' : '/creadores/alta'
   // Solo ofrecemos "Ver todo" si hay algo que limpiar; si el directorio esta

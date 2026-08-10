@@ -29,12 +29,14 @@ const OVERVIEW_INTERESTS = {
     emoji:'🎬',
     href:'/comunidades?view=creadores&creatorView=contenidos',
     label:'Contenido',
+    unfiltered:true,
     records:({ creatorContents }) => creatorContents,
   },
   creadores:{
     emoji:'🎙️',
     href:'/comunidades?view=creadores&creatorView=creadores',
     label:'Creadores',
+    unfiltered:true,
     records:({ creators }) => creators,
   },
   eventos:{
@@ -87,8 +89,9 @@ function countEntries({
     const meta = OVERVIEW_INTERESTS[interestId]
     if (!meta) return null
 
+    const showGlobalTotal = Boolean(meta.unfiltered)
     const count = meta.records(sources).filter(item =>
-      (!localOnly || isInCanton(item, canton))
+      (!localOnly || showGlobalTotal || isInCanton(item, canton))
     ).length
 
     return { id:interestId, count, ...meta }
@@ -143,9 +146,9 @@ export default function HomePersonalizationHeader({
 
   const locatedCreatorContents = useMemo(() => creatorContents.map(({ content, creator }) => ({
     ...content,
-    canton:creator?.canton || '',
-    city:creator?.city || '',
-    location:creator?.reach || '',
+    canton:content.canton || creator?.canton || '',
+    city:content.city || creator?.city || '',
+    location:content.location || content.reach || creator?.reach || '',
   })), [creatorContents])
   const locatedCreators = useMemo(() => creators.map(creator => ({
     ...creator,
@@ -186,7 +189,7 @@ export default function HomePersonalizationHeader({
         {overview.entries.map(entry => (
           <Link
             key={entry.id}
-            to={addCantonFilter(entry.href, canton, showLocalResults)}
+            to={entry.unfiltered ? entry.href : addCantonFilter(entry.href, canton, showLocalResults)}
             className="mi-latido-overview-card"
             aria-label={`${entry.count} ${entry.label}`}
           >
