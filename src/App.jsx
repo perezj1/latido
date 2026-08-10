@@ -28,6 +28,8 @@ import CookieConsent from './components/CookieConsent'
 import OfflineNotice from './components/OfflineNotice'
 import SearchResolutionPrompt from './components/SearchResolutionPrompt'
 import LatidoUsefulnessBanner from './components/LatidoUsefulnessBanner'
+import InAppNotificationAlert from './components/InAppNotificationAlert'
+import { AppNotificationsProvider } from './hooks/useAppNotifications'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
@@ -763,22 +765,25 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Seo />
-        <CreatorDirectorySync />
-        <ScrollToTop />
-        <OfflineNotice />
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            style: { fontFamily:PP, borderRadius:14, fontSize:13, boxShadow:'0 8px 32px rgba(0,0,0,0.12)' },
-            success: { iconTheme: { primary:C.primary, secondary:'#fff' } },
-          }}
-        />
-        <Routes>
-          <Route path="/*" element={<LazyRouteErrorBoundary><AppShell /></LazyRouteErrorBoundary>} />
-        </Routes>
-        <SearchResolutionPrompt />
-        <VercelTelemetry />
+        <AppNotificationsProvider>
+          <Seo />
+          <CreatorDirectorySync />
+          <ScrollToTop />
+          <OfflineNotice />
+          <InAppNotificationAlert />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: { fontFamily:PP, borderRadius:14, fontSize:13, boxShadow:'0 8px 32px rgba(0,0,0,0.12)' },
+              success: { iconTheme: { primary:C.primary, secondary:'#fff' } },
+            }}
+          />
+          <Routes>
+            <Route path="/*" element={<LazyRouteErrorBoundary><AppShell /></LazyRouteErrorBoundary>} />
+          </Routes>
+          <SearchResolutionPrompt />
+          <VercelTelemetry />
+        </AppNotificationsProvider>
       </BrowserRouter>
     </AuthProvider>
   )

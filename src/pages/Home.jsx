@@ -3,14 +3,13 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { useZoneAlerts, dismissZoneAlert, dismissZoneAlerts } from '../hooks/useZoneAlerts'
-import { useBusinessLeadAlerts } from '../hooks/useBusinessLeadAlerts'
-import { useSavedSearchAlerts } from '../hooks/useSavedSearchAlerts'
+import { dismissZoneAlert, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { markAllRead as markAllMessagesRead, markConvRead, useUnreadMessages } from '../hooks/useUnreadMessages'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { useFavorites } from '../hooks/useFavorites'
+import { useAppNotifications } from '../hooks/useAppNotifications'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
@@ -239,23 +238,20 @@ function EmptyState({ text }) {
   )
 }
 
-// Fila del panel de notificaciones: icono con emoji, titulo, texto y una accion
-// en forma de enlace. Sustituye a las tarjetas con fondo de color y boton pildora.
-function AttentionRow({ emoji, title, text, actionLabel, onAction, tone='info', showDot=true }) {
+// Toda la fila abre su destino; la flecha lateral comunica la navegacion sin
+// repetir acciones como "Revisar", "Activar" o "Elegir" debajo del texto.
+function AttentionRow({ emoji, title, text, onAction, tone='info', showDot=true }) {
   return (
-    <div className="latido-notif-row">
+    <button type="button" className="latido-notif-row" onClick={onAction} disabled={!onAction}>
       <span className="latido-notif-row__icon" data-tone={tone} data-dot={showDot ? 'on' : 'off'} aria-hidden="true">
         {emoji}
       </span>
-      <span>
+      <span className="latido-notif-row__copy">
         <span className="latido-notif-row__title">{title}</span>
         <span className="latido-notif-row__text">{text}</span>
-        <button type="button" className="latido-notif-row__action" data-tone={tone} onClick={onAction}>
-          {actionLabel}
-          <span aria-hidden="true">›</span>
-        </button>
       </span>
-    </div>
+      <span className="latido-notif-row__chevron" data-tone={tone} aria-hidden="true">›</span>
+    </button>
   )
 }
 
@@ -607,21 +603,27 @@ export default function Home() {
   const { displayName, isLoggedIn, user, userCanton, userInterests, profileMetaLoaded } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { alertItems } = useZoneAlerts()
-  const {
-    alerts:businessLeadAlerts,
-    unreadCount:businessLeadUnreadCount,
-    markRead:markBusinessLeadAlertRead,
-    markAllRead:markAllBusinessLeadAlertsRead,
-  } = useBusinessLeadAlerts()
-  const {
-    alerts:savedSearchAlerts,
-    unreadCount:savedSearchUnreadCount,
-    markRead:markSavedSearchAlertRead,
-    markAllRead:markAllSavedSearchAlertsRead,
-    getAlertPath:getSavedSearchAlertPath,
-  } = useSavedSearchAlerts()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
+  const {
+    groups:appNotificationGroups,
+    unreadCount:appNotificationUnreadCount,
+    markGroupRead:markAppNotificationGroupRead,
+    markAllRead:markAllAppNotificationsRead,
+    zoneAlerts:{ alertItems },
+    businessLeadAlerts:{
+      alerts:businessLeadAlerts,
+      unreadCount:businessLeadUnreadCount,
+      markRead:markBusinessLeadAlertRead,
+      markAllRead:markAllBusinessLeadAlertsRead,
+    },
+    savedSearchAlerts:{
+      alerts:savedSearchAlerts,
+      unreadCount:savedSearchUnreadCount,
+      markRead:markSavedSearchAlertRead,
+      markAllRead:markAllSavedSearchAlertsRead,
+      getAlertPath:getSavedSearchAlertPath,
+    },
+  } = useAppNotifications()
   const { favorites } = useFavorites()
 
   const [notifOpen, setNotifOpen] = useState(false)
@@ -667,8 +669,12 @@ export default function Home() {
   )
   const hasUnreadNotifications = visibleZoneAlerts.length > 0
     || hasUnread
+    || appNotificationUnreadCount > 0
     || businessLeadUnreadCount > 0
     || savedSearchUnreadCount > 0
+  const visibleAppNotificationGroups = appNotificationGroups.filter(group => (
+    group.source === 'app' && (group.kind !== 'message' || !hasUnread)
+  ))
   const rotatedBusinessHighlights = useMemo(
     () => rotateHomeBusinesses(businessHighlights, businessPromotionPlans),
     [businessHighlights, businessPromotionPlans, businessRotationBucket],
@@ -753,7 +759,6 @@ export default function Home() {
       emoji:'💙',
       title:'Selecciona tus intereses',
       text:'Para mostrarte contenido más relevante para ti.',
-      actionLabel:'Elegir',
       tone:'primary',
     }] : []),
     ...(showEmploymentProfileReminder ? [{
@@ -761,7 +766,6 @@ export default function Home() {
       type:'employment-profile',
       title:'Completa tu perfil',
       text:'Crea tu perfil profesional con cinco respuestas.',
-      actionLabel:'Completar',
       tone:'primary',
     }] : []),
     ...(isLoggedIn && needsActivation ? [{
@@ -770,7 +774,6 @@ export default function Home() {
       emoji:'🔔',
       title:'Activa las notificaciones',
       text:'Recibe respuestas a tus anuncios y novedades en tu zona.',
-      actionLabel:activatingPush ? 'Activando...' : 'Activar',
       disabled:activatingPush,
       tone:'primary',
     }] : []),
@@ -780,13 +783,11 @@ export default function Home() {
       emoji:'✨',
       title:'Destaca tu negocio',
       text:'Consigue más visibilidad entre los usuarios de Latido.',
-      actionLabel:'Destacar',
       tone:'primary',
     }] : []),
     ...visibleAttentionTasks.map(task => ({
       ...task,
       type:'review',
-      actionLabel:expandedAttentionTask === task.id ? 'Ocultar' : 'Ver',
       count:task.items.length,
     })),
   ]
@@ -847,6 +848,7 @@ export default function Home() {
   function clearAllNotifications() {
     markAllMessagesRead()
     dismissZoneAlerts()
+    void markAllAppNotificationsRead()
     void markAllBusinessLeadAlertsRead()
     void markAllSavedSearchAlertsRead()
   }
@@ -1582,6 +1584,33 @@ export default function Home() {
                         </div>
                       )}
 
+                      {visibleAppNotificationGroups.length > 0 && (
+                        <div style={{ padding:'10px 14px 6px' }}>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>ACTIVIDAD</p>
+                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                            {visibleAppNotificationGroups.map(group => (
+                              <button
+                                key={group.kind}
+                                type="button"
+                                onClick={() => {
+                                  void markAppNotificationGroupRead(group)
+                                  closeNotifPanel()
+                                  navigate(group.href)
+                                }}
+                                style={{ width:'100%', background:'#F8FAFC', border:`1px solid ${C.border}`, borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
+                              >
+                                <span style={{ display:'grid', width:34, height:34, flexShrink:0, placeItems:'center', borderRadius:11, background:C.primaryLight, fontSize:18 }} aria-hidden="true">{group.icon}</span>
+                                <span style={{ flex:1, minWidth:0 }}>
+                                  <span style={{ display:'block', fontFamily:PP, fontWeight:750, fontSize:12.5, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.title}</span>
+                                  <span style={{ display:'block', fontFamily:PP, fontSize:10.5, lineHeight:1.45, color:C.light }}>{group.body}</span>
+                                </span>
+                                <span style={{ color:C.primary, fontSize:16, lineHeight:'34px' }} aria-hidden="true">›</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {businessLeadAlerts.length > 0 && (
                         <div style={{ padding:'10px 14px 6px' }}>
                           <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>CLIENTES POTENCIALES</p>
@@ -1697,7 +1726,6 @@ export default function Home() {
                   emoji="💙"
                   title="Selecciona tus intereses"
                   text="Para mostrarte contenido más relevante para ti."
-                  actionLabel="Elegir"
                   onAction={() => {
                     closeNotifPanel()
                     navigate('/perfil?editar=intereses')
@@ -1709,7 +1737,6 @@ export default function Home() {
                   emoji="📄"
                   title="Completa tu perfil"
                   text="Crea tu perfil profesional con cinco respuestas."
-                  actionLabel="Completar"
                   onAction={() => {
                     closeNotifPanel()
                     navigate('/perfil?perfil-profesional=1')
@@ -1721,7 +1748,6 @@ export default function Home() {
                   emoji="🔔"
                   title="Activa las notificaciones"
                   text="Recibe respuestas a tus anuncios y novedades en tu zona."
-                  actionLabel={activatingPush ? 'Activando…' : 'Activar'}
                   onAction={activatingPush ? undefined : handleActivatePush}
                 />
               )}
@@ -1730,7 +1756,6 @@ export default function Home() {
                   emoji="✨"
                   title="Destaca tu negocio"
                   text="Consigue más visibilidad entre los usuarios de Latido."
-                  actionLabel="Destacar"
                   onAction={() => {
                     closeNotifPanel()
                     setBusinessPromotionModalOpen(true)
@@ -1748,7 +1773,6 @@ export default function Home() {
                       title={task.title}
                       text={task.text}
                       tone={warn ? 'warn' : 'info'}
-                      actionLabel={expanded ? 'Ocultar' : 'Revisar'}
                       onAction={() => setExpandedAttentionTask(current => current === task.id ? '' : task.id)}
                     />
 

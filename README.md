@@ -38,6 +38,10 @@ oferta de taxi a Servicios y corregir las solicitudes de empleo verificadas.
 Para activar los perfiles, contenidos, interacciones y métricas compartidas de
 Creadores, ejecuta `supabase/creator_platform.sql`. Esta migración también
 configura RLS, moderación y actualizaciones en tiempo real.
+Para activar la bandeja persistente y las alertas superiores de mensajes,
+seguidores, «Me ayudó» y nuevos creadores, ejecuta después
+`supabase/app_notifications.sql`. Requiere haber ejecutado antes
+`supabase/message_read_status.sql` y `supabase/creator_platform.sql`.
 
 ### 3. Crear `.env.local` en la raíz
 
@@ -196,6 +200,7 @@ npm run dev      # Servidor local en localhost:8080
 npm run build    # Build optimizado para producción
 npm run preview  # Preview del build
 npm run test:creators # Integridad de enlaces, embeds y orden de Creadores
+npm run test:notifications # Agrupación y textos de notificaciones de actividad
 npm run test:search   # Calidad del buscador global
 ```
 
