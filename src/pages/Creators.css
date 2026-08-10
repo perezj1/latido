@@ -1419,13 +1419,6 @@
   overflow: hidden;
 }
 
-.creator-video-modal__carousel-controls {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  pointer-events: none;
-}
-
 .creator-video-modal__carousel-arrow {
   position: absolute;
   z-index: 4;
@@ -1442,7 +1435,6 @@
   transform: translateY(-50%);
   cursor: pointer;
   place-items: center;
-  pointer-events: auto;
   backdrop-filter: blur(5px);
 }
 .creator-video-modal__carousel-arrow.is-previous { left: 8px; }

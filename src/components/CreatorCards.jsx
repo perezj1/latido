@@ -700,7 +700,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
               />
             </div>
             {hasPlaylist && (
-              <div className="creator-video-modal__carousel-controls" role="group" aria-label="Navegación entre vídeos">
+              <>
                 <button
                   type="button"
                   className="creator-video-modal__carousel-arrow is-previous"
@@ -719,7 +719,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
                 >
                   <ChevronRight aria-hidden="true" size={19} strokeWidth={2.2} />
                 </button>
-              </div>
+              </>
             )}
           </div>
         ) : (
