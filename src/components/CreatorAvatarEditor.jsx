@@ -217,7 +217,7 @@ export default function CreatorAvatarEditor({ show=false, source='', sourceName=
         <div className="creator-avatar-editor__actions">
           <button type="button" onClick={onCancel} disabled={busy}>Cancelar</button>
           <button type="button" className="is-primary" onClick={confirmCrop} disabled={busy || !imageSize || loadError}>
-            {busy ? 'Guardando…' : 'Guardar encuadre'}
+            {busy ? 'Guardando…' : 'Guardar'}
           </button>
         </div>
       </div>
