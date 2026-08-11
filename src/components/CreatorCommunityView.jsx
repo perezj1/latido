@@ -463,7 +463,7 @@ export default function CreatorCommunityView({
       <section className="creator-community-section" aria-labelledby="community-creators-profiles-title">
         <div className="creator-community-section__heading">
           <div>
-            <p id="community-creators-profiles-title">PERFILES PARA SEGUIR</p>
+            <p id="community-creators-profiles-title">PERFILES DE CREADORES</p>
             <span>Personas, profesionales y negocios que comparten sobre Suiza.</span>
           </div>
           <strong>{filteredCreators.length}</strong>

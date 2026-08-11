@@ -270,7 +270,7 @@ export default function Creadores() {
         <section id="perfiles" className="creators-section" aria-labelledby="creators-directory-title">
           <div className="creators-section__heading">
             <div>
-              <h2 id="creators-directory-title">Perfiles para seguir</h2>
+              <h2 id="creators-directory-title">Perfiles de creadores</h2>
               <p>Personas, profesionales, proyectos y negocios que comparten sobre Suiza en español.</p>
             </div>
             <span className="creators-results-count">{filteredCreators.length} {filteredCreators.length === 1 ? 'perfil' : 'perfiles'}</span>
