@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PartnerCard from './PartnerCard'
 import BusinessPartnerContactModal from './BusinessPartnerContactModal'
+import { useAuth } from '../hooks/useAuth'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
 import { getBusinessPartnerCardServiceLabel, hasBusinessPartnerBareLogo } from '../lib/businessPartnerOverrides'
 
@@ -16,17 +17,19 @@ export default function DynamicBusinessPartnerCard({
   placement,
   variant = 'partner-card',
 }) {
+  const { user, isAdmin } = useAuth()
   const [contactOpen, setContactOpen] = useState(false)
 
   useEffect(() => {
-    if (!partner?.analyticsId) return undefined
+    if (!partner?.analyticsId || isAdmin) return undefined
 
     trackPartnerInteraction('partner_card_impression', {
+      userId:user?.id,
       partnerId:partner.analyticsId,
       placement,
       action:'impression',
     })
-  }, [partner?.analyticsId, placement])
+  }, [isAdmin, partner?.analyticsId, placement, user?.id])
 
   if (!partner) return null
 
@@ -51,7 +54,9 @@ export default function DynamicBusinessPartnerCard({
   })
 
   const trackContactClick = action => {
+    if (isAdmin) return
     trackPartnerInteraction('partner_outbound_click', {
+      userId:user?.id,
       partnerId:partner.analyticsId,
       placement,
       action:action.type || action.id,
@@ -69,8 +74,10 @@ export default function DynamicBusinessPartnerCard({
       setContactOpen(true)
       return
     }
+    if (isAdmin) return
 
     trackPartnerInteraction('partner_outbound_click', {
+      userId:user?.id,
       partnerId:partner.analyticsId,
       placement,
       action:'contact',
@@ -103,7 +110,9 @@ export default function DynamicBusinessPartnerCard({
           }}
         accent={partner.accent}
         onServiceClick={service => {
+          if (isAdmin) return
           trackPartnerInteraction('partner_service_click', {
+            userId:user?.id,
             partnerId:partner.analyticsId,
             placement,
             action:'service',

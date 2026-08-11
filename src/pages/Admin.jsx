@@ -2285,13 +2285,21 @@ export default function Admin() {
     () => analyticsInRange.filter(event => event.event_type === 'search_resolution_reason'),
     [analyticsInRange]
   )
+  const analyticsUserIdBySession = useMemo(() => {
+    const usersBySession = new Map()
+    for (const event of analyticsEvents) {
+      if (event.session_id && event.user_id) usersBySession.set(event.session_id, event.user_id)
+    }
+    return usersBySession
+  }, [analyticsEvents])
   const partnerAnalyticsEvents = useMemo(
     () => {
       const rows = []
       for (const event of analyticsEvents) {
+        const attributedUserId = event.user_id || analyticsUserIdBySession.get(event.session_id) || null
         if (
           !String(event.event_type || '').startsWith('partner_')
-          || partnerMetricsExcludedUserIds.has(event.user_id)
+          || partnerMetricsExcludedUserIds.has(attributedUserId)
         ) continue
         const metadata = readMetadata(event.metadata)
         const explicitPartnerId = String(metadata.partner_id || metadata.partnerId || '').trim()
@@ -2303,13 +2311,14 @@ export default function Admin() {
         if (!partnerAnalyticsId) continue
         rows.push({
           ...event,
+          user_id:attributedUserId,
           partnerAnalyticsId,
           partnerMetadata:metadata,
         })
       }
       return rows
     },
-    [analyticsEvents, businessPartnerAnalyticsIds, partnerMetricsExcludedUserIds]
+    [analyticsEvents, analyticsUserIdBySession, businessPartnerAnalyticsIds, partnerMetricsExcludedUserIds]
   )
   const selectedPartner = partnerOptions.find(partner => partner.id === selectedPartnerId)
     || partnerOptions[0]
@@ -2349,6 +2358,10 @@ export default function Admin() {
     () => partnerClickEvents.filter(event =>
       getPartnerPlacementMeta(event.partnerMetadata.placement).channel === 'App'
     ),
+    [partnerClickEvents]
+  )
+  const partnerAnonymousClicks = useMemo(
+    () => partnerClickEvents.filter(event => !event.user_id).length,
     [partnerClickEvents]
   )
   const partnerPlacementRows = useMemo(
@@ -3820,7 +3833,7 @@ export default function Admin() {
       ? [
           { label: `Vistas tarjeta ${partnerMetricSuffix}`, value: loading ? '...' : partnerImpressionEvents.length, hint: 'Apariciones registradas de la tarjeta', color: '#0284C7' },
           { label: `Total enviado ${partnerMetricSuffix}`, value: loading ? '...' : partnerClickEvents.length, hint: 'Aperturas y contactos del colaborador', color: '#4F46E5' },
-          { label: `Cuentas enviadas ${partnerMetricSuffix}`, value: loading ? '...' : partnerDailyAccounts.length, hint: `${partnerUniqueAccounts} perfiles distintos · máximo 1 por día`, color: '#7C3AED' },
+          { label: `Cuentas enviadas ${partnerMetricSuffix}`, value: loading ? '...' : partnerDailyAccounts.length, hint: `${partnerUniqueAccounts} perfiles distintos · ${partnerAnonymousClicks} salidas anónimas`, color: '#7C3AED' },
           { label: 'Desde landing', value: loading ? '...' : partnerLandingClicks.length, hint: 'Landing pública de Latido', color: '#2563EB' },
           { label: 'Desde la app', value: loading ? '...' : partnerAppClicks.length, hint: 'Inicio, búsqueda o guías', color: '#0F766E' },
         ]
@@ -5236,7 +5249,7 @@ export default function Admin() {
               <div>
                 <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Cuentas enviadas por día</p>
                 <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.5, margin: 0 }}>
-                  Cada perfil aparece una sola vez por fecha, aunque abra el partner varias veces.
+                  Cada perfil aparece una sola vez por fecha, aunque abra el partner varias veces. Las salidas sin una cuenta identificada no pueden mostrar email.
                 </p>
               </div>
               <Tag bg="#F3E8FF" color="#7C3AED">{partnerDailyAccounts.length} registros diarios</Tag>
