@@ -148,7 +148,7 @@ BEGIN
       jsonb_build_object(
         'creator_id', NEW.id,
         'creator_name', NEW.name,
-        'href', '/creadores/' || NEW.slug
+        'href', '/comunidades?view=creadores&creatorView=creadores'
       ),
       NOW()
     FROM public.profiles profile

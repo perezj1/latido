@@ -98,13 +98,19 @@ export function useSavedSearchAlerts() {
     }
   }, [alerts, load, user?.id])
 
-  const getAlertPath = useCallback(alert => (
-    withSearchParam(
-      withSearchParam(alert.result_path, 'savedSearch', alert.saved_search_id),
+  const getAlertPath = useCallback(alert => {
+    const creatorPath = alert.entity_kind === 'creator'
+      ? '/comunidades?view=creadores&creatorView=creadores'
+      : alert.entity_kind === 'creator_content'
+        ? '/comunidades?view=creadores&creatorView=contenidos'
+        : alert.result_path
+
+    return withSearchParam(
+      withSearchParam(creatorPath, 'savedSearch', alert.saved_search_id),
       'savedMatch',
       alert.id,
     )
-  ), [])
+  }, [])
 
   return {
     alerts,
