@@ -22,6 +22,7 @@ import {
   resolvePartnerAnalyticsId,
 } from '../lib/partnerAnalytics'
 import { INTEREST_OPTIONS, normalizeInterestIds } from '../lib/interests'
+import { CREATOR_PLATFORMS, CREATOR_TOPICS } from '../lib/creators'
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
@@ -84,12 +85,32 @@ const ADMIN_TAB_DATA_GROUPS = {
   feedback: ['users', 'feedback'],
   partners: ['users', 'businesses', 'analytics'],
   live: ['users', 'analytics'],
-  overview: ['users', 'reports', 'moderation', 'contentMetrics', 'businesses', 'analytics', 'messages'],
+  overview: ['users', 'reports', 'moderation', 'contentMetrics', 'businesses', 'analytics', 'messages', 'creators'],
   businessVerification: ['businesses'],
   content: ['content'],
   reports: ['users', 'reports'],
   moderation: ['users', 'moderation'],
+  creators: ['users', 'creators'],
 }
+
+const CREATOR_REVIEW_META = {
+  pending: { label: 'Pendiente', color: '#B45309', bg: '#FFFBEB' },
+  approved: { label: 'Aprobado', color: '#047857', bg: '#ECFDF5' },
+  rejected: { label: 'Rechazado', color: '#B91C1C', bg: '#FEF2F2' },
+}
+
+const CREATOR_SORT_OPTIONS = [
+  { id: 'views', label: 'Más vistas de perfil' },
+  { id: 'clicks', label: 'Más clics en contenido' },
+  { id: 'helpful', label: 'Más votos de útil' },
+  { id: 'saved', label: 'Más guardados' },
+  { id: 'contents', label: 'Más contenidos' },
+  { id: 'ctr', label: 'Mejor CTR' },
+  { id: 'recent', label: 'Alta más reciente' },
+  { id: 'name', label: 'Nombre (A-Z)' },
+]
+
+const CREATOR_METRIC_KEYS = ['profile_view', 'content_impression', 'content_click', 'content_share', 'social_click']
 
 function getAdminTabDataGroups(tab) {
   return ADMIN_TAB_DATA_GROUPS[tab] || ['users']
@@ -140,6 +161,9 @@ async function fetchAllAdminRows({
   orderColumn = 'created_at',
   ascending = false,
   since = '',
+  // Tables with a composite primary key (creator_metrics) need a different
+  // tiebreaker so the keyset pagination stays deterministic.
+  idColumn = 'id',
   transformQuery,
 }) {
   const rows = []
@@ -154,7 +178,7 @@ async function fetchAllAdminRows({
     if (transformQuery) query = transformQuery(query)
     query = query
       .order(orderColumn, { ascending })
-      .order('id', { ascending: true })
+      .order(idColumn, { ascending: true })
       .range(offset, offset + ADMIN_QUERY_PAGE_SIZE - 1)
 
     const response = await query
@@ -396,6 +420,84 @@ function paginate(items, page, pageSize = ADMIN_LIST_PAGE_SIZE) {
     pageCount,
     items: items.slice(start, start + pageSize),
   }
+}
+
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => (
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia(query).matches
+      : false
+  ))
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined
+    const list = window.matchMedia(query)
+    const handleChange = event => setMatches(event.matches)
+    setMatches(list.matches)
+    list.addEventListener('change', handleChange)
+    return () => list.removeEventListener('change', handleChange)
+  }, [query])
+
+  return matches
+}
+
+const ADMIN_NUMBER_FORMATTER = new Intl.NumberFormat('es-ES')
+
+function fmtNumber(value) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return value ?? '—'
+  return ADMIN_NUMBER_FORMATTER.format(number)
+}
+
+function percentOf(value, total) {
+  const base = Number(total) || 0
+  if (!base) return 0
+  return Math.round((Number(value) || 0) / base * 100)
+}
+
+function ratePerItem(value, total, decimals = 1) {
+  const base = Number(total) || 0
+  if (!base) return 0
+  return Number(((Number(value) || 0) / base).toFixed(decimals))
+}
+
+function csvCell(value) {
+  const text = value === null || value === undefined ? '' : String(value)
+  return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+// Excel in Spanish locales expects `;` as the separator and a BOM for accents.
+function downloadCsv(filename, columns, rows) {
+  const lines = [columns.map(column => csvCell(column.label)).join(';')]
+  for (const row of rows) {
+    lines.push(columns.map(column => csvCell(column.value(row))).join(';'))
+  }
+
+  const blob = new Blob([`﻿${lines.join('\r\n')}`], { type:'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+function creatorTopicMeta(topicId) {
+  return CREATOR_TOPICS.find(topic => topic.id === topicId)
+    || { id:topicId, label:topicId || 'Sin tema', emoji:'📌', color:C.mid, bg:C.bg }
+}
+
+function creatorPlatformMeta(platformId) {
+  return CREATOR_PLATFORMS.find(platform => platform.id === platformId)
+    || { id:platformId, label:platformId || 'Otra', short:'—', color:C.mid, bg:C.bg }
+}
+
+function creatorStatusMeta(creator) {
+  if (creator?.active === false) return { label:'Inactivo', color:'#B91C1C', bg:'#FEF2F2' }
+  if (creator?.status !== 'published') return { label:'Borrador', color:'#B45309', bg:'#FFFBEB' }
+  return { label:'Publicado', color:'#047857', bg:'#ECFDF5' }
 }
 
 const MODERATED_CONTENT_TABLES = {
@@ -849,193 +951,6 @@ function SparkBarChart({ data, color }) {
   )
 }
 
-// eslint-disable-next-line no-unused-vars
-function ChartCard({ title, items, color }) {
-  const [days, setDays] = useState(30)
-  const data  = useMemo(() => countByDay(items, days), [items, days])
-  const total = data.reduce((s, d) => s + d.count, 0)
-  const trend = periodTrend(items, days)
-  const trendColor = trend > 0 ? '#059669' : trend < 0 ? '#DC2626' : C.mid
-  const trendLabel = trend > 0 ? `↑ ${trend}%` : trend < 0 ? `↓ ${Math.abs(trend)}%` : '→ sin cambio'
-
-  return (
-    <div style={{
-      background: '#fff',
-      border: `1px solid ${C.border}`,
-      borderRadius: 16,
-      padding: '16px 16px 10px',
-      boxShadow: '0 2px 12px rgba(15,23,42,0.04)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <div>
-          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '0 0 3px', fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' }}>
-            {title}
-          </p>
-          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 26, color: C.text, margin: 0, letterSpacing: -1 }}>
-            {total}
-          </p>
-        </div>
-        <span style={{
-          fontFamily: PP, fontSize: 11, fontWeight: 700,
-          color: trendColor,
-          background: trendColor + '18',
-          padding: '4px 9px', borderRadius: 999, marginTop: 2,
-        }}>
-          {trendLabel}
-        </span>
-      </div>
-      <SparkBarChart data={data} color={color} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {[7, 30].map(d => (
-            <button
-              key={d}
-              onClick={() => setDays(d)}
-              style={{
-                fontFamily: PP, fontSize: 9, fontWeight: 700,
-                padding: '2px 7px', borderRadius: 999,
-                border: `1px solid ${days === d ? C.primary : C.border}`,
-                cursor: 'pointer',
-                background: days === d ? C.primary : 'transparent',
-                color: days === d ? '#fff' : C.light,
-                transition: 'all 0.15s',
-              }}
-            >
-              {d}d
-            </button>
-          ))}
-        </div>
-        <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: 0 }}>
-          últimos {days} días
-        </p>
-      </div>
-    </div>
-  )
-}
-
-// eslint-disable-next-line no-unused-vars
-function StatCard({ id, icon, label, value, sub, color, isActive, onClick, urgent }) {
-  const hasAlert = urgent && value > 0
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        background: isActive ? `${color}12` : '#fff',
-        border: `2px solid ${isActive ? color : hasAlert ? `${color}50` : C.border}`,
-        borderRadius: 16,
-        padding: '16px',
-        cursor: 'pointer',
-        textAlign: 'left',
-        width: '100%',
-        transition: 'border-color .15s, background .15s',
-        position: 'relative',
-      }}
-    >
-      {hasAlert && (
-        <span style={{
-          position: 'absolute', top: 12, right: 12,
-          width: 8, height: 8, borderRadius: '50%',
-          background: color,
-          boxShadow: `0 0 0 3px ${color}30`,
-        }} />
-      )}
-      <span style={{ fontSize: 20 }}>{icon}</span>
-      <p style={{
-        fontFamily: PP, fontWeight: 900,
-        fontSize: value === '—' ? 22 : String(value).length > 4 ? 22 : 30,
-        color: isActive ? color : C.text,
-        margin: '6px 0 2px', lineHeight: 1, letterSpacing: -1,
-      }}>
-        {value}
-      </p>
-      <p style={{ fontFamily: PP, fontSize: 12, color: isActive ? color : C.mid, margin: 0, fontWeight: 700 }}>
-        {label}
-      </p>
-      {sub != null && (
-        <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '4px 0 0' }}>{sub}</p>
-      )}
-    </button>
-  )
-}
-
-// eslint-disable-next-line no-unused-vars
-function AdminStatCard({ icon, label, value, sub, color, isActive, onClick, urgent }) {
-  const hasAlert = urgent && Number(value) > 0
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        position: 'relative',
-        width: '100%',
-        minHeight: 132,
-        padding: '14px',
-        borderRadius: 20,
-        border: `1.5px solid ${isActive ? color : hasAlert ? `${color}55` : C.border}`,
-        background: '#fff',
-        boxShadow: isActive ? `0 16px 34px ${color}18` : '0 10px 26px rgba(15,23,42,0.04)',
-        cursor: 'pointer',
-        textAlign: 'left',
-        overflow: 'hidden',
-      }}
-    >
-      {isActive && (
-        <span style={{
-          position: 'absolute',
-          left: 0,
-          top: 14,
-          bottom: 14,
-          width: 4,
-          borderRadius: '0 999px 999px 0',
-          background: color,
-        }} />
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 14 }}>
-        <span style={{
-          width: 38,
-          height: 38,
-          borderRadius: 14,
-          background: `${color}14`,
-          display: 'grid',
-          placeItems: 'center',
-          fontSize: 18,
-          flexShrink: 0,
-        }}>
-          {icon}
-        </span>
-        <span style={{
-          fontFamily: PP,
-          fontWeight: 900,
-          fontSize: 10,
-          color: hasAlert ? color : C.light,
-          background: hasAlert ? `${color}12` : C.bgAlt,
-          borderRadius: 999,
-          padding: '4px 8px',
-        }}>
-          {hasAlert ? 'Atencion' : 'Modulo'}
-        </span>
-      </div>
-      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: isActive ? color : C.mid, margin: '0 0 4px' }}>
-        {label}
-      </p>
-      <p style={{
-        fontFamily: PP,
-        fontWeight: 900,
-        fontSize: value === 'â€”' ? 24 : String(value).length > 4 ? 24 : 34,
-        color: C.text,
-        lineHeight: 1,
-        letterSpacing: -1,
-        margin: '0 0 5px',
-      }}>
-        {value}
-      </p>
-      <p style={{ fontFamily: PP, fontSize: 11, color: C.light, lineHeight: 1.35, margin: 0 }}>
-        {sub}
-      </p>
-    </button>
-  )
-}
-
 function AdminChartCard({ title, items, color }) {
   const [days, setDays] = useState(30)
   const data = useMemo(() => countByDay(items, days), [items, days])
@@ -1107,29 +1022,195 @@ function AdminChartCard({ title, items, color }) {
   )
 }
 
-function SummaryMetric({ label, value, hint, color = C.primary }) {
+function TrendChip({ value, invert = false, size = 10 }) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return null
+  const trend = Number(value)
+  const good = invert ? trend < 0 : trend > 0
+  const bad = invert ? trend > 0 : trend < 0
+  const color = trend === 0 ? C.mid : good ? '#047857' : bad ? '#B91C1C' : C.mid
+  const arrow = trend > 0 ? '↑' : trend < 0 ? '↓' : '→'
+
+  return (
+    <span style={{
+      fontFamily: PP,
+      fontSize: size,
+      fontWeight: 900,
+      color,
+      background: `${color}14`,
+      borderRadius: 999,
+      padding: '3px 7px',
+      whiteSpace: 'nowrap',
+      flexShrink: 0,
+    }}>
+      {arrow} {trend === 0 ? 'igual' : `${Math.abs(trend)}%`}
+    </span>
+  )
+}
+
+function SummaryMetric({ label, value, hint, color = C.primary, trend = null, trendInvert = false, icon = '' }) {
   return (
     <div style={{
       position: 'relative',
       overflow: 'hidden',
-      minWidth: 150,
-      flex: '1 1 150px',
+      minWidth: 0,
       background: '#fff',
       border: '1px solid rgba(226,234,244,0.92)',
-      borderRadius: 16,
+      borderRadius: 18,
       padding: '15px 15px 14px',
       boxShadow: '0 16px 34px rgba(15,23,42,0.055)',
     }}>
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: color }} />
-      <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 6px' }}>
-        {label}
-      </p>
-      <p style={{ fontFamily: PP, fontSize: 24, fontWeight: 900, color, lineHeight: 1, margin: '0 0 5px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+        <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: 0, minWidth: 0 }}>
+          {icon ? `${icon} ` : ''}{label}
+        </p>
+        <TrendChip value={trend} invert={trendInvert} />
+      </div>
+      <p style={{ fontFamily: PP, fontSize: 25, fontWeight: 900, color, lineHeight: 1, margin: '0 0 5px', letterSpacing: -0.6, overflowWrap: 'anywhere' }}>
         {value}
       </p>
       <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.35, margin: 0 }}>
         {hint}
       </p>
+    </div>
+  )
+}
+
+function AdminSectionCard({ title, subtitle, action, children, style = {} }) {
+  return (
+    <Card style={{ padding: 16, overflow: 'hidden', ...style }}>
+      {(title || action) && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: subtitle ? 12 : 14 }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: 0 }}>{title}</p>
+            {subtitle && (
+              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '3px 0 0', lineHeight: 1.45 }}>{subtitle}</p>
+            )}
+          </div>
+          {action}
+        </div>
+      )}
+      {children}
+    </Card>
+  )
+}
+
+function FunnelSteps({ steps }) {
+  const max = Math.max(...steps.map(step => Number(step.value) || 0), 1)
+
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {steps.map((step, index) => {
+        const value = Number(step.value) || 0
+        const previous = index > 0 ? Number(steps[index - 1].value) || 0 : 0
+        const conversion = index > 0 && previous ? Math.round((value / previous) * 100) : null
+
+        return (
+          <div key={step.label} style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 5 }}>
+              <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {step.label}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexShrink: 0 }}>
+                {conversion !== null && (
+                  <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, color: C.light }}>{conversion}%</span>
+                )}
+                <span style={{ fontFamily: PP, fontSize: 13, fontWeight: 900, color: step.color }}>{fmtNumber(value)}</span>
+              </span>
+            </div>
+            <div style={{ width: '100%', height: 9, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
+              <div style={{ width: value ? `${Math.max(6, Math.round((value / max) * 100))}%` : 0, height: '100%', borderRadius: 999, background: step.color }} />
+            </div>
+            {step.hint && (
+              <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '4px 0 0' }}>{step.hint}</p>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function AdminDataTable({ columns, rows, getRowKey, sort, onSortChange, activeRowKey, onRowClick, emptyText = 'Sin resultados con estos filtros.' }) {
+  if (!rows.length) {
+    return (
+      <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, padding: '18px 4px', textAlign: 'center' }}>
+        {emptyText}
+      </p>
+    )
+  }
+
+  return (
+    <div style={{ overflowX: 'auto', margin: '0 -4px' }}>
+      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: 720 }}>
+        <thead>
+          <tr>
+            {columns.map(column => {
+              const sortable = Boolean(column.sortId && onSortChange)
+              const isSorted = sortable && sort === column.sortId
+              return (
+                <th
+                  key={column.key}
+                  style={{
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1,
+                    background: C.bgAlt,
+                    textAlign: column.align || 'left',
+                    fontFamily: PP,
+                    fontSize: 10,
+                    fontWeight: 900,
+                    letterSpacing: 0.6,
+                    textTransform: 'uppercase',
+                    color: isSorted ? C.primary : C.light,
+                    padding: '10px 10px',
+                    borderBottom: `1px solid ${C.border}`,
+                    whiteSpace: 'nowrap',
+                    cursor: sortable ? 'pointer' : 'default',
+                    width: column.width,
+                  }}
+                  onClick={sortable ? () => onSortChange(column.sortId) : undefined}
+                >
+                  {column.label}{isSorted ? ' ↓' : ''}
+                </th>
+              )
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => {
+            const key = getRowKey(row)
+            const active = activeRowKey === key
+            return (
+              <tr
+                key={key}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                style={{
+                  background: active ? C.primaryLight : 'transparent',
+                  cursor: onRowClick ? 'pointer' : 'default',
+                }}
+              >
+                {columns.map(column => (
+                  <td
+                    key={column.key}
+                    style={{
+                      fontFamily: PP,
+                      fontSize: 12,
+                      color: C.text,
+                      padding: '11px 10px',
+                      borderBottom: `1px solid ${C.borderLight}`,
+                      textAlign: column.align || 'left',
+                      verticalAlign: 'middle',
+                    }}
+                  >
+                    {column.render(row)}
+                  </td>
+                ))}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -1227,8 +1308,10 @@ function MonthPeriodSwitch({ value, onChange }) {
   )
 }
 
-function AdminPeriodChart({ title, items, color, days, onDaysChange }) {
+// The period is chosen once in the sticky topbar, so the chart only reports it.
+function AdminPeriodChart({ title, items, color, days }) {
   const data = useMemo(() => countByDay(items, days), [items, days])
+  const trend = useMemo(() => periodTrend(items, days), [items, days])
   const total = data.reduce((sum, item) => sum + item.count, 0)
   const titleSuffix = days === 1 ? 'hoy' : `${days} días`
 
@@ -1249,7 +1332,9 @@ function AdminPeriodChart({ title, items, color, days, onDaysChange }) {
             {total}
           </p>
         </div>
-        <PeriodSwitch value={days} onChange={onDaysChange} />
+        <span style={{ marginTop: 4 }}>
+          <TrendChip value={trend} size={11} />
+        </span>
       </div>
       <SparkBarChart data={data} color={color} />
     </div>
@@ -1375,6 +1460,61 @@ function AdminFilterSelect({ value, onChange, children, label }) {
   )
 }
 
+function AdminFilterBar({ children, footer }) {
+  return (
+    <div style={{
+      background: '#fff',
+      border: '1px solid rgba(226,234,244,0.95)',
+      borderRadius: 18,
+      padding: 12,
+      boxShadow: '0 12px 28px rgba(15,23,42,0.045)',
+      display: 'grid',
+      gap: 9,
+    }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: 8 }}>
+        {children}
+      </div>
+      {footer && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          {footer}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AdminChipFilter({ options, value, onChange, label }) {
+  return (
+    <div role="group" aria-label={label} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      {options.map(option => {
+        const active = value === option.id
+        const color = option.color || C.primary
+        return (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => onChange(option.id)}
+            style={{
+              fontFamily: PP,
+              fontSize: 11,
+              fontWeight: 900,
+              border: `1.5px solid ${active ? color : C.border}`,
+              background: active ? (option.bg || `${color}12`) : '#fff',
+              color: active ? color : C.mid,
+              borderRadius: 999,
+              padding: '7px 11px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {option.label}{option.count === undefined ? '' : ` · ${option.count}`}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function AdminPagination({ page, pageCount, total, onChange }) {
   if (pageCount <= 1) return null
   return (
@@ -1457,6 +1597,21 @@ export default function Admin() {
   const [selectedPartnerId, setSelectedPartnerId] = useState(PARTNER_ANALYTICS_PARTNERS[0]?.id || '')
   const [messageEvents, setMessageEvents] = useState([])
   const [messagesUnavailable, setMessagesUnavailable] = useState(false)
+  const [creatorProfiles, setCreatorProfiles] = useState([])
+  const [creatorContents, setCreatorContents] = useState([])
+  const [creatorMetricRows, setCreatorMetricRows] = useState([])
+  const [creatorsUnavailable, setCreatorsUnavailable] = useState(false)
+  const [creatorSearch, setCreatorSearch] = useState('')
+  const [creatorStatusFilter, setCreatorStatusFilter] = useState('all')
+  const [creatorReviewFilter, setCreatorReviewFilter] = useState('all')
+  const [creatorTopicFilter, setCreatorTopicFilter] = useState('all')
+  const [creatorCantonFilter, setCreatorCantonFilter] = useState('all')
+  const [creatorSort, setCreatorSort] = useState('views')
+  const [creatorPage, setCreatorPage] = useState(1)
+  const [creatorDays, setCreatorDays] = useState(30)
+  const [selectedCreatorId, setSelectedCreatorId] = useState('')
+  const [creatorActionLoading, setCreatorActionLoading] = useState(new Set())
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
   const dataErrors = Object.values(dataErrorsByGroup).filter(Boolean)
 
   const metricUsers = useMemo(
@@ -1796,6 +1951,254 @@ export default function Admin() {
     businessVerification: businesses.filter(b => getBusinessVerificationDetails(b).status === 'pending').length,
   }), [businesses, queue, reports, metricUsers, recentListings, recentJobs])
 
+  const usersById = useMemo(() => {
+    const map = new Map()
+    for (const profile of users) map.set(profile.id, profile)
+    return map
+  }, [users])
+
+  // creator_metrics stores lifetime counters (creator_id + metric + content_id),
+  // so totals are cumulative and not filtered by the period switch.
+  const creatorMetricIndex = useMemo(() => {
+    const emptyTotals = () => Object.fromEntries(CREATOR_METRIC_KEYS.map(key => [key, 0]))
+    const totals = emptyTotals()
+    const byCreator = new Map()
+    const byContent = new Map()
+    let updatedAt = ''
+
+    for (const row of creatorMetricRows) {
+      const metric = row?.metric
+      if (!CREATOR_METRIC_KEYS.includes(metric)) continue
+      const count = Math.max(0, Number(row.count) || 0)
+      totals[metric] += count
+
+      const creatorTotals = byCreator.get(row.creator_id) || emptyTotals()
+      creatorTotals[metric] += count
+      byCreator.set(row.creator_id, creatorTotals)
+
+      if (row.content_id) {
+        const contentTotals = byContent.get(row.content_id) || emptyTotals()
+        contentTotals[metric] += count
+        byContent.set(row.content_id, contentTotals)
+      }
+      if (row.updated_at && row.updated_at > updatedAt) updatedAt = row.updated_at
+    }
+
+    return { totals, byCreator, byContent, updatedAt }
+  }, [creatorMetricRows])
+
+  const creatorContentsByCreator = useMemo(() => {
+    const map = new Map()
+    for (const content of creatorContents) {
+      const list = map.get(content.creator_id)
+      if (list) list.push(content)
+      else map.set(content.creator_id, [content])
+    }
+    return map
+  }, [creatorContents])
+
+  const creatorRows = useMemo(() => creatorProfiles.map(creator => {
+    const contents = creatorContentsByCreator.get(creator.id) || []
+    const metrics = creatorMetricIndex.byCreator.get(creator.id)
+    const owner = usersById.get(creator.owner_id)
+    const profileViews = metrics?.profile_view || 0
+    const impressions = metrics?.content_impression || 0
+    const clicks = metrics?.content_click || 0
+    const profileHelpful = Math.max(0, Number(creator.helpful_count) || 0)
+    const contentHelpful = contents.reduce((sum, content) => sum + Math.max(0, Number(content.helpful_count) || 0), 0)
+    const publishedContents = contents.filter(content => content.status === 'published' && content.active !== false)
+    const lastPublishedAt = contents.reduce(
+      (latest, content) => (content.published_at || '') > latest ? (content.published_at || '') : latest,
+      '',
+    )
+    const platforms = [...new Set(contents.map(content => content.platform).filter(Boolean))]
+
+    return {
+      ...creator,
+      contents,
+      platforms,
+      contentCount: contents.length,
+      publishedContentCount: publishedContents.length,
+      profileViews,
+      impressions,
+      clicks,
+      shares: metrics?.content_share || 0,
+      socialClicks: metrics?.social_click || 0,
+      ctr: percentOf(clicks, impressions),
+      profileHelpful,
+      contentHelpful,
+      helpful: profileHelpful + contentHelpful,
+      saved: Math.max(0, Number(creator.saved_count) || 0),
+      ownerEmail: owner?.email || '',
+      ownerName: owner?.name || '',
+      lastPublishedAt,
+      isLive: creator.status === 'published' && creator.active !== false,
+    }
+  }), [creatorProfiles, creatorContentsByCreator, creatorMetricIndex, usersById])
+
+  const creatorRowsById = useMemo(
+    () => new Map(creatorRows.map(creator => [creator.id, creator])),
+    [creatorRows]
+  )
+
+  const creatorStats = useMemo(() => {
+    const live = creatorRows.filter(creator => creator.isLive)
+    const totals = creatorMetricIndex.totals
+    const helpful = creatorRows.reduce((sum, creator) => sum + creator.helpful, 0)
+    const saved = creatorRows.reduce((sum, creator) => sum + creator.saved, 0)
+    const publishedContents = creatorContents.filter(content => content.status === 'published' && content.active !== false)
+
+    return {
+      total: creatorRows.length,
+      live: live.length,
+      drafts: creatorRows.filter(creator => creator.status !== 'published').length,
+      inactive: creatorRows.filter(creator => creator.active === false).length,
+      verified: creatorRows.filter(creator => creator.verified).length,
+      pendingReview: creatorRows.filter(creator => creator.review_status === 'pending').length,
+      approved: creatorRows.filter(creator => creator.review_status === 'approved').length,
+      rejected: creatorRows.filter(creator => creator.review_status === 'rejected').length,
+      withoutContent: creatorRows.filter(creator => creator.contentCount === 0).length,
+      contents: creatorContents.length,
+      publishedContents: publishedContents.length,
+      profileViews: totals.profile_view,
+      impressions: totals.content_impression,
+      clicks: totals.content_click,
+      shares: totals.content_share,
+      socialClicks: totals.social_click,
+      ctr: percentOf(totals.content_click, totals.content_impression),
+      helpful,
+      saved,
+      newCreators: creatorRows.filter(creator => isWithinRecentDays(creator.created_at, creatorDays)).length,
+      newContents: creatorContents.filter(content => isWithinRecentDays(content.created_at, creatorDays)).length,
+      creatorTrend: periodTrend(creatorRows, creatorDays),
+      contentTrend: periodTrend(creatorContents, creatorDays),
+    }
+  }, [creatorRows, creatorContents, creatorMetricIndex, creatorDays])
+
+  const creatorCantons = useMemo(
+    () => [...new Set(creatorRows.map(creator => creator.canton).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
+    [creatorRows]
+  )
+
+  const filteredCreators = useMemo(() => {
+    const query = creatorSearch.trim().toLowerCase()
+    const rows = creatorRows.filter(creator => {
+      if (creatorStatusFilter === 'live' && !creator.isLive) return false
+      if (creatorStatusFilter === 'draft' && creator.status === 'published') return false
+      if (creatorStatusFilter === 'inactive' && creator.active !== false) return false
+      if (creatorStatusFilter === 'empty' && creator.contentCount > 0) return false
+      if (creatorReviewFilter === 'verified' && !creator.verified) return false
+      if (['pending', 'approved', 'rejected'].includes(creatorReviewFilter) && creator.review_status !== creatorReviewFilter) return false
+      if (creatorTopicFilter !== 'all' && !(creator.topics || []).includes(creatorTopicFilter)) return false
+      if (creatorCantonFilter !== 'all' && (creator.canton || '') !== creatorCantonFilter) return false
+      if (!query) return true
+      return [creator.name, creator.handle, creator.slug, creator.city, creator.canton, creator.ownerEmail, (creator.topics || []).join(' ')]
+        .some(value => String(value || '').toLowerCase().includes(query))
+    })
+
+    const sorters = {
+      views: (a, b) => b.profileViews - a.profileViews,
+      clicks: (a, b) => b.clicks - a.clicks,
+      helpful: (a, b) => b.helpful - a.helpful,
+      saved: (a, b) => b.saved - a.saved,
+      contents: (a, b) => b.contentCount - a.contentCount,
+      ctr: (a, b) => b.ctr - a.ctr,
+      recent: (a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')),
+      name: (a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'es'),
+    }
+
+    return rows.sort(sorters[creatorSort] || sorters.views)
+  }, [creatorRows, creatorSearch, creatorStatusFilter, creatorReviewFilter, creatorTopicFilter, creatorCantonFilter, creatorSort])
+
+  const pagedCreators = useMemo(() => paginate(filteredCreators, creatorPage, 20), [filteredCreators, creatorPage])
+  const selectedCreator = selectedCreatorId ? creatorRowsById.get(selectedCreatorId) : null
+
+  const creatorTopicRows = useMemo(() => CREATOR_TOPICS
+    .map(topic => {
+      const creators = creatorRows.filter(creator => (creator.topics || []).includes(topic.id))
+      const contents = creatorContents.filter(content => content.topic === topic.id)
+      return {
+        label:`${topic.emoji} ${topic.label}`,
+        value:contents.length,
+        sub:`${creators.length} creadores · ${contents.filter(content => content.status === 'published').length} publicados`,
+      }
+    })
+    .filter(row => row.value > 0 || creatorRows.length === 0)
+    .sort((a, b) => b.value - a.value),
+    [creatorRows, creatorContents]
+  )
+
+  const creatorPlatformRows = useMemo(() => CREATOR_PLATFORMS
+    .map(platform => {
+      const contents = creatorContents.filter(content => content.platform === platform.id)
+      const clicks = contents.reduce(
+        (sum, content) => sum + (creatorMetricIndex.byContent.get(content.id)?.content_click || 0),
+        0,
+      )
+      return {
+        label:platform.label,
+        value:contents.length,
+        sub:`${fmtNumber(clicks)} clics · ${contents.filter(content => content.status === 'published').length} publicados`,
+      }
+    })
+    .filter(row => row.value > 0)
+    .sort((a, b) => b.value - a.value),
+    [creatorContents, creatorMetricIndex]
+  )
+
+  const creatorCantonRows = useMemo(() => {
+    const counts = new Map()
+    for (const creator of creatorRows) {
+      const key = creator.canton || 'Sin cantón'
+      counts.set(key, (counts.get(key) || 0) + 1)
+    }
+    return [...counts.entries()]
+      .map(([label, value]) => ({ label, value, sub:`${percentOf(value, creatorRows.length)}% del total` }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8)
+  }, [creatorRows])
+
+  const topCreatorRows = useMemo(() => creatorRows
+    .slice()
+    .sort((a, b) => (b.profileViews + b.clicks) - (a.profileViews + a.clicks))
+    .slice(0, 8)
+    .map(creator => ({
+      label:creator.name || creator.handle || 'Sin nombre',
+      value:creator.profileViews + creator.clicks,
+      sub:`${fmtNumber(creator.profileViews)} vistas · ${fmtNumber(creator.clicks)} clics · ${creator.contentCount} contenidos`,
+    })),
+    [creatorRows]
+  )
+
+  const topCreatorHelpfulRows = useMemo(() => creatorRows
+    .filter(creator => creator.helpful > 0 || creator.saved > 0)
+    .sort((a, b) => (b.helpful + b.saved) - (a.helpful + a.saved))
+    .slice(0, 8)
+    .map(creator => ({
+      label:creator.name || creator.handle || 'Sin nombre',
+      value:creator.helpful + creator.saved,
+      sub:`${fmtNumber(creator.helpful)} útiles · ${fmtNumber(creator.saved)} guardados`,
+    })),
+    [creatorRows]
+  )
+
+  const topCreatorContentRows = useMemo(() => creatorContents
+    .map(content => {
+      const metrics = creatorMetricIndex.byContent.get(content.id)
+      const clicks = metrics?.content_click || 0
+      const impressions = metrics?.content_impression || 0
+      const creator = creatorRowsById.get(content.creator_id)
+      return {
+        label:content.title || 'Sin título',
+        value:clicks,
+        sub:`${creator?.name || 'Creador'} · ${creatorPlatformMeta(content.platform).label} · ${impressions ? `${percentOf(clicks, impressions)}% CTR` : 'sin impresiones'} · ${fmtNumber(Math.max(0, Number(content.helpful_count) || 0))} útiles`,
+      }
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8),
+    [creatorContents, creatorMetricIndex, creatorRowsById]
+  )
+
   const filteredUsers = useMemo(() => {
     const q = userSearch.trim().toLowerCase()
     return metricUsers.filter(profile => {
@@ -1818,12 +2221,18 @@ export default function Admin() {
     [metricUsers, userDays]
   )
   const userRangeLabel = userDays === 1 ? 'hoy' : `${userDays} dias`
+  const userTrendInRange = useMemo(() => periodTrend(metricUsers, userDays), [metricUsers, userDays])
+  const creatorRangeText = creatorDays === 1 ? 'hoy' : `${creatorDays}d`
   const activeUsersToday = useMemo(
     () => metricUsers.filter(profile => isWithinRecentDays(profile.last_seen_at, 1)),
     [metricUsers]
   )
   const activeUsersWeek = useMemo(
     () => metricUsers.filter(profile => isWithinRecentDays(profile.last_seen_at, 7)),
+    [metricUsers]
+  )
+  const activeUsersMonth = useMemo(
+    () => metricUsers.filter(profile => isWithinRecentDays(profile.last_seen_at, 30)),
     [metricUsers]
   )
   const onlineUsers = useMemo(
@@ -2189,6 +2598,8 @@ export default function Admin() {
   const liveOnlineRate = metricUsers.length ? Math.round((onlineUsers.length / metricUsers.length) * 100) : 0
   const liveTodayRate = metricUsers.length ? Math.round((activeUsersToday.length / metricUsers.length) * 100) : 0
   const liveWeekRate = metricUsers.length ? Math.round((activeUsersWeek.length / metricUsers.length) * 100) : 0
+  // DAU/MAU: cuánta de la base mensual vuelve cada día.
+  const stickinessRate = percentOf(activeUsersToday.length, activeUsersMonth.length)
   const liveLast14Total = analyticsUnavailable
     ? liveLast14Days.reduce((sum, item) => sum + item.count, 0)
     : (() => {
@@ -2304,6 +2715,9 @@ export default function Admin() {
         messagesRes,
         ratingsRes,
         searchFeedbackRes,
+        creatorProfilesRes,
+        creatorContentsRes,
+        creatorMetricsRes,
       ] = await Promise.all([
         groups.includes('reports') ? fetchAdminReportsDelta({
           cache:dailyRowsCacheRef.current,
@@ -2373,6 +2787,26 @@ export default function Admin() {
               orderColumn:'created_at',
             })
           : skipped(searchFeedback),
+        groups.includes('creators')
+          ? fetchAllAdminRows({
+              table:'creator_profiles',
+              columns:'id,owner_id,slug,name,handle,tagline,city,canton,reach,topics,socials,avatar_url,verified,active,status,review_status,helpful_count,saved_count,featured_content_ids,created_at,updated_at',
+            })
+          : skipped(creatorProfiles),
+        groups.includes('creators')
+          ? fetchAllAdminRows({
+              table:'creator_contents',
+              columns:'id,creator_id,title,url,platform,format,topic,canton,status,active,helpful_count,published_at,created_at,updated_at',
+            })
+          : skipped(creatorContents),
+        groups.includes('creators')
+          ? fetchAllAdminRows({
+              table:'creator_metrics',
+              columns:'creator_id,metric,content_id,count,updated_at',
+              orderColumn:'updated_at',
+              idColumn:'creator_id',
+            })
+          : skipped(creatorMetricRows),
       ])
 
       const responses = [
@@ -2386,6 +2820,9 @@ export default function Admin() {
         ['messages', 'mensajes', messagesRes],
         ['feedback', 'valoraciones de Latido', ratingsRes],
         ['feedback', 'respuestas de busqueda', searchFeedbackRes],
+        ['creators', 'creadores', creatorProfilesRes],
+        ['creators', 'contenidos de creadores', creatorContentsRes],
+        ['creators', 'metricas de creadores', creatorMetricsRes],
       ]
       const deltaResponses = []
       for (const [group, label, response] of responses) {
@@ -2421,6 +2858,14 @@ export default function Admin() {
       } else if (groups.includes('messages')) {
         setMessagesUnavailable(true)
         console.warn('Messages activity unavailable:', messagesRes.error.message)
+      }
+      if (groups.includes('creators')) {
+        const creatorsFailed = Boolean(creatorProfilesRes.error)
+        setCreatorsUnavailable(creatorsFailed)
+        if (!creatorsFailed) setCreatorProfiles(creatorProfilesRes.data)
+        if (!creatorContentsRes.error) setCreatorContents(creatorContentsRes.data)
+        if (!creatorMetricsRes.error) setCreatorMetricRows(creatorMetricsRes.data)
+        if (creatorsFailed) console.warn('Creator profiles unavailable:', creatorProfilesRes.error.message)
       }
       if (groups.includes('feedback') && !ratingsRes.error) {
         setLatidoRatings(ratingsRes.data)
@@ -2554,6 +2999,119 @@ export default function Admin() {
     setUsers(previous => previous.map(item => item.id === profile.id ? { ...item, ...data } : item))
     await logAdminAction({ admin_id: user.id, action_type: banned ? 'ban_user' : 'unban_user', target_type: 'profile', target_id: profile.id, notes: reason || '' })
     toast.success(banned ? 'Usuario baneado' : 'Usuario reactivado')
+  }
+
+  async function updateCreatorProfile(creator, patch, { actionType, successMessage }) {
+    setCreatorActionLoading(previous => new Set(previous).add(creator.id))
+    try {
+      const { data, error } = await supabase
+        .from('creator_profiles')
+        .update(patch)
+        .eq('id', creator.id)
+        .select('id,verified,active,status,review_status,updated_at')
+        .maybeSingle()
+
+      if (error) { toast.error(error.message || 'No se pudo actualizar el creador'); return }
+      if (!data) { toast.error('El creador no se actualizó. Revisa los permisos RLS del administrador.'); return }
+
+      setCreatorProfiles(previous => previous.map(item => item.id === creator.id ? { ...item, ...data } : item))
+      await logAdminAction({
+        admin_id: user.id,
+        action_type: actionType,
+        target_type: 'creator_profile',
+        target_id: creator.id,
+        notes: creator.name || creator.handle || '',
+      })
+      toast.success(successMessage)
+    } finally {
+      setCreatorActionLoading(previous => {
+        const next = new Set(previous)
+        next.delete(creator.id)
+        return next
+      })
+    }
+  }
+
+  function setCreatorReview(creator, reviewStatus) {
+    return updateCreatorProfile(
+      creator,
+      { review_status: reviewStatus },
+      {
+        actionType: `creator_review_${reviewStatus}`,
+        successMessage: reviewStatus === 'approved' ? 'Creador aprobado' : reviewStatus === 'rejected' ? 'Creador rechazado' : 'Creador marcado como pendiente',
+      },
+    )
+  }
+
+  function setCreatorVerified(creator, verified) {
+    return updateCreatorProfile(
+      creator,
+      { verified },
+      {
+        actionType: verified ? 'creator_verify' : 'creator_unverify',
+        successMessage: verified ? 'Creador verificado' : 'Verificación retirada',
+      },
+    )
+  }
+
+  function setCreatorActive(creator, active) {
+    return updateCreatorProfile(
+      creator,
+      { active },
+      {
+        actionType: active ? 'creator_activate' : 'creator_deactivate',
+        successMessage: active ? 'Creador visible en el directorio' : 'Creador oculto del directorio',
+      },
+    )
+  }
+
+  function exportCreatorsCsv() {
+    downloadCsv(
+      `latido-creadores-${swissDateKey(new Date().toISOString())}.csv`,
+      [
+        { label:'Creador', value:row => row.name || '' },
+        { label:'Handle', value:row => row.handle || '' },
+        { label:'Email cuenta', value:row => row.ownerEmail || '' },
+        { label:'Estado', value:row => creatorStatusMeta(row).label },
+        { label:'Revisión', value:row => (CREATOR_REVIEW_META[row.review_status] || {}).label || row.review_status || '' },
+        { label:'Verificado', value:row => row.verified ? 'Sí' : 'No' },
+        { label:'Ciudad', value:row => row.city || '' },
+        { label:'Cantón', value:row => row.canton || '' },
+        { label:'Temas', value:row => (row.topics || []).join(' | ') },
+        { label:'Contenidos', value:row => row.contentCount },
+        { label:'Contenidos publicados', value:row => row.publishedContentCount },
+        { label:'Vistas de perfil', value:row => row.profileViews },
+        { label:'Impresiones', value:row => row.impressions },
+        { label:'Clics', value:row => row.clicks },
+        { label:'CTR %', value:row => row.ctr },
+        { label:'Compartidos', value:row => row.shares },
+        { label:'Clics a redes', value:row => row.socialClicks },
+        { label:'Útiles', value:row => row.helpful },
+        { label:'Guardados', value:row => row.saved },
+        { label:'Alta', value:row => fmtDateShort(row.created_at) },
+        { label:'Último contenido', value:row => row.lastPublishedAt ? fmtDateShort(row.lastPublishedAt) : '' },
+      ],
+      filteredCreators,
+    )
+    toast.success(`${filteredCreators.length} creadores exportados`)
+  }
+
+  function exportUsersCsv() {
+    downloadCsv(
+      `latido-usuarios-${swissDateKey(new Date().toISOString())}.csv`,
+      [
+        { label:'Nombre', value:row => row.name || '' },
+        { label:'Email', value:row => row.email || '' },
+        { label:'Cantón', value:row => row.canton || '' },
+        { label:'Intereses', value:row => normalizeInterestIds(row.interests).join(' | ') },
+        { label:'Estado', value:row => row.banned ? 'Baneado' : 'Activo' },
+        { label:'Motivo baneo', value:row => row.banned_reason || '' },
+        { label:'Alta', value:row => fmtDateShort(row.created_at) },
+        { label:'Última visita', value:row => row.last_seen_at ? fmtDateShort(row.last_seen_at) : '' },
+      ],
+      filteredUsers,
+    )
+    toast.success(`${filteredUsers.length} usuarios exportados`)
   }
 
   async function setContentActive(type, id, active) {
@@ -3003,7 +3561,7 @@ export default function Admin() {
   const filteredJobs = recentJobs.filter(contentMatches)
   const pagedListings = paginate(filteredListings, listingPage)
   const pagedJobs = paginate(filteredJobs, jobPage)
-  const totalPendingActions = stats.queue + stats.reports + stats.businessVerification
+  const totalPendingActions = stats.queue + stats.reports + stats.businessVerification + creatorStats.pendingReview
   const activePublications = recentListings.filter(item => item.active !== false).length + recentJobs.filter(item => item.active !== false).length
   const verifiedBusinessCount = businessVerificationCounts.verified || 0
   const adminHealth = totalPendingActions > 0 ? 'Requiere atencion' : 'Todo al dia'
@@ -3037,6 +3595,8 @@ export default function Admin() {
   const activeUsersInOverviewRange = metricUsers.filter(profile => isWithinRecentDays(profile.last_seen_at, overviewDays))
   const recentListingsInOverviewRange = recentListings.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
   const recentJobsInOverviewRange = recentJobs.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
+  const newCreatorContentInOverviewRange = creatorContents.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
+  const newCreatorsInOverviewRange = countRecent(creatorProfiles, overviewDays)
   const newBusinessesInOverviewRange = countRecent(businesses, overviewDays)
   const newUsersInOverviewRange = countRecent(metricUsers, overviewDays)
   const newContentInOverviewRange = countRecent(contentItems, overviewDays)
@@ -3061,6 +3621,7 @@ export default function Admin() {
   const businessTrendInOverviewRange = periodTrend(businesses, overviewDays)
   const listingTrendInOverviewRange = periodTrend(recentListings, overviewDays)
   const jobTrendInOverviewRange = periodTrend(recentJobs, overviewDays)
+  const creatorContentTrendInOverviewRange = periodTrend(creatorContents, overviewDays)
   const interactionTrendInOverviewRange = analyticsUnavailable ? null : periodTrend(overviewAnalyticsBaseEvents, overviewDays)
   const messageTrendInOverviewRange = messagesUnavailable ? null : periodTrend(overviewMessageBaseEvents, overviewDays)
   const reportsTrendInOverviewRange = periodTrend(reports, overviewDays)
@@ -3105,6 +3666,8 @@ export default function Admin() {
     stats.queue > 0 && `Revisar ${stats.queue} elementos en cola antes de que se acumulen publicaciones bloqueadas.`,
     stats.reports > 0 && `Atender ${stats.reports} reportes pendientes para mantener confianza y seguridad.`,
     stats.businessVerification > 0 && `Verificar ${stats.businessVerification} negocios pendientes para mejorar confianza visual.`,
+    creatorStats.pendingReview > 0 && `Revisar ${creatorStats.pendingReview} creadores pendientes para que su contenido llegue al directorio.`,
+    creatorStats.withoutContent > 0 && `Acompañar a ${creatorStats.withoutContent} creadores sin contenido publicado.`,
     activeUsersInOverviewRange.length < overviewTargets.activeUsers && `Subir actividad: hay ${activeUsersInOverviewRange.length} usuarios activos y el objetivo del periodo es ${overviewTargets.activeUsers}.`,
     newUsersInOverviewRange === 0 && `Atraer usuarios nuevos: no hay altas registradas en ${overviewRangeText}.`,
     newBusinessesInOverviewRange === 0 && overviewDays > 1 && `Impulsar negocios: no hay negocios nuevos en ${overviewRangeText}.`,
@@ -3121,6 +3684,7 @@ export default function Admin() {
     { label: `Negocios nuevos ${overviewMetricSuffix}`, value: newBusinessesInOverviewRange, trend: businessTrendInOverviewRange, color: '#059669' },
     { label: `Anuncios nuevos ${overviewMetricSuffix}`, value: recentListingsInOverviewRange, trend: listingTrendInOverviewRange, color: '#0284C7' },
     { label: `Empleos nuevos ${overviewMetricSuffix}`, value: recentJobsInOverviewRange, trend: jobTrendInOverviewRange, color: '#7C3AED' },
+    { label: `Contenidos de creadores ${overviewMetricSuffix}`, value: newCreatorContentInOverviewRange, trend: creatorContentTrendInOverviewRange, color: '#DB2777' },
     { label: `Interacción ${overviewMetricSuffix}`, value: analyticsUnavailable ? 'No disp.' : overviewInteractionCount, trend: interactionTrendInOverviewRange, color: '#0891B2' },
     { label: `Mensajes ${overviewMetricSuffix}`, value: messagesUnavailable ? 'No disp.' : overviewMessagesCount, trend: messageTrendInOverviewRange, color: '#9333EA' },
     { label: `Reportes ${overviewMetricSuffix}`, value: reportsInOverviewRange, trend: reportsTrendInOverviewRange, color: '#DC2626' },
@@ -3128,15 +3692,6 @@ export default function Admin() {
   ]
   const topPageMax = Math.max(...topPageRows.map(row => row.value), 1)
   const topSearchMax = Math.max(...topSearchRows.map(row => row.value), 1)
-
-  // eslint-disable-next-line no-unused-vars
-  const STAT_CARDS = [
-    { id: 'moderation', icon: '⏳', label: 'En revisión', value: loading ? '—' : stats.queue,   color: '#D97706', urgent: true,  sub: 'Cola de moderación' },
-    { id: 'reports',    icon: '🚨', label: 'Reportes',    value: loading ? '—' : stats.reports, color: '#DC2626', urgent: true,  sub: 'Denuncias pendientes' },
-    { id: 'businessVerification', icon: '✓', label: 'Negocios', value: loading ? '—' : stats.businessVerification, color: '#059669', urgent: true, sub: 'Pendientes de verificar' },
-    { id: 'users',      icon: '👥', label: 'Usuarios',    value: loading ? '—' : stats.users,   color: C.primary, urgent: false, sub: `${loading ? '—' : stats.banned} baneados` },
-    { id: 'content',    icon: '📋', label: 'Contenido',   value: loading ? '—' : stats.content, color: '#059669', urgent: false, sub: 'Anuncios y empleos' },
-  ]
 
   const isDataGroupReady = group =>
     loadedDataGroups.has(group)
@@ -3150,25 +3705,26 @@ export default function Admin() {
 
   const NAV_ITEMS = [
     { id: 'users', icon: '👥', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
+    { id: 'creators', icon: '🎬', label: 'Creadores', value: navValue('creators', `${creatorStats.live} activos`), color: '#DB2777', bg: '#FDF2F8', alert: creatorStats.pendingReview },
     { id: 'analytics', icon: '📈', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'feedback', icon: '⭐', label: 'Intereses y valoraciones', value: navValue('feedback', `${totalFeedbackResponses} respuestas`), color: '#B45309', bg: '#FFFBEB' },
+    { id: 'feedback', icon: '⭐', label: 'Intereses y valoraciones', short: 'Valoración', value: navValue('feedback', `${totalFeedbackResponses} respuestas`), color: '#B45309', bg: '#FFFBEB' },
     { id: 'partners', icon: '🚀', label: 'Colaboraciones', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
     { id: 'live', icon: '📡', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
-    { id: 'overview', icon: '📊', label: 'Estado general', value: navValue('overview', `${generalScore}/100`), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
-    { id: 'businessVerification', icon: '✓', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5' },
+    { id: 'overview', icon: '📊', label: 'Estado general', short: 'Estado', value: navValue('overview', `${generalScore}/100`), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
+    { id: 'businessVerification', icon: '✓', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5', alert: stats.businessVerification },
     { id: 'content', icon: '📋', label: 'Publicaciones', value: navValue('content', `${stats.content} items`), color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'reports', icon: '🚨', label: 'Reportes', value: navValue('reports', `${stats.reports} pend.`), color: '#DC2626', bg: '#FEF2F2' },
-    { id: 'moderation', icon: '⏳', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB' },
+    { id: 'reports', icon: '🚨', label: 'Reportes', value: navValue('reports', `${stats.reports} pend.`), color: '#DC2626', bg: '#FEF2F2', alert: stats.reports },
+    { id: 'moderation', icon: '⏳', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB', alert: stats.queue },
   ]
 
   const navById = new Map(NAV_ITEMS.map(item => [item.id, item]))
   const NAV_GROUPS = [
-    { label: 'Direccion', hint: 'Estado global y decisiones rapidas', items: ['overview', 'live'] },
-    { label: 'Crecimiento', hint: 'Usuarios, intereses, valoraciones y colaboraciones', items: ['users', 'analytics', 'feedback', 'partners'] },
-    { label: 'Operacion', hint: 'Negocios, publicaciones y seguridad', items: ['businessVerification', 'content', 'reports', 'moderation'] },
+    { label: 'Dirección', hint: 'Estado global y decisiones rápidas', items: ['overview', 'live'] },
+    { label: 'Crecimiento', hint: 'Usuarios, creadores, valoraciones y colaboraciones', items: ['users', 'creators', 'analytics', 'feedback', 'partners'] },
+    { label: 'Operación', hint: 'Negocios, publicaciones y seguridad', items: ['businessVerification', 'content', 'reports', 'moderation'] },
   ]
   const BOTTOM_NAV_ITEMS = []
-  for (const id of ['users', 'analytics', 'feedback', 'businessVerification']) {
+  for (const id of ['users', 'creators', 'feedback', 'analytics']) {
     const item = navById.get(id)
     if (item) BOTTOM_NAV_ITEMS.push(item)
   }
@@ -3196,6 +3752,7 @@ export default function Admin() {
   const SECTION_TITLES = {
     overview: { icon: '📊', label: 'Estado general' },
     live: { icon: '📡', label: 'Live' },
+    creators: { icon: '🎬', label: 'Creadores' },
     analytics: { icon: '📈', label: 'Uso de la app' },
     feedback: { icon: '⭐', label: 'Intereses y valoraciones' },
     partners: { icon: '🚀', label: 'Colaboraciones' },
@@ -3219,6 +3776,7 @@ export default function Admin() {
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
     businessVerification: { description: 'Evalua datos, contacto y señales antes de mostrar la etiqueta Verificada.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
     users: { description: 'Busca cuentas, revisa actividad basica y gestiona baneos. Las métricas excluyen la cuenta admin.', color: C.primary, count: metricUsers.length, badge: `${metricUsers.length} usuarios sin admin` },
+    creators: { description: 'Directorio de creadores: alcance, contenido publicado, rendimiento por creador y decisiones de revisión.', color: '#DB2777', count: creatorStats.total, badge: `${creatorStats.live} activos · ${creatorStats.contents} contenidos · ${creatorStats.pendingReview} por revisar` },
     content: { description: 'Control completo de anuncios y empleos publicados en Latido.', color: '#059669', count: stats.content, badge: `${stats.content} publicaciones totales` },
   }
   const activeSectionDetails = SECTION_DETAILS[tab]
@@ -3228,6 +3786,7 @@ export default function Admin() {
         { label: `Usuarios activos ${overviewMetricSuffix}`, value: loading ? '...' : activeUsersInOverviewRange.length, hint: `${newUsersInOverviewRange} usuarios nuevos`, color: '#0F766E' },
         { label: `Contenido ${overviewMetricSuffix}`, value: loading ? '...' : overviewTotalNewContent, hint: `${recentListingsInOverviewRange} anuncios · ${recentJobsInOverviewRange} empleos · ${newBusinessesInOverviewRange} negocios`, color: '#059669' },
         { label: 'Interacción', value: loading ? '...' : (analyticsUnavailable && messagesUnavailable ? 'No disp.' : overviewEngagementCount), hint: `${analyticsUnavailable ? 'sin analytics' : `${overviewPageViews} vistas · ${overviewSearchInteractions} búsquedas`} · ${messagesUnavailable ? 'sin mensajes' : `${overviewMessagesCount} mensajes`}`, color: analyticsUnavailable && messagesUnavailable ? '#D97706' : '#0891B2' },
+        { label: `Creadores ${overviewMetricSuffix}`, value: loading ? '...' : creatorStats.live, hint: `${newCreatorsInOverviewRange} altas · ${newCreatorContentInOverviewRange} contenidos nuevos · ${creatorStats.pendingReview} por revisar`, color: '#DB2777', trend: creatorContentTrendInOverviewRange },
         { label: `Tendencia ${overviewMetricSuffix}`, value: loading ? '...' : generalTrend, hint: `Promedio ${overviewAverageTrend > 0 ? '+' : ''}${overviewAverageTrend}% · reportes ${reportsTrendInOverviewRange > 0 ? '+' : ''}${reportsTrendInOverviewRange}%`, color: generalTrendColor },
       ]
     : tab === 'live'
@@ -3235,6 +3794,8 @@ export default function Admin() {
         { label: 'Online ahora', value: loading ? '...' : onlineUsers.length, hint: `${liveOnlineRate}% de la base cargada`, color: '#7C3AED' },
         { label: 'Activos hoy', value: loading ? '...' : activeUsersToday.length, hint: `${liveTodayRate}% han abierto Latido`, color: C.primary },
         { label: 'Activos 7 días', value: loading ? '...' : activeUsersWeek.length, hint: `${liveWeekRate}% activos esta semana`, color: '#059669' },
+        { label: 'Activos 30 días', value: loading ? '...' : activeUsersMonth.length, hint: `${percentOf(activeUsersMonth.length, metricUsers.length)}% de la base registrada`, color: '#0891B2' },
+        { label: 'Fidelidad diaria', value: loading ? '...' : `${stickinessRate}%`, hint: 'Activos hoy sobre activos del mes (DAU/MAU)', color: stickinessRate >= 20 ? '#047857' : stickinessRate >= 10 ? '#B45309' : '#DC2626' },
         { label: 'Conexión live', value: loading ? '...' : presenceStatusMeta.label, hint: presenceStatusMeta.note, color: presenceStatusMeta.color },
         { label: 'Sin registro', value: loading ? '...' : liveUntrackedUsers, hint: 'Usuarios previos al tracking', color: '#D97706' },
       ]
@@ -3265,11 +3826,22 @@ export default function Admin() {
         ]
     : tab === 'users'
       ? [
-        { label: 'Nuevos usuarios', value: loading ? '...' : newUsersInRange.length, hint: `Registrados ${userRangeLabel}`, color: C.primary },
-        { label: 'Usuarios totales', value: loading ? '...' : metricUsers.length, hint: `Sin contar admin · ${filteredUsers.length} según filtros`, color: C.text },
+        { label: 'Nuevos usuarios', value: loading ? '...' : newUsersInRange.length, hint: `Registrados ${userRangeLabel}`, color: C.primary, trend: userTrendInRange },
+        { label: 'Usuarios totales', value: loading ? '...' : fmtNumber(metricUsers.length), hint: `Sin contar admin · ${filteredUsers.length} según filtros`, color: C.text },
+        { label: 'Activos 7 días', value: loading ? '...' : activeUsersWeek.length, hint: `${percentOf(activeUsersWeek.length, metricUsers.length)}% de la base abrió Latido`, color: '#0F766E' },
         { label: 'Usuarios baneados', value: loading ? '...' : stats.banned, hint: stats.banned ? 'Revisar cuentas bloqueadas' : 'Sin bloqueos activos', color: stats.banned ? '#DC2626' : '#059669' },
-        { label: 'Cantones nuevos', value: loading ? '...' : new Set(newUsersInRange.map(u => u.canton).filter(Boolean)).size, hint: `Diversidad en ${userRangeLabel}`, color: '#0F766E' },
+        { label: 'Cantones nuevos', value: loading ? '...' : new Set(newUsersInRange.map(u => u.canton).filter(Boolean)).size, hint: `Diversidad en ${userRangeLabel}`, color: '#7C3AED' },
       ]
+    : tab === 'creators'
+      ? [
+          { label: 'Creadores activos', value: loading ? '...' : creatorStats.live, hint: `${creatorStats.total} en total · ${creatorStats.drafts} borradores · ${creatorStats.inactive} ocultos`, color: '#DB2777' },
+          { label: 'Pendientes de revisión', value: loading ? '...' : creatorStats.pendingReview, hint: `${creatorStats.verified} verificados · ${creatorStats.rejected} rechazados`, color: creatorStats.pendingReview ? '#B45309' : '#047857' },
+          { label: `Nuevos creadores ${creatorRangeText}`, value: loading ? '...' : creatorStats.newCreators, hint: `${creatorStats.newContents} contenidos nuevos`, color: C.primary, trend: creatorStats.creatorTrend },
+          { label: 'Contenidos publicados', value: loading ? '...' : fmtNumber(creatorStats.publishedContents), hint: `${creatorStats.contents} totales · ${ratePerItem(creatorStats.contents, creatorStats.total)} por creador`, color: '#0284C7' },
+          { label: 'Vistas de perfil', value: loading ? '...' : fmtNumber(creatorStats.profileViews), hint: `${fmtNumber(ratePerItem(creatorStats.profileViews, creatorStats.total, 0))} de media por creador`, color: '#7C3AED' },
+          { label: 'Clics en contenido', value: loading ? '...' : fmtNumber(creatorStats.clicks), hint: `${creatorStats.ctr}% CTR sobre ${fmtNumber(creatorStats.impressions)} impresiones`, color: '#0F766E' },
+          { label: 'Votos de útil', value: loading ? '...' : fmtNumber(creatorStats.helpful), hint: `${fmtNumber(creatorStats.saved)} guardados · ${fmtNumber(creatorStats.socialClicks)} clics a redes`, color: '#047857' },
+        ]
     : tab === 'businessVerification'
       ? [
           { label: 'Negocios activos', value: loading ? '...' : activeBusinesses, hint: `${businesses.length} negocios cargados`, color: '#059669' },
@@ -3296,11 +3868,18 @@ export default function Admin() {
             ]
   const activeChart =
     tab === 'users'
-      ? <AdminPeriodChart title="Nuevos usuarios" items={metricUsers} color={C.primary} days={userDays} onDaysChange={setUserDays} />
+      ? <AdminPeriodChart title="Nuevos usuarios" items={metricUsers} color={C.primary} days={userDays} />
       : tab === 'analytics'
-        ? <AdminPeriodChart title="Vistas de página" items={pageViewEvents} color="#0284C7" days={analyticsDays} onDaysChange={setAnalyticsDays} />
+        ? <AdminPeriodChart title="Vistas de página" items={pageViewEvents} color="#0284C7" days={analyticsDays} />
       : tab === 'partners'
         ? <AdminMonthlyChart title={`Salidas a ${selectedPartner?.name || 'partners'}`} items={partnerClickEvents} color="#4F46E5" range={partnerMonthRange} />
+      : tab === 'creators'
+        ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 12 }}>
+            <AdminPeriodChart title="Altas de creadores" items={creatorProfiles} color="#DB2777" days={creatorDays} />
+            <AdminPeriodChart title="Contenidos publicados" items={creatorContents} color="#0284C7" days={creatorDays} />
+          </div>
+        )
       : tab === 'reports'
         ? <AdminChartCard title="Reportes recibidos" items={reports} color="#DC2626" />
         : tab === 'businessVerification'
@@ -3308,110 +3887,447 @@ export default function Admin() {
           : tab === 'content'
             ? <AdminChartCard title="Publicaciones" items={[...recentListings, ...recentJobs]} color="#059669" />
           : null
-  const showChartPlaceholder = ['users', 'analytics', 'partners', 'reports', 'businessVerification', 'content'].includes(tab)
+  const showChartPlaceholder = ['users', 'analytics', 'partners', 'reports', 'businessVerification', 'content', 'creators'].includes(tab)
+  const topbarPeriodControl = tab === 'overview'
+    ? <PeriodSwitch value={overviewDays} onChange={setOverviewDays} />
+    : tab === 'analytics'
+      ? <PeriodSwitch value={analyticsDays} onChange={setAnalyticsDays} />
+      : tab === 'users'
+        ? <PeriodSwitch value={userDays} onChange={setUserDays} />
+        : tab === 'creators'
+          ? <PeriodSwitch value={creatorDays} onChange={setCreatorDays} />
+          : tab === 'partners'
+            ? <MonthPeriodSwitch value={partnerMonthPeriod} onChange={setPartnerMonthPeriod} />
+            : null
   const menuNavActive = crmMenuOpen || !BOTTOM_NAV_ITEMS.some(item => item.id === tab)
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#F4F7FB 0%,#EEF4FF 100%)', padding: '18px 14px calc(104px + env(safe-area-inset-bottom))' }}>
-      <div style={{ maxWidth: 1180, margin: '0 auto' }}>
-        <main style={{ minWidth: 0 }}>
+  function creatorReviewTag(creator) {
+    const meta = CREATOR_REVIEW_META[creator.review_status] || { label:creator.review_status || 'Sin estado', color:C.mid, bg:C.bg }
+    return <Tag bg={meta.bg} color={meta.color}>{meta.label}</Tag>
+  }
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: '1px solid rgba(226,234,244,0.95)', borderRadius: 24, padding: 20, boxShadow: '0 18px 46px rgba(15,23,42,0.06)' }}>
-        <div style={{ minWidth: 240, flex: '1 1 420px' }}>
-          <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: activeSectionDetails.color, margin: '0 0 6px', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-            {activeSection.label}
-          </p>
-          <h1 style={{ fontFamily: PP, fontWeight: 900, fontSize: 30, color: C.text, margin: '0 0 6px', letterSpacing: -0.8, lineHeight: 1.08 }}>
-            Centro de control
-          </h1>
-          <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, margin: 0, lineHeight: 1.55, maxWidth: 620 }}>
-            Panel operativo para leer datos, tomar decisiones y mantener Latido ordenado.
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => loadAdminData({ groups: getAdminTabDataGroups(tab), days: getLoadDaysForTab(tab), force: true })}
-            disabled={loading}
-            style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: 14, padding: '11px 15px', cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 14px 30px rgba(37,99,235,0.22)', opacity: loading ? 0.72 : 1 }}
-          >
-            <span style={{ fontSize: 14 }}>↻</span> {loading ? 'Actualizando' : 'Actualizar'}
-          </button>
-        </div>
+  function renderCreatorActions(creator, { compact = false } = {}) {
+    const busy = creatorActionLoading.has(creator.id)
+    return (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: compact ? 'flex-start' : 'flex-end' }}>
+        {creator.review_status !== 'approved' && (
+          <AdminButton variant="success" disabled={busy} onClick={() => setCreatorReview(creator, 'approved')}>✓ Aprobar</AdminButton>
+        )}
+        {creator.review_status !== 'rejected' && (
+          <AdminButton variant="danger" disabled={busy} onClick={() => setCreatorReview(creator, 'rejected')}>✕ Rechazar</AdminButton>
+        )}
+        <AdminButton disabled={busy} onClick={() => setCreatorVerified(creator, !creator.verified)}>
+          {creator.verified ? 'Quitar verificado' : '★ Verificar'}
+        </AdminButton>
+        <AdminButton
+          variant={creator.active === false ? 'success' : 'danger'}
+          disabled={busy}
+          onClick={() => setCreatorActive(creator, creator.active === false)}
+        >
+          {creator.active === false ? '↩ Mostrar' : 'Ocultar'}
+        </AdminButton>
       </div>
+    )
+  }
 
-      {false && (
-      <Card style={{ marginBottom: 14, padding: 14, background: 'linear-gradient(135deg,#FFFFFF 0%,#F8FAFF 100%)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-          <div>
-            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 13, color: C.text, margin: '0 0 3px' }}>
-              Control CRM Latido
-            </p>
-            <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>
-              Datos reales agrupados por operacion. Las metricas pesadas se cargan por dia y se reutilizan al cambiar entre hoy, 7 y 30 dias.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <Tag bg={deltaStatusBg} color={deltaStatusColor}>{deltaStatusLabel}</Tag>
-            <Tag bg={C.bg} color={C.mid}>Cache diario</Tag>
-            <Tag bg="#EEF2FF" color="#4F46E5">1 · 7 · 30 dias</Tag>
-          </div>
-        </div>
+  const creatorTableColumns = [
+    {
+      key: 'creator',
+      label: 'Creador',
+      sortId: 'name',
+      render: creator => (
+        <span style={{ display: 'block', minWidth: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: PP, fontWeight: 900, fontSize: 12.5, color: C.text }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 190 }}>
+              {creator.name || 'Sin nombre'}
+            </span>
+            {creator.verified && <span title="Verificado" style={{ color: '#0284C7', fontSize: 12 }}>✔</span>}
+          </span>
+          <span style={{ display: 'block', fontFamily: PP, fontSize: 10.5, color: C.light, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+            {creator.handle || creator.slug}{creator.canton ? ` · ${creator.canton}` : ''}{creator.ownerEmail ? ` · ${creator.ownerEmail}` : ''}
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Estado',
+      render: creator => {
+        const meta = creatorStatusMeta(creator)
+        return (
+          <span style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <Tag bg={meta.bg} color={meta.color}>{meta.label}</Tag>
+            {creatorReviewTag(creator)}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'contents',
+      label: 'Cont.',
+      align: 'right',
+      sortId: 'contents',
+      render: creator => (
+        <span style={{ fontFamily: PP, fontWeight: 900 }}>
+          {creator.publishedContentCount}
+          <span style={{ color: C.light, fontWeight: 800 }}>/{creator.contentCount}</span>
+        </span>
+      ),
+    },
+    { key: 'views', label: 'Vistas', align: 'right', sortId: 'views', render: creator => fmtNumber(creator.profileViews) },
+    { key: 'impressions', label: 'Impr.', align: 'right', render: creator => fmtNumber(creator.impressions) },
+    { key: 'clicks', label: 'Clics', align: 'right', sortId: 'clicks', render: creator => fmtNumber(creator.clicks) },
+    {
+      key: 'ctr',
+      label: 'CTR',
+      align: 'right',
+      sortId: 'ctr',
+      render: creator => (
+        <span style={{ fontFamily: PP, fontWeight: 900, color: creator.ctr >= 10 ? '#047857' : creator.ctr > 0 ? C.text : C.light }}>
+          {creator.impressions ? `${creator.ctr}%` : '—'}
+        </span>
+      ),
+    },
+    { key: 'helpful', label: 'Útil', align: 'right', sortId: 'helpful', render: creator => fmtNumber(creator.helpful) },
+    { key: 'saved', label: 'Guard.', align: 'right', sortId: 'saved', render: creator => fmtNumber(creator.saved) },
+    { key: 'created', label: 'Alta', align: 'right', sortId: 'recent', render: creator => fmtDateShort(creator.created_at) },
+    {
+      key: 'actions',
+      label: 'Acciones',
+      align: 'right',
+      width: 260,
+      render: creator => (
+        <span onClick={event => event.stopPropagation()} style={{ display: 'block' }}>
+          {renderCreatorActions(creator)}
+        </span>
+      ),
+    },
+  ]
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 10 }}>
-          {NAV_GROUPS.map(group => (
-            <div key={group.label} style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 12, background: '#fff' }}>
-              <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase', color: C.light, margin: '0 0 3px' }}>
-                {group.label}
+  function renderCreatorCard(creator) {
+    const meta = creatorStatusMeta(creator)
+    const open = selectedCreatorId === creator.id
+
+    return (
+      <Card key={creator.id} style={{ padding: '12px 14px' }}>
+        <button
+          type="button"
+          onClick={() => setSelectedCreatorId(previous => previous === creator.id ? '' : creator.id)}
+          style={{ display: 'block', width: '100%', border: 'none', background: 'transparent', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 14, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
+                {creator.name || 'Sin nombre'}{creator.verified ? ' ✔' : ''}
               </p>
-              <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, margin: '0 0 10px', lineHeight: 1.35 }}>
-                {group.hint}
+              <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0', overflowWrap: 'anywhere' }}>
+                {creator.handle || creator.slug}
+                {creator.canton ? ` · ${creator.canton}` : ''}
+                {creator.created_at ? ` · alta ${fmtDateShort(creator.created_at)}` : ''}
               </p>
-              <div style={{ display: 'grid', gap: 7 }}>
-                {group.items.map(id => {
-                  const item = navById.get(id)
-                  if (!item) return null
-                  const active = tab === item.id
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => switchTab(item.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 10,
-                        width: '100%',
-                        border: `1.5px solid ${active ? `${item.color}66` : C.border}`,
-                        borderRadius: 14,
-                        padding: '10px 11px',
-                        background: active ? item.bg : '#fff',
-                        color: active ? item.color : C.text,
-                        cursor: 'pointer',
-                        boxShadow: active ? `0 10px 22px ${item.color}12` : 'none',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
-                        <span style={{ width: 30, height: 30, borderRadius: 11, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>
-                          {item.icon}
-                        </span>
-                        <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 10, color: active ? item.color : C.light, marginTop: 1 }}>{item.value}</span>
-                        </span>
-                      </span>
-                      <span style={{ fontFamily: PP, fontSize: 15, fontWeight: 900, color: active ? item.color : C.light }}>›</span>
-                    </button>
-                  )
-                })}
+            </div>
+            <span style={{ fontFamily: PP, fontSize: 16, fontWeight: 900, color: C.light, flexShrink: 0 }}>{open ? '−' : '+'}</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', margin: '8px 0' }}>
+            <Tag bg={meta.bg} color={meta.color}>{meta.label}</Tag>
+            {creatorReviewTag(creator)}
+            {(creator.topics || []).slice(0, 2).map(topicId => {
+              const topic = creatorTopicMeta(topicId)
+              return <Tag key={topicId} bg={topic.bg} color={topic.color}>{topic.emoji} {topic.label}</Tag>
+            })}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 6 }}>
+            {[
+              { label:'Contenidos', value:`${creator.publishedContentCount}/${creator.contentCount}` },
+              { label:'Vistas', value:fmtNumber(creator.profileViews) },
+              { label:'Clics', value:fmtNumber(creator.clicks) },
+              { label:'Útiles', value:fmtNumber(creator.helpful) },
+            ].map(item => (
+              <div key={item.label} style={{ background: C.bgAlt, borderRadius: 12, padding: '7px 8px', minWidth: 0 }}>
+                <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 900, color: C.light, margin: 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>{item.label}</p>
+                <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 900, color: C.text, margin: '2px 0 0' }}>{item.value}</p>
               </div>
+            ))}
+          </div>
+        </button>
+
+        <div style={{ marginTop: 10 }}>
+          {renderCreatorActions(creator, { compact: true })}
+        </div>
+      </Card>
+    )
+  }
+
+  function renderCreatorDetail(creator) {
+    const contents = [...creator.contents].sort(
+      (a, b) => String(b.published_at || b.created_at || '').localeCompare(String(a.published_at || a.created_at || ''))
+    )
+
+    return (
+      <AdminSectionCard
+        title={`${creator.name || 'Creador'} · detalle`}
+        subtitle={`${creator.handle || creator.slug}${creator.city ? ` · ${creator.city}` : ''}${creator.canton ? ` (${creator.canton})` : ''}${creator.ownerEmail ? ` · ${creator.ownerEmail}` : ''}`}
+        action={(
+          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+            <a
+              href={`/creadores/${creator.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: C.primary, background: C.primaryLight, borderRadius: 10, padding: '9px 12px', textDecoration: 'none' }}
+            >
+              Ver perfil público ↗
+            </a>
+            <AdminButton onClick={() => setSelectedCreatorId('')}>Cerrar</AdminButton>
+          </div>
+        )}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 8, marginBottom: 14 }}>
+          {[
+            { label:'Vistas de perfil', value:fmtNumber(creator.profileViews), color:'#7C3AED' },
+            { label:'Impresiones', value:fmtNumber(creator.impressions), color:'#0284C7' },
+            { label:'Clics', value:fmtNumber(creator.clicks), color:'#0F766E' },
+            { label:'CTR', value:creator.impressions ? `${creator.ctr}%` : '—', color:'#047857' },
+            { label:'Útiles', value:fmtNumber(creator.helpful), color:'#DB2777' },
+            { label:'Guardados', value:fmtNumber(creator.saved), color:C.primary },
+            { label:'Compartidos', value:fmtNumber(creator.shares), color:'#B45309' },
+            { label:'Clics a redes', value:fmtNumber(creator.socialClicks), color:'#4F46E5' },
+          ].map(item => (
+            <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 11px', minWidth: 0 }}>
+              <p style={{ fontFamily: PP, fontSize: 9.5, fontWeight: 900, color: C.light, margin: 0, textTransform: 'uppercase', letterSpacing: 0.6 }}>{item.label}</p>
+              <p style={{ fontFamily: PP, fontSize: 17, fontWeight: 900, color: item.color, margin: '3px 0 0' }}>{item.value}</p>
             </div>
           ))}
         </div>
-      </Card>
-      )}
+
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 12 }}>
+          {(creator.topics || []).map(topicId => {
+            const topic = creatorTopicMeta(topicId)
+            return <Tag key={topicId} bg={topic.bg} color={topic.color}>{topic.emoji} {topic.label}</Tag>
+          })}
+          {(creator.socials || []).map(social => {
+            const platform = creatorPlatformMeta(social.platform)
+            return <Tag key={`${social.platform}-${social.url}`} bg={platform.bg} color={platform.color}>{platform.label}</Tag>
+          })}
+        </div>
+
+        <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.mid, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          Contenidos ({contents.length})
+        </p>
+
+        {!contents.length ? (
+          <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Este creador aún no ha publicado contenido.</p>
+        ) : (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {contents.map(content => {
+              const metrics = creatorMetricIndex.byContent.get(content.id)
+              const clicks = metrics?.content_click || 0
+              const impressions = metrics?.content_impression || 0
+              const platform = creatorPlatformMeta(content.platform)
+              const topic = creatorTopicMeta(content.topic)
+              const published = content.status === 'published' && content.active !== false
+
+              return (
+                <div key={content.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ minWidth: 0, flex: '1 1 260px' }}>
+                    <a
+                      href={content.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontFamily: PP, fontWeight: 900, fontSize: 12.5, color: C.text, textDecoration: 'none', overflowWrap: 'anywhere' }}
+                    >
+                      {content.title || 'Sin título'} ↗
+                    </a>
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 6 }}>
+                      <Tag bg={platform.bg} color={platform.color}>{platform.label}</Tag>
+                      <Tag bg={topic.bg} color={topic.color}>{topic.emoji} {topic.label}</Tag>
+                      <Tag bg={published ? '#D1FAE5' : '#FEE2E2'} color={published ? '#065F46' : '#B91C1C'}>
+                        {published ? 'Publicado' : content.status === 'draft' ? 'Borrador' : 'Oculto'}
+                      </Tag>
+                      <Tag bg={C.bg} color={C.mid}>{fmtDateShort(content.published_at || content.created_at)}</Tag>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0 }}>
+                    {[
+                      { label:'Impr.', value:fmtNumber(impressions) },
+                      { label:'Clics', value:fmtNumber(clicks) },
+                      { label:'CTR', value:impressions ? `${percentOf(clicks, impressions)}%` : '—' },
+                      { label:'Útil', value:fmtNumber(Math.max(0, Number(content.helpful_count) || 0)) },
+                    ].map(item => (
+                      <div key={item.label} style={{ textAlign: 'right' }}>
+                        <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 900, color: C.light, margin: 0, textTransform: 'uppercase' }}>{item.label}</p>
+                        <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 900, color: C.text, margin: '2px 0 0' }}>{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </AdminSectionCard>
+    )
+  }
+
+  const refreshButton = (
+    <button
+      onClick={() => loadAdminData({ groups: getAdminTabDataGroups(tab), days: getLoadDaysForTab(tab), force: true })}
+      disabled={loading}
+      style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: 14, padding: '11px 15px', cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 14px 30px rgba(37,99,235,0.22)', opacity: loading ? 0.72 : 1, whiteSpace: 'nowrap' }}
+    >
+      <span style={{ fontSize: 14 }}>↻</span> {loading ? 'Actualizando' : 'Actualizar'}
+    </button>
+  )
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(180deg,#F4F7FB 0%,#EEF4FF 100%)',
+      padding: isDesktop ? '20px 24px 40px' : '14px 12px calc(104px + env(safe-area-inset-bottom))',
+    }}>
+      <div style={{
+        maxWidth: isDesktop ? 1680 : 1180,
+        margin: '0 auto',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: isDesktop ? 20 : 0,
+      }}>
+        {isDesktop && (
+          <aside style={{
+            width: 258,
+            flexShrink: 0,
+            position: 'sticky',
+            top: 20,
+            maxHeight: 'calc(100vh - 40px)',
+            overflowY: 'auto',
+            background: '#fff',
+            border: '1px solid rgba(226,234,244,0.95)',
+            borderRadius: 24,
+            padding: 14,
+            boxShadow: '0 18px 46px rgba(15,23,42,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 4px 14px', borderBottom: `1px solid ${C.borderLight}`, marginBottom: 12 }}>
+              <span style={{ width: 38, height: 38, borderRadius: 13, background: `linear-gradient(135deg,${C.primary},#7C3AED)`, display: 'grid', placeItems: 'center', fontSize: 17, flexShrink: 0 }}>
+                💓
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 14, color: C.text, margin: 0, letterSpacing: -0.3 }}>Latido CRM</p>
+                <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.email || 'Panel de administración'}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 14 }}>
+              {NAV_GROUPS.map(group => (
+                <div key={group.label}>
+                  <p style={{ fontFamily: PP, fontSize: 9.5, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', color: C.light, margin: '0 0 7px', padding: '0 4px' }}>
+                    {group.label}
+                  </p>
+                  <div style={{ display: 'grid', gap: 4 }}>
+                    {group.items.map(id => {
+                      const item = navById.get(id)
+                      if (!item) return null
+                      const active = tab === item.id
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => switchTab(item.id)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 9,
+                            width: '100%',
+                            border: 'none',
+                            borderRadius: 13,
+                            padding: '9px 10px',
+                            background: active ? item.bg : 'transparent',
+                            color: active ? item.color : C.text,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            position: 'relative',
+                          }}
+                        >
+                          <span style={{ width: 28, height: 28, borderRadius: 10, background: active ? '#fff' : C.bgAlt, display: 'grid', placeItems: 'center', fontSize: 13, flexShrink: 0 }}>
+                            {item.icon}
+                          </span>
+                          <span style={{ minWidth: 0, flex: 1 }}>
+                            <span style={{ display: 'block', fontFamily: PP, fontWeight: active ? 900 : 800, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {item.label}
+                            </span>
+                            <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 9.5, color: active ? item.color : C.light, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {item.value}
+                            </span>
+                          </span>
+                          {Number(item.alert) > 0 && (
+                            <span style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: item.color, color: '#fff', fontFamily: PP, fontSize: 9.5, fontWeight: 900, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                              {item.alert}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.borderLight}`, display: 'grid', gap: 7 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <Tag bg={deltaStatusBg} color={deltaStatusColor}>{deltaStatusLabel}</Tag>
+                <Tag bg={totalPendingActions ? '#FEF3C7' : '#D1FAE5'} color={totalPendingActions ? '#92400E' : '#047857'}>
+                  {totalPendingActions} pendientes
+                </Tag>
+              </div>
+              {deltaLoadSummary?.at && (
+                <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: 0 }}>
+                  Actualizado {fmtActivity(deltaLoadSummary.at)}
+                </p>
+              )}
+            </div>
+          </aside>
+        )}
+
+        <main style={{ minWidth: 0, flex: '1 1 0' }}>
+
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: 14,
+        flexWrap: 'wrap',
+        marginBottom: 14,
+        background: 'rgba(255,255,255,0.92)',
+        border: '1px solid rgba(226,234,244,0.95)',
+        borderRadius: 24,
+        padding: isDesktop ? '16px 20px' : 18,
+        boxShadow: '0 18px 46px rgba(15,23,42,0.06)',
+        position: 'sticky',
+        top: isDesktop ? 20 : 0,
+        zIndex: 40,
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+      }}>
+        <div style={{ minWidth: 200, flex: '1 1 340px' }}>
+          <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 900, color: activeSectionDetails.color, margin: '0 0 5px', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+            {activeSection.icon} Latido CRM · {activeSection.label}
+          </p>
+          <h1 style={{ fontFamily: PP, fontWeight: 900, fontSize: isDesktop ? 26 : 22, color: C.text, margin: '0 0 5px', letterSpacing: -0.8, lineHeight: 1.1 }}>
+            {activeSection.label}
+          </h1>
+          <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.5, maxWidth: 680 }}>
+            {activeSectionDetails.description}
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {topbarPeriodControl}
+          {refreshButton}
+        </div>
+      </div>
+
 
       {dataErrors.length > 0 && (
         <Card style={{ marginBottom: 14, borderColor: '#FCA5A5', background: '#FEF2F2' }}>
@@ -3439,14 +4355,9 @@ export default function Admin() {
         </Card>
       )}
 
-      {/* Stat cards — double as navigation */}
-      {tab === 'overview' && isTabDataReady('overview') && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '-2px 0 10px' }}>
-          <PeriodSwitch value={overviewDays} onChange={setOverviewDays} />
-        </div>
-      )}
+      {/* KPI row */}
       {isTabDataReady(tab) && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isDesktop ? 190 : 155}px, 1fr))`, gap: 10, marginBottom: 16 }}>
           {sectionMetrics.map(metric => (
             <SummaryMetric
               key={metric.label}
@@ -3454,6 +4365,8 @@ export default function Admin() {
               value={metric.value}
               hint={metric.hint}
               color={metric.color}
+              trend={metric.trend}
+              trendInvert={metric.trendInvert}
             />
           ))}
         </div>
@@ -3474,24 +4387,24 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Section header */}
+      {/* Section context strip: resumen de la sección + frescura de los datos */}
       {isTabDataReady(tab) && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: '1px solid rgba(226,234,244,0.95)', borderRadius: 20, padding: '14px 16px', boxShadow: '0 14px 32px rgba(15,23,42,0.045)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-            <span style={{ width: 40, height: 40, borderRadius: 14, background: `${activeSectionDetails.color}14`, display: 'grid', placeItems: 'center', fontSize: 18, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: '1px solid rgba(226,234,244,0.95)', borderRadius: 18, padding: '11px 14px', boxShadow: '0 12px 28px rgba(15,23,42,0.04)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+            <span style={{ width: 32, height: 32, borderRadius: 12, background: `${activeSectionDetails.color}14`, display: 'grid', placeItems: 'center', fontSize: 15, flexShrink: 0 }}>
               {activeSection.icon}
             </span>
-            <div style={{ minWidth: 0 }}>
-              <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 17, color: C.text, margin: '0 0 3px', lineHeight: 1.2 }}>
-                {activeSection.label}
-              </h2>
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.45 }}>
-                {activeSectionDetails.description}
-              </p>
-            </div>
-          </div>
-          <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: activeSectionDetails.color, background: `${activeSectionDetails.color}12`, borderRadius: 999, padding: '7px 11px' }}>
-            {activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`)}
+            <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: activeSectionDetails.color, minWidth: 0, lineHeight: 1.4 }}>
+              {activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`)}
+            </span>
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <Tag bg={deltaStatusBg} color={deltaStatusColor}>{deltaStatusLabel}</Tag>
+            {deltaLoadSummary?.at && (
+              <span style={{ fontFamily: PP, fontSize: 10.5, color: C.light }}>
+                Actualizado {fmtActivity(deltaLoadSummary.at)}
+              </span>
+            )}
           </span>
         </div>
       )}
@@ -4207,7 +5120,7 @@ export default function Admin() {
                 <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Colaboraciones</p>
                 <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Selecciona un colaborador para consultar sus resultados por mes natural.</p>
               </div>
-              <MonthPeriodSwitch value={partnerMonthPeriod} onChange={setPartnerMonthPeriod} />
+              <Tag bg="#EEF2FF" color="#4F46E5">{partnerMonthRange.monthLabel}</Tag>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 230px), 1fr))', gap: 10 }}>
@@ -4935,7 +5848,8 @@ export default function Admin() {
               <div style={{ display: 'grid', gap: 9 }}>
                 {[
                   { label: 'Online ahora', note: 'Supabase Presence: usuarios con sesión conectada en este momento.', color: '#7C3AED' },
-                  { label: 'Activos hoy/semana', note: 'Usuarios cuyo profiles.last_seen_at cae dentro del día o los últimos 7 días.', color: C.primary },
+                  { label: 'Activos hoy/semana/mes', note: 'Usuarios cuyo profiles.last_seen_at cae dentro del día, los últimos 7 o los últimos 30 días.', color: C.primary },
+                  { label: 'Fidelidad diaria (DAU/MAU)', note: 'Porcentaje de los activos del mes que han vuelto hoy. Por encima del 20% indica un hábito fuerte.', color: '#0891B2' },
                   { label: 'Conexión live', note: `Estado actual del canal realtime: ${presenceStatusMeta.label}.`, color: presenceStatusMeta.color },
                   { label: 'Sin registro', note: 'Usuarios antiguos que aún no han vuelto a abrir la app desde que se activó el tracking.', color: '#D97706' },
                 ].map(item => (
@@ -4953,48 +5867,298 @@ export default function Admin() {
         </div>
       )}
 
+      {/* ── Creadores ──────────────────────────────────── */}
+      {tab === 'creators' && isTabDataReady('creators') && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {creatorsUnavailable && (
+            <Card style={{ borderColor: '#FCD34D', background: '#FFFBEB' }}>
+              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 13, color: '#92400E', margin: '0 0 4px' }}>
+                Sin acceso a la plataforma de creadores
+              </p>
+              <p style={{ fontFamily: PP, fontSize: 11, color: '#B45309', margin: 0, lineHeight: 1.5 }}>
+                Comprueba que tu cuenta esté en business_promotion_admins para que las políticas RLS de creator_profiles te dejen leer todo el directorio.
+              </p>
+            </Card>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${isDesktop ? 340 : 280}px), 1fr))`, gap: 12 }}>
+            <AdminSectionCard
+              title="Embudo del directorio"
+              subtitle="Recorrido acumulado desde que una tarjeta aparece hasta que la comunidad la guarda."
+            >
+              <FunnelSteps steps={[
+                { label:'Impresiones de contenido', value:creatorStats.impressions, color:'#0284C7', hint:`${fmtNumber(creatorStats.profileViews)} vistas de perfil registradas` },
+                { label:'Clics en contenido', value:creatorStats.clicks, color:'#0F766E', hint:`${creatorStats.ctr}% de las impresiones acaban en clic` },
+                { label:'Votos de útil', value:creatorStats.helpful, color:'#047857', hint:`${percentOf(creatorStats.helpful, creatorStats.clicks)}% de los clics dejan un voto` },
+                { label:'Guardados', value:creatorStats.saved, color:'#7C3AED' },
+                { label:'Clics a redes del creador', value:creatorStats.socialClicks, color:'#DB2777' },
+              ]} />
+              {creatorMetricIndex.updatedAt && (
+                <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '12px 0 0' }}>
+                  Contadores acumulados · último registro {fmtActivity(creatorMetricIndex.updatedAt)}
+                </p>
+              )}
+            </AdminSectionCard>
+
+            <AdminSectionCard
+              title="Salud del directorio"
+              subtitle="Señales que indican dónde hace falta una decisión tuya."
+            >
+              <div style={{ display: 'grid', gap: 8 }}>
+                {[
+                  { label:'Pendientes de revisión', value:creatorStats.pendingReview, color:creatorStats.pendingReview ? '#B45309' : '#047857', hint:'Perfiles esperando aprobación', filter:() => { setCreatorReviewFilter('pending'); setCreatorStatusFilter('all'); setCreatorPage(1) } },
+                  { label:'Creadores sin contenido', value:creatorStats.withoutContent, color:creatorStats.withoutContent ? '#D97706' : '#047857', hint:'Perfiles creados pero vacíos', filter:() => { setCreatorStatusFilter('empty'); setCreatorReviewFilter('all'); setCreatorPage(1) } },
+                  { label:'Borradores sin publicar', value:creatorStats.drafts, color:'#0284C7', hint:'No aparecen en el directorio público', filter:() => { setCreatorStatusFilter('draft'); setCreatorReviewFilter('all'); setCreatorPage(1) } },
+                  { label:'Ocultos por admin', value:creatorStats.inactive, color:creatorStats.inactive ? '#B91C1C' : '#047857', hint:'Marcados como inactivos', filter:() => { setCreatorStatusFilter('inactive'); setCreatorReviewFilter('all'); setCreatorPage(1) } },
+                  { label:'Verificados', value:creatorStats.verified, color:'#047857', hint:`${percentOf(creatorStats.verified, creatorStats.total)}% del directorio`, filter:() => { setCreatorReviewFilter('verified'); setCreatorStatusFilter('all'); setCreatorPage(1) } },
+                ].map(row => (
+                  <button
+                    key={row.label}
+                    type="button"
+                    onClick={row.filter}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 10,
+                      width: '100%',
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 14,
+                      padding: '10px 12px',
+                      background: '#fff',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: 'block', fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text }}>{row.label}</span>
+                      <span style={{ display: 'block', fontFamily: PP, fontSize: 10, color: C.light, marginTop: 1 }}>{row.hint}</span>
+                    </span>
+                    <span style={{ fontFamily: PP, fontSize: 18, fontWeight: 900, color: row.color, flexShrink: 0 }}>{row.value}</span>
+                  </button>
+                ))}
+              </div>
+            </AdminSectionCard>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${isDesktop ? 320 : 280}px), 1fr))`, gap: 12 }}>
+            <InsightBarList
+              title="Creadores con más tracción"
+              subtitle="Vistas de perfil + clics en su contenido."
+              rows={topCreatorRows}
+              color="#DB2777"
+              emptyText="Todavía no hay métricas de creadores."
+            />
+            <InsightBarList
+              title="Creadores más valorados"
+              subtitle="Votos de útil y guardados recibidos."
+              rows={topCreatorHelpfulRows}
+              color="#047857"
+              emptyText="Aún nadie ha votado contenido de creadores."
+            />
+            <InsightBarList
+              title="Contenidos con más clics"
+              subtitle="Piezas que mejor convierten en el directorio."
+              rows={topCreatorContentRows}
+              color="#0F766E"
+              emptyText="Sin clics registrados todavía."
+            />
+            <InsightBarList
+              title="Temas cubiertos"
+              subtitle="Contenidos publicados por temática."
+              rows={creatorTopicRows}
+              color="#0284C7"
+              emptyText="Sin contenidos publicados."
+            />
+            <InsightBarList
+              title="Plataformas"
+              subtitle="Dónde publica la comunidad de creadores."
+              rows={creatorPlatformRows}
+              color="#7C3AED"
+              emptyText="Sin contenidos publicados."
+            />
+            <InsightBarList
+              title="Cobertura por cantón"
+              subtitle="Creadores registrados por zona."
+              rows={creatorCantonRows}
+              color={C.primary}
+              emptyText="Sin creadores registrados."
+            />
+          </div>
+
+          <AdminChipFilter
+            label="Filtro rápido por revisión"
+            value={creatorReviewFilter}
+            onChange={value => { setCreatorReviewFilter(value); setCreatorPage(1) }}
+            options={[
+              { id:'all', label:'Todos', count:creatorStats.total },
+              { id:'pending', label:'Pendientes', count:creatorStats.pendingReview, color:'#B45309', bg:'#FFFBEB' },
+              { id:'approved', label:'Aprobados', count:creatorStats.approved, color:'#047857', bg:'#ECFDF5' },
+              { id:'rejected', label:'Rechazados', count:creatorStats.rejected, color:'#B91C1C', bg:'#FEF2F2' },
+              { id:'verified', label:'Verificados', count:creatorStats.verified, color:'#0284C7', bg:'#E0F2FE' },
+            ]}
+          />
+
+          <AdminFilterBar
+            footer={(
+              <>
+                <span style={{ fontFamily: PP, fontSize: 11, color: C.mid }}>
+                  <strong style={{ color: C.text }}>{filteredCreators.length}</strong> de {creatorStats.total} creadores
+                  {' · '}<strong style={{ color: C.text }}>{fmtNumber(filteredCreators.reduce((sum, creator) => sum + creator.profileViews, 0))}</strong> vistas
+                  {' · '}<strong style={{ color: C.text }}>{fmtNumber(filteredCreators.reduce((sum, creator) => sum + creator.clicks, 0))}</strong> clics
+                </span>
+                <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+                  <AdminButton onClick={exportCreatorsCsv} disabled={!filteredCreators.length}>⬇ Exportar CSV</AdminButton>
+                  <AdminButton
+                    onClick={() => {
+                      setCreatorSearch('')
+                      setCreatorStatusFilter('all')
+                      setCreatorReviewFilter('all')
+                      setCreatorTopicFilter('all')
+                      setCreatorCantonFilter('all')
+                      setCreatorSort('views')
+                      setCreatorPage(1)
+                    }}
+                  >
+                    Limpiar filtros
+                  </AdminButton>
+                </div>
+              </>
+            )}
+          >
+            <AdminFilterInput
+              value={creatorSearch}
+              onChange={value => { setCreatorSearch(value); setCreatorPage(1) }}
+              placeholder="Buscar nombre, handle, ciudad, cantón o email..."
+            />
+            <AdminFilterSelect
+              label="Estado del creador"
+              value={creatorStatusFilter}
+              onChange={value => { setCreatorStatusFilter(value); setCreatorPage(1) }}
+            >
+              <option value="all">Estado: todos</option>
+              <option value="live">Publicados y visibles</option>
+              <option value="draft">Borradores</option>
+              <option value="inactive">Ocultos</option>
+              <option value="empty">Sin contenido</option>
+            </AdminFilterSelect>
+            <AdminFilterSelect
+              label="Tema del creador"
+              value={creatorTopicFilter}
+              onChange={value => { setCreatorTopicFilter(value); setCreatorPage(1) }}
+            >
+              <option value="all">Tema: todos</option>
+              {CREATOR_TOPICS.map(topic => (
+                <option key={topic.id} value={topic.id}>{topic.label}</option>
+              ))}
+            </AdminFilterSelect>
+            <AdminFilterSelect
+              label="Cantón del creador"
+              value={creatorCantonFilter}
+              onChange={value => { setCreatorCantonFilter(value); setCreatorPage(1) }}
+            >
+              <option value="all">Cantón: todos</option>
+              {creatorCantons.map(canton => <option key={canton} value={canton}>{canton}</option>)}
+            </AdminFilterSelect>
+            <AdminFilterSelect
+              label="Orden de la lista"
+              value={creatorSort}
+              onChange={value => { setCreatorSort(value); setCreatorPage(1) }}
+            >
+              {CREATOR_SORT_OPTIONS.map(option => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </AdminFilterSelect>
+          </AdminFilterBar>
+
+          {isDesktop ? (
+            <Card style={{ padding: 12 }}>
+              <AdminDataTable
+                columns={creatorTableColumns}
+                rows={pagedCreators.items}
+                getRowKey={creator => creator.id}
+                sort={creatorSort}
+                onSortChange={value => { setCreatorSort(value); setCreatorPage(1) }}
+                activeRowKey={selectedCreatorId}
+                onRowClick={creator => setSelectedCreatorId(previous => previous === creator.id ? '' : creator.id)}
+                emptyText="No hay creadores con estos filtros."
+              />
+              <AdminPagination
+                page={pagedCreators.page}
+                pageCount={pagedCreators.pageCount}
+                total={filteredCreators.length}
+                onChange={setCreatorPage}
+              />
+            </Card>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {!filteredCreators.length ? (
+                <EmptyState icon="🎬" text="No hay creadores con estos filtros." />
+              ) : pagedCreators.items.map(creator => renderCreatorCard(creator))}
+              <AdminPagination
+                page={pagedCreators.page}
+                pageCount={pagedCreators.pageCount}
+                total={filteredCreators.length}
+                onChange={setCreatorPage}
+              />
+            </div>
+          )}
+
+          {selectedCreator && renderCreatorDetail(selectedCreator)}
+        </div>
+      )}
+
       {/* ── Usuarios ───────────────────────────────────── */}
       {tab === 'users' && isTabDataReady('users') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ display: 'grid', gap: 8, marginBottom: 4 }}>
+          <AdminFilterBar
+            footer={(
+              <>
+                <span style={{ fontFamily: PP, fontSize: 11, color: C.mid }}>
+                  <strong style={{ color: C.text }}>{filteredUsers.length}</strong> mostrados
+                  {' · '}<strong style={{ color: '#DC2626' }}>{stats.banned}</strong> baneados
+                  {' · '}<strong style={{ color: C.text }}>{metricUsers.length}</strong> total sin admin
+                  {' · '}<strong style={{ color: '#0F766E' }}>{activeUsersWeek.length}</strong> activos 7d
+                </span>
+                <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+                  <AdminButton onClick={exportUsersCsv} disabled={!filteredUsers.length}>⬇ Exportar CSV</AdminButton>
+                  <AdminButton
+                    onClick={() => {
+                      setUserSearch('')
+                      setUserStatusFilter('all')
+                      setUserCantonFilter('all')
+                      setUserPage(1)
+                    }}
+                  >
+                    Limpiar filtros
+                  </AdminButton>
+                </div>
+              </>
+            )}
+          >
             <AdminFilterInput
               value={userSearch}
               onChange={value => { setUserSearch(value); setUserPage(1) }}
               placeholder="Buscar por nombre, email o cantón..."
             />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-              <AdminFilterSelect
-                label="Estado del usuario"
-                value={userStatusFilter}
-                onChange={value => { setUserStatusFilter(value); setUserPage(1) }}
-              >
-                <option value="all">Estado: todos</option>
-                <option value="active">Activos</option>
-                <option value="banned">Baneados</option>
-              </AdminFilterSelect>
-              <AdminFilterSelect
-                label="Cantón del usuario"
-                value={userCantonFilter}
-                onChange={value => { setUserCantonFilter(value); setUserPage(1) }}
-              >
-                <option value="all">Cantón: todos</option>
-                {userCantons.map(canton => <option key={canton} value={canton}>{canton}</option>)}
-              </AdminFilterSelect>
-            </div>
-          </div>
-
-          {/* Summary bar */}
-          <div style={{ display: 'flex', gap: 16, padding: '10px 14px', background: C.bg, borderRadius: 12, marginBottom: 4 }}>
-            <span style={{ fontFamily: PP, fontSize: 12, color: C.mid }}>
-              <strong style={{ color: C.text }}>{filteredUsers.length}</strong> mostrados
-            </span>
-            <span style={{ fontFamily: PP, fontSize: 12, color: C.mid }}>
-              <strong style={{ color: '#DC2626' }}>{stats.banned}</strong> baneados
-            </span>
-            <span style={{ fontFamily: PP, fontSize: 12, color: C.mid }}>
-              <strong style={{ color: C.text }}>{metricUsers.length}</strong> total sin admin
-            </span>
-          </div>
+            <AdminFilterSelect
+              label="Estado del usuario"
+              value={userStatusFilter}
+              onChange={value => { setUserStatusFilter(value); setUserPage(1) }}
+            >
+              <option value="all">Estado: todos</option>
+              <option value="active">Activos</option>
+              <option value="banned">Baneados</option>
+            </AdminFilterSelect>
+            <AdminFilterSelect
+              label="Cantón del usuario"
+              value={userCantonFilter}
+              onChange={value => { setUserCantonFilter(value); setUserPage(1) }}
+            >
+              <option value="all">Cantón: todos</option>
+              {userCantons.map(canton => <option key={canton} value={canton}>{canton}</option>)}
+            </AdminFilterSelect>
+          </AdminFilterBar>
 
           {filteredUsers.length === 0 ? (
             <EmptyState icon="👤" text="No se encontraron usuarios." />
@@ -5144,7 +6308,7 @@ export default function Admin() {
         </main>
       </div>
 
-      {crmMenuOpen && (
+      {crmMenuOpen && !isDesktop && (
         <>
           <button
             type="button"
@@ -5248,6 +6412,7 @@ export default function Admin() {
         </>
       )}
 
+      {!isDesktop && (
       <nav
         aria-label="Navegación admin"
         style={{
@@ -5285,7 +6450,7 @@ export default function Admin() {
                 background: active ? item.bg : 'transparent',
                 color: active ? item.color : C.mid,
                 cursor: 'pointer',
-                padding: '8px 5px',
+                padding: '8px 3px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -5294,13 +6459,19 @@ export default function Admin() {
                 textAlign: 'center',
                 boxShadow: active ? `0 12px 28px ${item.color}16` : 'none',
                 transition: 'background .15s ease, border-color .15s ease, box-shadow .15s ease',
+                position: 'relative',
               }}
             >
               <span style={{ width: 31, height: 31, borderRadius: 13, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 16, flexShrink: 0 }}>
                 {item.icon}
               </span>
-              <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 10, lineHeight: 1.05, color: active ? item.color : C.text, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {item.label}
+              {Number(item.alert) > 0 && (
+                <span style={{ position: 'absolute', top: 6, right: '50%', marginRight: -22, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: item.color, color: '#fff', fontFamily: PP, fontSize: 9, fontWeight: 900, display: 'grid', placeItems: 'center' }}>
+                  {item.alert}
+                </span>
+              )}
+              <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 9.5, letterSpacing: -0.1, lineHeight: 1.05, color: active ? item.color : C.text, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {item.short || item.label}
               </span>
             </button>
           )
@@ -5331,11 +6502,12 @@ export default function Admin() {
           <span style={{ width: 31, height: 31, borderRadius: 13, background: menuNavActive ? '#fff' : C.primaryLight, display: 'grid', placeItems: 'center', fontSize: 17, fontFamily: PP, fontWeight: 900, flexShrink: 0 }}>
             ☰
           </span>
-          <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 10, lineHeight: 1.05, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 9.5, letterSpacing: -0.1, lineHeight: 1.05, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             Menú
           </span>
         </button>
       </nav>
+      )}
     </div>
   )
 }
