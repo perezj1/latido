@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CreatorAppContentCard, CreatorAvatar, CreatorContentModal } from './CreatorCards'
 import { getAllCreators, getOrderedCreatorContents, subscribeCreatorUpdates } from '../lib/creators'
@@ -44,6 +44,8 @@ function CreatorProfileMiniCard({ creator }) {
 export default function CreatorHomeSection() {
   const [preview, setPreview] = useState(null)
   const [creators, setCreators] = useState(() => getAllCreators())
+  const contentScrollRef = useRef(null)
+  const creatorsScrollRef = useRef(null)
 
   useEffect(() => subscribeCreatorUpdates(() => setCreators(getAllCreators())), [])
 
@@ -57,6 +59,28 @@ export default function CreatorHomeSection() {
     .sort((first, second) => new Date(second.created_at) - new Date(first.created_at))
     .slice(0, 8), [creators])
 
+  const firstContentId = featured[0]?.content.id
+  const firstCreatorId = featuredCreators[0]?.id
+
+  useEffect(() => {
+    const resetToStart = () => {
+      if (contentScrollRef.current) contentScrollRef.current.scrollLeft = 0
+      if (creatorsScrollRef.current) creatorsScrollRef.current.scrollLeft = 0
+    }
+    const resetAfterRestore = () => window.requestAnimationFrame(resetToStart)
+
+    resetToStart()
+    const frame = window.requestAnimationFrame(resetToStart)
+    const timeout = window.setTimeout(resetToStart, 120)
+    window.addEventListener('pageshow', resetAfterRestore)
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timeout)
+      window.removeEventListener('pageshow', resetAfterRestore)
+    }
+  }, [firstContentId, firstCreatorId])
+
   if (!featured.length && !featuredCreators.length) return null
 
   return (
@@ -69,7 +93,7 @@ export default function CreatorHomeSection() {
             subtitle="Experiencias, consejos, trabajo y proyectos compartidos en español desde Suiza."
             to="/comunidades?view=creadores&creatorView=contenidos"
           />
-          <div className="creator-home-scroll no-scroll">
+          <div ref={contentScrollRef} className="creator-home-scroll no-scroll">
             <div className="creator-home-scroll__track">
               {featured.map(({ content, creator }) => (
                 <div key={content.id} className="creator-home-scroll__item">
@@ -104,7 +128,7 @@ export default function CreatorHomeSection() {
             subtitle="Personas, profesionales y negocios que cuentan Suiza en español."
             to="/comunidades?view=creadores&creatorView=creadores"
           />
-          <div className="creator-home-scroll no-scroll">
+          <div ref={creatorsScrollRef} className="creator-home-scroll no-scroll">
             <div className="creator-home-scroll__track">
               {featuredCreators.map(creator => (
                 <div key={creator.id} className="creator-home-scroll__item">
