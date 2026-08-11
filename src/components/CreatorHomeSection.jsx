@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CreatorAppContentCard, CreatorContentModal, getCreatorInitials } from './CreatorCards'
+import { CreatorAppContentCard, CreatorAvatar, CreatorContentModal } from './CreatorCards'
 import { getAllCreators, getOrderedCreatorContents, subscribeCreatorUpdates } from '../lib/creators'
 import { C, PP } from '../lib/theme'
 import '../pages/Creators.css'
@@ -15,30 +15,29 @@ function SectionHeading({ id, title, subtitle, to }) {
   )
 }
 
+// Reutiliza las clases del directorio para que la tarjeta sea la misma en las
+// dos superficies; aqui solo se omiten los botones, que no caben en el carrusel.
 function CreatorProfileMiniCard({ creator }) {
-  const place = creator.city || creator.reach
+  const place = `${creator.city || creator.reach}${creator.canton ? `, ${creator.canton}` : ''}`
 
   return (
-    <Link to={`/creadores/${creator.slug}`} className="creator-home-profile-card">
-      <span className="creator-home-profile-card__media">
-        {creator.avatar_url ? (
-          <img src={creator.avatar_url} alt="" loading="lazy" decoding="async" />
-        ) : (
-          <span
-            className="creator-home-profile-card__fallback"
-            style={{ '--creator-card-accent':creator.accent || C.primary }}
-            aria-hidden="true"
-          >
-            {getCreatorInitials(creator)}
+    <article className="creator-community-card" style={{ '--creator-card-accent':creator.accent || C.primary }}>
+      <Link to={`/creadores/${creator.slug}`} className="creator-community-card__open">
+        <span className="creator-community-card__media">
+          <CreatorAvatar creator={creator} size={84} />
+        </span>
+        <span className="creator-community-card__body">
+          <span className="creator-community-card__name">
+            <strong>{creator.name}</strong>
+            {creator.verified && (
+              <span className="creator-community-card__verification" title="Perfil verificado por Latido" aria-label="Perfil verificado por Latido">✓</span>
+            )}
           </span>
-        )}
-      </span>
-      <span className="creator-home-profile-card__copy">
-        <strong>{creator.name}</strong>
-        <span className="creator-home-profile-card__tagline">{creator.tagline}</span>
-        {place && <span className="creator-home-profile-card__place">📍 {place}</span>}
-      </span>
-    </Link>
+          <span className="creator-community-card__tagline">{creator.tagline}</span>
+          <span className="creator-community-card__location" title={place}>📍 {place}</span>
+        </span>
+      </Link>
+    </article>
   )
 }
 

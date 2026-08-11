@@ -17,7 +17,7 @@ import {
 } from '../lib/creators'
 import {
   CreatorAppContentCard,
-  getCreatorInitials,
+  CreatorAvatar,
   CreatorFollowButton,
   CreatorProfileHelpfulButton,
   CreatorProfileHelpfulMetric,
@@ -403,11 +403,7 @@ export default function CreatorCommunityView({
               {topCreators.map((entry, index) => (
                 <Link key={entry.creator.id} to={`/creadores/${entry.creator.slug}`} className="creator-rank-row">
                   <span className="creator-rank-row__position">#{index + 1}</span>
-                  <span className="creator-rank-row__avatar" style={{ '--creator-card-accent':entry.creator.accent || C.primary }}>
-                    {entry.creator.avatar_url
-                      ? <img src={entry.creator.avatar_url} alt="" loading="lazy" decoding="async" />
-                      : getCreatorInitials(entry.creator)}
-                  </span>
+                  <CreatorAvatar creator={entry.creator} size={38} compact />
                   <span className="creator-rank-row__body">
                     <strong>{entry.creator.name}</strong>
                     <span>{entry.creator.tagline}</span>
@@ -474,21 +470,12 @@ export default function CreatorCommunityView({
             const visibleTopics = (creator.topics || []).slice(0, 1)
             const remainingTopics = Math.max(0, (creator.topics || []).length - visibleTopics.length)
             return (
-              <article key={creator.id} className="creator-community-card">
+              <article key={creator.id} className="creator-community-card" style={{ '--creator-card-accent':creator.accent || C.primary }}>
                 <Link to={`/creadores/${creator.slug}`} className="creator-community-card__open">
+                  {/* El mismo CreatorAvatar del perfil, para que la foto se vea
+                      igual en el directorio, en Inicio y en la ficha. */}
                   <span className="creator-community-card__media">
-                    {creator.avatar_url ? (
-                      <img src={creator.avatar_url} alt="" loading="lazy" decoding="async" />
-                    ) : (
-                      <span
-                        className="creator-community-card__fallback"
-                        style={{ '--creator-card-accent':creator.accent || C.primary }}
-                        role="img"
-                        aria-label={creator.name}
-                      >
-                        {getCreatorInitials(creator)}
-                      </span>
-                    )}
+                    <CreatorAvatar creator={creator} size={84} />
                   </span>
                   <CreatorProfileHelpfulMetric creator={creator} />
 
