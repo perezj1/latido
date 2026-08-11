@@ -58,7 +58,7 @@ const creatorGroup = groupAppNotifications([
 
 assert.equal(creatorGroup.title, 'Nuevo creador en Latido')
 assert.equal(creatorGroup.body, 'Vivir en Berna acaba de unirse.')
-assert.equal(creatorGroup.href, '/creadores/vivir-en-berna')
+assert.equal(creatorGroup.href, '/comunidades?view=creadores&creatorView=creadores')
 
 const unreadOnly = groupAppNotifications([
   notification({ id:'unread', kind:APP_NOTIFICATION_KINDS.CONTENT_HELPFUL }),

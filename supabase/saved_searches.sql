@@ -100,6 +100,26 @@ ALTER TABLE public.saved_search_matches
   ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS email_error TEXT;
 
+-- Las alertas antiguas de creadores apuntaban a la landing. Conservamos sus
+-- filtros, pero las llevamos al directorio de la app y a la pestaña adecuada.
+UPDATE public.saved_searches
+SET
+  result_path = CASE
+    WHEN result_path = '/creadores' THEN '/comunidades?view=creadores&creatorView=creadores'
+    ELSE '/comunidades?view=creadores&creatorView=creadores&' || SPLIT_PART(result_path, '?', 2)
+  END,
+  updated_at = NOW()
+WHERE result_path = '/creadores'
+   OR result_path LIKE '/creadores?%';
+
+UPDATE public.saved_search_matches
+SET result_path = CASE entity_kind
+  WHEN 'creator' THEN '/comunidades?view=creadores&creatorView=creadores'
+  WHEN 'creator_content' THEN '/comunidades?view=creadores&creatorView=contenidos'
+  ELSE result_path
+END
+WHERE entity_kind IN ('creator', 'creator_content');
+
 DO $$
 BEGIN
   IF NOT EXISTS (

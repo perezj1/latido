@@ -211,7 +211,7 @@ async function getWeeklyActivity():Promise<WeeklyActivity> {
       emoji:'🎙️',
       count:creatorCount,
       label:`${creatorCount} ${singularPlural(creatorCount, 'nuevo perfil de creador', 'nuevos perfiles de creadores')}`,
-      href:`${APP_URL}/comunidades?view=creadores`,
+      href:`${APP_URL}/comunidades?view=creadores&creatorView=creadores`,
     })
   }
 
@@ -220,7 +220,7 @@ async function getWeeklyActivity():Promise<WeeklyActivity> {
       emoji:'🎬',
       count:creatorContentCount,
       label:`${creatorContentCount} ${singularPlural(creatorContentCount, 'nuevo contenido de creadores', 'nuevos contenidos de creadores')}`,
-      href:`${APP_URL}/comunidades?view=creadores`,
+      href:`${APP_URL}/comunidades?view=creadores&creatorView=contenidos`,
     })
   }
 

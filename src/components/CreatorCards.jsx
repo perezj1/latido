@@ -394,25 +394,7 @@ export function CreatorCard({ creator }) {
     <article className="creator-community-card creator-directory-card">
       <Link className="creator-community-card__open" to={`/creadores/${creator.slug}`}>
         <span className="creator-community-card__media">
-          {creator.avatar_url ? (
-            <img
-              src={creator.avatar_url}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              style={{
-                width:'100%',
-                height:'100%',
-                objectFit:'contain',
-                objectPosition:'center',
-                display:'block',
-              }}
-            />
-          ) : (
-            <span className="creator-community-card__fallback">
-              <CreatorAvatar creator={creator} size={88} />
-            </span>
-          )}
+          <CreatorAvatar creator={creator} size={84} />
         </span>
         <CreatorProfileHelpfulMetric creator={creator} />
 

@@ -105,7 +105,7 @@ export default function Creadores() {
   const activeFilterCount = Number(Boolean(topic)) + Number(Boolean(canton)) + Number(Boolean(platform))
   const filterSavedSearchDraft = useMemo(() => {
     const cleanQuery = search.trim().length >= 2 ? search.trim() : ''
-    const params = new URLSearchParams()
+    const params = new URLSearchParams({ view:'creadores', creatorView:'creadores' })
     if (cleanQuery) params.set('q', cleanQuery)
     if (draftFilters.topic) params.set('creatorTopic', draftFilters.topic)
     if (draftFilters.canton) params.set('canton', draftFilters.canton)
@@ -123,14 +123,14 @@ export default function Creadores() {
         creatorTopic:draftFilters.topic,
         creatorPlatform:draftFilters.platform,
       },
-      resultPath:`/creadores${params.size ? `?${params.toString()}` : ''}`,
+      resultPath:`/comunidades?${params.toString()}`,
     }
   }, [draftFilters, search])
   const savedSearchDraft = useMemo(() => {
     const cleanQuery = search.trim().length >= 2 ? search.trim() : ''
     if (!cleanQuery && !topic && !canton && !platform) return null
 
-    const params = new URLSearchParams()
+    const params = new URLSearchParams({ view:'creadores', creatorView:'creadores' })
     if (cleanQuery) params.set('q', cleanQuery)
     if (topic) params.set('creatorTopic', topic)
     if (canton) params.set('canton', canton)
@@ -145,7 +145,7 @@ export default function Creadores() {
       category:'creadores',
       canton,
       filters:{ creatorTopic:topic, creatorPlatform:platform },
-      resultPath:`/creadores${params.size ? `?${params.toString()}` : ''}`,
+      resultPath:`/comunidades?${params.toString()}`,
     }
   }, [canton, platform, search, topic])
   const openFilters = () => {

@@ -516,13 +516,8 @@ function savedSearchResultPath(table: string, record: Record<string, unknown>) {
   if (table === 'providers') return `/comunidades?view=negocios&openBusiness=${encodeURIComponent(id)}`
   if (table === 'events') return `/comunidades?view=eventos&openEvent=${encodeURIComponent(id)}`
   if (table === 'communities') return `/comunidades?view=comunidades&openCommunity=${encodeURIComponent(id)}`
-  if (table === 'creator_profiles') return `/creadores/${encodeURIComponent(text(record.slug, id))}`
-  if (table === 'creator_contents') {
-    const creatorSlug = text(record.creator_slug)
-    return creatorSlug
-      ? `/creadores/${encodeURIComponent(creatorSlug)}`
-      : '/comunidades?view=creadores&creatorView=contenidos'
-  }
+  if (table === 'creator_profiles') return '/comunidades?view=creadores&creatorView=creadores'
+  if (table === 'creator_contents') return '/comunidades?view=creadores&creatorView=contenidos'
   return `/tablon?openAd=${encodeURIComponent(id)}`
 }
 
@@ -617,11 +612,10 @@ function zonePushPayload(table: string, record: Record<string, unknown>): PushPa
 
   if (table === 'creator_profiles') {
     const body = truncate([record.name, record.tagline, record.city || canton].map(value => text(value)).filter(Boolean).join(' - '))
-    const slug = text(record.slug, id)
     return {
       title: 'Nuevo creador en Latido',
       body: body || 'Hay un nuevo creador que puede interesarte.',
-      url: `/creadores/${encodeURIComponent(slug)}`,
+      url: '/comunidades?view=creadores&creatorView=creadores',
       tag: `creator:${id}`,
       data: { kind: 'creator', id },
     }
@@ -629,13 +623,10 @@ function zonePushPayload(table: string, record: Record<string, unknown>): PushPa
 
   if (table === 'creator_contents') {
     const body = truncate([record.title, record.creator_name, canton].map(value => text(value)).filter(Boolean).join(' - '))
-    const creatorSlug = text(record.creator_slug)
     return {
       title: 'Nuevo contenido de un creador',
       body: body || 'Hay nuevo contenido que puede interesarte.',
-      url: creatorSlug
-        ? `/creadores/${encodeURIComponent(creatorSlug)}`
-        : '/comunidades?view=creadores&creatorView=contenidos',
+      url: '/comunidades?view=creadores&creatorView=contenidos',
       tag: `creator-content:${id}`,
       data: { kind: 'creator_content', id },
     }

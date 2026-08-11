@@ -98,7 +98,7 @@ function describeNotificationGroup(kind, rows) {
         icon:'🎙️',
         title:count === 1 ? 'Nuevo creador en Latido' : `Hay ${count} nuevos creadores en Latido`,
         body:count === 1 ? `${creatorName} acaba de unirse.` : `Descubre a ${creatorName} y a más creadores.`,
-        href:count === 1 && data.href ? data.href : '/creadores',
+        href:'/comunidades?view=creadores&creatorView=creadores',
       }
     case APP_NOTIFICATION_KINDS.SAVED_SEARCH:
       return {
