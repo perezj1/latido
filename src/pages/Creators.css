@@ -1249,6 +1249,9 @@
 
 .creator-home-scroll {
   overflow-x: auto;
+  /* Sin esto, al cargar las miniaturas el anclaje de scroll del navegador
+     desplaza el carrusel y las primeras tarjetas quedan ocultas a la izquierda. */
+  overflow-anchor: none;
   max-width: 1200px;
   margin: 0 auto;
   padding: 4px 16px 16px;
@@ -1936,7 +1939,7 @@
 .creator-community-section__heading span { display: block; color: #64748b; font-size: 10.5px; }
 .creator-community-section__heading > strong { display: grid; min-width: 27px; height: 27px; padding: 0 6px; color: #2563eb; background: #eff6ff; border-radius: 999px; place-items: center; font-size: 9px; }
 
-.creator-community-content { overflow-x: auto; margin: 0 -24px; padding: 2px 24px 10px; -webkit-overflow-scrolling: touch; }
+.creator-community-content { overflow-x: auto; overflow-anchor: none; margin: 0 -24px; padding: 2px 24px 10px; -webkit-overflow-scrolling: touch; }
 .creator-community-content > div { display: flex; width: max-content; gap: 10px; }
 .creator-community-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
 /* Sin padding: la imagen va a sangre y toca los bordes de la tarjeta, igual
