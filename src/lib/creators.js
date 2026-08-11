@@ -933,11 +933,31 @@ function getInteractionActors(action, targetType, targetId) {
   return readInteractionEntries(action, targetType, targetId).map(entry => entry.actor)
 }
 
+// El contador vive en la cache, que toggleCreatorInteraction deja actualizada.
+// Antes se devolvia el baseCount recibido por props y, al refrescar por la
+// suscripcion, el numero volvia al valor anterior al clic.
+function getCachedInteractionCount(action, targetType, targetId) {
+  const field = action === 'saved' ? 'saved_count' : 'helpful_count'
+
+  if (targetType === 'creator') {
+    const creator = creatorCache.find(item => String(item.id) === String(targetId))
+    return creator ? Number(creator[field]) : null
+  }
+
+  for (const creator of creatorCache) {
+    const content = (creator.contents || []).find(item => String(item.id) === String(targetId))
+    if (content) return Number(content[field])
+  }
+  return null
+}
+
 export function getCreatorInteractionState({ action, targetType, targetId, actorId = '', baseCount = 0 }) {
   const actors = getInteractionActors(action, targetType, targetId)
+  const cachedCount = getCachedInteractionCount(action, targetType, targetId)
+  const count = Number.isFinite(cachedCount) ? cachedCount : Number(baseCount) || 0
   return {
     active:Boolean(actorId) && actors.includes(String(actorId)),
-    count:Math.max(0, Number(baseCount) || 0),
+    count:Math.max(0, count),
   }
 }
 
