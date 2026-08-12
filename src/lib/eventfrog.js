@@ -1,3 +1,5 @@
+import { writeDisposableLocalStorage } from './storageBudget.js'
+
 const EVENTFROG_API_URL = import.meta.env.VITE_EVENTFROG_PROXY_URL || '/api/eventfrog'
 const EVENTFROG_EMBED_URL = 'https://embed.eventfrog.ch/en/events.html'
 const EVENTFROG_CACHE_TTL = 5 * 60 * 1000
@@ -730,17 +732,13 @@ function getStoredEvents(key, { allowStale = false } = {}) {
 function setStoredEvents(key, events) {
   if (typeof window === 'undefined') return
 
-  try {
-    window.localStorage.setItem(
-      `${EVENTFROG_STORAGE_PREFIX}${key}`,
-      JSON.stringify({
-        createdAt: Date.now(),
-        events: events.map(serializeStoredEvent),
-      })
-    )
-  } catch {
-    // Local storage may be unavailable in private mode or full storage contexts.
-  }
+  writeDisposableLocalStorage(
+    `${EVENTFROG_STORAGE_PREFIX}${key}`,
+    JSON.stringify({
+      createdAt: Date.now(),
+      events: events.map(serializeStoredEvent),
+    })
+  )
 }
 
 function getRangeDayCount(from, to) {

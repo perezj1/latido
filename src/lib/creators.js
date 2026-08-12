@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js'
 import { hasAnalyticsConsent } from './cookieConsent.js'
+import { writeDisposableLocalStorage } from './storageBudget.js'
 
 // Seis destacados, no un tope: el creador elige que seis encabezan su perfil y
 // el resto se sigue publicando y aparece en "Ultimos contenidos".
@@ -112,9 +113,7 @@ function writeLocalCreators(creators) {
         })),
         contents:(creator.contents || []).filter(content => content.status === 'published' && content.active !== false),
       }))
-    try {
-      window.localStorage.setItem(CREATOR_DIRECTORY_CACHE_KEY, JSON.stringify(publicSnapshot))
-    } catch {}
+    writeDisposableLocalStorage(CREATOR_DIRECTORY_CACHE_KEY, JSON.stringify(publicSnapshot))
   }
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(CREATOR_UPDATE_EVENT))
 }
