@@ -139,34 +139,48 @@ function GoogleIcon() {
   )
 }
 
+const GOOGLE_BUTTON_HEIGHT = 46
+
+function getGoogleButtonStyle({ disabled=false, loading=false } = {}) {
+  return {
+    width:'100%',
+    minHeight:GOOGLE_BUTTON_HEIGHT,
+    display:'flex',
+    alignItems:'center',
+    justifyContent:'center',
+    gap:11,
+    padding:'0 18px',
+    border:`1.5px solid ${C.border}`,
+    borderRadius:14,
+    background:'#fff',
+    color:C.text,
+    fontFamily:PP,
+    fontSize:13,
+    fontWeight:700,
+    cursor:disabled || loading ? 'default' : 'pointer',
+    opacity:disabled && !loading ? .55 : 1,
+    boxShadow:'0 3px 10px rgba(15,23,42,.05)',
+  }
+}
+
+function GoogleButtonContent({ loading=false, pending=false }) {
+  return (
+    <>
+      <GoogleIcon />
+      {loading ? 'Conectando con Google…' : pending ? 'Cargando Google…' : 'Continuar con Google'}
+    </>
+  )
+}
+
 function GoogleRedirectButton({ loading, disabled, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled || loading}
-      style={{
-        width:'100%',
-        minHeight:46,
-        display:'flex',
-        alignItems:'center',
-        justifyContent:'center',
-        gap:11,
-        padding:'0 18px',
-        border:`1.5px solid ${C.border}`,
-        borderRadius:14,
-        background:'#fff',
-        color:C.text,
-        fontFamily:PP,
-        fontSize:13,
-        fontWeight:700,
-        cursor:disabled || loading ? 'default' : 'pointer',
-        opacity:disabled && !loading ? .55 : 1,
-        boxShadow:'0 3px 10px rgba(15,23,42,.05)',
-      }}
+      style={getGoogleButtonStyle({ disabled, loading })}
     >
-      <GoogleIcon />
-      {loading ? 'Conectando con Google…' : 'Continuar con Google'}
+      <GoogleButtonContent loading={loading} />
     </button>
   )
 }
@@ -216,6 +230,16 @@ function GooglePwaAuthButton({ loading, disabled, onCredential, onUnavailable })
         width,
         locale:'es',
       })
+
+      // Keep Google's working credential surface, but stretch its hit area to
+      // the same height as the visible Latido button underneath it.
+      window.requestAnimationFrame(() => {
+        const surface = buttonRef.current?.firstElementChild
+        const renderedHeight = surface?.getBoundingClientRect().height || 0
+        if (!surface || !renderedHeight) return
+        surface.style.transformOrigin = 'top left'
+        surface.style.transform = `scaleY(${GOOGLE_BUTTON_HEIGHT / renderedHeight})`
+      })
       if (active) setReady(true)
     }
 
@@ -232,19 +256,37 @@ function GooglePwaAuthButton({ loading, disabled, onCredential, onUnavailable })
       aria-busy={!ready || loading}
       style={{
         width:'100%',
-        minHeight:46,
+        height:GOOGLE_BUTTON_HEIGHT,
         position:'relative',
         overflow:'hidden',
         pointerEvents:disabled || loading ? 'none' : 'auto',
         opacity:disabled && !loading ? .55 : 1,
       }}
     >
-      <div ref={buttonRef} style={{ width:'100%', minHeight:46, display:ready ? 'grid' : 'none', placeItems:'center' }} />
-      {(!ready || loading) && (
-        <div style={{ minHeight:46, display:'grid', placeItems:'center', border:`1.5px solid ${C.border}`, borderRadius:14, background:'#fff', color:C.mid, fontFamily:PP, fontSize:12, fontWeight:700, boxShadow:'0 3px 10px rgba(15,23,42,.05)' }}>
-          {loading ? 'Conectando con Google…' : 'Cargando Google…'}
-        </div>
-      )}
+      <div
+        aria-hidden="true"
+        style={{
+          ...getGoogleButtonStyle(),
+          height:GOOGLE_BUTTON_HEIGHT,
+          color:!ready || loading ? C.mid : C.text,
+          cursor:disabled || loading ? 'default' : 'pointer',
+        }}
+      >
+        <GoogleButtonContent loading={loading} pending={!ready} />
+      </div>
+      <div
+        ref={buttonRef}
+        style={{
+          position:'absolute',
+          inset:0,
+          zIndex:2,
+          width:'100%',
+          height:GOOGLE_BUTTON_HEIGHT,
+          overflow:'hidden',
+          opacity:ready && !loading ? .001 : 0,
+          pointerEvents:ready && !loading ? 'auto' : 'none',
+        }}
+      />
     </div>
   )
 }
