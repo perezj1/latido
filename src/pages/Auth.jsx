@@ -11,8 +11,6 @@ import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import toast from 'react-hot-toast'
 import { Icon } from '../lib/icons'
 
-const GOOGLE_OAUTH_PENDING_KEY = 'latido_google_oauth_pending'
-
 function getSafeNextPath(value) {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
 }
@@ -321,18 +319,16 @@ export default function Auth() {
 
     setGoogleLoading(true)
     try {
-      const callbackUrl = new URL('/auth/callback', window.location.origin)
+      const callbackUrl = new URL('/auth', window.location.origin)
       callbackUrl.searchParams.set('next', nextPath)
-      window.localStorage.setItem(GOOGLE_OAUTH_PENDING_KEY, callbackUrl.toString())
+      callbackUrl.searchParams.set('oauth', 'google')
 
       const { error } = await signInWithGoogle({ redirectTo:callbackUrl.toString() })
       if (error) {
-        window.localStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
         toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
         setGoogleLoading(false)
       }
     } catch {
-      window.localStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
       toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
       setGoogleLoading(false)
     }

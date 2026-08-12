@@ -47,7 +47,6 @@ const CreadorAlta = lazy(() => import('./pages/CreadorAlta'))
 const CreadorPanel = lazy(() => import('./pages/CreadorPanel'))
 const Perfil = lazy(() => import('./pages/Perfil'))
 const Auth = lazy(() => import('./pages/Auth'))
-const AuthCallback = lazy(() => import('./pages/AuthCallback'))
 const OAuthOnboarding = lazy(() => import('./pages/OAuthOnboarding'))
 const PublicarEvento = lazy(() => import('./pages/PublicarEvento'))
 const RegistrarNegocio = lazy(() => import('./pages/RegistrarNegocio'))
@@ -400,20 +399,6 @@ function getSafeNextPath(search, fallback = '/') {
   return next && next.startsWith('/') && !next.startsWith('//') ? next : fallback
 }
 
-function needsGoogleProfileOnboarding(user) {
-  if (!user) return false
-
-  const providers = Array.isArray(user.app_metadata?.providers)
-    ? user.app_metadata.providers
-    : [user.app_metadata?.provider]
-  const usesGoogle = providers.includes('google')
-  const metadata = user.user_metadata || {}
-  const completed = metadata.latido_onboarding_completed === true
-  const hasCanton = Boolean(String(metadata.canton || '').trim())
-
-  return usesGoogle && !completed && !hasCanton
-}
-
 function AuthRoute() {
   const { isLoggedIn, loading } = useAuth()
   const location = useLocation()
@@ -511,7 +496,6 @@ function AppShell() {
   const isVirtus360Services = pathname === '/servicios-virtus360'
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
-  const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
     const view = routeViewRef.current
@@ -584,13 +568,6 @@ function AppShell() {
     return () => window.removeEventListener('latido:messages-chat-open', sync)
   }, [pathname])
 
-  if (isLoggedIn && needsProfileOnboarding && !['/auth/onboarding', '/auth/callback'].includes(pathname)) {
-    const nextPath = pathname === '/auth'
-      ? getSafeNextPath(location.search)
-      : `${location.pathname}${location.search}`
-    return <Navigate to={`/auth/onboarding?next=${encodeURIComponent(nextPath)}`} replace />
-  }
-
   if (pathname === '/auth/onboarding') {
     if (loading) return <AppLoading />
     if (!isLoggedIn) return <Navigate to="/auth" replace />
@@ -604,14 +581,6 @@ function AppShell() {
           </Suspense>
         </main>
       </>
-    )
-  }
-
-  if (pathname === '/auth/callback') {
-    return (
-      <Suspense fallback={<AppLoading />}>
-        <AuthCallback />
-      </Suspense>
     )
   }
 
@@ -775,7 +744,6 @@ function AppShell() {
             <Route path="/creadores/mi-perfil" element={<ProtectedRoute><CreadorPanel /></ProtectedRoute>} />
             <Route path="/creadores/:creatorSlug" element={<CreadorPerfil />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/auth/onboarding" element={<ProtectedRoute><OAuthOnboarding /></ProtectedRoute>} />
             <Route path="/auth" element={<AuthRoute />} />
             <Route path="/publicar-evento" element={<ProtectedRoute><PublicarEvento /></ProtectedRoute>} />
