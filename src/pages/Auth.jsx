@@ -8,6 +8,7 @@ import { Btn, ChevronLeftIcon, ProgressBar, Input, Select } from '../components/
 import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
+import { isAdminEmail } from '../lib/admin'
 import toast from 'react-hot-toast'
 
 const GOOGLE_AUTH_ENABLED = true
@@ -19,6 +20,13 @@ let googleIdentityScriptPromise = null
 
 function getSafeNextPath(value) {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
+}
+
+function getGoogleAuthErrorMessage(error) {
+  const detail = String(error?.message || error?.code || '').trim()
+  return detail
+    ? `Google: ${detail.slice(0, 180)}`
+    : 'No se pudo conectar con Google. Inténtalo de nuevo.'
 }
 
 function isStandalonePwa() {
@@ -342,6 +350,7 @@ export default function Auth() {
   const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[], interests:[] })
   const [errors, setErrors] = useState({})
   const passwordNoticeShownRef = useRef(false)
+  const googleAuthVisible = GOOGLE_AUTH_ENABLED && isAdminEmail(form.email)
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   useEffect(() => {
@@ -363,7 +372,8 @@ export default function Auth() {
 
     if (!oauthError) return
 
-    toast.error('No se pudo iniciar sesión con Google. Inténtalo de nuevo.')
+    console.error('Google OAuth callback error:', oauthError)
+    toast.error(getGoogleAuthErrorMessage(new Error(oauthError)))
     const cleanUrl = new URL(window.location.href)
     const errorKeys = ['error', 'error_code', 'error_description']
     errorKeys.forEach(key => cleanUrl.searchParams.delete(key))
@@ -510,7 +520,7 @@ export default function Auth() {
       await beginGoogleRedirect()
     } catch (error) {
       console.error('Google OAuth redirect failed:', error)
-      toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
+      toast.error(getGoogleAuthErrorMessage(error))
       setGoogleLoading(false)
     }
   }
@@ -557,7 +567,7 @@ export default function Auth() {
       navigate(nextPath, { replace:true })
     } catch (error) {
       console.error('Google ID token sign-in failed:', error)
-      toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
+      toast.error(getGoogleAuthErrorMessage(error))
     } finally {
       setGoogleLoading(false)
     }
@@ -570,7 +580,7 @@ export default function Auth() {
       await retryGoogleWithRedirect(new Error('Google Identity Services is unavailable.'))
     } catch (error) {
       console.error('Google fallback redirect failed:', error)
-      toast.error('Google no está disponible ahora. Comprueba la conexión e inténtalo de nuevo.')
+      toast.error(getGoogleAuthErrorMessage(error))
       setGoogleLoading(false)
     }
   }
@@ -721,7 +731,7 @@ export default function Auth() {
       )}
 
       <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
-      {GOOGLE_AUTH_ENABLED && (
+      {googleAuthVisible && (
         <>
           <AuthDivider />
           <GoogleAuthButton
@@ -879,7 +889,7 @@ export default function Auth() {
         )}
       </div>
 
-      {GOOGLE_AUTH_ENABLED && step === 0 && (
+      {googleAuthVisible && step === 0 && (
         <>
           <AuthDivider />
           <GoogleAuthButton
