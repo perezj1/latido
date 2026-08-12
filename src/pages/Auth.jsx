@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent } from '../lib/analytics'
@@ -61,6 +61,59 @@ function PasswordVisibilityButton({ visible, onToggle }) {
     >
       {visible ? <EyeOffIcon /> : <EyeIcon />}
     </button>
+  )
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.61Z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.19l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z" />
+      <path fill="#FBBC05" d="M3.96 10.7A5.42 5.42 0 0 1 3.68 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.03l3-2.33Z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .96 4.97l3 2.33C4.67 5.17 6.66 3.58 9 3.58Z" />
+    </svg>
+  )
+}
+
+function GoogleAuthButton({ loading, disabled, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || loading}
+      style={{
+        width:'100%',
+        minHeight:46,
+        display:'flex',
+        alignItems:'center',
+        justifyContent:'center',
+        gap:11,
+        padding:'0 18px',
+        border:`1.5px solid ${C.border}`,
+        borderRadius:14,
+        background:'#fff',
+        color:C.text,
+        fontFamily:PP,
+        fontSize:13,
+        fontWeight:700,
+        cursor:disabled || loading ? 'default' : 'pointer',
+        opacity:disabled && !loading ? .55 : 1,
+        boxShadow:'0 3px 10px rgba(15,23,42,.05)',
+      }}
+    >
+      <GoogleIcon />
+      {loading ? 'Conectando con Google…' : 'Continuar con Google'}
+    </button>
+  )
+}
+
+function AuthDivider() {
+  return (
+    <div aria-hidden="true" style={{ display:'flex', alignItems:'center', gap:12, margin:'18px 0', color:C.light }}>
+      <span style={{ height:1, flex:1, background:C.border }} />
+      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con email</span>
+      <span style={{ height:1, flex:1, background:C.border }} />
+    </div>
   )
 }
 
@@ -133,7 +186,7 @@ function AuthModeSwitch({ mode, onChange }) {
 }
 
 export default function Auth() {
-  const { signIn, signUp } = useAuth()
+  const { signIn, signInWithGoogle, signUp } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const nextPath = getSafeNextPath(searchParams.get('next'))
@@ -142,12 +195,31 @@ export default function Auth() {
   const [mode, setMode] = useState('register')
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [registrationIntent, setRegistrationIntent] = useState('')
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showRegisterPassword, setShowRegisterPassword] = useState(false)
   const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[], interests:[] })
   const [errors, setErrors] = useState({})
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search)
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const oauthError = queryParams.get('error_description')
+      || hashParams.get('error_description')
+      || queryParams.get('error')
+      || hashParams.get('error')
+
+    if (!oauthError) return
+
+    toast.error('No se pudo iniciar sesión con Google. Inténtalo de nuevo.')
+    const cleanUrl = new URL(window.location.href)
+    const errorKeys = ['error', 'error_code', 'error_description']
+    errorKeys.forEach(key => cleanUrl.searchParams.delete(key))
+    cleanUrl.hash = ''
+    window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}`)
+  }, [])
   const clearFieldError = key => setErrors(prev => {
     if (!prev[key]) return prev
     const next = { ...prev }
@@ -238,6 +310,26 @@ export default function Auth() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleAuth = async () => {
+    if (loading || googleLoading) return
+
+    setGoogleLoading(true)
+    try {
+      const callbackUrl = new URL('/auth', window.location.origin)
+      callbackUrl.searchParams.set('next', nextPath)
+      callbackUrl.searchParams.set('oauth', 'google')
+
+      const { error } = await signInWithGoogle({ redirectTo:callbackUrl.toString() })
+      if (error) {
+        toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
+        setGoogleLoading(false)
+      }
+    } catch {
+      toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
+      setGoogleLoading(false)
     }
   }
 
@@ -340,6 +432,9 @@ export default function Auth() {
         </div>
       )}
 
+      <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
+      <AuthDivider />
+
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
       <Input
         label="Contraseña"
@@ -407,6 +502,8 @@ export default function Auth() {
 
       {step === 0 && (
         <>
+          <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
+          <AuthDivider />
           <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={e => s('name', e.target.value)} error={errors.name} errorKey="name" />
           <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={e => s('email', e.target.value)} error={errors.email} errorKey="email" />
           <Input
