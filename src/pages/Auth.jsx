@@ -10,6 +10,8 @@ import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import toast from 'react-hot-toast'
 
+const GOOGLE_OAUTH_PENDING_KEY = 'latido_google_oauth_pending'
+
 function getSafeNextPath(value) {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
 }
@@ -111,7 +113,7 @@ function AuthDivider() {
   return (
     <div aria-hidden="true" style={{ display:'flex', alignItems:'center', gap:12, margin:'18px 0', color:C.light }}>
       <span style={{ height:1, flex:1, background:C.border }} />
-      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con email</span>
+      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con Google</span>
       <span style={{ height:1, flex:1, background:C.border }} />
     </div>
   )
@@ -318,16 +320,18 @@ export default function Auth() {
 
     setGoogleLoading(true)
     try {
-      const callbackUrl = new URL('/auth', window.location.origin)
+      const callbackUrl = new URL('/auth/callback', window.location.origin)
       callbackUrl.searchParams.set('next', nextPath)
-      callbackUrl.searchParams.set('oauth', 'google')
+      window.sessionStorage.setItem(GOOGLE_OAUTH_PENDING_KEY, callbackUrl.toString())
 
       const { error } = await signInWithGoogle({ redirectTo:callbackUrl.toString() })
       if (error) {
+        window.sessionStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
         toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
         setGoogleLoading(false)
       }
     } catch {
+      window.sessionStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
       toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
       setGoogleLoading(false)
     }
@@ -432,9 +436,6 @@ export default function Auth() {
         </div>
       )}
 
-      <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
-      <AuthDivider />
-
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
       <Input
         label="Contraseña"
@@ -457,6 +458,8 @@ export default function Auth() {
       </div>
 
       <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
+      <AuthDivider />
+      <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
     </div>
   )
 
@@ -502,8 +505,6 @@ export default function Auth() {
 
       {step === 0 && (
         <>
-          <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
-          <AuthDivider />
           <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={e => s('name', e.target.value)} error={errors.name} errorKey="name" />
           <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={e => s('email', e.target.value)} error={errors.email} errorKey="email" />
           <Input
@@ -600,6 +601,13 @@ export default function Auth() {
           </Btn>
         )}
       </div>
+
+      {step === 0 && (
+        <>
+          <AuthDivider />
+          <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
+        </>
+      )}
 
       {step === 2 && (
         <button
