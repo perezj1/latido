@@ -8,7 +8,6 @@ import { Btn, ChevronLeftIcon, ProgressBar, Input, Select } from '../components/
 import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
-import { isAdminEmail } from '../lib/admin'
 import { getGooglePostAuthPath } from '../lib/oauthOnboarding'
 import toast from 'react-hot-toast'
 
@@ -353,7 +352,7 @@ export default function Auth() {
   const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[], interests:[] })
   const [errors, setErrors] = useState({})
   const passwordNoticeShownRef = useRef(false)
-  const googleAuthVisible = GOOGLE_AUTH_ENABLED && isAdminEmail(form.email)
+  const googleAuthVisible = GOOGLE_AUTH_ENABLED
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   useEffect(() => {
