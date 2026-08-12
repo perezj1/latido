@@ -1035,8 +1035,14 @@
   background: #fff;
   border: 1px solid #e2eaf4;
   border-radius: 18px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+  box-shadow: none;
   cursor: default;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+
+.creator-app-content-card--home:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, .1);
+  transform: translateY(-1px);
 }
 
 .creator-home-content-card__main {
@@ -1244,6 +1250,16 @@
   width: 152px;
   flex: 0 0 152px;
   scroll-snap-align: start;
+}
+
+/* En Inicio, Creadores y Contenido usan la misma elevacion que las cards de
+   Negocios del carrusel. El directorio conserva su estilo propio. */
+.creator-home-scroll .creator-community-card,
+.creator-home-scroll .creator-app-content-card--home,
+.creator-home-scroll .creator-community-card:hover,
+.creator-home-scroll .creator-app-content-card--home:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+  transform: none;
 }
 
 .creator-content-card--compact .creator-content-card__body h3 { min-height: 41px; }
@@ -1928,11 +1944,11 @@
   background: #fff;
   border: 1px solid #e2eaf4;
   border-radius: 22px;
-  box-shadow: 0 8px 22px rgba(30,64,175,.07);
-  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+  box-shadow: none;
+  transition: box-shadow .2s ease, transform .2s ease;
 }
 
-.creator-community-card:hover { border-color: #bfdbfe; box-shadow: 0 10px 25px rgba(30,64,175,.1); transform: translateY(-1px); }
+.creator-community-card:hover { box-shadow: 0 8px 24px rgba(37,99,235,.1); transform: translateY(-1px); }
 .creator-community-card__open { display: flex; min-width: 0; flex: 1; flex-direction: column; color: inherit; text-decoration: none; }
 .creator-community-card__media {
   position: relative;

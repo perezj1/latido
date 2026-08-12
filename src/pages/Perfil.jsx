@@ -59,7 +59,7 @@ import './Creators.css'
 
 const PUBLICATION_TABS = [
   { id:'all', label:'Todo' },
-  { id:'ad', label:'📌 Anuncios' },
+  { id:'ad', label:'📣 Anuncios' },
   { id:'job', label:'💼 Empleos' },
   { id:'event', label:'🎉 Eventos' },
   { id:'business', label:'🏪 Negocios' },
@@ -271,7 +271,7 @@ function isAdDueForReview(item, confirmations={}) {
 }
 
 const KIND_META = {
-  ad: { label:'Anuncio', icon:'📌', table:'listings' },
+  ad: { label:'Anuncio', icon:'📣', table:'listings' },
   job: { label:'Empleo', icon:'💼', table:'jobs' },
   event: { label:'Evento', icon:'🎉', table:'events' },
   business: { label:'Negocio', icon:'🏪', table:'providers' },
@@ -2212,7 +2212,7 @@ export default function Perfil() {
     {
       title: 'Mi actividad',
       items: [
-        { icon:'📌', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
+        { icon:'📣', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
         ...(hasEmploymentRequest ? [{
           icon:'💼',
           color:'#EFF6FF',
@@ -2331,7 +2331,7 @@ export default function Perfil() {
         {/* Stats */}
         <div style={{ display:'flex', justifyContent:'center', gap:0, marginTop:20, borderTop:'1px solid rgba(255,255,255,0.15)', paddingTop:16 }}>
           {[
-            { icon:'📌', value: counts.total, label:'Publicaciones' },
+            { icon:'📣', value: counts.total, label:'Publicaciones' },
             { icon: alertSettings.enabled ? '🔔' : '🔕', value: alertSettings.enabled ? '✅' : '❌', label:'Alertas', isText: true },
             { icon:'❤️', value: (favorites.ads?.length||0)+(favorites.jobs?.length||0), label:'Favoritos' },
           ].map(({ icon, value, label, isText }, i, arr) => (
@@ -2920,13 +2920,13 @@ export default function Perfil() {
         </div>
       </Modal>
 
-      <Modal show={adReminderOpen} onClose={closeAdReminderPrompt} title="📌 Revisar anuncio activo" syncHistory={false}>
+      <Modal show={adReminderOpen} onClose={closeAdReminderPrompt} title="📣 Revisar anuncio activo" syncHistory={false}>
         {adReminderItem && (
           <>
             <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:18, padding:'15px 16px', marginBottom:14 }}>
               <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
                 <div style={{ width:42, height:42, borderRadius:14, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
-                  📌
+                  📣
                 </div>
                 <div style={{ minWidth:0 }}>
                   <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, margin:'0 0 4px' }}>

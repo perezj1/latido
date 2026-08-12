@@ -488,7 +488,7 @@ function buildExpiredEventsTask(items) {
 function buildAdReviewTask(items) {
   return {
     id:'ad-review',
-    emoji:'📌',
+    emoji:'📣',
     title: items.length === 1 ? 'Confirma tu anuncio' : 'Confirma tus anuncios',
     text: items.length === 1
       ? 'Un anuncio lleva más de 30 días activo.'
@@ -596,7 +596,7 @@ function makeAttentionItem(kind, row, overrides={}) {
     title: overrides.title || row.title || row.name || 'Publicación',
     meta: overrides.meta || '',
     image: overrides.image || '',
-    emoji: overrides.emoji || '📌',
+    emoji: overrides.emoji || '📣',
   }
 }
 
@@ -1041,7 +1041,7 @@ export default function Home() {
           title: row.title || 'Anuncio',
           meta: [formatAdLocation(row), row.price].filter(Boolean).join(' · '),
           image: row.img_url || '',
-          emoji: getAdDisplayEmoji(row) || '📌',
+          emoji: getAdDisplayEmoji(row) || '📣',
         }))))
       }
 
@@ -1950,7 +1950,7 @@ export default function Home() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, gap:12 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>
-              📌 Anuncios recientes
+              📣 Anuncios recientes
             </h2>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, lineHeight:1.7 }}>
               Los últimos anuncios de la comunidad.

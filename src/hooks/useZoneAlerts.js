@@ -102,7 +102,7 @@ function normalizeAlertItem(kind, row) {
       kindLabel: 'Anuncio',
       meta: `${cat?.label || 'anuncio'} · ${row.canton || ''}`.trim(),
       href: `/tablon?openAd=${encodeURIComponent(row.id)}`,
-      icon: '📌',
+      icon: '📣',
       canton: row.canton || '',
       createdAt: row.created_at || '',
     }

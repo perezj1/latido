@@ -9,7 +9,7 @@
 export const EXPLORE_SECTIONS = [
   {
     id:'anuncios',
-    emoji:'📌',
+    emoji:'📣',
     label:'Anuncios',
     desc:'Vivienda, servicios, compraventa y trámites',
     to:'/tablon',

@@ -2324,7 +2324,7 @@ export default function Comunidades() {
 
   return (
     <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px 100px' }}>
-      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
+      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:'#fff' }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'16px 24px 0' }}>
       <div className="section-page-head">
         <h1>{tabCopy.title}</h1>

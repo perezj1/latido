@@ -436,7 +436,7 @@ export default function Auth() {
           </Select>
           <div style={{ background:C.bg, borderRadius:12, padding:'11px 13px', marginBottom:14 }}>
             <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.55 }}>
-              📌 Usamos tu cantón para mostrarte los anuncios más cercanos primero. Puedes cambiarlo en tu perfil.
+              📣 Usamos tu cantón para mostrarte los anuncios más cercanos primero. Puedes cambiarlo en tu perfil.
             </p>
           </div>
           <div style={{ marginBottom:14 }}>
