@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppNotifications } from '../hooks/useAppNotifications'
 
-const ALERT_DURATION_MS = 3000
+const ALERT_DURATION_MS = 5000
 const SWIPE_THRESHOLD_PX = 38
 
 export default function InAppNotificationAlert() {
@@ -137,7 +137,6 @@ export default function InAppNotificationAlert() {
         <button type="button" className="latido-in-app-alert__close" onClick={showNext} aria-label={queue.length > 1 ? 'Siguiente alerta' : 'Cerrar alerta'}>
           ×
         </button>
-        <span key={currentKey} className="latido-in-app-alert__progress" style={{ animationDuration:`${ALERT_DURATION_MS}ms` }} aria-hidden="true" />
         {progressLabel && <span className="sr-only">{progressLabel}</span>}
       </div>
     </div>

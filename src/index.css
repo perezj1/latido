@@ -230,11 +230,6 @@
 
 /* Alerta de actividad dentro de la app. Se inspira en una notificacion nativa,
    pero mantiene el gesto y el estado dentro de Latido. */
-@keyframes latido-alert-progress {
-  from { transform: scaleX(1); }
-  to { transform: scaleX(0); }
-}
-
 .latido-alert-stack {
   position: fixed;
   top: max(10px, calc(env(safe-area-inset-top) + 8px));
@@ -337,21 +332,8 @@
   cursor: pointer;
 }
 
-.latido-in-app-alert__progress {
-  position: absolute;
-  right: 10px;
-  bottom: 0;
-  left: 10px;
-  height: 2px;
-  border-radius: 999px;
-  background: #2563EB;
-  transform-origin: left;
-  animation: latido-alert-progress linear forwards;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .latido-in-app-alert,
-  .latido-in-app-alert__progress {
+  .latido-in-app-alert {
     transition: none !important;
     animation: none !important;
   }
