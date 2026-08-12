@@ -126,15 +126,15 @@ export function AuthProvider({ children }) {
     return result
   }
 
-  const signInWithGoogle = async ({ redirectTo }) => supabase.auth.signInWithOAuth({
-    provider:'google',
-    options: {
-      redirectTo,
-      queryParams: {
-        prompt:'select_account',
-      },
-    },
-  })
+  const signInWithGoogle = async ({ token, nonce }) => {
+    const result = await supabase.auth.signInWithIdToken({
+      provider:'google',
+      token,
+      ...(nonce ? { nonce } : {}),
+    })
+    setUser(result.data?.session?.user ?? null)
+    return result
+  }
 
   const signOut = async () => {
     await supabase.auth.signOut()
