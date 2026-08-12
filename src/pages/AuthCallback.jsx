@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
@@ -39,6 +39,7 @@ export default function AuthCallback() {
   const location = useLocation()
   const navigate = useNavigate()
   const [errorMessage, setErrorMessage] = useState('')
+  const completionRef = useRef(null)
 
   useEffect(() => {
     let active = true
@@ -47,37 +48,53 @@ export default function AuthCallback() {
       const response = getAuthResponseParams(location)
       if (response.error) throw new Error(response.error)
 
-      let session = null
-      if (response.accessToken && response.refreshToken) {
+      // First accept a session that may already have been restored from local
+      // storage (for example, when returning to an existing PWA window).
+      const current = await supabase.auth.getSession()
+      if (current.error) throw current.error
+      let session = current.data.session
+
+      if (!session && response.accessToken && response.refreshToken) {
+        // Backwards-compatible fallback for an implicit OAuth attempt started
+        // before the PKCE release reached the installed app.
         const { data, error } = await supabase.auth.setSession({
           access_token:response.accessToken,
           refresh_token:response.refreshToken,
         })
         if (error) throw error
         session = data.session
-      } else if (response.code) {
+      } else if (!session && response.code) {
         const { data, error } = await supabase.auth.exchangeCodeForSession(response.code)
-        if (error) {
-          const current = await supabase.auth.getSession()
-          if (!current.data.session) throw error
-          session = current.data.session
-        } else {
-          session = data.session
-        }
-      } else {
+        if (error) throw error
+        session = data.session
+      } else if (!session) {
         session = await waitForOAuthSession()
       }
 
       if (!session?.user) throw new Error('No se pudo recuperar la sesión de Google.')
-      window.sessionStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
-      if (active) navigate(response.nextPath, { replace:true })
+      window.localStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
+      return response.nextPath
     }
 
-    completeGoogleSignIn().catch(error => {
-      console.error('Google OAuth callback failed:', error)
-      window.sessionStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
-      if (active) setErrorMessage('No pudimos completar el acceso con Google. Vuelve a intentarlo.')
-    })
+    if (!completionRef.current) completionRef.current = completeGoogleSignIn()
+
+    completionRef.current
+      .then(nextPath => {
+        if (active) navigate(nextPath, { replace:true })
+      })
+      .catch(error => {
+        console.error('Google OAuth callback failed:', {
+          name:error?.name,
+          message:error?.message,
+          code:error?.code,
+          status:error?.status,
+          hasAuthCode:Boolean(getAuthResponseParams(location).code),
+          hasImplicitTokens:Boolean(getAuthResponseParams(location).accessToken),
+          displayMode:window.matchMedia?.('(display-mode: standalone)').matches ? 'standalone' : 'browser',
+        })
+        window.localStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
+        if (active) setErrorMessage('No pudimos completar el acceso con Google. Vuelve a intentarlo.')
+      })
 
     return () => { active = false }
   }, [location, navigate])
