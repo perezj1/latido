@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent } from '../lib/analytics'
@@ -10,57 +10,10 @@ import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import toast from 'react-hot-toast'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-  || '871031259969-sb41jb8hjfethoilmvps9rlsoj843ovk.apps.googleusercontent.com'
-const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services'
-const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client?hl=es'
-let googleIdentityScriptPromise = null
+const GOOGLE_AUTH_ENABLED = false
 
 function getSafeNextPath(value) {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
-}
-
-function loadGoogleIdentityServices() {
-  if (window.google?.accounts?.id) return Promise.resolve(window.google)
-  if (googleIdentityScriptPromise) return googleIdentityScriptPromise
-
-  googleIdentityScriptPromise = new Promise((resolve, reject) => {
-    const finish = () => window.google?.accounts?.id
-      ? resolve(window.google)
-      : reject(new Error('Google Identity Services did not initialize.'))
-    const existing = document.getElementById(GOOGLE_IDENTITY_SCRIPT_ID)
-
-    if (existing) {
-      existing.addEventListener('load', finish, { once:true })
-      existing.addEventListener('error', () => reject(new Error('Google Identity Services could not be loaded.')), { once:true })
-      return
-    }
-
-    const script = document.createElement('script')
-    script.id = GOOGLE_IDENTITY_SCRIPT_ID
-    script.src = GOOGLE_IDENTITY_SCRIPT_SRC
-    script.async = true
-    script.defer = true
-    script.addEventListener('load', finish, { once:true })
-    script.addEventListener('error', () => reject(new Error('Google Identity Services could not be loaded.')), { once:true })
-    document.head.appendChild(script)
-  }).catch(error => {
-    googleIdentityScriptPromise = null
-    throw error
-  })
-
-  return googleIdentityScriptPromise
-}
-
-async function createGoogleNonce() {
-  if (!window.crypto?.getRandomValues || !window.crypto?.subtle) return { raw:'', hashed:'' }
-
-  const bytes = new Uint8Array(32)
-  window.crypto.getRandomValues(bytes)
-  const raw = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
-  const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
-  const hashed = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
-  return { raw, hashed }
 }
 
 function EyeIcon() {
@@ -113,79 +66,46 @@ function PasswordVisibilityButton({ visible, onToggle }) {
   )
 }
 
-function GoogleAuthButton({ loading, disabled, onCredential, onUnavailable }) {
-  const buttonRef = useRef(null)
-  const credentialHandlerRef = useRef(onCredential)
-  const unavailableHandlerRef = useRef(onUnavailable)
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => { credentialHandlerRef.current = onCredential }, [onCredential])
-  useEffect(() => { unavailableHandlerRef.current = onUnavailable }, [onUnavailable])
-
-  useEffect(() => {
-    let active = true
-
-    const renderGoogleButton = async () => {
-      const [{ raw, hashed }, google] = await Promise.all([
-        createGoogleNonce(),
-        loadGoogleIdentityServices(),
-      ])
-      if (!active || !buttonRef.current) return
-
-      google.accounts.id.initialize({
-        client_id:GOOGLE_CLIENT_ID,
-        callback:response => {
-          if (response?.credential) credentialHandlerRef.current?.(response.credential, raw)
-          else unavailableHandlerRef.current?.()
-        },
-        nonce:hashed || undefined,
-        ux_mode:'popup',
-        auto_select:false,
-        itp_support:true,
-      })
-
-      const width = Math.max(240, Math.min(400, buttonRef.current.clientWidth || 400))
-      buttonRef.current.replaceChildren()
-      google.accounts.id.renderButton(buttonRef.current, {
-        type:'standard',
-        theme:'outline',
-        size:'large',
-        text:'continue_with',
-        shape:'rectangular',
-        logo_alignment:'left',
-        width,
-        locale:'es',
-      })
-      if (active) setReady(true)
-    }
-
-    renderGoogleButton().catch(error => {
-      console.error('Google Identity Services failed:', error)
-      if (active) unavailableHandlerRef.current?.()
-    })
-
-    return () => { active = false }
-  }, [])
-
+function GoogleIcon() {
   return (
-    <div
-      aria-busy={!ready || loading}
+    <svg width="19" height="19" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.61Z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.19l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z" />
+      <path fill="#FBBC05" d="M3.96 10.7A5.42 5.42 0 0 1 3.68 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.03l3-2.33Z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .96 4.97l3 2.33C4.67 5.17 6.66 3.58 9 3.58Z" />
+    </svg>
+  )
+}
+
+function GoogleAuthButton({ loading, disabled, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || loading}
       style={{
         width:'100%',
         minHeight:46,
-        position:'relative',
-        overflow:'hidden',
-        pointerEvents:disabled || loading ? 'none' : 'auto',
+        display:'flex',
+        alignItems:'center',
+        justifyContent:'center',
+        gap:11,
+        padding:'0 18px',
+        border:`1.5px solid ${C.border}`,
+        borderRadius:14,
+        background:'#fff',
+        color:C.text,
+        fontFamily:PP,
+        fontSize:13,
+        fontWeight:700,
+        cursor:disabled || loading ? 'default' : 'pointer',
         opacity:disabled && !loading ? .55 : 1,
+        boxShadow:'0 3px 10px rgba(15,23,42,.05)',
       }}
     >
-      <div ref={buttonRef} style={{ width:'100%', minHeight:46, display:ready ? 'grid' : 'none', placeItems:'center' }} />
-      {(!ready || loading) && (
-        <div style={{ minHeight:46, display:'grid', placeItems:'center', border:`1.5px solid ${C.border}`, borderRadius:14, background:'#fff', color:C.mid, fontFamily:PP, fontSize:12, fontWeight:700, boxShadow:'0 3px 10px rgba(15,23,42,.05)' }}>
-          {loading ? 'Conectando con Google…' : 'Cargando Google…'}
-        </div>
-      )}
-    </div>
+      <GoogleIcon />
+      {loading ? 'Conectando con Google…' : 'Continuar con Google'}
+    </button>
   )
 }
 
@@ -193,7 +113,7 @@ function AuthDivider() {
   return (
     <div aria-hidden="true" style={{ display:'flex', alignItems:'center', gap:12, margin:'18px 0', color:C.light }}>
       <span style={{ height:1, flex:1, background:C.border }} />
-      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con Google</span>
+      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con email</span>
       <span style={{ height:1, flex:1, background:C.border }} />
     </div>
   )
@@ -395,32 +315,24 @@ export default function Auth() {
     }
   }
 
-  const handleGoogleAuth = async (token, nonce) => {
+  const handleGoogleAuth = async () => {
     if (loading || googleLoading) return
 
     setGoogleLoading(true)
     try {
-      const { data, error } = await signInWithGoogle({ token, nonce })
+      const callbackUrl = new URL('/auth', window.location.origin)
+      callbackUrl.searchParams.set('next', nextPath)
+      callbackUrl.searchParams.set('oauth', 'google')
+
+      const { error } = await signInWithGoogle({ redirectTo:callbackUrl.toString() })
       if (error) {
         toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
         setGoogleLoading(false)
-        return
       }
-
-      trackAnalyticsEvent('login_success', {
-        user_id:data?.user?.id || data?.session?.user?.id || null,
-        metadata: { method:'google_id_token', entry_point:authEntryPoint },
-      })
-      navigate(nextPath, { replace:true })
     } catch {
       toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
       setGoogleLoading(false)
     }
-  }
-
-  const handleGoogleUnavailable = () => {
-    setGoogleLoading(false)
-    toast.error('Google no está disponible ahora. Comprueba la conexión e inténtalo de nuevo.')
   }
 
   const handleForgot = async () => {
@@ -522,6 +434,13 @@ export default function Auth() {
         </div>
       )}
 
+      {GOOGLE_AUTH_ENABLED && (
+        <>
+          <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
+          <AuthDivider />
+        </>
+      )}
+
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
       <Input
         label="Contraseña"
@@ -544,8 +463,6 @@ export default function Auth() {
       </div>
 
       <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
-      <AuthDivider />
-      <GoogleAuthButton loading={googleLoading} disabled={loading} onCredential={handleGoogleAuth} onUnavailable={handleGoogleUnavailable} />
     </div>
   )
 
@@ -591,6 +508,12 @@ export default function Auth() {
 
       {step === 0 && (
         <>
+          {GOOGLE_AUTH_ENABLED && (
+            <>
+              <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
+              <AuthDivider />
+            </>
+          )}
           <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={e => s('name', e.target.value)} error={errors.name} errorKey="name" />
           <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={e => s('email', e.target.value)} error={errors.email} errorKey="email" />
           <Input
@@ -687,13 +610,6 @@ export default function Auth() {
           </Btn>
         )}
       </div>
-
-      {step === 0 && (
-        <>
-          <AuthDivider />
-          <GoogleAuthButton loading={googleLoading} disabled={loading} onCredential={handleGoogleAuth} onUnavailable={handleGoogleUnavailable} />
-        </>
-      )}
 
       {step === 2 && (
         <button
