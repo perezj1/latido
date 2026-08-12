@@ -107,7 +107,7 @@ export function AuthProvider({ children }) {
 
     const recoverGoogleSession = async () => {
       if (syncing || document.visibilityState === 'hidden') return
-      if (!window.sessionStorage.getItem(GOOGLE_OAUTH_PENDING_KEY)) return
+      if (!window.localStorage.getItem(GOOGLE_OAUTH_PENDING_KEY)) return
 
       syncing = true
       try {
@@ -118,7 +118,7 @@ export function AuthProvider({ children }) {
         if (data.session?.user) {
           setUser(data.session.user)
           setLoading(false)
-          window.sessionStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
+          window.localStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
         }
       } finally {
         syncing = false
