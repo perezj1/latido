@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ChevronRight, Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import {
   getCreatorInteractionState,
   getCreatorVideoEmbed,
@@ -544,6 +545,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
 
 export function CreatorContentModal({ content, creator, playlist=[], onClose }) {
   const closeRef = useRef(null)
+  useOverlayHistory(Boolean(content && creator), onClose)
   const playlistEntries = useMemo(
     () => normalizeCreatorVideoPlaylist(playlist, content, creator),
     [content, creator, playlist],
