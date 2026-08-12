@@ -32,6 +32,11 @@ const sessionStorage = new FakeStorage()
 globalThis.window = { localStorage, sessionStorage }
 
 const { resilientAuthStorage } = await import('../src/lib/authStorage.js')
+const {
+  getGooglePostAuthPath,
+  isRecentlyCreatedAuthUser,
+  needsGoogleProfileOnboarding,
+} = await import('../src/lib/oauthOnboarding.js')
 
 const authKey = 'sb-project-auth-token'
 const authValue = JSON.stringify({ access_token:'a'.repeat(120), user:{ id:'user-1' } })
@@ -53,4 +58,29 @@ assert.equal(fallbackSessionStorage.getItem(fallbackKey), authValue)
 resilientAuthStorage.removeItem(fallbackKey)
 assert.equal(resilientAuthStorage.getItem(fallbackKey), null)
 
-console.log('Resilient auth storage tests passed')
+const now = Date.now()
+const newGoogleUser = {
+  created_at:new Date(now - 30_000).toISOString(),
+  app_metadata:{ provider:'google', providers:['google'] },
+  user_metadata:{ name:'Nueva cuenta', canton:'ZH' },
+}
+assert.equal(needsGoogleProfileOnboarding(newGoogleUser), true)
+assert.equal(isRecentlyCreatedAuthUser(newGoogleUser, now), true)
+assert.equal(
+  getGooglePostAuthPath(newGoogleUser, '/mensajes'),
+  '/auth/onboarding?next=%2Fmensajes',
+)
+assert.equal(needsGoogleProfileOnboarding({
+  ...newGoogleUser,
+  user_metadata:{ latido_onboarding_completed:true },
+}), false)
+assert.equal(needsGoogleProfileOnboarding({
+  ...newGoogleUser,
+  app_metadata:{ provider:'email', providers:['email'] },
+}), false)
+assert.equal(isRecentlyCreatedAuthUser({
+  ...newGoogleUser,
+  created_at:new Date(now - 24 * 60 * 60 * 1000).toISOString(),
+}, now), false)
+
+console.log('Auth storage and Google onboarding tests passed')

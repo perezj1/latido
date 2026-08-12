@@ -17,6 +17,7 @@ import { startEmailNotificationPresence } from './lib/emailNotificationPresence'
 import { PARTNER_LANDING_URL, trackPartnerInteraction } from './lib/partnerAttribution'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
 import { startCreatorDirectorySync } from './lib/creators'
+import { needsGoogleProfileOnboarding } from './lib/oauthOnboarding'
 import { C, PP } from './lib/theme'
 
 import Footer from './components/Footer'
@@ -396,20 +397,6 @@ function getAppRoutePosition(pathname='') {
 function getSafeNextPath(search, fallback = '/') {
   const next = new URLSearchParams(search).get('next')
   return next && next.startsWith('/') && !next.startsWith('//') ? next : fallback
-}
-
-function needsGoogleProfileOnboarding(user) {
-  if (!user) return false
-
-  const providers = Array.isArray(user.app_metadata?.providers)
-    ? user.app_metadata.providers
-    : [user.app_metadata?.provider]
-  const metadata = user.user_metadata || {}
-  const usesGoogle = providers.includes('google')
-  const completed = metadata.latido_onboarding_completed === true
-  const hasCanton = Boolean(String(metadata.canton || '').trim())
-
-  return usesGoogle && !completed && !hasCanton
 }
 
 function AuthRoute() {

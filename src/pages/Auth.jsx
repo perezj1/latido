@@ -9,6 +9,7 @@ import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import { isAdminEmail } from '../lib/admin'
+import { getGooglePostAuthPath } from '../lib/oauthOnboarding'
 import toast from 'react-hot-toast'
 
 const GOOGLE_AUTH_ENABLED = true
@@ -207,7 +208,9 @@ function GooglePwaAuthButton({ loading, disabled, onCredential, onUnavailable })
       google.accounts.id.renderButton(buttonRef.current, {
         type:'standard',
         theme:'outline',
-        size:'large',
+        // Google never personalizes medium/small buttons, so this keeps the
+        // neutral "Continuar con Google" appearance instead of an account bar.
+        size:'medium',
         text:'continue_with',
         shape:'rectangular',
         logo_alignment:'left',
@@ -564,7 +567,7 @@ export default function Auth() {
         user_id:persisted.session.user.id,
         metadata: { method:'google_id_token', entry_point:authEntryPoint },
       })
-      navigate(nextPath, { replace:true })
+      navigate(getGooglePostAuthPath(persisted.session.user, nextPath), { replace:true })
     } catch (error) {
       console.error('Google ID token sign-in failed:', error)
       toast.error(getGoogleAuthErrorMessage(error))
