@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { BadgeCheck, ChevronRight, Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
+import { BadgeCheck, Check, ChevronRight, Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import {
@@ -309,11 +309,19 @@ export function getCreatorInitials(creator) {
     .join('') || '?'
 }
 
-export function CreatorAvatar({ creator, size = 72, compact = false }) {
+export function CreatorAvatar({ creator, size = 72, compact = false, showVerified = true, verifiedBadgeSize = null }) {
   const initials = getCreatorInitials(creator)
-  const isVerified = Boolean(creator?.verified)
-  const badgeSize = Math.max(9, Math.min(26, Math.round(size * 0.25)))
-  const badgeBorder = size < 32 ? 1 : 2
+  const isVerified = Boolean(creator?.verified && showVerified)
+  const responsiveBadgeSize = size <= 20
+    ? 10
+    : size <= 32
+      ? 13
+      : size <= 48
+        ? 15
+        : Math.min(26, Math.round(size * 0.25))
+  const badgeSize = verifiedBadgeSize ?? responsiveBadgeSize
+  const badgeBorder = badgeSize <= 10 ? 1 : 2
+  const compactBadge = badgeSize < 15
 
   return (
     <span
@@ -359,8 +367,8 @@ export function CreatorAvatar({ creator, size = 72, compact = false }) {
           title="Perfil verificado por Latido"
           style={{
             position:'absolute',
-            right:-1,
-            bottom:Math.max(0, Math.round(size * 0.01)),
+            right:size < 49 ? -2 : -1,
+            bottom:size < 49 ? 2 : Math.max(3, Math.round(size * 0.03)),
             zIndex:2,
             display:'grid',
             width:badgeSize,
@@ -374,7 +382,9 @@ export function CreatorAvatar({ creator, size = 72, compact = false }) {
             placeItems:'center',
           }}
         >
-          <BadgeCheck size={Math.max(7, badgeSize - (badgeBorder * 2) - 2)} strokeWidth={2.4} />
+          {compactBadge
+            ? <Check size={Math.max(5, badgeSize - (badgeBorder * 2))} strokeWidth={3.2} />
+            : <BadgeCheck size={Math.max(9, badgeSize - (badgeBorder * 2) - 1)} strokeWidth={2.5} />}
         </span>
       )}
     </span>
@@ -498,7 +508,7 @@ export function CreatorContentCard({ content, creator, onContentOpen, compact = 
       <div className="creator-content-card__body">
         <h3>{content.title}</h3>
         <div className="creator-content-card__creator">
-          <CreatorAvatar creator={creator} size={28} />
+          <CreatorAvatar creator={creator} size={28} verifiedBadgeSize={9} />
           <span>{creator.name}</span>
         </div>
         {!compact && <p>{content.summary}</p>}
@@ -545,7 +555,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
           <span className="creator-home-content-card__copy">
             <strong>{content.title}</strong>
             <span className="creator-home-content-card__byline">
-              <CreatorAvatar creator={creator} size={18} compact />
+              <CreatorAvatar creator={creator} size={18} compact verifiedBadgeSize={8} />
               <span className="creator-home-content-card__identity">
                 <span>{creator.name}</span>
                 <span aria-hidden="true"> · </span>
@@ -570,7 +580,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
       <div className="creator-app-content-card__body">
         <strong>{content.title}</strong>
         <span className="creator-app-content-card__creator">
-          <CreatorAvatar creator={creator} size={20} />
+          <CreatorAvatar creator={creator} size={20} verifiedBadgeSize={8} />
           <span>{creator.name}</span>
         </span>
         {managementActions || <CreatorContentActions helpful={helpful} content={content} creator={creator} onOpen={handleOpen} />}
