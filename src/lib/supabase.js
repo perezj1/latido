@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { resilientAuthStorage } from './authStorage.js'
 
 const env = import.meta.env || {}
 const url = env.VITE_SUPABASE_URL
@@ -16,6 +17,7 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      storage: resilientAuthStorage,
     },
   },
 )
