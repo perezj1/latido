@@ -58,7 +58,12 @@ export function AuthProvider({ children }) {
 
       if (cancelled) return
       const profile = response.data || {}
-      setAvatarUrl(profile.avatar_url || null)
+      setAvatarUrl(
+        profile.avatar_url
+        || user.user_metadata?.avatar_url
+        || user.user_metadata?.picture
+        || null
+      )
       setProfileMeta({
         banned: profile.banned === true,
         bannedReason: profile.banned_reason || '',
@@ -121,6 +126,16 @@ export function AuthProvider({ children }) {
     return result
   }
 
+  const signInWithGoogle = async ({ redirectTo }) => supabase.auth.signInWithOAuth({
+    provider:'google',
+    options: {
+      redirectTo,
+      queryParams: {
+        prompt:'select_account',
+      },
+    },
+  })
+
   const signOut = async () => {
     await supabase.auth.signOut()
     setUser(null)
@@ -149,7 +164,7 @@ export function AuthProvider({ children }) {
     bannedAt: profileMeta.bannedAt,
     isAdmin: isAdminUser(user),
     updateAvatar,
-    signUp, signIn, signOut,
+    signUp, signIn, signInWithGoogle, signOut,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
