@@ -4,6 +4,7 @@ import { isAdminUser } from '../lib/admin'
 import { normalizeInterestIds } from '../lib/interests'
 
 const AuthContext = createContext(null)
+const GOOGLE_OAUTH_PENDING_KEY = 'latido_google_oauth_pending'
 
 function getLocalUser() {
   try {
@@ -99,6 +100,39 @@ export function AuthProvider({ children }) {
       // so we don't wipe out the user set by signUp()
     })
     return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    let syncing = false
+
+    const recoverGoogleSession = async () => {
+      if (syncing || document.visibilityState === 'hidden') return
+      if (!window.sessionStorage.getItem(GOOGLE_OAUTH_PENDING_KEY)) return
+
+      syncing = true
+      try {
+        const cachedUser = getLocalUser()
+        if (cachedUser) setUser(cachedUser)
+
+        const { data } = await supabase.auth.getSession()
+        if (data.session?.user) {
+          setUser(data.session.user)
+          setLoading(false)
+          window.sessionStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
+        }
+      } finally {
+        syncing = false
+      }
+    }
+
+    window.addEventListener('focus', recoverGoogleSession)
+    window.addEventListener('pageshow', recoverGoogleSession)
+    document.addEventListener('visibilitychange', recoverGoogleSession)
+    return () => {
+      window.removeEventListener('focus', recoverGoogleSession)
+      window.removeEventListener('pageshow', recoverGoogleSession)
+      document.removeEventListener('visibilitychange', recoverGoogleSession)
+    }
   }, [])
 
   const signUp = async ({ email, password, name, canton, languages=[], interests=[] }) => {

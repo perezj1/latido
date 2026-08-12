@@ -47,6 +47,7 @@ const CreadorAlta = lazy(() => import('./pages/CreadorAlta'))
 const CreadorPanel = lazy(() => import('./pages/CreadorPanel'))
 const Perfil = lazy(() => import('./pages/Perfil'))
 const Auth = lazy(() => import('./pages/Auth'))
+const AuthCallback = lazy(() => import('./pages/AuthCallback'))
 const OAuthOnboarding = lazy(() => import('./pages/OAuthOnboarding'))
 const PublicarEvento = lazy(() => import('./pages/PublicarEvento'))
 const RegistrarNegocio = lazy(() => import('./pages/RegistrarNegocio'))
@@ -583,7 +584,7 @@ function AppShell() {
     return () => window.removeEventListener('latido:messages-chat-open', sync)
   }, [pathname])
 
-  if (isLoggedIn && needsProfileOnboarding && pathname !== '/auth/onboarding') {
+  if (isLoggedIn && needsProfileOnboarding && !['/auth/onboarding', '/auth/callback'].includes(pathname)) {
     const nextPath = pathname === '/auth'
       ? getSafeNextPath(location.search)
       : `${location.pathname}${location.search}`
@@ -603,6 +604,14 @@ function AppShell() {
           </Suspense>
         </main>
       </>
+    )
+  }
+
+  if (pathname === '/auth/callback') {
+    return (
+      <Suspense fallback={<AppLoading />}>
+        <AuthCallback />
+      </Suspense>
     )
   }
 
@@ -766,6 +775,7 @@ function AppShell() {
             <Route path="/creadores/mi-perfil" element={<ProtectedRoute><CreadorPanel /></ProtectedRoute>} />
             <Route path="/creadores/:creatorSlug" element={<CreadorPerfil />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/auth/onboarding" element={<ProtectedRoute><OAuthOnboarding /></ProtectedRoute>} />
             <Route path="/auth" element={<AuthRoute />} />
             <Route path="/publicar-evento" element={<ProtectedRoute><PublicarEvento /></ProtectedRoute>} />
