@@ -3,14 +3,14 @@ import { isNationwideLocation } from './locationScope'
 export const ONBOARDING_INTEREST_OPTIONS = [
   { id:'empleo', emoji:'💼', label:'Empleo' },
   { id:'vivienda', emoji:'🏠', label:'Vivienda' },
-  { id:'servicios', emoji:'🏪', label:'Negocios y servicios' },
+  { id:'servicios', tone:'negocios', emoji:'🏪', label:'Negocios y servicios' },
   { id:'eventos', emoji:'🎉', label:'Eventos' },
   { id:'comunidad', emoji:'👥', label:'Comunidad' },
 ]
 
 export const INTEREST_OPTIONS = [
   ...ONBOARDING_INTEREST_OPTIONS,
-  { id:'cuidados', emoji:'❤️', label:'Cuidados' },
+  { id:'cuidados', icon:'care', emoji:'❤️', label:'Cuidados' },
   { id:'venta', emoji:'🛍️', label:'Compraventa' },
   { id:'documentos', emoji:'📄', label:'Trámites' },
   { id:'regalo', emoji:'🎁', label:'Regalos' },

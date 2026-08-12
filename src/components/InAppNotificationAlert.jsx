@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppNotifications } from '../hooks/useAppNotifications'
+import { InterfaceIcon } from '../lib/icons'
 
 const ALERT_DURATION_MS = 5000
 const SWIPE_THRESHOLD_PX = 38
@@ -127,7 +128,7 @@ export default function InAppNotificationAlert() {
         onPointerCancel={handlePointerEnd}
       >
         <button type="button" className="latido-in-app-alert__content" onClick={openNotification}>
-          <span className="latido-in-app-alert__icon" aria-hidden="true">{current.icon}</span>
+          <span className="latido-in-app-alert__icon" aria-hidden="true"><InterfaceIcon emoji={current.icon} size={22} /></span>
           <span className="latido-in-app-alert__copy">
             <span className="latido-in-app-alert__brand">LATIDO</span>
             <strong>{current.title}</strong>

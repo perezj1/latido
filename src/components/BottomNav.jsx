@@ -4,24 +4,25 @@ import { useAuth } from '../hooks/useAuth'
 import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { Avatar } from './UI'
-import { C, PP } from '../lib/theme'
+import { C, PP, getLatidoCategoryTheme } from '../lib/theme'
 import { isCreatorProfileRoute, isExploreRoute } from '../lib/sections'
+import { Icon } from '../lib/icons'
 
 const PUBLISH_OPTIONS = [
-  { emoji:'📌', label:'Anuncio',   sub:'Vivienda, servicios, cuidados, compraventa o trámites', to:'/publicar' },
-  { emoji:'💼', label:'Empleo',    sub:'Oferta o solicitud de empleo', to:'/publicar-empleo' },
-  { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
-  { emoji:'🎬', label:'Contenido', sub:'Un vídeo, artículo o publicación tuya', to:'/publicar-contenido' },
-  { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
-  { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
-]
+  { tone:'anuncios', icon:'listing',  label:'Anuncio',   sub:'Vivienda, servicios, cuidados, compraventa o trámites', to:'/publicar' },
+  { tone:'empleo', icon:'job',      label:'Empleo',    sub:'Oferta o solicitud de empleo', to:'/publicar-empleo' },
+  { tone:'negocios', icon:'business', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
+  { tone:'contenido', icon:'movie',    label:'Contenido', sub:'Un vídeo, artículo o publicación tuya', to:'/publicar-contenido' },
+  { tone:'grupos', icon:'group',    label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
+  { tone:'eventos', icon:'event',    label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
+].map(option => ({ ...option, theme:getLatidoCategoryTheme(option.tone) }))
 
 const TABS = [
-  { id:'inicio',   path:'/',         emoji:'🏠', label:'Inicio' },
-  { id:'explorar', path:'/explorar', emoji:'🔎', label:'Explorar' },
-  { id:'publicar', action:'publish', emoji:'✏️', label:'Publicar' },
-  { id:'mensajes', path:'/mensajes', emoji:'💬', label:'Mensajes' },
-  { id:'perfil',   path:'/perfil',   emoji:'👤', label:'Perfil' },
+  { id:'inicio',   path:'/',         icon:'home',    label:'Inicio' },
+  { id:'explorar', path:'/explorar', icon:'search',  label:'Explorar' },
+  { id:'publicar', action:'publish', icon:'addLarge', label:'Publicar' },
+  { id:'mensajes', path:'/mensajes', icon:'message', label:'Mensajes' },
+  { id:'perfil',   path:'/perfil',   icon:'user',    label:'Perfil' },
 ]
 
 // Flujos de alta/edicion con acciones fijas abajo: la barra estorbaria y se
@@ -110,14 +111,18 @@ export default function BottomNav() {
                   key={opt.to}
                   className="latido-publish-picker__option"
                   onClick={() => { setPickerOpen(false); navigate(opt.to) }}
-                  style={{ '--publish-option-index':index, display:'flex', alignItems:'center', gap:14, background:'#F8FAFF', border:'1px solid #E2EAF4', borderRadius:16, padding:'14px 16px', cursor:'pointer', textAlign:'left' }}
+                  style={{ '--publish-option-index':index, display:'flex', alignItems:'center', gap:14, background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'14px 16px', cursor:'pointer', textAlign:'left' }}
                 >
-                  <div style={{ width:44, height:44, background:'#EFF6FF', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>{opt.emoji}</div>
+                  {/* El color de seccion vive solo en el icono: la fila se queda
+                      neutra y las seis opciones se leen como una misma lista. */}
+                  <div style={{ width:44, height:44, background:opt.theme.soft, borderRadius:13, display:'flex', alignItems:'center', justifyContent:'center', color:opt.theme.ink, flexShrink:0 }}>
+                    <Icon name={opt.icon} size={21} />
+                  </div>
                   <div>
                     <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:'#0F172A', margin:'0 0 2px' }}>{opt.label}</p>
                     <p style={{ fontFamily:PP, fontSize:11, color:'#64748B', margin:0 }}>{opt.sub}</p>
                   </div>
-                  <span style={{ marginLeft:'auto', color:'#94A3B8', fontSize:18 }}>›</span>
+                  <span style={{ marginLeft:'auto', color:C.light, fontSize:18 }}>›</span>
                 </button>
               ))}
             </div>
@@ -143,7 +148,7 @@ export default function BottomNav() {
                 aria-label="Publicar"
               >
                 <span className="bottom-nav-publish-mark" aria-hidden="true">
-                  <span>{tab.emoji}</span>
+                  <span><Icon name={tab.icon} size={25} /></span>
                 </span>
                 <span className="bottom-nav-label" style={{ fontFamily:PP, fontSize:9, fontWeight:500 }}>{tab.label}</span>
               </button>
@@ -160,7 +165,7 @@ export default function BottomNav() {
               <span className="bottom-nav-icon" style={{ position:'relative', display:'inline-flex' }}>
                 {tab.id === 'perfil' && isLoggedIn
                   ? <Avatar name={displayName} size={24} src={avatarUrl} />
-                  : <span style={{ fontSize:20, lineHeight:1 }}>{tab.emoji}</span>
+                  : <Icon name={tab.icon} size={21} strokeWidth={active ? 2 : 1.75} />
                 }
                 {tab.id === 'mensajes' && hasUnread && (
                   <span style={{ position:'absolute', top:-2, right:-4, minWidth:8, height:8, borderRadius:4, background:'#EF4444', border:'1.5px solid #fff' }} />

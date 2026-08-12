@@ -18,7 +18,7 @@ import {
   normalizeNegocioType,
   EVENTO_TYPES,
 } from '../lib/constants'
-import { C, PP } from '../lib/theme'
+import { C, PP, getLatidoCategoryTheme } from '../lib/theme'
 import { Tag, EmptyState, Sheet, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal, ChevronLeftIcon } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CreatorCommunityView, { CreatorCommunityToolbar } from '../components/CreatorCommunityView'
@@ -50,37 +50,46 @@ import {
 } from '../lib/businessContact'
 import toast from 'react-hot-toast'
 import { markSavedSearchDigestOpened, markSavedSearchMatchOpened } from '../lib/savedSearches'
+import { Icon } from '../lib/icons'
 
 const MAIN_TABS = [
-  { id:'negocios', label:'🏪 Negocios' },
-  { id:'creadores', label:'🎙️ Creadores' },
-  { id:'eventos', label:'🎉 Eventos' },
-  { id:'comunidades', label:'👥 Grupos' },
+  { id:'negocios', label:'Negocios' },
+  { id:'creadores', label:'Creadores' },
+  { id:'eventos', label:'Eventos' },
+  { id:'comunidades', label:'Grupos' },
 ]
 
 const TAB_COPY = {
   negocios:{
-    title:'🏪 Negocios',
+    tone:'negocios',
+    icon:'business',
+    title:'Negocios',
     subtitle:'Restaurantes, tiendas, profesionales y servicios hispanohablantes.',
     search:'Buscar negocio, servicio o ciudad...',
     emptyTitle:'No hay negocios con estos filtros',
     emptyText:'Prueba otra categoría o registra tu negocio gratis.',
   },
   comunidades:{
-    title:'👥 Grupos',
+    tone:'grupos',
+    icon:'group',
+    title:'Grupos',
     subtitle:'Comunidades, chats y redes de apoyo por ciudad o interés.',
     search:'Buscar grupo, país, interés o ciudad...',
     emptyTitle:'No hay grupos con estos filtros',
     emptyText:'Prueba otra categoría o registra un grupo para la comunidad.',
   },
   eventos:{
-    title:'🎉 Eventos',
+    tone:'eventos',
+    icon:'event',
+    title:'Eventos',
     subtitle:'Actividades con fecha: conciertos, fiestas, quedadas y planes familiares.',
     emptyTitle:'Sin eventos de la comunidad aún',
     emptyText:'Publica el primer evento para que otros puedan encontrarlo.',
   },
   creadores:{
-    title:'🎙️ Creadores',
+    tone:'creadores',
+    icon:'creator',
+    title:'Creadores',
     subtitle:'Personas, profesionales y negocios que comparten sobre Suiza en sus redes.',
     search:'Buscar perfil, tema o ciudad...',
     emptyTitle:'Todavía no hay creadores',
@@ -484,7 +493,7 @@ function getBusinessContactMethods(business) {
   if (address) {
     methods.push({
       id:'address',
-      icon:'🧭',
+      icon:'explore',
       label:'Dirección',
       value:address,
       href:getNavigationUrl(address, business.city, business.canton),
@@ -495,7 +504,7 @@ function getBusinessContactMethods(business) {
   if (phone) {
     methods.push({
       id:'phone',
-      icon:'📞',
+      icon:'phone',
       label:'Teléfono',
       value:phone,
       href:getPhoneHref(phone),
@@ -506,7 +515,7 @@ function getBusinessContactMethods(business) {
   if (whatsapp) {
     methods.push({
       id:'whatsapp',
-      icon:'💬',
+      icon:'whatsapp',
       label:'WhatsApp',
       value:whatsapp,
       href:getWhatsappHref(whatsapp),
@@ -517,7 +526,7 @@ function getBusinessContactMethods(business) {
   if (email) {
     methods.push({
       id:'email',
-      icon:'✉️',
+      icon:'mail',
       label:'Email',
       value:email,
       href:`mailto:${email}`,
@@ -528,7 +537,7 @@ function getBusinessContactMethods(business) {
   if (instagram) {
     methods.push({
       id:'instagram',
-      icon:'📸',
+      icon:'instagram',
       label:'Instagram',
       value:instagram,
       href:`https://instagram.com/${instagram.replace('@', '')}`,
@@ -556,7 +565,7 @@ function LocationContactsPanel({ locations }) {
       {locations.map((loc, i) => (
         <div key={i} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, overflow:'hidden' }}>
           <div style={{ background:C.primaryLight, padding:'7px 12px', display:'flex', alignItems:'center', gap:6 }}>
-            <span style={{ fontSize:12 }}>📍</span>
+            <Icon name="location" size={13} />
             <span style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.primaryDark }}>{loc.city}</span>
             {loc.address && (
               <a
@@ -577,7 +586,7 @@ function LocationContactsPanel({ locations }) {
                 style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', textDecoration:'none', borderBottom: loc.email ? `1px solid ${C.border}` : 'none' }}
               >
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:14 }}>📞</span>
+                  <Icon name="phone" size={15} />
                   <span style={{ fontFamily:PP, fontSize:12, color:C.mid }}>{loc.phone}</span>
                 </div>
                 <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary }}>Llamar →</span>
@@ -589,7 +598,7 @@ function LocationContactsPanel({ locations }) {
                 style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', textDecoration:'none' }}
               >
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:14 }}>✉️</span>
+                  <Icon name="mail" size={15} />
                   <span style={{ fontFamily:PP, fontSize:12, color:C.mid, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:180 }}>{loc.email}</span>
                 </div>
                 <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary }}>Email →</span>
@@ -789,7 +798,7 @@ function BusinessCard({ business, onClick, photosMap, reviewsMap, recommendation
           ) : (
             <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>Sin reseñas aún</span>
           )}
-          {recommendationCount > 0 && <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.mid, display:'inline-flex', alignItems:'center', gap:3 }}>👍 {recommendationCount}</span>}
+          {recommendationCount > 0 && <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.mid, display:'inline-flex', alignItems:'center', gap:3 }}><Icon name="helpful" size={11} /> {recommendationCount}</span>}
           <span style={{ fontFamily:PP, fontSize:10, color:C.light, ...CLAMP_1 }}>{business.city}</span>
         </div>
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{business.desc}</p>
@@ -985,7 +994,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                 {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
               </div>
               <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, lineHeight:1.18, margin:'0 0 8px', ...WRAPPING_TEXT }}>{business.name}</h1>
-              <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
+              <Tag bg={C.bg} color={C.mid}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="location" size={11} /> {business.city}</span></Tag>
             </div>
             {rating !== null && (
               <button
@@ -1018,7 +1027,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                   rel="noreferrer"
                   style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.primary, textDecoration:'none', display:'flex', alignItems:'center', gap:6, width:'fit-content', marginBottom:business.address ? 8 : 16 }}
                 >
-                  🌐 {websiteLabel}
+                  <Icon name="website" size={14} /> {websiteLabel}
                 </a>
               )}
               {business.address && (
@@ -1028,7 +1037,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                   rel="noreferrer"
                   style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.primary, textDecoration:'none', display:'flex', alignItems:'flex-start', gap:6, width:'fit-content', lineHeight:1.55, marginBottom:16 }}
                 >
-                  <span aria-hidden="true">🧭</span>
+                  <Icon name="explore" size={14} />
                   <span>{business.address}</span>
                 </a>
               )}
@@ -1076,7 +1085,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                       return (
                         <div key={stars} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
                           <span style={{ fontFamily:PP, fontSize:10, color:C.mid, width:8 }}>{stars}</span>
-                          <span style={{ fontSize:10, color:'#F59E0B' }}>★</span>
+                          <Icon name="star" size={10} color="#F59E0B" style={{ fill:'#F59E0B' }} />
                           <div style={{ flex:1, height:6, background:C.border, borderRadius:3, overflow:'hidden' }}>
                             <div style={{ height:'100%', width:`${width}%`, background:'#F59E0B', borderRadius:3, transition:'width .4s' }} />
                           </div>
@@ -1099,7 +1108,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                   }}
                   style={{ width:'100%', background:C.primaryLight, border:`1.5px dashed ${C.primary}`, borderRadius:14, padding:'12px 0', fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, cursor:'pointer', marginBottom:14 }}
                 >
-                  {ownReview ? 'Editar mi reseña' : '✍️ Escribir una reseña'}
+                  {ownReview ? 'Editar mi reseña' : 'Escribir una reseña'}
                 </button>
               ) : (
                 <div style={{ opacity:savingReview ? 0.7 : 1, pointerEvents:savingReview ? 'none' : 'auto' }}>
@@ -1146,7 +1155,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
                 style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, textDecoration:'none' }}
               >
                 <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                  <span style={{ fontSize:16, flexShrink:0 }}>{method.icon}</span>
+                  <span style={{ color:C.primary, flexShrink:0 }}><Icon name={method.icon} size={17} /></span>
                   <div style={{ minWidth:0 }}>
                     <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.text, margin:'0 0 2px' }}>{method.label}</p>
                     <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{method.value}</p>
@@ -1178,7 +1187,6 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
         }}
         ownershipClaim={!business.user_id ? {
           label:'Este negocio es mío',
-          icon:'🏪',
           onClick:() => setClaimModalOpen(true),
         } : null}
         report={{
@@ -1198,9 +1206,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
         zIndex={120}
       >
         <div style={{ textAlign:'center' }}>
-          <div aria-hidden="true" style={{ width:64, height:64, borderRadius:'50%', margin:'0 auto 16px', display:'grid', placeItems:'center', background:C.primaryLight, color:C.primary, fontSize:30 }}>
-            🏪
-          </div>
+          <div aria-hidden="true" style={{ width:64, height:64, borderRadius:'50%', margin:'0 auto 16px', display:'grid', placeItems:'center', background:C.primaryLight, color:C.primary }}><Icon name="business" size={30} /></div>
           <p style={{ fontFamily:PP, fontSize:14, color:C.mid, lineHeight:1.7, margin:'0 0 20px' }}>
             Tu negocio está llegando a cientos de posibles clientes. Si este es tu negocio, contáctanos para asignarlo a tu cuenta y que puedas administrarlo.
           </p>
@@ -1253,10 +1259,10 @@ function CommunityDetail({ community, onClose, relatedCommunities=[], onOpenRela
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{community.name}</h1>
       </div>
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
-        {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.emoji} {category.label}</Tag>}
-        <Tag bg={C.bg} color={C.mid}>📍 {community.city}</Tag>
-        {!isWebCommunity(community.contact) && <Tag bg={C.bg} color={C.mid}>👥 {community.members} miembros</Tag>}
-        {community.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
+        {category && <Tag bg="#DBEAFE" color={C.primaryDark}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="group" size={11} /> {category.label}</span></Tag>}
+        <Tag bg={C.bg} color={C.mid}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="location" size={11} /> {community.city}</span></Tag>
+        {!isWebCommunity(community.contact) && <Tag bg={C.bg} color={C.mid}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="users" size={11} /> {community.members} miembros</span></Tag>}
+        {community.verified && <Tag bg="#D1FAE5" color="#065F46"><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="verified" size={11} /> Verificada</span></Tag>}
       </div>
 
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>
@@ -1322,9 +1328,9 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
       </div>
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
         <Tag bg="#DBEAFE" color={C.primaryDark}>{EVENTO_TYPES.find(type => type.id === event.type)?.label || 'Evento'}</Tag>
-        <Tag bg={C.bg} color={C.mid}>📍 {event.city}</Tag>
-        <Tag bg={C.bg} color={C.mid}>🕒 {event.time}</Tag>
-        <Tag bg={C.bg} color={C.mid}>🎟 {event.price}</Tag>
+        <Tag bg={C.bg} color={C.mid}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="location" size={11} /> {event.city}</span></Tag>
+        <Tag bg={C.bg} color={C.mid}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="clock" size={11} /> {event.time}</span></Tag>
+        <Tag bg={C.bg} color={C.mid}>{event.price}</Tag>
       </div>
       <InfoBanner emoji={event.emoji} title={`${event.day} ${event.month} · ${event.venue}`} text={`Organiza ${event.host}`} bg={C.primaryLight} border={C.primaryMid} color={C.primaryDark} />
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>{event.desc}</p>
@@ -1880,7 +1886,7 @@ export default function Comunidades() {
     return [
       { id:'', label:'Todas las ciudades' },
       ...(requestedCantonMeta
-        ? [{ id:requestedCantonMeta.code, label:`📍 Cerca de ti · ${requestedCantonMeta.name}` }]
+        ? [{ id:requestedCantonMeta.code, label:`Cerca de ti · ${requestedCantonMeta.name}` }]
         : []),
       ...cities.map(city => ({ id:city, label:`\u{1F4CD} ${city}` })),
     ]
@@ -2321,13 +2327,16 @@ export default function Comunidades() {
   }, [businesses, communities, events, loading, openCommunityId, targetOpenBusinessId, targetOpenEventId])
 
   const tabCopy = TAB_COPY[tab] || TAB_COPY.negocios
+  const tabTheme = getLatidoCategoryTheme(
+    tab === 'creadores' && creatorView === 'contenidos' ? 'contenido' : tabCopy.tone,
+  )
 
   return (
     <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px 100px' }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'16px 24px 0' }}>
       <div className="section-page-head">
-        <h1>{tabCopy.title}</h1>
+        <h1 style={{ display:'flex', alignItems:'center', gap:9 }}><Icon name={tabCopy.icon} size={27} color={tabTheme.ink} /> {tabCopy.title}</h1>
         <p>{tabCopy.subtitle}</p>
       </div>
 
@@ -2443,7 +2452,7 @@ export default function Comunidades() {
           {loading ? (
             <div className="skeleton" style={{ height:200, borderRadius:20 }} />
           ) : filteredComm.length === 0 ? (
-            <EmptyState emoji="👥" title={TAB_COPY.comunidades.emptyTitle} sub={TAB_COPY.comunidades.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
+            <EmptyState icon="group" title={TAB_COPY.comunidades.emptyTitle} sub={TAB_COPY.comunidades.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
               {filteredComm.map(group => (
@@ -2453,7 +2462,7 @@ export default function Comunidades() {
           )}
 
           <div style={{ marginTop:28, border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
-            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>➕ ¿Tienes un grupo hispanohablante?</h3>
+            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8, display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}><Icon name="add" size={18} /> ¿Tienes un grupo hispanohablante?</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Regístralo aquí y llega a más personas en Suiza. Gratis.</p>
             <Link to="/registrar-comunidad" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Registrar grupo</Link>
           </div>
@@ -2465,7 +2474,7 @@ export default function Comunidades() {
           {loading ? (
             <div className="skeleton" style={{ height:260, borderRadius:20 }} />
           ) : filteredNeg.length === 0 ? (
-            <EmptyState emoji="🏪" title={TAB_COPY.negocios.emptyTitle} sub={TAB_COPY.negocios.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
+            <EmptyState icon="business" title={TAB_COPY.negocios.emptyTitle} sub={TAB_COPY.negocios.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
               {filteredNeg.map(business => (
@@ -2482,7 +2491,7 @@ export default function Comunidades() {
           )}
 
           <div style={{ marginTop:28, border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
-            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>🏪 ¿Tienes un negocio?</h3>
+            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8, display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}><Icon name="business" size={18} /> ¿Tienes un negocio?</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Regístralo gratis, sube fotos y recibe reseñas de la comunidad.</p>
             <Link to="/registrar-negocio" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Registrar negocio</Link>
           </div>
@@ -2530,7 +2539,7 @@ export default function Comunidades() {
               </div>
             ) : filteredEvents.length === 0 ? (
               <div style={{ textAlign:'center', padding:'40px 20px', background:C.bg, borderRadius:20 }}>
-                <div style={{ fontSize:48, marginBottom:12 }}>🎉</div>
+                <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:12 }}><Icon name="event" size={42} /></div>
                 <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>{TAB_COPY.eventos.emptyTitle}</p>
                 <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>{TAB_COPY.eventos.emptyText}</p>
               </div>
@@ -2566,7 +2575,7 @@ export default function Comunidades() {
           </div>
 
           <div style={{ border:`2px dashed ${C.border}`, borderRadius:20, padding:24, textAlign:'center', background:C.primaryLight }}>
-            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>🎉 ¿Organizas un evento?</h3>
+            <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:17, color:C.text, marginBottom:8, display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}><Icon name="event" size={18} /> ¿Organizas un evento?</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:14 }}>Conciertos, fiestas, networking, festivales o quedadas: publícalo aquí para la comunidad.</p>
             <Link to="/publicar-evento" style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', padding:'12px 24px', borderRadius:14, display:'inline-flex' }}>Publicar evento</Link>
           </div>

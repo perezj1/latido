@@ -11,7 +11,8 @@ import {
   rememberRecentSearch,
   removeRecentSearch,
 } from '../lib/searchHistory'
-import { C, PP } from '../lib/theme'
+import { C, PP, getLatidoCategoryTheme } from '../lib/theme'
+import { Icon } from '../lib/icons'
 import { Sheet } from './UI'
 import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
@@ -142,15 +143,19 @@ function getSearchFilterControlStyle(value) {
   }
 }
 
+const GUIDE_THEME = getLatidoCategoryTheme('guias')
+const CREATOR_THEME = getLatidoCategoryTheme('creadores')
+const CONTENT_THEME = getLatidoCategoryTheme('contenido')
+
 const TYPE_COLORS = {
   ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Anuncio' },
   job:{ bg:'#E0F2FE', color:'#0369A1', label:'Empleo' },
   community:{ bg:'#D1FAE5', color:'#065F46', label:'Grupo' },
   business:{ bg:'#FEF3C7', color:'#92400E', label:'Negocio' },
   event:{ bg:'#FCE7F3', color:'#9D174D', label:'Evento' },
-  guide:{ bg:'#EDE9FE', color:'#6D28D9', label:'Guía' },
-  creator:{ bg:'#EDE9FE', color:'#7C3AED', label:'Creador' },
-  creator_content:{ bg:'#F3E8FF', color:'#6D28D9', label:'Contenido' },
+  guide:{ bg:GUIDE_THEME.soft, color:GUIDE_THEME.ink, label:'Guía' },
+  creator:{ bg:CREATOR_THEME.soft, color:CREATOR_THEME.ink, label:'Creador' },
+  creator_content:{ bg:CONTENT_THEME.soft, color:CONTENT_THEME.ink, label:'Contenido' },
   page:{ bg:'#F1F5F9', color:'#475569', label:'Página' },
 }
 
@@ -2979,7 +2984,7 @@ export default function GlobalSearch({
                       )}
                       <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.45, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}><HighlightSearchText text={result.sub} tokens={highlightTokens} /></p>
                     </div>
-                    {result.privacy === 'private' && <span style={{ fontSize:12, marginTop:6, flexShrink:0 }}>🔒</span>}
+                    {result.privacy === 'private' && <span style={{ color:C.light, marginTop:6, flexShrink:0 }}><Icon name="lock" size={13} /></span>}
                   </div>
                 )
               })}
@@ -3132,7 +3137,11 @@ export default function GlobalSearch({
                           key={section.id}
                           type="button"
                           className="explore-card"
-                          style={{ '--explore-card-bg':section.gradient }}
+                          style={{
+                            '--explore-card-bg':section.gradient,
+                            '--explore-card-soft':section.soft,
+                            '--explore-card-border':section.border,
+                          }}
                           onClick={() => {
                             if (!pageMode) setImmersiveOpen(false)
                             navigate(section.to)
@@ -3231,6 +3240,12 @@ export default function GlobalSearch({
                           key={extra.id}
                           type="button"
                           className="explore-extra"
+                          style={{
+                            '--extra-color':extra.color,
+                            '--extra-ink':extra.ink,
+                            '--extra-soft':extra.soft,
+                            '--extra-border':extra.border,
+                          }}
                           onClick={() => {
                             if (!pageMode) setImmersiveOpen(false)
                             navigate(extra.to)

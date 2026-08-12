@@ -11,6 +11,7 @@ import { fetchAvatarsByIds, fetchLastSeenByIds } from '../lib/profiles'
 import { subscribeToOnlineUsers } from '../lib/presence'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import toast from 'react-hot-toast'
+import { Icon } from '../lib/icons'
 
 const PENDING_READ_KEY_PREFIX = 'latido_messages_pending_read'
 const MESSAGE_INPUT_FONT_SIZE = 13
@@ -1021,8 +1022,8 @@ export default function Mensajes() {
   return (
     <div ref={pageRef} style={{ maxWidth: mobileChatOpen ? 'none' : 900, margin: mobileChatOpen ? 0 : '0 auto', padding: mobileChatOpen ? 0 : '24px 0 0', height: pageHeight ? `${pageHeight}px` : 'calc(100dvh - 60px)', minHeight:0, display: 'flex', flexDirection: 'column', background: mobileChatOpen ? '#E9EEF7' : undefined }}>
       {!mobileChatOpen && <div style={{ padding: '0 16px 16px' }}>
-        <h1 style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, color: C.text, margin: 0, letterSpacing: -0.5 }}>
-          💬 Mensajes
+        <h1 style={{ display:'flex', alignItems:'center', gap:8, fontFamily: PP, fontWeight: 800, fontSize: 22, color: C.text, margin: 0, letterSpacing: -0.5 }}>
+          <Icon name="message" size={23} /> Mensajes
         </h1>
       </div>}
 
@@ -1054,8 +1055,8 @@ export default function Mensajes() {
                           onClick={() => openConversation(conv)}
                           style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
                         >
-                          <span style={{ width: 34, height: 34, borderRadius: 12, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, flexShrink: 0 }}>
-                            💬
+                          <span style={{ width: 34, height: 34, borderRadius: 12, background: '#fff', color:C.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Icon name="message" size={18} />
                           </span>
                           <span style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -1087,10 +1088,10 @@ export default function Mensajes() {
               </div>
             ) : conversations.length === 0 ? (
               <div style={{ padding: '40px 16px', textAlign: 'center' }}>
-                <div style={{ fontSize: 40, marginBottom: 10 }}>💬</div>
+                <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:10 }}><Icon name="message" size={38} /></div>
                 <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, marginBottom: 6 }}>Sin mensajes aún</p>
                 <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.6, marginBottom: 16 }}>
-                  Para escribir a alguien, abre un anuncio o empleo y pulsa "💬 Enviar mensaje".
+                  Para escribir a alguien, abre un anuncio o empleo y pulsa "Enviar mensaje".
                 </p>
                 <button onClick={() => navigate('/tablon')}
                   style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, background: C.primary, color: '#fff', border: 'none', borderRadius: 12, padding: '11px 18px', cursor: 'pointer', width: '100%' }}>
@@ -1127,7 +1128,7 @@ export default function Mensajes() {
                     <button onClick={e => deleteConversation(e, conv)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 14px 0 4px', color: '#EF4444', fontSize: 16, flexShrink: 0, opacity: 0.6 }}
                       title="Eliminar conversación">
-                      🗑
+                      <Icon name="delete" size={17} />
                     </button>
                   </div>
                   )
@@ -1189,7 +1190,7 @@ export default function Mensajes() {
               <div style={{ flex: 1, minHeight:0, overflowY: 'auto', padding: mobileChatOpen ? '12px 9px 10px' : '16px', display: 'flex', flexDirection: 'column', gap: mobileChatOpen ? 6 : 8, background: mobileChatOpen ? '#E9EEF7' : C.bg }}>
                 {messages.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                    <p style={{ fontFamily: PP, fontSize: 13, color: C.light }}>Empieza la conversación 👋</p>
+                    <p style={{ fontFamily: PP, fontSize: 13, color: C.light }}>Empieza la conversación</p>
                   </div>
                 )}
                 {messages.map(msg => {
@@ -1250,14 +1251,14 @@ export default function Mensajes() {
                 </div>
                 <button onClick={sendMessage} disabled={isBanned || sending || !newMessage.trim()}
                   style={{ background: !isBanned && newMessage.trim() ? C.primary : C.border, color: '#fff', border: 'none', borderRadius: mobileChatOpen ? 22 : 14, width: mobileChatOpen ? 42 : 44, height: mobileChatOpen ? 42 : 44, cursor: !isBanned && newMessage.trim() ? 'pointer' : 'default', fontSize: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}>
-                  ↑
+                  <Icon name="send" size={19} />
                 </button>
                 </div>
               </div>
             </div>
           ) : (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 48 }}>💬</div>
+              <div style={{ color:C.light }}><Icon name="message" size={46} /></div>
               <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>Selecciona una conversación</p>
               <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>O pulsa "Enviar mensaje" en cualquier anuncio</p>
             </div>

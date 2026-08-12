@@ -10,6 +10,7 @@ import { fetchActiveBusinessPartners } from '../lib/businessPartners'
 import { BUSINESS_ROTATION_INTERVAL_MS } from '../lib/businessPromotion'
 import { rotateItems } from '../lib/rotation'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
+import { Icon } from '../lib/icons'
 
 const HOME_PARTNERS = [
   {
@@ -96,7 +97,7 @@ export default function PartnersSection({ placement = 'app_home_partners' }) {
     <section className="home-partners-section" aria-labelledby="home-partners-title">
       <div className="home-partners-heading">
         <div>
-          <h2 id="home-partners-title">🚀 Colaboradores</h2>
+          <h2 id="home-partners-title" style={{ display:'flex', alignItems:'center', gap:8 }}><Icon name="partner" size={21} /> Colaboradores</h2>
           <p>Equipos especializados para ayudarte en Suiza.</p>
         </div>
       </div>

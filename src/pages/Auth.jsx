@@ -9,6 +9,7 @@ import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import toast from 'react-hot-toast'
+import { Icon } from '../lib/icons'
 
 function getSafeNextPath(value) {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
@@ -316,7 +317,7 @@ export default function Auth() {
           creator_onboarding:intent === 'creator',
         },
       })
-      toast.success('¡Cuenta creada! Bienvenido/a 🎉')
+      toast.success('¡Cuenta creada! Bienvenido/a')
       navigate(destination)
     } finally {
       setLoading(false)
@@ -329,7 +330,7 @@ export default function Auth() {
       <AuthModeSwitch mode={mode} onChange={changeAuthMode} />
 
       <div style={{ textAlign:'center', marginBottom:28 }}>
-        <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🌎</div>
+        <div style={{ width:60, height:60, background:C.primaryLight, color:C.primary, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}><Icon name="world" size={29} /></div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Bienvenido/a</h1>
         <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Inicia sesión en Latido.ch</p>
       </div>
@@ -361,21 +362,21 @@ export default function Auth() {
         </button>
       </div>
 
-      <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
+      <Btn onClick={handleLogin} disabled={loading}>{loading ? <><Icon name="loading" size={16} /> Entrando...</> : 'Iniciar sesión'}</Btn>
     </div>
   )
 
   if (mode === 'forgot') return (
     <div style={{ maxWidth:440, margin:'60px auto', padding:'0 24px' }}>
       <div style={{ textAlign:'center', marginBottom:28 }}>
-        <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🔑</div>
+        <div style={{ width:60, height:60, background:C.primaryLight, color:C.primary, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}><Icon name="lock" size={29} /></div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Recuperar contraseña</h1>
         <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Te enviaremos un enlace para crear una nueva.</p>
       </div>
 
       <Input label="Tu email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
 
-      <Btn onClick={handleForgot} disabled={loading}>{loading ? '⏳ Enviando...' : 'Enviar enlace'}</Btn>
+      <Btn onClick={handleForgot} disabled={loading}>{loading ? <><Icon name="loading" size={16} /> Enviando...</> : 'Enviar enlace'}</Btn>
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:14 }}>
         <button onClick={() => { setErrors({}); setMode('login') }} style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
@@ -435,8 +436,8 @@ export default function Auth() {
             {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
           </Select>
           <div style={{ background:C.bg, borderRadius:12, padding:'11px 13px', marginBottom:14 }}>
-            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.55 }}>
-              📌 Usamos tu cantón para mostrarte los anuncios más cercanos primero. Puedes cambiarlo en tu perfil.
+            <p style={{ display:'flex', alignItems:'flex-start', gap:6, fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.55 }}>
+              <Icon name="location" size={14} style={{ marginTop:1 }} /> <span>Usamos tu cantón para mostrarte los anuncios más cercanos primero. Puedes cambiarlo en tu perfil.</span>
             </p>
           </div>
           <div style={{ marginBottom:14 }}>
@@ -468,7 +469,7 @@ export default function Auth() {
             style={{ marginBottom:12 }}
           />
           <section style={{ display:'grid', gridTemplateColumns:'auto minmax(0,1fr)', gap:11, margin:'4px 0 14px', padding:'14px', background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:16, boxShadow:'0 6px 18px rgba(37,99,235,.07)' }}>
-            <span aria-hidden="true" style={{ display:'grid', width:42, height:42, placeItems:'center', background:C.primaryLight, borderRadius:13, fontSize:22 }}>🎙️</span>
+            <span aria-hidden="true" style={{ display:'grid', width:42, height:42, placeItems:'center', background:C.primaryLight, color:C.primary, borderRadius:13 }}><Icon name="creator" size={22} /></span>
             <div style={{ minWidth:0 }}>
               <strong style={{ display:'block', color:C.text, fontFamily:PP, fontSize:12.5, lineHeight:1.4 }}>¿Eres creador de contenido?</strong>
               <p style={{ margin:'4px 0 10px', color:C.mid, fontFamily:PP, fontSize:10.5, lineHeight:1.6 }}>
@@ -499,7 +500,7 @@ export default function Auth() {
           </Btn>
         ) : (
           <Btn onClick={() => handleRegister()} disabled={loading} style={{ flex:1 }}>
-            {loading ? '⏳ Creando cuenta...' : '🎉 Crear cuenta gratis'}
+            {loading ? <><Icon name="loading" size={16} /> Creando cuenta...</> : 'Crear cuenta gratis'}
           </Btn>
         )}
       </div>

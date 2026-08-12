@@ -27,6 +27,7 @@ import { EmptyState, Sheet } from './UI'
 import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE, getFilterPanelControlStyle } from './FilterWorkspace'
 import SavedSearchButton from './SavedSearchButton'
 import { C, PP } from '../lib/theme'
+import { Icon } from '../lib/icons'
 import '../pages/Creators.css'
 
 const CREATOR_SORT_OPTIONS = [
@@ -36,8 +37,8 @@ const CREATOR_SORT_OPTIONS = [
 ]
 
 export const CREATOR_VIEW_TABS = [
-  { id:'contenidos', label:'Contenido' },
-  { id:'creadores', label:'Creadores' },
+  { id:'contenidos', tone:'contenido', label:'Contenido' },
+  { id:'creadores', tone:'creadores', label:'Creadores' },
 ]
 
 function normalize(value = '') {
@@ -135,7 +136,7 @@ export function CreatorCommunityToolbar({
     <div className="creator-community-toolbar segmented-content-transition">
       <div className="creator-community-toolbar__row">
         <div className="creator-community-search">
-          <span aria-hidden="true">🔍</span>
+          <span aria-hidden="true"><Icon name="search" size={17} /></span>
           <input
             type="search"
             value={search}
@@ -167,6 +168,7 @@ export function CreatorCommunityToolbar({
           onChange={onViewChange}
           ariaLabel="Qué quieres ver"
           className="creator-view-tabs"
+          accent={C.primary}
         />
       </div>
 
@@ -376,7 +378,7 @@ export default function CreatorCommunityView({
         <>
           {contentRow(
             'community-creators-helpful-title',
-            activeTopic ? `🔥 LO QUE MÁS AYUDA EN ${activeTopic.label.toUpperCase()}` : '🔥 CONTENIDO QUE ESTÁ AYUDANDO',
+            <span style={{ display:'inline-flex', alignItems:'center', gap:5 }}><Icon name="trending" size={13} /> {activeTopic ? `LO QUE MÁS AYUDA EN ${activeTopic.label.toUpperCase()}` : 'CONTENIDO QUE ESTÁ AYUDANDO'}</span>,
             'Lo que más gente ha marcado como útil.',
             helpfulContents,
           )}
@@ -395,7 +397,7 @@ export default function CreatorCommunityView({
           <section className="creator-community-section" aria-labelledby="community-top-creators-title">
             <div className="creator-community-section__heading">
               <div>
-                <p id="community-top-creators-title">🏆 CREADORES QUE MÁS AYUDAN</p>
+                <p id="community-top-creators-title" style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="trophy" size={13} /> CREADORES QUE MÁS AYUDAN</p>
                 <span>{activeTopic ? `Ranking en ${activeTopic.label}.` : 'Según los “me ayudó” de la comunidad.'}</span>
               </div>
             </div>
@@ -408,7 +410,7 @@ export default function CreatorCommunityView({
                     <strong>{entry.creator.name}</strong>
                     <span>{entry.creator.tagline}</span>
                   </span>
-                  <span className="creator-rank-row__score">❤️ {entry.helpful}</span>
+                  <span className="creator-rank-row__score"><Icon name="favoriteActive" size={12} color="#E11D48" /> {entry.helpful}</span>
                 </Link>
               ))}
             </div>
@@ -442,7 +444,7 @@ export default function CreatorCommunityView({
           </div>
         ) : (
           <EmptyState
-            emoji="🎬"
+            icon="movie"
             title={hasFilters ? 'No hay contenido con estos filtros' : 'Todavía no hay contenido'}
             sub={hasFilters
               ? 'Prueba otro tema o quita algún filtro.'
@@ -475,16 +477,13 @@ export default function CreatorCommunityView({
                   {/* El mismo CreatorAvatar del perfil, para que la foto se vea
                       igual en el directorio, en Inicio y en la ficha. */}
                   <span className="creator-community-card__media">
-                    <CreatorAvatar creator={creator} size={84} />
+                    <CreatorAvatar creator={creator} size={84} showVerified />
                   </span>
                   <CreatorProfileHelpfulMetric creator={creator} />
 
                   <span className="creator-community-card__body">
                     <span className="creator-community-card__name">
                       <strong>{creator.name}</strong>
-                      {creator.verified && (
-                        <span className="creator-community-card__verification" title="Perfil verificado por Latido" aria-label="Perfil verificado por Latido">✓</span>
-                      )}
                     </span>
                     <span className="creator-community-card__tagline">{creator.tagline}</span>
 
@@ -497,7 +496,7 @@ export default function CreatorCommunityView({
                     </span>
 
                     <span className="creator-community-card__location" title={`${creator.city || creator.reach}${creator.canton ? `, ${creator.canton}` : ''}`}>
-                      📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}
+                      <Icon name="location" size={12} /> {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}
                     </span>
                   </span>
                 </Link>
@@ -512,7 +511,7 @@ export default function CreatorCommunityView({
           </div>
         ) : (
           <EmptyState
-            emoji="🎙️"
+            icon="creator"
             title={hasFilters ? 'No hay creadores con estos filtros' : 'Todavía no hay creadores'}
             sub={hasFilters
               ? 'Prueba otro tema, plataforma o cantón.'
@@ -526,7 +525,7 @@ export default function CreatorCommunityView({
       )}
 
       <div className="creator-community-cta">
-        <span>🎙️</span>
+        <span><Icon name="creator" size={26} /></span>
         <h3>{ownCreator ? 'Gestiona tu perfil y tu contenido' : '¿Compartes algo sobre Suiza en redes?'}</h3>
         <p>{ownCreator ? 'Actualiza cómo te presentas y elige qué contenido mostrar.' : 'Tu experiencia, trabajo, proyecto o negocio puede interesar a la comunidad hispanohablante.'}</p>
         <Link to={isLoggedIn ? creatorCta : `/auth?next=${encodeURIComponent('/creadores/alta')}`}>

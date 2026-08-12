@@ -1,4 +1,5 @@
-import { C, PP } from '../lib/theme'
+import { C, PP, getLatidoCategoryTheme } from '../lib/theme'
+import { Icon, InterfaceIcon } from '../lib/icons'
 
 export default function InterestOptionGrid({
   options=[],
@@ -15,6 +16,7 @@ export default function InterestOptionGrid({
       {options.map(option => {
         const active = selected.has(option.id)
         const unavailable = !active && selectionFull
+        const theme = getLatidoCategoryTheme(option.tone || option.id)
 
         return (
           <button
@@ -33,14 +35,16 @@ export default function InterestOptionGrid({
               padding:'9px 10px',
               fontFamily:PP,
               textAlign:'left',
-              color:active ? C.primaryDark : C.mid,
-              background:active ? C.primaryLight : '#F8FAFC',
-              border:`1.5px solid ${active ? C.primary : C.border}`,
+              color:active ? theme.ink : C.mid,
+              // En reposo la fila es neutra y el color lo lleva el icono; el
+              // tinte de seccion queda reservado para marcar la seleccion.
+              background:active ? theme.soft : C.surface,
+              border:`1.5px solid ${active ? theme.color : C.border}`,
               borderRadius:15,
               cursor:unavailable ? 'not-allowed' : 'pointer',
               opacity:unavailable ? 0.52 : 1,
               boxShadow:active
-                ? '0 5px 14px rgba(37,99,235,0.12)'
+                ? '0 5px 14px rgba(15,23,42,0.09)'
                 : '0 2px 6px rgba(15,23,42,0.025)',
               transition:'border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease',
             }}
@@ -54,11 +58,14 @@ export default function InterestOptionGrid({
                 alignItems:'center',
                 justifyContent:'center',
                 borderRadius:10,
-                background:active ? '#DBEAFE' : '#EEF2F7',
-                fontSize:16,
+                background:active ? 'rgba(255,255,255,.82)' : theme.soft,
+                border:`1px solid ${theme.border}`,
+                color:theme.ink,
               }}
             >
-              {option.emoji}
+              {option.icon
+                ? <Icon name={option.icon} size={17} />
+                : <InterfaceIcon emoji={option.emoji} size={17} />}
             </span>
             <span style={{ minWidth:0, fontSize:11, fontWeight:700, lineHeight:1.25, overflowWrap:'normal', wordBreak:'normal' }}>
               {option.label}
@@ -72,16 +79,14 @@ export default function InterestOptionGrid({
                 alignItems:'center',
                 justifyContent:'center',
                 borderRadius:'50%',
-                border:`1.5px solid ${active ? C.primary : C.primaryMid}`,
-                background:active ? C.primary : '#fff',
+                border:`1.5px solid ${active ? theme.color : theme.border}`,
+                background:active ? theme.color : '#fff',
                 color:'#fff',
-                fontSize:11,
-                fontWeight:900,
                 lineHeight:1,
                 boxSizing:'border-box',
               }}
             >
-              {active ? '✓' : ''}
+              {active ? <Icon name="check" size={11} /> : null}
             </span>
           </button>
         )

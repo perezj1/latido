@@ -13,6 +13,7 @@ import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
 import toast from 'react-hot-toast'
+import { Icon, getCategoryIconName } from '../lib/icons'
 
 const STEPS = [
   { title:'¿De qué trata tu grupo?',  sub:'Elige la categoría que mejor lo describe' },
@@ -30,13 +31,13 @@ for (const item of COMMUNITY_CATS) {
 }
 
 const PLATFORMS = [
-  { id:'whatsapp',  emoji:'💬', label:'WhatsApp' },
-  { id:'telegram',  emoji:'📲', label:'Telegram' },
-  { id:'facebook',  emoji:'👥', label:'Facebook' },
-  { id:'discord',   emoji:'🎮', label:'Discord' },
-  { id:'instagram', emoji:'📸', label:'Instagram' },
-  { id:'web',       emoji:'🌐', label:'Web' },
-  { id:'otro',      emoji:'🔗', label:'Otro' },
+  { id:'whatsapp',  icon:'whatsapp', label:'WhatsApp' },
+  { id:'telegram',  icon:'send', label:'Telegram' },
+  { id:'facebook',  icon:'group', label:'Facebook' },
+  { id:'discord',   icon:'message', label:'Discord' },
+  { id:'instagram', icon:'instagram', label:'Instagram' },
+  { id:'web',       icon:'website', label:'Web' },
+  { id:'otro',      icon:'link', label:'Otro' },
 ]
 
 const LANGUAGES = ['Español', 'Español / Alemán', 'Español / Francés', 'Español / Italiano', 'Multilingüe']
@@ -102,7 +103,7 @@ export default function RegistrarComunidad() {
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
+      <div style={{ display:'flex', justifyContent:'center', color:C.primary, marginBottom:16 }}><Icon name="lock" size={48} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
         Para registrar tu grupo necesitas una cuenta. Es gratis y sin spam.
@@ -116,7 +117,7 @@ export default function RegistrarComunidad() {
 
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>👥</div>
+      <div style={{ width:80, height:80, background:C.successLight, color:C.success, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}><Icon name="group" size={40} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Grupo enviado a revisión' : '¡Grupo publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
         {publishedForReview
@@ -244,7 +245,7 @@ export default function RegistrarComunidad() {
           {COMMUNITY_OPTIONS.map(cat => (
             <button key={cat.id} onClick={() => s('cat', cat.id)}
               style={{ background:form.cat===cat.id?C.primary:C.surface, borderRadius:16, padding:'15px 16px', display:'flex', alignItems:'center', gap:14, border:`2px solid ${form.cat===cat.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
-              <span style={{ fontSize:28, width:36, flex:'0 0 36px', textAlign:'center' }}>{cat.emoji}</span>
+              <span style={{ width:36, flex:'0 0 36px', display:'flex', justifyContent:'center', color:form.cat===cat.id?'#fff':C.primary }}><Icon name={getCategoryIconName(cat.id)} size={25} /></span>
               <span style={{ display:'flex', flexDirection:'column', minWidth:0 }}>
                 <span style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:form.cat===cat.id?'#fff':C.text, marginBottom:3 }}>{cat.label}</span>
                 <span style={{ fontFamily:PP, fontSize:11, color:form.cat===cat.id?'rgba(255,255,255,0.78)':C.light, lineHeight:1.45 }}>{cat.desc}</span>
@@ -265,7 +266,7 @@ export default function RegistrarComunidad() {
             {PLATFORMS.map(p => (
               <button key={p.id} onClick={() => s('platform', p.id)}
                 style={{ background:form.platform===p.id?C.primaryLight:'#fff', border:`1.5px solid ${form.platform===p.id?C.primary:C.border}`, borderRadius:12, padding:'12px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:8, transition:'all .15s' }}>
-                <span style={{ fontSize:18 }}>{p.emoji}</span>
+                <Icon name={p.icon} size={18} />
                 <span style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:form.platform===p.id?C.primary:C.text }}>{p.label}</span>
               </button>
             ))}
@@ -305,13 +306,14 @@ export default function RegistrarComunidad() {
           } required value={form.contact} onChange={e=>s('contact',e.target.value)} error={errors.contact} errorKey="contact" />
           {form.platform && form.platform !== 'web' && (
             <div style={{ background:'#FFFBEB', border:'1px solid #FCD34D', borderRadius:12, padding:'12px 14px', marginTop:-8, marginBottom:16 }}>
-              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#92400E', margin:'0 0 6px' }}>
-                {form.platform === 'whatsapp'  && '💬 ¿Cómo conseguir el enlace de WhatsApp?'}
-                {form.platform === 'telegram'  && '📲 ¿Cómo conseguir el enlace de Telegram?'}
-                {form.platform === 'facebook'  && '👥 ¿Cómo conseguir el enlace del grupo de Facebook?'}
-                {form.platform === 'discord'   && '🎮 ¿Cómo conseguir el enlace de Discord?'}
-                {form.platform === 'instagram' && '📸 ¿Cómo conseguir el enlace de Instagram?'}
-                {form.platform === 'otro'      && '🔗 Añade el enlace directo a tu grupo'}
+              <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#92400E', margin:'0 0 6px', display:'flex', alignItems:'center', gap:6 }}>
+                <Icon name={selectedPlat?.icon || 'link'} size={15} />
+                {form.platform === 'whatsapp'  && '¿Cómo conseguir el enlace de WhatsApp?'}
+                {form.platform === 'telegram'  && '¿Cómo conseguir el enlace de Telegram?'}
+                {form.platform === 'facebook'  && '¿Cómo conseguir el enlace del grupo de Facebook?'}
+                {form.platform === 'discord'   && '¿Cómo conseguir el enlace de Discord?'}
+                {form.platform === 'instagram' && '¿Cómo conseguir el enlace de Instagram?'}
+                {form.platform === 'otro'      && 'Añade el enlace directo a tu grupo'}
               </p>
               <p style={{ fontFamily:PP, fontSize:11, color:'#78350F', margin:0, lineHeight:1.7 }}>
                 {form.platform === 'whatsapp'  && 'Abre el grupo → toca el icono de agregar miembros → "Invitar con enlace o QR" → "Copiar enlace".'}
@@ -345,26 +347,26 @@ export default function RegistrarComunidad() {
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, marginBottom:12, letterSpacing:0.5 }}>RESUMEN DE TU GRUPO</p>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
             {selectedCat && (
-              <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#D1FAE5', color:'#065F46' }}>{selectedCat.emoji} {selectedCat.label}</span>
+              <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#D1FAE5', color:'#065F46', display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={getCategoryIconName(selectedCat.id)} size={12} /> {selectedCat.label}</span>
             )}
             {selectedPlat && (
-              <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>{selectedPlat.emoji} {selectedPlat.label}</span>
+              <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary, display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={selectedPlat.icon} size={12} /> {selectedPlat.label}</span>
             )}
             {(form.city || form.canton) && (
-              <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.bg, color:C.mid }}>📍 {form.city || form.canton}</span>
+              <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.bg, color:C.mid, display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="location" size={12} /> {form.city || form.canton}</span>
             )}
           </div>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:6 }}>{form.name || '—'}</p>
           {form.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:10, whiteSpace:'pre-line' }}>{form.desc}</p>}
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-            {form.lang && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>🗣 {form.lang}</span>}
+            {form.lang && <span style={{ fontFamily:PP, fontSize:11, color:C.mid, display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="message" size={13} /> {form.lang}</span>}
             {form.contact && (
-              <span style={{ fontFamily:PP, fontSize:10, color:C.light, wordBreak:'break-all' }}>🔗 {form.contact.length > 40 ? form.contact.slice(0, 40) + '…' : form.contact}</span>
+              <span style={{ fontFamily:PP, fontSize:10, color:C.light, wordBreak:'break-all', display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="link" size={12} /> {form.contact.length > 40 ? form.contact.slice(0, 40) + '…' : form.contact}</span>
             )}
           </div>
         </div>
         <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginTop:14 }}>
-          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px', display:'flex', alignItems:'center', gap:6 }}><Icon name="warning" size={15} /> Responsabilidad del publicador</p>
           <p style={{ fontFamily:PP, fontSize:11, color:'#7C2D12', lineHeight:1.7, margin:0 }}>
             Al registrar este grupo confirmas que la información es verídica y que eres responsable del buen uso, contenido y gestión del grupo. Latido no se hace responsable de lo que ocurra dentro del grupo ni de la veracidad de los datos publicados.
           </p>
@@ -391,7 +393,8 @@ export default function RegistrarComunidad() {
           </Btn>
         ) : (
           <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Registrando...' : '👥 Registrar grupo'}
+            <Icon name={loading ? 'loading' : 'group'} size={17} />
+            {loading ? 'Registrando...' : 'Registrar grupo'}
           </Btn>
         )}
       </StickyFormActions>

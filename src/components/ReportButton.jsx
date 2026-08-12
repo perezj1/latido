@@ -4,29 +4,10 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { REPORT_REASONS, reportContent } from '../lib/reports'
+import { Icon } from '../lib/icons'
 
 function ReportAlertIcon() {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        display:'grid',
-        width:16,
-        height:16,
-        flex:'0 0 16px',
-        placeItems:'center',
-        color:'currentColor',
-        border:'1.5px solid currentColor',
-        borderRadius:'50%',
-        fontFamily:PP,
-        fontSize:10,
-        fontWeight:900,
-        lineHeight:1,
-      }}
-    >
-      !
-    </span>
-  )
+  return <Icon name="report" size={16} />
 }
 
 export default function ReportButton({

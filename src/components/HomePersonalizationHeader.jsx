@@ -3,50 +3,58 @@ import { Link } from 'react-router-dom'
 import { CANTONS, CITIES_BY_CANTON } from '../lib/constants'
 import { getAllCreatorContents, getAllCreators, subscribeCreatorUpdates } from '../lib/creators'
 import { isNationwideLocation } from '../lib/locationScope'
-import { C, PP } from '../lib/theme'
+import { C, PP, getLatidoCategoryTheme } from '../lib/theme'
+import { Icon } from '../lib/icons'
 
 const DEFAULT_INTERESTS = ['empleo', 'vivienda', 'servicios', 'contenido_creadores', 'creadores', 'comunidad', 'eventos']
 const OVERVIEW_INTERESTS = {
   vivienda:{
-    emoji:'🏠',
+    tone:'vivienda',
+    icon:'housing',
     href:'/tablon?cat=vivienda',
     label:'Viviendas',
     records:({ ads }) => ads.filter(item => item.cat === 'vivienda'),
   },
   empleo:{
-    emoji:'💼',
+    tone:'empleo',
+    icon:'job',
     href:'/tablon?cat=empleo',
     label:'Empleos',
     records:({ ads }) => ads.filter(item => item.cat === 'empleo'),
   },
   servicios:{
-    emoji:'🏪',
+    tone:'negocios',
+    icon:'business',
     href:'/comunidades?view=negocios',
     label:'Negocios',
     records:({ businesses }) => businesses,
   },
   contenido_creadores:{
-    emoji:'🎬',
+    tone:'contenido',
+    icon:'movie',
     href:'/comunidades?view=creadores&creatorView=contenidos',
     label:'Contenido',
     unfiltered:true,
     records:({ creatorContents }) => creatorContents,
   },
   creadores:{
-    emoji:'🎙️',
+    tone:'creadores',
+    icon:'creator',
     href:'/comunidades?view=creadores&creatorView=creadores',
     label:'Creadores',
     unfiltered:true,
     records:({ creators }) => creators,
   },
   eventos:{
-    emoji:'🎉',
+    tone:'eventos',
+    icon:'event',
     href:'/comunidades?view=eventos',
     label:'Eventos',
     records:({ events }) => events,
   },
   comunidad:{
-    emoji:'👥',
+    tone:'grupos',
+    icon:'group',
     href:'/comunidades?view=comunidades',
     label:'Grupos',
     records:({ communities }) => communities,
@@ -175,8 +183,8 @@ export default function HomePersonalizationHeader({
 
   return (
     <div style={{ maxWidth:1200, margin:'0 auto 14px', padding:'0 16px' }}>
-      <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, margin:'0 0 10px', letterSpacing:-0.25 }}>
-        ❤️ Mi Latido
+      <h2 style={{ display:'flex', alignItems:'center', gap:8, fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, margin:'0 0 10px', letterSpacing:-0.25 }}>
+        <Icon name="favoriteActive" size={22} color="#F43F5E" /> Mi Latido
       </h2>
       <div style={{ marginBottom:11 }}>
         <p style={{ minWidth:0, fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:0 }}>
@@ -186,18 +194,27 @@ export default function HomePersonalizationHeader({
         </p>
       </div>
       <div className="mi-latido-overview-grid" aria-label="Contenido disponible por categoría">
-        {overview.entries.map(entry => (
+        {overview.entries.map(entry => {
+          const theme = getLatidoCategoryTheme(entry.tone || entry.id)
+          return (
           <Link
             key={entry.id}
             to={entry.unfiltered ? entry.href : addCantonFilter(entry.href, canton, showLocalResults)}
             className="mi-latido-overview-card"
+            style={{
+              '--overview-color':theme.color,
+              '--overview-ink':theme.ink,
+              '--overview-soft':theme.soft,
+              '--overview-border':theme.border,
+            }}
             aria-label={`${entry.count} ${entry.label}`}
           >
-            <span aria-hidden="true" className="mi-latido-overview-icon">{entry.emoji}</span>
+            <span aria-hidden="true" className="mi-latido-overview-icon"><Icon name={entry.icon} size={25} strokeWidth={1.75} /></span>
             <strong>{loading ? '—' : entry.count}</strong>
             <span>{entry.label}</span>
           </Link>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

@@ -22,6 +22,7 @@ import { getStorageErrorMessage, uploadAvatar } from '../lib/storage'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
 import { C, PP } from '../lib/theme'
+import { Icon, getCreatorTopicIconName } from '../lib/icons'
 import './Creators.css'
 
 const STEPS = [
@@ -34,9 +35,9 @@ const STEPS = [
 // Al editar se reutiliza `step` como seccion activa: los tres primeros pasos del
 // alta son exactamente los tres bloques del formulario.
 const EDIT_SECTIONS = [
-  { step:0, emoji:'📝', label:'Información' },
-  { step:1, emoji:'🏷️', label:'Temas' },
-  { step:2, emoji:'🔗', label:'Redes' },
+  { step:0, icon:'edit', label:'Información' },
+  { step:1, icon:'document', label:'Temas' },
+  { step:2, icon:'link', label:'Redes' },
 ]
 
 const EDIT_SECTION_BY_QUERY = {
@@ -164,7 +165,7 @@ export default function CreadorAlta() {
     setForm(current => {
       const selected = current.topics.includes(topicId)
       if (!selected && current.topics.length >= 4) {
-        toast('Puedes elegir hasta cuatro temas principales.', { icon:'💡' })
+        toast('Puedes elegir hasta cuatro temas principales.', { icon:<Icon name="idea" size={18} /> })
         return current
       }
       return {
@@ -413,7 +414,7 @@ export default function CreadorAlta() {
                   aria-current={step === section.step ? 'true' : undefined}
                   onClick={() => setStep(section.step)}
                 >
-                  <span aria-hidden="true">{section.emoji}</span>
+                  <span aria-hidden="true"><Icon name={section.icon} size={15} /></span>
                   <span>{section.label}</span>
                   {hasErrors && <span className="creator-edit-tabs__alert" aria-label="Tiene campos por revisar" />}
                 </button>
@@ -424,7 +425,7 @@ export default function CreadorAlta() {
 
         {!isEditing && step === 0 && (
           <div style={{ display:'flex', gap:9, alignItems:'flex-start', marginBottom:16, padding:'11px 13px', color:'#1E3A8A', background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:14, fontFamily:PP, fontSize:10.5, lineHeight:1.6 }}>
-            <span>🎙️</span>
+            <span><Icon name="creator" size={18} /></span>
             <span>Este espacio es para personas, profesionales y negocios que comparten sobre Suiza en redes. No hace falta dedicarse profesionalmente a crear contenido.</span>
           </div>
         )}
@@ -443,10 +444,10 @@ export default function CreadorAlta() {
                     <small>Podrás centrarla y ajustar el zoom antes de guardarla.</small>
                     <div>
                       <label className="creator-avatar-upload__button is-primary" htmlFor={avatarDeviceId}>
-                        🖼 {form.avatar_url ? 'Cambiar' : 'Elegir foto'}
+                        <Icon name="image" size={14} /> {form.avatar_url ? 'Cambiar' : 'Elegir foto'}
                       </label>
-                      <label className="creator-avatar-upload__button" htmlFor={avatarCameraId}>📷 Cámara</label>
-                      {form.avatar_url && <button type="button" className="creator-avatar-upload__button" onClick={editCurrentAvatar} disabled={processingAvatar}>✂ Editar</button>}
+                      <label className="creator-avatar-upload__button" htmlFor={avatarCameraId}><Icon name="camera" size={14} /> Cámara</label>
+                      {form.avatar_url && <button type="button" className="creator-avatar-upload__button" onClick={editCurrentAvatar} disabled={processingAvatar}><Icon name="edit" size={14} /> Editar</button>}
                       {form.avatar_url && <button type="button" onClick={() => update('avatar_url', '')}>Quitar</button>}
                     </div>
                     <input id={avatarDeviceId} type="file" accept="image/*" onChange={handleAvatarFiles} disabled={processingAvatar} />
@@ -478,7 +479,7 @@ export default function CreadorAlta() {
                       aria-pressed={selected}
                       style={{ display:'flex', minHeight:54, padding:'10px 12px', alignItems:'center', gap:10, color:selected ? topic.color : C.mid, background:selected ? topic.bg : '#fff', border:`1.5px solid ${selected ? topic.color : C.border}`, borderRadius:14, fontFamily:PP, fontSize:10.5, fontWeight:800, textAlign:'left', cursor:'pointer' }}
                     >
-                      <span style={{ fontSize:22 }}>{topic.emoji}</span>
+                      <span><Icon name={getCreatorTopicIconName(topic.id)} size={20} /></span>
                       <span>{topic.label}</span>
                       {/* Círculo de selección: vacío al desmarcar, relleno con
                           el color del tema al marcar. */}
@@ -499,7 +500,7 @@ export default function CreadorAlta() {
                           lineHeight:1,
                         }}
                       >
-                        {selected ? '✓' : ''}
+                        {selected ? <Icon name="check" size={11} /> : null}
                       </span>
                     </button>
                   )
@@ -564,7 +565,7 @@ export default function CreadorAlta() {
                     <span style={{ color:C.light, fontFamily:PP, fontSize:9 }}>Sin confirmar</span>
                   </div>
                   <span style={{ display:'block', marginTop:3, color:C.light, fontFamily:PP, fontSize:10 }}>{previewCreator.handle}</span>
-                  <span style={{ display:'block', marginTop:5, color:C.mid, fontFamily:PP, fontSize:10 }}>📍 {previewCreator.city || previewCreator.reach}{previewCreator.canton ? ` · ${previewCreator.canton}` : ''}</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:4, marginTop:5, color:C.mid, fontFamily:PP, fontSize:10 }}><Icon name="location" size={11} /> {previewCreator.city || previewCreator.reach}{previewCreator.canton ? ` · ${previewCreator.canton}` : ''}</span>
                 </div>
               </div>
               <p style={{ margin:'0 0 12px', color:C.text, fontFamily:PP, fontSize:13, fontWeight:800, lineHeight:1.55 }}>{form.tagline}</p>

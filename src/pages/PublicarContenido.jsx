@@ -23,6 +23,7 @@ import {
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
+import { Icon, getCreatorTopicIconName } from '../lib/icons'
 import { C, PP } from '../lib/theme'
 
 const STEPS = [
@@ -269,7 +270,7 @@ export default function PublicarContenido() {
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
+      <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:16 }}><Icon name="lock" size={48} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
         Para publicar contenido necesitas registrarte. Es gratis, rápido y sin spam.
@@ -293,7 +294,7 @@ export default function PublicarContenido() {
   if (!creator) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px 170px' }}>
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontSize:52, marginBottom:16 }}>🎙️</div>
+        <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:16 }}><Icon name="movie" size={48} /></div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Empieza a compartir tu contenido</h1>
         <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
           Crea tu perfil de creador y reúne tus publicaciones y redes sociales en un solo lugar. Llega a más personas y haz crecer tu comunidad.
@@ -333,7 +334,7 @@ export default function PublicarContenido() {
           />
           {form.url.trim() && (
             <div style={{ display:'flex', alignItems:'center', gap:9, padding:'12px 14px', background:C.bgAlt, border:`1px solid ${C.border}`, borderRadius:14 }}>
-              <span style={{ fontSize:18 }}>{fetchingMetadata ? '⏳' : '🔗'}</span>
+              <span style={{ color:C.primary }}><Icon name={fetchingMetadata ? 'loading' : 'link'} size={18} /></span>
               <span style={{ fontFamily:PP, fontSize:11.5, color:C.mid, lineHeight:1.5 }}>
                 {fetchingMetadata
                   ? 'Leyendo los datos del contenido…'
@@ -371,7 +372,7 @@ export default function PublicarContenido() {
                     onClick={() => s('topic', item.id)}
                     style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'9px 13px', color:selected ? item.color : C.mid, background:selected ? item.bg : '#fff', border:`1.5px solid ${selected ? item.color : C.border}`, borderRadius:999, fontFamily:PP, fontSize:11, fontWeight:800, cursor:'pointer' }}
                   >
-                    <span aria-hidden="true">{item.emoji}</span>
+                    <span aria-hidden="true"><Icon name={getCreatorTopicIconName(item.id)} size={14} /></span>
                     {item.label}
                   </button>
                 )
@@ -415,7 +416,7 @@ export default function PublicarContenido() {
               </div>
             )}
             <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:9 }}>
-              {topic && <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, padding:'4px 9px', borderRadius:999, background:topic.bg, color:topic.color }}>{topic.emoji} {topic.label}</span>}
+              {topic && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, fontWeight:700, padding:'4px 9px', borderRadius:999, background:topic.bg, color:topic.color }}><Icon name={getCreatorTopicIconName(topic.id)} size={11} /> {topic.label}</span>}
               {platform && <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, padding:'4px 9px', borderRadius:999, background:platform.bg, color:platform.color }}>{platform.label}</span>}
             </div>
             <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, margin:'0 0 6px', lineHeight:1.35 }}>{form.title}</p>
@@ -445,7 +446,7 @@ export default function PublicarContenido() {
           </Btn>
         ) : (
           <Btn onClick={handlePublish} disabled={saving} variant="success" style={{ flex:1 }}>
-            {saving ? '⏳ Publicando...' : '🎙️ Publicar contenido'}
+            {saving ? <><Icon name="loading" size={15} /> Publicando...</> : <><Icon name="movie" size={15} /> Publicar contenido</>}
           </Btn>
         )}
       </StickyFormActions>

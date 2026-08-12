@@ -14,6 +14,7 @@ import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
 import toast from 'react-hot-toast'
+import { Icon } from '../lib/icons'
 
 const STEPS = [
   { title:'¿Qué tipo de evento es?',     sub:'Elige la categoría que mejor lo describe' },
@@ -102,7 +103,7 @@ export default function PublicarEvento() {
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
+      <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:16 }}><Icon name="lock" size={48} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
         Para publicar eventos necesitas registrarte. Es gratis, rápido y sin spam.
@@ -116,7 +117,7 @@ export default function PublicarEvento() {
 
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>🎉</div>
+      <div style={{ width:80, height:80, background:C.successLight, color:C.success, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}><Icon name="success" size={40} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Evento enviado a revisión' : '¡Evento publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
         {publishedForReview
@@ -321,20 +322,20 @@ export default function PublicarEvento() {
                   <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#DBEAFE', color:C.primaryDark }}>{selectedType.label}</span>
                 )}
                 {form.canton && (
-                  <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>📍 {form.city || form.canton}</span>
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}><Icon name="location" size={11} /> {form.city || form.canton}</span>
                 )}
                 {form.day && form.month && (
-                  <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#FEF3C7', color:'#92400E' }}>📅 {form.day} {form.month}</span>
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#FEF3C7', color:'#92400E' }}><Icon name="calendar" size={11} /> {form.day} {form.month}</span>
                 )}
               </div>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, marginBottom:4 }}>{form.title}</p>
-              {form.venue && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, marginBottom:2 }}>📍 {form.venue}</p>}
-              {form.time && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, marginBottom:2 }}>🕒 {form.time}</p>}
-              {form.price && <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, marginTop:4 }}>🎟 {form.price}</p>}
+              {form.venue && <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid, marginBottom:2 }}><Icon name="location" size={12} /> {form.venue}</p>}
+              {form.time && <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid, marginBottom:2 }}><Icon name="clock" size={12} /> {form.time}</p>}
+              {form.price && <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, marginTop:4 }}>{form.price}</p>}
             </div>
           )}
           <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginTop:14 }}>
-            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>
+            <p style={{ display:'flex', alignItems:'center', gap:5, fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}><Icon name="warning" size={14} /> Responsabilidad del publicador</p>
             <p style={{ fontFamily:PP, fontSize:11, color:'#7C2D12', lineHeight:1.7, margin:0 }}>
               Al publicar este evento confirmas que la información es verídica, que tienes autorización para anunciarlo y que eres responsable de su organización y contenido. Latido no se hace responsable de la veracidad de los datos ni de lo que ocurra en el evento.
             </p>
@@ -361,7 +362,7 @@ export default function PublicarEvento() {
           </Btn>
         ) : (
           <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Publicando...' : '🎉 Publicar evento'}
+            {loading ? <><Icon name="loading" size={15} /> Publicando...</> : <><Icon name="event" size={15} /> Publicar evento</>}
           </Btn>
         )}
       </StickyFormActions>

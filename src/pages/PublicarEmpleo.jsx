@@ -27,6 +27,7 @@ import {
   normalizeEmploymentProfile,
 } from '../lib/employmentProfile'
 import toast from 'react-hot-toast'
+import { Icon, InterfaceIcon } from '../lib/icons'
 
 const STEPS = [
   { title:'¿Qué publicación de empleo es?', sub:'Elige si publicas una oferta o una solicitud de empleo' },
@@ -174,7 +175,7 @@ export default function PublicarEmpleo() {
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
+      <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:16 }}><Icon name="lock" size={48} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
         Para publicar empleos necesitas registrarte. Es gratis, rápido y sin spam.
@@ -188,7 +189,7 @@ export default function PublicarEmpleo() {
 
   if (isBanned) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
+      <div style={{ display:'flex', justifyContent:'center', color:C.danger, marginBottom:16 }}><Icon name="ban" size={48} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Cuenta suspendida</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
         No puedes publicar ofertas ahora.{bannedReason ? ` Motivo: ${bannedReason}` : ''}
@@ -199,7 +200,7 @@ export default function PublicarEmpleo() {
 
   if (done) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>💼</div>
+      <div style={{ width:80, height:80, background:C.successLight, color:C.success, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}><Icon name="success" size={40} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>
         {publishedForReview
           ? 'Publicación enviada a revisión'
@@ -570,8 +571,8 @@ export default function PublicarEmpleo() {
               </p>
               <div style={{ display:'grid', gap:8 }}>
                 {[
-                  { id:'public', emoji:'🌐', title:'Visible para la comunidad', desc:'Cualquier usuario podrá encontrar tu solicitud y escribirte dentro de Latido.' },
-                  { id:'verified_employers', emoji:'🛡️', title:'Solo empresas verificadas', desc:'Tu solicitud solo aparecerá a cuentas que gestionen una empresa verificada.' },
+                  { id:'public', icon:'world', title:'Visible para la comunidad', desc:'Cualquier usuario podrá encontrar tu solicitud y escribirte dentro de Latido.' },
+                  { id:'verified_employers', icon:'verified', title:'Solo empresas verificadas', desc:'Tu solicitud solo aparecerá a cuentas que gestionen una empresa verificada.' },
                 ].map(option => (
                   <button
                     key={option.id}
@@ -579,7 +580,7 @@ export default function PublicarEmpleo() {
                     onClick={() => s('profileVisibility', option.id)}
                     style={{ display:'flex', alignItems:'center', gap:11, textAlign:'left', background:form.profileVisibility === option.id ? C.primaryLight : '#fff', border:`1.5px solid ${form.profileVisibility === option.id ? C.primary : C.border}`, borderRadius:14, padding:'12px 14px', cursor:'pointer' }}
                   >
-                    <span style={{ fontSize:23 }}>{option.emoji}</span>
+                    <span style={{ color:form.profileVisibility === option.id ? C.primary : C.mid }}><Icon name={option.icon} size={22} /></span>
                     <span>
                       <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:12.5, color:form.profileVisibility === option.id ? C.primary : C.text, marginBottom:2 }}>{option.title}</span>
                       <span style={{ display:'block', fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.4 }}>{option.desc}</span>
@@ -631,19 +632,19 @@ export default function PublicarEmpleo() {
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, margin:'0 0 6px' }}>{form.title}</p>
                 <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:4 }}>
-                  {selectedIntent && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:isSeekingJob?'#FEF3C7':'#E0F2FE', color:isSeekingJob?'#92400E':'#0369A1' }}>{selectedIntent.emoji} {selectedIntent.label}</span>}
+                  {selectedIntent && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:isSeekingJob?'#FEF3C7':'#E0F2FE', color:isSeekingJob?'#92400E':'#0369A1' }}><InterfaceIcon emoji={selectedIntent.emoji} size={11} /> {selectedIntent.label}</span>}
                   {selectedSector && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'#DBEAFE', color:C.primaryDark }}>{selectedSector.label}</span>}
                   {selectedType && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'#D1FAE5', color:'#065F46' }}>{selectedType.label}</span>}
-                  {form.canton && <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>📍 {form.city || form.canton}</span>}
+                  {form.canton && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}><Icon name="location" size={11} /> {form.city || form.canton}</span>}
                 </div>
-                {form.company && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:'0 0 2px' }}>{isSeekingJob ? '👤' : '🏢'} {form.company}</p>}
+                {form.company && <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:12, color:C.mid, margin:'0 0 2px' }}><Icon name={isSeekingJob ? 'user' : 'company'} size={13} /> {form.company}</p>}
                 {form.salaryValue && <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, margin:0 }}>{getFormattedSalary()}</p>}
               </div>
             </div>
           </div>
 
           <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginBottom:4 }}>
-            <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>
+            <p style={{ display:'flex', alignItems:'center', gap:5, fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}><Icon name="warning" size={14} /> Responsabilidad del publicador</p>
             <p style={{ fontFamily:PP, fontSize:11, color:'#7C2D12', lineHeight:1.7, margin:0 }}>
               {isSeekingJob
                 ? 'Al publicar confirmas que la información de tu solicitud y disponibilidad es real. Latido no se hace responsable de los acuerdos laborales entre usuarios.'
@@ -679,7 +680,7 @@ export default function PublicarEmpleo() {
           </Btn>
         ) : (
           <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Publicando...' : isSeekingJob ? '🔎 Publicar búsqueda' : '💼 Publicar oferta'}
+            {loading ? <><Icon name="loading" size={15} /> Publicando...</> : <><Icon name={isSeekingJob ? 'search' : 'job'} size={15} /> {isSeekingJob ? 'Publicar búsqueda' : 'Publicar oferta'}</>}
           </Btn>
         )}
       </StickyFormActions>

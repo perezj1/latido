@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { openCookieSettings } from '../lib/cookieConsent'
 import { C, PP } from '../lib/theme'
+import { Icon } from '../lib/icons'
 
 export default function Footer() {
   const links = [
@@ -51,8 +52,12 @@ export default function Footer() {
 
           <div>
             <h4 style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:'#fff', marginBottom:12, letterSpacing:2, textTransform:'uppercase' }}>Contacto</h4>
-            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📧 info@latido.ch</p>
-            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4 }}>📍 Zürich, Suiza</p>
+            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4, display:'flex', alignItems:'center', gap:7 }}>
+              <Icon name="mail" size={14} /> info@latido.ch
+            </p>
+            <p style={{ fontFamily:PP, fontSize:12, marginBottom:4, display:'flex', alignItems:'center', gap:7 }}>
+              <Icon name="location" size={14} /> Zürich, Suiza
+            </p>
             <div style={{ marginTop:14, background:'#1E293B', borderRadius:12, padding:'12px 14px' }}>
               <p style={{ fontFamily:PP, fontSize:11, color:'#64748B', margin:0 }}>
                 ¿Buscas trabajo en Suiza?{' '}
@@ -63,7 +68,11 @@ export default function Footer() {
         </div>
 
         <div style={{ borderTop:'1px solid #1E293B', paddingTop:20, paddingBottom:24, display:'flex', flexWrap:'wrap', justifyContent:'space-between', alignItems:'center', gap:10 }}>
-          <p style={{ fontFamily:PP, fontSize:11, margin:0 }}>© 2026 Latido.ch — Hecho con 💙 para la comunidad hispanohablante</p>
+          <p style={{ fontFamily:PP, fontSize:11, margin:0, display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
+            © 2026 Latido.ch — Hecho con
+            <Icon name="favoriteActive" size={12} color={C.primary} title="cariño" />
+            para la comunidad hispanohablante
+          </p>
           <div style={{ display:'flex', flexWrap:'wrap', gap:16 }}>
             {[
               { label:'Impressum',   to:'/impressum' },

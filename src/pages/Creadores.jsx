@@ -19,6 +19,7 @@ import {
 import { FilterButton, FILTER_PANEL_TITLE_STYLE, getFilterPanelControlStyle } from '../components/FilterWorkspace'
 import { Sheet } from '../components/UI'
 import SavedSearchButton from '../components/SavedSearchButton'
+import { Icon } from '../lib/icons'
 import './Creators.css'
 
 function normalizeSearch(value = '') {
@@ -200,7 +201,7 @@ export default function Creadores() {
       <main className="creators-shell">
         <div className="creators-toolbar" aria-label="Filtros de creadores">
           <div className="creators-toolbar__search">
-            <span aria-hidden="true">🔍</span>
+            <Icon name="search" size={18} />
             <input
               type="search"
               value={search}

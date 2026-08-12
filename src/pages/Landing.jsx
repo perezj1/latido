@@ -4,8 +4,9 @@ import GlobalSearch from '../components/GlobalSearch'
 import PublicPartnersSection from '../components/PublicPartnersSection'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
-import { C, PP } from '../lib/theme'
+import { C, PP, SECTION_COLORS } from '../lib/theme'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
+import { Icon } from '../lib/icons'
 
 /* ─────────────────────────────────────────────────────────────
    DATA
@@ -19,18 +20,18 @@ const STATS = [
 ]
 
 const FEATURES = [
-  { icon: '📌', color: '#DBEAFE', title: 'Anuncios claros',  desc: 'Vivienda, cuidados, servicios, trámites y compraventa. Todo en tu cantón, en tu idioma.' },
-  { icon: '👥', color: '#D1FAE5', title: 'Grupos',              desc: 'Grupos de venezolanos en Zúrich, colombianos en Ginebra, familias en Berna. Encuentra a los tuyos donde vives.' },
-  { icon: '🏪', color: '#FCE7F3', title: 'Negocios',            desc: 'Restaurantes, peluquerías, tiendas y servicios de nuestra comunidad. Apoya a quien habla tu idioma.' },
-  { icon: '📚', color: '#EDE9FE', title: 'Guías de trámites',   desc: 'Krankenkasse, Quellensteuer, permiso B/C/L, buscador de trabajo. La burocracia suiza explicada paso a paso en español.' },
-  { icon: '🎉', color: '#FEF3C7', title: 'Eventos',             desc: 'Fiestas, conciertos, quedadas y networking. Sabe siempre qué pasa en tu ciudad y publica los tuyos.' },
-  { icon: '📱', color: '#CCFBF1', title: 'App gratuita (PWA)',  desc: 'Instálala en tu móvil sin pasar por ninguna tienda. Un toque desde Safari o Chrome y la tienes en tu pantalla de inicio.' },
+  { icon: 'listing', color: '#DBEAFE', title: 'Anuncios claros',  desc: 'Vivienda, cuidados, servicios, trámites y compraventa. Todo en tu cantón, en tu idioma.' },
+  { icon: 'group', color: '#D1FAE5', title: 'Grupos',              desc: 'Grupos de venezolanos en Zúrich, colombianos en Ginebra, familias en Berna. Encuentra a los tuyos donde vives.' },
+  { icon: 'business', color: '#FCE7F3', title: 'Negocios',            desc: 'Restaurantes, peluquerías, tiendas y servicios de nuestra comunidad. Apoya a quien habla tu idioma.' },
+  { icon: 'guide', color:SECTION_COLORS.guias.soft, title: 'Guías de trámites',   desc: 'Krankenkasse, Quellensteuer, permiso B/C/L, buscador de trabajo. La burocracia suiza explicada paso a paso en español.' },
+  { icon: 'event', color: '#FEF3C7', title: 'Eventos',             desc: 'Fiestas, conciertos, quedadas y networking. Sabe siempre qué pasa en tu ciudad y publica los tuyos.' },
+  { icon: 'download', color: '#CCFBF1', title: 'App gratuita (PWA)',  desc: 'Instálala en tu móvil sin pasar por ninguna tienda. Un toque desde Safari o Chrome y la tienes en tu pantalla de inicio.' },
 ]
 
 const STEPS = [
-  { n: '1', emoji: '✍️', title: 'Crea tu cuenta',    desc: 'Gratis, en 2 pasos. Solo tu email y tu cantón.' },
-  { n: '2', emoji: '🔍', title: 'Explora o publica', desc: 'Busca lo que necesitas o publica tu anuncio en segundos.' },
-  { n: '3', emoji: '💬', title: 'Conecta',            desc: 'Habla directamente con la persona. Sin intermediarios, sin comisiones.' },
+  { n: '1', icon: 'edit', title: 'Crea tu cuenta',    desc: 'Gratis, en 2 pasos. Solo tu email y tu cantón.' },
+  { n: '2', icon: 'search', title: 'Explora o publica', desc: 'Busca lo que necesitas o publica tu anuncio en segundos.' },
+  { n: '3', icon: 'message', title: 'Conecta',            desc: 'Habla directamente con la persona. Sin intermediarios, sin comisiones.' },
 ]
 
 const TESTIMONIALS = [
@@ -44,12 +45,12 @@ const TESTIMONIALS = [
 ]
 
 const PARTNER_BENEFITS = [
-  { icon: '🎯', title: 'Audiencia cualificada', desc: 'La mayor comunidad hispanohablante de Suiza. Llegas exactamente a quien necesitas.' },
-  { icon: '🌐', title: 'Visibilidad real',      desc: 'Tu negocio, grupo o empresa aparece donde nuestra gente busca cada día.' },
-  { icon: '💬', title: 'Contacto directo',      desc: 'Sin intermediarios. Los usuarios te contactan por WhatsApp, email o teléfono.' },
-  { icon: '⭐', title: 'Reseñas y confianza',   desc: 'Construye reputación con reseñas reales de la comunidad que te elige.' },
-  { icon: '💙', title: 'Apoya a la comunidad', desc: 'Apoyas una plataforma creada para ayudar a la comunidad hispanohablante en Suiza.' },
-  { icon: '🚀', title: 'Crecimiento local', desc: 'Refuerzas tu marca dentro de una comunidad que valora servicios cercanos y de confianza.' },
+  { icon: 'users', title: 'Audiencia cualificada', desc: 'La mayor comunidad hispanohablante de Suiza. Llegas exactamente a quien necesitas.' },
+  { icon: 'world', title: 'Visibilidad real',      desc: 'Tu negocio, grupo o empresa aparece donde nuestra gente busca cada día.' },
+  { icon: 'message', title: 'Contacto directo',      desc: 'Sin intermediarios. Los usuarios te contactan por WhatsApp, email o teléfono.' },
+  { icon: 'star', title: 'Reseñas y confianza',   desc: 'Construye reputación con reseñas reales de la comunidad que te elige.' },
+  { icon: 'favorite', title: 'Apoya a la comunidad', desc: 'Apoyas una plataforma creada para ayudar a la comunidad hispanohablante en Suiza.' },
+  { icon: 'rocket', title: 'Crecimiento local', desc: 'Refuerzas tu marca dentro de una comunidad que valora servicios cercanos y de confianza.' },
 ]
 
 const FREE_PARTNER_PLAN = {
@@ -93,19 +94,19 @@ const LANDING_COLLABORATOR_LOGOS = [
 ]
 
 const AD_CATS_PREVIEW = [
-  { emoji: '🏠', label: 'Vivienda',  color: '#DBEAFE', tc: '#1D4ED8', desc: 'Pisos, habitaciones, alquileres', to: '/tablon?cat=vivienda' },
-  { emoji: '💼', label: 'Empleo',    color: '#D1FAE5', tc: '#065F46', desc: 'Ofertas y solicitudes de empleo', to: '/tablon?cat=empleo'  },
-  { emoji: '🛍️', label: 'Compraventa', color: '#FEF3C7', tc: '#92400E', desc: 'Compra, venta y regalos',      to: '/tablon?cat=venta'   },
-  { emoji: '🏪', label: 'Negocios',  color: '#CCFBF1', tc: '#0F766E', desc: 'Directorio de negocios', to: '/comunidades' },
-  { emoji: '🎉', label: 'Eventos',   color: '#FCE7F3', tc: '#9D174D', desc: 'Lo que pasa en Suiza',           to: '/comunidades?view=eventos' },
-  { emoji: '✨', label: 'Y más...',  color: '#F1F5F9', tc: '#475569', desc: 'Servicios, guías y mucho más',    to: '/' },
+  { icon: 'housing', label: 'Vivienda',  color: '#DBEAFE', tc: '#1D4ED8', desc: 'Pisos, habitaciones, alquileres', to: '/tablon?cat=vivienda' },
+  { icon: 'job', label: 'Empleo',    color: '#D1FAE5', tc: '#065F46', desc: 'Ofertas y solicitudes de empleo', to: '/tablon?cat=empleo'  },
+  { icon: 'sale', label: 'Compraventa', color: '#FEF3C7', tc: '#92400E', desc: 'Compra, venta y regalos',      to: '/tablon?cat=venta'   },
+  { icon: 'business', label: 'Negocios',  color: '#CCFBF1', tc: '#0F766E', desc: 'Directorio de negocios', to: '/comunidades' },
+  { icon: 'event', label: 'Eventos',   color: '#FCE7F3', tc: '#9D174D', desc: 'Lo que pasa en Suiza',           to: '/comunidades?view=eventos' },
+  { icon: 'sparkles', label: 'Y más...',  color: '#F1F5F9', tc: '#475569', desc: 'Servicios, guías y mucho más',    to: '/' },
 ]
 
 const APP_PEEK_FEED = [
-  { tag: '🏠 Vivienda',  who: 'María · Zürich',    text: 'Busco piso de 2 habitaciones en Oerlikon para julio. Hasta 2.800 CHF.', time: 'hace 3 min',  color: '#DBEAFE', tc: '#1D4ED8' },
-  { tag: '💼 Empleo',    who: 'Tech Startup · GVA', text: 'Buscamos developer full-stack hispanohablante. Remoto o híbrido.',        time: 'hace 12 min', color: '#D1FAE5', tc: '#065F46' },
-  { tag: '🎉 Evento',    who: 'Salsa Club Bern',    text: 'Noche latina este viernes 21h. Entrada libre para la comunidad.',        time: 'hace 1 h',    color: '#FCE7F3', tc: '#9D174D' },
-  { tag: '📚 Guía',      who: 'Comunidad Latido',   text: 'Cómo pedir tu permiso C después de 10 años: paso a paso actualizado.',    time: 'hoy',         color: '#EDE9FE', tc: '#6D28D9' },
+  { icon:'housing', tag: 'Vivienda',  who: 'María · Zürich',    text: 'Busco piso de 2 habitaciones en Oerlikon para julio. Hasta 2.800 CHF.', time: 'hace 3 min',  color: '#DBEAFE', tc: '#1D4ED8' },
+  { icon:'job', tag: 'Empleo',    who: 'Tech Startup · GVA', text: 'Buscamos developer full-stack hispanohablante. Remoto o híbrido.',        time: 'hace 12 min', color: '#D1FAE5', tc: '#065F46' },
+  { icon:'event', tag: 'Evento',    who: 'Salsa Club Bern',    text: 'Noche latina este viernes 21h. Entrada libre para la comunidad.',        time: 'hace 1 h',    color: '#FCE7F3', tc: '#9D174D' },
+  { icon:'guide', tag: 'Guía',      who: 'Comunidad Latido',   text: 'Cómo pedir tu permiso C después de 10 años: paso a paso actualizado.',    time: 'hoy',         color:SECTION_COLORS.guias.soft, tc:SECTION_COLORS.guias.ink },
 ]
 
 const FAQ = [
@@ -628,7 +629,7 @@ function PanelFaq() {
           onClick={handleSend}
           style={{ width: '100%', fontFamily: PP, fontWeight: 700, fontSize: 13, background: C.primary, color: '#fff', border: 'none', borderRadius: 12, padding: '13px 0', cursor: 'pointer' }}
         >
-          {'📬 Enviar pregunta'}
+          <span style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:7 }}><Icon name="send" size={17} /> Enviar pregunta</span>
         </button>
       </div>
     </div>
@@ -640,7 +641,7 @@ export function PanelPartners() {
     <div>
       <div style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%)', borderRadius: 24, padding: '40px 28px', marginBottom: 28, textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.12)', color: '#BAE6FD', fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 20, marginBottom: 18, fontFamily: PP, border: '1px solid rgba(255,255,255,0.2)', letterSpacing: 0.4 }}>
-          🚀 Para empresas y colaboradores
+          <Icon name="rocket" size={15} /> Para empresas y colaboradores
         </div>
         <h2 style={{ fontFamily: PP, fontWeight: 900, fontSize: 'clamp(22px,4vw,36px)', color: '#fff', lineHeight: 1.15, margin: '0 auto 14px', letterSpacing: -0.5, maxWidth: 680 }}>
           Convierte tu visibilidad en nuevos clientes
@@ -656,7 +657,7 @@ export function PanelPartners() {
       <div className="latido-partner-benefits-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 12, marginBottom: 32 }}>
         {PARTNER_BENEFITS.map((b) => (
           <div className="latido-partner-benefit-card" key={b.title} style={{ background: '#F8FAFF', borderRadius: 18, padding: '20px 18px', border: `1px solid ${C.border}` }}>
-            <div className="latido-partner-benefit-icon" style={{ fontSize: 28, marginBottom: 10 }}>{b.icon}</div>
+            <div className="latido-partner-benefit-icon" style={{ color:C.primary, marginBottom:10 }}><Icon name={b.icon} size={28} /></div>
             <h3 className="latido-partner-benefit-title" style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: C.text, marginBottom: 6, lineHeight: 1.3 }}>{b.title}</h3>
             <p className="latido-partner-benefit-desc" style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.6, margin: 0 }}>{b.desc}</p>
           </div>
@@ -692,7 +693,7 @@ export function PanelPartners() {
         <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.primaryDark, margin: '0 0 6px' }}>¿Hablamos?</p>
         <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, margin: '0 0 16px', lineHeight: 1.6 }}>Cuéntanos tu caso y exploramos cómo Latido puede ayudarte a llegar a la comunidad hispanohablante en Suiza.</p>
         <a href="mailto:info@latido.ch" style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, background: C.primary, color: '#fff', textDecoration: 'none', padding: '12px 24px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          📧 info@latido.ch
+          <Icon name="mail" size={17} /> info@latido.ch
         </a>
       </div>
     </div>
@@ -775,14 +776,14 @@ function PanelContacto() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 32 }}>
         <a href="mailto:info@latido.ch" style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 18, padding: '20px 22px', textDecoration: 'none' }}>
-          <div style={{ width: 48, height: 48, background: C.primaryLight, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>📧</div>
+          <div style={{ width:48, height:48, background:C.primaryLight, color:C.primary, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Icon name="mail" size={24} /></div>
           <div>
             <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: '0 0 3px' }}>Email</p>
             <p style={{ fontFamily: PP, fontSize: 13, color: C.primary, margin: 0 }}>info@latido.ch</p>
           </div>
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 18, padding: '20px 22px' }}>
-          <div style={{ width: 48, height: 48, background: '#FEF3C7', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>⏱️</div>
+          <div style={{ width:48, height:48, background:'#FEF3C7', color:'#B45309', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Icon name="clock" size={24} /></div>
           <div>
             <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: C.text, margin: '0 0 3px' }}>Tiempo de respuesta</p>
             <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, margin: 0 }}>Menos de 48 horas (días laborables)</p>
@@ -794,7 +795,7 @@ function PanelContacto() {
         href="mailto:info@latido.ch?subject=Pregunta%20sobre%20Latido"
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%', background: C.primary, border: 'none', borderRadius: 16, padding: '16px 24px', cursor: 'pointer', textDecoration: 'none', marginBottom: 16, boxSizing: 'border-box' }}
       >
-        <span style={{ fontSize: 20 }}>✉️</span>
+        <Icon name="mail" size={20} color="#fff" />
         <div style={{ textAlign: 'left' }}>
           <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: '#fff', margin: 0 }}>Envíanos tu pregunta</p>
           <p style={{ fontFamily: PP, fontSize: 11, color: 'rgba(255,255,255,0.75)', margin: 0 }}>Te responderemos lo antes posible</p>
@@ -946,7 +947,6 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         .latido-testimonial-dot { transition: width .2s ease, height .2s ease, background .2s ease, transform .15s ease; }
         .latido-testimonial-dot:hover { transform: scale(1.15); }
         .latido-testimonial-dot:focus-visible { outline: 3px solid rgba(37,99,235,0.25); outline-offset: 3px; }
-        .latido-hero-bg { background-size: 180% 180%; animation: latido-gradient 22s ease infinite; }
         .latido-card-hover { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
         .latido-partner-pricing-scroll {
           overflow: visible;
@@ -1106,15 +1106,12 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
 <section
   className="latido-hero-bg"
   style={{
-    background: 'linear-gradient(160deg, #0F1F5C 0%, #1E40AF 45%, #2563EB 100%)',
+    background: C.primary,
     position: 'relative',
     overflow: 'hidden',
     padding: '80px 24px 52px',
   }}
 >
-  <div className="latido-float" style={{ position: 'absolute', top: -100, right: -80, width: 360, height: 360, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(2px)' }} />
-  <div className="latido-float-slow" style={{ position: 'absolute', bottom: -60, left: -40, width: 260, height: 260, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', filter: 'blur(2px)' }} />
-  <div className="latido-float" style={{ position: 'absolute', top: 140, left: '55%', width: 180, height: 180, borderRadius: '50%', background: 'rgba(96,165,250,0.16)', filter: 'blur(4px)' }} />
 
   <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', textAlign: 'center' }}>
     <div className="latido-enter-1 latido-hero-logo-top">
@@ -1122,7 +1119,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
     </div>
 
     <div className="latido-enter-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.12)', color: '#BAE6FD', fontSize: 11, fontWeight: 700, padding: '8px 18px', borderRadius: 24, marginBottom: 28, fontFamily: PP, border: '1px solid rgba(255,255,255,0.22)', letterSpacing: 0.4, backdropFilter: 'blur(8px)' }}>
-      <span style={{ fontSize: 14 }}>🏆</span>
+      <Icon name="trophy" size={15} />
       La primera plataforma pensada exclusivamente para hispanohablantes en Suiza
     </div>
 
@@ -1150,7 +1147,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
     </div>
 
     <p className="latido-enter-5" style={{ fontFamily: PP, fontSize: 12, color: 'rgba(255,255,255,0.65)', marginBottom: 56 }}>
-      ✨ Aquí está tu gente
+      <span style={{ display:'inline-flex', alignItems:'center', gap:5 }}><Icon name="sparkles" size={14} /> Aquí está tu gente</span>
     </p>
 
     <div className="latido-enter-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, borderTop: '1px solid rgba(255,255,255,0.18)', paddingTop: 32, maxWidth: 620, margin: '0 auto' }}>
@@ -1210,7 +1207,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 14px 32px rgba(37,99,235,0.16)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
               >
-                <div style={{ fontSize: 'clamp(28px,6vw,36px)', marginBottom: 8 }}>{cat.emoji}</div>
+                <div style={{ color:cat.tc, marginBottom:8, display:'flex', justifyContent:'center' }}><Icon name={cat.icon} size={34} /></div>
                 <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 'clamp(11px,2.5vw,14px)', color: cat.tc, margin: '0 0 4px' }}>{cat.label}</p>
                 <p style={{ fontFamily: PP, fontSize: 'clamp(9px,1.8vw,10px)', color: cat.tc, opacity: 0.75, margin: 0, lineHeight: 1.4 }}>{cat.desc}</p>
               </Link>
@@ -1223,15 +1220,15 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         <Reveal>
           <div className="latido-creators-intro">
             <div className="latido-creators-intro__copy">
-              <span className="latido-creators-intro__eyebrow">🎙️ CREADORES EN LATIDO</span>
+              <span className="latido-creators-intro__eyebrow"><Icon name="creator" size={15} /> CREADORES EN LATIDO</span>
               <h2 id="landing-creators-title">Información sobre Suiza contada por quienes la viven</h2>
               <p>Encuentra experiencias, consejos y opiniones de creadores en español. Explora por tema y reproduce vídeos sin salir de Latido.</p>
               <Link className="latido-creators-intro__link" to={creatorsEntryPath}>Descubrir creadores</Link>
             </div>
             <div className="latido-creators-intro__preview" aria-hidden="true">
-              <div className="latido-creators-intro__item"><span>💬</span><div><strong>Experiencias</strong><small>Vida real en Suiza</small></div></div>
-              <div className="latido-creators-intro__item"><span>💡</span><div><strong>Consejos</strong><small>Trabajo, vivienda y trámites</small></div></div>
-              <div className="latido-creators-intro__item"><span>🎙️</span><div><strong>Opiniones</strong><small>Distintas voces y proyectos</small></div></div>
+              <div className="latido-creators-intro__item"><span><Icon name="message" size={21} /></span><div><strong>Experiencias</strong><small>Vida real en Suiza</small></div></div>
+              <div className="latido-creators-intro__item"><span><Icon name="idea" size={21} /></span><div><strong>Consejos</strong><small>Trabajo, vivienda y trámites</small></div></div>
+              <div className="latido-creators-intro__item"><span><Icon name="creator" size={21} /></span><div><strong>Opiniones</strong><small>Distintas voces y proyectos</small></div></div>
             </div>
           </div>
         </Reveal>
@@ -1251,13 +1248,13 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         {isIOS ? (
           <div style={{ width: '100%', background: `linear-gradient(90deg, ${C.primary}, ${C.primaryDark})`, borderRadius: 16, padding: '16px 20px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <span style={{ fontSize: 22 }}>📲</span>
+              <Icon name="download" size={22} color="#fff" />
               <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: '#fff', margin: 0 }}>Instala Latido en tu iPhone</p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
   { icon: '①', text: 'Pulsa ••• en el navegador' },
-  { icon: '②', text: 'Toca "Compartir" 📤' },
+  { icon: '②', text: 'Toca "Compartir"' },
   { icon: '③', text: 'Selecciona "Añadir a pantalla de inicio"' },
   { icon: '✓', text: '¡listo!' },
 ].map((step) => (
@@ -1286,7 +1283,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             style={{ width: '100%', background: `linear-gradient(90deg, ${C.primary}, ${C.primaryDark})`, border: 'none', borderRadius: 16, padding: '16px 24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 24 }}>📲</span>
+              <Icon name="download" size={24} color="#fff" />
               <div style={{ textAlign: 'left' }}>
                 <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: '#fff', margin: 0 }}>Instala Latido app — GRATIS</p>
                 <p style={{ fontFamily: PP, fontSize: 11, color: 'rgba(255,255,255,0.75)', margin: 0 }}>Sin App Store ni Google Play. Directo desde el navegador.</p>
@@ -1317,7 +1314,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
               </Link>
             </div>
             <p style={{ fontFamily: PP, fontSize: 11, color: C.light, marginTop: 18 }}>
-              ✨ Gratis. En tu idioma. Entre los tuyos.
+              <span style={{ display:'inline-flex', alignItems:'center', gap:5 }}><Icon name="sparkles" size={13} /> Gratis. En tu idioma. Entre los tuyos.</span>
             </p>
           </div>
         </Reveal>
@@ -1333,18 +1330,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             rel="noreferrer"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '10px 18px' }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="url(#ig)" strokeWidth="2"/>
-              <circle cx="12" cy="12" r="4.5" stroke="url(#ig)" strokeWidth="2"/>
-              <circle cx="17.5" cy="6.5" r="1" fill="#E1306C"/>
-              <defs>
-                <linearGradient id="ig" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#F58529"/>
-                  <stop offset="0.5" stopColor="#E1306C"/>
-                  <stop offset="1" stopColor="#833AB4"/>
-                </linearGradient>
-              </defs>
-            </svg>
+            <Icon name="instagram" size={18} color="#E1306C" />
             <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, color: C.text }}>@latido_ch</span>
           </a>
 
@@ -1354,9 +1340,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             rel="noreferrer"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '10px 18px' }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07Z" fill="#000"/>
-            </svg>
+            <Icon name="tiktok" size={18} color="#111827" />
             <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, color: C.text }}>@latido_ch</span>
           </a>
         </div>

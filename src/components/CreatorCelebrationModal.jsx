@@ -1,5 +1,6 @@
 import { Modal } from './UI'
 import './CreatorCelebrationModal.css'
+import { Icon } from '../lib/icons'
 
 const CONFETTI_PIECES = [
   { left:'7%', color:'#2563EB', delay:'-.15s', duration:'2.4s', rotate:'18deg' },
@@ -39,7 +40,7 @@ export default function CreatorCelebrationModal({
             />
           ))}
         </div>
-        <div className="creator-celebration__icon" aria-hidden="true">🎉</div>
+        <div className="creator-celebration__icon" aria-hidden="true"><Icon name="success" size={32} /></div>
         <h2>¡Enhorabuena!</h2>
         <p>{message}</p>
         <div className="creator-celebration__actions">

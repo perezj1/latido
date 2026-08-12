@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { C, PP } from '../lib/theme'
 import { HOME_CAROUSEL_CARD_WIDTH } from '../lib/homeCarousel'
+import { Icon } from '../lib/icons'
 import {
   buildEventfrogEmbedUrl,
   EVENTFROG_EMBED_KEY,
@@ -282,8 +283,8 @@ function EventCard({ event, compact }) {
         <p style={{ fontFamily:PP, fontWeight:800, fontSize:compact ? 12 : 14, color:C.text, lineHeight:1.3, margin:'0 0 4px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
           {event.title}
         </p>
-        <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-          📍 {event.locationShortLabel || event.locationLabel || event.city}
+        <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid, margin:'0 0 5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+          <Icon name="location" size={11} /> {event.locationShortLabel || event.locationLabel || event.city}
         </p>
         <p style={{ fontFamily:PP, fontSize:11, color:C.primary, fontWeight:700, margin:0 }}>
           {event.price}
@@ -327,8 +328,8 @@ function CarouselEventCard({ event }) {
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 4px', lineHeight:1.35, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minHeight:'2.7em' }}>
             {event.title}
           </p>
-          <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-            📍 {event.locationShortLabel || event.locationLabel || event.city}
+          <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            <Icon name="location" size={10} /> {event.locationShortLabel || event.locationLabel || event.city}
           </p>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.primary, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             {event.price}

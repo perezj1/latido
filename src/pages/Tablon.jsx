@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
-import { C, PP, CAT_COLORS } from '../lib/theme'
+import { C, PP, CAT_COLORS, getLatidoCategoryTheme } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getCategoryIntentMeta, getCategoryIntentViews, getDefaultCategoryIntent, getJobIntentId, getJobIntentMeta, getPublishPathForIntent, normalizeAdCat } from '../lib/constants'
 import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
 import FavoriteButton from '../components/FavoriteButton'
@@ -29,6 +29,7 @@ import {
 } from '../lib/employmentProfile'
 import toast from 'react-hot-toast'
 import { markSavedSearchDigestOpened, markSavedSearchMatchOpened } from '../lib/savedSearches'
+import { Icon, getCategoryIconName } from '../lib/icons'
 
 function fmtPrice(price) {
   if (!price) return ''
@@ -112,10 +113,21 @@ const TABLON_CACHE = {
   jobsTs:persistedTablonSnapshot?.savedAt || 0,
 }
 
+// La caché offline es solo un respaldo de arranque. La vista online conserva
+// todos los resultados, pero localStorage tiene una cuota pequeña (sobre todo
+// en PWA/iOS), así que guardamos una muestra reciente y acotada. Las consultas,
+// filtros y resultados visibles no se modifican.
+const TABLON_OFFLINE_AD_LIMIT = 100
+const TABLON_OFFLINE_JOB_LIMIT = 100
+
+function getRecentOfflineRows(rows, limit) {
+  return Array.isArray(rows) ? rows.slice(0, limit) : []
+}
+
 function persistTablonCache() {
   writeOfflineSnapshot('tablon-public', {
-    ads:TABLON_CACHE.publicAds || [],
-    jobs:TABLON_CACHE.jobs || [],
+    ads:getRecentOfflineRows(TABLON_CACHE.publicAds, TABLON_OFFLINE_AD_LIMIT),
+    jobs:getRecentOfflineRows(TABLON_CACHE.jobs, TABLON_OFFLINE_JOB_LIMIT),
   })
 }
 const CARD_STACK_GAP = 10
@@ -327,7 +339,9 @@ function getAdIntentTag(ad={}) {
 function getTablonContext(cat='', isEmpleos=false, intentMeta=null) {
   if (isEmpleos) {
     return {
-      title:'💼 Empleo',
+      tone:'empleo',
+      icon:'job',
+      title:'Empleo',
       subtitle:'Ofertas y solicitudes de empleo en un solo lugar.',
       resultLabel:'publicaciones de empleo',
       searchPlaceholder:'Buscar puesto, solicitud, empresa o sector...',
@@ -339,7 +353,9 @@ function getTablonContext(cat='', isEmpleos=false, intentMeta=null) {
   const meta = AD_CATS.find(item => item.id === cat)
   if (meta) {
     return {
-      title:`${meta.emoji} ${meta.label}`,
+      tone:meta.id,
+      icon:getCategoryIconName(meta.id),
+      title:meta.label,
       subtitle:intentMeta?.label || meta.desc,
       resultLabel:'anuncios',
       searchPlaceholder:`Buscar en ${meta.label.toLowerCase()}...`,
@@ -349,7 +365,9 @@ function getTablonContext(cat='', isEmpleos=false, intentMeta=null) {
   }
 
   return {
-    title:'📌 Anuncios',
+    tone:'anuncios',
+    icon:'listing',
+    title:'Anuncios',
     subtitle:'Vivienda, empleo, servicios, cuidados, compraventa y trámites.',
     resultLabel:'publicaciones',
     searchPlaceholder:'Buscar vivienda, servicios, productos o trámites...',
@@ -486,7 +504,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
           </div>
         )}
         <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:7 }}>
-          {intent && <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.shortLabel}</Tag>}
+          {intent && <Tag bg={intent.bg} color={intent.color}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={intent.id === 'busca' ? 'search' : 'listing'} size={12} /> {intent.shortLabel}</span></Tag>}
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:'auto', minWidth:0 }}>
           <Avatar name={ad.user_name || ad.user} size={18} src={avatarSrc}/>
@@ -572,11 +590,11 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
           <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, lineHeight:1.25, margin:0, ...WRAPPING_TEXT }}>{ad.title}</h1>
         </div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
-          {intent && <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.shortLabel}</Tag>}
-          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{subOption?.label || ad.sub}</Tag>}
+          {intent && <Tag bg={intent.bg} color={intent.color}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={intent.id === 'busca' ? 'search' : 'listing'} size={12} /> {intent.shortLabel}</span></Tag>}
+          <Tag bg={cc.bg} color={cc.tc}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={getCategoryIconName(ad.cat)} size={12} /> {cat?.label}</span></Tag>
+          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.label || ad.sub}</Tag>}
           <PrivacyTag privacy={ad.privacy}/>
-          {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
+          {ad.verified && <Tag bg="#D1FAE5" color="#065F46"><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="verified" size={12} /> Verificada</span></Tag>}
         </div>
         <div style={{ display:'flex', gap:9, alignItems:'center', minWidth:0 }}>
           <Avatar name={ad.user_name || ad.user} size={34} src={avatarSrc}/>
@@ -594,7 +612,7 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
               aria-label={`Ver ${reviews.length} reseña${reviews.length !== 1 ? 's' : ''}`}
               style={{ marginLeft:'auto', flexShrink:0, display:'inline-flex', alignItems:'center', gap:7, fontFamily:PP, fontWeight:900, fontSize:15, color:C.text, background:'#FFFBEB', border:'1.5px solid #FBBF24', borderRadius:999, padding:'7px 13px', cursor:'pointer' }}
             >
-              <span style={{ fontSize:18, lineHeight:1, color:'#F59E0B' }}>★</span>
+              <Icon name="star" size={18} color="#F59E0B" style={{ fill:'currentColor' }} />
               <span>{rating}</span>
             </button>
           )}
@@ -612,11 +630,11 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
         <div style={{ padding:'18px 20px', borderBottom:`1px solid ${C.border}` }}>
           <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 12px' }}>Datos de la vivienda</h2>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(135px, 1fr))', gap:9 }}>
-            {ad.available_from && <Tag bg={C.bg} color={C.mid}>📅 Desde {new Date(`${ad.available_from}T00:00:00`).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}</Tag>}
-            {ad.rooms != null && <Tag bg={C.bg} color={C.mid}>🚪 {ad.rooms} habitaciones</Tag>}
-            {ad.household_size != null && <Tag bg={C.bg} color={C.mid}>👥 {ad.household_size} personas</Tag>}
-            {ad.furnished != null && <Tag bg={C.bg} color={C.mid}>🛋️ {ad.furnished ? 'Amueblada' : 'Sin amueblar'}</Tag>}
-            {ad.pets_allowed != null && <Tag bg={C.bg} color={C.mid}>🐾 {ad.type === 'busca' ? (ad.pets_allowed ? 'Con mascota' : 'Sin mascota') : (ad.pets_allowed ? 'Mascotas permitidas' : 'No admite mascotas')}</Tag>}
+            {ad.available_from && <Tag bg={C.bg} color={C.mid}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="calendar" size={11} /> Desde {new Date(`${ad.available_from}T00:00:00`).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}</span></Tag>}
+            {ad.rooms != null && <Tag bg={C.bg} color={C.mid}>{ad.rooms} habitaciones</Tag>}
+            {ad.household_size != null && <Tag bg={C.bg} color={C.mid}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="users" size={11} /> {ad.household_size} personas</span></Tag>}
+            {ad.furnished != null && <Tag bg={C.bg} color={C.mid}>{ad.furnished ? 'Amueblada' : 'Sin amueblar'}</Tag>}
+            {ad.pets_allowed != null && <Tag bg={C.bg} color={C.mid}>{ad.type === 'busca' ? (ad.pets_allowed ? 'Con mascota' : 'Sin mascota') : (ad.pets_allowed ? 'Mascotas permitidas' : 'No admite mascotas')}</Tag>}
           </div>
         </div>
       )}
@@ -670,7 +688,7 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
                   return (
                     <div key={stars} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
                       <span style={{ fontFamily:PP, fontSize:10, color:C.mid, width:8 }}>{stars}</span>
-                      <span style={{ fontSize:10, color:'#F59E0B' }}>★</span>
+                      <Icon name="star" size={10} color="#F59E0B" style={{ fill:'currentColor' }} />
                       <div style={{ flex:1, height:6, background:C.border, borderRadius:3, overflow:'hidden' }}>
                         <div style={{ height:'100%', width:`${width}%`, background:'#F59E0B', borderRadius:3, transition:'width .4s' }} />
                       </div>
@@ -759,10 +777,10 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
       <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.32, margin:'0 0 4px', ...CLAMP_2 }}>{job.title || job.company}</h3>
         {job.salary && <p style={{ fontFamily:PP, fontSize:14, fontWeight:800, color:C.primary, lineHeight:1.15, margin:'0 0 5px', ...CLAMP_1 }}>{fmtPrice(job.salary)}</p>}
-        {job.company && job.company !== job.title && <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.35, margin:'0 0 3px', ...CLAMP_1 }}>{isSeekingJob ? '👤' : '🏢'} {job.company}</p>}
+        {job.company && job.company !== job.title && <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.35, margin:'0 0 3px', ...CLAMP_1 }}><Icon name={isSeekingJob ? 'user' : 'company'} size={12} /> {job.company}</p>}
         {languages && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.35, margin:'0 0 7px', ...CLAMP_1 }}>{languages}</p>}
         <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:'auto' }}>
-          <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
+          <Tag bg={intent.bg} color={intent.color}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={intent.id === 'busca' ? 'search' : 'job'} size={12} /> {intent.label}</span></Tag>
           {isSeekingJob && <EmploymentLevelBadge profile={employmentProfile} levelId={job.employment_level} />}
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:7, minWidth:0 }}>
@@ -811,7 +829,7 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
           )}
         </div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', borderBottom:`1px solid ${C.borderLight}`, paddingBottom:10, marginBottom:12 }}>
-          <Tag bg={intent.bg} color={intent.color}>{intent.emoji} {intent.label}</Tag>
+          <Tag bg={intent.bg} color={intent.color}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={intent.id === 'busca' ? 'search' : 'job'} size={12} /> {intent.label}</span></Tag>
           {job.type && <Tag bg={job.type==='Full-time'?C.primaryLight:'#D1FAE5'} color={job.type==='Full-time'?C.primary:'#065F46'}>{job.type}</Tag>}
           {job.sector && <Tag bg={C.bg} color={C.mid}>{job.sector}</Tag>}
         </div>
@@ -920,7 +938,7 @@ function PortalCard({ portal, defaultEmoji = '🏠', onClick }) {
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
           <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{portal.name}</h3>
         </div>
-        {portal.city && <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>📍 {portal.city}</p>}
+        {portal.city && <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}><Icon name="location" size={12} /> {portal.city}</p>}
         <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{portal.description}</p>
       </div>
       <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, flexShrink:0 }}>Ver →</span>
@@ -2045,9 +2063,10 @@ export default function Tablon() {
   })
 
   const cantonOptions = [{ id:'', label:'Toda Suiza' }, ...CANTONS.map(c => ({ id:c.code, label:`${c.code} · ${c.name}` }))]
-  const jobTypeOptions = [{ id:'', label:'Todos' }, ...JOB_TYPES.map(jobTypeOption => ({ id:jobTypeOption.id, label:`${jobTypeOption.emoji} ${jobTypeOption.label}` }))]
+  const jobTypeOptions = [{ id:'', label:'Todos' }, ...JOB_TYPES.map(jobTypeOption => ({ id:jobTypeOption.id, label:jobTypeOption.label }))]
   const intentValue = cat ? activeToolbarIntent : type
   const pageContext = getTablonContext(cat, isEmpleos, activeIntentMeta)
+  const pageTheme = getLatidoCategoryTheme(pageContext.tone)
   const publishHref = cat
     ? getPublishPathForIntent(cat, activeCategoryIntent)
     : '/publicar'
@@ -2058,7 +2077,7 @@ export default function Tablon() {
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'16px 20px 0' }}>
       <div className="section-page-head">
-        <h1>{pageContext.title}</h1>
+        <h1 style={{ display:'flex', alignItems:'center', gap:9 }}><Icon name={pageContext.icon} size={27} color={pageTheme.ink} /> {pageContext.title}</h1>
         <p>{pageContext.subtitle}</p>
       </div>
 
@@ -2158,7 +2177,7 @@ export default function Tablon() {
               />
             ) : (
               <div style={{ textAlign:'center', padding:'60px 20px' }}>
-                <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
+                <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:14 }}><Icon name="listing" size={44} /></div>
                 <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
                 <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
                 <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
@@ -2211,7 +2230,7 @@ export default function Tablon() {
               />
             ) : (
               <div style={{ textAlign:'center', padding:'50px 20px' }}>
-                <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
+                <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:14 }}><Icon name="listing" size={44} /></div>
                 <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
                 <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
                 <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
@@ -2230,7 +2249,7 @@ export default function Tablon() {
           />
         ) : (
           <div style={{ textAlign:'center', padding:'60px 20px' }}>
-            <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
+            <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:14 }}><Icon name="listing" size={44} /></div>
             <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
             <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:16 }}>{pageContext.emptyText}</p>
             <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
@@ -2302,7 +2321,7 @@ export default function Tablon() {
                 >
                   <option value="">Todos los anuncios</option>
                   {orderedCats.map(option => (
-                    <option key={option.id} value={option.id}>{option.emoji} {option.label}</option>
+                    <option key={option.id} value={option.id}>{option.label}</option>
                   ))}
                 </select>
               </label>

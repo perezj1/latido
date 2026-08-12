@@ -14,6 +14,7 @@ import {
   trackAnalyticsEvent,
 } from './lib/analytics'
 import { startEmailNotificationPresence } from './lib/emailNotificationPresence'
+import { Icon } from './lib/icons'
 import { PARTNER_LANDING_URL, trackPartnerInteraction } from './lib/partnerAttribution'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
 import { startCreatorDirectorySync } from './lib/creators'
@@ -263,7 +264,7 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA, onVisibilityChange
   return (
     <div ref={bannerRef} style={{ position:'fixed', bottom:'calc(112px + env(safe-area-inset-bottom))', left:'env(safe-area-inset-left)', right:'env(safe-area-inset-right)', zIndex:200, padding:'0 12px', pointerEvents:'none' }}>
       <div style={{ background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius:18, padding:'14px 16px', boxShadow:'0 8px 32px rgba(37,99,235,0.35)', display:'flex', gap:12, alignItems:'flex-start', pointerEvents:'all', maxWidth:480, margin:'0 auto' }}>
-        <div style={{ fontSize:28, flexShrink:0, marginTop:2 }}>📲</div>
+        <div style={{ flexShrink:0, marginTop:2, color:'#fff' }}><Icon name="download" size={26} /></div>
         <div style={{ flex:1, minWidth:0 }}>
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:'#fff', margin:'0 0 12px' }}>Instala Latido en tu móvil</p>
           <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
@@ -372,8 +373,8 @@ function AppLoading() {
   return (
     <div className="latido-loading-screen" style={{ minHeight:'100vh', display:'grid', placeItems:'center', background:`linear-gradient(180deg, ${C.bg} 0%, #fff 100%)`, padding:'24px' }}>
       <div className="latido-loading-screen__content" style={{ textAlign:'center' }}>
-        <div className="latido-loading-screen__mark" style={{ width:68, height:68, margin:'0 auto 16px', borderRadius:20, background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color:'#fff', display:'grid', placeItems:'center', fontSize:30, boxShadow:'0 12px 30px rgba(37,99,235,0.22)' }}>
-          🌎
+        <div className="latido-loading-screen__mark" style={{ width:68, height:68, margin:'0 auto 16px', borderRadius:20, background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color:'#fff', display:'grid', placeItems:'center', boxShadow:'0 12px 30px rgba(37,99,235,0.22)' }}>
+          <Icon name="explore" size={30} strokeWidth={1.6} />
         </div>
         <p style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, margin:'0 0 6px', letterSpacing:-0.5 }}>Cargando tu espacio</p>
         <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>Restaurando sesión y preparando la app.</p>

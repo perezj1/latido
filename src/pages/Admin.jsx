@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { C, PP } from '../lib/theme'
+import { C, PP, T, R } from '../lib/theme'
 import { Btn, Tag } from '../components/UI'
 import { REPORT_REASONS } from '../lib/reports'
 import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
@@ -23,6 +23,7 @@ import {
 } from '../lib/partnerAnalytics'
 import { INTEREST_OPTIONS, normalizeInterestIds } from '../lib/interests'
 import { CREATOR_PLATFORMS, CREATOR_TOPICS } from '../lib/creators'
+import { Icon, getCreatorTopicIconName } from '../lib/icons'
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
@@ -486,7 +487,7 @@ function downloadCsv(filename, columns, rows) {
 
 function creatorTopicMeta(topicId) {
   return CREATOR_TOPICS.find(topic => topic.id === topicId)
-    || { id:topicId, label:topicId || 'Sin tema', emoji:'📌', color:C.mid, bg:C.bg }
+    || { id:topicId, label:topicId || 'Sin tema', color:C.mid, bg:C.bg }
 }
 
 function creatorPlatformMeta(platformId) {
@@ -1062,11 +1063,11 @@ function SummaryMetric({ label, value, hint, color = C.primary, trend = null, tr
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: color }} />
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
         <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: 0, minWidth: 0 }}>
-          {icon ? `${icon} ` : ''}{label}
+          {icon ? <Icon name={icon} size={11} style={{ display:'inline-block', verticalAlign:'-1px', marginRight:4 }} /> : null}{label}
         </p>
         <TrendChip value={trend} invert={trendInvert} />
       </div>
-      <p style={{ fontFamily: PP, fontSize: 25, fontWeight: 900, color, lineHeight: 1, margin: '0 0 5px', letterSpacing: -0.6, overflowWrap: 'anywhere' }}>
+      <p style={{ fontFamily: PP, fontSize: 25, fontWeight: 900, color, lineHeight: 1, margin: '0 0 5px', letterSpacing: -0.6, overflowWrap: 'anywhere', fontVariantNumeric: 'tabular-nums' }}>
         {value}
       </p>
       <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.35, margin: 0 }}>
@@ -1201,6 +1202,9 @@ function AdminDataTable({ columns, rows, getRowKey, sort, onSortChange, activeRo
                       borderBottom: `1px solid ${C.borderLight}`,
                       textAlign: column.align || 'left',
                       verticalAlign: 'middle',
+                      // Las columnas alineadas a la derecha son cifras: con
+                      // ancho de digito fijo las filas se comparan de un vistazo.
+                      fontVariantNumeric: column.align === 'right' ? 'tabular-nums' : 'normal',
                     }}
                   >
                     {column.render(row)}
@@ -1403,7 +1407,7 @@ function AdminButton({ children, onClick, variant = 'secondary', disabled = fals
       variant={variant}
       disabled={disabled}
       onClick={onClick}
-      style={{ width: 'auto', minWidth: 0, padding: '9px 12px', borderRadius: 10, fontSize: 11 }}
+      style={{ width: 'auto', minWidth: 0, padding: '10px 13px', borderRadius: R.sm, fontSize: T.meta }}
     >
       {children}
     </Btn>
@@ -1533,7 +1537,7 @@ function AdminPagination({ page, pageCount, total, onChange }) {
 function EmptyState({ icon, text }) {
   return (
     <Card style={{ textAlign: 'center', padding: '48px 24px', background: 'linear-gradient(180deg,#fff,#F8FAFF)' }}>
-      <div style={{ fontSize: 34, marginBottom: 10 }}>{icon}</div>
+      <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'center', color: C.light }}><Icon name={icon} size={30} strokeWidth={1.6} /></div>
       <p style={{ fontFamily: PP, color: C.light, margin: 0, fontSize: 14, lineHeight: 1.5 }}>{text}</p>
     </Card>
   )
@@ -1670,7 +1674,7 @@ export default function Admin() {
           normalizeInterestIds(profile.interests).includes(option.id)
         ).length
         return {
-          label:`${option.emoji} ${option.label}`,
+          label:option.label,
           value,
           sub:metricUsers.length ? `${Math.round((value / metricUsers.length) * 100)}% de las cuentas` : '',
         }
@@ -2118,7 +2122,7 @@ export default function Admin() {
       const creators = creatorRows.filter(creator => (creator.topics || []).includes(topic.id))
       const contents = creatorContents.filter(content => content.topic === topic.id)
       return {
-        label:`${topic.emoji} ${topic.label}`,
+        label:topic.label,
         value:contents.length,
         sub:`${creators.length} creadores · ${contents.filter(content => content.status === 'published').length} publicados`,
       }
@@ -3717,17 +3721,17 @@ export default function Admin() {
     !isTabDataReady(tabId) || isTabDataLoading(tabId) ? '...' : value
 
   const NAV_ITEMS = [
-    { id: 'users', icon: '👥', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
-    { id: 'creators', icon: '🎬', label: 'Creadores', value: navValue('creators', `${creatorStats.live} activos`), color: '#DB2777', bg: '#FDF2F8', alert: creatorStats.pendingReview },
-    { id: 'analytics', icon: '📈', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'feedback', icon: '⭐', label: 'Intereses y valoraciones', short: 'Valoración', value: navValue('feedback', `${totalFeedbackResponses} respuestas`), color: '#B45309', bg: '#FFFBEB' },
-    { id: 'partners', icon: '🚀', label: 'Colaboraciones', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
-    { id: 'live', icon: '📡', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
-    { id: 'overview', icon: '📊', label: 'Estado general', short: 'Estado', value: navValue('overview', `${generalScore}/100`), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
-    { id: 'businessVerification', icon: '✓', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5', alert: stats.businessVerification },
-    { id: 'content', icon: '📋', label: 'Publicaciones', value: navValue('content', `${stats.content} items`), color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'reports', icon: '🚨', label: 'Reportes', value: navValue('reports', `${stats.reports} pend.`), color: '#DC2626', bg: '#FEF2F2', alert: stats.reports },
-    { id: 'moderation', icon: '⏳', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB', alert: stats.queue },
+    { id: 'users', icon: 'users', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
+    { id: 'creators', icon: 'creator', label: 'Creadores', value: navValue('creators', `${creatorStats.live} activos`), color: '#DB2777', bg: '#FDF2F8', alert: creatorStats.pendingReview },
+    { id: 'analytics', icon: 'chart', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'feedback', icon: 'star', label: 'Intereses y valoraciones', short: 'Valoración', value: navValue('feedback', `${totalFeedbackResponses} respuestas`), color: '#B45309', bg: '#FFFBEB' },
+    { id: 'partners', icon: 'rocket', label: 'Colaboraciones', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
+    { id: 'live', icon: 'live', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
+    { id: 'overview', icon: 'trending', label: 'Estado general', short: 'Estado', value: navValue('overview', `${generalScore}/100`), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
+    { id: 'businessVerification', icon: 'verified', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5', alert: stats.businessVerification },
+    { id: 'content', icon: 'listing', label: 'Publicaciones', value: navValue('content', `${stats.content} items`), color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'reports', icon: 'report', label: 'Reportes', value: navValue('reports', `${stats.reports} pend.`), color: '#DC2626', bg: '#FEF2F2', alert: stats.reports },
+    { id: 'moderation', icon: 'clock', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB', alert: stats.queue },
   ]
 
   const navById = new Map(NAV_ITEMS.map(item => [item.id, item]))
@@ -3763,17 +3767,17 @@ export default function Admin() {
       : 'Carga ligera'
 
   const SECTION_TITLES = {
-    overview: { icon: '📊', label: 'Estado general' },
-    live: { icon: '📡', label: 'Live' },
-    creators: { icon: '🎬', label: 'Creadores' },
-    analytics: { icon: '📈', label: 'Uso de la app' },
-    feedback: { icon: '⭐', label: 'Intereses y valoraciones' },
-    partners: { icon: '🚀', label: 'Colaboraciones' },
-    moderation: { icon: '⏳', label: 'Revisión manual' },
-    reports:    { icon: '🚨', label: 'Reportes pendientes' },
-    businessVerification: { icon: '✓', label: 'Verificación de negocios' },
-    users:      { icon: '👥', label: 'Usuarios' },
-    content:    { icon: '📋', label: 'Contenido reciente' },
+    overview: { icon: 'trending', label: 'Estado general' },
+    live: { icon: 'live', label: 'Live' },
+    creators: { icon: 'creator', label: 'Creadores' },
+    analytics: { icon: 'chart', label: 'Uso de la app' },
+    feedback: { icon: 'star', label: 'Intereses y valoraciones' },
+    partners: { icon: 'rocket', label: 'Colaboraciones' },
+    moderation: { icon: 'clock', label: 'Revisión manual' },
+    reports:    { icon: 'report', label: 'Reportes pendientes' },
+    businessVerification: { icon: 'verified', label: 'Verificación de negocios' },
+    users:      { icon: 'users', label: 'Usuarios' },
+    content:    { icon: 'listing', label: 'Contenido reciente' },
   }
 
   const activeSection = tab === 'content'
@@ -3924,22 +3928,47 @@ export default function Admin() {
     return (
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: compact ? 'flex-start' : 'flex-end' }}>
         {creator.review_status !== 'approved' && (
-          <AdminButton variant="success" disabled={busy} onClick={() => setCreatorReview(creator, 'approved')}>✓ Aprobar</AdminButton>
+          <AdminButton variant="success" disabled={busy} onClick={() => setCreatorReview(creator, 'approved')}><Icon name="check" size={12} /> Aprobar</AdminButton>
         )}
         {creator.review_status !== 'rejected' && (
-          <AdminButton variant="danger" disabled={busy} onClick={() => setCreatorReview(creator, 'rejected')}>✕ Rechazar</AdminButton>
+          <AdminButton variant="danger" disabled={busy} onClick={() => setCreatorReview(creator, 'rejected')}><Icon name="close" size={12} /> Rechazar</AdminButton>
         )}
         <AdminButton disabled={busy} onClick={() => setCreatorVerified(creator, !creator.verified)}>
-          {creator.verified ? 'Quitar verificado' : '★ Verificar'}
+          {creator.verified ? 'Quitar verificado' : <><Icon name="verified" size={12} /> Verificar</>}
         </AdminButton>
         <AdminButton
           variant={creator.active === false ? 'success' : 'danger'}
           disabled={busy}
           onClick={() => setCreatorActive(creator, creator.active === false)}
         >
-          {creator.active === false ? '↩ Mostrar' : 'Ocultar'}
+          {creator.active === false ? <><Icon name="refresh" size={12} /> Mostrar</> : 'Ocultar'}
         </AdminButton>
       </div>
+    )
+  }
+
+  // En la tabla solo va la decision principal de cada fila: cuatro botones por
+  // veinte filas es ruido. El juego completo esta en el panel de detalle, que
+  // se abre al pulsar la fila.
+  function renderCreatorPrimaryAction(creator) {
+    const busy = creatorActionLoading.has(creator.id)
+
+    if (creator.review_status === 'pending') {
+      return (
+        <AdminButton variant="success" disabled={busy} onClick={() => setCreatorReview(creator, 'approved')}>
+          <Icon name="check" size={12} /> Aprobar
+        </AdminButton>
+      )
+    }
+
+    return (
+      <AdminButton
+        variant={creator.active === false ? 'success' : 'secondary'}
+        disabled={busy}
+        onClick={() => setCreatorActive(creator, creator.active === false)}
+      >
+        {creator.active === false ? <><Icon name="refresh" size={12} /> Mostrar</> : 'Ocultar'}
+      </AdminButton>
     )
   }
 
@@ -3954,7 +3983,7 @@ export default function Admin() {
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 190 }}>
               {creator.name || 'Sin nombre'}
             </span>
-            {creator.verified && <span title="Verificado" style={{ color: '#0284C7', fontSize: 12 }}>✔</span>}
+            {creator.verified && <Icon name="verified" size={12} color="#0284C7" title="Verificado" />}
           </span>
           <span style={{ display: 'block', fontFamily: PP, fontSize: 10.5, color: C.light, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
             {creator.handle || creator.slug}{creator.canton ? ` · ${creator.canton}` : ''}{creator.ownerEmail ? ` · ${creator.ownerEmail}` : ''}
@@ -4006,12 +4035,12 @@ export default function Admin() {
     { key: 'created', label: 'Alta', align: 'right', sortId: 'recent', render: creator => fmtDateShort(creator.created_at) },
     {
       key: 'actions',
-      label: 'Acciones',
+      label: 'Acción',
       align: 'right',
-      width: 260,
+      width: 130,
       render: creator => (
-        <span onClick={event => event.stopPropagation()} style={{ display: 'block' }}>
-          {renderCreatorActions(creator)}
+        <span onClick={event => event.stopPropagation()} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          {renderCreatorPrimaryAction(creator)}
         </span>
       ),
     },
@@ -4031,7 +4060,7 @@ export default function Admin() {
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
             <div style={{ minWidth: 0, flex: 1 }}>
               <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 14, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
-                {creator.name || 'Sin nombre'}{creator.verified ? ' ✔' : ''}
+                {creator.name || 'Sin nombre'}{creator.verified ? <Icon name="verified" size={12} color="#0284C7" title="Verificado" style={{ display:'inline-block', verticalAlign:'-1px', marginLeft:4 }} /> : null}
               </p>
               <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0', overflowWrap: 'anywhere' }}>
                 {creator.handle || creator.slug}
@@ -4047,7 +4076,7 @@ export default function Admin() {
             {creatorReviewTag(creator)}
             {(creator.topics || []).slice(0, 2).map(topicId => {
               const topic = creatorTopicMeta(topicId)
-              return <Tag key={topicId} bg={topic.bg} color={topic.color}>{topic.emoji} {topic.label}</Tag>
+              return <Tag key={topicId} bg={topic.bg} color={topic.color}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={getCreatorTopicIconName(topicId)} size={11} /> {topic.label}</span></Tag>
             })}
           </div>
 
@@ -4096,6 +4125,10 @@ export default function Admin() {
           </div>
         )}
       >
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingBottom: 14, marginBottom: 14, borderBottom: `1px solid ${C.borderLight}` }}>
+          {renderCreatorActions(creator, { compact: true })}
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 8, marginBottom: 14 }}>
           {[
             { label:'Vistas de perfil', value:fmtNumber(creator.profileViews), color:'#7C3AED' },
@@ -4117,7 +4150,7 @@ export default function Admin() {
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 12 }}>
           {(creator.topics || []).map(topicId => {
             const topic = creatorTopicMeta(topicId)
-            return <Tag key={topicId} bg={topic.bg} color={topic.color}>{topic.emoji} {topic.label}</Tag>
+            return <Tag key={topicId} bg={topic.bg} color={topic.color}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={getCreatorTopicIconName(topicId)} size={11} /> {topic.label}</span></Tag>
           })}
           {(creator.socials || []).map(social => {
             const platform = creatorPlatformMeta(social.platform)
@@ -4154,7 +4187,7 @@ export default function Admin() {
                     </a>
                     <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 6 }}>
                       <Tag bg={platform.bg} color={platform.color}>{platform.label}</Tag>
-                      <Tag bg={topic.bg} color={topic.color}>{topic.emoji} {topic.label}</Tag>
+                      <Tag bg={topic.bg} color={topic.color}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name={getCreatorTopicIconName(content.topic)} size={11} /> {topic.label}</span></Tag>
                       <Tag bg={published ? '#D1FAE5' : '#FEE2E2'} color={published ? '#065F46' : '#B91C1C'}>
                         {published ? 'Publicado' : content.status === 'draft' ? 'Borrador' : 'Oculto'}
                       </Tag>
@@ -4221,8 +4254,8 @@ export default function Admin() {
             boxShadow: '0 18px 46px rgba(15,23,42,0.06)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 4px 14px', borderBottom: `1px solid ${C.borderLight}`, marginBottom: 12 }}>
-              <span style={{ width: 38, height: 38, borderRadius: 13, background: `linear-gradient(135deg,${C.primary},#7C3AED)`, display: 'grid', placeItems: 'center', fontSize: 17, flexShrink: 0 }}>
-                💓
+              <span style={{ width: 38, height: 38, borderRadius: 13, background: `linear-gradient(135deg,${C.primary},#7C3AED)`, color: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                <Icon name="favorite" size={18} />
               </span>
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 14, color: C.text, margin: 0, letterSpacing: -0.3 }}>Latido CRM</p>
@@ -4263,8 +4296,8 @@ export default function Admin() {
                             position: 'relative',
                           }}
                         >
-                          <span style={{ width: 28, height: 28, borderRadius: 10, background: active ? '#fff' : C.bgAlt, display: 'grid', placeItems: 'center', fontSize: 13, flexShrink: 0 }}>
-                            {item.icon}
+                          <span style={{ width: 28, height: 28, borderRadius: 10, background: active ? '#fff' : C.bgAlt, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                            <Icon name={item.icon} size={14} />
                           </span>
                           <span style={{ minWidth: 0, flex: 1 }}>
                             <span style={{ display: 'block', fontFamily: PP, fontWeight: active ? 900 : 800, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -4326,7 +4359,7 @@ export default function Admin() {
       }}>
         <div style={{ minWidth: 200, flex: '1 1 340px' }}>
           <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 900, color: activeSectionDetails.color, margin: '0 0 5px', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-            {activeSection.icon} Latido CRM · {activeSection.label}
+            <Icon name={activeSection.icon} size={11} style={{ display: 'inline-block', verticalAlign: '-1px', marginRight: 5 }} />Latido CRM · {activeSection.label}
           </p>
           <h1 style={{ fontFamily: PP, fontWeight: 900, fontSize: isDesktop ? 26 : 22, color: C.text, margin: '0 0 5px', letterSpacing: -0.8, lineHeight: 1.1 }}>
             {activeSection.label}
@@ -4404,8 +4437,8 @@ export default function Admin() {
       {isTabDataReady(tab) && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: '1px solid rgba(226,234,244,0.95)', borderRadius: 18, padding: '11px 14px', boxShadow: '0 12px 28px rgba(15,23,42,0.04)' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
-            <span style={{ width: 32, height: 32, borderRadius: 12, background: `${activeSectionDetails.color}14`, display: 'grid', placeItems: 'center', fontSize: 15, flexShrink: 0 }}>
-              {activeSection.icon}
+            <span style={{ width: 32, height: 32, borderRadius: 12, background: `${activeSectionDetails.color}14`, color: activeSectionDetails.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+              <Icon name={activeSection.icon} size={16} />
             </span>
             <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: activeSectionDetails.color, minWidth: 0, lineHeight: 1.4 }}>
               {activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`)}
@@ -4791,11 +4824,11 @@ export default function Admin() {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 7, marginBottom: 8 }}>
                         <div style={{ borderRadius: 11, padding: '9px 8px', background: '#fff', border: `1px solid ${C.border}` }}>
                           <p style={{ fontFamily: PP, fontSize: 9, color: C.light, fontWeight: 850, margin: '0 0 3px' }}>LATIDO</p>
-                          <p style={{ fontFamily: PP, fontSize: 14, color: '#B45309', fontWeight: 900, margin: 0 }}>★ {rating.overall_rating}/5</p>
+                          <p style={{ fontFamily: PP, fontSize: 14, color: '#B45309', fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="star" size={13} style={{ fill: 'currentColor' }} /> {rating.overall_rating}/5</p>
                         </div>
                         <div style={{ borderRadius: 11, padding: '9px 8px', background: '#fff', border: `1px solid ${C.border}` }}>
                           <p style={{ fontFamily: PP, fontSize: 9, color: C.light, fontWeight: 850, margin: '0 0 3px' }}>ENCUENTRA LO NECESARIO</p>
-                          <p style={{ fontFamily: PP, fontSize: 14, color: '#047857', fontWeight: 900, margin: 0 }}>★ {rating.usefulness_rating}/5</p>
+                          <p style={{ fontFamily: PP, fontSize: 14, color: '#047857', fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="star" size={13} style={{ fill: 'currentColor' }} /> {rating.usefulness_rating}/5</p>
                         </div>
                       </div>
                       <p style={{ fontFamily: PP, fontSize: 10.5, color: rating.comment ? C.text : C.light, fontStyle: rating.comment ? 'normal' : 'italic', lineHeight: 1.5, margin: 0, padding: rating.comment ? '8px 10px' : 0, borderRadius: 10, background: rating.comment ? '#FFF' : 'transparent', overflowWrap: 'anywhere' }}>
@@ -5338,7 +5371,7 @@ export default function Admin() {
             </AdminFilterSelect>
           </div>
           {filteredPendingQueue.length === 0 ? (
-            <EmptyState icon="✅" text="No hay contenido pendiente con este filtro." />
+            <EmptyState icon="success" text="No hay contenido pendiente con este filtro." />
           ) : pagedModeration.items.map(item => (
             <Card key={item.id}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
@@ -5354,10 +5387,10 @@ export default function Admin() {
                 Motivo: {item.reason || 'Filtro automático'}{item.matched_term ? ` · término: "${item.matched_term}"` : ''}
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <AdminButton variant="success" onClick={() => resolveQueueItem(item, 'approved')}>✓ Aprobar</AdminButton>
-                <AdminButton variant="danger"  onClick={() => resolveQueueItem(item, 'rejected')}>✕ Eliminar</AdminButton>
+                <AdminButton variant="success" onClick={() => resolveQueueItem(item, 'approved')}><Icon name="check" size={12} /> Aprobar</AdminButton>
+                <AdminButton variant="danger"  onClick={() => resolveQueueItem(item, 'rejected')}><Icon name="delete" size={12} /> Eliminar</AdminButton>
                 <AdminButton variant="danger" disabled={!canBanContentAuthor(item)} onClick={() => banContentAuthor(item)}>
-                  🚫 {banAuthorButtonLabel(item)}
+                  <Icon name="ban" size={12} /> {banAuthorButtonLabel(item)}
                 </AdminButton>
               </div>
             </Card>
@@ -5385,7 +5418,7 @@ export default function Admin() {
             </AdminFilterSelect>
           </div>
           {filteredPendingReports.length === 0 ? (
-            <EmptyState icon="✅" text="No hay reportes pendientes con este filtro." />
+            <EmptyState icon="success" text="No hay reportes pendientes con este filtro." />
           ) : pagedReports.items.map(report => (
             <Card key={report.id}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
@@ -5403,10 +5436,10 @@ export default function Admin() {
                 </p>
               )}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                <AdminButton onClick={() => updateReport(report, 'reviewed')}>✓ Mantener</AdminButton>
-                <AdminButton variant="danger" onClick={() => removeReportedContent(report)}>✕ Eliminar contenido</AdminButton>
+                <AdminButton onClick={() => updateReport(report, 'reviewed')}><Icon name="check" size={12} /> Mantener</AdminButton>
+                <AdminButton variant="danger" onClick={() => removeReportedContent(report)}><Icon name="delete" size={12} /> Eliminar contenido</AdminButton>
                 <AdminButton variant="danger" disabled={!canBanContentAuthor(report)} onClick={() => banContentAuthor(report)}>
-                  🚫 {banAuthorButtonLabel(report)}
+                  <Icon name="ban" size={12} /> {banAuthorButtonLabel(report)}
                 </AdminButton>
               </div>
             </Card>
@@ -5503,7 +5536,7 @@ export default function Admin() {
           </div>
 
           {filteredVerificationBusinesses.length === 0 ? (
-            <EmptyState icon="✓" text="No hay negocios en este estado." />
+            <EmptyState icon="verified" text="No hay negocios en este estado." />
           ) : pagedBusinesses.items.map(business => {
             const details = getBusinessVerificationDetails(business)
             const statusMeta = BUSINESS_VERIFICATION_STATUSES[details.status] || BUSINESS_VERIFICATION_STATUSES.unverified
@@ -5530,7 +5563,7 @@ export default function Admin() {
                       style={{ width: 74, height: 74, objectFit: 'contain', borderRadius: 12, background: C.bg, border: `1px solid ${C.border}`, flexShrink: 0 }}
                     />
                   ) : (
-                    <div style={{ width: 74, height: 74, borderRadius: 12, background: C.bg, display: 'grid', placeItems: 'center', fontSize: 28, flexShrink: 0 }}>🏪</div>
+                    <div style={{ width: 74, height: 74, borderRadius: 12, background: C.bg, display: 'grid', placeItems: 'center', color: C.light, flexShrink: 0 }}><Icon name="business" size={28} strokeWidth={1.6} /></div>
                   )}
 
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -5582,7 +5615,7 @@ export default function Admin() {
                             padding: '3px 8px',
                           }}
                         >
-                          {item.passed ? '✓' : '×'} {item.label} (+{item.points})
+                          <Icon name={item.passed ? 'check' : 'close'} size={11} style={{ display:'inline-block', verticalAlign:'-1px', marginRight:3 }} /> {item.label} (+{item.points})
                         </span>
                       ))}
                     </div>
@@ -6021,7 +6054,7 @@ export default function Admin() {
                   {' · '}<strong style={{ color: C.text }}>{fmtNumber(filteredCreators.reduce((sum, creator) => sum + creator.clicks, 0))}</strong> clics
                 </span>
                 <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                  <AdminButton onClick={exportCreatorsCsv} disabled={!filteredCreators.length}>⬇ Exportar CSV</AdminButton>
+                  <AdminButton onClick={exportCreatorsCsv} disabled={!filteredCreators.length}><Icon name="download" size={12} /> Exportar CSV</AdminButton>
                   <AdminButton
                     onClick={() => {
                       setCreatorSearch('')
@@ -6106,7 +6139,7 @@ export default function Admin() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {!filteredCreators.length ? (
-                <EmptyState icon="🎬" text="No hay creadores con estos filtros." />
+                <EmptyState icon="creator" text="No hay creadores con estos filtros." />
               ) : pagedCreators.items.map(creator => renderCreatorCard(creator))}
               <AdminPagination
                 page={pagedCreators.page}
@@ -6134,7 +6167,7 @@ export default function Admin() {
                   {' · '}<strong style={{ color: '#0F766E' }}>{activeUsersWeek.length}</strong> activos 7d
                 </span>
                 <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                  <AdminButton onClick={exportUsersCsv} disabled={!filteredUsers.length}>⬇ Exportar CSV</AdminButton>
+                  <AdminButton onClick={exportUsersCsv} disabled={!filteredUsers.length}><Icon name="download" size={12} /> Exportar CSV</AdminButton>
                   <AdminButton
                     onClick={() => {
                       setUserSearch('')
@@ -6174,7 +6207,7 @@ export default function Admin() {
           </AdminFilterBar>
 
           {filteredUsers.length === 0 ? (
-            <EmptyState icon="👤" text="No se encontraron usuarios." />
+            <EmptyState icon="user" text="No se encontraron usuarios." />
           ) : pagedUsers.items.map(profile => (
             <Card key={profile.id} style={{ padding: '12px 14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
@@ -6204,7 +6237,7 @@ export default function Admin() {
                   variant={profile.banned ? 'success' : 'danger'}
                   onClick={() => setUserBanned(profile, !profile.banned)}
                 >
-                  {profile.banned ? '↩ Desbanear' : '🚫 Banear'}
+                  {profile.banned ? <><Icon name="refresh" size={12} /> Desbanear</> : <><Icon name="ban" size={12} /> Banear</>}
                 </AdminButton>
               </div>
             </Card>
@@ -6253,7 +6286,7 @@ export default function Admin() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredListings.length === 0 ? (
-                <EmptyState icon="📭" text="Sin anuncios con estos filtros." />
+                <EmptyState icon="listing" text="Sin anuncios con estos filtros." />
               ) : pagedListings.items.map(item => (
                 <Card key={item.id} style={{ padding: '12px 14px' }}>
                   {renderContentSummary('listing', item.id)}
@@ -6288,7 +6321,7 @@ export default function Admin() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredJobs.length === 0 ? (
-                <EmptyState icon="📭" text="Sin empleos con estos filtros." />
+                <EmptyState icon="listing" text="Sin empleos con estos filtros." />
               ) : pagedJobs.items.map(item => (
                 <Card key={item.id} style={{ padding: '12px 14px' }}>
                   {renderContentSummary('job', item.id)}
@@ -6407,8 +6440,8 @@ export default function Admin() {
                             boxShadow: active ? `0 10px 22px ${item.color}12` : 'none',
                           }}
                         >
-                          <span style={{ width: 30, height: 30, borderRadius: 12, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 15, flexShrink: 0 }}>
-                            {item.icon}
+                          <span style={{ width: 30, height: 30, borderRadius: 12, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                            <Icon name={item.icon} size={15} />
                           </span>
                           <span style={{ minWidth: 0 }}>
                             <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
@@ -6475,8 +6508,8 @@ export default function Admin() {
                 position: 'relative',
               }}
             >
-              <span style={{ width: 31, height: 31, borderRadius: 13, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 16, flexShrink: 0 }}>
-                {item.icon}
+              <span style={{ width: 31, height: 31, borderRadius: 13, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                <Icon name={item.icon} size={17} />
               </span>
               {Number(item.alert) > 0 && (
                 <span style={{ position: 'absolute', top: 6, right: '50%', marginRight: -22, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: item.color, color: '#fff', fontFamily: PP, fontSize: 9, fontWeight: 900, display: 'grid', placeItems: 'center' }}>
@@ -6512,8 +6545,8 @@ export default function Admin() {
             transition: 'background .15s ease, border-color .15s ease, box-shadow .15s ease',
           }}
         >
-          <span style={{ width: 31, height: 31, borderRadius: 13, background: menuNavActive ? '#fff' : C.primaryLight, display: 'grid', placeItems: 'center', fontSize: 17, fontFamily: PP, fontWeight: 900, flexShrink: 0 }}>
-            ☰
+          <span style={{ width: 31, height: 31, borderRadius: 13, background: menuNavActive ? '#fff' : C.primaryLight, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+            <Icon name="menu" size={17} />
           </span>
           <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 9.5, letterSpacing: -0.1, lineHeight: 1.05, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             Menú

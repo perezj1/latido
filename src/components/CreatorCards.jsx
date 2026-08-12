@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { ChevronRight, Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
+import { ChevronRight, Ellipsis, EllipsisVertical, Share2, UserRound } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import {
@@ -20,6 +20,7 @@ import {
 import { C, PP } from '../lib/theme'
 import { ChevronLeftIcon } from './UI'
 import ReportButton from './ReportButton'
+import { Icon } from '../lib/icons'
 
 const PLAYABLE_CONTENT_PLATFORMS = new Set(['youtube', 'tiktok', 'instagram', 'spotify'])
 const VIDEO_CAROUSEL_PLATFORMS = new Set(['youtube', 'tiktok', 'instagram'])
@@ -67,7 +68,7 @@ function useCreatorInteraction({ action, targetType, targetId, baseCount = 0 }) 
 
   const toggle = async () => {
     if (!actorId) {
-      toast('Inicia sesión para guardar esta valoración.', { icon:'🔐' })
+      toast('Inicia sesión para guardar esta valoración.', { icon:<Icon name="lock" size={18} /> })
       return state
     }
     if (busy) return state
@@ -92,7 +93,7 @@ function ProfileOutlineIcon() {
 }
 
 function HeartOutlineIcon({ active=false }) {
-  return <Heart aria-hidden="true" size={18} strokeWidth={1.8} fill={active ? 'currentColor' : 'none'} />
+  return <Icon name={active ? 'favoriteActive' : 'favorite'} size={18} color={active ? '#E11D48' : 'currentColor'} />
 }
 
 function ShareOutlineIcon() {
@@ -244,7 +245,7 @@ export function CreatorFollowButton({ creator }) {
 
   return (
     <button type="button" className={`creator-follow-button${saved.active ? ' is-active' : ''}`} onClick={handleFollow} aria-pressed={saved.active}>
-      <span aria-hidden="true">{saved.active ? '✓' : '+'}</span>
+      <span aria-hidden="true"><Icon name={saved.active ? 'check' : 'add'} size={15} /></span>
       <span>{saved.active ? 'Siguiendo' : 'Seguir'}</span>
     </button>
   )
@@ -254,7 +255,7 @@ export function CreatorProfileHelpfulButton({ creator }) {
   const helpful = useCreatorInteraction({ action:'helpful', targetType:'creator', targetId:creator.id, baseCount:creator.helpful_count })
   return (
     <button type="button" className={`creator-profile-helpful${helpful.active ? ' is-active' : ''}`} onClick={helpful.toggle} aria-pressed={helpful.active}>
-      <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
+      <span aria-hidden="true"><Icon name={helpful.active ? 'favoriteActive' : 'favorite'} size={15} color={helpful.active ? '#E11D48' : 'currentColor'} /></span>
       <span>Me ayudó</span>
       {helpful.count > 0 && <strong>{helpful.count}</strong>}
     </button>
@@ -265,7 +266,7 @@ export function CreatorProfileHelpfulMetric({ creator }) {
   const helpful = useCreatorInteraction({ action:'helpful', targetType:'creator', targetId:creator.id, baseCount:creator.helpful_count })
   return (
     <span className="creator-community-card__helpful-metric">
-      <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
+      <span aria-hidden="true"><Icon name={helpful.active ? 'favoriteActive' : 'favorite'} size={14} color={helpful.active ? '#E11D48' : 'currentColor'} /></span>
       <span>{helpful.count} Me ayudó</span>
     </span>
   )
@@ -283,7 +284,7 @@ export function CreatorProfileTabs({ active = 'personal', creator = null, compac
         className={active === 'personal' ? 'is-active' : ''}
         aria-current={active === 'personal' ? 'page' : undefined}
       >
-        <span aria-hidden="true">👤</span>
+        <span aria-hidden="true"><Icon name="user" size={15} /></span>
         <span>Perfil de Latido</span>
       </Link>
       <Link
@@ -292,7 +293,7 @@ export function CreatorProfileTabs({ active = 'personal', creator = null, compac
         className={active === 'creator' ? 'is-active' : ''}
         aria-current={active === 'creator' ? 'page' : undefined}
       >
-        <span aria-hidden="true">🎙️</span>
+        <span aria-hidden="true"><Icon name="creator" size={15} /></span>
         <span>Perfil de creador</span>
         {!creator && <small>Crear</small>}
       </Link>
@@ -309,35 +310,80 @@ export function getCreatorInitials(creator) {
     .join('') || '?'
 }
 
-export function CreatorAvatar({ creator, size = 72, compact = false }) {
+// La insignia de verificado vive dentro del avatar, anclada a su esquina
+// inferior derecha. Al ser un unico componente, sale igual en el directorio, en
+// las tarjetas de contenido, en el perfil y en las sugerencias.
+// `showVerified` no se pasa casi nunca: por debajo de 48 px el avatar es una
+// miniatura junto a un nombre y la insignia solo ensucia, asi que se apaga sola.
+export function CreatorAvatar({ creator, size = 72, compact = false, showVerified = null }) {
   const initials = getCreatorInitials(creator)
+  const wantsBadge = showVerified === null ? size >= 48 : showVerified
+  const verified = wantsBadge && Boolean(creator?.verified)
+  // Insignia discreta en la esquina inferior derecha de la foto. Se mantiene
+  // pequeña para que no tape el rostro ni vuelva a competir con el nombre.
+  const badge = Math.round(Math.min(22, Math.max(13, size * 0.24)))
 
   return (
     <div
-      role="img"
-      aria-label={creator?.name || 'Creador'}
       style={{
+        position:'relative',
         width:size,
         height:size,
         flex:`0 0 ${size}px`,
-        borderRadius:'50%',
-        display:'grid',
-        placeItems:'center',
-        color:'#fff',
-        fontFamily:PP,
-        fontWeight:900,
-        fontSize:size * 0.3,
-        letterSpacing:-1,
-        background:`linear-gradient(145deg, ${creator?.accent || C.primary}, #0F172A)`,
-        border:compact ? '1.5px solid #fff' : '3px solid #fff',
-        boxShadow:compact ? '0 2px 6px rgba(15,23,42,.14)' : '0 8px 22px rgba(15,23,42,.16)',
-        overflow:'hidden',
+        display:'block',
       }}
     >
-      {creator?.avatar_url
-        ? <img src={creator.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
-        : initials || '?'
-      }
+      <div
+        role="img"
+        aria-label={creator?.name || 'Creador'}
+        style={{
+          width:'100%',
+          height:'100%',
+          borderRadius:'50%',
+          display:'grid',
+          placeItems:'center',
+          color:'#fff',
+          fontFamily:PP,
+          fontWeight:900,
+          fontSize:size * 0.3,
+          letterSpacing:-1,
+          background:`linear-gradient(145deg, ${creator?.accent || C.primary}, #0F172A)`,
+          border:compact ? '1.5px solid #fff' : '3px solid #fff',
+          boxShadow:compact ? '0 2px 6px rgba(15,23,42,.14)' : '0 8px 22px rgba(15,23,42,.16)',
+          overflow:'hidden',
+          boxSizing:'border-box',
+        }}
+      >
+        {creator?.avatar_url
+          ? <img src={creator.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
+          : initials || '?'
+        }
+      </div>
+      {verified && (
+        <span
+          className="creator-verified-badge"
+          title="Perfil verificado por Latido"
+          aria-label="Perfil verificado por Latido"
+          role="img"
+          style={{
+            position:'absolute',
+            right:0,
+            bottom:0,
+            width:badge,
+            height:badge,
+            borderRadius:'50%',
+            background:C.primary,
+            color:'#fff',
+            display:'grid',
+            placeItems:'center',
+            border:'2px solid #fff',
+            boxSizing:'border-box',
+            boxShadow:'0 2px 6px rgba(15,23,42,.18)',
+          }}
+        >
+          <Icon name="verified" size={Math.round(badge * 0.62)} strokeWidth={2.25} />
+        </span>
+      )}
     </div>
   )
 }
@@ -395,14 +441,13 @@ export function CreatorCard({ creator }) {
     <article className="creator-community-card creator-directory-card">
       <Link className="creator-community-card__open" to={`/creadores/${creator.slug}`}>
         <span className="creator-community-card__media">
-          <CreatorAvatar creator={creator} size={84} />
+          <CreatorAvatar creator={creator} size={84} showVerified />
         </span>
         <CreatorProfileHelpfulMetric creator={creator} />
 
         <span className="creator-community-card__body">
           <span className="creator-community-card__name">
             <strong>{creator.name}</strong>
-            {creator.verified && <span className="creator-community-card__verification" title="Perfil verificado por Latido" aria-label="Perfil verificado por Latido">✓</span>}
           </span>
           <span className="creator-community-card__tagline">{creator.tagline}</span>
 
@@ -412,7 +457,7 @@ export function CreatorCard({ creator }) {
           </span>
 
           <span className="creator-community-card__location">
-            📍 {creator.city || creator.reach || 'Toda Suiza'}{creator.canton ? `, ${creator.canton}` : ''}
+            <Icon name="location" size={12} /> {creator.city || creator.reach || 'Toda Suiza'}{creator.canton ? `, ${creator.canton}` : ''}
           </span>
         </span>
       </Link>
@@ -462,7 +507,6 @@ export function CreatorContentCard({ content, creator, onContentOpen, compact = 
         <div className="creator-content-card__creator">
           <CreatorAvatar creator={creator} size={28} />
           <span>{creator.name}</span>
-          {creator.verified && <span className="creator-confirmed creator-confirmed--small">✓</span>}
         </div>
         {!compact && <p>{content.summary}</p>}
         <div className="creator-content-card__footer">
@@ -503,7 +547,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
           <span className="creator-home-content-card__media" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
             <span className="creator-home-content-card__emoji">{topic.emoji}</span>
             {thumbnailUrl && <img className="creator-home-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
-            {isPlayable && <span className="creator-home-content-card__play" aria-hidden="true">▶</span>}
+            {isPlayable && <span className="creator-home-content-card__play" aria-hidden="true"><Icon name="play" size={18} /></span>}
           </span>
           <span className="creator-home-content-card__copy">
             <strong>{content.title}</strong>
@@ -535,7 +579,6 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
         <span className="creator-app-content-card__creator">
           <CreatorAvatar creator={creator} size={20} />
           <span>{creator.name}</span>
-          {creator.verified && <span className="creator-confirmed creator-confirmed--tiny">✓</span>}
         </span>
         {managementActions || <CreatorContentActions helpful={helpful} content={content} creator={creator} onOpen={handleOpen} />}
       </div>
@@ -692,7 +735,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
           <div className="creator-preview-modal__visual creator-video-modal__fallback" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
             <span>{topic.emoji}</span>
             {thumbnailUrl && <img className="creator-preview-modal__thumbnail" src={thumbnailUrl} alt="" onError={event => event.currentTarget.remove()} />}
-            <span className="creator-preview-modal__play">▶</span>
+            <span className="creator-preview-modal__play"><Icon name="play" size={24} /></span>
           </div>
         )}
         <div className="creator-video-modal__footer">

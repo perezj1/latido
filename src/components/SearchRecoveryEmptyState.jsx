@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { Link } from 'react-router-dom'
 import SavedSearchButton from './SavedSearchButton'
+import { Icon } from '../lib/icons'
 
 export default function SearchRecoveryEmptyState({
   employment = false,
@@ -16,7 +17,7 @@ export default function SearchRecoveryEmptyState({
   return (
     <section className="employment-search-empty" aria-labelledby={titleId}>
       <div className="employment-search-empty__illustration" aria-hidden="true">
-        <span>{employment ? '💼' : '🔎'}</span>
+        <span><Icon name={employment ? 'job' : 'search'} size={34} /></span>
         <i>⌕</i>
       </div>
       <p className="employment-search-empty__eyebrow">TU BÚSQUEDA SIGUE ACTIVA</p>
@@ -38,11 +39,11 @@ export default function SearchRecoveryEmptyState({
           />
         )}
         <button type="button" className="employment-search-empty__action employment-search-empty__action--secondary" onClick={onExpandSearch}>
-          <span aria-hidden="true">🌍</span>
+          <span aria-hidden="true"><Icon name="world" size={18} /></span>
           <span>Ampliar la búsqueda</span>
         </button>
         <Link className="employment-search-empty__action employment-search-empty__action--outline" to={resolvedPublishHref}>
-          <span aria-hidden="true">✍️</span>
+          <span aria-hidden="true"><Icon name="edit" size={18} /></span>
           <span>{resolvedPublishLabel}</span>
         </Link>
       </div>

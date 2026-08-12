@@ -15,6 +15,7 @@ import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
 import { getPublicationExpiresAt, isPublicationOpen } from '../lib/publicationLifecycle'
 import toast from 'react-hot-toast'
+import { Icon, InterfaceIcon } from '../lib/icons'
 
 const STEPS = [
   { title:'¿Qué quieres publicar?', sub:'Elige una categoría y después la acción que mejor describe tu anuncio' },
@@ -288,7 +289,7 @@ export default function Publicar() {
   if (!isLoggedIn) {
     return (
       <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-        <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
+        <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:16 }}><Icon name="lock" size={48} /></div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>
           Necesitas una cuenta
         </h1>
@@ -321,7 +322,7 @@ export default function Publicar() {
   if (isBanned) {
     return (
       <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-        <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
+        <div style={{ display:'flex', justifyContent:'center', color:C.danger, marginBottom:16 }}><Icon name="ban" size={48} /></div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>
           Cuenta suspendida
         </h1>
@@ -345,11 +346,10 @@ export default function Publicar() {
             display:'flex',
             alignItems:'center',
             justifyContent:'center',
-            fontSize:42,
             margin:'0 auto 20px'
           }}
         >
-          ✅
+          <Icon name="success" size={40} color={C.success} />
         </div>
 
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>
@@ -371,8 +371,8 @@ export default function Publicar() {
             marginBottom:24
           }}
         >
-          <p style={{ fontFamily:PP, fontSize:12, fontWeight:600, color:'#065F46', margin:0 }}>
-            🌐 Tu anuncio es público. El contacto con los interesados es siempre dentro de Latido.
+          <p style={{ display:'flex', alignItems:'flex-start', gap:6, fontFamily:PP, fontSize:12, fontWeight:600, color:'#065F46', margin:0 }}>
+            <Icon name="world" size={15} style={{ marginTop:1 }} /> <span>Tu anuncio es público. El contacto con los interesados es siempre dentro de Latido.</span>
           </p>
         </div>
 
@@ -953,16 +953,16 @@ export default function Publicar() {
                   )}
                   {selectedIntent && (
                     <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:form.type === 'busca' ? '#FEF3C7' : '#E0F2FE', color:form.type === 'busca' ? '#92400E' : '#0369A1' }}>
-                      {selectedIntent.emoji} {selectedIntent.itemLabel || selectedIntent.shortLabel}
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><InterfaceIcon emoji={selectedIntent.emoji} size={11} /> {selectedIntent.itemLabel || selectedIntent.shortLabel}</span>
                     </span>
                   )}
                   {form.sub && (
                     <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>
-                      {selectedSubOption?.emoji ? `${selectedSubOption.emoji} ` : ''}{form.sub}
+                      {form.sub}
                     </span>
                   )}
-                  <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>
-                    {allSwitzerland ? '🌐 Toda Suiza' : `📍 ${formatAdLocation(form)}`}
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>
+                    <Icon name={allSwitzerland ? 'world' : 'location'} size={11} /> {allSwitzerland ? 'Toda Suiza' : formatAdLocation(form)}
                   </span>
                 </div>
                 {getFormattedPrice() && (
@@ -1001,7 +1001,7 @@ export default function Publicar() {
           </Btn>
         ) : (
           <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Publicando...' : '✅ Publicar anuncio'}
+            {loading ? <><Icon name="loading" size={15} /> Publicando...</> : <><Icon name="check" size={15} /> Publicar anuncio</>}
           </Btn>
         )}
       </StickyFormActions>

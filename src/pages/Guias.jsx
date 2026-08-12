@@ -3,9 +3,22 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { MOCK_DOCS } from '../lib/constants'
 import { getGuideById, getGuideBySlug, getGuidePath } from '../lib/seo'
-import { C, PP } from '../lib/theme'
+import { C, PP, getLatidoCategoryTheme } from '../lib/theme'
 import { Card, Tag, Modal, Btn, InfoBanner, PillFilters } from '../components/UI'
 import PartnerServicesPromo, { getPartnerServiceMatch } from '../components/PartnerServicesPromo'
+import { Icon } from '../lib/icons'
+
+const GUIDE_ICONS = {
+  permisos:'document',
+  impuestos:'money',
+  salud:'care',
+  banco:'payment',
+  educacion:'classes',
+  trabajo:'job',
+  vivienda:'housing',
+}
+
+const GUIDE_THEME = getLatidoCategoryTheme('guias')
 
 export default function Guias() {
   const { isLoggedIn } = useAuth()
@@ -21,13 +34,13 @@ export default function Guias() {
 
   const cats = [
     { id:'', label:'Todos' },
-    { id:'permisos', label:'📄 Permisos' },
-    { id:'impuestos', label:'🧾 Dinero e impuestos' },
-    { id:'salud', label:'🏥 Salud' },
-    { id:'banco', label:'🏦 Banco y pagos' },
-    { id:'educacion', label:'🎓 Estudios' },
-    { id:'trabajo', label:'💼 Trabajo' },
-    { id:'vivienda', label:'🏠 Vivienda' },
+    { id:'permisos', label:'Permisos' },
+    { id:'impuestos', label:'Dinero e impuestos' },
+    { id:'salud', label:'Salud' },
+    { id:'banco', label:'Banco y pagos' },
+    { id:'educacion', label:'Estudios' },
+    { id:'trabajo', label:'Trabajo' },
+    { id:'vivienda', label:'Vivienda' },
   ]
 
   const filtered = MOCK_DOCS.filter((d) => {
@@ -80,8 +93,8 @@ export default function Guias() {
 
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 24px 100px' }}>
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:0 }}>
-        📚 Guías
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:0, display:'flex', alignItems:'center', gap:9 }}>
+        <Icon name="guide" size={27} color={GUIDE_THEME.ink} /> Guías
       </h1>
 
       <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:18 }}>
@@ -90,7 +103,7 @@ export default function Guias() {
 
       <div style={{ position:'relative', marginBottom:12 }}>
         <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:C.light }}>
-          🔍
+          <Icon name="search" size={17} />
         </span>
         <input
           style={{
@@ -110,7 +123,7 @@ export default function Guias() {
         />
       </div>
 
-      <PillFilters options={cats} value={cat} onChange={setCat} className="mb-4" />
+      <PillFilters options={cats} value={cat} onChange={setCat} className="mb-4" accent={GUIDE_THEME.color} onAccent={GUIDE_THEME.on} />
 
       {!isLoggedIn && (
         <div style={{ background:'#EFF6FF', border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'14px 16px', margin:'0 0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
@@ -139,17 +152,13 @@ export default function Guias() {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
         {filtered.map((doc) => (
           <Card key={doc.id} onClick={() => openGuide(doc)} style={{ padding:0, overflow:'hidden' }}>
-            <div style={{ position:'relative', height:150, background:C.bg }}>
+            <div style={{ position:'relative', height:150, background:GUIDE_THEME.soft }}>
               {doc.img ? (
                 <img src={doc.img} alt={doc.title} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
               ) : (
-                <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>
-                  {doc.emoji}
-                </div>
+                <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:GUIDE_THEME.ink }}><Icon name={GUIDE_ICONS[doc.cat] || 'guide'} size={44} /></div>
               )}
-              <span style={{ position:'absolute', left:12, bottom:12, width:38, height:38, borderRadius:13, background:'rgba(255,255,255,0.92)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, boxShadow:'0 8px 22px rgba(15,23,42,0.18)' }}>
-                {doc.emoji}
-              </span>
+              <span style={{ position:'absolute', left:12, bottom:12, width:38, height:38, borderRadius:13, border:`1px solid ${GUIDE_THEME.border}`, background:'rgba(255,255,255,0.92)', color:GUIDE_THEME.ink, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 22px rgba(15,23,42,0.18)' }}><Icon name={GUIDE_ICONS[doc.cat] || 'guide'} size={21} /></span>
               <div style={{ position:'absolute', right:12, top:12 }}>
                 <Tag
                   bg={doc.level === 'Básico' ? '#D1FAE5' : '#FEF3C7'}
@@ -178,7 +187,7 @@ export default function Guias() {
                   paddingTop:10
                 }}
               >
-                <span style={{ fontFamily:PP, fontSize:11, color:C.light }}>⏱ {doc.time}</span>
+                <span style={{ fontFamily:PP, fontSize:11, color:C.light, display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="clock" size={13} /> {doc.time}</span>
                 <Link
                   to={getGuidePath(doc)}
                   onClick={e => e.stopPropagation()}
@@ -227,7 +236,7 @@ export default function Guias() {
               >
                 {selected.level}
               </Tag>
-              <Tag bg={C.primaryLight} color={C.primary}>⏱ {selected.time}</Tag>
+              <Tag bg={C.primaryLight} color={C.primary}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="clock" size={12} /> {selected.time}</span></Tag>
             </div>
 
             <div

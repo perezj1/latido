@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@fontsource/poppins": "^5.2.7",
+    "@remixicon/react": "^4.9.0",
     "@supabase/supabase-js": "^2.39.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",

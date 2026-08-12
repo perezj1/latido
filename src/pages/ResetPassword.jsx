@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
 import { Btn, Input } from '../components/UI'
 import toast from 'react-hot-toast'
+import { Icon } from '../lib/icons'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -58,7 +59,7 @@ export default function ResetPassword() {
 
   if (!ready && expired) return (
     <div style={{ maxWidth:440, margin:'80px auto', padding:'0 24px', textAlign:'center' }}>
-      <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
+      <div style={{ display:'flex', justifyContent:'center', color:C.danger, marginBottom:16 }}><Icon name="ban" size={48} /></div>
       <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, marginBottom:8 }}>Enlace inválido o expirado</h2>
       <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:24 }}>
         Este enlace ya no es válido. Solicita uno nuevo desde la pantalla de inicio de sesión.
@@ -69,7 +70,7 @@ export default function ResetPassword() {
 
   if (!ready) return (
     <div style={{ maxWidth:440, margin:'80px auto', padding:'0 24px', textAlign:'center' }}>
-      <div style={{ fontSize:48, marginBottom:16 }}>⏳</div>
+      <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:16 }}><Icon name="loading" size={44} /></div>
       <p style={{ fontFamily:PP, fontSize:14, color:C.light }}>Verificando enlace...</p>
     </div>
   )
@@ -77,7 +78,7 @@ export default function ResetPassword() {
   return (
     <div style={{ maxWidth:440, margin:'60px auto', padding:'0 24px' }}>
       <div style={{ textAlign:'center', marginBottom:28 }}>
-        <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🔐</div>
+        <div style={{ width:60, height:60, background:C.primaryLight, color:C.primary, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}><Icon name="lock" size={29} /></div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Nueva contraseña</h1>
         <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Elige una contraseña segura para tu cuenta.</p>
       </div>
@@ -100,7 +101,7 @@ export default function ResetPassword() {
       />
 
       <Btn onClick={handleSubmit} disabled={loading}>
-        {loading ? '⏳ Guardando...' : 'Guardar nueva contraseña'}
+        {loading ? <><Icon name="loading" size={15} /> Guardando...</> : 'Guardar nueva contraseña'}
       </Btn>
     </div>
   )

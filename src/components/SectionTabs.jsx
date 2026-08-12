@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { EXPLORE_SECTIONS, getActiveSection } from '../lib/sections'
+import { Icon, getSectionIconName } from '../lib/icons'
 
 // Atajo entre secciones dentro de una lista, para no tener que volver a
 // Explorar solo para cambiar de sitio. Explorar sigue siendo el mapa completo.
@@ -31,10 +32,15 @@ export default function SectionTabs() {
             ref={isActive ? activeRef : undefined}
             to={section.to}
             className={`latido-section-tab${isActive ? ' is-active' : ''}`}
-            style={{ '--section-color':section.color, '--section-ink':section.ink }}
+            style={{
+              '--section-color':section.color,
+              '--section-ink':section.ink,
+              '--section-soft':section.soft,
+              '--section-border':section.border,
+            }}
             aria-current={isActive ? 'page' : undefined}
           >
-            <span aria-hidden="true">{section.emoji}</span>
+            <Icon name={getSectionIconName(section.id)} size={16} color={section.ink} strokeWidth={1.8} />
             <span>{section.label}</span>
           </Link>
         )

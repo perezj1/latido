@@ -8,7 +8,7 @@ import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
 import { PUSH_STATUS_EVENT, getPushStatus, subscribeToPushNotifications, syncPushPreferences, unsubscribeFromPushNotifications } from '../lib/pushNotifications'
 import { MAX_PUBLICATION_IMAGES, uploadAvatar, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
-import { C, PP } from '../lib/theme'
+import { C, PP, SECTION_COLORS } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
 import BusinessPartnerContactsEditor from '../components/BusinessPartnerContactsEditor'
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
@@ -35,6 +35,7 @@ import {
   subscribeCreatorUpdates,
   toggleCreatorInteraction,
 } from '../lib/creators'
+import { Icon } from '../lib/icons'
 import {
   createEmptyEmploymentProfile,
   employmentProfileFromJob,
@@ -59,11 +60,11 @@ import './Creators.css'
 
 const PUBLICATION_TABS = [
   { id:'all', label:'Todo' },
-  { id:'ad', label:'📌 Anuncios' },
-  { id:'job', label:'💼 Empleos' },
-  { id:'event', label:'🎉 Eventos' },
-  { id:'business', label:'🏪 Negocios' },
-  { id:'community', label:'👥 Grupos' },
+  { id:'ad', label:'Anuncios' },
+  { id:'job', label:'Empleos' },
+  { id:'event', label:'Eventos' },
+  { id:'business', label:'Negocios' },
+  { id:'community', label:'Grupos' },
 ]
 
 const MULTI_PHOTO_AD_CATS = new Set(['vivienda', 'venta'])
@@ -95,14 +96,14 @@ for (const item of COMMUNITY_CATS) {
 }
 
 const ALERT_CATS = [
-  { id:'eventos', emoji:'🎉', label:'Eventos' },
-  { id:'vivienda', emoji:'🏠', label:'Vivienda' },
-  { id:'servicios', emoji:'🔧', label:'Servicios' },
-  { id:'empleo', emoji:'💼', label:'Empleo' },
-  { id:'venta', emoji:'🛍️', label:'Compraventa' },
-  { id:'cuidados', emoji:'❤️', label:'Cuidados' },
-  { id:'documentos', emoji:'📄', label:'Trámites' },
-  { id:'regalo', emoji:'🎁', label:'Regalos' },
+  { id:'eventos', icon:'event', label:'Eventos' },
+  { id:'vivienda', icon:'housing', label:'Vivienda' },
+  { id:'servicios', icon:'service', label:'Servicios' },
+  { id:'empleo', icon:'job', label:'Empleo' },
+  { id:'venta', icon:'sale', label:'Compraventa' },
+  { id:'cuidados', icon:'care', label:'Cuidados' },
+  { id:'documentos', icon:'document', label:'Trámites' },
+  { id:'regalo', icon:'gift', label:'Regalos' },
 ]
 
 const EMPTY_LATIDO_RATING = {
@@ -487,12 +488,12 @@ function isRenewableRequest(item) {
 
 function getResolutionActionLabel(item) {
   if (item?.kind === 'job') {
-    return getJobIntentId(item.raw) === 'busca' ? '🎉 Ya encontré trabajo' : '✅ Puesto cubierto'
+    return getJobIntentId(item.raw) === 'busca' ? 'Ya encontré trabajo' : 'Puesto cubierto'
   }
   if (item?.kind === 'ad' && normalizeAdCat(item.raw?.cat) === 'vivienda') {
-    return item.raw?.type === 'busca' ? '🏠 Ya encontré vivienda' : '✅ Ya no está disponible'
+    return item.raw?.type === 'busca' ? 'Ya encontré vivienda' : 'Ya no está disponible'
   }
-  return item?.raw?.type === 'busca' ? '✅ Solicitud resuelta' : '✅ Ya no está disponible'
+  return item?.raw?.type === 'busca' ? 'Solicitud resuelta' : 'Ya no está disponible'
 }
 
 function buildEditorForm(item) {
@@ -654,7 +655,7 @@ function LatidoStarInput({
               transform:star <= activeValue ? 'scale(1.04)' : 'scale(1)',
             }}
           >
-            ★
+            <Icon name="star" size={31} style={{ fill:star <= activeValue ? 'currentColor' : 'transparent' }} />
           </button>
         ))}
         {activeValue > 0 && (
@@ -1399,7 +1400,7 @@ export default function Perfil() {
   }
 
   const SHARE_URL  = window.location.origin
-  const SHARE_TEXT = '¡Únete a Latido! La app de los hispanohablantes en Suiza: anuncios, empleos, grupos y más. ❤️'
+  const SHARE_TEXT = '¡Únete a Latido! La app de los hispanohablantes en Suiza: anuncios, empleos, grupos y más.'
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -2212,9 +2213,9 @@ export default function Perfil() {
     {
       title: 'Mi actividad',
       items: [
-        { icon:'📌', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
+        { icon:'listing', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
         ...(hasEmploymentRequest ? [{
-          icon:'💼',
+          icon:'job',
           color:'#EFF6FF',
           label:'Perfil profesional',
           sub:employmentProfileLoading
@@ -2224,27 +2225,27 @@ export default function Perfil() {
               : 'Créalo con cinco respuestas rápidas',
           action:openEmploymentProfileEditor,
         }] : []),
-        { icon:'❤️', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
-        { icon:'🎙️', color:'#EFF6FF', label:'Siguiendo', sub:followedCreators.length ? `${followedCreators.length} ${followedCreators.length === 1 ? 'creador seguido' : 'creadores seguidos'}` : 'Sigue perfiles para encontrarlos fácilmente', action:() => setFollowedCreatorsOpen(true) },
+        { icon:'favorite', color:'#F1F5F9', label:'Favoritos', sub:`${(favorites.ads?.length||0)+(favorites.jobs?.length||0)} guardados · toca el corazón en los anuncios`, action:() => { setFavOpen(true); loadFavorites() } },
+        { icon:'creator', color:'#EFF6FF', label:'Siguiendo', sub:followedCreators.length ? `${followedCreators.length} ${followedCreators.length === 1 ? 'creador seguido' : 'creadores seguidos'}` : 'Sigue perfiles para encontrarlos fácilmente', action:() => setFollowedCreatorsOpen(true) },
       ],
     },
     ...(PAID_BUSINESS_FEATURES_VISIBLE ? [{
       title: 'Profesional',
       items: [
-        { icon:'✨', color:'#F1F5F9', label:'Ventajas para tu negocio', sub: promotableBusinessPublications.length ? `${promotableBusinessPublications.length} ${promotableBusinessPublications.length === 1 ? 'negocio listo' : 'negocios listos'} para activar un plan` : businessPublications.length ? 'Tus negocios ya tienen un plan activo' : 'Publica un negocio para desbloquear esta ventaja', action:() => setProfessionalOpen(true) },
+        { icon:'sparkles', color:'#F1F5F9', label:'Ventajas para tu negocio', sub: promotableBusinessPublications.length ? `${promotableBusinessPublications.length} ${promotableBusinessPublications.length === 1 ? 'negocio listo' : 'negocios listos'} para activar un plan` : businessPublications.length ? 'Tus negocios ya tienen un plan activo' : 'Publica un negocio para desbloquear esta ventaja', action:() => setProfessionalOpen(true) },
       ],
     }] : []),
     ...(isAdmin ? [{
       title: 'Administrador',
       items: [
-        { icon:'🛡️', color:'#FEF2F2', label:'Administrar', sub:'Reportes, usuarios, moderacion y contenido pendiente', action:() => navigate('/admin-latido') },
+        { icon:'verified', color:'#FEF2F2', label:'Administrar', sub:'Reportes, usuarios, moderacion y contenido pendiente', action:() => navigate('/admin-latido') },
       ],
     }] : []),
     {
       title: 'Descubrir',
       items: [
         {
-          icon:'🔔',
+          icon:'bell',
           color:'#F1F5F9',
           label:'Notificaciones',
           sub: needsPushActivation
@@ -2253,15 +2254,15 @@ export default function Perfil() {
           attention: needsPushActivation,
           action:() => setAlertsOpen(true),
         },
-        { icon:'📚', color:'#F1F5F9', label:'Guías', sub:'Trámites y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
+        { icon:'guide', color:SECTION_COLORS.guias.soft, ink:SECTION_COLORS.guias.ink, label:'Guías', sub:'Trámites y recursos útiles para vivir en Suiza', action:() => navigate('/guias') },
       ],
     },
     {
       title: 'Ajustes',
       items: [
-        { icon:'⚙️', color:'#F1F5F9', label:'Configuración', sub:'Nombre, cantón, intereses y contraseña', action:openConfig },
+        { icon:'settings', color:'#F1F5F9', label:'Configuración', sub:'Nombre, cantón, intereses y contraseña', action:openConfig },
         {
-          icon:'⭐',
+          icon:'star',
           color:'#FFFBEB',
           label:'Valorar Latido',
           sub:hasLatidoRating
@@ -2269,8 +2270,8 @@ export default function Perfil() {
             : 'Cuéntanos qué te parece y si encuentras lo que necesitas',
           action:() => setLatidoRatingOpen(true),
         },
-        { icon:'🔗', color:'#F1F5F9', label:'Compartir Latido', sub:'Invita a amigos y familiares a unirse', action:handleShare },
-        { icon:'✉️', color:'#F1F5F9', label:'Contactar con Latido', sub:'Preguntas, sugerencias o feedback', action:() => window.location.href = `mailto:info@latido.ch?subject=${encodeURIComponent('Mensaje desde Latido')}` },
+        { icon:'share', color:'#F1F5F9', label:'Compartir Latido', sub:'Invita a amigos y familiares a unirse', action:handleShare },
+        { icon:'mail', color:'#F1F5F9', label:'Contactar con Latido', sub:'Preguntas, sugerencias o feedback', action:() => window.location.href = `mailto:info@latido.ch?subject=${encodeURIComponent('Mensaje desde Latido')}` },
       ],
     },
   ]
@@ -2278,7 +2279,7 @@ export default function Perfil() {
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:440, margin:'80px auto', padding:'0 24px', textAlign:'center' }}>
-      <div style={{ fontSize:52, marginBottom:16 }}>👤</div>
+      <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:16 }}><Icon name="user" size={48} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Tu perfil</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
         Inicia sesión para gestionar tus anuncios, mensajes y configuración.
@@ -2295,9 +2296,7 @@ export default function Perfil() {
 
       {/* Cabecera a sangre: se sale del contenedor de 600px para ocupar todo el
           ancho de la pantalla, como una portada. */}
-      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:'linear-gradient(135deg,#1D4ED8,#2563EB)', padding:'34px 24px 26px', marginBottom:24, position:'relative', overflow:'hidden', textAlign:'center' }}>
-        <div style={{ position:'absolute', top:-30, right:-30, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
-        <div style={{ position:'absolute', bottom:-20, left:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
+      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.primary, padding:'34px 24px 26px', marginBottom:24, position:'relative', overflow:'hidden', textAlign:'center' }}>
 
         {/* El fondo va a sangre, pero el contenido se queda centrado y legible. */}
         <div style={{ maxWidth:600, margin:'0 auto', position:'relative' }}>
@@ -2308,8 +2307,8 @@ export default function Perfil() {
           onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
         >
           <Avatar name={displayName} size={80} src={avatarUrl} />
-          <div style={{ position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:'50%', background:'#fff', border:'2px solid #2563EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13 }}>
-            {uploadingAvatar ? '⏳' : '📷'}
+          <div style={{ position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:'50%', background:'#fff', color:C.primary, border:'2px solid #2563EB', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Icon name={uploadingAvatar ? 'loading' : 'camera'} size={14} />
           </div>
           <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display:'none' }} />
         </div>
@@ -2321,7 +2320,7 @@ export default function Perfil() {
           <div style={{ display:'flex', justifyContent:'center', alignItems:'center', flexWrap:'wrap', gap:7 }}>
             {userCanton && (
               <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(255,255,255,0.15)', borderRadius:20, padding:'4px 12px', fontFamily:PP, fontSize:11, fontWeight:600, color:'#fff' }}>
-                📍 Cantón {userCanton}
+                <Icon name="location" size={12} /> Cantón {userCanton}
               </span>
             )}
             {hasEmploymentRequest && employmentProfileLevel && <EmploymentLevelBadge profile={employmentProfile} />}
@@ -2331,13 +2330,13 @@ export default function Perfil() {
         {/* Stats */}
         <div style={{ display:'flex', justifyContent:'center', gap:0, marginTop:20, borderTop:'1px solid rgba(255,255,255,0.15)', paddingTop:16 }}>
           {[
-            { icon:'📌', value: counts.total, label:'Publicaciones' },
-            { icon: alertSettings.enabled ? '🔔' : '🔕', value: alertSettings.enabled ? '✅' : '❌', label:'Alertas', isText: true },
-            { icon:'❤️', value: (favorites.ads?.length||0)+(favorites.jobs?.length||0), label:'Favoritos' },
+            { icon:'listing', value: counts.total, label:'Publicaciones' },
+            { icon:'bell', value:alertSettings.enabled ? 'Sí' : 'No', label:'Alertas', isText:true },
+            { icon:'favorite', value: (favorites.ads?.length||0)+(favorites.jobs?.length||0), label:'Favoritos' },
           ].map(({ icon, value, label, isText }, i, arr) => (
             <div key={label} style={{ flex:1, textAlign:'center', borderRight: i < arr.length-1 ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
               <p style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:'#fff', margin:'0 0 2px', letterSpacing:-0.5 }}>{value}</p>
-              <p style={{ fontFamily:PP, fontSize:10, color:'rgba(255,255,255,0.6)', margin:0 }}>{icon} {label}</p>
+              <p style={{ fontFamily:PP, fontSize:10, color:'rgba(255,255,255,0.6)', margin:0, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}><Icon name={icon} size={11} /> {label}</p>
             </div>
           ))}
         </div>
@@ -2370,8 +2369,8 @@ export default function Perfil() {
             {section.items.map((item, i) => {
               const content = (
                 <div style={{ padding:'14px 16px', display:'flex', gap:14, alignItems:'center', cursor:item.disabled ? 'not-allowed' : 'pointer', borderBottom: i < section.items.length - 1 ? `1px solid ${C.border}` : 'none', opacity:item.disabled ? 0.6 : 1 }}>
-                  <div style={{ width:40, height:40, background:item.color || C.bg, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:19, flexShrink:0, position:'relative' }}>
-                    {item.icon}
+                  <div style={{ width:40, height:40, background:item.color || C.bg, color:item.ink || C.primary, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, position:'relative' }}>
+                    <Icon name={item.icon} size={19} />
                     {item.attention && <span style={{ position:'absolute', top:5, right:5, width:9, height:9, borderRadius:5, background:'#EF4444', border:'1.5px solid #fff' }} />}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -2381,7 +2380,7 @@ export default function Perfil() {
                     </p>
                     <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{item.sub}</p>
                   </div>
-                  <span style={{ color:C.light, fontSize:18, fontWeight:300 }}>{item.disabled ? '🔒' : '›'}</span>
+                  <span style={{ color:C.light }}>{item.disabled ? <Icon name="lock" size={16} /> : <Icon name="chevronRight" size={18} />}</span>
                 </div>
               )
               if (item.disabled) return <div key={item.label}>{content}</div>
@@ -2399,7 +2398,7 @@ export default function Perfil() {
       {!isPWA && (
         <div id="instalar-ios" style={{ scrollMarginTop:96, background:`linear-gradient(135deg,${C.primaryDark},${C.primary})`, borderRadius:16, padding:'16px 18px', marginTop:8, marginBottom:8, boxShadow:'0 8px 24px rgba(37,99,235,0.3)' }}>
           <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
-            <div style={{ fontSize:28, flexShrink:0 }}>📲</div>
+            <div style={{ color:'#fff', flexShrink:0 }}><Icon name="download" size={27} /></div>
             <div style={{ flex:1 }}>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:'#fff', margin:'0 0 10px', letterSpacing:-0.3 }}>Instalar Latido</p>
               {/iPad|iPhone|iPod/.test(navigator.userAgent) ? (
@@ -2407,7 +2406,7 @@ export default function Perfil() {
                   <div style={{ background:'rgba(255,255,255,0.15)', borderRadius:10, padding:'8px 12px' }}>
                     {[
                       '1. Pulsa ••• en el navegador',
-                      '2. Toca "Compartir" 📤 ',
+                      '2. Toca "Compartir"',
                       '3. Selecciona "Añadir a pantalla de inicio"',
                     ].map(s => (
                       <p key={s} style={{ fontFamily:PP, fontSize:11, color:'rgba(255,255,255,0.65)', margin:'2px 0', lineHeight:1.4 }}>{s}</p>
@@ -2439,17 +2438,17 @@ export default function Perfil() {
       </button>
 
       {/* ── Favoritos ── */}
-      <Sheet show={favOpen} onClose={() => setFavOpen(false)} title="❤️ Favoritos">
+      <Sheet show={favOpen} onClose={() => setFavOpen(false)} title={<span style={{ display:'inline-flex', alignItems:'center', gap:7 }}><Icon name="favorite" size={18} /> Favoritos</span>}>
         {loadingFavs ? (
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             {[1,2].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:14 }} />)}
           </div>
         ) : favItems.length === 0 ? (
           <div style={{ textAlign:'center', padding:'40px 20px' }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>🤍</div>
+            <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:12 }}><Icon name="favorite" size={42} /></div>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>Sin favoritos todavía</p>
             <p style={{ fontFamily:PP, fontSize:12, color:C.light, lineHeight:1.6 }}>
-              Toca el corazón 🤍 en cualquier anuncio o empleo para guardarlo aquí.
+              Toca el corazón en cualquier anuncio o empleo para guardarlo aquí.
             </p>
           </div>
         ) : (
@@ -2461,7 +2460,7 @@ export default function Perfil() {
 
             if (item._unavailable) return (
               <div key={item.id} style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:14, padding:'13px 15px', marginBottom:10, display:'flex', gap:12, alignItems:'center' }}>
-                <div style={{ width:44, height:44, borderRadius:12, background:'#F1F5F9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>🗑️</div>
+                <div style={{ width:44, height:44, borderRadius:12, background:'#F1F5F9', color:C.light, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Icon name="delete" size={21} /></div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:'#B91C1C', margin:'0 0 2px' }}>Anuncio no disponible</p>
                   <p style={{ fontFamily:PP, fontSize:11, color:'#EF4444', margin:0 }}>Este anuncio fue eliminado o ya no está activo</p>
@@ -2485,8 +2484,9 @@ export default function Perfil() {
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.title || item.company}</p>
-                    <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-                      {isJob ? `${jobIntent.emoji} ${jobIntent.label} · ${item.company || item.city || item.canton || ''}` : `📍 ${formatAdLocation(item)}`}
+                    <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0, display:'flex', alignItems:'center', gap:4 }}>
+                      <Icon name={isJob ? 'job' : 'location'} size={12} />
+                      {isJob ? `${jobIntent.label} · ${item.company || item.city || item.canton || ''}` : formatAdLocation(item)}
                     </p>
                   </div>
                 </button>
@@ -2495,7 +2495,7 @@ export default function Perfil() {
                   style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, padding:'4px', flexShrink:0 }}
                   aria-label="Quitar de favoritos"
                 >
-                  ❤️
+                  <Icon name="favoriteActive" size={20} color="#E11D48" />
                 </button>
               </div>
             )
@@ -2503,10 +2503,10 @@ export default function Perfil() {
         )}
       </Sheet>
 
-      <Sheet show={followedCreatorsOpen} onClose={() => setFollowedCreatorsOpen(false)} title="🎙️ Creadores">
+      <Sheet show={followedCreatorsOpen} onClose={() => setFollowedCreatorsOpen(false)} title={<span style={{ display:'inline-flex', alignItems:'center', gap:7 }}><Icon name="creator" size={18} /> Creadores</span>}>
         {!followedCreators.length ? (
           <div className="profile-followed-creators-empty">
-            <div>🎙️</div>
+            <div><Icon name="creator" size={42} /></div>
             <strong>Aún no sigues a ningún creador</strong>
             <p>Cuando pulses «Seguir» en un perfil, aparecerá aquí para que puedas volver fácilmente.</p>
             <button type="button" onClick={() => { setFollowedCreatorsOpen(false); navigate('/comunidades?view=creadores') }}>Descubrir creadores</button>
@@ -2520,7 +2520,7 @@ export default function Perfil() {
                   <CreatorAvatar creator={creator} size={52} />
                   <span>
                     <strong>{creator.name}</strong>
-                    <small>{creator.handle} · 📍 {creator.canton || creator.reach}</small>
+                    <small style={{ display:'flex', alignItems:'center', gap:3 }}>{creator.handle} · <Icon name="location" size={11} /> {creator.canton || creator.reach}</small>
                     <span>{creator.tagline}</span>
                     <span className="profile-followed-creator-card__topics">{(creator.topics || []).slice(0, 2).map(topic => <CreatorTopicPill key={topic} topicId={topic} compact />)}</span>
                   </span>
@@ -2581,9 +2581,8 @@ export default function Perfil() {
       </Sheet>
 
       {/* ── Notifications ── */}
-      <Sheet show={professionalOpen} onClose={() => setProfessionalOpen(false)} title="✨ Profesional" syncHistory={false}>
-        <div style={{ background:`linear-gradient(135deg,${C.primaryDark},${C.primary})`, borderRadius:18, padding:'18px 16px', marginBottom:14, color:'#fff', overflow:'hidden', position:'relative' }}>
-          <div style={{ position:'absolute', top:-32, right:-24, width:110, height:110, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }} />
+      <Sheet show={professionalOpen} onClose={() => setProfessionalOpen(false)} title={<span style={{ display:'inline-flex', alignItems:'center', gap:7 }}><Icon name="sparkles" size={18} /> Profesional</span>} syncHistory={false}>
+        <div style={{ background:C.primary, borderRadius:18, padding:'18px 16px', marginBottom:14, color:'#fff', overflow:'hidden', position:'relative' }}>
           <p style={{ fontFamily:PP, fontWeight:900, fontSize:18, margin:'0 0 6px', position:'relative' }}>
             Ventajas profesionales
           </p>
@@ -2615,7 +2614,7 @@ export default function Perfil() {
           </div>
         ) : businessPublications.length === 0 ? (
           <EmptyState
-            emoji="🏪"
+            icon="business"
             title="Publica un negocio"
             sub="Cuando publiques tu primer negocio, este apartado profesional se activara con sus ventajas."
             action="Registrar negocio"
@@ -2674,7 +2673,7 @@ export default function Perfil() {
         )}
       </Sheet>
 
-      <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones">
+      <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title={<span style={{ display:'inline-flex', alignItems:'center', gap:7 }}><Icon name="bell" size={18} /> Notificaciones</span>}>
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.6 }}>
           Recibe una alerta cuando te escriban o cuando aparezca un resultado relacionado con tus búsquedas.
         </p>
@@ -2774,8 +2773,8 @@ export default function Perfil() {
                     }}
                     style={{ flex:1, minWidth:0, border:'none', background:'none', padding:0, textAlign:'left', cursor:'pointer' }}
                   >
-                    <p style={{ fontFamily:PP, fontWeight:750, fontSize:12, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      🔔 {search.name}
+                    <p style={{ fontFamily:PP, fontWeight:750, fontSize:12, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
+                      <Icon name="bell" size={13} /> {search.name}
                     </p>
                     <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                       {getSavedSearchSummary(search)} · Email activo
@@ -2849,12 +2848,10 @@ export default function Perfil() {
         </Btn>
       </Sheet>
 
-      <Modal show={expiredEventsOpen} onClose={closeExpiredEventsPrompt} title="🎉 Eventos con fecha pasada" syncHistory={false}>
+      <Modal show={expiredEventsOpen} onClose={closeExpiredEventsPrompt} title={<span style={{ display:'inline-flex', alignItems:'center', gap:7 }}><Icon name="event" size={18} /> Eventos con fecha pasada</span>} syncHistory={false}>
         <div style={{ background:C.warnLight, border:`1px solid ${C.warnMid}`, borderRadius:18, padding:'15px 16px', marginBottom:14 }}>
           <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
-            <div style={{ width:42, height:42, borderRadius:14, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
-              🎉
-            </div>
+            <div style={{ width:42, height:42, borderRadius:14, background:'#fff', color:'#D97706', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Icon name="event" size={22} /></div>
             <div style={{ minWidth:0 }}>
               <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, margin:'0 0 4px' }}>
                 Hay {expiredEvents.length} {expiredEvents.length === 1 ? 'evento activo que ya pasó' : 'eventos activos que ya pasaron'}
@@ -2891,7 +2888,7 @@ export default function Perfil() {
 
         {!eventAlertsEnabled && (
           <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:16, padding:'12px 13px', marginBottom:16, display:'flex', gap:10, alignItems:'flex-start' }}>
-            <span style={{ fontSize:20, lineHeight:1 }}>🔔</span>
+            <span style={{ color:C.primary, lineHeight:1 }}><Icon name="bell" size={20} /></span>
             <p style={{ fontFamily:PP, fontSize:11, color:C.primaryDark, margin:0, lineHeight:1.55 }}>
               {needsPushActivation
                 ? 'Activa notificaciones para recibir avisos útiles de Latido, incluidos eventos nuevos cerca de ti.'
@@ -2920,14 +2917,12 @@ export default function Perfil() {
         </div>
       </Modal>
 
-      <Modal show={adReminderOpen} onClose={closeAdReminderPrompt} title="📌 Revisar anuncio activo" syncHistory={false}>
+      <Modal show={adReminderOpen} onClose={closeAdReminderPrompt} title={<span style={{ display:'inline-flex', alignItems:'center', gap:7 }}><Icon name="listing" size={18} /> Revisar anuncio activo</span>} syncHistory={false}>
         {adReminderItem && (
           <>
             <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryMid}`, borderRadius:18, padding:'15px 16px', marginBottom:14 }}>
               <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
-                <div style={{ width:42, height:42, borderRadius:14, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
-                  📌
-                </div>
+                <div style={{ width:42, height:42, borderRadius:14, background:'#fff', color:C.primary, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Icon name="listing" size={22} /></div>
                 <div style={{ minWidth:0 }}>
                   <p style={{ fontFamily:PP, fontWeight:800, fontSize:15, color:C.text, margin:'0 0 4px' }}>
                     ¿Este anuncio sigue activo?
@@ -2977,13 +2972,13 @@ export default function Perfil() {
                   onClick={editAdReminder}
                   style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:C.primaryDark, background:C.primaryLight, border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 10px', cursor:'pointer' }}
                 >
-                  ✏️ Editar
+                  <Icon name="edit" size={15} /> Editar
                 </button>
                 <button
                   onClick={deleteAdReminder}
                   style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:'#B91C1C', background:C.dangerLight, border:'1.5px solid #FECACA', borderRadius:14, padding:'12px 10px', cursor:'pointer' }}
                 >
-                  🗑️ Eliminar
+                  <Icon name="delete" size={15} /> Eliminar
                 </button>
               </div>
               <button
@@ -3004,7 +2999,7 @@ export default function Perfil() {
       </Modal>
 
       {/* ── Configuración ── */}
-      <Sheet show={configOpen} onClose={() => setConfigOpen(false)} title="⚙️ Configuración">
+      <Sheet show={configOpen} onClose={() => setConfigOpen(false)} title={<span style={{ display:'inline-flex', alignItems:'center', gap:7 }}><Icon name="settings" size={18} /> Configuración</span>}>
         <Input
           label="Nombre visible"
           value={configForm.name || ''}
@@ -3100,7 +3095,7 @@ export default function Perfil() {
             {[1,2,3].map(index => <div key={index} className="skeleton" style={{ height:92, borderRadius:16 }} />)}
           </div>
         ) : filteredPublications.length === 0 ? (
-          <EmptyState emoji="🗂️" title="Todavía no tienes publicaciones aquí" sub="Cuando publiques anuncios, empleos, eventos, negocios o grupos, podrás gestionarlos desde este panel." />
+          <EmptyState icon="listing" title="Todavía no tienes publicaciones aquí" sub="Cuando publiques anuncios, empleos, eventos, negocios o grupos, podrás gestionarlos desde este panel." />
         ) : (
           filteredPublications.map(item => {
             const deleteKey = `${item.kind}-${item.id}`
@@ -3183,13 +3178,14 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.35 }}>{actionItem.title}</p>
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
             </div>
-            <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
+            <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}><Icon name="edit" size={16} /> Editar publicación</Btn>
             {['ad', 'job'].includes(actionItem.kind) && actionItem.active && !actionItem.expired && (
               <button
                 onClick={() => handlePublicationLifecycle(actionItem, 'resolve')}
                 disabled={lifecycleSavingKey === `${actionItem.kind}-${actionItem.id}-resolve`}
                 style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:13, background:'#ECFDF5', color:'#047857', border:'1.5px solid #A7F3D0', borderRadius:14, padding:'12px 16px', cursor:'pointer', marginBottom:10 }}
               >
+                <Icon name={lifecycleSavingKey === `${actionItem.kind}-${actionItem.id}-resolve` ? 'loading' : 'check'} size={16} />
                 {lifecycleSavingKey === `${actionItem.kind}-${actionItem.id}-resolve` ? 'Actualizando...' : getResolutionActionLabel(actionItem)}
               </button>
             )}
@@ -3248,7 +3244,7 @@ export default function Perfil() {
                 ? 'Comprobando...'
                 : businessDeleteBlock?.providerId === actionItem.id
                 ? 'Volver a comprobar y borrar'
-                : '🗑️ Borrar publicación'}
+                : <><Icon name="delete" size={16} /> Borrar publicación</>}
             </button>
             <button
               onClick={() => {
@@ -3266,7 +3262,7 @@ export default function Perfil() {
       <Modal
         show={latidoRatingOpen}
         onClose={closeLatidoRating}
-        title="⭐ Valorar Latido"
+        title={<span style={{ display:'inline-flex', alignItems:'center', gap:7 }}><Icon name="star" size={18} /> Valorar Latido</span>}
         syncHistory={false}
       >
         {latidoRatingLoading ? (
@@ -3363,14 +3359,14 @@ export default function Perfil() {
       </Modal>
 
       {/* ── Compartir Latido ── */}
-      <Sheet show={shareOpen} onClose={() => setShareOpen(false)} title="🔗 Compartir Latido">
+      <Sheet show={shareOpen} onClose={() => setShareOpen(false)} title={<span style={{ display:'inline-flex', alignItems:'center', gap:7 }}><Icon name="share" size={18} /> Compartir Latido</span>}>
         <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:20, lineHeight:1.6 }}>
           Invita a tus amigos y familiares a unirse a la comunidad latina en Suiza.
         </p>
 
         {[
           {
-            icon:'💬',
+            icon:'whatsapp',
             label:'WhatsApp',
             color:'#25D366',
             bg:'#F0FDF4',
@@ -3378,7 +3374,7 @@ export default function Perfil() {
             href:`https://wa.me/?text=${encodeURIComponent(SHARE_TEXT + '\n' + SHARE_URL)}`,
           },
           {
-            icon:'✉️',
+            icon:'mail',
             label:'Email',
             color:'#2563EB',
             bg:C.primaryLight,
@@ -3386,7 +3382,7 @@ export default function Perfil() {
             href:`mailto:?subject=${encodeURIComponent('Te invito a Latido')}&body=${encodeURIComponent(SHARE_TEXT + '\n\n' + SHARE_URL)}`,
           },
           {
-            icon:'📱',
+            icon:'send',
             label:'Telegram',
             color:'#0088CC',
             bg:'#EFF6FF',
@@ -3401,7 +3397,7 @@ export default function Perfil() {
             rel="noopener noreferrer"
             style={{ display:'flex', alignItems:'center', gap:14, background:opt.bg, border:`1.5px solid ${opt.border}`, borderRadius:14, padding:'13px 16px', marginBottom:10, textDecoration:'none' }}
           >
-            <span style={{ fontSize:26 }}>{opt.icon}</span>
+            <span style={{ display:'flex', color:opt.color }}><Icon name={opt.icon} size={24} /></span>
             <span style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:opt.color }}>{opt.label}</span>
             <span style={{ marginLeft:'auto', fontFamily:PP, fontSize:12, color:opt.color }}>›</span>
           </a>
@@ -3411,7 +3407,7 @@ export default function Perfil() {
           onClick={copyLink}
           style={{ width:'100%', display:'flex', alignItems:'center', gap:14, background: copied ? '#F0FDF4' : C.bg, border:`1.5px solid ${copied ? '#86EFAC' : C.border}`, borderRadius:14, padding:'13px 16px', cursor:'pointer', marginTop:4 }}
         >
-          <span style={{ fontSize:26 }}>{copied ? '✅' : '🔗'}</span>
+          <span style={{ display:'flex', color:copied ? '#15803D' : C.primary }}><Icon name={copied ? 'success' : 'link'} size={24} /></span>
           <span style={{ fontFamily:PP, fontWeight:700, fontSize:14, color: copied ? '#15803D' : C.text }}>
             {copied ? '¡Enlace copiado!' : 'Copiar enlace'}
           </span>

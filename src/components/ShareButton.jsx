@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { C } from '../lib/theme'
+import { Icon } from '../lib/icons'
 
 const SR_ONLY = {
   position:'absolute',
@@ -65,7 +66,7 @@ export default function ShareButton({
   url,
   ariaLabel='Compartir',
   label='',
-  icon='📤',
+  icon=null,
   style={},
 }) {
   const [busy, setBusy] = useState(false)
@@ -145,7 +146,7 @@ export default function ShareButton({
         ...style,
       }}
     >
-      {icon && <span aria-hidden="true" style={{ fontSize:18, lineHeight:1 }}>{icon}</span>}
+      <span aria-hidden="true" style={{ display:'inline-flex', lineHeight:1 }}>{icon || <Icon name="share" size={18} />}</span>
       {label && <span>{label}</span>}
       <span style={SR_ONLY} aria-live="polite">{status}</span>
     </button>

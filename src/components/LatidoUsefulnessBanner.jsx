@@ -9,49 +9,50 @@ import {
   saveLatidoUsefulnessFeedback,
 } from '../lib/feedback'
 import { C, PP } from '../lib/theme'
+import { Icon } from '../lib/icons'
 
 const BANNER_LIFT_VAR = '--latido-install-banner-lift'
 const THANK_YOU_DELAY_MS = 2_200
 
 const ANSWERS = [
-  { id:'yes', label:'Sí', icon:'✓', color:'#047857', background:'#ECFDF5', border:'#A7F3D0' },
-  { id:'partial', label:'Parcialmente', icon:'◐', color:'#B45309', background:'#FFFBEB', border:'#FDE68A' },
-  { id:'no', label:'No mucho', icon:'×', color:'#B91C1C', background:'#FEF2F2', border:'#FECACA' },
+  { id:'yes', label:'Sí', icon:'check', color:'#047857', background:'#ECFDF5', border:'#A7F3D0' },
+  { id:'partial', label:'Parcialmente', icon:'chart', color:'#B45309', background:'#FFFBEB', border:'#FDE68A' },
+  { id:'no', label:'No mucho', icon:'close', color:'#B91C1C', background:'#FEF2F2', border:'#FECACA' },
 ]
 
 const FOLLOW_UPS = {
   yes:{
     title:'¿En qué te ha ayudado Latido?',
     options:[
-      { id:'found_what_needed', label:'Encontré lo que buscaba', icon:'🔎' },
-      { id:'contacted_someone', label:'Contacté con alguien', icon:'🤝' },
-      { id:'discovered_nearby', label:'Descubrí algo cerca de mí', icon:'📍' },
-      { id:'published_got_responses', label:'Publiqué y recibí respuestas', icon:'📣' },
-      { id:'found_useful_information', label:'Encontré información útil', icon:'💡' },
-      { id:'connected_with_community', label:'Me ayudó a conectar con la comunidad', icon:'👥' },
+      { id:'found_what_needed', label:'Encontré lo que buscaba', icon:'search' },
+      { id:'contacted_someone', label:'Contacté con alguien', icon:'partner' },
+      { id:'discovered_nearby', label:'Descubrí algo cerca de mí', icon:'location' },
+      { id:'published_got_responses', label:'Publiqué y recibí respuestas', icon:'megaphone' },
+      { id:'found_useful_information', label:'Encontré información útil', icon:'idea' },
+      { id:'connected_with_community', label:'Me ayudó a conectar con la comunidad', icon:'users' },
     ],
   },
   partial:{
     title:'¿Qué necesitas para que Latido te resulte más útil?',
     options:[
-      { id:'more_offers', label:'Más ofertas', icon:'📣' },
-      { id:'clearer_information', label:'Información más clara', icon:'📝' },
-      { id:'more_relevant_results', label:'Resultados más relevantes', icon:'🎯' },
-      { id:'more_nearby_content', label:'Más contenido cerca de mí', icon:'📍' },
-      { id:'better_filters', label:'Mejores filtros', icon:'⚙️' },
-      { id:'new_content_alerts', label:'Avisos sobre novedades', icon:'🔔' },
-      { id:'other', label:'Otro motivo', icon:'💬' },
+      { id:'more_offers', label:'Más ofertas', icon:'megaphone' },
+      { id:'clearer_information', label:'Información más clara', icon:'document' },
+      { id:'more_relevant_results', label:'Resultados más relevantes', icon:'search' },
+      { id:'more_nearby_content', label:'Más contenido cerca de mí', icon:'location' },
+      { id:'better_filters', label:'Mejores filtros', icon:'filter' },
+      { id:'new_content_alerts', label:'Avisos sobre novedades', icon:'bell' },
+      { id:'other', label:'Otro motivo', icon:'message' },
     ],
   },
   no:{
     title:'¿Qué te ha faltado?',
     options:[
-      { id:'cannot_find', label:'No encuentro lo que busco', icon:'🔎' },
-      { id:'few_offers', label:'Hay pocas ofertas', icon:'📉' },
-      { id:'irrelevant_content', label:'El contenido no es relevante para mí', icon:'🎯' },
-      { id:'unclear_how_it_works', label:'No entiendo bien cómo funciona', icon:'❓' },
-      { id:'not_used_enough', label:'Todavía no lo he usado suficiente', icon:'⏳' },
-      { id:'other', label:'Otro motivo', icon:'💬' },
+      { id:'cannot_find', label:'No encuentro lo que busco', icon:'search' },
+      { id:'few_offers', label:'Hay pocas ofertas', icon:'chart' },
+      { id:'irrelevant_content', label:'El contenido no es relevante para mí', icon:'search' },
+      { id:'unclear_how_it_works', label:'No entiendo bien cómo funciona', icon:'help' },
+      { id:'not_used_enough', label:'Todavía no lo he usado suficiente', icon:'clock' },
+      { id:'other', label:'Otro motivo', icon:'message' },
     ],
   },
 }
@@ -252,7 +253,7 @@ export default function LatidoUsefulnessBanner({ blocked = false }) {
       >
         {step === 'thanks' ? (
           <div aria-live="polite" style={{ display:'flex', alignItems:'center', gap:12, padding:'8px 2px' }}>
-            <span aria-hidden="true" style={{ width:42, height:42, display:'grid', placeItems:'center', flexShrink:0, borderRadius:14, background:C.successLight, color:'#047857', fontSize:22, fontWeight:900 }}>✓</span>
+            <span aria-hidden="true" style={{ width:42, height:42, display:'grid', placeItems:'center', flexShrink:0, borderRadius:14, background:C.successLight, color:'#047857' }}><Icon name="success" size={22} /></span>
             <div>
               <p id="latido-usefulness-title" style={{ margin:'0 0 3px', fontFamily:PP, fontSize:15, fontWeight:850, color:C.text }}>¡Gracias!</p>
               <p id="latido-usefulness-description" style={{ margin:0, fontFamily:PP, fontSize:11.5, lineHeight:1.5, color:C.mid }}>Tu opinión es lo más importante para nosotros.</p>
@@ -356,7 +357,7 @@ export default function LatidoUsefulnessBanner({ blocked = false }) {
                       fontSize:13,
                     }}
                   >
-                    {option.icon}
+                    <Icon name={option.icon} size={14} />
                   </span>
                   <span style={{ flex:1, minWidth:0 }}>{option.label}</span>
                 </button>
@@ -391,7 +392,7 @@ export default function LatidoUsefulnessBanner({ blocked = false }) {
                     cursor:'pointer',
                   }}
                 >
-                  <span aria-hidden="true" style={{ marginRight:4 }}>{option.icon}</span>
+                  <span aria-hidden="true" style={{ marginRight:4, display:'inline-flex', verticalAlign:'middle' }}><Icon name={option.icon} size={13} /></span>
                   {option.label}
                 </button>
               ))}

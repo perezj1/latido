@@ -13,7 +13,7 @@ import { useAppNotifications } from '../hooks/useAppNotifications'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
-import { C, PP } from '../lib/theme'
+import { C, PP, CAT_COLORS, SECTION_COLORS } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
@@ -44,6 +44,7 @@ import {
 } from '../lib/employmentProfile'
 import { FilterResultSummary, SegmentedTabs } from '../components/FilterWorkspace'
 import { HOME_CAROUSEL_CARD_WIDTH } from '../lib/homeCarousel'
+import { Icon, InterfaceIcon } from '../lib/icons'
 import toast from 'react-hot-toast'
 
 const fmtPrice = p => {
@@ -52,16 +53,6 @@ const fmtPrice = p => {
   s = s.replace(/^([\d.,]+)\s+CHF\b(.*)/, 'CHF $1$2')          // "25 CHF x" → "CHF 25 x"
   s = s.replace(/^(CHF\s*[\d.,]+)\s+([^\s/].*)$/, '$1/$2')     // "CHF 25 total" → "CHF 25/total"
   return s
-}
-
-const CAT_COLORS = {
-  vivienda:{ bg:'#DBEAFE', tc:'#1D4ED8' },
-  cuidados:{ bg:'#FCE7F3', tc:'#9D174D' },
-  documentos:{ bg:'#EDE9FE', tc:'#6D28D9' },
-  venta:{ bg:'#FEF3C7', tc:'#92400E' },
-  servicios:{ bg:'#CCFBF1', tc:'#0F766E' },
-  regalo:{ bg:'#FEE2E2', tc:'#B91C1C' },
-  empleo:{ bg:'#DBEAFE', tc:'#1D4ED8' },
 }
 
 const REVIEWABLE_AD_CATS = new Set(['servicios', 'cuidados'])
@@ -244,7 +235,7 @@ function AttentionRow({ emoji, title, text, onAction, tone='info', showDot=true 
   return (
     <button type="button" className="latido-notif-row" onClick={onAction} disabled={!onAction}>
       <span className="latido-notif-row__icon" data-tone={tone} data-dot={showDot ? 'on' : 'off'} aria-hidden="true">
-        {emoji}
+        <InterfaceIcon emoji={emoji} size={19} />
       </span>
       <span className="latido-notif-row__copy">
         <span className="latido-notif-row__title">{title}</span>
@@ -309,8 +300,8 @@ function MiLatidoCard({ item, onOpen }) {
           <p style={{ fontFamily:PP, fontWeight:hasPrice ? 900 : 700, fontSize:hasPrice ? 14 : 10.5, color:C.primary, margin:'0 0 7px', lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             {priceLabel}
           </p>
-          <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-            📍 {location || item.canton} · {item.ts}
+          <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            <Icon name="location" size={11} /> {location || item.canton} · {item.ts}
           </p>
         </div>
       </div>
@@ -1458,12 +1449,7 @@ export default function Home() {
 
   return (
     <div style={{ background:'#fff' }}>
-      <section className="hero-section" style={{ background:'linear-gradient(160deg, #1E40AF 0%, #2563EB 58%, #60A5FA 100%)', position:'relative', overflow:'visible', zIndex:2 }}>
-        <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
-          <div style={{ position:'absolute', top:-70, right:-60, width:220, height:220, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
-          <div style={{ position:'absolute', bottom:-60, left:-20, width:180, height:180, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
-        </div>
-
+      <section className="hero-section" style={{ background:C.primary, position:'relative', overflow:'visible', zIndex:2 }}>
         <div style={{ maxWidth:1200, margin:'0 auto', position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, marginBottom:18 }}>
             <div style={{ flex:1, minWidth:0 }}>
@@ -1472,7 +1458,7 @@ export default function Home() {
               </h1>
               {isLoggedIn ? (
                 <label style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:4, color:'rgba(255,255,255,0.92)', fontFamily:PP, fontSize:13, fontWeight:400, cursor:savingCanton ? 'wait' : 'pointer', opacity:savingCanton ? 0.7 : 1 }}>
-                  <span aria-hidden="true">📍</span>
+                  <Icon name="location" size={15} />
                   <span>{selectedCantonName}</span>
                   <svg aria-hidden="true" viewBox="0 0 10 6" width="10" height="6" style={{ display:'block', flexShrink:0, marginLeft:1 }}>
                     <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -1494,7 +1480,7 @@ export default function Home() {
                 </label>
               ) : (
                 <Link to="/auth" style={{ display:'inline-flex', alignItems:'center', gap:5, color:'rgba(255,255,255,0.92)', fontFamily:PP, fontSize:13, fontWeight:600, textDecoration:'none' }}>
-                  <span aria-hidden="true">📍</span> Selecciona tu cantón
+                  <Icon name="location" size={15} /> Selecciona tu cantón
                 </Link>
               )}
             </div>
@@ -1511,7 +1497,7 @@ export default function Home() {
                   aria-expanded={notifOpen}
                   aria-haspopup="dialog"
                 >
-                  🔔
+                  <Icon name="bell" size={22} color="#fff" />
                   {hasNotificationContent && (
                     <span style={{ position:'absolute', top:7, right:7, width:9, height:9, borderRadius:'50%', background:'#EF4444', border:'2px solid rgba(255,255,255,0.4)' }} />
                   )}
@@ -1570,7 +1556,7 @@ export default function Home() {
                                 }}
                                 style={{ width:'100%', background:C.primaryLight, border:'none', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'center', gap:10, cursor:'pointer', textAlign:'left' }}
                               >
-                                <span style={{ fontSize:20 }}>💬</span>
+                                <span style={{ color:C.primary }}><Icon name="message" size={20} /></span>
                                 <div style={{ flex:1, minWidth:0 }}>
                                   <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.primary, margin:0 }}>
                                     {unreadConvIds.size === 1 ? 'Conversación nueva' : `Conversación nueva ${index + 1}`}
@@ -1599,7 +1585,7 @@ export default function Home() {
                                 }}
                                 style={{ width:'100%', background:'#F8FAFC', border:`1px solid ${C.border}`, borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
                               >
-                                <span style={{ display:'grid', width:34, height:34, flexShrink:0, placeItems:'center', borderRadius:11, background:C.primaryLight, fontSize:18 }} aria-hidden="true">{group.icon}</span>
+                                <span style={{ display:'grid', width:34, height:34, flexShrink:0, placeItems:'center', borderRadius:11, background:C.primaryLight, color:C.primary }} aria-hidden="true"><InterfaceIcon emoji={group.icon} size={18} /></span>
                                 <span style={{ flex:1, minWidth:0 }}>
                                   <span style={{ display:'block', fontFamily:PP, fontWeight:750, fontSize:12.5, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.title}</span>
                                   <span style={{ display:'block', fontFamily:PP, fontSize:10.5, lineHeight:1.45, color:C.light }}>{group.body}</span>
@@ -1621,7 +1607,7 @@ export default function Home() {
                                 onClick={() => { void markBusinessLeadAlertRead(alert.id); closeNotifPanel(); navigate(alert.listing_path) }}
                                 style={{ width:'100%', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
                               >
-                                <span style={{ fontSize:18, marginTop:1 }}>🔔</span>
+                                <span style={{ color:C.primary, marginTop:1 }}><Icon name="bell" size={18} /></span>
                                 <div style={{ flex:1, minWidth:0 }}>
                                   <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{alert.listing_title}</p>
                                   <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{alert.provider_name}{alert.matched_terms?.length ? ` · ${alert.matched_terms.join(', ')}` : ''}</p>
@@ -1647,7 +1633,7 @@ export default function Home() {
                                 }}
                                 style={{ width:'100%', background:'#F5F3FF', border:'1px solid #DDD6FE', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
                               >
-                                <span style={{ fontSize:18, marginTop:1 }}>🔔</span>
+                                <span style={{ color:'#7C3AED', marginTop:1 }}><Icon name="bell" size={18} /></span>
                                 <div style={{ flex:1, minWidth:0 }}>
                                   <p style={{ fontFamily:PP, fontWeight:750, fontSize:13, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                                     {alert.result_title}
@@ -1674,7 +1660,7 @@ export default function Home() {
                                 onClick={() => { dismissZoneAlert(item.key); closeNotifPanel(); navigate(item.href) }}
                                 style={{ width:'100%', background:`${C.bg}`, border:`1px solid ${C.border}`, borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
                               >
-                                <span style={{ fontSize:18, marginTop:1 }}>{item.icon}</span>
+                                <span style={{ color:C.primary, marginTop:1 }}><InterfaceIcon emoji={item.icon} size={18} /></span>
                                 <div style={{ flex:1, minWidth:0 }}>
                                   <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.title}</p>
                                   <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{item.kindLabel} · {item.canton}</p>
@@ -1688,7 +1674,7 @@ export default function Home() {
 
                       {!hasNotificationContent && (
                         <div style={{ padding:'30px 16px', textAlign:'center' }}>
-                          <div style={{ fontSize:36, marginBottom:8 }}>🔔</div>
+                          <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:8 }}><Icon name="bell" size={34} strokeWidth={1.5} /></div>
                           <p style={{ fontFamily:PP, fontSize:13, color:C.light, margin:0 }}>No hay notificaciones nuevas</p>
                         </div>
                       )}
@@ -1704,7 +1690,7 @@ export default function Home() {
               size="lg"
               assistantMode
               immersive
-              searchEmoji="🔎"
+              searchEmoji={<Icon name="search" size={21} />}
               placeholder="Buscar en Latido"
               clearOnClose
               showImmersiveFilterButton={false}
@@ -1834,7 +1820,7 @@ export default function Home() {
       >
         <div style={{ textAlign:'center', marginBottom:18 }}>
           <div style={{ width:64, height:64, borderRadius:22, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 12px' }}>
-            ✨
+            <Icon name="sparkles" size={30} color={C.primary} />
           </div>
           <h3 style={{ fontFamily:PP, fontWeight:900, fontSize:20, color:C.text, margin:'0 0 8px' }}>
             Haz que más clientes te encuentren
@@ -2013,8 +1999,8 @@ export default function Home() {
 
       <section style={{ padding:'40px 0 0' }}>
         <div style={{ maxWidth:1200, margin:'0 auto 14px', padding:'0 16px', display:'grid', gridTemplateColumns:'minmax(0, 1fr) auto', columnGap:16, rowGap:3, alignItems:'center' }}>
-          <h2 style={{ minWidth:0, fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0 }}>
-            🏪 Negocios
+          <h2 style={{ minWidth:0, display:'flex', alignItems:'center', gap:8, fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0 }}>
+            <Icon name="business" size={21} color={SECTION_COLORS.negocios.ink} /> Negocios
           </h2>
           <Link to="/comunidades" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', whiteSpace:'nowrap' }}>
             Ver todo →
@@ -2072,10 +2058,10 @@ export default function Home() {
                           boxSizing:'border-box',
                         }}
                       >
-                        {business.emoji} {business.typeLabel}
+                        {business.typeLabel}
                       </span>
                       <div style={{ position:'absolute', top:8, right:8, display:'flex', gap:4 }}>
-                        {business.verified && <span title="Verificada" style={{ width:24, height:24, borderRadius:12, background:'rgba(255,255,255,0.94)', color:'#065F46', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, boxShadow:'0 6px 16px rgba(15,23,42,0.12)' }}>✓</span>}
+                        {business.verified && <span title="Verificada" style={{ width:24, height:24, borderRadius:12, background:'rgba(255,255,255,0.94)', color:'#065F46', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 16px rgba(15,23,42,0.12)' }}><Icon name="verified" size={13} /></span>}
                       </div>
                       {hasPromotion && (
                         <span style={{ position:'absolute', left:'50%', bottom:-12, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5, fontFamily:PP, fontSize:9, fontWeight:800, color:promotionMeta.color, background:'#fff', border:`1.5px solid ${promotionMeta.color}`, borderRadius:999, padding:'6px 10px', boxShadow:'0 8px 18px rgba(15,23,42,0.14)', whiteSpace:'nowrap' }}>
@@ -2087,8 +2073,8 @@ export default function Home() {
                       <p title={business.name} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         {business.name}
                       </p>
-                      <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        📍 {business.city}{business.services.length ? ` · ${business.services[0]}` : ''}
+                      <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        <Icon name="location" size={11} /> {business.city}{business.services.length ? ` · ${business.services[0]}` : ''}
                       </p>
                     </div>
                   </div>
@@ -2108,8 +2094,8 @@ export default function Home() {
       <section style={{ padding:'40px 0 0' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:0 }}>
           <div>
-            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
-              🎉 Próximos eventos 
+            <h2 style={{ display:'flex', alignItems:'center', gap:8, fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
+              <Icon name="event" size={21} color={SECTION_COLORS.eventos.ink} /> Próximos eventos
             </h2>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
               Próximos eventos para ti.
@@ -2133,8 +2119,8 @@ export default function Home() {
       <section style={{ padding:'40px 0 0' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
-            <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
-              👥 Grupos para ti
+            <h2 style={{ display:'flex', alignItems:'center', gap:8, fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
+              <Icon name="group" size={21} color={SECTION_COLORS.grupos.ink} /> Grupos para ti
             </h2>
             <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>
               Tus próximos puntos de conexión en Suiza.
@@ -2172,8 +2158,8 @@ export default function Home() {
                       <p title={group.name} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         {group.name}
                       </p>
-                      <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        📍 {group.city}{!group.photo_url ? ` · 👥 ${group.members}` : ''}
+                      <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        <Icon name="location" size={11} /> {group.city}{!group.photo_url ? ` · ${group.members} miembros` : ''}
                       </p>
                     </div>
                   </div>
@@ -2206,10 +2192,10 @@ export default function Home() {
           <section style={{ padding:'40px 0 0' }}>
             <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
               <div>
-                <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>📚 Guías</h2>
+                <h2 style={{ display:'flex', alignItems:'center', gap:8, fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}><Icon name="guide" size={21} color={SECTION_COLORS.guias.ink} /> Guías</h2>
                 <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Permisos, trabajo, vivienda, salud y dinero en español.</p>
               </div>
-              <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>Ver todo →</Link>
+              <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:SECTION_COLORS.guias.ink, textDecoration:'none', flexShrink:0 }}>Ver todo →</Link>
             </div>
             <div style={{ maxWidth:1200, margin:'0 auto' }}>
             <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
@@ -2236,7 +2222,7 @@ export default function Home() {
                             {doc.title}
                           </p>
                           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                            <span style={{ fontFamily:PP, fontSize:10, color:C.light }}>⏱ {doc.time}</span>
+                            <span style={{ fontFamily:PP, fontSize:10, color:C.light, display:'inline-flex', alignItems:'center', gap:3 }}><Icon name="clock" size={10} /> {doc.time}</span>
                             <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, color: doc.level === 'Básico' ? '#065F46' : '#92400E' }}>{doc.level}</span>
                           </div>
                         </div>
@@ -2261,7 +2247,7 @@ export default function Home() {
                   {selectedGuide.level}
                 </span>
                 <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:'0 0 4px', lineHeight:1.3 }}>{selectedGuide.title}</h2>
-                <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0 }}>⏱ {selectedGuide.time}</p>
+                <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, display:'flex', alignItems:'center', gap:4 }}><Icon name="clock" size={11} /> {selectedGuide.time}</p>
               </div>
               <button onClick={() => setSelectedGuide(null)} style={{ background:C.bg, border:'none', borderRadius:10, width:32, height:32, fontSize:16, cursor:'pointer', flexShrink:0 }}>✕</button>
             </div>
@@ -2289,9 +2275,7 @@ export default function Home() {
       )}
 
       <section style={{ maxWidth:1200, margin:'0 auto', padding:'42px 16px 110px' }}>
-  <div style={{ background:'linear-gradient(135deg,#1E3A8A,#2563EB)', borderRadius:28, padding:'28px 24px', position:'relative', overflow:'hidden' }}>
-    <div style={{ position:'absolute', right:-40, top:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
-    <div style={{ position:'absolute', left:-20, bottom:-30, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
+  <div style={{ background:C.primary, borderRadius:28, padding:'28px 24px', position:'relative', overflow:'hidden' }}>
 
     <div
       style={{

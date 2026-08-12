@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
+import { Icon } from '../lib/icons'
 
 const CONTACT_ACTION_ICONS = {
-  address:'📍',
-  phone:'📞',
-  email:'✉️',
-  instagram:'📸',
-  tiktok:'🎵',
-  whatsapp:'💬',
-  website:'🌐',
-  profile:'🏪',
+  address:'location',
+  phone:'phone',
+  email:'mail',
+  instagram:'instagram',
+  tiktok:'tiktok',
+  whatsapp:'whatsapp',
+  website:'website',
+  profile:'business',
 }
 
 const CONTACT_TYPE_ORDER = ['address', 'phone', 'whatsapp', 'email', 'website', 'instagram', 'tiktok', 'profile']
@@ -41,7 +42,7 @@ function ContactAction({ action, onClick, nested=false }) {
   const icon = CONTACT_ACTION_ICONS[action.type || action.id] || action.icon
   const content = (
     <>
-      <span className="mira-contact-action-icon" aria-hidden="true">{icon}</span>
+      <span className="mira-contact-action-icon" aria-hidden="true"><Icon name={icon || 'info'} size={18} /></span>
       <span>
         <small>
           {nested
@@ -52,7 +53,7 @@ function ContactAction({ action, onClick, nested=false }) {
         </small>
         <strong>{action.value}</strong>
       </span>
-      <span className="mira-contact-action-arrow" aria-hidden="true">→</span>
+      <span className="mira-contact-action-arrow" aria-hidden="true"><Icon name="forward" size={16} /></span>
     </>
   )
 
@@ -119,7 +120,7 @@ export default function BusinessPartnerContactModal({
     : [{
       id:'profile',
       type:'profile',
-      icon:'🏪',
+      icon:'business',
       label:'Perfil en Latido',
       value:'Ver negocio',
       href:`/negocios/${partner.id}`,
@@ -145,7 +146,7 @@ export default function BusinessPartnerContactModal({
           aria-label="Cerrar"
           onClick={onClose}
         >
-          x
+          <Icon name="close" size={17} />
         </button>
 
         <div className="mira-contact-brand business-partner-contact-brand">
@@ -184,15 +185,13 @@ export default function BusinessPartnerContactModal({
                   aria-expanded={expanded}
                   onClick={() => setExpandedGroup(current => current === group.id ? '' : group.id)}
                 >
-                  <span className="mira-contact-action-icon" aria-hidden="true">{icon}</span>
+                  <span className="mira-contact-action-icon" aria-hidden="true"><Icon name={icon || 'info'} size={18} /></span>
                   <span>
                     <small>{group.label}</small>
                     <strong>{group.actions.length} {CONTACT_GROUP_SUMMARIES[group.type] || 'opciones'}</strong>
                   </span>
                   <span className={`mira-contact-action-chevron${expanded ? ' is-expanded' : ''}`} aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                      <path d="m6.5 9 5.5 5.5L17.5 9" />
-                    </svg>
+                    <Icon name="chevronDown" size={16} />
                   </span>
                 </button>
                 {expanded && (

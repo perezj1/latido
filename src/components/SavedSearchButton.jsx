@@ -15,6 +15,7 @@ import {
   loadPushSettings,
   subscribeToPushNotifications,
 } from '../lib/pushNotifications'
+import { Icon } from '../lib/icons'
 
 export default function SavedSearchButton({ draft, compact = false, idleLabel = '', prominent = false, panel = false }) {
   const { isLoggedIn, user, userCanton } = useAuth()
@@ -170,7 +171,7 @@ export default function SavedSearchButton({ draft, compact = false, idleLabel = 
         {panel ? (
           <>
             <span style={{ display:'inline-flex', alignItems:'center', gap:11, minWidth:0 }}>
-              <span aria-hidden="true" style={{ fontSize:19, lineHeight:1 }}>🔔</span>
+              <span aria-hidden="true" style={{ color:C.primary, lineHeight:1 }}><Icon name="bell" size={19} /></span>
               <span style={{ overflow:'hidden', textOverflow:'ellipsis' }}>{label}</span>
             </span>
             <span
@@ -194,7 +195,7 @@ export default function SavedSearchButton({ draft, compact = false, idleLabel = 
           </>
         ) : (
           <>
-            <span aria-hidden="true">{isSaved ? '✓' : '🔔'}</span>
+            <span aria-hidden="true"><Icon name={isSaved ? 'check' : 'bell'} size={15} /></span>
             <span style={{ overflow:'hidden', textOverflow:'ellipsis' }}>{label}</span>
           </>
         )}

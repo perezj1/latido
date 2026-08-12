@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { C, PP } from '../lib/theme'
-import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption } from '../lib/constants'
+import { C, PP, CAT_COLORS, T, W, R, E, TAP_MIN } from '../lib/theme'
+import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
+import { Icon, InterfaceIcon, getCategoryIconName, getInterfaceIconName } from '../lib/icons'
 
 export function ChevronLeftIcon({ size=22 }) {
   return (
@@ -15,15 +16,17 @@ export function ChevronLeftIcon({ size=22 }) {
 
 // ── Button ─────────────────────────────────────────────────────
 export function Btn({ children, onClick, variant='primary', size='md', disabled=false, style={}, className='' }) {
-  const sizes = { sm:'10px 16px', md:'12px 20px', lg:'14px 24px' }
+  // Todos los tamanos respetan el minimo tactil de 44 px; sm solo recorta el
+  // ancho, nunca la altura.
+  const sizes = { sm:'12px 16px', md:'13px 20px', lg:'15px 24px' }
   const variants = {
-    primary:   { background:C.primary,      color:'#fff',    border:'none' },
-    secondary: { background:C.bg,           color:C.primary, border:`1.5px solid ${C.border}` },
-    ghost:     { background:'transparent',  color:C.primary, border:`1.5px solid ${C.primary}` },
-    danger:    { background:C.dangerLight,  color:C.danger,  border:'none' },
-    success:   { background:C.successLight, color:C.success, border:`1.5px solid ${C.successMid}` },
-    white:     { background:'#fff',         color:C.primary, border:'none' },
-    dark:      { background:C.text,         color:'#fff',    border:'none' },
+    primary:   { background:C.primary,      color:'#fff',        border:'none' },
+    secondary: { background:C.bg,           color:C.primary,     border:`1.5px solid ${C.border}` },
+    ghost:     { background:'transparent',  color:C.primary,     border:`1.5px solid ${C.primary}` },
+    danger:    { background:C.dangerLight,  color:C.dangerText,  border:'none' },
+    success:   { background:C.successLight, color:C.successText, border:`1.5px solid ${C.successMid}` },
+    white:     { background:'#fff',         color:C.primary,     border:'none' },
+    dark:      { background:C.text,         color:'#fff',        border:'none' },
   }
   return (
     <button
@@ -31,9 +34,9 @@ export function Btn({ children, onClick, variant='primary', size='md', disabled=
       disabled={disabled}
       className={className}
       style={{
-        fontFamily: PP, fontWeight:700, fontSize:13, borderRadius:14,
+        fontFamily: PP, fontWeight:W.medium, fontSize:T.small, borderRadius:R.md,
         cursor: disabled?'not-allowed':'pointer',
-        padding: sizes[size], display:'flex', alignItems:'center',
+        padding: sizes[size], minHeight:TAP_MIN, display:'flex', alignItems:'center',
         justifyContent:'center', gap:6, width:'100%', letterSpacing:0.2, whiteSpace:'nowrap',
         opacity: disabled ? 0.55 : 1, transition:'all .15s',
         ...variants[variant], ...style,
@@ -70,18 +73,21 @@ export function StickyFormActions({ children }) {
   )
 }
 
-export function Card({ children, onClick, style={} }) {
+// Superficie unica de Latido. `elevation` toma un nombre de E, nunca una sombra
+// escrita a mano, para que todas las tarjetas floten a la misma altura.
+export function Card({ children, onClick, elevation='md', radius=R.lg, style={} }) {
+  const rest = E[elevation] || E.md
   return (
     <div
       onClick={onClick}
       style={{
-        background:C.surface, borderRadius:20, padding:16, marginBottom:10,
-        boxShadow:'0 2px 12px rgba(0,0,0,0.05)', border:`1px solid ${C.border}`,
-        cursor: onClick?'pointer':'default', transition: onClick?'all .2s':'none',
+        background:C.surface, borderRadius:radius, padding:16, marginBottom:10,
+        boxShadow:rest, border:`1px solid ${C.border}`,
+        cursor: onClick?'pointer':'default', transition: onClick?'box-shadow .2s, transform .2s':'none',
         ...style,
       }}
-      onMouseEnter={e => { if(onClick){ e.currentTarget.style.boxShadow='0 6px 24px rgba(37,99,235,0.1)'; e.currentTarget.style.transform='translateY(-1px)' }}}
-      onMouseLeave={e => { if(onClick){ e.currentTarget.style.boxShadow='0 2px 12px rgba(0,0,0,0.05)'; e.currentTarget.style.transform='translateY(0)' }}}
+      onMouseEnter={e => { if(onClick){ e.currentTarget.style.boxShadow=E.lg; e.currentTarget.style.transform='translateY(-1px)' }}}
+      onMouseLeave={e => { if(onClick){ e.currentTarget.style.boxShadow=rest; e.currentTarget.style.transform='translateY(0)' }}}
     >
       {children}
     </div>
@@ -96,9 +102,9 @@ export function Tag({ children, bg=C.primaryLight, color=C.primary, size=10, sty
       style={{
         fontFamily:PP,
         fontSize:size,
-        fontWeight:600,
+        fontWeight:W.medium,
         padding:'3px 8px',
-        borderRadius:20,
+        borderRadius:R.pill,
         background:bg,
         color,
         whiteSpace:'nowrap',
@@ -187,9 +193,10 @@ export function PrivacyTag({ privacy }) {
 // ── Input ──────────────────────────────────────────────────────
 export function Input({ label, placeholder, value, onChange, type='text', rows, required, style={}, leftElement, rightElement, error, errorKey }) {
   const hasError = Boolean(error)
+  // 15 px tambien evita que iOS haga zoom al enfocar el campo.
   const base = {
-    width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12,
-    padding:'11px 13px', fontSize:13, fontFamily:PP, outline:'none',
+    width:'100%', border:`1.5px solid ${C.border}`, borderRadius:R.md,
+    padding:'12px 13px', minHeight:TAP_MIN, fontSize:T.body, fontFamily:PP, outline:'none',
     background:C.surface, color:C.text, boxSizing:'border-box',
     marginBottom: label ? 0 : 10,
   }
@@ -197,7 +204,7 @@ export function Input({ label, placeholder, value, onChange, type='text', rows, 
   const controlStyle = { ...base, ...style, ...errorStyle }
   return (
     <div data-error-field={errorKey || undefined} style={{ marginBottom: 10 }}>
-      {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
+      {label && <label style={{ fontFamily:PP, fontSize:T.label, fontWeight:W.medium, color:C.light, letterSpacing:0.7, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
       {rows
         ? <textarea aria-invalid={hasError || undefined} style={{ ...controlStyle, resize:'none', minHeight: rows*24 }} placeholder={placeholder} value={value} onChange={onChange} rows={rows} />
         : leftElement || rightElement ? (
@@ -217,7 +224,7 @@ export function Input({ label, placeholder, value, onChange, type='text', rows, 
         ) : <input aria-invalid={hasError || undefined} style={controlStyle} type={type} placeholder={placeholder} value={value} onChange={onChange} />
       }
       {hasError && (
-        <p style={{ fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'5px 2px 0', lineHeight:1.45 }}>
+        <p style={{ fontFamily:PP, fontSize:T.meta, color:C.dangerText, margin:'5px 2px 0', lineHeight:1.45 }}>
           {error}
         </p>
       )}
@@ -230,12 +237,12 @@ export function Select({ label, value, onChange, children, required, disabled=fa
   const hasError = Boolean(error)
   return (
     <div data-error-field={errorKey || undefined} style={{ marginBottom:10 }}>
-      {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
+      {label && <label style={{ fontFamily:PP, fontSize:T.label, fontWeight:W.medium, color:C.light, letterSpacing:0.7, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
       <div style={{ position:'relative' }}>
         <select
           aria-invalid={hasError || undefined}
           value={value} onChange={onChange} disabled={disabled}
-          style={{ width:'100%', border:`1.5px solid ${hasError ? '#EF4444' : C.border}`, borderRadius:12, padding:'11px 40px 11px 13px', fontSize:13, fontFamily:PP, outline:'none', background:hasError ? '#FFF7F7' : C.surface, color:C.text, appearance:'none', WebkitAppearance:'none', MozAppearance:'none', cursor:disabled ? 'not-allowed' : 'pointer', opacity:disabled ? 0.6 : 1 }}
+          style={{ width:'100%', border:`1.5px solid ${hasError ? C.danger : C.border}`, borderRadius:R.md, padding:'12px 40px 12px 13px', minHeight:TAP_MIN, fontSize:T.body, fontFamily:PP, outline:'none', background:hasError ? '#FFF7F7' : C.surface, color:C.text, appearance:'none', WebkitAppearance:'none', MozAppearance:'none', cursor:disabled ? 'not-allowed' : 'pointer', opacity:disabled ? 0.6 : 1 }}
         >
           {children}
         </select>
@@ -254,7 +261,7 @@ export function Select({ label, value, onChange, children, required, disabled=fa
         </span>
       </div>
       {hasError && (
-        <p style={{ fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'5px 2px 0', lineHeight:1.45 }}>
+        <p style={{ fontFamily:PP, fontSize:T.meta, color:C.dangerText, margin:'5px 2px 0', lineHeight:1.45 }}>
           {error}
         </p>
       )}
@@ -348,11 +355,11 @@ export function ImageUploadField({
         </p>
 
         <div style={{ display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', gap:8 }}>
-          <label htmlFor={deviceId} style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 10.5 : 12, background:C.primary, color:'#fff', borderRadius:12, padding:compact ? '9px 8px' : '11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
-            🖼 Desde dispositivo
+          <label htmlFor={deviceId} style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 10.5 : 12, background:C.primary, color:'#fff', borderRadius:12, padding:compact ? '9px 8px' : '11px 12px', display:'flex', alignItems:'center', justifyContent:'center', gap:6, cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
+            <Icon name="image" size={14} /> Desde dispositivo
           </label>
-          <label htmlFor={cameraId} style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 10.5 : 12, background:C.bg, color:C.primary, border:`1.5px solid ${C.primaryMid}`, borderRadius:12, padding:compact ? '9px 8px' : '11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
-            📷 Usar cámara
+          <label htmlFor={cameraId} style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 10.5 : 12, background:C.bg, color:C.primary, border:`1.5px solid ${C.primaryMid}`, borderRadius:12, padding:compact ? '9px 8px' : '11px 12px', display:'flex', alignItems:'center', justifyContent:'center', gap:6, cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
+            <Icon name="camera" size={14} /> Usar cámara
           </label>
         </div>
 
@@ -483,7 +490,9 @@ export function Modal({ show, onClose, title, children, syncHistory=true, zIndex
       <div className="fade-up latido-modal-panel" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'calc(100vh - 32px)', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
         <div style={{ flexShrink:0, position:'relative', zIndex:2, background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'24px 24px 0 0' }}>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:0 }}>{title}</p>
-          <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:C.bg, border:'none', cursor:'pointer', fontSize:14, color:C.mid }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ width:32, height:32, borderRadius:'50%', background:C.bg, border:'none', cursor:'pointer', color:C.mid, display:'grid', placeItems:'center' }}>
+            <Icon name="close" size={15} />
+          </button>
         </div>
         <div className="no-scroll" style={{ padding:20, overflowY:'auto', minHeight:0, scrollbarWidth:'none', msOverflowStyle:'none' }}>{children}</div>
       </div>
@@ -507,7 +516,7 @@ export function ProgressBar({ step, total }) {
 }
 
 // ── Pill filter row ────────────────────────────────────────────
-export function PillFilters({ options, value, onChange, className='' }) {
+export function PillFilters({ options, value, onChange, className='', accent=C.primary, onAccent='#fff' }) {
   return (
     <div className={`no-scroll ${className}`} style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:2 }}>
       {options.map(o => {
@@ -515,9 +524,9 @@ export function PillFilters({ options, value, onChange, className='' }) {
         return (
           <button key={o.id} onClick={() => onChange(active ? '' : o.id)} style={{
             fontFamily:PP, fontSize:10, fontWeight:600, padding:'5px 12px', borderRadius:20,
-            border:`1.5px solid ${active ? C.primary : C.border}`,
-            background: active ? C.primary : C.surface,
-            color: active ? '#fff' : C.mid, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
+            border:`1.5px solid ${active ? accent : C.border}`,
+            background: active ? accent : C.surface,
+            color: active ? onAccent : C.mid, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
           }}>
             {o.label}
           </button>
@@ -562,7 +571,7 @@ export function SegmentedTabs({ tabs, value, onChange }) {
 export function InfoBanner({ emoji, title, text, bg=C.warnLight, border=C.warnMid, color='#92400E' }) {
   return (
     <div style={{ background:bg, border:`1px solid ${border}`, borderRadius:16, padding:'10px 13px', marginBottom:14, display:'flex', gap:10, alignItems:'flex-start' }}>
-      <span style={{ fontSize:18, flexShrink:0 }}>{emoji}</span>
+      <span style={{ color, flexShrink:0, marginTop:1 }}><InterfaceIcon emoji={emoji} size={19} /></span>
       <div>
         {title && <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color, margin:'0 0 2px' }}>{title}</p>}
         <p style={{ fontFamily:PP, fontSize:11, color, margin:0, lineHeight:1.55, opacity:.9 }}>{text}</p>
@@ -587,7 +596,7 @@ export function SearchBeforePublishNotice({ kind='ad', onSearch }) {
       }}
     >
       <div style={{ display:'flex', gap:11, alignItems:'flex-start' }}>
-        <span style={{ fontSize:22, lineHeight:1, flexShrink:0 }}>🔎</span>
+        <span style={{ flexShrink:0, color:'#1D4ED8', marginTop:1 }}><Icon name="search" size={20} /></span>
         <div style={{ minWidth:0 }}>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:'#1E3A8A', margin:'0 0 4px' }}>
             Busca primero en Latido
@@ -624,13 +633,16 @@ export function SearchBeforePublishNotice({ kind='ad', onSearch }) {
 }
 
 // ── Empty state ────────────────────────────────────────────────
-export function EmptyState({ emoji='😕', title, sub, action, onAction }) {
+export function EmptyState({ icon='', emoji='', title, sub, action, onAction }) {
+  const resolvedIcon = icon || getInterfaceIconName(emoji, 'search')
   return (
     <div style={{ textAlign:'center', padding:'48px 20px' }}>
-      <div style={{ fontSize:52, marginBottom:14 }}>{emoji}</div>
-      <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:6 }}>{title}</h3>
-      {sub && <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:18 }}>{sub}</p>}
-      {action && <Btn onClick={onAction} style={{ width:'auto', margin:'0 auto', padding:'10px 24px' }}>{action}</Btn>}
+      <div style={{ width:64, height:64, margin:'0 auto 14px', borderRadius:20, background:C.bg, color:C.light, display:'grid', placeItems:'center' }}>
+        <Icon name={resolvedIcon} size={28} />
+      </div>
+      <h3 style={{ fontFamily:PP, fontWeight:W.bold, fontSize:T.section, color:C.text, marginBottom:7, letterSpacing:-0.4 }}>{title}</h3>
+      {sub && <p style={{ fontFamily:PP, fontSize:T.small, color:C.light, marginBottom:18, lineHeight:1.6, maxWidth:'44ch', marginLeft:'auto', marginRight:'auto' }}>{sub}</p>}
+      {action && <Btn onClick={onAction} style={{ width:'auto', margin:'0 auto' }}>{action}</Btn>}
     </div>
   )
 }
@@ -639,58 +651,74 @@ export function EmptyState({ emoji='😕', title, sub, action, onAction }) {
 export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
   const { AD_CATS, CAT_COLORS_MAP } = (() => {
     const cats = [...BASE_AD_CATS, {id:'regalo',emoji:'🎁',label:'Regalo'}]
-    const map = {vivienda:{bg:'#DBEAFE',tc:'#1D4ED8'},cuidados:{bg:'#FCE7F3',tc:'#9D174D'},documentos:{bg:'#EDE9FE',tc:'#6D28D9'},venta:{bg:'#FEF3C7',tc:'#92400E'},servicios:{bg:'#CCFBF1',tc:'#0F766E'},empleo:{bg:'#DBEAFE',tc:'#1D4ED8'},regalo:{bg:'#FEE2E2',tc:'#B91C1C'}}
-    return { AD_CATS: cats, CAT_COLORS_MAP: map }
+    return { AD_CATS: cats, CAT_COLORS_MAP:CAT_COLORS }
   })()
   const normalizedCat = getAdCategoryId(ad)
   const cat = getAdDisplayCat(ad) || AD_CATS.find(c => c.id === normalizedCat)
   const cc  = CAT_COLORS_MAP[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
+  // Arte de respaldo de la tarjeta cuando el anuncio no trae foto.
   const displayEmoji = getAdDisplayEmoji(ad)
-  const subOption = getAdSubOption(normalizedCat, ad.sub)
-  const typeMap = { busca:['🔍 Busca','#FEF3C7','#92400E'], ofrece:['✨ Ofrece','#D1FAE5','#065F46'], vende:['🏷️ Vende','#DBEAFE','#1D4ED8'], regala:['🎁 Regala','#FCE7F3','#9D174D'] }
-  const [tl, tbg, ttc] = typeMap[ad.type] || ['•', C.bg, C.mid]
   const location = formatAdLocation(ad)
 
   if (compact) return (
-    <div onClick={onClick} style={{ background:C.surface, borderRadius:13, border:`1px solid ${C.border}`, padding:'10px 12px', display:'flex', gap:10, alignItems:'flex-start', cursor:'pointer', transition:'all .15s' }}>
-      <div style={{ width:36, height:36, background:cc.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>{displayEmoji}</div>
+    <div onClick={onClick} style={{ background:C.surface, borderRadius:R.md, border:`1px solid ${C.border}`, padding:'12px 13px', display:'flex', gap:11, alignItems:'flex-start', cursor:'pointer', transition:'all .15s' }}>
+      <div style={{ width:40, height:40, background:cc.bg, borderRadius:R.sm, display:'flex', alignItems:'center', justifyContent:'center', fontSize:19, flexShrink:0 }}>{displayEmoji}</div>
       <div style={{ flex:1, minWidth:0 }}>
-        <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, lineHeight:1.3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:3 }}>{ad.title}</p>
-        <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
-          <PrivacyTag privacy={ad.privacy}/>
-          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
-          <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>📍 {location || ad.canton} · {ad.ts}</span>
+        <p style={{ fontFamily:PP, fontWeight:W.medium, fontSize:T.small, color:C.text, lineHeight:1.35, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:4 }}>{ad.title}</p>
+        <div style={{ display:'flex', gap:5, flexWrap:'wrap', alignItems:'center' }}>
+          <Tag bg={cc.bg} color={cc.tc}>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
+              <Icon name={getCategoryIconName(normalizedCat)} size={11} /> {cat?.label}
+            </span>
+          </Tag>
+          <span style={{ fontFamily:PP, fontSize:T.meta, color:C.light, display:'inline-flex', alignItems:'center', gap:3 }}>
+            <Icon name="location" size={11} /> {location || ad.canton}
+          </span>
         </div>
       </div>
-      <span style={{ fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, flexShrink:0 }}>{ad.price}</span>
+      <span style={{ fontFamily:PP, fontSize:T.small, fontWeight:W.bold, color:C.primary, flexShrink:0 }}>{ad.price}</span>
     </div>
   )
 
   return (
-    <div onClick={onClick} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', cursor:'pointer', transition:'all .2s' }}>
+    <div onClick={onClick} style={{ background:C.surface, borderRadius:R.lg, border:`1px solid ${C.border}`, overflow:'hidden', cursor:'pointer', transition:'all .2s' }}>
       {ad.img ? (
         <img src={getThumbnailImageUrl(ad.img)} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:160, objectFit:'cover' }} />
       ) : (
-        <div style={{ width:'100%', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:52 }}>
+        // Sin foto, el respaldo se tine del color de la categoria: la ausencia
+        // de imagen pasa a ser una senal util en vez de un hueco en blanco.
+        <div style={{ width:'100%', height:160, background:cc.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:52 }}>
           {displayEmoji}
         </div>
       )}
-      <div style={{ padding:'12px 14px 14px' }}>
-        <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:7 }}>
-          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
-          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
-          <PrivacyTag privacy={ad.privacy}/>
-          {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓</Tag>}
+      <div style={{ padding:'13px 14px 15px' }}>
+        {/* Dos etiquetas como maximo: categoria y confianza. La subcategoria
+            vive en el detalle, donde hay sitio para leerla. */}
+        <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:8 }}>
+          <Tag bg={cc.bg} color={cc.tc}>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
+              <Icon name={getCategoryIconName(normalizedCat)} size={11} /> {cat?.label}
+            </span>
+          </Tag>
+          {ad.verified && (
+            <Tag bg={C.successLight} color={C.successText}>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
+                <Icon name="verified" size={11} /> Verificado
+              </span>
+            </Tag>
+          )}
         </div>
-        <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, lineHeight:1.35, marginBottom:4 }}>{ad.title}</p>
-        <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.5, marginBottom:8, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div style={{ display:'flex', gap:5, alignItems:'center' }}>
-            <Avatar name={ad.user} size={20} />
-            <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>{ad.user} · {ad.ts} · {location || ad.canton}</span>
-          </div>
-          <span style={{ fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary }}>{ad.price}</span>
+        <p style={{ fontFamily:PP, fontWeight:W.bold, fontSize:T.cardTitle, color:C.text, lineHeight:1.28, letterSpacing:-0.3, marginBottom:5 }}>{ad.title}</p>
+        {/* El precio decide si sigues leyendo: va justo despues del titulo. */}
+        {ad.price && (
+          <p style={{ fontFamily:PP, fontWeight:W.medium, fontSize:T.body, color:C.primary, margin:'0 0 7px' }}>{ad.price}</p>
+        )}
+        <p style={{ fontFamily:PP, fontSize:T.small, color:C.mid, lineHeight:1.55, marginBottom:10, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{ad.desc}</p>
+        <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+          <Avatar name={ad.user} size={22} />
+          <span style={{ fontFamily:PP, fontSize:T.meta, color:C.light, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            {ad.user} · {ad.ts} · {location || ad.canton}
+          </span>
         </div>
       </div>
     </div>
@@ -706,9 +734,9 @@ export function Stars({ rating, size = 14, showNumber = false, count }) {
   const empty = 5 - full - (half ? 1 : 0)
   return (
     <span style={{ display:'inline-flex', alignItems:'center', gap:2 }}>
-      {Array(full).fill(0).map((_,i)  => <span key={`f${i}`} style={{ color:'#F59E0B', fontSize:size }}>★</span>)}
-      {half                             && <span style={{ color:'#F59E0B', fontSize:size }}>½</span>}
-      {Array(empty).fill(0).map((_,i) => <span key={`e${i}`} style={{ color:'#D1D5DB', fontSize:size }}>★</span>)}
+      {Array(full).fill(0).map((_,i)  => <Icon key={`f${i}`} name="star" size={size} color="#F59E0B" style={{ fill:'#F59E0B' }} />)}
+      {half                             && <Icon name="starHalf" size={size} color="#F59E0B" style={{ fill:'#F59E0B' }} />}
+      {Array(empty).fill(0).map((_,i) => <Icon key={`e${i}`} name="star" size={size} color="#D1D5DB" />)}
       {showNumber && <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:size-2, color:'#475569', marginLeft:3 }}>{rating.toFixed(1)}{count !== undefined && ` (${count})`}</span>}
     </span>
   )
@@ -746,7 +774,7 @@ export function RatingPill({ rating, count, style }) {
         ...style,
       }}
     >
-      <span style={{ fontSize:12, lineHeight:'14px', display:'inline-flex', alignItems:'center' }}>⭐</span>
+      <Icon name="star" size={12} color="#F59E0B" style={{ fill:'#F59E0B' }} />
       <span style={{ lineHeight:'14px', display:'inline-flex', alignItems:'center' }}>{label}</span>
     </span>
   )
@@ -765,7 +793,9 @@ export function ReviewCard({ review, googleReviewsUrl = '' }) {
           </div>
           <div>
             <p style={{ fontFamily:"'Poppins',sans-serif", fontWeight:600, fontSize:12, color:'#0F172A', margin:0 }}>{review.author}</p>
-            <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, color:'#94A3B8', margin:0 }}>📍 Cantón {review.canton} · {review.date}</p>
+            <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:T.meta, color:C.light, margin:0, display:'flex', alignItems:'center', gap:3 }}>
+              <Icon name="location" size={10} /> Cantón {review.canton} · {review.date}
+            </p>
           </div>
         </div>
         <Stars rating={review.stars} size={12} />
@@ -814,7 +844,7 @@ export function ReviewList({
   if (!reviews.length) {
     return (
       <div style={{ textAlign:'center', padding:'32px 0' }}>
-        <p style={{ fontSize:40, margin:'0 0 10px' }}>⭐</p>
+        <p style={{ margin:'0 0 10px', display:'flex', justifyContent:'center', color:'#F59E0B' }}><Icon name="star" size={38} strokeWidth={1.5} /></p>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:'0 0 5px' }}>{emptyTitle}</p>
         <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>{emptyText}</p>
       </div>
@@ -824,16 +854,18 @@ export function ReviewList({
   return (
     <div>
       <div className="no-scroll" style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:10, marginBottom:8 }}>
-        {[{ id:'all', label:'Todas', count:reviews.length }, ...[5, 4, 3, 2, 1].map(stars => ({ id:String(stars), label:`${stars} ★`, count:countsByStars[stars] || 0 }))].map(option => {
+        {[{ id:'all', label:'Todas', count:reviews.length }, ...[5, 4, 3, 2, 1].map(stars => ({ id:String(stars), label:String(stars), star:true, count:countsByStars[stars] || 0 }))].map(option => {
           const active = filter === option.id
           return (
             <button
               key={option.id}
               type="button"
               onClick={() => setFilter(option.id)}
-              style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:active ? '#fff' : C.mid, background:active ? C.primary : '#fff', border:`1.5px solid ${active ? C.primary : C.border}`, borderRadius:999, padding:'7px 11px', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+              style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:active ? '#fff' : C.mid, background:active ? C.primary : '#fff', border:`1.5px solid ${active ? C.primary : C.border}`, borderRadius:999, padding:'7px 11px', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0, display:'inline-flex', alignItems:'center', gap:4 }}
             >
-              {option.label} ({option.count})
+              {option.label}
+              {option.star && <Icon name="star" size={11} style={{ fill:'currentColor' }} />}
+              ({option.count})
             </button>
           )
         })}
@@ -841,7 +873,7 @@ export function ReviewList({
 
       {filteredReviews.length === 0 ? (
         <div style={{ textAlign:'center', padding:'24px 0' }}>
-          <p style={{ fontSize:34, margin:'0 0 8px' }}>⭐</p>
+          <p style={{ margin:'0 0 8px', display:'flex', justifyContent:'center', color:'#F59E0B' }}><Icon name="star" size={32} strokeWidth={1.5} /></p>
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px' }}>No hay reseñas de {filter} estrella{filter === '1' ? '' : 's'}</p>
           <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>Prueba otro filtro o escribe la primera.</p>
         </div>
@@ -1196,11 +1228,14 @@ export function ReviewForm({
 
       {/* Star picker */}
       <div style={{ marginBottom:12 }}>
-        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:8 }}>TU VALORACIÓN *</p>
+        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:T.label, fontWeight:W.medium, color:C.light, letterSpacing:0.7, marginBottom:8 }}>TU VALORACIÓN *</p>
         <div style={{ display:'flex', gap:4 }}>
           {[1,2,3,4,5].map(n => (
             <button key={n} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} onClick={() => setStars(n)}
-              style={{ background:'none', border:'none', cursor:'pointer', fontSize:28, color: n<=(hover||stars)?'#F59E0B':'#D1D5DB', transition:'color .1s', padding:'0 2px' }}>★</button>
+              aria-label={`${n} de 5`}
+              style={{ background:'none', border:'none', cursor:'pointer', display:'grid', placeItems:'center', color: n<=(hover||stars)?'#F59E0B':'#D1D5DB', transition:'color .1s', padding:'0 2px' }}>
+              <Icon name="star" size={26} style={n<=(hover||stars) ? { fill:'#F59E0B' } : undefined} />
+            </button>
           ))}
           {(hover||stars) > 0 && <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:12, color:'#F59E0B', marginLeft:6, alignSelf:'center', fontWeight:600 }}>
             {['','Muy malo','Malo','Regular','Bueno','Excelente'][hover||stars]}
@@ -1212,7 +1247,7 @@ export function ReviewForm({
         <div className="grid-2" style={{ gap:8, marginBottom:8 }}>
           {showNameField && (
             <div>
-              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>TU NOMBRE *</p>
+              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:T.label, fontWeight:W.medium, color:C.light, letterSpacing:0.7, marginBottom:5 }}>TU NOMBRE *</p>
               <input
                 style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', color:'#0F172A', boxSizing:'border-box' }}
                 placeholder="Maria G."
@@ -1223,7 +1258,7 @@ export function ReviewForm({
           )}
           {showCantonField && (
             <div>
-              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>CANTÓN</p>
+              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:T.label, fontWeight:W.medium, color:C.light, letterSpacing:0.7, marginBottom:5 }}>CANTÓN</p>
               <input
                 style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', color:'#0F172A', boxSizing:'border-box' }}
                 placeholder="ZH"
@@ -1238,15 +1273,15 @@ export function ReviewForm({
 
       {/* Text */}
       <div style={{ marginBottom:12 }}>
-        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>TU RESEÑA *</p>
+        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:T.label, fontWeight:W.medium, color:C.light, letterSpacing:0.7, marginBottom:5 }}>TU RESEÑA *</p>
         <textarea style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', resize:'none', minHeight:80, boxSizing:'border-box' }}
           placeholder="Cuéntanos cómo fue tu experiencia con este proveedor..." value={text} onChange={e => setText(e.target.value)} />
-        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:9, color:'#94A3B8', margin:'3px 0 0' }}>{text.length} / mínimo 10 caracteres</p>
+        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:T.meta, color:C.light, margin:'3px 0 0' }}>{text.length} / mínimo 10 caracteres</p>
       </div>
 
       <div style={{ display:'flex', gap:8 }}>
         <button onClick={() => onSubmit({ id:initialReview?.id, stars, text, name, canton, date:'Ahora mismo' })} disabled={!canSubmit}
-          style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:12, background: canSubmit?'#2563EB':'#E2EAF4', color: canSubmit?'#fff':'#94A3B8', border:'none', borderRadius:11, padding:'10px 0', flex:1, cursor: canSubmit?'pointer':'not-allowed', transition:'all .15s' }}>
+          style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:12, background: canSubmit?'#2563EB':'#E2EAF4', color: canSubmit?'#fff':C.light, border:'none', borderRadius:11, padding:'10px 0', flex:1, cursor: canSubmit?'pointer':'not-allowed', transition:'all .15s' }}>
           {finalSubmitLabel}
         </button>
         <button onClick={onCancel}

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
 import { BUSINESS_PROMOTION_PLAN_DETAILS, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
+import { Icon } from '../lib/icons'
 
 const PENDING_STATUSES = new Set(['reserved', 'checkout_open', 'processing'])
 const PLAN_KEYS = ['featured', 'basic', 'premium']
@@ -381,7 +382,7 @@ export default function DestacarNegocio() {
     return (
       <div style={{ maxWidth:560, margin:'0 auto', padding:'60px 20px', textAlign:'center' }}>
         <div style={{ width:72, height:72, borderRadius:24, background:C.primaryLight, color:C.primary, display:'grid', placeItems:'center', fontSize:34, margin:'0 auto 20px' }}>
-          ✨
+          <Icon name="sparkles" size={34} />
         </div>
         <h1 style={{ fontFamily:PP, fontWeight:900, fontSize:24, color:C.text, margin:'0 0 10px' }}>
           Opciones profesionales temporalmente pausadas

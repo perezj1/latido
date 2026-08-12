@@ -6,16 +6,16 @@
 //   color    tono de la seccion. Tine el fondo claro de la pestana activa.
 //   ink      version oscura del mismo tono, para el texto sobre ese fondo claro.
 //   gradient degradado de la tarjeta de Explorar.
+import { SECTION_COLORS } from './theme'
+
 export const EXPLORE_SECTIONS = [
   {
     id:'anuncios',
-    emoji:'📌',
+    emoji:'📣',
     label:'Anuncios',
     desc:'Vivienda, servicios, compraventa y trámites',
     to:'/tablon',
-    color:'#4C8DFF',
-    ink:'#1D4ED8',
-    gradient:'linear-gradient(150deg, #4C8DFF 0%, #1D4ED8 100%)',
+    ...SECTION_COLORS.anuncios,
   },
   {
     id:'empleo',
@@ -23,9 +23,7 @@ export const EXPLORE_SECTIONS = [
     label:'Empleo',
     desc:'Ofertas y solicitudes de trabajo',
     to:'/tablon?cat=empleo',
-    color:'#34D6A4',
-    ink:'#0E9C74',
-    gradient:'linear-gradient(150deg, #34D6A4 0%, #0E9C74 100%)',
+    ...SECTION_COLORS.empleo,
   },
   {
     id:'negocios',
@@ -33,9 +31,7 @@ export const EXPLORE_SECTIONS = [
     label:'Negocios',
     desc:'Comercios y profesionales hispanohablantes',
     to:'/comunidades?view=negocios',
-    color:'#FFB84D',
-    ink:'#B26A05',
-    gradient:'linear-gradient(150deg, #FFB84D 0%, #E08706 100%)',
+    ...SECTION_COLORS.negocios,
   },
   {
     id:'creadores',
@@ -43,9 +39,7 @@ export const EXPLORE_SECTIONS = [
     label:'Creadores',
     desc:'Voces que cuentan Suiza en español',
     to:'/comunidades?view=creadores',
-    color:'#A78BFA',
-    ink:'#6D28D9',
-    gradient:'linear-gradient(150deg, #A78BFA 0%, #6D28D9 100%)',
+    ...SECTION_COLORS.creadores,
   },
   {
     id:'eventos',
@@ -53,9 +47,7 @@ export const EXPLORE_SECTIONS = [
     label:'Eventos',
     desc:'Conciertos, fiestas y quedadas con fecha',
     to:'/comunidades?view=eventos',
-    color:'#FF6F68',
-    ink:'#D22B24',
-    gradient:'linear-gradient(150deg, #FF6F68 0%, #D22B24 100%)',
+    ...SECTION_COLORS.eventos,
   },
   {
     id:'grupos',
@@ -63,16 +55,14 @@ export const EXPLORE_SECTIONS = [
     label:'Grupos',
     desc:'Comunidades y chats por ciudad o interés',
     to:'/comunidades?view=comunidades',
-    color:'#3FD3E8',
-    ink:'#0296AB',
-    gradient:'linear-gradient(150deg, #3FD3E8 0%, #0296AB 100%)',
+    ...SECTION_COLORS.grupos,
   },
 ]
 
 // Superficies secundarias: no son secciones propias, pero en movil no habia
 // ninguna via para llegar a ellas.
 export const EXPLORE_EXTRAS = [
-  { id:'guias', emoji:'📚', label:'Guías', desc:'Permisos, trabajo, salud y dinero', to:'/guias' },
+  { id:'guias', emoji:'📚', label:'Guías', desc:'Permisos, trabajo, salud y dinero', to:'/guias', ...SECTION_COLORS.guias },
 ]
 
 // Rutas que pertenecen a Explorar. El area de perfil de creador (/creadores/alta

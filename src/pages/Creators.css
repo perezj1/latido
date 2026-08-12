@@ -2,9 +2,7 @@
   min-height: 100vh;
   padding-bottom: 90px;
   color: #0f172a;
-  background:
-    radial-gradient(circle at 0 0, rgba(191, 219, 254, .7), transparent 27rem),
-    linear-gradient(180deg, #f8fbff 0, #f0f6ff 40rem);
+  background: #f0f6ff;
 }
 
 .creator-app-form-page {
@@ -171,8 +169,8 @@
 .creator-social-profile__identity { padding: 14px 24px 24px; text-align: center; }
 .creator-social-profile__avatar { position: relative; z-index: 2; display: flex; justify-content: center; }
 .creator-social-profile__name { display: flex; margin-top: 10px; align-items: center; justify-content: center; gap: 7px; }
-.creator-social-profile__name h1 { margin: 0; color: #102a5c; font-size: 24px; font-weight: 800; line-height: 1.25; letter-spacing: -.04em; }
-.creator-social-profile__location { margin: 4px 0 13px; color: #94a3b8; font-size: 9.5px; font-weight: 600; }
+.creator-social-profile__name h1 { margin: 0; color: #2563eb; font-size: 24px; font-weight: 800; line-height: 1.25; letter-spacing: -.04em; }
+.creator-social-profile__location { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 4px 0 13px; color: #94a3b8; font-size: 9.5px; font-weight: 600; }
 .creator-social-profile__tagline { display: block; max-width: 520px; margin: 0 auto; color: #0f172a; font-size: 12.5px; line-height: 1.55; }
 .creator-social-profile__bio { max-width: 560px; margin: 8px auto 0; color: #64748b; font-size: 10px; line-height: 1.65; }
 .creator-social-profile__topics { display: flex; margin-top: 13px; flex-wrap: wrap; justify-content: center; gap: 5px; }
@@ -191,7 +189,7 @@
 .creator-social-profile__main-action .creator-profile-share { box-sizing: border-box; width: 100%; min-width: 0; padding-right: 6px; padding-left: 6px; }
 .creator-social-profile__main-action > a { display: flex; min-height: 44px; align-items: center; justify-content: center; color: #fff; background: #2563eb; border-radius: 14px; font-size: 10px; font-weight: 800; text-decoration: none; }
 .creator-social-profile__networks { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: left; }
-.creator-social-profile__networks h2 { margin: 0 0 13px; color: #102a5c; font-size: 12px; font-weight: 800; }
+.creator-social-profile__networks h2 { margin: 0 0 13px; color: #2563eb; font-size: 12px; font-weight: 800; }
 
 .creator-profile-editor-shell { padding-top: 22px; }
 .creator-social-profile--editor .creator-social-profile__identity { position: relative; }
@@ -200,7 +198,7 @@
 .creator-inline-edit-button--identity { position: absolute; z-index: 3; top: 12px; right: 18px; }
 .creator-editor-block-heading { display: flex; margin-top: 17px; align-items: center; justify-content: space-between; gap: 12px; text-align: left; }
 .creator-editor-block-heading > strong,
-.creator-editor-block-heading > h2 { margin: 0 !important; color: #102a5c; font-size: 12px; font-weight: 800; }
+.creator-editor-block-heading > h2 { margin: 0 !important; color: #2563eb; font-size: 12px; font-weight: 800; }
 .creator-social-profile--editor .creator-social-profile__topics { margin-top: 9px; justify-content: flex-start; }
 .creator-editor-main-actions { display: grid; max-width: 500px; margin: 0 auto; grid-template-columns: 1fr; gap: 8px; }
 .creator-editor-main-actions > button,
@@ -270,19 +268,7 @@
   padding: 56px 0 38px;
 }
 
-.creators-hero::after {
-  position: absolute;
-  top: 26px;
-  right: max(3vw, 12px);
-  width: 250px;
-  height: 250px;
-  content: '';
-  opacity: .65;
-  border: 1px solid rgba(37, 99, 235, .14);
-  border-radius: 50%;
-  background: repeating-radial-gradient(circle, transparent 0 22px, rgba(37, 99, 235, .06) 23px 24px);
-  pointer-events: none;
-}
+/* Sin anillo decorativo: las cabeceras de Latido van a color plano. */
 
 .creators-hero__grid {
   position: relative;
@@ -309,7 +295,7 @@
 .creators-hero h1 {
   max-width: 720px;
   margin: 16px 0 14px;
-  color: #102a5c;
+  color: #2563eb;
   font-size: clamp(32px, 5vw, 58px);
   font-weight: 900;
   line-height: 1.02;
@@ -557,7 +543,7 @@
 
 .creators-section__heading h2 {
   margin: 0 0 4px;
-  color: #102a5c;
+  color: #2563eb;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: -.03em;
@@ -650,33 +636,6 @@
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.creator-confirmed {
-  display: inline-grid;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  color: #fff;
-  background: #2563eb;
-  border-radius: 50%;
-  place-items: center;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.creator-confirmed--small {
-  width: 14px;
-  height: 14px;
-  flex-basis: 14px;
-  font-size: 8px;
-}
-
-.creator-confirmed--tiny {
-  width: 12px;
-  height: 12px;
-  flex-basis: 12px;
-  font-size: 7px;
 }
 
 .creator-profile-card__tagline {
@@ -1521,7 +1480,7 @@
 .creator-preview-modal__body { padding: 24px; }
 .creator-preview-modal__body h2 {
   margin: 13px 0 8px;
-  color: #102a5c;
+  color: #2563eb;
   font-size: 22px;
   line-height: 1.3;
 }
@@ -1593,7 +1552,7 @@
 
 .creator-studio-heading h1 {
   margin: 14px 0 4px;
-  color: #102a5c;
+  color: #2563eb;
   font-size: clamp(28px, 4vw, 42px);
   font-weight: 900;
   line-height: 1.1;
@@ -1639,7 +1598,7 @@
   box-shadow: 0 10px 30px rgba(30, 64, 175, .07);
 }
 
-.creator-studio-profile h2 { margin: 0; color: #102a5c; font-size: 18px; }
+.creator-studio-profile h2 { margin: 0; color: #2563eb; font-size: 18px; }
 .creator-studio-profile p { margin: 4px 0 0; color: #475569; font-size: 10.5px; }
 .creator-studio-status { padding: 4px 7px; color: #047857; background: #ecfdf5; border-radius: 999px; font-size: 8px; font-weight: 900; }
 .creator-studio-profile__meta { display: flex; align-items: flex-end; flex-direction: column; gap: 5px; color: #64748b; font-size: 9px; }
@@ -1800,7 +1759,7 @@
 }
 
 .creator-publish-form__heading span { color: #2563eb; font-size: 9px; font-weight: 900; letter-spacing: .08em; }
-.creator-publish-form__heading h3 { margin: 4px 0 0; color: #102a5c; font-size: 17px; }
+.creator-publish-form__heading h3 { margin: 4px 0 0; color: #2563eb; font-size: 17px; }
 .creator-publish-form__heading button { display: grid; width: 34px; height: 34px; padding: 0; flex: 0 0 34px; align-self: flex-start; color: #64748b; background: #f1f5f9; border: 0; border-radius: 50%; place-items: center; font-size: 21px; line-height: 1; cursor: pointer; }
 
 .creator-publish-form__body { width: min(680px,100%); margin: 0 auto; }
@@ -1808,7 +1767,7 @@
 .creator-publish-step__heading { display: flex; margin-bottom: 13px; align-items: center; gap: 9px; }
 .creator-publish-step__heading > span { display: grid; width: 27px; height: 27px; flex: 0 0 27px; color: #fff; background: #2563eb; border-radius: 9px; place-items: center; font-size: 10px; font-weight: 900; }
 .creator-publish-step__heading > div { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
-.creator-publish-step__heading strong { color: #102a5c; font-size: 11.5px; }
+.creator-publish-step__heading strong { color: #2563eb; font-size: 11.5px; }
 .creator-publish-step__heading small { color: #94a3b8; font-size: 8.5px; line-height: 1.45; }
 .creator-publish-preview { display: grid; margin: 2px 0 5px; padding: 9px; grid-template-columns: 112px minmax(0,1fr); align-items: center; gap: 11px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; }
 .creator-publish-preview__media { position: relative; display: grid; overflow: hidden; width: 112px; aspect-ratio: 16/9; background: var(--preview-bg,#eff6ff); border-radius: 10px; place-items: center; font-size: 36px; }
@@ -1964,7 +1923,9 @@
 .creator-community-card__media {
   position: relative;
   display: grid;
-  overflow: hidden;
+  /* Visible a proposito: la insignia de verificado sobresale por la esquina
+     inferior derecha del avatar y con overflow oculto se veria a medias. */
+  overflow: visible;
   width: 84px;
   height: 84px;
   margin: 0 auto;
@@ -1983,6 +1944,8 @@
   height: 100%;
   padding: 9px;
   box-sizing: border-box;
+  /* La imagen se recorta ella misma, ya que el contenedor no lo hace. */
+  border-radius: 50%;
   object-fit: contain;
   object-position: center;
 }
@@ -2002,11 +1965,12 @@
 .creator-community-card__name { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 5px; }
 .creator-community-card__name > strong { overflow: hidden; color: #0f172a; font-size: 11.5px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .creator-community-card__tagline { display: -webkit-box; overflow: hidden; min-height: 26px; margin-top: 7px; color: #475569; font-size: 8.5px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.creator-community-card__verification { display: grid; width: 16px; height: 16px; flex: 0 0 16px; color: #fff; background: #2563eb; border-radius: 50%; place-items: center; font-size: 8px; font-weight: 900; }
 .creator-community-card__topics { display: flex; min-width: 0; margin-top: 6px; align-items: center; gap: 4px; }
 .creator-community-card__topics > span { overflow: hidden; min-width: 0; padding: 5px 7px; color: #1e40af; background: #eef2ff; border-radius: 8px; font-size: 7.5px; font-weight: 700; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .creator-community-card__topics > small { flex: 0 0 auto; color: #64748b; font-size: 8px; font-weight: 800; }
-.creator-community-card__location { display: block; overflow: hidden; margin-top: 8px; color: #64748b; font-size: 7.5px; text-overflow: ellipsis; white-space: nowrap; }
+/* Fila en flex: el icono va pegado al nombre del lugar. Con `display:block` el
+   svg formaba su propio bloque y el texto se iba al centro. */
+.creator-community-card__location { display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; margin-top: 8px; color: #64748b; font-size: 7.5px; text-overflow: ellipsis; white-space: nowrap; }
 .creator-community-card__footer { display: flex; min-width: 0; margin: auto 0 0; padding-top: 8px; align-items: center; justify-content: space-between; gap: 6px; color: #64748b; border-top: 1px solid #e2e8f0; font-size: 8px; }
 .creator-community-card__footer .creator-profile-helpful,
 .creator-community-card__footer .creator-follow-button { min-width: 0; min-height: 30px; padding: 0 7px; gap: 4px; border-radius: 999px; box-shadow: none; font-size: 7.5px; }
@@ -2257,12 +2221,16 @@
 /* Mismo rojo que el boton de "me ayudo" activo, para que el contador y la
    accion que lo alimenta se lean como lo mismo. */
 .creator-rank-row__score {
+  display: flex;
   flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
   padding: 5px 9px;
   color: #be123c;
   background: #fff1f2;
   border-radius: 999px;
   font: 800 10px/1 'Poppins', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
 }
 
 

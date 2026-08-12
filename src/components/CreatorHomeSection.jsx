@@ -2,14 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CreatorAppContentCard, CreatorAvatar, CreatorContentModal } from './CreatorCards'
 import { getAllCreators, getOrderedCreatorContents, subscribeCreatorUpdates } from '../lib/creators'
-import { C, PP } from '../lib/theme'
+import { C, PP, getLatidoCategoryTheme } from '../lib/theme'
+import { Icon } from '../lib/icons'
 import '../pages/Creators.css'
 
-function SectionHeading({ id, title, subtitle, to }) {
+function SectionHeading({ id, icon, tone, title, subtitle, to }) {
+  const theme = getLatidoCategoryTheme(tone)
   return (
     <div style={{ maxWidth:1200, margin:'0 auto 14px', padding:'0 16px', display:'grid', gridTemplateColumns:'minmax(0,1fr) auto', gap:'3px 16px', alignItems:'center' }}>
-      <h2 id={id} style={{ margin:0, color:C.text, fontFamily:PP, fontWeight:800, fontSize:20 }}>{title}</h2>
-      <Link to={to} style={{ color:C.primary, fontFamily:PP, fontSize:11, fontWeight:700, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todo →</Link>
+      <h2 id={id} style={{ display:'flex', alignItems:'center', gap:8, margin:0, color:C.text, fontFamily:PP, fontWeight:800, fontSize:20 }}><Icon name={icon} size={21} color={theme.ink} /> {title}</h2>
+      <Link to={to} style={{ color:theme.ink, fontFamily:PP, fontSize:11, fontWeight:700, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todo →</Link>
       <p style={{ gridColumn:'1 / -1', margin:0, color:C.mid, fontFamily:PP, fontSize:11, lineHeight:1.5 }}>{subtitle}</p>
     </div>
   )
@@ -24,17 +26,14 @@ function CreatorProfileMiniCard({ creator }) {
     <article className="creator-community-card" style={{ '--creator-card-accent':creator.accent || C.primary }}>
       <Link to={`/creadores/${creator.slug}`} className="creator-community-card__open">
         <span className="creator-community-card__media">
-          <CreatorAvatar creator={creator} size={84} />
+          <CreatorAvatar creator={creator} size={84} showVerified />
         </span>
         <span className="creator-community-card__body">
           <span className="creator-community-card__name">
             <strong>{creator.name}</strong>
-            {creator.verified && (
-              <span className="creator-community-card__verification" title="Perfil verificado por Latido" aria-label="Perfil verificado por Latido">✓</span>
-            )}
           </span>
           <span className="creator-community-card__tagline">{creator.tagline}</span>
-          <span className="creator-community-card__location" title={place}>📍 {place}</span>
+          <span className="creator-community-card__location" title={place}><Icon name="location" size={12} /> {place}</span>
         </span>
       </Link>
     </article>
@@ -89,7 +88,9 @@ export default function CreatorHomeSection() {
         <section style={{ padding:'40px 0 0' }} aria-labelledby="home-creator-contents-title">
           <SectionHeading
             id="home-creator-contents-title"
-            title="🎬 Contenido"
+            icon="movie"
+            tone="contenido"
+            title="Contenido"
             subtitle="Experiencias, consejos, trabajo y proyectos compartidos en español desde Suiza."
             to="/comunidades?view=creadores&creatorView=contenidos"
           />
@@ -124,7 +125,9 @@ export default function CreatorHomeSection() {
         <section style={{ padding:'40px 0 0' }} aria-labelledby="home-creators-title">
           <SectionHeading
             id="home-creators-title"
-            title="🎙️ Creadores"
+            icon="creator"
+            tone="creadores"
+            title="Creadores"
             subtitle="Personas, profesionales y negocios que cuentan Suiza en español."
             to="/comunidades?view=creadores&creatorView=creadores"
           />

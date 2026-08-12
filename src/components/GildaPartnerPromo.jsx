@@ -50,7 +50,7 @@ const GILDA_PARTNER = {
     {
       id:'address',
       type:'address',
-      icon:'📍',
+      icon:'location',
       label:'Direccion',
       value:'Burgerstrasse 5, 6003 Luzern',
       href:GILDA_MAPS_URL,
@@ -59,7 +59,7 @@ const GILDA_PARTNER = {
     {
       id:'phone',
       type:'phone',
-      icon:'📞',
+      icon:'phone',
       label:'Telefono',
       value:GILDA_PHONE,
       href:GILDA_PHONE_HREF,
@@ -68,7 +68,7 @@ const GILDA_PARTNER = {
     {
       id:'email',
       type:'email',
-      icon:'✉️',
+      icon:'mail',
       label:'Email',
       value:GILDA_EMAIL,
       href:`mailto:${GILDA_EMAIL}`,
@@ -77,7 +77,7 @@ const GILDA_PARTNER = {
     {
       id:'instagram',
       type:'instagram',
-      icon:'📸',
+      icon:'instagram',
       label:'Instagram',
       value:'@dematos_luzern',
       href:GILDA_INSTAGRAM,

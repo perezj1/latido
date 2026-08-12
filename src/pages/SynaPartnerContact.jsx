@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
+import { Icon } from '../lib/icons'
 
 const SYNA_PARTNER_ID = 'syna'
 const SYNA_LOGO = '/partners/syna/logo.svg'
@@ -20,12 +21,12 @@ function ContactAction({ href, icon, label, value, external = false, onClick }) 
       rel={external ? 'noopener noreferrer sponsored' : undefined}
       onClick={onClick}
     >
-      <span className="mira-contact-action-icon" aria-hidden="true">{icon}</span>
+      <span className="mira-contact-action-icon" aria-hidden="true"><Icon name={icon} size={18} /></span>
       <span>
         <small>{label}</small>
         <strong>{value}</strong>
       </span>
-      <span className="mira-contact-action-arrow" aria-hidden="true">→</span>
+      <span className="mira-contact-action-arrow" aria-hidden="true"><Icon name="forward" size={16} /></span>
     </a>
   )
 }
@@ -66,10 +67,10 @@ export default function SynaPartnerContact() {
         </div>
 
         <div className="mira-contact-actions">
-          <ContactAction href={WHATSAPP_HREF} icon="💬" label="WhatsApp" value={PHONE_DISPLAY} external onClick={() => trackContactClick('whatsapp', WHATSAPP_HREF)} />
-          <ContactAction href={PHONE_HREF} icon="📞" label="Llamadas" value={PHONE_DISPLAY} onClick={() => trackContactClick('phone', PHONE_HREF)} />
-          <ContactAction href={`mailto:${EMAIL}`} icon="✉️" label="Email" value={EMAIL} onClick={() => trackContactClick('email', `mailto:${EMAIL}`)} />
-          <ContactAction href={WEBSITE} icon="🌐" label="Web" value="syna.ch/luzern" external onClick={() => trackContactClick('website', WEBSITE)} />
+          <ContactAction href={WHATSAPP_HREF} icon="whatsapp" label="WhatsApp" value={PHONE_DISPLAY} external onClick={() => trackContactClick('whatsapp', WHATSAPP_HREF)} />
+          <ContactAction href={PHONE_HREF} icon="phone" label="Llamadas" value={PHONE_DISPLAY} onClick={() => trackContactClick('phone', PHONE_HREF)} />
+          <ContactAction href={`mailto:${EMAIL}`} icon="mail" label="Email" value={EMAIL} onClick={() => trackContactClick('email', `mailto:${EMAIL}`)} />
+          <ContactAction href={WEBSITE} icon="website" label="Web" value="syna.ch/luzern" external onClick={() => trackContactClick('website', WEBSITE)} />
         </div>
 
         <Link to="/" className="mira-contact-back">

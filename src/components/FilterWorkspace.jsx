@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { C, PP } from '../lib/theme'
+import { C, PP, getLatidoCategoryTheme } from '../lib/theme'
 
 export function FilterIcon({ size=18 }) {
   return (
@@ -51,10 +51,16 @@ export function SegmentedTabs({
   showEmoji=false,
   ariaLabel='Opciones',
   className='',
+  // Por defecto el selector se tine con el color de la seccion activa. `accent`
+  // lo fija a un color unico cuando cambiar de tono al pulsar distrae mas que
+  // orienta, como en el conmutador de contenido y creadores.
+  accent='',
 }) {
   if (items.length < 2) return null
 
   const activeIndex = Math.max(0, items.findIndex(item => item.id === value))
+  const activeItem = items[activeIndex] || items[0]
+  const activeTheme = getLatidoCategoryTheme(activeItem?.tone || activeItem?.id)
 
   return (
     <div
@@ -64,6 +70,8 @@ export function SegmentedTabs({
       style={{
         '--segment-count':items.length,
         '--active-segment':activeIndex,
+        '--segment-color':accent || activeTheme.color,
+        '--segment-on-color':accent ? '#fff' : (activeTheme.on || '#fff'),
       }}
     >
       <span className="joined-segmented-tabs__indicator" aria-hidden="true" />

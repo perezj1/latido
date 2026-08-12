@@ -17,6 +17,7 @@ import { getPushStatus } from '../lib/pushNotifications'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { canUseWhatsappNumber } from '../lib/businessContact'
 import toast from 'react-hot-toast'
+import { Icon } from '../lib/icons'
 
 const STEPS = [
   { title:'¿Qué tipo de negocio es?',     sub:'Elige la categoría que mejor lo describe' },
@@ -158,7 +159,7 @@ export default function RegistrarNegocio() {
 
   if (!isLoggedIn) return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
+      <div style={{ display:'flex', justifyContent:'center', color:C.light, marginBottom:16 }}><Icon name="lock" size={48} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
         Para registrar tu negocio necesitas una cuenta. Es gratis y sin spam.
@@ -205,8 +206,8 @@ export default function RegistrarNegocio() {
               }}
             />
           </div>
-          <div style={{ width:76, height:76, borderRadius:24, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:38, margin:'8px auto 22px', position:'relative', zIndex:1 }}>
-            ✨
+          <div style={{ width:76, height:76, borderRadius:24, background:C.primaryLight, color:C.primary, display:'flex', alignItems:'center', justifyContent:'center', margin:'8px auto 22px', position:'relative', zIndex:1 }}>
+            <Icon name="sparkles" size={36} />
           </div>
           <h2 style={{ fontFamily:PP, fontWeight:900, fontSize:21, color:C.text, margin:'0 0 9px', position:'relative', zIndex:1 }}>
             Enhorabuena
@@ -223,7 +224,7 @@ export default function RegistrarNegocio() {
           </button>
         </div>
       </Modal>
-      <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>🏪</div>
+      <div style={{ width:80, height:80, background:C.successLight, color:C.success, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}><Icon name="success" size={40} /></div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Negocio enviado a revisión' : '¡Negocio publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
         {publishedForReview
@@ -365,7 +366,7 @@ export default function RegistrarNegocio() {
       }
 
       if (PAID_BUSINESS_FEATURES_VISIBLE && selectedProfessionalPlan && needsReview) {
-        toast('El negocio se enviará a revisión antes de poder activar el plan o la landing.', { icon:'ℹ️' })
+        toast('El negocio se enviará a revisión antes de poder activar el plan o la landing.', { icon:<Icon name="info" size={18} /> })
       }
       setPublishedForReview(needsReview)
       setProfessionalUnlockOpen(PAID_BUSINESS_FEATURES_VISIBLE)
@@ -393,7 +394,7 @@ export default function RegistrarNegocio() {
 
   const toggleLandingPageExtra = () => {
     if (!selectedPlanOption) {
-      toast('Elige primero un plan profesional.', { icon:'ℹ️' })
+      toast('Elige primero un plan profesional.', { icon:<Icon name="info" size={18} /> })
       return
     }
     setLandingPageSelected(selected => !selected)
@@ -590,13 +591,13 @@ export default function RegistrarNegocio() {
               <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:'#DBEAFE', color:C.primaryDark }}>{selectedType.label}</span>
             )}
             {form.canton && (
-              <span style={{ fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}>📍 {form.city || form.canton}</span>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:20, background:C.primaryLight, color:C.primary }}><Icon name="location" size={11} /> {form.city || form.canton}</span>
             )}
           </div>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:6 }}>{form.name || '—'}</p>
-          {form.address && <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'0 0 8px' }}>🧭 {form.address}</p>}
+          {form.address && <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.primary, margin:'0 0 8px' }}><Icon name="explore" size={12} /> {form.address}</p>}
           {form.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.65, marginBottom:form.website ? 8 : 10, whiteSpace:'pre-line' }}>{form.desc}</p>}
-          {form.website && <p style={{ fontFamily:PP, fontSize:11, color:C.primary, margin:'0 0 10px' }}>🌐 {form.website}</p>}
+          {form.website && <p style={{ display:'flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.primary, margin:'0 0 10px' }}><Icon name="website" size={12} /> {form.website}</p>}
           {form.services && (
             <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>
               {form.services.split(',').map(s => s.trim()).filter(Boolean).slice(0,3).map(sv => (
@@ -605,12 +606,12 @@ export default function RegistrarNegocio() {
             </div>
           )}
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            {form.phone && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📞 {form.phone}</span>}
-            {form.hasWhatsapp && canUseWhatsappNumber(form.phone) && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>💬 WhatsApp</span>}
-            {form.email && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>✉️ {form.email}</span>}
-            {form.instagram && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📸 {form.instagram}</span>}
-            {form.website && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>🌐 {form.website}</span>}
-            {form.gallery.length > 0 && <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>📷 {form.gallery.length} foto(s) extra</span>}
+            {form.phone && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid }}><Icon name="phone" size={12} /> {form.phone}</span>}
+            {form.hasWhatsapp && canUseWhatsappNumber(form.phone) && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid }}><Icon name="whatsapp" size={12} /> WhatsApp</span>}
+            {form.email && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid }}><Icon name="mail" size={12} /> {form.email}</span>}
+            {form.instagram && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid }}><Icon name="instagram" size={12} /> {form.instagram}</span>}
+            {form.website && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid }}><Icon name="website" size={12} /> {form.website}</span>}
+            {form.gallery.length > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontSize:11, color:C.mid }}><Icon name="camera" size={12} /> {form.gallery.length} foto(s) extra</span>}
           </div>
         </div>
         {PAID_BUSINESS_FEATURES_VISIBLE && (
@@ -628,7 +629,7 @@ export default function RegistrarNegocio() {
             style={{ flex:1, minWidth:0, padding:0, border:'none', background:'transparent', cursor:'pointer', display:'flex', alignItems:'center', gap:12, textAlign:'left' }}
           >
             <span style={{ display:'flex', alignItems:'center', gap:11 }}>
-              <span style={{ width:34, height:34, borderRadius:11, background:C.primaryLight, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>🚀</span>
+              <span style={{ width:34, height:34, borderRadius:11, background:C.primaryLight, color:C.primary, display:'inline-flex', alignItems:'center', justifyContent:'center' }}><Icon name="rocket" size={17} /></span>
               <span>
                 <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text }}>Potenciar tu negocio</span>
                 <span style={{ display:'block', fontFamily:PP, fontSize:11, color:C.light, marginTop:2 }}>
@@ -734,7 +735,7 @@ export default function RegistrarNegocio() {
         </section>
         <div style={{ marginTop:12 }}>
           <div style={{ width:'100%', padding:'12px 14px 12px 16px', border:`1.5px solid ${landingPageSelected ? C.primary : C.border}`, borderRadius:16, background:landingPageSelected ? C.primaryLight : '#fff', display:'flex', alignItems:'center', gap:12 }}>
-            <span style={{ width:34, height:34, flex:'0 0 34px', borderRadius:11, background:'#ECFEFF', display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>📣</span>
+            <span style={{ width:34, height:34, flex:'0 0 34px', borderRadius:11, background:'#ECFEFF', color:'#0F9F8E', display:'inline-flex', alignItems:'center', justifyContent:'center' }}><Icon name="megaphone" size={17} /></span>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
                 <button
@@ -790,7 +791,7 @@ export default function RegistrarNegocio() {
         </div>
         )}
         <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginTop:14 }}>
-          <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}>⚠️ Responsabilidad del publicador</p>
+          <p style={{ display:'flex', alignItems:'center', gap:5, fontFamily:PP, fontWeight:700, fontSize:12, color:'#9A3412', margin:'0 0 6px' }}><Icon name="warning" size={14} /> Responsabilidad del publicador</p>
           <p style={{ fontFamily:PP, fontSize:11, color:'#7C2D12', lineHeight:1.7, margin:0 }}>
             Al registrar este negocio confirmas que la información publicada es verídica, que tienes autorización para representarlo y que eres responsable del contenido y la atención al cliente. Latido no se hace responsable de la veracidad de los datos ni de los servicios prestados.
           </p>
@@ -820,10 +821,10 @@ export default function RegistrarNegocio() {
         ) : (
           <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
             {loading
-              ? '⏳ Registrando...'
+              ? <><Icon name="loading" size={15} /> Registrando...</>
               : hasPaidSelection
-                ? '💳 Publicar y pagar'
-                : '🏪 Registrar negocio'}
+                ? <><Icon name="payment" size={15} /> Publicar y pagar</>
+                : <><Icon name="business" size={15} /> Registrar negocio</>}
           </Btn>
         )}
       </StickyFormActions>

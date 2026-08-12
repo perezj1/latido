@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Ellipsis, Heart, Pencil, Star, Trash2 } from 'lucide-react'
+import { Ellipsis, Pencil, Star, Trash2 } from 'lucide-react'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import {
@@ -33,6 +33,7 @@ import {
   CreatorContentModal,
 } from '../components/CreatorCards'
 import { C, PP } from '../lib/theme'
+import { Icon } from '../lib/icons'
 import ReportButton from '../components/ReportButton'
 import './Creators.css'
 
@@ -80,7 +81,7 @@ function CreatorOwnerContentControls({
       {content.active === false && <span className="creator-card-management-actions__review">En revisión</span>}
       <div className="creator-owner-content-metrics" aria-label={`${helpful} personas indicaron que este contenido les ayudó`}>
         <span title={`${helpful.toLocaleString('es-CH')} Me ayudó`}>
-          <Heart size={14} strokeWidth={2} aria-hidden="true" />
+          <Icon name="favoriteActive" size={14} color="#E11D48" />
           <strong>{creatorMetricFormatter.format(helpful)}</strong>
           <small>Me ayudó</small>
         </span>
@@ -211,7 +212,7 @@ export default function CreadorPerfil() {
     return (
       <div className="creators-page" style={{ display:'grid', minHeight:'70vh', placeItems:'center', padding:'30px' }}>
         <div style={{ maxWidth:480, padding:28, textAlign:'center', background:'#fff', border:`1px solid ${C.border}`, borderRadius:24 }}>
-          <div style={{ fontSize:44 }}>🎙️</div>
+          <div style={{ display:'flex', justifyContent:'center', color:C.light }}><Icon name="creator" size={42} /></div>
           <h1 style={{ fontFamily:PP, fontSize:22, color:C.text }}>Este perfil no está disponible</h1>
           <p style={{ fontFamily:PP, fontSize:12, lineHeight:1.7, color:C.mid }}>Puede estar todavía en borrador o haber cambiado de dirección.</p>
           <Link className="creators-primary-action" to="/creadores">Volver a creadores</Link>
@@ -319,7 +320,7 @@ export default function CreadorPerfil() {
             </div>
             {!isOwner && (
               <div ref={profileMenuRef} className="creator-profile-menu">
-                <button type="button" className="creator-profile-menu__trigger" onClick={() => setProfileMenuOpen(current => !current)} aria-label="Más opciones del perfil" aria-haspopup="menu" aria-expanded={profileMenuOpen}>⋮</button>
+                <button type="button" className="creator-profile-menu__trigger" onClick={() => setProfileMenuOpen(current => !current)} aria-label="Más opciones del perfil" aria-haspopup="menu" aria-expanded={profileMenuOpen}><Icon name="more" size={18} /></button>
                 <div className={`creator-profile-menu__popover${profileMenuOpen ? ' is-open' : ''}`} role="menu" aria-hidden={!profileMenuOpen}>
                   <ReportButton
                     contentType="creator_profile"
@@ -339,12 +340,11 @@ export default function CreadorPerfil() {
           </div>
 
           <div className="creator-social-profile__identity">
-            <div className="creator-social-profile__avatar"><CreatorAvatar creator={creator} size={98} /></div>
+            <div className="creator-social-profile__avatar"><CreatorAvatar creator={creator} size={98} showVerified /></div>
             <div className="creator-social-profile__name">
               <h1>{creator.name}</h1>
-              {creator.verified && <span className="creator-confirmed" title="Perfil confirmado por su responsable">✓</span>}
             </div>
-            <p className="creator-social-profile__location">{formatCreatorHandle(creator.handle)} · 📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</p>
+            <p className="creator-social-profile__location">{formatCreatorHandle(creator.handle)} · <Icon name="location" size={12} /> {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</p>
             <strong className="creator-social-profile__tagline">{creator.tagline}</strong>
             <p className="creator-social-profile__bio">{creator.bio}</p>
 
@@ -359,12 +359,12 @@ export default function CreadorPerfil() {
                 className="creator-impact-help"
                 title={`${helpfulCount} ${helpfulCount === 1 ? 'persona ayudada' : 'personas ayudadas'}`}
               >
-                <span aria-hidden="true">❤️</span>
+                <span aria-hidden="true"><Icon name="favoriteActive" size={15} color="#E11D48" /></span>
                 <strong>{helpfulCount.toLocaleString('es-CH')}</strong>
               </span>
               {helpRank > 0 && (
                 <span className="creator-impact-rank" title="Puesto en Creadores que más ayudan">
-                  <span aria-hidden="true">🏆</span>
+                  <span aria-hidden="true"><Icon name="trophy" size={15} /></span>
                   <strong>#{helpRank}</strong>
                 </span>
               )}
@@ -377,10 +377,10 @@ export default function CreadorPerfil() {
             </div>
 
             <div className={`creator-social-profile__main-action${isOwner ? ' is-owner' : ''}`}>
-              {!isOwner ? <CreatorFollowButton creator={creator} /> : <Link className="creator-owner-add-content" to="/publicar-contenido"><span aria-hidden="true">➕</span> Añadir contenido</Link>}
-              {isOwner && <Link className="creator-owner-edit-profile" to="/creadores/mi-perfil"><span aria-hidden="true">✏️</span> Editar mi perfil</Link>}
+              {!isOwner ? <CreatorFollowButton creator={creator} /> : <Link className="creator-owner-add-content" to="/publicar-contenido"><span aria-hidden="true"><Icon name="add" size={15} /></span> Añadir contenido</Link>}
+              {isOwner && <Link className="creator-owner-edit-profile" to="/creadores/mi-perfil"><span aria-hidden="true"><Icon name="edit" size={15} /></span> Editar mi perfil</Link>}
               {!isOwner && <CreatorProfileHelpfulButton creator={creator} />}
-              <button type="button" className="creator-profile-share" onClick={handleShare}><span aria-hidden="true">📤</span><span>Compartir</span></button>
+              <button type="button" className="creator-profile-share" onClick={handleShare}><span aria-hidden="true"><Icon name="share" size={15} /></span><span>Compartir</span></button>
             </div>
 
             {(creator.socials || []).length > 0 && (

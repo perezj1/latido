@@ -33,6 +33,7 @@ import {
   setCreatorContentFeatured,
   subscribeCreatorUpdates,
 } from '../lib/creators'
+import { Icon } from '../lib/icons'
 import { getStorageErrorMessage, uploadPublicationImage } from '../lib/storage'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
@@ -114,7 +115,7 @@ export default function CreadorPanel() {
     if (searchParams.get('created') !== '1') return
     toast('Tu perfil ya aparece en el directorio. Ahora añade tu primer contenido.', {
       id:'creator-profile-created',
-      icon:'🎉',
+      icon:<Icon name="success" size={18} />,
       duration:5000,
     })
     const nextParams = new URLSearchParams(searchParams)
@@ -217,7 +218,7 @@ export default function CreadorPanel() {
     return (
       <div className="creators-page" style={{ display:'grid', minHeight:'78vh', placeItems:'center', padding:28 }}>
         <section style={{ width:'min(540px,100%)', padding:30, background:'#fff', border:`1px solid ${C.border}`, borderRadius:26, textAlign:'center' }}>
-          <div style={{ fontSize:44 }}>🎙️</div>
+          <div style={{ display:'flex', justifyContent:'center', color:C.light }}><Icon name="creator" size={42} /></div>
           <h1 style={{ margin:'14px 0 8px', color:C.text, fontFamily:PP, fontSize:22 }}>Crea primero tu perfil público</h1>
           <p style={{ margin:'0 auto 20px', maxWidth:430, color:C.mid, fontFamily:PP, fontSize:11.5, lineHeight:1.7 }}>Después podrás editar cada zona y gestionar tu contenido desde una vista igual a tu perfil.</p>
           <Link className="creators-primary-action" to="/creadores/alta" state={{ from:'/creadores/mi-perfil' }}>Crear mi perfil →</Link>
@@ -360,11 +361,11 @@ export default function CreadorPanel() {
           aria-pressed={featured}
           title={featured ? 'Quitar de destacados' : 'Destacar'}
         >
-          <span aria-hidden="true">{featured ? '★' : '☆'}</span>
+          <span aria-hidden="true"><Icon name="star" size={15} style={{ fill:featured ? 'currentColor' : 'none' }} /></span>
           <small>{featured ? 'Destacada' : 'Destacar'}</small>
         </button>
         <button type="button" onClick={() => startEditContent(content)} aria-label="Editar contenido" title="Editar">
-          <span aria-hidden="true">✎</span>
+          <span aria-hidden="true"><Icon name="edit" size={15} /></span>
         </button>
         <button type="button" className="is-danger" onClick={() => removeContent(content)} aria-label="Eliminar contenido" title="Eliminar">
           <Trash2 size={16} strokeWidth={2.4} aria-hidden="true" />
@@ -409,16 +410,16 @@ export default function CreadorPanel() {
           )}
 
           <div className="creator-social-profile__identity">
-            <Link className="creator-inline-edit-button creator-inline-edit-button--identity" to="/creadores/alta?section=info">✎ Editar</Link>
+            <Link className="creator-inline-edit-button creator-inline-edit-button--identity" to="/creadores/alta?section=info"><Icon name="edit" size={13} /> Editar</Link>
             <div className="creator-social-profile__avatar"><CreatorAvatar creator={creator} size={98} /></div>
             <div className="creator-social-profile__name"><h1>{creator.name}</h1></div>
-            <p className="creator-social-profile__location">{formatCreatorHandle(creator.handle)} · 📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</p>
+            <p className="creator-social-profile__location">{formatCreatorHandle(creator.handle)} · <Icon name="location" size={12} /> {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</p>
             <strong className="creator-social-profile__tagline">{creator.tagline}</strong>
             <p className="creator-social-profile__bio">{creator.bio}</p>
 
             <div className="creator-editor-block-heading">
               <strong>Temas</strong>
-              <Link to="/creadores/alta?section=topics">✎ Editar</Link>
+              <Link to="/creadores/alta?section=topics"><Icon name="edit" size={13} /> Editar</Link>
             </div>
             <div className="creator-social-profile__topics">
               {(creator.topics || []).map(topic => <CreatorTopicPill key={topic} topicId={topic} />)}
@@ -437,14 +438,14 @@ export default function CreadorPanel() {
             <section className="creator-social-profile__networks" aria-labelledby="creator-editor-networks-title">
               <div className="creator-editor-block-heading">
                 <h2 id="creator-editor-networks-title">Redes</h2>
-                <Link to="/creadores/alta?section=networks">✎ Editar</Link>
+                <Link to="/creadores/alta?section=networks"><Icon name="edit" size={13} /> Editar</Link>
               </div>
               <div className="creator-social-profile__network-list">
                 {(creator.socials || []).map(social => {
                   const platform = getCreatorPlatform(social.platform)
                   return (
                     <a key={`${social.platform}-${social.url}`} href={social.url} target="_blank" rel="noreferrer noopener" className="creator-network-link" style={{ '--social-color':platform.color, '--social-bg':platform.bg }}>
-                      <span className="creator-editor-network-symbol" aria-hidden="true">↗</span>
+                      <span className="creator-editor-network-symbol" aria-hidden="true"><Icon name="external" size={13} /></span>
                       <span>{social.label || platform.label}</span>
                     </a>
                   )

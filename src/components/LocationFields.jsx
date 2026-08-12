@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { C, PP } from '../lib/theme'
 import { CANTONS, getCitySuggestionItems } from '../lib/constants'
+import { Icon } from '../lib/icons'
 
 export default function LocationFields({
   canton,
@@ -100,7 +101,7 @@ export default function LocationFields({
                       color:C.text,
                     }}
                   >
-                    <span style={{ color:C.primary }}>📍</span>
+                    <span style={{ color:C.primary }}><Icon name="location" size={15} /></span>
                     <span style={{ display:'flex', flexDirection:'column', gap:1 }}>
                       <span style={{ fontWeight:700, fontSize:12 }}>{item.city}</span>
                       <span style={{ fontSize:10, color:C.light }}>{item.canton}{cantonName ? ` — ${cantonName}` : ''}</span>

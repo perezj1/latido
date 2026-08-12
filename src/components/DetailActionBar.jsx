@@ -3,6 +3,7 @@ import { C, PP } from '../lib/theme'
 import FavoriteButton from './FavoriteButton'
 import ReportButton from './ReportButton'
 import ShareButton from './ShareButton'
+import { Icon, InterfaceIcon } from '../lib/icons'
 
 const MENU_ITEM_STYLE = {
   width:'100%',
@@ -179,7 +180,7 @@ export default function DetailActionBar({
                   {...share}
                   ariaLabel={share.ariaLabel || 'Enviar'}
                   label="Enviar"
-                  icon={<MenuIcon>📤</MenuIcon>}
+                  icon={<MenuIcon><Icon name="share" size={17} /></MenuIcon>}
                   style={MENU_ITEM_STYLE}
                 />
               )}
@@ -191,7 +192,7 @@ export default function DetailActionBar({
                   isFav={favorite.isFav}
                   onClick={favorite.onClick}
                   label={favorite.isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-                  icon={<MenuIcon active={favorite.isFav}>{favorite.isFav ? '❤️' : '🤍'}</MenuIcon>}
+                  icon={<MenuIcon active={favorite.isFav}><Icon name={favorite.isFav ? 'favoriteActive' : 'favorite'} size={17} color={favorite.isFav ? '#E11D48' : 'currentColor'} /></MenuIcon>}
                   style={MENU_ITEM_STYLE}
                 />
               )}
@@ -211,7 +212,7 @@ export default function DetailActionBar({
                     cursor:like.loading ? 'wait' : 'pointer',
                   }}
                 >
-                  <MenuIcon active={like.active}>👍</MenuIcon>
+                  <MenuIcon active={like.active}><Icon name="helpful" size={17} /></MenuIcon>
                   <span style={{ minWidth:0, flex:1 }}>
                     <span style={{ display:'block' }}>{like.label || 'Me gusta'}</span>
                     {like.hint && <span style={{ display:'block', fontSize:10, fontWeight:500, color:C.light, marginTop:2 }}>{like.hint}</span>}
@@ -231,7 +232,7 @@ export default function DetailActionBar({
                   }}
                   style={MENU_ITEM_STYLE}
                 >
-                  <MenuIcon active>{ownershipClaim.icon || '🏪'}</MenuIcon>
+                  <MenuIcon active>{ownershipClaim.icon ? <InterfaceIcon emoji={ownershipClaim.icon} fallback="business" size={17} /> : <Icon name="business" size={17} />}</MenuIcon>
                   <span style={{ minWidth:0, flex:1 }}>{ownershipClaim.label || 'Este negocio es mío'}</span>
                 </button>
               )}

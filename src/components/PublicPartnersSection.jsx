@@ -10,6 +10,7 @@ import { fetchActiveBusinessPartners } from '../lib/businessPartners'
 import { BUSINESS_ROTATION_INTERVAL_MS } from '../lib/businessPromotion'
 import { rotateItems } from '../lib/rotation'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
+import { Icon } from '../lib/icons'
 
 const PUBLIC_PARTNERS = [
   {
@@ -149,7 +150,7 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
 
   return (
     <section className="public-partner-section" aria-labelledby="public-partners-title" data-nosnippet>
-      <div className="public-partner-vip-star" aria-hidden="true">⭐</div>
+      <div className="public-partner-vip-star" aria-hidden="true"><Icon name="star" size={22} style={{ fill:'currentColor' }} /></div>
       <div className="public-partner-heading">
         <div className="public-partner-heading-title">
           <span>Colaboradores seleccionados</span>

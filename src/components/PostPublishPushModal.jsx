@@ -8,6 +8,7 @@ import {
   subscribeToPushNotifications,
 } from '../lib/pushNotifications'
 import { C, PP } from '../lib/theme'
+import { Icon } from '../lib/icons'
 
 export default function PostPublishPushModal({
   open,
@@ -109,8 +110,8 @@ export default function PostPublishPushModal({
           boxShadow:'0 30px 90px rgba(15,23,42,0.36)',
         }}
       >
-        <div style={{ width:68, height:68, borderRadius:22, background:'#DBEAFE', display:'flex', alignItems:'center', justifyContent:'center', fontSize:34, margin:'0 auto 16px' }}>
-          🔔
+        <div style={{ width:68, height:68, borderRadius:22, background:'#DBEAFE', color:C.primary, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
+          <Icon name="bell" size={32} />
         </div>
         <h2 id="post-publish-push-title" style={{ fontFamily:PP, fontWeight:900, fontSize:21, color:C.text, margin:'0 0 8px' }}>
           No te pierdas nada

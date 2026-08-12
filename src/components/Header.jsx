@@ -2,33 +2,34 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { usePushActivation } from '../hooks/usePushActivation'
-import { C, PP } from '../lib/theme'
+import { C, PP, getLatidoCategoryTheme } from '../lib/theme'
 import { Avatar } from './UI'
+import { Icon } from '../lib/icons'
 
 const PUBLISH_OPTIONS = [
-  { emoji:'📌', label:'Anuncio',   sub:'Vivienda, servicios, cuidados, compraventa o trámites', to:'/publicar' },
-  { emoji:'💼', label:'Empleo',    sub:'Oferta o solicitud de empleo', to:'/publicar-empleo' },
-  { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
-  { emoji:'🎬', label:'Contenido', sub:'Un vídeo, artículo o publicación tuya', to:'/publicar-contenido' },
-  { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
-  { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
-]
+  { tone:'anuncios', icon:'listing',  label:'Anuncio',   sub:'Vivienda, servicios, cuidados, compraventa o trámites', to:'/publicar' },
+  { tone:'empleo', icon:'job',      label:'Empleo',    sub:'Oferta o solicitud de empleo', to:'/publicar-empleo' },
+  { tone:'negocios', icon:'business', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
+  { tone:'contenido', icon:'movie',    label:'Contenido', sub:'Un vídeo, artículo o publicación tuya', to:'/publicar-contenido' },
+  { tone:'grupos', icon:'group',    label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
+  { tone:'eventos', icon:'event',    label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
+].map(option => ({ ...option, theme:getLatidoCategoryTheme(option.tone) }))
 const NAV_GUEST = [
-  { href:'/tablon', label:'📌 Anuncios' },
-  { href:'/tablon?cat=empleo', label:'💼 Empleo' },
-  { href:'/comunidades', label:'🤝 Comunidad' },
-  { href:'/creadores', label:'🎙️ Creadores' },
-  { href:'/colaboraciones', label:'🚀 Para Empresas' },
+  { href:'/tablon', icon:'listing', label:'Anuncios' },
+  { href:'/tablon?cat=empleo', icon:'job', label:'Empleo' },
+  { href:'/comunidades', icon:'partner', label:'Comunidad' },
+  { href:'/creadores', icon:'creator', label:'Creadores' },
+  { href:'/colaboraciones', icon:'rocket', label:'Para Empresas' },
 ]
 
 const NAV_USER = [
-  { href:'/', label:'🏠 Inicio' },
-  { href:'/tablon', label:'📌 Anuncios' },
-  { href:'/tablon?cat=empleo', label:'💼 Empleo' },
-  { href:'/comunidades', label:'🤝 Comunidad' },
-  { href:'/comunidades?view=creadores', label:'🎙️ Creadores' },
-  { href:'/colaboraciones', label:'🚀 Para Empresas' },
-  { href:'/mensajes', label:'💬 Mensajes' },
+  { href:'/', icon:'home', label:'Inicio' },
+  { href:'/tablon', icon:'listing', label:'Anuncios' },
+  { href:'/tablon?cat=empleo', icon:'job', label:'Empleo' },
+  { href:'/comunidades', icon:'partner', label:'Comunidad' },
+  { href:'/comunidades?view=creadores', icon:'creator', label:'Creadores' },
+  { href:'/colaboraciones', icon:'rocket', label:'Para Empresas' },
+  { href:'/mensajes', icon:'message', label:'Mensajes' },
 ]
 
 export default function Header({ transparent }) {
@@ -88,7 +89,8 @@ export default function Header({ transparent }) {
           {NAV.map(link => {
             const active = isActive(link.href)
             return (
-              <Link key={link.href} to={link.href} style={{ fontFamily:PP, fontWeight:600, fontSize:12, textDecoration:'none', padding:'7px 12px', borderRadius:10, background: active ? C.primaryMid : 'transparent', color: active ? C.primaryDark : C.mid, transition:'all .15s' }}>
+              <Link key={link.href} to={link.href} style={{ display:'inline-flex', alignItems:'center', gap:6, fontFamily:PP, fontWeight:600, fontSize:12, textDecoration:'none', padding:'7px 12px', borderRadius:10, background: active ? C.primaryMid : 'transparent', color: active ? C.primaryDark : C.mid, transition:'all .15s' }}>
+                <Icon name={link.icon} size={15} />
                 {link.label}
               </Link>
             )
@@ -96,14 +98,14 @@ export default function Header({ transparent }) {
 
           {!isProfilePage && (
           <div ref={publishRef} style={{ position:'relative', marginLeft:8 }}>
-            <div style={{ padding:2, borderRadius:22, background:'conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A)', boxShadow:'0 2px 12px rgba(37,99,235,0.35)' }}>
+            <div style={{ padding:2, borderRadius:22, background:'conic-gradient(#FA2F35, #4A76EF, #24BFE2, #24E2C9, #03AA98, #F9A719, #FA2F35)', boxShadow:'0 2px 12px rgba(74,118,239,0.30)' }}>
               <button
                 onClick={() => setPublishOpen(v => !v)}
                 aria-expanded={publishOpen}
                 aria-haspopup="menu"
-                style={{ height:36, borderRadius:20, background:'#fff', color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, border:'none', cursor:'pointer', padding:'0 16px', whiteSpace:'nowrap', letterSpacing:-0.2, fontFamily:PP }}
+                style={{ height:36, borderRadius:20, background:'#fff', color:C.primaryDark, display:'flex', alignItems:'center', justifyContent:'center', gap:6, fontSize:12, fontWeight:700, border:'none', cursor:'pointer', padding:'0 16px', whiteSpace:'nowrap', letterSpacing:-0.2, fontFamily:PP }}
               >
-                ✏️ Publicar
+                <Icon name="addLarge" size={16} /> Publicar
               </button>
             </div>
             {publishOpen && (
@@ -112,11 +114,11 @@ export default function Header({ transparent }) {
                   <button
                     key={opt.to}
                     onClick={() => { setPublishOpen(false); navigate(opt.to) }}
-                    style={{ display:'flex', alignItems:'center', gap:12, background:'transparent', border:'none', borderRadius:12, padding:'10px 12px', cursor:'pointer', textAlign:'left', width:'100%' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = C.bg }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                    style={{ display:'flex', alignItems:'center', gap:12, background:'transparent', border:'1px solid transparent', borderRadius:12, padding:'10px 12px', margin:'3px 0', cursor:'pointer', textAlign:'left', width:'100%' }}
                   >
-                    <div style={{ width:36, height:36, background:C.primaryLight, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{opt.emoji}</div>
+                    <div style={{ width:36, height:36, background:opt.theme.soft, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', color:opt.theme.ink, flexShrink:0 }}>
+                      <Icon name={opt.icon} size={18} />
+                    </div>
                     <div>
                       <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 1px' }}>{opt.label}</p>
                       <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{opt.sub}</p>

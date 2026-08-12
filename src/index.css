@@ -2919,7 +2919,8 @@ img[data-latido-img-state="loaded"] {
   padding: 4px;
   margin-bottom: 12px;
   border-radius: 14px;
-  background: #D7E0EE;
+  border: 1px solid #E1E8F2;
+  background: #F1F5FA;
   box-sizing: border-box;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -2931,7 +2932,7 @@ img[data-latido-img-state="loaded"] {
   align-items: center;
   gap: 5px;
   padding: 8px 12px;
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
   cursor: pointer;
   border-radius: 10px;
@@ -2947,9 +2948,10 @@ img[data-latido-img-state="loaded"] {
 /* La activa se tine con el color de su seccion, pero muy rebajado sobre blanco:
    asi se lee el texto y el emoji no compite con un fondo saturado. */
 .latido-section-tab.is-active {
-  background: color-mix(in srgb, var(--section-color, #2563EB) 15%, #fff);
+  border-color: var(--section-border, #BFDBFE);
+  background: var(--section-soft, #EFF6FF);
   color: var(--section-ink, #1D4ED8);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, .12);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--section-color, #2563EB) 18%, transparent);
 }
 
 .latido-section-tab:active {
@@ -3016,7 +3018,8 @@ img[data-latido-img-state="loaded"] {
   align-items: center;
   justify-content: center;
   border-radius: 15px;
-  background: rgba(255, 255, 255, .93);
+  border: 1px solid var(--explore-card-border, rgba(255, 255, 255, .7));
+  background: var(--explore-card-soft, rgba(255, 255, 255, .93));
   font-size: 29px;
   line-height: 1;
   transform: rotate(24deg);
@@ -3035,9 +3038,9 @@ img[data-latido-img-state="loaded"] {
   gap: 12px;
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #E2EAF4;
+  border: 1px solid var(--extra-border, #E2EAF4);
   border-radius: 16px;
-  background: #fff;
+  background: var(--extra-soft, #fff);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -3050,8 +3053,9 @@ img[data-latido-img-state="loaded"] {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--extra-border, #E2EAF4);
   border-radius: 12px;
-  background: #EFF6FF;
+  background: rgba(255, 255, 255, .82);
   font-size: 18px;
   line-height: 1;
 }
@@ -3080,7 +3084,7 @@ img[data-latido-img-state="loaded"] {
 .explore-extra__chevron {
   flex-shrink: 0;
   font-size: 18px;
-  color: #94A3B8;
+  color: var(--extra-ink, #94A3B8);
 }
 
 @media (min-width: 768px) {
@@ -3167,8 +3171,8 @@ img[data-latido-img-state="loaded"] {
   left: 4px;
   width: calc((100% - 8px) / var(--segment-count));
   border-radius: 999px;
-  background: #2864F0;
-  box-shadow: 0 5px 14px rgba(40, 100, 240, .24);
+  background: var(--segment-color, #2864F0);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--segment-color, #2864F0) 24%, transparent);
   transform: translateX(calc(var(--active-segment) * 100%));
   transition: transform .3s cubic-bezier(.22, 1, .36, 1), box-shadow .2s ease;
 }
@@ -3200,7 +3204,7 @@ img[data-latido-img-state="loaded"] {
 }
 
 .joined-segmented-tabs > button.is-active {
-  color: #fff;
+  color: var(--segment-on-color, #fff);
 }
 
 .joined-segmented-tabs__label {
@@ -4287,7 +4291,7 @@ img[data-latido-img-state="loaded"] {
   border-radius: 999px;
   display: inline-flex;
   box-sizing: border-box;
-  background: conic-gradient(#E8403A, #2563EB, #00BCD4, #1DBD8A, #F5A623, #E8403A);
+  background: conic-gradient(#FA2F35, #4A76EF, #24BFE2, #24E2C9, #03AA98, #F9A719, #FA2F35);
   transition: transform .24s cubic-bezier(.22, 1, .36, 1);
 }
 
@@ -4295,6 +4299,7 @@ img[data-latido-img-state="loaded"] {
   flex: 1;
   border-radius: 999px;
   background: #fff;
+  color: #1E2A44;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5377,6 +5382,8 @@ img[data-latido-img-state="loaded"] {
   align-items: center;
   justify-content: center;
   padding: 7px;
+  /* El color de seccion vive solo en el icono. La tarjeta se queda neutra para
+     que las cifras se comparen entre si y no compitan con cuatro fondos. */
   border: 1px solid #E8EEF8;
   border-radius: 19px;
   background: #fff;
@@ -5390,8 +5397,7 @@ img[data-latido-img-state="loaded"] {
 }
 
 .mi-latido-overview-card:hover {
-  border-color: #CBDCFF;
-  background: #F8FBFF;
+  border-color: var(--overview-color, #CBDCFF);
   box-shadow: 0 7px 16px rgba(40, 100, 240, .09);
 }
 
@@ -5403,7 +5409,7 @@ img[data-latido-img-state="loaded"] {
   min-height: 27px;
   display: flex;
   align-items: center;
-  color: #2864F0;
+  color: var(--overview-ink, #2864F0);
   font-size: 22px;
   line-height: 1;
 }
