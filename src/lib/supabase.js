@@ -15,12 +15,7 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      // OAuth uses PKCE so an installed PWA receives a short-lived code in
-      // the query string instead of session tokens in the URL fragment.
-      flowType: 'pkce',
-      // AuthCallback owns this route. Keeping automatic detection enabled on
-      // every other route preserves password recovery and email-link flows.
-      detectSessionInUrl: url => !url.pathname.startsWith('/auth/callback'),
+      detectSessionInUrl: true,
     },
   },
 )
