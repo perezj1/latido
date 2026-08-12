@@ -95,8 +95,7 @@ export function AuthProvider({ children }) {
         setUser(session.user)
         setLoading(false)
       }
-      // Ignore events without session (e.g. SIGNED_UP with email confirmation pending)
-      // so we don't wipe out the user set by signUp()
+      // Ignore events without session (e.g. SIGNED_UP with email confirmation pending).
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -114,14 +113,17 @@ export function AuthProvider({ children }) {
         },
       },
     })
-    // Set user from session (immediate login) or from user object (email confirmation flow)
-    const u = result.data?.session?.user ?? result.data?.user ?? null
-    setUser(u)
+    // A user object without a session is not authenticated. Supabase can
+    // return that shape for email confirmation and obfuscated duplicate users.
+    setUser(result.data?.session?.user ?? null)
     return result
   }
 
   const signIn = async ({ email, password }) => {
-    const result = await supabase.auth.signInWithPassword({ email, password })
+    const result = await supabase.auth.signInWithPassword({
+      email:String(email || '').trim().toLowerCase(),
+      password,
+    })
     setUser(result.data?.session?.user ?? null)
     return result
   }
@@ -135,6 +137,16 @@ export function AuthProvider({ children }) {
       },
     },
   })
+
+  const signInWithGoogleIdToken = async ({ token, nonce }) => {
+    const result = await supabase.auth.signInWithIdToken({
+      provider:'google',
+      token,
+      ...(nonce ? { nonce } : {}),
+    })
+    setUser(result.data?.session?.user ?? null)
+    return result
+  }
 
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -164,7 +176,7 @@ export function AuthProvider({ children }) {
     bannedAt: profileMeta.bannedAt,
     isAdmin: isAdminUser(user),
     updateAvatar,
-    signUp, signIn, signInWithGoogle, signOut,
+    signUp, signIn, signInWithGoogle, signInWithGoogleIdToken, signOut,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent } from '../lib/analytics'
@@ -10,10 +10,64 @@ import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import toast from 'react-hot-toast'
 
-const GOOGLE_AUTH_ENABLED = false
+const GOOGLE_AUTH_ENABLED = true
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  || '871031259969-sb41jb8hjfethoilmvps9rlsoj843ovk.apps.googleusercontent.com'
+const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services'
+const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client?hl=es'
+let googleIdentityScriptPromise = null
 
 function getSafeNextPath(value) {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
+}
+
+function isStandalonePwa() {
+  return window.matchMedia?.('(display-mode: standalone)').matches
+    || window.navigator.standalone === true
+    || document.referrer.startsWith('android-app://')
+}
+
+function loadGoogleIdentityServices() {
+  if (window.google?.accounts?.id) return Promise.resolve(window.google)
+  if (googleIdentityScriptPromise) return googleIdentityScriptPromise
+
+  googleIdentityScriptPromise = new Promise((resolve, reject) => {
+    const finish = () => window.google?.accounts?.id
+      ? resolve(window.google)
+      : reject(new Error('Google Identity Services did not initialize.'))
+    const existing = document.getElementById(GOOGLE_IDENTITY_SCRIPT_ID)
+
+    if (existing) {
+      existing.addEventListener('load', finish, { once:true })
+      existing.addEventListener('error', () => reject(new Error('Google Identity Services could not be loaded.')), { once:true })
+      return
+    }
+
+    const script = document.createElement('script')
+    script.id = GOOGLE_IDENTITY_SCRIPT_ID
+    script.src = GOOGLE_IDENTITY_SCRIPT_SRC
+    script.async = true
+    script.defer = true
+    script.addEventListener('load', finish, { once:true })
+    script.addEventListener('error', () => reject(new Error('Google Identity Services could not be loaded.')), { once:true })
+    document.head.appendChild(script)
+  }).catch(error => {
+    googleIdentityScriptPromise = null
+    throw error
+  })
+
+  return googleIdentityScriptPromise
+}
+
+async function createGoogleNonce() {
+  if (!window.crypto?.getRandomValues || !window.crypto?.subtle) return { raw:'', hashed:'' }
+
+  const bytes = new Uint8Array(32)
+  window.crypto.getRandomValues(bytes)
+  const raw = window.btoa(String.fromCharCode(...bytes))
+  const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
+  const hashed = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
+  return { raw, hashed }
 }
 
 function EyeIcon() {
@@ -77,7 +131,7 @@ function GoogleIcon() {
   )
 }
 
-function GoogleAuthButton({ loading, disabled, onClick }) {
+function GoogleRedirectButton({ loading, disabled, onClick }) {
   return (
     <button
       type="button"
@@ -109,11 +163,95 @@ function GoogleAuthButton({ loading, disabled, onClick }) {
   )
 }
 
+function GooglePwaAuthButton({ loading, disabled, onCredential, onUnavailable }) {
+  const buttonRef = useRef(null)
+  const credentialHandlerRef = useRef(onCredential)
+  const unavailableHandlerRef = useRef(onUnavailable)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => { credentialHandlerRef.current = onCredential }, [onCredential])
+  useEffect(() => { unavailableHandlerRef.current = onUnavailable }, [onUnavailable])
+
+  useEffect(() => {
+    let active = true
+
+    const renderGoogleButton = async () => {
+      const [{ raw, hashed }, google] = await Promise.all([
+        createGoogleNonce(),
+        loadGoogleIdentityServices(),
+      ])
+      if (!active || !buttonRef.current) return
+
+      google.accounts.id.initialize({
+        client_id:GOOGLE_CLIENT_ID,
+        callback:response => {
+          if (response?.credential) credentialHandlerRef.current?.(response.credential, raw)
+          else unavailableHandlerRef.current?.()
+        },
+        nonce:hashed || undefined,
+        ux_mode:'popup',
+        auto_select:false,
+        itp_support:true,
+        use_fedcm_for_button:true,
+        button_auto_select:false,
+      })
+
+      const width = Math.max(240, Math.min(400, buttonRef.current.clientWidth || 400))
+      buttonRef.current.replaceChildren()
+      google.accounts.id.renderButton(buttonRef.current, {
+        type:'standard',
+        theme:'outline',
+        size:'large',
+        text:'continue_with',
+        shape:'rectangular',
+        logo_alignment:'left',
+        width,
+        locale:'es',
+      })
+      if (active) setReady(true)
+    }
+
+    renderGoogleButton().catch(error => {
+      console.error('Google Identity Services failed:', error)
+      if (active) unavailableHandlerRef.current?.()
+    })
+
+    return () => { active = false }
+  }, [])
+
+  return (
+    <div
+      aria-busy={!ready || loading}
+      style={{
+        width:'100%',
+        minHeight:46,
+        position:'relative',
+        overflow:'hidden',
+        pointerEvents:disabled || loading ? 'none' : 'auto',
+        opacity:disabled && !loading ? .55 : 1,
+      }}
+    >
+      <div ref={buttonRef} style={{ width:'100%', minHeight:46, display:ready ? 'grid' : 'none', placeItems:'center' }} />
+      {(!ready || loading) && (
+        <div style={{ minHeight:46, display:'grid', placeItems:'center', border:`1.5px solid ${C.border}`, borderRadius:14, background:'#fff', color:C.mid, fontFamily:PP, fontSize:12, fontWeight:700, boxShadow:'0 3px 10px rgba(15,23,42,.05)' }}>
+          {loading ? 'Conectando con Google…' : 'Cargando Google…'}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GoogleAuthButton({ pwa, ...props }) {
+  return pwa
+    ? <GooglePwaAuthButton {...props} />
+    : <GoogleRedirectButton loading={props.loading} disabled={props.disabled} onClick={props.onRedirect} />
+}
+
 function AuthDivider() {
   return (
     <div aria-hidden="true" style={{ display:'flex', alignItems:'center', gap:12, margin:'18px 0', color:C.light }}>
       <span style={{ height:1, flex:1, background:C.border }} />
-      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con email</span>
+      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con Google</span>
       <span style={{ height:1, flex:1, background:C.border }} />
     </div>
   )
@@ -188,22 +326,34 @@ function AuthModeSwitch({ mode, onChange }) {
 }
 
 export default function Auth() {
-  const { signIn, signInWithGoogle, signUp } = useAuth()
+  const { signIn, signInWithGoogle, signInWithGoogleIdToken, signUp } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const nextPath = getSafeNextPath(searchParams.get('next'))
+  const [pwa] = useState(() => isStandalonePwa())
   const isPartnerAccess = nextPath.startsWith('/servicios-suiza') || nextPath.startsWith('/colaboradores/')
   const authEntryPoint = isPartnerAccess ? 'partner' : nextPath === '/' ? 'general' : 'protected_route'
-  const [mode, setMode] = useState('register')
+  const [mode, setMode] = useState(() => searchParams.get('mode') === 'login' ? 'login' : 'register')
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [showPasswordRecoveryHint, setShowPasswordRecoveryHint] = useState(false)
   const [registrationIntent, setRegistrationIntent] = useState('')
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showRegisterPassword, setShowRegisterPassword] = useState(false)
   const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[], interests:[] })
   const [errors, setErrors] = useState({})
+  const passwordNoticeShownRef = useRef(false)
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  useEffect(() => {
+    if (searchParams.get('password') !== 'updated' || passwordNoticeShownRef.current) return
+    passwordNoticeShownRef.current = true
+    toast.success('Contraseña creada. Ya puedes entrar también desde la PWA.')
+    const cleanUrl = new URL(window.location.href)
+    cleanUrl.searchParams.delete('password')
+    window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}`)
+  }, [searchParams])
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search)
@@ -231,9 +381,11 @@ export default function Auth() {
   const s = (k, v) => {
     setForm(f => ({ ...f, [k]:v }))
     clearFieldError(k)
+    if (k === 'email' || k === 'password') setShowPasswordRecoveryHint(false)
   }
   const changeAuthMode = nextMode => {
     setErrors({})
+    setShowPasswordRecoveryHint(false)
     setMode(nextMode)
   }
   const toggleLang = l => s('languages', form.languages.includes(l) ? form.languages.filter(x => x !== l) : [...form.languages, l])
@@ -299,23 +451,42 @@ export default function Auth() {
 
     setLoading(true)
     try {
-      const { error } = await signIn({ email: form.email, password: form.password })
+      const { data, error } = await signIn({ email: form.email, password: form.password })
       if (error) {
-        setErrors({ email:'Email o contraseña incorrectos.', password:'Email o contraseña incorrectos.' })
-        toast.error('Email o contraseña incorrectos')
+        const errorCode = String(error.code || '').toLowerCase()
+        const errorMessage = String(error.message || '').toLowerCase()
+        const invalidCredentials = errorCode === 'invalid_credentials'
+          || errorMessage.includes('invalid login credentials')
+
+        if (invalidCredentials) {
+          setErrors({ email:'Email o contraseña incorrectos.', password:'Email o contraseña incorrectos.' })
+          setShowPasswordRecoveryHint(true)
+          toast.error('Email o contraseña incorrectos')
+        } else if (errorCode === 'email_not_confirmed' || errorMessage.includes('email not confirmed')) {
+          setErrors({ email:'Confirma primero tu email para poder entrar.' })
+          toast.error('Confirma primero tu email para poder entrar.')
+        } else {
+          toast.error('No se pudo conectar con el servicio de acceso. Comprueba tu conexión e inténtalo de nuevo.')
+        }
       }
-      else {
+      else if (data?.session?.user) {
+        setShowPasswordRecoveryHint(false)
         trackAnalyticsEvent('login_success', {
           metadata: { method:'email', entry_point:authEntryPoint },
         })
-        navigate(nextPath)
+        navigate(nextPath, { replace:true })
+      } else {
+        toast.error('No se pudo guardar la sesión. Inténtalo de nuevo.')
       }
+    } catch (error) {
+      console.error('Email sign-in failed:', error)
+      toast.error('No se pudo conectar con el servicio de acceso. Comprueba tu conexión e inténtalo de nuevo.')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleGoogleAuth = async () => {
+  const handleGoogleRedirect = async () => {
     if (loading || googleLoading) return
 
     setGoogleLoading(true)
@@ -335,6 +506,45 @@ export default function Auth() {
     }
   }
 
+  const handleGoogleCredential = async (token, nonce) => {
+    if (loading || googleLoading) return
+
+    setGoogleLoading(true)
+    try {
+      const { data, error } = await signInWithGoogleIdToken({ token, nonce })
+      if (error) {
+        console.error('Google ID token sign-in failed:', {
+          code:error.code,
+          status:error.status,
+          message:error.message,
+        })
+        toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
+        return
+      }
+
+      if (!data?.session?.user) {
+        toast.error('Google no devolvió una sesión válida. Inténtalo de nuevo.')
+        return
+      }
+
+      trackAnalyticsEvent('login_success', {
+        user_id:data.session.user.id,
+        metadata: { method:'google_id_token', entry_point:authEntryPoint },
+      })
+      navigate(nextPath, { replace:true })
+    } catch (error) {
+      console.error('Google ID token sign-in failed:', error)
+      toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
+
+  const handleGoogleUnavailable = () => {
+    setGoogleLoading(false)
+    toast.error('Google no está disponible ahora. Comprueba la conexión e inténtalo de nuevo.')
+  }
+
   const handleForgot = async () => {
     const next = {}
     if (!form.email.trim()) next.email = 'Introduce tu email.'
@@ -342,15 +552,18 @@ export default function Auth() {
     if (!showErrors(next)) return
     setLoading(true)
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(form.email.trim().toLowerCase(), {
         redirectTo: `${window.location.origin}/reset-password`,
       })
       if (error) {
         toast.error('No se pudo enviar el email. Comprueba la dirección.')
       } else {
-        toast.success('¡Email enviado! Revisa tu bandeja de entrada.', { duration: 6000 })
+        toast.success('¡Email enviado! Revisa tu bandeja de entrada y spam.', { duration: 6000 })
         setMode('login')
       }
+    } catch (error) {
+      console.error('Password recovery request failed:', error)
+      toast.error('No se pudo enviar el email. Comprueba tu conexión e inténtalo de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -401,6 +614,14 @@ export default function Auth() {
         return
       }
 
+      if (!data.session?.user) {
+        setMode('login')
+        setStep(0)
+        setShowPasswordRecoveryHint(true)
+        toast('No se inició sesión. Si ya usaste Google, entra con Google o crea una contraseña. Si es una cuenta nueva, revisa tu email.', { duration:8000 })
+        return
+      }
+
       trackAnalyticsEvent('signup_success', {
         user_id:data.user.id,
         metadata: {
@@ -434,13 +655,6 @@ export default function Auth() {
         </div>
       )}
 
-      {GOOGLE_AUTH_ENABLED && (
-        <>
-          <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
-          <AuthDivider />
-        </>
-      )}
-
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
       <Input
         label="Contraseña"
@@ -462,7 +676,34 @@ export default function Auth() {
         </button>
       </div>
 
+      {showPasswordRecoveryHint && (
+        <div style={{ margin:'0 0 16px', padding:'12px 13px', border:`1px solid ${C.primaryMid}`, borderRadius:14, background:C.primaryLight, color:C.mid, fontFamily:PP, fontSize:11, lineHeight:1.55 }}>
+          <strong style={{ display:'block', marginBottom:3, color:C.text }}>¿Creaste esta cuenta con Google?</strong>
+          Esa cuenta todavía no tiene contraseña. Puedes entrar con Google o crear una contraseña para acceder también con email desde la PWA.
+          <button
+            type="button"
+            onClick={() => { setErrors({}); setShowPasswordRecoveryHint(false); setMode('forgot') }}
+            style={{ display:'block', marginTop:7, padding:0, border:0, background:'transparent', color:C.primary, fontFamily:PP, fontSize:11, fontWeight:800, cursor:'pointer', textDecoration:'underline' }}
+          >
+            Crear una contraseña
+          </button>
+        </div>
+      )}
+
       <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
+      {GOOGLE_AUTH_ENABLED && (
+        <>
+          <AuthDivider />
+          <GoogleAuthButton
+            pwa={pwa}
+            loading={googleLoading}
+            disabled={loading}
+            onRedirect={handleGoogleRedirect}
+            onCredential={handleGoogleCredential}
+            onUnavailable={handleGoogleUnavailable}
+          />
+        </>
+      )}
     </div>
   )
 
@@ -472,6 +713,9 @@ export default function Auth() {
         <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🔑</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Recuperar contraseña</h1>
         <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Te enviaremos un enlace para crear una nueva.</p>
+        <p style={{ margin:'8px auto 0', maxWidth:340, fontFamily:PP, fontSize:11, lineHeight:1.55, color:C.mid }}>
+          También funciona si tu cuenta fue creada con Google y quieres entrar con email desde la PWA.
+        </p>
       </div>
 
       <Input label="Tu email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
@@ -508,12 +752,6 @@ export default function Auth() {
 
       {step === 0 && (
         <>
-          {GOOGLE_AUTH_ENABLED && (
-            <>
-              <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
-              <AuthDivider />
-            </>
-          )}
           <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={e => s('name', e.target.value)} error={errors.name} errorKey="name" />
           <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={e => s('email', e.target.value)} error={errors.email} errorKey="email" />
           <Input
@@ -610,6 +848,20 @@ export default function Auth() {
           </Btn>
         )}
       </div>
+
+      {GOOGLE_AUTH_ENABLED && step === 0 && (
+        <>
+          <AuthDivider />
+          <GoogleAuthButton
+            pwa={pwa}
+            loading={googleLoading}
+            disabled={loading}
+            onRedirect={handleGoogleRedirect}
+            onCredential={handleGoogleCredential}
+            onUnavailable={handleGoogleUnavailable}
+          />
+        </>
+      )}
 
       {step === 2 && (
         <button
