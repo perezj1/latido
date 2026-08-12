@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, createContext, useContext } from 'react'
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react'
 import { supabase } from '../lib/supabase'
 import { isAdminUser } from '../lib/admin'
 import { normalizeInterestIds } from '../lib/interests'
@@ -29,6 +29,13 @@ export function AuthProvider({ children }) {
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [profileMeta, setProfileMeta] = useState({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
   const [profileMetaLoaded, setProfileMetaLoaded] = useState(!localUser)
+  const authRevisionRef = useRef(0)
+
+  const applySession = useCallback(session => {
+    authRevisionRef.current += 1
+    setUser(session?.user ?? null)
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
     if (!user?.id) {
@@ -78,27 +85,37 @@ export function AuthProvider({ children }) {
   }, [user?.id])
 
   useEffect(() => {
-    // Verify session in background; resolves loading if no cached user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    }).catch(() => setLoading(false))
+    let active = true
+    const initialRevision = authRevisionRef.current
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return
       if (event === 'SIGNED_OUT') {
-        setUser(null)
+        applySession(null)
         setAvatarUrl(null)
         setProfileMeta({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
         setProfileMetaLoaded(true)
       } else if (session?.user) {
         // SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED — real session
-        setUser(session.user)
-        setLoading(false)
+        applySession(session)
       }
       // Ignore events without session (e.g. SIGNED_UP with email confirmation pending).
     })
-    return () => subscription.unsubscribe()
-  }, [])
+
+    // Do not let an initialization read overwrite a newer SIGNED_IN event.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return
+      if (authRevisionRef.current === initialRevision) applySession(session)
+      else setLoading(false)
+    }).catch(() => {
+      if (active) setLoading(false)
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [applySession])
 
   const signUp = async ({ email, password, name, canton, languages=[], interests=[] }) => {
     const result = await supabase.auth.signUp({
@@ -115,7 +132,7 @@ export function AuthProvider({ children }) {
     })
     // A user object without a session is not authenticated. Supabase can
     // return that shape for email confirmation and obfuscated duplicate users.
-    setUser(result.data?.session?.user ?? null)
+    applySession(result.data?.session ?? null)
     return result
   }
 
@@ -124,7 +141,7 @@ export function AuthProvider({ children }) {
       email:String(email || '').trim().toLowerCase(),
       password,
     })
-    setUser(result.data?.session?.user ?? null)
+    applySession(result.data?.session ?? null)
     return result
   }
 
@@ -144,13 +161,13 @@ export function AuthProvider({ children }) {
       token,
       ...(nonce ? { nonce } : {}),
     })
-    setUser(result.data?.session?.user ?? null)
+    applySession(result.data?.session ?? null)
     return result
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
-    setUser(null)
+    applySession(null)
     setAvatarUrl(null)
     setProfileMeta({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
     setProfileMetaLoaded(true)

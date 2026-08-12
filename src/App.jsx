@@ -583,7 +583,7 @@ function AppShell() {
     return () => window.removeEventListener('latido:messages-chat-open', sync)
   }, [pathname])
 
-  if (isLoggedIn && needsProfileOnboarding && pathname !== '/auth/onboarding') {
+  if (isLoggedIn && !isAdmin && needsProfileOnboarding && pathname !== '/auth/onboarding') {
     const nextPath = pathname === '/auth'
       ? getSafeNextPath(location.search)
       : `${location.pathname}${location.search}`
