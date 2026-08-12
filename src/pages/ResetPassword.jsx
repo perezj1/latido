@@ -34,8 +34,8 @@ export default function ResetPassword() {
   }, [])
 
   const handleSubmit = async () => {
-    if (!password || password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres')
+    if (!password || password.length < 8) {
+      toast.error('La contraseña debe tener al menos 8 caracteres')
       return
     }
     if (password !== confirm) {
@@ -48,8 +48,8 @@ export default function ResetPassword() {
       if (error) {
         toast.error('No se pudo actualizar. El enlace puede haber expirado.')
       } else {
-        toast.success('¡Contraseña actualizada! Ya puedes entrar.')
-        navigate('/')
+        await supabase.auth.signOut({ scope:'local' })
+        navigate('/auth?mode=login&password=updated', { replace:true })
       }
     } finally {
       setLoading(false)
@@ -85,7 +85,7 @@ export default function ResetPassword() {
       <Input
         label="Nueva contraseña"
         type="password"
-        placeholder="Mínimo 6 caracteres"
+        placeholder="Mínimo 8 caracteres"
         value={password}
         onChange={e => setPassword(e.target.value)}
         required
