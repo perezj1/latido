@@ -281,7 +281,7 @@ export function getAdDisplayEmoji(ad={}) {
   const subEmoji = getAdSubOption(categoryId, ad.sub)?.emoji
   const categoryEmoji = getAdCat(categoryId)?.emoji
 
-  return subEmoji || ad.emoji || categoryEmoji || '📌'
+  return subEmoji || ad.emoji || categoryEmoji || '📣'
 }
 
 export const AD_TYPES = [

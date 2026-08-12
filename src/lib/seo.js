@@ -30,7 +30,7 @@ export const DEFAULT_SEO = {
 
 export const SEARCHABLE_SITE_PAGES = [
   { id:'inicio', icon:'🏠', title:'Inicio', section:'Latido', desc:'Resumen de anuncios, empleos, negocios, eventos y guías.', href:'/' },
-  { id:'tablon', icon:'📌', title:'Anuncios', section:'Anuncios', desc:'Vivienda, servicios, cuidados, compraventa y trámites de la comunidad.', href:'/tablon' },
+  { id:'tablon', icon:'📣', title:'Anuncios', section:'Anuncios', desc:'Vivienda, servicios, cuidados, compraventa y trámites de la comunidad.', href:'/tablon' },
   { id:'vivienda', icon:'🏠', title:'Vivienda', section:'Anuncios', desc:'Pisos, habitaciones, compañeros y alquileres temporales.', href:'/tablon?cat=vivienda' },
   { id:'empleo', icon:'💼', title:'Empleo', section:'Empleo', desc:'Ofertas y solicitudes de empleo.', href:'/tablon?cat=empleo' },
   { id:'mercado', icon:'🛍️', title:'Compraventa', section:'Anuncios', desc:'Compra, venta, regalos y artículos de segunda mano.', href:'/tablon?cat=venta' },

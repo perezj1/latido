@@ -232,7 +232,7 @@ function getJobProfessionalSearchText(job={}) {
 }
 
 const GENERAL_INTENT_VIEWS = [
-  { id:'ofrece', emoji:'📌', label:'Ofertas', shortLabel:'Ofertas' },
+  { id:'ofrece', emoji:'📣', label:'Ofertas', shortLabel:'Ofertas' },
   { id:'busca', emoji:'🔎', label:'Solicitudes', shortLabel:'Solicitudes' },
 ]
 
@@ -349,7 +349,7 @@ function getTablonContext(cat='', isEmpleos=false, intentMeta=null) {
   }
 
   return {
-    title:'📌 Anuncios',
+    title:'📣 Anuncios',
     subtitle:'Vivienda, empleo, servicios, cuidados, compraventa y trámites.',
     resultLabel:'publicaciones',
     searchPlaceholder:'Buscar vivienda, servicios, productos o trámites...',
@@ -2055,7 +2055,7 @@ export default function Tablon() {
 
   return (
     <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px 100px' }}>
-      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:C.bg }}>
+      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:'#fff' }}>
         <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'16px 20px 0' }}>
       <div className="section-page-head">
         <h1>{pageContext.title}</h1>

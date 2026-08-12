@@ -486,7 +486,7 @@ function downloadCsv(filename, columns, rows) {
 
 function creatorTopicMeta(topicId) {
   return CREATOR_TOPICS.find(topic => topic.id === topicId)
-    || { id:topicId, label:topicId || 'Sin tema', emoji:'📌', color:C.mid, bg:C.bg }
+    || { id:topicId, label:topicId || 'Sin tema', emoji:'📣', color:C.mid, bg:C.bg }
 }
 
 function creatorPlatformMeta(platformId) {
