@@ -322,16 +322,16 @@ export default function Auth() {
     try {
       const callbackUrl = new URL('/auth/callback', window.location.origin)
       callbackUrl.searchParams.set('next', nextPath)
-      window.sessionStorage.setItem(GOOGLE_OAUTH_PENDING_KEY, callbackUrl.toString())
+      window.localStorage.setItem(GOOGLE_OAUTH_PENDING_KEY, callbackUrl.toString())
 
       const { error } = await signInWithGoogle({ redirectTo:callbackUrl.toString() })
       if (error) {
-        window.sessionStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
+        window.localStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
         toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
         setGoogleLoading(false)
       }
     } catch {
-      window.sessionStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
+      window.localStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY)
       toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
       setGoogleLoading(false)
     }
