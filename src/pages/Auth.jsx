@@ -192,8 +192,6 @@ function GooglePwaAuthButton({ loading, disabled, onCredential, onUnavailable })
         ux_mode:'popup',
         auto_select:false,
         itp_support:true,
-        use_fedcm_for_button:true,
-        button_auto_select:false,
       })
 
       const width = Math.max(240, Math.min(400, buttonRef.current.clientWidth || 400))
@@ -470,6 +468,15 @@ export default function Auth() {
         }
       }
       else if (data?.session?.user) {
+        const { data:persisted, error:persistError } = await supabase.auth.setSession({
+          access_token:data.session.access_token,
+          refresh_token:data.session.refresh_token,
+        })
+        if (persistError || !persisted.session?.user) {
+          console.error('Email session persistence failed:', persistError)
+          toast.error('No se pudo guardar la sesión. Inténtalo de nuevo.')
+          return
+        }
         setShowPasswordRecoveryHint(false)
         trackAnalyticsEvent('login_success', {
           metadata: { method:'email', entry_point:authEntryPoint },
@@ -486,24 +493,36 @@ export default function Auth() {
     }
   }
 
+  const beginGoogleRedirect = async () => {
+    const callbackUrl = new URL('/auth', window.location.origin)
+    callbackUrl.searchParams.set('next', nextPath)
+    callbackUrl.searchParams.set('oauth', 'google')
+
+    const { error } = await signInWithGoogle({ redirectTo:callbackUrl.toString() })
+    if (error) throw error
+  }
+
   const handleGoogleRedirect = async () => {
     if (loading || googleLoading) return
 
     setGoogleLoading(true)
     try {
-      const callbackUrl = new URL('/auth', window.location.origin)
-      callbackUrl.searchParams.set('next', nextPath)
-      callbackUrl.searchParams.set('oauth', 'google')
-
-      const { error } = await signInWithGoogle({ redirectTo:callbackUrl.toString() })
-      if (error) {
-        toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
-        setGoogleLoading(false)
-      }
-    } catch {
+      await beginGoogleRedirect()
+    } catch (error) {
+      console.error('Google OAuth redirect failed:', error)
       toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
       setGoogleLoading(false)
     }
+  }
+
+  const retryGoogleWithRedirect = async error => {
+    console.error('Google ID-token access failed; retrying with OAuth redirect:', {
+      code:error?.code,
+      status:error?.status,
+      message:error?.message,
+    })
+    toast('Reintentando el acceso seguro con Google…')
+    await beginGoogleRedirect()
   }
 
   const handleGoogleCredential = async (token, nonce) => {
@@ -513,22 +532,26 @@ export default function Auth() {
     try {
       const { data, error } = await signInWithGoogleIdToken({ token, nonce })
       if (error) {
-        console.error('Google ID token sign-in failed:', {
-          code:error.code,
-          status:error.status,
-          message:error.message,
-        })
-        toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
+        await retryGoogleWithRedirect(error)
         return
       }
 
       if (!data?.session?.user) {
-        toast.error('Google no devolvió una sesión válida. Inténtalo de nuevo.')
+        await retryGoogleWithRedirect(new Error('Google did not return a session.'))
+        return
+      }
+
+      const { data:persisted, error:persistError } = await supabase.auth.setSession({
+        access_token:data.session.access_token,
+        refresh_token:data.session.refresh_token,
+      })
+      if (persistError || !persisted.session?.user) {
+        await retryGoogleWithRedirect(persistError || new Error('Google session could not be persisted.'))
         return
       }
 
       trackAnalyticsEvent('login_success', {
-        user_id:data.session.user.id,
+        user_id:persisted.session.user.id,
         metadata: { method:'google_id_token', entry_point:authEntryPoint },
       })
       navigate(nextPath, { replace:true })
@@ -540,9 +563,16 @@ export default function Auth() {
     }
   }
 
-  const handleGoogleUnavailable = () => {
-    setGoogleLoading(false)
-    toast.error('Google no está disponible ahora. Comprueba la conexión e inténtalo de nuevo.')
+  const handleGoogleUnavailable = async () => {
+    if (loading || googleLoading) return
+    setGoogleLoading(true)
+    try {
+      await retryGoogleWithRedirect(new Error('Google Identity Services is unavailable.'))
+    } catch (error) {
+      console.error('Google fallback redirect failed:', error)
+      toast.error('Google no está disponible ahora. Comprueba la conexión e inténtalo de nuevo.')
+      setGoogleLoading(false)
+    }
   }
 
   const handleForgot = async () => {
