@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "lint": "eslint src --ext js,jsx",
     "test:creators": "node scripts/test-creators.mjs",
+    "test:auth": "node scripts/test-auth-storage.mjs",
     "test:notifications": "node scripts/test-notifications.mjs",
     "test:search": "node scripts/test-search.mjs",
     "vapid:keys": "node scripts/generate-vapid-keys.mjs"
