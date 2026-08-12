@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent } from '../lib/analytics'
@@ -9,59 +9,11 @@ import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import toast from 'react-hot-toast'
-import { Icon } from '../lib/icons'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-  || '871031259969-sb41jb8hjfethoilmvps9rlsoj843ovk.apps.googleusercontent.com'
-const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services'
-const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client?hl=es'
-let googleIdentityScriptPromise = null
+const GOOGLE_AUTH_ENABLED = false
 
 function getSafeNextPath(value) {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
-}
-
-function loadGoogleIdentityServices() {
-  if (window.google?.accounts?.id) return Promise.resolve(window.google)
-  if (googleIdentityScriptPromise) return googleIdentityScriptPromise
-
-  googleIdentityScriptPromise = new Promise((resolve, reject) => {
-    const finish = () => window.google?.accounts?.id
-      ? resolve(window.google)
-      : reject(new Error('Google Identity Services did not initialize.'))
-    const existing = document.getElementById(GOOGLE_IDENTITY_SCRIPT_ID)
-
-    if (existing) {
-      existing.addEventListener('load', finish, { once:true })
-      existing.addEventListener('error', () => reject(new Error('Google Identity Services could not be loaded.')), { once:true })
-      return
-    }
-
-    const script = document.createElement('script')
-    script.id = GOOGLE_IDENTITY_SCRIPT_ID
-    script.src = GOOGLE_IDENTITY_SCRIPT_SRC
-    script.async = true
-    script.defer = true
-    script.addEventListener('load', finish, { once:true })
-    script.addEventListener('error', () => reject(new Error('Google Identity Services could not be loaded.')), { once:true })
-    document.head.appendChild(script)
-  }).catch(error => {
-    googleIdentityScriptPromise = null
-    throw error
-  })
-
-  return googleIdentityScriptPromise
-}
-
-async function createGoogleNonce() {
-  if (!window.crypto?.getRandomValues || !window.crypto?.subtle) return { raw:'', hashed:'' }
-
-  const bytes = new Uint8Array(32)
-  window.crypto.getRandomValues(bytes)
-  const raw = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
-  const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
-  const hashed = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
-  return { raw, hashed }
 }
 
 function EyeIcon() {
@@ -114,79 +66,46 @@ function PasswordVisibilityButton({ visible, onToggle }) {
   )
 }
 
-function GoogleAuthButton({ loading, disabled, onCredential, onUnavailable }) {
-  const buttonRef = useRef(null)
-  const credentialHandlerRef = useRef(onCredential)
-  const unavailableHandlerRef = useRef(onUnavailable)
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => { credentialHandlerRef.current = onCredential }, [onCredential])
-  useEffect(() => { unavailableHandlerRef.current = onUnavailable }, [onUnavailable])
-
-  useEffect(() => {
-    let active = true
-
-    const renderGoogleButton = async () => {
-      const [{ raw, hashed }, google] = await Promise.all([
-        createGoogleNonce(),
-        loadGoogleIdentityServices(),
-      ])
-      if (!active || !buttonRef.current) return
-
-      google.accounts.id.initialize({
-        client_id:GOOGLE_CLIENT_ID,
-        callback:response => {
-          if (response?.credential) credentialHandlerRef.current?.(response.credential, raw)
-          else unavailableHandlerRef.current?.()
-        },
-        nonce:hashed || undefined,
-        ux_mode:'popup',
-        auto_select:false,
-        itp_support:true,
-      })
-
-      const width = Math.max(240, Math.min(400, buttonRef.current.clientWidth || 400))
-      buttonRef.current.replaceChildren()
-      google.accounts.id.renderButton(buttonRef.current, {
-        type:'standard',
-        theme:'outline',
-        size:'large',
-        text:'continue_with',
-        shape:'rectangular',
-        logo_alignment:'left',
-        width,
-        locale:'es',
-      })
-      if (active) setReady(true)
-    }
-
-    renderGoogleButton().catch(error => {
-      console.error('Google Identity Services failed:', error)
-      if (active) unavailableHandlerRef.current?.()
-    })
-
-    return () => { active = false }
-  }, [])
-
+function GoogleIcon() {
   return (
-    <div
-      aria-busy={!ready || loading}
+    <svg width="19" height="19" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.61Z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.19l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z" />
+      <path fill="#FBBC05" d="M3.96 10.7A5.42 5.42 0 0 1 3.68 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.03l3-2.33Z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .96 4.97l3 2.33C4.67 5.17 6.66 3.58 9 3.58Z" />
+    </svg>
+  )
+}
+
+function GoogleAuthButton({ loading, disabled, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || loading}
       style={{
         width:'100%',
         minHeight:46,
-        position:'relative',
-        overflow:'hidden',
-        pointerEvents:disabled || loading ? 'none' : 'auto',
+        display:'flex',
+        alignItems:'center',
+        justifyContent:'center',
+        gap:11,
+        padding:'0 18px',
+        border:`1.5px solid ${C.border}`,
+        borderRadius:14,
+        background:'#fff',
+        color:C.text,
+        fontFamily:PP,
+        fontSize:13,
+        fontWeight:700,
+        cursor:disabled || loading ? 'default' : 'pointer',
         opacity:disabled && !loading ? .55 : 1,
+        boxShadow:'0 3px 10px rgba(15,23,42,.05)',
       }}
     >
-      <div ref={buttonRef} style={{ width:'100%', minHeight:46, display:ready ? 'grid' : 'none', placeItems:'center' }} />
-      {(!ready || loading) && (
-        <div style={{ minHeight:46, display:'grid', placeItems:'center', border:`1.5px solid ${C.border}`, borderRadius:14, background:'#fff', color:C.mid, fontFamily:PP, fontSize:12, fontWeight:700, boxShadow:'0 3px 10px rgba(15,23,42,.05)' }}>
-          {loading ? 'Conectando con Google…' : 'Cargando Google…'}
-        </div>
-      )}
-    </div>
+      <GoogleIcon />
+      {loading ? 'Conectando con Google…' : 'Continuar con Google'}
+    </button>
   )
 }
 
@@ -194,7 +113,7 @@ function AuthDivider() {
   return (
     <div aria-hidden="true" style={{ display:'flex', alignItems:'center', gap:12, margin:'18px 0', color:C.light }}>
       <span style={{ height:1, flex:1, background:C.border }} />
-      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con Google</span>
+      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con email</span>
       <span style={{ height:1, flex:1, background:C.border }} />
     </div>
   )
@@ -396,32 +315,24 @@ export default function Auth() {
     }
   }
 
-  const handleGoogleAuth = async (token, nonce) => {
+  const handleGoogleAuth = async () => {
     if (loading || googleLoading) return
 
     setGoogleLoading(true)
     try {
-      const { data, error } = await signInWithGoogle({ token, nonce })
+      const callbackUrl = new URL('/auth', window.location.origin)
+      callbackUrl.searchParams.set('next', nextPath)
+      callbackUrl.searchParams.set('oauth', 'google')
+
+      const { error } = await signInWithGoogle({ redirectTo:callbackUrl.toString() })
       if (error) {
         toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
         setGoogleLoading(false)
-        return
       }
-
-      trackAnalyticsEvent('login_success', {
-        user_id:data?.user?.id || data?.session?.user?.id || null,
-        metadata: { method:'google_id_token', entry_point:authEntryPoint },
-      })
-      navigate(nextPath, { replace:true })
     } catch {
       toast.error('No se pudo conectar con Google. Inténtalo de nuevo.')
       setGoogleLoading(false)
     }
-  }
-
-  const handleGoogleUnavailable = () => {
-    setGoogleLoading(false)
-    toast.error('Google no está disponible ahora. Comprueba la conexión e inténtalo de nuevo.')
   }
 
   const handleForgot = async () => {
@@ -499,7 +410,7 @@ export default function Auth() {
           creator_onboarding:intent === 'creator',
         },
       })
-      toast.success('¡Cuenta creada! Bienvenido/a')
+      toast.success('¡Cuenta creada! Bienvenido/a 🎉')
       navigate(destination)
     } finally {
       setLoading(false)
@@ -512,7 +423,7 @@ export default function Auth() {
       <AuthModeSwitch mode={mode} onChange={changeAuthMode} />
 
       <div style={{ textAlign:'center', marginBottom:28 }}>
-        <div style={{ width:60, height:60, background:C.primaryLight, color:C.primary, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}><Icon name="world" size={29} /></div>
+        <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🌎</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Bienvenido/a</h1>
         <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Inicia sesión en Latido.ch</p>
       </div>
@@ -521,6 +432,13 @@ export default function Auth() {
         <div style={{ fontFamily:PP, fontSize:12, lineHeight:1.55, color:C.mid, background:C.primaryLight, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 13px', marginBottom:18 }}>
           Inicia sesión para acceder a la información y los servicios de nuestros colaboradores.
         </div>
+      )}
+
+      {GOOGLE_AUTH_ENABLED && (
+        <>
+          <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
+          <AuthDivider />
+        </>
       )}
 
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
@@ -544,23 +462,21 @@ export default function Auth() {
         </button>
       </div>
 
-      <Btn onClick={handleLogin} disabled={loading}>{loading ? <><Icon name="loading" size={16} /> Entrando...</> : 'Iniciar sesión'}</Btn>
-      <AuthDivider />
-      <GoogleAuthButton loading={googleLoading} disabled={loading} onCredential={handleGoogleAuth} onUnavailable={handleGoogleUnavailable} />
+      <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
     </div>
   )
 
   if (mode === 'forgot') return (
     <div style={{ maxWidth:440, margin:'60px auto', padding:'0 24px' }}>
       <div style={{ textAlign:'center', marginBottom:28 }}>
-        <div style={{ width:60, height:60, background:C.primaryLight, color:C.primary, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}><Icon name="lock" size={29} /></div>
+        <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🔑</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Recuperar contraseña</h1>
         <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Te enviaremos un enlace para crear una nueva.</p>
       </div>
 
       <Input label="Tu email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
 
-      <Btn onClick={handleForgot} disabled={loading}>{loading ? <><Icon name="loading" size={16} /> Enviando...</> : 'Enviar enlace'}</Btn>
+      <Btn onClick={handleForgot} disabled={loading}>{loading ? '⏳ Enviando...' : 'Enviar enlace'}</Btn>
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:14 }}>
         <button onClick={() => { setErrors({}); setMode('login') }} style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
@@ -592,6 +508,12 @@ export default function Auth() {
 
       {step === 0 && (
         <>
+          {GOOGLE_AUTH_ENABLED && (
+            <>
+              <GoogleAuthButton loading={googleLoading} disabled={loading} onClick={handleGoogleAuth} />
+              <AuthDivider />
+            </>
+          )}
           <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={e => s('name', e.target.value)} error={errors.name} errorKey="name" />
           <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={e => s('email', e.target.value)} error={errors.email} errorKey="email" />
           <Input
@@ -620,8 +542,8 @@ export default function Auth() {
             {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
           </Select>
           <div style={{ background:C.bg, borderRadius:12, padding:'11px 13px', marginBottom:14 }}>
-            <p style={{ display:'flex', alignItems:'flex-start', gap:6, fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.55 }}>
-              <Icon name="location" size={14} style={{ marginTop:1 }} /> <span>Usamos tu cantón para mostrarte los anuncios más cercanos primero. Puedes cambiarlo en tu perfil.</span>
+            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.55 }}>
+              📣 Usamos tu cantón para mostrarte los anuncios más cercanos primero. Puedes cambiarlo en tu perfil.
             </p>
           </div>
           <div style={{ marginBottom:14 }}>
@@ -653,7 +575,7 @@ export default function Auth() {
             style={{ marginBottom:12 }}
           />
           <section style={{ display:'grid', gridTemplateColumns:'auto minmax(0,1fr)', gap:11, margin:'4px 0 14px', padding:'14px', background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:16, boxShadow:'0 6px 18px rgba(37,99,235,.07)' }}>
-            <span aria-hidden="true" style={{ display:'grid', width:42, height:42, placeItems:'center', background:C.primaryLight, color:C.primary, borderRadius:13 }}><Icon name="creator" size={22} /></span>
+            <span aria-hidden="true" style={{ display:'grid', width:42, height:42, placeItems:'center', background:C.primaryLight, borderRadius:13, fontSize:22 }}>🎙️</span>
             <div style={{ minWidth:0 }}>
               <strong style={{ display:'block', color:C.text, fontFamily:PP, fontSize:12.5, lineHeight:1.4 }}>¿Eres creador de contenido?</strong>
               <p style={{ margin:'4px 0 10px', color:C.mid, fontFamily:PP, fontSize:10.5, lineHeight:1.6 }}>
@@ -684,17 +606,10 @@ export default function Auth() {
           </Btn>
         ) : (
           <Btn onClick={() => handleRegister()} disabled={loading} style={{ flex:1 }}>
-            {loading ? <><Icon name="loading" size={16} /> Creando cuenta...</> : 'Crear cuenta gratis'}
+            {loading ? '⏳ Creando cuenta...' : '🎉 Crear cuenta gratis'}
           </Btn>
         )}
       </div>
-
-      {step === 0 && (
-        <>
-          <AuthDivider />
-          <GoogleAuthButton loading={googleLoading} disabled={loading} onCredential={handleGoogleAuth} onUnavailable={handleGoogleUnavailable} />
-        </>
-      )}
 
       {step === 2 && (
         <button
