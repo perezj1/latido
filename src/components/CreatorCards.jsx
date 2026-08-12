@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { ChevronRight, Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
+import { BadgeCheck, ChevronRight, Ellipsis, EllipsisVertical, Heart, Share2, UserRound } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import {
@@ -311,17 +311,31 @@ export function getCreatorInitials(creator) {
 
 export function CreatorAvatar({ creator, size = 72, compact = false }) {
   const initials = getCreatorInitials(creator)
+  const isVerified = Boolean(creator?.verified)
+  const badgeSize = Math.max(9, Math.min(26, Math.round(size * 0.25)))
+  const badgeBorder = size < 32 ? 1 : 2
 
   return (
-    <div
+    <span
       role="img"
-      aria-label={creator?.name || 'Creador'}
+      aria-label={`${creator?.name || 'Creador'}${isVerified ? ', perfil verificado por Latido' : ''}`}
       style={{
+        position:'relative',
         width:size,
         height:size,
         flex:`0 0 ${size}px`,
-        borderRadius:'50%',
+        display:'inline-grid',
+        placeItems:'center',
+        overflow:'visible',
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
         display:'grid',
+        width:'100%',
+        height:'100%',
+        borderRadius:'50%',
         placeItems:'center',
         color:'#fff',
         fontFamily:PP,
@@ -333,12 +347,37 @@ export function CreatorAvatar({ creator, size = 72, compact = false }) {
         boxShadow:compact ? '0 2px 6px rgba(15,23,42,.14)' : '0 8px 22px rgba(15,23,42,.16)',
         overflow:'hidden',
       }}
-    >
-      {creator?.avatar_url
-        ? <img src={creator.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
-        : initials || '?'
-      }
-    </div>
+      >
+        {creator?.avatar_url
+          ? <img src={creator.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
+          : initials || '?'
+        }
+      </span>
+      {isVerified && (
+        <span
+          aria-hidden="true"
+          title="Perfil verificado por Latido"
+          style={{
+            position:'absolute',
+            right:-1,
+            bottom:Math.max(0, Math.round(size * 0.01)),
+            zIndex:2,
+            display:'grid',
+            width:badgeSize,
+            height:badgeSize,
+            boxSizing:'border-box',
+            color:'#fff',
+            background:'#2563EB',
+            border:`${badgeBorder}px solid #fff`,
+            borderRadius:'50%',
+            boxShadow:size < 32 ? '0 1px 4px rgba(15,23,42,.22)' : '0 3px 8px rgba(15,23,42,.24)',
+            placeItems:'center',
+          }}
+        >
+          <BadgeCheck size={Math.max(7, badgeSize - (badgeBorder * 2) - 2)} strokeWidth={2.4} />
+        </span>
+      )}
+    </span>
   )
 }
 
@@ -402,7 +441,6 @@ export function CreatorCard({ creator }) {
         <span className="creator-community-card__body">
           <span className="creator-community-card__name">
             <strong>{creator.name}</strong>
-            {creator.verified && <span className="creator-community-card__verification" title="Perfil verificado por Latido" aria-label="Perfil verificado por Latido">✓</span>}
           </span>
           <span className="creator-community-card__tagline">{creator.tagline}</span>
 
@@ -462,7 +500,6 @@ export function CreatorContentCard({ content, creator, onContentOpen, compact = 
         <div className="creator-content-card__creator">
           <CreatorAvatar creator={creator} size={28} />
           <span>{creator.name}</span>
-          {creator.verified && <span className="creator-confirmed creator-confirmed--small">✓</span>}
         </div>
         {!compact && <p>{content.summary}</p>}
         <div className="creator-content-card__footer">
@@ -535,7 +572,6 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
         <span className="creator-app-content-card__creator">
           <CreatorAvatar creator={creator} size={20} />
           <span>{creator.name}</span>
-          {creator.verified && <span className="creator-confirmed creator-confirmed--tiny">✓</span>}
         </span>
         {managementActions || <CreatorContentActions helpful={helpful} content={content} creator={creator} onOpen={handleOpen} />}
       </div>
