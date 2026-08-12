@@ -29,9 +29,6 @@ function CreatorProfileMiniCard({ creator }) {
         <span className="creator-community-card__body">
           <span className="creator-community-card__name">
             <strong>{creator.name}</strong>
-            {creator.verified && (
-              <span className="creator-community-card__verification" title="Perfil verificado por Latido" aria-label="Perfil verificado por Latido">✓</span>
-            )}
           </span>
           <span className="creator-community-card__tagline">{creator.tagline}</span>
           <span className="creator-community-card__location" title={place}>📍 {place}</span>

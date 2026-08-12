@@ -342,7 +342,6 @@ export default function CreadorPerfil() {
             <div className="creator-social-profile__avatar"><CreatorAvatar creator={creator} size={98} /></div>
             <div className="creator-social-profile__name">
               <h1>{creator.name}</h1>
-              {creator.verified && <span className="creator-confirmed" title="Perfil confirmado por su responsable">✓</span>}
             </div>
             <p className="creator-social-profile__location">{formatCreatorHandle(creator.handle)} · 📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</p>
             <strong className="creator-social-profile__tagline">{creator.tagline}</strong>

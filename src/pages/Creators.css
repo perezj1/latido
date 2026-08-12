@@ -652,33 +652,6 @@
   white-space: nowrap;
 }
 
-.creator-confirmed {
-  display: inline-grid;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  color: #fff;
-  background: #2563eb;
-  border-radius: 50%;
-  place-items: center;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.creator-confirmed--small {
-  width: 14px;
-  height: 14px;
-  flex-basis: 14px;
-  font-size: 8px;
-}
-
-.creator-confirmed--tiny {
-  width: 12px;
-  height: 12px;
-  flex-basis: 12px;
-  font-size: 7px;
-}
-
 .creator-profile-card__tagline {
   display: -webkit-box;
   overflow: hidden;
@@ -1964,7 +1937,7 @@
 .creator-community-card__media {
   position: relative;
   display: grid;
-  overflow: hidden;
+  overflow: visible;
   width: 84px;
   height: 84px;
   margin: 0 auto;
@@ -2002,7 +1975,6 @@
 .creator-community-card__name { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 5px; }
 .creator-community-card__name > strong { overflow: hidden; color: #0f172a; font-size: 11.5px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .creator-community-card__tagline { display: -webkit-box; overflow: hidden; min-height: 26px; margin-top: 7px; color: #475569; font-size: 8.5px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.creator-community-card__verification { display: grid; width: 16px; height: 16px; flex: 0 0 16px; color: #fff; background: #2563eb; border-radius: 50%; place-items: center; font-size: 8px; font-weight: 900; }
 .creator-community-card__topics { display: flex; min-width: 0; margin-top: 6px; align-items: center; gap: 4px; }
 .creator-community-card__topics > span { overflow: hidden; min-width: 0; padding: 5px 7px; color: #1e40af; background: #eef2ff; border-radius: 8px; font-size: 7.5px; font-weight: 700; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .creator-community-card__topics > small { flex: 0 0 auto; color: #64748b; font-size: 8px; font-weight: 800; }
