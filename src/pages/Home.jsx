@@ -13,6 +13,7 @@ import { useFavorites } from '../hooks/useFavorites'
 import { useAppNotifications } from '../hooks/useAppNotifications'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
+import HorizontalDragScroller from '../components/HorizontalDragScroller'
 import PartnersSection from '../components/PartnersSection'
 import { C, CAT_COLORS, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
@@ -307,21 +308,21 @@ function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText
       )}
 
       {loading ? (
-        <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+        <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
           <div style={{ display:'flex', gap:12, width:'max-content' }}>
             {[1,2,3].map(index => <SkeletonCard key={index} variant="carousel" lines={1} style={{ width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, flexShrink:0 }} />)}
           </div>
-        </div>
+        </HorizontalDragScroller>
       ) : items.length === 0 ? (
         <div style={{ padding:'0 var(--latido-page-gutter) 10px' }}>
           <EmptyState variant="compact-card" emoji="" text={emptyText} />
         </div>
       ) : (
-        <div ref={feedRef} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+        <HorizontalDragScroller ref={feedRef} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
           <div style={{ display:'flex', gap:12, width:'max-content' }}>
             {items.map(item => <MiLatidoCard key={item.id} item={item} onOpen={onOpen} />)}
           </div>
-        </div>
+        </HorizontalDragScroller>
       )}
     </section>
   )
@@ -2000,13 +2001,13 @@ export default function Home() {
 
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
-          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
+          <HorizontalDragScroller className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
             {[1,2,3,4].map(i => <SkeletonCard key={i} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT }} />)}
-          </div>
+          </HorizontalDragScroller>
         ) : rotatedBusinessHighlights.length === 0 ? (
           <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState variant="compact-card" emoji="🏪" text="Todavía no hay negocios publicados." /></div>
         ) : (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+          <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {rotatedBusinessHighlights.map(business => {
                 const promotionMeta = getBusinessPromotionMeta(business.effectivePromotionPlan)
@@ -2089,7 +2090,7 @@ export default function Home() {
                 )
               })}
             </div>
-          </div>
+          </HorizontalDragScroller>
         )}
         </div>
       </section>
@@ -2140,13 +2141,13 @@ export default function Home() {
 
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
-          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
+          <HorizontalDragScroller className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
             {[1,2,3,4].map(i => <SkeletonCard key={i} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT }} />)}
-          </div>
+          </HorizontalDragScroller>
         ) : communityHighlights.length === 0 ? (
           <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState variant="compact-card" emoji="👥" text="Todavía no hay grupos publicados." /></div>
         ) : (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+          <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {communityHighlights.slice(0, 12).map(group => (
                 <Link
@@ -2173,7 +2174,7 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-          </div>
+          </HorizontalDragScroller>
         )}
         </div>
       </section>
@@ -2205,7 +2206,7 @@ export default function Home() {
               <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>Ver todo →</Link>
             </div>
             <div style={{ maxWidth:1200, margin:'0 auto' }}>
-            <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+            <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
               <div style={{ display:'flex', gap:12, width:'max-content' }}>
                 {MOCK_DOCS.map(doc => {
                   const gc = GUIDE_COLORS[doc.cat] || { bg:C.bg, tc:C.primary }
@@ -2238,7 +2239,7 @@ export default function Home() {
                   )
                 })}
               </div>
-            </div>
+            </HorizontalDragScroller>
             </div>
           </section>
         )

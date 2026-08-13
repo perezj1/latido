@@ -151,6 +151,45 @@
 .latido-page-container--form { --latido-page-max-width: var(--latido-page-max-form); }
 .latido-page-container--compact { --latido-page-max-width: var(--latido-page-max-compact); }
 
+/* Directory results stay comfortably scannable on phones and use the available
+   width on desktop without stretching a single card across the whole page. */
+.latido-directory-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--latido-space-3);
+}
+
+.latido-directory-grid > * {
+  min-width: 0;
+}
+
+.latido-directory-grid__full {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 1024px) {
+  .latido-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--latido-space-4);
+  }
+}
+
+@media (min-width: 1024px) and (pointer: fine) {
+  .latido-drag-scroll {
+    cursor: grab;
+  }
+
+  .latido-drag-scroll.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  .latido-drag-scroll.is-dragging * {
+    user-select: none;
+  }
+}
+
 /* Shared UI primitives. Their geometry and interaction states stay identical
    across routes; page styles only provide layout around them. */
 .latido-visually-hidden {

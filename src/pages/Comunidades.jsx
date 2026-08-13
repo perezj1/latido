@@ -182,7 +182,6 @@ const EVENT_EMOJI = {
   familia:'👨‍👩‍👧',
 }
 
-const CARD_STACK_GAP = 10
 const WRAPPING_TEXT = { minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
 const LIST_CARD_STYLE = {
   background:'#fff',
@@ -2441,11 +2440,13 @@ export default function Comunidades() {
       {tab === 'comunidades' && (
         <>
           {loading ? (
-            <SkeletonCard variant="grid" lines={2} style={{ minHeight:200 }} />
+            <div className="latido-directory-grid">
+              {[1,2,3,4].map(item => <SkeletonCard key={item} variant="grid" lines={2} style={{ minHeight:200 }} />)}
+            </div>
           ) : filteredComm.length === 0 ? (
             <EmptyState emoji="👥" title={TAB_COPY.comunidades.emptyTitle} sub={TAB_COPY.comunidades.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
           ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
+            <div className="latido-directory-grid">
               {filteredComm.map(group => (
                 <CommunityCard key={group.id} group={group} onClick={() => openCommunityDetails(group)} />
               ))}
@@ -2463,11 +2464,13 @@ export default function Comunidades() {
       {tab === 'negocios' && (
         <>
           {loading ? (
-            <SkeletonCard variant="grid" lines={2} style={{ minHeight:260 }} />
+            <div className="latido-directory-grid">
+              {[1,2,3,4].map(item => <SkeletonCard key={item} variant="grid" lines={2} style={{ minHeight:260 }} />)}
+            </div>
           ) : filteredNeg.length === 0 ? (
             <EmptyState emoji="🏪" title={TAB_COPY.negocios.emptyTitle} sub={TAB_COPY.negocios.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
           ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
+            <div className="latido-directory-grid">
               {filteredNeg.map(business => (
                 <BusinessCard
                   key={business.id}
@@ -2525,8 +2528,8 @@ export default function Comunidades() {
           <div style={{ marginBottom:24 }}>
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:12 }}>EVENTOS DE LA COMUNIDAD</p>
             {loading ? (
-              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                {[1,2].map(i => <SkeletonCard key={i} variant="list" lines={1} style={{ minHeight:120 }} />)}
+              <div className="latido-directory-grid">
+                {[1,2,3,4].map(i => <SkeletonCard key={i} variant="list" lines={1} style={{ minHeight:120 }} />)}
               </div>
             ) : filteredEvents.length === 0 ? (
               <div style={{ textAlign:'center', padding:'40px 20px', background:C.bg, borderRadius:20 }}>
@@ -2535,7 +2538,7 @@ export default function Comunidades() {
                 <p style={{ fontFamily:PP, fontSize:12, color:C.light }}>{TAB_COPY.eventos.emptyText}</p>
               </div>
             ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
+              <div className="latido-directory-grid">
                 {filteredEvents.map(event => (
                   <div
                     key={event.id}
