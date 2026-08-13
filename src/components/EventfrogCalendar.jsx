@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { C, PP } from '../lib/theme'
 import { HOME_CAROUSEL_CARD_WIDTH } from '../lib/homeCarousel'
+import HorizontalDragScroller from './HorizontalDragScroller'
 import { SkeletonCard } from './UI'
 import {
   buildEventfrogEmbedUrl,
@@ -518,7 +519,7 @@ export default function EventfrogCalendar({
         </div>
 
         {filteredEvents.length > 0 ? (
-          <div className="no-scroll" onScroll={handleCarouselScroll} style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+          <HorizontalDragScroller className="no-scroll" onScroll={handleCarouselScroll} style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {visibleEvents.map(event => (
                 <CarouselEventCard key={event.id} event={event} />
@@ -527,15 +528,15 @@ export default function EventfrogCalendar({
                 <SkeletonCard key={`loading-${item}`} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226 }} />
               ))}
             </div>
-          </div>
+          </HorizontalDragScroller>
         ) : loading && events.length === 0 ? (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+          <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {[1, 2, 3, 4].map(item => (
                 <SkeletonCard key={item} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226 }} />
               ))}
             </div>
-          </div>
+          </HorizontalDragScroller>
         ) : (
           <div className="latido-page-container latido-page-container--content">
             <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'18px 14px', textAlign:'center' }}>

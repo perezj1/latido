@@ -118,7 +118,6 @@ function persistTablonCache() {
     jobs:TABLON_CACHE.jobs || [],
   })
 }
-const CARD_STACK_GAP = 10
 const TABLON_SEARCH_RESULT_TYPES = ['ad', 'job']
 const TABLON_DATA_PAGE_SIZE = 500
 
@@ -2129,7 +2128,7 @@ export default function Tablon() {
       {/* Results */}
       <div key={`${cat || 'all'}-${activeToolbarIntent}`} className="segmented-content-transition">
       {loading ? (
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div className="latido-directory-grid">
           {[1,2,3].map(i => <SkeletonCard key={i} variant="list" lines={isEmpleos ? 2 : 1} style={{ minHeight:isEmpleos ? 122 : 136 }} />)}
         </div>
       ) : isEmpleos ? (
@@ -2141,7 +2140,7 @@ export default function Tablon() {
                 <span style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, letterSpacing:0, textTransform:'none' }}>{portalsOpen ? 'Ocultar' : 'Mostrar'}</span>
               </button>
               {portalsOpen && (
-                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                <div className="latido-directory-grid">
                   {employmentPortals.map(p => (
                     <PortalCard key={p.id} portal={p} defaultEmoji="💼" onClick={() => setSelectedPortal({ ...p, defaultEmoji:'💼' })} />
                   ))}
@@ -2169,11 +2168,11 @@ export default function Tablon() {
           ) : (
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>{activeIntentMeta?.label?.toUpperCase() || 'EMPLEO DE LA COMUNIDAD'}</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
+              <div className="latido-directory-grid">
                 {displayedJobs.map(j => (
                   <JobCard key={j.id} job={j} onClick={() => openJobDetails(j)} isFav={isFavorite('jobs', j.id)} onToggleFav={() => toggleFavorite('jobs', j.id)} avatarSrc={userProfiles.get(j.user_id)?.avatarUrl} authorName={userProfiles.get(j.user_id)?.name} />
                 ))}
-                <div style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
+                <div className="latido-directory-grid__full" style={{ marginTop:16, border:`2px dashed ${C.border}`, borderRadius:16, padding:'18px 20px', textAlign:'center', background:C.primaryLight }}>
                   <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>{activeCategoryIntent === 'busca' ? '¿Quieres que te encuentren empresas y empleadores?' : '¿Necesitas incorporar a alguien?'}</h3>
                   <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:12 }}>{activeCategoryIntent === 'busca' ? 'Crea una solicitud de empleo clara y fácil de encontrar.' : 'Publica la oferta gratis para la comunidad hispanohablante en Suiza.'}</p>
                   <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:12, background:C.primary, color:'#fff', textDecoration:'none', padding:'10px 22px', borderRadius:13, display:'inline-flex' }}>{publishLabel}</Link>
@@ -2190,7 +2189,7 @@ export default function Tablon() {
               <span style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary, letterSpacing:0, textTransform:'none' }}>{portalsOpen ? 'Ocultar' : 'Mostrar'}</span>
             </button>
             {portalsOpen && (
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <div className="latido-directory-grid">
                 {housingPortals.map(p => (
                   <PortalCard key={p.id} portal={p} defaultEmoji="🏠" onClick={() => setSelectedPortal({ ...p, defaultEmoji:'🏠' })} />
                 ))}
@@ -2200,7 +2199,7 @@ export default function Tablon() {
           {displayedAds.length > 0 ? (
             <>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>{activeIntentMeta?.label?.toUpperCase() || 'VIVIENDA EN LA COMUNIDAD'}</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>{displayedAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userProfiles.get(ad.user_id)?.avatarUrl} reviews={adReviews[ad.id] || []} />)}</div>
+              <div className="latido-directory-grid">{displayedAds.map(ad => <AdCard key={ad.id} ad={ad} onClick={() => openAdDetails(ad)} isFav={isFavorite('ads', ad.id)} onToggleFav={() => toggleFavorite('ads', ad.id)} avatarSrc={userProfiles.get(ad.user_id)?.avatarUrl} reviews={adReviews[ad.id] || []} />)}</div>
             </>
           ) : (
             showSearchRecovery ? (
@@ -2241,7 +2240,7 @@ export default function Tablon() {
       ) : (
         <>
           {cat && <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:10 }}>{activeIntentMeta?.label?.toUpperCase()}</p>}
-          <div style={{ display:'flex', flexDirection:'column', gap:CARD_STACK_GAP }}>
+          <div className="latido-directory-grid">
             {tablonItems.map(({ kind, item }) => kind === 'job' ? (
               <JobCard key={`job-${item.id}`} job={item} onClick={() => openJobDetails(item)} isFav={isFavorite('jobs', item.id)} onToggleFav={() => toggleFavorite('jobs', item.id)} avatarSrc={userProfiles.get(item.user_id)?.avatarUrl} authorName={userProfiles.get(item.user_id)?.name} />
             ) : (
