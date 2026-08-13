@@ -724,7 +724,7 @@ export default function Auth() {
   }
 
   if (mode === 'login') return (
-    <div style={{ maxWidth:440, margin:'32px auto 48px', padding:'0 24px' }}>
+    <div className="latido-page-container" style={{ maxWidth:440, marginTop:32, marginBottom:48 }}>
       <AuthModeSwitch mode={mode} onChange={changeAuthMode} />
 
       <div style={{ textAlign:'center', marginBottom:28 }}>
@@ -792,7 +792,7 @@ export default function Auth() {
   )
 
   if (mode === 'forgot') return (
-    <div style={{ maxWidth:440, margin:'60px auto', padding:'0 24px' }}>
+    <div className="latido-page-container" style={{ maxWidth:440, marginTop:60, marginBottom:60 }}>
       <div style={{ textAlign:'center', marginBottom:28 }}>
         <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🔑</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Recuperar contraseña</h1>
@@ -821,7 +821,7 @@ export default function Auth() {
   ]
 
   return (
-    <div style={{ maxWidth:440, margin:'32px auto 48px', padding:'0 24px' }}>
+    <div className="latido-page-container" style={{ maxWidth:440, marginTop:32, marginBottom:48 }}>
       <AuthModeSwitch mode={mode} onChange={changeAuthMode} />
 
       <ProgressBar step={step} total={REG_STEPS.length} />

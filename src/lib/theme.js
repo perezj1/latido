@@ -40,6 +40,15 @@ export const SPACE = Object.freeze({
   16:token('space-16'),
 })
 
+export const LAYOUT = Object.freeze({
+  gutter:token('page-gutter'),
+  wide:token('page-max-wide'),
+  content:token('page-max-content'),
+  reading:token('page-max-reading'),
+  form:token('page-max-form'),
+  compact:token('page-max-compact'),
+})
+
 export const RADIUS = Object.freeze({
   sm:token('radius-sm'),
   md:token('radius-md'),

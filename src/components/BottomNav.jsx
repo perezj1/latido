@@ -82,7 +82,7 @@ export default function BottomNav() {
   const isAdminPage = pathname === '/admin-latido' || pathname.startsWith('/admin-latido/')
   const isPublishFlow = PUBLISH_FLOW_PATHS.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const isCreatorProfileArea = isCreatorProfileRoute(pathname)
-  const hideMobileNav = isAdminPage || isPublishFlow || (pathname.startsWith('/mensajes') && messagesChatOpen)
+  const hideNav = isAdminPage || isPublishFlow || (pathname.startsWith('/mensajes') && messagesChatOpen)
   const isTabActive = tab => {
     if (tab.action) return false
     if (tab.id === 'inicio') return pathname === '/'
@@ -100,7 +100,7 @@ export default function BottomNav() {
           onClick={() => window.history.back()}
           style={{ position:'fixed', inset:0, zIndex:260, background:'rgba(0,0,0,0.45)', display:'flex', flexDirection:'column', justifyContent:'flex-end' }}
         >
-          <div className="latido-sheet-panel latido-publish-picker__panel" onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:'24px 24px 0 0', padding:'16px 20px 40px' }}>
+          <div className="latido-sheet-panel latido-publish-picker__panel" onClick={e => e.stopPropagation()} style={{ background:'#fff' }}>
             <div style={{ width:36, height:4, background:'#E2EAF4', borderRadius:4, margin:'0 auto 20px' }} />
             <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:'#0F172A', marginBottom:6 }}>¿Qué quieres publicar?</p>
             <p style={{ fontFamily:PP, fontSize:12, color:'#64748B', marginBottom:20 }}>Elige el tipo de publicación</p>
@@ -125,7 +125,7 @@ export default function BottomNav() {
         </div>
       )}
 
-      {!hideMobileNav && <nav className="hide-md bottom-nav" style={{ transform: keyboardVisible && pathname.startsWith('/mensajes') ? 'translateY(calc(100% + 24px))' : 'translateZ(0)', transition:'transform 0.12s ease' }}>
+      {!hideNav && <nav className="bottom-nav" aria-label="Navegación principal" style={{ transform: keyboardVisible && pathname.startsWith('/mensajes') ? 'translateY(calc(100% + 24px))' : 'translateZ(0)', transition:'transform 0.12s ease' }}>
         {TABS.map(tab => {
           const active = isTabActive(tab)
           const needsNotificationDot = tab.id === 'perfil' && needsPushActivation

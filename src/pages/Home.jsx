@@ -313,7 +313,7 @@ function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText
   return (
     <section aria-label={title} style={{ marginTop:hideHeader ? 10 : 18 }}>
       {!hideHeader && (
-        <div style={{ padding:'0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:8 }}>
+        <div style={{ padding:'0 var(--latido-page-gutter)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:8 }}>
           <h3 style={{ minWidth:0, fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0 }}>
             {title}
           </h3>
@@ -324,17 +324,17 @@ function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText
       )}
 
       {loading ? (
-        <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+        <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
           <div style={{ display:'flex', gap:12, width:'max-content' }}>
             {[1,2,3].map(index => <div key={index} className="skeleton" style={{ width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, borderRadius:18, flexShrink:0 }} />)}
           </div>
         </div>
       ) : items.length === 0 ? (
-        <div style={{ padding:'0 16px 10px' }}>
+        <div style={{ padding:'0 var(--latido-page-gutter) 10px' }}>
           <EmptyState text={emptyText} />
         </div>
       ) : (
-        <div ref={feedRef} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+        <div ref={feedRef} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
           <div style={{ display:'flex', gap:12, width:'max-content' }}>
             {items.map(item => <MiLatidoCard key={item.id} item={item} onOpen={onOpen} />)}
           </div>
@@ -1891,7 +1891,7 @@ export default function Home() {
           canton={userCanton}
           loading={loading}
         />
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px' }}>
+        <div className="latido-page-container">
           <SegmentedTabs
             items={MY_LATIDO_SECTIONS}
             value={latidoSection}
@@ -2003,7 +2003,7 @@ export default function Home() {
       </section> */}
 
       <section style={{ padding:'40px 0 0' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto 14px', padding:'0 16px', display:'grid', gridTemplateColumns:'minmax(0, 1fr) auto', columnGap:16, rowGap:3, alignItems:'center' }}>
+        <div className="latido-page-container" style={{ marginBottom:14, display:'grid', gridTemplateColumns:'minmax(0, 1fr) auto', columnGap:16, rowGap:3, alignItems:'center' }}>
           <h2 style={{ minWidth:0, fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:0 }}>
             🏪 Negocios
           </h2>
@@ -2017,13 +2017,13 @@ export default function Home() {
 
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
-          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
+          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
             {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, borderRadius:18 }}/>)}
           </div>
         ) : rotatedBusinessHighlights.length === 0 ? (
-          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay negocios publicados." /></div>
+          <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState text="Todavía no hay negocios publicados." /></div>
         ) : (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {rotatedBusinessHighlights.map(business => {
                 const promotionMeta = getBusinessPromotionMeta(business.effectivePromotionPlan)
@@ -2116,7 +2116,7 @@ export default function Home() {
       <CreatorHomeSection />
 
       <section style={{ padding:'40px 0 0' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:0 }}>
+        <div className="latido-page-container" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:0 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
               🎉 Próximos eventos 
@@ -2141,7 +2141,7 @@ export default function Home() {
       </section>
 
       <section style={{ padding:'40px 0 0' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+        <div className="latido-page-container" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
             <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>
               👥 Grupos para ti
@@ -2157,13 +2157,13 @@ export default function Home() {
 
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
-          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px 16px 16px', overflowX:'auto' }}>
+          <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
             {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, borderRadius:18 }}/>)}
           </div>
         ) : communityHighlights.length === 0 ? (
-          <div style={{ padding:'0 16px' }}><EmptyState text="Todavía no hay grupos publicados." /></div>
+          <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState text="Todavía no hay grupos publicados." /></div>
         ) : (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {communityHighlights.slice(0, 12).map(group => (
                 <Link
@@ -2214,7 +2214,7 @@ export default function Home() {
         }
         return (
           <section style={{ padding:'40px 0 0' }}>
-            <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+            <div className="latido-page-container" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
               <div>
                 <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, margin:'0 0 4px' }}>📚 Guías</h2>
                 <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:0 }}>Permisos, trabajo, vivienda, salud y dinero en español.</p>
@@ -2222,7 +2222,7 @@ export default function Home() {
               <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>Ver todo →</Link>
             </div>
             <div style={{ maxWidth:1200, margin:'0 auto' }}>
-            <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+            <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
               <div style={{ display:'flex', gap:12, width:'max-content' }}>
                 {MOCK_DOCS.map(doc => {
                   const gc = GUIDE_COLORS[doc.cat] || { bg:C.bg, tc:C.primary }
@@ -2298,7 +2298,7 @@ export default function Home() {
         </div>
       )}
 
-      <section style={{ maxWidth:1200, margin:'0 auto', padding:'42px 16px 110px' }}>
+      <section className="latido-page-container" style={{ paddingTop:42, paddingBottom:110 }}>
   <div style={{ background:'linear-gradient(135deg,#1E3A8A,#2563EB)', borderRadius:28, padding:'28px 24px', position:'relative', overflow:'hidden' }}>
     <div style={{ position:'absolute', right:-40, top:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
     <div style={{ position:'absolute', left:-20, bottom:-30, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />

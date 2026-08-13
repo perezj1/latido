@@ -812,7 +812,7 @@ export default function Legal() {
   }, [docId, navigate])
 
   return (
-    <div style={{ maxWidth:780, margin:'0 auto', padding:'32px 24px 100px' }}>
+    <div className="latido-page-container latido-page-container--reading" style={{ paddingTop:32, paddingBottom:100 }}>
       <Link to="/" style={{ fontFamily:PP, fontSize:12, color:C.primary, textDecoration:'none', display:'inline-flex', alignItems:'center', gap:4, marginBottom:20 }}>
         <ChevronLeftIcon size={16} /> Volver
       </Link>

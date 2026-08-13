@@ -57,7 +57,7 @@ export default function ResetPassword() {
   }
 
   if (!ready && expired) return (
-    <div style={{ maxWidth:440, margin:'80px auto', padding:'0 24px', textAlign:'center' }}>
+    <div className="latido-page-container" style={{ maxWidth:440, marginTop:80, marginBottom:80, textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
       <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:20, color:C.text, marginBottom:8 }}>Enlace inválido o expirado</h2>
       <p style={{ fontFamily:PP, fontSize:13, color:C.light, marginBottom:24 }}>
@@ -68,14 +68,14 @@ export default function ResetPassword() {
   )
 
   if (!ready) return (
-    <div style={{ maxWidth:440, margin:'80px auto', padding:'0 24px', textAlign:'center' }}>
+    <div className="latido-page-container" style={{ maxWidth:440, marginTop:80, marginBottom:80, textAlign:'center' }}>
       <div style={{ fontSize:48, marginBottom:16 }}>⏳</div>
       <p style={{ fontFamily:PP, fontSize:14, color:C.light }}>Verificando enlace...</p>
     </div>
   )
 
   return (
-    <div style={{ maxWidth:440, margin:'60px auto', padding:'0 24px' }}>
+    <div className="latido-page-container" style={{ maxWidth:440, marginTop:60, marginBottom:60 }}>
       <div style={{ textAlign:'center', marginBottom:28 }}>
         <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🔐</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Nueva contraseña</h1>

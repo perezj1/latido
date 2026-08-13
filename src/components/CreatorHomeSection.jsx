@@ -7,7 +7,7 @@ import '../pages/Creators.css'
 
 function SectionHeading({ id, title, subtitle, to }) {
   return (
-    <div style={{ maxWidth:1200, margin:'0 auto 14px', padding:'0 16px', display:'grid', gridTemplateColumns:'minmax(0,1fr) auto', gap:'3px 16px', alignItems:'center' }}>
+    <div className="latido-page-container" style={{ marginBottom:14, display:'grid', gridTemplateColumns:'minmax(0,1fr) auto', gap:'3px 16px', alignItems:'center' }}>
       <h2 id={id} style={{ margin:0, color:C.text, fontFamily:PP, fontWeight:800, fontSize:20 }}>{title}</h2>
       <Link to={to} style={{ color:C.primary, fontFamily:PP, fontSize:11, fontWeight:700, textDecoration:'none', whiteSpace:'nowrap' }}>Ver todo →</Link>
       <p style={{ gridColumn:'1 / -1', margin:0, color:C.mid, fontFamily:PP, fontSize:11, lineHeight:1.5 }}>{subtitle}</p>

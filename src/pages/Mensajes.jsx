@@ -1019,14 +1019,14 @@ export default function Mensajes() {
   })
 
   return (
-    <div ref={pageRef} style={{ maxWidth: mobileChatOpen ? 'none' : 900, margin: mobileChatOpen ? 0 : '0 auto', padding: mobileChatOpen ? 0 : '24px 0 0', height: pageHeight ? `${pageHeight}px` : 'calc(100dvh - 60px)', minHeight:0, display: 'flex', flexDirection: 'column', background: mobileChatOpen ? '#E9EEF7' : undefined }}>
-      {!mobileChatOpen && <div style={{ padding: '0 16px 16px' }}>
+    <div ref={pageRef} className={mobileChatOpen ? '' : 'latido-page-container'} style={{ maxWidth: mobileChatOpen ? 'none' : 900, margin: mobileChatOpen ? 0 : '0 auto', paddingTop: mobileChatOpen ? 0 : 24, height: pageHeight ? `${pageHeight}px` : 'calc(100dvh - 60px)', minHeight:0, display: 'flex', flexDirection: 'column', background: mobileChatOpen ? '#E9EEF7' : undefined }}>
+      {!mobileChatOpen && <div style={{ paddingBottom:16 }}>
         <h1 style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, color: C.text, margin: 0, letterSpacing: -0.5 }}>
           💬 Mensajes
         </h1>
       </div>}
 
-      <div style={{ flex: 1, minHeight:0, display: 'flex', overflow: 'hidden', border: mobileChatOpen ? 'none' : `1px solid ${C.border}`, borderRadius: mobileChatOpen ? 0 : 18, margin: mobileChatOpen ? 0 : '0 16px 16px', background: '#fff' }}>
+      <div style={{ flex: 1, minHeight:0, display: 'flex', overflow: 'hidden', border: mobileChatOpen ? 'none' : `1px solid ${C.border}`, borderRadius: mobileChatOpen ? 0 : 18, margin: mobileChatOpen ? 0 : '0 0 16px', background: '#fff' }}>
 
         {/* Conversation list */}
         {(showListPanel || !isMobile) && (

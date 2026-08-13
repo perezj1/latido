@@ -66,6 +66,15 @@
   --latido-space-12: 48px;
   --latido-space-16: 64px;
 
+  /* One horizontal rhythm for every route. It starts compact on phones and
+     grows on wide screens without leaving content floating against the edge. */
+  --latido-page-gutter: clamp(16px, 3vw, 32px);
+  --latido-page-max-wide: 1200px;
+  --latido-page-max-content: 1000px;
+  --latido-page-max-reading: 780px;
+  --latido-page-max-form: 600px;
+  --latido-page-max-compact: 480px;
+
   /* Type roles. Screens can use responsive clamp values for display only. */
   --latido-font-size-caption: 12px;
   --latido-font-size-body: 14px;
@@ -123,6 +132,20 @@
     overflow-x: hidden;
   }
 }
+
+.latido-page-container {
+  width: 100%;
+  max-width: var(--latido-page-max-width, var(--latido-page-max-wide));
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: max(var(--latido-page-gutter), env(safe-area-inset-right));
+  padding-left: max(var(--latido-page-gutter), env(safe-area-inset-left));
+}
+
+.latido-page-container--content { --latido-page-max-width: var(--latido-page-max-content); }
+.latido-page-container--reading { --latido-page-max-width: var(--latido-page-max-reading); }
+.latido-page-container--form { --latido-page-max-width: var(--latido-page-max-form); }
+.latido-page-container--compact { --latido-page-max-width: var(--latido-page-max-compact); }
 
 @supports (overflow: clip) {
   html,
@@ -424,13 +447,30 @@
 .latido-publish-picker__panel {
   width: 100%;
   max-height: min(88dvh, 760px);
+  padding: 16px 20px calc(40px + env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
+  border-radius: 24px 24px 0 0;
 }
 
 .latido-publish-picker__option {
   opacity: 0;
   animation: latido-option-in 210ms var(--latido-ease-emphasized) calc(70ms + var(--publish-option-index, 0) * 24ms) both;
+}
+
+@media (min-width: 768px) {
+  .latido-publish-picker {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .latido-publish-picker__panel {
+    max-width: 560px;
+    max-height: calc(100dvh - 48px);
+    margin: 0 auto;
+    padding: 20px 24px 28px;
+    border-radius: 24px;
+  }
 }
 
 .latido-backdrop-hitbox:active { transform:none !important; }
@@ -1484,7 +1524,8 @@ a[href]:active { opacity:.82; }
   gap: 16px;
   max-width: 1200px;
   margin: 0 auto 13px;
-  padding: 0 16px;
+  padding-right: var(--latido-page-gutter);
+  padding-left: var(--latido-page-gutter);
 }
 
 .home-partners-heading h2 {
@@ -1519,7 +1560,7 @@ a[href]:active { opacity:.82; }
 .home-partners-scroll {
   position: relative;
   overflow-x: auto;
-  padding: 3px 16px 18px;
+  padding: 3px var(--latido-page-gutter) 18px;
   scroll-padding-inline: 16px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
@@ -2637,7 +2678,7 @@ a[href]:active { opacity:.82; }
   }
 
   .home-partners-scroll--single {
-    padding-right: 16px;
+    padding-right: var(--latido-page-gutter);
   }
 
   .partner-card {
@@ -2933,9 +2974,11 @@ html { scroll-behavior: smooth; }
 .provider-detail-img { height: auto; max-height: none; background: #fff; }
 @media (max-width: 500px) { .provider-detail-img { max-height: none; } }
 
-/* ── Mobile padding ── */
-@media (max-width: 480px) {
-  .page-wrap { padding-left: 16px !important; padding-right: 16px !important; }
+/* Legacy page wrappers inherit the same responsive gutter while they are
+   progressively migrated to .latido-page-container. */
+.page-wrap {
+  padding-right: max(var(--latido-page-gutter), env(safe-area-inset-right)) !important;
+  padding-left: max(var(--latido-page-gutter), env(safe-area-inset-left)) !important;
 }
 
 /* ── Prevent horizontal overflow ── */
@@ -2968,7 +3011,6 @@ img[data-latido-img-state="loaded"] {
 
 /* ── Category bar sticky offset ── */
 .cat-bar { position: sticky; top: 0; z-index: 40; }
-@media (min-width: 768px) { .cat-bar { top: 57px; } }
 
 /* ── Encabezado de seccion ──
    Altura fija en todas las pantallas: el subtitulo reserva siempre dos lineas,
@@ -4302,9 +4344,25 @@ img[data-latido-img-state="loaded"] {
   right: 12px;
   bottom: calc(10px + env(safe-area-inset-bottom));
   left: 12px;
+  width: calc(100% - 24px);
+  max-width: 620px;
+  margin-right: auto;
+  margin-left: auto;
+  display: flex;
   align-items: center;
   min-height: 64px;
   border-radius: 30px;
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    bottom: 18px;
+    min-height: 68px;
+  }
+
+  .bottom-nav-label {
+    font-size: 11px !important;
+  }
 }
 
 /* El fondo va en un pseudo-elemento aparte para no afectar a los iconos.
@@ -4418,9 +4476,9 @@ img[data-latido-img-state="loaded"] {
 }
 
 /* ── Hero section responsive ── */
-.hero-section { padding: 20px 16px 24px !important; }
-@media (min-width: 768px)  { .hero-section { padding: 40px 32px 48px !important; } }
-@media (min-width: 1024px) { .hero-section { padding: 48px 40px 56px !important; } }
+.hero-section { padding: 20px var(--latido-page-gutter) 24px !important; }
+@media (min-width: 768px)  { .hero-section { padding-top: 40px !important; padding-bottom: 48px !important; } }
+@media (min-width: 1024px) { .hero-section { padding-top: 48px !important; padding-bottom: 56px !important; } }
 
 .hero-search-wrap { max-width: 620px; }
 @media (min-width: 768px) { .hero-search-wrap { max-width: 100%; } }

@@ -287,7 +287,7 @@ export default function Publicar() {
 
   if (!isLoggedIn) {
     return (
-      <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
         <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>
           Necesitas una cuenta
@@ -320,7 +320,7 @@ export default function Publicar() {
 
   if (isBanned) {
     return (
-      <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
         <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>
           Cuenta suspendida
@@ -335,7 +335,7 @@ export default function Publicar() {
 
   if (done) {
     return (
-      <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
         <div
           style={{
             width:80,
@@ -640,7 +640,7 @@ export default function Publicar() {
   }
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
+    <div className="latido-page-container latido-page-container--form" style={{ paddingTop:32, paddingBottom:170 }}>
       <PostPublishPushModal
         open={pushModalOpen}
         user={user}

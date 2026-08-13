@@ -173,7 +173,7 @@ export default function PublicarEmpleo() {
   }
 
   if (!isLoggedIn) return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+    <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
@@ -187,7 +187,7 @@ export default function PublicarEmpleo() {
   )
 
   if (isBanned) return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+    <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Cuenta suspendida</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
@@ -198,7 +198,7 @@ export default function PublicarEmpleo() {
   )
 
   if (done) return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+    <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>💼</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>
         {publishedForReview
@@ -414,7 +414,7 @@ export default function PublicarEmpleo() {
   const selectedType = JOB_TYPES.find(t => t.id === form.jobType)
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
+    <div className="latido-page-container latido-page-container--form" style={{ paddingTop:32, paddingBottom:170 }}>
       <PostPublishPushModal
         open={pushModalOpen}
         user={user}

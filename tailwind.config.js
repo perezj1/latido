@@ -80,6 +80,14 @@ export default {
         'latido-10':'var(--latido-space-10)',
         'latido-12':'var(--latido-space-12)',
         'latido-16':'var(--latido-space-16)',
+        'latido-gutter':'var(--latido-page-gutter)',
+      },
+      maxWidth: {
+        'latido-wide':'var(--latido-page-max-wide)',
+        'latido-content':'var(--latido-page-max-content)',
+        'latido-reading':'var(--latido-page-max-reading)',
+        'latido-form':'var(--latido-page-max-form)',
+        'latido-compact':'var(--latido-page-max-compact)',
       },
       borderRadius: {
         'latido-sm':'var(--latido-radius-sm)',

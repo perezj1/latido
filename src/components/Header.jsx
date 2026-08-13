@@ -76,7 +76,7 @@ export default function Header({ transparent }) {
         transition:'all .3s',
       }}
     >
-      <div style={{ width:'100%', maxWidth:1200, margin:'0 auto', padding:'12px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
+      <div className="latido-page-container" style={{ paddingTop:12, paddingBottom:12, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
         {!isLoggedIn && (
           <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
             <img src="/favicon.svg" alt="Latido" style={{ width:32, height:32 }} />
@@ -149,7 +149,7 @@ export default function Header({ transparent }) {
       </div>
 
       {open && (
-        <div className="fade-up lg:hidden" style={{ background:C.surface, borderTop:`1px solid ${C.border}`, padding:'12px 20px 16px' }}>
+        <div className="fade-up lg:hidden" style={{ background:C.surface, borderTop:`1px solid ${C.border}`, padding:'12px var(--latido-page-gutter) 16px' }}>
           {NAV.map(link => (
             <Link key={link.href} to={link.href} onClick={() => setOpen(false)} style={{ fontFamily:PP, fontWeight:600, fontSize:13, textDecoration:'none', display:'flex', alignItems:'center', gap:8, padding:'11px 12px', borderRadius:12, color: isActive(link.href) ? C.primary : C.mid, background: isActive(link.href) ? C.primaryLight : 'transparent', marginBottom:4 }}>
               {link.label}

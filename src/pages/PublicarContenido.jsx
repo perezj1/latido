@@ -268,7 +268,7 @@ export default function PublicarContenido() {
   }
 
   if (!isLoggedIn) return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+    <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
@@ -283,7 +283,7 @@ export default function PublicarContenido() {
   )
 
   if (directoryState.error) return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+    <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text }}>No pudimos cargar tu perfil</h1>
       <p style={{ fontFamily:PP, color:C.mid }}>Comprueba tu conexión e inténtalo de nuevo.</p>
       <Btn onClick={() => window.location.reload()}>Reintentar</Btn>
@@ -291,7 +291,7 @@ export default function PublicarContenido() {
   )
 
   if (!creator) return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px 170px' }}>
+    <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:170 }}>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontSize:52, marginBottom:16 }}>🎙️</div>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Empieza a compartir tu contenido</h1>
@@ -315,7 +315,7 @@ export default function PublicarContenido() {
   const previewThumbnail = getCreatorThumbnailUrl(form)
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
+    <div className="latido-page-container latido-page-container--form" style={{ paddingTop:32, paddingBottom:170 }}>
       <ProgressBar step={step} total={STEPS.length} />
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>{STEPS[step].title}</h1>
       <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:24 }}>{STEPS[step].sub}</p>
