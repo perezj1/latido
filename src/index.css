@@ -152,6 +152,12 @@
     outline: 3px solid var(--latido-color-focus) !important;
     outline-offset: 2px;
   }
+
+  /* Search fields already expose focus through their blue border and icon. */
+  input.latido-search-input:focus-visible {
+    outline: none !important;
+    outline-offset: 0;
+  }
 }
 
 .latido-page-container {
@@ -4826,7 +4832,7 @@ img[data-latido-img-state="loaded"] {
   border-radius: 17px;
   background: #fff;
   color: #2864F0;
-  box-shadow: 0 0 0 3px rgba(40, 100, 240, .09);
+  box-shadow: none;
 }
 
 .latido-search-experience__form input {

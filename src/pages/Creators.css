@@ -1889,19 +1889,55 @@
 .creator-community-toolbar .filter-chip-row { margin-top: 9px; }
 .creator-community-toolbar .filter-result-summary { margin-top: 5px; }
 .creator-community-search {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  background: #fff;
-  border: 1.5px solid #e2eaf4;
-  border-radius: 14px;
+  position: relative;
 }
 
-.creator-community-search > span { color: var(--latido-color-text-muted); font-size: 14px; }
-.creator-community-search input { width: 100%; min-width: 0; padding: 0; color: #0f172a; background: transparent; border: 0; outline: 0; font: 500 12px 'Poppins', system-ui, sans-serif; }
-.creator-community-search button { width: 26px; height: 26px; padding: 0; color: #64748b; background: #f1f5f9; border: 0; border-radius: 50%; font-size: 17px; cursor: pointer; }
+.creator-community-search__icon {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 12px;
+  display: flex;
+  color: var(--latido-color-text-muted);
+  transform: translateY(-50%);
+  transition: color .15s;
+  pointer-events: none;
+}
+.creator-community-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 38px 11px 36px;
+  color: var(--latido-color-text-primary);
+  background: #fff;
+  border: 1.5px solid var(--latido-color-border);
+  border-radius: 14px;
+  outline: none;
+  box-sizing: border-box;
+  font: 400 13px 'Poppins', system-ui, sans-serif;
+  transition: border-color .15s;
+}
+.creator-community-search input::placeholder { color: #98A6BC; opacity: 1; }
+.creator-community-search:focus-within .creator-community-search__icon { color: var(--latido-color-accent); }
+.creator-community-search input:focus { border-color: var(--latido-color-accent); }
+.creator-community-search button {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: 12px;
+  display: flex;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--latido-color-text-secondary);
+  background: var(--latido-color-border);
+  border: 0;
+  border-radius: 50%;
+  font-size: 10px;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
 
 .creator-community-topics {
   display: flex;

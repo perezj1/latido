@@ -2747,7 +2747,7 @@ export default function GlobalSearch({
         background:'#fff',
         boxSizing:'border-box',
         color:C.text,
-        boxShadow: focused ? `0 0 0 2px ${C.primaryLight}, 0 4px 14px rgba(15,23,42,0.08)` : '0 2px 12px rgba(0,0,0,0.06)',
+        boxShadow: focused ? '0 4px 14px rgba(15,23,42,0.08)' : '0 2px 12px rgba(0,0,0,0.06)',
         transition:'all .2s',
       }
     : {
@@ -2781,6 +2781,7 @@ export default function GlobalSearch({
             {searchEmoji || <SearchGlyph size={size === 'lg' ? 21 : 17} />}
           </span>
           <input
+            className="latido-search-input"
             ref={inputRef}
             style={inputStyle}
             placeholder={ph}
@@ -3079,6 +3080,7 @@ export default function GlobalSearch({
                 ? <span aria-hidden="true" style={{ fontSize:20, lineHeight:1 }}>{searchEmoji}</span>
                 : <SearchGlyph size={22} />}
               <input
+                className="latido-search-input"
                 ref={overlayInputRef}
                 value={q}
                 onChange={event => {

@@ -135,15 +135,21 @@ export function CreatorCommunityToolbar({
     <div className="creator-community-toolbar segmented-content-transition">
       <div className="creator-community-toolbar__row">
         <div className="creator-community-search">
-          <span aria-hidden="true">🔍</span>
+          <span className="creator-community-search__icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
+          </span>
           <input
+            className="latido-search-input"
             type="search"
             value={search}
             onChange={event => onSearchChange(event.target.value)}
             placeholder="Buscar perfil, tema o ciudad..."
             aria-label="Buscar creadores"
           />
-          {search && <button type="button" onClick={() => onSearchChange('')} aria-label="Limpiar búsqueda">×</button>}
+          {search && <button type="button" onClick={() => onSearchChange('')} aria-label="Limpiar búsqueda">✕</button>}
         </div>
         <FilterButton count={filterCount} open={showFilters} onClick={openFilters} controls="creator-filter-sheet" />
       </div>
@@ -296,8 +302,7 @@ export default function CreatorCommunityView({
         && (!location || content.canton === location))
       .map((content, selectionIndex) => ({ content, creator, selectionIndex })))
     .filter(({ content, creator }) => !query || normalize(`${content.title} ${content.summary} ${creator.name} ${creator.handle}`).includes(query))
-    .sort((a, b) => a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at))
-    .slice(0, 12), [creators, location, platform, query, topic])
+    .sort((a, b) => a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at)), [creators, location, platform, query, topic])
 
   useEffect(() => {
     onResultCountChange?.(view === 'contenidos' ? contents.length : filteredCreators.length)
