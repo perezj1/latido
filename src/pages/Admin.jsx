@@ -6497,7 +6497,7 @@ export default function Admin() {
             minWidth: 0,
             minHeight: 58,
             borderRadius: 17,
-            border: `1.5px solid ${menuNavActive ? `${C.primary}55` : 'transparent'}`,
+            border: `1.5px solid ${menuNavActive ? `color-mix(in srgb, ${C.primary} 33%, transparent)` : 'transparent'}`,
             background: menuNavActive ? C.primaryLight : 'transparent',
             color: menuNavActive ? C.primary : C.text,
             cursor: 'pointer',
