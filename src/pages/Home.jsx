@@ -10,7 +10,7 @@ import { usePushActivation } from '../hooks/usePushActivation'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
-import { C, PP } from '../lib/theme'
+import { C, CAT_COLORS, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
@@ -30,16 +30,6 @@ const fmtPrice = p => {
   s = s.replace(/^([\d.,]+)\s+CHF\b(.*)/, 'CHF $1$2')          // "25 CHF x" → "CHF 25 x"
   s = s.replace(/^(CHF\s*[\d.,]+)\s+([^\s/].*)$/, '$1/$2')     // "CHF 25 total" → "CHF 25/total"
   return s
-}
-
-const CAT_COLORS = {
-  vivienda:{ bg:'#DBEAFE', tc:'#1D4ED8' },
-  cuidados:{ bg:'#FCE7F3', tc:'#9D174D' },
-  documentos:{ bg:'#EDE9FE', tc:'#6D28D9' },
-  venta:{ bg:'#FEF3C7', tc:'#92400E' },
-  servicios:{ bg:'#CCFBF1', tc:'#0F766E' },
-  regalo:{ bg:'#FEE2E2', tc:'#B91C1C' },
-  empleo:{ bg:'#DBEAFE', tc:'#1D4ED8' },
 }
 
 const REVIEWABLE_AD_CATS = new Set(['servicios', 'cuidados'])

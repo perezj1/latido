@@ -1,12 +1,16 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { C, PP } from '../lib/theme'
+import { C, CAT_COLORS, PP, RADIUS, SHADOW, SPACE } from '../lib/theme'
 import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 
 // ── Button ─────────────────────────────────────────────────────
 export function Btn({ children, onClick, variant='primary', size='md', disabled=false, style={}, className='' }) {
-  const sizes = { sm:'10px 16px', md:'12px 20px', lg:'14px 24px' }
+  const sizes = {
+    sm:`${SPACE[2]} ${SPACE[4]}`,
+    md:`${SPACE[3]} ${SPACE[5]}`,
+    lg:`${SPACE[4]} ${SPACE[6]}`,
+  }
   const variants = {
     primary:   { background:C.primary,      color:'#fff',    border:'none' },
     secondary: { background:C.bg,           color:C.primary, border:`1.5px solid ${C.border}` },
@@ -22,10 +26,10 @@ export function Btn({ children, onClick, variant='primary', size='md', disabled=
       disabled={disabled}
       className={className}
       style={{
-        fontFamily: PP, fontWeight:700, fontSize:13, borderRadius:14,
+        fontFamily: PP, fontWeight:700, fontSize:13, borderRadius:RADIUS.md,
         cursor: disabled?'not-allowed':'pointer',
         padding: sizes[size], display:'flex', alignItems:'center',
-        justifyContent:'center', gap:6, width:'100%', letterSpacing:0.2, whiteSpace:'nowrap',
+        justifyContent:'center', gap:SPACE[2], width:'100%', letterSpacing:0.2, whiteSpace:'nowrap',
         opacity: disabled ? 0.55 : 1, transition:'all .15s',
         ...variants[variant], ...style,
       }}
@@ -66,13 +70,13 @@ export function Card({ children, onClick, style={} }) {
     <div
       onClick={onClick}
       style={{
-        background:C.surface, borderRadius:20, padding:16, marginBottom:10,
-        boxShadow:'0 2px 12px rgba(0,0,0,0.05)', border:`1px solid ${C.border}`,
+        background:C.surface, borderRadius:RADIUS.lg, padding:SPACE[4], marginBottom:SPACE[3],
+        boxShadow:SHADOW.sm, border:`1px solid ${C.border}`,
         cursor: onClick?'pointer':'default', transition: onClick?'all .2s':'none',
         ...style,
       }}
-      onMouseEnter={e => { if(onClick){ e.currentTarget.style.boxShadow='0 6px 24px rgba(37,99,235,0.1)'; e.currentTarget.style.transform='translateY(-1px)' }}}
-      onMouseLeave={e => { if(onClick){ e.currentTarget.style.boxShadow='0 2px 12px rgba(0,0,0,0.05)'; e.currentTarget.style.transform='translateY(0)' }}}
+      onMouseEnter={e => { if(onClick){ e.currentTarget.style.boxShadow=SHADOW.md; e.currentTarget.style.transform='translateY(-1px)' }}}
+      onMouseLeave={e => { if(onClick){ e.currentTarget.style.boxShadow=SHADOW.sm; e.currentTarget.style.transform='translateY(0)' }}}
     >
       {children}
     </div>
@@ -573,7 +577,7 @@ export function EmptyState({ emoji='😕', title, sub, action, onAction }) {
 export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
   const { AD_CATS, CAT_COLORS_MAP } = (() => {
     const cats = [...BASE_AD_CATS, {id:'regalo',emoji:'🎁',label:'Regalo'}]
-    const map = {vivienda:{bg:'#DBEAFE',tc:'#1D4ED8'},cuidados:{bg:'#FCE7F3',tc:'#9D174D'},documentos:{bg:'#EDE9FE',tc:'#6D28D9'},venta:{bg:'#FEF3C7',tc:'#92400E'},servicios:{bg:'#CCFBF1',tc:'#0F766E'},empleo:{bg:'#DBEAFE',tc:'#1D4ED8'},regalo:{bg:'#FEE2E2',tc:'#B91C1C'}}
+    const map = { ...CAT_COLORS, empleo:CAT_COLORS.vivienda }
     return { AD_CATS: cats, CAT_COLORS_MAP: map }
   })()
   const normalizedCat = getAdCategoryId(ad)

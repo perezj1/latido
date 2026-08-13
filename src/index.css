@@ -2,6 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+
+  /* Semantic color roles. Component and page styles consume these variables
+     directly or through the Tailwind/theme.js compatibility layers. */
+  --latido-color-surface-canvas: #F0F6FF;
+  --latido-color-surface: #FFFFFF;
+  --latido-color-surface-subtle: #F8FAFF;
+  --latido-color-surface-elevated: #FFFFFF;
+  --latido-color-surface-inverse: #0F172A;
+  --latido-color-border: #E2EAF4;
+  --latido-color-border-subtle: #F1F5F9;
+  --latido-color-border-strong: #CBD5E1;
+  --latido-color-text-primary: #0F172A;
+  --latido-color-text-secondary: #475569;
+  --latido-color-text-muted: #94A3B8;
+  --latido-color-text-inverse: #FFFFFF;
+  --latido-color-accent: #2563EB;
+  --latido-color-accent-hover: #1D4ED8;
+  --latido-color-accent-strong: #1D4ED8;
+  --latido-color-accent-subtle: #EFF6FF;
+  --latido-color-accent-border: #BFDBFE;
+  --latido-color-brand-100: #DBEAFE;
+  --latido-color-brand-500: #3B82F6;
+  --latido-color-brand-800: #1E40AF;
+  --latido-color-brand-900: #1E3A8A;
+  --latido-color-success: #10B981;
+  --latido-color-success-subtle: #ECFDF5;
+  --latido-color-success-border: #6EE7B7;
+  --latido-color-warning: #F59E0B;
+  --latido-color-warning-subtle: #FFFBEB;
+  --latido-color-warning-border: #FCD34D;
+  --latido-color-danger: #EF4444;
+  --latido-color-danger-subtle: #FEF2F2;
+  --latido-color-danger-border: #FECACA;
+  --latido-color-focus: #2563EB;
+
+  /* Category accents are brand identifiers, not status colors. */
+  --latido-color-category-vivienda-surface: #DBEAFE;
+  --latido-color-category-vivienda-text: #1D4ED8;
+  --latido-color-category-cuidados-surface: #FCE7F3;
+  --latido-color-category-cuidados-text: #9D174D;
+  --latido-color-category-documentos-surface: #EDE9FE;
+  --latido-color-category-documentos-text: #6D28D9;
+  --latido-color-category-venta-surface: #FEF3C7;
+  --latido-color-category-venta-text: #92400E;
+  --latido-color-category-servicios-surface: #CCFBF1;
+  --latido-color-category-servicios-text: #0F766E;
+  --latido-color-category-regalo-surface: #FEE2E2;
+  --latido-color-category-regalo-text: #B91C1C;
+
+  /* 4px spacing scale. */
+  --latido-space-0: 0px;
+  --latido-space-1: 4px;
+  --latido-space-2: 8px;
+  --latido-space-3: 12px;
+  --latido-space-4: 16px;
+  --latido-space-5: 20px;
+  --latido-space-6: 24px;
+  --latido-space-8: 32px;
+  --latido-space-10: 40px;
+  --latido-space-12: 48px;
+  --latido-space-16: 64px;
+
+  /* Type roles. Screens can use responsive clamp values for display only. */
+  --latido-font-size-caption: 12px;
+  --latido-font-size-body: 14px;
+  --latido-font-size-subtitle: 16px;
+  --latido-font-size-title: 24px;
+  --latido-font-size-display: clamp(32px, 5vw, 48px);
+  --latido-line-height-title: 1.2;
+  --latido-line-height-body: 1.6;
+  --latido-measure-reading: 70ch;
+
+  --latido-radius-sm: 8px;
+  --latido-radius-md: 12px;
+  --latido-radius-lg: 20px;
+  --latido-radius-full: 999px;
+
+  --latido-shadow-sm: 0 2px 8px rgba(15, 23, 42, .06);
+  --latido-shadow-md: 0 10px 28px rgba(15, 23, 42, .10);
+  --latido-shadow-lg: 0 24px 64px rgba(15, 23, 42, .18);
+
+  --latido-motion-fast: 140ms;
+  --latido-motion-base: 220ms;
+  --latido-motion-slow: 320ms;
+  --latido-ease-standard: cubic-bezier(.2, .8, .2, 1);
+  --latido-ease-emphasized: cubic-bezier(.22, 1, .36, 1);
+}
+
 @layer base {
   html {
     width: 100%;
@@ -19,8 +109,8 @@
     max-width: 100%;
     overflow-x: hidden;
     font-family: 'Poppins', system-ui, sans-serif;
-    background: #F0F6FF;
-    color: #0F172A;
+    background: var(--latido-color-surface-canvas);
+    color: var(--latido-color-text-primary);
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
   }
