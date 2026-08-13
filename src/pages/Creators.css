@@ -134,12 +134,12 @@
 .creator-edit-section-heading span { display: block; margin-top: 3px; color: #94a3b8; font-size: 9.5px; line-height: 1.5; }
 
 .creator-studio-shell {
-  width: min(920px, calc(100% - 32px));
+  width: min(920px, calc(100% - var(--latido-page-gutter) - var(--latido-page-gutter)));
   margin: 0 auto;
 }
 
 .creator-public-shell {
-  width: min(680px, calc(100% - 32px));
+  width: min(680px, calc(100% - var(--latido-page-gutter) - var(--latido-page-gutter)));
   margin: 0 auto;
 }
 
@@ -260,7 +260,7 @@
 .creator-network-link:hover .creator-network-link__icon { transform: translateY(-2px); box-shadow: 0 0 0 2px #93c5fd, 0 8px 16px rgba(37,99,235,.16); }
 
 .creators-shell {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1180px, calc(100% - var(--latido-page-gutter) - var(--latido-page-gutter)));
   margin: 0 auto;
 }
 
@@ -291,6 +291,10 @@
   grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
   gap: 48px;
   align-items: center;
+}
+
+.creators-hero__grid > * {
+  min-width: 0;
 }
 
 .creators-eyebrow {
@@ -2115,9 +2119,9 @@
 }
 
 @media (max-width: 680px) {
-  .creators-shell { width: min(100% - 28px, 1180px); }
+  .creators-shell { width: min(calc(100% - var(--latido-page-gutter) - var(--latido-page-gutter)), 1180px); }
   .creators-hero { padding: 32px 0 22px; }
-  .creators-hero__grid { grid-template-columns: 1fr; }
+  .creators-hero__grid { grid-template-columns: minmax(0, 1fr); }
   .creators-hero__sample { min-height: 250px; }
   .creators-hero__phone { width: 185px; }
   .creators-hero__phone-screen { min-height: 280px; }
@@ -2184,7 +2188,7 @@
   .creator-onboarding-location-grid { grid-template-columns: 1fr !important; }
   .creator-social-field { grid-template-columns: 1fr; gap: 5px; }
   .creator-social-field > span { padding-top: 0; }
-  .creator-studio-shell { width: min(100% - 32px, 600px); }
+  .creator-studio-shell { width: min(calc(100% - var(--latido-page-gutter) - var(--latido-page-gutter)), 600px); }
   .creator-public-profile__body { grid-template-columns: 1fr !important; padding: 0 18px 20px !important; }
   .creator-public-profile__socials { display: grid !important; grid-template-columns: 1fr 1fr; min-width: 0 !important; padding-top: 0 !important; }
   .creator-profile-six-grid { grid-template-columns: repeat(2, minmax(0, 152px)); }
@@ -2193,8 +2197,8 @@
   .creator-social-profile { border-right: 0; border-left: 0; border-radius: 0; box-shadow: none; }
   .creator-social-profile__topbar { border-radius: 0; }
   .creator-social-profile__identity { padding-right: 18px; padding-left: 18px; }
-  .creator-public-shell > .creators-section { margin-right: 16px; margin-left: 16px; }
-  .creator-public-section-inset { margin-right: 16px !important; margin-left: 16px !important; }
+  .creator-public-shell > .creators-section { margin-right: var(--latido-page-gutter); margin-left: var(--latido-page-gutter); }
+  .creator-public-section-inset { margin-right: var(--latido-page-gutter) !important; margin-left: var(--latido-page-gutter) !important; }
   .profile-followed-creator-card { grid-template-columns: minmax(0,1fr); }
   .profile-followed-creator-card__remove { width: 100%; }
 }

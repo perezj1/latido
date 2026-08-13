@@ -174,7 +174,7 @@ export default function HomePersonalizationHeader({
   const showLocalResults = overview.scope === 'local' && Boolean(canton)
 
   return (
-    <div style={{ maxWidth:1200, margin:'0 auto 14px', padding:'0 16px' }}>
+    <div className="latido-page-container" style={{ marginBottom:14 }}>
       <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, margin:'0 0 10px', letterSpacing:-0.25 }}>
         ❤️ Mi Latido
       </h2>

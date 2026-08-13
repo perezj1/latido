@@ -2323,9 +2323,9 @@ export default function Comunidades() {
   const tabCopy = TAB_COPY[tab] || TAB_COPY.negocios
 
   return (
-    <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px 100px' }}>
+    <div className="latido-page-container" style={{ paddingBottom:100 }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:'#fff' }}>
-        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'16px 24px 0' }}>
+        <div className="latido-page-container" style={{ maxWidth:1240, paddingTop:16 }}>
       <div className="section-page-head">
         <h1>{tabCopy.title}</h1>
         <p>{tabCopy.subtitle}</p>
@@ -2337,7 +2337,7 @@ export default function Comunidades() {
       </div>
 
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:16, padding:'10px 0 12px' }}>
-        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px', boxSizing:'border-box' }}>
+        <div className="latido-page-container" style={{ maxWidth:1240 }}>
           <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)', boxSizing:'border-box' }}>
           <SectionTabs />
           {tab !== 'eventos' && tab !== 'creadores' && (

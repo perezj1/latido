@@ -4197,7 +4197,9 @@ export default function Admin() {
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(180deg,#F4F7FB 0%,#EEF4FF 100%)',
-      padding: isDesktop ? '20px 24px 40px' : '14px 12px calc(104px + env(safe-area-inset-bottom))',
+      padding: isDesktop
+        ? '20px var(--latido-page-gutter) 40px'
+        : '14px var(--latido-page-gutter) calc(104px + env(safe-area-inset-bottom))',
     }}>
       <div style={{
         maxWidth: isDesktop ? 1680 : 1180,

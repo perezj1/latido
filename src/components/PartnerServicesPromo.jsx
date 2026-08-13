@@ -279,8 +279,8 @@ export default function PartnerServicesPromo({
   return (
     <section
       aria-labelledby={`partner-promo-${placement}`}
-      className="partner-services-promo"
-      style={{ maxWidth:900, margin:'0 auto', padding:'56px 24px 0' }}
+      className="partner-services-promo latido-page-container"
+      style={{ maxWidth:900, paddingTop:56 }}
     >
       <div className="partner-services-promo-card" style={{
         position:'relative',

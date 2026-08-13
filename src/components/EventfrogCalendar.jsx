@@ -462,7 +462,7 @@ export default function EventfrogCalendar({
   if (layout === 'carousel') {
     return (
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', width:'100%', padding:'10px 16px 0' }}>
+        <div className="latido-page-container" style={{ paddingTop:10 }}>
           <div style={{ paddingBottom:8 }}>
             <FilterRow>
             <PillSelect
@@ -517,7 +517,7 @@ export default function EventfrogCalendar({
         </div>
 
         {filteredEvents.length > 0 ? (
-          <div className="no-scroll" onScroll={handleCarouselScroll} style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+          <div className="no-scroll" onScroll={handleCarouselScroll} style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {visibleEvents.map(event => (
                 <CarouselEventCard key={event.id} event={event} />
@@ -528,7 +528,7 @@ export default function EventfrogCalendar({
             </div>
           </div>
         ) : loading && events.length === 0 ? (
-          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px 16px 16px' }}>
+          <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {[1, 2, 3, 4].map(item => (
                 <div key={item} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226, borderRadius:16 }} />
@@ -536,7 +536,7 @@ export default function EventfrogCalendar({
             </div>
           </div>
         ) : (
-          <div style={{ maxWidth:980, margin:'0 auto', width:'100%', padding:'0 16px' }}>
+          <div className="latido-page-container latido-page-container--content">
             <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'18px 14px', textAlign:'center' }}>
               <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 4px' }}>
                 No encontramos eventos para este filtro.
@@ -549,7 +549,7 @@ export default function EventfrogCalendar({
         )}
 
         {error && (
-          <div style={{ maxWidth:980, margin:'0 auto', width:'100%', padding:'0 16px' }}>
+          <div className="latido-page-container latido-page-container--content">
             <p style={{ fontFamily:PP, fontSize:11, color:'#991B1B', margin:0 }}>
               {error}
             </p>

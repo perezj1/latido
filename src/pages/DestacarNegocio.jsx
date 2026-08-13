@@ -370,7 +370,7 @@ export default function DestacarNegocio() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth:620, margin:'0 auto', padding:'28px 18px 60px' }}>
+      <div className="latido-page-container" style={{ maxWidth:620, paddingTop:28, paddingBottom:60 }}>
         <div className="skeleton" style={{ height:44, width:180, borderRadius:14, marginBottom:18 }} />
         <div className="skeleton" style={{ height:390, borderRadius:24 }} />
       </div>
@@ -379,7 +379,7 @@ export default function DestacarNegocio() {
 
   if (!PAID_BUSINESS_FEATURES_VISIBLE) {
     return (
-      <div style={{ maxWidth:560, margin:'0 auto', padding:'60px 20px', textAlign:'center' }}>
+      <div className="latido-page-container" style={{ maxWidth:560, paddingTop:60, paddingBottom:60, textAlign:'center' }}>
         <div style={{ width:72, height:72, borderRadius:24, background:C.primaryLight, color:C.primary, display:'grid', placeItems:'center', fontSize:34, margin:'0 auto 20px' }}>
           ✨
         </div>
@@ -398,7 +398,7 @@ export default function DestacarNegocio() {
 
   if (!provider) {
     return (
-      <div style={{ maxWidth:560, margin:'0 auto', padding:'60px 20px', textAlign:'center' }}>
+      <div className="latido-page-container" style={{ maxWidth:560, paddingTop:60, paddingBottom:60, textAlign:'center' }}>
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text }}>
           No se pudo cargar el plan
         </h1>
@@ -425,8 +425,8 @@ export default function DestacarNegocio() {
   }
 
   return (
-    <div style={{ maxWidth:620, margin:'0 auto', padding:'24px 0 60px' }}>
-      <div style={{ padding:'0 16px' }}>
+    <div className="latido-page-container" style={{ maxWidth:620, paddingTop:24, paddingBottom:60 }}>
+      <div>
         <button
           onClick={() => navigate('/perfil')}
           style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.mid, background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'9px 13px', cursor:'pointer', marginBottom:14 }}
@@ -735,7 +735,7 @@ function PaymentSuccess({
   const waiting = !confirmed && !confirmationFinished
 
   return (
-    <div style={{ maxWidth:620, margin:'0 auto', padding:'42px 18px 72px' }}>
+    <div className="latido-page-container" style={{ maxWidth:620, paddingTop:42, paddingBottom:72 }}>
       <section style={{ background:'#fff', border:'1px solid #BFDBFE', borderRadius:26, padding:'36px 24px 28px', textAlign:'center', boxShadow:'0 18px 50px rgba(37,99,235,0.13)' }}>
         <div style={{ width:74, height:74, margin:'0 auto 22px', borderRadius:37, background:'linear-gradient(135deg,#2563EB,#14B8A6)', color:'#fff', display:'grid', placeItems:'center', fontFamily:PP, fontWeight:900, fontSize:36, boxShadow:'0 12px 28px rgba(37,99,235,0.24)' }}>
           &#10003;

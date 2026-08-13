@@ -13,7 +13,7 @@ export default function Footer() {
 
   return (
     <footer className="pb-20 md:pb-0" style={{ background:'#0F172A', color:'#64748B' }}>
-      <div style={{ maxWidth:1200, margin:'0 auto', padding:'64px 24px 0' }}>
+      <div className="latido-page-container" style={{ paddingTop:64 }}>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:36, marginBottom:40 }}>
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>

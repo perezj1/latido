@@ -2,7 +2,7 @@ import { PanelPartners } from './Landing'
 
 export default function Colaboraciones() {
   return (
-    <div style={{ background:'#fff', padding:'28px 16px 72px' }}>
+    <div className="latido-page-container" style={{ background:'#fff', paddingTop:28, paddingBottom:72 }}>
       <style>{`
         .latido-partner-pricing-scroll {
           overflow: visible;

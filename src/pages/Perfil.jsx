@@ -2277,7 +2277,7 @@ export default function Perfil() {
   const menu = menuSections.flatMap(s => s.items)
 
   if (!isLoggedIn) return (
-    <div style={{ maxWidth:440, margin:'80px auto', padding:'0 24px', textAlign:'center' }}>
+    <div className="latido-page-container" style={{ maxWidth:440, marginTop:80, marginBottom:80, textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>👤</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Tu perfil</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
@@ -2291,11 +2291,11 @@ export default function Perfil() {
   )
 
   return (
-    <div style={{ maxWidth:600, margin:'0 auto', padding:'0 24px 100px' }}>
+    <div className="latido-page-container latido-page-container--form" style={{ paddingBottom:100 }}>
 
       {/* Cabecera a sangre: se sale del contenedor de 600px para ocupar todo el
           ancho de la pantalla, como una portada. */}
-      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:'linear-gradient(135deg,#1D4ED8,#2563EB)', padding:'34px 24px 26px', marginBottom:24, position:'relative', overflow:'hidden', textAlign:'center' }}>
+      <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:'linear-gradient(135deg,#1D4ED8,#2563EB)', padding:'34px var(--latido-page-gutter) 26px', marginBottom:24, position:'relative', overflow:'hidden', textAlign:'center' }}>
         <div style={{ position:'absolute', top:-30, right:-30, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
         <div style={{ position:'absolute', bottom:-20, left:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
 

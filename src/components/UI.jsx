@@ -432,7 +432,7 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
     <div ref={scrollerRef} className="fade-in latido-fullpage-enter no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', overflowX:'hidden', scrollbarWidth:'none', msOverflowStyle:'none', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}>
       {floatingHeader && (
         <div style={{ position:'sticky', top:0, zIndex:30, height:0, pointerEvents:'none' }}>
-          <div style={{ maxWidth:760, margin:'0 auto', padding:'calc(16px + env(safe-area-inset-top)) 16px 0', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+          <div className="latido-page-container" style={{ maxWidth:760, paddingTop:'calc(16px + env(safe-area-inset-top))', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
             <button
               onClick={onClose}
               aria-label="Volver"

@@ -124,7 +124,7 @@ export default function OAuthOnboarding() {
   }
 
   return (
-    <div style={{ maxWidth:440, margin:'24px auto 48px', padding:'0 24px' }}>
+    <div className="latido-page-container" style={{ maxWidth:440, marginTop:24, marginBottom:48 }}>
       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:22 }}>
         <div style={{ width:54, height:54, flexShrink:0, display:'grid', placeItems:'center', overflow:'hidden', borderRadius:18, background:C.primaryLight, color:C.primary, fontFamily:PP, fontSize:20, fontWeight:800 }}>
           {avatarUrl

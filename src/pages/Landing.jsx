@@ -243,7 +243,7 @@ function LandingCollaboratorsStrip() {
             lineHeight: 1.08,
             letterSpacing: -0.7,
             color: C.primary,
-            margin: '0 24px 20px',
+            margin: '0 var(--latido-page-gutter) 20px',
           }}
         >
           Nuestros colaboradores / usuarios
@@ -259,7 +259,7 @@ function LandingCollaboratorsStrip() {
             overflowX: 'hidden',
             scrollBehavior: 'smooth',
             scrollSnapType: 'x mandatory',
-            padding: '0 max(20px, calc((100vw - 1120px) / 2)) 12px',
+            padding: '0 max(var(--latido-page-gutter), calc((100vw - 1120px) / 2)) 12px',
           }}
         >
           {LANDING_COLLABORATOR_LOGOS.map((partner, index) => (
@@ -387,7 +387,7 @@ function TestimonialCarousel() {
       aria-labelledby="testimonial-title"
       style={{
         position: 'relative',
-        width: 'calc(100% - 32px)',
+        width: 'calc(100% - var(--latido-page-gutter) - var(--latido-page-gutter))',
         maxWidth: 1120,
         margin: '56px auto 0',
         padding: '34px 0 24px',
@@ -1109,7 +1109,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
     background: 'linear-gradient(160deg, #0F1F5C 0%, #1E40AF 45%, #2563EB 100%)',
     position: 'relative',
     overflow: 'hidden',
-    padding: '80px 24px 52px',
+    padding: '80px var(--latido-page-gutter) 52px',
   }}
 >
   <div className="latido-float" style={{ position: 'absolute', top: -100, right: -80, width: 360, height: 360, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(2px)' }} />
@@ -1172,7 +1172,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
 
       {/* ── SEARCH ──────────────────────────────────────────────── */}
       <Reveal style={{ position: 'relative', zIndex: 10 }}>
-        <div style={{ background: '#fff', padding: '48px 24px', borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ background: '#fff', padding:'48px var(--latido-page-gutter)', borderBottom: `1px solid ${C.border}` }}>
           <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
             <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 6 }}>¿Qué necesitas hoy?</p>
             <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, marginBottom: 18 }}>Pisos, empleo, cuidadoras, trámites, grupos y mucho más</p>
@@ -1190,7 +1190,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
       </Reveal>
 
       {/* ── CATEGORY CARDS ──────────────────────────────────────── */}
-      <section style={{ maxWidth: 900, margin: '0 auto', padding: '60px 24px 0' }}>
+      <section className="latido-page-container" style={{ maxWidth:900, paddingTop:60 }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 36 }}>
             <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: C.primary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Todo en un solo lugar</p>
@@ -1219,7 +1219,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         </div>
       </section>
 
-      <section style={{ maxWidth: 900, margin: '0 auto', padding: '52px 24px 0' }} aria-labelledby="landing-creators-title">
+      <section className="latido-page-container" style={{ maxWidth:900, paddingTop:52 }} aria-labelledby="landing-creators-title">
         <Reveal>
           <div className="latido-creators-intro">
             <div className="latido-creators-intro__copy">
@@ -1247,7 +1247,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
       </Reveal>
 
       {/* ── PWA INSTALL BANNER ───────────────────────────────────── */}
-      <section style={{ maxWidth: 760, margin: '72px auto 0', padding: '0 24px' }}>
+      <section className="latido-page-container" style={{ maxWidth:760, marginTop:72 }}>
         {isIOS ? (
           <div style={{ width: '100%', background: `linear-gradient(90deg, ${C.primary}, ${C.primaryDark})`, borderRadius: 16, padding: '16px 20px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -1298,7 +1298,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
       </section>
 
       {/* ── FINAL CTA ────────────────────────────────────────────── */}
-      <section style={{ maxWidth: 720, margin: '72px auto 0', padding: '0 24px 96px' }}>
+      <section className="latido-page-container" style={{ maxWidth:720, marginTop:72, paddingBottom:96 }}>
         <Reveal>
           <div style={{ textAlign: 'center' }}>
             <div className="latido-float" style={{ width: 72, height: 72, background: `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, margin: '0 auto 24px', boxShadow: '0 16px 40px rgba(37,99,235,0.32)' }}>
@@ -1324,7 +1324,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
       </section>
 
       {/* ── REDES SOCIALES ───────────────────────────────────────── */}
-      <section style={{ maxWidth: 720, margin: '0 auto 72px', padding: '0 24px', textAlign: 'center' }}>
+      <section className="latido-page-container" style={{ maxWidth:720, marginBottom:72, textAlign:'center' }}>
         <p style={{ fontFamily: PP, fontSize: 12, color: C.light, marginBottom: 14 }}>Síguenos en redes</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <a

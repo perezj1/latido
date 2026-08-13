@@ -23,7 +23,6 @@ import { C, PP } from './lib/theme'
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
 import { isExploreRoute } from './lib/sections'
-import Header from './components/Header'
 import Seo from './components/Seo'
 import CookieConsent from './components/CookieConsent'
 import OfflineNotice from './components/OfflineNotice'
@@ -124,7 +123,7 @@ class LazyRouteErrorBoundary extends Component {
     const recoverable = isLazyChunkError(error)
 
     return (
-      <div style={{ minHeight:'100vh', display:'grid', placeItems:'center', padding:'24px', background:'#F7FAFF' }}>
+      <div style={{ minHeight:'100vh', display:'grid', placeItems:'center', padding:'24px var(--latido-page-gutter)', background:'#F7FAFF' }}>
         <div style={{ width:'min(420px, 100%)', textAlign:'center', background:'#fff', border:'1px solid #DCE6F2', borderRadius:24, padding:'24px', boxShadow:'0 18px 42px rgba(30,64,175,.12)' }}>
           <img src="/favicon.svg" alt="Latido" style={{ width:54, height:54, marginBottom:16 }} />
           <h1 style={{ fontFamily:PP, fontSize:22, lineHeight:1.18, color:C.text, margin:'0 0 10px' }}>
@@ -372,7 +371,7 @@ function ScrollToTop() {
 
 function AppLoading() {
   return (
-    <div className="latido-loading-screen" style={{ minHeight:'100vh', display:'grid', placeItems:'center', background:`linear-gradient(180deg, ${C.bg} 0%, #fff 100%)`, padding:'24px' }}>
+    <div className="latido-loading-screen" style={{ minHeight:'100vh', display:'grid', placeItems:'center', background:`linear-gradient(180deg, ${C.bg} 0%, #fff 100%)`, padding:'24px var(--latido-page-gutter)' }}>
       <div className="latido-loading-screen__content" style={{ textAlign:'center' }}>
         <div className="latido-loading-screen__mark" style={{ width:68, height:68, margin:'0 auto 16px', borderRadius:20, background:`linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color:'#fff', display:'grid', placeItems:'center', fontSize:30, boxShadow:'0 12px 30px rgba(37,99,235,0.22)' }}>
           🌎
@@ -603,7 +602,7 @@ function AppShell() {
     const openPage = (id) => { setMenuPage(id); setMenuOpen(false) }
     return (
       <>
-        <nav style={{ position:'sticky', top:0, zIndex:100, background:'rgba(255,255,255,0.97)', backdropFilter:'blur(10px)', borderBottom:`1px solid ${C.border}`, padding:'10px 20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <nav style={{ position:'sticky', top:0, zIndex:100, background:'rgba(255,255,255,0.97)', backdropFilter:'blur(10px)', borderBottom:`1px solid ${C.border}`, padding:'10px var(--latido-page-gutter)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           {/* Logo */}
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <img src="/favicon.svg" alt="Latido" style={{ width:30, height:30 }} />
@@ -727,7 +726,6 @@ function AppShell() {
   return (
     <>
       <CookieConsent showBanner={false} />
-      <Header />
       <PushRegistrationSync />
       <UserPresenceSync />
       <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:'#fff' }}>

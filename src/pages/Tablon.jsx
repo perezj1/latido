@@ -2054,9 +2054,9 @@ export default function Tablon() {
   const publishLabel = activeIntentMeta?.publishLabel || 'Publicar anuncio'
 
   return (
-    <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px 100px' }}>
+    <div className="latido-page-container" style={{ paddingBottom:100 }}>
       <div style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', background:'#fff' }}>
-        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'16px 20px 0' }}>
+        <div className="latido-page-container" style={{ maxWidth:1240, paddingTop:16 }}>
       <div className="section-page-head">
         <h1>{pageContext.title}</h1>
         <p>{pageContext.subtitle}</p>
@@ -2066,7 +2066,7 @@ export default function Tablon() {
       </div>
 
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:18, padding:'10px 0 12px' }}>
-        <div style={{ width:'100%', maxWidth:1240, margin:'0 auto', padding:'0 8px', boxSizing:'border-box' }}>
+        <div className="latido-page-container" style={{ maxWidth:1240 }}>
           <div className="tablon-toolbar-card" style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)', boxSizing:'border-box' }}>
       <SectionTabs />
       <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%', minWidth:0 }}>

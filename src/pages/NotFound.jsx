@@ -3,7 +3,7 @@ import { ChevronLeftIcon } from '../components/UI'
 import { C, PP } from '../lib/theme'
 export default function NotFound() {
   return (
-    <div style={{ textAlign:'center', padding:'100px 24px' }}>
+    <div className="latido-page-container latido-page-container--reading" style={{ textAlign:'center', paddingTop:100, paddingBottom:100 }}>
       <div style={{ fontSize:64, marginBottom:16 }}>🌎</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:10 }}>Página no encontrada</h1>
       <p style={{ fontFamily:PP, fontSize:14, color:C.mid, marginBottom:24 }}>Esta sección aún no existe o la URL no es correcta.</p>

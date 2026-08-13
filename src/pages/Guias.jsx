@@ -79,7 +79,7 @@ export default function Guias() {
   }
 
   return (
-    <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 24px 100px' }}>
+    <div className="latido-page-container latido-page-container--content" style={{ paddingTop:32, paddingBottom:100 }}>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:26, color:C.text, marginBottom:6, letterSpacing:0 }}>
         📚 Guías
       </h1>

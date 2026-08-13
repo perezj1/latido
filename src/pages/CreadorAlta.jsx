@@ -396,7 +396,7 @@ export default function CreadorAlta() {
 
   return (
     <div className="creators-page creator-app-form-page">
-      <div style={{ maxWidth:600, margin:'0 auto', padding:'32px 24px 170px' }}>
+      <div className="latido-page-container latido-page-container--form" style={{ paddingTop:32, paddingBottom:170 }}>
         {!isEditing && <ProgressBar step={step} total={STEPS.length} />}
         <h1 style={{ margin:'0 0 4px', color:C.text, fontFamily:PP, fontWeight:800, fontSize:22, letterSpacing:-.3 }}>{isEditing ? 'Editar perfil de creador' : STEPS[step].title}</h1>
         <p style={{ margin:'0 0 18px', color:C.light, fontFamily:PP, fontSize:12, lineHeight:1.6 }}>{isEditing ? 'Actualiza los campos que necesites y guarda los cambios en cualquier momento.' : STEPS[step].sub}</p>

@@ -205,14 +205,14 @@ export default function AlertasClientesPotenciales() {
     navigate(alert.listing_path)
   }
 
-  if (loading) return <div style={{ maxWidth:760, margin:'0 auto', padding:'28px 18px 60px' }}><div className="skeleton" style={{ height:42, width:250, borderRadius:12, marginBottom:16 }} /><div className="skeleton" style={{ height:420, borderRadius:24 }} /></div>
-  if (!status?.provider) return <div style={{ maxWidth:560, margin:'0 auto', padding:'60px 20px', textAlign:'center' }}><p style={{ fontFamily:PP, color:C.mid }}>No se pudo cargar este negocio.</p><Link to="/perfil" style={{ color:C.primary }}>Volver al perfil</Link></div>
+  if (loading) return <div className="latido-page-container" style={{ maxWidth:760, paddingTop:28, paddingBottom:60 }}><div className="skeleton" style={{ height:42, width:250, borderRadius:12, marginBottom:16 }} /><div className="skeleton" style={{ height:420, borderRadius:24 }} /></div>
+  if (!status?.provider) return <div className="latido-page-container" style={{ maxWidth:560, paddingTop:60, paddingBottom:60, textAlign:'center' }}><p style={{ fontFamily:PP, color:C.mid }}>No se pudo cargar este negocio.</p><Link to="/perfil" style={{ color:C.primary }}>Volver al perfil</Link></div>
 
   const state = stateCopy(status.state)
   const canManage = status.subscription?.canManage === true
 
   return (
-    <main style={{ maxWidth:760, margin:'0 auto', padding:'24px 16px 64px' }}>
+    <main className="latido-page-container" style={{ maxWidth:760, paddingTop:24, paddingBottom:64 }}>
       <button onClick={() => navigate('/perfil')} style={backStyle}><ChevronLeftIcon size={16} /> Volver al perfil</button>
       <section style={{ background:'linear-gradient(135deg,#EFF6FF,#fff)', border:`1px solid ${C.primaryMid}`, borderRadius:24, padding:'24px 22px', marginTop:14 }}>
         <p style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:C.primary, letterSpacing:.8, margin:'0 0 8px' }}>ALERTAS DE CLIENTES POTENCIALES</p>
