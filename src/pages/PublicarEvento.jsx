@@ -360,8 +360,8 @@ export default function PublicarEvento() {
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Publicando...' : '🎉 Publicar evento'}
+          <Btn onClick={requestPublish} loading={loading} variant="success" style={{ flex:1 }}>
+            🎉 Publicar evento
           </Btn>
         )}
       </StickyFormActions>

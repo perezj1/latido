@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useUnreadMessages, markConvRead } from '../hooks/useUnreadMessages'
 import { unreadStore } from '../lib/unreadStore'
 import { C, PP } from '../lib/theme'
-import { Avatar, ChevronLeftIcon } from '../components/UI'
+import { Avatar, ChevronLeftIcon, SkeletonCard } from '../components/UI'
 import ReportButton from '../components/ReportButton'
 import { fetchAvatarsByIds, fetchLastSeenByIds } from '../lib/profiles'
 import { subscribeToOnlineUsers } from '../lib/presence'
@@ -1083,7 +1083,7 @@ export default function Mensajes() {
 
             {loading ? (
               <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 68, borderRadius: 12 }} />)}
+                {[1, 2, 3].map(i => <SkeletonCard key={i} variant="compact" lines={1} />)}
               </div>
             ) : conversations.length === 0 ? (
               <div style={{ padding: '40px 16px', textAlign: 'center' }}>
@@ -1125,7 +1125,7 @@ export default function Mensajes() {
                       <span style={{ fontFamily: PP, fontSize: 10, color: isUnread ? C.primary : C.light, fontWeight: isUnread ? 700 : 400, flexShrink: 0 }}>{formatTime(lastMsgAt.get(conv.id) || conv.created_at)}</span>
                     </button>
                     <button onClick={e => deleteConversation(e, conv)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 14px 0 4px', color: '#EF4444', fontSize: 16, flexShrink: 0, opacity: 0.6 }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 14px 0 4px', color: C.danger, fontSize: 16, flexShrink: 0, opacity: 0.75 }}
                       title="Eliminar conversación">
                       🗑
                     </button>

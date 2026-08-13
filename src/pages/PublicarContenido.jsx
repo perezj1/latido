@@ -377,7 +377,7 @@ export default function PublicarContenido() {
                 )
               })}
             </div>
-            {errors.topic && <p style={{ fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'8px 2px 0' }}>{errors.topic}</p>}
+            {errors.topic && <p style={{ fontFamily:PP, fontSize:10.5, color:C.danger, margin:'8px 2px 0' }}>{errors.topic}</p>}
           </div>
 
           <Input
@@ -444,8 +444,8 @@ export default function PublicarContenido() {
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={handlePublish} disabled={saving} variant="success" style={{ flex:1 }}>
-            {saving ? '⏳ Publicando...' : '🎙️ Publicar contenido'}
+          <Btn onClick={handlePublish} loading={saving} variant="success" style={{ flex:1 }}>
+            🎙️ Publicar contenido
           </Btn>
         )}
       </StickyFormActions>

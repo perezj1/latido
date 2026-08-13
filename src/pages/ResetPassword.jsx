@@ -99,8 +99,8 @@ export default function ResetPassword() {
         required
       />
 
-      <Btn onClick={handleSubmit} disabled={loading}>
-        {loading ? '⏳ Guardando...' : 'Guardar nueva contraseña'}
+      <Btn onClick={handleSubmit} loading={loading}>
+        Guardar nueva contraseña
       </Btn>
     </div>
   )

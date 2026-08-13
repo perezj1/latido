@@ -23,7 +23,7 @@ import {
   CreatorProfileHelpfulMetric,
   CreatorContentModal,
 } from './CreatorCards'
-import { EmptyState, Sheet } from './UI'
+import { EmptyState, Sheet, SkeletonCard } from './UI'
 import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE, getFilterPanelControlStyle } from './FilterWorkspace'
 import SavedSearchButton from './SavedSearchButton'
 import { C, PP } from '../lib/theme'
@@ -358,14 +358,26 @@ export default function CreatorCommunityView({
   )
 
   if ((!directoryState.loaded || directoryState.loading) && !creators.length) {
-    return <div className="creator-community-view creators-empty">Cargando Creadores…</div>
+    return (
+      <div className="creator-community-view" aria-busy="true" aria-label="Cargando Creadores">
+        <div className="creator-community-list">
+          {[1,2,3].map(item => <SkeletonCard key={item} variant="list" lines={1} />)}
+        </div>
+      </div>
+    )
   }
 
   if (directoryState.error && !creators.length) {
     return (
-      <div className="creator-community-view creators-empty">
-        <p>No pudimos cargar Creadores. Comprueba tu conexión e inténtalo de nuevo.</p>
-        <button type="button" onClick={() => window.location.reload()}>Reintentar</button>
+      <div className="creator-community-view">
+        <EmptyState
+          variant="card"
+          emoji="⚠️"
+          title="No pudimos cargar Creadores"
+          sub="Comprueba tu conexión e inténtalo de nuevo."
+          action="Reintentar"
+          onAction={() => window.location.reload()}
+        />
       </div>
     )
   }

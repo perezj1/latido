@@ -117,7 +117,7 @@ export default function BottomNav() {
                     <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:'#0F172A', margin:'0 0 2px' }}>{opt.label}</p>
                     <p style={{ fontFamily:PP, fontSize:11, color:'#64748B', margin:0 }}>{opt.sub}</p>
                   </div>
-                  <span style={{ marginLeft:'auto', color:'#94A3B8', fontSize:18 }}>›</span>
+                  <span style={{ marginLeft:'auto', color:C.light, fontSize:18 }}>›</span>
                 </button>
               ))}
             </div>

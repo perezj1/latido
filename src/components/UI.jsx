@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { C, CAT_COLORS, PP, RADIUS, SHADOW, SPACE } from '../lib/theme'
+import { C, CAT_COLORS, PP } from '../lib/theme'
 import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
@@ -14,34 +14,73 @@ export function ChevronLeftIcon({ size=22 }) {
 }
 
 // ── Button ─────────────────────────────────────────────────────
-export function Btn({ children, onClick, variant='primary', size='md', disabled=false, style={}, className='' }) {
-  const sizes = {
-    sm:`${SPACE[2]} ${SPACE[4]}`,
-    md:`${SPACE[3]} ${SPACE[5]}`,
-    lg:`${SPACE[4]} ${SPACE[6]}`,
-  }
-  const variants = {
-    primary:   { background:C.primary,      color:'#fff',    border:'none' },
-    secondary: { background:C.bg,           color:C.primary, border:`1.5px solid ${C.border}` },
-    ghost:     { background:'transparent',  color:C.primary, border:`1.5px solid ${C.primary}` },
-    danger:    { background:C.dangerLight,  color:C.danger,  border:'none' },
-    success:   { background:C.successLight, color:C.success, border:`1.5px solid ${C.successMid}` },
-    white:     { background:'#fff',         color:C.primary, border:'none' },
-    dark:      { background:C.text,         color:'#fff',    border:'none' },
-  }
+export function Button({
+  as:Component='button',
+  children,
+  variant='primary',
+  size='md',
+  block=true,
+  loading=false,
+  success=false,
+  disabled=false,
+  type='button',
+  className='',
+  style={},
+  ...props
+}) {
+  const isNativeButton = Component === 'button'
+  const isDisabled = disabled || loading
+  const classes = [
+    'latido-button',
+    `latido-button--${success ? 'success' : variant}`,
+    `latido-button--${size}`,
+    block && 'latido-button--block',
+    className,
+  ].filter(Boolean).join(' ')
+
+  return (
+    <Component
+      {...props}
+      {...(isNativeButton ? { type, disabled:isDisabled } : {})}
+      className={classes}
+      aria-busy={loading || undefined}
+      aria-disabled={!isNativeButton && isDisabled ? true : undefined}
+      data-loading={loading ? 'true' : undefined}
+      data-success={success ? 'true' : undefined}
+      style={style}
+    >
+      <span className="latido-button__content" aria-hidden={loading || undefined}>{children}</span>
+      {loading && <span className="latido-button__loader" aria-hidden="true" />}
+      {loading && <span className="latido-visually-hidden">Cargando</span>}
+    </Component>
+  )
+}
+
+// Compatibility name used by existing screens while they migrate gradually.
+export function Btn(props) {
+  return <Button {...props} />
+}
+
+export function IconButton({
+  children,
+  label,
+  variant='ghost',
+  size='md',
+  className='',
+  type='button',
+  ...props
+}) {
   return (
     <button
-      onClick={onClick}
-      disabled={disabled}
-      className={className}
-      style={{
-        fontFamily: PP, fontWeight:700, fontSize:13, borderRadius:RADIUS.md,
-        cursor: disabled?'not-allowed':'pointer',
-        padding: sizes[size], display:'flex', alignItems:'center',
-        justifyContent:'center', gap:SPACE[2], width:'100%', letterSpacing:0.2, whiteSpace:'nowrap',
-        opacity: disabled ? 0.55 : 1, transition:'all .15s',
-        ...variants[variant], ...style,
-      }}
+      {...props}
+      type={type}
+      aria-label={label || props['aria-label']}
+      className={[
+        'latido-icon-button',
+        `latido-icon-button--${variant}`,
+        `latido-icon-button--${size}`,
+        className,
+      ].filter(Boolean).join(' ')}
     >
       {children}
     </button>
@@ -74,21 +113,47 @@ export function StickyFormActions({ children }) {
   )
 }
 
-export function Card({ children, onClick, style={} }) {
+export function Card({
+  as:Component='div',
+  children,
+  onClick,
+  onKeyDown,
+  variant='surface',
+  padding='md',
+  interactive=Boolean(onClick),
+  className='',
+  style={},
+  ...props
+}) {
+  const isNaturallyInteractive = Component === 'button' || Component === 'a'
+
+  const handleKeyDown = event => {
+    onKeyDown?.(event)
+    if (!interactive || isNaturallyInteractive || event.defaultPrevented) return
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onClick?.(event)
+    }
+  }
+
   return (
-    <div
+    <Component
+      {...props}
       onClick={onClick}
-      style={{
-        background:C.surface, borderRadius:RADIUS.lg, padding:SPACE[4], marginBottom:SPACE[3],
-        boxShadow:SHADOW.sm, border:`1px solid ${C.border}`,
-        cursor: onClick?'pointer':'default', transition: onClick?'all .2s':'none',
-        ...style,
-      }}
-      onMouseEnter={e => { if(onClick){ e.currentTarget.style.boxShadow=SHADOW.md; e.currentTarget.style.transform='translateY(-1px)' }}}
-      onMouseLeave={e => { if(onClick){ e.currentTarget.style.boxShadow=SHADOW.sm; e.currentTarget.style.transform='translateY(0)' }}}
+      onKeyDown={handleKeyDown}
+      role={interactive && !isNaturallyInteractive ? 'button' : props.role}
+      tabIndex={interactive && !isNaturallyInteractive ? (props.tabIndex ?? 0) : props.tabIndex}
+      className={[
+        'latido-card',
+        `latido-card--${variant}`,
+        `latido-card--padding-${padding}`,
+        interactive && 'latido-card--interactive',
+        className,
+      ].filter(Boolean).join(' ')}
+      style={style}
     >
       {children}
-    </div>
+    </Component>
   )
 }
 
@@ -487,7 +552,7 @@ export function Modal({ show, onClose, title, children, syncHistory=true, zIndex
       <div className="fade-up latido-modal-panel" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'calc(100vh - 32px)', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
         <div style={{ flexShrink:0, position:'relative', zIndex:2, background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'24px 24px 0 0' }}>
           <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:0 }}>{title}</p>
-          <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:C.bg, border:'none', cursor:'pointer', fontSize:14, color:C.mid }}>✕</button>
+          <IconButton size="sm" variant="surface" onClick={onClose} label="Cerrar">✕</IconButton>
         </div>
         <div className="no-scroll" style={{ padding:20, overflowY:'auto', minHeight:0, scrollbarWidth:'none', msOverflowStyle:'none' }}>{children}</div>
       </div>
@@ -563,7 +628,7 @@ export function SegmentedTabs({ tabs, value, onChange }) {
 }
 
 // ── Info banner ────────────────────────────────────────────────
-export function InfoBanner({ emoji, title, text, bg=C.warnLight, border=C.warnMid, color='#92400E' }) {
+export function InfoBanner({ emoji, title, text, bg=C.warnLight, border=C.warnMid, color=C.warn }) {
   return (
     <div style={{ background:bg, border:`1px solid ${border}`, borderRadius:16, padding:'10px 13px', marginBottom:14, display:'flex', gap:10, alignItems:'flex-start' }}>
       <span style={{ fontSize:18, flexShrink:0 }}>{emoji}</span>
@@ -628,13 +693,73 @@ export function SearchBeforePublishNotice({ kind='ad', onSearch }) {
 }
 
 // ── Empty state ────────────────────────────────────────────────
-export function EmptyState({ emoji='😕', title, sub, action, onAction }) {
+export function EmptyState({
+  emoji='😕',
+  title,
+  sub,
+  text,
+  action,
+  onAction,
+  actionHref,
+  actionComponent,
+  actionProps={},
+  variant='page',
+  className='',
+  style={},
+}) {
+  const description = sub || text
+  const ActionComponent = actionComponent || (actionHref ? 'a' : 'button')
+
   return (
-    <div style={{ textAlign:'center', padding:'48px 20px' }}>
-      <div style={{ fontSize:52, marginBottom:14 }}>{emoji}</div>
-      <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:6 }}>{title}</h3>
-      {sub && <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:18 }}>{sub}</p>}
-      {action && <Btn onClick={onAction} style={{ width:'auto', margin:'0 auto', padding:'10px 24px' }}>{action}</Btn>}
+    <section
+      className={['latido-empty-state', `latido-empty-state--${variant}`, className].filter(Boolean).join(' ')}
+      style={style}
+    >
+      {emoji && <span className="latido-empty-state__emoji" aria-hidden="true">{emoji}</span>}
+      {title && <h3 className="latido-empty-state__title">{title}</h3>}
+      {description && <p className="latido-empty-state__description">{description}</p>}
+      {action && (
+        <Button
+          as={ActionComponent}
+          {...actionProps}
+          href={actionHref}
+          onClick={onAction}
+          block={false}
+          className="latido-empty-state__action"
+        >
+          {action}
+        </Button>
+      )}
+    </section>
+  )
+}
+
+export function SkeletonCard({
+  variant='list',
+  lines=2,
+  className='',
+  style={},
+}) {
+  const lineCount = Math.max(1, Math.min(lines, 3))
+
+  return (
+    <div
+      className={['latido-skeleton-card', `latido-skeleton-card--${variant}`, className].filter(Boolean).join(' ')}
+      style={style}
+      aria-hidden="true"
+    >
+      <span className="skeleton latido-skeleton-card__media" />
+      <span className="latido-skeleton-card__body">
+        <span className="skeleton latido-skeleton-card__eyebrow" />
+        <span className="skeleton latido-skeleton-card__title" />
+        {Array.from({ length:lineCount }, (_, index) => (
+          <span key={index} className="skeleton latido-skeleton-card__line" />
+        ))}
+        <span className="latido-skeleton-card__footer">
+          <span className="skeleton" />
+          <span className="skeleton" />
+        </span>
+      </span>
     </div>
   )
 }
@@ -769,7 +894,7 @@ export function ReviewCard({ review, googleReviewsUrl = '' }) {
           </div>
           <div>
             <p style={{ fontFamily:"'Poppins',sans-serif", fontWeight:600, fontSize:12, color:'#0F172A', margin:0 }}>{review.author}</p>
-            <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, color:'#94A3B8', margin:0 }}>📍 Cantón {review.canton} · {review.date}</p>
+            <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, color:C.light, margin:0 }}>📍 Cantón {review.canton} · {review.date}</p>
           </div>
         </div>
         <Stars rating={review.stars} size={12} />
@@ -1200,13 +1325,13 @@ export function ReviewForm({
 
       {/* Star picker */}
       <div style={{ marginBottom:12 }}>
-        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:8 }}>TU VALORACIÓN *</p>
+        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>TU VALORACIÓN *</p>
         <div style={{ display:'flex', gap:4 }}>
           {[1,2,3,4,5].map(n => (
             <button key={n} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} onClick={() => setStars(n)}
               style={{ background:'none', border:'none', cursor:'pointer', fontSize:28, color: n<=(hover||stars)?'#F59E0B':'#D1D5DB', transition:'color .1s', padding:'0 2px' }}>★</button>
           ))}
-          {(hover||stars) > 0 && <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:12, color:'#F59E0B', marginLeft:6, alignSelf:'center', fontWeight:600 }}>
+          {(hover||stars) > 0 && <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:12, color:C.warn, marginLeft:6, alignSelf:'center', fontWeight:600 }}>
             {['','Muy malo','Malo','Regular','Bueno','Excelente'][hover||stars]}
           </span>}
         </div>
@@ -1216,7 +1341,7 @@ export function ReviewForm({
         <div className="grid-2" style={{ gap:8, marginBottom:8 }}>
           {showNameField && (
             <div>
-              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>TU NOMBRE *</p>
+              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:5 }}>TU NOMBRE *</p>
               <input
                 style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', color:'#0F172A', boxSizing:'border-box' }}
                 placeholder="Maria G."
@@ -1227,7 +1352,7 @@ export function ReviewForm({
           )}
           {showCantonField && (
             <div>
-              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>CANTÓN</p>
+              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:5 }}>CANTÓN</p>
               <input
                 style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', color:'#0F172A', boxSizing:'border-box' }}
                 placeholder="ZH"
@@ -1242,15 +1367,15 @@ export function ReviewForm({
 
       {/* Text */}
       <div style={{ marginBottom:12 }}>
-        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:'#94A3B8', letterSpacing:1, marginBottom:5 }}>TU RESEÑA *</p>
+        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:5 }}>TU RESEÑA *</p>
         <textarea style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', resize:'none', minHeight:80, boxSizing:'border-box' }}
           placeholder="Cuéntanos cómo fue tu experiencia con este proveedor..." value={text} onChange={e => setText(e.target.value)} />
-        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:9, color:'#94A3B8', margin:'3px 0 0' }}>{text.length} / mínimo 10 caracteres</p>
+        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:9, color:C.light, margin:'3px 0 0' }}>{text.length} / mínimo 10 caracteres</p>
       </div>
 
       <div style={{ display:'flex', gap:8 }}>
         <button onClick={() => onSubmit({ id:initialReview?.id, stars, text, name, canton, date:'Ahora mismo' })} disabled={!canSubmit}
-          style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:12, background: canSubmit?'#2563EB':'#E2EAF4', color: canSubmit?'#fff':'#94A3B8', border:'none', borderRadius:11, padding:'10px 0', flex:1, cursor: canSubmit?'pointer':'not-allowed', transition:'all .15s' }}>
+          style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:12, background: canSubmit?'#2563EB':'#E2EAF4', color: canSubmit?'#fff':C.light, border:'none', borderRadius:11, padding:'10px 0', flex:1, cursor: canSubmit?'pointer':'not-allowed', transition:'all .15s' }}>
           {finalSubmitLabel}
         </button>
         <button onClick={onCancel}

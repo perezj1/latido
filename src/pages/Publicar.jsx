@@ -1000,8 +1000,8 @@ export default function Publicar() {
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Publicando...' : '✅ Publicar anuncio'}
+          <Btn onClick={requestPublish} loading={loading} variant="success" style={{ flex:1 }}>
+            ✅ Publicar anuncio
           </Btn>
         )}
       </StickyFormActions>

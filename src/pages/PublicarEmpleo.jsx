@@ -678,8 +678,8 @@ export default function PublicarEmpleo() {
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Publicando...' : isSeekingJob ? '🔎 Publicar búsqueda' : '💼 Publicar oferta'}
+          <Btn onClick={requestPublish} loading={loading} variant="success" style={{ flex:1 }}>
+            {isSeekingJob ? '🔎 Publicar búsqueda' : '💼 Publicar oferta'}
           </Btn>
         )}
       </StickyFormActions>

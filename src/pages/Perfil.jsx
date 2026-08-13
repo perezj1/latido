@@ -9,7 +9,7 @@ import { PUSH_STATUS_EVENT, getPushStatus, subscribeToPushNotifications, syncPus
 import { MAX_PUBLICATION_IMAGES, uploadAvatar, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
 import { C, PP } from '../lib/theme'
-import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, Tag } from '../components/UI'
+import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, SkeletonCard, Tag } from '../components/UI'
 import BusinessPartnerContactsEditor from '../components/BusinessPartnerContactsEditor'
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
@@ -2434,7 +2434,7 @@ export default function Perfil() {
         </div>
       )}
 
-      <button onClick={handleSignOut} style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:'#EF4444', background:'#FEF2F2', border:'none', borderRadius:14, padding:'13px 0', width:'100%', cursor:'pointer', marginTop:8 }}>
+      <button onClick={handleSignOut} style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.danger, background:C.dangerLight, border:'none', borderRadius:14, padding:'13px 0', width:'100%', cursor:'pointer', marginTop:8 }}>
         Cerrar sesión
       </button>
 
@@ -2442,7 +2442,7 @@ export default function Perfil() {
       <Sheet show={favOpen} onClose={() => setFavOpen(false)} title="❤️ Favoritos">
         {loadingFavs ? (
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {[1,2].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:14 }} />)}
+            {[1,2].map(i => <SkeletonCard key={i} variant="compact" lines={1} style={{ minHeight:80 }} />)}
           </div>
         ) : favItems.length === 0 ? (
           <div style={{ textAlign:'center', padding:'40px 20px' }}>
@@ -2464,11 +2464,11 @@ export default function Perfil() {
                 <div style={{ width:44, height:44, borderRadius:12, background:'#F1F5F9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>🗑️</div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:'#B91C1C', margin:'0 0 2px' }}>Anuncio no disponible</p>
-                  <p style={{ fontFamily:PP, fontSize:11, color:'#EF4444', margin:0 }}>Este anuncio fue eliminado o ya no está activo</p>
+                  <p style={{ fontFamily:PP, fontSize:11, color:C.danger, margin:0 }}>Este anuncio fue eliminado o ya no está activo</p>
                 </div>
                 <button
                   onClick={() => { toggleFavorite(favType, item.id); setFavItems(prev => prev.filter(x => x.id !== item.id)) }}
-                  style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, padding:'4px', flexShrink:0, color:'#EF4444' }}
+                  style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, padding:'4px', flexShrink:0, color:C.danger }}
                   aria-label="Eliminar de favoritos"
                 >✕</button>
               </div>
@@ -2547,7 +2547,7 @@ export default function Perfil() {
 
       <Sheet show={employmentProfileOpen && hasEmploymentRequest} onClose={() => setEmploymentProfileOpen(false)} title="Perfil profesional" syncHistory={false}>
         {employmentProfileLoading ? (
-          <div className="skeleton" style={{ height:420, borderRadius:18 }} />
+          <SkeletonCard variant="profile" lines={3} style={{ minHeight:420 }} />
         ) : (
           <>
             <EmploymentProfileForm
@@ -2611,7 +2611,7 @@ export default function Perfil() {
 
         {loadingPublications ? (
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {[1,2].map(index => <div key={index} className="skeleton" style={{ height:74, borderRadius:14 }} />)}
+            {[1,2].map(index => <SkeletonCard key={index} variant="compact" lines={1} style={{ minHeight:74 }} />)}
           </div>
         ) : businessPublications.length === 0 ? (
           <EmptyState
@@ -2739,7 +2739,7 @@ export default function Perfil() {
           </div>
 
           {loadingSavedSearches ? (
-            <div className="skeleton" style={{ height:68, borderRadius:14 }} />
+            <SkeletonCard variant="compact" lines={1} />
           ) : savedSearchesError ? (
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:14, padding:'12px 14px' }}>
               <p style={{ fontFamily:PP, fontSize:11, color:'#991B1B', margin:0, lineHeight:1.5 }}>
@@ -3068,8 +3068,8 @@ export default function Perfil() {
           <button onClick={() => setConfigOpen(false)} style={{ flex:1, fontFamily:PP, fontWeight:700, fontSize:12, background:'#fff', color:C.mid, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 0', cursor:'pointer' }}>
             Cancelar
           </button>
-          <Btn onClick={handleSaveConfig} disabled={savingConfig} style={{ flex:1 }}>
-            {savingConfig ? 'Guardando...' : 'Guardar'}
+          <Btn onClick={handleSaveConfig} loading={savingConfig} style={{ flex:1 }}>
+            Guardar
           </Btn>
         </div>
       </Sheet>
@@ -3097,7 +3097,7 @@ export default function Perfil() {
 
         {loadingPublications ? (
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {[1,2,3].map(index => <div key={index} className="skeleton" style={{ height:92, borderRadius:16 }} />)}
+            {[1,2,3].map(index => <SkeletonCard key={index} variant="compact" lines={2} style={{ minHeight:92 }} />)}
           </div>
         ) : filteredPublications.length === 0 ? (
           <EmptyState emoji="🗂️" title="Todavía no tienes publicaciones aquí" sub="Cuando publiques anuncios, empleos, eventos, negocios o grupos, podrás gestionarlos desde este panel." />
@@ -3716,8 +3716,8 @@ export default function Perfil() {
           <button onClick={closeEditor} style={{ flex:1, fontFamily:PP, fontWeight:700, fontSize:12, background:'#F8FAFC', color:'#475569', border:'1.5px solid #CBD5E1', borderRadius:12, padding:'11px 0', cursor:'pointer' }}>
             Cancelar
           </button>
-          <Btn onClick={handleSavePublication} disabled={saving} style={{ flex:1 }}>
-            {saving ? 'Guardando...' : 'Guardar cambios'}
+          <Btn onClick={handleSavePublication} loading={saving} style={{ flex:1 }}>
+            Guardar cambios
           </Btn>
         </div>
       </Modal>

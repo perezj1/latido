@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
+import { SkeletonCard } from '../components/UI'
 import { BUSINESS_PROMOTION_PLAN_DETAILS, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 
 const PENDING_STATUSES = new Set(['reserved', 'checkout_open', 'processing'])
@@ -372,7 +373,7 @@ export default function DestacarNegocio() {
     return (
       <div className="latido-page-container" style={{ maxWidth:620, paddingTop:28, paddingBottom:60 }}>
         <div className="skeleton" style={{ height:44, width:180, borderRadius:14, marginBottom:18 }} />
-        <div className="skeleton" style={{ height:390, borderRadius:24 }} />
+        <SkeletonCard variant="grid" lines={3} style={{ minHeight:390 }} />
       </div>
     )
   }

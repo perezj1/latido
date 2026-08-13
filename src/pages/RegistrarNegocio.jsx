@@ -818,12 +818,8 @@ export default function RegistrarNegocio() {
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading
-              ? '⏳ Registrando...'
-              : hasPaidSelection
-                ? '💳 Publicar y pagar'
-                : '🏪 Registrar negocio'}
+          <Btn onClick={requestPublish} loading={loading} variant="success" style={{ flex:1 }}>
+            {hasPaidSelection ? '💳 Publicar y pagar' : '🏪 Registrar negocio'}
           </Btn>
         )}
       </StickyFormActions>
