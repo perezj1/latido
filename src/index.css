@@ -135,6 +135,23 @@
     max-width: 100%;
     overflow-x: hidden;
   }
+
+  /* A single, high-contrast keyboard focus treatment also restores visibility
+     for legacy controls that still remove their outline through inline styles. */
+  :where(
+    a[href],
+    button,
+    input:not([type='hidden']),
+    select,
+    textarea,
+    summary,
+    [role='button'],
+    [role='link'],
+    [tabindex]:not([tabindex='-1'])
+  ):focus-visible {
+    outline: 3px solid var(--latido-color-focus) !important;
+    outline-offset: 2px;
+  }
 }
 
 .latido-page-container {

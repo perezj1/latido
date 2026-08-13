@@ -437,7 +437,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
   const showReviews = isReviewableAd(ad)
   const intent = getAdIntentTag(ad)
   return (
-    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:136 }}>
+    <Card onClick={onClick} aria-label={`Ver anuncio: ${ad.title}`} variant="outlined" padding="none" style={{ ...LIST_CARD_STYLE, minHeight:136 }}>
       <div style={LIST_THUMB_STYLE}>
         {coverPhoto ? (
           <button
@@ -493,7 +493,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
         </div>
       </div>
       <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ position:'absolute', top:10, right:10, width:34, height:34, fontSize:17 }} />
-    </div>
+    </Card>
   )
 }
 
@@ -749,7 +749,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
   const metaBits = [author, job.city || job.canton, dateStr].filter(Boolean)
   const employmentProfile = isSeekingJob ? employmentProfileFromJob(job) : null
   return (
-    <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()} style={{ ...LIST_CARD_STYLE, minHeight:122 }}>
+    <Card onClick={onClick} aria-label={`Ver empleo: ${job.title || job.company}`} variant="outlined" padding="none" style={{ ...LIST_CARD_STYLE, minHeight:122 }}>
       <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight }}>
         {mediaSrc
           ? <img src={getThumbnailImageUrl(mediaSrc)} onError={event => handleThumbnailImageError(event, mediaSrc)} alt={job.company || job.title} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
@@ -770,7 +770,7 @@ function JobCard({ job, onClick, isFav, onToggleFav, avatarSrc, authorName }) {
         </div>
       </div>
       <FavoriteButton isFav={isFav} onClick={onToggleFav} style={{ position:'absolute', top:10, right:10, width:34, height:34, fontSize:17 }} />
-    </div>
+    </Card>
   )
 }
 

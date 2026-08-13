@@ -130,6 +130,7 @@ export function Card({
   const handleKeyDown = event => {
     onKeyDown?.(event)
     if (!interactive || isNaturallyInteractive || event.defaultPrevented) return
+    if (event.target !== event.currentTarget) return
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       onClick?.(event)
@@ -141,7 +142,7 @@ export function Card({
       {...props}
       onClick={onClick}
       onKeyDown={handleKeyDown}
-      role={interactive && !isNaturallyInteractive ? 'button' : props.role}
+      role={interactive && !isNaturallyInteractive ? (props.role || 'button') : props.role}
       tabIndex={interactive && !isNaturallyInteractive ? (props.tabIndex ?? 0) : props.tabIndex}
       className={[
         'latido-card',
@@ -781,7 +782,7 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
   const location = formatAdLocation(ad)
 
   if (compact) return (
-    <div onClick={onClick} style={{ background:C.surface, borderRadius:13, border:`1px solid ${C.border}`, padding:'10px 12px', display:'flex', gap:10, alignItems:'flex-start', cursor:'pointer', transition:'all .15s' }}>
+    <Card onClick={onClick} aria-label={`Ver anuncio: ${ad.title}`} variant="outlined" padding="none" style={{ background:C.surface, borderRadius:13, border:`1px solid ${C.border}`, padding:'10px 12px', display:'flex', gap:10, alignItems:'flex-start', cursor:'pointer', transition:'all .15s' }}>
       <div style={{ width:36, height:36, background:cc.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>{displayEmoji}</div>
       <div style={{ flex:1, minWidth:0 }}>
         <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, lineHeight:1.3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:3 }}>{ad.title}</p>
@@ -793,11 +794,11 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
         </div>
       </div>
       <span style={{ fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, flexShrink:0 }}>{ad.price}</span>
-    </div>
+    </Card>
   )
 
   return (
-    <div onClick={onClick} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', cursor:'pointer', transition:'all .2s' }}>
+    <Card onClick={onClick} aria-label={`Ver anuncio: ${ad.title}`} variant="outlined" padding="none" style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', cursor:'pointer', transition:'all .2s' }}>
       {ad.img ? (
         <img src={getThumbnailImageUrl(ad.img)} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:160, objectFit:'cover' }} />
       ) : (
@@ -822,7 +823,7 @@ export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
           <span style={{ fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary }}>{ad.price}</span>
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
 

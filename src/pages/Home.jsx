@@ -17,7 +17,7 @@ import HorizontalDragScroller from '../components/HorizontalDragScroller'
 import PartnersSection from '../components/PartnersSection'
 import { C, CAT_COLORS, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
-import { Avatar, EmptyState, Modal, PrivacyTag, RatingPill, SkeletonCard, Tag } from '../components/UI'
+import { Avatar, Card, EmptyState, Modal, PrivacyTag, RatingPill, SkeletonCard, Tag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import HomePersonalizationHeader from '../components/HomePersonalizationHeader'
 import CreatorHomeSection from '../components/CreatorHomeSection'
@@ -247,14 +247,12 @@ function MiLatidoCard({ item, onOpen }) {
   const hasPrice = Boolean(formattedPrice)
 
   return (
-    <div
-      role="link"
-      tabIndex={0}
+    <Card
       onClick={() => onOpen(item)}
-      onKeyDown={event => {
-        if (event.key === 'Enter') onOpen(item)
-      }}
-      style={{ textDecoration:'none', flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, display:'block', cursor:'pointer' }}
+      aria-label={`Ver publicación: ${item.title}`}
+      variant="outlined"
+      padding="none"
+      style={{ textDecoration:'none', flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, display:'block', cursor:'pointer', background:'transparent', border:'none', boxShadow:'none' }}
     >
       <div style={HOME_CAROUSEL_CARD_STYLE}>
         <div style={{ ...HOME_CAROUSEL_MEDIA_STYLE, fontSize:44 }}>
@@ -289,7 +287,7 @@ function MiLatidoCard({ item, onOpen }) {
           </p>
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -308,7 +306,7 @@ function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText
       )}
 
       {loading ? (
-        <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+        <HorizontalDragScroller label={`${title}: cargando contenido`} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
           <div style={{ display:'flex', gap:12, width:'max-content' }}>
             {[1,2,3].map(index => <SkeletonCard key={index} variant="carousel" lines={1} style={{ width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, flexShrink:0 }} />)}
           </div>
@@ -318,7 +316,7 @@ function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText
           <EmptyState variant="compact-card" emoji="" text={emptyText} />
         </div>
       ) : (
-        <HorizontalDragScroller ref={feedRef} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+        <HorizontalDragScroller ref={feedRef} label={title} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
           <div style={{ display:'flex', gap:12, width:'max-content' }}>
             {items.map(item => <MiLatidoCard key={item.id} item={item} onOpen={onOpen} />)}
           </div>
@@ -2001,13 +1999,13 @@ export default function Home() {
 
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
-          <HorizontalDragScroller className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
+          <HorizontalDragScroller label="Negocios destacados: cargando contenido" className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
             {[1,2,3,4].map(i => <SkeletonCard key={i} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT }} />)}
           </HorizontalDragScroller>
         ) : rotatedBusinessHighlights.length === 0 ? (
           <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState variant="compact-card" emoji="🏪" text="Todavía no hay negocios publicados." /></div>
         ) : (
-          <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+          <HorizontalDragScroller label="Negocios destacados" className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {rotatedBusinessHighlights.map(business => {
                 const promotionMeta = getBusinessPromotionMeta(business.effectivePromotionPlan)
@@ -2141,13 +2139,13 @@ export default function Home() {
 
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
-          <HorizontalDragScroller className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
+          <HorizontalDragScroller label="Comunidades: cargando contenido" className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
             {[1,2,3,4].map(i => <SkeletonCard key={i} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT }} />)}
           </HorizontalDragScroller>
         ) : communityHighlights.length === 0 ? (
           <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState variant="compact-card" emoji="👥" text="Todavía no hay grupos publicados." /></div>
         ) : (
-          <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+          <HorizontalDragScroller label="Comunidades" className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {communityHighlights.slice(0, 12).map(group => (
                 <Link
@@ -2206,12 +2204,12 @@ export default function Home() {
               <Link to="/guias" style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary, textDecoration:'none', flexShrink:0 }}>Ver todo →</Link>
             </div>
             <div style={{ maxWidth:1200, margin:'0 auto' }}>
-            <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+            <HorizontalDragScroller label="Guías" className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
               <div style={{ display:'flex', gap:12, width:'max-content' }}>
                 {MOCK_DOCS.map(doc => {
                   const gc = GUIDE_COLORS[doc.cat] || { bg:C.bg, tc:C.primary }
                   return (
-                    <div key={doc.id} onClick={() => setSelectedGuide(doc)} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, cursor:'pointer' }}>
+                    <Card key={doc.id} onClick={() => setSelectedGuide(doc)} aria-label={`Abrir guía: ${doc.title}`} variant="outlined" padding="none" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, cursor:'pointer', background:'transparent', border:'none', boxShadow:'none' }}>
                       <div style={HOME_CAROUSEL_CARD_STYLE}>
                         <div style={HOME_CAROUSEL_MEDIA_STYLE}>
                           {doc.img ? (
@@ -2235,7 +2233,7 @@ export default function Home() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   )
                 })}
               </div>
@@ -2257,7 +2255,7 @@ export default function Home() {
                 <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:'0 0 4px', lineHeight:1.3 }}>{selectedGuide.title}</h2>
                 <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0 }}>⏱ {selectedGuide.time}</p>
               </div>
-              <button onClick={() => setSelectedGuide(null)} style={{ background:C.bg, border:'none', borderRadius:10, width:32, height:32, fontSize:16, cursor:'pointer', flexShrink:0 }}>✕</button>
+              <button type="button" aria-label="Cerrar guía" onClick={() => setSelectedGuide(null)} style={{ background:C.bg, border:'none', borderRadius:10, width:32, height:32, fontSize:16, cursor:'pointer', flexShrink:0 }}>✕</button>
             </div>
             <div style={{ padding:'18px 20px 32px', overflowY:'auto', flex:1 }}>
               {selectedGuide.img && (

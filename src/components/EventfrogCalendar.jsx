@@ -519,7 +519,7 @@ export default function EventfrogCalendar({
         </div>
 
         {filteredEvents.length > 0 ? (
-          <HorizontalDragScroller className="no-scroll" onScroll={handleCarouselScroll} style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+          <HorizontalDragScroller label="Eventos en Suiza" className="no-scroll" onScroll={handleCarouselScroll} style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {visibleEvents.map(event => (
                 <CarouselEventCard key={event.id} event={event} />
@@ -530,7 +530,7 @@ export default function EventfrogCalendar({
             </div>
           </HorizontalDragScroller>
         ) : loading && events.length === 0 ? (
-          <HorizontalDragScroller className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
+          <HorizontalDragScroller label="Eventos en Suiza: cargando contenido" className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {[1, 2, 3, 4].map(item => (
                 <SkeletonCard key={item} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226 }} />

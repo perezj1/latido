@@ -19,7 +19,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { ChevronLeftIcon, EmptyState, FullPageOverlay, ImageLightbox, InfoBanner, Modal, PhotoGallery, ReviewForm, ReviewList, Sheet, SkeletonCard, Stars, Tag } from '../components/UI'
+import { Card, ChevronLeftIcon, EmptyState, FullPageOverlay, ImageLightbox, InfoBanner, Modal, PhotoGallery, ReviewForm, ReviewList, Sheet, SkeletonCard, Stars, Tag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CreatorCommunityView, { CreatorCommunityToolbar } from '../components/CreatorCommunityView'
 import SectionTabs from '../components/SectionTabs'
@@ -696,11 +696,11 @@ function RelatedEventCard({ event, onClick }) {
 function CommunityCard({ group, onClick }) {
   const hasImage = !!group.photo_url
   return (
-    <div
+    <Card
       onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={e => e.key === 'Enter' && onClick()}
+      aria-label={`Ver comunidad: ${group.name}`}
+      variant="outlined"
+      padding="none"
       style={{ ...LIST_CARD_STYLE, minHeight:126 }}
     >
       <div style={{ ...LIST_THUMB_STYLE, background:hasImage ? '#fff' : C.primaryLight }}>
@@ -719,7 +719,7 @@ function CommunityCard({ group, onClick }) {
         {!isWebCommunity(group.contact) && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.3, margin:'0 0 5px', ...CLAMP_1 }}>{group.members} miembros</p>}
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', ...CLAMP_2 }}>{group.desc}</p>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -733,8 +733,11 @@ function BusinessCard({ business, onClick, photosMap, reviewsMap, recommendation
   const [lightboxOpen, setLightboxOpen] = useState(false)
 
   return (
-    <div
+    <Card
       onClick={onClick}
+      aria-label={`Ver negocio: ${business.name}`}
+      variant="outlined"
+      padding="none"
       style={{ ...LIST_CARD_STYLE, display:'grid', gridTemplateColumns:'96px minmax(0,1fr)', alignItems:'start', gap:'10px 12px', minHeight:132, transition:'all .2s' }}
       onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,99,235,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
       onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
@@ -794,7 +797,7 @@ function BusinessCard({ business, onClick, photosMap, reviewsMap, recommendation
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{business.desc}</p>
       </div>
 
-    </div>
+    </Card>
   )
 }
 

@@ -5,6 +5,7 @@ const DRAG_THRESHOLD = 5
 const HorizontalDragScroller = forwardRef(function HorizontalDragScroller({
   children,
   className='',
+  label='Contenido desplazable horizontalmente',
   onScroll,
   style,
   ...props
@@ -55,6 +56,9 @@ const HorizontalDragScroller = forwardRef(function HorizontalDragScroller({
     <div
       {...props}
       ref={assignRef}
+      role="region"
+      aria-label={label}
+      tabIndex={0}
       className={['latido-drag-scroll', className].filter(Boolean).join(' ')}
       style={style}
       onScroll={onScroll}
