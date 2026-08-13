@@ -6,7 +6,7 @@ import { useFavorites } from '../hooks/useFavorites'
 import { fetchPublicProfilesByIds } from '../lib/profiles'
 import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getCategoryIntentMeta, getCategoryIntentViews, getDefaultCategoryIntent, getJobIntentId, getJobIntentMeta, getPublishPathForIntent, normalizeAdCat } from '../lib/constants'
-import { Tag, PrivacyTag, Avatar, Sheet, FullPageOverlay, PhotoGallery, ImageLightbox, Stars, ReviewForm, ReviewList } from '../components/UI'
+import { Avatar, Card, EmptyState, FullPageOverlay, ImageLightbox, PhotoGallery, PrivacyTag, ReviewForm, ReviewList, Sheet, SkeletonCard, Stars, Tag } from '../components/UI'
 import FavoriteButton from '../components/FavoriteButton'
 import DetailActionBar from '../components/DetailActionBar'
 import GlobalSearch from '../components/GlobalSearch'
@@ -2067,7 +2067,7 @@ export default function Tablon() {
 
       <div className="cat-bar sticky-toolbar-shell" style={{ width:'100vw', marginLeft:'calc(50% - 50vw)', marginRight:'calc(50% - 50vw)', marginBottom:18, padding:'10px 0 12px' }}>
         <div className="latido-page-container" style={{ maxWidth:1240 }}>
-          <div className="tablon-toolbar-card" style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:22, padding:12, boxShadow:'0 10px 24px rgba(15,23,42,0.06)', boxSizing:'border-box' }}>
+          <Card className="tablon-toolbar-card" padding="sm" style={{ borderRadius:22 }}>
       <SectionTabs />
       <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%', minWidth:0 }}>
         <div style={{ flex:'1 1 0', minWidth:0 }}>
@@ -2122,7 +2122,7 @@ export default function Tablon() {
           <SavedSearchButton draft={savedSearchDraft} compact />
         </div>
       )}
-          </div>
+          </Card>
         </div>
       </div>
 
@@ -2130,7 +2130,7 @@ export default function Tablon() {
       <div key={`${cat || 'all'}-${activeToolbarIntent}`} className="segmented-content-transition">
       {loading ? (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:isEmpleos?122:136, borderRadius:16 }}/>)}
+          {[1,2,3].map(i => <SkeletonCard key={i} variant="list" lines={isEmpleos ? 2 : 1} style={{ minHeight:isEmpleos ? 122 : 136 }} />)}
         </div>
       ) : isEmpleos ? (
         <>
@@ -2157,12 +2157,14 @@ export default function Tablon() {
                 onExpandSearch={expandJobSearch}
               />
             ) : (
-              <div style={{ textAlign:'center', padding:'60px 20px' }}>
-                <div style={{ fontSize:52, marginBottom:14 }}>📭</div>
-                <h3 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, marginBottom:8 }}>{pageContext.emptyTitle}</h3>
-                <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 16px' }}>{pageContext.emptyText}</p>
-                <Link to={publishHref} style={{ fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:13, padding:'11px 22px', display:'inline-flex', alignItems:'center', gap:6 }}>{publishLabel}</Link>
-              </div>
+              <EmptyState
+                emoji="📭"
+                title={pageContext.emptyTitle}
+                sub={pageContext.emptyText}
+                action={publishLabel}
+                actionComponent={Link}
+                actionProps={{ to:publishHref }}
+              />
             )
           ) : (
             <>

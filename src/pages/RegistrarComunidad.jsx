@@ -390,8 +390,8 @@ export default function RegistrarComunidad() {
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={requestPublish} disabled={loading} variant="success" style={{ flex:1 }}>
-            {loading ? '⏳ Registrando...' : '👥 Registrar grupo'}
+          <Btn onClick={requestPublish} loading={loading} variant="success" style={{ flex:1 }}>
+            👥 Registrar grupo
           </Btn>
         )}
       </StickyFormActions>

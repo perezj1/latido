@@ -138,7 +138,7 @@ export default function Guias() {
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12 }}>
         {filtered.map((doc) => (
-          <Card key={doc.id} onClick={() => openGuide(doc)} style={{ padding:0, overflow:'hidden' }}>
+          <Card key={doc.id} onClick={() => openGuide(doc)} padding="none" style={{ overflow:'hidden' }}>
             <div style={{ position:'relative', height:150, background:C.bg }}>
               {doc.img ? (
                 <img src={doc.img} alt={doc.title} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />

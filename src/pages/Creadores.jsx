@@ -17,7 +17,7 @@ import {
   CreatorContentModal,
 } from '../components/CreatorCards'
 import { FilterButton, FILTER_PANEL_TITLE_STYLE, getFilterPanelControlStyle } from '../components/FilterWorkspace'
-import { Sheet } from '../components/UI'
+import { EmptyState, Sheet, SkeletonCard } from '../components/UI'
 import SavedSearchButton from '../components/SavedSearchButton'
 import './Creators.css'
 
@@ -154,7 +154,18 @@ export default function Creadores() {
   }
 
   if ((!directoryState.loaded || directoryState.loading) && !creators.length) {
-    return <div className="creators-page" style={{ minHeight:'70vh', display:'grid', placeItems:'center', fontFamily:'Poppins, sans-serif', color:'#64748B' }}>Cargando Creadores…</div>
+    return (
+      <div className="creators-page" aria-busy="true" aria-label="Cargando Creadores">
+        <main className="creators-shell" style={{ paddingTop:48, paddingBottom:64 }}>
+          <div className="creators-grid">
+            {[1,2,3].map(item => <SkeletonCard key={item} variant="profile" lines={1} />)}
+          </div>
+          <div className="creator-content-grid" style={{ marginTop:28 }}>
+            {[1,2,3].map(item => <SkeletonCard key={item} variant="grid" lines={1} />)}
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -278,10 +289,13 @@ export default function Creadores() {
           <div className="creators-grid">
             {filteredCreators.map(creator => <CreatorCard key={creator.id} creator={creator} />)}
             {!filteredCreators.length && (
-              <div className="creators-empty">
-                <strong>No encontramos perfiles con esos filtros.</strong>
-                <br />Prueba otro tema, plataforma o ubicación.
-              </div>
+              <EmptyState
+                className="creators-empty"
+                variant="card"
+                emoji="🎙️"
+                title="No encontramos perfiles con esos filtros"
+                sub="Prueba otro tema, plataforma o ubicación."
+              />
             )}
           </div>
         </section>
@@ -308,9 +322,13 @@ export default function Creadores() {
               />
             ))}
             {!featuredContents.length && (
-              <div className="creators-empty">
-                No hay contenido que coincida con estos filtros.
-              </div>
+              <EmptyState
+                className="creators-empty"
+                variant="card"
+                emoji="🎬"
+                title="No hay contenido con estos filtros"
+                sub="Prueba otra combinación para descubrir más contenido."
+              />
             )}
           </div>
         </section>

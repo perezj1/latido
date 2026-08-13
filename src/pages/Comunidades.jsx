@@ -19,7 +19,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Tag, EmptyState, Sheet, FullPageOverlay, InfoBanner, Stars, ReviewForm, ReviewList, PhotoGallery, ImageLightbox, Modal, ChevronLeftIcon } from '../components/UI'
+import { ChevronLeftIcon, EmptyState, FullPageOverlay, ImageLightbox, InfoBanner, Modal, PhotoGallery, ReviewForm, ReviewList, Sheet, SkeletonCard, Stars, Tag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CreatorCommunityView, { CreatorCommunityToolbar } from '../components/CreatorCommunityView'
 import SectionTabs from '../components/SectionTabs'
@@ -2441,7 +2441,7 @@ export default function Comunidades() {
       {tab === 'comunidades' && (
         <>
           {loading ? (
-            <div className="skeleton" style={{ height:200, borderRadius:20 }} />
+            <SkeletonCard variant="grid" lines={2} style={{ minHeight:200 }} />
           ) : filteredComm.length === 0 ? (
             <EmptyState emoji="👥" title={TAB_COPY.comunidades.emptyTitle} sub={TAB_COPY.comunidades.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
           ) : (
@@ -2463,7 +2463,7 @@ export default function Comunidades() {
       {tab === 'negocios' && (
         <>
           {loading ? (
-            <div className="skeleton" style={{ height:260, borderRadius:20 }} />
+            <SkeletonCard variant="grid" lines={2} style={{ minHeight:260 }} />
           ) : filteredNeg.length === 0 ? (
             <EmptyState emoji="🏪" title={TAB_COPY.negocios.emptyTitle} sub={TAB_COPY.negocios.emptyText} action="Ver todo" onAction={() => { clearAllDirectoryFilters(); setSearch('') }} />
           ) : (
@@ -2526,7 +2526,7 @@ export default function Comunidades() {
             <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, letterSpacing:1, marginBottom:12 }}>EVENTOS DE LA COMUNIDAD</p>
             {loading ? (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                {[1,2].map(i => <div key={i} className="skeleton" style={{ height:120, borderRadius:16 }} />)}
+                {[1,2].map(i => <SkeletonCard key={i} variant="list" lines={1} style={{ minHeight:120 }} />)}
               </div>
             ) : filteredEvents.length === 0 ? (
               <div style={{ textAlign:'center', padding:'40px 20px', background:C.bg, borderRadius:20 }}>

@@ -601,14 +601,14 @@ export default function CreadorAlta() {
           {isEditing || step === 0 ? 'Cancelar' : <><ChevronLeftIcon size={16} /> Atrás</>}
         </Btn>
         {isEditing ? (
-          <Btn variant="success" disabled={saving || processingAvatar} onClick={handleSave} style={{ flex:1 }}>
-            {saving ? 'Guardando…' : 'Guardar cambios'}
+          <Btn variant="success" loading={saving} disabled={processingAvatar} onClick={handleSave} style={{ flex:1 }}>
+            Guardar cambios
           </Btn>
         ) : step < STEPS.length - 1 ? (
           <Btn onClick={next} style={{ flex:1 }}>Continuar →</Btn>
         ) : (
-          <Btn variant="success" disabled={saving || !form.accepted} onClick={handleSave} style={{ flex:1 }}>
-            {saving ? 'Guardando…' : existing ? 'Guardar cambios' : 'Publicar perfil'}
+          <Btn variant="success" loading={saving} disabled={!form.accepted} onClick={handleSave} style={{ flex:1 }}>
+            {existing ? 'Guardar cambios' : 'Publicar perfil'}
           </Btn>
         )}
       </StickyFormActions>

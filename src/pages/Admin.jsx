@@ -3,7 +3,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { Btn, Tag } from '../components/UI'
+import { Btn, Card, EmptyState, Tag } from '../components/UI'
 import { REPORT_REASONS } from '../lib/reports'
 import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
@@ -1381,21 +1381,6 @@ function AdminMonthlyChart({ title, items, color, range }) {
   )
 }
 
-function Card({ children, style = {} }) {
-  return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid rgba(226,234,244,0.95)',
-      borderRadius: 18,
-      padding: 18,
-      boxShadow: '0 14px 32px rgba(15,23,42,0.05)',
-      ...style,
-    }}>
-      {children}
-    </div>
-  )
-}
-
 function AdminButton({ children, onClick, variant = 'secondary', disabled = false }) {
   return (
     <Btn
@@ -1527,15 +1512,6 @@ function AdminPagination({ page, pageCount, total, onChange }) {
         <AdminButton disabled={page >= pageCount} onClick={() => onChange(page + 1)}>Siguiente</AdminButton>
       </div>
     </div>
-  )
-}
-
-function EmptyState({ icon, text }) {
-  return (
-    <Card style={{ textAlign: 'center', padding: '48px 24px', background: 'linear-gradient(180deg,#fff,#F8FAFF)' }}>
-      <div style={{ fontSize: 34, marginBottom: 10 }}>{icon}</div>
-      <p style={{ fontFamily: PP, color: C.light, margin: 0, fontSize: 14, lineHeight: 1.5 }}>{text}</p>
-    </Card>
   )
 }
 
@@ -5340,7 +5316,7 @@ export default function Admin() {
             </AdminFilterSelect>
           </div>
           {filteredPendingQueue.length === 0 ? (
-            <EmptyState icon="✅" text="No hay contenido pendiente con este filtro." />
+            <EmptyState variant="card" emoji="✅" text="No hay contenido pendiente con este filtro." />
           ) : pagedModeration.items.map(item => (
             <Card key={item.id}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
@@ -5387,7 +5363,7 @@ export default function Admin() {
             </AdminFilterSelect>
           </div>
           {filteredPendingReports.length === 0 ? (
-            <EmptyState icon="✅" text="No hay reportes pendientes con este filtro." />
+            <EmptyState variant="card" emoji="✅" text="No hay reportes pendientes con este filtro." />
           ) : pagedReports.items.map(report => (
             <Card key={report.id}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
@@ -5505,7 +5481,7 @@ export default function Admin() {
           </div>
 
           {filteredVerificationBusinesses.length === 0 ? (
-            <EmptyState icon="✓" text="No hay negocios en este estado." />
+            <EmptyState variant="card" emoji="✓" text="No hay negocios en este estado." />
           ) : pagedBusinesses.items.map(business => {
             const details = getBusinessVerificationDetails(business)
             const statusMeta = BUSINESS_VERIFICATION_STATUSES[details.status] || BUSINESS_VERIFICATION_STATUSES.unverified
@@ -6108,7 +6084,7 @@ export default function Admin() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {!filteredCreators.length ? (
-                <EmptyState icon="🎬" text="No hay creadores con estos filtros." />
+                <EmptyState variant="card" emoji="🎬" text="No hay creadores con estos filtros." />
               ) : pagedCreators.items.map(creator => renderCreatorCard(creator))}
               <AdminPagination
                 page={pagedCreators.page}
@@ -6176,7 +6152,7 @@ export default function Admin() {
           </AdminFilterBar>
 
           {filteredUsers.length === 0 ? (
-            <EmptyState icon="👤" text="No se encontraron usuarios." />
+            <EmptyState variant="card" emoji="👤" text="No se encontraron usuarios." />
           ) : pagedUsers.items.map(profile => (
             <Card key={profile.id} style={{ padding: '12px 14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
@@ -6255,7 +6231,7 @@ export default function Admin() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredListings.length === 0 ? (
-                <EmptyState icon="📭" text="Sin anuncios con estos filtros." />
+                <EmptyState variant="card" emoji="📭" text="Sin anuncios con estos filtros." />
               ) : pagedListings.items.map(item => (
                 <Card key={item.id} style={{ padding: '12px 14px' }}>
                   {renderContentSummary('listing', item.id)}
@@ -6290,7 +6266,7 @@ export default function Admin() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredJobs.length === 0 ? (
-                <EmptyState icon="📭" text="Sin empleos con estos filtros." />
+                <EmptyState variant="card" emoji="📭" text="Sin empleos con estos filtros." />
               ) : pagedJobs.items.map(item => (
                 <Card key={item.id} style={{ padding: '12px 14px' }}>
                   {renderContentSummary('job', item.id)}

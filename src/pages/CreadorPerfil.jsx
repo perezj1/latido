@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Ellipsis, Heart, Pencil, Star, Trash2 } from 'lucide-react'
-import { ChevronLeftIcon } from '../components/UI'
+import { ChevronLeftIcon, EmptyState } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import {
   CREATOR_FEATURED_CONTENTS,
@@ -330,7 +330,7 @@ export default function CreadorPerfil() {
                     compact
                     onOpen={() => setProfileMenuOpen(false)}
                     metadata={{ creator_name:creator.name, creator_slug:creator.slug, creator_handle:creator.handle }}
-                    style={{ width:'100%', justifyContent:'flex-start', padding:'9px 10px', color:'#DC2626', background:'transparent', border:'none', borderRadius:9, fontSize:10.5 }}
+                    style={{ width:'100%', justifyContent:'flex-start', padding:'9px 10px', color:C.danger, background:'transparent', border:'none', borderRadius:9, fontSize:10.5 }}
                   />
                 </div>
               </div>
@@ -427,7 +427,7 @@ export default function CreadorPerfil() {
               </div>
             </div>
           ) : (
-            <div className="creators-empty">Este perfil todavía no ha añadido contenido.</div>
+            <EmptyState className="creators-empty" variant="card" emoji="🎬" text="Este perfil todavía no ha añadido contenido." />
           )}
         </section>
 

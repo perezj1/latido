@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Check, ChevronDown, ChevronRight, ChevronUp, Trash2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { Btn, ChevronLeftIcon, ImageUploadField, Input } from '../components/UI'
+import { Btn, ChevronLeftIcon, EmptyState, IconButton, ImageUploadField, Input } from '../components/UI'
 import {
   CreatorAppContentCard,
   CreatorAvatar,
@@ -350,7 +350,7 @@ export default function CreadorPanel() {
     const featured = featuredContentIdSet.has(String(content.id))
     return (
       <div className="creator-card-management-actions">
-        {content.active === false && <span style={{ color:'#92400E', fontSize:9, fontWeight:800 }}>En revisión</span>}
+        {content.active === false && <span style={{ color:C.warn, fontSize:9, fontWeight:800 }}>En revisión</span>}
         <button
           type="button"
           className={featured ? 'is-featured' : ''}
@@ -403,7 +403,7 @@ export default function CreadorPanel() {
           </div>
 
           {creator.active === false && (
-            <p style={{ margin:'12px 20px 0', padding:'10px 12px', color:'#92400E', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, fontFamily:PP, fontSize:10.5, lineHeight:1.55 }}>
+            <p style={{ margin:'12px 20px 0', padding:'10px 12px', color:C.warn, background:C.warnLight, border:`1px solid ${C.warnMid}`, borderRadius:12, fontFamily:PP, fontSize:10.5, lineHeight:1.55 }}>
               Tu perfil está en revisión y todavía no es visible públicamente.
             </p>
           )}
@@ -523,7 +523,7 @@ export default function CreadorPanel() {
                 {featuredContents.map(content => renderContentCard(content, featuredContents))}
               </div>
             </div>
-          ) : <div className="creators-empty">Marca un contenido como destacado desde la sección Todos.</div>}
+          ) : <EmptyState className="creators-empty" variant="card" emoji="⭐" text="Marca un contenido como destacado desde la sección Todos." />}
         </section>
 
         <section className="creators-section creator-profile-content-section creator-profile-all-section creator-editor-content-section">
@@ -551,7 +551,7 @@ export default function CreadorPanel() {
             >
               <div className="creator-publish-form__heading">
                 <div><span>EDITAR CONTENIDO</span><h3 id="creator-editor-publication-title">Actualiza el vídeo o su información</h3></div>
-                <button type="button" onClick={() => setFormOpen(false)} disabled={saving} aria-label="Cerrar formulario">×</button>
+                <IconButton size="sm" onClick={() => setFormOpen(false)} disabled={saving} label="Cerrar formulario">×</IconButton>
               </div>
               <div className="creator-publish-form__body">
                 <Input label="ENLACE DEL CONTENIDO" required type="url" error={contentErrors.url} errorKey="url" value={contentForm.url} onChange={event => updateContent('url', event.target.value)} placeholder="https://youtube.com/watch?v=…" />
@@ -585,7 +585,7 @@ export default function CreadorPanel() {
               </div>
               <div className="creator-publish-form__actions">
                 <Btn variant="secondary" disabled={saving} onClick={() => setFormOpen(false)}>Cancelar</Btn>
-                <Btn disabled={saving} onClick={handleContentSave}>{saving ? 'Guardando…' : 'Guardar cambios'}</Btn>
+                <Btn loading={saving} onClick={handleContentSave}>Guardar cambios</Btn>
               </div>
             </section>
           </div>

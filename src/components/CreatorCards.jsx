@@ -195,7 +195,7 @@ function CreatorContentMenu({ content, creator, className='', inline=false }) {
             allowOwnContent
             onOpen={() => setOpen(false)}
             metadata={{ creator_id:creator.id, creator_name:creator.name, content_title:content.title, external_url:content.url }}
-            style={{ width:'100%', justifyContent:'flex-start', padding:'9px 10px', color:'#DC2626', background:'transparent', border:'none', borderRadius:9, fontSize:10.5 }}
+            style={{ width:'100%', justifyContent:'flex-start', padding:'9px 10px', color:C.danger, background:'transparent', border:'none', borderRadius:9, fontSize:10.5 }}
           />
       </div>
     </div>

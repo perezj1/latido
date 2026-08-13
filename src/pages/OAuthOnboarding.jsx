@@ -201,8 +201,8 @@ export default function OAuthOnboarding() {
         />
       </section>
 
-      <Btn onClick={handleSave} disabled={saving}>
-        {saving ? 'Guardando tu perfil…' : 'Guardar y entrar en Latido →'}
+      <Btn onClick={handleSave} loading={saving}>
+        Guardar y entrar en Latido →
       </Btn>
       <button
         type="button"

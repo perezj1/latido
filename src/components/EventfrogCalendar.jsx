@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { C, PP } from '../lib/theme'
 import { HOME_CAROUSEL_CARD_WIDTH } from '../lib/homeCarousel'
+import { SkeletonCard } from './UI'
 import {
   buildEventfrogEmbedUrl,
   EVENTFROG_EMBED_KEY,
@@ -523,7 +524,7 @@ export default function EventfrogCalendar({
                 <CarouselEventCard key={event.id} event={event} />
               ))}
               {loading && [1, 2].map(item => (
-                <div key={`loading-${item}`} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226, borderRadius:16 }} />
+                <SkeletonCard key={`loading-${item}`} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226 }} />
               ))}
             </div>
           </div>
@@ -531,7 +532,7 @@ export default function EventfrogCalendar({
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
               {[1, 2, 3, 4].map(item => (
-                <div key={item} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226, borderRadius:16 }} />
+                <SkeletonCard key={item} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:226 }} />
               ))}
             </div>
           </div>
@@ -660,7 +661,7 @@ export default function EventfrogCalendar({
               {loading && (
                 <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                   {[1, 2].map(item => (
-                    <div key={item} className="skeleton" style={{ height:compact ? 96 : 116, borderRadius:16 }} />
+                    <SkeletonCard key={item} variant={compact ? 'compact' : 'list'} lines={1} style={{ minHeight:compact ? 96 : 116 }} />
                   ))}
                 </div>
               )}
@@ -669,7 +670,7 @@ export default function EventfrogCalendar({
         ) : loading && events.length === 0 ? (
           <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:listMaxHeight, overflow:'hidden' }}>
             {[1, 2, 3].map(item => (
-              <div key={item} className="skeleton" style={{ height:compact ? 96 : 116, borderRadius:16 }} />
+              <SkeletonCard key={item} variant={compact ? 'compact' : 'list'} lines={1} style={{ minHeight:compact ? 96 : 116 }} />
             ))}
           </div>
         ) : (

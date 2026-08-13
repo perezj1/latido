@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { ChevronLeftIcon } from '../components/UI'
+import { ChevronLeftIcon, SkeletonCard } from '../components/UI'
 import { supabase } from '../lib/supabase'
 import { AD_CATS, CANTONS } from '../lib/constants'
 import { C, PP } from '../lib/theme'
@@ -205,7 +205,7 @@ export default function AlertasClientesPotenciales() {
     navigate(alert.listing_path)
   }
 
-  if (loading) return <div className="latido-page-container" style={{ maxWidth:760, paddingTop:28, paddingBottom:60 }}><div className="skeleton" style={{ height:42, width:250, borderRadius:12, marginBottom:16 }} /><div className="skeleton" style={{ height:420, borderRadius:24 }} /></div>
+  if (loading) return <div className="latido-page-container" style={{ maxWidth:760, paddingTop:28, paddingBottom:60 }}><div className="skeleton" style={{ height:42, width:250, borderRadius:12, marginBottom:16 }} /><SkeletonCard variant="grid" lines={3} style={{ minHeight:420 }} /></div>
   if (!status?.provider) return <div className="latido-page-container" style={{ maxWidth:560, paddingTop:60, paddingBottom:60, textAlign:'center' }}><p style={{ fontFamily:PP, color:C.mid }}>No se pudo cargar este negocio.</p><Link to="/perfil" style={{ color:C.primary }}>Volver al perfil</Link></div>
 
   const state = stateCopy(status.state)

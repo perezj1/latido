@@ -774,7 +774,7 @@ export default function Auth() {
         </div>
       )}
 
-      <Btn onClick={handleLogin} disabled={loading}>{loading ? '⏳ Entrando...' : 'Iniciar sesión'}</Btn>
+      <Btn onClick={handleLogin} loading={loading}>Iniciar sesión</Btn>
       {googleAuthVisible && (
         <>
           <AuthDivider />
@@ -804,7 +804,7 @@ export default function Auth() {
 
       <Input label="Tu email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
 
-      <Btn onClick={handleForgot} disabled={loading}>{loading ? '⏳ Enviando...' : 'Enviar enlace'}</Btn>
+      <Btn onClick={handleForgot} loading={loading}>Enviar enlace</Btn>
 
       <p style={{ fontFamily:PP, fontSize:12, color:C.mid, textAlign:'center', marginTop:14 }}>
         <button onClick={() => { setErrors({}); setMode('login') }} style={{ display:'inline-flex', alignItems:'center', gap:4, fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, background:'none', border:'none', cursor:'pointer' }}>
@@ -927,8 +927,8 @@ export default function Auth() {
             Continuar →
           </Btn>
         ) : (
-          <Btn onClick={() => handleRegister()} disabled={loading} style={{ flex:1 }}>
-            {loading ? '⏳ Creando cuenta...' : '🎉 Crear cuenta gratis'}
+          <Btn onClick={() => handleRegister()} loading={loading} style={{ flex:1 }}>
+            🎉 Crear cuenta gratis
           </Btn>
         )}
       </div>

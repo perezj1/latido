@@ -16,7 +16,7 @@ import GlobalSearch from '../components/GlobalSearch'
 import PartnersSection from '../components/PartnersSection'
 import { C, CAT_COLORS, PP } from '../lib/theme'
 import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
-import { Avatar, Tag, PrivacyTag, RatingPill, Modal } from '../components/UI'
+import { Avatar, EmptyState, Modal, PrivacyTag, RatingPill, SkeletonCard, Tag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import HomePersonalizationHeader from '../components/HomePersonalizationHeader'
 import CreatorHomeSection from '../components/CreatorHomeSection'
@@ -212,23 +212,6 @@ function formatTimeAgo(value) {
   })
 }
 
-function EmptyState({ text }) {
-  return (
-    <div
-      style={{
-        background:'#fff',
-        border:`1px solid ${C.border}`,
-        borderRadius:18,
-        padding:'18px 16px',
-      }}
-    >
-      <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>
-        {text}
-      </p>
-    </div>
-  )
-}
-
 // Toda la fila abre su destino; la flecha lateral comunica la navegacion sin
 // repetir acciones como "Revisar", "Activar" o "Elegir" debajo del texto.
 function AttentionRow({ emoji, title, text, onAction, tone='info', showDot=true }) {
@@ -326,12 +309,12 @@ function MiLatidoSubsection({ title, items=[], loading=false, feedRef, emptyText
       {loading ? (
         <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
           <div style={{ display:'flex', gap:12, width:'max-content' }}>
-            {[1,2,3].map(index => <div key={index} className="skeleton" style={{ width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, borderRadius:18, flexShrink:0 }} />)}
+            {[1,2,3].map(index => <SkeletonCard key={index} variant="carousel" lines={1} style={{ width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, flexShrink:0 }} />)}
           </div>
         </div>
       ) : items.length === 0 ? (
         <div style={{ padding:'0 var(--latido-page-gutter) 10px' }}>
-          <EmptyState text={emptyText} />
+          <EmptyState variant="compact-card" emoji="" text={emptyText} />
         </div>
       ) : (
         <div ref={feedRef} className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
@@ -1954,10 +1937,10 @@ export default function Home() {
 
         {loading ? (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:14 }}>
-            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height:160, borderRadius:18 }}/>)}
+            {[1,2,3,4].map(i => <SkeletonCard key={i} variant="list" lines={1} style={{ height:160 }} />)}
           </div>
         ) : recentAds.length === 0 ? (
-          <EmptyState text="Todavía no hay anuncios publicados." />
+          <EmptyState variant="compact-card" emoji="📭" text="Todavía no hay anuncios publicados." />
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:14 }}>
             {recentAds.map(ad => {
@@ -2018,10 +2001,10 @@ export default function Home() {
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
           <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
-            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, borderRadius:18 }}/>)}
+            {[1,2,3,4].map(i => <SkeletonCard key={i} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT }} />)}
           </div>
         ) : rotatedBusinessHighlights.length === 0 ? (
-          <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState text="Todavía no hay negocios publicados." /></div>
+          <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState variant="compact-card" emoji="🏪" text="Todavía no hay negocios publicados." /></div>
         ) : (
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
@@ -2158,10 +2141,10 @@ export default function Home() {
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
         {loading ? (
           <div className="no-scroll" style={{ display:'flex', gap:12, padding:'4px var(--latido-page-gutter) 16px', overflowX:'auto' }}>
-            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT, borderRadius:18 }}/>)}
+            {[1,2,3,4].map(i => <SkeletonCard key={i} variant="carousel" lines={1} style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, height:HOME_CAROUSEL_CARD_HEIGHT }} />)}
           </div>
         ) : communityHighlights.length === 0 ? (
-          <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState text="Todavía no hay grupos publicados." /></div>
+          <div style={{ padding:'0 var(--latido-page-gutter)' }}><EmptyState variant="compact-card" emoji="👥" text="Todavía no hay grupos publicados." /></div>
         ) : (
           <div className="no-scroll" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'4px var(--latido-page-gutter) 16px' }}>
             <div style={{ display:'flex', gap:12, width:'max-content' }}>
