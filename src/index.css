@@ -5009,7 +5009,7 @@ img[data-latido-img-state="loaded"] {
   overflow: hidden;
   border: 1px solid #EDF1F7;
   border-radius: 13px;
-  background: #fff;
+  background: var(--latido-color-surface-canvas);
   font-size: 21px;
 }
 
@@ -5381,7 +5381,7 @@ img[data-latido-img-state="loaded"] {
   overflow: hidden;
   border: 1px solid #E3EAF4;
   border-radius: 14px;
-  background: #F2F6FC;
+  background: var(--latido-color-surface-canvas);
   font-size: 25px;
 }
 
