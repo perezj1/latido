@@ -1743,6 +1743,7 @@ export default function Comunidades() {
 
   const handleCreatorViewChange = nextCreatorView => {
     setCreatorView(nextCreatorView)
+    setCreatorSort('newest')
     const params = new URLSearchParams(searchParams)
     params.set('view', 'creadores')
     params.set('creatorView', nextCreatorView)

@@ -7,6 +7,7 @@ const {
   formatCreatorHandle,
   getAutomaticCreatorThumbnail,
   getCreatorContentsNewestFirst,
+  getContentRecentHelpfulCount,
   getCreatorInteractionState,
   getCreatorMetrics,
   getCreatorOEmbedMetadata,
@@ -137,6 +138,8 @@ assert.deepEqual(
   getCreatorInteractionState({ action:'helpful', targetType:'content', targetId:'content-1', actorId:'user-1', baseCount:12 }),
   { active:false, count:12 },
 )
+assert.equal(getContentRecentHelpfulCount({ recent_helpful_count:7 }), 7)
+assert.equal(getContentRecentHelpfulCount({ recent_helpful_count:-3 }), 0)
 assert.deepEqual(
   getCreatorMetrics(creator).byContent['content-1'],
   { impressions:0, clicks:0, helpful:0, shares:0, clickRate:0 },

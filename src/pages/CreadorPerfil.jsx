@@ -13,8 +13,6 @@ import {
   getCreatorForUser,
   getCreatorMetrics,
   formatCreatorHandle,
-  getCreatorHelpfulCount,
-  getCreatorHelpRank,
   getCreatorContentsNewestFirst,
   getFeaturedCreatorContents,
   getCreatorPlatform,
@@ -28,7 +26,6 @@ import {
   CreatorAppContentCard,
   CreatorCard,
   CreatorFollowButton,
-  CreatorProfileHelpfulButton,
   CreatorTopicPill,
   CreatorContentModal,
 } from '../components/CreatorCards'
@@ -224,8 +221,6 @@ export default function CreadorPerfil() {
   const featuredContents = getFeaturedCreatorContents(creator)
   const featuredContentIds = getCreatorFeaturedContentIds(creator)
   const featuredContentIdSet = new Set(featuredContentIds)
-  const helpfulCount = getCreatorHelpfulCount(creator)
-  const helpRank = getCreatorHelpRank(creator)
   const viewerCreator = getCreatorForUser(user?.id)
   const isOwner = Boolean(user?.id && creator.owner_id === user.id)
   const creatorMetrics = getCreatorMetrics(creator)
@@ -351,34 +346,9 @@ export default function CreadorPerfil() {
               {(creator.topics || []).map(topic => <CreatorTopicPill key={topic} topicId={topic} />)}
             </div>
 
-            {/* Lo que mide de verdad a un creador en Latido: a cuánta gente ha
-                ayudado y qué puesto ocupa por ello. */}
-            <div className="creator-social-profile__impact">
-              <span
-                className="creator-impact-help"
-                title={`${helpfulCount} ${helpfulCount === 1 ? 'persona ayudada' : 'personas ayudadas'}`}
-              >
-                <span aria-hidden="true">❤️</span>
-                <strong>{helpfulCount.toLocaleString('es-CH')}</strong>
-              </span>
-              {helpRank > 0 && (
-                <span className="creator-impact-rank" title="Puesto en Creadores que más ayudan">
-                  <span aria-hidden="true">🏆</span>
-                  <strong>#{helpRank}</strong>
-                </span>
-              )}
-            </div>
-
-            <div className="creator-social-profile__stats" aria-label="Datos del perfil">
-              <span><strong>{publishedContents.length}</strong><small>Contenidos</small></span>
-              <span><strong>{creator.topics?.length || 0}</strong><small>Temas</small></span>
-              <span><strong>{creator.socials?.length || 0}</strong><small>Redes</small></span>
-            </div>
-
             <div className={`creator-social-profile__main-action${isOwner ? ' is-owner' : ''}`}>
               {!isOwner ? <CreatorFollowButton creator={creator} /> : <Link className="creator-owner-add-content" to="/publicar-contenido"><span aria-hidden="true">➕</span> Añadir contenido</Link>}
               {isOwner && <Link className="creator-owner-edit-profile" to="/creadores/mi-perfil"><span aria-hidden="true">✏️</span> Editar mi perfil</Link>}
-              {!isOwner && <CreatorProfileHelpfulButton creator={creator} />}
               <button type="button" className="creator-profile-share" onClick={handleShare}><span aria-hidden="true">📤</span><span>Compartir</span></button>
             </div>
 

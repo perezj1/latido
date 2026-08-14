@@ -72,6 +72,7 @@ const CREATOR_IMPRESSIONS_SESSION_KEY = 'latido_creator_impressions_v1'
 const CREATOR_DIRECTORY_CACHE_KEY = 'latido_creator_directory_cache_v1'
 const CREATOR_UPDATE_EVENT = 'latido:creators-updated'
 const CREATOR_INTERACTIONS_EVENT = 'latido:creator-interactions-updated'
+const RECENT_HELPFUL_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 const TIKTOK_RESOLVE_ENDPOINT = '/api/tiktok-resolve'
 const tiktokResolutionCache = new Map()
 let creatorCache = []
@@ -484,12 +485,19 @@ function normalizeCreatorContentRow(row = {}) {
   }
 }
 
-function mapCreatorRows(profileRows = [], contentRows = [], privateRows = []) {
+function mapCreatorRows(profileRows = [], contentRows = [], privateRows = [], recentHelpfulRows = []) {
   const contentsByCreator = new Map()
   const privateByCreator = new Map((privateRows || []).map(row => [row.creator_id, row]))
+  const recentHelpfulByContent = new Map((recentHelpfulRows || []).map(row => [
+    String(row.content_id),
+    Math.max(0, Number(row.recent_helpful_count) || 0),
+  ]))
   for (const row of contentRows || []) {
     const creatorContents = contentsByCreator.get(row.creator_id) || []
-    creatorContents.push(normalizeCreatorContentRow(row))
+    creatorContents.push(normalizeCreatorContentRow({
+      ...row,
+      recent_helpful_count:recentHelpfulByContent.get(String(row.id)) || 0,
+    }))
     contentsByCreator.set(row.creator_id, creatorContents)
   }
 
@@ -551,6 +559,7 @@ export async function refreshCreatorDirectory(userId = '', { force = false } = {
   creatorRefreshPromise = (async () => {
     const profileRequest = supabase.from('creator_profiles').select('*').order('updated_at', { ascending:false })
     const contentRequest = supabase.from('creator_contents').select('*').order('published_at', { ascending:false })
+    const recentHelpfulRequest = supabase.rpc('get_recent_creator_content_helpful_counts', { p_days:30 })
     const interactionRequest = normalizedUserId
       ? supabase.from('creator_interactions').select('action,target_type,target_id,created_at').eq('actor_id', normalizedUserId)
       : Promise.resolve({ data:[], error:null })
@@ -561,9 +570,10 @@ export async function refreshCreatorDirectory(userId = '', { force = false } = {
       ? supabase.from('creator_private_data').select('creator_id,follower_ranges')
       : Promise.resolve({ data:[], error:null })
 
-    const [profiles, contents, interactions, metrics, privateData] = await Promise.all([
+    const [profiles, contents, recentHelpful, interactions, metrics, privateData] = await Promise.all([
       profileRequest,
       contentRequest,
+      recentHelpfulRequest,
       interactionRequest,
       metricsRequest,
       privateRequest,
@@ -571,7 +581,7 @@ export async function refreshCreatorDirectory(userId = '', { force = false } = {
     const error = profiles.error || contents.error || interactions.error || metrics.error || privateData.error
     if (error) throw error
 
-    creatorCache = mapCreatorRows(profiles.data, contents.data, privateData.data)
+    creatorCache = mapCreatorRows(profiles.data, contents.data, privateData.data, recentHelpful.data)
     creatorInteractionsCache = interactions.data || []
     creatorMetricsCache = Object.fromEntries((metrics.data || []).map(row => [
       [row.creator_id, row.metric, row.content_id].filter(Boolean).join(':'),
@@ -966,6 +976,13 @@ export async function toggleCreatorInteraction({ action, targetType, targetId, a
     return getCreatorInteractionState({ action, targetType, targetId, actorId, baseCount })
   }
 
+  const existingInteraction = readInteractionEntries(action, targetType, targetId)
+    .find(entry => entry.actor === String(actorId))
+  const existingInteractionIsRecent = Boolean(
+    existingInteraction?.at
+    && Date.now() - existingInteraction.at <= RECENT_HELPFUL_WINDOW_MS
+  )
+
   const { data, error } = await supabase.rpc('toggle_creator_interaction', {
     p_action:action,
     p_target_type:targetType,
@@ -975,6 +992,7 @@ export async function toggleCreatorInteraction({ action, targetType, targetId, a
 
   const active = Boolean(data?.active)
   const count = Math.max(0, Number(data?.count) || 0)
+  const recentHelpfulDelta = active ? 1 : existingInteractionIsRecent ? -1 : 0
   creatorInteractionsCache = creatorInteractionsCache.filter(entry => !(
     entry.action === action
     && entry.target_type === targetType
@@ -1000,7 +1018,14 @@ export async function toggleCreatorInteraction({ action, targetType, targetId, a
       return {
         ...creator,
         contents:(creator.contents || []).map(content => content.id === targetId && action === 'helpful'
-          ? { ...content, helpful_count:count }
+          ? {
+              ...content,
+              helpful_count:count,
+              recent_helpful_count:Math.max(
+                0,
+                Number(content.recent_helpful_count || 0) + recentHelpfulDelta,
+              ),
+            }
           : content),
       }
     }
@@ -1131,15 +1156,8 @@ export function detectCreatorFormat(value, platform) {
 // El directorio deja de ser "creador -> sus videos" para poder responder
 // "que necesito saber de Suiza -> quien lo ha explicado bien".
 
-export function getContentHelpfulCount(content) {
-  return Math.max(0, Number(content?.helpful_count) || 0)
-}
-
-export function getCreatorHelpfulCount(creator) {
-  const profile = Math.max(0, Number(creator?.helpful_count) || 0)
-  const contents = getOrderedCreatorContents(creator, { publishedOnly:true })
-    .reduce((total, content) => total + getContentHelpfulCount(content), 0)
-  return profile + contents
+export function getContentRecentHelpfulCount(content) {
+  return Math.max(0, Number(content?.recent_helpful_count) || 0)
 }
 
 // Todo el contenido publicado, con su creador al lado.
@@ -1149,44 +1167,6 @@ export function getAllCreatorContents({ topic = '' } = {}) {
       .filter(content => !topic || content.topic === topic)
       .map(content => ({ content, creator }))
   ))
-}
-
-export function getMostHelpfulContents({ topic = '', limit = 8 } = {}) {
-  return getAllCreatorContents({ topic })
-    .map(entry => ({ ...entry, helpful:getContentHelpfulCount(entry.content) }))
-    .filter(entry => entry.helpful > 0)
-    .sort((first, second) => second.helpful - first.helpful
-      || new Date(second.content.published_at) - new Date(first.content.published_at))
-    .slice(0, limit)
-}
-
-export function getLatestContents({ topic = '', limit = 8 } = {}) {
-  return getAllCreatorContents({ topic })
-    .sort((first, second) => new Date(second.content.published_at) - new Date(first.content.published_at))
-    .slice(0, limit)
-}
-
-export function getTopHelpfulCreators({ topic = '', limit = 5 } = {}) {
-  return getAllCreators()
-    .filter(creator => !topic || (creator.topics || []).includes(topic))
-    .map(creator => ({ creator, helpful:getCreatorHelpfulCount(creator) }))
-    .filter(entry => entry.helpful > 0)
-    .sort((first, second) => second.helpful - first.helpful
-      || String(first.creator.name).localeCompare(String(second.creator.name), 'es'))
-    .slice(0, limit)
-}
-
-// Posicion del creador dentro de un tema, para el "#3 en Trabajo" del perfil.
-// Sin tema devuelve la posicion global; con tema, la de ese tema.
-export function getCreatorHelpRank(creator, { topic = '' } = {}) {
-  if (!creator) return 0
-  const ranking = getTopHelpfulCreators({ topic, limit:Number.MAX_SAFE_INTEGER })
-  const position = ranking.findIndex(entry => entry.creator.id === creator.id)
-  return position < 0 ? 0 : position + 1
-}
-
-export function getCreatorTopicRank(creator, topic) {
-  return topic ? getCreatorHelpRank(creator, { topic }) : 0
 }
 
 // Los seis que encabezan el perfil. El resto sigue publicado y aparece en "Todos".
