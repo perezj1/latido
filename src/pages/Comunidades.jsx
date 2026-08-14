@@ -1175,7 +1175,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           active:recommended,
           loading:recommendationLoading,
           onClick:onToggleRecommend,
-          label:'Me gusta',
+          label:'Lo recomiendo',
           hint:recommendationCount === 1 ? '1 persona lo recomienda' : `${recommendationCount} personas lo recomiendan`,
         }}
         ownershipClaim={!business.user_id ? {
