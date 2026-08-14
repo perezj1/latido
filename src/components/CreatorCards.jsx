@@ -250,27 +250,6 @@ export function CreatorFollowButton({ creator }) {
   )
 }
 
-export function CreatorProfileHelpfulButton({ creator }) {
-  const helpful = useCreatorInteraction({ action:'helpful', targetType:'creator', targetId:creator.id, baseCount:creator.helpful_count })
-  return (
-    <button type="button" className={`creator-profile-helpful${helpful.active ? ' is-active' : ''}`} onClick={helpful.toggle} aria-pressed={helpful.active}>
-      <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
-      <span>Me ayudó</span>
-      {helpful.count > 0 && <strong>{helpful.count}</strong>}
-    </button>
-  )
-}
-
-export function CreatorProfileHelpfulMetric({ creator }) {
-  const helpful = useCreatorInteraction({ action:'helpful', targetType:'creator', targetId:creator.id, baseCount:creator.helpful_count })
-  return (
-    <span className="creator-community-card__helpful-metric">
-      <span aria-hidden="true">{helpful.active ? '❤️' : '🤍'}</span>
-      <span>{helpful.count} Me ayudó</span>
-    </span>
-  )
-}
-
 export function CreatorProfileTabs({ active = 'personal', creator = null, compact = false }) {
   const location = useLocation()
   const creatorTarget = creator?.slug ? `/creadores/${creator.slug}` : '/creadores/alta'
@@ -446,7 +425,6 @@ export function CreatorCard({ creator }) {
         <span className="creator-community-card__media">
           <CreatorAvatar creator={creator} size={84} />
         </span>
-        <CreatorProfileHelpfulMetric creator={creator} />
 
         <span className="creator-community-card__body">
           <span className="creator-community-card__name">
@@ -466,7 +444,6 @@ export function CreatorCard({ creator }) {
       </Link>
 
       <span className="creator-community-card__footer">
-        <CreatorProfileHelpfulButton creator={creator} />
         <CreatorFollowButton creator={creator} />
       </span>
     </article>

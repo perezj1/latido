@@ -8,19 +8,14 @@ import {
   getAllCreators,
   getCreatorDirectoryState,
   getCreatorForUser,
-  getCreatorTopic,
-  getLatestContents,
-  getMostHelpfulContents,
+  getContentRecentHelpfulCount,
   getOrderedCreatorContents,
-  getTopHelpfulCreators,
   subscribeCreatorUpdates,
 } from '../lib/creators'
 import {
   CreatorAppContentCard,
   CreatorAvatar,
   CreatorFollowButton,
-  CreatorProfileHelpfulButton,
-  CreatorProfileHelpfulMetric,
   CreatorContentModal,
 } from './CreatorCards'
 import { EmptyState, Sheet, SkeletonCard } from './UI'
@@ -29,11 +24,12 @@ import SavedSearchButton from './SavedSearchButton'
 import { C, PP } from '../lib/theme'
 import '../pages/Creators.css'
 
-const CREATOR_SORT_OPTIONS = [
+const PROFILE_SORT_OPTIONS = [
   { id:'newest', label:'Más recientes' },
-  { id:'contents', label:'Más contenido' },
   { id:'name', label:'Nombre A–Z' },
 ]
+
+const DISCOVERY_ROW_LIMIT = 8
 
 export const CREATOR_VIEW_TABS = [
   { id:'contenidos', label:'Contenido' },
@@ -65,6 +61,8 @@ export function CreatorCommunityToolbar({
 }) {
   const [showFilters, setShowFilters] = useState(false)
   const [draft, setDraft] = useState({ topic:'', platform:'', location:'' })
+  const sortOptions = view === 'creadores' ? PROFILE_SORT_OPTIONS : []
+  const effectiveSort = sortOptions.some(option => option.id === sort) ? sort : 'newest'
   const filterCount = Number(Boolean(topic)) + Number(Boolean(platform)) + Number(Boolean(location))
   const filterSavedSearchDraft = useMemo(() => {
     const cleanQuery = search.trim().length >= 2 ? search.trim() : ''
@@ -178,9 +176,9 @@ export function CreatorCommunityToolbar({
 
       <FilterResultSummary
         count={resultCount}
-        sortLabel={CREATOR_SORT_OPTIONS.find(option => option.id === sort)?.label || 'Más recientes'}
-        sortOptions={CREATOR_SORT_OPTIONS}
-        sortValue={sort}
+        sortLabel={view === 'creadores' ? sortOptions.find(option => option.id === effectiveSort)?.label || 'Más recientes' : ''}
+        sortOptions={sortOptions}
+        sortValue={effectiveSort}
         onSortChange={onSortChange}
       />
       {savedSearchDraft && (
@@ -245,6 +243,20 @@ function getPlatformLabel(platformId) {
   return CREATOR_PLATFORMS.find(item => item.id === platformId)?.label || platformId
 }
 
+function getAddedAt(entry) {
+  const timestamp = new Date(entry?.content?.created_at || entry?.content?.published_at || 0).getTime()
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
+function compareByAdded(first, second) {
+  return getAddedAt(second) - getAddedAt(first)
+}
+
+function compareByHelpful(first, second) {
+  return getContentRecentHelpfulCount(second.content) - getContentRecentHelpfulCount(first.content)
+    || compareByAdded(first, second)
+}
+
 export default function CreatorCommunityView({
   search='',
   topic='',
@@ -285,11 +297,6 @@ export default function CreatorCommunityView({
       && (!location || creator.canton === location)
   }).sort((first, second) => {
     if (sort === 'name') return first.name.localeCompare(second.name, 'es')
-    if (sort === 'contents') {
-      const firstCount = (first.contents || []).filter(content => content.status === 'published').length
-      const secondCount = (second.contents || []).filter(content => content.status === 'published').length
-      return secondCount - firstCount
-    }
     return new Date(second.created_at) - new Date(first.created_at)
   }), [creators, location, platform, query, sort, topic])
 
@@ -300,9 +307,9 @@ export default function CreatorCommunityView({
         && (!topic || content.topic === topic)
         && (!platform || content.platform === platform)
         && (!location || content.canton === location))
-      .map((content, selectionIndex) => ({ content, creator, selectionIndex })))
+      .map(content => ({ content, creator })))
     .filter(({ content, creator }) => !query || normalize(`${content.title} ${content.summary} ${creator.name} ${creator.handle}`).includes(query))
-    .sort((a, b) => a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at)), [creators, location, platform, query, topic])
+    .sort(compareByAdded), [creators, location, platform, query, topic])
 
   useEffect(() => {
     onResultCountChange?.(view === 'contenidos' ? contents.length : filteredCreators.length)
@@ -313,28 +320,21 @@ export default function CreatorCommunityView({
   // vacio de verdad, el boton no llevaria a ningun sitio.
   const hasFilters = Boolean(search || topic || platform || location)
 
-  // Con el directorio "en limpio" mandan las secciones de descubrimiento: que
-  // esta ayudando, quien ayuda mas y que hay nuevo. En cuanto buscas o filtras,
-  // pasan a estorbar y se muestra solo el resultado de tu busqueda.
-  const browsing = !search && !platform && !location
+  // Las colecciones editoriales aparecen solo al explorar sin filtros. Así la
+  // búsqueda sigue mostrando una única lista clara de resultados.
+  const browsing = !search && !topic && !platform && !location
   const showContents = view === 'contenidos'
   const showCreators = view === 'creadores'
-  const helpfulContents = useMemo(
-    () => browsing ? getMostHelpfulContents({ topic, limit:8 }) : [],
-    [browsing, topic, creators],
-  )
-  const latestContents = useMemo(
-    () => browsing ? getLatestContents({ topic, limit:8 }) : [],
-    [browsing, topic, creators],
-  )
-  const topCreators = useMemo(
-    () => browsing ? getTopHelpfulCreators({ topic, limit:5 }) : [],
-    [browsing, topic, creators],
-  )
-  const activeTopic = topic ? getCreatorTopic(topic) : null
+  const monthlyHelpfulContents = useMemo(() => {
+    if (!browsing) return []
+    return contents
+      .filter(entry => getContentRecentHelpfulCount(entry.content) > 0)
+      .sort(compareByHelpful)
+      .slice(0, DISCOVERY_ROW_LIMIT)
+  }, [browsing, contents])
 
   const contentRow = (id, label, hint, entries) => entries.length > 0 && (
-    <section className="creator-community-section" aria-labelledby={id}>
+    <section key={id} className="creator-community-section" aria-labelledby={id}>
       <div className="creator-community-section__heading">
         <div>
           <p id={id}>{label}</p>
@@ -390,54 +390,20 @@ export default function CreatorCommunityView({
   return (
     <div className="creator-community-view">
       {browsing && showContents && (
-        <>
-          {contentRow(
-            'community-creators-helpful-title',
-            activeTopic ? `🔥 LO QUE MÁS AYUDA EN ${activeTopic.label.toUpperCase()}` : '🔥 CONTENIDO QUE ESTÁ AYUDANDO',
-            'Lo que más gente ha marcado como útil.',
-            helpfulContents,
-          )}
-
-          {contentRow(
-            'community-creators-latest-title',
-            'CONTENIDO RECIENTE',
-            'Lo más reciente que ha publicado la comunidad.',
-            latestContents,
-          )}
-
-        </>
+        contentRow(
+          'community-creators-monthly-helpful-title',
+          '✨ CONTENIDO MÁS ÚTIL ESTE MES',
+          'Contenido con más votos recibidos durante los últimos 30 días.',
+          monthlyHelpfulContents,
+        )
       )}
-
-        {browsing && showCreators && topCreators.length > 0 && (
-          <section className="creator-community-section" aria-labelledby="community-top-creators-title">
-            <div className="creator-community-section__heading">
-              <div>
-                <p id="community-top-creators-title">🏆 CREADORES QUE MÁS AYUDAN</p>
-                <span>{activeTopic ? `Ranking en ${activeTopic.label}.` : 'Según los “me ayudó” de la comunidad.'}</span>
-              </div>
-            </div>
-            <div className="creator-rank-list">
-              {topCreators.map((entry, index) => (
-                <Link key={entry.creator.id} to={`/creadores/${entry.creator.slug}`} className="creator-rank-row">
-                  <span className="creator-rank-row__position">#{index + 1}</span>
-                  <CreatorAvatar creator={entry.creator} size={38} compact />
-                  <span className="creator-rank-row__body">
-                    <strong>{entry.creator.name}</strong>
-                    <span>{entry.creator.tagline}</span>
-                  </span>
-                  <span className="creator-rank-row__score">❤️ {entry.helpful}</span>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
 
       {showContents && (
       <section className="creator-community-section" aria-labelledby="community-creators-content-title">
         <div className="creator-community-section__heading">
           <div>
-            <p id="community-creators-content-title">CONTENIDO PARA DESCUBRIR</p>
-            <span>Vídeos y contenido para descubrir sin salir de Latido.</span>
+            <p id="community-creators-content-title">{hasFilters ? 'RESULTADOS' : 'MÁS CONTENIDO SOBRE SUIZA'}</p>
+            <span>{hasFilters ? 'Contenido que coincide con tu búsqueda.' : 'Todo el contenido, empezando por lo último añadido a Latido.'}</span>
           </div>
           <strong>{contents.length}</strong>
         </div>
@@ -494,7 +460,6 @@ export default function CreatorCommunityView({
                   <span className="creator-community-card__media">
                     <CreatorAvatar creator={creator} size={84} />
                   </span>
-                  <CreatorProfileHelpfulMetric creator={creator} />
 
                   <span className="creator-community-card__body">
                     <span className="creator-community-card__name">
@@ -517,7 +482,6 @@ export default function CreatorCommunityView({
                 </Link>
 
                 <span className="creator-community-card__footer">
-                  <CreatorProfileHelpfulButton creator={creator} />
                   <CreatorFollowButton creator={creator} />
                 </span>
               </article>
