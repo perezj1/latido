@@ -201,7 +201,7 @@ const LIST_THUMB_STYLE = {
   height:108,
   minHeight:108,
   alignSelf:'flex-start',
-  background:'#fff',
+  background:C.bg,
   borderRadius:14,
   overflow:'hidden',
   display:'flex',
@@ -703,7 +703,7 @@ function CommunityCard({ group, onClick }) {
       padding="none"
       style={{ ...LIST_CARD_STYLE, minHeight:126 }}
     >
-      <div style={{ ...LIST_THUMB_STYLE, background:hasImage ? '#fff' : C.primaryLight }}>
+      <div style={{ ...LIST_THUMB_STYLE, background:hasImage ? C.bg : C.primaryLight }}>
         {hasImage ? (
           <img src={getThumbnailImageUrl(group.photo_url)} alt={group.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
         ) : (

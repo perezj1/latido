@@ -153,7 +153,7 @@ const LIST_THUMB_STYLE = {
   height:108,
   minHeight:108,
   alignSelf:'flex-start',
-  background:'#fff',
+  background:C.bg,
   borderRadius:14,
   overflow:'hidden',
   display:'flex',

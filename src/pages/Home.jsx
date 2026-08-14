@@ -75,7 +75,7 @@ const HOME_CAROUSEL_MEDIA_STYLE = {
   alignItems:'center',
   justifyContent:'center',
   overflow:'hidden',
-  background:'#fff',
+  background:C.bg,
   borderBottom:`1px solid ${C.borderLight}`,
 }
 const HOME_CAROUSEL_BODY_STYLE = {
