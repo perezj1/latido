@@ -471,7 +471,7 @@ export default function CommunityPulse() {
           to="/tablon"
           style={{
             fontFamily: PP,
-            fontWeight: 700,
+            fontWeight: 600,
             fontSize: 12.5,
             color: C.primary,
             textDecoration: 'none',
@@ -479,7 +479,7 @@ export default function CommunityPulse() {
           }}
           aria-label="Ver todas las publicaciones"
         >
-          Ver todo
+          Ver todo →
         </Link>
       </div>
     </section>
