@@ -6,6 +6,7 @@ import SynaPartnerPromo from './SynaPartnerPromo'
 import Virtus360PartnerPromo from './Virtus360PartnerPromo'
 import GildaPartnerPromo from './GildaPartnerPromo'
 import DynamicBusinessPartnerCard from './DynamicBusinessPartnerCard'
+import HorizontalDragScroller from './HorizontalDragScroller'
 import { fetchActiveBusinessPartners } from '../lib/businessPartners'
 import { BUSINESS_ROTATION_INTERVAL_MS } from '../lib/businessPromotion'
 import { rotateItems } from '../lib/rotation'
@@ -63,16 +64,6 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
   ], rotationOffset), [businessPartners, rotationOffset])
   const totalPartners = partnerCards.length
   const hasSinglePartner = totalPartners === 1
-
-  const scrollPartners = direction => {
-    const scroller = scrollRef.current
-    if (!scroller) return
-
-    scroller.scrollBy({
-      left: direction * Math.max(scroller.clientWidth * 0.82, 320),
-      behavior: 'smooth',
-    })
-  }
 
   const scrollToPartner = index => {
     const scroller = scrollRef.current
@@ -163,10 +154,10 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
         </div>
       </div>
 
-      <div
+      <HorizontalDragScroller
         ref={scrollRef}
         className={`public-partners-scroll no-scroll${hasSinglePartner ? ' public-partners-scroll--single' : ''}`}
-        aria-label="Colaboradores de Latido"
+        label="Colaboradores de Latido"
       >
         <div className="public-partners-track">
           {partnerCards.map(card => (
@@ -180,7 +171,7 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
             ) : card.partner.render(`${placement}_${card.partner.id}`)
           ))}
         </div>
-      </div>
+      </HorizontalDragScroller>
 
       {!hasSinglePartner && (
         <div className="public-partners-dots" aria-label="Navegación de colaboradores">
@@ -197,26 +188,6 @@ export default function PublicPartnersSection({ placement = 'public_landing' }) 
         </div>
       )}
 
-      {!hasSinglePartner && (
-        <>
-          <button
-            type="button"
-            className="public-partners-arrow public-partners-arrow--prev"
-            onClick={() => scrollPartners(-1)}
-            aria-label="Ver colaboradores anteriores"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            className="public-partners-arrow public-partners-arrow--next"
-            onClick={() => scrollPartners(1)}
-            aria-label="Ver más colaboradores"
-          >
-            ›
-          </button>
-        </>
-      )}
     </section>
   )
 }
