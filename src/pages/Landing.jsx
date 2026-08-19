@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
+import CommunityPulse from '../components/CommunityPulse'
 import PublicPartnersSection from '../components/PublicPartnersSection'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
@@ -99,13 +100,6 @@ const AD_CATS_PREVIEW = [
   { emoji: '🏪', label: 'Negocios',  color: '#CCFBF1', tc: '#0F766E', desc: 'Directorio de negocios', to: '/comunidades' },
   { emoji: '🎉', label: 'Eventos',   color: '#FCE7F3', tc: '#9D174D', desc: 'Lo que pasa en Suiza',           to: '/comunidades?view=eventos' },
   { emoji: '✨', label: 'Y más...',  color: '#F1F5F9', tc: '#475569', desc: 'Servicios, guías y mucho más',    to: '/' },
-]
-
-const APP_PEEK_FEED = [
-  { tag: '🏠 Vivienda',  who: 'María · Zürich',    text: 'Busco piso de 2 habitaciones en Oerlikon para julio. Hasta 2.800 CHF.', time: 'hace 3 min',  color: '#DBEAFE', tc: '#1D4ED8' },
-  { tag: '💼 Empleo',    who: 'Tech Startup · GVA', text: 'Buscamos developer full-stack hispanohablante. Remoto o híbrido.',        time: 'hace 12 min', color: '#D1FAE5', tc: '#065F46' },
-  { tag: '🎉 Evento',    who: 'Salsa Club Bern',    text: 'Noche latina este viernes 21h. Entrada libre para la comunidad.',        time: 'hace 1 h',    color: '#FCE7F3', tc: '#9D174D' },
-  { tag: '📚 Guía',      who: 'Comunidad Latido',   text: 'Cómo pedir tu permiso C después de 10 años: paso a paso actualizado.',    time: 'hoy',         color: '#EDE9FE', tc: '#6D28D9' },
 ]
 
 const FAQ = [
@@ -948,6 +942,20 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         .latido-testimonial-dot:focus-visible { outline: 3px solid rgba(37,99,235,0.25); outline-offset: 3px; }
         .latido-hero-bg { background-size: 180% 180%; animation: latido-gradient 22s ease infinite; }
         .latido-card-hover { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+        .latido-card-hover:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(37,99,235,0.14); border-color: rgba(37,99,235,0.28); }
+        .latido-pulse-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #16A34A;
+          box-shadow: 0 0 0 0 rgba(22,163,74,0.55);
+          animation: latido-pulse-ring 2s ease-out infinite;
+          flex-shrink: 0;
+        }
+        @keyframes latido-pulse-ring {
+          70%  { box-shadow: 0 0 0 7px rgba(22,163,74,0); }
+          100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+        }
         .latido-partner-pricing-scroll {
           overflow: visible;
         }
@@ -978,17 +986,6 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
           border: 1px solid #D7E6FB;
           border-radius: 28px;
           box-shadow: 0 18px 44px rgba(30,64,175,.08);
-        }
-        .latido-creators-intro::after {
-          position: absolute;
-          z-index: -1;
-          top: -90px;
-          right: -60px;
-          width: 240px;
-          height: 240px;
-          content: '';
-          background: rgba(37,99,235,.07);
-          border-radius: 50%;
         }
         .latido-creators-intro__eyebrow {
           display: inline-flex;
@@ -1093,7 +1090,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         }
         @media (prefers-reduced-motion: reduce) {
           .latido-enter-1, .latido-enter-2, .latido-enter-3, .latido-enter-4, .latido-enter-5,
-          .latido-float, .latido-float-slow, .latido-hero-bg { animation: none !important; }
+          .latido-float, .latido-float-slow, .latido-hero-bg, .latido-pulse-dot { animation: none !important; }
           .latido-cta-primary, .latido-cta-ghost, .latido-card-hover, .latido-collaborator-card, .latido-collaborator-dot, .latido-testimonial-card, .latido-testimonial-dot { transition: none !important; }
         }
       `}</style>
@@ -1187,6 +1184,12 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             />
           </div>
         </div>
+      </Reveal>
+
+      {/* ── PULSO DE LA COMUNIDAD ───────────────────────────────── */}
+      {/* Se oculta solo si no hay publicaciones públicas recientes. */}
+      <Reveal>
+        <CommunityPulse />
       </Reveal>
 
       {/* ── CATEGORY CARDS ──────────────────────────────────────── */}
