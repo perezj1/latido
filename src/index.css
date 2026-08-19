@@ -5089,6 +5089,107 @@ img[data-latido-img-state="loaded"] {
   scroll-snap-align: start;
 }
 
+.latido-recently-viewed {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin: 0 -20px;
+  padding: 2px 20px 6px;
+  scroll-padding-inline: 20px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.latido-recently-viewed::-webkit-scrollbar {
+  display: none;
+}
+
+.latido-recently-viewed__card {
+  flex: 0 0 clamp(232px, 68vw, 278px);
+  min-width: 0;
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid #DCE4F0;
+  border-radius: 16px;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(15, 23, 42, .05);
+  scroll-snap-align: start;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.latido-recently-viewed__card:hover {
+  border-color: #BFD3FF;
+  box-shadow: 0 8px 20px rgba(40, 100, 240, .09);
+}
+
+.latido-recently-viewed__card:active {
+  transform: scale(.98);
+}
+
+.latido-recently-viewed__media {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #E3EAF4;
+  border-radius: 14px;
+  background: #F3F7FD;
+  font-size: 25px;
+}
+
+.latido-recently-viewed__media img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.latido-recently-viewed__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.latido-recently-viewed__type {
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--recent-type-bg);
+  color: var(--recent-type-color);
+  font: 750 8.5px/1.2 'Poppins', sans-serif;
+}
+
+.latido-recently-viewed__body strong,
+.latido-recently-viewed__body small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.latido-recently-viewed__body strong {
+  color: #101B34;
+  font: 750 12px/1.35 'Poppins', sans-serif;
+}
+
+.latido-recently-viewed__body small {
+  color: #71829B;
+  font: 450 9.5px/1.4 'Poppins', sans-serif;
+}
+
+.latido-recently-viewed__chevron {
+  color: #7B8CA6;
+  font: 700 22px/1 'Poppins', sans-serif;
+}
+
 .latido-search-history {
   display: flex;
   flex-direction: column;
@@ -5669,6 +5770,12 @@ img[data-latido-img-state="loaded"] {
 
   .latido-search-section {
     padding-inline: 16px;
+  }
+
+  .latido-recently-viewed {
+    margin-inline: -16px;
+    padding-inline: 16px;
+    scroll-padding-inline: 16px;
   }
 
   .latido-search-result {

@@ -31,6 +31,7 @@ import {
 } from '../components/CreatorCards'
 import { C, PP } from '../lib/theme'
 import ReportButton from '../components/ReportButton'
+import { rememberRecentlyViewed } from '../lib/recentlyViewed'
 import './Creators.css'
 
 const creatorMetricFormatter = new Intl.NumberFormat('es-CH', {
@@ -165,6 +166,20 @@ export default function CreadorPerfil() {
   useEffect(() => {
     if (creator?.id && creator.owner_id !== user?.id) trackCreatorMetric(creator.id, 'profile_view')
   }, [creator?.id, creator?.owner_id, user?.id])
+
+  useEffect(() => {
+    if (!creator?.id || creator.status !== 'published' || creator.active === false) return
+    rememberRecentlyViewed({
+      type:'creator',
+      id:creator.id,
+      label:creator.name || 'Creador',
+      sub:['Creador', creator.city || creator.reach, formatCreatorHandle(creator.handle)].filter(Boolean).join(' · '),
+      href:`/creadores/${creator.slug}`,
+      image:creator.avatar_url || '',
+      imageFit:'cover',
+      icon:'🎙️',
+    }, user?.id)
+  }, [creator, user?.id])
 
   useEffect(() => {
     if (!creator || !requestedContentId) return

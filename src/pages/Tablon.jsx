@@ -29,6 +29,7 @@ import {
 } from '../lib/employmentProfile'
 import toast from 'react-hot-toast'
 import { markSavedSearchDigestOpened, markSavedSearchMatchOpened } from '../lib/savedSearches'
+import { rememberRecentlyViewed } from '../lib/recentlyViewed'
 
 function fmtPrice(price) {
   if (!price) return ''
@@ -2036,6 +2037,36 @@ export default function Tablon() {
     const ad = ads.find(entry => String(entry.id) === targetOpenAdId && isPublicationOpen(entry))
     setSelectedAd(ad || null)
   }, [ads, filteredJobs, jobs, loading, targetOpenAdId, targetOpenJobId])
+
+  useEffect(() => {
+    if (!selectedAd) return
+    const category = getAdDisplayCat(selectedAd)
+    rememberRecentlyViewed({
+      type:'ad',
+      id:selectedAd.id,
+      label:selectedAd.title || 'Anuncio',
+      sub:[category?.label || 'Anuncio', formatAdLocation(selectedAd), fmtPrice(selectedAd.price)].filter(Boolean).join(' · '),
+      href:getAdPath(selectedAd),
+      image:getAdPhotos(selectedAd)[0] || '',
+      imageFit:'cover',
+      icon:getAdDisplayEmoji(selectedAd),
+    }, user?.id)
+  }, [selectedAd, user?.id])
+
+  useEffect(() => {
+    if (!selectedJob) return
+    const intent = getJobIntentMeta(selectedJob)
+    rememberRecentlyViewed({
+      type:'job',
+      id:selectedJob.id,
+      label:selectedJob.title || selectedJob.company || 'Empleo',
+      sub:[intent?.label || 'Empleo', selectedJob.company, selectedJob.city || selectedJob.canton, selectedJob.type].filter(Boolean).join(' · '),
+      href:getJobPath(selectedJob),
+      image:selectedJob.logo_url || '',
+      imageFit:'contain',
+      icon:selectedJob.emoji || '💼',
+    }, user?.id)
+  }, [selectedJob, user?.id])
 
   // Empleo sale de las pildoras: ya es una seccion propia en SectionTabs.
   const orderedCats = AD_CATS.filter(item => item.id !== 'empleo').sort((a, b) => {

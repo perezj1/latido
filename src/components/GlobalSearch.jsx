@@ -11,6 +11,12 @@ import {
   rememberRecentSearch,
   removeRecentSearch,
 } from '../lib/searchHistory'
+import {
+  clearRecentlyViewed,
+  readRecentlyViewed,
+  rememberRecentlyViewed,
+  subscribeRecentlyViewed,
+} from '../lib/recentlyViewed'
 import { C, PP } from '../lib/theme'
 import { Sheet } from './UI'
 import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
@@ -287,6 +293,63 @@ function PremiumPartnerSearchList({ partners, onOpen, highlightTokens, horizonta
         ))}
       </div>
     </section>
+  )
+}
+
+const RECENTLY_VIEWED_ICONS = {
+  ad:'📣',
+  job:'💼',
+  business:'🏪',
+  community:'👥',
+  event:'🎉',
+  guide:'📚',
+  creator:'🎙️',
+  creator_content:'🎬',
+}
+
+function RecentlyViewedList({ items, onOpen }) {
+  return (
+    <div className="latido-recently-viewed no-scroll">
+      {items.map(item => {
+        const typeMeta = TYPE_COLORS[item.type] || TYPE_COLORS.page
+        return (
+          <button
+            key={`recently-viewed-${item.type}-${item.id}`}
+            type="button"
+            className="latido-recently-viewed__card"
+            onClick={() => onOpen(item)}
+            onMouseEnter={() => prefetchSearchDestination(item)}
+            onFocus={() => prefetchSearchDestination(item)}
+            aria-label={`Volver a ver ${item.label}`}
+          >
+            <span className="latido-recently-viewed__media">
+              {item.image ? (
+                <img
+                  src={getThumbnailImageUrl(item.image)}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  style={{ objectFit:item.imageFit || 'cover' }}
+                />
+              ) : (
+                <span aria-hidden="true">{item.icon || RECENTLY_VIEWED_ICONS[item.type] || '↗'}</span>
+              )}
+            </span>
+            <span className="latido-recently-viewed__body">
+              <span
+                className="latido-recently-viewed__type"
+                style={{ '--recent-type-bg':typeMeta.bg, '--recent-type-color':typeMeta.color }}
+              >
+                {typeMeta.label}
+              </span>
+              <strong>{item.label}</strong>
+              {item.sub && <small>{item.sub}</small>}
+            </span>
+            <span className="latido-recently-viewed__chevron" aria-hidden="true">›</span>
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -1517,6 +1580,7 @@ export default function GlobalSearch({
   const [immersiveFilterDraft, setImmersiveFilterDraft] = useState(EMPTY_IMMERSIVE_FILTER_DRAFT)
   const [dismissedIntentForQuery, setDismissedIntentForQuery] = useState(null)
   const [recentSearches, setRecentSearches] = useState([])
+  const [recentlyViewed, setRecentlyViewed] = useState(() => readRecentlyViewed(user?.id))
   const q = value === undefined ? internalQuery : String(value || '')
   const baseSearchFilterKey = `${searchFilters.category || ''}|${searchFilters.canton || ''}|${searchFilters.location || ''}|${searchFilters.intent || ''}`
   const overriddenSearchFilters = { ...searchFilters, ...immersiveSearchFilterOverrides }
@@ -2145,6 +2209,11 @@ export default function GlobalSearch({
     setCreatorDataVersion(current => current + 1)
   }), [])
 
+  useEffect(() => {
+    setRecentlyViewed(readRecentlyViewed(user?.id))
+    return subscribeRecentlyViewed(user?.id, setRecentlyViewed)
+  }, [user?.id])
+
   const ensureDataLoaded = useCallback(async () => {
     const cached = getCachedSearchData(isLoggedIn)
     if (cached) {
@@ -2539,6 +2608,10 @@ export default function GlobalSearch({
     const result = typeof target === 'string' ? null : target
     const href = result?.href || target
     const query = q.trim()
+
+    if (result) {
+      setRecentlyViewed(rememberRecentlyViewed(result, user?.id))
+    }
 
     if (result && query.length >= 2) {
       saveCurrentSearch(query)
@@ -3163,6 +3236,21 @@ export default function GlobalSearch({
                       highlightTokens={[]}
                       horizontal
                     />
+                  </section>
+                )}
+
+                {recentlyViewed.length > 0 && (
+                  <section className="latido-search-section" aria-labelledby="recently-viewed-title">
+                    <div className="latido-search-section__heading">
+                      <h2 id="recently-viewed-title">Últimos vistos</h2>
+                      <button
+                        type="button"
+                        onClick={() => setRecentlyViewed(clearRecentlyViewed(user?.id))}
+                      >
+                        Borrar
+                      </button>
+                    </div>
+                    <RecentlyViewedList items={recentlyViewed} onOpen={goTo} />
                   </section>
                 )}
 

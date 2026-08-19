@@ -18,6 +18,7 @@ import {
   trackCreatorMetric,
 } from '../lib/creators'
 import { C, PP } from '../lib/theme'
+import { rememberRecentlyViewed } from '../lib/recentlyViewed'
 import { ChevronLeftIcon } from './UI'
 import ReportButton from './ReportButton'
 
@@ -567,6 +568,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
 }
 
 export function CreatorContentModal({ content, creator, playlist=[], onClose }) {
+  const { user } = useAuth()
   const closeRef = useRef(null)
   useOverlayHistory(Boolean(content && creator), onClose)
   const playlistEntries = useMemo(
@@ -594,6 +596,20 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
     targetId:activeContent?.id,
     baseCount:activeContent?.helpful_count,
   })
+
+  useEffect(() => {
+    if (!activeContent?.id || !activeCreator) return
+    rememberRecentlyViewed({
+      type:'creator_content',
+      id:activeContent.id,
+      label:activeContent.title || 'Contenido',
+      sub:['Contenido', activeCreator.name, platform?.label].filter(Boolean).join(' · '),
+      href:`/creadores/${activeCreator.slug}?contenido=${encodeURIComponent(activeContent.id)}`,
+      image:thumbnailUrl,
+      imageFit:'cover',
+      icon:'🎬',
+    }, user?.id)
+  }, [activeContent, activeCreator, platform?.label, thumbnailUrl, user?.id])
 
   const goToIndex = nextIndex => {
     if (nextIndex < 0 || nextIndex >= playlistEntries.length || nextIndex === activeIndex) return

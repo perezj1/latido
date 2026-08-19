@@ -38,6 +38,7 @@ import { getThumbnailImageUrl, handleThumbnailImageError, resolveImageUrl } from
 import { isNationwideLocation, matchesCantonOrNationwide } from '../lib/locationScope'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import { rotateItems } from '../lib/rotation'
+import { rememberRecentlyViewed } from '../lib/recentlyViewed'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import {
   getBusinessAddress,
@@ -2322,6 +2323,52 @@ export default function Comunidades() {
       if (event) setSelectedEvent(event)
     }
   }, [businesses, communities, events, loading, openCommunityId, targetOpenBusinessId, targetOpenEventId])
+
+  useEffect(() => {
+    if (!selectedCommunity) return
+    const category = getCommunityMeta(selectedCommunity.cat)
+    rememberRecentlyViewed({
+      type:'community',
+      id:selectedCommunity.id,
+      label:selectedCommunity.name || 'Grupo',
+      sub:[category?.label || 'Grupo', selectedCommunity.city, selectedCommunity.members ? `${selectedCommunity.members} miembros` : ''].filter(Boolean).join(' · '),
+      href:`/comunidades?openCommunity=${encodeURIComponent(selectedCommunity.id)}`,
+      image:selectedCommunity.photo_url || '',
+      imageFit:'cover',
+      icon:selectedCommunity.emoji || '👥',
+    }, user?.id)
+  }, [selectedCommunity, user?.id])
+
+  useEffect(() => {
+    if (!selectedBusiness) return
+    const businessType = getNegocioTypeMeta(selectedBusiness.type)
+    const selectedServices = businessServices[selectedBusiness.id] || selectedBusiness.services || []
+    rememberRecentlyViewed({
+      type:'business',
+      id:selectedBusiness.id,
+      label:selectedBusiness.name || 'Negocio',
+      sub:[businessType?.label || 'Negocio', selectedBusiness.city, ...selectedServices.slice(0, 1)].filter(Boolean).join(' · '),
+      href:getBusinessPath(selectedBusiness),
+      image:businessPhotos[selectedBusiness.id]?.[0] || selectedBusiness.photo_url || '',
+      imageFit:'contain',
+      icon:selectedBusiness.emoji || '🏪',
+    }, user?.id)
+  }, [businessPhotos, businessServices, selectedBusiness, user?.id])
+
+  useEffect(() => {
+    if (!selectedEvent) return
+    const eventTypeLabel = EVENTO_TYPES.find(type => type.id === selectedEvent.type)?.label || 'Evento'
+    rememberRecentlyViewed({
+      type:'event',
+      id:selectedEvent.id,
+      label:selectedEvent.title || 'Evento',
+      sub:[eventTypeLabel, [selectedEvent.day, selectedEvent.month].filter(Boolean).join(' '), selectedEvent.city].filter(Boolean).join(' · '),
+      href:getEventPath(selectedEvent),
+      image:selectedEvent.img || '',
+      imageFit:'cover',
+      icon:selectedEvent.emoji || '🎉',
+    }, user?.id)
+  }, [selectedEvent, user?.id])
 
   const tabCopy = TAB_COPY[tab] || TAB_COPY.negocios
 

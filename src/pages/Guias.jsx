@@ -6,9 +6,10 @@ import { getGuideById, getGuideBySlug, getGuidePath } from '../lib/seo'
 import { C, PP } from '../lib/theme'
 import { Card, Tag, Modal, Btn, InfoBanner, PillFilters } from '../components/UI'
 import PartnerServicesPromo, { getPartnerServiceMatch } from '../components/PartnerServicesPromo'
+import { rememberRecentlyViewed } from '../lib/recentlyViewed'
 
 export default function Guias() {
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
   const { guideSlug } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -58,6 +59,20 @@ export default function Guias() {
     const doc = getGuideById(openGuideId)
     if (doc) setSelected(doc)
   }, [openGuideId, routeGuide])
+
+  useEffect(() => {
+    if (!selected) return
+    rememberRecentlyViewed({
+      type:'guide',
+      id:selected.id,
+      label:selected.title || 'Guía',
+      sub:['Guía', selected.time, selected.level].filter(Boolean).join(' · '),
+      href:getGuidePath(selected),
+      image:selected.img || '',
+      imageFit:'cover',
+      icon:selected.emoji || '📚',
+    }, user?.id)
+  }, [selected, user?.id])
 
   const openGuide = doc => {
     navigate(getGuidePath(doc))
