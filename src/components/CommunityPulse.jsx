@@ -375,7 +375,7 @@ export default function CommunityPulse() {
           gap: 10,
           overflowX: 'auto',
           WebkitOverflowScrolling: 'touch',
-          scrollSnapType: 'x proximity',
+          scrollSnapType: 'none',
           maxWidth: 960,
           width: '100%',
           margin: '18px auto 0',
