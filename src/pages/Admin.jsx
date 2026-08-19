@@ -23,6 +23,38 @@ import {
 } from '../lib/partnerAnalytics'
 import { INTEREST_OPTIONS, normalizeInterestIds } from '../lib/interests'
 import { CREATOR_PLATFORMS, CREATOR_TOPICS } from '../lib/creators'
+import { AdminIcon } from '../components/admin/AdminIcon'
+import '../styles/admin.css'
+
+// ── Lenguaje visual del panel ──────────────────────────────────
+// Una sola escala de radios, sombras y tintas para que cada tarjeta,
+// tabla y filtro se lea como parte del mismo sistema.
+const R = { sm: 10, md: 14, lg: 18, xl: 22 }
+const SH = {
+  sm: '0 1px 2px rgba(15,23,42,0.04), 0 6px 16px -12px rgba(15,23,42,0.22)',
+  md: '0 1px 3px rgba(15,23,42,0.05), 0 16px 34px -20px rgba(15,23,42,0.30)',
+  lg: '0 28px 64px -28px rgba(15,23,42,0.34)',
+}
+// Los tres niveles de texto pasan AA sobre blanco: el panel es de lectura densa.
+const INK = { strong: '#0F172A', base: '#4B5B70', soft: '#64748B' }
+const LINE = '#E6EDF7'
+const LINE_STRONG = '#D5E0EF'
+const SURFACE_MUTED = '#F7F9FD'
+const POSITIVE = '#047857'
+const NEGATIVE = '#B91C1C'
+
+// Tinta de acento sobre blanco (fondos suaves) o transparente (bordes).
+const tint = (color, amount = 10) => `color-mix(in srgb, ${color} ${amount}%, #fff)`
+const veil = (color, amount = 22) => `color-mix(in srgb, ${color} ${amount}%, transparent)`
+const EYEBROW = {
+  fontFamily: PP,
+  fontSize: 10,
+  fontWeight: 800,
+  letterSpacing: 0.9,
+  textTransform: 'uppercase',
+  color: INK.soft,
+  margin: 0,
+}
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
@@ -56,8 +88,6 @@ const ADMIN_QUERY_PAGE_SIZE = 500
 const ADMIN_LIST_PAGE_SIZE = 40
 const ADMIN_ACTIVITY_RETENTION_DAYS = 60
 const ADMIN_MAX_DELTA_DAYS = 70
-const ADMIN_DELTA_CONCURRENCY = 2
-const ADMIN_DELTA_REFRESH_RECENT_DAYS = 2
 const ADMIN_PERIOD_OPTIONS = [1, 7, 30]
 const PARTNER_MONTH_PERIOD_OPTIONS = [
   { value: 'current', label: 'Mes actual' },
@@ -81,7 +111,7 @@ const ADMIN_ANALYTICS_EVENT_TYPES = [
 const PARTNER_METRICS_EXCLUDED_EMAILS = new Set(['test@g.com'])
 const ADMIN_TAB_DATA_GROUPS = {
   users: ['users'],
-  analytics: ['users', 'analytics'],
+  analytics: ['users', 'analytics', 'contentMetrics'],
   feedback: ['users', 'feedback'],
   partners: ['users', 'businesses', 'analytics'],
   live: ['users', 'analytics'],
@@ -111,6 +141,16 @@ const CREATOR_SORT_OPTIONS = [
 ]
 
 const CREATOR_METRIC_KEYS = ['profile_view', 'content_impression', 'content_click', 'content_share', 'social_click']
+
+const USER_STATUS_LABELS = { active: 'Activos', banned: 'Baneados' }
+
+const USER_SORT_OPTIONS = [
+  { id: 'recent', label: 'Orden: alta más reciente' },
+  { id: 'oldest', label: 'Orden: alta más antigua' },
+  { id: 'active', label: 'Orden: última visita' },
+  { id: 'name', label: 'Orden: nombre (A-Z)' },
+  { id: 'canton', label: 'Orden: cantón' },
+]
 
 function getAdminTabDataGroups(tab) {
   return ADMIN_TAB_DATA_GROUPS[tab] || ['users']
@@ -161,9 +201,8 @@ async function fetchAllAdminRows({
   orderColumn = 'created_at',
   ascending = false,
   since = '',
-  // Tables with a composite primary key (creator_metrics) need a different
-  // tiebreaker so the keyset pagination stays deterministic.
   idColumn = 'id',
+  idColumns,
   transformQuery,
 }) {
   const rows = []
@@ -176,10 +215,12 @@ async function fetchAllAdminRows({
 
     if (since) query = query.gte(orderColumn, since)
     if (transformQuery) query = transformQuery(query)
-    query = query
-      .order(orderColumn, { ascending })
-      .order(idColumn, { ascending: true })
-      .range(offset, offset + ADMIN_QUERY_PAGE_SIZE - 1)
+    query = query.order(orderColumn, { ascending })
+    const tieBreakers = idColumns || [idColumn]
+    for (const column of tieBreakers) {
+      if (column !== orderColumn) query = query.order(column, { ascending:true })
+    }
+    query = query.range(offset, offset + ADMIN_QUERY_PAGE_SIZE - 1)
 
     const response = await query
     if (response.error) return { data: rows, count: rows.length, error: response.error }
@@ -196,19 +237,16 @@ async function fetchAllAdminRows({
 
 function getAdminDayRanges(days = 30) {
   const safeDays = Math.max(1, Math.min(Number(days) || 1, ADMIN_MAX_DELTA_DAYS))
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const todayKey = swissDateKey(new Date())
 
   return Array.from({ length: safeDays }, (_, index) => {
-    const start = new Date(today)
-    start.setDate(today.getDate() - (safeDays - 1 - index))
-    const end = new Date(start)
-    end.setDate(start.getDate() + 1)
+    const key = shiftDateKey(todayKey, -(safeDays - 1 - index))
+    const nextKey = shiftDateKey(key, 1)
 
     return {
-      key: localDateKey(start),
-      start:start.toISOString(),
-      end:end.toISOString(),
+      key,
+      start:swissDateStartIso(key),
+      end:swissDateStartIso(nextKey),
     }
   })
 }
@@ -222,77 +260,75 @@ function mergeRowsById(rows = []) {
   return [...byId.values()]
 }
 
-async function fetchAdminRowsByDayDelta({
+async function fetchAdminRowsForPeriod({
   cache,
   cacheKey,
   table,
   columns = '*',
   orderColumn = 'created_at',
   days = 30,
-  refreshRecent = false,
+  refresh = false,
   transformQuery,
 }) {
   const ranges = getAdminDayRanges(days)
-  const missing = ranges.filter((range, index) => {
-    const key = `${cacheKey}:${range.key}`
-    const shouldRefresh = refreshRecent && index >= ranges.length - ADMIN_DELTA_REFRESH_RECENT_DAYS
-    return shouldRefresh || !cache.has(key)
+  const firstRange = ranges[0]
+  const lastRange = ranges[ranges.length - 1]
+  const rangeKey = `${cacheKey}:range:${firstRange.key}:${lastRange.key}`
+  const cached = !refresh ? cache.get(rangeKey) : null
+  const response = cached || await fetchAllAdminRows({
+    table,
+    columns,
+    orderColumn,
+    ascending:false,
+    transformQuery: query => {
+      const scoped = query.gte(orderColumn, firstRange.start).lt(orderColumn, lastRange.end)
+      return transformQuery ? transformQuery(scoped) : scoped
+    },
   })
 
-  for (let index = 0; index < missing.length; index += ADMIN_DELTA_CONCURRENCY) {
-    const chunk = missing.slice(index, index + ADMIN_DELTA_CONCURRENCY)
-    await Promise.all(chunk.map(async range => {
-      const response = await fetchAllAdminRows({
-        table,
-        columns,
-        orderColumn,
-        ascending:false,
-        transformQuery: query => {
-          const scoped = query.gte(orderColumn, range.start).lt(orderColumn, range.end)
-          return transformQuery ? transformQuery(scoped) : scoped
-        },
-      })
-      cache.set(`${cacheKey}:${range.key}`, {
-        ...response,
-        fetchedAt:new Date().toISOString(),
-      })
-    }))
+  // Cache only complete responses. A failed request must remain retryable and a
+  // manual refresh must always re-read the complete selected period.
+  if (!cached && !response.error) {
+    cache.set(rangeKey, {
+      ...response,
+      fetchedAt:new Date().toISOString(),
+    })
   }
 
-  const selected = ranges.map(range => cache.get(`${cacheKey}:${range.key}`)).filter(Boolean)
-  const firstError = selected.find(item => item.error)?.error || null
   return {
-    data: mergeRowsById(selected.flatMap(item => item.data || []))
+    data: mergeRowsById(response.data || [])
       .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))),
-    count: selected.reduce((sum, item) => sum + (item.count || item.data?.length || 0), 0),
-    error:firstError,
+    count:response.count || response.data?.length || 0,
+    error:response.error || null,
     delta:{
       days:ranges.length,
-      cached:ranges.length - missing.length,
-      fetched:missing.length,
+      cached:cached ? 1 : 0,
+      fetched:cached ? 0 : 1,
     },
   }
 }
 
-async function fetchAdminReportsDelta({ cache, days, refreshRecent }) {
+async function fetchAdminReportsDelta({ cache, days, refresh }) {
   const [pendingRes, recentRes] = await Promise.all([
     fetchAllAdminRows({
       table:'reports',
       transformQuery: query => query.eq('status', 'pending'),
     }),
-    fetchAdminRowsByDayDelta({
+    fetchAdminRowsForPeriod({
       cache,
       cacheKey:'reports:recent',
       table:'reports',
       days,
-      refreshRecent,
+      refresh,
     }),
   ])
 
+  const data = mergeRowsById([...(pendingRes.data || []), ...(recentRes.data || [])])
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+
   return {
-    data: mergeRowsById([...(pendingRes.data || []), ...(recentRes.data || [])])
-      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))),
-    count:(pendingRes.count || 0) + (recentRes.count || 0),
+    data,
+    count:data.length,
     error:pendingRes.error || recentRes.error,
     delta:recentRes.delta,
   }
@@ -548,6 +584,16 @@ const SWISS_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
   month: '2-digit',
   day: '2-digit',
 })
+const SWISS_DATE_TIME_FORMATTER = new Intl.DateTimeFormat('en-GB', {
+  timeZone:'Europe/Zurich',
+  year:'numeric',
+  month:'2-digit',
+  day:'2-digit',
+  hour:'2-digit',
+  minute:'2-digit',
+  second:'2-digit',
+  hourCycle:'h23',
+})
 
 function swissDateKey(value) {
   const date = value instanceof Date ? value : new Date(value)
@@ -555,18 +601,40 @@ function swissDateKey(value) {
   return SWISS_DATE_FORMATTER.format(date)
 }
 
+function shiftDateKey(key, days) {
+  const [year, month, day] = String(key).split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day + days))
+  return [date.getUTCFullYear(), String(date.getUTCMonth() + 1).padStart(2, '0'), String(date.getUTCDate()).padStart(2, '0')].join('-')
+}
+
+function swissUtcOffsetMs(value) {
+  const date = value instanceof Date ? value : new Date(value)
+  const parts = Object.fromEntries(
+    SWISS_DATE_TIME_FORMATTER.formatToParts(date)
+      .filter(part => part.type !== 'literal')
+      .map(part => [part.type, Number(part.value)])
+  )
+  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
+    - Math.floor(date.getTime() / 1000) * 1000
+}
+
+function swissDateStartIso(key) {
+  const [year, month, day] = String(key).split('-').map(Number)
+  const wallClockUtc = Date.UTC(year, month - 1, day)
+  let instant = wallClockUtc
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    instant = wallClockUtc - swissUtcOffsetMs(new Date(instant))
+  }
+  return new Date(instant).toISOString()
+}
+
 function isWithinRecentDays(value, days) {
   if (!value) return false
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return false
-  if (days === 1) return swissDateKey(date) === swissDateKey(new Date())
-
-  const start = new Date()
-  start.setHours(0, 0, 0, 0)
-  start.setDate(start.getDate() - (days - 1))
-  const end = new Date()
-  end.setHours(23, 59, 59, 999)
-  return date >= start && date <= end
+  const key = swissDateKey(date)
+  const todayKey = swissDateKey(new Date())
+  return key >= shiftDateKey(todayKey, -(Math.max(1, days) - 1)) && key <= todayKey
 }
 
 function countRecent(items, days) {
@@ -579,11 +647,9 @@ function localDateKey(value) {
 
 function countByDay(items, days = 30) {
   const counts = {}
-  const now = new Date()
+  const todayKey = swissDateKey(new Date())
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now)
-    d.setDate(d.getDate() - i)
-    counts[localDateKey(d)] = 0
+    counts[shiftDateKey(todayKey, -i)] = 0
   }
   items.forEach(item => {
     const key = localDateKey(item.created_at)
@@ -593,23 +659,30 @@ function countByDay(items, days = 30) {
 }
 
 function calendarMonthRange(period = 'current') {
-  const now = new Date()
+  const [year, month] = swissDateKey(new Date()).split('-').map(Number)
   const offset = period === 'previous' ? -1 : 0
-  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1)
-  const endExclusive = new Date(now.getFullYear(), now.getMonth() + offset + 1, 1)
+  const startCalendar = new Date(Date.UTC(year, month - 1 + offset, 1))
+  const endCalendar = new Date(Date.UTC(year, month + offset, 1))
+  const startKey = [startCalendar.getUTCFullYear(), String(startCalendar.getUTCMonth() + 1).padStart(2, '0'), '01'].join('-')
+  const endKey = [endCalendar.getUTCFullYear(), String(endCalendar.getUTCMonth() + 1).padStart(2, '0'), '01'].join('-')
+  const start = new Date(swissDateStartIso(startKey))
+  const endExclusive = new Date(swissDateStartIso(endKey))
   const endInclusive = new Date(endExclusive.getTime() - 1)
-  const monthLabel = start.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
-  const shortLabel = start.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })
+  const dateOptions = { timeZone:'Europe/Zurich' }
+  const monthLabel = start.toLocaleDateString('es-ES', { ...dateOptions, month: 'long', year: 'numeric' })
+  const shortLabel = start.toLocaleDateString('es-ES', { ...dateOptions, month: 'short', year: 'numeric' })
 
   return {
     period,
+    startKey,
+    endKey,
     start,
     endExclusive,
     endInclusive,
     monthLabel,
     shortLabel,
-    startLabel:start.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-    endLabel:endInclusive.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    startLabel:start.toLocaleDateString('es-ES', { ...dateOptions, day: '2-digit', month: '2-digit', year: 'numeric' }),
+    endLabel:endInclusive.toLocaleDateString('es-ES', { ...dateOptions, day: '2-digit', month: '2-digit', year: 'numeric' }),
   }
 }
 
@@ -623,11 +696,11 @@ function isWithinDateRange(value, range) {
 function countByDateRange(items, range) {
   if (!range) return []
   const counts = {}
-  const cursor = new Date(range.start)
+  let key = range.startKey
 
-  while (cursor < range.endExclusive) {
-    counts[localDateKey(cursor)] = 0
-    cursor.setDate(cursor.getDate() + 1)
+  while (key < range.endKey) {
+    counts[key] = 0
+    key = shiftDateKey(key, 1)
   }
 
   items.forEach(item => {
@@ -640,17 +713,10 @@ function countByDateRange(items, range) {
 
 function getPartnerMonthlyLoadDays() {
   const previousMonth = calendarMonthRange('previous')
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  let days = 0
-  const cursor = new Date(previousMonth.start)
-  while (cursor <= today) {
-    days += 1
-    cursor.setDate(cursor.getDate() + 1)
-  }
-
-  return Math.max(1, days)
+  const todayKey = swissDateKey(new Date())
+  const start = Date.parse(`${previousMonth.startKey}T00:00:00Z`)
+  const end = Date.parse(`${todayKey}T00:00:00Z`)
+  return Math.max(1, Math.round((end - start) / 86_400_000) + 1)
 }
 
 function periodTrend(items, days) {
@@ -886,68 +952,146 @@ function strongestTimeLabel(rows) {
   return best.value ? best.label : 'Sin datos'
 }
 
+function chartDayLabel(key = '') {
+  const [, month, day] = String(key).split('-')
+  return month && day ? `${day}/${month}` : key
+}
+
 function SparkBarChart({ data, color }) {
+  const gradientId = useMemo(
+    () => `adm-bar-${Math.random().toString(36).slice(2, 9)}`,
+    [],
+  )
   const rawMax = Math.max(...data.map(d => d.count), 0)
   const axisMax = rawMax > 0 ? rawMax : 1
+  const peakIndex = data.reduce((best, item, index) => (item.count > (data[best]?.count ?? -1) ? index : best), 0)
 
-  const LW = 18
-  const W  = 300
-  const H  = 68
-  const PAD_TOP = 6
-  const PAD_BOT = 1
-  const chartH = H - PAD_TOP - PAD_BOT
+  // viewBox ancho + height:auto = el gráfico ocupa todo el ancho de la
+  // tarjeta sin deformar el texto de los ejes.
+  const LW = 34
+  const W = 720
+  const H = 210
+  const PAD_TOP = 10
+  const AXIS_H = 22
+  const chartH = H - PAD_TOP - AXIS_H
   const chartW = W - LW
-  const n    = data.length
+  const n = Math.max(data.length, 1)
   const slot = chartW / n
-  const bw   = slot * 0.65
+  const bw = Math.max(3, Math.min(slot * 0.6, 34))
 
-  const mid  = Math.round(axisMax / 2)
+  const mid = Math.round(axisMax / 2)
   const ticks = [...new Set([0, mid, axisMax])]
+  const labelEvery = Math.max(1, Math.ceil(n / 7))
 
-  function yPos(value) {
-    return PAD_TOP + chartH - (value / axisMax) * chartH
-  }
+  const yPos = value => PAD_TOP + chartH - (value / axisMax) * chartH
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 68, display: 'block' }}>
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      role="img"
+      aria-label={`Evolución diaria, máximo ${rawMax}`}
+      style={{ width: '100%', height: 'auto', display: 'block' }}
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.95" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.55" />
+        </linearGradient>
+      </defs>
+
       {ticks.map(tick => {
         const y = yPos(tick)
         return (
           <g key={tick}>
             <line
               x1={LW} y1={y} x2={W} y2={y}
-              stroke="#E2E8F0"
-              strokeWidth={tick === 0 ? 1 : 0.7}
-              strokeDasharray={tick === 0 ? '' : '3 3'}
+              stroke={tick === 0 ? LINE_STRONG : LINE}
+              strokeWidth={tick === 0 ? 1 : 1}
+              strokeDasharray={tick === 0 ? '' : '2 4'}
             />
             <text
-              x={LW - 3} y={y + 3.5}
+              x={LW - 8} y={y + 4.4}
               textAnchor="end"
-              fontSize={8}
-              fill="#94A3B8"
-              fontFamily="system-ui,sans-serif"
+              fontSize={12}
+              fontWeight="700"
+              fill={INK.soft}
+              fontFamily="Poppins,system-ui,sans-serif"
             >
               {tick}
             </text>
           </g>
         )
       })}
+
       {data.map((d, i) => {
-        const bh = Math.max(2, (d.count / axisMax) * chartH)
+        const bh = d.count > 0 ? Math.max(4, (d.count / axisMax) * chartH) : 0
+        const x = LW + i * slot + (slot - bw) / 2
+        const isPeak = i === peakIndex && d.count > 0
         return (
-          <rect
-            key={d.date}
-            x={LW + i * slot + (slot - bw) / 2}
-            y={yPos(0) - bh}
-            width={bw}
-            height={bh}
-            rx={1.5}
-            fill={color}
-            opacity={0.82}
-          />
+          <g key={d.date}>
+            <rect
+              x={LW + i * slot}
+              y={PAD_TOP}
+              width={slot}
+              height={chartH}
+              fill="transparent"
+            >
+              <title>{`${chartDayLabel(d.date)} · ${d.count}`}</title>
+            </rect>
+            {bh > 0 && (
+              <rect
+                x={x}
+                y={yPos(0) - bh}
+                width={bw}
+                height={bh}
+                rx={Math.min(5, bw / 2)}
+                fill={isPeak ? color : `url(#${gradientId})`}
+                pointerEvents="none"
+              />
+            )}
+          </g>
         )
       })}
+
+      {data.map((d, i) => (
+        (i % labelEvery === 0 || i === n - 1) ? (
+          <text
+            key={`label-${d.date}`}
+            x={LW + i * slot + slot / 2}
+            y={H - 4}
+            textAnchor="middle"
+            fontSize={12}
+            fontWeight="700"
+            fill={INK.soft}
+            fontFamily="Poppins,system-ui,sans-serif"
+          >
+            {chartDayLabel(d.date)}
+          </text>
+        ) : null
+      ))}
     </svg>
+  )
+}
+
+// Marco común de todos los gráficos: mismo encabezado, misma jerarquía.
+function ChartShell({ eyebrow, total, badge, footer, children }) {
+  return (
+    <div
+      className="adm-surface"
+      style={{ padding: '16px 18px 12px', display: 'grid', gap: 12 }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ ...EYEBROW, marginBottom: 5 }}>{eyebrow}</p>
+          <p className="adm-num" style={{ fontFamily: PP, fontWeight: 800, fontSize: 30, color: INK.strong, margin: 0, letterSpacing: -1.1, lineHeight: 1 }}>
+            {total}
+          </p>
+        </div>
+        {badge}
+      </div>
+      {children}
+      {footer}
+    </div>
   )
 }
 
@@ -956,69 +1100,47 @@ function AdminChartCard({ title, items, color }) {
   const data = useMemo(() => countByDay(items, days), [items, days])
   const total = data.reduce((sum, item) => sum + item.count, 0)
   const trend = periodTrend(items, days)
-  const trendColor = trend > 0 ? '#059669' : trend < 0 ? '#DC2626' : C.mid
-  const trendLabel = trend > 0 ? `+${trend}%` : trend < 0 ? `-${Math.abs(trend)}%` : 'sin cambio'
 
   return (
-    <div style={{
-      background: '#fff',
-      border: `1px solid ${C.border}`,
-      borderRadius: 22,
-      padding: '18px 18px 12px',
-      boxShadow: '0 18px 44px rgba(15,23,42,0.06)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, marginBottom: 10 }}>
-        <div>
-          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '0 0 4px', fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase' }}>
-            {title}
+    <ChartShell
+      eyebrow={title}
+      total={fmtNumber(total)}
+      badge={<TrendChip value={trend} size={11} />}
+      footer={(
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, borderTop: `1px solid ${LINE}`, paddingTop: 10 }}>
+          <p style={{ fontFamily: PP, fontSize: 11, color: INK.soft, margin: 0, fontWeight: 600 }}>
+            Últimos {days} días
           </p>
-          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 32, color: C.text, margin: 0, letterSpacing: -1, lineHeight: 1 }}>
-            {total}
-          </p>
+          <div style={{ display: 'flex', gap: 4, background: SURFACE_MUTED, borderRadius: 999, padding: 3 }}>
+            {[7, 30].map(d => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setDays(d)}
+                className="adm-chip"
+                data-active={days === d}
+                style={{
+                  fontFamily: PP,
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  padding: '5px 11px',
+                  borderRadius: 999,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: days === d ? '#fff' : 'transparent',
+                  color: days === d ? INK.strong : INK.soft,
+                  boxShadow: days === d ? SH.sm : 'none',
+                }}
+              >
+                {d}d
+              </button>
+            ))}
+          </div>
         </div>
-        <span style={{
-          fontFamily: PP,
-          fontSize: 11,
-          fontWeight: 900,
-          color: trendColor,
-          background: `${trendColor}16`,
-          padding: '6px 10px',
-          borderRadius: 999,
-          marginTop: 2,
-          whiteSpace: 'nowrap',
-        }}>
-          {trendLabel}
-        </span>
-      </div>
+      )}
+    >
       <SparkBarChart data={data} color={color} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-        <div style={{ display: 'flex', gap: 5 }}>
-          {[7, 30].map(d => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setDays(d)}
-              style={{
-                fontFamily: PP,
-                fontSize: 10,
-                fontWeight: 900,
-                padding: '4px 9px',
-                borderRadius: 999,
-                border: `1px solid ${days === d ? C.primary : C.border}`,
-                cursor: 'pointer',
-                background: days === d ? C.primary : '#fff',
-                color: days === d ? '#fff' : C.light,
-              }}
-            >
-              {d}d
-            </button>
-          ))}
-        </div>
-        <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>
-          ultimos {days} dias
-        </p>
-      </div>
-    </div>
+    </ChartShell>
   )
 }
 
@@ -1027,71 +1149,101 @@ function TrendChip({ value, invert = false, size = 10 }) {
   const trend = Number(value)
   const good = invert ? trend < 0 : trend > 0
   const bad = invert ? trend > 0 : trend < 0
-  const color = trend === 0 ? C.mid : good ? '#047857' : bad ? '#B91C1C' : C.mid
-  const arrow = trend > 0 ? '↑' : trend < 0 ? '↓' : '→'
+  const color = trend === 0 ? INK.base : good ? POSITIVE : bad ? NEGATIVE : INK.base
+  const iconName = trend > 0 ? 'arrowUp' : trend < 0 ? 'arrowDown' : 'flat'
 
   return (
-    <span style={{
-      fontFamily: PP,
-      fontSize: size,
-      fontWeight: 900,
-      color,
-      background: `${color}14`,
-      borderRadius: 999,
-      padding: '3px 7px',
-      whiteSpace: 'nowrap',
-      flexShrink: 0,
-    }}>
-      {arrow} {trend === 0 ? 'igual' : `${Math.abs(trend)}%`}
+    <span
+      title={trend === 0 ? 'Sin cambio respecto al periodo anterior' : `${trend > 0 ? '+' : ''}${trend}% respecto al periodo anterior`}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 3,
+        fontFamily: PP,
+        fontSize: size,
+        fontWeight: 800,
+        color,
+        background: tint(color, 9),
+        border: `1px solid ${veil(color, 18)}`,
+        borderRadius: 999,
+        padding: '3px 7px 3px 5px',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+        lineHeight: 1.3,
+      }}
+    >
+      <AdminIcon name={iconName} size={size + 1} strokeWidth={2.6} />
+      <span className="adm-num">{trend === 0 ? 'igual' : `${Math.abs(trend)}%`}</span>
     </span>
   )
 }
 
 function SummaryMetric({ label, value, hint, color = C.primary, trend = null, trendInvert = false, icon = '' }) {
   return (
-    <div style={{
-      position: 'relative',
-      overflow: 'hidden',
-      minWidth: 0,
-      background: '#fff',
-      border: '1px solid rgba(226,234,244,0.92)',
-      borderRadius: 18,
-      padding: '15px 15px 14px',
-      boxShadow: '0 16px 34px rgba(15,23,42,0.055)',
-    }}>
-      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: color }} />
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-        <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: 0, minWidth: 0 }}>
+    <div
+      className="adm-surface adm-raise"
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        minWidth: 0,
+        padding: '14px 15px',
+        display: 'grid',
+        gap: 8,
+        alignContent: 'start',
+      }}
+    >
+      <span style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 3, background: color, opacity: 0.9 }} />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+        <p style={{ ...EYEBROW, minWidth: 0, lineHeight: 1.35 }}>
           {icon ? `${icon} ` : ''}{label}
         </p>
         <TrendChip value={trend} invert={trendInvert} />
       </div>
-      <p style={{ fontFamily: PP, fontSize: 25, fontWeight: 900, color, lineHeight: 1, margin: '0 0 5px', letterSpacing: -0.6, overflowWrap: 'anywhere' }}>
+      <p
+        className="adm-num"
+        style={{ fontFamily: PP, fontSize: 27, fontWeight: 800, color: INK.strong, lineHeight: 1, margin: 0, letterSpacing: -0.9, overflowWrap: 'anywhere' }}
+      >
         {value}
       </p>
-      <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.35, margin: 0 }}>
+      <p style={{ fontFamily: PP, fontSize: 11, color: INK.base, lineHeight: 1.4, margin: 0 }}>
         {hint}
       </p>
     </div>
   )
 }
 
-function AdminSectionCard({ title, subtitle, action, children, style = {} }) {
+function AdminSectionCard({ title, subtitle, action, icon = null, children, style = {} }) {
   return (
-    <Card style={{ padding: 16, overflow: 'hidden', ...style }}>
+    <div className="adm-surface" style={{ padding: 16, overflow: 'hidden', ...style }}>
       {(title || action) && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: subtitle ? 12 : 14 }}>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: 0 }}>{title}</p>
-            {subtitle && (
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '3px 0 0', lineHeight: 1.45 }}>{subtitle}</p>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 12,
+          flexWrap: 'wrap',
+          paddingBottom: 12,
+          marginBottom: 14,
+          borderBottom: `1px solid ${LINE}`,
+        }}>
+          <div style={{ minWidth: 0, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            {icon && (
+              <span style={{ width: 30, height: 30, borderRadius: R.sm, background: SURFACE_MUTED, color: INK.base, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                {icon}
+              </span>
             )}
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14.5, color: INK.strong, margin: 0, letterSpacing: -0.2 }}>{title}</p>
+              {subtitle && (
+                <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '3px 0 0', lineHeight: 1.45 }}>{subtitle}</p>
+              )}
+            </div>
           </div>
           {action}
         </div>
       )}
       {children}
-    </Card>
+    </div>
   )
 }
 
@@ -1099,7 +1251,7 @@ function FunnelSteps({ steps }) {
   const max = Math.max(...steps.map(step => Number(step.value) || 0), 1)
 
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div style={{ display: 'grid', gap: 12 }}>
       {steps.map((step, index) => {
         const value = Number(step.value) || 0
         const previous = index > 0 ? Number(steps[index - 1].value) || 0 : 0
@@ -1107,22 +1259,31 @@ function FunnelSteps({ steps }) {
 
         return (
           <div key={step.label} style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 5 }}>
-              <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {step.label}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: step.color, flexShrink: 0 }} />
+                <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 700, color: INK.strong, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {step.label}
+                </span>
               </span>
-              <span style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexShrink: 0 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 {conversion !== null && (
-                  <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, color: C.light }}>{conversion}%</span>
+                  <span
+                    className="adm-num"
+                    title="Conversión respecto al paso anterior"
+                    style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, color: INK.soft, background: SURFACE_MUTED, borderRadius: 999, padding: '2px 6px' }}
+                  >
+                    {conversion}%
+                  </span>
                 )}
-                <span style={{ fontFamily: PP, fontSize: 13, fontWeight: 900, color: step.color }}>{fmtNumber(value)}</span>
+                <span className="adm-num" style={{ fontFamily: PP, fontSize: 14, fontWeight: 800, color: INK.strong }}>{fmtNumber(value)}</span>
               </span>
             </div>
-            <div style={{ width: '100%', height: 9, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
-              <div style={{ width: value ? `${Math.max(6, Math.round((value / max) * 100))}%` : 0, height: '100%', borderRadius: 999, background: step.color }} />
+            <div className="adm-bar-track" style={{ width: '100%', height: 8 }}>
+              <div className="adm-bar-fill" style={{ width: value ? `${Math.max(4, Math.round((value / max) * 100))}%` : 0, height: '100%', background: step.color }} />
             </div>
             {step.hint && (
-              <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '4px 0 0' }}>{step.hint}</p>
+              <p style={{ fontFamily: PP, fontSize: 10.5, color: INK.soft, margin: '5px 0 0' }}>{step.hint}</p>
             )}
           </div>
         )
@@ -1134,44 +1295,65 @@ function FunnelSteps({ steps }) {
 function AdminDataTable({ columns, rows, getRowKey, sort, onSortChange, activeRowKey, onRowClick, emptyText = 'Sin resultados con estos filtros.' }) {
   if (!rows.length) {
     return (
-      <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, padding: '18px 4px', textAlign: 'center' }}>
-        {emptyText}
-      </p>
+      <div style={{ display: 'grid', gap: 6, justifyItems: 'center', padding: '28px 12px' }}>
+        <span style={{ width: 34, height: 34, borderRadius: R.sm, background: SURFACE_MUTED, color: INK.soft, display: 'grid', placeItems: 'center' }}>
+          <AdminIcon name="search" size={17} />
+        </span>
+        <p style={{ fontFamily: PP, fontSize: 12, color: INK.base, margin: 0, textAlign: 'center' }}>
+          {emptyText}
+        </p>
+      </div>
     )
   }
 
   return (
-    <div style={{ overflowX: 'auto', margin: '0 -4px' }}>
-      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: 720 }}>
+    <div className="adm-scroll" style={{ overflowX: 'auto', margin: '0 -4px' }}>
+      <table className="adm-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: 720 }}>
         <thead>
           <tr>
             {columns.map(column => {
               const sortable = Boolean(column.sortId && onSortChange)
               const isSorted = sortable && sort === column.sortId
+              const alignRight = (column.align || 'left') === 'right'
               return (
                 <th
                   key={column.key}
+                  className={sortable ? 'adm-sortable' : undefined}
+                  aria-sort={isSorted ? 'descending' : undefined}
                   style={{
                     position: 'sticky',
                     top: 0,
                     zIndex: 1,
-                    background: C.bgAlt,
+                    background: 'rgba(247,249,253,0.94)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
                     textAlign: column.align || 'left',
                     fontFamily: PP,
-                    fontSize: 10,
-                    fontWeight: 900,
-                    letterSpacing: 0.6,
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    letterSpacing: 0.7,
                     textTransform: 'uppercase',
-                    color: isSorted ? C.primary : C.light,
+                    color: isSorted ? C.primary : INK.soft,
                     padding: '10px 10px',
-                    borderBottom: `1px solid ${C.border}`,
+                    borderBottom: `1px solid ${LINE_STRONG}`,
                     whiteSpace: 'nowrap',
                     cursor: sortable ? 'pointer' : 'default',
+                    userSelect: 'none',
                     width: column.width,
                   }}
                   onClick={sortable ? () => onSortChange(column.sortId) : undefined}
                 >
-                  {column.label}{isSorted ? ' ↓' : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexDirection: alignRight ? 'row-reverse' : 'row' }}>
+                    {column.label}
+                    {sortable && (
+                      <AdminIcon
+                        name={isSorted ? 'arrowDown' : 'sort'}
+                        size={11}
+                        strokeWidth={2.6}
+                        style={{ opacity: isSorted ? 1 : 0.4 }}
+                      />
+                    )}
+                  </span>
                 </th>
               )
             })}
@@ -1184,11 +1366,9 @@ function AdminDataTable({ columns, rows, getRowKey, sort, onSortChange, activeRo
             return (
               <tr
                 key={key}
+                data-active={active ? 'true' : undefined}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
-                style={{
-                  background: active ? C.primaryLight : 'transparent',
-                  cursor: onRowClick ? 'pointer' : 'default',
-                }}
+                style={{ cursor: onRowClick ? 'pointer' : 'default' }}
               >
                 {columns.map(column => (
                   <td
@@ -1196,11 +1376,12 @@ function AdminDataTable({ columns, rows, getRowKey, sort, onSortChange, activeRo
                     style={{
                       fontFamily: PP,
                       fontSize: 12,
-                      color: C.text,
+                      color: INK.strong,
                       padding: '11px 10px',
-                      borderBottom: `1px solid ${C.borderLight}`,
+                      borderBottom: `1px solid ${LINE}`,
                       textAlign: column.align || 'left',
                       verticalAlign: 'middle',
+                      fontWeight: (column.align || 'left') === 'right' ? 700 : 400,
                     }}
                   >
                     {column.render(row)}
@@ -1217,94 +1398,119 @@ function AdminDataTable({ columns, rows, getRowKey, sort, onSortChange, activeRo
 
 function InsightBarList({ title, subtitle, rows, color = C.primary, emptyText = 'Sin datos todavía.' }) {
   const max = Math.max(...rows.map(row => row.value), 1)
+  const total = rows.reduce((sum, row) => sum + (Number(row.value) || 0), 0)
 
   return (
-    <Card style={{ padding: 16, overflow: 'hidden' }}>
-      <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>{title}</p>
-      <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.45 }}>{subtitle}</p>
+    <div className="adm-surface" style={{ padding: 16, overflow: 'hidden' }}>
+      <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14.5, color: INK.strong, margin: '0 0 3px', letterSpacing: -0.2 }}>{title}</p>
+      <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '0 0 14px', lineHeight: 1.45 }}>{subtitle}</p>
 
-      <div style={{ display: 'grid', gap: 10, minWidth: 0, overflow: 'hidden' }}>
-        {rows.map(row => (
-          <div key={row.label} style={{ minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
-              <span style={{ minWidth: 0, flex: '1 1 0', overflow: 'hidden' }}>
-                <span style={{ display: 'block', fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</span>
-                {row.sub && (
-                  <span style={{ display: 'block', fontFamily: PP, fontSize: 10, color: C.light, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{row.sub}</span>
-                )}
-              </span>
-              <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color, flexShrink: 0 }}>{row.value}</span>
+      <div style={{ display: 'grid', gap: 11, minWidth: 0, overflow: 'hidden' }}>
+        {rows.map((row, index) => {
+          const share = total ? Math.round((row.value / total) * 100) : 0
+          return (
+            <div key={row.label} className="adm-insight-row" style={{ minWidth: 0, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5, alignItems: 'flex-start' }}>
+                <span style={{ minWidth: 0, flex: '1 1 0', overflow: 'hidden', display: 'flex', gap: 7, alignItems: 'flex-start' }}>
+                  <span
+                    className="adm-num"
+                    style={{ width: 17, height: 17, borderRadius: 6, background: SURFACE_MUTED, color: INK.soft, fontFamily: PP, fontSize: 9.5, fontWeight: 800, display: 'grid', placeItems: 'center', flexShrink: 0, marginTop: 1 }}
+                  >
+                    {index + 1}
+                  </span>
+                  <span style={{ minWidth: 0, overflow: 'hidden' }}>
+                    <span style={{ display: 'block', fontFamily: PP, fontSize: 12, fontWeight: 700, color: INK.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</span>
+                    {row.sub && (
+                      <span style={{ display: 'block', fontFamily: PP, fontSize: 10, color: INK.soft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{row.sub}</span>
+                    )}
+                  </span>
+                </span>
+                <span style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexShrink: 0 }}>
+                  {total > 0 && (
+                    <span className="adm-num" style={{ fontFamily: PP, fontSize: 10, fontWeight: 700, color: INK.soft }}>{share}%</span>
+                  )}
+                  <span className="adm-num" style={{ fontFamily: PP, fontSize: 12.5, fontWeight: 800, color: INK.strong }}>{row.value}</span>
+                </span>
+              </div>
+              <div className="adm-bar-track" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 7 }}>
+                <div className="adm-bar-fill" style={{ width: row.value ? `${Math.max(4, Math.round((row.value / max) * 100))}%` : 0, height: '100%', background: color }} />
+              </div>
             </div>
-            <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
-              <div style={{ width: row.value ? `${Math.max(8, Math.round((row.value / max) * 100))}%` : 0, height: '100%', borderRadius: 999, background: color }} />
-            </div>
-          </div>
-        ))}
+          )
+        })}
 
         {!rows.length && (
-          <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>{emptyText}</p>
+          <p style={{ fontFamily: PP, fontSize: 12, color: INK.soft, margin: 0, lineHeight: 1.5 }}>{emptyText}</p>
         )}
       </div>
-    </Card>
+    </div>
+  )
+}
+
+// Selector segmentado: una sola forma para todos los periodos del panel.
+function SegmentedSwitch({ options, value, onChange, accent = C.primary, label }) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      style={{ display: 'flex', gap: 2, background: SURFACE_MUTED, border: `1px solid ${LINE}`, borderRadius: 999, padding: 3 }}
+    >
+      {options.map(option => {
+        const active = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(option.value)}
+            className="adm-chip"
+            data-active={active}
+            style={{
+              border: 'none',
+              borderRadius: 999,
+              background: active ? '#fff' : 'transparent',
+              color: active ? accent : INK.base,
+              padding: '6px 12px',
+              fontFamily: PP,
+              fontSize: 11,
+              fontWeight: 800,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: active ? SH.sm : 'none',
+            }}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
 function PeriodSwitch({ value, onChange }) {
-  const options = [
-    { value: 1, label: 'Hoy' },
-    { value: 7, label: '7 días' },
-    { value: 30, label: '30 días' },
-  ]
   return (
-    <div style={{ display: 'flex', gap: 6, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 999, padding: 5, boxShadow: '0 8px 20px rgba(15,23,42,0.04)' }}>
-      {options.map(option => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          style={{
-            border: 'none',
-            borderRadius: 999,
-            background: value === option.value ? C.primary : 'transparent',
-            color: value === option.value ? '#fff' : C.mid,
-            padding: '7px 10px',
-            fontFamily: PP,
-            fontSize: 11,
-            fontWeight: 900,
-            cursor: 'pointer',
-          }}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
+    <SegmentedSwitch
+      label="Periodo"
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: 1, label: 'Hoy' },
+        { value: 7, label: '7 días' },
+        { value: 30, label: '30 días' },
+      ]}
+    />
   )
 }
 
 function MonthPeriodSwitch({ value, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 6, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 999, padding: 5, boxShadow: '0 8px 20px rgba(15,23,42,0.04)' }}>
-      {PARTNER_MONTH_PERIOD_OPTIONS.map(option => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          style={{
-            border: 'none',
-            borderRadius: 999,
-            background: value === option.value ? '#4F46E5' : 'transparent',
-            color: value === option.value ? '#fff' : C.mid,
-            padding: '7px 10px',
-            fontFamily: PP,
-            fontSize: 11,
-            fontWeight: 900,
-            cursor: 'pointer',
-          }}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
+    <SegmentedSwitch
+      label="Mes"
+      value={value}
+      onChange={onChange}
+      accent="#4F46E5"
+      options={PARTNER_MONTH_PERIOD_OPTIONS}
+    />
   )
 }
 
@@ -1313,31 +1519,16 @@ function AdminPeriodChart({ title, items, color, days }) {
   const data = useMemo(() => countByDay(items, days), [items, days])
   const trend = useMemo(() => periodTrend(items, days), [items, days])
   const total = data.reduce((sum, item) => sum + item.count, 0)
-  const titleSuffix = days === 1 ? 'hoy' : `${days} días`
+  const titleSuffix = days === 1 ? 'hoy' : `últimos ${days} días`
 
   return (
-    <div style={{
-      background: '#fff',
-      border: `1px solid ${C.border}`,
-      borderRadius: 22,
-      padding: '18px',
-      boxShadow: '0 18px 44px rgba(15,23,42,0.06)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', marginBottom: 10 }}>
-        <div>
-          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '0 0 4px', fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase' }}>
-            {title} · {titleSuffix}
-          </p>
-          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 32, color: C.text, margin: 0, letterSpacing: -1, lineHeight: 1 }}>
-            {total}
-          </p>
-        </div>
-        <span style={{ marginTop: 4 }}>
-          <TrendChip value={trend} size={11} />
-        </span>
-      </div>
+    <ChartShell
+      eyebrow={`${title} · ${titleSuffix}`}
+      total={fmtNumber(total)}
+      badge={<TrendChip value={trend} size={11} />}
+    >
       <SparkBarChart data={data} color={color} />
-    </div>
+    </ChartShell>
   )
 }
 
@@ -1346,97 +1537,125 @@ function AdminMonthlyChart({ title, items, color, range }) {
   const total = data.reduce((sum, item) => sum + item.count, 0)
 
   return (
-    <div style={{
-      background: '#fff',
-      border: `1px solid ${C.border}`,
-      borderRadius: 22,
-      padding: '18px',
-      boxShadow: '0 18px 44px rgba(15,23,42,0.06)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', marginBottom: 10 }}>
-        <div>
-          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '0 0 4px', fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase' }}>
-            {title} · {range.monthLabel}
-          </p>
-          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 32, color: C.text, margin: 0, letterSpacing: -1, lineHeight: 1 }}>
-            {total}
-          </p>
-        </div>
-        <span style={{
-          fontFamily: PP,
-          fontSize: 11,
-          fontWeight: 900,
-          color,
-          background: `${color}14`,
-          padding: '6px 10px',
-          borderRadius: 999,
-          marginTop: 2,
-          whiteSpace: 'nowrap',
-        }}>
-          {range.startLabel} - {range.endLabel}
+    <ChartShell
+      eyebrow={`${title} · ${range.monthLabel}`}
+      total={fmtNumber(total)}
+      badge={(
+        <span
+          className="adm-num"
+          style={{
+            fontFamily: PP,
+            fontSize: 10.5,
+            fontWeight: 700,
+            color: INK.base,
+            background: SURFACE_MUTED,
+            border: `1px solid ${LINE}`,
+            padding: '5px 9px',
+            borderRadius: 999,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {range.startLabel} – {range.endLabel}
         </span>
-      </div>
+      )}
+    >
       <SparkBarChart data={data} color={color} />
-    </div>
+    </ChartShell>
   )
 }
 
-function AdminButton({ children, onClick, variant = 'secondary', disabled = false }) {
+function AdminButton({ children, onClick, variant = 'secondary', disabled = false, icon = null, title }) {
   return (
     <Btn
       size="sm"
       variant={variant}
       disabled={disabled}
       onClick={onClick}
-      style={{ width: 'auto', minWidth: 0, padding: '9px 12px', borderRadius: 10, fontSize: 11 }}
+      title={title}
+      className="adm-action"
+      style={{ width: 'auto', minWidth: 0, padding: '8px 12px', borderRadius: R.sm, fontSize: 11, fontWeight: 700 }}
     >
-      {children}
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+        {icon && <AdminIcon name={icon} size={13} />}
+        {children}
+      </span>
     </Btn>
   )
 }
 
 function AdminFilterInput({ value, onChange, placeholder }) {
   return (
-    <input
-      value={value}
-      onChange={event => onChange(event.target.value)}
-      placeholder={placeholder}
+    <label
+      className="adm-field"
       style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
         minWidth: 0,
         flex: '1 1 220px',
         boxSizing: 'border-box',
-        fontFamily: PP,
-        fontSize: 12,
-        color: C.text,
         background: '#fff',
-        border: `1.5px solid ${C.border}`,
-        borderRadius: 12,
-        padding: '10px 12px',
-        outline: 'none',
+        border: `1px solid ${LINE_STRONG}`,
+        borderRadius: R.sm,
+        padding: '0 10px',
+        height: 38,
       }}
-    />
+    >
+      <AdminIcon name="search" size={15} style={{ color: INK.soft }} />
+      <input
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder={placeholder}
+        style={{
+          minWidth: 0,
+          flex: 1,
+          fontFamily: PP,
+          fontSize: 12,
+          color: INK.strong,
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          padding: 0,
+        }}
+      />
+      {value && (
+        <button
+          type="button"
+          aria-label="Limpiar búsqueda"
+          onClick={() => onChange('')}
+          style={{ border: 'none', background: 'transparent', color: INK.soft, cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 2 }}
+        >
+          <AdminIcon name="close" size={13} strokeWidth={2.6} />
+        </button>
+      )}
+    </label>
   )
 }
 
-function AdminFilterSelect({ value, onChange, children, label }) {
+// `plain` = el select ordena, no recorta: no debe pintarse como filtro activo.
+function AdminFilterSelect({ value, onChange, children, label, plain = false }) {
+  const isDefault = plain || value === 'all'
   return (
     <select
       aria-label={label}
+      title={label}
+      className="adm-field"
       value={value}
       onChange={event => onChange(event.target.value)}
       style={{
         minWidth: 0,
         width: '100%',
         flex: '0 1 190px',
+        height: 38,
         boxSizing: 'border-box',
         fontFamily: PP,
-        fontSize: 11,
-        fontWeight: 800,
-        color: C.text,
-        background: '#fff',
-        border: `1.5px solid ${C.border}`,
-        borderRadius: 12,
-        padding: '10px 8px',
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: isDefault ? INK.base : INK.strong,
+        background: isDefault ? '#fff' : tint(C.primary, 7),
+        border: `1px solid ${isDefault ? LINE_STRONG : veil(C.primary, 35)}`,
+        borderRadius: R.sm,
+        padding: '0 10px',
         outline: 'none',
       }}
     >
@@ -1445,22 +1664,27 @@ function AdminFilterSelect({ value, onChange, children, label }) {
   )
 }
 
-function AdminFilterBar({ children, footer }) {
+function AdminFilterBar({ children, footer, title = 'Filtros', chips = null }) {
   return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid rgba(226,234,244,0.95)',
-      borderRadius: 18,
-      padding: 12,
-      boxShadow: '0 12px 28px rgba(15,23,42,0.045)',
-      display: 'grid',
-      gap: 9,
-    }}>
+    <div className="adm-surface" style={{ padding: 12, display: 'grid', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        <AdminIcon name="filters" size={13} style={{ color: INK.soft }} />
+        <p style={{ ...EYEBROW }}>{title}</p>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: 8 }}>
         {children}
       </div>
+      {chips}
       {footer && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          flexWrap: 'wrap',
+          borderTop: `1px solid ${LINE}`,
+          paddingTop: 10,
+        }}>
           {footer}
         </div>
       )}
@@ -1468,9 +1692,91 @@ function AdminFilterBar({ children, footer }) {
   )
 }
 
+// Filtros activos siempre visibles: qué recorte estoy viendo y cómo deshacerlo.
+function ActiveFilters({ items = [], onClearAll }) {
+  const active = items.filter(item => item && item.value)
+  if (!active.length) return null
+
+  return (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+      <span style={{ ...EYEBROW, fontSize: 9.5 }}>Activos</span>
+      {active.map(item => (
+        <span
+          key={item.label}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            fontFamily: PP,
+            fontSize: 10.5,
+            fontWeight: 700,
+            color: C.primary,
+            background: tint(C.primary, 8),
+            border: `1px solid ${veil(C.primary, 25)}`,
+            borderRadius: 999,
+            padding: '3px 5px 3px 9px',
+            maxWidth: 260,
+          }}
+        >
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.label}: {item.value}
+          </span>
+          {item.onClear && (
+            <button
+              type="button"
+              aria-label={`Quitar filtro ${item.label}`}
+              onClick={item.onClear}
+              style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 1 }}
+            >
+              <AdminIcon name="close" size={11} strokeWidth={2.8} />
+            </button>
+          )}
+        </span>
+      ))}
+      {onClearAll && (
+        <button
+          type="button"
+          onClick={onClearAll}
+          className="adm-action"
+          style={{
+            fontFamily: PP,
+            fontSize: 10.5,
+            fontWeight: 700,
+            color: INK.base,
+            background: 'transparent',
+            border: `1px solid ${LINE_STRONG}`,
+            borderRadius: 999,
+            padding: '3px 10px',
+            cursor: 'pointer',
+          }}
+        >
+          Limpiar todo
+        </button>
+      )}
+    </div>
+  )
+}
+
+// Resumen de resultados: cifra grande primero, contexto después.
+function ResultSummary({ parts = [] }) {
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontFamily: PP, fontSize: 11, color: INK.soft }}>
+      {parts.filter(Boolean).map((part, index) => (
+        <span key={part.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {index > 0 && <span style={{ color: LINE_STRONG }}>|</span>}
+          <span>
+            <strong className="adm-num" style={{ color: part.color || INK.strong, fontWeight: 800, fontSize: 12 }}>{part.value}</strong>
+            {' '}{part.label}
+          </span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
 function AdminChipFilter({ options, value, onChange, label }) {
   return (
-    <div role="group" aria-label={label} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+    <div role="group" aria-label={label} className="adm-scroll" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {options.map(option => {
         const active = value === option.id
         const color = option.color || C.primary
@@ -1478,21 +1784,43 @@ function AdminChipFilter({ options, value, onChange, label }) {
           <button
             key={option.id}
             type="button"
+            aria-pressed={active}
             onClick={() => onChange(option.id)}
+            className="adm-chip"
+            data-active={active}
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
               fontFamily: PP,
-              fontSize: 11,
-              fontWeight: 900,
-              border: `1.5px solid ${active ? color : C.border}`,
-              background: active ? (option.bg || `${color}12`) : '#fff',
-              color: active ? color : C.mid,
+              fontSize: 11.5,
+              fontWeight: 700,
+              border: `1px solid ${active ? veil(color, 45) : LINE_STRONG}`,
+              background: active ? (option.bg || tint(color, 10)) : '#fff',
+              color: active ? color : INK.base,
               borderRadius: 999,
-              padding: '7px 11px',
+              padding: '6px 11px',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              boxShadow: active ? SH.sm : 'none',
             }}
           >
-            {option.label}{option.count === undefined ? '' : ` · ${option.count}`}
+            {option.label}
+            {option.count !== undefined && (
+              <span
+                className="adm-num"
+                style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  color: active ? color : INK.soft,
+                  background: active ? veil(color, 14) : SURFACE_MUTED,
+                  borderRadius: 999,
+                  padding: '1px 6px',
+                }}
+              >
+                {option.count}
+              </span>
+            )}
           </button>
         )
       })}
@@ -1503,13 +1831,26 @@ function AdminChipFilter({ options, value, onChange, label }) {
 function AdminPagination({ page, pageCount, total, onChange }) {
   if (pageCount <= 1) return null
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 2px 2px' }}>
-      <span style={{ fontFamily: PP, fontSize: 11, color: C.light }}>
-        Página {page} de {pageCount} · {total} resultados
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 10,
+      flexWrap: 'wrap',
+      padding: '12px 2px 2px',
+    }}>
+      <span className="adm-num" style={{ fontFamily: PP, fontSize: 11, color: INK.base }}>
+        Página <strong style={{ color: INK.strong }}>{page}</strong> de {pageCount}
+        <span style={{ color: INK.soft }}> · {fmtNumber(total)} resultados</span>
       </span>
-      <div style={{ display: 'flex', gap: 7 }}>
-        <AdminButton disabled={page <= 1} onClick={() => onChange(page - 1)}>Anterior</AdminButton>
-        <AdminButton disabled={page >= pageCount} onClick={() => onChange(page + 1)}>Siguiente</AdminButton>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <AdminButton disabled={page <= 1} onClick={() => onChange(page - 1)} icon="prev">Anterior</AdminButton>
+        <AdminButton disabled={page >= pageCount} onClick={() => onChange(page + 1)}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            Siguiente
+            <AdminIcon name="next" size={13} />
+          </span>
+        </AdminButton>
       </div>
     </div>
   )
@@ -1525,7 +1866,7 @@ export default function Admin() {
   const loadedDataGroupsRef = useRef(new Set())
   const loadingDataGroupsRef = useRef(new Set())
   const dataRangeDaysByGroupRef = useRef(new Map())
-  const dailyRowsCacheRef = useRef(new Map())
+  const periodRowsCacheRef = useRef(new Map())
   const [tab, setTab] = useState('overview')
   const [crmMenuOpen, setCrmMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -1536,6 +1877,7 @@ export default function Admin() {
   const [userSearch, setUserSearch] = useState('')
   const [userStatusFilter, setUserStatusFilter] = useState('all')
   const [userCantonFilter, setUserCantonFilter] = useState('all')
+  const [userSort, setUserSort] = useState('recent')
   const [userPage, setUserPage] = useState(1)
   const [userDays, setUserDays] = useState(1)
   const [overviewDays, setOverviewDays] = useState(7)
@@ -1818,7 +2160,11 @@ export default function Admin() {
       + metricSearchFeedback.filter(item => ['partial', 'no'].includes(item.answer)).length,
     [metricSearchFeedback, metricStarRatings, metricUsefulnessFeedback]
   )
-  const totalFeedbackResponses = metricStarRatings.length + metricUsefulnessFeedback.length + metricSearchFeedback.length
+  const latidoFeedbackRecordIds = useMemo(() => new Set([
+    ...metricStarRatings.map(item => item.id),
+    ...metricUsefulnessFeedback.map(item => item.id),
+  ].filter(Boolean)), [metricStarRatings, metricUsefulnessFeedback])
+  const totalFeedbackResponses = latidoFeedbackRecordIds.size + metricSearchFeedback.length
   const identifiedFeedbackCoverage = metricUsers.length
     ? Math.min(100, feedbackPercentage(identifiedFeedbackUserIds.size, metricUsers.length))
     : 0
@@ -1875,22 +2221,39 @@ export default function Admin() {
     }),
     [feedbackToneFilter, normalizedFeedbackSearch, sortedSearchFeedback, userProfilesById]
   )
+  const filteredFeedbackResponses = useMemo(() => new Set([
+    ...filteredLatidoRatings.map(item => `latido:${item.id}`),
+    ...filteredUsefulnessFeedback.map(item => `latido:${item.id}`),
+    ...filteredSearchFeedback.map(item => `search:${item.id}`),
+  ]).size, [filteredLatidoRatings, filteredSearchFeedback, filteredUsefulnessFeedback])
   const businessPromotionPlans = useMemo(
     () => mergeBusinessPromotionPlans(businessPromotionAvailability),
     [businessPromotionAvailability],
   )
+  const historicalBusinessPartnerIds = useMemo(() => {
+    const ids = new Set()
+    for (const event of analyticsEvents) {
+      const metadata = readMetadata(event.metadata)
+      const partnerId = String(metadata.partner_id || metadata.partnerId || '').trim()
+      if (isBusinessPartnerAnalyticsId(partnerId)) ids.add(partnerId)
+    }
+    return ids
+  }, [analyticsEvents])
   const businessPartnerOptions = useMemo(
     () => {
       const options = []
       for (const business of businesses) {
-        if (!isActiveBusinessPartner(business)) continue
+        const analyticsId = getBusinessPartnerAnalyticsId(business.id)
+        const isActive = isActiveBusinessPartner(business)
+        if (!isActive && !historicalBusinessPartnerIds.has(analyticsId)) continue
+        const businessName = business.partner_card_title || business.name || 'Colaborador'
         const services = Array.isArray(business.services)
           ? Object.fromEntries(business.services.map(service => [service, service]))
           : {}
         options.push({
-          id:getBusinessPartnerAnalyticsId(business.id),
+          id:analyticsId,
           providerId:business.id,
-          name:business.partner_card_title || business.name || 'Colaborador',
+          name:isActive ? businessName : `${businessName} (histórico)`,
           logo:business.partner_logo_url || business.photo_url || '/favicon.svg',
           campaign:`business-${business.id}`,
           legacyPartnerIds:[],
@@ -1898,6 +2261,7 @@ export default function Admin() {
           tint:businessPartnerTint(business.promotion_plan),
           services,
           isBusinessPartner:true,
+          isActive,
           planKey:business.promotion_plan,
         })
       }
@@ -1907,7 +2271,7 @@ export default function Admin() {
         return a.name.localeCompare(b.name, 'es')
       })
     },
-    [businesses],
+    [businesses, historicalBusinessPartnerIds],
   )
   const partnerOptions = useMemo(
     () => [...businessPartnerOptions, ...PARTNER_ANALYTICS_PARTNERS],
@@ -2016,13 +2380,23 @@ export default function Admin() {
     () => new Map(creatorRows.map(creator => [creator.id, creator])),
     [creatorRows]
   )
+  const publishedCreatorContents = useMemo(
+    () => creatorContents.filter(content => content.status === 'published' && content.active !== false),
+    [creatorContents]
+  )
+  const publishedCreatorChartItems = useMemo(
+    () => publishedCreatorContents.map(content => ({
+      ...content,
+      created_at:content.published_at || content.created_at,
+    })),
+    [publishedCreatorContents]
+  )
 
   const creatorStats = useMemo(() => {
     const live = creatorRows.filter(creator => creator.isLive)
     const totals = creatorMetricIndex.totals
     const helpful = creatorRows.reduce((sum, creator) => sum + creator.helpful, 0)
     const saved = creatorRows.reduce((sum, creator) => sum + creator.saved, 0)
-    const publishedContents = creatorContents.filter(content => content.status === 'published' && content.active !== false)
 
     return {
       total: creatorRows.length,
@@ -2035,7 +2409,7 @@ export default function Admin() {
       rejected: creatorRows.filter(creator => creator.review_status === 'rejected').length,
       withoutContent: creatorRows.filter(creator => creator.contentCount === 0).length,
       contents: creatorContents.length,
-      publishedContents: publishedContents.length,
+      publishedContents: publishedCreatorContents.length,
       profileViews: totals.profile_view,
       impressions: totals.content_impression,
       clicks: totals.content_click,
@@ -2049,7 +2423,7 @@ export default function Admin() {
       creatorTrend: periodTrend(creatorRows, creatorDays),
       contentTrend: periodTrend(creatorContents, creatorDays),
     }
-  }, [creatorRows, creatorContents, creatorMetricIndex, creatorDays])
+  }, [creatorRows, creatorContents, publishedCreatorContents, creatorMetricIndex, creatorDays])
 
   const creatorCantons = useMemo(
     () => [...new Set(creatorRows.map(creator => creator.canton).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
@@ -2091,22 +2465,22 @@ export default function Admin() {
 
   const creatorTopicRows = useMemo(() => CREATOR_TOPICS
     .map(topic => {
-      const creators = creatorRows.filter(creator => (creator.topics || []).includes(topic.id))
-      const contents = creatorContents.filter(content => content.topic === topic.id)
+      const creators = creatorRows.filter(creator => creator.isLive && (creator.topics || []).includes(topic.id))
+      const contents = publishedCreatorContents.filter(content => content.topic === topic.id)
       return {
         label:`${topic.emoji} ${topic.label}`,
         value:contents.length,
-        sub:`${creators.length} creadores · ${contents.filter(content => content.status === 'published').length} publicados`,
+        sub:`${creators.length} creadores activos`,
       }
     })
     .filter(row => row.value > 0 || creatorRows.length === 0)
     .sort((a, b) => b.value - a.value),
-    [creatorRows, creatorContents]
+    [creatorRows, publishedCreatorContents]
   )
 
   const creatorPlatformRows = useMemo(() => CREATOR_PLATFORMS
     .map(platform => {
-      const contents = creatorContents.filter(content => content.platform === platform.id)
+      const contents = publishedCreatorContents.filter(content => content.platform === platform.id)
       const clicks = contents.reduce(
         (sum, content) => sum + (creatorMetricIndex.byContent.get(content.id)?.content_click || 0),
         0,
@@ -2114,12 +2488,12 @@ export default function Admin() {
       return {
         label:platform.label,
         value:contents.length,
-        sub:`${fmtNumber(clicks)} clics · ${contents.filter(content => content.status === 'published').length} publicados`,
+        sub:`${fmtNumber(clicks)} clics acumulados`,
       }
     })
     .filter(row => row.value > 0)
     .sort((a, b) => b.value - a.value),
-    [creatorContents, creatorMetricIndex]
+    [publishedCreatorContents, creatorMetricIndex]
   )
 
   const creatorCantonRows = useMemo(() => {
@@ -2177,7 +2551,7 @@ export default function Admin() {
 
   const filteredUsers = useMemo(() => {
     const q = userSearch.trim().toLowerCase()
-    return metricUsers.filter(profile => {
+    const rows = metricUsers.filter(profile => {
       if (userStatusFilter === 'banned' && !profile.banned) return false
       if (userStatusFilter === 'active' && profile.banned) return false
       if (userCantonFilter !== 'all' && (profile.canton || '') !== userCantonFilter) return false
@@ -2186,7 +2560,14 @@ export default function Admin() {
         || (profile.email || '').toLowerCase().includes(q)
         || (profile.canton || '').toLowerCase().includes(q)
     })
-  }, [metricUsers, userCantonFilter, userSearch, userStatusFilter])
+
+    const byDateDesc = key => (a, b) => String(b[key] || '').localeCompare(String(a[key] || ''))
+    if (userSort === 'oldest') return [...rows].sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
+    if (userSort === 'active') return [...rows].sort(byDateDesc('last_seen_at'))
+    if (userSort === 'name') return [...rows].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'))
+    if (userSort === 'canton') return [...rows].sort((a, b) => (a.canton || 'zzz').localeCompare(b.canton || 'zzz', 'es'))
+    return [...rows].sort(byDateDesc('created_at'))
+  }, [metricUsers, userCantonFilter, userSearch, userSort, userStatusFilter])
   const userCantons = useMemo(
     () => [...new Set(metricUsers.map(profile => profile.canton).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
     [metricUsers]
@@ -2615,11 +2996,12 @@ export default function Admin() {
     if (tabId === 'partners') return Math.min(ADMIN_MAX_DELTA_DAYS, getPartnerMonthlyLoadDays())
     if (tabId === 'live') return 14
     if (tabId === 'users') return userDays
+    if (tabId === 'reports') return ADMIN_ACTIVITY_RETENTION_DAYS
     return 30
   }
 
   function isRangeSensitiveGroup(group) {
-    return ['analytics', 'messages', 'contentMetrics', 'content', 'reports'].includes(group)
+    return ['analytics', 'messages', 'contentMetrics', 'reports'].includes(group)
   }
 
   function groupHasRequiredRange(group, days) {
@@ -2709,9 +3091,9 @@ export default function Admin() {
         creatorMetricsRes,
       ] = await Promise.all([
         groups.includes('reports') ? fetchAdminReportsDelta({
-          cache:dailyRowsCacheRef.current,
+          cache:periodRowsCacheRef.current,
           days:requestedDays,
-          refreshRecent:force,
+          refresh:force,
         }) : skipped(reports),
         groups.includes('moderation') ? fetchAllAdminRows({
           table: 'moderation_queue',
@@ -2720,47 +3102,53 @@ export default function Admin() {
         groups.includes('users')
           ? fetchAllAdminRows({ table: 'profiles', columns: 'id,name,email,canton,interests,banned,banned_reason,banned_at,created_at,last_seen_at' })
           : skipped(users),
-        wantsContent || wantsContentMetrics
-          ? fetchAdminRowsByDayDelta({
-              cache:dailyRowsCacheRef.current,
-              cacheKey:`listings:${wantsContent ? 'full' : 'metrics'}`,
+        wantsContent
+          ? fetchAllAdminRows({
+              table:'listings',
+              columns:'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at',
+            })
+          : wantsContentMetrics
+          ? fetchAdminRowsForPeriod({
+              cache:periodRowsCacheRef.current,
+              cacheKey:'listings:metrics',
               table: 'listings',
-              columns: wantsContent
-                ? 'id,title,desc,cat,sub,active,user_id,user_name,canton,city,created_at'
-                : 'id,active,created_at',
+              columns:'id,active,created_at',
               days:requestedDays,
-              refreshRecent:force,
+              refresh:force,
             })
           : skipped(recentListings),
-        wantsContent || wantsContentMetrics
-          ? fetchAdminRowsByDayDelta({
-              cache:dailyRowsCacheRef.current,
-              cacheKey:`jobs:${wantsContent ? 'full' : 'metrics'}`,
+        wantsContent
+          ? fetchAllAdminRows({
+              table:'jobs',
+              columns:'id,title,company,desc,sector,active,user_id,canton,city,created_at',
+            })
+          : wantsContentMetrics
+          ? fetchAdminRowsForPeriod({
+              cache:periodRowsCacheRef.current,
+              cacheKey:'jobs:metrics',
               table: 'jobs',
-              columns: wantsContent
-                ? 'id,title,company,desc,sector,active,user_id,canton,city,created_at'
-                : 'id,active,created_at',
+              columns:'id,active,created_at',
               days:requestedDays,
-              refreshRecent:force,
+              refresh:force,
             })
           : skipped(recentJobs),
         groups.includes('businesses') ? fetchAllAdminRows({ table: 'providers' }) : skipped(businesses),
-        groups.includes('analytics') ? fetchAdminRowsByDayDelta({
-          cache:dailyRowsCacheRef.current,
+        groups.includes('analytics') ? fetchAdminRowsForPeriod({
+          cache:periodRowsCacheRef.current,
           cacheKey:'analytics:events',
           table: 'analytics_events',
           columns: 'id,event_type,path,search,user_id,session_id,metadata,created_at',
           days:requestedDays,
-          refreshRecent:force,
+          refresh:force,
           transformQuery: query => query.in('event_type', ADMIN_ANALYTICS_EVENT_TYPES),
         }) : skipped(analyticsEvents),
-        groups.includes('messages') ? fetchAdminRowsByDayDelta({
-          cache:dailyRowsCacheRef.current,
+        groups.includes('messages') ? fetchAdminRowsForPeriod({
+          cache:periodRowsCacheRef.current,
           cacheKey:'messages:activity',
           table: 'messages',
           columns: 'id,sender_id,created_at',
           days:requestedDays,
-          refreshRecent:force,
+          refresh:force,
         }) : skipped(messageEvents),
         groups.includes('feedback')
           ? fetchAllAdminRows({
@@ -2793,7 +3181,7 @@ export default function Admin() {
               table:'creator_metrics',
               columns:'creator_id,metric,content_id,count,updated_at',
               orderColumn:'updated_at',
-              idColumn:'creator_id',
+              idColumns:['creator_id', 'metric', 'content_id'],
             })
           : skipped(creatorMetricRows),
       ])
@@ -2822,8 +3210,12 @@ export default function Admin() {
         cached:acc.cached + (item.cached || 0),
       }), { fetched:0, cached:0 })
       const nextErrors = []
+      const failedGroups = new Set()
       for (const [group, label, response] of responses) {
-        if (groups.includes(group) && response.error) nextErrors.push(`${label}: ${response.error.message}`)
+        if (groups.includes(group) && response.error) {
+          nextErrors.push(`${label}: ${response.error.message}`)
+          failedGroups.add(group)
+        }
       }
 
       groups.forEach(group => {
@@ -2883,6 +3275,7 @@ export default function Admin() {
       if (relatedContent.errors.length) {
         for (const group of groups) {
           if (group !== 'reports' && group !== 'moderation') continue
+          failedGroups.add(group)
           setDataErrorsByGroup(previous => ({
             ...previous,
             [group]: [previous[group], ...relatedContent.errors].filter(Boolean).join(' ? '),
@@ -2905,9 +3298,18 @@ export default function Admin() {
         })
       }
 
-      groups.forEach(group => loadedDataGroupsRef.current.add(group))
-      if (wantsContent) loadedDataGroupsRef.current.add('contentMetrics')
-      groups.forEach(group => {
+      const successfulGroups = groups.filter(group => !failedGroups.has(group))
+      failedGroups.forEach(group => {
+        loadedDataGroupsRef.current.delete(group)
+        dataRangeDaysByGroupRef.current.delete(group)
+      })
+      if (wantsContent && failedGroups.has('content')) {
+        loadedDataGroupsRef.current.delete('contentMetrics')
+        dataRangeDaysByGroupRef.current.delete('contentMetrics')
+      }
+      successfulGroups.forEach(group => loadedDataGroupsRef.current.add(group))
+      if (wantsContent && !failedGroups.has('content')) loadedDataGroupsRef.current.add('contentMetrics')
+      successfulGroups.forEach(group => {
         if (isRangeSensitiveGroup(group)) {
           dataRangeDaysByGroupRef.current.set(group, Math.max(
             dataRangeDaysByGroupRef.current.get(group) || 0,
@@ -2915,16 +3317,16 @@ export default function Admin() {
           ))
         }
       })
-      if (wantsContent) {
+      if (wantsContent && !failedGroups.has('content')) {
         dataRangeDaysByGroupRef.current.set('contentMetrics', Math.max(
           dataRangeDaysByGroupRef.current.get('contentMetrics') || 0,
-          requestedDays,
+          ADMIN_MAX_DELTA_DAYS,
         ))
       }
       setLoadedDataGroups(new Set(loadedDataGroupsRef.current))
       setDataRangeDaysByGroup(new Map(dataRangeDaysByGroupRef.current))
       setDeltaLoadSummary({
-        status:'ready',
+        status:nextErrors.length ? 'partial' : 'ready',
         groups,
         days:requestedDays,
         fetched:deltaTotals.fetched,
@@ -3592,7 +3994,8 @@ export default function Admin() {
   const overviewTotalNewContent = newContentInOverviewRange + newBusinessesInOverviewRange
   const reportsInOverviewRange = countRecent(reports, overviewDays)
   const overviewPageViews = overviewInteractionEvents.filter(event => event.event_type === 'page_view').length
-  const overviewSearchInteractions = overviewInteractionEvents.filter(event => event.event_type === 'search' || event.event_type === 'search_result_open').length
+  const overviewSearches = overviewInteractionEvents.filter(event => event.event_type === 'search').length
+  const overviewSearchOpens = overviewInteractionEvents.filter(event => event.event_type === 'search_result_open').length
   const overviewInteractionCount = overviewInteractionEvents.length
   const overviewMessagesCount = overviewMessageEvents.length
   const overviewEngagementCount = (analyticsUnavailable ? 0 : overviewInteractionCount) + (messagesUnavailable ? 0 : overviewMessagesCount)
@@ -3630,26 +4033,42 @@ export default function Admin() {
   const overviewTrendAdjustment = overviewAverageTrend > 20 ? 6 : overviewAverageTrend > 8 ? 3 : overviewAverageTrend < -25 ? -8 : overviewAverageTrend < -10 ? -4 : 0
   const overviewPendingPenalty = Math.min(24, totalPendingActions * 4)
   const overviewReportPenalty = Math.min(10, reportsInOverviewRange * 2) + (reportsTrendInOverviewRange > 25 ? 6 : 0)
-  const generalScore = Math.max(0, Math.min(100,
+  const overviewScoreAvailable = !analyticsUnavailable && !messagesUnavailable
+  const calculatedGeneralScore = Math.max(0, Math.min(100,
     22
     + scoreByTarget(activeUsersInOverviewRange.length, overviewTargets.activeUsers, 18)
     + scoreByTarget(newUsersInOverviewRange, overviewTargets.newUsers, 10)
     + scoreByTarget(newBusinessesInOverviewRange, overviewTargets.businesses, 8)
     + scoreByTarget(recentListingsInOverviewRange, overviewTargets.listings, 10)
     + scoreByTarget(recentJobsInOverviewRange, overviewTargets.jobs, 6)
-    + (analyticsUnavailable ? 7 : scoreByTarget(overviewInteractionCount, overviewTargets.interactions, 14))
-    + (messagesUnavailable ? 4 : scoreByTarget(overviewMessagesCount, overviewTargets.messages, 8))
+    + scoreByTarget(overviewInteractionCount, overviewTargets.interactions, 14)
+    + scoreByTarget(overviewMessagesCount, overviewTargets.messages, 8)
     + overviewTrendAdjustment
     - overviewPendingPenalty
     - overviewReportPenalty
   ))
-  const generalStatus = generalScore >= 82 ? 'Bueno' : generalScore >= 64 ? 'Estable' : 'Requiere atención'
+  const generalScore = overviewScoreAvailable ? calculatedGeneralScore : null
+  const generalStatus = generalScore === null
+    ? 'Datos incompletos'
+    : generalScore >= 82
+      ? 'Bueno'
+      : generalScore >= 64
+        ? 'Estable'
+        : 'Requiere atención'
   const generalTrend = reportsTrendInOverviewRange > 25 || overviewNegativeTrendCount >= 2 || overviewAverageTrend < -18
     ? 'Empeora'
     : overviewPositiveTrendCount >= 2 || overviewAverageTrend > 12
       ? 'Mejora'
       : 'Estable'
-  const generalTrendColor = generalTrend === 'Mejora' ? '#059669' : generalTrend === 'Empeora' ? '#DC2626' : '#D97706'
+  const generalTrendColor = generalScore === null
+    ? '#64748B'
+    : generalTrend === 'Mejora'
+      ? '#059669'
+      : generalTrend === 'Empeora'
+        ? '#DC2626'
+        : '#D97706'
+  const generalScoreLabel = generalScore === null ? 'No disponible' : `${generalScore}/100`
+  const generalTrendLabel = generalScore === null ? 'Sin calcular' : generalTrend
   const generalSuggestions = [
     totalPendingActions > 0 && `Resolver ${totalPendingActions} acciones pendientes para bajar fricción administrativa.`,
     stats.queue > 0 && `Revisar ${stats.queue} elementos en cola antes de que se acumulen publicaciones bloqueadas.`,
@@ -3693,17 +4112,17 @@ export default function Admin() {
     !isTabDataReady(tabId) || isTabDataLoading(tabId) ? '...' : value
 
   const NAV_ITEMS = [
-    { id: 'users', icon: '👥', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
-    { id: 'creators', icon: '🎬', label: 'Creadores', value: navValue('creators', `${creatorStats.live} activos`), color: '#DB2777', bg: '#FDF2F8', alert: creatorStats.pendingReview },
-    { id: 'analytics', icon: '📈', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'feedback', icon: '⭐', label: 'Intereses y valoraciones', short: 'Valoración', value: navValue('feedback', `${totalFeedbackResponses} respuestas`), color: '#B45309', bg: '#FFFBEB' },
-    { id: 'partners', icon: '🚀', label: 'Colaboraciones', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
-    { id: 'live', icon: '📡', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
-    { id: 'overview', icon: '📊', label: 'Estado general', short: 'Estado', value: navValue('overview', `${generalScore}/100`), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
-    { id: 'businessVerification', icon: '✓', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5', alert: stats.businessVerification },
-    { id: 'content', icon: '📋', label: 'Publicaciones', value: navValue('content', `${stats.content} items`), color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'reports', icon: '🚨', label: 'Reportes', value: navValue('reports', `${stats.reports} pend.`), color: '#DC2626', bg: '#FEF2F2', alert: stats.reports },
-    { id: 'moderation', icon: '⏳', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB', alert: stats.queue },
+    { id: 'users', icon: 'users', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
+    { id: 'creators', icon: 'creators', label: 'Creadores', value: navValue('creators', `${creatorStats.live} activos`), color: '#DB2777', bg: '#FDF2F8', alert: creatorStats.pendingReview },
+    { id: 'analytics', icon: 'analytics', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'feedback', icon: 'feedback', label: 'Intereses y valoraciones', short: 'Valoración', value: navValue('feedback', `${totalFeedbackResponses} registros`), color: '#B45309', bg: '#FFFBEB' },
+    { id: 'partners', icon: 'partners', label: 'Colaboraciones', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
+    { id: 'live', icon: 'live', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
+    { id: 'overview', icon: 'overview', label: 'Estado general', short: 'Estado', value: navValue('overview', generalScoreLabel), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
+    { id: 'businessVerification', icon: 'businessVerification', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5', alert: stats.businessVerification },
+    { id: 'content', icon: 'content', label: 'Publicaciones', value: navValue('content', `${stats.content} items`), color: '#0284C7', bg: '#E0F2FE' },
+    { id: 'reports', icon: 'reports', label: 'Reportes', value: navValue('reports', `${stats.reports} pend.`), color: '#DC2626', bg: '#FEF2F2', alert: stats.reports },
+    { id: 'moderation', icon: 'moderation', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB', alert: stats.queue },
   ]
 
   const navById = new Map(NAV_ITEMS.map(item => [item.id, item]))
@@ -3724,57 +4143,57 @@ export default function Admin() {
   const activeRangeDays = Math.max(...activeRangeValues, 0)
   const deltaStatusColor = deltaLoadSummary?.status === 'error'
     ? '#DC2626'
-    : deltaLoadSummary?.status === 'loading'
+    : ['loading', 'partial'].includes(deltaLoadSummary?.status)
       ? '#D97706'
       : '#059669'
   const deltaStatusBg = deltaLoadSummary?.status === 'error'
     ? '#FEF2F2'
-    : deltaLoadSummary?.status === 'loading'
+    : ['loading', 'partial'].includes(deltaLoadSummary?.status)
       ? '#FFFBEB'
       : '#ECFDF5'
   const deltaStatusLabel = deltaLoadSummary?.status === 'loading'
-    ? `Cargando delta ${deltaLoadSummary.days || getLoadDaysForTab(tab)}d`
-    : activeRangeDays
-      ? `Delta ${activeRangeDays}d listo`
-      : 'Carga ligera'
+    ? `Cargando ${deltaLoadSummary.days || getLoadDaysForTab(tab)}d`
+    : deltaLoadSummary?.status === 'partial'
+      ? 'Carga parcial'
+      : activeRangeDays
+        ? `Periodo ${activeRangeDays}d listo`
+        : 'Datos completos'
 
   const SECTION_TITLES = {
-    overview: { icon: '📊', label: 'Estado general' },
-    live: { icon: '📡', label: 'Live' },
-    creators: { icon: '🎬', label: 'Creadores' },
-    analytics: { icon: '📈', label: 'Uso de la app' },
-    feedback: { icon: '⭐', label: 'Intereses y valoraciones' },
-    partners: { icon: '🚀', label: 'Colaboraciones' },
-    moderation: { icon: '⏳', label: 'Revisión manual' },
-    reports:    { icon: '🚨', label: 'Reportes pendientes' },
-    businessVerification: { icon: '✓', label: 'Verificación de negocios' },
-    users:      { icon: '👥', label: 'Usuarios' },
-    content:    { icon: '📋', label: 'Contenido reciente' },
+    overview: { icon: 'overview', label: 'Estado general' },
+    live: { icon: 'live', label: 'Live' },
+    creators: { icon: 'creators', label: 'Creadores' },
+    analytics: { icon: 'analytics', label: 'Uso de la app' },
+    feedback: { icon: 'feedback', label: 'Intereses y valoraciones' },
+    partners: { icon: 'partners', label: 'Colaboraciones' },
+    moderation: { icon: 'moderation', label: 'Revisión manual' },
+    reports:    { icon: 'reports', label: 'Reportes pendientes' },
+    businessVerification: { icon: 'businessVerification', label: 'Verificación de negocios' },
+    users:      { icon: 'users', label: 'Usuarios' },
+    content:    { icon: 'content', label: 'Publicaciones' },
   }
 
-  const activeSection = tab === 'content'
-    ? { ...SECTION_TITLES.content, label: 'Publicaciones recientes' }
-    : SECTION_TITLES[tab]
+  const activeSection = SECTION_TITLES[tab]
   const SECTION_DETAILS = {
-    overview: { description: `Rapport de ${overviewRangeText} con señales de crecimiento, actividad, pendientes y recomendaciones.`, color: generalTrendColor, count: generalScore, badge: `${generalStatus} · ${generalTrend}` },
+    overview: { description: `Rapport de ${overviewRangeText} con datos separados de crecimiento, actividad y pendientes.`, color: generalTrendColor, count: generalScoreLabel, badge: `${generalStatus} · ${generalTrendLabel}` },
     live: { description: 'Online ahora se actualiza en directo; actividad diaria y semanal usa la última consulta a Supabase.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
     analytics: { description: `Páginas más usadas, búsquedas frecuentes, soluciones confirmadas y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResolution.yes} resueltas` },
-    feedback: { description: 'Personas participantes, preferencias, valoraciones, votos de utilidad, búsquedas evaluadas y comentarios completos.', color: '#B45309', count: totalFeedbackResponses, badge: `${identifiedFeedbackUserIds.size} personas · ${totalFeedbackResponses} respuestas` },
-    partners: { description: `Salidas reales hacia el colaborador seleccionado, separadas entre landing y app en ${partnerRangeText}.`, color: '#4F46E5', count: partnerClickEvents.length, badge: `${partnerClickEvents.length} salidas · ${partnerLandingClicks.length} landing · ${partnerAppClicks.length} app` },
+    feedback: { description: 'Registros únicos de valoración de Latido y respuestas únicas sobre búsquedas, sin duplicar las preguntas de un mismo formulario.', color: '#B45309', count: totalFeedbackResponses, badge: `${identifiedFeedbackUserIds.size} personas · ${totalFeedbackResponses} registros` },
+    partners: { description: `Salidas registradas en sesiones con analítica aceptada, separadas entre landing y app en ${partnerRangeText}.`, color: '#4F46E5', count: partnerClickEvents.length, badge: `${partnerClickEvents.length} salidas · ${partnerLandingClicks.length} landing · ${partnerAppClicks.length} app` },
     moderation: { description: 'Publicaciones retenidas por filtros o pendientes de una decisión manual antes de quedar visibles.', color: '#D97706', count: stats.queue, badge: `${stats.queue} elementos en cola` },
     reports: { description: 'Denuncias de la comunidad que necesitan revision y accion.', color: '#DC2626', count: stats.reports, badge: `${stats.reports} reportes pendientes` },
-    businessVerification: { description: 'Evalua datos, contacto y señales antes de mostrar la etiqueta Verificada.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
+    businessVerification: { description: 'Comprueba completitud, formato de contacto y posibles duplicados antes de la revisión manual.', color: '#059669', count: stats.businessVerification, badge: `${stats.businessVerification} negocios pendientes` },
     users: { description: 'Busca cuentas, revisa actividad basica y gestiona baneos. Las métricas excluyen la cuenta admin.', color: C.primary, count: metricUsers.length, badge: `${metricUsers.length} usuarios sin admin` },
-    creators: { description: 'Directorio de creadores: alcance, contenido publicado, rendimiento por creador y decisiones de revisión.', color: '#DB2777', count: creatorStats.total, badge: `${creatorStats.live} activos · ${creatorStats.contents} contenidos · ${creatorStats.pendingReview} por revisar` },
+    creators: { description: 'El periodo filtra altas y publicaciones; vistas, clics, votos y guardados son contadores históricos acumulados.', color: '#DB2777', count: creatorStats.total, badge: `${creatorStats.live} activos · ${creatorStats.contents} contenidos · ${creatorStats.pendingReview} por revisar` },
     content: { description: 'Control completo de anuncios y empleos publicados en Latido.', color: '#059669', count: stats.content, badge: `${stats.content} publicaciones totales` },
   }
   const activeSectionDetails = SECTION_DETAILS[tab]
   const sectionMetrics = tab === 'overview'
     ? [
-        { label: 'Estado', value: loading ? '...' : generalStatus, hint: `Score operativo ${generalScore}/100`, color: generalTrendColor },
+        { label: 'Estado', value: loading ? '...' : generalStatus, hint: `Índice operativo derivado: ${generalScoreLabel}`, color: generalTrendColor },
         { label: `Usuarios activos ${overviewMetricSuffix}`, value: loading ? '...' : activeUsersInOverviewRange.length, hint: `${newUsersInOverviewRange} usuarios nuevos`, color: '#0F766E' },
         { label: `Contenido ${overviewMetricSuffix}`, value: loading ? '...' : overviewTotalNewContent, hint: `${recentListingsInOverviewRange} anuncios · ${recentJobsInOverviewRange} empleos · ${newBusinessesInOverviewRange} negocios`, color: '#059669' },
-        { label: 'Interacción', value: loading ? '...' : (analyticsUnavailable && messagesUnavailable ? 'No disp.' : overviewEngagementCount), hint: `${analyticsUnavailable ? 'sin analytics' : `${overviewPageViews} vistas · ${overviewSearchInteractions} búsquedas`} · ${messagesUnavailable ? 'sin mensajes' : `${overviewMessagesCount} mensajes`}`, color: analyticsUnavailable && messagesUnavailable ? '#D97706' : '#0891B2' },
+        { label: 'Señales registradas', value: loading ? '...' : (analyticsUnavailable && messagesUnavailable ? 'No disp.' : overviewEngagementCount), hint: `${analyticsUnavailable ? 'sin analytics' : `${overviewPageViews} vistas · ${overviewSearches} búsquedas · ${overviewSearchOpens} aperturas`} · ${messagesUnavailable ? 'sin mensajes' : `${overviewMessagesCount} mensajes`}`, color: analyticsUnavailable && messagesUnavailable ? '#D97706' : '#0891B2' },
         { label: `Creadores ${overviewMetricSuffix}`, value: loading ? '...' : creatorStats.live, hint: `${newCreatorsInOverviewRange} altas · ${newCreatorContentInOverviewRange} contenidos nuevos · ${creatorStats.pendingReview} por revisar`, color: '#DB2777', trend: creatorContentTrendInOverviewRange },
         { label: `Tendencia ${overviewMetricSuffix}`, value: loading ? '...' : generalTrend, hint: `Promedio ${overviewAverageTrend > 0 ? '+' : ''}${overviewAverageTrend}% · reportes ${reportsTrendInOverviewRange > 0 ? '+' : ''}${reportsTrendInOverviewRange}%`, color: generalTrendColor },
       ]
@@ -3808,8 +4227,8 @@ export default function Admin() {
     : tab === 'partners'
       ? [
           { label: `Vistas tarjeta ${partnerMetricSuffix}`, value: loading ? '...' : partnerImpressionEvents.length, hint: 'Apariciones registradas de la tarjeta', color: '#0284C7' },
-          { label: `Total enviado ${partnerMetricSuffix}`, value: loading ? '...' : partnerClickEvents.length, hint: 'Aperturas y contactos del colaborador', color: '#4F46E5' },
-          { label: `Cuentas enviadas ${partnerMetricSuffix}`, value: loading ? '...' : partnerDailyAccounts.length, hint: `${partnerUniqueAccounts} perfiles distintos · ${partnerAnonymousClicks} salidas anónimas`, color: '#7C3AED' },
+          { label: `Salidas registradas ${partnerMetricSuffix}`, value: loading ? '...' : partnerClickEvents.length, hint: 'Aperturas y contactos con consentimiento analítico', color: '#4F46E5' },
+          { label: `Cuentas por día ${partnerMetricSuffix}`, value: loading ? '...' : partnerDailyAccounts.length, hint: `${partnerUniqueAccounts} perfiles distintos · ${partnerAnonymousClicks} salidas anónimas`, color: '#7C3AED' },
           { label: 'Desde landing', value: loading ? '...' : partnerLandingClicks.length, hint: 'Landing pública de Latido', color: '#2563EB' },
           { label: 'Desde la app', value: loading ? '...' : partnerAppClicks.length, hint: 'Inicio, búsqueda o guías', color: '#0F766E' },
         ]
@@ -3836,7 +4255,7 @@ export default function Admin() {
           { label: 'Negocios activos', value: loading ? '...' : activeBusinesses, hint: `${businesses.length} negocios cargados`, color: '#059669' },
           { label: 'Verificadas', value: loading ? '...' : verifiedBusinessCount, hint: 'Con etiqueta visible en ficha', color: '#0F766E' },
           { label: 'Pendientes', value: loading ? '...' : businessVerificationCounts.pending || 0, hint: 'Esperan decision manual', color: '#D97706' },
-          { label: 'Score medio', value: loading ? '...' : `${businessAverageScore}/100`, hint: `${featuredBusinesses} planes activos`, color: C.primary },
+          { label: 'Completitud media', value: loading ? '...' : `${businessAverageScore}/100`, hint: `Reglas de campos · ${featuredBusinesses} planes activos`, color: C.primary },
         ]
       : tab === 'reports'
         ? [
@@ -3866,7 +4285,7 @@ export default function Admin() {
         ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 12 }}>
             <AdminPeriodChart title="Altas de creadores" items={creatorProfiles} color="#DB2777" days={creatorDays} />
-            <AdminPeriodChart title="Contenidos publicados" items={creatorContents} color="#0284C7" days={creatorDays} />
+            <AdminPeriodChart title="Contenidos publicados" items={publishedCreatorChartItems} color="#0284C7" days={creatorDays} />
           </div>
         )
       : tab === 'reports'
@@ -3900,24 +4319,146 @@ export default function Admin() {
     return (
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: compact ? 'flex-start' : 'flex-end' }}>
         {creator.review_status !== 'approved' && (
-          <AdminButton variant="success" disabled={busy} onClick={() => setCreatorReview(creator, 'approved')}>✓ Aprobar</AdminButton>
+          <AdminButton variant="success" icon="check" disabled={busy} onClick={() => setCreatorReview(creator, 'approved')}>Aprobar</AdminButton>
         )}
         {creator.review_status !== 'rejected' && (
-          <AdminButton variant="danger" disabled={busy} onClick={() => setCreatorReview(creator, 'rejected')}>✕ Rechazar</AdminButton>
+          <AdminButton variant="danger" icon="close" disabled={busy} onClick={() => setCreatorReview(creator, 'rejected')}>Rechazar</AdminButton>
         )}
-        <AdminButton disabled={busy} onClick={() => setCreatorVerified(creator, !creator.verified)}>
-          {creator.verified ? 'Quitar verificado' : '★ Verificar'}
+        <AdminButton
+          disabled={busy}
+          icon={creator.verified ? 'close' : 'businessVerification'}
+          onClick={() => setCreatorVerified(creator, !creator.verified)}
+        >
+          {creator.verified ? 'Quitar verificado' : 'Verificar'}
         </AdminButton>
         <AdminButton
           variant={creator.active === false ? 'success' : 'danger'}
+          icon={creator.active === false ? 'show' : 'hide'}
           disabled={busy}
           onClick={() => setCreatorActive(creator, creator.active === false)}
         >
-          {creator.active === false ? '↩ Mostrar' : 'Ocultar'}
+          {creator.active === false ? 'Mostrar' : 'Ocultar'}
         </AdminButton>
       </div>
     )
   }
+
+  function resetContentFilters() {
+    setContentSearch('')
+    setContentStatusFilter('all')
+    setListingPage(1)
+    setJobPage(1)
+  }
+
+  function resetCreatorFilters() {
+    setCreatorSearch('')
+    setCreatorStatusFilter('all')
+    setCreatorReviewFilter('all')
+    setCreatorTopicFilter('all')
+    setCreatorCantonFilter('all')
+    setCreatorSort('views')
+    setCreatorPage(1)
+  }
+
+  function resetUserFilters() {
+    setUserSearch('')
+    setUserStatusFilter('all')
+    setUserCantonFilter('all')
+    setUserSort('recent')
+    setUserPage(1)
+  }
+
+  const userTableColumns = [
+    {
+      key: 'user',
+      label: 'Usuario',
+      sortId: 'name',
+      render: profile => (
+        <span style={{ display: 'block', minWidth: 0 }}>
+          <span style={{ display: 'block', fontFamily: PP, fontWeight: 700, fontSize: 12.5, color: INK.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 240 }}>
+            {profile.name || 'Sin nombre'}
+          </span>
+          <span style={{ display: 'block', fontFamily: PP, fontSize: 10.5, color: INK.soft, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
+            {profile.email || profile.id}
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: 'canton',
+      label: 'Cantón',
+      sortId: 'canton',
+      render: profile => profile.canton
+        ? <span style={{ fontFamily: PP, fontSize: 11.5, color: INK.base }}>{profile.canton}</span>
+        : <span style={{ color: INK.soft }}>—</span>,
+    },
+    {
+      key: 'status',
+      label: 'Estado',
+      render: profile => (
+        <span style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Tag bg={profile.banned ? '#FEE2E2' : '#D1FAE5'} color={profile.banned ? '#B91C1C' : '#065F46'}>
+            {profile.banned ? 'Baneado' : 'Activo'}
+          </Tag>
+          {profile.banned && profile.banned_reason && (
+            <span title={profile.banned_reason} style={{ fontFamily: PP, fontSize: 10, color: INK.soft, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {profile.banned_reason}
+            </span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'interests',
+      label: 'Intereses',
+      align: 'right',
+      render: profile => {
+        const count = normalizeInterestIds(profile.interests).length
+        return count
+          ? <span className="adm-num" style={{ fontFamily: PP, fontWeight: 700 }}>{count}</span>
+          : <span style={{ color: INK.soft }}>—</span>
+      },
+    },
+    {
+      key: 'created',
+      label: 'Alta',
+      align: 'right',
+      sortId: 'recent',
+      render: profile => (
+        <span style={{ fontFamily: PP, fontSize: 11.5, color: INK.base, whiteSpace: 'nowrap' }}>
+          {profile.created_at ? fmtDateShort(profile.created_at) : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'lastSeen',
+      label: 'Última visita',
+      align: 'right',
+      sortId: 'active',
+      render: profile => (
+        <span style={{ fontFamily: PP, fontSize: 11.5, color: profile.last_seen_at ? INK.base : INK.soft, whiteSpace: 'nowrap' }}>
+          {profile.last_seen_at ? fmtActivity(profile.last_seen_at) : 'Sin registro'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Acciones',
+      align: 'right',
+      width: 130,
+      render: profile => (
+        <span onClick={event => event.stopPropagation()} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <AdminButton
+            variant={profile.banned ? 'success' : 'danger'}
+            icon={profile.banned ? 'reset' : 'ban'}
+            onClick={() => setUserBanned(profile, !profile.banned)}
+          >
+            {profile.banned ? 'Desbanear' : 'Banear'}
+          </AdminButton>
+        </span>
+      ),
+    },
+  ]
 
   const creatorTableColumns = [
     {
@@ -3926,7 +4467,7 @@ export default function Admin() {
       sortId: 'name',
       render: creator => (
         <span style={{ display: 'block', minWidth: 0 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: PP, fontWeight: 900, fontSize: 12.5, color: C.text }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: PP, fontWeight: 800, fontSize: 12.5, color: C.text }}>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 190 }}>
               {creator.name || 'Sin nombre'}
             </span>
@@ -3957,7 +4498,7 @@ export default function Admin() {
       align: 'right',
       sortId: 'contents',
       render: creator => (
-        <span style={{ fontFamily: PP, fontWeight: 900 }}>
+        <span style={{ fontFamily: PP, fontWeight: 800 }}>
           {creator.publishedContentCount}
           <span style={{ color: C.light, fontWeight: 800 }}>/{creator.contentCount}</span>
         </span>
@@ -3972,7 +4513,7 @@ export default function Admin() {
       align: 'right',
       sortId: 'ctr',
       render: creator => (
-        <span style={{ fontFamily: PP, fontWeight: 900, color: creator.ctr >= 10 ? '#047857' : creator.ctr > 0 ? C.text : C.light }}>
+        <span style={{ fontFamily: PP, fontWeight: 800, color: creator.ctr >= 10 ? '#047857' : creator.ctr > 0 ? C.text : C.light }}>
           {creator.impressions ? `${creator.ctr}%` : '—'}
         </span>
       ),
@@ -4006,7 +4547,7 @@ export default function Admin() {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 14, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
+              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
                 {creator.name || 'Sin nombre'}{creator.verified ? ' ✔' : ''}
               </p>
               <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0', overflowWrap: 'anywhere' }}>
@@ -4015,7 +4556,7 @@ export default function Admin() {
                 {creator.created_at ? ` · alta ${fmtDateShort(creator.created_at)}` : ''}
               </p>
             </div>
-            <span style={{ fontFamily: PP, fontSize: 16, fontWeight: 900, color: C.light, flexShrink: 0 }}>{open ? '−' : '+'}</span>
+            <span style={{ fontFamily: PP, fontSize: 16, fontWeight: 800, color: C.light, flexShrink: 0 }}>{open ? '−' : '+'}</span>
           </div>
 
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', margin: '8px 0' }}>
@@ -4035,8 +4576,8 @@ export default function Admin() {
               { label:'Útiles', value:fmtNumber(creator.helpful) },
             ].map(item => (
               <div key={item.label} style={{ background: C.bgAlt, borderRadius: 12, padding: '7px 8px', minWidth: 0 }}>
-                <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 900, color: C.light, margin: 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>{item.label}</p>
-                <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 900, color: C.text, margin: '2px 0 0' }}>{item.value}</p>
+                <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 800, color: C.light, margin: 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>{item.label}</p>
+                <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 800, color: C.text, margin: '2px 0 0' }}>{item.value}</p>
               </div>
             ))}
           </div>
@@ -4064,7 +4605,7 @@ export default function Admin() {
               href={`/creadores/${creator.slug}`}
               target="_blank"
               rel="noreferrer"
-              style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: C.primary, background: C.primaryLight, borderRadius: 10, padding: '9px 12px', textDecoration: 'none' }}
+              style={{ fontFamily: PP, fontSize: 11, fontWeight: 800, color: C.primary, background: C.primaryLight, borderRadius: 10, padding: '9px 12px', textDecoration: 'none' }}
             >
               Ver perfil público ↗
             </a>
@@ -4084,8 +4625,8 @@ export default function Admin() {
             { label:'Clics a redes', value:fmtNumber(creator.socialClicks), color:'#4F46E5' },
           ].map(item => (
             <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 11px', minWidth: 0 }}>
-              <p style={{ fontFamily: PP, fontSize: 9.5, fontWeight: 900, color: C.light, margin: 0, textTransform: 'uppercase', letterSpacing: 0.6 }}>{item.label}</p>
-              <p style={{ fontFamily: PP, fontSize: 17, fontWeight: 900, color: item.color, margin: '3px 0 0' }}>{item.value}</p>
+              <p style={{ fontFamily: PP, fontSize: 9.5, fontWeight: 800, color: C.light, margin: 0, textTransform: 'uppercase', letterSpacing: 0.6 }}>{item.label}</p>
+              <p style={{ fontFamily: PP, fontSize: 17, fontWeight: 800, color: item.color, margin: '3px 0 0' }}>{item.value}</p>
             </div>
           ))}
         </div>
@@ -4101,7 +4642,7 @@ export default function Admin() {
           })}
         </div>
 
-        <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.mid, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.mid, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
           Contenidos ({contents.length})
         </p>
 
@@ -4124,7 +4665,7 @@ export default function Admin() {
                       href={content.url}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ fontFamily: PP, fontWeight: 900, fontSize: 12.5, color: C.text, textDecoration: 'none', overflowWrap: 'anywhere' }}
+                      style={{ fontFamily: PP, fontWeight: 800, fontSize: 12.5, color: C.text, textDecoration: 'none', overflowWrap: 'anywhere' }}
                     >
                       {content.title || 'Sin título'} ↗
                     </a>
@@ -4145,8 +4686,8 @@ export default function Admin() {
                       { label:'Útil', value:fmtNumber(Math.max(0, Number(content.helpful_count) || 0)) },
                     ].map(item => (
                       <div key={item.label} style={{ textAlign: 'right' }}>
-                        <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 900, color: C.light, margin: 0, textTransform: 'uppercase' }}>{item.label}</p>
-                        <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 900, color: C.text, margin: '2px 0 0' }}>{item.value}</p>
+                        <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 800, color: C.light, margin: 0, textTransform: 'uppercase' }}>{item.label}</p>
+                        <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 800, color: C.text, margin: '2px 0 0' }}>{item.value}</p>
                       </div>
                     ))}
                   </div>
@@ -4163,18 +4704,24 @@ export default function Admin() {
     <button
       onClick={() => loadAdminData({ groups: getAdminTabDataGroups(tab), days: getLoadDaysForTab(tab), force: true })}
       disabled={loading}
-      style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: 14, padding: '11px 15px', cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 14px 30px rgba(37,99,235,0.22)', opacity: loading ? 0.72 : 1, whiteSpace: 'nowrap' }}
+      className="adm-primary-action"
+      style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: R.sm, padding: '0 14px', height: 38, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: `0 8px 20px -8px ${veil(C.primary, 70)}`, opacity: loading ? 0.72 : 1, whiteSpace: 'nowrap' }}
     >
-      <span style={{ fontSize: 14 }}>↻</span> {loading ? 'Actualizando' : 'Actualizar'}
+      <AdminIcon name="refresh" size={14} className={loading ? 'adm-spin' : undefined} />
+      {loading ? 'Actualizando' : 'Actualizar'}
     </button>
   )
 
+  const activeNavGroup = NAV_GROUPS.find(group => group.items.includes(tab))
+  const lastUpdatedLabel = deltaLoadSummary?.at ? fmtActivity(deltaLoadSummary.at) : ''
+
   return (
-    <div style={{
+    <div className="latido-admin" style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg,#F4F7FB 0%,#EEF4FF 100%)',
+      background: '#F4F7FC',
+      backgroundImage: 'radial-gradient(1200px 460px at 12% -8%, rgba(37,99,235,0.07), transparent 60%), radial-gradient(900px 420px at 96% 0%, rgba(124,58,237,0.06), transparent 62%)',
       padding: isDesktop
-        ? '20px var(--latido-page-gutter) 40px'
+        ? '20px var(--latido-page-gutter) 48px'
         : '14px var(--latido-page-gutter) calc(104px + env(safe-area-inset-bottom))',
     }}>
       <div style={{
@@ -4185,38 +4732,38 @@ export default function Admin() {
         gap: isDesktop ? 20 : 0,
       }}>
         {isDesktop && (
-          <aside style={{
-            width: 258,
-            flexShrink: 0,
-            position: 'sticky',
-            top: 20,
-            maxHeight: 'calc(100vh - 40px)',
-            overflowY: 'auto',
-            background: '#fff',
-            border: '1px solid rgba(226,234,244,0.95)',
-            borderRadius: 24,
-            padding: 14,
-            boxShadow: '0 18px 46px rgba(15,23,42,0.06)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 4px 14px', borderBottom: `1px solid ${C.borderLight}`, marginBottom: 12 }}>
-              <span style={{ width: 38, height: 38, borderRadius: 13, background: `linear-gradient(135deg,${C.primary},#7C3AED)`, display: 'grid', placeItems: 'center', fontSize: 17, flexShrink: 0 }}>
-                💓
+          <aside
+            className="adm-surface adm-scroll"
+            style={{
+              width: 252,
+              flexShrink: 0,
+              position: 'sticky',
+              top: 20,
+              maxHeight: 'calc(100vh - 40px)',
+              overflowY: 'auto',
+              borderRadius: R.xl,
+              padding: 12,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 4px 12px', borderBottom: `1px solid ${LINE}`, marginBottom: 12 }}>
+              <span style={{ width: 36, height: 36, borderRadius: R.sm, background: `linear-gradient(135deg,${C.primary},#7C3AED)`, color: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0, boxShadow: `0 8px 18px -8px ${veil(C.primary, 80)}` }}>
+                <AdminIcon name="brand" size={18} strokeWidth={2.2} />
               </span>
               <div style={{ minWidth: 0 }}>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 14, color: C.text, margin: 0, letterSpacing: -0.3 }}>Latido CRM</p>
-                <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13.5, color: INK.strong, margin: 0, letterSpacing: -0.3 }}>Latido CRM</p>
+                <p style={{ fontFamily: PP, fontSize: 10, color: INK.soft, margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {user?.email || 'Panel de administración'}
                 </p>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gap: 14 }}>
+            <div style={{ display: 'grid', gap: 13 }}>
               {NAV_GROUPS.map(group => (
                 <div key={group.label}>
-                  <p style={{ fontFamily: PP, fontSize: 9.5, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', color: C.light, margin: '0 0 7px', padding: '0 4px' }}>
+                  <p style={{ ...EYEBROW, fontSize: 9, margin: '0 0 6px', padding: '0 6px' }}>
                     {group.label}
                   </p>
-                  <div style={{ display: 'grid', gap: 4 }}>
+                  <div style={{ display: 'grid', gap: 2 }}>
                     {group.items.map(id => {
                       const item = navById.get(id)
                       if (!item) return null
@@ -4226,34 +4773,48 @@ export default function Admin() {
                           key={item.id}
                           type="button"
                           onClick={() => switchTab(item.id)}
+                          className="adm-nav-item"
+                          data-active={active}
+                          aria-current={active ? 'page' : undefined}
+                          title={`${item.label} · ${item.value}`}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: 9,
                             width: '100%',
                             border: 'none',
-                            borderRadius: 13,
-                            padding: '9px 10px',
+                            borderRadius: R.sm,
+                            padding: '8px 9px',
                             background: active ? item.bg : 'transparent',
-                            color: active ? item.color : C.text,
+                            color: active ? item.color : INK.base,
                             cursor: 'pointer',
                             textAlign: 'left',
                             position: 'relative',
                           }}
                         >
-                          <span style={{ width: 28, height: 28, borderRadius: 10, background: active ? '#fff' : C.bgAlt, display: 'grid', placeItems: 'center', fontSize: 13, flexShrink: 0 }}>
-                            {item.icon}
+                          <span style={{
+                            width: 27,
+                            height: 27,
+                            borderRadius: 8,
+                            background: active ? '#fff' : SURFACE_MUTED,
+                            color: active ? item.color : INK.soft,
+                            display: 'grid',
+                            placeItems: 'center',
+                            flexShrink: 0,
+                            boxShadow: active ? SH.sm : 'none',
+                          }}>
+                            <AdminIcon name={item.icon} size={14} strokeWidth={active ? 2.4 : 2} />
                           </span>
                           <span style={{ minWidth: 0, flex: 1 }}>
-                            <span style={{ display: 'block', fontFamily: PP, fontWeight: active ? 900 : 800, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ display: 'block', fontFamily: PP, fontWeight: active ? 800 : 700, fontSize: 12, color: active ? item.color : INK.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {item.label}
                             </span>
-                            <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 9.5, color: active ? item.color : C.light, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span className="adm-num" style={{ display: 'block', fontFamily: PP, fontWeight: 600, fontSize: 9.5, color: active ? item.color : INK.soft, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {item.value}
                             </span>
                           </span>
                           {Number(item.alert) > 0 && (
-                            <span style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: item.color, color: '#fff', fontFamily: PP, fontSize: 9.5, fontWeight: 900, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                            <span className="adm-num" style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: item.color, color: '#fff', fontFamily: PP, fontSize: 9.5, fontWeight: 800, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                               {item.alert}
                             </span>
                           )}
@@ -4265,16 +4826,29 @@ export default function Admin() {
               ))}
             </div>
 
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.borderLight}`, display: 'grid', gap: 7 }}>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <Tag bg={deltaStatusBg} color={deltaStatusColor}>{deltaStatusLabel}</Tag>
-                <Tag bg={totalPendingActions ? '#FEF3C7' : '#D1FAE5'} color={totalPendingActions ? '#92400E' : '#047857'}>
-                  {totalPendingActions} pendientes
-                </Tag>
-              </div>
-              {deltaLoadSummary?.at && (
-                <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: 0 }}>
-                  Actualizado {fmtActivity(deltaLoadSummary.at)}
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${LINE}`, display: 'grid', gap: 8 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: PP, fontSize: 10.5, fontWeight: 700, color: deltaStatusColor }}>
+                <span
+                  className={deltaLoadSummary?.status === 'loading' ? 'adm-pulse-dot' : undefined}
+                  style={{ width: 7, height: 7, borderRadius: 999, background: deltaStatusColor, flexShrink: 0 }}
+                />
+                {deltaStatusLabel}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontFamily: PP, fontSize: 10.5, color: INK.soft }}>
+                <span>Pendientes</span>
+                <span className="adm-num" style={{
+                  fontWeight: 800,
+                  color: totalPendingActions ? '#92400E' : POSITIVE,
+                  background: totalPendingActions ? '#FEF3C7' : '#D1FAE5',
+                  borderRadius: 999,
+                  padding: '2px 8px',
+                }}>
+                  {totalPendingActions}
+                </span>
+              </span>
+              {lastUpdatedLabel && (
+                <p style={{ fontFamily: PP, fontSize: 10, color: INK.soft, margin: 0 }}>
+                  Actualizado {lastUpdatedLabel}
                 </p>
               )}
             </div>
@@ -4283,72 +4857,162 @@ export default function Admin() {
 
         <main style={{ minWidth: 0, flex: '1 1 0' }}>
 
-      {/* Header */}
+      {/* Cabecera: identidad de la sección, qué mide y controles de periodo */}
       <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        gap: 14,
-        flexWrap: 'wrap',
         marginBottom: 14,
-        background: 'rgba(255,255,255,0.92)',
-        border: '1px solid rgba(226,234,244,0.95)',
-        borderRadius: 24,
-        padding: isDesktop ? '16px 20px' : 18,
-        boxShadow: '0 18px 46px rgba(15,23,42,0.06)',
-        position: 'sticky',
-        top: isDesktop ? 20 : 0,
+        background: 'rgba(255,255,255,0.9)',
+        border: `1px solid ${LINE}`,
+        borderRadius: R.xl,
+        padding: isDesktop ? '15px 18px' : '14px 15px',
+        boxShadow: SH.md,
+        // En móvil no se fija: la cabecera completa robaría media pantalla y
+        // la navegación ya vive en la barra inferior.
+        position: isDesktop ? 'sticky' : 'static',
+        top: isDesktop ? 20 : undefined,
         zIndex: 40,
         backdropFilter: 'blur(18px)',
         WebkitBackdropFilter: 'blur(18px)',
       }}>
-        <div style={{ minWidth: 200, flex: '1 1 340px' }}>
-          <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 900, color: activeSectionDetails.color, margin: '0 0 5px', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-            {activeSection.icon} Latido CRM · {activeSection.label}
-          </p>
-          <h1 style={{ fontFamily: PP, fontWeight: 900, fontSize: isDesktop ? 26 : 22, color: C.text, margin: '0 0 5px', letterSpacing: -0.8, lineHeight: 1.1 }}>
-            {activeSection.label}
-          </h1>
-          <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.5, maxWidth: 680 }}>
-            {activeSectionDetails.description}
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 200, flex: '1 1 340px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <span style={{
+              width: 40,
+              height: 40,
+              borderRadius: R.sm,
+              background: tint(activeSectionDetails.color, 12),
+              color: activeSectionDetails.color,
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0,
+            }}>
+              <AdminIcon name={activeSection.icon} size={19} strokeWidth={2.2} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ ...EYEBROW, marginBottom: 3 }}>
+                Latido CRM{activeNavGroup ? ` · ${activeNavGroup.label}` : ''}
+              </p>
+              <h1 style={{ fontFamily: PP, fontWeight: 800, fontSize: isDesktop ? 23 : 20, color: INK.strong, margin: '0 0 4px', letterSpacing: -0.7, lineHeight: 1.15 }}>
+                {activeSection.label}
+              </h1>
+              <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.base, margin: 0, lineHeight: 1.5, maxWidth: 680 }}>
+                {activeSectionDetails.description}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {topbarPeriodControl}
+            {refreshButton}
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          {topbarPeriodControl}
-          {refreshButton}
-        </div>
+
+        {isTabDataReady(tab) && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            flexWrap: 'wrap',
+            marginTop: 12,
+            paddingTop: 11,
+            borderTop: `1px solid ${LINE}`,
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>
+              {String(activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`))
+                .split('·')
+                .map(part => part.trim())
+                .filter(Boolean)
+                .map(part => (
+                  <span
+                    key={part}
+                    className="adm-num"
+                    style={{
+                      fontFamily: PP,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: activeSectionDetails.color,
+                      background: tint(activeSectionDetails.color, 9),
+                      border: `1px solid ${veil(activeSectionDetails.color, 20)}`,
+                      borderRadius: 999,
+                      padding: '3px 9px',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {part}
+                  </span>
+                ))}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: PP, fontSize: 10.5, fontWeight: 700, color: deltaStatusColor }}>
+                <span
+                  className={deltaLoadSummary?.status === 'loading' ? 'adm-pulse-dot' : undefined}
+                  style={{ width: 6, height: 6, borderRadius: 999, background: deltaStatusColor, flexShrink: 0 }}
+                />
+                {deltaStatusLabel}
+              </span>
+              {lastUpdatedLabel && (
+                <span style={{ fontFamily: PP, fontSize: 10.5, color: INK.soft }}>
+                  · Actualizado {lastUpdatedLabel}
+                </span>
+              )}
+            </span>
+          </div>
+        )}
       </div>
 
-
       {dataErrors.length > 0 && (
-        <Card style={{ marginBottom: 14, borderColor: '#FCA5A5', background: '#FEF2F2' }}>
-          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 13, color: '#B91C1C', margin: '0 0 5px' }}>
-            Datos incompletos
-          </p>
-          <p style={{ fontFamily: PP, fontSize: 11, color: '#991B1B', lineHeight: 1.5, margin: 0 }}>
-            {dataErrors.join(' · ')}
-          </p>
-        </Card>
+        <div style={{ marginBottom: 14, border: '1px solid #FCA5A5', background: '#FEF2F2', borderRadius: R.lg, padding: '13px 15px', display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+          <span style={{ color: '#B91C1C', marginTop: 1 }}>
+            <AdminIcon name="alert" size={17} />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12.5, color: '#B91C1C', margin: '0 0 4px' }}>
+              Datos incompletos
+            </p>
+            <p style={{ fontFamily: PP, fontSize: 11, color: '#991B1B', lineHeight: 1.55, margin: 0 }}>
+              {dataErrors.join(' · ')}
+            </p>
+          </div>
+        </div>
       )}
 
       {!isTabDataReady(tab) && (
-        <Card style={{ marginBottom: 14, textAlign: 'center', padding: '34px 20px' }}>
-          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 14, color: C.text, margin: '0 0 5px' }}>
-            {isTabDataLoading(tab)
-              ? `Cargando ${activeSection.label.toLowerCase()}`
-              : 'Datos no disponibles'}
-          </p>
-          <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>
-            {isTabDataLoading(tab)
-              ? 'Solo estamos consultando los datos necesarios para esta seccion.'
-              : 'Usa Actualizar para volver a intentar esta consulta.'}
-          </p>
-        </Card>
+        isTabDataLoading(tab) ? (
+          <div style={{ display: 'grid', gap: 12, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isDesktop ? 190 : 155}px, 1fr))`, gap: 10 }}>
+              {[0, 1, 2, 3].map(index => (
+                <div key={index} className="adm-surface" style={{ padding: '14px 15px', display: 'grid', gap: 9 }}>
+                  <span className="adm-skeleton" style={{ height: 9, width: '55%', borderRadius: 999 }} />
+                  <span className="adm-skeleton" style={{ height: 22, width: '42%', borderRadius: 8 }} />
+                  <span className="adm-skeleton" style={{ height: 9, width: '80%', borderRadius: 999 }} />
+                </div>
+              ))}
+            </div>
+            <div className="adm-surface" style={{ padding: 18, display: 'grid', gap: 12 }}>
+              <span className="adm-skeleton" style={{ height: 10, width: 160, borderRadius: 999 }} />
+              <span className="adm-skeleton" style={{ height: 140, borderRadius: R.md }} />
+            </div>
+            <p style={{ fontFamily: PP, fontSize: 11, color: INK.soft, margin: 0, textAlign: 'center' }}>
+              Cargando {activeSection.label.toLowerCase()} · solo se consultan los datos de esta sección.
+            </p>
+          </div>
+        ) : (
+          <div className="adm-surface" style={{ marginBottom: 14, textAlign: 'center', padding: '34px 20px', display: 'grid', gap: 8, justifyItems: 'center' }}>
+            <span style={{ width: 38, height: 38, borderRadius: R.sm, background: '#FFFBEB', color: '#B45309', display: 'grid', placeItems: 'center' }}>
+              <AdminIcon name="alert" size={18} />
+            </span>
+            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: INK.strong, margin: 0 }}>
+              Datos no disponibles
+            </p>
+            <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.base, margin: 0 }}>
+              Usa Actualizar para volver a intentar esta consulta.
+            </p>
+          </div>
+        )
       )}
 
-      {/* KPI row */}
+      {/* Indicadores clave de la sección */}
       {isTabDataReady(tab) && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isDesktop ? 190 : 155}px, 1fr))`, gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isDesktop ? 190 : 155}px, 1fr))`, gap: 10, marginBottom: 14 }}>
           {sectionMetrics.map(metric => (
             <SummaryMetric
               key={metric.label}
@@ -4363,146 +5027,139 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Context chart */}
+      {/* Evolución del periodo */}
       {isTabDataReady(tab) && !loading && activeChart && tab !== 'partners' && (
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 18 }}>
           {activeChart}
         </div>
       )}
 
       {isTabDataReady(tab) && loading && showChartPlaceholder && tab !== 'partners' && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: '16px', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Cargando...</p>
+        <div style={{ marginBottom: 18 }}>
+          <div className="adm-surface" style={{ padding: 18, display: 'grid', gap: 12 }}>
+            <span className="adm-skeleton" style={{ height: 10, width: 160, borderRadius: 999 }} />
+            <span className="adm-skeleton" style={{ height: 26, width: 90, borderRadius: 8 }} />
+            <span className="adm-skeleton" style={{ height: 120, borderRadius: R.md }} />
           </div>
-        </div>
-      )}
-
-      {/* Section context strip: resumen de la sección + frescura de los datos */}
-      {isTabDataReady(tab) && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14, background: '#fff', border: '1px solid rgba(226,234,244,0.95)', borderRadius: 18, padding: '11px 14px', boxShadow: '0 12px 28px rgba(15,23,42,0.04)' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
-            <span style={{ width: 32, height: 32, borderRadius: 12, background: `${activeSectionDetails.color}14`, display: 'grid', placeItems: 'center', fontSize: 15, flexShrink: 0 }}>
-              {activeSection.icon}
-            </span>
-            <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: activeSectionDetails.color, minWidth: 0, lineHeight: 1.4 }}>
-              {activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`)}
-            </span>
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <Tag bg={deltaStatusBg} color={deltaStatusColor}>{deltaStatusLabel}</Tag>
-            {deltaLoadSummary?.at && (
-              <span style={{ fontFamily: PP, fontSize: 10.5, color: C.light }}>
-                Actualizado {fmtActivity(deltaLoadSummary.at)}
-              </span>
-            )}
-          </span>
         </div>
       )}
 
       {/* ── Estado general ─────────────────────────────── */}
       {tab === 'overview' && isTabDataReady('overview') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Card style={{ padding: 0, overflow: 'hidden', borderRadius: 24 }}>
+          <div className="adm-surface" style={{ padding: 0, overflow: 'hidden', borderRadius: R.xl }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 0 }}>
               <div style={{ padding: 22, background: `linear-gradient(135deg,${generalTrendColor} 0%,#2563EB 100%)`, color: '#fff' }}>
-                <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.86 }}>
+                <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.9, opacity: 0.85 }}>
                   Rapport {overviewPeriodLabel.toLowerCase()}
                 </p>
-                <h3 style={{ fontFamily: PP, fontWeight: 900, fontSize: 31, lineHeight: 1.05, margin: '0 0 8px', letterSpacing: -0.8 }}>
+                <h3 style={{ fontFamily: PP, fontWeight: 800, fontSize: 30, lineHeight: 1.05, margin: '0 0 8px', letterSpacing: -0.9 }}>
                   {generalStatus}
                 </h3>
-                <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.55, margin: '0 0 18px', opacity: 0.9 }}>
+                <p style={{ fontFamily: PP, fontSize: 12.5, lineHeight: 1.6, margin: '0 0 18px', opacity: 0.92 }}>
                   {activeUsersInOverviewRange.length} usuarios activos, {newUsersInOverviewRange} nuevos, {newBusinessesInOverviewRange} negocios, {recentListingsInOverviewRange} anuncios y {overviewEngagementText} en {overviewRangeText}.
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ flex: 1, height: 10, borderRadius: 999, background: 'rgba(255,255,255,0.22)', overflow: 'hidden' }}>
-                    <div style={{ width: `${generalScore}%`, height: '100%', borderRadius: 999, background: '#fff' }} />
+                  <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.24)', overflow: 'hidden' }}>
+                    <div className="adm-bar-fill" style={{ width: `${generalScore || 0}%`, height: '100%', background: '#fff' }} />
                   </div>
-                  <strong style={{ fontFamily: PP, fontSize: 22, fontWeight: 900 }}>{generalScore}/100</strong>
+                  <strong className="adm-num" style={{ fontFamily: PP, fontSize: 21, fontWeight: 800, letterSpacing: -0.5 }}>{generalScoreLabel}</strong>
                 </div>
               </div>
 
               <div style={{ padding: 22, background: '#fff' }}>
-                <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 8px' }}>
+                <p style={{ ...EYEBROW, marginBottom: 8 }}>
                   Lectura automática
                 </p>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 22, color: C.text, margin: '0 0 8px', lineHeight: 1.15 }}>
-                  La tendencia está {generalTrend.toLowerCase()}.
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 21, color: INK.strong, margin: '0 0 8px', lineHeight: 1.2, letterSpacing: -0.5 }}>
+                  La tendencia está {generalTrendLabel.toLowerCase()}.
                 </p>
-                <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, lineHeight: 1.6, margin: 0 }}>
+                <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.base, lineHeight: 1.6, margin: 0 }}>
                   Se calcula sin IA, comparando {overviewComparisonText} en actividad, usuarios nuevos, negocios, anuncios, empleos, navegación, búsquedas, mensajes y reportes.
                 </p>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 15 }}>
+                <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 15 }}>
                   <Tag bg={generalTrend === 'Mejora' ? '#D1FAE5' : generalTrend === 'Empeora' ? '#FEE2E2' : '#FEF3C7'} color={generalTrendColor}>
-                    {generalTrend}
+                    {generalTrendLabel}
                   </Tag>
-                  <Tag bg={C.bg} color={C.mid}>{overviewPeriodLabel}</Tag>
+                  <Tag bg={SURFACE_MUTED} color={INK.base}>{overviewPeriodLabel}</Tag>
                   <Tag bg={totalPendingActions ? '#FEF3C7' : '#D1FAE5'} color={totalPendingActions ? '#92400E' : '#047857'}>
                     {totalPendingActions} pendientes
                   </Tag>
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 12 }}>
+          {/* Señales del periodo: una rejilla comparable, sin colores gritando */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 10 }}>
             {overviewSignals.map(signal => (
-              <Card key={signal.label} style={{ padding: 15 }}>
-                <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 7px' }}>
-                  {signal.label}
+              <div key={signal.label} className="adm-surface adm-raise" style={{ padding: '13px 14px', display: 'grid', gap: 8 }}>
+                <p style={{ ...EYEBROW, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: signal.color, flexShrink: 0 }} />
+                  <span style={{ minWidth: 0 }}>{signal.label}</span>
                 </p>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-                  <strong style={{ fontFamily: PP, fontWeight: 900, fontSize: 28, color: signal.color, lineHeight: 1 }}>
-                    {loading ? '...' : signal.value}
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+                  <strong className="adm-num" style={{ fontFamily: PP, fontWeight: 800, fontSize: 25, color: INK.strong, lineHeight: 1, letterSpacing: -0.8 }}>
+                    {loading ? '···' : signal.value}
                   </strong>
-                  {signal.trend != null && (
-                    <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: signal.trend > 0 ? '#047857' : signal.trend < 0 ? '#B91C1C' : C.light, background: signal.trend > 0 ? '#D1FAE5' : signal.trend < 0 ? '#FEE2E2' : C.bg, borderRadius: 999, padding: '5px 8px' }}>
-                      {signal.trend > 0 ? `+${signal.trend}%` : signal.trend < 0 ? `${signal.trend}%` : '0%'}
-                    </span>
-                  )}
+                  <TrendChip value={signal.trend} size={10} />
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 14 }}>
-            <Card style={{ padding: 16, overflow: 'hidden' }}>
-              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 4px' }}>Sugerencias de mejora</p>
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Reglas simples basadas en actividad y carga pendiente.</p>
-              <div style={{ display: 'grid', gap: 10 }}>
+            <AdminSectionCard
+              title="Sugerencias de mejora"
+              subtitle="Reglas simples basadas en actividad y carga pendiente."
+              icon={<AdminIcon name="insight" size={15} />}
+            >
+              <div style={{ display: 'grid', gap: 8 }}>
                 {(generalSuggestions.length ? generalSuggestions : ['El panel no detecta bloqueos fuertes ahora mismo. Mantén revisión y reportes al día.']).map((text, index) => (
-                  <div key={text} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '11px 12px', border: `1px solid ${C.border}`, borderRadius: 14, background: '#F8FAFF' }}>
-                    <span style={{ width: 25, height: 25, borderRadius: 9, background: C.primaryLight, color: C.primary, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, fontSize: 12, flexShrink: 0 }}>
+                  <div key={text} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', border: `1px solid ${LINE}`, borderRadius: R.md, background: SURFACE_MUTED }}>
+                    <span className="adm-num" style={{ width: 22, height: 22, borderRadius: 7, background: '#fff', color: C.primary, border: `1px solid ${veil(C.primary, 22)}`, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
                       {index + 1}
                     </span>
-                    <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.45 }}>{text}</p>
+                    <p style={{ fontFamily: PP, fontSize: 12, color: INK.base, margin: 0, lineHeight: 1.5 }}>{text}</p>
                   </div>
                 ))}
               </div>
-            </Card>
+            </AdminSectionCard>
 
-            <Card style={{ padding: 16 }}>
-              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 4px' }}>Cola operativa</p>
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Qué necesita atención ahora.</p>
-              <div style={{ display: 'grid', gap: 10 }}>
+            <AdminSectionCard
+              title="Cola operativa"
+              subtitle="Qué necesita atención ahora. Pulsa para ir a la sección."
+              icon={<AdminIcon name="moderation" size={15} />}
+            >
+              <div style={{ display: 'grid', gap: 8 }}>
                 {[
-                  { label: 'Revisión de contenido', value: stats.queue, color: '#D97706' },
-                  { label: 'Reportes pendientes', value: stats.reports, color: '#DC2626' },
-                  { label: 'Negocios por verificar', value: stats.businessVerification, color: '#059669' },
+                  { label: 'Revisión de contenido', value: stats.queue, color: '#D97706', tab: 'moderation', icon: 'moderation' },
+                  { label: 'Reportes pendientes', value: stats.reports, color: '#DC2626', tab: 'reports', icon: 'reports' },
+                  { label: 'Negocios por verificar', value: stats.businessVerification, color: '#059669', tab: 'businessVerification', icon: 'businessVerification' },
                 ].map(item => (
                   <button
                     key={item.label}
                     type="button"
-                    onClick={() => switchTab(item.label.includes('contenido') ? 'moderation' : item.label.includes('Reportes') ? 'reports' : 'businessVerification')}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: `1px solid ${C.border}`, borderRadius: 14, padding: '11px 12px', background: '#fff', cursor: 'pointer', textAlign: 'left' }}
+                    onClick={() => switchTab(item.tab)}
+                    className="adm-action"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: `1px solid ${LINE}`, borderRadius: R.md, padding: '10px 12px', background: '#fff', cursor: 'pointer', textAlign: 'left' }}
                   >
-                    <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text }}>{item.label}</span>
-                    <strong style={{ fontFamily: PP, fontSize: 13, color: item.color }}>{item.value} pend.</strong>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                      <span style={{ width: 26, height: 26, borderRadius: 8, background: item.value ? tint(item.color, 12) : SURFACE_MUTED, color: item.value ? item.color : INK.soft, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                        <AdminIcon name={item.icon} size={14} />
+                      </span>
+                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 700, color: INK.strong }}>{item.label}</span>
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <strong className="adm-num" style={{ fontFamily: PP, fontSize: 13, fontWeight: 800, color: item.value ? item.color : INK.soft }}>
+                        {item.value}
+                      </strong>
+                      <AdminIcon name="arrowRight" size={13} style={{ color: INK.soft }} />
+                    </span>
                   </button>
                 ))}
               </div>
-            </Card>
+            </AdminSectionCard>
           </div>
         </div>
       )}
@@ -4513,7 +5170,7 @@ export default function Admin() {
           <Card style={{ padding: 18, background: 'linear-gradient(135deg,#FFFFFF 0%,#F7FAFF 55%,#FFF9EC 100%)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               <div>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 17, color: C.text, margin: '0 0 4px' }}>Participación y opinión general</p>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 17, color: C.text, margin: '0 0 4px' }}>Participación y opinión general</p>
                 <p style={{ fontFamily: PP, fontSize: 11.5, color: C.light, lineHeight: 1.5, margin: 0 }}>Quién responde, cuántas respuestas hay y qué señales requieren atención.</p>
               </div>
               <Tag bg={identifiedFeedbackCoverage >= 20 ? '#ECFDF5' : '#FFFBEB'} color={identifiedFeedbackCoverage >= 20 ? '#047857' : '#B45309'}>
@@ -4530,7 +5187,7 @@ export default function Admin() {
                 { label:'Señales a revisar', value:feedbackSignalsToReview, hint:`Frente a ${positiveFeedbackSignals} positivas`, color:'#B91C1C' },
               ].map(item => (
                 <div key={item.label} style={{ minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 11px', background: 'rgba(255,255,255,0.92)' }}>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 24, color: item.color, lineHeight: 1, margin: '0 0 6px' }}>{item.value}</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 24, color: item.color, lineHeight: 1, margin: '0 0 6px' }}>{item.value}</p>
                   <p style={{ fontFamily: PP, fontWeight: 850, fontSize: 10.5, color: C.text, margin: '0 0 3px' }}>{item.label}</p>
                   <p style={{ fontFamily: PP, fontSize: 9.5, color: C.light, lineHeight: 1.35, margin: 0 }}>{item.hint}</p>
                 </div>
@@ -4553,7 +5210,7 @@ export default function Admin() {
             <Card style={{ padding: 18, background: 'linear-gradient(180deg,#FFFFFF,#F7F3FF)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Cobertura de intereses</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Cobertura de intereses</p>
                   <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>Cuántas cuentas han indicado al menos una preferencia.</p>
                 </div>
                 <Tag bg="#F3E8FF" color="#7C3AED">{interestCoverage}%</Tag>
@@ -4566,7 +5223,7 @@ export default function Admin() {
                   { label:'Media por cuenta', value:metricUsers.length ? (selectedInterestCount / metricUsers.length).toFixed(1) : '0.0', color:'#0F766E' },
                 ].map(item => (
                   <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 11px', background: '#fff' }}>
-                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 23, color: item.color, lineHeight: 1, margin: '0 0 5px' }}>{item.value}</p>
+                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 23, color: item.color, lineHeight: 1, margin: '0 0 5px' }}>{item.value}</p>
                     <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.light, margin: 0 }}>{item.label}</p>
                   </div>
                 ))}
@@ -4621,7 +5278,7 @@ export default function Admin() {
           <Card style={{ padding: 18, background: 'linear-gradient(180deg,#FFFFFF,#F3FCF8)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 15 }}>
               <div>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>¿Encontraron lo que buscaban?</p>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>¿Encontraron lo que buscaban?</p>
                 <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>Respuestas guardadas después de una búsqueda, independientemente del consentimiento de métricas.</p>
               </div>
               <Tag bg="#ECFDF5" color="#047857">
@@ -4636,7 +5293,7 @@ export default function Admin() {
                 { label:'No', value:directSearchResolution.no, color:'#B91C1C' },
               ].map(item => (
                 <div key={item.label} style={{ minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 8px', background: '#fff' }}>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 24, color: item.color, lineHeight: 1, margin: '0 0 5px' }}>{item.value}</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 24, color: item.color, lineHeight: 1, margin: '0 0 5px' }}>{item.value}</p>
                   <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.light, margin: 0 }}>{item.label}</p>
                 </div>
               ))}
@@ -4666,11 +5323,11 @@ export default function Admin() {
           <Card style={{ padding: 16, background: '#F8FAFF' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 11 }}>
               <div>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Explorar todas las respuestas</p>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Explorar todas las respuestas</p>
                 <p style={{ fontFamily: PP, fontSize: 11, color: C.light, lineHeight: 1.45, margin: 0 }}>Busca por persona, email, comentario, motivo, consulta o resultado.</p>
               </div>
               <Tag bg="#E0F2FE" color="#0369A1">
-                {filteredLatidoRatings.length + filteredUsefulnessFeedback.length + filteredSearchFeedback.length} de {totalFeedbackResponses} visibles
+                {filteredFeedbackResponses} de {totalFeedbackResponses} registros visibles
               </Tag>
             </div>
             <div style={{ display: 'flex', alignItems: 'stretch', gap: 9, flexWrap: 'wrap' }}>
@@ -4689,7 +5346,7 @@ export default function Admin() {
                 </AdminFilterSelect>
               </div>
               {(feedbackSearch || feedbackToneFilter !== 'all') && (
-                <AdminButton onClick={() => { setFeedbackSearch(''); setFeedbackToneFilter('all') }}>Limpiar filtros</AdminButton>
+                <AdminButton icon="reset" onClick={() => { setFeedbackSearch(''); setFeedbackToneFilter('all') }}>Limpiar filtros</AdminButton>
               )}
             </div>
           </Card>
@@ -4698,7 +5355,7 @@ export default function Admin() {
             <Card style={{ padding: 16, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Votos de utilidad</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Votos de utilidad</p>
                   <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Todas las personas, motivos y comentarios.</p>
                 </div>
                 <Tag bg="#ECFDF5" color="#047857">{filteredUsefulnessFeedback.length}/{metricUsefulnessFeedback.length}</Tag>
@@ -4712,7 +5369,7 @@ export default function Admin() {
                     <div key={rating.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 9 }}>
                         <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>
+                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>
                             {profile?.name || profile?.email || 'Usuario sin perfil'}
                           </span>
                           {profileMeta && <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.mid, marginTop: 2, overflowWrap: 'anywhere' }}>{profileMeta}</span>}
@@ -4721,7 +5378,7 @@ export default function Admin() {
                         <Tag bg={answerMeta.bg} color={answerMeta.color}>{answerMeta.label}</Tag>
                       </div>
                       <div style={{ borderRadius: 11, padding: '9px 10px', background: '#fff', border: `1px solid ${C.border}`, marginBottom: 7 }}>
-                        <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 900, letterSpacing: 0.55, color: C.light, margin: '0 0 3px', textTransform: 'uppercase' }}>Qué indicó</p>
+                        <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 800, letterSpacing: 0.55, color: C.light, margin: '0 0 3px', textTransform: 'uppercase' }}>Qué indicó</p>
                         <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 750, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}>
                           {LATIDO_USEFULNESS_DETAIL_LABELS[rating.usefulness_detail] || 'Sin opción adicional'}
                         </p>
@@ -4741,7 +5398,7 @@ export default function Admin() {
             <Card style={{ padding: 16, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Valoraciones de Latido</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Valoraciones de Latido</p>
                   <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Las dos puntuaciones y el comentario completo.</p>
                 </div>
                 <Tag bg="#FFFBEB" color="#B45309">{filteredLatidoRatings.length}/{metricStarRatings.length}</Tag>
@@ -4760,7 +5417,7 @@ export default function Admin() {
                     <div key={rating.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 9 }}>
                         <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>{profile?.name || profile?.email || 'Usuario sin perfil'}</span>
+                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>{profile?.name || profile?.email || 'Usuario sin perfil'}</span>
                           {profileMeta && <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.mid, marginTop: 2, overflowWrap: 'anywhere' }}>{profileMeta}</span>}
                           <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(rating.updated_at || rating.created_at)}</span>
                         </span>
@@ -4769,11 +5426,11 @@ export default function Admin() {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 7, marginBottom: 8 }}>
                         <div style={{ borderRadius: 11, padding: '9px 8px', background: '#fff', border: `1px solid ${C.border}` }}>
                           <p style={{ fontFamily: PP, fontSize: 9, color: C.light, fontWeight: 850, margin: '0 0 3px' }}>LATIDO</p>
-                          <p style={{ fontFamily: PP, fontSize: 14, color: '#B45309', fontWeight: 900, margin: 0 }}>★ {rating.overall_rating}/5</p>
+                          <p style={{ fontFamily: PP, fontSize: 14, color: '#B45309', fontWeight: 800, margin: 0 }}>★ {rating.overall_rating}/5</p>
                         </div>
                         <div style={{ borderRadius: 11, padding: '9px 8px', background: '#fff', border: `1px solid ${C.border}` }}>
                           <p style={{ fontFamily: PP, fontSize: 9, color: C.light, fontWeight: 850, margin: '0 0 3px' }}>ENCUENTRA LO NECESARIO</p>
-                          <p style={{ fontFamily: PP, fontSize: 14, color: '#047857', fontWeight: 900, margin: 0 }}>★ {rating.usefulness_rating}/5</p>
+                          <p style={{ fontFamily: PP, fontSize: 14, color: '#047857', fontWeight: 800, margin: 0 }}>★ {rating.usefulness_rating}/5</p>
                         </div>
                       </div>
                       <p style={{ fontFamily: PP, fontSize: 10.5, color: rating.comment ? C.text : C.light, fontStyle: rating.comment ? 'normal' : 'italic', lineHeight: 1.5, margin: 0, padding: rating.comment ? '8px 10px' : 0, borderRadius: 10, background: rating.comment ? '#FFF' : 'transparent', overflowWrap: 'anywhere' }}>
@@ -4791,7 +5448,7 @@ export default function Admin() {
             <Card style={{ padding: 16, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Votos sobre búsquedas</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Votos sobre búsquedas</p>
                   <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Persona, consulta, resultado, motivo y acción.</p>
                 </div>
                 <Tag bg="#E0F2FE" color="#0369A1">{filteredSearchFeedback.length}/{metricSearchFeedback.length}</Tag>
@@ -4805,7 +5462,7 @@ export default function Admin() {
                     <div key={item.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 9 }}>
                         <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>{profile?.name || profile?.email || 'Respuesta anónima'}</span>
+                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>{profile?.name || profile?.email || 'Respuesta anónima'}</span>
                           {profileMeta && <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.mid, marginTop: 2, overflowWrap: 'anywhere' }}>{profileMeta}</span>}
                           <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(item.updated_at || item.created_at)}</span>
                         </span>
@@ -4813,7 +5470,7 @@ export default function Admin() {
                       </div>
                       <div style={{ display: 'grid', gap: 6 }}>
                         <div style={{ borderRadius: 11, padding: '9px 10px', background: '#fff', border: `1px solid ${C.border}` }}>
-                          <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 900, letterSpacing: 0.55, color: C.light, margin: '0 0 3px', textTransform: 'uppercase' }}>Búsqueda</p>
+                          <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 800, letterSpacing: 0.55, color: C.light, margin: '0 0 3px', textTransform: 'uppercase' }}>Búsqueda</p>
                           <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 850, color: C.text, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}>“{item.query}”</p>
                         </div>
                         <div style={{ display: 'grid', gap: 3, padding: '2px 1px' }}>
@@ -4840,7 +5497,7 @@ export default function Admin() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {analyticsUnavailable && (
             <Card style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
-              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>
+              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>
                 Tracking pendiente de activar
               </p>
               <p style={{ fontFamily: PP, fontSize: 12, color: '#92400E', lineHeight: 1.55, margin: 0 }}>
@@ -4853,7 +5510,7 @@ export default function Admin() {
             <Card style={{ padding: 16 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Páginas más usadas</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Páginas más usadas</p>
                   <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Agrupado por sección en {analyticsRangeText}.</p>
                 </div>
                 <Tag bg="#E0F2FE" color="#0284C7">{pageViewEvents.length} vistas</Tag>
@@ -4864,11 +5521,11 @@ export default function Admin() {
                   <div key={row.label} style={{ minWidth: 0, overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
                       <div style={{ minWidth: 0, maxWidth: '100%', flex: '1 1 0', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                        <span style={{ width: 24, height: 24, borderRadius: 9, background: '#E0F2FE', color: '#0284C7', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, fontSize: 11, flexShrink: 0 }}>
+                        <span style={{ width: 24, height: 24, borderRadius: 9, background: '#E0F2FE', color: '#0284C7', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
                           {index + 1}
                         </span>
                         <div style={{ minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
-                          <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
+                          <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
                           <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.sub}</p>
                         </div>
                       </div>
@@ -4890,7 +5547,7 @@ export default function Admin() {
             <Card style={{ padding: 16, overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Búsquedas frecuentes</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Búsquedas frecuentes</p>
                   <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Términos escritos en búsqueda global, anuncios y comunidad en {analyticsRangeText}.</p>
                 </div>
                 <Tag bg={C.primaryLight} color={C.primary}>{searchEvents.length} búsquedas</Tag>
@@ -4901,11 +5558,11 @@ export default function Admin() {
                   <div key={row.label} style={{ minWidth: 0, overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
                       <div style={{ minWidth: 0, maxWidth: '100%', flex: '1 1 0', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                        <span style={{ width: 24, height: 24, borderRadius: 9, background: C.primaryLight, color: C.primary, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, fontSize: 11, flexShrink: 0 }}>
+                        <span style={{ width: 24, height: 24, borderRadius: 9, background: C.primaryLight, color: C.primary, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
                           {index + 1}
                         </span>
                         <div style={{ minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
-                          <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
+                          <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
                           <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '2px 0 0' }}>{row.sub}</p>
                         </div>
                       </div>
@@ -4991,7 +5648,7 @@ export default function Admin() {
             <Card style={{ padding: 16, background: 'linear-gradient(180deg,#FFFFFF,#F8FAFF)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Embudo de búsqueda</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Embudo de búsqueda</p>
                   <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Desde la consulta hasta una acción útil sobre el resultado.</p>
                 </div>
                 <Tag bg="#ECFDF5" color="#047857">{searchActionRate}% acción</Tag>
@@ -5004,7 +5661,7 @@ export default function Admin() {
                   { label: 'Sin resultados', value: searchesWithoutResults, color: '#DC2626' },
                 ].map(item => (
                   <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '11px 10px', background: '#fff' }}>
-                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 22, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
+                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
                     <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.light, margin: 0 }}>{item.label}</p>
                   </div>
                 ))}
@@ -5014,7 +5671,7 @@ export default function Admin() {
             <Card style={{ padding: 16, background: 'linear-gradient(180deg,#FFFFFF,#F3FCF8)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Soluciones encontradas</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Soluciones encontradas</p>
                   <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Respuesta directa después de revisar un resultado.</p>
                 </div>
                 <Tag bg="#ECFDF5" color="#047857">
@@ -5029,7 +5686,7 @@ export default function Admin() {
                   { label: 'No', value: searchResolution.no, color: '#B91C1C' },
                 ].map(item => (
                   <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 13, padding: '10px 8px', background: '#fff' }}>
-                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 21, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
+                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 21, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
                     <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 9.5, color: C.light, margin: 0 }}>{item.label}</p>
                   </div>
                 ))}
@@ -5066,7 +5723,7 @@ export default function Admin() {
           </div>
 
           <Card style={{ padding: 16, background: '#fff' }}>
-            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
+            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
             <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.55 }}>
               La navegación, las búsquedas y las respuestas salen de analytics_events. Estas métricas representan las sesiones que aceptaron la analítica.
             </p>
@@ -5082,7 +5739,7 @@ export default function Admin() {
               ].map(item => (
                 <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF' }}>
                   <span style={{ width: 10, height: 10, borderRadius: 999, background: item.color, display: 'inline-block', marginBottom: 8 }} />
-                  <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: '0 0 4px' }}>{item.label}</p>
+                  <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: '0 0 4px' }}>{item.label}</p>
                   <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>{item.note}</p>
                 </div>
               ))}
@@ -5096,7 +5753,7 @@ export default function Admin() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {analyticsUnavailable && (
             <Card style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
-              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>
+              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>
                 Métricas no disponibles
               </p>
               <p style={{ fontFamily: PP, fontSize: 12, color: '#92400E', lineHeight: 1.55, margin: 0 }}>
@@ -5108,7 +5765,7 @@ export default function Admin() {
           <Card style={{ padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
               <div>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Colaboraciones</p>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Colaboraciones</p>
                 <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Selecciona un colaborador para consultar sus resultados por mes natural.</p>
               </div>
               <Tag bg="#EEF2FF" color="#4F46E5">{partnerMonthRange.monthLabel}</Tag>
@@ -5151,7 +5808,7 @@ export default function Admin() {
                         {partner.isBusinessPartner ? `${partner.planKey === 'premium' ? 'Premium' : 'Básica'} · ` : ''}{clicks} salidas · {partnerMonthRange.monthLabel}
                       </span>
                     </span>
-                    <span aria-hidden="true" style={{ color: active ? partner.color : C.light, fontWeight: 900 }}>›</span>
+                    <span aria-hidden="true" style={{ color: active ? partner.color : C.light, fontWeight: 800 }}>›</span>
                   </button>
                 )
               })}
@@ -5179,7 +5836,7 @@ export default function Admin() {
                   <img src={selectedPartner?.logo} alt="" style={{ width: 35, height: 35, objectFit: 'contain' }} />
                 </span>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>{selectedPartner?.name}</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>{selectedPartner?.name}</p>
                   <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Aperturas y contactos del colaborador en {partnerRangeText}.</p>
                 </div>
               </div>
@@ -5193,8 +5850,8 @@ export default function Admin() {
                 return (
                   <div key={row.label} style={{ marginTop: 13 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.text }}>{row.label}</span>
-                      <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: row.color }}>{row.value} · {share}%</span>
+                      <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text }}>{row.label}</span>
+                      <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: row.color }}>{row.value} · {share}%</span>
                     </div>
                     <div style={{ height: 10, borderRadius: 999, overflow: 'hidden', background: C.bg }}>
                       <div style={{ width: `${row.value ? Math.max(8, Math.round((row.value / max) * 100)) : 0}%`, height: '100%', borderRadius: 999, background: row.color }} />
@@ -5225,7 +5882,7 @@ export default function Admin() {
           <Card style={{ padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
               <div>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Cuentas enviadas por día</p>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Cuentas registradas por día</p>
                 <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.5, margin: 0 }}>
                   Cada perfil aparece una sola vez por fecha, aunque abra el partner varias veces. Las salidas sin una cuenta identificada no pueden mostrar email.
                 </p>
@@ -5249,7 +5906,7 @@ export default function Admin() {
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
-                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.text, margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text, margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {account.name}
                     </p>
                     <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, margin: 0, overflowWrap: 'anywhere' }}>
@@ -5269,7 +5926,7 @@ export default function Admin() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', alignSelf: 'start' }}>
-                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 11, color: C.text, margin: '0 0 3px', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 11, color: C.text, margin: '0 0 3px', whiteSpace: 'nowrap' }}>
                       {new Date(`${account.date}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                     </p>
                     <p style={{ fontFamily: PP, fontSize: 9, color: C.light, margin: 0, whiteSpace: 'nowrap' }}>
@@ -5288,9 +5945,9 @@ export default function Admin() {
           </Card>
 
           <Card style={{ padding: 16, background: '#fff' }}>
-            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 4px' }}>Qué significa cada número</p>
+            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 4px' }}>Qué significa cada número</p>
             <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.6, margin: 0 }}>
-              “Total enviado” cuenta cada apertura o contacto registrado hacia el colaborador. “Cuentas enviadas” agrupa por perfil y fecha: tres clics de una misma cuenta hoy cuentan como una cuenta; si vuelve mañana, genera una nueva fila para mañana. “Landing” y “App” son partes del total de aperturas. Las cuentas admin y test@g.com quedan excluidas.
+              “Salidas registradas” cuenta cada apertura o contacto guardado en analytics_events y, por consentimiento, no equivale a todas las salidas posibles. “Cuentas por día” agrupa por perfil y fecha: tres clics de una misma cuenta hoy cuentan como una; si vuelve mañana, genera otra fila. “Landing” y “App” son partes del total. Las cuentas admin y test@g.com quedan excluidas.
             </p>
           </Card>
         </div>
@@ -5300,21 +5957,37 @@ export default function Admin() {
       {tab === 'moderation' && isTabDataReady('moderation') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <Card style={{ padding: 16, background: '#FFFBEB', borderColor: '#FDE68A' }}>
-            <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>Qué significa revisión</p>
+            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>Qué significa revisión</p>
             <p style={{ fontFamily: PP, fontSize: 12, color: '#92400E', lineHeight: 1.55, margin: 0 }}>
               Aquí aparecen publicaciones retenidas por filtros automáticos o marcadas para decisión manual. El objetivo es aprobar contenido válido, eliminar contenido problemático o bloquear al autor si el caso lo requiere.
             </p>
           </Card>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <AdminFilterBar
+            footer={(
+              <>
+                <ResultSummary
+                  parts={[
+                    { value: fmtNumber(filteredPendingQueue.length), label: 'en la vista' },
+                    { value: fmtNumber(pendingQueue.length), label: 'en cola total', color: '#D97706' },
+                  ]}
+                />
+                {moderationTypeFilter !== 'all' && (
+                  <AdminButton icon="reset" onClick={() => { setModerationTypeFilter('all'); setModerationPage(1) }}>
+                    Limpiar filtros
+                  </AdminButton>
+                )}
+              </>
+            )}
+          >
             <AdminFilterSelect
               label="Tipo de contenido en moderación"
               value={moderationTypeFilter}
               onChange={value => { setModerationTypeFilter(value); setModerationPage(1) }}
             >
-              <option value="all">Todos los tipos ({pendingQueue.length})</option>
+              <option value="all">Tipo: todos ({pendingQueue.length})</option>
               {moderationTypes.map(type => <option key={type} value={type}>{type}</option>)}
             </AdminFilterSelect>
-          </div>
+          </AdminFilterBar>
           {filteredPendingQueue.length === 0 ? (
             <EmptyState variant="card" emoji="✅" text="No hay contenido pendiente con este filtro." />
           ) : pagedModeration.items.map(item => (
@@ -5332,10 +6005,10 @@ export default function Admin() {
                 Motivo: {item.reason || 'Filtro automático'}{item.matched_term ? ` · término: "${item.matched_term}"` : ''}
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <AdminButton variant="success" onClick={() => resolveQueueItem(item, 'approved')}>✓ Aprobar</AdminButton>
-                <AdminButton variant="danger"  onClick={() => resolveQueueItem(item, 'rejected')}>✕ Eliminar</AdminButton>
-                <AdminButton variant="danger" disabled={!canBanContentAuthor(item)} onClick={() => banContentAuthor(item)}>
-                  🚫 {banAuthorButtonLabel(item)}
+                <AdminButton variant="success" icon="check" onClick={() => resolveQueueItem(item, 'approved')}>Aprobar</AdminButton>
+                <AdminButton variant="danger" icon="close" onClick={() => resolveQueueItem(item, 'rejected')}>Eliminar</AdminButton>
+                <AdminButton variant="danger" icon="ban" disabled={!canBanContentAuthor(item)} onClick={() => banContentAuthor(item)}>
+                  {banAuthorButtonLabel(item)}
                 </AdminButton>
               </div>
             </Card>
@@ -5352,16 +6025,33 @@ export default function Admin() {
       {/* ── Reportes ───────────────────────────────────── */}
       {tab === 'reports' && isTabDataReady('reports') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <AdminFilterBar
+            footer={(
+              <>
+                <ResultSummary
+                  parts={[
+                    { value: fmtNumber(filteredPendingReports.length), label: 'en la vista' },
+                    { value: fmtNumber(pendingReports.length), label: 'pendientes', color: '#DC2626' },
+                    { value: fmtNumber(reports.length), label: 'cargados' },
+                  ]}
+                />
+                {reportTypeFilter !== 'all' && (
+                  <AdminButton icon="reset" onClick={() => { setReportTypeFilter('all'); setReportPage(1) }}>
+                    Limpiar filtros
+                  </AdminButton>
+                )}
+              </>
+            )}
+          >
             <AdminFilterSelect
               label="Tipo de contenido reportado"
               value={reportTypeFilter}
               onChange={value => { setReportTypeFilter(value); setReportPage(1) }}
             >
-              <option value="all">Todos los tipos ({pendingReports.length})</option>
+              <option value="all">Tipo: todos ({pendingReports.length})</option>
               {reportTypes.map(type => <option key={type} value={type}>{type}</option>)}
             </AdminFilterSelect>
-          </div>
+          </AdminFilterBar>
           {filteredPendingReports.length === 0 ? (
             <EmptyState variant="card" emoji="✅" text="No hay reportes pendientes con este filtro." />
           ) : pagedReports.items.map(report => (
@@ -5381,10 +6071,10 @@ export default function Admin() {
                 </p>
               )}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                <AdminButton onClick={() => updateReport(report, 'reviewed')}>✓ Mantener</AdminButton>
-                <AdminButton variant="danger" onClick={() => removeReportedContent(report)}>✕ Eliminar contenido</AdminButton>
-                <AdminButton variant="danger" disabled={!canBanContentAuthor(report)} onClick={() => banContentAuthor(report)}>
-                  🚫 {banAuthorButtonLabel(report)}
+                <AdminButton icon="check" onClick={() => updateReport(report, 'reviewed')}>Mantener</AdminButton>
+                <AdminButton variant="danger" icon="close" onClick={() => removeReportedContent(report)}>Eliminar contenido</AdminButton>
+                <AdminButton variant="danger" icon="ban" disabled={!canBanContentAuthor(report)} onClick={() => banContentAuthor(report)}>
+                  {banAuthorButtonLabel(report)}
                 </AdminButton>
               </div>
             </Card>
@@ -5403,7 +6093,7 @@ export default function Admin() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {businessPromotionUnavailable ? (
             <div style={{ padding:14, borderRadius:16, border:'1px solid #F59E0B', background:'#FFFBEB' }}>
-              <p style={{ fontFamily:PP, fontWeight:900, fontSize:12, color:'#92400E', margin:'0 0 4px' }}>
+              <p style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:'#92400E', margin:'0 0 4px' }}>
                 Planes de Inicio pendientes de configurar
               </p>
               <p style={{ fontFamily:PP, fontSize:11, color:'#A16207', margin:0, lineHeight:1.55 }}>
@@ -5416,7 +6106,7 @@ export default function Admin() {
                 <div key={plan.key} style={{ padding:12, borderRadius:16, border:`1px solid ${plan.color}44`, background:plan.background }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
                     <div>
-                      <p style={{ fontFamily:PP, fontWeight:900, fontSize:11, color:plan.color, margin:'0 0 4px' }}>{plan.label}</p>
+                      <p style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:plan.color, margin:'0 0 4px' }}>{plan.label}</p>
                       <p style={{ fontFamily:PP, fontWeight:800, fontSize:16, color:C.text, margin:0 }}>
                         {plan.availableSlots ?? '∞'} libres
                       </p>
@@ -5443,42 +6133,76 @@ export default function Admin() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 18, padding: 8, boxShadow: '0 10px 26px rgba(15,23,42,0.04)' }}>
-            {BUSINESS_VERIFICATION_FILTERS.map(item => (
-              <button
-                key={item.id}
-                onClick={() => { setBusinessVerificationFilter(item.id); setBusinessPage(1) }}
-                style={{
-                  fontFamily: PP,
-                  fontWeight: 900,
-                  fontSize: 11,
-                  borderRadius: 999,
-                  border: `1.5px solid ${businessVerificationFilter === item.id ? item.color : C.border}`,
-                  background: item.bg,
-                  color: item.color,
-                  padding: '9px 12px',
-                  cursor: 'pointer',
-                  width: '100%',
-                  minHeight: 44,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  textAlign: 'center',
-                  boxShadow: businessVerificationFilter === item.id ? `0 0 0 3px ${item.color}14, 0 10px 22px ${item.color}12` : 'none',
-                }}
-              >
-                {item.label} ({businessVerificationCounts[item.id] || 0})
-              </button>
-            ))}
+          {/* Cada estado de verificación es una pestaña con su recuento visible */}
+          <div className="adm-surface" style={{ display: 'grid', gridTemplateColumns: `repeat(${isDesktop ? BUSINESS_VERIFICATION_FILTERS.length : 2}, minmax(0, 1fr))`, gap: 6, padding: 6 }}>
+            {BUSINESS_VERIFICATION_FILTERS.map(item => {
+              const active = businessVerificationFilter === item.id
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => { setBusinessVerificationFilter(item.id); setBusinessPage(1) }}
+                  className="adm-nav-item"
+                  data-active={active}
+                  style={{
+                    fontFamily: PP,
+                    fontWeight: 700,
+                    fontSize: 11.5,
+                    borderRadius: R.sm,
+                    border: `1px solid ${active ? veil(item.color, 40) : 'transparent'}`,
+                    background: active ? item.bg : 'transparent',
+                    color: active ? item.color : INK.base,
+                    padding: '9px 10px',
+                    cursor: 'pointer',
+                    width: '100%',
+                    minHeight: 44,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 7,
+                    textAlign: 'center',
+                    boxShadow: active ? SH.sm : 'none',
+                  }}
+                >
+                  {item.label}
+                  <span className="adm-num" style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    color: active ? item.color : INK.soft,
+                    background: active ? '#fff' : SURFACE_MUTED,
+                    borderRadius: 999,
+                    padding: '1px 7px',
+                  }}>
+                    {businessVerificationCounts[item.id] || 0}
+                  </span>
+                </button>
+              )
+            })}
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <AdminFilterBar
+            chips={(
+              <ActiveFilters
+                items={[{ label: 'Búsqueda', value: businessSearch, onClear: () => { setBusinessSearch(''); setBusinessPage(1) } }]}
+              />
+            )}
+            footer={(
+              <ResultSummary
+                parts={[
+                  { value: fmtNumber(filteredVerificationBusinesses.length), label: 'en la vista' },
+                  { value: fmtNumber(verifiedBusinessCount), label: 'verificadas', color: '#0F766E' },
+                  { value: fmtNumber(businessVerificationCounts.pending || 0), label: 'pendientes', color: '#D97706' },
+                ]}
+              />
+            )}
+          >
             <AdminFilterInput
               value={businessSearch}
               onChange={value => { setBusinessSearch(value); setBusinessPage(1) }}
               placeholder="Buscar negocio, categoría, ciudad, email o web..."
             />
-          </div>
+          </AdminFilterBar>
 
           {filteredVerificationBusinesses.length === 0 ? (
             <EmptyState variant="card" emoji="✓" text="No hay negocios en este estado." />
@@ -5515,7 +6239,7 @@ export default function Admin() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:3 }}>
-                          <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
+                          <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
                             {business.name || 'Negocio sin nombre'}
                           </p>
                           {promotionPlanKey !== 'free' && (
@@ -5535,7 +6259,7 @@ export default function Admin() {
                       <div style={{ flex: 1, height: 8, background: C.border, borderRadius: 999, overflow: 'hidden' }}>
                         <div style={{ width: `${Math.min(details.score, 100)}%`, height: '100%', background: details.score >= 80 ? '#10B981' : details.score >= 50 ? '#F59E0B' : '#EF4444' }} />
                       </div>
-                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, whiteSpace: 'nowrap' }}>
                         {details.score}/100
                       </span>
                     </div>
@@ -5572,7 +6296,7 @@ export default function Admin() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <div style={{ width:'100%', padding:10, borderRadius:14, border:`1px solid ${C.border}`, background:C.bg }}>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:8 }}>
-                          <p style={{ fontFamily:PP, fontWeight:900, fontSize:11, color:C.text, margin:0 }}>
+                          <p style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:C.text, margin:0 }}>
                             Plan de rotación en Inicio
                           </p>
                           <span style={{ fontFamily:PP, fontSize:9, fontWeight:800, color:promotionPlan.color }}>
@@ -5600,7 +6324,7 @@ export default function Admin() {
                                 title={noAvailability ? 'Plan completo' : isCurrent && plan.key !== 'free' ? 'Renovar o cambiar duración' : ''}
                                 style={{
                                   fontFamily:PP,
-                                  fontWeight:900,
+                                  fontWeight:800,
                                   fontSize:9,
                                   borderRadius:999,
                                   border:`1.5px solid ${isCurrent ? plan.color : C.border}`,
@@ -5663,10 +6387,10 @@ export default function Admin() {
           <Card style={{ padding: 0, overflow: 'hidden', borderRadius: 24, boxShadow: '0 24px 60px rgba(15,23,42,0.08)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 0 }}>
               <div style={{ padding: 20, background: 'linear-gradient(135deg,#7C3AED 0%,#2563EB 58%,#0F766E 100%)', color: '#fff' }}>
-                <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.86 }}>
+                <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 800, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.86 }}>
                   Monitor en vivo
                 </p>
-                <h3 style={{ fontFamily: PP, fontSize: 28, fontWeight: 900, lineHeight: 1.05, margin: '0 0 10px', letterSpacing: -0.7 }}>
+                <h3 style={{ fontFamily: PP, fontSize: 28, fontWeight: 800, lineHeight: 1.05, margin: '0 0 10px', letterSpacing: -0.7 }}>
                   Actividad de Latido
                 </h3>
                 <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.5, margin: '0 0 18px', opacity: 0.86 }}>
@@ -5674,7 +6398,7 @@ export default function Admin() {
                 </p>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.24)', borderRadius: 999, padding: '7px 10px', marginBottom: 12 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 999, background: presenceStatusMeta.color, boxShadow: `0 0 0 3px ${presenceStatusMeta.color}22` }} />
-                  <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 11, color: '#fff' }}>
+                  <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 11, color: '#fff' }}>
                     Realtime: {presenceStatusMeta.label}
                   </span>
                 </div>
@@ -5685,7 +6409,7 @@ export default function Admin() {
                     { label: '7 dias', value: activeUsersWeek.length },
                   ].map(item => (
                     <div key={item.label} style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.24)', borderRadius: 16, padding: '11px 12px' }}>
-                      <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 22, margin: '0 0 3px', lineHeight: 1 }}>{loading ? '...' : item.value}</p>
+                      <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, margin: '0 0 3px', lineHeight: 1 }}>{loading ? '...' : item.value}</p>
                       <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, margin: 0, opacity: 0.82 }}>{item.label}</p>
                     </div>
                   ))}
@@ -5695,14 +6419,14 @@ export default function Admin() {
               <div style={{ padding: 20, background: '#fff' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
                   <div>
-                    <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 5px' }}>
+                    <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 5px' }}>
                       {analyticsUnavailable ? 'Últimas conexiones en 14 días' : 'Visitantes únicos en 14 días'}
                     </p>
-                    <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 30, color: C.text, margin: 0, lineHeight: 1 }}>
+                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 30, color: C.text, margin: 0, lineHeight: 1 }}>
                       {loading ? '...' : liveLast14Total}
                     </p>
                   </div>
-                  <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: liveWeeklyTrend >= 0 ? '#047857' : '#B91C1C', background: liveWeeklyTrend >= 0 ? '#D1FAE5' : '#FEE2E2', borderRadius: 999, padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 800, color: liveWeeklyTrend >= 0 ? '#047857' : '#B91C1C', background: liveWeeklyTrend >= 0 ? '#D1FAE5' : '#FEE2E2', borderRadius: 999, padding: '7px 10px', whiteSpace: 'nowrap' }}>
                     {liveWeeklyTrend > 0 ? `+${liveWeeklyTrend}%` : liveWeeklyTrend < 0 ? `${liveWeeklyTrend}%` : 'estable'}
                   </span>
                 </div>
@@ -5715,10 +6439,10 @@ export default function Admin() {
             <Card style={{ padding: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Usuarios online</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Usuarios online</p>
                   <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Presencia conectada en tiempo real.</p>
                 </div>
-                <span style={{ width: 44, height: 44, borderRadius: 16, background: '#F3E8FF', color: '#7C3AED', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900 }}>
+                <span style={{ width: 44, height: 44, borderRadius: 16, background: '#F3E8FF', color: '#7C3AED', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800 }}>
                   {onlineUsers.length}
                 </span>
               </div>
@@ -5727,14 +6451,14 @@ export default function Admin() {
                   <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.border}`, borderRadius: 14, padding: '9px 10px', background: '#F8FAFF' }}>
                     <span style={{ width: 10, height: 10, borderRadius: 999, background: '#10B981', boxShadow: '0 0 0 4px rgba(16,185,129,0.14)' }} />
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {profile.name || profile.email || 'Usuario'}
                       </p>
                       <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0' }}>
                         {profile.canton || 'Sin canton'}
                       </p>
                     </div>
-                    <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: '#047857', background: '#D1FAE5', borderRadius: 999, padding: '4px 7px' }}>
+                    <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, color: '#047857', background: '#D1FAE5', borderRadius: 999, padding: '4px 7px' }}>
                       online
                     </span>
                   </div>
@@ -5750,10 +6474,10 @@ export default function Admin() {
             <Card style={{ padding: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
                 <div>
-                  <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Últimas señales</p>
+                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Últimas señales</p>
                   <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Usuarios con actividad más reciente.</p>
                 </div>
-                <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 900, color: C.primary, background: C.primaryLight, borderRadius: 999, padding: '7px 10px' }}>
+                <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 800, color: C.primary, background: C.primaryLight, borderRadius: 999, padding: '7px 10px' }}>
                   {recentLiveUsers.length}
                 </span>
               </div>
@@ -5762,18 +6486,18 @@ export default function Admin() {
                   const isOnline = onlineUserIds.has(profile.id)
                   return (
                     <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${C.border}`, padding: '8px 0' }}>
-                      <span style={{ flex: '0 0 auto', width: 34, height: 34, borderRadius: 12, background: isOnline ? '#D1FAE5' : C.bg, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 900, color: isOnline ? '#047857' : C.mid }}>
+                      <span style={{ flex: '0 0 auto', width: 34, height: 34, borderRadius: 12, background: isOnline ? '#D1FAE5' : C.bg, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, color: isOnline ? '#047857' : C.mid }}>
                         {(profile.name || profile.email || 'U').slice(0, 1).toUpperCase()}
                       </span>
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 12, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {profile.name || profile.email || 'Usuario'}
                         </p>
                         <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0' }}>
                           {profile.canton || 'Sin canton'}
                         </p>
                       </div>
-                      <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, color: isOnline ? '#047857' : C.light, background: isOnline ? '#D1FAE5' : C.bg, borderRadius: 999, padding: '4px 7px', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, color: isOnline ? '#047857' : C.light, background: isOnline ? '#D1FAE5' : C.bg, borderRadius: 999, padding: '4px 7px', whiteSpace: 'nowrap' }}>
                         {isOnline ? 'online' : fmtActivity(profile.last_seen_at)}
                       </span>
                     </div>
@@ -5788,14 +6512,14 @@ export default function Admin() {
             </Card>
 
             <Card style={{ padding: 16 }}>
-              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Actividad por cantón</p>
+              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Actividad por cantón</p>
               <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Top de usuarios activos esta semana.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {activeCantonRows.map(row => (
                   <div key={row.label}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
-                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text }}>{row.label}</span>
-                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.primary }}>{row.value}</span>
+                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text }}>{row.label}</span>
+                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.primary }}>{row.value}</span>
                     </div>
                     <div style={{ height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
                       <div style={{ width: `${Math.max(8, Math.round((row.value / activeCantonMax) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#7C3AED,#10B981)' }} />
@@ -5811,7 +6535,7 @@ export default function Admin() {
             </Card>
 
             <Card style={{ padding: 16, background: 'linear-gradient(180deg,#FFFFFF,#F8FAFF)' }}>
-              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Lectura rápida</p>
+              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Lectura rápida</p>
               <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Resumen para decidir si hay que activar, revisar o esperar.</p>
               <div style={{ display: 'grid', gap: 9 }}>
                 {[
@@ -5821,9 +6545,9 @@ export default function Admin() {
                   { label: 'Reactivación real', value: liveInactiveUsers, note: 'con tracking, sin señal en 30 días', color: '#B45309' },
                 ].map(item => (
                   <div key={item.label} style={{ display: 'grid', gridTemplateColumns: '76px 1fr', gap: 10, alignItems: 'center', border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 11px', background: '#fff' }}>
-                    <strong style={{ fontFamily: PP, fontSize: 22, fontWeight: 900, color: item.color, lineHeight: 1 }}>{item.value}</strong>
+                    <strong style={{ fontFamily: PP, fontSize: 22, fontWeight: 800, color: item.color, lineHeight: 1 }}>{item.value}</strong>
                     <div>
-                      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: 0 }}>{item.label}</p>
+                      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: 0 }}>{item.label}</p>
                       <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0' }}>{item.note}</p>
                     </div>
                   </div>
@@ -5832,7 +6556,7 @@ export default function Admin() {
             </Card>
 
             <Card style={{ padding: 16, background: '#fff' }}>
-              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
+              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
               <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.5 }}>
                 La actividad empieza a ser fiable desde que Latido guarda presencia y última conexión.
               </p>
@@ -5847,7 +6571,7 @@ export default function Admin() {
                   <div key={item.label} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 0', borderBottom: `1px solid ${C.border}` }}>
                     <span style={{ width: 9, height: 9, borderRadius: 999, background: item.color, marginTop: 5, flexShrink: 0 }} />
                     <div>
-                      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text, margin: '0 0 2px' }}>{item.label}</p>
+                      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: '0 0 2px' }}>{item.label}</p>
                       <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>{item.note}</p>
                     </div>
                   </div>
@@ -5863,7 +6587,7 @@ export default function Admin() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {creatorsUnavailable && (
             <Card style={{ borderColor: '#FCD34D', background: '#FFFBEB' }}>
-              <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 13, color: '#92400E', margin: '0 0 4px' }}>
+              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13, color: '#92400E', margin: '0 0 4px' }}>
                 Sin acceso a la plataforma de creadores
               </p>
               <p style={{ fontFamily: PP, fontSize: 11, color: '#B45309', margin: 0, lineHeight: 1.5 }}>
@@ -5922,10 +6646,10 @@ export default function Admin() {
                     }}
                   >
                     <span style={{ minWidth: 0 }}>
-                      <span style={{ display: 'block', fontFamily: PP, fontSize: 12, fontWeight: 900, color: C.text }}>{row.label}</span>
+                      <span style={{ display: 'block', fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text }}>{row.label}</span>
                       <span style={{ display: 'block', fontFamily: PP, fontSize: 10, color: C.light, marginTop: 1 }}>{row.hint}</span>
                     </span>
-                    <span style={{ fontFamily: PP, fontSize: 18, fontWeight: 900, color: row.color, flexShrink: 0 }}>{row.value}</span>
+                    <span style={{ fontFamily: PP, fontSize: 18, fontWeight: 800, color: row.color, flexShrink: 0 }}>{row.value}</span>
                   </button>
                 ))}
               </div>
@@ -5991,28 +6715,30 @@ export default function Admin() {
           />
 
           <AdminFilterBar
+            chips={(
+              <ActiveFilters
+                items={[
+                  { label: 'Búsqueda', value: creatorSearch, onClear: () => { setCreatorSearch(''); setCreatorPage(1) } },
+                  { label: 'Revisión', value: creatorReviewFilter === 'all' ? '' : (CREATOR_REVIEW_META[creatorReviewFilter]?.label || creatorReviewFilter), onClear: () => { setCreatorReviewFilter('all'); setCreatorPage(1) } },
+                  { label: 'Estado', value: creatorStatusFilter === 'all' ? '' : creatorStatusFilter, onClear: () => { setCreatorStatusFilter('all'); setCreatorPage(1) } },
+                  { label: 'Tema', value: creatorTopicFilter === 'all' ? '' : (creatorTopicMeta(creatorTopicFilter).label || creatorTopicFilter), onClear: () => { setCreatorTopicFilter('all'); setCreatorPage(1) } },
+                  { label: 'Cantón', value: creatorCantonFilter === 'all' ? '' : creatorCantonFilter, onClear: () => { setCreatorCantonFilter('all'); setCreatorPage(1) } },
+                ]}
+                onClearAll={resetCreatorFilters}
+              />
+            )}
             footer={(
               <>
-                <span style={{ fontFamily: PP, fontSize: 11, color: C.mid }}>
-                  <strong style={{ color: C.text }}>{filteredCreators.length}</strong> de {creatorStats.total} creadores
-                  {' · '}<strong style={{ color: C.text }}>{fmtNumber(filteredCreators.reduce((sum, creator) => sum + creator.profileViews, 0))}</strong> vistas
-                  {' · '}<strong style={{ color: C.text }}>{fmtNumber(filteredCreators.reduce((sum, creator) => sum + creator.clicks, 0))}</strong> clics
-                </span>
+                <ResultSummary
+                  parts={[
+                    { value: `${fmtNumber(filteredCreators.length)}/${fmtNumber(creatorStats.total)}`, label: 'creadores' },
+                    { value: fmtNumber(filteredCreators.reduce((sum, creator) => sum + creator.profileViews, 0)), label: 'vistas' },
+                    { value: fmtNumber(filteredCreators.reduce((sum, creator) => sum + creator.clicks, 0)), label: 'clics' },
+                  ]}
+                />
                 <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                  <AdminButton onClick={exportCreatorsCsv} disabled={!filteredCreators.length}>⬇ Exportar CSV</AdminButton>
-                  <AdminButton
-                    onClick={() => {
-                      setCreatorSearch('')
-                      setCreatorStatusFilter('all')
-                      setCreatorReviewFilter('all')
-                      setCreatorTopicFilter('all')
-                      setCreatorCantonFilter('all')
-                      setCreatorSort('views')
-                      setCreatorPage(1)
-                    }}
-                  >
-                    Limpiar filtros
-                  </AdminButton>
+                  <AdminButton icon="download" onClick={exportCreatorsCsv} disabled={!filteredCreators.length}>Exportar CSV</AdminButton>
+                  <AdminButton icon="reset" onClick={resetCreatorFilters}>Limpiar filtros</AdminButton>
                 </div>
               </>
             )}
@@ -6053,6 +6779,7 @@ export default function Admin() {
             </AdminFilterSelect>
             <AdminFilterSelect
               label="Orden de la lista"
+              plain
               value={creatorSort}
               onChange={value => { setCreatorSort(value); setCreatorPage(1) }}
             >
@@ -6101,28 +6828,31 @@ export default function Admin() {
 
       {/* ── Usuarios ───────────────────────────────────── */}
       {tab === 'users' && isTabDataReady('users') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <AdminFilterBar
+            chips={(
+              <ActiveFilters
+                items={[
+                  { label: 'Búsqueda', value: userSearch, onClear: () => { setUserSearch(''); setUserPage(1) } },
+                  { label: 'Estado', value: userStatusFilter === 'all' ? '' : USER_STATUS_LABELS[userStatusFilter], onClear: () => { setUserStatusFilter('all'); setUserPage(1) } },
+                  { label: 'Cantón', value: userCantonFilter === 'all' ? '' : userCantonFilter, onClear: () => { setUserCantonFilter('all'); setUserPage(1) } },
+                ]}
+                onClearAll={resetUserFilters}
+              />
+            )}
             footer={(
               <>
-                <span style={{ fontFamily: PP, fontSize: 11, color: C.mid }}>
-                  <strong style={{ color: C.text }}>{filteredUsers.length}</strong> mostrados
-                  {' · '}<strong style={{ color: '#DC2626' }}>{stats.banned}</strong> baneados
-                  {' · '}<strong style={{ color: C.text }}>{metricUsers.length}</strong> total sin admin
-                  {' · '}<strong style={{ color: '#0F766E' }}>{activeUsersWeek.length}</strong> activos 7d
-                </span>
+                <ResultSummary
+                  parts={[
+                    { value: fmtNumber(filteredUsers.length), label: 'mostrados' },
+                    { value: fmtNumber(metricUsers.length), label: 'total sin admin' },
+                    { value: fmtNumber(activeUsersWeek.length), label: 'activos 7d', color: '#0F766E' },
+                    { value: fmtNumber(stats.banned), label: 'baneados', color: stats.banned ? '#DC2626' : INK.strong },
+                  ]}
+                />
                 <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                  <AdminButton onClick={exportUsersCsv} disabled={!filteredUsers.length}>⬇ Exportar CSV</AdminButton>
-                  <AdminButton
-                    onClick={() => {
-                      setUserSearch('')
-                      setUserStatusFilter('all')
-                      setUserCantonFilter('all')
-                      setUserPage(1)
-                    }}
-                  >
-                    Limpiar filtros
-                  </AdminButton>
+                  <AdminButton icon="download" onClick={exportUsersCsv} disabled={!filteredUsers.length}>Exportar CSV</AdminButton>
+                  <AdminButton icon="reset" onClick={resetUserFilters}>Limpiar filtros</AdminButton>
                 </div>
               </>
             )}
@@ -6149,57 +6879,111 @@ export default function Admin() {
               <option value="all">Cantón: todos</option>
               {userCantons.map(canton => <option key={canton} value={canton}>{canton}</option>)}
             </AdminFilterSelect>
+            <AdminFilterSelect
+              label="Orden de la lista"
+              plain
+              value={userSort}
+              onChange={value => { setUserSort(value); setUserPage(1) }}
+            >
+              {USER_SORT_OPTIONS.map(option => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </AdminFilterSelect>
           </AdminFilterBar>
 
-          {filteredUsers.length === 0 ? (
-            <EmptyState variant="card" emoji="👤" text="No se encontraron usuarios." />
-          ) : pagedUsers.items.map(profile => (
-            <Card key={profile.id} style={{ padding: '12px 14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
-                      {profile.name || 'Sin nombre'}
-                    </p>
-                    {profile.banned && (
-                      <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 700, color: '#B91C1C', background: '#FEE2E2', borderRadius: 999, padding: '2px 8px' }}>
-                        BANEADO
-                      </span>
-                    )}
+          {isDesktop ? (
+            <div className="adm-surface" style={{ padding: 12 }}>
+              <AdminDataTable
+                columns={userTableColumns}
+                rows={pagedUsers.items}
+                getRowKey={profile => profile.id}
+                sort={userSort}
+                onSortChange={value => { setUserSort(value); setUserPage(1) }}
+                emptyText="No se encontraron usuarios con estos filtros."
+              />
+              <AdminPagination
+                page={pagedUsers.page}
+                pageCount={pagedUsers.pageCount}
+                total={filteredUsers.length}
+                onChange={setUserPage}
+              />
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {filteredUsers.length === 0 ? (
+                <EmptyState variant="card" emoji="👤" text="No se encontraron usuarios." />
+              ) : pagedUsers.items.map(profile => (
+                <div key={profile.id} className="adm-surface" style={{ padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13.5, color: INK.strong, margin: 0, overflowWrap: 'anywhere' }}>
+                          {profile.name || 'Sin nombre'}
+                        </p>
+                        {profile.banned && (
+                          <span style={{ fontFamily: PP, fontSize: 9.5, fontWeight: 800, letterSpacing: 0.4, color: '#B91C1C', background: '#FEE2E2', borderRadius: 999, padding: '2px 8px' }}>
+                            BANEADO
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '3px 0 0', overflowWrap: 'anywhere' }}>
+                        {profile.email || profile.id}
+                        {profile.canton ? ` · ${profile.canton}` : ''}
+                        {profile.created_at ? ` · desde ${fmtDateShort(profile.created_at)}` : ''}
+                      </p>
+                      {profile.banned && profile.banned_reason && (
+                        <p style={{ fontFamily: PP, fontSize: 11, color: '#B91C1C', margin: '5px 0 0' }}>
+                          Motivo: {profile.banned_reason}
+                        </p>
+                      )}
+                    </div>
+                    <AdminButton
+                      variant={profile.banned ? 'success' : 'danger'}
+                      icon={profile.banned ? 'reset' : 'ban'}
+                      onClick={() => setUserBanned(profile, !profile.banned)}
+                    >
+                      {profile.banned ? 'Desbanear' : 'Banear'}
+                    </AdminButton>
                   </div>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '2px 0 0', overflowWrap: 'anywhere' }}>
-                    {profile.email || profile.id}
-                    {profile.canton ? ` · ${profile.canton}` : ''}
-                    {profile.created_at ? ` · desde ${fmtDateShort(profile.created_at)}` : ''}
-                  </p>
-                  {profile.banned && profile.banned_reason && (
-                    <p style={{ fontFamily: PP, fontSize: 11, color: '#B91C1C', margin: '5px 0 0' }}>
-                      Motivo: {profile.banned_reason}
-                    </p>
-                  )}
                 </div>
-                <AdminButton
-                  variant={profile.banned ? 'success' : 'danger'}
-                  onClick={() => setUserBanned(profile, !profile.banned)}
-                >
-                  {profile.banned ? '↩ Desbanear' : '🚫 Banear'}
-                </AdminButton>
-              </div>
-            </Card>
-          ))}
-          <AdminPagination
-            page={pagedUsers.page}
-            pageCount={pagedUsers.pageCount}
-            total={filteredUsers.length}
-            onChange={setUserPage}
-          />
+              ))}
+              <AdminPagination
+                page={pagedUsers.page}
+                pageCount={pagedUsers.pageCount}
+                total={filteredUsers.length}
+                onChange={setUserPage}
+              />
+            </div>
+          )}
         </div>
       )}
 
       {/* ── Contenido ──────────────────────────────────── */}
       {tab === 'content' && isTabDataReady('content') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <AdminFilterBar
+            chips={(
+              <ActiveFilters
+                items={[
+                  { label: 'Búsqueda', value: contentSearch, onClear: () => { setContentSearch(''); setListingPage(1); setJobPage(1) } },
+                  { label: 'Estado', value: contentStatusFilter === 'all' ? '' : (contentStatusFilter === 'active' ? 'Activos' : 'Ocultos'), onClear: () => { setContentStatusFilter('all'); setListingPage(1); setJobPage(1) } },
+                ]}
+                onClearAll={resetContentFilters}
+              />
+            )}
+            footer={(
+              <>
+                <ResultSummary
+                  parts={[
+                    { value: fmtNumber(filteredListings.length), label: 'anuncios' },
+                    { value: fmtNumber(filteredJobs.length), label: 'empleos' },
+                    { value: fmtNumber(activePublications), label: 'activos', color: '#059669' },
+                  ]}
+                />
+                <AdminButton icon="reset" onClick={resetContentFilters}>Limpiar filtros</AdminButton>
+              </>
+            )}
+          >
             <AdminFilterInput
               value={contentSearch}
               onChange={value => {
@@ -6218,11 +7002,11 @@ export default function Admin() {
                 setJobPage(1)
               }}
             >
-              <option value="all">Todos los estados</option>
+              <option value="all">Estado: todos</option>
               <option value="active">Activos</option>
               <option value="hidden">Ocultos</option>
             </AdminFilterSelect>
-          </div>
+          </AdminFilterBar>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
           {/* Anuncios */}
           <div>
@@ -6336,7 +7120,7 @@ export default function Admin() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
               <div>
-                <p style={{ fontFamily: PP, fontWeight: 900, fontSize: 15, color: C.text, margin: '0 0 3px' }}>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>
                   Control CRM Latido
                 </p>
                 <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>
@@ -6346,7 +7130,7 @@ export default function Admin() {
               <button
                 type="button"
                 onClick={() => setCrmMenuOpen(false)}
-                style={{ width: 34, height: 34, borderRadius: 13, border: `1px solid ${C.border}`, background: C.bg, color: C.mid, cursor: 'pointer', fontFamily: PP, fontWeight: 900 }}
+                style={{ width: 34, height: 34, borderRadius: 13, border: `1px solid ${C.border}`, background: C.bg, color: C.mid, cursor: 'pointer', fontFamily: PP, fontWeight: 800 }}
               >
                 ×
               </button>
@@ -6358,7 +7142,7 @@ export default function Admin() {
             <div style={{ display: 'grid', gap: 10 }}>
               {NAV_GROUPS.map(group => (
                 <div key={group.label} style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 10, background: '#F8FAFC' }}>
-                  <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 900, letterSpacing: 0.7, textTransform: 'uppercase', color: C.light, margin: '0 0 8px' }}>
+                  <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, letterSpacing: 0.7, textTransform: 'uppercase', color: C.light, margin: '0 0 8px' }}>
                     {group.label}
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(132px, 1fr))', gap: 7 }}>
@@ -6371,26 +7155,28 @@ export default function Admin() {
                           key={item.id}
                           type="button"
                           onClick={() => switchTab(item.id)}
+                          className="adm-nav-item"
+                          data-active={active}
                           style={{
-                            border: `1.5px solid ${active ? `${item.color}66` : C.border}`,
-                            borderRadius: 15,
+                            border: `1px solid ${active ? veil(item.color, 40) : LINE_STRONG}`,
+                            borderRadius: R.md,
                             background: active ? item.bg : '#fff',
-                            color: active ? item.color : C.text,
+                            color: active ? item.color : INK.strong,
                             cursor: 'pointer',
-                            padding: '10px 9px',
+                            padding: '9px 9px',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 8,
                             textAlign: 'left',
-                            boxShadow: active ? `0 10px 22px ${item.color}12` : 'none',
+                            boxShadow: active ? SH.sm : 'none',
                           }}
                         >
-                          <span style={{ width: 30, height: 30, borderRadius: 12, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 15, flexShrink: 0 }}>
-                            {item.icon}
+                          <span style={{ width: 29, height: 29, borderRadius: 9, background: active ? '#fff' : SURFACE_MUTED, color: active ? item.color : INK.soft, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                            <AdminIcon name={item.icon} size={15} />
                           </span>
                           <span style={{ minWidth: 0 }}>
-                            <span style={{ display: 'block', fontFamily: PP, fontWeight: 900, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
-                            <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 9, color: active ? item.color : C.light, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</span>
+                            <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                            <span className="adm-num" style={{ display: 'block', fontFamily: PP, fontWeight: 600, fontSize: 9, color: active ? item.color : INK.soft, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</span>
                           </span>
                         </button>
                       )
@@ -6432,14 +7218,17 @@ export default function Admin() {
               key={item.id}
               type="button"
               onClick={() => switchTab(item.id)}
+              className="adm-nav-item"
+              data-active={active}
+              aria-current={active ? 'page' : undefined}
               style={{
                 flex: '1 1 0',
                 minWidth: 0,
                 minHeight: 58,
-                borderRadius: 17,
-                border: `1.5px solid ${active ? `${item.color}55` : 'transparent'}`,
+                borderRadius: R.md,
+                border: `1px solid ${active ? veil(item.color, 34) : 'transparent'}`,
                 background: active ? item.bg : 'transparent',
-                color: active ? item.color : C.mid,
+                color: active ? item.color : INK.base,
                 cursor: 'pointer',
                 padding: '8px 3px',
                 display: 'flex',
@@ -6448,20 +7237,19 @@ export default function Admin() {
                 justifyContent: 'center',
                 gap: 4,
                 textAlign: 'center',
-                boxShadow: active ? `0 12px 28px ${item.color}16` : 'none',
-                transition: 'background .15s ease, border-color .15s ease, box-shadow .15s ease',
+                boxShadow: active ? SH.sm : 'none',
                 position: 'relative',
               }}
             >
-              <span style={{ width: 31, height: 31, borderRadius: 13, background: active ? '#fff' : item.bg, display: 'grid', placeItems: 'center', fontSize: 16, flexShrink: 0 }}>
-                {item.icon}
+              <span style={{ width: 30, height: 30, borderRadius: 10, background: active ? '#fff' : SURFACE_MUTED, color: active ? item.color : INK.soft, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                <AdminIcon name={item.icon} size={16} strokeWidth={active ? 2.4 : 2} />
               </span>
               {Number(item.alert) > 0 && (
-                <span style={{ position: 'absolute', top: 6, right: '50%', marginRight: -22, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: item.color, color: '#fff', fontFamily: PP, fontSize: 9, fontWeight: 900, display: 'grid', placeItems: 'center' }}>
+                <span className="adm-num" style={{ position: 'absolute', top: 6, right: '50%', marginRight: -22, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: item.color, color: '#fff', fontFamily: PP, fontSize: 9, fontWeight: 800, display: 'grid', placeItems: 'center' }}>
                   {item.alert}
                 </span>
               )}
-              <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 9.5, letterSpacing: -0.1, lineHeight: 1.05, color: active ? item.color : C.text, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 9.5, letterSpacing: -0.1, lineHeight: 1.05, color: active ? item.color : INK.strong, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {item.short || item.label}
               </span>
             </button>
@@ -6470,14 +7258,17 @@ export default function Admin() {
         <button
           type="button"
           onClick={() => setCrmMenuOpen(open => !open)}
+          className="adm-nav-item"
+          data-active={menuNavActive}
+          aria-expanded={crmMenuOpen}
           style={{
             flex: '1 1 0',
             minWidth: 0,
             minHeight: 58,
-            borderRadius: 17,
-            border: `1.5px solid ${menuNavActive ? `color-mix(in srgb, ${C.primary} 33%, transparent)` : 'transparent'}`,
+            borderRadius: R.md,
+            border: `1px solid ${menuNavActive ? veil(C.primary, 30) : 'transparent'}`,
             background: menuNavActive ? C.primaryLight : 'transparent',
-            color: menuNavActive ? C.primary : C.text,
+            color: menuNavActive ? C.primary : INK.base,
             cursor: 'pointer',
             padding: '8px 5px',
             display: 'flex',
@@ -6486,14 +7277,13 @@ export default function Admin() {
             justifyContent: 'center',
             gap: 4,
             textAlign: 'center',
-            boxShadow: menuNavActive ? '0 12px 28px rgba(37,99,235,0.16)' : 'none',
-            transition: 'background .15s ease, border-color .15s ease, box-shadow .15s ease',
+            boxShadow: menuNavActive ? SH.sm : 'none',
           }}
         >
-          <span style={{ width: 31, height: 31, borderRadius: 13, background: menuNavActive ? '#fff' : C.primaryLight, display: 'grid', placeItems: 'center', fontSize: 17, fontFamily: PP, fontWeight: 900, flexShrink: 0 }}>
-            ☰
+          <span style={{ width: 30, height: 30, borderRadius: 10, background: menuNavActive ? '#fff' : SURFACE_MUTED, color: menuNavActive ? C.primary : INK.soft, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+            <AdminIcon name="menu" size={16} strokeWidth={2.4} />
           </span>
-          <span style={{ fontFamily: PP, fontWeight: 900, fontSize: 9.5, letterSpacing: -0.1, lineHeight: 1.05, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 9.5, letterSpacing: -0.1, lineHeight: 1.05, color: menuNavActive ? C.primary : INK.strong, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             Menú
           </span>
         </button>
