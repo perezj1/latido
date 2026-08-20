@@ -495,6 +495,7 @@ function AppShell() {
   const isVirtus360Services = pathname === '/servicios-virtus360'
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
+  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password'
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -581,12 +582,23 @@ function AppShell() {
 
     return (
       <>
-        <CookieConsent />
-        <main className="latido-route-view latido-route-view--standalone" style={{ minHeight:'100vh', overflowX:'hidden', background:`linear-gradient(180deg, ${C.bg} 0%, #fff 100%)` }}>
+        <CookieConsent showBanner={false} />
+        <main className="latido-route-view latido-route-view--standalone" style={{ minHeight:'100vh', overflowX:'hidden', background:'#fff' }}>
           <Suspense fallback={<AppLoading />}>
             <OAuthOnboarding />
           </Suspense>
         </main>
+      </>
+    )
+  }
+
+  if (pathname === '/auth') {
+    return (
+      <>
+        <CookieConsent showBanner={false} />
+        <div ref={routeViewRef} className="latido-route-view latido-route-view--standalone" style={{ minHeight:'100vh', overflowX:'hidden', background:'#fff' }}>
+          <AuthRoute />
+        </div>
       </>
     )
   }
@@ -728,7 +740,7 @@ function AppShell() {
       <CookieConsent showBanner={false} />
       <PushRegistrationSync />
       <UserPresenceSync />
-      <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:'#fff' }}>
+      <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen || hideAppNavigation ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:'#fff' }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -774,14 +786,16 @@ function AppShell() {
           </Routes>
         </Suspense>
       </main>
-      <BottomNav />
-      <PWAInstallBanner
-        canInstall={canInstall}
-        promptInstall={promptInstall}
-        isPWA={isPWA}
-        onVisibilityChange={setInstallBannerVisible}
-      />
-      <LatidoUsefulnessBanner blocked={installBannerVisible} />
+      {!hideAppNavigation && <BottomNav />}
+      {!hideAppNavigation && (
+        <PWAInstallBanner
+          canInstall={canInstall}
+          promptInstall={promptInstall}
+          isPWA={isPWA}
+          onVisibilityChange={setInstallBannerVisible}
+        />
+      )}
+      {!hideAppNavigation && <LatidoUsefulnessBanner blocked={installBannerVisible} />}
     </>
   )
 }

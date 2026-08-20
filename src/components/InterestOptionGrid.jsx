@@ -5,6 +5,7 @@ export default function InterestOptionGrid({
   selectedIds=[],
   onToggle,
   maxSelected=3,
+  compact=false,
   style,
 }) {
   const selected = new Set(selectedIds)
@@ -25,12 +26,12 @@ export default function InterestOptionGrid({
             onClick={() => onToggle?.(option.id)}
             style={{
               width:'100%',
-              minHeight:62,
+              minHeight:compact ? 46 : 62,
               display:'grid',
-              gridTemplateColumns:'34px minmax(0, 1fr) 18px',
+              gridTemplateColumns:`${compact ? 28 : 34}px minmax(0, 1fr) 18px`,
               alignItems:'center',
-              gap:8,
-              padding:'9px 10px',
+              gap:compact ? 6 : 8,
+              padding:compact ? '6px 8px' : '9px 10px',
               fontFamily:PP,
               textAlign:'left',
               color:active ? C.primaryDark : C.mid,
@@ -48,19 +49,19 @@ export default function InterestOptionGrid({
             <span
               aria-hidden="true"
               style={{
-                width:34,
-                height:34,
+                width:compact ? 28 : 34,
+                height:compact ? 28 : 34,
                 display:'flex',
                 alignItems:'center',
                 justifyContent:'center',
-                borderRadius:10,
+                borderRadius:compact ? 8 : 10,
                 background:active ? '#DBEAFE' : '#EEF2F7',
-                fontSize:16,
+                fontSize:compact ? 14 : 16,
               }}
             >
               {option.emoji}
             </span>
-            <span style={{ minWidth:0, fontSize:11, fontWeight:700, lineHeight:1.25, overflowWrap:'normal', wordBreak:'normal' }}>
+            <span style={{ minWidth:0, fontSize:compact ? 9.5 : 11, fontWeight:700, lineHeight:1.2, overflowWrap:'normal', wordBreak:'normal' }}>
               {option.label}
             </span>
             <span
