@@ -78,6 +78,15 @@ assert.equal(needsGoogleProfileOnboarding({
   ...newGoogleUser,
   app_metadata:{ provider:'email', providers:['email'] },
 }), false)
+assert.equal(needsGoogleProfileOnboarding({
+  ...newGoogleUser,
+  app_metadata:{ provider:'email', providers:['email'] },
+  user_metadata:{ latido_onboarding_completed:false },
+}), true)
+assert.equal(needsGoogleProfileOnboarding({
+  ...newGoogleUser,
+  app_metadata:{ provider:'apple', providers:['apple'] },
+}), true)
 assert.equal(isRecentlyCreatedAuthUser({
   ...newGoogleUser,
   created_at:new Date(now - 24 * 60 * 60 * 1000).toISOString(),

@@ -127,6 +127,7 @@ export function AuthProvider({ children }) {
           canton,
           languages,
           interests:normalizeInterestIds(interests),
+          latido_onboarding_completed:true,
         },
       },
     })
@@ -145,15 +146,16 @@ export function AuthProvider({ children }) {
     return result
   }
 
-  const signInWithGoogle = async ({ redirectTo }) => supabase.auth.signInWithOAuth({
-    provider:'google',
+  const signInWithProvider = async ({ provider, redirectTo }) => supabase.auth.signInWithOAuth({
+    provider,
     options: {
       redirectTo,
-      queryParams: {
-        prompt:'select_account',
-      },
+      ...(provider === 'google' ? { queryParams:{ prompt:'select_account' } } : {}),
     },
   })
+
+  const signInWithGoogle = async ({ redirectTo }) => signInWithProvider({ provider:'google', redirectTo })
+  const signInWithApple = async ({ redirectTo }) => signInWithProvider({ provider:'apple', redirectTo })
 
   const signInWithGoogleIdToken = async ({ token, nonce }) => {
     const result = await supabase.auth.signInWithIdToken({
@@ -193,7 +195,7 @@ export function AuthProvider({ children }) {
     bannedAt: profileMeta.bannedAt,
     isAdmin: isAdminUser(user),
     updateAvatar,
-    signUp, signIn, signInWithGoogle, signInWithGoogleIdToken, signOut,
+    signUp, signIn, signInWithGoogle, signInWithApple, signInWithGoogleIdToken, signOut,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

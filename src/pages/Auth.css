@@ -1,0 +1,1159 @@
+/* ── Shell compartido del flujo de acceso ──────────────────────
+   Bienvenida, onboarding, registro, login y recuperación comparten
+   la misma estructura: cabecera + zona azul + hoja blanca inferior. */
+.latido-auth-flow {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(160deg, #1e40af 0%, #2563eb 58%, #60a5fa 100%);
+  background-size: 165% 165%;
+  animation: latido-auth-gradient 22s ease infinite;
+  font-family: 'Poppins', system-ui, sans-serif;
+}
+
+.latido-auth-flow,
+.latido-auth-flow *,
+.latido-post-onboarding,
+.latido-post-onboarding * {
+  box-sizing: border-box;
+}
+
+.latido-auth-flow::before {
+  position: absolute;
+  z-index: -1;
+  top: 28%;
+  left: 58%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(147, 197, 253, .15);
+  filter: blur(2px);
+  content: '';
+  pointer-events: none;
+}
+
+.latido-auth-flow__orb {
+  position: absolute;
+  z-index: -1;
+  border: 0;
+  border-radius: 999px;
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.latido-auth-flow__orb--one {
+  top: -70px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: rgba(255, 255, 255, .08);
+}
+
+.latido-auth-flow__orb--two {
+  bottom: 23%;
+  left: -30px;
+  width: 180px;
+  height: 180px;
+  background: rgba(255, 255, 255, .055);
+}
+
+@keyframes latido-auth-gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes latido-auth-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+/* ── Cabecera ──────────────────────────────────────────────── */
+.latido-auth-flow__topbar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  width: min(100%, 720px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 auto;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    6px
+    max(18px, env(safe-area-inset-left));
+}
+
+.latido-auth-pill {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 3px;
+  padding: 0 14px 0 9px;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 255, 255, .16);
+  backdrop-filter: blur(12px);
+  font: 700 12px/1 'Poppins', system-ui, sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.latido-auth-pill:active { transform: scale(.97); }
+
+.latido-auth-flow__skip {
+  padding: 9px 4px;
+  border: 0;
+  color: rgba(255, 255, 255, .82);
+  background: none;
+  font: 600 12px/1 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+/* ── Zona azul (héroe) ─────────────────────────────────────── */
+.latido-auth-flow__hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(100%, 560px);
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 auto;
+  padding: 8px 24px 20px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.latido-auth-flow__emoji {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 21px;
+  background: rgba(255, 255, 255, .15);
+  box-shadow: 0 16px 34px rgba(15, 31, 92, .14);
+  font-size: clamp(30px, 9vw, 38px);
+  line-height: 1;
+  animation: latido-auth-float 7s ease-in-out infinite;
+}
+
+.latido-auth-flow__logo {
+  display: grid;
+  width: 86px;
+  height: 86px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 18px 42px rgba(15, 31, 92, .2);
+  animation: latido-auth-float 8s ease-in-out infinite;
+}
+
+.latido-auth-flow__logo img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.latido-auth-flow__hero > .latido-auth-flow__wordmark {
+  margin: 16px 0 0;
+  font-size: clamp(30px, 8vw, 40px);
+  font-weight: 900;
+  letter-spacing: -1.6px;
+}
+
+.latido-auth-flow__hero > .latido-auth-flow__kicker {
+  margin: 6px 0 16px;
+  color: rgba(255, 255, 255, .75);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2.2px;
+}
+
+.latido-auth-flow__hero h1 {
+  max-width: 500px;
+  margin: 14px 0 9px;
+  font-size: clamp(22px, 6.4vw, 30px);
+  font-weight: 900;
+  line-height: 1.22;
+  letter-spacing: -.9px;
+  text-wrap: balance;
+}
+
+.latido-auth-flow--welcome .latido-auth-flow__hero h1 {
+  margin-top: 0;
+  font-size: clamp(19px, 5.2vw, 25px);
+  line-height: 1.25;
+  letter-spacing: -.6px;
+}
+
+.latido-auth-flow__hero > p {
+  max-width: 460px;
+  margin: 0;
+  color: rgba(255, 255, 255, .82);
+  font-size: 13px;
+  line-height: 1.6;
+  text-wrap: balance;
+}
+
+/* ── Puntos indicadores ────────────────────────────────────── */
+.latido-auth-flow__dots {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 0 16px;
+}
+
+.latido-auth-flow__dots > * {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .38);
+  cursor: pointer;
+  transition: width 180ms ease, background-color 180ms ease;
+}
+
+.latido-auth-flow__dots > .is-active {
+  width: 20px;
+  background: #fff;
+}
+
+/* ── Hoja blanca inferior ──────────────────────────────────── */
+.latido-auth-flow__sheet {
+  position: relative;
+  z-index: 3;
+  width: min(100%, 580px);
+  flex: 0 0 auto;
+  max-height: 78dvh;
+  margin: 0 auto;
+  padding:
+    22px
+    max(20px, env(safe-area-inset-right))
+    calc(16px + env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+  overflow-y: auto;
+  border-radius: 28px 28px 0 0;
+  color: var(--latido-color-text-primary);
+  background: #fff;
+  box-shadow: 0 -18px 50px rgba(15, 23, 42, .18);
+  overscroll-behavior: contain;
+}
+
+.latido-auth-flow__sheet-inner {
+  width: min(100%, 440px);
+  margin: 0 auto;
+}
+
+.latido-auth-flow__primary,
+.latido-auth-flow__secondary {
+  display: flex;
+  width: 100%;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 15px;
+  font: 800 13px/1.2 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.latido-auth-flow__primary {
+  border: 1px solid #2563eb;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, .28);
+}
+
+.latido-auth-flow__secondary {
+  min-height: 48px;
+  margin-top: 10px;
+  border: 1.5px solid #dbeafe;
+  color: #1d4ed8;
+  background: #f8fbff;
+}
+
+.latido-auth-flow__primary:active,
+.latido-auth-flow__secondary:active { transform: scale(.985); }
+
+.latido-auth-flow__note {
+  margin: 13px 0 0;
+  color: var(--latido-color-text-muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.latido-auth-flow__switch {
+  margin: 14px 0 0;
+  color: var(--latido-color-text-secondary);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+.latido-auth-flow__switch button {
+  padding: 0;
+  border: 0;
+  color: #2563eb;
+  background: none;
+  font: 800 11.5px/1 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+/* ── Onboarding en carrusel ────────────────────────────────── */
+.latido-auth-welcome-carousel {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.latido-auth-story__scroller {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-auto-columns: 100%;
+  grid-auto-flow: column;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+
+.latido-auth-story__scroller:active { cursor: grabbing; }
+.latido-auth-story__scroller:focus-visible { outline: 2px solid rgba(255, 255, 255, .9); outline-offset: -4px; }
+
+.latido-auth-story__scroller::-webkit-scrollbar { display: none; }
+
+.latido-auth-story__slide {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px max(24px, calc((100vw - 560px) / 2)) 8px;
+  overflow: hidden;
+  scroll-snap-align: center;
+  text-align: center;
+}
+
+/* Mismo cuadro que el logo de la diapositiva de intro (76px / radio 24). */
+.latido-auth-story__slide-emoji {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .92);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 16px 34px rgba(15, 31, 92, .14);
+  font-size: clamp(36px, 10.5vw, 44px);
+  line-height: 1;
+  animation: latido-auth-float 7s ease-in-out infinite;
+}
+
+.latido-auth-story__slide h2 {
+  max-width: 460px;
+  margin: 7px 0 3px;
+  font-size: clamp(18px, 5.2vw, 23px);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -.9px;
+  text-wrap: balance;
+}
+
+.latido-auth-story__slide > p {
+  max-width: 420px;
+  margin: 0;
+  color: rgba(255, 255, 255, .8);
+  font-size: 11px;
+  line-height: 1.55;
+  text-wrap: balance;
+}
+
+.latido-auth-story__points {
+  display: grid;
+  width: min(100%, 440px);
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.latido-auth-story__point {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 3px 2px;
+  text-align: left;
+}
+
+.latido-auth-story__point > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .92);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 5px 14px rgba(15, 31, 92, .12);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.latido-auth-story__point p {
+  margin: 0;
+  color: rgba(255, 255, 255, .86);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.latido-auth-story__point strong { color: #fff; font-weight: 800; }
+
+.latido-auth-story__slide--intro .latido-auth-flow__logo {
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+}
+
+.latido-auth-story__slide--intro .latido-auth-flow__logo img {
+  width: 52px;
+  height: 52px;
+}
+
+.latido-auth-story__slide--intro > .latido-auth-story__wordmark {
+  margin: 13px 0 9px;
+  color: #fff;
+  font-size: clamp(29px, 8vw, 38px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1.4px;
+}
+
+.latido-auth-story__slide--intro h2 {
+  max-width: 420px;
+  margin: 10px 0 7px;
+  font-size: clamp(21px, 6vw, 28px);
+  line-height: 1.22;
+}
+
+.latido-auth-story__slide--intro > .latido-auth-story__intro-copy {
+  max-width: 390px;
+  color: rgba(255, 255, 255, .86);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.latido-auth-story__hint {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: -10px 0 9px;
+  color: rgba(255, 255, 255, .62);
+  font-size: 10px;
+  text-align: center;
+}
+
+.latido-auth-welcome-carousel .latido-auth-flow__dots { padding-bottom: 13px; }
+
+/* Formularios de acceso sin carrusel: una única superficie a pantalla completa. */
+.latido-auth-form-screen {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  color: #0f172a;
+  background: #fff;
+  font-family: 'Poppins', system-ui, sans-serif;
+}
+
+.latido-auth-form-screen__topbar {
+  position: relative;
+  z-index: 5;
+  width: min(100%, 540px);
+  flex: 0 0 auto;
+  margin: 0 auto;
+  padding:
+    max(15px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    8px
+    max(20px, env(safe-area-inset-left));
+  background: rgba(255, 255, 255, .94);
+  backdrop-filter: blur(12px);
+}
+
+.latido-auth-form-screen__topbar button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 3px;
+  padding: 0 13px 0 8px;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font: 800 11.5px/1 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.latido-auth-form-screen__content {
+  width: min(100%, 500px);
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 auto;
+  padding:
+    14px
+    max(24px, env(safe-area-inset-right))
+    calc(40px + env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* El registro reparte su alto en columna para que la fila de acciones
+   quede pegada abajo (margin-top:auto) cuando sobra espacio. */
+.latido-auth-form-screen--register .latido-auth-form-screen__content {
+  display: flex;
+  flex-direction: column;
+  padding-top: max(18px, env(safe-area-inset-top));
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+}
+
+/* Sin encoger: si el paso no cabe, que scrollee en vez de aplastarse. */
+.latido-auth-form-screen--register .latido-auth-form-screen__content > * { flex-shrink: 0; }
+
+.latido-auth-form-screen .latido-auth-sheet-heading { margin-bottom: 24px; }
+.latido-auth-form-screen .latido-auth-legal a { color: #2563eb; }
+
+.latido-auth-access-options {
+  display: grid;
+  gap: 10px;
+}
+
+.latido-auth-access-options .latido-auth-flow__secondary { margin-top: 0; }
+.latido-auth-flow__note a { color: inherit; }
+
+.latido-auth-flow--story .latido-auth-flow__dots { padding-bottom: 13px; }
+.latido-auth-flow--story .latido-auth-flow__sheet { max-height: 64dvh; }
+
+.latido-auth-sheet-heading { margin: 0 0 18px; }
+
+.latido-auth-sheet-heading h1 {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: clamp(21px, 5.8vw, 26px);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -.6px;
+}
+
+.latido-auth-sheet-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.latido-auth-register-progress { margin-bottom: 18px; color: #64748b; font-size: 10.5px; }
+
+.latido-auth-register-progress__segments {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+.latido-auth-register-progress__segments span {
+  height: 4px;
+  border-radius: 999px;
+  background: #dfe7f3;
+}
+
+.latido-auth-register-progress__segments span.is-active { background: #2563eb; }
+
+.latido-auth-location-note {
+  margin: 2px 0 16px;
+  padding: 11px 13px;
+  border-radius: 13px;
+  color: #52627a;
+  background: #eff5ff;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.latido-auth-language-block { margin-bottom: 18px; }
+
+.latido-auth-language-block > p,
+.latido-auth-selection-count {
+  margin: 0 0 9px;
+  color: #64748b;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .8px;
+}
+
+.latido-auth-language-block > div { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.latido-auth-language-block button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1.5px solid #dbe4f1;
+  border-radius: 999px;
+  color: #465873;
+  background: #fff;
+  font: 700 10.5px/1 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.latido-auth-language-block button.is-active {
+  border-color: #2563eb;
+  color: #fff;
+  background: #2563eb;
+}
+
+.latido-auth-register-actions { display: flex; flex: 0 0 auto; gap: 10px; margin-top: auto; padding-top: 18px; }
+
+.latido-auth-interests-note {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+
+.latido-auth-code {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 15px;
+  cursor: text;
+}
+
+.latido-auth-code input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: .01;
+  pointer-events: none;
+}
+
+.latido-auth-code span {
+  display: grid;
+  min-width: 0;
+  height: 52px;
+  place-items: center;
+  border: 1px solid #e1e8f5;
+  border-radius: 12px;
+  color: #c9d4e8;
+  background: #f7f9fe;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.latido-auth-code span.is-filled { color: #1f2d50; }
+.latido-auth-code span.is-current { border: 2px solid #2b4fd8; }
+.latido-auth-flow__primary:disabled { opacity: .58; cursor: default; }
+
+.latido-auth-resend {
+  display: block;
+  margin: 12px auto 0;
+  padding: 4px;
+  border: 0;
+  color: #93a3c4;
+  background: none;
+  font: 600 12px/1.3 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.latido-auth-resend:disabled { cursor: default; }
+
+/* ── Formularios dentro de la hoja ─────────────────────────── */
+.latido-auth-flow__sheet [data-error-field] { margin-bottom: 9px !important; }
+.latido-auth-flow__sheet [data-error-field] > label { margin-bottom: 4px !important; font-size: 9px !important; }
+
+.latido-auth-flow__sheet [data-error-field] input,
+.latido-auth-flow__sheet [data-error-field] select {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  font-size: 12.5px !important;
+}
+
+.latido-auth-flow__sheet .latido-button--primary {
+  min-height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, .2);
+}
+
+.latido-auth-flow__sheet .latido-button--secondary { min-height: 46px; border-radius: 14px; }
+
+.latido-auth-divider { margin: 13px 0 !important; }
+.latido-auth-legal { margin: 2px 0 10px !important; font-size: 9px !important; line-height: 1.4 !important; }
+
+.latido-auth-notice {
+  margin: 0 0 13px;
+  padding: 11px 13px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  color: var(--latido-color-text-secondary);
+  background: #f5f9ff;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.latido-auth-creator-prompt {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+  margin: 5px 0 14px;
+  padding: 14px;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 7px 20px rgba(37, 99, 235, .07);
+}
+
+.latido-auth-creator-prompt > span {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 13px;
+  background: #eff6ff;
+  font-size: 21px;
+}
+
+.latido-auth-creator-prompt strong { display: block; color: #0f172a; font-size: 11.5px; line-height: 1.35; }
+.latido-auth-creator-prompt p { margin: 4px 0 10px; color: #5f6f85; font-size: 9.5px; line-height: 1.55; }
+
+.latido-auth-creator-prompt button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 11px;
+  color: #fff;
+  background: #2563eb;
+  font: 800 9.5px/1 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.latido-auth-creator-prompt button:disabled { opacity: .58; cursor: default; }
+
+.latido-auth-creator-prompt small {
+  display: block;
+  margin-top: 7px;
+  color: #94a3b8;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+/* ── Adaptaciones ──────────────────────────────────────────── */
+@media (min-width: 640px) {
+  .latido-auth-flow__sheet { border-radius: 32px 32px 0 0; }
+}
+
+@media (max-height: 740px) {
+  .latido-auth-flow__hero { padding-bottom: 14px; }
+  .latido-auth-flow__logo { width: 72px; height: 72px; border-radius: 22px; }
+  .latido-auth-flow__logo img { width: 48px; height: 48px; }
+  .latido-auth-flow__wordmark { margin-top: 12px; }
+  .latido-auth-flow__kicker { margin-bottom: 12px; }
+  .latido-auth-flow__hero h1 { margin: 11px 0 7px; font-size: clamp(20px, 6vw, 26px); }
+  .latido-auth-flow__hero > p { font-size: 12px; line-height: 1.5; }
+  .latido-auth-flow__emoji { font-size: 38px; }
+  .latido-auth-story__slide-emoji { font-size: 40px; }
+  .latido-auth-flow__dots { padding-bottom: 12px; }
+  .latido-auth-flow__sheet { max-height: 82dvh; padding-top: 18px; }
+  .latido-auth-story__slide h2 { margin: 11px 0 6px; font-size: clamp(20px, 6vw, 26px); }
+  .latido-auth-story__slide > p { font-size: 12px; }
+  .latido-auth-story__points { gap: 8px; margin-top: 14px; }
+  .latido-auth-story__point { padding: 3px 2px; }
+  .latido-auth-story__point p { font-size: 11px; line-height: 1.45; }
+  .latido-auth-flow__primary,
+  .latido-auth-flow__secondary { min-height: 46px; }
+
+  .latido-auth-flow--story .latido-auth-story__slide-emoji {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    font-size: 23px;
+  }
+
+  .latido-auth-flow--story .latido-auth-story__slide h2 {
+    margin: 5px 0 2px;
+    font-size: 17px;
+  }
+
+  .latido-auth-flow--story .latido-auth-story__points { gap: 7px; margin-top: 9px; }
+  .latido-auth-flow--story .latido-auth-story__point { padding: 2px; }
+  .latido-auth-flow--story .latido-auth-story__point p { font-size: 10.5px; line-height: 1.4; }
+}
+
+@media (max-height: 640px) {
+  .latido-auth-flow--login .latido-auth-flow__hero > p,
+  .latido-auth-flow--register .latido-auth-flow__hero > p { display: none; }
+  .latido-auth-flow__sheet { max-height: 86dvh; }
+  .latido-auth-flow--story .latido-auth-flow__sheet { max-height: 58dvh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .latido-auth-story__scroller { scroll-behavior: auto; }
+  .latido-auth-flow__dots > *,
+  .latido-auth-flow__primary,
+  .latido-auth-flow__secondary { transition: none; }
+}
+
+/* ── Personalización posterior al registro ─────────────────── */
+.latido-post-onboarding {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(160deg, #1e40af 0%, #2563eb 58%, #60a5fa 100%);
+  background-size: 165% 165%;
+  animation: latido-auth-gradient 22s ease infinite;
+  font-family: 'Poppins', system-ui, sans-serif;
+}
+
+.latido-post-onboarding::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(circle at calc(100% + 28px) 75px, rgba(255, 255, 255, .08) 0 118px, transparent 119px),
+    radial-gradient(circle at -18px 72%, rgba(255, 255, 255, .055) 0 92px, transparent 93px),
+    radial-gradient(circle at 74% 42%, rgba(147, 197, 253, .14) 0 82px, transparent 83px);
+  content: '';
+  pointer-events: none;
+}
+
+.latido-post-onboarding__topbar {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 580px);
+  margin: 0 auto;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    0
+    max(20px, env(safe-area-inset-left));
+}
+
+.latido-post-onboarding__segments {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 13px;
+}
+
+.latido-post-onboarding__segments span {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .28);
+}
+
+.latido-post-onboarding__segments span.is-active { background: #fff; }
+
+.latido-post-onboarding__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.latido-post-onboarding__nav button {
+  padding: 5px 0;
+  border: 0;
+  color: rgba(255, 255, 255, .82);
+  background: none;
+  font: 600 12px/1.2 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.latido-post-onboarding__hero {
+  display: flex;
+  width: min(100%, 560px);
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 auto;
+  padding: 12px 26px 20px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.latido-post-onboarding__emoji {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .92);
+  border-radius: 21px;
+  background: #fff;
+  box-shadow: 0 16px 34px rgba(15, 31, 92, .14);
+  font-size: clamp(30px, 9vw, 38px);
+  line-height: 1;
+  animation: latido-auth-float 7s ease-in-out infinite;
+}
+
+.latido-post-onboarding__logo {
+  display: grid;
+  width: 70px;
+  height: 70px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 18px 42px rgba(15, 31, 92, .2);
+  animation: latido-auth-float 8s ease-in-out infinite;
+}
+
+.latido-post-onboarding__logo img { width: 48px; height: 48px; }
+
+.latido-post-onboarding__hero h1 {
+  max-width: 480px;
+  margin: 14px 0 7px;
+  font-size: clamp(22px, 6.4vw, 29px);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -.8px;
+  text-wrap: balance;
+}
+
+.latido-post-onboarding__hero > p {
+  max-width: 440px;
+  margin: 0;
+  color: rgba(255, 255, 255, .82);
+  font-size: 13px;
+  line-height: 1.6;
+  text-wrap: balance;
+}
+
+.latido-post-onboarding__hero .latido-post-onboarding__alerts {
+  margin-top: 16px;
+  color: rgba(255, 255, 255, .9);
+  font-size: 12px;
+  line-height: 1.75;
+  text-align: left;
+  text-wrap: initial;
+}
+
+.latido-post-onboarding__sheet {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 580px);
+  flex: 0 0 auto;
+  max-height: 62dvh;
+  margin: 0 auto;
+  padding:
+    21px
+    max(20px, env(safe-area-inset-right))
+    calc(18px + env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+  overflow-y: auto;
+  border-radius: 27px 27px 0 0;
+  color: #1f2d50;
+  background: #fff;
+  box-shadow: 0 -18px 48px rgba(15, 23, 42, .18);
+}
+
+.latido-post-onboarding__sheet-inner { width: min(100%, 440px); margin: 0 auto; }
+
+.latido-post-onboarding__eyebrow {
+  margin: 0 0 11px;
+  color: #93a3c4;
+  font-size: 11px;
+}
+
+.latido-post-onboarding__goals {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.latido-post-onboarding__goals button {
+  display: flex;
+  min-height: 47px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  border: 1px solid #dde5f5;
+  border-radius: 12px;
+  color: #1f2d50;
+  background: #fff;
+  font: 600 12px/1.35 'Poppins', system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.latido-post-onboarding__goals button span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 17px;
+}
+
+.latido-post-onboarding__goals button.is-selected {
+  padding: 9px 12px;
+  border: 2px solid #2b4fd8;
+  color: #1b3a9e;
+  background: #f4f7fe;
+  font-weight: 700;
+}
+
+.latido-post-onboarding__cantons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.latido-post-onboarding__cantons button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid #dde5f5;
+  border-radius: 999px;
+  color: #1f2d50;
+  background: #fff;
+  font: 600 11.5px/1 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.latido-post-onboarding__cantons button.is-selected {
+  border: 2px solid #2b4fd8;
+  color: #1b3a9e;
+  background: #f4f7fe;
+}
+
+.latido-post-onboarding__select {
+  width: 100%;
+  min-height: 44px;
+  margin: -6px 0 15px;
+  padding: 0 12px;
+  border: 1px solid #dde5f5;
+  border-radius: 12px;
+  color: #1f2d50;
+  background: #fff;
+  font: 600 12px/1 'Poppins', system-ui, sans-serif;
+}
+
+.latido-post-onboarding__button {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 14px;
+  font: 800 13px/1.2 'Poppins', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.latido-post-onboarding__button + .latido-post-onboarding__button { margin-top: 10px; }
+
+.latido-post-onboarding__button--primary {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(90deg, #2f5ae8, #4b45d6);
+  box-shadow: 0 10px 24px rgba(47, 90, 232, .22);
+}
+
+.latido-post-onboarding__button--oauth {
+  border: 1px solid #e6ecf9;
+  color: #1f2d50;
+  background: #fff;
+}
+
+.latido-post-onboarding__button--secondary {
+  border: 0;
+  color: #2b4fd8;
+  background: #f4f7fe;
+}
+
+.latido-post-onboarding__button:disabled { opacity: .58; cursor: default; }
+
+.latido-post-onboarding__link {
+  display: block;
+  margin: 10px auto 0;
+  padding: 3px;
+  border: 0;
+  color: #5c6c90;
+  background: none;
+  font: 600 11.5px/1.3 'Poppins', system-ui, sans-serif;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.latido-post-onboarding__note {
+  margin: 13px 0 0;
+  color: #93a3c4;
+  font-size: 9.5px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.latido-post-onboarding--complete .latido-post-onboarding__hero { padding-top: max(24px, env(safe-area-inset-top)); }
+
+@media (max-height: 700px) {
+  .latido-post-onboarding__hero { padding-top: 6px; padding-bottom: 12px; }
+  .latido-post-onboarding__logo { width: 58px; height: 58px; border-radius: 18px; }
+  .latido-post-onboarding__logo img { width: 40px; height: 40px; }
+  .latido-post-onboarding__emoji { font-size: 36px; }
+  .latido-post-onboarding__hero h1 { margin-top: 10px; font-size: 21px; }
+  .latido-post-onboarding__hero > p { font-size: 11.5px; line-height: 1.45; }
+  .latido-post-onboarding__hero .latido-post-onboarding__alerts { margin-top: 10px; }
+  .latido-post-onboarding__sheet { padding-top: 17px; max-height: 67dvh; }
+  .latido-post-onboarding__goals button { min-height: 42px; padding-top: 7px; padding-bottom: 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .latido-auth-flow,
+  .latido-auth-flow__logo,
+  .latido-auth-flow__emoji,
+  .latido-auth-story__slide-emoji,
+  .latido-post-onboarding,
+  .latido-post-onboarding__emoji,
+  .latido-post-onboarding__logo {
+    animation: none;
+  }
+}

@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { ArrowRight, ChevronLeft } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
-import { Btn, ChevronLeftIcon, ProgressBar, Input, Select } from '../components/UI'
+import { Btn, ChevronLeftIcon, Input, Select } from '../components/UI'
 import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import { getGooglePostAuthPath } from '../lib/oauthOnboarding'
 import toast from 'react-hot-toast'
+import './Auth.css'
 
 const GOOGLE_AUTH_ENABLED = true
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -299,91 +301,304 @@ function GoogleAuthButton({ pwa, ...props }) {
 
 function AuthDivider() {
   return (
-    <div aria-hidden="true" style={{ display:'flex', alignItems:'center', gap:12, margin:'18px 0', color:C.light }}>
+    <div className="latido-auth-divider" aria-hidden="true" style={{ display:'flex', alignItems:'center', gap:12, margin:'18px 0', color:C.light }}>
       <span style={{ height:1, flex:1, background:C.border }} />
-      <span style={{ fontFamily:PP, fontSize:10, fontWeight:600 }}>o continúa con Google</span>
+      <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, letterSpacing:.3 }}>O</span>
       <span style={{ height:1, flex:1, background:C.border }} />
     </div>
   )
 }
 
-function AuthModeSwitch({ mode, onChange }) {
-  const options = [
-    { value:'register', label:'Crear cuenta' },
-    { value:'login', label:'Iniciar sesión' },
-  ]
+const ONBOARDING_SLIDES = [
+  {
+    id:'directorio',
+    emoji:'🏪',
+    title:'Negocios y profesionales',
+    body:'',
+    accent:'sky',
+    points:[
+      {
+        emoji:'🔍',
+        label:'Encuentra:',
+        text:'un restaurante, una peluquería, un abogado o un mecánico que te atienda en español, cerca de casa.',
+      },
+      {
+        emoji:'✨',
+        label:'Publica:',
+        text:'tu negocio o tus servicios para darlos a conocer y llegar a más personas totalmente gratis.',
+      },
+    ],
+  },
+  {
+    id:'oportunidades',
+    emoji:'📣',
+    title:'Anuncios, empleos y más',
+    body:'',
+    accent:'violet',
+    points:[
+      {
+        emoji:'🔍',
+        label:'Encuentra:',
+        text:'ofertas de empleo, vivienda, artículos de segunda mano o un servicio puntual cerca de ti.',
+      },
+      {
+        emoji:'✨',
+        label:'Publica:',
+        text:'artículos de segunda mano, una oportunidad de trabajo, una habitación libre o cualquier otra oferta.',
+      },
+    ],
+  },
+  {
+    id:'comunidad',
+    emoji:'🎙️',
+    title:'Creadores y comunidad',
+    body:'',
+    accent:'mint',
+    points:[
+      {
+        emoji:'🔍',
+        label:'Encuentra:',
+        text:'el grupo de hispanohablantes de tu ciudad, la fiesta del sábado o el vídeo que te explica el permiso B sin marearte.',
+      },
+      {
+        emoji:'✨',
+        label:'Publica:',
+        text:'tu contenido y añade tus redes sociales a tu perfil de creador para llegar a más personas.',
+      },
+    ],
+  },
+]
+
+const WELCOME_SLIDES = [
+  {
+    id:'latido',
+    intro:true,
+    title:'El punto de encuentro de la comunidad hispanohablante en Suiza.',
+    body:'Aquí unos encuentran lo que necesitan y otros dan a conocer lo que ofrecen.',
+  },
+  ...ONBOARDING_SLIDES,
+]
+
+// Estructura común de todas las pantallas del flujo: cabecera, zona azul
+// (héroe o carrusel) y hoja blanca inferior con la acción principal.
+function AuthFlowScreen({ variant, hero, dots=null, onBack, backTo, backLabel='Volver', onSkip, skipLabel='Saltar', children }) {
+  return (
+    <section className={`latido-auth-flow latido-auth-flow--${variant}`}>
+      <div className="latido-auth-flow__orb latido-auth-flow__orb--one" aria-hidden="true" />
+      <div className="latido-auth-flow__orb latido-auth-flow__orb--two" aria-hidden="true" />
+
+      <header className="latido-auth-flow__topbar">
+        {backTo ? (
+          <Link to={backTo} className="latido-auth-pill" aria-label="Volver a Latido">
+            <ChevronLeft size={16} aria-hidden="true" />
+            {backLabel}
+          </Link>
+        ) : onBack ? (
+          <button type="button" className="latido-auth-pill" onClick={onBack} aria-label="Volver">
+            <ChevronLeft size={16} aria-hidden="true" />
+            {backLabel}
+          </button>
+        ) : <span aria-hidden="true" />}
+        {onSkip
+          ? <button type="button" className="latido-auth-flow__skip" onClick={onSkip}>{skipLabel}</button>
+          : <span aria-hidden="true" />}
+      </header>
+
+      {hero}
+      {dots}
+
+      <div className="latido-auth-flow__sheet">
+        <div className="latido-auth-flow__sheet-inner">
+          {children}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function AuthFlowDots({ total, active, label, onSelect }) {
+  return (
+    <div className="latido-auth-flow__dots" role="group" aria-label={label}>
+      {Array.from({ length:total }, (_, index) => (
+        onSelect ? (
+          <button
+            key={index}
+            type="button"
+            className={index === active ? 'is-active' : ''}
+            onClick={() => onSelect(index)}
+            aria-label={`Ver pantalla ${index + 1} de ${total}`}
+            aria-current={index === active ? 'true' : undefined}
+          />
+        ) : (
+          <span key={index} className={index === active ? 'is-active' : ''} />
+        )
+      ))}
+    </div>
+  )
+}
+
+function AuthSlidesCarousel() {
+  const scrollerRef = useRef(null)
+  const [activeSlide, setActiveSlide] = useState(0)
+  const lastSlide = WELCOME_SLIDES.length - 1
+
+  const goToSlide = index => {
+    const targetIndex = Math.max(0, Math.min(lastSlide, index))
+    const scroller = scrollerRef.current
+    const slide = scroller?.children[targetIndex]
+    if (!scroller || !slide) return
+
+    const left = slide.offsetLeft - scroller.offsetLeft - (scroller.clientWidth - slide.clientWidth) / 2
+    scroller.scrollTo({ left, behavior:'smooth' })
+    setActiveSlide(targetIndex)
+  }
+
+  const handleScroll = event => {
+    const scroller = event.currentTarget
+    const center = scroller.scrollLeft + scroller.clientWidth / 2
+    let closestIndex = 0
+    let closestDistance = Number.POSITIVE_INFINITY
+
+    Array.from(scroller.children).forEach((slide, index) => {
+      const slideCenter = slide.offsetLeft - scroller.offsetLeft + slide.clientWidth / 2
+      const distance = Math.abs(center - slideCenter)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestIndex = index
+      }
+    })
+    setActiveSlide(closestIndex)
+  }
 
   return (
-    <div
-      role="group"
-      aria-label="Elige cómo acceder"
-      style={{
-        position:'relative',
-        display:'grid',
-        gridTemplateColumns:'repeat(2, minmax(0, 1fr))',
-        padding:4,
-        marginBottom:26,
-        border:`1px solid ${C.border}`,
-        borderRadius:16,
-        background:'#E8EFF9',
-      }}
-    >
+    <div className="latido-auth-welcome-carousel">
       <div
-        aria-hidden="true"
-        style={{
-          position:'absolute',
-          top:4,
-          bottom:4,
-          left:4,
-          width:'calc(50% - 4px)',
-          borderRadius:12,
-          background:C.primary,
-          boxShadow:'0 4px 12px rgba(37,99,235,0.24)',
-          transform:mode === 'login' ? 'translateX(100%)' : 'translateX(0)',
-          transition:'transform .24s ease',
+        className="latido-auth-story__scroller"
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        role="region"
+        aria-roledescription="carrusel"
+        aria-label="Información sobre Latido"
+        tabIndex={0}
+        onKeyDown={event => {
+          if (event.key === 'ArrowLeft') goToSlide(activeSlide - 1)
+          if (event.key === 'ArrowRight') goToSlide(activeSlide + 1)
         }}
+      >
+        {WELCOME_SLIDES.map(({ id, intro, emoji, title, body, points=[], accent }) => (
+          intro ? (
+            <article className="latido-auth-story__slide latido-auth-story__slide--intro" key={id}>
+              <div className="latido-auth-flow__logo">
+                <img src="/apple-touch-icon-180.png" alt="Logo de Latido" />
+              </div>
+              <p className="latido-auth-story__wordmark">Latido</p>
+              <h2>{title}</h2>
+              <p className="latido-auth-story__intro-copy">{body}</p>
+            </article>
+          ) : (
+            <article className={`latido-auth-story__slide latido-auth-story__slide--${accent}`} key={id}>
+              <span className="latido-auth-story__slide-emoji" aria-hidden="true">{emoji}</span>
+              <h2>{title}</h2>
+              {body && <p>{body}</p>}
+              <div className="latido-auth-story__points">
+                {points.map(point => (
+                  <div className="latido-auth-story__point" key={point.label}>
+                    <span aria-hidden="true">{point.emoji}</span>
+                    <p><strong>{point.label}</strong> {point.text}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          )
+        ))}
+      </div>
+      <AuthFlowDots
+        total={WELCOME_SLIDES.length}
+        active={activeSlide}
+        label={`Pantalla ${activeSlide + 1} de ${WELCOME_SLIDES.length}`}
+        onSelect={goToSlide}
       />
-      {options.map(option => {
-        const active = mode === option.value
-        return (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={active}
-            onClick={() => onChange(option.value)}
-            style={{
-              position:'relative',
-              zIndex:1,
-              minWidth:0,
-              padding:'10px 8px',
-              border:'none',
-              borderRadius:12,
-              background:'transparent',
-              color:active ? '#fff' : C.mid,
-              fontFamily:PP,
-              fontSize:12,
-              fontWeight:700,
-              cursor:'pointer',
-              transition:'color .2s ease',
-            }}
-          >
-            {option.label}
-          </button>
-        )
-      })}
+      <p className="latido-auth-story__hint">
+        Desliza
+        <ArrowRight size={13} aria-hidden="true" />
+      </p>
     </div>
   )
 }
 
+function AuthWelcome({
+  onChoose,
+  googleAuthVisible,
+  pwa,
+  loading,
+  googleLoading,
+  onGoogleRedirect,
+  onGoogleCredential,
+  onGoogleUnavailable,
+}) {
+  return (
+    <AuthFlowScreen
+      variant="welcome"
+      backTo="/"
+      hero={<AuthSlidesCarousel />}
+    >
+      <button type="button" className="latido-auth-flow__primary" onClick={() => onChoose('register')}>
+        Crear cuenta gratis
+      </button>
+      <button type="button" className="latido-auth-flow__secondary" onClick={() => onChoose('login')}>
+        Ya tengo cuenta
+      </button>
+      {googleAuthVisible && (
+        <>
+          <AuthDivider />
+          <GoogleAuthButton
+            pwa={pwa}
+            loading={googleLoading}
+            disabled={loading}
+            onRedirect={onGoogleRedirect}
+            onCredential={onGoogleCredential}
+            onUnavailable={onGoogleUnavailable}
+          />
+        </>
+      )}
+      <p className="latido-auth-flow__note">Únete gratis · Sin spam · Sin comisiones</p>
+    </AuthFlowScreen>
+  )
+}
+
+// `onBack` pinta la píldora "Volver" de la cabecera. Las pantallas que ya
+// tienen su propio botón "Atrás" abajo lo omiten para no duplicar la acción.
+function AuthFormScreen({ onBack, variant='', children }) {
+  return (
+    <section className={`latido-auth-form-screen${variant ? ` latido-auth-form-screen--${variant}` : ''}`}>
+      {onBack && (
+        <header className="latido-auth-form-screen__topbar">
+          <button type="button" onClick={onBack} aria-label="Volver">
+            <ChevronLeft size={17} aria-hidden="true" />
+            Volver
+          </button>
+        </header>
+      )}
+      <main className="latido-auth-form-screen__content">
+        {children}
+      </main>
+    </section>
+  )
+}
 export default function Auth() {
   const { signIn, signInWithGoogle, signInWithGoogleIdToken, signUp } = useAuth()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const nextPath = getSafeNextPath(searchParams.get('next'))
   const [pwa] = useState(() => isStandalonePwa())
   const isPartnerAccess = nextPath.startsWith('/servicios-suiza') || nextPath.startsWith('/colaboradores/')
   const authEntryPoint = isPartnerAccess ? 'partner' : nextPath === '/' ? 'general' : 'protected_route'
-  const [mode, setMode] = useState(() => searchParams.get('mode') === 'login' ? 'login' : 'register')
+  const [mode, setMode] = useState(() => {
+    const requestedMode = searchParams.get('mode')
+    if (requestedMode === 'login' || requestedMode === 'register') return requestedMode
+    if (searchParams.get('oauth') === 'google' || searchParams.get('password') === 'updated') return 'login'
+    return 'welcome'
+  })
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -396,6 +611,17 @@ export default function Auth() {
   const passwordNoticeShownRef = useRef(false)
   const googleAuthVisible = GOOGLE_AUTH_ENABLED
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  useEffect(() => {
+    const requestedMode = searchParams.get('mode')
+    const routeMode = requestedMode === 'login' || requestedMode === 'register'
+      ? requestedMode
+      : searchParams.get('oauth') === 'google' || searchParams.get('password') === 'updated'
+        ? 'login'
+        : 'welcome'
+
+    setMode(currentMode => currentMode === 'forgot' && routeMode === 'login' ? currentMode : routeMode)
+  }, [searchParams])
 
   useEffect(() => {
     if (searchParams.get('password') !== 'updated' || passwordNoticeShownRef.current) return
@@ -438,9 +664,23 @@ export default function Auth() {
   const changeAuthMode = nextMode => {
     setErrors({})
     setShowPasswordRecoveryHint(false)
+    setStep(0)
     setMode(nextMode)
+    const nextParams = new URLSearchParams(searchParams)
+    if (nextMode === 'login' || nextMode === 'register') nextParams.set('mode', nextMode)
+    else {
+      nextParams.delete('mode')
+      nextParams.delete('oauth')
+      nextParams.delete('password')
+    }
+    setSearchParams(nextParams, { replace:false })
   }
-  const toggleLang = l => s('languages', form.languages.includes(l) ? form.languages.filter(x => x !== l) : [...form.languages, l])
+  const toggleLang = language => s(
+    'languages',
+    form.languages.includes(language)
+      ? form.languages.filter(item => item !== language)
+      : [...form.languages, language]
+  )
   const toggleInterest = interest => {
     if (!form.interests.includes(interest) && form.interests.length >= 3) {
       toast('Puedes elegir hasta tres intereses.')
@@ -453,7 +693,6 @@ export default function Auth() {
         : [...form.interests, interest]
     )
   }
-
   const showErrors = next => {
     setErrors(next)
     const firstKey = Object.keys(next)[0]
@@ -474,9 +713,7 @@ export default function Auth() {
       if (!form.password) next.password = 'Añade una contraseña.'
       else if (form.password.length < 8) next.password = 'La contraseña debe tener al menos 8 caracteres.'
     }
-    if (targetStep === 1 && !form.canton) {
-      next.canton = 'Selecciona tu cantón.'
-    }
+    if (targetStep === 1 && !form.canton) next.canton = 'Selecciona tu cantón.'
     return next
   }
 
@@ -702,6 +939,9 @@ export default function Auth() {
         setMode('login')
         setStep(0)
         setShowPasswordRecoveryHint(true)
+        const nextParams = new URLSearchParams(searchParams)
+        nextParams.set('mode', 'login')
+        setSearchParams(nextParams, { replace:true })
         toast('No se inició sesión. Si ya usaste Google, entra con Google o crea una contraseña. Si es una cuenta nueva, revisa tu email.', { duration:8000 })
         return
       }
@@ -723,20 +963,29 @@ export default function Auth() {
     }
   }
 
+  if (mode === 'welcome') return (
+    <AuthWelcome
+      onChoose={changeAuthMode}
+      googleAuthVisible={googleAuthVisible}
+      pwa={pwa}
+      loading={loading}
+      googleLoading={googleLoading}
+      onGoogleRedirect={handleGoogleRedirect}
+      onGoogleCredential={handleGoogleCredential}
+      onGoogleUnavailable={handleGoogleUnavailable}
+    />
+  )
+
   if (mode === 'login') return (
-    <div className="latido-page-container" style={{ maxWidth:440, marginTop:32, marginBottom:48 }}>
-      <AuthModeSwitch mode={mode} onChange={changeAuthMode} />
-
-      <div style={{ textAlign:'center', marginBottom:28 }}>
-        <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🌎</div>
-        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Bienvenido/a</h1>
-        <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Inicia sesión en Latido.ch</p>
-      </div>
-
+    <AuthFormScreen onBack={() => changeAuthMode('welcome')}>
+      <header className="latido-auth-sheet-heading">
+        <h1>Hola de nuevo</h1>
+        <p>Entra y sigue donde lo dejaste.</p>
+      </header>
       {isPartnerAccess && (
-        <div style={{ fontFamily:PP, fontSize:12, lineHeight:1.55, color:C.mid, background:C.primaryLight, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 13px', marginBottom:18 }}>
+        <p className="latido-auth-notice">
           Inicia sesión para acceder a la información y los servicios de nuestros colaboradores.
-        </div>
+        </p>
       )}
 
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
@@ -774,7 +1023,7 @@ export default function Auth() {
         </div>
       )}
 
-      <Btn onClick={handleLogin} loading={loading}>Iniciar sesión</Btn>
+      <Btn onClick={handleLogin} loading={loading}>Entrar →</Btn>
       {googleAuthVisible && (
         <>
           <AuthDivider />
@@ -788,20 +1037,20 @@ export default function Auth() {
           />
         </>
       )}
-    </div>
+
+      <p className="latido-auth-flow__switch">
+        ¿Aún no tienes cuenta?{' '}
+        <button type="button" onClick={() => changeAuthMode('register')}>Créala gratis</button>
+      </p>
+    </AuthFormScreen>
   )
 
   if (mode === 'forgot') return (
-    <div className="latido-page-container" style={{ maxWidth:440, marginTop:60, marginBottom:60 }}>
-      <div style={{ textAlign:'center', marginBottom:28 }}>
-        <div style={{ width:60, height:60, background:C.primaryLight, borderRadius:20, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, margin:'0 auto 14px' }}>🔑</div>
-        <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:4 }}>Recuperar contraseña</h1>
-        <p style={{ fontFamily:PP, fontSize:13, color:C.light }}>Te enviaremos un enlace para crear una nueva.</p>
-        <p style={{ margin:'8px auto 0', maxWidth:340, fontFamily:PP, fontSize:11, lineHeight:1.55, color:C.mid }}>
-          También funciona si tu cuenta fue creada con Google y quieres entrar con email desde la PWA.
-        </p>
-      </div>
-
+    <AuthFormScreen onBack={() => setMode('login')}>
+      <header className="latido-auth-sheet-heading">
+        <h1>Nueva contraseña</h1>
+        <p>Te enviaremos un enlace para crear una nueva. También funciona con cuentas creadas mediante Google.</p>
+      </header>
       <Input label="Tu email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
 
       <Btn onClick={handleForgot} loading={loading}>Enviar enlace</Btn>
@@ -811,73 +1060,85 @@ export default function Auth() {
           <ChevronLeftIcon size={15} /> Volver al inicio de sesión
         </button>
       </p>
-    </div>
+    </AuthFormScreen>
   )
 
-  const REG_STEPS = [
-    { title:'Crea tu cuenta', sub:'Gratis · Sin spam · Sin comisiones' },
-    { title:'¿Dónde estás en Suiza?', sub:'Para mostrarte anuncios cercanos primero' },
-    { title:'¿Qué buscas en Latido?', sub:'Elige hasta tres para personalizar tu inicio' },
+  const registerSteps = [
+    { title:'Crea tu cuenta', body:'Gratis · Sin spam · Sin comisiones' },
+    { title:'¿Dónde estás en Suiza?', body:'Para mostrarte primero los anuncios más cercanos' },
+    { title:'¿Qué buscas en Latido?', body:'Elige hasta tres opciones para personalizar tu inicio' },
   ]
 
-  return (
-    <div className="latido-page-container" style={{ maxWidth:440, marginTop:32, marginBottom:48 }}>
-      <AuthModeSwitch mode={mode} onChange={changeAuthMode} />
+  const goBackFromRegister = () => {
+    setErrors({})
+    if (step > 0) {
+      setStep(current => current - 1)
+      return
+    }
+    changeAuthMode('welcome')
+  }
 
-      <ProgressBar step={step} total={REG_STEPS.length} />
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4 }}>{REG_STEPS[step].title}</h1>
-      <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:22 }}>{REG_STEPS[step].sub}</p>
+  return (
+    <AuthFormScreen variant="register">
+      <div className="latido-auth-register-progress" aria-label={`Paso ${step + 1} de 3`}>
+        <div className="latido-auth-register-progress__segments" aria-hidden="true">
+          {registerSteps.map((item, index) => <span className={index <= step ? 'is-active' : ''} key={item.title} />)}
+        </div>
+        <span>Paso {step + 1} de 3</span>
+      </div>
+
+      <header className="latido-auth-sheet-heading">
+        <h1>{registerSteps[step].title}</h1>
+        <p>{registerSteps[step].body}</p>
+      </header>
 
       {isPartnerAccess && step === 0 && (
-        <div style={{ fontFamily:PP, fontSize:12, lineHeight:1.55, color:C.mid, background:C.primaryLight, border:`1px solid ${C.border}`, borderRadius:14, padding:'11px 13px', marginBottom:18 }}>
+        <p className="latido-auth-notice">
           Crea tu cuenta gratuita para acceder a la información y los servicios de nuestros colaboradores.
-        </div>
+        </p>
       )}
 
       {step === 0 && (
         <>
-          <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={e => s('name', e.target.value)} error={errors.name} errorKey="name" />
-          <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={e => s('email', e.target.value)} error={errors.email} errorKey="email" />
+          <Input label="Nombre completo" placeholder="María García" required value={form.name} onChange={event => s('name', event.target.value)} error={errors.name} errorKey="name" />
+          <Input label="Email" type="email" placeholder="tu@email.com" required value={form.email} onChange={event => s('email', event.target.value)} error={errors.email} errorKey="email" />
           <Input
             label="Contraseña"
             type={showRegisterPassword ? 'text' : 'password'}
             placeholder="Mínimo 8 caracteres"
             required
             value={form.password}
-            onChange={e => s('password', e.target.value)}
+            onChange={event => s('password', event.target.value)}
             error={errors.password}
             errorKey="password"
-            rightElement={
-              <PasswordVisibilityButton visible={showRegisterPassword} onToggle={() => setShowRegisterPassword(v => !v)} />
-            }
+            rightElement={<PasswordVisibilityButton visible={showRegisterPassword} onToggle={() => setShowRegisterPassword(value => !value)} />}
           />
-          <p style={{ fontFamily:PP, fontSize:10, color:C.light, marginBottom:14, lineHeight:1.5 }}>
-            Al registrarte aceptas los <Link to="/terminos" style={{ color:C.primary }}>términos de uso</Link> y confirmas que has leído la <Link to="/privacidad" style={{ color:C.primary }}>política de privacidad</Link> y la <Link to="/cookies" style={{ color:C.primary }}>política de cookies</Link>.
+          <p className="latido-auth-legal">
+            Al registrarte aceptas los <Link to="/terminos">términos de uso</Link> y confirmas que has leído la <Link to="/privacidad">política de privacidad</Link> y la <Link to="/cookies">política de cookies</Link>.
           </p>
         </>
       )}
 
       {step === 1 && (
         <>
-          <Select label="Tu cantón" required value={form.canton} onChange={e => s('canton', e.target.value)} error={errors.canton} errorKey="canton">
-            <option value="">Seleccionar cantón...</option>
-            {CANTONS.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
+          <Select label="Tu cantón" required value={form.canton} onChange={event => s('canton', event.target.value)} error={errors.canton} errorKey="canton">
+            <option value="">Seleccionar cantón…</option>
+            {CANTONS.map(canton => <option key={canton.code} value={canton.code}>{canton.code} — {canton.name}</option>)}
           </Select>
-          <div style={{ background:C.bg, borderRadius:12, padding:'11px 13px', marginBottom:14 }}>
-            <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.55 }}>
-              📣 Usamos tu cantón para mostrarte los anuncios más cercanos primero. Puedes cambiarlo en tu perfil.
-            </p>
+          <div className="latido-auth-location-note">
+            📣 Usamos tu cantón para mostrarte los anuncios más cercanos primero. Puedes cambiarlo en tu perfil.
           </div>
-          <div style={{ marginBottom:14 }}>
-            <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>IDIOMAS QUE HABLAS</p>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-              {['Español','Alemán','Francés','Italiano','Inglés','Portugués'].map(l => (
+          <div className="latido-auth-language-block">
+            <p>IDIOMAS QUE HABLAS</p>
+            <div>
+              {['Español', 'Alemán', 'Francés', 'Italiano', 'Inglés', 'Portugués'].map(language => (
                 <button
-                  key={l}
-                  onClick={() => toggleLang(l)}
-                  style={{ fontFamily:PP, fontSize:11, fontWeight:600, padding:'6px 14px', borderRadius:20, border:`1.5px solid ${form.languages.includes(l) ? C.primary : C.border}`, background:form.languages.includes(l) ? C.primary : '#fff', color:form.languages.includes(l) ? '#fff' : C.mid, cursor:'pointer' }}
+                  key={language}
+                  type="button"
+                  className={form.languages.includes(language) ? 'is-active' : ''}
+                  onClick={() => toggleLang(language)}
                 >
-                  {l}
+                  {language}
                 </button>
               ))}
             </div>
@@ -887,43 +1148,43 @@ export default function Auth() {
 
       {step === 2 && (
         <>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, margin:'0 0 9px', letterSpacing:0.5 }}>
-            {form.interests.length}/3 SELECCIONADOS
-          </p>
+          <p className="latido-auth-selection-count">{form.interests.length}/3 SELECCIONADOS</p>
           <InterestOptionGrid
             options={ONBOARDING_INTEREST_OPTIONS}
             selectedIds={form.interests}
             onToggle={toggleInterest}
             style={{ marginBottom:12 }}
           />
-          <section style={{ display:'grid', gridTemplateColumns:'auto minmax(0,1fr)', gap:11, margin:'4px 0 14px', padding:'14px', background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:16, boxShadow:'0 6px 18px rgba(37,99,235,.07)' }}>
-            <span aria-hidden="true" style={{ display:'grid', width:42, height:42, placeItems:'center', background:C.primaryLight, borderRadius:13, fontSize:22 }}>🎙️</span>
-            <div style={{ minWidth:0 }}>
-              <strong style={{ display:'block', color:C.text, fontFamily:PP, fontSize:12.5, lineHeight:1.4 }}>¿Eres creador de contenido?</strong>
-              <p style={{ margin:'4px 0 10px', color:C.mid, fontFamily:PP, fontSize:10.5, lineHeight:1.6 }}>
-                Si tienes redes sociales donde hablas de Suiza y quieres llegar a más personas, crea tu perfil de creador en Latido.
-              </p>
+          <section className="latido-auth-creator-prompt">
+            <span aria-hidden="true">🎙️</span>
+            <div>
+              <strong>¿Eres creador de contenido?</strong>
+              <p>Si tienes redes sociales donde hablas de Suiza y quieres llegar a más personas, crea tu perfil de creador en Latido.</p>
               <button
                 type="button"
                 onClick={() => handleRegister(null, '/creadores/alta?from=onboarding', 'creator')}
                 disabled={loading}
-                style={{ minHeight:38, padding:'0 13px', color:'#fff', background:C.primary, border:0, borderRadius:11, fontFamily:PP, fontSize:10.5, fontWeight:800, cursor:loading ? 'default' : 'pointer', opacity:loading && registrationIntent !== 'creator' ? .55 : 1 }}
               >
                 {loading && registrationIntent === 'creator' ? 'Creando tu cuenta…' : 'Crear perfil de creador'}
               </button>
-              <small style={{ display:'block', marginTop:7, color:C.light, fontFamily:PP, fontSize:8.5, lineHeight:1.45 }}>Primero crearemos tu cuenta y después completarás el perfil.</small>
             </div>
           </section>
-          <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 18px', lineHeight:1.55 }}>
-            Es opcional. Podrás cambiar estos intereses cuando quieras desde tu perfil.
-          </p>
+          <p className="latido-auth-interests-note">Podrás cambiar estos intereses cuando quieras desde tu perfil.</p>
         </>
       )}
 
-      <div style={{ display:'flex', gap:10 }}>
-        {step > 0 && <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 100px' }}><ChevronLeftIcon size={16} /> Atrás</Btn>}
-        {step < REG_STEPS.length - 1 ? (
-          <Btn onClick={() => { if (!validateRegisterStep()) return; setStep(current => current + 1) }} style={{ flex:1 }}>
+      <div className="latido-auth-register-actions">
+        <Btn onClick={goBackFromRegister} variant="secondary" style={{ flex:'0 0 104px' }}>
+          <ChevronLeftIcon size={16} /> Atrás
+        </Btn>
+        {step < registerSteps.length - 1 ? (
+          <Btn
+            onClick={() => {
+              if (!validateRegisterStep()) return
+              setStep(current => current + 1)
+            }}
+            style={{ flex:1 }}
+          >
             Continuar →
           </Btn>
         ) : (
@@ -947,16 +1208,6 @@ export default function Auth() {
         </>
       )}
 
-      {step === 2 && (
-        <button
-          type="button"
-          onClick={() => handleRegister([])}
-          disabled={loading}
-          style={{ width:'100%', fontFamily:PP, fontSize:11, fontWeight:700, color:C.mid, background:'transparent', border:'none', padding:'11px 0 4px', cursor:loading ? 'default' : 'pointer' }}
-        >
-          Omitir por ahora
-        </button>
-      )}
-    </div>
+    </AuthFormScreen>
   )
 }
