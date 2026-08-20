@@ -381,7 +381,7 @@ const WELCOME_SLIDES = [
 
 // Estructura común de todas las pantallas del flujo: cabecera, zona azul
 // (héroe o carrusel) y hoja blanca inferior con la acción principal.
-function AuthFlowScreen({ variant, hero, dots=null, onBack, backTo, backLabel='Volver', onSkip, skipLabel='Saltar', children }) {
+function AuthFlowScreen({ variant, hero, dots=null, onBack, backTo, onSkip, skipLabel='Saltar', children }) {
   return (
     <section className={`latido-auth-flow latido-auth-flow--${variant}`}>
       <div className="latido-auth-flow__orb latido-auth-flow__orb--one" aria-hidden="true" />
@@ -389,14 +389,12 @@ function AuthFlowScreen({ variant, hero, dots=null, onBack, backTo, backLabel='V
 
       <header className="latido-auth-flow__topbar">
         {backTo ? (
-          <Link to={backTo} className="latido-auth-pill" aria-label="Volver a Latido">
-            <ChevronLeft size={16} aria-hidden="true" />
-            {backLabel}
+          <Link to={backTo} className="latido-auth-pill" aria-label="Volver a Latido" title="Volver">
+            <ChevronLeft size={18} aria-hidden="true" />
           </Link>
         ) : onBack ? (
-          <button type="button" className="latido-auth-pill" onClick={onBack} aria-label="Volver">
-            <ChevronLeft size={16} aria-hidden="true" />
-            {backLabel}
+          <button type="button" className="latido-auth-pill" onClick={onBack} aria-label="Volver" title="Volver">
+            <ChevronLeft size={18} aria-hidden="true" />
           </button>
         ) : <span aria-hidden="true" />}
         {onSkip

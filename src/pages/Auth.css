@@ -90,18 +90,19 @@
     max(18px, env(safe-area-inset-left));
 }
 
+/* Botón circular: solo la flecha, el nombre accesible va en aria-label. */
 .latido-auth-pill {
   display: inline-flex;
-  min-height: 38px;
+  width: 38px;
+  height: 38px;
   align-items: center;
-  gap: 3px;
-  padding: 0 14px 0 9px;
+  justify-content: center;
+  padding: 0;
   border: 1px solid rgba(255, 255, 255, .25);
   border-radius: 999px;
   color: #fff;
   background: rgba(255, 255, 255, .16);
   backdrop-filter: blur(12px);
-  font: 700 12px/1 'Poppins', system-ui, sans-serif;
   text-decoration: none;
   cursor: pointer;
 }
