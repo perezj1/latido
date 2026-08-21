@@ -2024,29 +2024,6 @@ export default function Home() {
                         ? <img src={getThumbnailImageUrl(business.photo_url)} onError={event => handleThumbnailImageError(event, business.photo_url)} alt={business.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
                         : <span>{business.emoji || '🏪'}</span>
                       }
-                      <span
-                        title={business.typeLabel}
-                        style={{
-                          position:'absolute',
-                          top:8,
-                          left:8,
-                          maxWidth:business.verified ? 'calc(100% - 42px)' : 'calc(100% - 16px)',
-                          fontFamily:PP,
-                          fontSize:9,
-                          fontWeight:700,
-                          lineHeight:1.2,
-                          background:'rgba(255,255,255,0.92)',
-                          color:'#0F766E',
-                          padding:'4px 7px',
-                          borderRadius:999,
-                          whiteSpace:'nowrap',
-                          overflow:'hidden',
-                          textOverflow:'ellipsis',
-                          boxSizing:'border-box',
-                        }}
-                      >
-                        {business.emoji} {business.typeLabel}
-                      </span>
                       <div style={{ position:'absolute', top:8, right:8, display:'flex', gap:4 }}>
                         {business.verified && (
                           <span
@@ -2076,11 +2053,14 @@ export default function Home() {
                       )}
                     </div>
                     <div style={{ ...HOME_CAROUSEL_BODY_STYLE, padding:hasPromotion ? '18px 12px 13px' : HOME_CAROUSEL_BODY_STYLE.padding }}>
-                      <p title={business.name} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 8px', lineHeight:1.32, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      <p title={business.name} style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 7px', lineHeight:1.32, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         {business.name}
                       </p>
+                      <p title={business.typeLabel} style={{ fontFamily:PP, fontWeight:700, fontSize:9, lineHeight:1.3, color:'#0F766E', margin:'0 0 6px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {business.emoji} {business.typeLabel}
+                      </p>
                       <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        📍 {business.city}{business.services.length ? ` · ${business.services[0]}` : ''}
+                        📍 {business.city}
                       </p>
                     </div>
                   </div>

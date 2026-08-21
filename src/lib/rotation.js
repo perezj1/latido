@@ -10,6 +10,38 @@ export function rotateItems(items = [], offset = 0) {
   return [...items.slice(normalizedOffset), ...items.slice(0, normalizedOffset)]
 }
 
+export function rotateItemsWithRecentFirst(
+  items = [],
+  offset = 0,
+  recentWindowMs = 0,
+  getCreatedAt = item => item?.created_at,
+  now = Date.now(),
+) {
+  if (!Array.isArray(items) || items.length < 2) return items || []
+
+  const windowMs = Math.max(0, Number(recentWindowMs) || 0)
+  const recent = []
+  const rotationCandidates = []
+
+  items.forEach(item => {
+    const timestamp = new Date(getCreatedAt(item) || 0).getTime()
+    const age = now - timestamp
+
+    if (Number.isFinite(timestamp) && age < windowMs) {
+      recent.push({ item, timestamp })
+    } else {
+      rotationCandidates.push(item)
+    }
+  })
+
+  recent.sort((first, second) => second.timestamp - first.timestamp)
+
+  return [
+    ...recent.map(entry => entry.item),
+    ...rotateItems(rotationCandidates, offset),
+  ]
+}
+
 export function mixRecentWithOlder(items = [], rotationBucket = 0, getCreatedAt = item => item?.created_at) {
   if (!Array.isArray(items) || items.length < 3) return items || []
 

@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CreatorAppContentCard, CreatorAvatar, CreatorContentModal } from './CreatorCards'
 import { getAllCreators, getOrderedCreatorContents, subscribeCreatorUpdates } from '../lib/creators'
+import { BUSINESS_ROTATION_INTERVAL_MS } from '../lib/businessPromotion'
+import { rotateItemsWithRecentFirst } from '../lib/rotation'
 import { C, PP } from '../lib/theme'
+import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import '../pages/Creators.css'
 
 function SectionHeading({ id, title, subtitle, to }) {
@@ -43,18 +46,54 @@ export default function CreatorHomeSection() {
   const [creators, setCreators] = useState(() => getAllCreators())
   const contentScrollRef = useRef(null)
   const creatorsScrollRef = useRef(null)
+  const rotationOffset = useTimedRotationBucket(BUSINESS_ROTATION_INTERVAL_MS)
+  const [freshnessNow, setFreshnessNow] = useState(() => Date.now())
 
-  useEffect(() => subscribeCreatorUpdates(() => setCreators(getAllCreators())), [])
+  useEffect(() => subscribeCreatorUpdates(() => {
+    setCreators(getAllCreators())
+    setFreshnessNow(Date.now())
+  }), [])
 
-  const featured = useMemo(() => creators
-    .flatMap(creator => getOrderedCreatorContents(creator, { publishedOnly:true })
-      .map((content, selectionIndex) => ({ content, creator, selectionIndex })))
-    .sort((a, b) => a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at))
-    .slice(0, 6), [creators])
+  useEffect(() => {
+    const now = Math.max(Date.now(), freshnessNow)
+    const expirationTimes = creators.flatMap(creator => [
+      new Date(creator.created_at || 0).getTime() + BUSINESS_ROTATION_INTERVAL_MS,
+      ...(creator.contents || []).map(content => (
+        new Date(content.published_at || content.created_at || 0).getTime() + BUSINESS_ROTATION_INTERVAL_MS
+      )),
+    ])
+    const nextExpiration = Math.min(...expirationTimes.filter(timestamp => (
+      Number.isFinite(timestamp) && timestamp > now
+    )))
 
-  const featuredCreators = useMemo(() => [...creators]
-    .sort((first, second) => new Date(second.created_at) - new Date(first.created_at))
-    .slice(0, 8), [creators])
+    if (!Number.isFinite(nextExpiration)) return undefined
+
+    const timeoutId = window.setTimeout(
+      () => setFreshnessNow(Date.now()),
+      Math.min(nextExpiration - now + 25, 2_147_483_647),
+    )
+
+    return () => window.clearTimeout(timeoutId)
+  }, [creators, freshnessNow])
+
+  const featured = useMemo(() => rotateItemsWithRecentFirst(
+    creators
+      .flatMap(creator => getOrderedCreatorContents(creator, { publishedOnly:true })
+        .map((content, selectionIndex) => ({ content, creator, selectionIndex })))
+      .sort((a, b) => a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at)),
+    rotationOffset,
+    BUSINESS_ROTATION_INTERVAL_MS,
+    item => item.content.published_at || item.content.created_at,
+    freshnessNow,
+  ).slice(0, 6), [creators, freshnessNow, rotationOffset])
+
+  const featuredCreators = useMemo(() => rotateItemsWithRecentFirst(
+    [...creators].sort((first, second) => new Date(second.created_at) - new Date(first.created_at)),
+    rotationOffset,
+    BUSINESS_ROTATION_INTERVAL_MS,
+    creator => creator.created_at,
+    freshnessNow,
+  ).slice(0, 8), [creators, freshnessNow, rotationOffset])
 
   const firstContentId = featured[0]?.content.id
   const firstCreatorId = featuredCreators[0]?.id
