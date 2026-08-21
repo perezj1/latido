@@ -20,6 +20,7 @@ const {
 } = await import('../src/lib/creators.js')
 const { resolveTikTokLink } = await import('../api/tiktok-resolve.js')
 const { getSeoForLocation } = await import('../src/lib/seo.js')
+const { rotateItemsWithRecentFirst } = await import('../src/lib/rotation.js')
 
 assert.equal(formatCreatorHandle('perfilantiguo'), '@perfilantiguo')
 assert.equal(slugifyCreator('María en Zúrich'), 'maria-en-zurich')
@@ -63,6 +64,23 @@ assert.deepEqual(
   'Los destacados deben respetar la selección persistida.',
 )
 assert.equal(CREATOR_FEATURED_CONTENTS, 6)
+const rotationNow = new Date('2026-08-21T12:00:00.000Z').getTime()
+const rotationWindow = 6 * 60 * 60 * 1000
+const rotationItems = [
+  { id:'new', created_at:'2026-08-21T11:00:00.000Z' },
+  { id:'boundary', created_at:'2026-08-21T06:00:00.000Z' },
+  { id:'old', created_at:'2026-08-20T12:00:00.000Z' },
+]
+assert.deepEqual(
+  rotateItemsWithRecentFirst(rotationItems, 1, rotationWindow, item => item.created_at, rotationNow).map(item => item.id),
+  ['new', 'old', 'boundary'],
+  'Lo nuevo debe permanecer primero durante seis horas y el resto debe rotar.',
+)
+assert.deepEqual(
+  rotateItemsWithRecentFirst(rotationItems, 1, rotationWindow, item => item.created_at, rotationNow + rotationWindow).map(item => item.id),
+  ['boundary', 'old', 'new'],
+  'Al cumplir seis horas, el elemento nuevo debe entrar en la rotación normal.',
+)
 assert.deepEqual(
   CREATOR_VIDEO_IFRAME_PERMISSIONS,
   {
