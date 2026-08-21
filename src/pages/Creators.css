@@ -850,7 +850,10 @@
 .creator-content-actions { display: flex; min-height: 39px; margin-top: 11px; padding-top: 9px; align-items: center; gap: 5px; border-top: 1px solid #e2e8f0; }
 .creator-content-actions button { display: inline-flex; min-width: 34px; height: 34px; padding: 0 7px; align-items: center; justify-content: center; gap: 4px; color: #71829d; background: transparent; border: 0; border-radius: 10px; font: 700 9px/1 'Poppins', system-ui, sans-serif; cursor: pointer; }
 .creator-content-actions button:hover { color: #1d4ed8; background: #f8fafc; }
-.creator-content-actions__helpful.is-active { color: #e11d48; }
+.creator-content-actions button.creator-content-actions__helpful,
+.creator-content-actions button.creator-content-actions__helpful:hover { color: #71829d; }
+.creator-content-actions button.creator-content-actions__helpful.is-active,
+.creator-content-actions button.creator-content-actions__helpful.is-active:hover { color: #e11d48; }
 .creator-content-actions__open { min-width: 48px !important; margin-left: auto; color: #2563eb !important; background: #eef4ff !important; font-size: 8.5px !important; font-weight: 900 !important; }
 
 .creator-helpful-button {
@@ -1173,11 +1176,15 @@
   background: transparent;
 }
 
-/* El :hover de arriba lleva un selector de elemento, asi que ganaba a .is-active
-   y en tactil el hover se queda pegado tras pulsar: el corazon activo salia azul.
-   Repetirlo con :hover le da la especificidad que faltaba. */
-.creator-home-content-actions__helpful.is-active,
-.creator-home-content-actions__helpful.is-active:hover {
+/* En tactil, :hover puede quedarse pegado despues de pulsar. El corazon debe
+   continuar gris si esta deseleccionado y rojo cuando la valoracion esta activa. */
+.creator-home-content-actions > button.creator-home-content-actions__helpful,
+.creator-home-content-actions > button.creator-home-content-actions__helpful:hover {
+  color: #71829d;
+}
+
+.creator-home-content-actions > button.creator-home-content-actions__helpful.is-active,
+.creator-home-content-actions > button.creator-home-content-actions__helpful.is-active:hover {
   color: #e11d48;
 }
 
