@@ -78,6 +78,7 @@ const tiktokResolutionCache = new Map()
 let creatorCache = []
 let creatorMetricsCache = {}
 let creatorInteractionsCache = []
+let creatorMembershipIds = new Set()
 let creatorDirectoryState = { loaded:false, loading:false, error:null, userId:'' }
 let creatorRefreshPromise = null
 let creatorCacheHydrated = false
@@ -553,6 +554,7 @@ export async function refreshCreatorDirectory(userId = '', { force = false } = {
       }))
     creatorInteractionsCache = []
     creatorMetricsCache = {}
+    creatorMembershipIds = new Set()
   }
 
   creatorDirectoryState = { ...creatorDirectoryState, loading:true, error:null, userId:normalizedUserId }
@@ -569,20 +571,27 @@ export async function refreshCreatorDirectory(userId = '', { force = false } = {
     const privateRequest = normalizedUserId
       ? supabase.from('creator_private_data').select('creator_id,follower_ranges')
       : Promise.resolve({ data:[], error:null })
+    const membershipRequest = normalizedUserId
+      ? supabase.from('creator_members').select('creator_id').eq('user_id', normalizedUserId)
+      : Promise.resolve({ data:[], error:null })
 
-    const [profiles, contents, recentHelpful, interactions, metrics, privateData] = await Promise.all([
+    const [profiles, contents, recentHelpful, interactions, metrics, privateData, memberships] = await Promise.all([
       profileRequest,
       contentRequest,
       recentHelpfulRequest,
       interactionRequest,
       metricsRequest,
       privateRequest,
+      membershipRequest,
     ])
     const error = profiles.error || contents.error || interactions.error || metrics.error || privateData.error
     if (error) throw error
 
     creatorCache = mapCreatorRows(profiles.data, contents.data, privateData.data, recentHelpful.data)
     creatorInteractionsCache = interactions.data || []
+    // La tabla se despliega mediante creator_shared_access.sql. Mantener la
+    // carga compatible permite desplegar el frontend antes que la migración.
+    creatorMembershipIds = new Set((memberships.data || []).map(row => String(row.creator_id)))
     creatorMetricsCache = Object.fromEntries((metrics.data || []).map(row => [
       [row.creator_id, row.metric, row.content_id].filter(Boolean).join(':'),
       Number(row.count) || 0,
@@ -615,8 +624,25 @@ export function getCreatorBySlug(slug = '') {
 
 export function getCreatorForUser(userId) {
   if (!userId) return null
-  const creator = readLocalCreators().find(item => item.owner_id === userId)
+  const normalizedUserId = String(userId)
+  const creator = readLocalCreators().find(item => (
+    String(item.owner_id || '') === normalizedUserId
+    || (
+      creatorDirectoryState.userId === normalizedUserId
+      && creatorMembershipIds.has(String(item.id))
+    )
+  ))
   return creator ? normalizeCreatorRecord(creator) : null
+}
+
+export function canManageCreator(userId, creator) {
+  if (!userId || !creator?.id) return false
+  const normalizedUserId = String(userId)
+  return String(creator.owner_id || '') === normalizedUserId
+    || (
+      creatorDirectoryState.userId === normalizedUserId
+      && creatorMembershipIds.has(String(creator.id))
+    )
 }
 
 export function normalizeCreatorHandle(value = '') {
@@ -631,9 +657,10 @@ export function formatCreatorHandle(value = '') {
 export function isCreatorHandleAvailable(value, userId = '') {
   const handle = normalizeCreatorHandle(value)
   if (!handle) return false
+  const managedCreatorId = getCreatorForUser(userId)?.id
   return !getAllCreators({ includeUnpublished:true }).some(creator => (
     normalizeCreatorHandle(creator.handle) === handle
-    && String(creator.owner_id || '') !== String(userId || '')
+    && String(creator.id || '') !== String(managedCreatorId || '')
   ))
 }
 
@@ -650,7 +677,7 @@ export async function saveCreatorProfile(userId, input = {}) {
     throw new Error('Ese usuario ya pertenece a otro perfil. Elige uno diferente.')
   }
   const baseSlug = slugifyCreator(name) || 'creador'
-  const usedSlugs = new Set(getAllCreators({ includeUnpublished:true }).filter(creator => creator.owner_id !== userId).map(creator => creator.slug))
+  const usedSlugs = new Set(getAllCreators({ includeUnpublished:true }).filter(creator => creator.id !== existing?.id).map(creator => creator.slug))
   let slug = existing?.slug || baseSlug
   if (usedSlugs.has(slug)) slug = `${baseSlug}-${String(userId).slice(0, 6).toLowerCase()}`
 
@@ -674,7 +701,7 @@ export async function saveCreatorProfile(userId, input = {}) {
       .map(social => [social.platform, social.follower_range]),
   )
   const profile = {
-    owner_id:userId,
+    owner_id:existing?.owner_id || userId,
     slug,
     name,
     avatar_url:Object.hasOwn(input, 'avatar_url') ? String(input.avatar_url || '') : existing?.avatar_url || '',
@@ -695,9 +722,10 @@ export async function saveCreatorProfile(userId, input = {}) {
     updated_at:new Date().toISOString(),
   }
 
-  const { data, error } = await supabase
-    .from('creator_profiles')
-    .upsert(profile, { onConflict:'owner_id' })
+  const profileRequest = existing?.id
+    ? supabase.from('creator_profiles').update(profile).eq('id', existing.id)
+    : supabase.from('creator_profiles').insert(profile)
+  const { data, error } = await profileRequest
     .select('*')
     .single()
   if (error) {
@@ -709,7 +737,7 @@ export async function saveCreatorProfile(userId, input = {}) {
 
   const { error:privateError } = await supabase.from('creator_private_data').upsert({
     creator_id:data.id,
-    owner_id:userId,
+    owner_id:data.owner_id,
     follower_ranges:followerRanges,
     updated_at:new Date().toISOString(),
   }, { onConflict:'creator_id' })
@@ -778,7 +806,6 @@ export async function saveCreatorContent(userId, input = {}) {
     .from('creator_profiles')
     .update({ featured_content_ids:nextFeaturedIds, selection_updated_at:now, updated_at:now })
     .eq('id', creator.id)
-    .eq('owner_id', userId)
   // El contenido ya está guardado. Un fallo secundario al actualizar la
   // selección no debe provocar que el usuario repita la publicación y cree un
   // duplicado; podrá destacarlo manualmente después.
@@ -811,7 +838,6 @@ export async function moveCreatorContent(userId, contentId, direction) {
   const { error } = await supabase.from('creator_profiles')
     .update({ selection_updated_at:now, updated_at:now })
     .eq('id', creator.id)
-    .eq('owner_id', userId)
   if (error) throw error
   await refreshCreatorDirectory(userId, { force:true })
   return getCreatorForUser(userId)
@@ -834,7 +860,6 @@ export async function setCreatorContentStatus(userId, contentId, status) {
   const { error:profileError } = await supabase.from('creator_profiles')
     .update({ featured_content_ids:nextFeaturedIds, selection_updated_at:now, updated_at:now })
     .eq('id', creator.id)
-    .eq('owner_id', userId)
   // El estado principal ya se confirmó; no hacemos que el usuario repita la
   // acción si únicamente falla la selección secundaria de destacados.
   if (profileError && import.meta.env?.DEV) console.warn('Creator featured selection could not be updated:', profileError.message)
@@ -864,7 +889,6 @@ export async function setCreatorContentFeatured(userId, contentId, featured) {
       updated_at:now,
     })
     .eq('id', creator.id)
-    .eq('owner_id', userId)
   if (error) throw error
   await refreshCreatorDirectory(userId, { force:true })
   return getCreatorForUser(userId)
@@ -886,7 +910,6 @@ export async function removeCreatorContent(userId, contentId) {
       updated_at:now,
     })
     .eq('id', creator.id)
-    .eq('owner_id', userId)
   // La eliminación principal ya se confirmó; una selección obsoleta se filtra
   // al leer y se corregirá en la siguiente actualización del perfil.
   if (profileError && import.meta.env?.DEV) console.warn('Creator featured selection could not be cleaned:', profileError.message)
@@ -1131,6 +1154,7 @@ export function startCreatorDirectorySync(userId = '') {
   const channel = supabase.channel(`creator-directory:${userId || 'public'}:${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes', { event:'*', schema:'public', table:'creator_profiles' }, refresh)
     .on('postgres_changes', { event:'*', schema:'public', table:'creator_contents' }, refresh)
+    .on('postgres_changes', { event:'*', schema:'public', table:'creator_members' }, refresh)
     .subscribe()
 
   return () => {
