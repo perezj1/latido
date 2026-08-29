@@ -6,6 +6,7 @@ import { ChevronLeftIcon, EmptyState } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import {
   CREATOR_FEATURED_CONTENTS,
+  canManageCreator,
   getAllCreators,
   getCreatorBySlug,
   getCreatorFeaturedContentIds,
@@ -163,8 +164,10 @@ export default function CreadorPerfil() {
   }, [creatorSlug])
 
   useEffect(() => {
-    if (creator?.id && creator.owner_id !== user?.id) trackCreatorMetric(creator.id, 'profile_view')
-  }, [creator?.id, creator?.owner_id, user?.id])
+    if (!directoryState.loaded || directoryState.loading) return
+    if (user?.id && directoryState.userId !== String(user.id)) return
+    if (creator?.id && !canManageCreator(user?.id, creator)) trackCreatorMetric(creator.id, 'profile_view')
+  }, [creator?.id, creator?.owner_id, directoryState.loaded, directoryState.loading, directoryState.userId, user?.id])
 
   useEffect(() => {
     if (!creator || !requestedContentId) return
@@ -222,7 +225,7 @@ export default function CreadorPerfil() {
   const featuredContentIds = getCreatorFeaturedContentIds(creator)
   const featuredContentIdSet = new Set(featuredContentIds)
   const viewerCreator = getCreatorForUser(user?.id)
-  const isOwner = Boolean(user?.id && creator.owner_id === user.id)
+  const isOwner = canManageCreator(user?.id, creator)
   const creatorMetrics = getCreatorMetrics(creator)
 
   const handleSocialClick = (_event, social) => {

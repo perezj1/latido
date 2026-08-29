@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 const {
   CREATOR_FEATURED_CONTENTS,
   CREATOR_VIDEO_IFRAME_PERMISSIONS,
+  canManageCreator,
   detectCreatorPlatform,
   formatCreatorHandle,
   getAutomaticCreatorThumbnail,
@@ -23,6 +24,8 @@ const { getSeoForLocation } = await import('../src/lib/seo.js')
 const { rotateItemsWithRecentFirst } = await import('../src/lib/rotation.js')
 
 assert.equal(formatCreatorHandle('perfilantiguo'), '@perfilantiguo')
+assert.equal(canManageCreator('owner-1', { id:'creator-1', owner_id:'owner-1' }), true)
+assert.equal(canManageCreator('other-user', { id:'creator-1', owner_id:'owner-1' }), false)
 assert.equal(slugifyCreator('María en Zúrich'), 'maria-en-zurich')
 assert.equal(normalizeCreatorUrl('latido.ch/creadores'), 'https://latido.ch/creadores')
 assert.equal(normalizeCreatorUrl('javascript:alert(1)'), '')
