@@ -1,3 +1,4 @@
+import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
@@ -1614,15 +1615,15 @@ export default function GlobalSearch({
     if (showPartnerService) {
       entries.push({
         type:'business',
-        id:'suiza-en-espanol',
-        label:'Suiza en Español',
-        sub:partnerService?.label ? `${partnerService.label} · Atención en español` : 'Seguros, previsión y llegada a Suiza',
-        image:'/partners/suiza-en-espanol/logo-see.webp',
+        id:PUNTO_HISPANO_PROVIDER_ID,
+        label:'Punto Hispano',
+        sub:partnerService?.label ? `${partnerService.label} · Atención en español` : 'Gestoría, asesoría, seguros e idiomas',
+        image:'/partners/punto-hispano/logo.webp',
         href:`/servicios-suiza${partnerService?.id ? `?service=${encodeURIComponent(partnerService.id)}` : ''}`,
         partnerPlan:'premium',
       })
     }
-    entries.push(...premiumBusinessResults)
+    entries.push(...premiumBusinessResults.filter(result => !showPartnerService || result.id !== PUNTO_HISPANO_PROVIDER_ID))
     return entries
   }, [partnerService, premiumBusinessResults, showPartnerService])
   const rotatedPremiumPartnerEntries = useMemo(
@@ -1631,10 +1632,12 @@ export default function GlobalSearch({
   )
   const showPremiumPartnerList = premiumPartnerEntries.length > 1
   const visibleResultPool = useMemo(
-    () => showPremiumPartnerList
-      ? resultPool.filter(result => !(result.type === 'business' && result.partnerPlan === 'premium'))
-      : resultPool,
-    [resultPool, showPremiumPartnerList]
+    () => resultPool.filter(result => {
+      if (result.type !== 'business') return true
+      if (showPartnerService && result.id === PUNTO_HISPANO_PROVIDER_ID) return false
+      return !showPremiumPartnerList || result.partnerPlan !== 'premium'
+    }),
+    [resultPool, showPartnerService, showPremiumPartnerList]
   )
   const filteredResults = useMemo(
     () => visibleResultPool.slice(0, expandedResults ? MAX_SEARCH_RESULTS : INITIAL_SEARCH_RESULTS),
@@ -2948,7 +2951,7 @@ export default function GlobalSearch({
                           </p>
                         </div>
                         <span style={{ gridColumn:'2', justifySelf:'start', fontFamily:PP, fontWeight:800, fontSize:11, color:C.primary, background:'#fff', border:`1px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 12px', whiteSpace:'nowrap' }}>
-                          Ver servicios →
+                          {result.id === PUNTO_HISPANO_PROVIDER_ID ? 'Contactar' : 'Ver servicios'} →
                         </span>
                       </div>
                     </div>

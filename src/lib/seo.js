@@ -82,7 +82,7 @@ const ROUTE_SEO = [
   {
     path:'/servicios-suiza',
     title:'Servicios para vivir en Suiza en español | Latido.ch',
-    description:'Orientación en español sobre seguro médico, tercer pilar y preparación para vivir en Suiza, en colaboración con Suiza en Español.',
+    description:'Gestoría, asesoría, seguros y formación en idiomas en Suiza, con atención en español de Punto Hispano.',
     robots:'noindex, follow',
   },
   {
