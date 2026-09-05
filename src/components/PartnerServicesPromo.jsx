@@ -6,9 +6,13 @@ import { C, PP } from '../lib/theme'
 import PartnerServiceIcon from './PartnerServiceIcon'
 import PartnerCard from './PartnerCard'
 
-const PARTNER_LOGO = '/partners/suiza-en-espanol/logo-see.webp'
+import { PUNTO_HISPANO_LOGO as PARTNER_LOGO } from '../lib/puntoHispano'
 const PARTNER_CARD_SEARCH_TERMS = [
-  'suiza en espanol',
+  'punto hispano',
+  'asesoria',
+  'alquiler de viviendas',
+  'alquiler de vehiculos',
+  'soluciones digitales',
   'servicios especializados',
   'vivir en suiza',
   'orientacion en espanol',
@@ -21,31 +25,28 @@ const PARTNER_CARD_SEARCH_TERMS = [
 
 const SERVICES = [
   {
-    id:'seguros',
-    path:'/seguromedico/',
-    icon:'health',
-    label:'Seguro de salud',
+    id:'alquiler',
+    icon:'key',
+    label:'Alquiler',
     color:'#2563EB',
     tint:'#EFF6FF',
-    terms:['seguro medico', 'seguro salud', 'seguro de salud', 'seguros', 'salud', 'krankenkasse', 'franquicia', 'prima medica'],
+    terms:['alquiler', 'alquilar', 'vehiculos', 'coches'],
   },
   {
-    id:'tercer-pilar',
-    path:'/formulario-tercerpilar/',
-    icon:'pillar',
-    label:'Tercer pilar',
+    id:'gestoria',
+    icon:'documents',
+    label:'Gestoría',
     color:'#0F766E',
     tint:'#ECFDF5',
-    terms:['tercer pilar', 'pilar 3', 'pilar 3a', 'jubilacion', 'pension', 'prevision'],
+    terms:['gestoria', 'administracion', 'tramites', 'desempleo', 'rav', 'cv', 'documentacion', 'traducciones', 'asesoria legal', 'permisos'],
   },
   {
-    id:'curso',
-    path:'/curso/',
-    icon:'course',
-    label:'Curso para llegar',
+    id:'vivienda',
+    icon:'home',
+    label:'Vivienda',
     color:'#9D174D',
     tint:'#FDF2F8',
-    terms:['curso', 'llegar a suiza', 'mudanza a suiza', 'emigrar a suiza', 'primeros pasos'],
+    terms:['vivienda', 'viviendas', 'pisos', 'apartamentos', 'inmobiliaria'],
   },
 ]
 
@@ -126,7 +127,7 @@ function PartnerLockup({ light = false }) {
       <span className="partner-services-lockup-logo">
         <img src={PARTNER_LOGO} alt="" />
       </span>
-      <span style={{ color:light ? '#fff' : C.text }}>Suiza en Español</span>
+      <span style={{ color:light ? '#fff' : C.text }}>Punto Hispano</span>
     </div>
   )
 }
@@ -182,14 +183,14 @@ export default function PartnerServicesPromo({
   if (mode === 'public-featured') {
     return (
       <PartnerCard
-        id={`suiza-en-espanol-${placement}`}
+        id={`punto-hispano-${placement}`}
         className="public-partner-tile"
         brand={{
           partnerLogo:PARTNER_LOGO,
-          partnerName:'Suiza en Español',
+          partnerName:'Punto Hispano',
         }}
         title="Servicios especializados para vivir en Suiza"
-        description="Orientación en español con un equipo especializado en seguros, previsión y llegada al país."
+        description="Punto Hispano te ayuda con gestoría, asesoría, seguros e idiomas en Suiza, con atención en español."
         services={SERVICES.map(service => ({
           ...service,
           href:isLoggedIn ? serviceUrls[service.id] : serviceAuthPaths[service.id],
@@ -209,13 +210,13 @@ export default function PartnerServicesPromo({
   if (mode === 'partner-card' || mode === 'compact') {
     return (
       <PartnerCard
-        id="suiza-en-espanol"
+        id="punto-hispano"
         brand={{
           partnerLogo:PARTNER_LOGO,
-          partnerName:'Suiza en Español',
+          partnerName:'Punto Hispano',
         }}
         title="Servicios especializados para vivir en Suiza"
-        description="Orientación en español con un equipo especializado en seguros, previsión y llegada al país."
+        description="Punto Hispano te ayuda con gestoría, asesoría, seguros e idiomas en Suiza, con atención en español."
         services={SERVICES.map(service => ({
           ...service,
           href:isLoggedIn ? serviceUrls[service.id] : serviceAuthPaths[service.id],
@@ -236,7 +237,7 @@ export default function PartnerServicesPromo({
     const contextualTitle = title || (selectedService
       ? `¿Necesitas ayuda con ${selectedService.label.toLowerCase()}?`
       : '¿No encuentras lo que necesitas?')
-    const contextualDescription = description || 'Nuestro colaborador Suiza en Español puede orientarte y ofrecerte servicios especializados en tu idioma.'
+    const contextualDescription = description || 'Nuestro colaborador Punto Hispano puede orientarte y ofrecerte servicios especializados en tu idioma.'
 
     return (
       <aside
@@ -259,7 +260,7 @@ export default function PartnerServicesPromo({
             authHref={serviceAuthPaths[selectedService.id]}
             onClick={() => handleServiceOpen(selectedService)}
           >
-            Consultar <span aria-hidden="true">↗</span>
+            Contactar <span aria-hidden="true">↗</span>
           </PartnerAccessLink>
         ) : (
           <PartnerAccessLink
@@ -269,7 +270,7 @@ export default function PartnerServicesPromo({
             authHref={partnerAuthPath}
             onClick={handleOpen}
           >
-            Ver servicios <span aria-hidden="true">→</span>
+            Contactar <span aria-hidden="true">→</span>
           </PartnerAccessLink>
         )}
       </aside>
@@ -304,7 +305,7 @@ export default function PartnerServicesPromo({
               Servicios para vivir mejor en Suiza
             </h2>
             <p id={`partner-promo-description-${placement}`} style={{ fontFamily:PP, fontSize:13, lineHeight:1.7, color:C.mid, margin:0, maxWidth:540 }}>
-              Orientación en español sobre seguro médico, tercer pilar y preparación para tu llegada.
+              Atención en español de Punto Hispano para tus trámites, seguros, asesoría y formación en idiomas.
             </p>
           </div>
 
@@ -318,7 +319,7 @@ export default function PartnerServicesPromo({
                   externalHref={serviceUrls[service.id]}
                   authHref={serviceAuthPaths[service.id]}
                   onClick={() => handleServiceOpen(service)}
-                  aria-label={isLoggedIn ? `${service.label}. Se abre en Suiza en Español` : `${service.label}. Inicia sesión para acceder`}
+                  aria-label={isLoggedIn ? `${service.label}. Se abre en Punto Hispano` : `${service.label}. Inicia sesión para acceder`}
                   style={{ position:'relative', minWidth:0, background:'#fff', border:'1px solid #DCE7F5', borderRadius:14, padding:'11px 9px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7, textAlign:'center', textDecoration:'none', boxShadow:'0 6px 18px rgba(15,23,42,0.04)', transition:'transform .18s ease, border-color .18s ease, box-shadow .18s ease' }}
                 >
                   <span style={{ width:34, height:34, borderRadius:11, background:service.tint, color:service.color, display:'grid', placeItems:'center', flexShrink:0 }}>
@@ -339,7 +340,7 @@ export default function PartnerServicesPromo({
               style={{ width:'100%', boxSizing:'border-box', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, minHeight:58, padding:'8px 12px 8px 22px', borderRadius:15, background:'linear-gradient(135deg, #2563EB, #1D4ED8)', color:'#fff', textDecoration:'none', fontFamily:PP, fontWeight:800, fontSize:15, boxShadow:'0 12px 28px rgba(37,99,235,0.25)', transition:'transform .18s ease, box-shadow .18s ease, background .18s ease' }}
             >
               <span style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', lineHeight:1.2 }}>
-                <span>Explorar todos los servicios</span>
+                <span>Contactar</span>
                 <span style={{ marginTop:3, fontWeight:500, fontSize:10, color:'rgba(255,255,255,0.78)' }}>Información clara y atención en español</span>
               </span>
               <span aria-hidden="true" style={{ width:36, height:36, flexShrink:0, borderRadius:'50%', background:'rgba(255,255,255,0.17)', border:'1px solid rgba(255,255,255,0.18)', display:'grid', placeItems:'center', fontSize:19 }}>→</span>

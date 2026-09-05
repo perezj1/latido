@@ -86,7 +86,7 @@ const PARTNER_PLANS = PAID_BUSINESS_FEATURES_VISIBLE
   : [FREE_PARTNER_PLAN]
 
 const LANDING_COLLABORATOR_LOGOS = [
-  { name: 'Suiza en Español', logo: '/partners/suiza-en-espanol/logo-see.webp' },
+  { name: 'Punto Hispano', logo: '/partners/punto-hispano/logo.webp' },
   { name: 'Virtus360', logo: '/partners/virtus360/logo.svg' },
   { name: 'Syna', logo: '/partners/syna/logo.svg' },
   { name: 'Bellini', logo: '/partners/bellini/logo-wide.svg' },

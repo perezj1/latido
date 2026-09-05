@@ -1,8 +1,20 @@
-export const DEFAULT_PARTNER_ANALYTICS_ID = 'suiza-en-espanol'
+import { PUNTO_HISPANO_PROVIDER_ID, PUNTO_HISPANO_NAME, PUNTO_HISPANO_LOGO } from './puntoHispano.js'
+
+export const DEFAULT_PARTNER_ANALYTICS_ID = `business:${PUNTO_HISPANO_PROVIDER_ID}`
 
 export const PARTNER_ANALYTICS_PARTNERS = [
   {
     id:DEFAULT_PARTNER_ANALYTICS_ID,
+    name:PUNTO_HISPANO_NAME,
+    logo:PUNTO_HISPANO_LOGO,
+    campaign:'punto-hispano-latido',
+    legacyPartnerIds:[],
+    color:'#2563EB',
+    tint:'#EFF6FF',
+    services:{ alquiler:'Alquiler', gestoria:'Gestoría', vivienda:'Vivienda' },
+  },
+  {
+    id:'suiza-en-espanol',
     name:'Suiza en Español',
     logo:'/partners/suiza-en-espanol/logo-see.webp',
     campaign:'servicios-latido',
@@ -107,7 +119,7 @@ export function isPartnerOutboundAnalyticsEvent(event, metadata = {}) {
 
   try {
     const destination = new URL(String(metadata.destination || ''), 'https://latido.ch')
-    return destination.hostname === 'suizaespanol.com'
+    return ['suizaespanol.com', 'puntohispano.ch'].includes(destination.hostname)
   } catch {
     return false
   }

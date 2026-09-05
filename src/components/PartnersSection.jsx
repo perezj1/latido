@@ -1,3 +1,4 @@
+import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import PartnerServicesPromo from './PartnerServicesPromo'
 import BelliniPartnerPromo from './BelliniPartnerPromo'
@@ -17,10 +18,10 @@ const HOME_PARTNERS = [
     render:placement => <Virtus360PartnerPromo key="virtus360" placement={placement} variant="partner-card" />,
   },
   {
-    id:'suiza-en-espanol',
+    id:'punto-hispano',
     render:placement => (
       <PartnerServicesPromo
-        key="suiza-en-espanol"
+        key="punto-hispano"
         placement={placement}
         variant="partner-card"
       />
@@ -55,7 +56,7 @@ export default function PartnersSection({ placement = 'app_home_partners' }) {
       planKey:partner.planKey,
       partner,
     }))
-    const editorialCards = HOME_PARTNERS.map(partner => ({
+    const editorialCards = HOME_PARTNERS.filter(partner => partner.id !== 'punto-hispano' || !businessPartners.some(business => business.id === PUNTO_HISPANO_PROVIDER_ID)).map(partner => ({
       id:`editorial:${partner.id}`,
       type:'editorial',
       planKey:'premium',

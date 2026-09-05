@@ -1,11 +1,12 @@
+import { PUNTO_HISPANO_CONTACT_URL } from './puntoHispano'
 import { isAnalyticsEnabled, trackAnalyticsEvent } from './analytics'
 import { DEFAULT_PARTNER_ANALYTICS_ID } from './partnerAnalytics'
 
 const PARTNER_ID = 'latido'
-const DEFAULT_CAMPAIGN = 'servicios-latido'
-const STORAGE_KEY = 'latido_partner_attribution'
-const FIRST_TOUCH_KEY = 'latido_partner_first_touch'
-export const PARTNER_LANDING_URL = 'https://suizaespanol.com/latido/?utm_source=latido&utm_medium=partner&utm_campaign=servicios-latido'
+const DEFAULT_CAMPAIGN = 'punto-hispano-latido'
+const STORAGE_KEY = 'latido_punto_hispano_attribution'
+const FIRST_TOUCH_KEY = 'latido_punto_hispano_first_touch'
+export const PARTNER_LANDING_URL = PUNTO_HISPANO_CONTACT_URL
 
 function readStorage(key) {
   try {
