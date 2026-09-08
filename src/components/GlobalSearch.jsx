@@ -22,6 +22,7 @@ import { C, PP } from '../lib/theme'
 import { Sheet } from './UI'
 import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
+import { getBusinessPartnerCardDestinationOverride } from '../lib/businessPartnerOverrides'
 import {
   MOCK_ADS,
   MOCK_COMMUNITIES,
@@ -510,7 +511,7 @@ const SEARCH_SELECTS = {
   ads: 'id, cat, sub, type, title, desc, city, canton, plz, price, price_amount, price_unit, rooms, available_from, privacy, active, img_url, photo_urls, created_at',
   jobs: 'id, title, company, city, canton, type, sector, category, job_intent, salary, salary_amount, salary_unit, lang, languages, desc, emoji, logo_url, employment_profile, employment_level, experience_years, available_from, driving_license, german_level, german_required, spanish_supported, active, created_at',
   communities: 'id, name, city, members, emoji, cat, desc, photo_url, active, created_at',
-  providers: 'id, name, category, city, canton, description, services, languages, active, featured, verified, promotion_plan, promotion_starts_at, promotion_ends_at, photo_url, created_at',
+  providers: 'id, name, category, city, canton, description, services, languages, active, featured, verified, promotion_plan, promotion_starts_at, promotion_ends_at, photo_url, partner_logo_url, created_at',
   events: 'id, type, title, day, month, year, price, city, canton, venue, host, desc, emoji, img_url, active, featured, created_at',
 }
 
@@ -674,6 +675,33 @@ const BUSINESS_SEARCH_PRIORITY = {
 
 const EDITORIAL_PREMIUM_PARTNERS = [
   {
+    id:'punto-hispano',
+    providerId:PUNTO_HISPANO_PROVIDER_ID,
+    name:'Punto Hispano',
+    aliases:['punto hispano', 'punto hispano asesoria'],
+    type:'asesoria_tramites',
+    city:'Zürich',
+    canton:'ZH',
+    description:'Gestoría, asesoría, alquiler, vivienda, seguros e idiomas en Suiza con atención en español.',
+    services:['Alquiler', 'Gestoría', 'Vivienda', 'Seguros', 'Idiomas'],
+    categories:['negocios', 'servicios', 'documentos', 'vivienda'],
+    image:'/partners/punto-hispano/logo.webp',
+    href:'/servicios-suiza',
+  },
+  {
+    id:'suiza-en-espanol',
+    name:'Suiza en Español',
+    aliases:['suiza en espanol', 'suiza espanol'],
+    type:'asesoria_tramites',
+    city:'Suiza',
+    canton:'',
+    description:'Orientación en español sobre seguros, previsión y llegada a Suiza.',
+    services:['Seguro de salud', 'Tercer pilar', 'Curso para llegar'],
+    categories:['negocios', 'servicios', 'documentos'],
+    image:'/partners/suiza-en-espanol/logo-see.webp',
+    href:'/servicios-suiza?partner=suiza-en-espanol&from=global-search',
+  },
+  {
     id:'virtus360',
     name:'Virtus360',
     aliases:['360 virtus gmbh', 'virtus360'],
@@ -743,7 +771,10 @@ const EDITORIAL_PREMIUM_PARTNERS = [
 function getEditorialPremiumPartner(business) {
   const normalizedName = normalizeSearchText(business?.name)
   if (!normalizedName) return null
-  return EDITORIAL_PREMIUM_PARTNERS.find(partner => partner.aliases.includes(normalizedName)) || null
+  return EDITORIAL_PREMIUM_PARTNERS.find(partner => (
+    (partner.providerId && partner.providerId === business?.id)
+    || partner.aliases.includes(normalizedName)
+  )) || null
 }
 
 function getCacheKey(isLoggedIn) {
@@ -823,8 +854,8 @@ function normalizeBusiness(provider) {
     promotionPlan,
     editorialPartnerId:editorialPartner?.id || '',
     partnerCategories:editorialPartner?.categories || [],
-    href:editorialPartner?.href || '',
-    photoUrl: resolveImageUrl(editorialPartner?.image || provider.photo_url || provider.img),
+    href:editorialPartner?.href || getBusinessPartnerCardDestinationOverride(provider.id)?.href || '',
+    photoUrl: resolveImageUrl(editorialPartner?.image || provider.partner_logo_url || provider.photo_url || provider.img),
     created_at: provider.created_at || '',
     createdAt:provider.created_at || '',
   }
@@ -1232,7 +1263,7 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
     if (!searchScore) continue
 
     matchingBusinesses.push({
-      id:`editorial-${partner.id}`,
+      id:partner.providerId || `editorial-${partner.id}`,
       name:partner.name,
       type:partner.type,
       city:partner.city,
@@ -1779,7 +1810,7 @@ export default function GlobalSearch({
       seen.add(partner.id)
       entries.push({
         type:'business',
-        id:`editorial-${partner.id}`,
+        id:partner.providerId || `editorial-${partner.id}`,
         label:partner.name,
         sub:partner.services.slice(0, 3).join(' · '),
         image:partner.image,
@@ -2471,10 +2502,10 @@ export default function GlobalSearch({
   }, [q])
 
   useEffect(() => {
-    if (focused || deferredQuery.trim().length >= 2) {
+    if (immersiveOpen || focused || deferredQuery.trim().length >= 2) {
       ensureDataLoaded()
     }
-  }, [deferredQuery, ensureDataLoaded, focused])
+  }, [deferredQuery, ensureDataLoaded, focused, immersiveOpen])
 
   useEffect(() => {
     setActiveIdx(-1)
