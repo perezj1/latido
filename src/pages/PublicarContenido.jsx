@@ -65,6 +65,7 @@ export default function PublicarContenido() {
   const [saving, setSaving] = useState(false)
   const [processingThumbnail, setProcessingThumbnail] = useState(false)
   const [fetchingMetadata, setFetchingMetadata] = useState(false)
+  const [metadataError, setMetadataError] = useState('')
   const [publishResult, setPublishResult] = useState(null)
 
   useEffect(() => {
@@ -107,6 +108,8 @@ export default function PublicarContenido() {
   // Igual que en el panel: YouTube y TikTok devuelven titulo y portada, asi que
   // se rellenan solos mientras no los hayas tocado.
   useEffect(() => {
+    setMetadataError('')
+    setFetchingMetadata(false)
     const platform = detectCreatorPlatform(form.url)
     if (!['youtube', 'tiktok'].includes(platform)) return undefined
     const normalizedUrl = normalizeCreatorUrl(form.url)
@@ -122,6 +125,8 @@ export default function PublicarContenido() {
           if (current.url !== form.url) return current
           const next = { ...current }
           if (!current.title.trim() && metadata.title) next.title = metadata.title.slice(0, LIMITS.title.max)
+          if (!current.summary.trim() && metadata.summary) next.summary = metadata.summary.slice(0, LIMITS.summary.max)
+          if (metadata.resolved_url) next.format = detectCreatorFormat(metadata.resolved_url, platform)
           if (current.thumbnail_kind !== 'custom' && metadata.thumbnail_url) {
             next.thumbnail_url = metadata.thumbnail_url
             next.thumbnail_kind = 'auto'
@@ -133,8 +138,8 @@ export default function PublicarContenido() {
           return next
         })
       } catch (error) {
-        if (error?.name !== 'AbortError') {
-          setForm(current => current.thumbnail_kind === 'auto' ? { ...current, thumbnail_url:'', thumbnail_kind:'' } : current)
+        if (!controller.signal.aborted && error?.name !== 'AbortError') {
+          setMetadataError('No se pudieron importar los datos. Puedes escribirlos y añadir una portada manualmente.')
         }
       } finally {
         if (!controller.signal.aborted) setFetchingMetadata(false)
@@ -343,6 +348,8 @@ export default function PublicarContenido() {
           )}
         </>
       )}
+
+      {metadataError && <p role="status" style={{ color:C.mid, fontSize:12 }}>{metadataError}</p>}
 
       {step === 1 && (
         <>

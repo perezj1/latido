@@ -85,6 +85,7 @@ export default function CreadorPanel() {
   const [contentErrors, setContentErrors] = useState({})
   const [processingThumbnail, setProcessingThumbnail] = useState(false)
   const [fetchingMetadata, setFetchingMetadata] = useState(false)
+  const [metadataError, setMetadataError] = useState('')
   const [preview, setPreview] = useState(null)
   const [completedChecksOpen, setCompletedChecksOpen] = useState(false)
 
@@ -142,6 +143,8 @@ export default function CreadorPanel() {
   }, [creator, searchParams, setSearchParams])
 
   useEffect(() => {
+    setMetadataError('')
+    setFetchingMetadata(false)
     const platform = detectCreatorPlatform(contentForm.url)
     if (!formOpen || !['youtube', 'tiktok'].includes(platform)) return undefined
     const normalizedUrl = normalizeCreatorUrl(contentForm.url)
@@ -157,6 +160,8 @@ export default function CreadorPanel() {
           if (current.url !== contentForm.url) return current
           const next = { ...current }
           if (!current.title.trim() && metadata.title) next.title = metadata.title.slice(0, CONTENT_LIMITS.title.max)
+          if (!current.summary.trim() && metadata.summary) next.summary = metadata.summary.slice(0, CONTENT_LIMITS.summary.max)
+          if (metadata.resolved_url) next.format = detectCreatorFormat(metadata.resolved_url, platform)
           if (current.thumbnail_kind !== 'custom' && metadata.thumbnail_url) {
             next.thumbnail_url = metadata.thumbnail_url
             next.thumbnail_kind = 'auto'
@@ -167,10 +172,8 @@ export default function CreadorPanel() {
           return next
         })
       } catch (error) {
-        if (error?.name !== 'AbortError') {
-          setContentForm(current => current.thumbnail_kind === 'auto'
-            ? { ...current, thumbnail_url:'', thumbnail_kind:'' }
-            : current)
+        if (!controller.signal.aborted && error?.name !== 'AbortError') {
+          setMetadataError('No se pudieron importar los datos. Puedes escribirlos y añadir una portada manualmente.')
         }
       } finally {
         if (!controller.signal.aborted) setFetchingMetadata(false)
@@ -550,7 +553,7 @@ export default function CreadorPanel() {
               aria-labelledby="creator-editor-publication-title"
             >
               <div className="creator-publish-form__heading">
-                <div><span>EDITAR CONTENIDO</span><h3 id="creator-editor-publication-title">Actualiza el vídeo o su información</h3></div>
+                <div><span>EDITAR CONTENIDO</span><h3 id="creator-editor-publication-title">Actualiza la publicación o su información</h3></div>
                 <IconButton size="sm" onClick={() => setFormOpen(false)} disabled={saving} label="Cerrar formulario">×</IconButton>
               </div>
               <div className="creator-publish-form__body">
@@ -564,7 +567,7 @@ export default function CreadorPanel() {
                     <div className="creator-publish-preview__copy">
                       <span style={{ color:publishPlatform.color, background:publishPlatform.bg }}>{publishPlatform.label}</span>
                       <strong>{contentForm.title.trim() || 'Título del contenido'}</strong>
-                      <small>{fetchingMetadata ? 'Leyendo el enlace…' : 'Vista previa preparada'}</small>
+                      <small>{fetchingMetadata ? 'Leyendo el enlace…' : metadataError || 'Vista previa preparada'}</small>
                     </div>
                   </div>
                 )}
