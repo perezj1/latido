@@ -3,6 +3,7 @@ import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolveTikTokLink } from './api/tiktok-resolve.js'
+import tiktokMetadataHandler from './api/tiktok-metadata.js'
 
 dns.setDefaultResultOrder('verbatim')
 
@@ -10,6 +11,7 @@ function tiktokResolverPlugin() {
   return {
     name:'latido-tiktok-resolver',
     configureServer(server) {
+      server.middlewares.use('/api/tiktok-metadata', tiktokMetadataHandler)
       server.middlewares.use('/api/tiktok-resolve', async (req, res) => {
         if (req.method === 'OPTIONS') {
           res.statusCode = 204

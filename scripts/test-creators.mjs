@@ -5,6 +5,7 @@ const {
   CREATOR_VIDEO_IFRAME_PERMISSIONS,
   canManageCreator,
   detectCreatorPlatform,
+  detectCreatorFormat,
   formatCreatorHandle,
   getAutomaticCreatorThumbnail,
   getCreatorContentsNewestFirst,
@@ -13,13 +14,18 @@ const {
   getCreatorMetrics,
   getCreatorOEmbedMetadata,
   getCreatorTopicsFromInterests,
+  getCreatorThumbnailUrl,
   getCreatorVideoEmbed,
   getFeaturedCreatorContents,
   getOrderedCreatorContents,
+  getTikTokVideoId,
   normalizeCreatorUrl,
+  resolveCreatorVideoEmbed,
+  resolveTikTokVideo,
   slugifyCreator,
 } = await import('../src/lib/creators.js')
-const { resolveTikTokLink } = await import('../api/tiktok-resolve.js')
+const { getTikTokIdFromUrl, resolveTikTokLink } = await import('../api/tiktok-resolve.js')
+const { default:tiktokMetadataHandler, getTikTokMetadata, getTikTokThumbnail } = await import('../api/tiktok-metadata.js')
 const { getSeoForLocation } = await import('../src/lib/seo.js')
 const { rotateItemsWithRecentFirst } = await import('../src/lib/rotation.js')
 
@@ -151,6 +157,56 @@ assert.equal(
   'https://www.tiktok.com/player/v1/7670562387044470038?autoplay=0&loop=0&fullscreen_button=0',
 )
 
+const photoTikTokUrl = 'https://www.tiktok.com/@martaacorral97/photo/7682743119472872726?_r=1&_t=ZN-99ZFldkOFHy'
+const shortPhotoTikTokUrl = 'https://vm.tiktok.com/ZN82yn7Hg/'
+const photoId = '7682743119472872726'
+const photoEmbedUrl = `https://www.tiktok.com/player/v1/${photoId}`
+assert.equal(detectCreatorFormat(photoTikTokUrl, 'tiktok'), 'fotos')
+for (const parseId of [getTikTokIdFromUrl, getTikTokVideoId]) {
+  assert.equal(parseId(photoTikTokUrl), photoId)
+  assert.equal(parseId(`https://www.tiktok.com/@latido/photo/${photoId}/`), photoId)
+  assert.equal(parseId(`https://example.com/@latido/photo/${photoId}`), '')
+  assert.equal(parseId(`https://www.tiktok.com/@latido/photo/${photoId}invalid`), '')
+  assert.equal(parseId('https://www.tiktok.com/@latido'), '')
+}
+const directPhoto = await resolveTikTokLink(photoTikTokUrl, {
+  fetchImpl:async () => assert.fail('Un enlace completo de fotos no necesita peticiones a TikTok.'),
+})
+assert.equal(directPhoto.video_id, photoId)
+assert.equal(directPhoto.resolved_url, photoTikTokUrl)
+assert.equal(directPhoto.embed_url, photoEmbedUrl)
+assert.deepEqual(await resolveTikTokVideo(photoTikTokUrl), directPhoto)
+
+// Simulate TikTok's short-link redirects, stopping before the photo page itself.
+const photoRedirectRequests = []
+const resolvedPhoto = await resolveTikTokLink(shortPhotoTikTokUrl, {
+  fetchImpl:async url => {
+    photoRedirectRequests.push(String(url))
+    assert.ok(photoRedirectRequests.length <= 2, 'No se debe solicitar la página de fotos tras obtener su URL.')
+    return {
+      status:302,
+      headers:{ get:() => photoRedirectRequests.length === 1 ? '/intermediate' : photoTikTokUrl },
+    }
+  },
+})
+assert.deepEqual(photoRedirectRequests, [shortPhotoTikTokUrl, 'https://vm.tiktok.com/intermediate'])
+assert.deepEqual(resolvedPhoto, { ...directPhoto, original_url:shortPhotoTikTokUrl })
+assert.equal((await resolveTikTokLink(shortPhotoTikTokUrl, {
+  fetchImpl:async () => ({ ok:true, url:photoTikTokUrl }),
+})).video_id, photoId)
+await assert.rejects(resolveTikTokLink(shortPhotoTikTokUrl, {
+  fetchImpl:async () => ({ ok:true, url:'https://www.tiktok.com/' }),
+}), error => error.statusCode === 422 && /vídeo o fotos/.test(error.message))
+
+const expectedPhotoEmbed = {
+  platform:'tiktok',
+  src:`${photoEmbedUrl}?autoplay=0&loop=0&fullscreen_button=0`,
+  vertical:true,
+}
+assert.deepEqual(getCreatorVideoEmbed({ url:photoTikTokUrl }), expectedPhotoEmbed)
+assert.deepEqual(getCreatorVideoEmbed({ url:shortPhotoTikTokUrl, ...resolvedPhoto }), expectedPhotoEmbed)
+assert.deepEqual(getCreatorVideoEmbed({ url:shortPhotoTikTokUrl, resolved_url:photoTikTokUrl }), expectedPhotoEmbed)
+
 assert.deepEqual(
   getCreatorTopicsFromInterests(['empleo', 'vivienda', 'comunidad']),
   ['trabajo', 'vivienda', 'integracion'],
@@ -171,6 +227,13 @@ const originalFetch = globalThis.fetch
 let requestedOEmbedUrl = ''
 globalThis.fetch = async url => {
   requestedOEmbedUrl = String(url)
+  if (requestedOEmbedUrl.startsWith('/api/tiktok-resolve?')) {
+    assert.equal(new URL(requestedOEmbedUrl, 'https://latido.ch').searchParams.get('url'), shortPhotoTikTokUrl)
+    return { ok:true, json:async () => resolvedPhoto }
+  }
+  if (requestedOEmbedUrl.startsWith('/api/tiktok-metadata?')) {
+    return { ok:true, json:async () => ({ title:'Título de fotos', thumbnail_url:'/api/tiktok-metadata?thumbnail=1&url=photo' }) }
+  }
   return {
     ok:true,
     async json() {
@@ -184,7 +247,94 @@ try {
   assert.match(requestedOEmbedUrl, /youtube\.com\/oembed/)
 
   await getCreatorOEmbedMetadata('https://www.tiktok.com/@latido/video/123456789')
-  assert.match(requestedOEmbedUrl, /tiktok\.com\/oembed/)
+  assert.match(requestedOEmbedUrl, /^\/api\/tiktok-metadata\?/)
+
+  assert.deepEqual(await resolveCreatorVideoEmbed({ url:shortPhotoTikTokUrl }), expectedPhotoEmbed)
+  for (const photoUrl of [photoTikTokUrl, shortPhotoTikTokUrl]) {
+    const photoMetadata = await getCreatorOEmbedMetadata(photoUrl)
+    assert.equal(photoMetadata.video_id, photoId)
+    assert.equal(photoMetadata.resolved_url, photoTikTokUrl)
+    assert.equal(photoMetadata.embed_url, photoEmbedUrl)
+    assert.equal(photoMetadata.title, 'Título de fotos')
+    assert.equal(photoMetadata.summary, 'Título de fotos')
+    assert.equal(getCreatorThumbnailUrl(photoMetadata), '/api/tiktok-metadata?thumbnail=1&url=photo')
+    assert.equal(new URL(requestedOEmbedUrl, 'https://latido.ch').searchParams.get('url'), photoTikTokUrl)
+  }
+} finally {
+  globalThis.fetch = originalFetch
+}
+
+const cdnThumbnail = 'https://p16-common-sign.tiktokcdn-eu.com/photo.jpeg?x-expires=123'
+const metadataRequests = []
+const metadataFetch = async (url, options) => {
+  const requested = new URL(url)
+  metadataRequests.push(requested.href)
+  if (requested.hostname === 'www.tiktok.com') {
+    assert.equal(requested.pathname, '/oembed')
+    assert.equal(requested.searchParams.get('url'), `https://www.tiktok.com/@martaacorral97/video/${photoId}`)
+    assert.equal(options.redirect, 'error')
+    return Response.json({ title:'Encontré esto sin gluten en Coop', thumbnail_url:cdnThumbnail })
+  }
+  assert.equal(requested.href, cdnThumbnail)
+  assert.equal(options.redirect, 'manual')
+  return new Response(new Uint8Array([255, 216, 255]), { headers:{ 'Content-Type':'image/jpeg' } })
+}
+const serverMetadata = await getTikTokMetadata(photoTikTokUrl, { fetchImpl:metadataFetch })
+assert.equal(serverMetadata.title, 'Encontré esto sin gluten en Coop')
+assert.equal(serverMetadata.resolved_url, photoTikTokUrl, 'El enlace original debe conservar su ruta de fotos.')
+const serverImage = await getTikTokThumbnail(photoTikTokUrl, { fetchImpl:metadataFetch })
+assert.equal(serverImage.contentType, 'image/jpeg')
+assert.equal(serverImage.body.length, 3)
+assert.equal(metadataRequests.length, 3, 'La portada debe solicitar una URL firmada nueva al servidor de TikTok.')
+await assert.rejects(getTikTokMetadata(photoTikTokUrl, {
+  fetchImpl:async () => Response.json({ code:400, message:'Something went wrong' }),
+}), /no devolvió los datos/)
+await assert.rejects(getTikTokMetadata('https://example.com/photo/123456789', {
+  fetchImpl:async () => assert.fail('No se deben solicitar dominios externos.'),
+}), /Only TikTok/)
+await assert.rejects(getTikTokMetadata(photoTikTokUrl, {
+  fetchImpl:async () => Response.json({ title:'Foto', thumbnail_url:'https://127.0.0.1/private' }),
+}), /portada válida/)
+await assert.rejects(getTikTokThumbnail(photoTikTokUrl, {
+  fetchImpl:async (url, options) => String(url).startsWith('https://www.tiktok.com/')
+    ? metadataFetch(url, options)
+    : new Response(null, { status:302, headers:{ location:'https://127.0.0.1/private' } }),
+}), /portada válida/)
+await assert.rejects(getTikTokThumbnail(photoTikTokUrl, {
+  fetchImpl:async (url, options) => String(url).startsWith('https://www.tiktok.com/')
+    ? metadataFetch(url, options)
+    : new Response('Access denied', { status:403 }),
+}), /no pudo cargar la portada/)
+await assert.rejects(getTikTokThumbnail(photoTikTokUrl, {
+  fetchImpl:async (url, options) => String(url).startsWith('https://www.tiktok.com/')
+    ? metadataFetch(url, options)
+    : new Response(new Uint8Array(5 * 1024 * 1024 + 1), { headers:{ 'Content-Type':'image/jpeg' } }),
+}), /demasiado grande/)
+
+const handlerResponse = () => ({
+  headers:{},
+  setHeader(key, value) { this.headers[key] = value },
+  end(body) { this.body = body },
+})
+globalThis.fetch = metadataFetch
+try {
+  const response = handlerResponse()
+  await tiktokMetadataHandler({ method:'GET', url:`/?url=${encodeURIComponent(photoTikTokUrl)}` }, response)
+  assert.equal(response.statusCode, 200)
+  const data = JSON.parse(response.body)
+  assert.match(data.thumbnail_url, /^\/api\/tiktok-metadata\?thumbnail=1&url=/)
+  assert.equal(getCreatorThumbnailUrl(data), data.thumbnail_url)
+  const imageResponse = handlerResponse()
+  await tiktokMetadataHandler({ method:'GET', url:data.thumbnail_url }, imageResponse)
+  assert.equal(imageResponse.statusCode, 200)
+  assert.equal(imageResponse.headers['Content-Type'], 'image/jpeg')
+  assert.equal(imageResponse.body.length, 3)
+  const invalidResponse = handlerResponse()
+  await tiktokMetadataHandler({ method:'GET', url:'/' }, invalidResponse)
+  assert.equal(invalidResponse.statusCode, 400)
+  const methodResponse = handlerResponse()
+  await tiktokMetadataHandler({ method:'POST', url:'/' }, methodResponse)
+  assert.equal(methodResponse.statusCode, 405)
 } finally {
   globalThis.fetch = originalFetch
 }

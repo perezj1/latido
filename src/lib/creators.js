@@ -189,6 +189,7 @@ export function getYouTubeVideoId(value = '') {
 }
 
 export function getTikTokVideoId(value = '') {
+  // TikTok uses the same post ID and embedded player for videos and photo posts.
   const normalized = normalizeCreatorUrl(value)
   if (!normalized) return ''
 
@@ -196,7 +197,7 @@ export function getTikTokVideoId(value = '') {
     const url = new URL(normalized)
     const host = url.hostname.toLowerCase().replace(/^www\./, '')
     if (host !== 'tiktok.com' && !host.endsWith('.tiktok.com')) return ''
-    return url.pathname.match(/\/video\/(\d+)/i)?.[1] || ''
+    return url.pathname.match(/\/(?:video|photo)\/(\d+)(?:\/|$)/i)?.[1] || ''
   } catch {
     return ''
   }
@@ -238,7 +239,7 @@ export async function resolveTikTokVideo(value = '', { signal } = {}) {
   const videoId = normalizeTikTokVideoId(data?.video_id)
   const resolvedUrl = normalizeCreatorUrl(data?.resolved_url)
   if (!videoId || getTikTokVideoId(resolvedUrl) !== videoId) {
-    throw new Error('TikTok no devolvió un vídeo válido para este enlace.')
+    throw new Error('TikTok no devolvió una publicación válida para este enlace.')
   }
 
   const result = {
@@ -338,12 +339,13 @@ export async function getCreatorOEmbedMetadata(value = '', { signal } = {}) {
 
   const endpoint = platform === 'youtube'
     ? `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
-    : `https://www.tiktok.com/oembed?url=${encodeURIComponent(metadataUrl)}`
+    : `/api/tiktok-metadata?url=${encodeURIComponent(metadataUrl)}`
   const response = await fetch(endpoint, { signal })
   if (!response.ok) throw new Error('No se han podido leer los datos de este enlace.')
   const data = await response.json()
   return {
     title:String(data?.title || '').trim(),
+    summary:platform === 'tiktok' ? String(data?.title || '').trim() : '',
     thumbnail_url:normalizeCreatorThumbnail(data?.thumbnail_url),
     video_id:tiktokResolution?.video_id || '',
     resolved_url:tiktokResolution?.resolved_url || '',
@@ -353,6 +355,7 @@ export async function getCreatorOEmbedMetadata(value = '', { signal } = {}) {
 
 function normalizeCreatorThumbnail(value = '') {
   const clean = String(value || '').trim()
+  if (clean.startsWith('/api/tiktok-metadata?')) return clean
   if (/^data:image\/(?:png|jpe?g|webp);base64,/i.test(clean)) return clean
   return normalizeCreatorUrl(clean)
 }
@@ -1168,7 +1171,7 @@ export function startCreatorDirectorySync(userId = '') {
 
 export function detectCreatorFormat(value, platform) {
   const url = String(value || '').toLowerCase()
-  if (platform === 'tiktok') return 'reel'
+  if (platform === 'tiktok') return url.includes('/photo/') ? 'fotos' : 'reel'
   if (platform === 'instagram') return url.includes('/reel') ? 'reel' : 'publicacion'
   if (platform === 'spotify') return 'podcast'
   if (platform === 'web') return 'artículo'

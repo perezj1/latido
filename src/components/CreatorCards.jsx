@@ -691,7 +691,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
       >
         {resolvingEmbed ? (
           <div className="creator-video-modal__player creator-video-modal__loading" role="status">
-            <span>Preparando vídeo de {platform.label}…</span>
+            <span>Preparando contenido de {platform.label}…</span>
           </div>
         ) : embed ? (
           <div className={`creator-video-modal__player${embed.vertical ? ' is-vertical' : ''} is-${embed.platform}`}>

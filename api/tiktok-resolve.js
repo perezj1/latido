@@ -1,4 +1,4 @@
-const TIKTOK_VIDEO_PATH = /\/video\/(\d+)/i
+const TIKTOK_POST_PATH = /\/(?:video|photo)\/(\d+)(?:\/|$)/i
 
 function httpError(message, statusCode) {
   const error = new Error(message)
@@ -22,7 +22,7 @@ function parseTikTokUrl(value) {
 
 export function getTikTokIdFromUrl(value) {
   try {
-    return parseTikTokUrl(value).pathname.match(TIKTOK_VIDEO_PATH)?.[1] || ''
+    return parseTikTokUrl(value).pathname.match(TIKTOK_POST_PATH)?.[1] || ''
   } catch {
     return ''
   }
@@ -56,6 +56,11 @@ export async function resolveTikTokLink(value, { fetchImpl=fetch, signal } = {})
     if (response.status >= 300 && response.status < 400) {
       if (!location) throw httpError('TikTok returned an invalid redirect', 502)
       currentUrl = parseTikTokUrl(new URL(location, currentUrl).href)
+      // Once TikTok supplies a post URL, no further request to its page is needed.
+      if (getTikTokIdFromUrl(currentUrl.href)) {
+        const resolved = await resolveTikTokLink(currentUrl.href, { fetchImpl, signal:requestSignal })
+        return { ...resolved, original_url:originalUrl.href }
+      }
       continue
     }
     if (!response.ok) throw httpError('TikTok could not resolve this link', 502)
@@ -64,7 +69,7 @@ export async function resolveTikTokLink(value, { fetchImpl=fetch, signal } = {})
     // platforms that resolve internally compatible with this helper.
     const resolvedUrl = parseTikTokUrl(response.url || currentUrl.href)
     const videoId = getTikTokIdFromUrl(resolvedUrl.href)
-    if (!videoId) throw httpError('TikTok did not return a video URL', 422)
+    if (!videoId) throw httpError('TikTok no devolvió un enlace de vídeo o fotos. Abre la publicación en TikTok y copia su enlace completo.', 422)
 
     return {
       original_url:originalUrl.href,
