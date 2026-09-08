@@ -66,6 +66,7 @@ export function getPartnerServiceUrl() {
 export function trackPartnerInteraction(eventType, {
   userId = null,
   partnerId = DEFAULT_PARTNER_ANALYTICS_ID,
+  campaign = '',
   placement = '',
   action = '',
   service = '',
@@ -80,7 +81,7 @@ export function trackPartnerInteraction(eventType, {
     metadata:{
       partner_id:partnerId,
       affiliate:attribution.partner,
-      campaign:attribution.utmCampaign,
+      campaign:campaign || attribution.utmCampaign,
       cid:attribution.cid,
       placement,
       action,
