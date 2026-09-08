@@ -86,12 +86,14 @@ const PARTNER_PLANS = PAID_BUSINESS_FEATURES_VISIBLE
   : [FREE_PARTNER_PLAN]
 
 const LANDING_COLLABORATOR_LOGOS = [
-  { name: 'Punto Hispano', logo: '/partners/punto-hispano/logo.webp' },
-  { name: 'Virtus360', logo: '/partners/virtus360/logo.svg' },
-  { name: 'Syna', logo: '/partners/syna/logo.svg' },
-  { name: 'Bellini', logo: '/partners/bellini/logo-wide.svg' },
-  { name: 'Gilda by de Matos', logo: '/partners/gilda/logo.png', maxWidth: 150, maxHeight: 78 },
-  { name: 'mira', logo: '/partners/mira/mira-removebg-preview.png' },
+  // Ajustes ópticos según las proporciones y el espacio interno de cada marca.
+  { name: 'Punto Hispano', logo: '/partners/punto-hispano/logo-wide.png', width: 180, height: 66 },
+  { name: 'Suiza en Español', logo: '/partners/suiza-en-espanol/logo-see.webp', width: 90, height: 80 },
+  { name: 'Virtus360', logo: '/partners/virtus360/logo.svg', width: 180, height: 76 },
+  { name: 'Syna', logo: '/partners/syna/logo.svg', width: 124, height: 80 },
+  { name: 'Bellini', logo: '/partners/bellini/logo-wide.svg', width: 180, height: 60 },
+  { name: 'Gilda by de Matos', logo: '/partners/gilda/logo.png', width: 100, height: 88 },
+  { name: 'mira', logo: '/partners/mira/mira-removebg-preview.png', width: 150, height: 58 },
 ]
 
 const AD_CATS_PREVIEW = [
@@ -263,7 +265,8 @@ function LandingCollaboratorsStrip() {
                 className="latido-collaborator-card"
                 style={{
                 flex: '0 0 clamp(190px, 23vw, 240px)',
-                minHeight: 82,
+                height: 116,
+                boxSizing: 'border-box',
                 display: 'grid',
                 placeItems: 'center',
                 padding: '14px 18px',
@@ -281,10 +284,10 @@ function LandingCollaboratorsStrip() {
                 decoding="async"
                 style={{
                   display: 'block',
-                  maxWidth: `min(${partner.maxWidth || 158}px, 100%)`,
-                  maxHeight: partner.maxHeight || 46,
-                  width: 'auto',
-                  height: 'auto',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  width: partner.width,
+                  height: partner.height,
                   objectFit: 'contain',
                 }}
               />

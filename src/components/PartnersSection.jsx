@@ -1,6 +1,7 @@
 import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import PartnerServicesPromo from './PartnerServicesPromo'
+import SuizaEspanolPartnerPromo from './SuizaEspanolPartnerPromo'
 import BelliniPartnerPromo from './BelliniPartnerPromo'
 import MiraPartnerPromo from './MiraPartnerPromo'
 import SynaPartnerPromo from './SynaPartnerPromo'
@@ -13,6 +14,10 @@ import { rotateItems } from '../lib/rotation'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 
 const HOME_PARTNERS = [
+  {
+    id:'suiza-en-espanol',
+    render:placement => <SuizaEspanolPartnerPromo key="suiza-en-espanol" placement={placement} />,
+  },
   {
     id:'virtus360',
     render:placement => <Virtus360PartnerPromo key="virtus360" placement={placement} variant="partner-card" />,

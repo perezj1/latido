@@ -15,6 +15,7 @@ import {
 } from './lib/analytics'
 import { startEmailNotificationPresence } from './lib/emailNotificationPresence'
 import { PARTNER_LANDING_URL, trackPartnerInteraction } from './lib/partnerAttribution'
+import { SUIZA_ESPANOL_URL } from './lib/suizaEspanol'
 import { loadPushSettings, syncExistingPushRegistration } from './lib/pushNotifications'
 import { startCreatorDirectorySync } from './lib/creators'
 import { needsGoogleProfileOnboarding } from './lib/oauthOnboarding'
@@ -432,10 +433,12 @@ function PartnerServicesRedirect() {
   const placement = params.get('from') || 'direct'
   const action = params.get('action') || 'cta'
   const service = params.get('service') || ''
+  const isSuizaEspanol = params.get('partner') === 'suiza-en-espanol'
+  const destination = isSuizaEspanol ? SUIZA_ESPANOL_URL : PARTNER_LANDING_URL
 
   useEffect(() => {
     if (isAdmin) {
-      window.location.replace(PARTNER_LANDING_URL)
+      window.location.replace(destination)
       return undefined
     }
 
@@ -447,17 +450,18 @@ function PartnerServicesRedirect() {
           placement,
           action,
           service,
-          destination:PARTNER_LANDING_URL,
+          destination,
+          ...(isSuizaEspanol ? { partnerId:'suiza-en-espanol', campaign:'servicios-latido' } : {}),
         }),
         new Promise(resolve => window.setTimeout(resolve, 700)),
       ])
 
-      if (active) window.location.replace(PARTNER_LANDING_URL)
+      if (active) window.location.replace(destination)
     }
 
     redirect()
     return () => { active = false }
-  }, [action, isAdmin, placement, service, user?.id])
+  }, [action, destination, isAdmin, isSuizaEspanol, placement, service, user?.id])
 
   return <AppLoading />
 }
