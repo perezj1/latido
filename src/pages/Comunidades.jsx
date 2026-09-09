@@ -1,7 +1,8 @@
-import { PUNTO_HISPANO_PROVIDER_ID, PUNTO_HISPANO_CONTACT_URL } from '../lib/puntoHispano'
+import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import PuntoHispanoContactForm from '../components/PuntoHispanoContactForm'
 import { useAuth } from '../hooks/useAuth'
 import { useFavorites } from '../hooks/useFavorites'
 import {
@@ -1133,16 +1134,12 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
       <DetailActionBar
         maxWidth={560}
         primaryLabel={hasContact ? 'Contactar' : ''}
-        onPrimaryClick={hasContact ? () => {
-          if (business.id === PUNTO_HISPANO_PROVIDER_ID) {
-            window.location.assign(`${PUNTO_HISPANO_CONTACT_URL}?from=business_profile`)
-            return
-          }
-          setShowContacts(current => !current)
-        } : undefined}
+        onPrimaryClick={hasContact ? () => setShowContacts(current => !current) : undefined}
         onMenuOpen={() => setShowContacts(false)}
         onExpandedClose={() => setShowContacts(false)}
-        expandedContent={showContacts ? (locationContacts ? (
+        expandedContent={showContacts ? (business.id === PUNTO_HISPANO_PROVIDER_ID ? (
+          <PuntoHispanoContactForm compact placement="business_profile" />
+        ) : locationContacts ? (
           <LocationContactsPanel locations={locationContacts} />
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>

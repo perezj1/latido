@@ -2,7 +2,7 @@
 
 Antes de desplegar el frontend, ejecutar `punto_hispano_contacts.sql` en el editor SQL del proyecto de Supabase de Latido. Requiere `profiles` y la función existente `is_business_promotion_admin()` de `business_promotion_plans.sql`. La migración se puede ejecutar de nuevo sin borrar contactos.
 
-El frontend dirige las tarjetas, los enlaces antiguos `/servicios-suiza` y el botón Contactar del negocio de Punto Hispano al selector. El visitante puede elegir categoría y servicio antes de iniciar sesión; la selección se conserva al regresar del acceso.
+El frontend dirige las tarjetas, los enlaces antiguos `/servicios-suiza` y el botón Contactar del negocio de Punto Hispano al selector. La categoría es obligatoria y la subcategoría es opcional. Si no se elige subcategoría, el mensaje de WhatsApp usa solo la categoría y el registro administrativo muestra `Sin especificar` como servicio. La selección se conserva al regresar del acceso.
 
 El botón final llama a `record_punto_hispano_contact`, que toma el nombre del perfil, el email de Auth y la fecha del servidor. Solo después de guardar el registro se abre `https://wa.me/41766232664` con el mensaje personalizado. Si el guardado falla, se muestra un error y se permite reintentar con el mismo identificador para evitar duplicados. El registro mide el clic, no el envío ni la recepción del mensaje en WhatsApp.
 
