@@ -41,7 +41,7 @@ try {
  const anon=await setup();
  await anon.page.goto('http://127.0.0.1:5188/servicios-suiza');
  await anon.page.getByLabel('Categoría',{exact:true}).selectOption('idiomas');
- await anon.page.getByLabel(/Subcategoría/).selectOption('aleman');
+ await anon.page.getByLabel(/Servicios/).selectOption('aleman');
  const login=anon.page.getByRole('link',{name:'Inicia sesión para contactar'});
  const href=await login.getAttribute('href');
  assert.match(decodeURIComponent(href),/category=idiomas/); assert.match(decodeURIComponent(href),/subcategory=aleman/);
@@ -61,11 +61,11 @@ try {
  const button=member.page.getByRole('button',{name:'Contactar por WhatsApp'});
  await button.waitFor(); assert.equal(await button.isDisabled(),true);
  await member.page.getByLabel('Categoría',{exact:true}).selectOption('gestoria');
- await member.page.getByLabel(/Subcategoría/).selectOption('rav');
+ await member.page.getByLabel(/Servicios/).selectOption('rav');
  await member.page.getByLabel('Categoría',{exact:true}).selectOption('idiomas');
- assert.equal(await member.page.getByLabel(/Subcategoría/).inputValue(),'');
- assert.equal(await button.isEnabled(),true);
- await member.page.getByLabel(/Subcategoría/).selectOption('aleman');
+ assert.equal(await member.page.getByLabel(/Servicios/).inputValue(),'');
+ assert.equal(await button.isDisabled(),true);
+ await member.page.getByLabel(/Servicios/).selectOption('aleman');
  member.setFail(true); await button.click(); await member.page.getByRole('alert').filter({hasText:'No pudimos'}).waitFor();
  assert.equal(member.outbound.length,0); assert.equal(member.rpc.length,1);
  member.setFail(false); await button.click(); await member.page.waitForURL('https://wa.me/**');

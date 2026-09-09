@@ -111,14 +111,15 @@ export default function PuntoHispanoContactForm({
           {PUNTO_HISPANO_SERVICES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
         </select>
 
-        <label htmlFor={`ph-service-${fieldId}`}>Subcategoría <span className="ph-optional">(opcional)</span></label>
+        <label htmlFor={`ph-service-${fieldId}`}>Servicios</label>
         <select
           id={`ph-service-${fieldId}`}
+          required
           value={selected ? serviceId : ''}
           disabled={!category || busy}
           onChange={event => chooseService(event.target.value)}
         >
-          <option value="">{category ? 'Continuar solo con la categoría' : 'Elige primero una categoría'}</option>
+          <option value="">{category ? 'Elige un servicio' : 'Elige primero una categoría'}</option>
           {category?.services.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
         </select>
 

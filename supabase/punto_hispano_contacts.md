@@ -2,7 +2,7 @@
 
 Antes de desplegar el frontend, ejecutar `punto_hispano_contacts.sql` en el editor SQL del proyecto de Supabase de Latido. Requiere `profiles` y la función existente `is_business_promotion_admin()` de `business_promotion_plans.sql`. La migración se puede ejecutar de nuevo sin borrar contactos.
 
-El frontend dirige las tarjetas, los enlaces antiguos `/servicios-suiza` y el botón Contactar del negocio de Punto Hispano al selector. La categoría es obligatoria y la subcategoría es opcional. Si no se elige subcategoría, el mensaje de WhatsApp usa solo la categoría y el registro administrativo muestra `Sin especificar` como servicio. La selección se conserva al regresar del acceso.
+El frontend dirige las tarjetas, los enlaces antiguos `/servicios-suiza` y el botón Contactar del negocio de Punto Hispano al selector. La categoría y el servicio son obligatorios. La selección se conserva al regresar del acceso.
 
 El botón final llama a `record_punto_hispano_contact`, que toma el nombre del perfil, el email de Auth y la fecha del servidor. Solo después de guardar el registro se abre `https://wa.me/41766232664` con el mensaje personalizado. Si el guardado falla, se muestra un error y se permite reintentar con el mismo identificador para evitar duplicados. El registro mide el clic, no el envío ni la recepción del mensaje en WhatsApp.
 
@@ -10,7 +10,7 @@ Administración → Colaboraciones → Contactos de Punto Hispano muestra nombre
 
 Los contactos tienen RLS: solo los administradores de Latido pueden leerlos. Los usuarios normales no pueden leer, insertar directamente, modificar ni borrar filas. La función admite únicamente los servicios del catálogo, y no acepta nombre, email, usuario ni fecha enviados por el cliente. El registro de contacto es independiente de las métricas opcionales de cookies; el selector informa de los datos que se guardan.
 
-Las siete categorías y sus subcategorías resumidas proceden de `SERVICIOS PUNTO HISPANO.pdf`. El PDF no se publica. Si se cambia el catálogo, actualizar `src/lib/puntoHispanoServices.js` y el JSON de la función SQL juntos; la prueba comprueba que coincidan.
+Las siete categorías y sus servicios resumidos proceden de `SERVICIOS PUNTO HISPANO.pdf`. El PDF no se publica. Si se cambia el catálogo, actualizar `src/lib/puntoHispanoServices.js` y el JSON de la función SQL juntos; la prueba comprueba que coincidan.
 
 Verificación local:
 

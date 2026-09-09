@@ -52,15 +52,13 @@ export const PUNTO_HISPANO_SERVICES = [
 export function getPuntoHispanoService(categoryId, serviceId) {
   const category = PUNTO_HISPANO_SERVICES.find(item => item.id === categoryId)
   if (!category) return null
-  if (!String(serviceId || '').trim()) return { category:category.label, service:'' }
   const service = category?.services.find(item => item.id === serviceId)
   return service ? { category:category.label, service:service.label } : null
 }
 
 export function buildPuntoHispanoWhatsappUrl(name, category, service) {
-  if (!String(name || '').trim() || !category) throw new Error('Faltan datos de contacto')
-  const interest = service ? `${category}: ${service}` : category
-  const message = `Hola soy ${name.trim()} y vengo de Latido.ch. Tengo interés en ${interest}. Saludos.`
+  if (!String(name || '').trim() || !category || !service) throw new Error('Faltan datos de contacto')
+  const message = `Hola soy ${name.trim()} y vengo de Latido.ch. Tengo interés en ${category}: ${service}. Saludos.`
   return `https://wa.me/41766232664?text=${encodeURIComponent(message)}`
 }
 
