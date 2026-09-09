@@ -1,7 +1,4 @@
-import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { getPartnerServiceUrl, trackPartnerInteraction } from '../lib/partnerAttribution'
 import { C, PP } from '../lib/theme'
 import PartnerServiceIcon from './PartnerServiceIcon'
 import PartnerCard from './PartnerCard'
@@ -77,33 +74,6 @@ function matchesSearchTerms(query, terms) {
   )
 }
 
-function PartnerAccessLink({
-  isLoggedIn,
-  externalHref,
-  authHref,
-  children,
-  ...props
-}) {
-  if (isLoggedIn) {
-    return (
-      <a
-        href={externalHref}
-        target="_blank"
-        rel="noopener noreferrer sponsored"
-        {...props}
-      >
-        {children}
-      </a>
-    )
-  }
-
-  return (
-    <Link to={authHref} {...props}>
-      {children}
-    </Link>
-  )
-}
-
 export function getPartnerServiceMatch(query='') {
   const serviceMatch = SERVICES.find(service => {
     const serviceTerms = [service.label, ...service.terms]
@@ -140,45 +110,14 @@ export default function PartnerServicesPromo({
   title = '',
   description = '',
 }) {
-  const { user, isLoggedIn, isAdmin } = useAuth()
   const mode = variant || (compact ? 'featured' : 'compact')
   const selectedService = SERVICES.find(service => service.id === serviceId) || null
   const partnerPath = `/servicios-suiza?from=${encodeURIComponent(placement)}&action=cta`
-  const partnerAuthPath = `/auth?next=${encodeURIComponent(partnerPath)}`
-  const partnerLandingUrl = getPartnerServiceUrl()
-  const partnerInfoPath = isLoggedIn ? partnerLandingUrl : partnerAuthPath
-  const serviceUrls = useMemo(
-    () => Object.fromEntries(SERVICES.map(service => [service.id, getPartnerServiceUrl()])),
-    []
-  )
-  const serviceAuthPaths = useMemo(
-    () => Object.fromEntries(SERVICES.map(service => {
-      const servicePath = `/servicios-suiza?from=${encodeURIComponent(placement)}&action=service&service=${encodeURIComponent(service.id)}`
-      return [service.id, `/auth?next=${encodeURIComponent(servicePath)}`]
-    })),
-    [placement]
-  )
-
-  const handleOpen = () => {
-    if (!isLoggedIn || isAdmin) return
-    trackPartnerInteraction('partner_outbound_click', {
-      userId:user?.id,
-      placement,
-      action:'cta',
-      destination:partnerLandingUrl,
-    })
-  }
-
-  const handleServiceOpen = service => {
-    if (!isLoggedIn || isAdmin) return
-    trackPartnerInteraction('partner_outbound_click', {
-      userId:user?.id,
-      placement,
-      action:'service',
-      service:service.id,
-      destination:serviceUrls[service.id],
-    })
-  }
+  const partnerLandingUrl = partnerPath
+  const partnerInfoPath = partnerPath
+  const serviceUrls = Object.fromEntries(SERVICES.map(service => [
+    service.id, `${partnerPath}&category=${encodeURIComponent(service.id)}`,
+  ]))
 
   if (mode === 'public-featured') {
     return (
@@ -193,16 +132,14 @@ export default function PartnerServicesPromo({
         description="Punto Hispano te ayuda con gestoría, asesoría, seguros e idiomas en Suiza, con atención en español."
         services={SERVICES.map(service => ({
           ...service,
-          href:isLoggedIn ? serviceUrls[service.id] : serviceAuthPaths[service.id],
-          external:isLoggedIn,
+          href:serviceUrls[service.id],
+          external:false,
         }))}
         cta={{
           href:partnerInfoPath,
           label:'Contactar',
-          external:isLoggedIn,
+          external:false,
         }}
-        onServiceClick={handleServiceOpen}
-        onCtaClick={handleOpen}
       />
     )
   }
@@ -219,16 +156,14 @@ export default function PartnerServicesPromo({
         description="Punto Hispano te ayuda con gestoría, asesoría, seguros e idiomas en Suiza, con atención en español."
         services={SERVICES.map(service => ({
           ...service,
-          href:isLoggedIn ? serviceUrls[service.id] : serviceAuthPaths[service.id],
-          external:isLoggedIn,
+          href:serviceUrls[service.id],
+          external:false,
         }))}
         cta={{
           href:partnerInfoPath,
           label:'Contactar',
-          external:isLoggedIn,
+          external:false,
         }}
-        onServiceClick={handleServiceOpen}
-        onCtaClick={handleOpen}
       />
     )
   }
@@ -253,25 +188,19 @@ export default function PartnerServicesPromo({
           <p>{contextualDescription}</p>
         </div>
         {selectedService ? (
-          <PartnerAccessLink
+          <Link
             className="partner-services-contextual-cta"
-            isLoggedIn={isLoggedIn}
-            externalHref={serviceUrls[selectedService.id]}
-            authHref={serviceAuthPaths[selectedService.id]}
-            onClick={() => handleServiceOpen(selectedService)}
+            to={serviceUrls[selectedService.id]}
           >
             Contactar <span aria-hidden="true">↗</span>
-          </PartnerAccessLink>
+          </Link>
         ) : (
-          <PartnerAccessLink
+          <Link
             className="partner-services-contextual-cta"
-            isLoggedIn={isLoggedIn}
-            externalHref={partnerLandingUrl}
-            authHref={partnerAuthPath}
-            onClick={handleOpen}
+            to={partnerLandingUrl}
           >
             Contactar <span aria-hidden="true">→</span>
-          </PartnerAccessLink>
+          </Link>
         )}
       </aside>
     )
@@ -312,14 +241,11 @@ export default function PartnerServicesPromo({
           <div>
             <div className="partner-services-promo-options" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(105px,1fr))', gap:9, marginBottom:16 }}>
               {SERVICES.map(service => (
-                <PartnerAccessLink
+                <Link
                   className="partner-services-promo-option"
                   key={service.id}
-                  isLoggedIn={isLoggedIn}
-                  externalHref={serviceUrls[service.id]}
-                  authHref={serviceAuthPaths[service.id]}
-                  onClick={() => handleServiceOpen(service)}
-                  aria-label={isLoggedIn ? `${service.label}. Se abre en Punto Hispano` : `${service.label}. Inicia sesión para acceder`}
+                  to={serviceUrls[service.id]}
+                  aria-label={`${service.label}. Elegir servicio de Punto Hispano`}
                   style={{ position:'relative', minWidth:0, background:'#fff', border:'1px solid #DCE7F5', borderRadius:14, padding:'11px 9px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7, textAlign:'center', textDecoration:'none', boxShadow:'0 6px 18px rgba(15,23,42,0.04)', transition:'transform .18s ease, border-color .18s ease, box-shadow .18s ease' }}
                 >
                   <span style={{ width:34, height:34, borderRadius:11, background:service.tint, color:service.color, display:'grid', placeItems:'center', flexShrink:0 }}>
@@ -327,14 +253,11 @@ export default function PartnerServicesPromo({
                   </span>
                   <span style={{ fontFamily:PP, fontWeight:700, fontSize:10, lineHeight:1.3, color:C.text }}>{service.label}</span>
                   <span className="partner-services-promo-option-arrow" aria-hidden="true">↗</span>
-                </PartnerAccessLink>
+                </Link>
               ))}
             </div>
-            <PartnerAccessLink
-              isLoggedIn={isLoggedIn}
-              externalHref={partnerLandingUrl}
-              authHref={partnerAuthPath}
-              onClick={handleOpen}
+            <Link
+              to={partnerLandingUrl}
               className="partner-services-cta"
               aria-describedby={`partner-promo-description-${placement}`}
               style={{ width:'100%', boxSizing:'border-box', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, minHeight:58, padding:'8px 12px 8px 22px', borderRadius:15, background:'linear-gradient(135deg, #2563EB, #1D4ED8)', color:'#fff', textDecoration:'none', fontFamily:PP, fontWeight:800, fontSize:15, boxShadow:'0 12px 28px rgba(37,99,235,0.25)', transition:'transform .18s ease, box-shadow .18s ease, background .18s ease' }}
@@ -344,7 +267,7 @@ export default function PartnerServicesPromo({
                 <span style={{ marginTop:3, fontWeight:500, fontSize:10, color:'rgba(255,255,255,0.78)' }}>Información clara y atención en español</span>
               </span>
               <span aria-hidden="true" style={{ width:36, height:36, flexShrink:0, borderRadius:'50%', background:'rgba(255,255,255,0.17)', border:'1px solid rgba(255,255,255,0.18)', display:'grid', placeItems:'center', fontSize:19 }}>→</span>
-            </PartnerAccessLink>
+            </Link>
           </div>
         </div>
       </div>

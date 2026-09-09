@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
+import { PUNTO_HISPANO_PROVIDER_ID, PUNTO_HISPANO_CONTACT_URL } from '../lib/puntoHispano'
 import { ChevronLeftIcon } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
@@ -179,6 +180,7 @@ export default function BusinessPartnerLanding() {
     })
   }
 
+  if (providerId === PUNTO_HISPANO_PROVIDER_ID) return <Navigate to={`${PUNTO_HISPANO_CONTACT_URL}?from=business_landing`} replace />
   if (loading) return <LoadingLanding />
   if (!provider?.active || !hasActiveBusinessLanding(provider)) return <UnavailableLanding />
 

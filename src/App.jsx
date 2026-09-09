@@ -58,6 +58,7 @@ const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Admin = lazy(() => import('./pages/Admin'))
 const PartnerContact = lazy(() => import('./pages/PartnerContact'))
+const PuntoHispanoContact = lazy(() => import('./pages/PuntoHispanoContact'))
 const BelliniPartnerContact = lazy(() => import('./pages/BelliniPartnerContact'))
 const SynaPartnerContact = lazy(() => import('./pages/SynaPartnerContact'))
 const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
@@ -702,6 +703,9 @@ function AppShell() {
   }
 
   if (isPartnerServices) {
+    if (new URLSearchParams(location.search).get('partner') !== 'suiza-en-espanol') {
+      return <Suspense fallback={<AppLoading />}><PuntoHispanoContact /></Suspense>
+    }
     if (loading) return <AppLoading />
     if (!isLoggedIn) {
       const next = encodeURIComponent(`${location.pathname}${location.search}`)

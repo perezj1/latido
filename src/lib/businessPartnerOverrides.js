@@ -1,3 +1,5 @@
+import { PUNTO_HISPANO_PROVIDER_ID, PUNTO_HISPANO_CONTACT_URL } from './puntoHispano.js'
+
 export const JOBLI_PROVIDER_ID = 'eb01f0b2-101c-4634-8909-b432981d37eb'
 
 const JOBLI_CARD_DESTINATION_URL = 'https://www.joblis.ch/?utm_source=latido&utm_medium=web&utm_campaign=empleos'
@@ -9,6 +11,9 @@ const JOBLI_CARD_SERVICE_LABELS = {
 }
 
 export function getBusinessPartnerCardDestinationOverride(providerId) {
+  if (String(providerId || '') === PUNTO_HISPANO_PROVIDER_ID) {
+    return { href:PUNTO_HISPANO_CONTACT_URL, label:'Contactar', external:false, direct:true }
+  }
   if (String(providerId || '') !== JOBLI_PROVIDER_ID) return null
 
   return {

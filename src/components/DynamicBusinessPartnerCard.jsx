@@ -1,3 +1,4 @@
+import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useEffect, useState } from 'react'
 import PartnerCard from './PartnerCard'
 import BusinessPartnerContactModal from './BusinessPartnerContactModal'
@@ -36,7 +37,7 @@ export default function DynamicBusinessPartnerCard({
   const visibleServices = partner.services.slice(0, 3).map(service => ({
     label:getBusinessPartnerCardServiceLabel(partner.id, service),
     originalLabel:service,
-    href:partner.destination.href,
+    href:partner.id === PUNTO_HISPANO_PROVIDER_ID ? `${partner.destination.href}?from=${encodeURIComponent(placement || 'direct')}` : partner.destination.href,
     external:partner.destination.external,
   }))
 
@@ -74,7 +75,7 @@ export default function DynamicBusinessPartnerCard({
       setContactOpen(true)
       return
     }
-    if (isAdmin) return
+    if (isAdmin || partner.id === PUNTO_HISPANO_PROVIDER_ID) return
 
     trackPartnerInteraction('partner_outbound_click', {
       userId:user?.id,
@@ -101,7 +102,7 @@ export default function DynamicBusinessPartnerCard({
         cta={hasDirectCta
           ? {
             label:'Contactar',
-            href:partner.destination.href,
+            href:partner.id === PUNTO_HISPANO_PROVIDER_ID ? `${partner.destination.href}?from=${encodeURIComponent(placement || 'direct')}` : partner.destination.href,
             external:partner.destination.external,
           }
           : {
@@ -110,7 +111,7 @@ export default function DynamicBusinessPartnerCard({
           }}
         accent={partner.accent}
         onServiceClick={service => {
-          if (isAdmin) return
+          if (isAdmin || partner.id === PUNTO_HISPANO_PROVIDER_ID) return
           trackPartnerInteraction('partner_service_click', {
             userId:user?.id,
             partnerId:partner.analyticsId,
