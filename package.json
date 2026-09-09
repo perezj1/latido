@@ -16,6 +16,7 @@
     "test:auth": "node scripts/test-auth-storage.mjs",
     "test:notifications": "node scripts/test-notifications.mjs",
     "test:search": "node scripts/test-search.mjs",
+    "test:punto-hispano": "node scripts/test-punto-hispano.mjs",
     "vapid:keys": "node scripts/generate-vapid-keys.mjs"
   },
   "dependencies": {

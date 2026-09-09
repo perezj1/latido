@@ -1,3 +1,4 @@
+import { PUNTO_HISPANO_PROVIDER_ID, PUNTO_HISPANO_CONTACT_URL } from '../lib/puntoHispano'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -820,7 +821,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   const ownReview = user?.id ? reviews.find(review => review.user_id === user.id) : null
   const contactMethods = getBusinessContactMethods(business)
   const locationContacts = getLocationContacts(business)
-  const hasContact = locationContacts ? locationContacts.length > 0 : contactMethods.length > 0
+  const hasContact = business.id === PUNTO_HISPANO_PROVIDER_ID || (locationContacts ? locationContacts.length > 0 : contactMethods.length > 0)
   const websiteLabel = business.website ? formatUrlLabel(business.website) : ''
   const websiteHref = business.website ? ensureUrl(business.website) : ''
   const addressHref = business.address ? getNavigationUrl(business.address, business.city, business.canton) : ''
@@ -1133,7 +1134,13 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
       <DetailActionBar
         maxWidth={560}
         primaryLabel={hasContact ? 'Contactar' : ''}
-        onPrimaryClick={hasContact ? () => setShowContacts(current => !current) : undefined}
+        onPrimaryClick={hasContact ? () => {
+          if (business.id === PUNTO_HISPANO_PROVIDER_ID) {
+            window.location.assign(`${PUNTO_HISPANO_CONTACT_URL}?from=business_profile`)
+            return
+          }
+          setShowContacts(current => !current)
+        } : undefined}
         onMenuOpen={() => setShowContacts(false)}
         onExpandedClose={() => setShowContacts(false)}
         expandedContent={showContacts ? (locationContacts ? (

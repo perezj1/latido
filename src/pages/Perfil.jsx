@@ -3214,7 +3214,7 @@ export default function Perfil() {
                 }}
                 style={{ width:'100%', fontFamily:PP, fontWeight:800, fontSize:13, background:C.primaryLight, color:C.primaryDark, border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 16px', cursor:'pointer', marginBottom:10 }}
               >
-                Ver planes de colaboración
+                Destacar mi negocio
               </button>
             )}
             {actionItem.kind === 'business'

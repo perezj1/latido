@@ -1,4 +1,5 @@
 import { PUNTO_HISPANO_PROVIDER_ID, PUNTO_HISPANO_NAME, PUNTO_HISPANO_LOGO } from './puntoHispano.js'
+import { PUNTO_HISPANO_SERVICES } from './puntoHispanoServices.js'
 
 export const DEFAULT_PARTNER_ANALYTICS_ID = `business:${PUNTO_HISPANO_PROVIDER_ID}`
 
@@ -11,7 +12,7 @@ export const PARTNER_ANALYTICS_PARTNERS = [
     legacyPartnerIds:[],
     color:'#2563EB',
     tint:'#EFF6FF',
-    services:{ alquiler:'Alquiler', gestoria:'Gestoría', vivienda:'Vivienda' },
+    services:Object.fromEntries(PUNTO_HISPANO_SERVICES.map(category => [category.id, category.label])),
   },
   {
     id:'suiza-en-espanol',

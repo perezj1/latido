@@ -1,0 +1,17 @@
+.ph-admin { background:#fff; border:1px solid #dce6f1; border-radius:18px; padding:20px; margin-bottom:14px; font-family:'Poppins',sans-serif; color:#163052; }
+.ph-admin-heading { display:flex; gap:16px; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; }
+.ph-admin h2 { margin:0; font-size:18px; }
+.ph-admin p { font-size:12px; line-height:1.6; color:#4c627d; }
+.ph-admin button { padding:10px 14px; min-height:42px; border:1px solid #bacbdf; background:#f3f7fc; color:#163052; border-radius:9px; font:inherit; font-size:12px; cursor:pointer; }
+.ph-admin button:disabled { opacity:.5; cursor:default; }
+.ph-admin button:focus-visible, .ph-admin input:focus-visible, .ph-admin select:focus-visible { outline:3px solid #3181de; outline-offset:2px; }
+.ph-admin-filters { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin:16px 0; }
+.ph-admin-filters label { display:flex; flex-direction:column; gap:6px; font-size:12px; }
+.ph-admin input, .ph-admin select { max-width:100%; padding:9px; min-height:42px; border:1px solid #bacbdf; border-radius:8px; font:inherit; background:#fff; color:#163052; }
+.ph-admin-table { overflow:auto; }
+.ph-admin table { width:100%; border-collapse:collapse; min-width:780px; text-align:left; font-size:12px; }
+.ph-admin th { font-weight:600; background:#f3f7fc; }
+.ph-admin td, .ph-admin th { padding:12px 10px; border-bottom:1px solid #e6edf7; }
+.ph-admin td { max-width:240px; overflow-wrap:anywhere; }
+.ph-admin-pagination { display:flex; gap:12px; align-items:center; justify-content:flex-end; margin-top:16px; font-size:12px; flex-wrap:wrap; }
+.ph-admin .ph-admin-error { color:#b42318; }
