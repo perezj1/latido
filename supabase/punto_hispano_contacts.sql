@@ -61,16 +61,12 @@ BEGIN
     RAISE EXCEPTION 'Invalid category' USING ERRCODE = '22023';
   END IF;
 
-  IF normalized_service = '' THEN
-    service_label := 'Sin especificar';
-  ELSE
-    SELECT service ->> 'label' INTO service_label
-    FROM jsonb_array_elements(catalogue) AS category,
-      LATERAL jsonb_array_elements(category -> 'services') AS service
-    WHERE category ->> 'id' = p_category AND service ->> 'id' = normalized_service;
-    IF service_label IS NULL THEN
-      RAISE EXCEPTION 'Invalid service' USING ERRCODE = '22023';
-    END IF;
+  SELECT service ->> 'label' INTO service_label
+  FROM jsonb_array_elements(catalogue) AS category,
+    LATERAL jsonb_array_elements(category -> 'services') AS service
+  WHERE category ->> 'id' = p_category AND service ->> 'id' = normalized_service;
+  IF service_label IS NULL THEN
+    RAISE EXCEPTION 'Invalid service' USING ERRCODE = '22023';
   END IF;
 
   -- Identity and timestamp are resolved on the server, never supplied by callers.
@@ -101,7 +97,7 @@ BEGIN
   END IF;
   RETURN jsonb_build_object('id', saved.id, 'user_name', saved.user_name,
     'category_label', saved.category_label,
-    'service_label', CASE WHEN saved.service_id = '' THEN '' ELSE saved.service_label END,
+    'service_label', saved.service_label,
     'created_at', saved.created_at);
 END;
 $$;
