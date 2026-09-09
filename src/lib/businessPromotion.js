@@ -4,9 +4,9 @@ const HOUR_MS = 60 * 60 * 1000
 const NEW_FREE_BUSINESS_WINDOW_MS = 72 * HOUR_MS
 export const BUSINESS_ROTATION_INTERVAL_MS = 6 * HOUR_MS
 
-// Show the existing paid plans and checkout entry points.
-// Availability and activation after payment remain controlled by the backend.
-export const PAID_BUSINESS_FEATURES_VISIBLE = true
+// TEMPORAL: oculta los planes, extras y accesos al checkout sin eliminar su código.
+// Para reactivarlos cuando sea necesario, cambiar este valor a true.
+export const PAID_BUSINESS_FEATURES_VISIBLE = false
 
 export const BUSINESS_PROMOTION_PLANS = [
   {
