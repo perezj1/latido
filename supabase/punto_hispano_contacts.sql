@@ -43,6 +43,7 @@ DECLARE
   contact_email TEXT;
   category_label TEXT;
   service_label TEXT;
+  normalized_service TEXT := COALESCE(btrim(p_service), '');
   catalogue CONSTANT JSONB := '[{"id":"gestoria","label":"Gestoría y asesoría","services":[{"id":"rav","label":"Desempleo y RAV"},{"id":"tramites","label":"Trámites y acompañamientos"},{"id":"impuestos","label":"Impuestos y contabilidad"},{"id":"empresas","label":"Creación de empresas"},{"id":"cv","label":"CV y cartas de presentación"},{"id":"legal","label":"Asesoría legal"},{"id":"traducciones","label":"Traducciones generales y oficiales"}]},{"id":"idiomas","label":"Idiomas","services":[{"id":"aleman","label":"Alemán (A1–C1)"},{"id":"ingles","label":"Inglés (A1–C1)"}]},{"id":"seguros","label":"Seguros y pensiones","services":[{"id":"salud","label":"Salud y complementarios"},{"id":"hogar","label":"Hogar, vehículos y viajes"},{"id":"pensiones","label":"Vida y pensiones (pilares)"},{"id":"empresa","label":"Seguros de empresa"},{"id":"prestaciones","label":"Ayudas familiares, primas y baja laboral"},{"id":"polizas","label":"Revisión de pólizas y reclamaciones"}]},{"id":"alquiler","label":"Vehículos y mudanzas","services":[{"id":"coches","label":"Alquiler de coches"},{"id":"furgonetas","label":"Alquiler de furgonetas"},{"id":"mudanzas","label":"Mudanzas"}]},{"id":"vivienda","label":"Vivienda","services":[{"id":"buscar","label":"Alquiler de pisos y habitaciones"},{"id":"contratos","label":"Contratos y depósitos"},{"id":"gestion","label":"Gestión y mantenimiento"},{"id":"limpieza","label":"Mudanza y limpieza"}]},{"id":"relocation","label":"Llegada a Suiza y retorno","services":[{"id":"llegada","label":"Pack de llegada e integración"},{"id":"permisos","label":"Permisos y registro en Suiza"},{"id":"instalacion","label":"Vivienda, banco y servicios básicos"},{"id":"retorno","label":"Pack de retorno al país de origen"}]},{"id":"digital","label":"Soluciones digitales","services":[{"id":"web","label":"Páginas web y tiendas online"},{"id":"crm","label":"Gestión de clientes (CRM)"},{"id":"ia","label":"Inteligencia artificial y automatización"},{"id":"marketing","label":"Marketing y redes sociales"},{"id":"apps","label":"Apps y proyectos personalizados"},{"id":"soporte","label":"Consultoría y soporte digital"}]}]';
   saved public.punto_hispano_contacts%ROWTYPE;
 BEGIN
@@ -53,13 +54,23 @@ BEGIN
     RAISE EXCEPTION 'Invalid contact request' USING ERRCODE = '22023';
   END IF;
 
-  SELECT category ->> 'label', service ->> 'label'
-  INTO category_label, service_label
-  FROM jsonb_array_elements(catalogue) AS category,
-    LATERAL jsonb_array_elements(category -> 'services') AS service
-  WHERE category ->> 'id' = p_category AND service ->> 'id' = p_service;
-  IF service_label IS NULL THEN
-    RAISE EXCEPTION 'Invalid service' USING ERRCODE = '22023';
+  SELECT category ->> 'label' INTO category_label
+  FROM jsonb_array_elements(catalogue) AS category
+  WHERE category ->> 'id' = p_category;
+  IF category_label IS NULL THEN
+    RAISE EXCEPTION 'Invalid category' USING ERRCODE = '22023';
+  END IF;
+
+  IF normalized_service = '' THEN
+    service_label := 'Sin especificar';
+  ELSE
+    SELECT service ->> 'label' INTO service_label
+    FROM jsonb_array_elements(catalogue) AS category,
+      LATERAL jsonb_array_elements(category -> 'services') AS service
+    WHERE category ->> 'id' = p_category AND service ->> 'id' = normalized_service;
+    IF service_label IS NULL THEN
+      RAISE EXCEPTION 'Invalid service' USING ERRCODE = '22023';
+    END IF;
   END IF;
 
   -- Identity and timestamp are resolved on the server, never supplied by callers.
@@ -80,16 +91,17 @@ BEGIN
     service_id, service_label, placement
   ) VALUES (
     p_request_id, current_user_id, contact_name, contact_email, p_category, category_label,
-    p_service, service_label, COALESCE(NULLIF(btrim(p_placement), ''), 'direct')
+    normalized_service, service_label, COALESCE(NULLIF(btrim(p_placement), ''), 'direct')
   ) ON CONFLICT (user_id, request_id) DO NOTHING;
 
   SELECT * INTO STRICT saved FROM public.punto_hispano_contacts
   WHERE user_id = current_user_id AND request_id = p_request_id;
-  IF saved.category_id <> p_category OR saved.service_id <> p_service THEN
+  IF saved.category_id <> p_category OR saved.service_id <> normalized_service THEN
     RAISE EXCEPTION 'Request already used for another service' USING ERRCODE = '22023';
   END IF;
   RETURN jsonb_build_object('id', saved.id, 'user_name', saved.user_name,
-    'category_label', saved.category_label, 'service_label', saved.service_label,
+    'category_label', saved.category_label,
+    'service_label', CASE WHEN saved.service_id = '' THEN '' ELSE saved.service_label END,
     'created_at', saved.created_at);
 END;
 $$;

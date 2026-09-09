@@ -14,9 +14,12 @@ assert.equal(PUNTO_HISPANO_SERVICES.length, 7)
 assert.ok(PUNTO_HISPANO_SERVICES.every(category => category.services.length <= 7))
 assert.equal(getPuntoHispanoService('idiomas', 'rav'), null)
 assert.equal(getPuntoHispanoService('invalid', 'invalid'), null)
+assert.deepEqual(getPuntoHispanoService('idiomas', ''), { category:'Idiomas', service:'' })
 const url = new URL(buildPuntoHispanoWhatsappUrl('José & Ana', 'Gestoría y asesoría', 'Desempleo y RAV'))
 assert.equal(url.origin + url.pathname, 'https://wa.me/41766232664')
 assert.equal(url.searchParams.get('text'), 'Hola soy José & Ana y vengo de Latido.ch. Tengo interés en Gestoría y asesoría: Desempleo y RAV. Saludos.')
+const categoryOnlyUrl = new URL(buildPuntoHispanoWhatsappUrl('José', 'Idiomas', ''))
+assert.equal(categoryOnlyUrl.searchParams.get('text'), 'Hola soy José y vengo de Latido.ch. Tengo interés en Idiomas. Saludos.')
 assert.throws(() => buildPuntoHispanoWhatsappUrl('', 'Idiomas', 'Alemán'))
 const csv = puntoHispanoContactsCsv([{ user_name:'  =HYPERLINK("bad")', user_email:'ana@example.com', service_label:'Traducción; "oficial"\nnueva línea' }])
 assert.ok(csv.startsWith('\uFEFFsep=;\r\n'))
@@ -76,6 +79,9 @@ if (process.argv[2]) {
     assert.deepEqual((await record(request)).rows[0].contact, first, 'Retry must retain ID, name and timestamp')
     await assert.rejects(() => record(request, 'idiomas', 'aleman'), /another service/)
     await assert.rejects(() => record(randomUUID(), 'idiomas', 'rav'), /Invalid service/)
+    const categoryOnly = (await record(randomUUID(), 'idiomas', '')).rows[0].contact
+    assert.equal(categoryOnly.category_label, 'Idiomas')
+    assert.equal(categoryOnly.service_label, '')
     assert.equal((await db.query('SELECT * FROM public.punto_hispano_contacts')).rows.length, 0)
     await assert.rejects(() => db.exec('DELETE FROM public.punto_hispano_contacts'), /permission denied/)
     await assert.rejects(() => db.exec('UPDATE public.punto_hispano_contacts SET user_email = \'fake@example.com\''), /permission denied/)
@@ -97,6 +103,10 @@ if (process.argv[2]) {
     const saved = (await db.query('SELECT * FROM public.punto_hispano_contacts WHERE id = $1', [first.id])).rows[0]
     assert.equal(saved.user_email, 'ana@example.com')
     assert.equal(saved.user_id, user)
+    const categoryOnlySaved = (await db.query(
+      "SELECT service_id, service_label FROM public.punto_hispano_contacts WHERE category_id = 'idiomas' AND service_id = ''",
+    )).rows[0]
+    assert.deepEqual(categoryOnlySaved, { service_id:'', service_label:'Sin especificar' })
     console.log('Punto Hispano: PostgreSQL migration, all services, identity, timestamp, idempotency and admin-only access passed')
   } finally {
     await db.close()

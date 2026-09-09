@@ -41,7 +41,7 @@ try {
  const anon=await setup();
  await anon.page.goto('http://127.0.0.1:5188/servicios-suiza');
  await anon.page.getByLabel('Categoría',{exact:true}).selectOption('idiomas');
- await anon.page.getByLabel('Servicio',{exact:true}).selectOption('aleman');
+ await anon.page.getByLabel(/Subcategoría/).selectOption('aleman');
  const login=anon.page.getByRole('link',{name:'Inicia sesión para contactar'});
  const href=await login.getAttribute('href');
  assert.match(decodeURIComponent(href),/category=idiomas/); assert.match(decodeURIComponent(href),/subcategory=aleman/);
@@ -50,8 +50,10 @@ try {
  await anon.page.screenshot({path:path.join(outputDir,'selector-mobile.png'),fullPage:true});
  await anon.page.goto('http://127.0.0.1:5188/');
  await anon.page.locator('article[aria-labelledby^="partner-card-punto-hispano"] .partner-card-cta').first().click();
- await anon.page.waitForURL('**/servicios-suiza**');
- await anon.page.locator('#ph-contact-title').waitFor();
+ await anon.page.getByRole('dialog',{name:'Contactar con Punto Hispano'}).waitFor();
+ assert.equal(new URL(anon.page.url()).pathname,'/');
+ await anon.page.getByRole('button',{name:'Cerrar'}).click();
+ assert.equal(await anon.page.getByRole('dialog',{name:'Contactar con Punto Hispano'}).count(),0);
  assert.deepEqual(anon.errors,[]);
  await anon.context.close();
  const member=await setup('ana@example.com');
@@ -59,11 +61,11 @@ try {
  const button=member.page.getByRole('button',{name:'Contactar por WhatsApp'});
  await button.waitFor(); assert.equal(await button.isDisabled(),true);
  await member.page.getByLabel('Categoría',{exact:true}).selectOption('gestoria');
- await member.page.getByLabel('Servicio',{exact:true}).selectOption('rav');
+ await member.page.getByLabel(/Subcategoría/).selectOption('rav');
  await member.page.getByLabel('Categoría',{exact:true}).selectOption('idiomas');
- assert.equal(await member.page.getByLabel('Servicio',{exact:true}).inputValue(),'');
- assert.equal(await button.isDisabled(),true);
- await member.page.getByLabel('Servicio',{exact:true}).selectOption('aleman');
+ assert.equal(await member.page.getByLabel(/Subcategoría/).inputValue(),'');
+ assert.equal(await button.isEnabled(),true);
+ await member.page.getByLabel(/Subcategoría/).selectOption('aleman');
  member.setFail(true); await button.click(); await member.page.getByRole('alert').filter({hasText:'No pudimos'}).waitFor();
  assert.equal(member.outbound.length,0); assert.equal(member.rpc.length,1);
  member.setFail(false); await button.click(); await member.page.waitForURL('https://wa.me/**');
@@ -87,6 +89,6 @@ try {
  await admin.page.getByLabel('Desde (UTC)').fill('2026-09-01');
  await admin.page.screenshot({path:path.join(outputDir,'admin-desktop.png'),fullPage:false});
  assert.deepEqual(admin.errors,[]); await admin.context.close();
- console.log('Browser passed: mobile selector, login return path, category reset, no premature record, failure/retry, WhatsApp URL, admin table and CSV download. All remote APIs mocked.');
+ console.log('Browser passed: inline contact modal, mobile selector, login return path, category reset, no premature record, failure/retry, WhatsApp URL, admin table and CSV download. All remote APIs mocked.');
  console.log('Test artifacts:', outputDir);
 } finally {await browser.close();}

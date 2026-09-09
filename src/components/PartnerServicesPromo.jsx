@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { C, PP } from '../lib/theme'
 import PartnerServiceIcon from './PartnerServiceIcon'
 import PartnerCard from './PartnerCard'
+import PuntoHispanoContactModal from './PuntoHispanoContactModal'
 
 import { PUNTO_HISPANO_LOGO as PARTNER_LOGO } from '../lib/puntoHispano'
 const PARTNER_CARD_SEARCH_TERMS = [
@@ -110,18 +112,30 @@ export default function PartnerServicesPromo({
   title = '',
   description = '',
 }) {
+  const [contactOpen, setContactOpen] = useState(false)
+  const [contactCategory, setContactCategory] = useState('')
   const mode = variant || (compact ? 'featured' : 'compact')
   const selectedService = SERVICES.find(service => service.id === serviceId) || null
   const partnerPath = `/servicios-suiza?from=${encodeURIComponent(placement)}&action=cta`
-  const partnerLandingUrl = partnerPath
-  const partnerInfoPath = partnerPath
   const serviceUrls = Object.fromEntries(SERVICES.map(service => [
     service.id, `${partnerPath}&category=${encodeURIComponent(service.id)}`,
   ]))
+  const openContact = (category = '') => {
+    setContactCategory(category)
+    setContactOpen(true)
+  }
+  const contactModal = (
+    <PuntoHispanoContactModal
+      open={contactOpen}
+      placement={placement}
+      initialCategory={contactCategory}
+      onClose={() => setContactOpen(false)}
+    />
+  )
 
   if (mode === 'public-featured') {
     return (
-      <PartnerCard
+      <><PartnerCard
         id={`punto-hispano-${placement}`}
         className="public-partner-tile"
         brand={{
@@ -135,18 +149,15 @@ export default function PartnerServicesPromo({
           href:serviceUrls[service.id],
           external:false,
         }))}
-        cta={{
-          href:partnerInfoPath,
-          label:'Contactar',
-          external:false,
-        }}
-      />
+        cta={{ label:'Contactar', button:true }}
+        onCtaClick={() => openContact()}
+      />{contactModal}</>
     )
   }
 
   if (mode === 'partner-card' || mode === 'compact') {
     return (
-      <PartnerCard
+      <><PartnerCard
         id="punto-hispano"
         brand={{
           partnerLogo:PARTNER_LOGO,
@@ -159,12 +170,9 @@ export default function PartnerServicesPromo({
           href:serviceUrls[service.id],
           external:false,
         }))}
-        cta={{
-          href:partnerInfoPath,
-          label:'Contactar',
-          external:false,
-        }}
-      />
+        cta={{ label:'Contactar', button:true }}
+        onCtaClick={() => openContact()}
+      />{contactModal}</>
     )
   }
 
@@ -175,7 +183,7 @@ export default function PartnerServicesPromo({
     const contextualDescription = description || 'Nuestro colaborador Punto Hispano puede orientarte y ofrecerte servicios especializados en tu idioma.'
 
     return (
-      <aside
+      <><aside
         aria-labelledby={`partner-promo-${placement}`}
         className={`partner-services-contextual${placement.startsWith('global_search') ? ' partner-services-contextual--search' : ''}`}
       >
@@ -187,22 +195,15 @@ export default function PartnerServicesPromo({
           <h2 id={`partner-promo-${placement}`}>{contextualTitle}</h2>
           <p>{contextualDescription}</p>
         </div>
-        {selectedService ? (
-          <Link
-            className="partner-services-contextual-cta"
-            to={serviceUrls[selectedService.id]}
-          >
-            Contactar <span aria-hidden="true">↗</span>
-          </Link>
-        ) : (
-          <Link
-            className="partner-services-contextual-cta"
-            to={partnerLandingUrl}
-          >
-            Contactar <span aria-hidden="true">→</span>
-          </Link>
-        )}
-      </aside>
+        <button
+          type="button"
+          className="partner-services-contextual-cta"
+          onClick={() => openContact(selectedService?.id || '')}
+          style={{ border:0, cursor:'pointer' }}
+        >
+          Contactar <span aria-hidden="true">→</span>
+        </button>
+      </aside>{contactModal}</>
     )
   }
 
@@ -256,21 +257,23 @@ export default function PartnerServicesPromo({
                 </Link>
               ))}
             </div>
-            <Link
-              to={partnerLandingUrl}
+            <button
+              type="button"
+              onClick={() => openContact()}
               className="partner-services-cta"
               aria-describedby={`partner-promo-description-${placement}`}
-              style={{ width:'100%', boxSizing:'border-box', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, minHeight:58, padding:'8px 12px 8px 22px', borderRadius:15, background:'linear-gradient(135deg, #2563EB, #1D4ED8)', color:'#fff', textDecoration:'none', fontFamily:PP, fontWeight:800, fontSize:15, boxShadow:'0 12px 28px rgba(37,99,235,0.25)', transition:'transform .18s ease, box-shadow .18s ease, background .18s ease' }}
+              style={{ width:'100%', boxSizing:'border-box', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, minHeight:58, padding:'8px 12px 8px 22px', border:0, borderRadius:15, background:'linear-gradient(135deg, #2563EB, #1D4ED8)', color:'#fff', textDecoration:'none', fontFamily:PP, fontWeight:800, fontSize:15, boxShadow:'0 12px 28px rgba(37,99,235,0.25)', transition:'transform .18s ease, box-shadow .18s ease, background .18s ease', cursor:'pointer' }}
             >
               <span style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', lineHeight:1.2 }}>
                 <span>Contactar</span>
                 <span style={{ marginTop:3, fontWeight:500, fontSize:10, color:'rgba(255,255,255,0.78)' }}>Información clara y atención en español</span>
               </span>
               <span aria-hidden="true" style={{ width:36, height:36, flexShrink:0, borderRadius:'50%', background:'rgba(255,255,255,0.17)', border:'1px solid rgba(255,255,255,0.18)', display:'grid', placeItems:'center', fontSize:19 }}>→</span>
-            </Link>
+            </button>
           </div>
         </div>
       </div>
+      {contactModal}
     </section>
   )
 }

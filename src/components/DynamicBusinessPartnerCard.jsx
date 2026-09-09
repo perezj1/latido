@@ -2,6 +2,7 @@ import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useEffect, useState } from 'react'
 import PartnerCard from './PartnerCard'
 import BusinessPartnerContactModal from './BusinessPartnerContactModal'
+import PuntoHispanoContactModal from './PuntoHispanoContactModal'
 import { useAuth } from '../hooks/useAuth'
 import { trackPartnerInteraction } from '../lib/partnerAttribution'
 import { getBusinessPartnerCardServiceLabel, hasBusinessPartnerBareLogo } from '../lib/businessPartnerOverrides'
@@ -71,6 +72,10 @@ export default function DynamicBusinessPartnerCard({
   const hasDirectCta = partner.destination?.direct === true
 
   const handleCtaClick = () => {
+    if (partner.id === PUNTO_HISPANO_PROVIDER_ID) {
+      setContactOpen(true)
+      return
+    }
     if (!hasDirectCta) {
       setContactOpen(true)
       return
@@ -99,7 +104,9 @@ export default function DynamicBusinessPartnerCard({
         title={partner.title}
         description={partner.description}
         services={services}
-        cta={hasDirectCta
+        cta={partner.id === PUNTO_HISPANO_PROVIDER_ID
+          ? { label:'Contactar', button:true }
+          : hasDirectCta
           ? {
             label:'Contactar',
             href:partner.id === PUNTO_HISPANO_PROVIDER_ID ? `${partner.destination.href}?from=${encodeURIComponent(placement || 'direct')}` : partner.destination.href,
@@ -124,13 +131,21 @@ export default function DynamicBusinessPartnerCard({
         onCtaClick={handleCtaClick}
       />
 
-      <BusinessPartnerContactModal
-        open={contactOpen}
-        partner={partner}
-        placement={placement}
-        onClose={() => setContactOpen(false)}
-        onContactClick={trackContactClick}
-      />
+      {partner.id === PUNTO_HISPANO_PROVIDER_ID ? (
+        <PuntoHispanoContactModal
+          open={contactOpen}
+          placement={placement}
+          onClose={() => setContactOpen(false)}
+        />
+      ) : (
+        <BusinessPartnerContactModal
+          open={contactOpen}
+          partner={partner}
+          placement={placement}
+          onClose={() => setContactOpen(false)}
+          onContactClick={trackContactClick}
+        />
+      )}
     </>
   )
 }
