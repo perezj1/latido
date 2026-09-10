@@ -30,6 +30,7 @@ import SavedSearchButton from '../components/SavedSearchButton'
 import { FilterButton, FilterChips, FilterResultSummary, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
 import { buildShareUrl } from '../components/ShareButton'
 import DetailActionBar from '../components/DetailActionBar'
+import BusinessProfileShareModal from '../components/BusinessProfileShareModal'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getBusinessPath, getEventPath, getIdFromSlug } from '../lib/seo'
 import { getMissingColumnName } from '../lib/supabaseCompat'
@@ -815,6 +816,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [savingReview, setSavingReview] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
+  const [shareCardOpen, setShareCardOpen] = useState(false)
   const [claimModalOpen, setClaimModalOpen] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [tab, setTab] = useState('info')
@@ -841,6 +843,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
     business.canton,
   )
   const mainPhoto = photos[0] || ''
+  const isBusinessOwner = !!user?.id && String(user.id) === String(business.user_id)
   const tabItems = [
     { id:'info', label:'Info' },
     { id:'servicios', label:'Servicios' },
@@ -860,6 +863,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
   useEffect(() => {
     setReviews(reviewsMap[business.id] || [])
     setShowContacts(false)
+    setShareCardOpen(false)
     setClaimModalOpen(false)
     setShowReviewForm(false)
     setSavingReview(false)
@@ -1167,10 +1171,9 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           </div>
         )) : null}
         share={{
-          title:business.name || 'Negocio en Latido',
-          text:getContentShareText('negocio', business.city),
-          url:getBusinessPath(business),
-          ariaLabel:'Enviar negocio',
+          onClick:() => setShareCardOpen(true),
+          label:'Compartir',
+          ariaLabel:'Compartir negocio como imagen',
         }}
         favorite={{
           isFav:isFavorite('businesses', business.id),
@@ -1195,6 +1198,16 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
           title:'Reportar negocio',
           metadata:{ title:business.name, category:business.type, city:business.city },
         }}
+      />
+
+      <BusinessProfileShareModal
+        business={business}
+        categoryLabel={category?.label || ''}
+        imageUrl={mainPhoto}
+        url={getBusinessPath(business)}
+        isOwner={isBusinessOwner}
+        open={shareCardOpen}
+        onClose={() => setShareCardOpen(false)}
       />
 
       <Modal

@@ -174,7 +174,22 @@ export default function DetailActionBar({
               Más opciones
             </p>
             <div style={{ display:'flex', flexDirection:'column' }}>
-              {share && (
+              {share && (share.onClick ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  aria-label={share.ariaLabel || 'Enviar'}
+                  onClick={event => {
+                    event.stopPropagation()
+                    setMenuOpen(false)
+                    share.onClick(event)
+                  }}
+                  style={MENU_ITEM_STYLE}
+                >
+                  <MenuIcon>📤</MenuIcon>
+                  <span>{share.label || 'Enviar'}</span>
+                </button>
+              ) : (
                 <ShareButton
                   {...share}
                   ariaLabel={share.ariaLabel || 'Enviar'}
@@ -182,7 +197,7 @@ export default function DetailActionBar({
                   icon={<MenuIcon>📤</MenuIcon>}
                   style={MENU_ITEM_STYLE}
                 />
-              )}
+              ))}
               {share && (favorite || like || ownershipClaim || report) && (
                 <span aria-hidden="true" style={{ height:1, background:C.borderLight, margin:'0 10px', display:'block' }} />
               )}
