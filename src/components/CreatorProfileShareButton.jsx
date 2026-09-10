@@ -100,11 +100,11 @@ function SimpleCreatorShareCard({ creator, avatarUrl }) {
           {[handle, location].filter(Boolean).join(' · ') || 'Creador de contenido en Suiza'}
         </p>
 
-        <div style={{ width:'100%', maxWidth:440, boxSizing:'border-box', marginTop:17, padding:'14px 20px', borderRadius:18, background:'#EAF2FF', color:'#334155', fontSize:15.5, lineHeight:1.42, fontWeight:650 }}>
+        <div style={{ width:'100%', maxWidth:440, boxSizing:'border-box', marginTop:17, padding:'14px 20px', borderRadius:18, background:'#EAF2FF', color:'#334155', fontSize:16.5, lineHeight:1.42, fontWeight:650 }}>
           {tagline}
         </div>
 
-        <div style={{ maxWidth:460, marginTop:18, fontSize:14.5, lineHeight:1.55, fontWeight:700 }}>
+        <div style={{ maxWidth:460, marginTop:24, fontSize:14.5, lineHeight:1.55, fontWeight:700 }}>
           <span style={{ display:'block', color:'#2563EB', fontSize:13.5, fontWeight:800, whiteSpace:'nowrap' }}>Juntos hacemos crecer la comunidad hispanohablante en Suiza.</span>
           <span style={{ display:'block', marginTop:2, color:'#64748B' }}>latido.ch</span>
         </div>
@@ -139,11 +139,11 @@ function LatidoCreatorShareCard({ creator, avatarUrl, backgroundUrl }) {
           {[handle, location].filter(Boolean).join(' · ') || 'Creador de contenido en Suiza'}
         </p>
 
-        <div style={{ width:'100%', maxWidth:440, boxSizing:'border-box', marginTop:14, padding:'13px 20px', border:'1px solid rgba(219,234,254,0.9)', borderRadius:17, background:'rgba(234,242,255,0.9)', color:'#334155', fontSize:14.5, lineHeight:1.42, fontWeight:650 }}>
+        <div style={{ width:'100%', maxWidth:440, boxSizing:'border-box', marginTop:14, padding:'13px 20px', border:'1px solid rgba(219,234,254,0.9)', borderRadius:17, background:'rgba(234,242,255,0.9)', color:'#334155', fontSize:16, lineHeight:1.42, fontWeight:650 }}>
           {tagline}
         </div>
 
-        <div style={{ width:'100%', maxWidth:465, marginTop:15, fontSize:13.5, lineHeight:1.5, fontWeight:700 }}>
+        <div style={{ width:'100%', maxWidth:465, marginTop:23, fontSize:13.5, lineHeight:1.5, fontWeight:700 }}>
           <span style={{ display:'block', color:'#2563EB', fontSize:13.5, fontWeight:800, whiteSpace:'nowrap' }}>Juntos hacemos crecer la comunidad hispanohablante en Suiza.</span>
           <span style={{ display:'block', marginTop:3, color:'#64748B' }}>latido.ch</span>
         </div>
