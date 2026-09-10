@@ -335,7 +335,7 @@ export default function CreadorPerfil() {
             <div className={`creator-social-profile__main-action${isOwner ? ' is-owner' : ''}`}>
               {!isOwner ? <CreatorFollowButton creator={creator} /> : <Link className="creator-owner-add-content" to="/publicar-contenido"><span aria-hidden="true">➕</span> Añadir contenido</Link>}
               {isOwner && <Link className="creator-owner-edit-profile" to="/creadores/mi-perfil"><span aria-hidden="true">✏️</span> Editar mi perfil</Link>}
-              <CreatorProfileShareButton creator={creator} />
+              <CreatorProfileShareButton creator={creator} isOwner={isOwner} />
             </div>
 
             {(creator.socials || []).length > 0 && (

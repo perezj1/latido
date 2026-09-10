@@ -159,7 +159,7 @@ function CreatorShareCard({ creator, avatarUrl, backgroundUrl, style }) {
   return <SimpleCreatorShareCard creator={creator} avatarUrl={avatarUrl} />
 }
 
-export default function CreatorProfileShareButton({ creator }) {
+export default function CreatorProfileShareButton({ creator, isOwner=false }) {
   const cardRef = useRef(null)
   const previewUrlRef = useRef('')
   const [busy, setBusy] = useState(false)
@@ -291,8 +291,14 @@ export default function CreatorProfileShareButton({ creator }) {
           <div role="dialog" aria-modal="true" aria-labelledby="creator-share-title" style={{ width:'min(430px, 100%)', maxHeight:'calc(100dvh - 36px)', overflowY:'auto', boxSizing:'border-box', padding:16, borderRadius:24, background:'#fff', boxShadow:'0 28px 80px rgba(0,0,0,0.35)' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, marginBottom:12 }}>
               <div>
-                <h2 id="creator-share-title" style={{ margin:0, color:'#0F172A', fontFamily:PP, fontSize:17, fontWeight:900 }}>Comparte tu perfil</h2>
-                <p style={{ margin:'3px 0 0', color:'#64748B', fontFamily:PP, fontSize:10.5, fontWeight:600 }}>Comparte en tus redes tu participación en la comunidad hispanohablante en Suiza.</p>
+                <h2 id="creator-share-title" style={{ margin:0, color:'#0F172A', fontFamily:PP, fontSize:17, fontWeight:900 }}>
+                  {isOwner ? 'Comparte tu perfil' : 'Comparte este perfil'}
+                </h2>
+                <p style={{ margin:'3px 0 0', color:'#64748B', fontFamily:PP, fontSize:10.5, fontWeight:600 }}>
+                  {isOwner
+                    ? 'Comparte en tus redes tu participación en la comunidad hispanohablante en Suiza.'
+                    : 'Comparte el perfil de este creador para seguir apoyando a la comunidad.'}
+                </p>
               </div>
               <button type="button" onClick={closePreview} aria-label="Cerrar vista previa" style={{ width:36, height:36, flexShrink:0, border:'1px solid #E2E8F0', borderRadius:'50%', background:'#fff', color:'#475569', fontSize:22, lineHeight:1, cursor:'pointer' }}>×</button>
             </div>
