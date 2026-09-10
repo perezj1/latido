@@ -159,9 +159,10 @@ function CreatorShareCard({ creator, avatarUrl, backgroundUrl, style }) {
   return <SimpleCreatorShareCard creator={creator} avatarUrl={avatarUrl} />
 }
 
-export default function CreatorProfileShareButton({ creator, isOwner=false }) {
+export default function CreatorProfileShareButton({ creator, isOwner=false, showTrigger=true, open=false, onClose, onShared }) {
   const cardRef = useRef(null)
   const previewUrlRef = useRef('')
+  const autoOpenRef = useRef(false)
   const [busy, setBusy] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [backgroundUrl, setBackgroundUrl] = useState(null)
@@ -175,6 +176,7 @@ export default function CreatorProfileShareButton({ creator, isOwner=false }) {
       URL.revokeObjectURL(previewUrlRef.current)
       previewUrlRef.current = ''
     }
+    onClose?.()
   }
 
   useEffect(() => () => {
@@ -227,10 +229,24 @@ export default function CreatorProfileShareButton({ creator, isOwner=false }) {
       setPreview({ objectUrl, filename, shareData, canShare, style:nextStyle })
     } catch {
       toast.error('No se pudo crear la tarjeta del perfil')
+      if (!showTrigger) {
+        autoOpenRef.current = false
+        onClose?.()
+      }
     } finally {
       setBusy(false)
     }
   }
+
+  useEffect(() => {
+    if (!open) {
+      autoOpenRef.current = false
+      return
+    }
+    if (autoOpenRef.current) return
+    autoOpenRef.current = true
+    void createCard(cardStyle)
+  }, [open])
 
   const downloadCard = () => {
     if (!preview) return
@@ -258,6 +274,7 @@ export default function CreatorProfileShareButton({ creator, isOwner=false }) {
         await copyProfileLink()
         return
       }
+      onShared?.()
       closePreview()
     } catch (error) {
       if (error?.name !== 'AbortError') toast.error('No se pudo compartir el perfil')
@@ -275,10 +292,12 @@ export default function CreatorProfileShareButton({ creator, isOwner=false }) {
 
   return (
     <>
-      <button type="button" className="creator-profile-share" onClick={() => createCard(cardStyle)} disabled={busy} aria-label="Compartir perfil como imagen">
-        <span aria-hidden="true">{busy ? '⏳' : '📤'}</span>
-        <span>{busy ? 'Creando…' : 'Compartir perfil'}</span>
-      </button>
+      {showTrigger && (
+        <button type="button" className="creator-profile-share" onClick={() => createCard(cardStyle)} disabled={busy} aria-label="Compartir perfil como imagen">
+          <span aria-hidden="true">{busy ? '⏳' : '📤'}</span>
+          <span>{busy ? 'Creando…' : 'Compartir perfil'}</span>
+        </button>
+      )}
 
       <div aria-hidden="true" style={{ position:'fixed', left:-10000, top:0, width:CARD_WIDTH, height:CARD_HEIGHT, pointerEvents:'none', zIndex:-1 }}>
         <div ref={cardRef}>

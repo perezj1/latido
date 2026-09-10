@@ -13,7 +13,10 @@ import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
+import BusinessProfileShareModal from '../components/BusinessProfileShareModal'
 import { getPushStatus } from '../lib/pushNotifications'
+import { getBusinessPath } from '../lib/seo'
+import { markShareCardShared } from '../lib/shareCardReminder'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { canUseWhatsappNumber } from '../lib/businessContact'
 import toast from 'react-hot-toast'
@@ -39,6 +42,8 @@ export default function RegistrarNegocio() {
   const [uploadingCover, setUploadingCover] = useState(false)
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [done, setDone] = useState(false)
+  const [publishedBusiness, setPublishedBusiness] = useState(null)
+  const [shareCardOpen, setShareCardOpen] = useState(false)
   const [publishedForReview, setPublishedForReview] = useState(false)
   const [pushModalOpen, setPushModalOpen] = useState(false)
   const [professionalUnlockOpen, setProfessionalUnlockOpen] = useState(false)
@@ -230,10 +235,22 @@ export default function RegistrarNegocio() {
           ? 'Tu negocio quedó oculto temporalmente hasta que el equipo lo revise.'
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
-      <Btn onClick={() => navigate('/comunidades?view=negocios')}>Ver negocios →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setProfessionalUnlockOpen(false); setProfessionalOptionsOpen(false); setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLandingPageSelected(false); setErrors({}); setStep(0); setForm({ type:'', name:'', city:'', canton:'', address:'', desc:'', phone:'', hasWhatsapp:false, email:'', instagram:'', website:'', services:'', photo_url:'', gallery:[] }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
-        Registrar otro negocio
+      <Btn onClick={() => setShareCardOpen(true)} disabled={!publishedBusiness}>Comparte tu negocio</Btn>
+      <button onClick={() => navigate('/')} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+        Volver a Latido
       </button>
+      {publishedBusiness && (
+        <BusinessProfileShareModal
+          business={publishedBusiness}
+          categoryLabel={NEGOCIO_TYPES_FORM.find(type => type.id === publishedBusiness.type)?.label || ''}
+          imageUrl={publishedBusiness.photo_url || ''}
+          url={getBusinessPath(publishedBusiness)}
+          isOwner
+          open={shareCardOpen}
+          onClose={() => setShareCardOpen(false)}
+          onShared={() => markShareCardShared('business', user?.id, publishedBusiness.id)}
+        />
+      )}
     </div>
   )
 
@@ -308,6 +325,18 @@ export default function RegistrarNegocio() {
         single: true,
       })
       if (error) throw error
+
+      setPublishedBusiness({
+        id:data?.id,
+        user_id:user?.id,
+        type:form.type,
+        name:form.name.trim(),
+        city:form.city.trim(),
+        canton:form.canton,
+        desc:form.desc.trim(),
+        photo_url:form.photo_url.trim(),
+        services:servicesList,
+      })
 
       if (needsReview && data?.id) {
         await addModerationQueueItem({

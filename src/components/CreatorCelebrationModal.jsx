@@ -21,6 +21,7 @@ export default function CreatorCelebrationModal({
   primaryLabel,
   onPrimary,
   secondaryLabel = 'Cerrar',
+  onSecondary,
 }) {
   return (
     <Modal show={show} onClose={onClose} title={title} syncHistory={false} zIndex={620}>
@@ -46,7 +47,7 @@ export default function CreatorCelebrationModal({
           <button type="button" className="creator-celebration__primary" onClick={onPrimary}>
             {primaryLabel}
           </button>
-          <button type="button" className="creator-celebration__secondary" onClick={onClose}>
+          <button type="button" className="creator-celebration__secondary" onClick={onSecondary || onClose}>
             {secondaryLabel}
           </button>
         </div>

@@ -6,6 +6,7 @@ import { Btn, ChevronLeftIcon, Input, ProgressBar, Select, StickyFormActions } f
 import { CreatorAvatar, CreatorTopicPill } from '../components/CreatorCards'
 import CreatorAvatarEditor from '../components/CreatorAvatarEditor'
 import CreatorCelebrationModal from '../components/CreatorCelebrationModal'
+import CreatorProfileShareButton from '../components/CreatorProfileShareButton'
 import { CANTONS } from '../lib/constants'
 import {
   CREATOR_PLATFORMS,
@@ -22,6 +23,7 @@ import { getStorageErrorMessage, uploadAvatar } from '../lib/storage'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { addModerationQueueItem } from '../lib/reports'
 import { C, PP } from '../lib/theme'
+import { markShareCardShared } from '../lib/shareCardReminder'
 import './Creators.css'
 
 const STEPS = [
@@ -109,6 +111,7 @@ export default function CreadorAlta() {
   const [form, setForm] = useState(() => initialForm(existing, displayName, userCanton, userInterests))
   const [errors, setErrors] = useState({})
   const [publishResult, setPublishResult] = useState(null)
+  const [shareProfileOpen, setShareProfileOpen] = useState(false)
 
   useEffect(() => {
     const sync = () => {
@@ -259,7 +262,7 @@ export default function CreadorAlta() {
         toast.success(needsReview ? 'Perfil enviado a revisión' : 'Perfil actualizado')
         navigate('/creadores/mi-perfil')
       } else {
-        setPublishResult({ needsReview })
+        setPublishResult({ needsReview, creator:savedProfile })
       }
     } catch (error) {
       toast.error(error?.message || 'No se pudo guardar el perfil')
@@ -335,13 +338,19 @@ export default function CreadorAlta() {
   }
 
   const closePublishSuccess = () => {
+    setShareProfileOpen(false)
     setPublishResult(null)
     navigate('/creadores/mi-perfil?created=1')
   }
 
   const publishFirstContent = () => {
+    setShareProfileOpen(false)
     setPublishResult(null)
     navigate('/publicar-contenido')
+  }
+
+  const sharePublishedProfile = () => {
+    setShareProfileOpen(true)
   }
 
   const cancelCreatorFlow = () => {
@@ -614,15 +623,27 @@ export default function CreadorAlta() {
       </StickyFormActions>
 
       <CreatorCelebrationModal
-        show={Boolean(publishResult)}
+        show={Boolean(publishResult) && !shareProfileOpen}
         onClose={closePublishSuccess}
         title={publishResult?.needsReview ? 'Perfil enviado' : 'Perfil publicado'}
         message={publishResult?.needsReview
           ? 'Tu perfil se ha enviado a revisión. Te avisaremos cuando esté visible en la comunidad de creadores de Latido.'
           : 'Ahora formas parte de la comunidad de creadores de Latido. Comparte tu contenido y llega a más personas.'}
-        primaryLabel="Publicar contenido"
-        onPrimary={publishFirstContent}
+        primaryLabel="Compartir mi perfil"
+        onPrimary={sharePublishedProfile}
+        secondaryLabel="Publicar contenido"
+        onSecondary={publishFirstContent}
       />
+      {publishResult?.creator && (
+        <CreatorProfileShareButton
+          creator={publishResult.creator}
+          isOwner
+          showTrigger={false}
+          open={shareProfileOpen}
+          onClose={() => setShareProfileOpen(false)}
+          onShared={() => markShareCardShared('creator', user?.id, publishResult.creator.id)}
+        />
+      )}
       <CreatorAvatarEditor
         show={Boolean(avatarEditor)}
         source={avatarEditor?.source || ''}

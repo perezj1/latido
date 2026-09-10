@@ -134,7 +134,7 @@ function BusinessShareCard({ business, categoryLabel, imageUrl, backgroundUrl, s
   return <SimpleBusinessShareCard business={business} categoryLabel={categoryLabel} imageUrl={imageUrl} />
 }
 
-export default function BusinessProfileShareModal({ business, categoryLabel='', imageUrl:sourceImageUrl='', url='', isOwner=false, open=false, onClose }) {
+export default function BusinessProfileShareModal({ business, categoryLabel='', imageUrl:sourceImageUrl='', url='', isOwner=false, open=false, onClose, onShared }) {
   const cardRef = useRef(null)
   const previewUrlRef = useRef('')
   const busyRef = useRef(false)
@@ -252,6 +252,7 @@ export default function BusinessProfileShareModal({ business, categoryLabel='', 
         await copyBusinessLink()
         return
       }
+      onShared?.()
       closeModal()
     } catch (error) {
       if (error?.name !== 'AbortError') toast.error('No se pudo compartir el negocio')
