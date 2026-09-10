@@ -39,6 +39,7 @@ import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { BUSINESS_ROTATION_INTERVAL_MS, getBusinessPromotionDisplayLabel, getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import { getThumbnailImageUrl, handleThumbnailImageError, resolveImageUrl } from '../lib/imageVariants'
 import { isNationwideLocation, matchesCantonOrNationwide } from '../lib/locationScope'
+import { markShareCardShared } from '../lib/shareCardReminder'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import { rotateItems } from '../lib/rotation'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
@@ -1207,6 +1208,9 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
         isOwner={isBusinessOwner}
         open={shareCardOpen}
         onClose={() => setShareCardOpen(false)}
+        onShared={() => {
+          if (isBusinessOwner) markShareCardShared('business', user?.id, business.id)
+        }}
       />
 
       <Modal

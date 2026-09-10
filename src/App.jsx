@@ -30,6 +30,7 @@ import OfflineNotice from './components/OfflineNotice'
 import SearchResolutionPrompt from './components/SearchResolutionPrompt'
 import LatidoUsefulnessBanner from './components/LatidoUsefulnessBanner'
 import InAppNotificationAlert from './components/InAppNotificationAlert'
+import ShareCardReminder from './components/ShareCardReminder'
 import { AppNotificationsProvider } from './hooks/useAppNotifications'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
@@ -818,6 +819,7 @@ export default function App() {
           <ScrollToTop />
           <OfflineNotice />
           <InAppNotificationAlert />
+          <ShareCardReminder />
           <Toaster
             position="top-center"
             toastOptions={{
