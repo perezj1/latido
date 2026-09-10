@@ -87,9 +87,9 @@ function SimpleCreatorShareCard({ creator, avatarUrl }) {
       </header>
 
       <main style={{ position:'relative', display:'flex', height:450, alignItems:'center', flexDirection:'column', textAlign:'center' }}>
-        <div style={{ position:'relative', width:146, height:146, flex:'0 0 146px', marginTop:10, display:'grid', placeItems:'center', border:'6px solid #fff', borderRadius:'50%', background:`linear-gradient(145deg, ${creator?.accent || '#2563EB'}, #0F172A)`, color:'#fff', boxShadow:'0 10px 28px rgba(15,23,42,0.17)', fontSize:42, fontWeight:900, overflow:'hidden' }}>
+        <div style={{ position:'relative', width:146, height:146, flex:'0 0 146px', marginTop:10, display:'grid', placeItems:'center', border:'6px solid #fff', borderRadius:'50%', background:avatarUrl ? '#fff' : `linear-gradient(145deg, ${creator?.accent || '#2563EB'}, #0F172A)`, color:'#fff', boxShadow:'0 10px 28px rgba(15,23,42,0.17)', fontSize:42, fontWeight:900, overflow:'hidden' }}>
           {avatarUrl ? (
-            <img src={avatarUrl} alt="" style={{ display:'block', width:'100%', height:'100%', objectFit:'cover', objectPosition:'center' }} />
+            <img src={avatarUrl} alt="" style={{ display:'block', width:'102%', height:'102%', maxWidth:'none', objectFit:'cover', objectPosition:'center' }} />
           ) : creatorInitials(name)}
         </div>
 
@@ -126,9 +126,9 @@ function LatidoCreatorShareCard({ creator, avatarUrl, backgroundUrl }) {
       </header>
 
       <main style={{ position:'absolute', zIndex:1, top:67, right:34, bottom:64, left:34, display:'flex', alignItems:'center', flexDirection:'column', textAlign:'center' }}>
-        <div style={{ position:'relative', width:128, height:128, flex:'0 0 128px', display:'grid', placeItems:'center', border:'5px solid #fff', borderRadius:'50%', background:`linear-gradient(145deg, ${creator?.accent || '#2563EB'}, #0F172A)`, color:'#fff', boxShadow:'0 9px 25px rgba(15,23,42,0.18)', fontSize:38, fontWeight:900, overflow:'hidden' }}>
+        <div style={{ position:'relative', width:128, height:128, flex:'0 0 128px', display:'grid', placeItems:'center', border:'5px solid #fff', borderRadius:'50%', background:avatarUrl ? '#fff' : `linear-gradient(145deg, ${creator?.accent || '#2563EB'}, #0F172A)`, color:'#fff', boxShadow:'0 9px 25px rgba(15,23,42,0.18)', fontSize:38, fontWeight:900, overflow:'hidden' }}>
           {avatarUrl ? (
-            <img src={avatarUrl} alt="" style={{ display:'block', width:'100%', height:'100%', objectFit:'cover', objectPosition:'center' }} />
+            <img src={avatarUrl} alt="" style={{ display:'block', width:'102%', height:'102%', maxWidth:'none', objectFit:'cover', objectPosition:'center' }} />
           ) : creatorInitials(name)}
         </div>
 
