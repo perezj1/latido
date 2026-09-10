@@ -296,7 +296,7 @@ export default function CreatorProfileShareButton({ creator, isOwner=false }) {
                 </h2>
                 <p style={{ margin:'3px 0 0', color:'#64748B', fontFamily:PP, fontSize:10.5, fontWeight:600 }}>
                   {isOwner
-                    ? 'Comparte en tus redes tu participación en la comunidad hispanohablante en Suiza.'
+                    ? 'Comparte en redes tu participación en la comunidad hispanohablante en Suiza.'
                     : 'Comparte el perfil de este creador para seguir apoyando a la comunidad.'}
                 </p>
               </div>
@@ -319,7 +319,7 @@ export default function CreatorProfileShareButton({ creator, isOwner=false }) {
 
             <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'center', gap:26, marginTop:13, padding:'15px 14px 13px', border:'1px solid #E2E8F0', borderRadius:19, background:'#F8FAFC' }}>
               <div style={{ width:72, display:'flex', alignItems:'center', flexDirection:'column', gap:7 }}>
-                <button type="button" onClick={shareCard} aria-label="Compartir perfil" style={{ width:54, height:54, display:'grid', placeItems:'center', border:'1px solid #BFDBFE', borderRadius:'50%', background:'#EFF6FF', color:'#2563EB', fontSize:23, cursor:'pointer', boxShadow:'0 6px 16px rgba(37,99,235,0.12)' }}>📤</button>
+                <button type="button" onClick={shareCard} aria-label="Compartir perfil" style={{ width:54, height:54, display:'grid', placeItems:'center', border:'1px solid #BFDBFE', borderRadius:'50%', background:'#fff', color:'#2563EB', fontSize:23, cursor:'pointer', boxShadow:'0 6px 16px rgba(37,99,235,0.12)' }}>📤</button>
                 <span style={{ color:'#334155', fontFamily:PP, fontSize:10.5, lineHeight:1.25, fontWeight:700, textAlign:'center' }}>Compartir</span>
               </div>
               <div style={{ width:72, display:'flex', alignItems:'center', flexDirection:'column', gap:7 }}>
