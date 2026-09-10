@@ -97,7 +97,7 @@ function SimpleBusinessShareCard({ business, categoryLabel, imageUrl }) {
         <div style={{ width:'100%', maxWidth:440, boxSizing:'border-box', marginTop:11, padding:'11px 18px', borderRadius:17, background:'#EAF2FF', color:'#334155', fontSize:14, lineHeight:1.4, fontWeight:650 }}>{description}</div>
         <div style={{ maxWidth:460, marginTop:12, fontSize:13, lineHeight:1.45, fontWeight:700 }}>
           <span style={{ display:'block', color:'#2563EB', fontSize:14, fontWeight:800 }}>Apoyando a los negocios de nuestra comunidad en Suiza.</span>
-          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>Latido crece contigo. · latido.ch</span>
+          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>latido.ch</span>
         </div>
       </main>
     </div>
@@ -122,7 +122,7 @@ function LatidoBusinessShareCard({ business, categoryLabel, imageUrl, background
         <div style={{ width:'100%', maxWidth:440, boxSizing:'border-box', marginTop:10, padding:'10px 18px', border:'1px solid rgba(219,234,254,0.9)', borderRadius:17, background:'rgba(234,242,255,0.9)', color:'#334155', fontSize:13.5, lineHeight:1.38, fontWeight:650 }}>{description}</div>
         <div style={{ width:'100%', maxWidth:465, marginTop:10, fontSize:13, lineHeight:1.45, fontWeight:700 }}>
           <span style={{ display:'block', color:'#2563EB', fontSize:14, fontWeight:800 }}>Apoyando a los negocios de nuestra comunidad en Suiza.</span>
-          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>Latido crece contigo. · latido.ch</span>
+          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>latido.ch</span>
         </div>
       </main>
     </div>

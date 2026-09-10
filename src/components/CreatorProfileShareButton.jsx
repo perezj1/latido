@@ -105,8 +105,8 @@ function SimpleCreatorShareCard({ creator, avatarUrl }) {
         </div>
 
         <div style={{ maxWidth:460, marginTop:18, fontSize:14.5, lineHeight:1.55, fontWeight:700 }}>
-          <span style={{ display:'block', color:'#2563EB', fontSize:15.5, fontWeight:800 }}>Juntos hacemos crecer la comunidad hispanohablante en Suiza.</span>
-          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>Latido crece contigo. · latido.ch</span>
+          <span style={{ display:'block', color:'#2563EB', fontSize:13.5, fontWeight:800, whiteSpace:'nowrap' }}>Juntos hacemos crecer la comunidad hispanohablante en Suiza.</span>
+          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>latido.ch</span>
         </div>
       </main>
     </div>
@@ -144,8 +144,8 @@ function LatidoCreatorShareCard({ creator, avatarUrl, backgroundUrl }) {
         </div>
 
         <div style={{ width:'100%', maxWidth:465, marginTop:15, fontSize:13.5, lineHeight:1.5, fontWeight:700 }}>
-          <span style={{ display:'block', color:'#2563EB', fontSize:14.5, fontWeight:800 }}>Juntos hacemos crecer la comunidad hispanohablante en Suiza.</span>
-          <span style={{ display:'block', marginTop:3, color:'#64748B' }}>Latido crece contigo. · latido.ch</span>
+          <span style={{ display:'block', color:'#2563EB', fontSize:13.5, fontWeight:800, whiteSpace:'nowrap' }}>Juntos hacemos crecer la comunidad hispanohablante en Suiza.</span>
+          <span style={{ display:'block', marginTop:3, color:'#64748B' }}>latido.ch</span>
         </div>
       </main>
     </div>
