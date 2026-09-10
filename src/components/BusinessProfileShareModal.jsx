@@ -97,7 +97,7 @@ function SimpleBusinessShareCard({ business, categoryLabel, imageUrl }) {
         <div style={{ width:'100%', maxWidth:440, boxSizing:'border-box', marginTop:11, padding:'11px 18px', borderRadius:17, background:'#EAF2FF', color:'#334155', fontSize:14, lineHeight:1.4, fontWeight:650 }}>{description}</div>
         <div style={{ maxWidth:460, marginTop:12, fontSize:13, lineHeight:1.45, fontWeight:700 }}>
           <span style={{ display:'block', color:'#2563EB', fontSize:14, fontWeight:800 }}>Apoyando a los negocios de nuestra comunidad en Suiza.</span>
-          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>Somos parte de Latido · latido.ch</span>
+          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>Latido crece contigo. · latido.ch</span>
         </div>
       </main>
     </div>
@@ -122,7 +122,7 @@ function LatidoBusinessShareCard({ business, categoryLabel, imageUrl, background
         <div style={{ width:'100%', maxWidth:440, boxSizing:'border-box', marginTop:10, padding:'10px 18px', border:'1px solid rgba(219,234,254,0.9)', borderRadius:17, background:'rgba(234,242,255,0.9)', color:'#334155', fontSize:13.5, lineHeight:1.38, fontWeight:650 }}>{description}</div>
         <div style={{ width:'100%', maxWidth:465, marginTop:10, fontSize:13, lineHeight:1.45, fontWeight:700 }}>
           <span style={{ display:'block', color:'#2563EB', fontSize:14, fontWeight:800 }}>Apoyando a los negocios de nuestra comunidad en Suiza.</span>
-          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>Somos parte de Latido · latido.ch</span>
+          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>Latido crece contigo. · latido.ch</span>
         </div>
       </main>
     </div>
@@ -301,9 +301,9 @@ export default function BusinessProfileShareModal({ business, categoryLabel='', 
                 ['📤', 'Compartir', shareCard, 'Compartir negocio'],
                 ['🔗', 'Copiar enlace', copyBusinessLink, 'Copiar enlace del negocio'],
                 ['⬇️', 'Descargar', downloadCard, 'Descargar tarjeta PNG'],
-              ].map(([icon, label, action, ariaLabel], index) => (
+              ].map(([icon, label, action, ariaLabel]) => (
                 <div key={label} style={{ width:72, display:'flex', alignItems:'center', flexDirection:'column', gap:7 }}>
-                  <button type="button" onClick={action} disabled={!preview || busy} aria-label={ariaLabel} style={{ width:54, height:54, display:'grid', placeItems:'center', border:index === 0 ? '1px solid #BFDBFE' : '1px solid #E2E8F0', borderRadius:'50%', background:'#fff', color:index === 0 ? '#2563EB' : '#475569', fontSize:23, cursor:!preview || busy ? 'wait' : 'pointer', opacity:!preview || busy ? 0.6 : 1, boxShadow:index === 0 ? '0 6px 16px rgba(37,99,235,0.12)' : '0 6px 16px rgba(15,23,42,0.08)' }}>{icon}</button>
+                  <button type="button" onClick={action} disabled={!preview || busy} aria-label={ariaLabel} style={{ width:54, height:54, display:'grid', placeItems:'center', border:'1px solid #E2E8F0', borderRadius:'50%', background:'#fff', color:'#475569', fontSize:23, cursor:!preview || busy ? 'wait' : 'pointer', opacity:!preview || busy ? 0.6 : 1, boxShadow:'0 6px 16px rgba(15,23,42,0.08)' }}>{icon}</button>
                   <span style={{ color:'#334155', fontFamily:PP, fontSize:10.5, lineHeight:1.25, fontWeight:700, textAlign:'center' }}>{label}</span>
                 </div>
               ))}

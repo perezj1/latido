@@ -106,7 +106,7 @@ function SimpleCreatorShareCard({ creator, avatarUrl }) {
 
         <div style={{ maxWidth:460, marginTop:18, fontSize:14.5, lineHeight:1.55, fontWeight:700 }}>
           <span style={{ display:'block', color:'#2563EB', fontSize:15.5, fontWeight:800 }}>Juntos hacemos crecer la comunidad hispanohablante en Suiza.</span>
-          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>Somos parte de Latido · latido.ch</span>
+          <span style={{ display:'block', marginTop:2, color:'#64748B' }}>Latido crece contigo. · latido.ch</span>
         </div>
       </main>
     </div>
@@ -145,7 +145,7 @@ function LatidoCreatorShareCard({ creator, avatarUrl, backgroundUrl }) {
 
         <div style={{ width:'100%', maxWidth:465, marginTop:15, fontSize:13.5, lineHeight:1.5, fontWeight:700 }}>
           <span style={{ display:'block', color:'#2563EB', fontSize:14.5, fontWeight:800 }}>Juntos hacemos crecer la comunidad hispanohablante en Suiza.</span>
-          <span style={{ display:'block', marginTop:3, color:'#64748B' }}>Somos parte de Latido · latido.ch</span>
+          <span style={{ display:'block', marginTop:3, color:'#64748B' }}>Latido crece contigo. · latido.ch</span>
         </div>
       </main>
     </div>
@@ -338,7 +338,7 @@ export default function CreatorProfileShareButton({ creator, isOwner=false, show
 
             <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'center', gap:26, marginTop:13, padding:'15px 14px 13px', border:'1px solid #E2E8F0', borderRadius:19, background:'#F8FAFC' }}>
               <div style={{ width:72, display:'flex', alignItems:'center', flexDirection:'column', gap:7 }}>
-                <button type="button" onClick={shareCard} aria-label="Compartir perfil" style={{ width:54, height:54, display:'grid', placeItems:'center', border:'1px solid #BFDBFE', borderRadius:'50%', background:'#fff', color:'#2563EB', fontSize:23, cursor:'pointer', boxShadow:'0 6px 16px rgba(37,99,235,0.12)' }}>📤</button>
+                <button type="button" onClick={shareCard} aria-label="Compartir perfil" style={{ width:54, height:54, display:'grid', placeItems:'center', border:'1px solid #E2E8F0', borderRadius:'50%', background:'#fff', color:'#475569', fontSize:23, cursor:'pointer', boxShadow:'0 6px 16px rgba(15,23,42,0.08)' }}>📤</button>
                 <span style={{ color:'#334155', fontFamily:PP, fontSize:10.5, lineHeight:1.25, fontWeight:700, textAlign:'center' }}>Compartir</span>
               </div>
               <div style={{ width:72, display:'flex', alignItems:'center', flexDirection:'column', gap:7 }}>
