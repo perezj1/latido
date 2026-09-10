@@ -178,7 +178,7 @@ export default function DetailActionBar({
                 <button
                   type="button"
                   role="menuitem"
-                  aria-label={share.ariaLabel || 'Enviar'}
+                  aria-label={share.ariaLabel || 'Compartir'}
                   onClick={event => {
                     event.stopPropagation()
                     setMenuOpen(false)
@@ -187,13 +187,13 @@ export default function DetailActionBar({
                   style={MENU_ITEM_STYLE}
                 >
                   <MenuIcon>📤</MenuIcon>
-                  <span>{share.label || 'Enviar'}</span>
+                  <span>{share.label || 'Compartir'}</span>
                 </button>
               ) : (
                 <ShareButton
                   {...share}
-                  ariaLabel={share.ariaLabel || 'Enviar'}
-                  label="Enviar"
+                  ariaLabel={share.ariaLabel || 'Compartir'}
+                  label="Compartir"
                   icon={<MenuIcon>📤</MenuIcon>}
                   style={MENU_ITEM_STYLE}
                 />
