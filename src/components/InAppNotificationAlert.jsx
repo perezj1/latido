@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppNotifications } from '../hooks/useAppNotifications'
 
 const ALERT_DURATION_MS = 5000
@@ -7,6 +7,7 @@ const SWIPE_THRESHOLD_PX = 38
 
 export default function InAppNotificationAlert() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { groups, markSeen, markGroupRead } = useAppNotifications()
   const [queue, setQueue] = useState([])
   const [dragOffset, setDragOffset] = useState(0)
@@ -71,7 +72,7 @@ export default function InAppNotificationAlert() {
     return `Quedan ${queue.length} alertas`
   }, [queue.length])
 
-  if (!current) return null
+  if (!current || location.pathname.startsWith('/publicar/punto-hispano/')) return null
 
   const handlePointerDown = event => {
     if (leaving) return

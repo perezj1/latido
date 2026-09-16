@@ -25,6 +25,7 @@ import { INTEREST_OPTIONS, normalizeInterestIds } from '../lib/interests'
 import { CREATOR_PLATFORMS, CREATOR_TOPICS } from '../lib/creators'
 import { AdminIcon } from '../components/admin/AdminIcon'
 import PuntoHispanoContacts from '../components/admin/PuntoHispanoContacts'
+import PuntoHispanoPublishLinks from '../components/admin/PuntoHispanoPublishLinks'
 import '../styles/admin.css'
 
 // ── Lenguaje visual del panel ──────────────────────────────────
@@ -5750,7 +5751,12 @@ export default function Admin() {
       )}
 
       {/* ── Partners ───────────────────────────────────── */}
-      {tab === 'partners' && <PuntoHispanoContacts />}
+      {tab === 'partners' && (
+        <div style={{ display:'grid', gap:14, marginBottom:14 }}>
+          <PuntoHispanoPublishLinks />
+          <PuntoHispanoContacts />
+        </div>
+      )}
       {tab === 'partners' && isTabDataReady('partners') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {analyticsUnavailable && (

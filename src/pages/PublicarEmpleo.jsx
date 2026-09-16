@@ -57,9 +57,10 @@ const createInitialForm = () => ({
   employmentProfile:createEmptyEmploymentProfile(), profileVisibility:'public',
 })
 
-export default function PublicarEmpleo() {
+export default function PublicarEmpleo({ sharedPublishToken = '', sharedPublisherName = 'Punto Hispano', onSharedExit }) {
   const { isLoggedIn, user, isBanned, bannedReason } = useAuth()
   const navigate = useNavigate()
+  const isSharedPublisher = Boolean(sharedPublishToken)
   const [searchParams] = useSearchParams()
   const presetIntent = searchParams.get('intent') || ''
   const [step, setStep] = useState(0)
@@ -69,14 +70,18 @@ export default function PublicarEmpleo() {
   const [done, setDone] = useState(false)
   const [publishedForReview, setPublishedForReview] = useState(false)
   const [pushModalOpen, setPushModalOpen] = useState(false)
-  const [form, setForm] = useState(createInitialForm)
+  const [form, setForm] = useState(() => ({
+    ...createInitialForm(),
+    jobIntent:isSharedPublisher ? 'ofrece' : '',
+  }))
   const [errors, setErrors] = useState({})
   useEffect(() => {
+    if (isSharedPublisher) return
     if (!JOB_INTENTS.some(intent => intent.id === presetIntent)) return
     setForm(current => current.jobIntent ? current : { ...current, jobIntent:presetIntent })
-  }, [presetIntent])
+  }, [isSharedPublisher, presetIntent])
   useEffect(() => {
-    if (!user?.id) return undefined
+    if (isSharedPublisher || !user?.id) return undefined
 
     let cancelled = false
     const loadEmploymentProfile = async () => {
@@ -101,7 +106,7 @@ export default function PublicarEmpleo() {
 
     loadEmploymentProfile()
     return () => { cancelled = true }
-  }, [user?.id])
+  }, [isSharedPublisher, user?.id])
   const errorTextStyle = { fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'6px 2px 0', lineHeight:1.45 }
   const clearFieldError = key => setErrors(prev => {
     if (!prev[key]) return prev
@@ -172,7 +177,7 @@ export default function PublicarEmpleo() {
     return `CHF ${value}`
   }
 
-  if (!isLoggedIn) return (
+  if (!isLoggedIn && !isSharedPublisher) return (
     <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
@@ -186,7 +191,7 @@ export default function PublicarEmpleo() {
     </div>
   )
 
-  if (isBanned) return (
+  if (isBanned && !isSharedPublisher) return (
     <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Cuenta suspendida</h1>
@@ -214,11 +219,17 @@ export default function PublicarEmpleo() {
             ? 'Tu búsqueda ya está visible para la comunidad. Las personas interesadas podrán escribirte por mensaje dentro de Latido.'
             : 'Tu oferta ya está visible para miles de personas en Suiza. Los candidatos te escribirán por mensaje dentro de Latido.'}
       </p>
-      <Btn onClick={() => navigate(`/tablon?cat=empleo&jobIntent=${encodeURIComponent(form.jobIntent || 'ofrece')}`)}>
-        {isSeekingJob ? 'Ver solicitudes de empleo →' : 'Ver ofertas de empleo →'}
-      </Btn>
+      {!isSharedPublisher && (
+        <Btn onClick={() => navigate(`/tablon?cat=empleo&jobIntent=${encodeURIComponent(form.jobIntent || 'ofrece')}`)}>
+          {isSeekingJob ? 'Ver solicitudes de empleo →' : 'Ver ofertas de empleo →'}
+        </Btn>
+      )}
       <button onClick={() => {
-        if (isSeekingJob) {
+        if (isSharedPublisher && onSharedExit) {
+          onSharedExit()
+          return
+        }
+        if (!isSharedPublisher && isSeekingJob) {
           navigate('/perfil')
           return
         }
@@ -226,9 +237,14 @@ export default function PublicarEmpleo() {
         setPublishedForReview(false)
         setErrors({})
         setStep(0)
-        setForm({ ...createInitialForm(), jobIntent:JOB_INTENTS.some(intent => intent.id === presetIntent) ? presetIntent : '' })
+        setForm({
+          ...createInitialForm(),
+          jobIntent:isSharedPublisher
+            ? 'ofrece'
+            : JOB_INTENTS.some(intent => intent.id === presetIntent) ? presetIntent : '',
+        })
       }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
-        {isSeekingJob ? 'Gestionar mi solicitud de empleo' : 'Publicar otra oferta'}
+        {isSharedPublisher ? 'Crear otra publicación' : isSeekingJob ? 'Gestionar mi solicitud de empleo' : 'Publicar otra oferta'}
       </button>
     </div>
   )
@@ -239,7 +255,7 @@ export default function PublicarEmpleo() {
     if (!form.sector) { toast.error('Elige el sector del empleo'); return }
     if (!form.title || !form.canton) { toast.error('Completa el título y el cantón'); return }
 
-    if (form.jobIntent === 'busca') {
+    if (form.jobIntent === 'busca' && !isSharedPublisher) {
       const { data: existingProfiles, error: existingProfileError } = await supabase
         .from('jobs')
         .select('id,title,active,expires_at,lifecycle_status')
@@ -313,13 +329,26 @@ export default function PublicarEmpleo() {
         lifecycle_status:'active',
       }
 
-      const { error } = await insertWithOptionalColumnsFallback({
-        table: 'jobs',
-        payload,
-        optionalColumns: OPTIONAL_JOB_INSERT_COLUMNS,
-      })
-      if (error) throw error
-      if (isSeekingJob) {
+      if (isSharedPublisher) {
+        const { data, error } = await supabase.rpc('publish_punto_hispano_job', {
+          p_link_token:sharedPublishToken,
+          p_payload:{
+            ...payload,
+            needs_review:needsReview,
+            matched_term:moderation.matchedTerm || '',
+          },
+        })
+        if (error) throw error
+        setPublishedForReview(data?.published_for_review === true)
+      } else {
+        const { error } = await insertWithOptionalColumnsFallback({
+          table: 'jobs',
+          payload,
+          optionalColumns: OPTIONAL_JOB_INSERT_COLUMNS,
+        })
+        if (error) throw error
+      }
+      if (isSeekingJob && !isSharedPublisher) {
         const profilePayload = {
           employment_profile:employmentProfile,
           employment_level:employmentLevel?.id || null,
@@ -342,7 +371,7 @@ export default function PublicarEmpleo() {
           toast('La solicitud se publicó, pero no pudimos guardar el perfil para reutilizarlo.')
         }
       }
-      if (needsReview && jobId) {
+      if (needsReview && jobId && !isSharedPublisher) {
         await addModerationQueueItem({
           contentType: 'job',
           contentId: jobId,
@@ -353,18 +382,27 @@ export default function PublicarEmpleo() {
           metadata: { job_intent: form.jobIntent, sector: form.sector, type: form.jobType },
         })
       }
-      trackPublicationCreated({
-        user_id:user?.id,
-        contentType:'job',
-        category:form.sector,
-        intent:form.jobIntent,
-        needsReview,
-      })
-      setPublishedForReview(needsReview)
+      if (!isSharedPublisher) {
+        trackPublicationCreated({
+          user_id:user?.id,
+          contentType:'job',
+          category:form.sector,
+          intent:form.jobIntent,
+          needsReview,
+        })
+        setPublishedForReview(needsReview)
+      }
       setDone(true)
     } catch (error) {
       console.error('Publish job failed:', error)
-      if (String(error?.message || '').includes('ACTIVE_JOB_PROFILE_EXISTS')) {
+      const errorMessage = String(error?.message || '')
+      if (isSharedPublisher && errorMessage.includes('INVALID_OR_REVOKED_LINK')) {
+        toast.error('Esta URL ya no es válida. Solicita un enlace nuevo al administrador.')
+      } else if (isSharedPublisher && errorMessage.includes('LINK_RATE_LIMIT')) {
+        toast.error('Se alcanzó el límite temporal de publicaciones. Inténtalo de nuevo más tarde.')
+      } else if (isSharedPublisher && errorMessage.includes('ACTIVE_JOB_PROFILE_EXISTS')) {
+        toast.error('Punto Hispano ya tiene una solicitud de empleo activa.')
+      } else if (errorMessage.includes('ACTIVE_JOB_PROFILE_EXISTS')) {
         toast.error('Ya tienes una solicitud de empleo activa. Puedes editarla o cerrarla desde tu perfil.')
         navigate('/perfil')
       } else if (isLikelySchemaMismatchError(error, 'jobs')) {
@@ -382,7 +420,11 @@ export default function PublicarEmpleo() {
     if (!file) return
     setUploadingLogo(true)
     try {
-      const publicUrl = await uploadPublicationImage({ file, userId: user?.id, folder:'jobs' })
+      const publicUrl = await uploadPublicationImage({
+        file,
+        userId:isSharedPublisher ? sharedPublishToken : user?.id,
+        folder:isSharedPublisher ? 'punto-hispano-jobs' : 'jobs',
+      })
       s('logoUrl', publicUrl)
       toast.success('Imagen subida')
     } catch (error) {
@@ -395,6 +437,10 @@ export default function PublicarEmpleo() {
   const requestPublish = async () => {
     if (loading) return
     if (!validateBeforePublish()) return
+    if (isSharedPublisher) {
+      await handleSubmit()
+      return
+    }
     let subscribed = false
     try {
       const status = await getPushStatus()
@@ -415,36 +461,55 @@ export default function PublicarEmpleo() {
 
   return (
     <div className="latido-page-container latido-page-container--form" style={{ paddingTop:32, paddingBottom:170 }}>
-      <PostPublishPushModal
-        open={pushModalOpen}
-        user={user}
-        userCanton={form.canton}
-        onActivated={handleSubmit}
-        onComplete={() => setPushModalOpen(false)}
-      />
+      {!isSharedPublisher && (
+        <PostPublishPushModal
+          open={pushModalOpen}
+          user={user}
+          userCanton={form.canton}
+          onActivated={handleSubmit}
+          onComplete={() => setPushModalOpen(false)}
+        />
+      )}
+      {isSharedPublisher && (
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18, padding:'11px 13px', borderRadius:14, background:'#EFF6FF', border:'1px solid #BFDBFE' }}>
+          <span style={{ fontSize:24 }} aria-hidden="true">💼</span>
+          <div>
+            <strong style={{ display:'block', fontFamily:PP, fontSize:12, color:'#1D4ED8' }}>Publicar como {sharedPublisherName}</strong>
+            <span style={{ display:'block', fontFamily:PP, fontSize:10.5, color:'#475569', marginTop:2 }}>El empleo quedará asociado automáticamente a la cuenta de Punto Hispano.</span>
+          </div>
+        </div>
+      )}
       <ProgressBar step={step} total={STEPS.length} />
-      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>{STEPS[step].title}</h1>
-      <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:24 }}>{STEPS[step].sub}</p>
+      <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>
+        {isSharedPublisher && step === 0 ? '¿En qué sector está la oferta?' : STEPS[step].title}
+      </h1>
+      <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:24 }}>
+        {isSharedPublisher && step === 0 ? 'Elige el sector que mejor describe la oferta de empleo' : STEPS[step].sub}
+      </p>
 
       {/* Step 0 — Intención y sector */}
       {step === 0 && (
         <>
-          <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE PUBLICACIÓN</p>
-          <div data-error-field="jobIntent" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(210px, 1fr))', gap:10, marginBottom:errors.jobIntent ? 6 : 18 }}>
-            {JOB_INTENTS.map(intent => (
-              <button key={intent.id} onClick={() => s('jobIntent', intent.id)}
-                style={{ background:form.jobIntent===intent.id?C.primaryLight:'#fff', borderRadius:16, padding:'12px 14px', minHeight:78, display:'flex', alignItems:'center', gap:12, border:`2px solid ${form.jobIntent===intent.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
-                <span style={{ fontSize:26, lineHeight:1 }}>{intent.emoji}</span>
-                <span style={{ display:'block' }}>
-                  <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13.5, color:form.jobIntent===intent.id?C.primary:C.text, margin:'0 0 3px', lineHeight:1.25 }}>{intent.label}</span>
-                  <span style={{ display:'block', fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.35 }}>{intent.desc}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-          {errors.jobIntent && <p style={{ ...errorTextStyle, marginBottom:18 }}>{errors.jobIntent}</p>}
+          {!isSharedPublisher && (
+            <>
+              <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:10 }}>TIPO DE PUBLICACIÓN</p>
+              <div data-error-field="jobIntent" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(210px, 1fr))', gap:10, marginBottom:errors.jobIntent ? 6 : 18 }}>
+                {JOB_INTENTS.map(intent => (
+                  <button key={intent.id} onClick={() => s('jobIntent', intent.id)}
+                    style={{ background:form.jobIntent===intent.id?C.primaryLight:'#fff', borderRadius:16, padding:'12px 14px', minHeight:78, display:'flex', alignItems:'center', gap:12, border:`2px solid ${form.jobIntent===intent.id?C.primary:C.border}`, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
+                    <span style={{ fontSize:26, lineHeight:1 }}>{intent.emoji}</span>
+                    <span style={{ display:'block' }}>
+                      <span style={{ display:'block', fontFamily:PP, fontWeight:800, fontSize:13.5, color:form.jobIntent===intent.id?C.primary:C.text, margin:'0 0 3px', lineHeight:1.25 }}>{intent.label}</span>
+                      <span style={{ display:'block', fontFamily:PP, fontSize:10.5, color:C.light, lineHeight:1.35 }}>{intent.desc}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {errors.jobIntent && <p style={{ ...errorTextStyle, marginBottom:18 }}>{errors.jobIntent}</p>}
+            </>
+          )}
 
-          {isSeekingJob && (
+          {isSeekingJob && !isSharedPublisher && (
             <div style={{ marginBottom:18 }}>
               <SearchBeforePublishNotice
                 kind="job"
@@ -659,7 +724,7 @@ export default function PublicarEmpleo() {
       </p>
       <StickyFormActions>
         {step === 0 ? (
-          <Btn onClick={() => navigate('/tablon?cat=empleo')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}><ChevronLeftIcon size={16} /> Cancelar</Btn>
+          <Btn onClick={() => isSharedPublisher ? (onSharedExit ? onSharedExit() : window.location.reload()) : navigate('/tablon?cat=empleo')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}><ChevronLeftIcon size={16} /> {isSharedPublisher ? 'Atrás' : 'Cancelar'}</Btn>
         ) : (
           <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}><ChevronLeftIcon size={16} /> Atrás</Btn>
         )}

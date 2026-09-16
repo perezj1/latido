@@ -50,6 +50,7 @@ function isRelevantLocation(context, location) {
     !context
     || location.pathname.startsWith('/admin-latido')
     || location.pathname.startsWith('/auth')
+    || location.pathname.startsWith('/publicar/punto-hispano/')
     || location.pathname.startsWith('/reset-password')
   ) return false
   if (context.action_recorded_at) return true

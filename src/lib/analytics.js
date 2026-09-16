@@ -5,6 +5,7 @@ import { hasAnalyticsConsent } from './cookieConsent'
 const SESSION_KEY = 'latido_analytics_session_id'
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 const DYNAMIC_ROUTES = [
+  [/^\/publicar\/punto-hispano\/[^/]+\/?$/, '/publicar/punto-hispano/[token]'],
   [/^\/anuncios\/[^/]+\/?$/, '/anuncios/[adSlug]'],
   [/^\/empleos\/[^/]+\/?$/, '/empleos/[jobSlug]'],
   [/^\/negocios\/[^/]+\/?$/, '/negocios/[businessSlug]'],

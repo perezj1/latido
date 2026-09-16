@@ -39,6 +39,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Explorar = lazy(() => import('./pages/Explorar'))
 const Tablon = lazy(() => import('./pages/Tablon'))
 const Publicar = lazy(() => import('./pages/Publicar'))
+const PuntoHispanoPublicar = lazy(() => import('./pages/PuntoHispanoPublicar'))
 const Comunidades = lazy(() => import('./pages/Comunidades'))
 const Colaboraciones = lazy(() => import('./pages/Colaboraciones'))
 const Guias = lazy(() => import('./pages/Guias'))
@@ -500,8 +501,9 @@ function AppShell() {
   const isPartnerServices = pathname === '/servicios-suiza'
   const isVirtus360Services = pathname === '/servicios-virtus360'
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
+  const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
-  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password'
+  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password' || isPuntoHispanoPublisher
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -555,7 +557,7 @@ function AppShell() {
 
     trackAnalyticsEvent('page_view', {
       user_id: user?.id || null,
-      path: location.pathname,
+      path: getAnalyticsRoute(location.pathname),
       search: location.search,
       metadata: {
         is_logged_in: Boolean(isLoggedIn),
@@ -575,7 +577,7 @@ function AppShell() {
     return () => window.removeEventListener('latido:messages-chat-open', sync)
   }, [pathname])
 
-  if (isLoggedIn && !isAdmin && needsProfileOnboarding && pathname !== '/auth/onboarding') {
+  if (isLoggedIn && !isAdmin && needsProfileOnboarding && pathname !== '/auth/onboarding' && !isPuntoHispanoPublisher) {
     const nextPath = pathname === '/auth'
       ? getSafeNextPath(location.search)
       : `${location.pathname}${location.search}`
@@ -758,6 +760,7 @@ function AppShell() {
             <Route path="/anuncios/:adSlug" element={<Tablon />} />
             <Route path="/empleos/:jobSlug" element={<Tablon />} />
             <Route path="/publicar" element={<ProtectedRoute><Publicar /></ProtectedRoute>} />
+            <Route path="/publicar/punto-hispano/:linkToken" element={<PuntoHispanoPublicar />} />
             <Route path="/comunidades" element={<Comunidades />} />
             <Route path="/colaboraciones" element={<Colaboraciones />} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />

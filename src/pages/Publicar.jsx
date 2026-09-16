@@ -95,10 +95,11 @@ function uniqueUrls(urls) {
   return Array.from(new Set((urls || []).filter(Boolean)))
 }
 
-export default function Publicar() {
+export default function Publicar({ sharedPublishToken = '', sharedPublisherName = 'Punto Hispano', onSharedExit }) {
   const { isLoggedIn, user, isBanned, bannedReason } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const isSharedPublisher = Boolean(sharedPublishToken)
   const presetCat = normalizeAdCat(searchParams.get('cat') || '')
   const presetIntent = searchParams.get('intent') || ''
   const presetHandledRef = useRef(false)
@@ -285,7 +286,7 @@ export default function Publicar() {
     return `CHF ${value}`
   }
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn && !isSharedPublisher) {
     return (
       <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
         <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
@@ -318,7 +319,7 @@ export default function Publicar() {
     )
   }
 
-  if (isBanned) {
+  if (isBanned && !isSharedPublisher) {
     return (
       <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
         <div style={{ fontSize:52, marginBottom:16 }}>⛔</div>
@@ -376,11 +377,17 @@ export default function Publicar() {
           </p>
         </div>
 
-        <Btn onClick={() => navigate(form.cat ? `/tablon?cat=${encodeURIComponent(form.cat)}` : '/tablon')}>Ver en Anuncios →</Btn>
+        {!isSharedPublisher && (
+          <Btn onClick={() => navigate(form.cat ? `/tablon?cat=${encodeURIComponent(form.cat)}` : '/tablon')}>Ver en Anuncios →</Btn>
+        )}
 
         <button
           onClick={() => {
-            if (form.cat === 'vivienda' && form.type === 'busca') {
+            if (isSharedPublisher && onSharedExit) {
+              onSharedExit()
+              return
+            }
+            if (!isSharedPublisher && form.cat === 'vivienda' && form.type === 'busca') {
               navigate('/perfil')
               return
             }
@@ -423,7 +430,9 @@ export default function Publicar() {
             padding:'6px 0'
           }}
         >
-          {form.cat === 'vivienda' && form.type === 'busca'
+          {isSharedPublisher
+            ? 'Crear otra publicación'
+            : form.cat === 'vivienda' && form.type === 'busca'
             ? 'Gestionar mi solicitud'
             : 'Publicar otro anuncio'}
         </button>
@@ -443,7 +452,7 @@ export default function Publicar() {
       return
     }
 
-    if (form.cat === 'vivienda' && resolvedType === 'busca') {
+    if (!isSharedPublisher && form.cat === 'vivienda' && resolvedType === 'busca') {
       const { data: existingRequests, error: existingRequestError } = await supabase
         .from('listings')
         .select('id,title,active,expires_at,lifecycle_status')
@@ -469,7 +478,7 @@ export default function Publicar() {
     setLoading(true)
 
     try {
-      const listingId = globalThis.crypto?.randomUUID?.()
+      let listingId = globalThis.crypto?.randomUUID?.()
       const needsReview = moderation.action === 'review'
       const publishAllSwitzerland = !form.canton
       const finalPrice = getFormattedPrice() || null
@@ -480,11 +489,15 @@ export default function Publicar() {
       const priceAmount = form.priceValue
         ? Number(String(form.priceValue).replace(',', '.'))
         : null
-      const { data: ownProfile } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('id', user?.id)
-        .maybeSingle()
+      let ownProfile = null
+      if (!isSharedPublisher) {
+        const profileResult = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user?.id)
+          .maybeSingle()
+        ownProfile = profileResult.data
+      }
 
       const photoUrls = uniqueUrls([
         form.img_url,
@@ -511,9 +524,11 @@ export default function Publicar() {
         contact_via_app: true,
         contact_phone: null,
         contact_email: null,
-        user_id: user?.id,
+        user_id: isSharedPublisher ? undefined : user?.id,
         active: !needsReview,
-        user_name: ownProfile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
+        user_name: isSharedPublisher
+          ? sharedPublisherName
+          : ownProfile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
         property_type:form.cat === 'vivienda' ? resolvedSub : null,
         available_from:form.cat === 'vivienda' && form.availableFrom ? form.availableFrom : null,
         rooms:form.cat === 'vivienda' && form.rooms ? Number(String(form.rooms).replace(',', '.')) : null,
@@ -524,18 +539,38 @@ export default function Publicar() {
         lifecycle_status:'active',
       }
 
-      const { error, strippedColumns } = await insertWithOptionalColumnsFallback({
-        table: 'listings',
-        payload,
-        optionalColumns: OPTIONAL_AD_INSERT_COLUMNS,
-      })
+      let error = null
+      let strippedColumns = []
+      if (isSharedPublisher) {
+        const sharedResult = await supabase.rpc('publish_punto_hispano_listing', {
+          p_link_token:sharedPublishToken,
+          p_payload:{
+            ...payload,
+            user_id:undefined,
+            user_name:undefined,
+            active:undefined,
+            needs_review:needsReview,
+            matched_term:moderation.matchedTerm || '',
+          },
+        })
+        error = sharedResult.error
+        listingId = sharedResult.data?.id || listingId
+      } else {
+        const insertResult = await insertWithOptionalColumnsFallback({
+          table: 'listings',
+          payload,
+          optionalColumns: OPTIONAL_AD_INSERT_COLUMNS,
+        })
+        error = insertResult.error
+        strippedColumns = insertResult.strippedColumns
+      }
 
       if (error) throw error
       if (strippedColumns?.includes('photo_urls') && photoUrls.length > 1) {
         toast.error('El anuncio se publicó, pero algunas fotos extra no se pudieron guardar.')
       }
 
-      if (needsReview && listingId) {
+      if (!isSharedPublisher && needsReview && listingId) {
         await addModerationQueueItem({
           contentType: 'listing',
           contentId: listingId,
@@ -547,18 +582,25 @@ export default function Publicar() {
         })
       }
 
-      trackPublicationCreated({
-        user_id:user?.id,
-        contentType:'listing',
-        category:form.cat,
-        intent:resolvedType,
-        needsReview,
-      })
+      if (!isSharedPublisher) {
+        trackPublicationCreated({
+          user_id:user?.id,
+          contentType:'listing',
+          category:form.cat,
+          intent:resolvedType,
+          needsReview,
+        })
+      }
       setPublishedForReview(needsReview)
       setDone(true)
     } catch (error) {
       console.error('Publish ad failed:', error)
-      if (String(error?.message || '').includes('ACTIVE_HOUSING_REQUEST_EXISTS')) {
+      const errorMessage = String(error?.message || '')
+      if (errorMessage.includes('INVALID_OR_REVOKED_LINK')) {
+        toast.error('Esta URL ya no está activa. Pide al administrador una URL nueva.')
+      } else if (errorMessage.includes('LINK_RATE_LIMIT')) {
+        toast.error('Esta URL ha alcanzado el límite temporal de publicaciones. Inténtalo dentro de una hora.')
+      } else if (errorMessage.includes('ACTIVE_HOUSING_REQUEST_EXISTS')) {
         toast.error('Ya tienes una solicitud de vivienda activa. Puedes editarla o cerrarla desde tu perfil.')
         navigate('/perfil')
       } else if (isLikelySchemaMismatchError(error, 'ads')) {
@@ -587,8 +629,8 @@ export default function Publicar() {
         const selectedFiles = Array.from(files).slice(0, remainingSlots)
         const uploadedUrls = await uploadPublicationImages({
           files:selectedFiles,
-          userId: user?.id,
-          folder:'ads'
+          userId:isSharedPublisher ? sharedPublishToken : user?.id,
+          folder:isSharedPublisher ? 'punto-hispano' : 'ads'
         })
 
         setForm(prev => {
@@ -608,8 +650,8 @@ export default function Publicar() {
       } else {
         const publicUrl = await uploadPublicationImage({
           file:files[0],
-          userId: user?.id,
-          folder:'ads'
+          userId:isSharedPublisher ? sharedPublishToken : user?.id,
+          folder:isSharedPublisher ? 'punto-hispano' : 'ads'
         })
         setForm(prev => ({ ...prev, img_url:publicUrl, photo_urls:[publicUrl] }))
         toast.success('Imagen subida')
@@ -624,6 +666,10 @@ export default function Publicar() {
   const requestPublish = async () => {
     if (loading) return
     if (!validateBeforePublish()) return
+    if (isSharedPublisher) {
+      await handleSubmit()
+      return
+    }
     let subscribed = false
     try {
       const status = await getPushStatus()
@@ -641,13 +687,24 @@ export default function Publicar() {
 
   return (
     <div className="latido-page-container latido-page-container--form" style={{ paddingTop:32, paddingBottom:170 }}>
-      <PostPublishPushModal
-        open={pushModalOpen}
-        user={user}
-        userCanton={form.canton}
-        onActivated={handleSubmit}
-        onComplete={() => setPushModalOpen(false)}
-      />
+      {!isSharedPublisher && (
+        <PostPublishPushModal
+          open={pushModalOpen}
+          user={user}
+          userCanton={form.canton}
+          onActivated={handleSubmit}
+          onComplete={() => setPushModalOpen(false)}
+        />
+      )}
+      {isSharedPublisher && (
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18, padding:'11px 13px', borderRadius:14, background:'#EFF6FF', border:'1px solid #BFDBFE' }}>
+          <span style={{ fontSize:24 }} aria-hidden="true">📣</span>
+          <div>
+            <strong style={{ display:'block', fontFamily:PP, fontSize:12, color:'#1D4ED8' }}>Publicar como {sharedPublisherName}</strong>
+            <span style={{ display:'block', fontFamily:PP, fontSize:10.5, color:'#475569', marginTop:2 }}>El anuncio quedará asociado automáticamente a la cuenta de Punto Hispano.</span>
+          </div>
+        </div>
+      )}
       <ProgressBar step={step} total={STEPS.length} />
 
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>
@@ -726,7 +783,7 @@ export default function Publicar() {
             </div>
           )}
 
-          {form.type === 'busca' && (
+          {form.type === 'busca' && !isSharedPublisher && (
             <SearchBeforePublishNotice
               kind="ad"
               onSearch={searchBeforePublishing}
@@ -981,7 +1038,7 @@ export default function Publicar() {
 
       <StickyFormActions>
         {step === 0 ? (
-          <Btn onClick={() => navigate('/tablon')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}><ChevronLeftIcon size={16} /> Cancelar</Btn>
+          <Btn onClick={() => isSharedPublisher ? (onSharedExit ? onSharedExit() : window.location.reload()) : navigate('/tablon')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}><ChevronLeftIcon size={16} /> {isSharedPublisher ? 'Atrás' : 'Cancelar'}</Btn>
         ) : (
           <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}><ChevronLeftIcon size={16} /> Atrás</Btn>
         )}

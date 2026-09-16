@@ -25,9 +25,10 @@ const STEPS = [
 const EVENT_TYPES_FORM = EVENTO_TYPES.filter(t => t.id !== '')
 const EVENT_MONTHS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
 
-export default function PublicarEvento() {
+export default function PublicarEvento({ sharedPublishToken = '', sharedPublisherName = 'Punto Hispano', onSharedExit }) {
   const { isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
+  const isSharedPublisher = Boolean(sharedPublishToken)
   const [step, setStep] = useState(0)
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
@@ -100,7 +101,7 @@ export default function PublicarEvento() {
     return false
   }
 
-  if (!isLoggedIn) return (
+  if (!isLoggedIn && !isSharedPublisher) return (
     <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
       <div style={{ fontSize:52, marginBottom:16 }}>🔐</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:10 }}>Necesitas una cuenta</h1>
@@ -123,9 +124,19 @@ export default function PublicarEvento() {
           ? 'Tu evento quedó oculto temporalmente hasta que el equipo lo revise.'
           : 'Tu evento ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
-      <Btn onClick={() => navigate('/comunidades?view=eventos')}>Ver en eventos →</Btn>
-      <button onClick={() => { setDone(false); setPublishedForReview(false); setErrors({}); setStep(0); setForm({ type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' }); }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
-        Publicar otro evento
+      {!isSharedPublisher && <Btn onClick={() => navigate('/comunidades?view=eventos')}>Ver en eventos →</Btn>}
+      <button onClick={() => {
+        if (isSharedPublisher && onSharedExit) {
+          onSharedExit()
+          return
+        }
+        setDone(false)
+        setPublishedForReview(false)
+        setErrors({})
+        setStep(0)
+        setForm({ type:'', title:'', date:'', day:'', month:'', year:'', time:'', price:'', city:'', canton:'', venue:'', desc:'', img_url:'', host:'', link:'' })
+      }} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
+        {isSharedPublisher ? 'Crear otra publicación' : 'Publicar otro evento'}
       </button>
     </div>
   )
@@ -148,7 +159,7 @@ export default function PublicarEvento() {
     try {
       const eventId = globalThis.crypto?.randomUUID?.()
       const needsReview = moderation.action === 'review'
-      const { error } = await supabase.from('events').insert({
+      const payload = {
         ...(eventId ? { id: eventId } : {}),
         type: form.type,
         title: form.title,
@@ -162,13 +173,27 @@ export default function PublicarEvento() {
         venue: form.venue,
         desc: form.desc,
         img_url: form.img_url || null,
-        host: form.host || user?.user_metadata?.name || 'Organizador',
+        host: form.host || (isSharedPublisher ? sharedPublisherName : user?.user_metadata?.name) || 'Organizador',
         link: link || null,
         user_id: user?.id,
         active: !needsReview,
-      })
-      if (error) throw error
-      if (needsReview && eventId) {
+      }
+      if (isSharedPublisher) {
+        const { data, error } = await supabase.rpc('publish_punto_hispano_event', {
+          p_link_token:sharedPublishToken,
+          p_payload:{
+            ...payload,
+            needs_review:needsReview,
+            matched_term:moderation.matchedTerm || '',
+          },
+        })
+        if (error) throw error
+        setPublishedForReview(data?.published_for_review === true)
+      } else {
+        const { error } = await supabase.from('events').insert(payload)
+        if (error) throw error
+      }
+      if (needsReview && eventId && !isSharedPublisher) {
         await addModerationQueueItem({
           contentType: 'event',
           contentId: eventId,
@@ -179,19 +204,26 @@ export default function PublicarEvento() {
           metadata: { type: form.type, canton: form.canton, city: form.city },
         })
       }
-      trackPublicationCreated({
-        user_id:user?.id,
-        contentType:'event',
-        category:form.type,
-        needsReview,
-      })
-      setPublishedForReview(needsReview)
+      if (!isSharedPublisher) {
+        trackPublicationCreated({
+          user_id:user?.id,
+          contentType:'event',
+          category:form.type,
+          needsReview,
+        })
+        setPublishedForReview(needsReview)
+      }
       setDone(true)
     } catch (error) {
       console.error('Publish event failed:', error)
-      const message = error?.message?.toLowerCase().includes('events')
-        ? 'No pudimos publicar el evento ahora. Inténtalo de nuevo más tarde.'
-        : (error?.message || 'No se pudo publicar el evento')
+      const errorMessage = String(error?.message || '')
+      const message = isSharedPublisher && errorMessage.includes('INVALID_OR_REVOKED_LINK')
+        ? 'Esta URL ya no es válida. Solicita un enlace nuevo al administrador.'
+        : isSharedPublisher && errorMessage.includes('LINK_RATE_LIMIT')
+          ? 'Se alcanzó el límite temporal de publicaciones. Inténtalo de nuevo más tarde.'
+          : errorMessage.toLowerCase().includes('events')
+            ? 'No pudimos publicar el evento ahora. Inténtalo de nuevo más tarde.'
+            : (errorMessage || 'No se pudo publicar el evento')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -205,7 +237,11 @@ export default function PublicarEvento() {
     if (!file) return
     setUploadingImage(true)
     try {
-      const publicUrl = await uploadPublicationImage({ file, userId: user?.id, folder:'events' })
+      const publicUrl = await uploadPublicationImage({
+        file,
+        userId:isSharedPublisher ? sharedPublishToken : user?.id,
+        folder:isSharedPublisher ? 'punto-hispano-events' : 'events',
+      })
       s('img_url', publicUrl)
       toast.success('Imagen subida')
     } catch (error) {
@@ -218,6 +254,10 @@ export default function PublicarEvento() {
   const requestPublish = async () => {
     if (loading) return
     if (!validateBeforePublish()) return
+    if (isSharedPublisher) {
+      await handleSubmit()
+      return
+    }
     let subscribed = false
     try {
       const status = await getPushStatus()
@@ -235,13 +275,24 @@ export default function PublicarEvento() {
 
   return (
     <div className="latido-page-container latido-page-container--form" style={{ paddingTop:32, paddingBottom:170 }}>
-      <PostPublishPushModal
-        open={pushModalOpen}
-        user={user}
-        userCanton={form.canton}
-        onActivated={handleSubmit}
-        onComplete={() => setPushModalOpen(false)}
-      />
+      {!isSharedPublisher && (
+        <PostPublishPushModal
+          open={pushModalOpen}
+          user={user}
+          userCanton={form.canton}
+          onActivated={handleSubmit}
+          onComplete={() => setPushModalOpen(false)}
+        />
+      )}
+      {isSharedPublisher && (
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18, padding:'11px 13px', borderRadius:14, background:'#EFF6FF', border:'1px solid #BFDBFE' }}>
+          <span style={{ fontSize:24 }} aria-hidden="true">🎉</span>
+          <div>
+            <strong style={{ display:'block', fontFamily:PP, fontSize:12, color:'#1D4ED8' }}>Publicar como {sharedPublisherName}</strong>
+            <span style={{ display:'block', fontFamily:PP, fontSize:10.5, color:'#475569', marginTop:2 }}>El evento quedará asociado automáticamente a la cuenta de Punto Hispano.</span>
+          </div>
+        </div>
+      )}
       <ProgressBar step={step} total={STEPS.length} />
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, marginBottom:4, letterSpacing:-0.3 }}>{STEPS[step].title}</h1>
       <p style={{ fontFamily:PP, fontSize:12, color:C.light, marginBottom:24 }}>{STEPS[step].sub}</p>
@@ -348,7 +399,7 @@ export default function PublicarEvento() {
       </p>
       <StickyFormActions>
         {step === 0 ? (
-          <Btn onClick={() => navigate('/comunidades?view=eventos')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}><ChevronLeftIcon size={16} /> Cancelar</Btn>
+          <Btn onClick={() => isSharedPublisher ? (onSharedExit ? onSharedExit() : window.location.reload()) : navigate('/comunidades?view=eventos')} variant="danger" style={{ flex:'0 0 122px', border:'1.5px solid #FCA5A5' }}><ChevronLeftIcon size={16} /> {isSharedPublisher ? 'Volver' : 'Cancelar'}</Btn>
         ) : (
           <Btn onClick={() => setStep(s => s - 1)} variant="secondary" style={{ flex:'0 0 122px' }}><ChevronLeftIcon size={16} /> Atrás</Btn>
         )}
