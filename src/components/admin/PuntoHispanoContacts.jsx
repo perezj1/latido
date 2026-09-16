@@ -111,7 +111,15 @@ export default function PuntoHispanoContacts() {
       <div className="ph-admin-table" role="region" aria-label="Contactos registrados" tabIndex={0}>
         <table>
           <thead><tr>{['Nombre', 'Email', 'Categoría', 'Servicio', 'Fecha del clic (Suiza)'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
-          <tbody>{!loading && rows.map(row => <tr key={row.id}><td>{row.user_name}</td><td>{row.user_email}</td><td>{row.category_label}</td><td>{row.service_label}</td><td>{displayDate(row.created_at)}</td></tr>)}</tbody>
+          <tbody>{!loading && rows.map(row => (
+            <tr key={row.id}>
+              <td data-label="Nombre">{row.user_name}</td>
+              <td data-label="Email">{row.user_email}</td>
+              <td data-label="Categoría">{row.category_label}</td>
+              <td data-label="Servicio">{row.service_label}</td>
+              <td data-label="Fecha">{displayDate(row.created_at)}</td>
+            </tr>
+          ))}</tbody>
         </table>
         {!loading && !error && !rows.length && <p>No hay contactos en este periodo.</p>}
       </div>

@@ -5770,7 +5770,7 @@ export default function Admin() {
             </Card>
           )}
 
-          <Card style={{ padding: 16 }}>
+          <Card style={{ boxSizing:'border-box', width:'100%', maxWidth:'100%', minWidth:0, padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
               <div>
                 <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Colaboraciones</p>
@@ -5794,6 +5794,9 @@ export default function Admin() {
                     type="button"
                     onClick={() => setSelectedPartnerId(partner.id)}
                     style={{
+                      boxSizing: 'border-box',
+                      minWidth: 0,
+                      maxWidth: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 11,
@@ -5812,7 +5815,7 @@ export default function Admin() {
                     </span>
                     <span style={{ minWidth: 0, flex: 1 }}>
                       <strong style={{ display: 'block', fontFamily: PP, fontSize: 13, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{partner.name}</strong>
-                      <span style={{ display: 'block', fontFamily: PP, fontSize: 10, fontWeight: 800, color: active ? partner.color : C.light, marginTop: 3 }}>
+                      <span style={{ display: 'block', maxWidth:'100%', fontFamily: PP, fontSize: 10, fontWeight: 800, color: active ? partner.color : C.light, marginTop: 3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {partner.isBusinessPartner ? `${partner.planKey === 'premium' ? 'Premium' : 'Básica'} · ` : ''}{clicks} salidas · {partnerMonthRange.monthLabel}
                       </span>
                     </span>
