@@ -30,6 +30,24 @@ CREATE TABLE IF NOT EXISTS public.email_notification_preferences (
 ALTER TABLE public.email_notification_preferences
   ADD COLUMN IF NOT EXISTS weekly_digest_enabled BOOLEAN NOT NULL DEFAULT TRUE;
 
+-- Excepcion solicitada: este usuario no recibe el resumen informativo semanal.
+-- Las preferencias de mensajes y el resto de notificaciones no se modifican.
+INSERT INTO public.email_notification_preferences (
+  user_id,
+  weekly_digest_enabled,
+  updated_at
+)
+SELECT
+  profile.id,
+  FALSE,
+  NOW()
+FROM public.profiles profile
+WHERE LOWER(BTRIM(COALESCE(profile.email, ''))) = 'pablorope03@icloud.com'
+ON CONFLICT (user_id) DO UPDATE
+SET
+  weekly_digest_enabled = FALSE,
+  updated_at = NOW();
+
 ALTER TABLE public.email_notification_preferences ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE ON public.email_notification_preferences TO authenticated;
 
@@ -78,6 +96,16 @@ ALTER TABLE public.weekly_digest_email_log
 
 ALTER TABLE public.weekly_digest_email_log
   ADD COLUMN IF NOT EXISTS eligible_at TIMESTAMPTZ;
+
+-- Suprime tambien cualquier resumen que ya estuviera esperando o reintentandose.
+UPDATE public.weekly_digest_email_log
+SET
+  status = 'suppressed',
+  processing_started_at = NULL,
+  last_error = 'weekly_digest_opt_out',
+  updated_at = NOW()
+WHERE LOWER(BTRIM(email)) = 'pablorope03@icloud.com'
+  AND status IN ('pending', 'processing', 'failed');
 
 DO $$
 BEGIN
@@ -129,8 +157,19 @@ BEGIN
     updated_at = NOW(),
     last_error = COALESCE(last_error, 'Processing timeout, retrying.')
   WHERE status = 'processing'
+    AND LOWER(BTRIM(email)) <> 'pablorope03@icloud.com'
     AND processing_started_at < NOW() - INTERVAL '30 minutes'
     AND attempts < 3;
+
+  -- Defensa adicional para filas antiguas o creadas antes de guardar la baja.
+  UPDATE public.weekly_digest_email_log
+  SET
+    status = 'suppressed',
+    processing_started_at = NULL,
+    last_error = 'weekly_digest_opt_out',
+    updated_at = NOW()
+  WHERE LOWER(BTRIM(email)) = 'pablorope03@icloud.com'
+    AND status IN ('pending', 'processing', 'failed');
 
   -- Crea candidatos cuando ya llevan 7 dias sin entrar.
   INSERT INTO public.weekly_digest_email_log (
@@ -154,6 +193,7 @@ BEGIN
   LEFT JOIN public.email_notification_preferences preference
     ON preference.user_id = profile.id
   WHERE COALESCE(profile.email, '') <> ''
+    AND LOWER(BTRIM(profile.email)) <> 'pablorope03@icloud.com'
     AND COALESCE(profile.banned, FALSE) IS FALSE
     AND COALESCE(preference.weekly_digest_enabled, TRUE) IS TRUE
     AND COALESCE(profile.last_seen_at, profile.created_at, NOW() - INTERVAL '8 days')
@@ -173,6 +213,7 @@ BEGIN
     SELECT log.id
     FROM public.weekly_digest_email_log log
     WHERE log.status IN ('pending', 'failed')
+      AND LOWER(BTRIM(log.email)) <> 'pablorope03@icloud.com'
       AND log.attempts < 3
     ORDER BY log.created_at ASC
     LIMIT safe_limit

@@ -15,6 +15,9 @@ const MAX_BATCH = Math.min(
   Math.max(Number(Deno.env.get('WEEKLY_DIGEST_MAX_BATCH') || Deno.env.get('EMAIL_MAX_BATCH') || '25'), 1),
   100,
 )
+const WEEKLY_DIGEST_EMAIL_EXCEPTIONS = new Set([
+  'pablorope03@icloud.com',
+])
 
 type Recipient = {
   log_id:string
@@ -66,6 +69,36 @@ function escapeHtml(value:string) {
 
 function singularPlural(count:number, singular:string, plural:string) {
   return count === 1 ? singular : plural
+}
+
+function isWeeklyDigestEmailException(email:string | null | undefined) {
+  return WEEKLY_DIGEST_EMAIL_EXCEPTIONS.has(String(email || '').trim().toLowerCase())
+}
+
+async function suppressWeeklyDigest(logId:string, userId:string, reason:string) {
+  const updatedAt = new Date().toISOString()
+  const { error:preferenceError } = await service
+    .from('email_notification_preferences')
+    .upsert({
+      user_id:userId,
+      weekly_digest_enabled:false,
+      updated_at:updatedAt,
+    }, { onConflict:'user_id' })
+
+  if (preferenceError) throw preferenceError
+
+  const { error:logError } = await service
+    .from('weekly_digest_email_log')
+    .update({
+      status:'suppressed',
+      processing_started_at:null,
+      last_error:reason.slice(0, 1000),
+      updated_at:updatedAt,
+    })
+    .eq('id', logId)
+    .eq('status', 'processing')
+
+  if (logError) throw logError
 }
 
 async function countRows(table:string, setup:(query:any) => any) {
@@ -347,7 +380,7 @@ async function sendMail(to:string, name:string | null | undefined, activity:Week
       subject:content.subject,
       text:content.text,
       html:content.html,
-    }, error => error ? reject(error) : resolve())
+    }, (error:Error | null) => error ? reject(error) : resolve())
   })
 }
 
@@ -383,6 +416,14 @@ Deno.serve(async req => {
     }
 
     if (body.test_email) {
+      if (isWeeklyDigestEmailException(body.test_email)) {
+        return json({
+          ok:true,
+          test:true,
+          skipped:'weekly_digest_opt_out',
+        })
+      }
+
       await sendMail(body.test_email, body.test_name || 'Prueba Latido', activity)
 
       return json({
@@ -404,11 +445,18 @@ Deno.serve(async req => {
     const result = {
       claimed:recipients.length,
       sent:0,
+      suppressed:0,
       failed:0,
     }
 
     for (const recipient of recipients) {
       try {
+        if (isWeeklyDigestEmailException(recipient.email)) {
+          await suppressWeeklyDigest(recipient.log_id, recipient.user_id, 'weekly_digest_opt_out')
+          result.suppressed += 1
+          continue
+        }
+
         await sendMail(recipient.email, recipient.display_name, activity)
 
         const { error: completionError } = await service.rpc('complete_weekly_digest_delivery', {
