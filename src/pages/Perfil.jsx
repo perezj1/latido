@@ -2439,7 +2439,7 @@ export default function Perfil() {
       </button>
 
       {/* ── Favoritos ── */}
-      <Sheet show={favOpen} onClose={() => setFavOpen(false)} title="❤️ Favoritos">
+      <Modal show={favOpen} onClose={() => setFavOpen(false)} title="❤️ Favoritos">
         {loadingFavs ? (
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             {[1,2].map(i => <SkeletonCard key={i} variant="compact" lines={1} style={{ minHeight:80 }} />)}
@@ -2501,9 +2501,9 @@ export default function Perfil() {
             )
           })
         )}
-      </Sheet>
+      </Modal>
 
-      <Sheet show={followedCreatorsOpen} onClose={() => setFollowedCreatorsOpen(false)} title="🎙️ Creadores">
+      <Modal show={followedCreatorsOpen} onClose={() => setFollowedCreatorsOpen(false)} title="🎙️ Creadores">
         {!followedCreators.length ? (
           <div className="profile-followed-creators-empty">
             <div>🎙️</div>
@@ -2543,9 +2543,9 @@ export default function Perfil() {
             ))}
           </div>
         )}
-      </Sheet>
+      </Modal>
 
-      <Sheet show={employmentProfileOpen && hasEmploymentRequest} onClose={() => setEmploymentProfileOpen(false)} title="Perfil profesional" syncHistory={false}>
+      <Modal show={employmentProfileOpen && hasEmploymentRequest} onClose={() => setEmploymentProfileOpen(false)} title="Perfil profesional">
         {employmentProfileLoading ? (
           <SkeletonCard variant="profile" lines={3} style={{ minHeight:420 }} />
         ) : (
@@ -2578,10 +2578,10 @@ export default function Perfil() {
             </div>
           </>
         )}
-      </Sheet>
+      </Modal>
 
       {/* ── Notifications ── */}
-      <Sheet show={professionalOpen} onClose={() => setProfessionalOpen(false)} title="✨ Profesional" syncHistory={false}>
+      <Modal show={professionalOpen} onClose={() => setProfessionalOpen(false)} title="✨ Profesional">
         <div style={{ background:`linear-gradient(135deg,${C.primaryDark},${C.primary})`, borderRadius:18, padding:'18px 16px', marginBottom:14, color:'#fff', overflow:'hidden', position:'relative' }}>
           <div style={{ position:'absolute', top:-32, right:-24, width:110, height:110, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }} />
           <p style={{ fontFamily:PP, fontWeight:900, fontSize:18, margin:'0 0 6px', position:'relative' }}>
@@ -2647,13 +2647,13 @@ export default function Perfil() {
             })}
           </div>
         )}
-      </Sheet>
+      </Modal>
 
-      <Sheet show={myListOpen} onClose={() => setMyListOpen(false)} title="📝 Mi lista">
+      <Modal show={myListOpen} onClose={() => setMyListOpen(false)} title="📝 Mi lista">
         <MyListPanel active={myListOpen} surface={false} />
-      </Sheet>
+      </Modal>
 
-      <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones">
+      <Modal show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones">
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.6 }}>
           Gestiona los avisos de mensajes y las novedades generales de Latido.
         </p>
@@ -2740,7 +2740,7 @@ export default function Perfil() {
         <Btn onClick={() => { toast.success('Alertas guardadas'); setAlertsOpen(false) }} style={{ marginTop:8 }}>
           Guardar
         </Btn>
-      </Sheet>
+      </Modal>
 
       <Modal show={expiredEventsOpen} onClose={closeExpiredEventsPrompt} title="🎉 Eventos con fecha pasada" syncHistory={false}>
         <div style={{ background:C.warnLight, border:`1px solid ${C.warnMid}`, borderRadius:18, padding:'15px 16px', marginBottom:14 }}>
@@ -2897,7 +2897,7 @@ export default function Perfil() {
       </Modal>
 
       {/* ── Configuración ── */}
-      <Sheet show={configOpen} onClose={() => setConfigOpen(false)} title="⚙️ Configuración">
+      <Modal show={configOpen} onClose={() => setConfigOpen(false)} title="⚙️ Configuración">
         <Input
           label="Nombre visible"
           value={configForm.name || ''}
@@ -2965,7 +2965,7 @@ export default function Perfil() {
             Guardar
           </Btn>
         </div>
-      </Sheet>
+      </Modal>
 
       {/* ── Mis publicaciones modal ── */}
       <Modal show={manageOpen} onClose={() => setManageOpen(false)} title="Mis publicaciones">
@@ -3222,7 +3222,7 @@ export default function Perfil() {
       </Modal>
 
       {/* ── Compartir Latido ── */}
-      <Sheet show={shareOpen} onClose={() => setShareOpen(false)} title="🔗 Compartir Latido">
+      <Modal show={shareOpen} onClose={() => setShareOpen(false)} title="🔗 Compartir Latido">
         <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:20, lineHeight:1.6 }}>
           Invita a tus amigos y familiares a unirse a la comunidad latina en Suiza.
         </p>
@@ -3275,7 +3275,7 @@ export default function Perfil() {
             {copied ? '¡Enlace copiado!' : 'Copiar enlace'}
           </span>
         </button>
-      </Sheet>
+      </Modal>
 
       <Modal show={!!editorItem} onClose={closeEditor} title={editorItem ? `Editar ${KIND_META[editorItem.kind].label.toLowerCase()}` : 'Editar'}>
         {editorItem?.kind === 'ad' && (
