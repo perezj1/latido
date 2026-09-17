@@ -11,6 +11,7 @@ import FavoriteButton from '../components/FavoriteButton'
 import DetailActionBar from '../components/DetailActionBar'
 import GlobalSearch from '../components/GlobalSearch'
 import SavedSearchButton from '../components/SavedSearchButton'
+import SavedSearchPrompt from '../components/SavedSearchPrompt'
 import SearchRecoveryEmptyState from '../components/SearchRecoveryEmptyState'
 import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
 import SectionTabs from '../components/SectionTabs'
@@ -2147,10 +2148,7 @@ export default function Tablon() {
         onSortChange={setSortView}
       />
       {savedSearchDraft && !showSearchRecovery && (
-        <div className="saved-search-prompt saved-search-prompt--toolbar">
-          <span>Avísame cuando haya nuevos resultados.</span>
-          <SavedSearchButton draft={savedSearchDraft} compact />
-        </div>
+        <SavedSearchPrompt draft={savedSearchDraft} />
       )}
           </Card>
         </div>
@@ -2413,7 +2411,7 @@ export default function Tablon() {
 
           <SavedSearchButton
             draft={filterSavedSearchDraft}
-            idleLabel="Guardar esta búsqueda y avisarme"
+            idleLabel="Añadir a Mi lista"
             panel
           />
 

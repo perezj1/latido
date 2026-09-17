@@ -42,6 +42,10 @@ Para activar la bandeja persistente y las alertas superiores de mensajes,
 seguidores, «Me ayudó» y nuevos creadores, ejecuta después
 `supabase/app_notifications.sql`. Requiere haber ejecutado antes
 `supabase/message_read_status.sql` y `supabase/creator_platform.sql`.
+Para activar **Mi lista**, ejecuta primero `supabase/saved_searches.sql` y,
+en instalaciones que ya usaban búsquedas guardadas, ejecuta después
+`supabase/my_list.sql`. Esta migración conserva las búsquedas existentes,
+añade el estado «Conseguido» y desactiva el envío gratuito por email.
 
 ### 3. Crear `.env.local` en la raíz
 

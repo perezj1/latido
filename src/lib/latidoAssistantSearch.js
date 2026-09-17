@@ -621,12 +621,44 @@ function detectScope(normalized) {
   const vehicleTerms = [...carTerms, ...motorcycleTerms, 'vehiculo', 'vehiculos', 'mecanico', 'mecanica', 'taller mecanico', 'neumaticos', 'llantas']
   if (hasAnyPhrase(normalized, vehicleTerms)) {
     const repairContext = hasAnyPhrase(normalized, ['arreglar', 'reparar', 'averia', 'mecanico', 'mecanica', 'taller mecanico'])
+    const rentalTerms = [
+      'alquiler de coches', 'alquiler de coche', 'alquilar coche', 'rentar coche',
+      'renta de autos', 'rent a car', 'car rental', 'alquiler', 'alquilar',
+      'renta', 'rentar', 'rent', 'rental',
+    ]
+    const rentalContext = !repairContext && (
+      hasAnyPhrase(normalized, rentalTerms)
+      || (
+        hasAnyPhrase(normalized, ['alquilar', 'alquiler', 'rentar', 'renta'])
+        && hasAnyPhrase(normalized, [...carTerms, ...motorcycleTerms, 'vehiculo', 'vehiculos'])
+      )
+    )
     const marketplaceContext = !repairContext && hasAnyPhrase(normalized, [
       'comprar', 'compro', 'vender', 'vendo', 'regalar', 'regalo', 'segunda mano',
       'busco coche', 'busco carro', 'busco auto', 'busco moto', 'busco motocicleta',
     ])
     const carContext = hasAnyPhrase(normalized, carTerms)
     const motorcycleContext = hasAnyPhrase(normalized, motorcycleTerms)
+
+    if (rentalContext) {
+      const rentalVehicleTerms = motorcycleContext
+        ? motorcycleTerms
+        : carContext
+          ? carTerms
+          : ['vehiculo', 'vehiculos']
+      return {
+        ...focusScope(
+          'vehicle',
+          motorcycleContext ? 'alquiler motocicleta' : 'alquiler coche',
+          rentalVehicleTerms,
+          'vehicle-rental',
+        ),
+        label:motorcycleContext ? 'Alquiler de motos' : 'Alquiler de coches',
+        searchTerms:[...new Set([...rentalVehicleTerms, ...rentalTerms])],
+        vehicleFocusTerms:rentalVehicleTerms,
+        rentalTerms,
+      }
+    }
 
     if (marketplaceContext) {
       const saleFocusTerms = motorcycleContext
@@ -646,6 +678,7 @@ function detectScope(normalized) {
         category:'venta',
         entityTypes:['ad'],
         marketplaceVehicle:true,
+        searchTerms:saleFocusTerms,
       }
     }
 
@@ -656,12 +689,15 @@ function detectScope(normalized) {
         : carContext
           ? carTerms
           : ['vehiculo', 'vehiculos']
-    return focusScope(
+    return {
+      ...focusScope(
       'vehicle',
       repairContext ? 'mecanico' : motorcycleContext ? 'motocicleta' : carContext ? 'coche' : 'vehiculo',
       generalFocusTerms,
       motorcycleContext ? 'motorcycle' : carContext ? 'car' : 'terms',
-    )
+      ),
+      searchTerms:generalFocusTerms,
+    }
   }
 
   const homeRepairFocus = detectHomeRepairFocus(normalized)
@@ -939,6 +975,23 @@ function matchesScopeFocus(result, scope, allowGeneralFallback = false) {
     const focusTerms = scope.focusTerms || []
     if (hasAnyPhrase(title, focusTerms)) return true
     return hasAnyPhrase(subcategory, ['vehiculo', 'vehiculos']) && hasAnyPhrase(searchText, focusTerms)
+  }
+
+  if (['car', 'motorcycle'].includes(scope.focusKind)) {
+    const title = normalizeSearchText(meta.title || result?.label || '')
+    const subcategory = normalizeSearchText(meta.subcategory || '')
+    const focusTerms = scope.focusTerms || []
+    if (hasAnyPhrase(title, focusTerms) || hasAnyPhrase(subcategory, focusTerms)) return true
+    return hasAnyPhrase(searchText, focusTerms)
+      && hasAnyPhrase(searchText, [
+        'alquiler', 'venta', 'comprar', 'mecanico', 'mecanica', 'taller',
+        'reparacion', 'recambios', 'repuestos', 'neumaticos', 'llantas',
+      ])
+  }
+
+  if (scope.focusKind === 'vehicle-rental') {
+    return hasAnyPhrase(searchText, scope.vehicleFocusTerms || [])
+      && hasAnyPhrase(searchText, scope.rentalTerms || [])
   }
 
   if (scope.focusKind === 'dance') {

@@ -26,6 +26,7 @@ import {
 import { getLifecycleLabel, getPublicationExpiresAt, isPublicationExpired } from '../lib/publicationLifecycle'
 import EmploymentProfileForm, { EmploymentLevelBadge } from '../components/EmploymentProfileForm'
 import InterestOptionGrid from '../components/InterestOptionGrid'
+import MyListPanel from '../components/MyListPanel'
 import { CreatorAvatar, CreatorProfileTabs, CreatorTopicPill } from '../components/CreatorCards'
 import {
   getAllCreators,
@@ -47,13 +48,6 @@ import {
   normalizeEmploymentProfile,
 } from '../lib/employmentProfile'
 import { isLikelySchemaMismatchError, updateWithOptionalColumnsFallback } from '../lib/supabaseCompat'
-import {
-  deleteSavedSearch,
-  getSavedSearchSummary,
-  listSavedSearches,
-  SAVED_SEARCHES_CHANGED_EVENT,
-  setSavedSearchActive,
-} from '../lib/savedSearches'
 import toast from 'react-hot-toast'
 import './Creators.css'
 
@@ -702,13 +696,10 @@ export default function Perfil() {
 
   // alerts
   const [alertsOpen, setAlertsOpen] = useState(false)
+  const [myListOpen, setMyListOpen] = useState(false)
   const [alertSettings, setAlertSettings] = useState(loadAlertSettings)
   const [pushStatus, setPushStatus] = useState({ supported: false, permission: 'default', subscribed: false })
   const [savingPush, setSavingPush] = useState(false)
-  const [savedSearches, setSavedSearches] = useState([])
-  const [loadingSavedSearches, setLoadingSavedSearches] = useState(false)
-  const [savedSearchesError, setSavedSearchesError] = useState('')
-  const [updatingSavedSearchId, setUpdatingSavedSearchId] = useState('')
   const needsPushActivation = pushStatus.supported && !pushStatus.subscribed
 
   // config
@@ -1097,7 +1088,7 @@ export default function Perfil() {
   useEffect(() => {
     if (!isLoggedIn || !user?.id || loadingPublications || expiredEventsDismissed || !expiredEvents.length) return
     if (suppressAttentionPrompts) return
-    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || adReminderOpen) return
+    if (manageOpen || editorItem || actionItem || alertsOpen || myListOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || adReminderOpen) return
 
     const key = `latido_attention_expired_events:${user.id}`
     let stored = {}
@@ -1125,6 +1116,7 @@ export default function Perfil() {
     editorItem,
     actionItem,
     alertsOpen,
+    myListOpen,
     configOpen,
     favOpen,
     professionalOpen,
@@ -1136,7 +1128,7 @@ export default function Perfil() {
   useEffect(() => {
     if (!isLoggedIn || !user?.id || loadingPublications || adReminderDismissed || !adReminderItems.length) return
     if (suppressAttentionPrompts) return
-    if (manageOpen || editorItem || actionItem || alertsOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || expiredEventsOpen) return
+    if (manageOpen || editorItem || actionItem || alertsOpen || myListOpen || configOpen || favOpen || professionalOpen || employmentProfileOpen || shareOpen || expiredEventsOpen) return
     if (expiredEvents.length) return
 
     const key = `latido_attention_ad_review:${user.id}`
@@ -1167,6 +1159,7 @@ export default function Perfil() {
     editorItem,
     actionItem,
     alertsOpen,
+    myListOpen,
     configOpen,
     favOpen,
     professionalOpen,
@@ -1215,46 +1208,6 @@ export default function Perfil() {
     if (!alertsOpen) return
     refreshPushStatus()
   }, [alertsOpen, refreshPushStatus])
-
-  const refreshSavedSearches = useCallback(async ({ silent = false } = {}) => {
-    if (!user?.id) {
-      setSavedSearches([])
-      setSavedSearchesError('')
-      return
-    }
-
-    if (!silent) setLoadingSavedSearches(true)
-    setSavedSearchesError('')
-    try {
-      setSavedSearches(await listSavedSearches(user.id))
-    } catch (error) {
-      console.warn('Saved searches could not be loaded:', error)
-      setSavedSearchesError('No pudimos cargar tus búsquedas guardadas.')
-    } finally {
-      if (!silent) setLoadingSavedSearches(false)
-    }
-  }, [user?.id])
-
-  useEffect(() => {
-    if (!alertsOpen) return
-    void refreshSavedSearches()
-  }, [alertsOpen, refreshSavedSearches])
-
-  useEffect(() => {
-    const refresh = event => {
-      const savedSearch = event.detail?.search
-      if (savedSearch?.id && savedSearch.user_id === user?.id) {
-        setSavedSearches(current => [
-          savedSearch,
-          ...current.filter(search => search.id !== savedSearch.id),
-        ])
-        setSavedSearchesError('')
-      }
-      void refreshSavedSearches({ silent:true })
-    }
-    window.addEventListener(SAVED_SEARCHES_CHANGED_EVENT, refresh)
-    return () => window.removeEventListener(SAVED_SEARCHES_CHANGED_EVENT, refresh)
-  }, [refreshSavedSearches, user?.id])
 
   useEffect(() => {
     if (!isLoggedIn) return
@@ -1360,36 +1313,6 @@ export default function Perfil() {
   const toggleZoneAlerts = async () => {
     const next = { ...alertSettings, enabled: !alertSettings.enabled, messagesEnabled: true }
     await saveAlerts(next)
-  }
-
-  const toggleSavedSearch = async search => {
-    if (!user?.id || updatingSavedSearchId) return
-    setUpdatingSavedSearchId(search.id)
-    try {
-      await setSavedSearchActive(user.id, search.id, !search.active)
-      setSavedSearches(current => current.map(item => (
-        item.id === search.id ? { ...item, active:!item.active } : item
-      )))
-      toast.success(search.active ? 'Alerta pausada' : 'Alerta activada')
-    } catch (error) {
-      toast.error(error?.message || 'No se pudo actualizar la alerta')
-    } finally {
-      setUpdatingSavedSearchId('')
-    }
-  }
-
-  const removeSavedSearch = async search => {
-    if (!user?.id || updatingSavedSearchId) return
-    setUpdatingSavedSearchId(search.id)
-    try {
-      await deleteSavedSearch(user.id, search.id)
-      setSavedSearches(current => current.filter(item => item.id !== search.id))
-      toast.success('Búsqueda eliminada')
-    } catch (error) {
-      toast.error(error?.message || 'No se pudo eliminar la búsqueda')
-    } finally {
-      setUpdatingSavedSearchId('')
-    }
   }
 
   const toggleAlertCat = cat => {
@@ -2213,6 +2136,7 @@ export default function Perfil() {
       title: 'Mi actividad',
       items: [
         { icon:'📣', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
+        { icon:'📝', color:'#EFF6FF', label:'Mi lista', sub:'Lo que necesitas y lo que ya has conseguido', action:() => setMyListOpen(true) },
         ...(hasEmploymentRequest ? [{
           icon:'💼',
           color:'#EFF6FF',
@@ -2674,9 +2598,13 @@ export default function Perfil() {
         )}
       </Sheet>
 
+      <Sheet show={myListOpen} onClose={() => setMyListOpen(false)} title="📝 Mi lista">
+        <MyListPanel active={myListOpen} surface={false} />
+      </Sheet>
+
       <Sheet show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones">
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.6 }}>
-          Recibe una alerta cuando te escriban o cuando aparezca un resultado relacionado con tus búsquedas.
+          Gestiona los avisos de mensajes y las novedades generales de Latido.
         </p>
 
         {needsPushActivation && (
@@ -2716,92 +2644,6 @@ export default function Perfil() {
             <p style={{ fontFamily:PP, fontSize:11, color:'#B45309', margin:'10px 0 0', lineHeight:1.5 }}>
               El navegador tiene las notificaciones bloqueadas. Actívalas en los ajustes del sitio y vuelve a intentarlo.
             </p>
-          )}
-        </div>
-
-        <div aria-hidden="true" style={{ height:1, background:C.border, margin:'2px 0 14px' }} />
-
-        <div style={{ marginBottom:14 }}>
-          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:10, marginBottom:8 }}>
-            <div>
-              <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, margin:'0 0 2px' }}>
-                Búsquedas guardadas
-              </p>
-              <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>
-                Te avisaremos cuando haya coincidencias.
-              </p>
-            </div>
-            {savedSearches.length > 0 && (
-              <span style={{ fontFamily:PP, fontSize:10, fontWeight:800, color:C.primary }}>
-                {savedSearches.filter(search => search.active).length} activas
-              </span>
-            )}
-          </div>
-
-          {loadingSavedSearches ? (
-            <SkeletonCard variant="compact" lines={1} />
-          ) : savedSearchesError ? (
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:14, padding:'12px 14px' }}>
-              <p style={{ fontFamily:PP, fontSize:11, color:'#991B1B', margin:0, lineHeight:1.5 }}>
-                {savedSearchesError}
-              </p>
-              <button
-                type="button"
-                onClick={() => refreshSavedSearches()}
-                style={{ flexShrink:0, border:'1px solid #FCA5A5', borderRadius:10, background:'#fff', color:'#B91C1C', padding:'7px 10px', fontFamily:PP, fontWeight:800, fontSize:10.5, cursor:'pointer' }}
-              >
-                Reintentar
-              </button>
-            </div>
-          ) : savedSearches.length === 0 ? (
-            <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 14px' }}>
-              <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.5 }}>
-                  Cuando filtres o busques algo, pulsa «Activar alerta» para recibir solo novedades relacionadas.
-              </p>
-            </div>
-          ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {savedSearches.map(search => (
-                <div
-                  key={search.id}
-                  style={{ display:'flex', alignItems:'center', gap:9, background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, padding:'10px 10px 10px 12px', opacity:search.active ? 1 : 0.68 }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAlertsOpen(false)
-                      navigate(search.result_path)
-                    }}
-                    style={{ flex:1, minWidth:0, border:'none', background:'none', padding:0, textAlign:'left', cursor:'pointer' }}
-                  >
-                    <p style={{ fontFamily:PP, fontWeight:750, fontSize:12, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      🔔 {search.name}
-                    </p>
-                    <p style={{ fontFamily:PP, fontSize:10.5, color:C.light, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {getSavedSearchSummary(search)} · Email activo
-                    </p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleSavedSearch(search)}
-                    disabled={updatingSavedSearchId === search.id}
-                    aria-label={search.active ? 'Pausar alerta' : 'Activar alerta'}
-                    style={{ width:38, height:22, borderRadius:12, border:'none', cursor:'pointer', background:search.active ? C.primary : '#D1D5DB', position:'relative', flexShrink:0 }}
-                  >
-                    <span style={{ position:'absolute', top:2, left:search.active ? 18 : 2, width:18, height:18, borderRadius:'50%', background:'#fff', transition:'left .2s', boxShadow:'0 1px 3px rgba(0,0,0,0.18)' }} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeSavedSearch(search)}
-                    disabled={updatingSavedSearchId === search.id}
-                    aria-label={`Eliminar ${search.name}`}
-                    style={{ width:28, height:28, borderRadius:10, border:'none', background:'#FEF2F2', color:'#B91C1C', fontFamily:PP, fontWeight:800, fontSize:13, cursor:'pointer', flexShrink:0 }}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
           )}
         </div>
 

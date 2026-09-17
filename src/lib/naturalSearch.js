@@ -175,10 +175,28 @@ const INTENT_DEFINITIONS = [
     terms:['clase', 'clases', 'curso', 'profesor', 'profesora', 'academia', 'formacion', 'taller'],
   },
   {
-    id:'vehicle',
-    triggers:['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'automoviles', 'vehiculo', 'vehiculos', 'moto', 'motos', 'motocicleta', 'motocicletas', 'motociclo', 'motociclos', 'scooter', 'scooters', 'ciclomotor', 'ciclomotores', 'mecanico', 'taller'],
+    id:'car',
+    triggers:['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'automoviles'],
     consumed:['comprar', 'reparar', 'vender'],
-    terms:['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'automoviles', 'vehiculo', 'vehiculos', 'moto', 'motos', 'motocicleta', 'motocicletas', 'motociclo', 'motociclos', 'scooter', 'scooters', 'ciclomotor', 'ciclomotores', 'mecanico', 'mecanica', 'taller'],
+    terms:['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'automoviles'],
+  },
+  {
+    id:'motorcycle',
+    triggers:['moto', 'motos', 'motocicleta', 'motocicletas', 'motociclo', 'motociclos', 'scooter', 'scooters', 'ciclomotor', 'ciclomotores'],
+    consumed:['comprar', 'reparar', 'vender'],
+    terms:['moto', 'motos', 'motocicleta', 'motocicletas', 'motociclo', 'motociclos', 'scooter', 'scooters', 'ciclomotor', 'ciclomotores'],
+  },
+  {
+    id:'vehicle-service',
+    triggers:['mecanico', 'mecanica', 'taller mecanico', 'neumaticos', 'llantas'],
+    consumed:['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'moto', 'motos', 'reparar'],
+    terms:['mecanico', 'mecanica', 'taller mecanico', 'reparacion de coches', 'reparacion de motos', 'neumaticos', 'llantas'],
+  },
+  {
+    id:'vehicle',
+    triggers:['vehiculo', 'vehiculos'],
+    consumed:['comprar', 'reparar', 'vender'],
+    terms:['vehiculo', 'vehiculos', 'coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'automoviles', 'moto', 'motos', 'motocicleta', 'motocicletas'],
   },
   {
     id:'transport',
@@ -200,6 +218,7 @@ const SEARCH_WORD_PROFILE_CACHE = new Map()
 const RELATED_WORDS_CACHE = new Map()
 const TEXT_CACHE_LIMIT = 12_000
 const RELATED_WORDS_CACHE_LIMIT = 30_000
+const PROTECTED_PREFIX_CONCEPTS = new Set(['auto', 'moto'])
 
 function rememberInCache(cache, key, value, limit) {
   if (cache.size >= limit) {
@@ -299,6 +318,11 @@ function computeWordsAreRelated(left, right) {
 
   const shortestLength = Math.min(left.length, right.length)
   if (shortestLength < 4) return false
+
+  // Palabras cortas con significado propio no deben comportarse como un
+  // prefijo libre: "moto" no es "motorista" y "auto" no es "autor".
+  // Sus sinónimos válidos ya están descritos explícitamente en los intents.
+  if (left !== right && (PROTECTED_PREFIX_CONCEPTS.has(left) || PROTECTED_PREFIX_CONCEPTS.has(right))) return false
 
   const leftForms = new Set(getWordForms(left))
   const rightForms = new Set(getWordForms(right))

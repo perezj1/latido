@@ -55,6 +55,7 @@ import {
 } from '../lib/employmentProfile'
 import { FilterIcon, FILTER_PANEL_TITLE_STYLE } from './FilterWorkspace'
 import SavedSearchButton from './SavedSearchButton'
+import SavedSearchPrompt from './SavedSearchPrompt'
 import SearchRecoveryEmptyState from './SearchRecoveryEmptyState'
 import {
   buildLatidoSearchRpcParams,
@@ -63,6 +64,7 @@ import {
   parseResultAmount,
   parseResultRooms,
 } from '../lib/latidoAssistantSearch'
+import { getMyListMatchTerms } from '../lib/myList'
 
 const BUSINESS_EMOJI = {
   restaurante:'🍽️',
@@ -1516,8 +1518,8 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
     rankedResults.push({ ...eligibleResults[index], searchIndex:index })
   }
   rankedResults.sort((a, b) => (
-    (a.searchPriority ?? BUSINESS_SEARCH_PRIORITY.free) - (b.searchPriority ?? BUSINESS_SEARCH_PRIORITY.free) ||
     (b.searchScore || 0) - (a.searchScore || 0) ||
+    (a.searchPriority ?? BUSINESS_SEARCH_PRIORITY.free) - (b.searchPriority ?? BUSINESS_SEARCH_PRIORITY.free) ||
     a.searchIndex - b.searchIndex
   ))
 
@@ -2147,7 +2149,17 @@ export default function GlobalSearch({
       canton:savedCanton,
       city:savedCity,
       plz:savedPlz,
-      filters:{},
+      filters:assistantQuery?.active ? {
+        entityTypes:assistantQuery.entityTypes || [],
+        searchTerms:assistantQuery.searchTerms || [],
+        matchTerms:getMyListMatchTerms(assistantQuery),
+        priceMin:assistantQuery.priceMin,
+        priceMax:assistantQuery.priceMax,
+        roomsMin:assistantQuery.roomsMin,
+        dateFrom:assistantQuery.dateFrom || '',
+        spanishRequired:Boolean(assistantQuery.spanishRequired),
+        germanLevel:assistantQuery.germanLevel || '',
+      } : {},
       resultPath,
     }
   }, [
@@ -3430,10 +3442,11 @@ export default function GlobalSearch({
                       <strong>Coincidencias</strong>
                     </div>
                     {showingRelatedAlternatives && savedSearchDraft && (
-                      <div className="saved-search-prompt saved-search-prompt--toolbar latido-search-no-results-alert">
-                        <span>Guarda esta búsqueda y te avisaremos cuando haya coincidencias.</span>
-                        <SavedSearchButton draft={savedSearchDraft} compact />
-                      </div>
+                      <SavedSearchPrompt
+                        draft={savedSearchDraft}
+                        className="saved-search-prompt saved-search-prompt--toolbar latido-search-no-results-alert"
+                        message="Añade esta necesidad a Mi lista para seguirla."
+                      />
                     )}
                     {showingRelatedAlternatives && (
                       <div className="latido-search-related-note">
@@ -3524,10 +3537,10 @@ export default function GlobalSearch({
                     </div>
                   </div>
                   {savedSearchDraft && immersiveResultCount > 0 && (
-                    <div className="latido-search-results-toolbar__save">
-                      <span>Avísame cuando haya nuevos resultados.</span>
-                      <SavedSearchButton draft={savedSearchDraft} compact />
-                    </div>
+                    <SavedSearchPrompt
+                      draft={savedSearchDraft}
+                      className="latido-search-results-toolbar__save"
+                    />
                   )}
                 </div>
 
@@ -3750,7 +3763,7 @@ export default function GlobalSearch({
               {savedSearchDraft && (
                 <SavedSearchButton
                   draft={savedSearchDraft}
-                  idleLabel="Guardar esta búsqueda y avisarme"
+                  idleLabel="Añadir a Mi lista"
                   panel
                 />
               )}

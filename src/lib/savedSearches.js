@@ -96,6 +96,7 @@ export function notifySavedSearchesChanged(search = null) {
 
 export async function findSavedSearch(userId, draft) {
   const fingerprint = getSavedSearchFingerprint(draft)
+  const normalized = normalizeSavedSearchDraft(draft)
   if (!userId || !fingerprint) return null
 
   const { data, error } = await supabase
@@ -106,7 +107,25 @@ export async function findSavedSearch(userId, draft) {
     .maybeSingle()
 
   if (error) throw error
-  return data || null
+  if (data) return data
+
+  // Las entradas creadas antes de Mi lista no incluian todos los criterios
+  // semanticos en su fingerprint. La frase evita que el cambio de interfaz
+  // cree una segunda anotacion identica.
+  if (normalized?.query) {
+    const fallback = await supabase
+      .from('saved_searches')
+      .select('id,active,push_enabled')
+      .eq('user_id', userId)
+      .eq('query', normalized.query)
+      .order('updated_at', { ascending:false })
+      .limit(1)
+      .maybeSingle()
+    if (fallback.error) throw fallback.error
+    return fallback.data || null
+  }
+
+  return null
 }
 
 export async function saveSavedSearch(userId, draft) {
@@ -116,11 +135,9 @@ export async function saveSavedSearch(userId, draft) {
     throw new Error('Esta búsqueda necesita al menos una sección y un destino válido.')
   }
 
-  const { data, error } = await supabase
-    .from('saved_searches')
-    .upsert({
+  const row = {
       user_id:userId,
-      name:normalized.name,
+      name:normalized.query || normalized.name,
       query:normalized.query,
       entity_kinds:normalized.entityKinds,
       category:normalized.category || null,
@@ -133,13 +150,34 @@ export async function saveSavedSearch(userId, draft) {
       fingerprint,
       frequency:'daily',
       push_enabled:true,
-      email_enabled:true,
+      // El email se reserva para una futura funcion de pago. Mi lista funciona
+      // dentro de la aplicacion y, si el usuario lo permite, mediante push.
+      email_enabled:false,
       in_app_enabled:true,
       active:true,
+      completed_at:null,
       updated_at:new Date().toISOString(),
-    }, { onConflict:'user_id,fingerprint' })
+  }
+
+  let response = await supabase
+    .from('saved_searches')
+    .upsert(row, { onConflict:'user_id,fingerprint' })
     .select()
     .single()
+
+  // Compatibilidad durante el despliegue: el frontend puede publicarse unos
+  // minutos antes que la migracion que incorpora completed_at.
+  if (response.error && /completed_at|schema cache|column/i.test(response.error.message || '')) {
+    const legacyRow = { ...row }
+    delete legacyRow.completed_at
+    response = await supabase
+      .from('saved_searches')
+      .upsert(legacyRow, { onConflict:'user_id,fingerprint' })
+      .select()
+      .single()
+  }
+
+  const { data, error } = response
 
   if (error) throw error
   notifySavedSearchesChanged(data)
@@ -158,14 +196,29 @@ export async function saveSavedSearch(userId, draft) {
 export async function listSavedSearches(userId) {
   if (!userId) return []
 
-  const { data, error } = await supabase
+  let response = await supabase
     .from('saved_searches')
-    .select('id,name,query,entity_kinds,category,intent,canton,city,plz,filters,result_path,active,push_enabled,email_enabled,created_at,updated_at')
+    .select('id,user_id,name,query,entity_kinds,category,intent,canton,city,plz,filters,result_path,active,completed_at,push_enabled,email_enabled,created_at,updated_at')
     .eq('user_id', userId)
     .order('updated_at', { ascending:false })
 
+  if (response.error && /completed_at|schema cache|column/i.test(response.error.message || '')) {
+    response = await supabase
+      .from('saved_searches')
+      .select('id,user_id,name,query,entity_kinds,category,intent,canton,city,plz,filters,result_path,active,push_enabled,email_enabled,created_at,updated_at')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending:false })
+  }
+
+  const { data, error } = response
+
   if (error) throw error
-  return data || []
+  return (data || []).map(search => ({
+    ...search,
+    // Antes de Mi lista, active=false significaba una alerta pausada. Esas
+    // entradas se muestran ahora en Conseguido en vez de desaparecer.
+    completed_at:search.completed_at || (!search.active ? search.updated_at : null),
+  }))
 }
 
 export async function setSavedSearchActive(userId, searchId, active) {
@@ -188,6 +241,85 @@ export async function deleteSavedSearch(userId, searchId) {
 
   if (error) throw error
   notifySavedSearchesChanged()
+}
+
+export async function setSavedSearchCompleted(userId, searchId, completed) {
+  if (!userId || !searchId) return
+  const now = new Date().toISOString()
+  const values = completed
+    ? { active:false, completed_at:now, email_enabled:false, updated_at:now }
+    : { active:true, completed_at:null, email_enabled:false, updated_at:now }
+
+  let { error } = await supabase
+    .from('saved_searches')
+    .update(values)
+    .eq('id', searchId)
+    .eq('user_id', userId)
+
+  if (error && /completed_at|schema cache|column/i.test(error.message || '')) {
+    const legacyValues = { active:!completed, email_enabled:false, updated_at:now }
+    const legacy = await supabase
+      .from('saved_searches')
+      .update(legacyValues)
+      .eq('id', searchId)
+      .eq('user_id', userId)
+    error = legacy.error
+  }
+
+  if (error) throw error
+  notifySavedSearchesChanged()
+}
+
+export async function updateSavedSearch(userId, searchId, draft) {
+  const normalized = normalizeSavedSearchDraft(draft)
+  const fingerprint = getSavedSearchFingerprint(draft)
+  if (!userId || !searchId || !normalized || !fingerprint) {
+    throw new Error('Escribe algo que Latido pueda buscar.')
+  }
+
+  const values = {
+    name:normalized.query || normalized.name,
+    query:normalized.query,
+    entity_kinds:normalized.entityKinds,
+    category:normalized.category || null,
+    intent:normalized.intent || null,
+    canton:normalized.canton || null,
+    city:normalized.city || null,
+    plz:normalized.plz || null,
+    filters:normalized.filters,
+    result_path:normalized.resultPath,
+    fingerprint,
+    active:true,
+    completed_at:null,
+    email_enabled:false,
+    updated_at:new Date().toISOString(),
+  }
+
+  let response = await supabase
+    .from('saved_searches')
+    .update(values)
+    .eq('id', searchId)
+    .eq('user_id', userId)
+    .select()
+    .single()
+
+  if (response.error && /completed_at|schema cache|column/i.test(response.error.message || '')) {
+    const legacyValues = { ...values }
+    delete legacyValues.completed_at
+    response = await supabase
+      .from('saved_searches')
+      .update(legacyValues)
+      .eq('id', searchId)
+      .eq('user_id', userId)
+      .select()
+      .single()
+  }
+
+  const { data, error } = response
+
+  if (error) throw error
+  notifySavedSearchesChanged(data)
+  return data
 }
 
 export async function markSavedSearchMatchOpened(matchId, userId) {

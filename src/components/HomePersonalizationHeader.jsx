@@ -135,6 +135,10 @@ export default function HomePersonalizationHeader({
   communities=[],
   canton='',
   loading=false,
+  view='for-you',
+  onViewChange,
+  listCount=0,
+  listUnreadCount=0,
 }) {
   const [creatorContents, setCreatorContents] = useState(() => getAllCreatorContents())
   const [creators, setCreators] = useState(() => getAllCreators())
@@ -178,27 +182,62 @@ export default function HomePersonalizationHeader({
       <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:21, color:C.text, margin:'0 0 10px', letterSpacing:-0.25 }}>
         ❤️ Mi Latido
       </h2>
-      <div style={{ marginBottom:11 }}>
-        <p style={{ minWidth:0, fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:0 }}>
-          {loading
-            ? 'Buscando opciones para ti…'
-            : `${overview.total} ${overview.total === 1 ? 'opción' : 'opciones'} ${locationLabel}`}
-        </p>
+      <div className="mi-latido-primary-tabs" role="tablist" aria-label="Vistas de Mi Latido">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === 'for-you'}
+          className={view === 'for-you' ? 'is-active' : ''}
+          onClick={() => onViewChange?.('for-you')}
+        >
+          Para ti
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === 'my-list'}
+          className={view === 'my-list' ? 'is-active' : ''}
+          onClick={() => onViewChange?.('my-list')}
+        >
+          Mi lista
+          {listCount > 0 && (
+            <span className={`mi-latido-primary-tabs__badge${listUnreadCount > 0 ? ' has-unread' : ''}`}>
+              {listCount}
+            </span>
+          )}
+        </button>
       </div>
-      <div className="mi-latido-overview-grid" aria-label="Contenido disponible por categoría">
-        {overview.entries.map(entry => (
-          <Link
-            key={entry.id}
-            to={entry.unfiltered ? entry.href : addCantonFilter(entry.href, canton, showLocalResults)}
-            className="mi-latido-overview-card"
-            aria-label={`${entry.count} ${entry.label}`}
-          >
-            <span aria-hidden="true" className="mi-latido-overview-icon">{entry.emoji}</span>
-            <strong>{loading ? '—' : entry.count}</strong>
-            <span>{entry.label}</span>
-          </Link>
-        ))}
-      </div>
+
+      {view === 'for-you' && (
+        <>
+          <div style={{ marginBottom:11 }}>
+            <p className="mi-latido-overview-summary">
+              {loading
+                ? 'Buscando opciones para ti…'
+                : (
+                  <>
+                    <strong>{overview.total}</strong>{' '}
+                    <span>{overview.total === 1 ? 'opción' : 'opciones'} {locationLabel}</span>
+                  </>
+                )}
+            </p>
+          </div>
+          <div className="mi-latido-overview-grid" aria-label="Contenido disponible por categoría">
+            {overview.entries.map(entry => (
+              <Link
+                key={entry.id}
+                to={entry.unfiltered ? entry.href : addCantonFilter(entry.href, canton, showLocalResults)}
+                className="mi-latido-overview-card"
+                aria-label={`${entry.count} ${entry.label}`}
+              >
+                <span aria-hidden="true" className="mi-latido-overview-icon">{entry.emoji}</span>
+                <strong>{loading ? '—' : entry.count}</strong>
+                <span>{entry.label}</span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

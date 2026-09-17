@@ -27,6 +27,7 @@ import CreatorCommunityView, { CreatorCommunityToolbar } from '../components/Cre
 import SectionTabs from '../components/SectionTabs'
 import GlobalSearch from '../components/GlobalSearch'
 import SavedSearchButton from '../components/SavedSearchButton'
+import SavedSearchPrompt from '../components/SavedSearchPrompt'
 import { FilterButton, FilterChips, FilterResultSummary, FILTER_PANEL_TITLE_STYLE } from '../components/FilterWorkspace'
 import { buildShareUrl } from '../components/ShareButton'
 import DetailActionBar from '../components/DetailActionBar'
@@ -2081,9 +2082,10 @@ export default function Comunidades() {
 
   const baseOrderedBusinesses = businessMatches
     .sort((a, b) => {
+      const searchDiff = b.searchScore - a.searchScore
+      if (hasSearch && searchDiff) return searchDiff
       const planDiff = getDirectoryBusinessPriority(a.business) - getDirectoryBusinessPriority(b.business)
       if (planDiff) return planDiff
-      const searchDiff = b.searchScore - a.searchScore
       if (searchDiff) return searchDiff
       if (a.business.featured !== b.business.featured) return b.business.featured ? 1 : -1
       const recommendationDiff = (businessRecommendations[b.business.id] || 0) - (businessRecommendations[a.business.id] || 0)
@@ -2459,10 +2461,7 @@ export default function Comunidades() {
                 onSortChange={handleDirectorySortChange}
               />
               {savedSearchDraft && (
-                <div className="saved-search-prompt saved-search-prompt--toolbar">
-                  <span>Avísame cuando haya nuevos resultados.</span>
-                  <SavedSearchButton draft={savedSearchDraft} compact />
-                </div>
+                <SavedSearchPrompt draft={savedSearchDraft} />
               )}
             </div>
           )}
@@ -2480,10 +2479,7 @@ export default function Comunidades() {
                 />
               </div>
               {savedSearchDraft && (
-                <div className="saved-search-prompt saved-search-prompt--toolbar">
-                  <span>Avísame cuando haya nuevos resultados.</span>
-                  <SavedSearchButton draft={savedSearchDraft} compact />
-                </div>
+                <SavedSearchPrompt draft={savedSearchDraft} />
               )}
             </div>
           )}
@@ -2717,7 +2713,7 @@ export default function Comunidades() {
 
             <SavedSearchButton
               draft={filterSavedSearchDraft}
-              idleLabel="Guardar esta búsqueda y avisarme"
+              idleLabel="Añadir a Mi lista"
               panel
             />
 

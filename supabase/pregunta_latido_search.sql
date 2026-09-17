@@ -107,8 +107,8 @@ AS $$
   SELECT COALESCE(COUNT(*), 0)::INTEGER
   FROM unnest(COALESCE(p_terms, ARRAY[]::TEXT[])) AS requested(term)
   WHERE public.latido_search_normalize(requested.term) <> ''
-    AND public.latido_search_normalize(p_document)
-        LIKE '%' || public.latido_search_normalize(requested.term) || '%';
+    AND (' ' || trim(public.latido_search_normalize(p_document)) || ' ')
+        LIKE '% ' || trim(public.latido_search_normalize(requested.term)) || ' %';
 $$;
 
 CREATE OR REPLACE FUNCTION public.latido_search_canonical_city(p_value TEXT)
@@ -271,7 +271,7 @@ AS $$
       'ad'::TEXT AS entity_type,
       listing.id AS entity_id,
       to_jsonb(listing) AS payload,
-      1 AS commercial_priority,
+      3 AS commercial_priority,
       public.latido_search_term_score(
         concat_ws(' ', listing.title, listing."desc", listing.cat, listing.sub, listing.city, listing.canton),
         p_terms
@@ -310,7 +310,7 @@ AS $$
       'job'::TEXT,
       job.id,
       to_jsonb(job),
-      1,
+      3,
       public.latido_search_term_score(
         concat_ws(
           ' ',
@@ -398,7 +398,7 @@ AS $$
       'community'::TEXT,
       community.id,
       to_jsonb(community),
-      1,
+      3,
       public.latido_search_term_score(
         concat_ws(' ', community.name, community."desc", community.cat, community.city),
         p_terms
@@ -416,7 +416,7 @@ AS $$
       'event'::TEXT,
       event.id,
       to_jsonb(event),
-      1,
+      3,
       public.latido_search_term_score(
         concat_ws(' ', event.title, event."desc", event.type, event.venue, event.host, event.city, event.canton),
         p_terms

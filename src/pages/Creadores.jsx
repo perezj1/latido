@@ -19,15 +19,9 @@ import {
 import { FilterButton, FILTER_PANEL_TITLE_STYLE, getFilterPanelControlStyle } from '../components/FilterWorkspace'
 import { EmptyState, Sheet, SkeletonCard } from '../components/UI'
 import SavedSearchButton from '../components/SavedSearchButton'
+import SavedSearchPrompt from '../components/SavedSearchPrompt'
+import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import './Creators.css'
-
-function normalizeSearch(value = '') {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-}
 
 export default function Creadores() {
   const { user, isLoggedIn } = useAuth()
@@ -62,44 +56,58 @@ export default function Creadores() {
   const cantons = useMemo(() => (
     [...new Set(creators.map(creator => creator.canton).filter(Boolean))].sort()
   ), [creators])
+  const searchProfile = useMemo(() => buildSearchProfile(search), [search])
+  const hasSearch = searchProfile.normalized.length >= 2
 
   const filteredCreators = useMemo(() => {
-    const query = normalizeSearch(search)
-    return creators.filter(creator => {
-      const searchable = normalizeSearch([
-        creator.name,
-        creator.handle,
-        creator.tagline,
-        creator.bio,
-        creator.city,
-        creator.canton,
-        creator.reach,
-        ...(creator.contents || []).flatMap(content => [content.title, content.summary]),
-      ].join(' '))
+    return creators.map(creator => {
+      const searchScore = hasSearch ? scoreSearchFields(searchProfile, [
+        { value:creator.name, weight:6 },
+        { value:creator.handle, weight:5 },
+        { value:creator.tagline, weight:4 },
+        { value:(creator.topics || []).join(' '), weight:3 },
+        { value:creator.bio, weight:2 },
+        { value:creator.city || creator.reach, weight:2 },
+        { value:(creator.contents || []).map(content => `${content.title || ''} ${content.summary || ''}`).join(' '), weight:2 },
+      ]) : 0
       const hasPlatform = !platform || (creator.socials || []).some(social => social.platform === platform)
-      return (!query || searchable.includes(query))
+      const matches = (!hasSearch || searchScore > 0)
         && (!topic || (creator.topics || []).includes(topic))
         && (!canton || creator.canton === canton)
         && hasPlatform
+      return { creator, searchScore, matches }
     })
-  }, [canton, creators, platform, search, topic])
+      .filter(entry => entry.matches)
+      .sort((left, right) => right.searchScore - left.searchScore)
+      .map(entry => entry.creator)
+  }, [canton, creators, hasSearch, platform, searchProfile, topic])
 
   const featuredContents = useMemo(() => {
-    const query = normalizeSearch(search)
     return filteredCreators
       .flatMap(creator => getOrderedCreatorContents(creator, { publishedOnly:true })
-      .filter(content => {
-        const searchable = normalizeSearch([content.title, content.summary, creator.name, creator.handle].join(' '))
+      .map((content, selectionIndex) => ({
+        content,
+        creator,
+        selectionIndex,
+        searchScore:hasSearch ? scoreSearchFields(searchProfile, [
+          { value:content.title, weight:6 },
+          { value:content.summary, weight:4 },
+          { value:content.topic, weight:3 },
+          { value:creator.name, weight:2 },
+          { value:creator.handle, weight:2 },
+        ]) : 0,
+      }))
+      .filter(entry => {
+        const { content, searchScore } = entry
         return content.status === 'published'
-          && (!query || searchable.includes(query))
+          && (!hasSearch || searchScore > 0)
           && (!topic || content.topic === topic)
           && (!platform || content.platform === platform)
           && (!canton || content.canton === canton)
-      })
-      .map((content, selectionIndex) => ({ content, creator, selectionIndex })))
-    .sort((a, b) => a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at))
+      }))
+    .sort((a, b) => b.searchScore - a.searchScore || a.selectionIndex - b.selectionIndex || new Date(b.content.published_at) - new Date(a.content.published_at))
     .slice(0, 6)
-  }, [canton, filteredCreators, platform, search, topic])
+  }, [canton, filteredCreators, hasSearch, platform, searchProfile, topic])
 
   const creatorCta = ownCreator ? '/creadores/mi-perfil' : '/creadores/alta'
   const activeFilterCount = Number(Boolean(topic)) + Number(Boolean(canton)) + Number(Boolean(platform))
@@ -224,10 +232,7 @@ export default function Creadores() {
           <FilterButton count={activeFilterCount} open={showFilters} onClick={openFilters} controls="creators-filter-sheet" />
         </div>
         {savedSearchDraft && (
-          <div className="saved-search-prompt saved-search-prompt--toolbar">
-            <span>Avísame cuando haya nuevos resultados.</span>
-            <SavedSearchButton draft={savedSearchDraft} compact />
-          </div>
+          <SavedSearchPrompt draft={savedSearchDraft} />
         )}
 
         <Sheet show={showFilters} onClose={() => setShowFilters(false)}>
@@ -271,7 +276,7 @@ export default function Creadores() {
             </div>
             <SavedSearchButton
               draft={filterSavedSearchDraft}
-              idleLabel="Guardar esta búsqueda y avisarme"
+              idleLabel="Añadir a Mi lista"
               panel
             />
             <button type="submit" className="filter-show-results filter-sheet-submit">Mostrar resultados</button>

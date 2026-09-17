@@ -103,8 +103,8 @@ function describeNotificationGroup(kind, rows) {
     case APP_NOTIFICATION_KINDS.SAVED_SEARCH:
       return {
         icon:'✨',
-        title:count === 1 ? 'Hay algo nuevo para ti' : `Tienes ${count} novedades en tus búsquedas`,
-        body:count === 1 ? data.title || 'Encontramos un resultado que coincide con tu búsqueda.' : 'Revisa los nuevos resultados que coinciden con tus alertas.',
+        title:count === 1 ? 'Hay algo nuevo en Mi lista' : `Tienes ${count} novedades en Mi lista`,
+        body:count === 1 ? data.title || 'Encontramos un resultado para una de tus anotaciones.' : 'Revisa los nuevos resultados de Mi lista.',
         href:data.href || '/',
       }
     case APP_NOTIFICATION_KINDS.BUSINESS_LEAD:

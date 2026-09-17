@@ -23,9 +23,10 @@ CREATE TABLE IF NOT EXISTS public.saved_searches (
   fingerprint TEXT NOT NULL,
   frequency TEXT NOT NULL DEFAULT 'daily' CHECK (frequency IN ('daily')),
   push_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-  email_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  email_enabled BOOLEAN NOT NULL DEFAULT FALSE,
   in_app_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   active BOOLEAN NOT NULL DEFAULT TRUE,
+  completed_at TIMESTAMPTZ,
   last_delivery_attempt_at TIMESTAMPTZ,
   last_notified_at TIMESTAMPTZ,
   last_email_attempt_at TIMESTAMPTZ,
@@ -88,7 +89,8 @@ ALTER TABLE public.saved_search_matches
   CHECK (entity_kind IN ('listing', 'job', 'provider', 'event', 'community', 'creator', 'creator_content'));
 
 ALTER TABLE public.saved_searches
-  ADD COLUMN IF NOT EXISTS email_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  ADD COLUMN IF NOT EXISTS email_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS last_email_attempt_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS last_email_notified_at TIMESTAMPTZ;
 
@@ -184,8 +186,10 @@ BEGIN
     SELECT COUNT(*)
     FROM public.saved_searches
     WHERE user_id = NEW.user_id
+      AND active = TRUE
+      AND completed_at IS NULL
   ) >= 10 THEN
-    RAISE EXCEPTION 'Puedes guardar hasta 10 búsquedas. Elimina una para crear otra.'
+    RAISE EXCEPTION 'Puedes tener hasta 10 necesidades activas. Marca una como conseguida para añadir otra.'
       USING ERRCODE = 'P0001';
   END IF;
 
@@ -372,12 +376,12 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  completed_at TIMESTAMPTZ := NOW();
+  delivery_completed_at TIMESTAMPTZ := NOW();
 BEGIN
   UPDATE public.saved_search_matches
   SET
     email_status = 'sent',
-    email_sent_at = completed_at,
+    email_sent_at = delivery_completed_at,
     email_processing_at = NULL,
     email_error = NULL
   WHERE saved_search_id = p_saved_search_id
@@ -386,9 +390,9 @@ BEGIN
 
   UPDATE public.saved_searches
   SET
-    last_email_attempt_at = completed_at,
-    last_email_notified_at = completed_at,
-    updated_at = completed_at
+    last_email_attempt_at = delivery_completed_at,
+    last_email_notified_at = delivery_completed_at,
+    updated_at = delivery_completed_at
   WHERE id = p_saved_search_id;
 END;
 $$;

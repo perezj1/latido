@@ -324,8 +324,17 @@ const SEARCH_STOP_WORDS = new Set([
   'con', 'del', 'desde', 'el', 'en', 'la', 'las', 'los', 'para', 'por', 'que', 'una', 'uno', 'unos', 'unas',
 ])
 
-function queryMatches(query: string, record: Record<string, unknown>) {
-  const tokens = normalizeSearchText(query)
+function queryMatches(
+  query: string,
+  record: Record<string, unknown>,
+  filters: Record<string, unknown> | null = null,
+) {
+  const configuredTerms = Array.isArray(filters?.matchTerms)
+    ? filters.matchTerms
+    : Array.isArray(filters?.match_terms)
+      ? filters.match_terms
+      : []
+  const tokens = normalizeSearchText(configuredTerms.length ? configuredTerms.join(' ') : query)
     .split(' ')
     .filter(token => token.length >= 2 && !SEARCH_STOP_WORDS.has(token))
   if (!tokens.length) return true
@@ -358,12 +367,32 @@ function queryMatches(query: string, record: Record<string, unknown>) {
     record.socials ? JSON.stringify(record.socials) : '',
   ].flat().filter(Boolean).join(' '))
 
-  return tokens.every(token => {
+  const queryWords = new Set(normalizeSearchText(query).split(' ').filter(Boolean))
+  const haystackWords = new Set(haystack.split(' ').filter(Boolean))
+  const hasExactWord = (terms: string[]) => terms.some(term => haystackWords.has(term))
+  const motorcycleTerms = ['moto', 'motos', 'motocicleta', 'motocicletas', 'motociclo', 'motociclos', 'scooter', 'scooters', 'ciclomotor', 'ciclomotores']
+  const carTerms = ['coche', 'coches', 'carro', 'carros', 'auto', 'autos', 'automovil', 'automoviles']
+  const rentalTerms = ['alquiler', 'alquilar', 'renta', 'rentar', 'rent', 'rental']
+  const asksForMotorcycle = motorcycleTerms.some(term => queryWords.has(term))
+  const asksForCar = carTerms.some(term => queryWords.has(term))
+  const asksForRental = rentalTerms.some(term => queryWords.has(term))
+
+  // Conceptos de vehículo se comparan como palabras completas y por familia.
+  // Evita que "moto" coincida con "motorista" o con cualquier anuncio de coche.
+  if (asksForMotorcycle && !hasExactWord(motorcycleTerms)) return false
+  if (asksForCar && !hasExactWord(carTerms)) return false
+  if (asksForRental && (asksForMotorcycle || asksForCar) && !hasExactWord(rentalTerms)) return false
+
+  const tokenMatches = (token: string) => {
     const stems = [token]
     if (token.length > 4 && token.endsWith('es')) stems.push(token.slice(0, -2))
     if (token.length > 3 && token.endsWith('s')) stems.push(token.slice(0, -1))
     return stems.some(stem => stem.length >= 2 && haystack.includes(stem))
-  })
+  }
+
+  // Las anotaciones nuevas guardan terminos semanticos y necesitan al menos
+  // una coincidencia. Las busquedas antiguas conservan su comportamiento.
+  return configuredTerms.length ? tokens.some(tokenMatches) : tokens.every(tokenMatches)
 }
 
 function isNationwide(value: unknown) {
@@ -433,6 +462,27 @@ function priceRangeMatches(range: unknown, record: Record<string, unknown>) {
   return true
 }
 
+function numericFilterMatches(value: unknown, min: unknown, max: unknown) {
+  const hasMin = min !== null && min !== undefined && min !== ''
+  const hasMax = max !== null && max !== undefined && max !== ''
+  if (!hasMin && !hasMax) return true
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) return false
+  if (hasMin && amount < Number(min)) return false
+  if (hasMax && amount > Number(max)) return false
+  return true
+}
+
+function extractAmount(value: unknown) {
+  if (value !== null && value !== undefined && value !== '') {
+    const direct = Number(value)
+    if (Number.isFinite(direct)) return direct
+  }
+  const matched = text(value).match(/([0-9]{1,3}(?:[.'’\s][0-9]{3})+|[0-9]{2,7}(?:,[0-9]{1,2})?)/)
+  if (!matched) return Number.NaN
+  return Number(matched[1].replace(/[.'’\s]/g, '').replace(',', '.'))
+}
+
 function filtersMatch(search: SavedSearchRow, record: Record<string, unknown>) {
   const filters = search.filters || {}
   const creatorTopics = [
@@ -458,6 +508,10 @@ function filtersMatch(search: SavedSearchRow, record: Record<string, unknown>) {
   if (!exactNormalizedMatch(filters.creatorPlatform, creatorPlatforms)) return false
   if (!exactNormalizedMatch(filters.sub, [record.sub, record.sector, record.category])) return false
   if (!exactNormalizedMatch(filters.privacy, [record.privacy])) return false
+  const amount = record.price_amount ?? record.salary_amount ?? record.price ?? record.salary
+  if (!numericFilterMatches(extractAmount(amount), filters.priceMin, filters.priceMax)) return false
+  if (!numericFilterMatches(record.rooms, filters.roomsMin, null)) return false
+  if (filters.dateFrom && (!record.available_from || text(record.available_from).slice(0, 10) > text(filters.dateFrom).slice(0, 10))) return false
   return priceRangeMatches(filters.priceRange, record)
 }
 
@@ -487,6 +541,18 @@ function publicationIntent(table: string, record: Record<string, unknown>) {
   return ''
 }
 
+function savedSearchIntentMatches(search: SavedSearchRow, publication: string) {
+  const configured = Array.isArray(search.filters?.resultIntents)
+    ? search.filters.resultIntents.map(value => normalizeSearchText(value)).filter(Boolean)
+    : []
+  const expected = configured.length
+    ? configured
+    : normalizeSearchText(search.intent) === 'ofrece'
+      ? ['ofrece', 'vende', 'regala']
+      : [normalizeSearchText(search.intent)].filter(Boolean)
+  return !expected.length || expected.includes(normalizeSearchText(publication))
+}
+
 function savedSearchMatchesPublication(
   search: SavedSearchRow,
   table: string,
@@ -498,10 +564,14 @@ function savedSearchMatchesPublication(
   if (search.category && normalizeCategory(search.category) !== normalizeCategory(publicationCategory(table, record))) {
     return false
   }
-  if (search.intent && !exactNormalizedMatch(search.intent, [publicationIntent(table, record)])) return false
+  if (
+    (search.intent || Array.isArray(search.filters?.resultIntents))
+    && ['listing', 'job'].includes(kind)
+    && !savedSearchIntentMatches(search, publicationIntent(table, record))
+  ) return false
   if (!locationMatches(search, record)) return false
   if (!filtersMatch(search, record)) return false
-  return queryMatches(search.query, record)
+  return queryMatches(search.query, record, search.filters)
 }
 
 function appendSearchParam(path: string, key: string, value: string) {
@@ -725,22 +795,10 @@ async function findSavedSearchMatches(table: string, record: Record<string, unkn
     .filter(search => savedSearchMatchesPublication(search, table, record))
   const recipientIds = [...new Set(matching.map(search => search.user_id))]
 
-  // Una misma publicación puede coincidir con varias búsquedas de la misma
-  // persona. Conservamos solo la más específica para no duplicar avisos.
-  const bestByUser = new Map<string, SavedSearchRow>()
-  for (const search of matching) {
-    const current = bestByUser.get(search.user_id)
-    if (
-      !current
-      || (deliveryIsDue(search) && !deliveryIsDue(current))
-      || (deliveryIsDue(search) === deliveryIsDue(current) && savedSearchSpecificity(search) > savedSearchSpecificity(current))
-    ) {
-      bestByUser.set(search.user_id, search)
-    }
-  }
-
   const created: Array<{ search:SavedSearchRow, match:SavedSearchMatch }> = []
-  for (const search of bestByUser.values()) {
+  // Una publicacion puede servir para varias anotaciones de Mi lista. La
+  // guardamos en todas y agrupamos la entrega push en el paso siguiente.
+  for (const search of matching) {
     const resultPath = savedSearchResultPath(table, record)
     const { data: match, error: insertError } = await supabase
       .from('saved_search_matches')
@@ -773,11 +831,24 @@ async function deliverImmediateSavedSearchMatches(
   const duePairs = pairs.filter(pair => pair.search.push_enabled && deliveryIsDue(pair.search))
   if (!duePairs.length) return { attempted:0, sent:0 }
 
+  const pairsByUser = new Map<string, Array<{ search:SavedSearchRow, match:SavedSearchMatch }>>()
+  for (const pair of pairs) {
+    const current = pairsByUser.get(pair.search.user_id) || []
+    current.push(pair)
+    pairsByUser.set(pair.search.user_id, current)
+  }
+
   let attempted = 0
   let sent = 0
-  for (const { search, match } of duePairs) {
+  for (const [userId, userPairs] of pairsByUser) {
+    const dueForUser = userPairs
+      .filter(pair => pair.search.push_enabled && deliveryIsDue(pair.search))
+      .sort((left, right) => savedSearchSpecificity(right.search) - savedSearchSpecificity(left.search))
+    if (!dueForUser.length) continue
+
+    const { search, match } = dueForUser[0]
     const now = new Date().toISOString()
-    const subscriptions = await fetchActiveSubscriptions([search.user_id])
+    const subscriptions = await fetchActiveSubscriptions([userId])
     const path = appendSearchParam(
       appendSearchParam(match.result_path, 'savedSearch', search.id),
       'savedMatch',
@@ -806,14 +877,14 @@ async function deliverImmediateSavedSearchMatches(
           notified_at:now,
           push_sent_at:result.sent > 0 ? now : null,
         })
-        .eq('id', match.id),
+        .in('id', userPairs.map(pair => pair.match.id)),
       supabase
         .from('saved_searches')
         .update({
           last_delivery_attempt_at:now,
           ...(result.sent > 0 ? { last_notified_at:now } : {}),
         })
-        .eq('id', search.id),
+        .in('id', [...new Set(userPairs.map(pair => pair.search.id))]),
     ])
   }
 

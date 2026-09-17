@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { BadgeCheck } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -20,6 +20,7 @@ import { readOfflineSnapshot, writeOfflineSnapshot } from '../lib/offlineCache'
 import { Avatar, Card, EmptyState, Modal, PrivacyTag, RatingPill, SkeletonCard, Tag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import HomePersonalizationHeader from '../components/HomePersonalizationHeader'
+import MyListPanel from '../components/MyListPanel'
 import CreatorHomeSection from '../components/CreatorHomeSection'
 import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
@@ -573,6 +574,7 @@ function makeAttentionItem(kind, row, overrides={}) {
 }
 
 export default function Home() {
+  const routerLocation = useLocation()
   const { displayName, isLoggedIn, user, userCanton, userInterests, profileMetaLoaded } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -611,6 +613,10 @@ export default function Home() {
   const [eventfrogEvents, setEventfrogEvents] = useState([])
   const [latidoSection, setLatidoSection] = useState('offers')
   const [latidoMode, setLatidoMode] = useState('for-you')
+  const [miLatidoView, setMiLatidoView] = useState(() => (
+    new URLSearchParams(window.location.search).get('miLista') === '1' ? 'my-list' : 'for-you'
+  ))
+  const [myListSummary, setMyListSummary] = useState({ activeCount:0, unreadCount:0 })
   const latidoOffersFeedRef = useRef(null)
   const latidoRequestsFeedRef = useRef(null)
   const [attentionTasks, setAttentionTasks] = useState([])
@@ -1608,7 +1614,7 @@ export default function Home() {
 
                       {savedSearchAlerts.length > 0 && (
                         <div style={{ padding:'10px 14px 6px' }}>
-                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>NUEVOS PARA TI</p>
+                          <p style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:C.light, margin:'0 0 8px', letterSpacing:0.5 }}>NUEVO EN MI LISTA</p>
                           <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                             {savedSearchAlerts.map(alert => (
                               <button
@@ -1620,7 +1626,7 @@ export default function Home() {
                                 }}
                                 style={{ width:'100%', background:'#F5F3FF', border:'1px solid #DDD6FE', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left' }}
                               >
-                                <span style={{ fontSize:18, marginTop:1 }}>🔔</span>
+                                <span style={{ fontSize:18, marginTop:1 }}>📝</span>
                                 <div style={{ flex:1, minWidth:0 }}>
                                   <p style={{ fontFamily:PP, fontWeight:750, fontSize:13, color:C.text, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                                     {alert.result_title}
@@ -1674,6 +1680,7 @@ export default function Home() {
 
           <div className="hero-search-wrap">
             <GlobalSearch
+              key={reopenSavedGlobalSearch ? `saved-search-${routerLocation.key}` : 'home-search'}
               size="lg"
               assistantMode
               immersive
@@ -1872,50 +1879,71 @@ export default function Home() {
           communities={communityHighlights}
           canton={userCanton}
           loading={loading}
+          view={miLatidoView}
+          onViewChange={setMiLatidoView}
+          listCount={myListSummary.activeCount}
+          listUnreadCount={myListSummary.unreadCount}
         />
-        <div className="latido-page-container">
-          <SegmentedTabs
-            items={MY_LATIDO_SECTIONS}
-            value={latidoSection}
-            onChange={setLatidoSection}
-            ariaLabel="Tipo de publicaciones de Mi Latido"
-            className="mi-latido-section-tabs"
-          />
-          <div className="mi-latido-result-summary">
-            <FilterResultSummary
-              count={visibleLatidoItems.length}
-              sortLabel={MY_LATIDO_MODES.find(mode => mode.id === latidoMode)?.label || 'Recomendado'}
-              sortOptions={MY_LATIDO_MODES}
-              sortValue={latidoMode}
-              onSortChange={setLatidoMode}
+        {miLatidoView === 'for-you' ? (
+          <>
+            <div className="latido-page-container">
+              <SegmentedTabs
+                items={MY_LATIDO_SECTIONS}
+                value={latidoSection}
+                onChange={setLatidoSection}
+                ariaLabel="Tipo de publicaciones de Mi Latido"
+                className="mi-latido-section-tabs"
+              />
+              <div className="mi-latido-result-summary">
+                <FilterResultSummary
+                  count={visibleLatidoItems.length}
+                  sortLabel={MY_LATIDO_MODES.find(mode => mode.id === latidoMode)?.label || 'Recomendado'}
+                  sortOptions={MY_LATIDO_MODES}
+                  sortValue={latidoMode}
+                  onSortChange={setLatidoMode}
+                />
+              </div>
+            </div>
+            <div key={`${latidoSection}-${latidoMode}`} className="segmented-content-transition" style={{ maxWidth:1200, margin:'0 auto' }}>
+              {latidoSection === 'offers' ? (
+                <MiLatidoSubsection
+                  title="Ofertas"
+                  items={visibleLatidoSections.offers}
+                  loading={loading}
+                  feedRef={latidoOffersFeedRef}
+                  emptyText="Todavía no hay ofertas disponibles."
+                  viewAllHref="/tablon?type=ofrece"
+                  onOpen={openLatidoItem}
+                  hideHeader
+                />
+              ) : (
+                <MiLatidoSubsection
+                  title="Solicitudes"
+                  items={visibleLatidoSections.requests}
+                  loading={loading}
+                  feedRef={latidoRequestsFeedRef}
+                  emptyText="Todavía no hay solicitudes disponibles."
+                  viewAllHref="/tablon?type=busca"
+                  onOpen={openLatidoItem}
+                  hideHeader
+                />
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="latido-page-container segmented-content-transition" style={{ paddingBottom:18 }}>
+            <MyListPanel
+              active
+              onSummaryChange={setMyListSummary}
             />
           </div>
-        </div>
-        <div key={`${latidoSection}-${latidoMode}`} className="segmented-content-transition" style={{ maxWidth:1200, margin:'0 auto' }}>
-          {latidoSection === 'offers' ? (
-            <MiLatidoSubsection
-              title="Ofertas"
-              items={visibleLatidoSections.offers}
-              loading={loading}
-              feedRef={latidoOffersFeedRef}
-              emptyText="Todavía no hay ofertas disponibles."
-              viewAllHref="/tablon?type=ofrece"
-              onOpen={openLatidoItem}
-              hideHeader
-            />
-          ) : (
-            <MiLatidoSubsection
-              title="Solicitudes"
-              items={visibleLatidoSections.requests}
-              loading={loading}
-              feedRef={latidoRequestsFeedRef}
-              emptyText="Todavía no hay solicitudes disponibles."
-              viewAllHref="/tablon?type=busca"
-              onOpen={openLatidoItem}
-              hideHeader
-            />
-          )}
-        </div>
+        )}
+
+        {miLatidoView !== 'my-list' && (
+          <div style={{ display:'none' }} aria-hidden="true">
+            <MyListPanel active={false} onSummaryChange={setMyListSummary} surface={false} />
+          </div>
+        )}
       </section>
 
       {/* <section style={{ maxWidth:1200, margin:'0 auto', padding:'34px 16px 0' }}>

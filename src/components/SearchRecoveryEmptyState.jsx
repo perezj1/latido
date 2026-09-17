@@ -19,21 +19,21 @@ export default function SearchRecoveryEmptyState({
         <span>{employment ? '💼' : '🔎'}</span>
         <i>⌕</i>
       </div>
-      <p className="employment-search-empty__eyebrow">TU BÚSQUEDA SIGUE ACTIVA</p>
+      <p className="employment-search-empty__eyebrow">LATIDO PUEDE SEGUIR BUSCANDO</p>
       <h2 id={titleId}>
         {employment
           ? 'Todavía no hemos encontrado empleos que coincidan exactamente contigo.'
           : 'Todavía no hemos encontrado resultados que coincidan exactamente con tu búsqueda.'}
       </h2>
       <p className="employment-search-empty__intro">
-        Guarda esta búsqueda y te avisaremos cuando aparezca una coincidencia.
+        Añádelo a Mi lista y Latido seguirá buscando coincidencias.
       </p>
 
       <div className="employment-search-empty__actions">
         {savedSearchDraft && (
           <SavedSearchButton
             draft={savedSearchDraft}
-            idleLabel="Activar alerta"
+            idleLabel="Añadir a Mi lista"
             prominent
           />
         )}

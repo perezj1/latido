@@ -21,7 +21,9 @@ import {
 import { EmptyState, Sheet, SkeletonCard } from './UI'
 import { FilterButton, FilterChips, FilterResultSummary, SegmentedTabs, FILTER_PANEL_TITLE_STYLE, getFilterPanelControlStyle } from './FilterWorkspace'
 import SavedSearchButton from './SavedSearchButton'
+import SavedSearchPrompt from './SavedSearchPrompt'
 import { C, PP } from '../lib/theme'
+import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
 import '../pages/Creators.css'
 
 const PROFILE_SORT_OPTIONS = [
@@ -35,14 +37,6 @@ export const CREATOR_VIEW_TABS = [
   { id:'contenidos', label:'Contenido' },
   { id:'creadores', label:'Creadores' },
 ]
-
-function normalize(value = '') {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-}
 
 export function CreatorCommunityToolbar({
   search,
@@ -182,10 +176,7 @@ export function CreatorCommunityToolbar({
         onSortChange={onSortChange}
       />
       {savedSearchDraft && (
-        <div className="saved-search-prompt saved-search-prompt--toolbar">
-          <span>Avísame cuando haya nuevos resultados.</span>
-          <SavedSearchButton draft={savedSearchDraft} compact />
-        </div>
+        <SavedSearchPrompt draft={savedSearchDraft} />
       )}
 
       <Sheet show={showFilters} onClose={() => setShowFilters(false)}>
@@ -229,7 +220,7 @@ export function CreatorCommunityToolbar({
           </div>
           <SavedSearchButton
             draft={filterSavedSearchDraft}
-            idleLabel="Guardar esta búsqueda y avisarme"
+            idleLabel="Añadir a Mi lista"
             panel
           />
           <button type="submit" className="filter-show-results filter-sheet-submit">Mostrar resultados</button>
@@ -278,27 +269,30 @@ export default function CreatorCommunityView({
   }), [])
 
   const ownCreator = getCreatorForUser(user?.id)
-  const query = normalize(search)
-  const filteredCreators = useMemo(() => creators.filter(creator => {
+  const searchProfile = useMemo(() => buildSearchProfile(search), [search])
+  const hasSearch = searchProfile.normalized.length >= 2
+  const filteredCreators = useMemo(() => creators.map(creator => {
     const publishedContents = (creator.contents || []).filter(content => content.status === 'published')
-    const searchable = normalize([
-      creator.name,
-      creator.handle,
-      creator.tagline,
-      creator.bio,
-      creator.city,
-      creator.canton,
-      creator.reach,
-      ...(creator.contents || []).flatMap(content => [content.title, content.summary]),
-    ].join(' '))
-    return (!query || searchable.includes(query))
+    const searchScore = hasSearch ? scoreSearchFields(searchProfile, [
+      { value:creator.name, weight:6 },
+      { value:creator.handle, weight:5 },
+      { value:creator.tagline, weight:4 },
+      { value:(creator.topics || []).join(' '), weight:3 },
+      { value:creator.bio, weight:2 },
+      { value:creator.city || creator.reach, weight:2 },
+      { value:publishedContents.map(content => `${content.title || ''} ${content.summary || ''}`).join(' '), weight:2 },
+    ]) : 0
+    const matches = (!hasSearch || searchScore > 0)
       && (!topic || creator.topics?.includes(topic))
       && (!platform || publishedContents.some(content => content.platform === platform) || creator.socials?.some(social => social.platform === platform))
       && (!location || creator.canton === location)
-  }).sort((first, second) => {
-    if (sort === 'name') return first.name.localeCompare(second.name, 'es')
-    return new Date(second.created_at) - new Date(first.created_at)
-  }), [creators, location, platform, query, sort, topic])
+    return { creator, searchScore, matches }
+  }).filter(entry => entry.matches).sort((first, second) => {
+    const relevanceDifference = second.searchScore - first.searchScore
+    if (relevanceDifference) return relevanceDifference
+    if (sort === 'name') return first.creator.name.localeCompare(second.creator.name, 'es')
+    return new Date(second.creator.created_at) - new Date(first.creator.created_at)
+  }).map(entry => entry.creator), [creators, hasSearch, location, platform, searchProfile, sort, topic])
 
   const contents = useMemo(() => creators
     .flatMap(creator => getOrderedCreatorContents(creator, { publishedOnly:true })
@@ -307,9 +301,19 @@ export default function CreatorCommunityView({
         && (!topic || content.topic === topic)
         && (!platform || content.platform === platform)
         && (!location || content.canton === location))
-      .map(content => ({ content, creator })))
-    .filter(({ content, creator }) => !query || normalize(`${content.title} ${content.summary} ${creator.name} ${creator.handle}`).includes(query))
-    .sort(compareByAdded), [creators, location, platform, query, topic])
+      .map(content => ({
+        content,
+        creator,
+        searchScore:hasSearch ? scoreSearchFields(searchProfile, [
+          { value:content.title, weight:6 },
+          { value:content.summary, weight:4 },
+          { value:content.topic, weight:3 },
+          { value:creator.name, weight:2 },
+          { value:creator.handle, weight:2 },
+        ]) : 0,
+      })))
+    .filter(entry => !hasSearch || entry.searchScore > 0)
+    .sort((first, second) => second.searchScore - first.searchScore || compareByAdded(first, second)), [creators, hasSearch, location, platform, searchProfile, topic])
 
   useEffect(() => {
     onResultCountChange?.(view === 'contenidos' ? contents.length : filteredCreators.length)

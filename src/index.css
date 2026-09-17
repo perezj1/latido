@@ -5790,10 +5790,74 @@ img[data-latido-img-state="loaded"] {
   gap: 8px;
 }
 
+.mi-latido-primary-tabs {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  margin: 0 0 14px;
+  padding: 3px;
+  border: 0;
+  border-radius: 12px;
+  background: #f3f4f9;
+}
+
+.mi-latido-primary-tabs > button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748b;
+  padding: 5px 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.mi-latido-primary-tabs > button.is-active {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, .1);
+}
+
+.mi-latido-primary-tabs__badge {
+  min-width: 15px;
+  height: 15px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #e4e7ef;
+  color: #64748b;
+  padding: 0 4px;
+  font-size: 8px;
+  line-height: 1;
+}
+
+.mi-latido-primary-tabs__badge.has-unread { background: #dbeafe; color: #1d4ed8; }
+
+.mi-latido-overview-summary {
+  min-width: 0;
+  margin: 0;
+  color: #7b8496;
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.mi-latido-overview-summary strong { color: #111827; font-size: 13px; font-weight: 800; }
+
 .mi-latido-overview-grid {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: max(78px, calc((100% - 32px) / 4.25));
+  grid-auto-columns: max(74px, calc((100% - 24px) / 4));
   gap: 8px;
   overflow-x: auto;
   padding: 1px 1px 6px;
@@ -5838,19 +5902,19 @@ img[data-latido-img-state="loaded"] {
 }
 
 .mi-latido-overview-card .mi-latido-overview-icon {
-  min-height: 27px;
+  min-height: 22px;
   display: flex;
   align-items: center;
   color: #2864F0;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1;
 }
 
 .mi-latido-overview-card strong {
-  margin-top: 3px;
+  margin-top: 2px;
   color: #111C36;
   font-family: 'Poppins', sans-serif;
-  font-size: 20px;
+  font-size: 17px;
   line-height: 1.1;
 }
 
@@ -5858,7 +5922,7 @@ img[data-latido-img-state="loaded"] {
   margin-top: 2px;
   color: #667694;
   font-family: 'Poppins', sans-serif;
-  font-size: 11.5px;
+  font-size: 10px;
   line-height: 1.2;
 }
 
