@@ -13,7 +13,7 @@ import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Se
 import BusinessPartnerContactsEditor from '../components/BusinessPartnerContactsEditor'
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
-import { getBusinessPromotionMeta, isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
+import { isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
 import { canUseWhatsappNumber } from '../lib/businessContact'
 import { getPartnerContactOptionHref, normalizePartnerContactOptions } from '../lib/businessPartnerContacts'
@@ -392,6 +392,82 @@ function formatDate(value) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return 'Sin fecha'
   return date.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' })
+}
+
+function PublicationManagementCard({
+  item,
+  expiredEvent=false,
+  lifecycleExpired=false,
+  adNeedsReview=false,
+  deleting=false,
+  actionLabel='',
+  actionAriaLabel='',
+  onAction,
+}) {
+  const imageUrl = getPublicationImageUrl(item)
+  const compactAction = !actionLabel
+
+  return (
+    <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:compactAction ? '14px 15px' : 0, overflow:'hidden' }}>
+      <div style={{ display:'flex', gap:12, alignItems:'flex-start', padding:compactAction ? 0 : '14px 15px' }}>
+        {imageUrl ? (
+          <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0 }}>
+            <img src={getThumbnailImageUrl(imageUrl)} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          </div>
+        ) : (
+          <div style={{ width:42, height:42, borderRadius:12, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+            {item.icon}
+          </div>
+        )}
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:6 }}>
+            <Tag bg="#DBEAFE" color={C.primaryDark}>{KIND_META[item.kind].label}</Tag>
+            <Tag bg={expiredEvent || lifecycleExpired ? '#FEF3C7' : item.active ? '#D1FAE5' : '#E5E7EB'} color={expiredEvent || lifecycleExpired ? '#92400E' : item.active ? '#065F46' : '#475569'}>
+              {expiredEvent ? 'Fecha pasada' : lifecycleExpired ? 'Caducada' : item.lifecycleLabel || (item.active ? 'Activa' : 'Oculta')}
+            </Tag>
+            {adNeedsReview && <Tag bg="#FEF3C7" color="#92400E">Revisar</Tag>}
+          </div>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.title}</p>
+          {item.summary && (
+            <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:'0 0 3px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+              {item.summary}
+            </p>
+          )}
+          <div style={{ display:'flex', alignItems:'center', gap:4, minWidth:0 }}>
+            {item.meta && <span style={{ fontFamily:PP, fontSize:10, color:C.light, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.meta}</span>}
+            <span style={{ fontFamily:PP, fontSize:10, color:C.light, flexShrink:0 }}>{item.meta ? ' · ' : ''}{formatDate(item.createdAt)}</span>
+          </div>
+        </div>
+        {compactAction && (
+          <button
+            type="button"
+            onClick={onAction}
+            style={{ width:36, height:36, borderRadius:12, border:`1px solid ${C.border}`, background:C.bg, color:C.mid, fontSize:18, cursor:'pointer', flexShrink:0 }}
+            aria-label={actionAriaLabel || `Gestionar ${item.title}`}
+          >
+            ⋯
+          </button>
+        )}
+      </div>
+      {!compactAction && (
+        <div style={{ display:'flex', justifyContent:'center', borderTop:`1px solid ${C.border}`, padding:'10px 20px 12px' }}>
+          <button
+            type="button"
+            onClick={onAction}
+            style={{ width:'min(260px, 100%)', minHeight:34, border:`1px solid ${C.primary}`, borderRadius:11, background:C.primary, color:'#fff', padding:'7px 18px', fontFamily:PP, fontWeight:800, fontSize:11, cursor:'pointer' }}
+            aria-label={actionAriaLabel || `${actionLabel} ${item.title}`}
+          >
+            {actionLabel}
+          </button>
+        </div>
+      )}
+      {deleting && (
+        <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'10px 0 0', paddingTop:10, borderTop:`1px solid ${C.border}` }}>
+          Borrando publicación...
+        </p>
+      )}
+    </div>
+  )
 }
 
 function normalizePublication(kind, row) {
@@ -2552,23 +2628,13 @@ export default function Perfil() {
           <div style={{ display:'grid', gap:10 }}>
             {businessPublications.map(item => {
               const hasActivePlan = isBusinessPromotionActive(item.raw)
-              const activePlan = getBusinessPromotionMeta(item.raw?.promotion_plan)
               return (
-                <div key={item.id} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:15, padding:'12px', display:'flex', gap:11, alignItems:'center' }}>
-                  <div style={{ width:42, height:42, borderRadius:13, background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
-                    {item.icon}
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:C.text, margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                      {item.title || 'Negocio'}
-                    </p>
-                    <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                      {hasActivePlan ? `Plan activo: ${activePlan.shortLabel}` : item.summary || 'Listo para elegir un plan'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
+                <PublicationManagementCard
+                  key={item.id}
+                  item={item}
+                  actionLabel={hasActivePlan ? 'Editar' : 'Destacar'}
+                  actionAriaLabel={`${hasActivePlan ? 'Editar' : 'Destacar'} ${item.title || 'negocio'}`}
+                  onAction={() => {
                       setProfessionalOpen(false)
                       if (hasActivePlan) {
                         openProfessionalBusinessEditor(item)
@@ -2576,22 +2642,7 @@ export default function Perfil() {
                       }
                       navigate(`/negocios/${item.id}/destacar`)
                     }}
-                    style={{
-                      fontFamily:PP,
-                      fontWeight:900,
-                      fontSize:11,
-                      color:'#fff',
-                      background:C.primary,
-                      border:'none',
-                      borderRadius:999,
-                      padding:'10px 15px',
-                      cursor:'pointer',
-                      flexShrink:0,
-                    }}
-                  >
-                    {hasActivePlan ? 'Editar' : 'Elegir'}
-                  </button>
-                </div>
+                />
               )
             })}
           </div>
@@ -2949,54 +3000,20 @@ export default function Perfil() {
             const expiredEvent = isExpiredEventPublication(item, eventReviewConfirmations)
             const lifecycleExpired = ['ad', 'job'].includes(item.kind) && item.expired
             const adNeedsReview = isAdDueForReview(item, adReviewConfirmations)
-            const imageUrl = getPublicationImageUrl(item)
             return (
-              <div key={deleteKey} style={{ background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'14px 15px', marginBottom:10 }}>
-                <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
-                  {imageUrl ? (
-                    <div style={{ width:42, height:42, borderRadius:12, overflow:'hidden', flexShrink:0 }}>
-                      <img src={getThumbnailImageUrl(imageUrl)} alt={item.title} loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                    </div>
-                  ) : (
-                    <div style={{ width:42, height:42, borderRadius:12, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
-                      {item.icon}
-                    </div>
-                  )}
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:6 }}>
-                      <Tag bg="#DBEAFE" color={C.primaryDark}>{KIND_META[item.kind].label}</Tag>
-                      <Tag bg={expiredEvent || lifecycleExpired ? '#FEF3C7' : item.active ? '#D1FAE5' : '#E5E7EB'} color={expiredEvent || lifecycleExpired ? '#92400E' : item.active ? '#065F46' : '#475569'}>
-                        {expiredEvent ? 'Fecha pasada' : lifecycleExpired ? 'Caducada' : item.lifecycleLabel || (item.active ? 'Activa' : 'Oculta')}
-                      </Tag>
-                      {adNeedsReview && <Tag bg="#FEF3C7" color="#92400E">Revisar</Tag>}
-                    </div>
-                    <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.35, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.title}</p>
-                    {item.summary && (
-                      <p style={{ fontFamily:PP, fontSize:12, color:C.mid, margin:'0 0 3px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        {item.summary}
-                      </p>
-                    )}
-                    <div style={{ display:'flex', alignItems:'center', gap:4, minWidth:0 }}>
-                      {item.meta && <span style={{ fontFamily:PP, fontSize:10, color:C.light, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.meta}</span>}
-                      <span style={{ fontFamily:PP, fontSize:10, color:C.light, flexShrink:0 }}>{item.meta ? '· ' : ''}{formatDate(item.createdAt)}</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
+              <div key={deleteKey} style={{ marginBottom:10 }}>
+                <PublicationManagementCard
+                  item={item}
+                  expiredEvent={expiredEvent}
+                  lifecycleExpired={lifecycleExpired}
+                  adNeedsReview={adNeedsReview}
+                  deleting={deletingKey === deleteKey}
+                  actionAriaLabel={`Gestionar ${item.title}`}
+                  onAction={() => {
                       setBusinessDeleteBlock(null)
                       setActionItem(item)
                     }}
-                    style={{ width:36, height:36, borderRadius:12, border:`1px solid ${C.border}`, background:C.bg, color:C.mid, fontSize:18, cursor:'pointer', flexShrink:0 }}
-                    aria-label={`Gestionar ${item.title}`}
-                  >
-                    ⋯
-                  </button>
-                </div>
-                {deletingKey === deleteKey && (
-                  <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'10px 0 0', paddingTop:10, borderTop:`1px solid ${C.border}` }}>
-                    Borrando publicación...
-                  </p>
-                )}
+                />
               </div>
             )
           })

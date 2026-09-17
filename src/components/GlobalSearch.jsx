@@ -3180,9 +3180,10 @@ export default function GlobalSearch({
                     window.setTimeout(() => overlayInputRef.current?.focus(), 0)
                   } else {
                     closeImmersive()
+                    if (!pageMode) navigate('/', { replace:true })
                   }
                 }}
-                aria-label={immersiveView === 'results' ? 'Volver a las sugerencias' : 'Cerrar búsqueda'}
+                aria-label={immersiveView === 'results' ? 'Volver a las sugerencias' : pageMode ? 'Volver' : 'Volver a Inicio'}
               >
                 <BackGlyph />
               </button>
