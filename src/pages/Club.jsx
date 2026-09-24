@@ -101,7 +101,7 @@ const CLUB_DESIGNS = [
     name: 'Café 6.50 CHF · ¡Qué ruina!',
     image: '/club/designs/cafe-granate.webp',
     alt: 'Diseño granate Café 6.50 CHF, qué ruina, de Latido Club',
-    tone: '#FFF2EC',
+    tone: '#F4F2EE',
   },
   {
     id: 'logo',
@@ -1017,8 +1017,8 @@ export default function Club() {
             </div>
           </div>
           <div className="club-hero__collage" aria-hidden="true">
-            <div className="club-hero-card club-hero-card--shirt"><img src="/club/products/camiseta-cafe-texto-blanco-negra.webp" alt="" /></div>
-            <div className="club-hero-card club-hero-card--case"><img src="/club/products/sudadera-hablas-arena-trasera.webp" alt="" /></div>
+            <div className="club-hero-card club-hero-card--shirt"><img src="/club/hero-camiseta-logo-blanca.webp" alt="" /></div>
+            <div className="club-hero-card club-hero-card--case"><img src="/club/totebag-hablas-espanol-granate.jpg" alt="" /></div>
             <span className="club-scribble">Diseños con<br />identidad.</span>
           </div>
         </section>

@@ -104,8 +104,10 @@
 .club-hero__collage { position: relative; z-index: 2; width: min(100%, 610px); height: 540px; justify-self: end; }
 .club-hero-card { position: absolute; overflow: hidden; border: 8px solid #fff; background: #f2f6ff; box-shadow: 0 28px 70px rgba(16, 32, 74, .18); }
 .club-hero-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.club-hero-card--shirt { top: 0; right: 7%; width: 72%; aspect-ratio: 1; transform: rotate(3deg); border-radius: 42% 42% 20px 20px; }
+.club-hero-card--shirt { top: 0; right: 7%; width: 72%; aspect-ratio: 1; transform: rotate(3deg); border-radius: 42% 42% 20px 20px; border: 0; background: #e3eaf3; }
 .club-hero-card--case { bottom: 0; left: 1%; width: 39%; aspect-ratio: 1; transform: rotate(-7deg); border-radius: 24px; }
+.club-hero-card--case img { object-fit: contain; }
+.club-hero-card--shirt img { padding: 6% 5% 2%; object-fit: contain; }
 .club-scribble { position: absolute; z-index: 3; right: 0; bottom: 50px; color: var(--club-red); font: italic 700 24px/1.05 Georgia, serif; transform: rotate(-6deg); }
 .club-scribble::after { display: block; width: 100%; height: 9px; margin-top: 4px; border-top: 3px solid currentColor; border-radius: 50%; content: ''; transform: rotate(-3deg); }
 
@@ -127,6 +129,7 @@
 .club-design-card__visual > span { position: absolute; right: 16px; bottom: 16px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border-radius: 999px; color: var(--club-ink); background: rgba(255,255,255,.9); box-shadow: 0 8px 24px rgba(16,32,74,.12); font-size: 9px; font-weight: 800; opacity: 0; transform: translateY(5px); transition: .2s ease; }
 .club-design-card__visual:hover > span, .club-design-card__visual:focus-visible > span { opacity: 1; transform: translateY(0); }
 .club-design-card--logo .club-design-card__visual { padding: 46px; }
+.club-design-card--cafe img { transform: scale(2); filter: none; }
 .club-design-card h3 { margin: 0; padding: 18px 20px; color: var(--club-ink); font-size: 12px; line-height: 1.4; }
 
 .club-collection, .club-faq { width: min(1240px, calc(100% - 40px)); margin: 0 auto; padding: 110px 0; }
