@@ -4,7 +4,7 @@
   --club-red: #ff4557;
   --club-teal: #00b3a4;
   --club-yellow: #ffb31a;
-  --club-cream: #fffaf1;
+  --club-cream: #ffffff;
   min-height: 100vh;
   overflow-x: clip;
   color: var(--club-ink);
@@ -20,7 +20,7 @@
   z-index: 40;
   top: 0;
   border-bottom: 1px solid rgba(16, 32, 74, .1);
-  background: rgba(255, 250, 241, .9);
+  background: rgba(255, 255, 255, .92);
   backdrop-filter: blur(16px);
 }
 
@@ -43,6 +43,7 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   justify-self: end;
   gap: 7px;
   min-height: 40px;
@@ -66,11 +67,11 @@
   grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr);
   align-items: center;
   gap: clamp(32px, 6vw, 96px);
-  background: #fffaf1;
+  background: #fff;
 }
 
 .club-hero__shape { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(1px); }
-.club-hero__shape--one { top: -130px; left: -120px; width: 420px; height: 420px; background: rgba(255, 179, 26, .13); }
+.club-hero__shape--one { top: -130px; left: -120px; width: 420px; height: 420px; background: rgba(255, 179, 26, .09); }
 .club-hero__shape--two { right: -120px; bottom: -240px; width: 560px; height: 560px; background: rgba(0, 179, 164, .12); }
 .club-hero__content { position: relative; z-index: 2; max-width: 570px; }
 
@@ -153,23 +154,23 @@
 .club-shop__tabs::-webkit-scrollbar { display: none; }
 .club-shop__tabs button { display: grid; min-width: 0; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border: 1px solid #dce2eb; border-radius: 18px; color: var(--club-ink); background: #fff; text-align: left; cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
 .club-shop__tabs button:hover:not(:disabled) { border-color: rgba(23,87,232,.5); transform: translateY(-1px); box-shadow: 0 10px 24px rgba(16,32,74,.07); }
-.club-shop__tabs button.is-selected { border-color: var(--club-blue); background: #f5f8ff; box-shadow: inset 0 0 0 1px var(--club-blue), 0 12px 28px rgba(23,87,232,.12); }
+.club-shop__tabs button.is-selected { border-color: var(--club-blue); background: #fff; box-shadow: inset 0 0 0 1px var(--club-blue), 0 12px 28px rgba(23,87,232,.12); }
 .club-shop__tabs button:disabled { opacity: .42; cursor: not-allowed; }
 .club-shop__tabs button:focus-visible, .club-config button:focus-visible, .club-config select:focus-visible { outline: 3px solid rgba(23,87,232,.35); outline-offset: 2px; }
-.club-shop__tab-image { position: relative; display: block; width: 56px; height: 56px; overflow: hidden; border-radius: 12px; background: #f2f5f9; }
+.club-shop__tab-image { position: relative; display: block; width: 56px; height: 56px; overflow: hidden; border: 1px solid rgba(16,32,74,.08); border-radius: 12px; background: #fff; }
 .club-shop__tab-image > img, .club-shop__tab-image .club-product-artwork { width: 100%; height: 100%; object-fit: cover; }
 .club-shop__tab-copy { display: grid; min-width: 0; gap: 3px; }
 .club-shop__tab-copy strong { font-size: 13px; line-height: 1.2; }
 .club-shop__tab-copy small { overflow: hidden; color: #7b8498; font-size: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .club-shop__tabs button.is-selected strong { color: var(--club-blue); }
 
-.club-config { display: grid; overflow: hidden; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); border: 1px solid rgba(16,32,74,.1); border-radius: 28px; background: #f2f6fb; box-shadow: 0 18px 50px rgba(16,32,74,.07); }
+.club-config { display: grid; overflow: clip; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); border: 1px solid rgba(16,32,74,.1); border-radius: 28px; background: #fff; box-shadow: 0 18px 50px rgba(16,32,74,.07); }
 .club-config--empty { display: flex; min-height: 320px; align-items: center; justify-content: center; gap: 10px; color: #68738c; font-size: 12px; font-weight: 700; }
 .club-config__stage { position: sticky; top: 72px; display: flex; min-width: 0; align-self: start; flex-direction: column; }
 .club-config__media { position: relative; overflow: hidden; aspect-ratio: 1; }
 .club-config__gallery { display: flex; width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
 .club-config__gallery::-webkit-scrollbar { display: none; }
-.club-config__slide { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; flex: 0 0 100%; padding: 0; border: 0; background: #f2f6fb; cursor: zoom-in; scroll-snap-align: start; scroll-snap-stop: always; }
+.club-config__slide { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; flex: 0 0 100%; padding: 0; border: 0; background: #fff; cursor: zoom-in; scroll-snap-align: start; scroll-snap-stop: always; }
 .club-config__slide > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .club-config__slide > img, .club-config__slide > .club-product-artwork { transition: transform .6s cubic-bezier(.2,.8,.2,1); }
 .club-config__media:hover .club-config__slide > img, .club-config__media:hover .club-config__slide > .club-product-artwork { transform: scale(1.03); }
@@ -182,12 +183,12 @@
 .club-config__thumbs { display: flex; gap: 8px; overflow-x: auto; padding: 12px 16px 16px; scrollbar-width: none; }
 .club-config__thumbs::-webkit-scrollbar { display: none; }
 .club-config__thumbs button { display: grid; flex: 0 0 auto; gap: 5px; justify-items: center; padding: 4px 4px 6px; border: 1px solid transparent; border-radius: 13px; color: #6a748b; background: transparent; font-size: 9px; font-weight: 800; cursor: pointer; transition: border-color .2s ease, background .2s ease; }
-.club-config__thumbs button:hover { background: rgba(255,255,255,.7); }
+.club-config__thumbs button:hover { border-color: #dce2eb; }
 .club-config__thumbs button.is-selected { border-color: var(--club-blue); color: var(--club-blue); background: #fff; }
 .club-config__thumbs .club-product-artwork, .club-config__thumbs img { width: 64px; height: 64px; border-radius: 9px; object-fit: cover; }
 .club-config__thumbs .club-product-artwork img { width: 100%; height: 100%; border-radius: 0; }
 
-.club-config__panel { display: flex; background: #fff; min-width: 0; flex-direction: column; gap: 22px; padding: clamp(24px, 3.4vw, 44px); }
+.club-config__panel { display: flex; border-left: 1px solid rgba(16,32,74,.08); background: #fff; min-width: 0; flex-direction: column; gap: 22px; padding: clamp(24px, 3.4vw, 44px); }
 .club-config__heading > p:first-child { margin: 0 0 6px; color: var(--club-accent); font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
 .club-config__heading h3 { margin: 0; font-weight: 900; color: var(--club-ink); font-size: clamp(22px, 2.3vw, 30px); line-height: 1.12; letter-spacing: -1px; }
 .club-config__price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 10px; }
@@ -205,7 +206,7 @@
 
 .club-config__designs { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
 .club-config__designs button { display: grid; min-width: 0; align-content: start; gap: 7px; padding: 0; border: 0; color: #5c6780; background: transparent; text-align: left; cursor: pointer; }
-.club-config__design-image { position: relative; display: block; overflow: hidden; aspect-ratio: 1; border: 1px solid #dce2eb; border-radius: 14px; background: #f2f5f9; transition: border-color .2s ease, box-shadow .2s ease; }
+.club-config__design-image { position: relative; display: block; overflow: hidden; aspect-ratio: 1; border: 1px solid #dce2eb; border-radius: 14px; background: #fff; transition: border-color .2s ease, box-shadow .2s ease; }
 .club-config__design-image > img, .club-config__design-image .club-product-artwork { width: 100%; height: 100%; object-fit: cover; }
 .club-config__designs button:hover .club-config__design-image { border-color: rgba(23,87,232,.5); }
 .club-config__designs button.is-selected .club-config__design-image { border-color: var(--club-blue); box-shadow: 0 0 0 2px var(--club-blue); }
@@ -296,7 +297,7 @@
 .club-preview > header span { color: var(--club-red); font-size: 9px; font-weight: 900; letter-spacing: 1.4px; text-transform: uppercase; }
 .club-preview > header h2 { margin: 3px 0 0; color: var(--club-ink); font-size: 18px; line-height: 1.25; }
 .club-preview > header button { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(16,32,74,.14); border-radius: 50%; color: var(--club-ink); background: #fff; cursor: pointer; }
-.club-preview__canvas { position: relative; display: grid; min-height: 0; flex: 1; place-items: center; padding: clamp(14px, 3vw, 34px); background: #f4f6f9; }
+.club-preview__canvas { position: relative; display: grid; min-height: 0; flex: 1; place-items: center; padding: clamp(14px, 3vw, 34px); background: #fff; }
 .club-preview__canvas img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 20px 34px rgba(16,32,74,.14)); }
 .club-preview__canvas .club-product-artwork { width: min(100%, 760px); height: min(100%, 760px); aspect-ratio: 1; filter: drop-shadow(0 20px 34px rgba(16,32,74,.14)); }
 .club-preview__canvas .club-product-artwork img { object-fit: contain; filter: none; }
@@ -356,7 +357,7 @@
 .club-honeypot { position: absolute !important; left: -9999px !important; width: 1px !important; height: 1px !important; opacity: 0 !important; }
 .club-quote-button { margin-top: 6px; }
 .club-quote-button:disabled, .club-order-button:disabled { cursor: wait; opacity: .65; }
-.club-order-summary { padding: 27px; background: var(--club-cream); }
+.club-order-summary { padding: 27px; border-left: 1px solid rgba(16,32,74,.08); background: #fff; }
 .club-order-summary > h3 { margin: 0 0 18px; font-size: 14px; }
 .club-order-line, .club-order-total, .club-grand-total { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .club-order-line { margin-bottom: 12px; color: #5f6982; font-size: 10px; }
@@ -401,6 +402,7 @@
 @media (max-width: 900px) {
   .club-config { grid-template-columns: 1fr; }
   .club-config__stage { position: static; }
+  .club-config__panel { border-top: 1px solid rgba(16,32,74,.08); border-left: 0; }
   .club-config__media { aspect-ratio: 4 / 3; }
   .club-shop__tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .club-hero { min-height: auto; padding-top: 54px; padding-bottom: 64px; grid-template-columns: 1fr; }
@@ -438,10 +440,11 @@
   .club-back svg { width: 17px; height: 17px; }
   .club-brand { justify-self: center; }
   .club-brand img { width: 144px; height: 28px; }
-  .club-cart-button { width: 40px; min-height: 40px; padding: 0; }
+  .club-cart-button { width: 40px; height: 40px; min-height: 40px; padding: 0; gap: 0; }
   .club-cart-button > span { display: none; }
   .club-cart-button b { position: absolute; top: -4px; right: -4px; width: 17px; height: 17px; }
   .club-hero { padding: 50px 20px 55px; gap: 38px; }
+  .club-hero__shape--one { top: -120px; left: -140px; width: 300px; height: 300px; }
   .club-hero h1 { font-size: clamp(52px, 18vw, 76px); letter-spacing: -4px; }
   .club-hero__copy { margin: 22px 0 24px; font-size: 14px; }
   .club-hero__trust { display: grid; gap: 10px; }
@@ -482,6 +485,7 @@
   .club-checkout-layer { padding: 0; align-items: flex-end; }
   .club-checkout { max-height: 94vh; border-radius: 22px 22px 0 0; }
   .club-checkout__layout { grid-template-columns: 1fr; }
+  .club-order-summary { border-top: 1px solid rgba(16,32,74,.08); border-left: 0; }
   .club-address-form, .club-checkout-payment, .club-order-summary { padding: 20px; }
   .club-field-row { grid-template-columns: 1fr; }
   .club-field-row--postcode { grid-template-columns: .7fr 1.3fr; }
