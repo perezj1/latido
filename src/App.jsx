@@ -35,6 +35,7 @@ import { AppNotificationsProvider } from './hooks/useAppNotifications'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
+const Club = lazy(() => import('./pages/Club'))
 const Home = lazy(() => import('./pages/Home'))
 const Explorar = lazy(() => import('./pages/Explorar'))
 const Tablon = lazy(() => import('./pages/Tablon'))
@@ -503,7 +504,7 @@ function AppShell() {
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
-  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password' || isPuntoHispanoPublisher
+  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/club' || isPuntoHispanoPublisher
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -616,6 +617,7 @@ function AppShell() {
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'creadores', label:'Creadores', to:'/creadores' },
+      { id:'club', label:'Club', to:'/club' },
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
@@ -763,6 +765,7 @@ function AppShell() {
             <Route path="/publicar/punto-hispano/:linkToken" element={<PuntoHispanoPublicar />} />
             <Route path="/comunidades" element={<Comunidades />} />
             <Route path="/colaboraciones" element={<Colaboraciones />} />
+            <Route path="/club" element={<Club />} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />
