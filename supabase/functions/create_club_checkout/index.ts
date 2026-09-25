@@ -88,6 +88,9 @@ const PRODUCT_CONFIG:Record<string, ProductConfig> = {
   'e2a521ea-ebab-4709-80c1-12b173b13271': {
     shortName:'Sudadera Latido Logo · Clara', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
+  'e922400e-27f5-410e-83bd-ef4647215e41': {
+    shortName:'Sudadera Atardecer', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
+  },
   '9b2e0872-ffc6-4bbe-8615-eec669e36da4': {
     shortName:'Bolsa Latido Logo', price:24.9, optionLabel:'Color', purchaseType:'addon',
   },
