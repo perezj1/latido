@@ -5,6 +5,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Clock,
   CreditCard,
   Heart,
   Leaf,
@@ -620,7 +621,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
   if (!orderable) buttonLabel = product.availabilityMessage || 'Disponible próximamente'
   else if (isAddon && !hasGarment) buttonLabel = 'Añade primero una camiseta o sudadera'
   else if (missingGroup) buttonLabel = `Elige tu ${missingGroup.name.toLowerCase()} para continuar`
-  else if (pendingAddon && !isAddon) buttonLabel = `Añadir ambos · ${money(product.price + pendingAddon.product.price)}`
+  else if (pendingAddon && !isAddon) buttonLabel = `Añadir los dos · ${money(product.price + pendingAddon.product.price)}`
   else if (justAdded) buttonLabel = 'Añadido a tu bolsa'
 
   return (
@@ -642,7 +643,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
             <span className="club-shop__tab-copy">
               <strong>{category.label}</strong>
               <small>
-                {category.count} {category.count === 1 ? 'diseño' : 'diseños'} · {['bolsas', 'carcasas'].includes(category.id) ? 'complemento desde +' : 'desde '}{money(category.price)}
+                {category.count} {category.count === 1 ? 'diseño' : 'diseños'} · {['bolsas', 'carcasas'].includes(category.id) ? `+${money(category.price)} con tu prenda` : money(category.price)}
               </small>
             </span>
           </button>
@@ -716,11 +717,11 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
               {Number(product.compareAtPrice) > Number(product.price) && (
                 <del>{money(product.compareAtPrice)}</del>
               )}
-              <span>{isAddon ? 'Solo como complemento de una camiseta o sudadera' : 'Precio promocional · IVA y envío a Suiza incluidos'}</span>
+              <span>{isAddon ? 'Complemento para tu camiseta o sudadera' : 'Precio de lanzamiento · IVA y envío a Suiza incluidos'}</span>
             </div>
             {isAddon && (
               <p className="club-config__addon-note">
-                Este artículo se muestra para que puedas combinarlo con tu prenda, pero no se vende individualmente por los costes de producción y envío.
+                Solo se vende junto a una camiseta o sudadera: producirlo y enviarlo por separado encarecería demasiado su precio.
               </p>
             )}
             {currentImage && product.description && <p className="club-config__description">{product.description}</p>}
@@ -833,7 +834,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
                   <ProductArtwork image={{ url: pendingAddon.image }} alt="" />
                 </span>
                 <span>
-                  <small>También se añadirá</small>
+                  <small>Se añadirá con tu prenda</small>
                   <b>{pendingAddon.product.shortName}</b>
                   <strong>+{money(pendingAddon.product.price)}</strong>
                 </span>
@@ -848,8 +849,8 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
             {isAddon && !hasGarment && garmentChoices.length ? (
               <div className="club-companion-picker">
                 <div className="club-companion-picker__heading">
-                  <strong>Elige una prenda para combinarlo</strong>
-                  <span>{missingGroup ? `Primero selecciona tu ${missingGroup.name.toLowerCase()} y después elige la prenda.` : 'Después podrás seleccionar su color y talla; añadiremos ambos juntos.'}</span>
+                  <strong>Combínalo con una prenda</strong>
+                  <span>{missingGroup ? `Elige primero tu ${missingGroup.name.toLowerCase()} y después la prenda.` : 'Elige la prenda y después su color y talla. Añadiremos los dos artículos juntos.'}</span>
                 </div>
                 <div className="club-companion-picker__grid">
                   {garmentChoices.map(garment => (
@@ -878,8 +879,8 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
               </button>
             )}
             <div className="club-config__benefits" aria-label="Ventajas del producto">
-              <span><Leaf size={15} /><b>Producido bajo demanda</b></span>
               <span><Truck size={15} /><b>Envío incluido</b></span>
+              <span><Clock size={15} /><b>Entrega en 10-15 días</b></span>
               <span><ShieldCheck size={15} /><b>Pago seguro con Stripe</b></span>
             </div>
             {catalogStatus === 'loading' && (
@@ -1021,7 +1022,7 @@ function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onB
           <div className="club-cart-empty">
             <span><ShoppingBag size={28} /></span>
             <h3>Tu bolsa está esperando</h3>
-            <p>Elige una pieza de la nueva colección de Latido Club.</p>
+            <p>Elige tu prenda favorita de la nueva colección de Latido Club.</p>
             <button type="button" onClick={onClose}>Ver la colección</button>
           </div>
         ) : (
@@ -1042,17 +1043,17 @@ function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onB
               ))}
               <div className="club-cart-next">
                 <div>
-                  <span>Sigue creando tu pedido</span>
-                  <h3>Agrega otro artículo o elige un complemento para tu pedido.</h3>
+                  <span>Completa tu pedido</span>
+                  <h3>Añade otra prenda o un complemento a juego.</h3>
                 </div>
-                <CartSuggestionShelf title="Elige un complemento" choices={addonChoices} onChoose={onBrowse} />
-                <CartSuggestionShelf title="Añade otro artículo" choices={garmentChoices} onChoose={onBrowse} />
+                <CartSuggestionShelf title="Complementos" choices={addonChoices} onChoose={onBrowse} />
+                <CartSuggestionShelf title="Más prendas" choices={garmentChoices} onChoose={onBrowse} />
               </div>
             </div>
             <div className="club-drawer__summary">
               <div><span>Total</span><strong>{money(subtotal)}</strong></div>
-              <p>IVA y envío estándar a Suiza incluidos.</p>
-              {hasOrphanAddon && <p className="club-cart-error">Añade una camiseta o sudadera para comprar los complementos.</p>}
+              <p>IVA y envío a Suiza incluidos · Entrega estimada en 10-15 días.</p>
+              {hasOrphanAddon && <p className="club-cart-error">Añade una camiseta o sudadera para poder comprar los complementos.</p>}
               <button type="button" onClick={onCheckout} disabled={hasOrphanAddon}>
                 Continuar con el pedido <ChevronRight size={18} />
               </button>
@@ -1070,6 +1071,11 @@ function CheckoutModal({ open, cart, onClose }) {
   const [error, setError] = useState('')
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const total = subtotal
+  const savings = cart.reduce((sum, item) => (
+    Number(item.compareAtPrice) > Number(item.price)
+      ? sum + (item.compareAtPrice - item.price) * item.quantity
+      : sum
+  ), 0)
 
   useEffect(() => {
     if (!open) return undefined
@@ -1102,7 +1108,7 @@ function CheckoutModal({ open, cart, onClose }) {
         const messages = {
           PRODUCT_NOT_AVAILABLE:'Una variante de tu bolsa ya no está disponible. Actualiza la página y vuelve a elegirla.',
           ADDON_REQUIRES_GARMENT:'Las bolsas y carcasas solo pueden comprarse junto con una camiseta o sudadera.',
-          CLUB_CATALOG_UNAVAILABLE:'No pudimos comprobar el catálogo de Gelato. Inténtalo de nuevo en unos minutos.',
+          CLUB_CATALOG_UNAVAILABLE:'No pudimos comprobar la disponibilidad de los productos. Inténtalo de nuevo en unos minutos.',
           TOO_MANY_CHECKOUTS:'Has iniciado varios pagos. Espera unos minutos antes de volver a intentarlo.',
           CHECKOUT_NOT_CONFIGURED:'El pago seguro todavía no está configurado.',
         }
@@ -1128,11 +1134,22 @@ function CheckoutModal({ open, cart, onClose }) {
 
         <div className="club-checkout__layout">
           <div className="club-checkout-payment">
-            <span className="club-checkout-payment__icon"><CreditCard size={25} /></span>
-            <h3>Completarás tus datos en Stripe</h3>
-            <p>En el siguiente paso introducirás tu email, teléfono, dirección de entrega y forma de pago. Latido no recibe ni almacena los datos de tu tarjeta.</p>
-            <div><ShieldCheck size={18} /><span><strong>Pago verificado</strong>Solo prepararemos el pedido cuando Stripe confirme el cobro.</span></div>
-            <div><Truck size={18} /><span><strong>Envío a Suiza</strong>Stripe validará la dirección y la guardaremos junto al pedido confirmado.</span></div>
+            <h3>Así funciona tu compra</h3>
+            <ol className="club-checkout-steps">
+              <li className="is-current">
+                <b>1</b>
+                <span><strong>Revisa tu pedido</strong>Comprueba tallas, colores y cantidades: cada prenda se fabrica para ti.</span>
+              </li>
+              <li>
+                <b>2</b>
+                <span><strong>Paga de forma segura</strong>En Stripe indicarás tu email, teléfono, dirección de entrega y forma de pago. Latido nunca ve ni guarda los datos de tu tarjeta.</span>
+              </li>
+              <li>
+                <b>3</b>
+                <span><strong>Lo fabricamos y te lo enviamos</strong>Con el pago confirmado empezamos la producción. Recibirás tu pedido en un plazo estimado de 10 a 15 días.</span>
+              </li>
+            </ol>
+            <p className="club-checkout-payment__trust"><ShieldCheck size={16} /> Pago cifrado con Stripe · Envío incluido · Entrega en 10-15 días</p>
           </div>
 
           <aside className="club-order-summary">
@@ -1144,16 +1161,17 @@ function CheckoutModal({ open, cart, onClose }) {
               </div>
             ))}
             <div className="club-order-total"><span>Productos</span><strong>{money(subtotal)}</strong></div>
-            <div className="club-order-line club-order-line--shipping"><span>Envío estándar a Suiza</span><strong>Incluido</strong></div>
+            <div className="club-order-line club-order-line--shipping"><span>Envío a Suiza<small>Entrega estimada en 10-15 días</small></span><strong>Incluido</strong></div>
             <div className="club-grand-total"><span>Total</span><strong>{money(total)}</strong></div>
+            {savings > 0 && <p className="club-order-savings">Ahorras {money(savings)} con el precio de lanzamiento.</p>}
 
             {error && <p className="club-checkout-error" role="alert">{error}</p>}
 
             <button className="club-order-button" type="button" disabled={loading || !cart.length} onClick={handleCheckout}>
               {loading ? <LoaderCircle className="club-spin" size={18} /> : <CreditCard size={18} />}
-              {loading ? 'Abriendo pago seguro…' : 'Continuar al pago'}
+              {loading ? 'Abriendo el pago seguro…' : 'Ir al pago seguro'}
             </button>
-            <p className="club-order-note"><ShieldCheck size={13} /> El siguiente paso es el pago seguro en Stripe. Allí confirmarás el cobro de {money(total)}.</p>
+            <p className="club-order-note"><ShieldCheck size={13} /> Te llevaremos a Stripe para confirmar el pago de {money(total)}.</p>
           </aside>
         </div>
       </section>
@@ -1215,7 +1233,7 @@ export default function Club() {
       try {
         const response = await fetch('/api/gelato?action=products', { signal: controller.signal })
         const payload = await response.json().catch(() => ({}))
-        if (!response.ok) throw new Error(payload.error || 'No pudimos actualizar el catálogo de Gelato.')
+        if (!response.ok) throw new Error(payload.error || 'No pudimos actualizar el catálogo.')
         if (Array.isArray(payload.products) && payload.products.length) setProducts(payload.products)
         setCatalogStatus('connected')
       } catch (error) {
@@ -1300,7 +1318,7 @@ export default function Club() {
               <span>
                 <strong>{paymentReturn.status === 'success' ? 'Estamos confirmando tu pago' : 'Pago cancelado'}</strong>
                 {paymentReturn.status === 'success'
-                  ? `Stripe nos avisará automáticamente y recibirás la confirmación por email${paymentReturn.reference ? ` para el pedido ${paymentReturn.reference}` : ''}.`
+                  ? `Recibirás la confirmación por email${paymentReturn.reference ? ` del pedido ${paymentReturn.reference}` : ''}. Tu pedido llegará en un plazo estimado de 10 a 15 días.`
                   : 'No se ha realizado ningún cargo. Tu selección sigue en la bolsa.'}
               </span>
               <button type="button" onClick={() => setPaymentReturn(null)} aria-label="Cerrar aviso"><X size={17} /></button>
@@ -1317,7 +1335,7 @@ export default function Club() {
             <a href="#coleccion" className="club-hero__cta">Descubrir la colección <ChevronRight size={18} /></a>
             <div className="club-hero__trust">
               <span><Leaf size={16} /> Diseñado por Latido Club</span>
-              <span><Truck size={16} /> Producido bajo demanda por Gelato</span>
+              <span><Truck size={16} /> Producido bajo demanda</span>
             </div>
           </div>
           <div className="club-hero__collage" aria-hidden="true">
@@ -1373,12 +1391,17 @@ export default function Club() {
             onAdd={addToCart}
             onPreview={setPreview}
           />
-          <aside className="club-support-note">
-            <Heart fill="currentColor" size={22} aria-hidden="true" />
-            <div>
-              <strong>Tu compra también sostiene a la comunidad.</strong>
-              <p>Estamos mejorando y buscando proveedores más competitivos para poder ofrecer mejores calidades y precios. Los beneficios generados por tu compra ayudan a que Latido pueda seguir ofreciendo servicios a la comunidad hispanohablante en Suiza. Gracias por tu apoyo.</p>
+          <aside className="club-support-note" aria-labelledby="club-support-title">
+            <span className="club-support-note__icon"><Heart fill="currentColor" size={20} aria-hidden="true" /></span>
+            <div className="club-support-note__copy">
+              <strong id="club-support-title">Tu compra también apoya a la comunidad.</strong>
+              <p>Los beneficios de cada pedido ayudan a mantener Latido, la plataforma de la comunidad hispanohablante en Suiza. Y seguimos trabajando para mejorar la calidad y los precios de la colección. ¡Gracias por tu apoyo!</p>
             </div>
+            <ul className="club-support-note__list" aria-label="Lo que ayudas a mantener">
+              <li><Check size={14} aria-hidden="true" /> Tablón de anuncios y empleos</li>
+              <li><Check size={14} aria-hidden="true" /> Guías para vivir en Suiza</li>
+              <li><Check size={14} aria-hidden="true" /> Comunidades, negocios y eventos</li>
+            </ul>
           </aside>
         </section>
 
@@ -1394,7 +1417,7 @@ export default function Club() {
             <p>Cada pieza se produce solo cuando la pides: menos excedentes y una red de producción que busca fabricar cerca del destino.</p>
             <div className="club-story__points">
               <div><Leaf size={20} /><span><strong>Sin stock innecesario</strong>Producimos una a una.</span></div>
-              <div><Truck size={20} /><span><strong>Producción local</strong>Gelato busca el centro más cercano.</span></div>
+              <div><Truck size={20} /><span><strong>Producción cercana</strong>Fabricamos lo más cerca posible de ti.</span></div>
               <div><Heart size={20} /><span><strong>Hecho para conectar</strong>Diseños que hablan de nosotros.</span></div>
             </div>
           </div>
@@ -1403,22 +1426,22 @@ export default function Club() {
         <section className="club-process">
           <div className="club-section-heading club-section-heading--light">
             <div><span>03 / De aquí a tus manos</span><h2>Hecho cuando tú lo eliges.</h2></div>
-            <p>Selecciona producto, color y talla. Tras confirmar el pago, Gelato fabrica el pedido y lo envía a tu dirección en Suiza.</p>
+            <p>Selecciona producto, color y talla. Tras confirmar el pago, fabricamos tu pedido y lo enviamos a tu dirección en Suiza.</p>
           </div>
           <div className="club-process__steps">
             <div><b>1</b><h3>Eliges</h3><p>Producto, diseño, color, talla o modelo.</p></div>
-            <div><b>2</b><h3>Producimos</h3><p>Gelato fabrica tu pieza bajo demanda.</p></div>
-            <div><b>3</b><h3>Recibes</h3><p>Te avisamos cuando el pedido esté en camino.</p></div>
+            <div><b>2</b><h3>Producimos</h3><p>Fabricamos tu pieza bajo demanda.</p></div>
+            <div><b>3</b><h3>Recibes</h3><p>Tu pedido llega en un plazo estimado de 10 a 15 días.</p></div>
           </div>
         </section>
 
         <section className="club-faq">
           <div><span>Antes de pedir</span><h2>Preguntas frecuentes</h2></div>
           <div className="club-faq__list">
-            <details><summary>¿Cuánto tarda el envío?<Plus size={18} /></summary><p>El plazo depende del producto, la disponibilidad y el destino. Recibirás un email de seguimiento cuando el pedido esté preparado para el envío.</p></details>
+            <details><summary>¿Cuánto tarda el envío?<Plus size={18} /></summary><p>El plazo de entrega estimado es de 10 a 15 días desde la confirmación del pago, incluyendo la fabricación bajo demanda y el envío a Suiza. Los envíos no incluyen número de seguimiento: si pasados 15 días no has recibido tu pedido, responde al email de confirmación y lo revisamos.</p></details>
             <details><summary>¿Dónde introduzco mi dirección?<Plus size={18} /></summary><p>Después de revisar la bolsa pasarás al pago seguro de Stripe. Allí indicarás tu email, teléfono y dirección de entrega una sola vez.</p></details>
-            <details><summary>¿Dónde se fabrica?<Plus size={18} /></summary><p>Gelato asigna el pedido a un centro de producción cercano al destino siempre que el producto y el color estén disponibles.</p></details>
-            <details><summary>¿Puedo comprar una bolsa o carcasa por separado?<Plus size={18} /></summary><p>Por ahora se ofrecen únicamente como complemento de una camiseta o sudadera, porque producirlas y enviarlas individualmente tendría un coste demasiado alto.</p></details>
+            <details><summary>¿Dónde se fabrica?<Plus size={18} /></summary><p>Nuestro proveedor asigna cada pedido al centro de producción más cercano al destino, siempre que el producto y el color estén disponibles.</p></details>
+            <details><summary>¿Puedo comprar una bolsa o carcasa por separado?<Plus size={18} /></summary><p>Por ahora solo se venden junto a una camiseta o sudadera, porque producirlas y enviarlas por separado encarecería demasiado su precio.</p></details>
             <details><summary>¿Puedo cambiar la talla?<Plus size={18} /></summary><p>Las prendas se producen bajo demanda, por eso conviene revisar bien la talla antes de pagar. Si recibes una pieza con un defecto de producción, escríbenos para revisarlo.</p></details>
           </div>
         </section>
@@ -1426,7 +1449,7 @@ export default function Club() {
 
       <footer className="club-footer">
         <div><img src="/brand/latido-horizontal-white.webp" alt="Latido Club" /></div>
-        <p>Hecho con corazón en Suiza · Producido bajo demanda con Gelato</p>
+        <p>Hecho con corazón en Suiza · Producido bajo demanda</p>
         <Link to="/">latido.ch</Link>
       </footer>
 
