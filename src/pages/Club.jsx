@@ -1398,9 +1398,9 @@ export default function Club() {
               <p>Los beneficios de cada pedido ayudan a mantener Latido, la plataforma de la comunidad hispanohablante en Suiza. Y seguimos trabajando para mejorar la calidad y los precios de la colección. ¡Gracias por tu apoyo!</p>
             </div>
             <ul className="club-support-note__list" aria-label="Lo que ayudas a mantener">
-              <li><Check size={14} aria-hidden="true" /> Tablón de anuncios y empleos</li>
-              <li><Check size={14} aria-hidden="true" /> Guías para vivir en Suiza</li>
-              <li><Check size={14} aria-hidden="true" /> Comunidades, negocios y eventos</li>
+              <li><Check size={14} aria-hidden="true" /> Encuentra todo lo que necesitas</li>
+              <li><Check size={14} aria-hidden="true" /> Conecta con la comunidad</li>
+              <li><Check size={14} aria-hidden="true" /> Vive Suiza más fácil y en español</li>
             </ul>
           </aside>
         </section>
