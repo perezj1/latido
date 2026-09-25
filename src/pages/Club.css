@@ -129,7 +129,8 @@
 .club-design-card__visual > span { position: absolute; right: 16px; bottom: 16px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border-radius: 999px; color: var(--club-ink); background: rgba(255,255,255,.9); box-shadow: 0 8px 24px rgba(16,32,74,.12); font-size: 9px; font-weight: 800; opacity: 0; transform: translateY(5px); transition: .2s ease; }
 .club-design-card__visual:hover > span, .club-design-card__visual:focus-visible > span { opacity: 1; transform: translateY(0); }
 .club-design-card--logo .club-design-card__visual { padding: 46px; }
-.club-design-card--cafe img { transform: scale(2); filter: none; }
+.club-design-card--cafe .club-design-card__visual { padding: 14px; }
+.club-design-card--cafe img { transform: scale(1.3); filter: none; }
 .club-design-card h3 { margin: 0; padding: 18px 20px; color: var(--club-ink); font-size: 12px; line-height: 1.4; }
 
 .club-collection, .club-faq { width: min(1240px, calc(100% - 40px)); margin: 0 auto; padding: 110px 0; }
@@ -150,6 +151,9 @@
 .club-product-artwork__overlay { pointer-events: none; }
 .club-product-artwork--front .club-product-artwork__overlay { transform: translate(12%, -20%) scale(.22); }
 .club-product-artwork--back .club-product-artwork__overlay { transform: translateY(-9%) scale(.66); }
+.club-product-artwork--cafe-back-v2 .club-product-artwork__overlay { inset: 18% auto auto 20%; width: 60%; height: 48%; object-fit: contain; }
+.club-product-artwork--hablas-front .club-product-artwork__overlay { inset: 28% auto auto 55%; width: 11%; height: 8%; object-fit: contain; }
+.club-product-artwork--hablas-back .club-product-artwork__overlay { inset: 27% auto auto 28%; width: 44%; height: 36%; object-fit: contain; }
 
 /* Configurador de la colección */
 .club-shop { display: grid; gap: 18px; }
@@ -189,15 +193,17 @@
 .club-config__thumbs button:hover { border-color: #dce2eb; }
 .club-config__thumbs button.is-selected { border-color: var(--club-blue); color: var(--club-blue); background: #fff; }
 .club-config__thumbs .club-product-artwork, .club-config__thumbs img { width: 64px; height: 64px; border-radius: 9px; object-fit: cover; }
-.club-config__thumbs .club-product-artwork img { width: 100%; height: 100%; border-radius: 0; }
+.club-config__thumbs .club-product-artwork img { border-radius: 0; }
 
 .club-config__panel { display: flex; border-left: 1px solid rgba(16,32,74,.08); background: #fff; min-width: 0; flex-direction: column; gap: 22px; padding: clamp(24px, 3.4vw, 44px); }
 .club-config__heading > p:first-child { margin: 0 0 6px; color: var(--club-accent); font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
 .club-config__heading h3 { margin: 0; font-weight: 900; color: var(--club-ink); font-size: clamp(22px, 2.3vw, 30px); line-height: 1.12; letter-spacing: -1px; }
 .club-config__price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 10px; }
 .club-config__price strong { font-size: 22px; letter-spacing: -.5px; }
+.club-config__price del { color: #929bad; font-size: 14px; font-weight: 700; }
 .club-config__price span { color: #7b8498; font-size: 10px; font-weight: 600; }
 .club-config__description { margin: 14px 0 0; color: #68738b; font-size: 12px; line-height: 1.65; }
+.club-config__addon-note { margin: 13px 0 0; padding: 11px 13px; border-radius: 11px; color: #6a5270; background: #fbf2fc; font-size: 10px; font-weight: 650; line-height: 1.55; }
 
 .club-config__group { min-width: 0; margin: 0; padding: 20px 0 0; border: 0; border-top: 1px solid rgba(16,32,74,.08); }
 .club-config__group legend { display: flex; width: 100%; float: left; align-items: baseline; gap: 8px; margin-bottom: 12px; padding: 0; }
@@ -243,6 +249,28 @@
 .club-config .club-add-button.is-pending { color: var(--club-ink); background: #eef2f8; box-shadow: none; }
 .club-config .club-add-button.is-added { background: var(--club-teal); box-shadow: 0 14px 30px rgba(0,179,164,.24); }
 .club-config .club-add-button:disabled, .club-config .club-add-button:disabled:hover { color: #73809a; background: #e8ebf0; box-shadow: none; cursor: not-allowed; transform: none; }
+.club-companion-picker { display: grid; gap: 11px; }
+.club-companion-picker__heading { display: flex; flex-direction: column; gap: 2px; }
+.club-companion-picker__heading strong { color: var(--club-ink); font-size: 12px; }
+.club-companion-picker__heading span { color: #768097; font-size: 9px; }
+.club-companion-picker__grid { display: grid; max-height: 270px; overflow-y: auto; padding: 2px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; scrollbar-width: thin; }
+.club-companion-picker__grid > button { display: grid; min-width: 0; min-height: 68px; padding: 7px; border: 1px solid #dce2eb; border-radius: 13px; color: var(--club-ink); background: #fff; text-align: left; cursor: pointer; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 8px; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.club-companion-picker__grid > button:hover { border-color: var(--club-blue); box-shadow: 0 8px 22px rgba(23,87,232,.1); transform: translateY(-1px); }
+.club-companion-picker__grid > button:focus-visible { outline: 3px solid rgba(23,87,232,.28); outline-offset: 2px; }
+.club-companion-picker__grid > button > svg { flex: 0 0 auto; color: var(--club-blue); }
+.club-companion-picker__image, .club-companion-picker__image > img, .club-companion-picker__image .club-product-artwork { display: block; width: 52px; height: 52px; border-radius: 9px; object-fit: cover; overflow: hidden; background: #f4f5f7; }
+.club-companion-picker__image .club-product-artwork img { border-radius: 0; }
+.club-companion-picker__copy { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.club-companion-picker__copy b { display: -webkit-box; overflow: hidden; font-size: 9px; line-height: 1.3; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.club-companion-picker__copy small { color: #7b8498; font-size: 8px; font-weight: 700; }
+.club-pending-addon { display: grid; padding: 9px; border: 1px solid rgba(0,179,164,.24); border-radius: 13px; background: #f0fbf9; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.club-pending-addon__image, .club-pending-addon__image > img, .club-pending-addon__image .club-product-artwork { display: block; width: 48px; height: 48px; overflow: hidden; border-radius: 9px; object-fit: cover; background: #fff; }
+.club-pending-addon__image .club-product-artwork img { border-radius: 0; }
+.club-pending-addon > span:nth-child(2) { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 8px; }
+.club-pending-addon small { color: #6b7d7a; font-size: 8px; font-weight: 700; grid-column: 1 / -1; text-transform: uppercase; letter-spacing: .5px; }
+.club-pending-addon b { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.club-pending-addon strong { color: var(--club-teal); font-size: 10px; }
+.club-pending-addon > button { display: grid; width: 29px; height: 29px; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #66718a; background: #fff; cursor: pointer; }
 .club-config__benefits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .club-config__benefits span { display: flex; min-width: 0; align-items: center; gap: 6px; color: #6c7790; }
 .club-config__benefits svg { flex: 0 0 auto; color: var(--club-teal); }
@@ -312,7 +340,7 @@
 .club-preview__views button.is-selected { border-color: var(--club-blue); color: var(--club-blue); box-shadow: inset 0 0 0 1px var(--club-blue); }
 .club-preview__views img { display: block; width: 70px; height: 58px; border-radius: 8px; object-fit: cover; }
 .club-preview__views .club-product-artwork { width: 70px; height: 58px; border-radius: 8px; }
-.club-preview__views .club-product-artwork img { width: 70px; height: 58px; }
+.club-preview__views .club-product-artwork img { border-radius: 0; }
 .club-drawer { display: flex; width: min(460px, 100%); height: 100%; flex-direction: column; background: var(--club-cream); box-shadow: -20px 0 80px rgba(8,18,43,.18); animation: clubSlide .32s cubic-bezier(.22,1,.36,1) both; }
 .club-drawer__header, .club-checkout > header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px 26px; border-bottom: 1px solid rgba(16,32,74,.1); }
 .club-drawer__header span, .club-checkout > header span { color: var(--club-red); font-size: 9px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; }
@@ -330,6 +358,18 @@
 .club-cart-item__info p { margin: 0; color: #707a90; font-size: 10px; }
 .club-cart-item__info > div { display: flex; align-items: center; justify-content: space-between; margin-top: 11px; }
 .club-cart-item__info strong { font-size: 12px; }
+.club-cart-next { display: grid; gap: 18px; padding: 24px 0 12px; }
+.club-cart-next > div:first-child > span { color: var(--club-red); font-size: 8px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+.club-cart-next > div:first-child > h3 { margin: 5px 0 0; color: var(--club-ink); font-size: 15px; line-height: 1.35; letter-spacing: -.25px; }
+.club-cart-suggestions { display: grid; gap: 9px; min-width: 0; }
+.club-cart-suggestions h4 { margin: 0; color: #56627c; font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+.club-cart-suggestions > div { display: flex; gap: 8px; overflow-x: auto; padding: 1px 1px 8px; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.club-cart-suggestions button { display: grid; width: 116px; min-width: 116px; overflow: hidden; padding: 0 0 9px; border: 1px solid #dce2eb; border-radius: 12px; color: var(--club-ink); background: #fff; text-align: left; cursor: pointer; scroll-snap-align: start; transition: border-color .2s ease, transform .2s ease; }
+.club-cart-suggestions button:hover { border-color: var(--club-blue); transform: translateY(-1px); }
+.club-cart-suggestions button > span, .club-cart-suggestions button > span > img, .club-cart-suggestions button .club-product-artwork { display: block; width: 100%; height: 86px; overflow: hidden; object-fit: cover; background: #f3f4f6; }
+.club-cart-suggestions button .club-product-artwork img { border-radius: 0; }
+.club-cart-suggestions b { display: -webkit-box; overflow: hidden; min-height: 25px; margin: 8px 9px 2px; font-size: 9px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.club-cart-suggestions small { margin: 0 9px; color: #7b8498; font-size: 8px; font-weight: 700; }
 .club-quantity { display: inline-flex; overflow: hidden; align-items: center; border: 1px solid #dce2eb; border-radius: 999px; background: #fff; }
 .club-quantity button { display: grid; width: 29px; height: 28px; place-items: center; border: 0; color: var(--club-ink); background: transparent; cursor: pointer; }
 .club-quantity span { min-width: 20px; text-align: center; font-size: 10px; font-weight: 800; }
@@ -337,6 +377,8 @@
 .club-drawer__summary > div { display: flex; align-items: center; justify-content: space-between; font-size: 15px; }
 .club-drawer__summary > p { margin: 6px 0 18px; color: #768097; font-size: 10px; }
 .club-drawer__summary > button, .club-quote-button, .club-order-button, .club-checkout--success > button { display: flex; width: 100%; min-height: 49px; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 13px; color: #fff; background: var(--club-blue); font-size: 12px; font-weight: 800; cursor: pointer; }
+.club-drawer__summary > button:disabled { color: #73809a; background: #e8ebf0; cursor: not-allowed; }
+.club-cart-error { color: #a82231 !important; font-weight: 700; }
 .club-drawer__summary small { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 12px; color: #778197; font-size: 9px; }
 
 .club-checkout-layer { align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
@@ -383,6 +425,11 @@
 .club-order-note { display: flex; align-items: flex-start; justify-content: center; gap: 5px; margin: 10px 0 0; color: #7d879a; font-size: 9px; line-height: 1.55; text-align: center; }
 .club-order-note svg { flex: 0 0 auto; margin-top: 1px; color: var(--club-blue); }
 .club-checkout-error { margin: 14px 0; padding: 10px 12px; border: 1px solid #ffc5ca; border-radius: 10px; color: #a82231; background: #fff0f2; font-size: 10px; line-height: 1.5; }
+
+.club-support-note { display: grid; margin-top: 18px; padding: clamp(20px, 3vw, 30px); border: 1px solid rgba(158,27,32,.12); border-radius: 22px; color: var(--club-ink); background: linear-gradient(135deg, #fff8f4, #fff); grid-template-columns: auto 1fr; gap: 15px; box-shadow: 0 14px 36px rgba(16,32,74,.05); }
+.club-support-note > svg { margin-top: 2px; color: var(--club-red); }
+.club-support-note strong { font-size: 13px; }
+.club-support-note p { max-width: 900px; margin: 7px 0 0; color: #68738b; font-size: 11px; line-height: 1.7; }
 .club-spin { animation: clubSpin .8s linear infinite; }
 .club-checkout--success { display: flex; max-width: 490px; padding: 54px 42px; align-items: center; flex-direction: column; text-align: center; }
 .club-success-mark { display: grid; width: 76px; height: 76px; place-items: center; margin-bottom: 20px; border-radius: 50%; color: #fff; background: var(--club-teal); }
@@ -436,6 +483,7 @@
   .club-config__designs { display: flex; margin: 0 -18px; padding: 2px 18px 4px; overflow-x: auto; scrollbar-width: none; }
   .club-config__designs button { width: 88px; flex: 0 0 auto; }
   .club-config__sizes { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .club-companion-picker__grid { grid-template-columns: 1fr; }
   .club-config__benefits b { font-size: 8px; }
   .club-nav__inner { width: calc(100% - 28px); min-height: 62px; grid-template-columns: auto 1fr auto; }
   .club-back { width: 40px; height: 40px; justify-content: center; border: 1px solid rgba(16,32,74,.12); border-radius: 50%; background: #fff; }

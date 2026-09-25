@@ -16,10 +16,11 @@ En Stripe, empieza en modo de prueba. Crea una clave restringida para Latido
 Club con el permiso mínimo necesario para crear, leer y caducar Checkout
 Sessions. No sustituyas la clave usada por otras funciones de Latido.
 
-Guarda las claves de Stripe y Gelato y la tarifa de envío en Supabase:
+Guarda las claves de Stripe y Gelato en Supabase. Los precios del catálogo ya
+incluyen el envío a Suiza:
 
 ```powershell
-supabase secrets set --project-ref zmievixfjefjppofebbh STRIPE_CLUB_SECRET_KEY="rk_test_..." GELATO_API_KEY="..." CLUB_SHIPPING_CHF="7.90" CLUB_ORDER_EMAIL="latidoch@gmail.com"
+supabase secrets set --project-ref zmievixfjefjppofebbh STRIPE_CLUB_SECRET_KEY="rk_test_..." GELATO_API_KEY="..." CLUB_ORDER_EMAIL="latidoch@gmail.com"
 ```
 
 Las credenciales SMTP ya configuradas en el proyecto se reutilizan. Solo sería
@@ -64,15 +65,9 @@ supabase secrets set --project-ref zmievixfjefjppofebbh STRIPE_CLUB_WEBHOOK_SECR
 Los secretos quedan disponibles inmediatamente; no hace falta volver a
 desplegar las funciones.
 
-## 5. Configurar y publicar la web cuando se autorice
+## 5. Publicar la web cuando se autorice
 
-En Vercel añade esta variable para Production y Preview:
-
-```text
-VITE_CLUB_SHIPPING_CHF=7.90
-```
-
-Debe coincidir siempre con `CLUB_SHIPPING_CHF` de Supabase. Publica la web solo
+Publica la web solo
 después de que la base de datos, las funciones y el webhook estén preparados.
 La Edge Function valida las variantes conectadas directamente contra la Custom
 Store de Gelato. El endpoint web `/api/gelato?action=products` sigue alimentando

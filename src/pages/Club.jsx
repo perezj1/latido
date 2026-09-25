@@ -23,7 +23,6 @@ import { supabase } from '../lib/supabase'
 import './Club.css'
 
 const CART_STORAGE_KEY = 'latido-club-cart-v1'
-const CLUB_SHIPPING_CHF = Math.max(0, Number(import.meta.env.VITE_CLUB_SHIPPING_CHF || 7.9))
 
 const COLOR_SWATCHES = {
   blanco: '#ffffff',
@@ -52,6 +51,14 @@ const CATEGORY_FILTERS = [
   { id: 'carcasas', label: 'Carcasas' },
 ]
 
+const productPurchaseType = product => (
+  product?.purchaseType === 'addon' || ['bolsas', 'carcasas'].includes(product?.category)
+    ? 'addon'
+    : 'base'
+)
+
+const cartHasGarment = cart => cart.some(item => item.purchaseType !== 'addon')
+
 const COLOR_ORDER = ['Blanco', 'Natural', 'Arena', 'Ash', 'ring spun sports grey', 'Negro', 'Único']
 
 const normalizeKey = value => String(value || '')
@@ -78,6 +85,15 @@ function productColors(product) {
 }
 
 function productDesign(product) {
+  if (product.category === 'carcasas') {
+    const label = product.shortName || product.name
+    return {
+      id: `carcasa-${product.id}`,
+      label,
+      family: label,
+    }
+  }
+
   const cafeInk = String(product.name || '').match(/texto\s+(.+)$/i)?.[1]
   if (cafeInk) {
     return {
@@ -97,10 +113,10 @@ function productSupportsColor(product, color) {
 
 const CLUB_DESIGNS = [
   {
-    id: 'cafe',
-    name: 'Café 6.50 CHF · ¡Qué ruina!',
-    image: '/club/designs/cafe-granate.webp',
-    alt: 'Diseño granate Café 6.50 CHF, qué ruina, de Latido Club',
+    id: 'hablas-espanol',
+    name: '¿Tú también hablas español?',
+    image: '/club/products/hablas-espanol-granate-trasera.webp',
+    alt: 'Diseño tipográfico granate ¿Tú también hablas español? de Latido Club',
     tone: '#F4F2EE',
   },
   {
@@ -118,13 +134,68 @@ const CLUB_DESIGNS = [
     tone: '#E9FAF7',
   },
   {
-    id: 'hablas-espanol',
-    name: '¿Tú también hablas español?',
-    image: '/club/products/hablas-espanol-granate-trasera.webp',
-    alt: 'Diseño tipográfico granate ¿Tú también hablas español? de Latido Club',
-    tone: '#FFF0F2',
+    id: 'cafe',
+    name: 'Café 6.50 CHF · Te despierta el precio',
+    image: '/club/designs/cafe-trasera-negro-v2.png',
+    alt: 'Diseño negro Café 6.50 CHF, te despierta el precio, de Latido Club',
+    tone: '#ECEEF1',
   },
 ]
+
+const hablasFallbackMockups = ({ colorLabel, garment, selection, exactFront, exactBack }) => {
+  const selections = { Color: selection }
+  const base = `/club/products/camiseta-base-${garment}.webp`
+  return [
+    exactFront
+      ? { url: exactFront, label: `Frontal · ${colorLabel}`, selections }
+      : {
+          url: base,
+          base,
+          overlay: '/club/products/hablas-espanol-granate-frontal.webp',
+          placement: 'hablas-front',
+          label: `Frontal · ${colorLabel}`,
+          selections,
+        },
+    exactBack
+      ? { url: exactBack, label: `Trasera · ${colorLabel}`, selections }
+      : {
+          url: base,
+          base,
+          overlay: '/club/products/hablas-espanol-granate-trasera.webp',
+          placement: 'hablas-back',
+          label: `Trasera · ${colorLabel}`,
+          selections,
+        },
+  ]
+}
+
+const HABLAS_FALLBACK_VARIANTS = [
+  ['Blanco', 'S', '11ef009f-2859-4c9b-99ac-2819cc3cdfbc'],
+  ['Blanco', 'M', '08b7a5de-37f5-471b-9f98-eab0ad3693fe'],
+  ['Blanco', 'L', '2b498b98-1c0d-4af7-b90b-5a507ed3e18b'],
+  ['Blanco', 'XL', 'c30ed3fb-af5d-4bca-86fd-b0eb7aef7924'],
+  ['Blanco', '2XL', '07b3a9ea-1594-4264-81b9-20e6bb1672bc'],
+  ['Natural', 'S', 'b88b4e79-9236-43c2-abe3-1ad8228e39ba'],
+  ['Natural', 'M', '8c0b726b-5508-4c20-a826-bfd398a8c4bc'],
+  ['Natural', 'L', 'ad5ad3ca-5a0e-4558-8e61-be8ce88f6038'],
+  ['Natural', 'XL', '347e5c99-378d-4250-8909-09677d31ad53'],
+  ['Natural', '2XL', '9aba98a6-b4fc-45f7-98cc-08151bbbfd8b'],
+  ['Ash', 'S', 'fad51b09-58a1-4ba6-9229-2ff4c41df588'],
+  ['Ash', 'M', '6d329ab4-93d4-41c5-bd3a-952094b6ce76'],
+  ['Ash', 'L', 'dcd814d6-08e4-4cdf-9e72-c29556ad28e1'],
+  ['Ash', 'XL', '4a73574b-b2f5-4475-8308-6aedcb83634d'],
+  ['Ash', '2XL', 'd0960900-6dfe-4a4f-9aff-0be102931ddc'],
+  ['Negro', 'S', '4cac5cfd-06e2-4aa3-82aa-ae6e59cf5b66'],
+  ['Negro', 'M', '45367cbe-e854-43b1-bdce-67a9411ae053'],
+  ['Negro', 'L', 'e9257c82-a216-4a52-958d-5d5a4d4f9ba1'],
+  ['Negro', 'XL', 'f96f811c-83d0-41a8-9230-47e5db0fc0bd'],
+  ['Negro', '2XL', 'b4dda10f-4f43-44bc-80aa-44a31028ffe6'],
+].map(([color, size, id]) => ({
+  label: `${color} / ${size}`,
+  selections: { Color: color, Talla: size },
+  sku: `gelato:c1b3d3ef-dd71-4d78-8712-4d7fea26880b:${id}`,
+  available: true,
+}))
 
 const FALLBACK_PRODUCTS = [
   {
@@ -134,22 +205,29 @@ const FALLBACK_PRODUCTS = [
     shortName: 'Camiseta Hablas Español',
     eyebrow: 'Diseño tipográfico',
     description: 'Camiseta unisex de algodón de alto gramaje: mensaje minimalista delante y diseño granate grande en la espalda.',
-    price: 34,
-    image: '/club/camiseta-hablas-espanol-chica.webp',
+    price: 36.9,
+    compareAtPrice: 39.9,
+    image: '/club/products/camiseta-hablas-blanca-frontal.webp',
     images: [
-      { url: '/club/camiseta-hablas-espanol-chica.webp', label: 'Frontal' },
-      { url: '/club/camiseta-hablas-espanol-espalda.png?v=2', label: 'Trasera' },
+      ...hablasFallbackMockups({
+        colorLabel: 'Blanco',
+        garment: 'blanca',
+        selection: 'Blanco',
+        exactFront: '/club/products/camiseta-hablas-blanca-frontal.webp',
+        exactBack: '/club/camiseta-hablas-espanol-espalda.png?v=2',
+      }),
+      ...hablasFallbackMockups({ colorLabel: 'Natural', garment: 'natural', selection: 'Natural' }),
+      ...hablasFallbackMockups({ colorLabel: 'Gris claro', garment: 'gris', selection: 'Ash' }),
+      ...hablasFallbackMockups({ colorLabel: 'Negro', garment: 'negra', selection: 'Negro' }),
     ],
     imageFallback: '/club/products/camiseta-hablas-blanca-frontal.webp',
-    imageAlt: 'Camiseta blanca con diseño granate de Latido Club',
-    optionLabel: 'Talla',
-    options: [
-      { label: 'S', sku: 'gelato:c1b3d3ef-dd71-4d78-8712-4d7fea26880b:11ef009f-2859-4c9b-99ac-2819cc3cdfbc' },
-      { label: 'M', sku: 'gelato:c1b3d3ef-dd71-4d78-8712-4d7fea26880b:08b7a5de-37f5-471b-9f98-eab0ad3693fe' },
-      { label: 'L', sku: 'gelato:c1b3d3ef-dd71-4d78-8712-4d7fea26880b:2b498b98-1c0d-4af7-b90b-5a507ed3e18b' },
-      { label: 'XL', sku: 'gelato:c1b3d3ef-dd71-4d78-8712-4d7fea26880b:c30ed3fb-af5d-4bca-86fd-b0eb7aef7924' },
-      { label: '2XL', sku: 'gelato:c1b3d3ef-dd71-4d78-8712-4d7fea26880b:07b3a9ea-1594-4264-81b9-20e6bb1672bc' },
+    imageAlt: 'Camiseta con diseño granate de Latido Club',
+    optionLabel: 'Color / Talla',
+    optionGroups: [
+      { name: 'Color', values: ['Blanco', 'Natural', 'Ash', 'Negro'] },
+      { name: 'Talla', values: ['S', 'M', 'L', 'XL', '2XL'] },
     ],
+    variants: HABLAS_FALLBACK_VARIANTS,
     material: 'Algodón de alto gramaje',
     accent: '#2161E8',
   },
@@ -160,7 +238,8 @@ const FALLBACK_PRODUCTS = [
     shortName: 'Bolsa Hablas Español',
     eyebrow: 'Diseño tipográfico',
     description: 'Bolsa de algodón natural con el diseño granate, asas largas, costuras reforzadas y 10 litros de capacidad.',
-    price: 29,
+    price: 24.9,
+    purchaseType: 'addon',
     image: '/club/totebag-hablas-espanol-granate.jpg',
     images: [{ url: '/club/totebag-hablas-espanol-granate.jpg', label: 'Frontal' }],
     imageFallback: '/club/totebag-hablas-espanol-granate.jpg',
@@ -177,7 +256,7 @@ const FALLBACK_PRODUCTS = [
 const money = value => new Intl.NumberFormat('de-CH', {
   style: 'currency',
   currency: 'CHF',
-  minimumFractionDigits: 0,
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 }).format(value)
 
@@ -293,7 +372,60 @@ function designThumb(product, color) {
 const productTitle = product => String(product?.name || '')
   .replace(/\s·\s(colores claros|negra|negro|clara)$/i, '')
 
-function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
+function catalogChoices(products, predicate) {
+  const groups = new Map()
+  for (const product of products.filter(predicate)) {
+    const design = productDesign(product)
+    const key = `${product.category}:${design.id}`
+    const colors = sortColors(productColors(product))
+    const color = defaultColor(colors)
+    const existing = groups.get(key)
+    const candidate = {
+      key,
+      categoryId: product.category,
+      categoryLabel: product.category === 'sudaderas'
+        ? 'Sudadera'
+        : product.category === 'camisetas'
+          ? 'Camiseta'
+          : product.category === 'bolsas'
+            ? 'Bolsa'
+            : 'Carcasa',
+      designId: design.id,
+      label: design.label,
+      color,
+      image: designThumb(product, color),
+      price: product.price,
+    }
+    if (!existing || productSupportsColor(product, 'Blanco')) groups.set(key, candidate)
+  }
+  return [...groups.values()]
+}
+
+function cartLine(product, option, image) {
+  return {
+    sku: option.sku,
+    productId: product.id,
+    name: product.name,
+    shortName: product.shortName,
+    image,
+    option: optionValueLabel(option.label),
+    optionLabel: Object.keys(option.selections || {}).join(' / ') || product.optionLabel,
+    price: product.price,
+    compareAtPrice: product.compareAtPrice,
+    purchaseType: productPurchaseType(product),
+    quantity: 1,
+  }
+}
+
+function addCartLine(cart, line) {
+  const existing = cart.find(item => item.sku === line.sku)
+  if (!existing) return [...cart, line]
+  return cart.map(item => item.sku === line.sku
+    ? { ...item, quantity: Math.min(10, item.quantity + 1) }
+    : item)
+}
+
+function ClubConfigurator({ products, catalogStatus, hasGarment, selectionRequest, onAdd, onPreview }) {
   const [categoryId, setCategoryId] = useState('camisetas')
   const [designId, setDesignId] = useState('')
   const [color, setColor] = useState('')
@@ -301,6 +433,7 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
   const [imageIndex, setImageIndex] = useState(0)
   const [attempted, setAttempted] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
+  const [pendingAddon, setPendingAddon] = useState(null)
   const galleryRef = useRef(null)
   const optionsRef = useRef(null)
 
@@ -314,6 +447,10 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
       price: matches.length ? Math.min(...matches.map(product => product.price)) : 0,
     }
   }), [products])
+
+  const garmentChoices = useMemo(() => (
+    catalogChoices(products, item => productPurchaseType(item) === 'base')
+  ), [products])
 
   const designs = useMemo(() => {
     const groups = new Map()
@@ -365,6 +502,8 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
     optionGroups.every(group => variant.selections[group.name] === resolved[group.name])
   ))
   const orderable = product?.orderable !== false && selectedVariant?.available !== false
+  const isAddon = productPurchaseType(product) === 'addon'
+  const canAdd = orderable && (!isAddon || hasGarment)
   const images = product ? imagesForSelection(product, { Color: activeColor, ...resolved }) : []
   const currentImage = images[Math.min(imageIndex, images.length - 1)]
 
@@ -379,9 +518,38 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
     return () => clearTimeout(timer)
   }, [justAdded])
 
+  useEffect(() => {
+    if (!selectionRequest) return
+    setCategoryId(selectionRequest.categoryId)
+    setDesignId(selectionRequest.designId)
+    setColor(selectionRequest.color)
+    setChoices({})
+    setPendingAddon(null)
+    setAttempted(false)
+  }, [selectionRequest])
+
   const chooseCategory = id => {
     setCategoryId(id)
     setDesignId('')
+    setAttempted(false)
+    if (['bolsas', 'carcasas'].includes(id)) setPendingAddon(null)
+  }
+
+  const chooseGarment = garment => {
+    if (!selectedVariant) {
+      setAttempted(true)
+      optionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      optionsRef.current?.querySelector('button:not(:disabled), select')?.focus({ preventScroll: true })
+      return
+    }
+    const addonImage = images.find(image => image.url && !image.overlay)?.url
+      || images[0]?.base
+      || product.image
+    setPendingAddon({ product, option: selectedVariant, image: addonImage })
+    setCategoryId(garment.categoryId)
+    setDesignId(garment.designId)
+    setColor(garment.color)
+    setChoices({})
     setAttempted(false)
   }
 
@@ -411,6 +579,10 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
   }
 
   const handleAdd = () => {
+    if (isAddon && !hasGarment) {
+      toast.error('Añade primero una camiseta o sudadera para elegir este complemento.')
+      return
+    }
     if (!selectedVariant) {
       setAttempted(true)
       optionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -420,8 +592,11 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
     const cartImage = images.find(image => image.url && !image.overlay)?.url
       || images[0]?.base
       || product.image
-    onAdd(product, selectedVariant, cartImage)
-    setJustAdded(true)
+    const added = onAdd(product, selectedVariant, cartImage, isAddon ? null : pendingAddon)
+    if (added !== false) {
+      setPendingAddon(null)
+      setJustAdded(true)
+    }
   }
 
   if (!design || !product) {
@@ -439,9 +614,13 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
     ...optionGroups.filter(group => group.values.length > 1).map(group => resolved[group.name]),
   ].filter(Boolean)
 
-  let buttonLabel = `Añadir a la bolsa · ${money(product.price)}`
+  let buttonLabel = isAddon
+    ? `Añadir como complemento · +${money(product.price)}`
+    : `Añadir a la bolsa · ${money(product.price)}`
   if (!orderable) buttonLabel = product.availabilityMessage || 'Disponible próximamente'
+  else if (isAddon && !hasGarment) buttonLabel = 'Añade primero una camiseta o sudadera'
   else if (missingGroup) buttonLabel = `Elige tu ${missingGroup.name.toLowerCase()} para continuar`
+  else if (pendingAddon && !isAddon) buttonLabel = `Añadir ambos · ${money(product.price + pendingAddon.product.price)}`
   else if (justAdded) buttonLabel = 'Añadido a tu bolsa'
 
   return (
@@ -462,7 +641,9 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
             </span>
             <span className="club-shop__tab-copy">
               <strong>{category.label}</strong>
-              <small>{category.count} {category.count === 1 ? 'diseño' : 'diseños'} · desde {money(category.price)}</small>
+              <small>
+                {category.count} {category.count === 1 ? 'diseño' : 'diseños'} · {['bolsas', 'carcasas'].includes(category.id) ? 'complemento desde +' : 'desde '}{money(category.price)}
+              </small>
             </span>
           </button>
         ))}
@@ -531,9 +712,17 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
             <p>{product.material}</p>
             <h3>{productTitle(product)}</h3>
             <div className="club-config__price">
-              <strong>{money(product.price)}</strong>
-              <span>IVA incluido · {CLUB_SHIPPING_CHF > 0 ? `envío a Suiza ${money(CLUB_SHIPPING_CHF)}` : 'envío gratuito a Suiza'}</span>
+              <strong>{isAddon ? '+' : ''}{money(product.price)}</strong>
+              {Number(product.compareAtPrice) > Number(product.price) && (
+                <del>{money(product.compareAtPrice)}</del>
+              )}
+              <span>{isAddon ? 'Solo como complemento de una camiseta o sudadera' : 'Precio promocional · IVA y envío a Suiza incluidos'}</span>
             </div>
+            {isAddon && (
+              <p className="club-config__addon-note">
+                Este artículo se muestra para que puedas combinarlo con tu prenda, pero no se vende individualmente por los costes de producción y envío.
+              </p>
+            )}
             {currentImage && product.description && <p className="club-config__description">{product.description}</p>}
           </div>
 
@@ -638,23 +827,59 @@ function ClubConfigurator({ products, catalogStatus, onAdd, onPreview }) {
           </div>
 
           <div className="club-config__checkout">
+            {pendingAddon && !isAddon && (
+              <div className="club-pending-addon" role="status">
+                <span className="club-pending-addon__image">
+                  <ProductArtwork image={{ url: pendingAddon.image }} alt="" />
+                </span>
+                <span>
+                  <small>También se añadirá</small>
+                  <b>{pendingAddon.product.shortName}</b>
+                  <strong>+{money(pendingAddon.product.price)}</strong>
+                </span>
+                <button type="button" onClick={() => setPendingAddon(null)} aria-label="Quitar complemento"><X size={15} /></button>
+              </div>
+            )}
             <p className="club-config__summary" aria-live="polite">
               {summary.map((part, index) => (
                 <span key={`${part}:${index}`}>{index > 0 && <ChevronRight size={11} aria-hidden="true" />}{part}</span>
               ))}
             </p>
-            <button
-              type="button"
-              className={`club-add-button${justAdded ? ' is-added' : ''}${missingGroup && orderable ? ' is-pending' : ''}`}
-              disabled={!orderable}
-              onClick={handleAdd}
-            >
-              {justAdded ? <Check size={17} aria-hidden="true" /> : <ShoppingBag size={17} aria-hidden="true" />}
-              {buttonLabel}
-            </button>
+            {isAddon && !hasGarment && garmentChoices.length ? (
+              <div className="club-companion-picker">
+                <div className="club-companion-picker__heading">
+                  <strong>Elige una prenda para combinarlo</strong>
+                  <span>{missingGroup ? `Primero selecciona tu ${missingGroup.name.toLowerCase()} y después elige la prenda.` : 'Después podrás seleccionar su color y talla; añadiremos ambos juntos.'}</span>
+                </div>
+                <div className="club-companion-picker__grid">
+                  {garmentChoices.map(garment => (
+                    <button key={garment.key} type="button" onClick={() => chooseGarment(garment)}>
+                      <span className="club-companion-picker__image">
+                        <ProductArtwork image={garment.image} alt="" />
+                      </span>
+                      <span className="club-companion-picker__copy">
+                        <b>{garment.label}</b>
+                        <small>{garment.categoryLabel} · {money(garment.price)}</small>
+                      </span>
+                      <ChevronRight size={16} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className={`club-add-button${justAdded ? ' is-added' : ''}${missingGroup && orderable ? ' is-pending' : ''}`}
+                disabled={!canAdd}
+                onClick={handleAdd}
+              >
+                {justAdded ? <Check size={17} aria-hidden="true" /> : <ShoppingBag size={17} aria-hidden="true" />}
+                {buttonLabel}
+              </button>
+            )}
             <div className="club-config__benefits" aria-label="Ventajas del producto">
               <span><Leaf size={15} /><b>Producido bajo demanda</b></span>
-              <span><Truck size={15} /><b>Envío a Suiza</b></span>
+              <span><Truck size={15} /><b>Envío incluido</b></span>
               <span><ShieldCheck size={15} /><b>Pago seguro con Stripe</b></span>
             </div>
             {catalogStatus === 'loading' && (
@@ -736,8 +961,34 @@ function QuantityControl({ item, onChange }) {
   )
 }
 
-function CartDrawer({ open, cart, onClose, onQuantity, onCheckout }) {
+function CartSuggestionShelf({ title, choices, onChoose }) {
+  if (!choices.length) return null
+  return (
+    <section className="club-cart-suggestions">
+      <h4>{title}</h4>
+      <div>
+        {choices.map(choice => (
+          <button key={choice.key} type="button" onClick={() => onChoose(choice)}>
+            <span><ProductArtwork image={choice.image} alt="" /></span>
+            <b>{choice.label}</b>
+            <small>{choice.categoryLabel} · {choice.categoryId === 'bolsas' || choice.categoryId === 'carcasas' ? '+' : ''}{money(choice.price)}</small>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onBrowse }) {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const hasGarment = cartHasGarment(cart)
+  const hasOrphanAddon = cart.some(item => item.purchaseType === 'addon') && !hasGarment
+  const addonChoices = useMemo(() => (
+    catalogChoices(products, item => productPurchaseType(item) === 'addon')
+  ), [products])
+  const garmentChoices = useMemo(() => (
+    catalogChoices(products, item => productPurchaseType(item) === 'base')
+  ), [products])
 
   useEffect(() => {
     if (!open) return undefined
@@ -789,11 +1040,20 @@ function CartDrawer({ open, cart, onClose, onQuantity, onCheckout }) {
                   </div>
                 </div>
               ))}
+              <div className="club-cart-next">
+                <div>
+                  <span>Sigue creando tu pedido</span>
+                  <h3>Agrega otro artículo o elige un complemento para tu pedido.</h3>
+                </div>
+                <CartSuggestionShelf title="Elige un complemento" choices={addonChoices} onChoose={onBrowse} />
+                <CartSuggestionShelf title="Añade otro artículo" choices={garmentChoices} onChoose={onBrowse} />
+              </div>
             </div>
             <div className="club-drawer__summary">
-              <div><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-              <p>Envío estándar a Suiza: {money(CLUB_SHIPPING_CHF)}.</p>
-              <button type="button" onClick={onCheckout}>
+              <div><span>Total</span><strong>{money(subtotal)}</strong></div>
+              <p>IVA y envío estándar a Suiza incluidos.</p>
+              {hasOrphanAddon && <p className="club-cart-error">Añade una camiseta o sudadera para comprar los complementos.</p>}
+              <button type="button" onClick={onCheckout} disabled={hasOrphanAddon}>
                 Continuar con el pedido <ChevronRight size={18} />
               </button>
               <small><ShieldCheck size={14} /> Pedido seguro · Producción bajo demanda</small>
@@ -809,7 +1069,7 @@ function CheckoutModal({ open, cart, onClose }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const total = subtotal + CLUB_SHIPPING_CHF
+  const total = subtotal
 
   useEffect(() => {
     if (!open) return undefined
@@ -841,6 +1101,7 @@ function CheckoutModal({ open, cart, onClose }) {
         const code = await functionErrorCode(invokeError, data)
         const messages = {
           PRODUCT_NOT_AVAILABLE:'Una variante de tu bolsa ya no está disponible. Actualiza la página y vuelve a elegirla.',
+          ADDON_REQUIRES_GARMENT:'Las bolsas y carcasas solo pueden comprarse junto con una camiseta o sudadera.',
           CLUB_CATALOG_UNAVAILABLE:'No pudimos comprobar el catálogo de Gelato. Inténtalo de nuevo en unos minutos.',
           TOO_MANY_CHECKOUTS:'Has iniciado varios pagos. Espera unos minutos antes de volver a intentarlo.',
           CHECKOUT_NOT_CONFIGURED:'El pago seguro todavía no está configurado.',
@@ -883,7 +1144,7 @@ function CheckoutModal({ open, cart, onClose }) {
               </div>
             ))}
             <div className="club-order-total"><span>Productos</span><strong>{money(subtotal)}</strong></div>
-            <div className="club-order-line club-order-line--shipping"><span>Envío estándar a Suiza</span><strong>{money(CLUB_SHIPPING_CHF)}</strong></div>
+            <div className="club-order-line club-order-line--shipping"><span>Envío estándar a Suiza</span><strong>Incluido</strong></div>
             <div className="club-grand-total"><span>Total</span><strong>{money(total)}</strong></div>
 
             {error && <p className="club-checkout-error" role="alert">{error}</p>}
@@ -907,12 +1168,35 @@ export default function Club() {
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [preview, setPreview] = useState(null)
+  const [selectionRequest, setSelectionRequest] = useState(null)
   const [paymentReturn, setPaymentReturn] = useState(readCheckoutReturn)
   const itemCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart])
+  const hasGarment = useMemo(() => cartHasGarment(cart), [cart])
 
   useEffect(() => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
   }, [cart])
+
+  useEffect(() => {
+    if (catalogStatus !== 'connected') return
+    setCart(current => {
+      const refreshed = current.map(item => {
+        const product = products.find(entry => entry.id === item.productId)
+        if (!product) return item
+        return {
+          ...item,
+          name: product.name,
+          shortName: product.shortName,
+          price: product.price,
+          compareAtPrice: product.compareAtPrice,
+          purchaseType: productPurchaseType(product),
+        }
+      })
+      return cartHasGarment(refreshed)
+        ? refreshed
+        : refreshed.filter(item => item.purchaseType !== 'addon')
+    })
+  }, [catalogStatus, products])
 
   useEffect(() => {
     if (!paymentReturn) return
@@ -943,33 +1227,53 @@ export default function Club() {
     return () => controller.abort()
   }, [])
 
-  const addToCart = (product, option, image = product.image) => {
+  const addToCart = (product, option, image = product.image, bundledAddon = null) => {
     if (product.orderable === false || option.available === false) {
       toast.error(product.availabilityMessage || 'Este producto estará disponible próximamente')
-      return
+      return false
+    }
+    const purchaseType = productPurchaseType(product)
+    if (purchaseType === 'addon' && !hasGarment) {
+      toast.error('Las bolsas y carcasas solo están disponibles junto con una camiseta o sudadera.')
+      return false
+    }
+    if (bundledAddon && (
+      bundledAddon.product.orderable === false
+      || bundledAddon.option.available === false
+      || productPurchaseType(bundledAddon.product) !== 'addon'
+    )) {
+      toast.error('El complemento seleccionado ya no está disponible.')
+      return false
+    }
+    const lines = [cartLine(product, option, image)]
+    if (bundledAddon) {
+      lines.push(cartLine(bundledAddon.product, bundledAddon.option, bundledAddon.image))
     }
     setCart(current => {
-      const existing = current.find(item => item.sku === option.sku)
-      if (existing) return current.map(item => item.sku === option.sku ? { ...item, quantity: Math.min(10, item.quantity + 1) } : item)
-      return [...current, {
-        sku: option.sku,
-        productId: product.id,
-        name: product.name,
-        shortName: product.shortName,
-        image,
-        option: optionValueLabel(option.label),
-        optionLabel: Object.keys(option.selections || {}).join(' / ') || product.optionLabel,
-        price: product.price,
-        quantity: 1,
-      }]
+      return lines.reduce((next, line) => addCartLine(next, line), current)
     })
-    toast.success(`${product.shortName} añadida a tu bolsa`)
+    setCartOpen(true)
+    toast.success(bundledAddon ? 'Prenda y complemento añadidos a tu bolsa' : 'Artículo añadido a tu bolsa')
+    return true
+  }
+
+  const browseChoice = choice => {
+    setSelectionRequest({ ...choice, requestId: Date.now() })
+    setCartOpen(false)
+    window.setTimeout(() => {
+      document.getElementById('coleccion')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
   }
 
   const changeQuantity = (sku, quantity) => {
-    setCart(current => quantity <= 0
-      ? current.filter(item => item.sku !== sku)
-      : current.map(item => item.sku === sku ? { ...item, quantity: Math.min(10, quantity) } : item))
+    let next = quantity <= 0
+      ? cart.filter(item => item.sku !== sku)
+      : cart.map(item => item.sku === sku ? { ...item, quantity: Math.min(10, quantity) } : item)
+    if (!cartHasGarment(next) && next.some(item => item.purchaseType === 'addon')) {
+      next = next.filter(item => item.purchaseType !== 'addon')
+      toast('También retiramos los complementos porque necesitan una camiseta o sudadera.')
+    }
+    setCart(next)
   }
 
   return (
@@ -1053,10 +1357,10 @@ export default function Club() {
             <div>
               <span>01 / La colección</span>
               <h2>Elige cómo<br />llevar tu Latido.</h2>
-              <p>Elige el artículo, el diseño y el color. Ves cómo queda antes de añadirlo a tu bolsa.</p>
+              <p>Elige el artículo, el diseño y el color. Los precios de las prendas incluyen el envío a Suiza.</p>
             </div>
             <div className="club-collection-benefits" aria-label="Ventajas de Latido Club">
-              <div><Truck size={22} /><span><strong>Envío a Suiza</strong><small>Rápido y fiable</small></span></div>
+              <div><Truck size={22} /><span><strong>Envío incluido</strong><small>En camisetas y sudaderas</small></span></div>
               <div><Leaf size={22} /><span><strong>Calidad premium</strong><small>Impresión duradera</small></span></div>
               <div><Sparkles size={22} /><span><strong>Diseños originales</strong><small>Hechos para conectar</small></span></div>
             </div>
@@ -1064,9 +1368,18 @@ export default function Club() {
           <ClubConfigurator
             products={products}
             catalogStatus={catalogStatus}
+            hasGarment={hasGarment}
+            selectionRequest={selectionRequest}
             onAdd={addToCart}
             onPreview={setPreview}
           />
+          <aside className="club-support-note">
+            <Heart fill="currentColor" size={22} aria-hidden="true" />
+            <div>
+              <strong>Tu compra también sostiene a la comunidad.</strong>
+              <p>Estamos mejorando y buscando proveedores más competitivos para poder ofrecer mejores calidades y precios. Los beneficios generados por tu compra ayudan a que Latido pueda seguir ofreciendo servicios a la comunidad hispanohablante en Suiza. Gracias por tu apoyo.</p>
+            </div>
+          </aside>
         </section>
 
         <section className="club-story">
@@ -1105,6 +1418,7 @@ export default function Club() {
             <details><summary>¿Cuánto tarda el envío?<Plus size={18} /></summary><p>El plazo depende del producto, la disponibilidad y el destino. Recibirás un email de seguimiento cuando el pedido esté preparado para el envío.</p></details>
             <details><summary>¿Dónde introduzco mi dirección?<Plus size={18} /></summary><p>Después de revisar la bolsa pasarás al pago seguro de Stripe. Allí indicarás tu email, teléfono y dirección de entrega una sola vez.</p></details>
             <details><summary>¿Dónde se fabrica?<Plus size={18} /></summary><p>Gelato asigna el pedido a un centro de producción cercano al destino siempre que el producto y el color estén disponibles.</p></details>
+            <details><summary>¿Puedo comprar una bolsa o carcasa por separado?<Plus size={18} /></summary><p>Por ahora se ofrecen únicamente como complemento de una camiseta o sudadera, porque producirlas y enviarlas individualmente tendría un coste demasiado alto.</p></details>
             <details><summary>¿Puedo cambiar la talla?<Plus size={18} /></summary><p>Las prendas se producen bajo demanda, por eso conviene revisar bien la talla antes de pagar. Si recibes una pieza con un defecto de producción, escríbenos para revisarlo.</p></details>
           </div>
         </section>
@@ -1123,9 +1437,11 @@ export default function Club() {
       <CartDrawer
         open={cartOpen}
         cart={cart}
+        products={products}
         onClose={() => setCartOpen(false)}
         onQuantity={changeQuantity}
         onCheckout={() => { setCartOpen(false); setCheckoutOpen(true) }}
+        onBrowse={browseChoice}
       />
       <CheckoutModal
         open={checkoutOpen}

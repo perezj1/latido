@@ -239,6 +239,8 @@ async function getStorefront(apiKey) {
       eyebrow: presentation.eyebrow,
       description: presentation.description || stripHtml(product.description),
       price: presentation.price,
+      compareAtPrice: presentation.compareAtPrice,
+      purchaseType: presentation.purchaseType || 'base',
       currency: 'CHF',
       image: images[0]?.url || presentation.imageFallback,
       images,

@@ -9,7 +9,7 @@ const GELATO_STORE_ID = Deno.env.get('GELATO_STORE_ID') || ''
 const APP_URL = (Deno.env.get('LATIDO_APP_URL') || 'https://www.latido.ch').replace(/\/+$/, '')
 const CATALOG_URL = Deno.env.get('CLUB_CATALOG_URL') || `${APP_URL}/api/gelato?action=products`
 const GELATO_STORES_URL = 'https://ecommerce.gelatoapis.com/v1/stores'
-const SHIPPING_AMOUNT = Math.max(0, Math.round(Number(Deno.env.get('CLUB_SHIPPING_CHF') || '7.90') * 100))
+const SHIPPING_AMOUNT = 0
 const MAX_ITEMS = 20
 const MAX_QUANTITY = 10
 
@@ -30,6 +30,7 @@ type StorefrontProduct = {
   shortName?:string
   optionLabel?:string
   price?:number
+  purchaseType?:PurchaseType
   orderable?:boolean
   variants?:StorefrontVariant[]
   options?:StorefrontVariant[]
@@ -57,35 +58,65 @@ type ClubCheckoutItem = {
   unit_amount:number
   quantity:number
   line_total:number
+  purchase_type:PurchaseType
 }
 
-const PRODUCT_CONFIG:Record<string, { shortName:string; price:number; optionLabel:string }> = {
+type PurchaseType = 'base' | 'addon'
+type ProductConfig = {
+  shortName:string
+  price:number
+  optionLabel:string
+  purchaseType:PurchaseType
+}
+
+const PRODUCT_CONFIG:Record<string, ProductConfig> = {
+  '5dd70f64-e112-4cfb-88b1-5cdc18d257c3': {
+    shortName:'Camiseta Café · Blanco', price:36.9, optionLabel:'Talla', purchaseType:'base',
+  },
+  '588088c0-6780-41c2-a67f-201ecf5f0eb2': {
+    shortName:'Camiseta Café · Lavanda', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+  },
+  'b6b8be91-6cfd-42d2-88f3-bed61406fe2f': {
+    shortName:'Camiseta Café · Negro', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+  },
+  'c5fe22ad-0172-4582-83ec-b713487b18fb': {
+    shortName:'Camiseta Café · Granate', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+  },
   '1759e8a1-03e1-40eb-947b-de41f50490c3': {
-    shortName:'Sudadera Latido Logo · Negra', price:54, optionLabel:'Talla',
+    shortName:'Sudadera Latido Logo · Negra', price:46.9, optionLabel:'Talla', purchaseType:'base',
   },
   'e2a521ea-ebab-4709-80c1-12b173b13271': {
-    shortName:'Sudadera Latido Logo · Clara', price:54, optionLabel:'Color / Talla',
+    shortName:'Sudadera Latido Logo · Clara', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   '9b2e0872-ffc6-4bbe-8615-eec669e36da4': {
-    shortName:'Bolsa Latido Logo', price:29, optionLabel:'Color',
+    shortName:'Bolsa Latido Logo', price:24.9, optionLabel:'Color', purchaseType:'addon',
   },
   'e23cd355-eb48-4844-862a-98592e7757f7': {
-    shortName:'Camiseta Latido Logo · Negra', price:34, optionLabel:'Talla',
+    shortName:'Camiseta Latido Logo · Negra', price:36.9, optionLabel:'Talla', purchaseType:'base',
   },
   '0541177c-34b6-4fb4-bd91-64bd5a087c08': {
-    shortName:'Camiseta Latido Logo · Clara', price:34, optionLabel:'Color / Talla',
+    shortName:'Camiseta Latido Logo · Clara', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'c1b3d3ef-dd71-4d78-8712-4d7fea26880b': {
-    shortName:'Camiseta Latido Club', price:34, optionLabel:'Color / Talla',
+    shortName:'Camiseta Latido Club', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'f3ff3398-9981-496f-b9d3-4602be85b15b': {
-    shortName:'Sudadera Latido Club', price:54, optionLabel:'Talla',
+    shortName:'Sudadera Latido Club', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'bd807369-b74d-483d-9065-fb994ca7bb38': {
-    shortName:'Bolsa de tela Latido Club', price:29, optionLabel:'Color',
+    shortName:'Bolsa de tela Latido Club', price:24.9, optionLabel:'Color', purchaseType:'addon',
   },
   '7e2bab53-6962-4fc7-ab8c-f8009c6f5754': {
-    shortName:'Carcasa Latido Club', price:29, optionLabel:'Modelo',
+    shortName:'Carcasa Hablas Español', price:21.9, optionLabel:'Modelo', purchaseType:'addon',
+  },
+  'c578978a-3f07-41e9-b715-e71af2e84070': {
+    shortName:'Carcasa Latido Club', price:21.9, optionLabel:'Modelo', purchaseType:'addon',
+  },
+  '2f6d7770-e062-471d-8966-a0877be0b212': {
+    shortName:'Carcasa Samsung Latido Club', price:21.9, optionLabel:'Modelo', purchaseType:'addon',
+  },
+  '150f2628-a409-4b1b-ae40-810a53225d9f': {
+    shortName:'Carcasa Samsung Hablas Español', price:21.9, optionLabel:'Modelo', purchaseType:'addon',
   },
 }
 
@@ -195,6 +226,7 @@ async function gelatoStorefrontProducts() {
       shortName:config.shortName,
       optionLabel:config.optionLabel,
       price:config.price,
+      purchaseType:config.purchaseType,
       orderable:true,
       variants,
     }]
@@ -271,8 +303,16 @@ Deno.serve(async req => {
         unit_amount:unitAmount,
         quantity,
         line_total:unitAmount * quantity,
+        purchase_type:configured.product.purchaseType === 'addon' ? 'addon' : 'base',
       }
     })
+
+    if (
+      normalizedItems.some(item => item.purchase_type === 'addon')
+      && !normalizedItems.some(item => item.purchase_type === 'base')
+    ) {
+      throw new Error('ADDON_REQUIRES_GARMENT')
+    }
 
     const subtotalAmount = normalizedItems.reduce((sum:number, item:{ line_total:number }) => sum + item.line_total, 0)
     const totalAmount = subtotalAmount + SHIPPING_AMOUNT
@@ -320,17 +360,6 @@ Deno.serve(async req => {
         },
       },
     }))
-    if (SHIPPING_AMOUNT > 0) {
-      lineItems.push({
-        quantity:1,
-        price_data:{
-          currency:'chf',
-          unit_amount:SHIPPING_AMOUNT,
-          product_data:{ name:'Envío estándar a Suiza' },
-        },
-      })
-    }
-
     const expiresAt = Math.floor(Date.now() / 1000) + 30 * 60
     const session = await stripe.checkout.sessions.create({
       mode:'payment',
@@ -368,6 +397,7 @@ Deno.serve(async req => {
       CHECKOUT_NOT_CONFIGURED:503,
       CLUB_CATALOG_UNAVAILABLE:503,
       PRODUCT_NOT_AVAILABLE:409,
+      ADDON_REQUIRES_GARMENT:409,
       INVALID_QUANTITY:400,
       INVALID_PRODUCT_PRICE:500,
       CHECKOUT_ALREADY_USED:409,
