@@ -1,28 +1,16 @@
 const PRINT_BASE_URL = 'https://www.latido.ch/club/prints'
 
-function cafeMockups({ colorLabel, garment, ink, selection, exactFront }) {
+function cafeBackMockup({ colorLabel, garment, ink, selection }) {
   const selections = selection ? { Color: selection } : undefined
   const base = `/club/products/camiseta-base-${garment}.webp`
-  return [
-    exactFront
-      ? { url: exactFront, label: `Frontal · ${colorLabel}`, ...(selections ? { selections } : {}) }
-      : {
-          url: base,
-          base,
-          overlay: `/club/designs/cafe-frontal-${ink}.webp`,
-          placement: 'front',
-          label: `Frontal · ${colorLabel}`,
-          ...(selections ? { selections } : {}),
-        },
-    {
-      url: base,
-      base,
-      overlay: `/club/designs/cafe-trasera-${ink}-v2.png`,
-      placement: 'cafe-back-v2',
-      label: `Trasera · ${colorLabel}`,
-      ...(selections ? { selections } : {}),
-    },
-  ]
+  return {
+    url: base,
+    base,
+    overlay: `/club/designs/cafe-trasera-texto-${ink}.png`,
+    placement: 'cafe-back-v2',
+    label: `Trasera · ${colorLabel}`,
+    ...(selections ? { selections } : {}),
+  }
 }
 
 function hablasMockups({ colorLabel, garment, selection, exactFront, exactBack }) {
@@ -75,81 +63,40 @@ export const GELATO_STOREFRONT = {
   products: [
     {
       id: '5dd70f64-e112-4cfb-88b1-5cdc18d257c3',
-      name: 'Camiseta Café · Texto blanco',
-      category: 'camisetas',
-      price: 36.9,
-      compareAtPrice: 39.9,
-      shortName: 'Camiseta Café · Blanco',
-      eyebrow: 'Café 6.50 CHF',
-      description: 'Camiseta unisex negra de algodón de alto gramaje con el diseño Café en blanco.',
-      material: '100% algodón · Alto gramaje',
-      accent: '#8FA5FF',
-      imageFallback: '/club/products/camiseta-cafe-texto-blanco-negra.webp',
-      imageAlt: 'Camiseta negra Café con texto blanco de Latido Club',
-      galleryImages: [
-        ...cafeMockups({
-          colorLabel: 'Negro',
-          garment: 'negra',
-          ink: 'blanco',
-          exactFront: '/club/products/camiseta-cafe-texto-blanco-negra.webp',
-        }),
-      ],
-    },
-    {
-      id: '588088c0-6780-41c2-a67f-201ecf5f0eb2',
-      name: 'Camiseta Café · Texto lavanda',
-      category: 'camisetas',
-      price: 36.9,
-      compareAtPrice: 39.9,
-      shortName: 'Camiseta Café · Lavanda',
-      eyebrow: 'Café 6.50 CHF',
-      description: 'Camiseta unisex de algodón de alto gramaje con el diseño Café en lavanda. Disponible en blanco, natural y negro.',
-      material: '100% algodón · Alto gramaje',
-      accent: '#8FA5FF',
-      imageFallback: '/club/products/camiseta-cafe-texto-lavanda-blanca.webp',
-      imageAlt: 'Camiseta Café con texto lavanda de Latido Club',
-      galleryImages: [
-        ...cafeMockups({ colorLabel: 'Blanco', garment: 'blanca', ink: 'lavanda', selection: 'Blanco', exactFront: '/club/products/camiseta-cafe-texto-lavanda-blanca.webp' }),
-        ...cafeMockups({ colorLabel: 'Natural', garment: 'natural', ink: 'lavanda', selection: 'Natural' }),
-        ...cafeMockups({ colorLabel: 'Negro', garment: 'negra', ink: 'lavanda', selection: 'Negro' }),
-      ],
-    },
-    {
-      id: 'b6b8be91-6cfd-42d2-88f3-bed61406fe2f',
       name: 'Camiseta Café · Texto negro',
       category: 'camisetas',
       price: 36.9,
       compareAtPrice: 39.9,
       shortName: 'Camiseta Café · Negro',
       eyebrow: 'Café 6.50 CHF',
-      description: 'Camiseta unisex de algodón de alto gramaje con el diseño Café en negro. Disponible en blanco, natural y gris claro.',
+      description: 'Camiseta unisex de algodón de alto gramaje con el nuevo diseño Café en negro. Disponible en blanco, natural y gris claro.',
       material: '100% algodón · Alto gramaje',
-      accent: '#10204A',
-      imageFallback: '/club/products/camiseta-cafe-texto-negro-blanca.webp',
+      accent: '#8A503A',
+      imageFallback: '/club/products/camiseta-base-blanca.webp',
       imageAlt: 'Camiseta Café con texto negro de Latido Club',
+      gelatoFront: true,
       galleryImages: [
-        ...cafeMockups({ colorLabel: 'Blanco', garment: 'blanca', ink: 'negro', selection: 'Blanco', exactFront: '/club/products/camiseta-cafe-texto-negro-blanca.webp' }),
-        ...cafeMockups({ colorLabel: 'Natural', garment: 'natural', ink: 'negro', selection: 'Natural', exactFront: '/club/products/camiseta-cafe-texto-negro-natural.webp' }),
-        ...cafeMockups({ colorLabel: 'Gris claro', garment: 'gris', ink: 'negro', selection: 'Ash', exactFront: '/club/products/camiseta-cafe-texto-negro-gris.webp' }),
+        cafeBackMockup({ colorLabel: 'Blanco', garment: 'blanca', ink: 'negro', selection: 'Blanco' }),
+        cafeBackMockup({ colorLabel: 'Natural', garment: 'natural', ink: 'negro', selection: 'Natural' }),
+        cafeBackMockup({ colorLabel: 'Gris claro', garment: 'gris', ink: 'negro', selection: 'Ash' }),
       ],
     },
     {
-      id: 'c5fe22ad-0172-4582-83ec-b713487b18fb',
-      name: 'Camiseta Café · Texto granate',
+      id: 'b6b8be91-6cfd-42d2-88f3-bed61406fe2f',
+      name: 'Camiseta Café · Texto blanco',
       category: 'camisetas',
       price: 36.9,
       compareAtPrice: 39.9,
-      shortName: 'Camiseta Café · Granate',
+      shortName: 'Camiseta Café · Blanco',
       eyebrow: 'Café 6.50 CHF',
-      description: 'Camiseta unisex de algodón de alto gramaje con el diseño Café en granate. Disponible en blanco, natural y gris claro.',
+      description: 'Camiseta unisex negra de algodón de alto gramaje con el nuevo diseño Café en blanco.',
       material: '100% algodón · Alto gramaje',
-      accent: '#9E1B20',
-      imageFallback: '/club/products/camiseta-cafe-texto-granate-blanca.webp',
-      imageAlt: 'Camiseta Café con texto granate de Latido Club',
+      accent: '#8A503A',
+      imageFallback: '/club/products/camiseta-base-negra.webp',
+      imageAlt: 'Camiseta negra Café con texto blanco de Latido Club',
+      gelatoFront: true,
       galleryImages: [
-        ...cafeMockups({ colorLabel: 'Blanco', garment: 'blanca', ink: 'granate', selection: 'Blanco', exactFront: '/club/products/camiseta-cafe-texto-granate-blanca.webp' }),
-        ...cafeMockups({ colorLabel: 'Natural', garment: 'natural', ink: 'granate', selection: 'Natural' }),
-        ...cafeMockups({ colorLabel: 'Gris claro', garment: 'gris', ink: 'granate', selection: 'Ash' }),
+        cafeBackMockup({ colorLabel: 'Negro', garment: 'negra', ink: 'blanco' }),
       ],
     },
     {

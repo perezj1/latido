@@ -71,16 +71,10 @@ type ProductConfig = {
 
 const PRODUCT_CONFIG:Record<string, ProductConfig> = {
   '5dd70f64-e112-4cfb-88b1-5cdc18d257c3': {
-    shortName:'Camiseta Café · Blanco', price:36.9, optionLabel:'Talla', purchaseType:'base',
-  },
-  '588088c0-6780-41c2-a67f-201ecf5f0eb2': {
-    shortName:'Camiseta Café · Lavanda', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
-  },
-  'b6b8be91-6cfd-42d2-88f3-bed61406fe2f': {
     shortName:'Camiseta Café · Negro', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
-  'c5fe22ad-0172-4582-83ec-b713487b18fb': {
-    shortName:'Camiseta Café · Granate', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+  'b6b8be91-6cfd-42d2-88f3-bed61406fe2f': {
+    shortName:'Camiseta Café · Blanco', price:36.9, optionLabel:'Talla', purchaseType:'base',
   },
   '55a12a31-4d0b-40e1-bed5-b3ea94b69228': {
     shortName:'Camiseta Atardecer', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',

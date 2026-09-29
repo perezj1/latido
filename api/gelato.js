@@ -133,7 +133,15 @@ async function imageFingerprint(url) {
 
 async function getProductImages(product, presentation) {
     if (Array.isArray(presentation.galleryImages) && presentation.galleryImages.length) {
-      return presentation.galleryImages
+      const gelatoFront = presentation.gelatoFront
+        ? (Array.isArray(product.productImages) ? product.productImages : [])
+            .filter(item => item?.fileUrl && item.status !== 'failed')
+            .sort((first, second) => Number(second.isPrimary) - Number(first.isPrimary))[0]
+        : null
+      return [
+        ...(gelatoFront ? [{ url: gelatoFront.fileUrl, label: 'Frontal' }] : []),
+        ...presentation.galleryImages,
+      ]
         .filter(image => image?.url || (image?.base && image?.overlay))
         .map((image, index) => ({
           url: image.url || image.base,

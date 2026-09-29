@@ -95,7 +95,9 @@ function productDesign(product) {
     }
   }
 
-  const cafeInk = String(product.name || '').match(/texto\s+(.+)$/i)?.[1]
+  const productName = String(product.name || '')
+  const isCafe = /caf[ée]/i.test(`${productName} ${product.eyebrow || ''}`)
+  const cafeInk = isCafe ? productName.match(/texto\s+(.+)$/i)?.[1] : ''
   if (cafeInk) {
     return {
       id: `cafe-${normalizeKey(cafeInk)}`,
@@ -130,7 +132,7 @@ const CLUB_DESIGNS = [
   {
     id: 'cafe',
     name: 'Café 6.50 CHF · Te despierta el precio',
-    image: '/club/designs/cafe-trasera-negro-v2.png',
+    image: '/club/designs/cafe-trasera-texto-negro.png',
     alt: 'Diseño negro Café 6.50 CHF, te despierta el precio, de Latido Club',
     tone: '#E9FAF7',
   },
