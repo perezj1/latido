@@ -128,18 +128,25 @@ const CLUB_DESIGNS = [
     tone: '#E8F1FF',
   },
   {
-    id: 'latido-logo-camiseta',
-    name: 'Símbolo Latido · Tu estilo también habla español',
-    image: '/club/designs/latido-logo-camiseta.webp',
-    alt: 'Símbolo multicolor de Latido Club con el lema Tu estilo también habla español',
-    tone: '#E9FAF7',
-  },
-  {
     id: 'cafe',
     name: 'Café 6.50 CHF · Te despierta el precio',
     image: '/club/designs/cafe-trasera-negro-v2.png',
     alt: 'Diseño negro Café 6.50 CHF, te despierta el precio, de Latido Club',
+    tone: '#E9FAF7',
+  },
+  {
+    id: 'latido-logo-camiseta',
+    name: 'Símbolo Latido · Tu estilo también habla español',
+    image: '/club/designs/latido-logo-camiseta.webp',
+    alt: 'Símbolo multicolor de Latido Club con el lema Tu estilo también habla español',
     tone: '#ECEEF1',
+  },
+  {
+    id: 'atardecer',
+    name: 'Atardecer al mediodía',
+    image: '/club/designs/atardecer-al-mediodia.png',
+    alt: 'Diseño Atardecer al mediodía en amarillo y azul de Latido Club',
+    tone: '#FFF5D6',
   },
 ]
 
@@ -1449,7 +1456,7 @@ export default function Club() {
 
       <footer className="club-footer">
         <div><img src="/brand/latido-horizontal-white.webp" alt="Latido Club" /></div>
-        <p>Hecho con corazón en Suiza · Producido bajo demanda</p>
+        <p>Hecho con corazón para los hispanohablantes en Suiza</p>
         <Link to="/">latido.ch</Link>
       </footer>
 

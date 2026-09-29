@@ -52,6 +52,24 @@ function hablasMockups({ colorLabel, garment, selection, exactFront, exactBack }
   ]
 }
 
+function atardecerMockups({ colorLabel, garment, selection, exactFront, exactBack }) {
+  const selections = { Color: selection }
+  const base = `/club/products/camiseta-base-${garment}.webp`
+  return [
+    exactFront
+      ? { url: exactFront, label: `Frontal · ${colorLabel}`, selections }
+      : {
+          url: base,
+          base,
+          overlay: '/club/designs/atardecer-sol-frontal.png',
+          placement: 'atardecer-front',
+          label: `Frontal · ${colorLabel}`,
+          selections,
+        },
+    { url: exactBack, label: `Trasera · ${colorLabel}`, selections },
+  ]
+}
+
 export const GELATO_STOREFRONT = {
   storeName: 'Latido Club',
   products: [
@@ -132,6 +150,27 @@ export const GELATO_STOREFRONT = {
         ...cafeMockups({ colorLabel: 'Blanco', garment: 'blanca', ink: 'granate', selection: 'Blanco', exactFront: '/club/products/camiseta-cafe-texto-granate-blanca.webp' }),
         ...cafeMockups({ colorLabel: 'Natural', garment: 'natural', ink: 'granate', selection: 'Natural' }),
         ...cafeMockups({ colorLabel: 'Gris claro', garment: 'gris', ink: 'granate', selection: 'Ash' }),
+      ],
+    },
+    {
+      id: '55a12a31-4d0b-40e1-bed5-b3ea94b69228',
+      titleIncludes: 'Atardecer / Texto Azul',
+      name: 'Camiseta Atardecer al mediodía',
+      category: 'camisetas',
+      price: 36.9,
+      compareAtPrice: 39.9,
+      shortName: 'Camiseta Atardecer',
+      eyebrow: 'Atardecer al mediodía',
+      description: 'Camiseta unisex de algodón de alto gramaje con un sol amarillo en el pecho y el diseño Atardecer al mediodía en la espalda. Disponible en blanco, natural, gris claro y negro.',
+      material: '100% algodón · Alto gramaje',
+      accent: '#F9C642',
+      imageFallback: '/club/products/camiseta-atardecer-blanca-frontal.jpg',
+      imageAlt: 'Camiseta Atardecer al mediodía de Latido Club',
+      galleryImages: [
+        ...atardecerMockups({ colorLabel: 'Blanco', garment: 'blanca', selection: 'Blanco', exactFront: '/club/products/camiseta-atardecer-blanca-frontal.jpg', exactBack: '/club/products/camiseta-atardecer-blanca-trasera.jpg' }),
+        ...atardecerMockups({ colorLabel: 'Natural', garment: 'natural', selection: 'Natural', exactBack: '/club/products/camiseta-atardecer-natural-trasera.jpg' }),
+        ...atardecerMockups({ colorLabel: 'Gris claro', garment: 'gris', selection: 'Ash', exactBack: '/club/products/camiseta-atardecer-gris-trasera.jpg' }),
+        ...atardecerMockups({ colorLabel: 'Negro', garment: 'negra', selection: 'Negro', exactBack: '/club/products/camiseta-atardecer-negra-trasera.jpg' }),
       ],
     },
     {
