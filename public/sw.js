@@ -225,11 +225,24 @@ function handleNavigation(event) {
 
   return network.catch(async () => {
     const cache = await caches.open(SHELL_CACHE)
-    return (
+    const cached = (
       await cache.match(cacheKey) ||
       await cache.match('/index.html') ||
       await cache.match('/')
     )
+
+    if (cached) return cached
+
+    // respondWith() must always resolve to a Response. iOS WebKit reports
+    // "Returned response is null" when both the network and cache are empty.
+    return new Response('Latido no esta disponible temporalmente. Comprueba tu conexion e intentalo de nuevo.', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store',
+      },
+    })
   })
 }
 
