@@ -148,6 +148,13 @@ const CLUB_DESIGNS = [
     alt: 'Diseño Atardecer al mediodía en amarillo y azul de Latido Club',
     tone: '#FFF5D6',
   },
+  {
+    id: 'improvisar',
+    name: 'Improvisar · De 16:40 a 17:10',
+    image: '/club/products/improvisar-trasera-texto-negro.png',
+    alt: 'Diseño Improvisar con un reloj y el horario de 16:40 a 17:10 de Latido Club',
+    tone: '#F7E7D5',
+  },
 ]
 
 const hablasFallbackMockups = ({ colorLabel, garment, selection, exactFront, exactBack }) => {

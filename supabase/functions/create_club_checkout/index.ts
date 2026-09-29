@@ -85,6 +85,12 @@ const PRODUCT_CONFIG:Record<string, ProductConfig> = {
   '55a12a31-4d0b-40e1-bed5-b3ea94b69228': {
     shortName:'Camiseta Atardecer', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
+  '4ce36309-eb36-4b08-8d3a-e33e0d71d5b5': {
+    shortName:'Camiseta Improvisar · Negro', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+  },
+  'ebcb0c86-9d07-4e2a-8bf7-59fff8ebc97f': {
+    shortName:'Camiseta Improvisar · Blanco', price:36.9, optionLabel:'Talla', purchaseType:'base',
+  },
   '1759e8a1-03e1-40eb-947b-de41f50490c3': {
     shortName:'Sudadera Latido Logo · Negra', price:46.9, optionLabel:'Talla', purchaseType:'base',
   },
@@ -93,6 +99,12 @@ const PRODUCT_CONFIG:Record<string, ProductConfig> = {
   },
   'e922400e-27f5-410e-83bd-ef4647215e41': {
     shortName:'Sudadera Atardecer', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
+  },
+  'd7ed15a0-30bf-49cc-888c-fdd0bc58f3fa': {
+    shortName:'Sudadera Improvisar · Negro', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
+  },
+  '23397fd4-1013-4481-9c11-e22932316c7c': {
+    shortName:'Sudadera Improvisar · Blanco', price:46.9, optionLabel:'Talla', purchaseType:'base',
   },
   '9b2e0872-ffc6-4bbe-8615-eec669e36da4': {
     shortName:'Bolsa Latido Logo', price:24.9, optionLabel:'Color', purchaseType:'addon',
