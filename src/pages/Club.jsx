@@ -102,7 +102,7 @@ function productDesign(product) {
     return {
       id: `cafe-${normalizeKey(cafeInk)}`,
       label: `Café · Texto ${cafeInk.toLowerCase()}`,
-      family: 'Café 6.50 CHF',
+      family: 'Café en Suiza',
     }
   }
 
@@ -131,9 +131,9 @@ const CLUB_DESIGNS = [
   },
   {
     id: 'cafe',
-    name: 'Café 6.50 CHF · Te despierta el precio',
-    image: '/club/designs/cafe-trasera-texto-negro.png',
-    alt: 'Diseño negro Café 6.50 CHF, te despierta el precio, de Latido Club',
+    name: 'Café en Suiza · Te despierta el precio',
+    image: '/club/designs/cafe-trasera-en-suiza-texto-negro.png',
+    alt: 'Diseño Café en Suiza, te despierta el precio, de Latido Club',
     tone: '#E9FAF7',
   },
   {
