@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Children, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
-import { Btn, Card, EmptyState, Tag } from '../components/UI'
+import { Btn, EmptyState, Tag } from '../components/UI'
 import { REPORT_REASONS } from '../lib/reports'
 import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getMissingColumnName } from '../lib/supabaseCompat'
@@ -31,17 +31,17 @@ import '../styles/admin.css'
 // ── Lenguaje visual del panel ──────────────────────────────────
 // Una sola escala de radios, sombras y tintas para que cada tarjeta,
 // tabla y filtro se lea como parte del mismo sistema.
-const R = { sm: 10, md: 14, lg: 18, xl: 22 }
+const R = { sm: 10, md: 12, lg: 16, xl: 20 }
 const SH = {
-  sm: '0 1px 2px rgba(15,23,42,0.04), 0 6px 16px -12px rgba(15,23,42,0.22)',
-  md: '0 1px 3px rgba(15,23,42,0.05), 0 16px 34px -20px rgba(15,23,42,0.30)',
-  lg: '0 28px 64px -28px rgba(15,23,42,0.34)',
+  sm: '0 1px 2px rgba(15,23,42,0.05)',
+  md: '0 1px 2px rgba(15,23,42,0.05), 0 8px 24px -12px rgba(15,23,42,0.18)',
+  lg: '0 24px 60px -24px rgba(15,23,42,0.35)',
 }
 // Los tres niveles de texto pasan AA sobre blanco: el panel es de lectura densa.
-const INK = { strong: '#0F172A', base: '#4B5B70', soft: '#64748B' }
-const LINE = '#E6EDF7'
-const LINE_STRONG = '#D5E0EF'
-const SURFACE_MUTED = '#F7F9FD'
+const INK = { strong: '#0F172A', base: '#475569', soft: '#64748B' }
+const LINE = '#E5E9F0'
+const LINE_STRONG = '#D5DCE6'
+const SURFACE_MUTED = '#F6F8FB'
 const POSITIVE = '#047857'
 const NEGATIVE = '#B91C1C'
 
@@ -959,37 +959,64 @@ function chartDayLabel(key = '') {
   return month && day ? `${day}/${month}` : key
 }
 
+// Ancho real del contenedor: el gráfico se dibuja a tamaño 1:1 para que
+// los ejes se lean igual en un móvil que en escritorio.
+function useElementWidth(fallback = 720) {
+  const ref = useRef(null)
+  const [width, setWidth] = useState(fallback)
+
+  useEffect(() => {
+    const node = ref.current
+    if (!node || typeof ResizeObserver === 'undefined') return undefined
+    const update = () => {
+      const next = Math.round(node.getBoundingClientRect().width)
+      if (next > 0) setWidth(next)
+    }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  return [ref, width]
+}
+
 function SparkBarChart({ data, color }) {
   const gradientId = useMemo(
     () => `adm-bar-${Math.random().toString(36).slice(2, 9)}`,
     [],
   )
+  const [containerRef, containerWidth] = useElementWidth()
   const rawMax = Math.max(...data.map(d => d.count), 0)
   const axisMax = rawMax > 0 ? rawMax : 1
   const peakIndex = data.reduce((best, item, index) => (item.count > (data[best]?.count ?? -1) ? index : best), 0)
 
-  // viewBox ancho + height:auto = el gráfico ocupa todo el ancho de la
-  // tarjeta sin deformar el texto de los ejes.
-  const LW = 34
-  const W = 720
-  const H = 210
+  const compact = containerWidth < 480
+  const LW = compact ? 28 : 34
+  const W = Math.max(containerWidth, 240)
+  const H = compact ? 170 : 210
   const PAD_TOP = 10
   const AXIS_H = 22
+  const FONT = compact ? 10.5 : 11.5
   const chartH = H - PAD_TOP - AXIS_H
   const chartW = W - LW
   const n = Math.max(data.length, 1)
   const slot = chartW / n
-  const bw = Math.max(3, Math.min(slot * 0.6, 34))
+  const bw = Math.max(3, Math.min(slot * 0.62, 30))
 
   const mid = Math.round(axisMax / 2)
   const ticks = [...new Set([0, mid, axisMax])]
-  const labelEvery = Math.max(1, Math.ceil(n / 7))
+  const maxLabels = Math.max(2, Math.floor(chartW / (compact ? 50 : 64)))
+  const labelEvery = Math.max(1, Math.ceil(n / maxLabels))
 
   const yPos = value => PAD_TOP + chartH - (value / axisMax) * chartH
 
   return (
+    <div ref={containerRef} style={{ width: '100%', minWidth: 0 }}>
     <svg
       viewBox={`0 0 ${W} ${H}`}
+      width={W}
+      height={H}
       role="img"
       aria-label={`Evolución diaria, máximo ${rawMax}`}
       style={{ width: '100%', height: 'auto', display: 'block' }}
@@ -1012,10 +1039,10 @@ function SparkBarChart({ data, color }) {
               strokeDasharray={tick === 0 ? '' : '2 4'}
             />
             <text
-              x={LW - 8} y={y + 4.4}
+              x={LW - 7} y={y + 4}
               textAnchor="end"
-              fontSize={12}
-              fontWeight="700"
+              fontSize={FONT}
+              fontWeight="600"
               fill={INK.soft}
               fontFamily="Poppins,system-ui,sans-serif"
             >
@@ -1055,23 +1082,29 @@ function SparkBarChart({ data, color }) {
         )
       })}
 
-      {data.map((d, i) => (
-        (i % labelEvery === 0 || i === n - 1) ? (
+      {data.map((d, i) => {
+        const isLast = i === n - 1
+        // La última fecha siempre se ve; la anterior se omite si chocaría con ella.
+        const show = isLast || (i % labelEvery === 0 && n - 1 - i >= Math.ceil(labelEvery * 0.7))
+        if (!show) return null
+        const alignEnd = isLast && n > 1 && slot < 44
+        return (
           <text
             key={`label-${d.date}`}
-            x={LW + i * slot + slot / 2}
-            y={H - 4}
-            textAnchor="middle"
-            fontSize={12}
-            fontWeight="700"
+            x={alignEnd ? W - 1 : LW + i * slot + slot / 2}
+            y={H - 5}
+            textAnchor={alignEnd ? 'end' : 'middle'}
+            fontSize={FONT}
+            fontWeight="600"
             fill={INK.soft}
             fontFamily="Poppins,system-ui,sans-serif"
           >
             {chartDayLabel(d.date)}
           </text>
-        ) : null
-      ))}
+        )
+      })}
     </svg>
+    </div>
   )
 }
 
@@ -1080,12 +1113,12 @@ function ChartShell({ eyebrow, total, badge, footer, children }) {
   return (
     <div
       className="adm-surface"
-      style={{ padding: '16px 18px 12px', display: 'grid', gap: 12 }}
+      style={{ padding: '16px 16px 12px', display: 'grid', gap: 14, minWidth: 0 }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
-          <p style={{ ...EYEBROW, marginBottom: 5 }}>{eyebrow}</p>
-          <p className="adm-num" style={{ fontFamily: PP, fontWeight: 800, fontSize: 30, color: INK.strong, margin: 0, letterSpacing: -1.1, lineHeight: 1 }}>
+          <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 600, color: INK.base, margin: '0 0 6px', lineHeight: 1.35 }}>{eyebrow}</p>
+          <p className="adm-num" style={{ fontFamily: PP, fontWeight: 800, fontSize: 28, color: INK.strong, margin: 0, letterSpacing: -1, lineHeight: 1 }}>
             {total}
           </p>
         </div>
@@ -1180,69 +1213,133 @@ function TrendChip({ value, invert = false, size = 10 }) {
   )
 }
 
+// Los valores de texto ("Requiere atención", "Empeora") se leen mejor un
+// punto más pequeños que las cifras.
+function isTextualMetric(value) {
+  return typeof value === 'string' && value.length > 6 && !/^[\d\s.,%/+\-–:·dh]+$/.test(value)
+}
+
 function SummaryMetric({ label, value, hint, color = C.primary, trend = null, trendInvert = false, icon = '' }) {
   return (
-    <div
-      className="adm-surface adm-raise"
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        minWidth: 0,
-        padding: '14px 15px',
-        display: 'grid',
-        gap: 8,
-        alignContent: 'start',
-      }}
-    >
-      <span style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 3, background: color, opacity: 0.9 }} />
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-        <p style={{ ...EYEBROW, minWidth: 0, lineHeight: 1.35 }}>
-          {icon ? `${icon} ` : ''}{label}
+    <div className="adm-kpi" style={{ '--kpi-color': color }}>
+      <div className="adm-kpi__head">
+        <p className="adm-kpi__label">
+          <span className="adm-kpi__dot" aria-hidden="true" />
+          <span style={{ minWidth: 0 }}>{icon ? `${icon} ` : ''}{label}</span>
         </p>
         <TrendChip value={trend} invert={trendInvert} />
       </div>
-      <p
-        className="adm-num"
-        style={{ fontFamily: PP, fontSize: 27, fontWeight: 800, color: INK.strong, lineHeight: 1, margin: 0, letterSpacing: -0.9, overflowWrap: 'anywhere' }}
-      >
+      <p className={`adm-kpi__value adm-num${isTextualMetric(value) ? ' adm-kpi__value--text' : ''}`}>
         {value}
       </p>
-      <p style={{ fontFamily: PP, fontSize: 11, color: INK.base, lineHeight: 1.4, margin: 0 }}>
-        {hint}
+      {hint && <p className="adm-kpi__hint">{hint}</p>}
+    </div>
+  )
+}
+
+// Rejilla de KPIs sin huérfanos: 2 columnas en móvil, filas completas en escritorio.
+function KpiGrid({ children, count, style = {} }) {
+  const total = count ?? (Array.isArray(children) ? children.length : 1)
+  const lg = total <= 6 ? total : Math.ceil(total / 2)
+  const md = total === 4 ? 4 : total === 7 || total === 8 ? 4 : Math.min(total, 3)
+  return (
+    <div className="adm-kpi-grid" style={{ '--kpi-cols': lg, '--kpi-cols-md': md, ...style }}>
+      {children}
+    </div>
+  )
+}
+
+// Cabecera única de tarjeta: mismo tamaño, peso y aire en todo el panel.
+function CardHeader({ title, subtitle, aside = null, icon = null, style = {} }) {
+  return (
+    <div className="adm-card-head" style={style}>
+      <div className="adm-card-head__text">
+        {icon && <span className="adm-card-head__icon">{icon}</span>}
+        <div style={{ minWidth: 0 }}>
+          <p className="adm-card-head__title">{title}</p>
+          {subtitle && <p className="adm-card-head__subtitle">{subtitle}</p>}
+        </div>
+      </div>
+      {aside}
+    </div>
+  )
+}
+
+// Encabezado de bloque: separa "qué mido" de "cómo evoluciona" y "qué hago".
+function BlockTitle({ children, aside = null }) {
+  return (
+    <div className="adm-block-title">
+      <h2>{children}</h2>
+      {aside}
+    </div>
+  )
+}
+
+function MiniStat({ label, value, hint, color = INK.strong }) {
+  return (
+    <div className="adm-mini-stat">
+      <p className="adm-mini-stat__value adm-num" style={{ color }}>{value}</p>
+      <p className="adm-mini-stat__label">{label}</p>
+      {hint && <p className="adm-mini-stat__hint">{hint}</p>}
+    </div>
+  )
+}
+
+// Registro individual de opinión: quién, cuándo y qué respondió.
+function FeedbackRecordHeader({ name, meta, date, tag }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+      <span style={{ minWidth: 0 }}>
+        <span style={{ display: 'block', fontFamily: PP, fontWeight: 700, fontSize: 13, color: INK.strong, overflowWrap: 'anywhere' }}>{name}</span>
+        {meta && <span style={{ display: 'block', fontFamily: PP, fontSize: 11.5, color: INK.base, marginTop: 2, overflowWrap: 'anywhere' }}>{meta}</span>}
+        <span style={{ display: 'block', fontFamily: PP, fontSize: 11, color: INK.soft, marginTop: 2 }}>{date}</span>
+      </span>
+      {tag && <span style={{ flexShrink: 0, display: 'flex' }}>{tag}</span>}
+    </div>
+  )
+}
+
+function FeedbackField({ label, children, style = {} }) {
+  return (
+    <div style={{ borderRadius: R.sm, padding: '9px 10px', background: SURFACE_MUTED, border: `1px solid ${LINE}`, marginBottom: 8, minWidth: 0, ...style }}>
+      <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: INK.soft, margin: '0 0 3px', textTransform: 'uppercase' }}>{label}</p>
+      <div style={{ fontFamily: PP, fontSize: 12.5, fontWeight: 600, color: INK.base, lineHeight: 1.45, overflowWrap: 'anywhere' }}>{children}</div>
+    </div>
+  )
+}
+
+function FeedbackComment({ text }) {
+  return (
+    <p style={{ fontFamily: PP, fontSize: 12.5, color: text ? INK.strong : INK.soft, fontStyle: text ? 'normal' : 'italic', lineHeight: 1.5, margin: 0, overflowWrap: 'anywhere' }}>
+      {text ? `“${text}”` : 'Sin comentario escrito'}
+    </p>
+  )
+}
+
+// Nota metodológica: qué significa cada cifra y de dónde sale.
+function MethodNote({ label, note, color }) {
+  return (
+    <div style={{ border: `1px solid ${LINE}`, borderRadius: R.md, padding: 12, background: SURFACE_MUTED, minWidth: 0 }}>
+      <p style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: PP, fontSize: 12.5, fontWeight: 700, color: INK.strong, margin: '0 0 4px' }}>
+        <span style={{ width: 8, height: 8, borderRadius: 3, background: color, flexShrink: 0 }} />
+        {label}
       </p>
+      <p style={{ fontFamily: PP, fontSize: 12, color: INK.base, margin: 0, lineHeight: 1.5 }}>{note}</p>
     </div>
   )
 }
 
 function AdminSectionCard({ title, subtitle, action, icon = null, children, style = {} }) {
   return (
-    <div className="adm-surface" style={{ padding: 16, overflow: 'hidden', ...style }}>
+    <div className="adm-surface" style={{ padding: 16, overflow: 'hidden', minWidth: 0, ...style }}>
       {(title || action) && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: 12,
-          flexWrap: 'wrap',
-          paddingBottom: 12,
-          marginBottom: 14,
-          borderBottom: `1px solid ${LINE}`,
-        }}>
-          <div style={{ minWidth: 0, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            {icon && (
-              <span style={{ width: 30, height: 30, borderRadius: R.sm, background: SURFACE_MUTED, color: INK.base, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                {icon}
-              </span>
-            )}
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14.5, color: INK.strong, margin: 0, letterSpacing: -0.2 }}>{title}</p>
-              {subtitle && (
-                <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '3px 0 0', lineHeight: 1.45 }}>{subtitle}</p>
-              )}
-            </div>
-          </div>
-          {action}
-        </div>
+        <CardHeader
+          title={title}
+          subtitle={subtitle}
+          icon={icon}
+          aside={action}
+          style={{ paddingBottom: 12, borderBottom: `1px solid ${LINE}` }}
+        />
       )}
       {children}
     </div>
@@ -1326,17 +1423,14 @@ function AdminDataTable({ columns, rows, getRowKey, sort, onSortChange, activeRo
                     position: 'sticky',
                     top: 0,
                     zIndex: 1,
-                    background: 'rgba(247,249,253,0.94)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
+                    background: SURFACE_MUTED,
                     textAlign: column.align || 'left',
                     fontFamily: PP,
-                    fontSize: 9.5,
-                    fontWeight: 800,
-                    letterSpacing: 0.7,
-                    textTransform: 'uppercase',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: 0.3,
                     color: isSorted ? C.primary : INK.soft,
-                    padding: '10px 10px',
+                    padding: '10px 12px',
                     borderBottom: `1px solid ${LINE_STRONG}`,
                     whiteSpace: 'nowrap',
                     cursor: sortable ? 'pointer' : 'default',
@@ -1377,9 +1471,9 @@ function AdminDataTable({ columns, rows, getRowKey, sort, onSortChange, activeRo
                     key={column.key}
                     style={{
                       fontFamily: PP,
-                      fontSize: 12,
+                      fontSize: 12.5,
                       color: INK.strong,
-                      padding: '11px 10px',
+                      padding: '12px 12px',
                       borderBottom: `1px solid ${LINE}`,
                       textAlign: column.align || 'left',
                       verticalAlign: 'middle',
@@ -1398,43 +1492,42 @@ function AdminDataTable({ columns, rows, getRowKey, sort, onSortChange, activeRo
   )
 }
 
-function InsightBarList({ title, subtitle, rows, color = C.primary, emptyText = 'Sin datos todavía.' }) {
+function InsightBarList({ title, subtitle, rows, color = C.primary, emptyText = 'Sin datos todavía.', aside = null, showShare = true }) {
   const max = Math.max(...rows.map(row => row.value), 1)
   const total = rows.reduce((sum, row) => sum + (Number(row.value) || 0), 0)
 
   return (
-    <div className="adm-surface" style={{ padding: 16, overflow: 'hidden' }}>
-      <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14.5, color: INK.strong, margin: '0 0 3px', letterSpacing: -0.2 }}>{title}</p>
-      <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '0 0 14px', lineHeight: 1.45 }}>{subtitle}</p>
+    <div className="adm-surface" style={{ padding: 16, overflow: 'hidden', minWidth: 0 }}>
+      <CardHeader title={title} subtitle={subtitle} aside={aside} />
 
-      <div style={{ display: 'grid', gap: 11, minWidth: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gap: 12, minWidth: 0, overflow: 'hidden' }}>
         {rows.map((row, index) => {
           const share = total ? Math.round((row.value / total) * 100) : 0
           return (
-            <div key={row.label} className="adm-insight-row" style={{ minWidth: 0, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5, alignItems: 'flex-start' }}>
-                <span style={{ minWidth: 0, flex: '1 1 0', overflow: 'hidden', display: 'flex', gap: 7, alignItems: 'flex-start' }}>
+            <div key={`${row.label}-${index}`} className="adm-insight-row" style={{ minWidth: 0, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 6, alignItems: 'flex-start' }}>
+                <span style={{ minWidth: 0, flex: '1 1 0', overflow: 'hidden', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                   <span
                     className="adm-num"
-                    style={{ width: 17, height: 17, borderRadius: 6, background: SURFACE_MUTED, color: INK.soft, fontFamily: PP, fontSize: 9.5, fontWeight: 800, display: 'grid', placeItems: 'center', flexShrink: 0, marginTop: 1 }}
+                    style={{ width: 20, height: 20, borderRadius: 6, background: SURFACE_MUTED, border: `1px solid ${LINE}`, color: INK.soft, fontFamily: PP, fontSize: 10.5, fontWeight: 700, display: 'grid', placeItems: 'center', flexShrink: 0, boxSizing: 'border-box' }}
                   >
                     {index + 1}
                   </span>
                   <span style={{ minWidth: 0, overflow: 'hidden' }}>
-                    <span style={{ display: 'block', fontFamily: PP, fontSize: 12, fontWeight: 700, color: INK.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</span>
+                    <span style={{ display: 'block', fontFamily: PP, fontSize: 12.5, fontWeight: 600, color: INK.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.45 }}>{row.label}</span>
                     {row.sub && (
-                      <span style={{ display: 'block', fontFamily: PP, fontSize: 10, color: INK.soft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{row.sub}</span>
+                      <span style={{ display: 'block', fontFamily: PP, fontSize: 11, color: INK.soft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{row.sub}</span>
                     )}
                   </span>
                 </span>
-                <span style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexShrink: 0 }}>
-                  {total > 0 && (
-                    <span className="adm-num" style={{ fontFamily: PP, fontSize: 10, fontWeight: 700, color: INK.soft }}>{share}%</span>
+                <span style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexShrink: 0 }}>
+                  {showShare && total > 0 && (
+                    <span className="adm-num" style={{ fontFamily: PP, fontSize: 11, fontWeight: 600, color: INK.soft }}>{share}%</span>
                   )}
-                  <span className="adm-num" style={{ fontFamily: PP, fontSize: 12.5, fontWeight: 800, color: INK.strong }}>{row.value}</span>
+                  <span className="adm-num" style={{ fontFamily: PP, fontSize: 13, fontWeight: 800, color: INK.strong, minWidth: 18, textAlign: 'right' }}>{row.value}</span>
                 </span>
               </div>
-              <div className="adm-bar-track" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 7 }}>
+              <div className="adm-bar-track" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 6 }}>
                 <div className="adm-bar-fill" style={{ width: row.value ? `${Math.max(4, Math.round((row.value / max) * 100))}%` : 0, height: '100%', background: color }} />
               </div>
             </div>
@@ -1442,8 +1535,29 @@ function InsightBarList({ title, subtitle, rows, color = C.primary, emptyText = 
         })}
 
         {!rows.length && (
-          <p style={{ fontFamily: PP, fontSize: 12, color: INK.soft, margin: 0, lineHeight: 1.5 }}>{emptyText}</p>
+          <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.soft, margin: 0, lineHeight: 1.5, padding: '6px 0' }}>{emptyText}</p>
         )}
+      </div>
+    </div>
+  )
+}
+
+// Aviso de estado (tabla ausente, permisos, explicación de una cola).
+const NOTICE_TONES = {
+  warning: { border: '#FCD34D', bg: '#FFFBEB', title: '#92400E', text: '#92400E', icon: 'alert' },
+  info: { border: '#BFDBFE', bg: '#EFF6FF', title: '#1E40AF', text: '#1E3A8A', icon: 'info' },
+}
+
+function AdminNotice({ tone = 'warning', title, children }) {
+  const palette = NOTICE_TONES[tone] || NOTICE_TONES.warning
+  return (
+    <div role="note" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '13px 15px', border: `1px solid ${palette.border}`, background: palette.bg, borderRadius: R.lg }}>
+      <span style={{ color: palette.title, marginTop: 1 }}>
+        <AdminIcon name={palette.icon} size={17} />
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13.5, color: palette.title, margin: '0 0 4px' }}>{title}</p>
+        <p style={{ fontFamily: PP, fontSize: 12.5, color: palette.text, lineHeight: 1.55, margin: 0 }}>{children}</p>
       </div>
     </div>
   )
@@ -1575,7 +1689,7 @@ function AdminButton({ children, onClick, variant = 'secondary', disabled = fals
       onClick={onClick}
       title={title}
       className="adm-action"
-      style={{ width: 'auto', minWidth: 0, padding: '8px 12px', borderRadius: R.sm, fontSize: 11, fontWeight: 700 }}
+      style={{ width: 'auto', minWidth: 0, minHeight: 36, padding: '8px 12px', borderRadius: R.sm, fontSize: 12, fontWeight: 700 }}
     >
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
         {icon && <AdminIcon name={icon} size={13} />}
@@ -1666,16 +1780,47 @@ function AdminFilterSelect({ value, onChange, children, label, plain = false }) 
   )
 }
 
+// En móvil solo queda a la vista el primer campo (la búsqueda); el resto de
+// selectores se despliega con "Filtros" para no ocupar media pantalla.
 function AdminFilterBar({ children, footer, title = 'Filtros', chips = null }) {
+  const isCompact = useMediaQuery('(max-width: 639px)')
+  const [expanded, setExpanded] = useState(false)
+  const fields = Children.toArray(children)
+  const [primary, ...secondary] = fields
+  const collapsible = isCompact && secondary.length > 0
+  const changedCount = secondary.filter(field => {
+    const value = field?.props?.value
+    return field?.props?.plain !== true && value !== undefined && value !== 'all' && value !== ''
+  }).length
+
   return (
     <div className="adm-surface" style={{ padding: 12, display: 'grid', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
         <AdminIcon name="filters" size={13} style={{ color: INK.soft }} />
         <p style={{ ...EYEBROW }}>{title}</p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: 8 }}>
-        {children}
-      </div>
+      {collapsible ? (
+        <>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+            <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex' }}>{primary}</div>
+            <button
+              type="button"
+              className="adm-filter-toggle"
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Ocultar filtros' : 'Mostrar filtros'}
+              onClick={() => setExpanded(open => !open)}
+            >
+              <AdminIcon name="filters" size={15} />
+              {changedCount > 0 && <span className="adm-count-badge adm-num">{changedCount}</span>}
+            </button>
+          </div>
+          {expanded && <div className="adm-filter-grid">{secondary}</div>}
+        </>
+      ) : (
+        <div className="adm-filter-grid">
+          {fields}
+        </div>
+      )}
       {chips}
       {footer && (
         <div style={{
@@ -1710,8 +1855,8 @@ function ActiveFilters({ items = [], onClearAll }) {
             alignItems: 'center',
             gap: 5,
             fontFamily: PP,
-            fontSize: 10.5,
-            fontWeight: 700,
+            fontSize: 11.5,
+            fontWeight: 600,
             color: C.primary,
             background: tint(C.primary, 8),
             border: `1px solid ${veil(C.primary, 25)}`,
@@ -1762,12 +1907,12 @@ function ActiveFilters({ items = [], onClearAll }) {
 // Resumen de resultados: cifra grande primero, contexto después.
 function ResultSummary({ parts = [] }) {
   return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontFamily: PP, fontSize: 11, color: INK.soft }}>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontFamily: PP, fontSize: 12, color: INK.soft }}>
       {parts.filter(Boolean).map((part, index) => (
         <span key={part.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {index > 0 && <span style={{ color: LINE_STRONG }}>|</span>}
           <span>
-            <strong className="adm-num" style={{ color: part.color || INK.strong, fontWeight: 800, fontSize: 12 }}>{part.value}</strong>
+            <strong className="adm-num" style={{ color: part.color || INK.strong, fontWeight: 800, fontSize: 13 }}>{part.value}</strong>
             {' '}{part.label}
           </span>
         </span>
@@ -1778,7 +1923,7 @@ function ResultSummary({ parts = [] }) {
 
 function AdminChipFilter({ options, value, onChange, label }) {
   return (
-    <div role="group" aria-label={label} className="adm-scroll" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+    <div role="group" aria-label={label} className="adm-chip-row">
       {options.map(option => {
         const active = value === option.id
         const color = option.color || C.primary
@@ -1795,13 +1940,15 @@ function AdminChipFilter({ options, value, onChange, label }) {
               alignItems: 'center',
               gap: 6,
               fontFamily: PP,
-              fontSize: 11.5,
-              fontWeight: 700,
+              fontSize: 12.5,
+              fontWeight: 600,
               border: `1px solid ${active ? veil(color, 45) : LINE_STRONG}`,
               background: active ? (option.bg || tint(color, 10)) : '#fff',
               color: active ? color : INK.base,
               borderRadius: 999,
-              padding: '6px 11px',
+              padding: '7px 12px',
+              minHeight: 36,
+              flexShrink: 0,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               boxShadow: active ? SH.sm : 'none',
@@ -1841,7 +1988,7 @@ function AdminPagination({ page, pageCount, total, onChange }) {
       flexWrap: 'wrap',
       padding: '12px 2px 2px',
     }}>
-      <span className="adm-num" style={{ fontFamily: PP, fontSize: 11, color: INK.base }}>
+      <span className="adm-num" style={{ fontFamily: PP, fontSize: 12, color: INK.base }}>
         Página <strong style={{ color: INK.strong }}>{page}</strong> de {pageCount}
         <span style={{ color: INK.soft }}> · {fmtNumber(total)} resultados</span>
       </span>
@@ -1933,6 +2080,21 @@ export default function Admin() {
   const [creatorActionLoading, setCreatorActionLoading] = useState(new Set())
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const dataErrors = Object.values(dataErrorsByGroup).filter(Boolean)
+
+  // Hoja "Más" en móvil: bloquea el scroll del fondo y se cierra con Escape.
+  useEffect(() => {
+    if (!crmMenuOpen || isDesktop) return undefined
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKeyDown = event => {
+      if (event.key === 'Escape') setCrmMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [crmMenuOpen, isDesktop])
 
   const metricUsers = useMemo(
     () => users.filter(profile => !isAdminEmail(profile.email)),
@@ -2276,7 +2438,13 @@ export default function Admin() {
     [businesses, historicalBusinessPartnerIds],
   )
   const partnerOptions = useMemo(
-    () => [...businessPartnerOptions, ...PARTNER_ANALYTICS_PARTNERS],
+    () => {
+      const businessPartnerIds = new Set(businessPartnerOptions.map(partner => partner.id))
+      return [
+        ...businessPartnerOptions,
+        ...PARTNER_ANALYTICS_PARTNERS.filter(partner => !businessPartnerIds.has(partner.id)),
+      ]
+    },
     [businessPartnerOptions],
   )
   const businessPartnerAnalyticsIds = useMemo(
@@ -2963,7 +3131,6 @@ export default function Admin() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5)
   }, [activeUsersWeek])
-  const activeCantonMax = Math.max(...activeCantonRows.map(row => row.value), 1)
   const usersWithActivityBaseline = metricUsers.filter(profile => profile.last_seen_at)
   const liveInactiveUsers = usersWithActivityBaseline.filter(profile => !isWithinRecentDays(profile.last_seen_at, 30)).length
   const liveUntrackedUsers = metricUsers.length - usersWithActivityBaseline.length
@@ -3789,7 +3956,7 @@ export default function Admin() {
     const p = getContentOwnerProfile(item)
     if (!p?.id) return null
     return (
-      <p style={{ fontFamily: PP, fontSize: 11, color: p.banned ? '#B91C1C' : C.light, margin: '8px 0 0', overflowWrap: 'anywhere' }}>
+      <p style={{ fontFamily: PP, fontSize: 12, color: p.banned ? '#B91C1C' : INK.soft, margin: '8px 0 0', overflowWrap: 'anywhere' }}>
         Autor: {p.name || p.email || p.id}{p.banned ? ' · baneado' : ''}
       </p>
     )
@@ -3854,11 +4021,11 @@ export default function Admin() {
 
   function renderContentSummary(contentType, contentId, fallback = '') {
     const content = contentByKey.get(`${contentType}:${contentId}`)
-    if (!content) return <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>{fallback || 'Contenido no encontrado'}</p>
+    if (!content) return <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.soft, margin: 0 }}>{fallback || 'Contenido no encontrado'}</p>
 
     if (contentType === 'message') {
       return (
-        <p style={{ fontFamily: PP, fontSize: 13, color: C.text, lineHeight: 1.55, margin: 0, fontStyle: 'italic' }}>
+        <p style={{ fontFamily: PP, fontSize: 13.5, color: INK.strong, lineHeight: 1.55, margin: 0, fontStyle: 'italic', overflowWrap: 'anywhere' }}>
           "{content.body}"
         </p>
       )
@@ -3866,12 +4033,12 @@ export default function Admin() {
     if (contentType === 'profile') {
       return (
         <div>
-          <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: C.text, margin: '0 0 3px' }}>{content.name || 'Usuario'}</p>
-          <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.5, margin: 0, overflowWrap: 'anywhere' }}>
+          <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14.5, color: INK.strong, margin: '0 0 3px', overflowWrap: 'anywhere' }}>{content.name || 'Usuario'}</p>
+          <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.base, lineHeight: 1.5, margin: 0, overflowWrap: 'anywhere' }}>
             {content.email || content.id}{content.canton ? ` · ${content.canton}` : ''}
           </p>
           {content.banned && (
-            <p style={{ fontFamily: PP, fontSize: 11, color: '#B91C1C', margin: '5px 0 0' }}>
+            <p style={{ fontFamily: PP, fontSize: 12, color: '#B91C1C', margin: '5px 0 0' }}>
               Baneado: {content.banned_reason || 'Sin motivo'}
             </p>
           )}
@@ -3880,10 +4047,10 @@ export default function Admin() {
     }
     return (
       <div>
-        <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: C.text, margin: '0 0 4px' }}>
+        <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14.5, color: INK.strong, margin: '0 0 4px', overflowWrap: 'anywhere' }}>
           {content.title || content.name || content.company || content.host || 'Sin titulo'}
         </p>
-        <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.5, margin: 0 }}>
+        <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.base, lineHeight: 1.5, margin: 0, overflowWrap: 'anywhere' }}>
           {(content.desc || content.description || content.summary || content.tagline || (Array.isArray(content.services) ? content.services.join(', ') : '') || content.contact || '').slice(0, 200)}
         </p>
       </div>
@@ -4100,8 +4267,6 @@ export default function Admin() {
     { label: `Reportes ${overviewMetricSuffix}`, value: reportsInOverviewRange, trend: reportsTrendInOverviewRange, color: '#DC2626' },
     { label: 'Pendientes ahora', value: totalPendingActions, trend: null, color: adminHealthColor },
   ]
-  const topPageMax = Math.max(...topPageRows.map(row => row.value), 1)
-  const topSearchMax = Math.max(...topSearchRows.map(row => row.value), 1)
 
   const isDataGroupReady = group =>
     loadedDataGroups.has(group)
@@ -4134,7 +4299,7 @@ export default function Admin() {
     { label: 'Operación', hint: 'Negocios, publicaciones y seguridad', items: ['businessVerification', 'content', 'reports', 'moderation'] },
   ]
   const BOTTOM_NAV_ITEMS = []
-  for (const id of ['users', 'creators', 'feedback', 'analytics']) {
+  for (const id of ['overview', 'users', 'creators', 'analytics']) {
     const item = navById.get(id)
     if (item) BOTTOM_NAV_ITEMS.push(item)
   }
@@ -4541,32 +4706,35 @@ export default function Admin() {
     const open = selectedCreatorId === creator.id
 
     return (
-      <Card key={creator.id} style={{ padding: '12px 14px' }}>
+      <div key={creator.id} className="adm-surface" style={{ padding: 14, borderColor: open ? veil(C.primary, 45) : undefined }}>
         <button
           type="button"
+          aria-expanded={open}
           onClick={() => setSelectedCreatorId(previous => previous === creator.id ? '' : creator.id)}
           style={{ display: 'block', width: '100%', border: 'none', background: 'transparent', padding: 0, textAlign: 'left', cursor: 'pointer' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
+              <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: INK.strong, margin: 0, overflowWrap: 'anywhere' }}>
                 {creator.name || 'Sin nombre'}{creator.verified ? ' ✔' : ''}
               </p>
-              <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0', overflowWrap: 'anywhere' }}>
+              <p style={{ fontFamily: PP, fontSize: 12, color: INK.soft, margin: '2px 0 0', overflowWrap: 'anywhere' }}>
                 {creator.handle || creator.slug}
                 {creator.canton ? ` · ${creator.canton}` : ''}
                 {creator.created_at ? ` · alta ${fmtDateShort(creator.created_at)}` : ''}
               </p>
             </div>
-            <span style={{ fontFamily: PP, fontSize: 16, fontWeight: 800, color: C.light, flexShrink: 0 }}>{open ? '−' : '+'}</span>
+            <span aria-hidden="true" style={{ width: 30, height: 30, borderRadius: 999, border: `1px solid ${LINE}`, display: 'grid', placeItems: 'center', color: INK.soft, flexShrink: 0 }}>
+              <AdminIcon name="next" size={15} strokeWidth={2.4} style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .18s ease' }} />
+            </span>
           </div>
 
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', margin: '8px 0' }}>
-            <Tag bg={meta.bg} color={meta.color}>{meta.label}</Tag>
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', margin: '10px 0' }}>
+            <Tag size={11} bg={meta.bg} color={meta.color}>{meta.label}</Tag>
             {creatorReviewTag(creator)}
             {(creator.topics || []).slice(0, 2).map(topicId => {
               const topic = creatorTopicMeta(topicId)
-              return <Tag key={topicId} bg={topic.bg} color={topic.color}>{topic.emoji} {topic.label}</Tag>
+              return <Tag key={topicId} size={11} bg={topic.bg} color={topic.color}>{topic.emoji} {topic.label}</Tag>
             })}
           </div>
 
@@ -4577,18 +4745,18 @@ export default function Admin() {
               { label:'Clics', value:fmtNumber(creator.clicks) },
               { label:'Útiles', value:fmtNumber(creator.helpful) },
             ].map(item => (
-              <div key={item.label} style={{ background: C.bgAlt, borderRadius: 12, padding: '7px 8px', minWidth: 0 }}>
-                <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 800, color: C.light, margin: 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>{item.label}</p>
-                <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 800, color: C.text, margin: '2px 0 0' }}>{item.value}</p>
+              <div key={item.label} style={{ background: SURFACE_MUTED, border: `1px solid ${LINE}`, borderRadius: R.sm, padding: '8px 8px', minWidth: 0 }}>
+                <p className="adm-num" style={{ fontFamily: PP, fontSize: 14, fontWeight: 800, color: INK.strong, margin: 0 }}>{item.value}</p>
+                <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 600, color: INK.soft, margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</p>
               </div>
             ))}
           </div>
         </button>
 
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${LINE}` }}>
           {renderCreatorActions(creator, { compact: true })}
         </div>
-      </Card>
+      </div>
     )
   }
 
@@ -4607,7 +4775,7 @@ export default function Admin() {
               href={`/creadores/${creator.slug}`}
               target="_blank"
               rel="noreferrer"
-              style={{ fontFamily: PP, fontSize: 11, fontWeight: 800, color: C.primary, background: C.primaryLight, borderRadius: 10, padding: '9px 12px', textDecoration: 'none' }}
+              style={{ display: 'inline-flex', alignItems: 'center', minHeight: 36, boxSizing: 'border-box', fontFamily: PP, fontSize: 12, fontWeight: 700, color: C.primary, background: C.primaryLight, borderRadius: R.sm, padding: '8px 12px', textDecoration: 'none' }}
             >
               Ver perfil público ↗
             </a>
@@ -4626,8 +4794,8 @@ export default function Admin() {
             { label:'Compartidos', value:fmtNumber(creator.shares), color:'#B45309' },
             { label:'Clics a redes', value:fmtNumber(creator.socialClicks), color:'#4F46E5' },
           ].map(item => (
-            <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 11px', minWidth: 0 }}>
-              <p style={{ fontFamily: PP, fontSize: 9.5, fontWeight: 800, color: C.light, margin: 0, textTransform: 'uppercase', letterSpacing: 0.6 }}>{item.label}</p>
+            <div key={item.label} style={{ border: `1px solid ${LINE}`, borderRadius: R.md, padding: '10px 11px', minWidth: 0, background: SURFACE_MUTED }}>
+              <p style={{ fontFamily: PP, fontSize: 11.5, fontWeight: 600, color: INK.base, margin: 0 }}>{item.label}</p>
               <p style={{ fontFamily: PP, fontSize: 17, fontWeight: 800, color: item.color, margin: '3px 0 0' }}>{item.value}</p>
             </div>
           ))}
@@ -4644,12 +4812,12 @@ export default function Admin() {
           })}
         </div>
 
-        <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.mid, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        <p style={{ ...EYEBROW, fontSize: 11, margin: '4px 0 10px' }}>
           Contenidos ({contents.length})
         </p>
 
         {!contents.length ? (
-          <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Este creador aún no ha publicado contenido.</p>
+          <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.soft, margin: 0 }}>Este creador aún no ha publicado contenido.</p>
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
             {contents.map(content => {
@@ -4661,13 +4829,13 @@ export default function Admin() {
               const published = content.status === 'published' && content.active !== false
 
               return (
-                <div key={content.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div key={content.id} style={{ border: `1px solid ${LINE}`, borderRadius: R.md, padding: '12px', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                   <div style={{ minWidth: 0, flex: '1 1 260px' }}>
                     <a
                       href={content.url}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ fontFamily: PP, fontWeight: 800, fontSize: 12.5, color: C.text, textDecoration: 'none', overflowWrap: 'anywhere' }}
+                      style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: INK.strong, textDecoration: 'none', overflowWrap: 'anywhere' }}
                     >
                       {content.title || 'Sin título'} ↗
                     </a>
@@ -4688,7 +4856,7 @@ export default function Admin() {
                       { label:'Útil', value:fmtNumber(Math.max(0, Number(content.helpful_count) || 0)) },
                     ].map(item => (
                       <div key={item.label} style={{ textAlign: 'right' }}>
-                        <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 800, color: C.light, margin: 0, textTransform: 'uppercase' }}>{item.label}</p>
+                        <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 600, color: INK.soft, margin: 0 }}>{item.label}</p>
                         <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 800, color: C.text, margin: '2px 0 0' }}>{item.value}</p>
                       </div>
                     ))}
@@ -4702,275 +4870,209 @@ export default function Admin() {
     )
   }
 
+  const refreshData = () => loadAdminData({ groups: getAdminTabDataGroups(tab), days: getLoadDaysForTab(tab), force: true })
   const refreshButton = (
     <button
-      onClick={() => loadAdminData({ groups: getAdminTabDataGroups(tab), days: getLoadDaysForTab(tab), force: true })}
+      type="button"
+      onClick={refreshData}
       disabled={loading}
-      className="adm-primary-action"
-      style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, background: C.primary, color: '#fff', border: 'none', borderRadius: R.sm, padding: '0 14px', height: 38, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: `0 8px 20px -8px ${veil(C.primary, 70)}`, opacity: loading ? 0.72 : 1, whiteSpace: 'nowrap' }}
+      className={`adm-refresh${isDesktop ? '' : ' adm-refresh--icon'}`}
+      aria-label={loading ? 'Actualizando' : 'Actualizar'}
+      title={loading ? 'Actualizando' : 'Actualizar'}
     >
-      <AdminIcon name="refresh" size={14} className={loading ? 'adm-spin' : undefined} />
-      {loading ? 'Actualizando' : 'Actualizar'}
+      <AdminIcon name="refresh" size={isDesktop ? 14 : 17} className={loading ? 'adm-spin' : undefined} />
+      {isDesktop && (loading ? 'Actualizando' : 'Actualizar')}
     </button>
   )
 
   const activeNavGroup = NAV_GROUPS.find(group => group.items.includes(tab))
   const lastUpdatedLabel = deltaLoadSummary?.at ? fmtActivity(deltaLoadSummary.at) : ''
+  const sectionColor = activeSectionDetails.color
+  const sectionChips = String(activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`))
+    .split('·')
+    .map(part => part.trim())
+    .filter(Boolean)
+  // Avisos de secciones que no están en la barra inferior: se suman en "Más".
+  const hiddenNavAlerts = NAV_ITEMS
+    .filter(item => !BOTTOM_NAV_ITEMS.some(bottom => bottom.id === item.id))
+    .reduce((sum, item) => sum + (Number(item.alert) || 0), 0)
+  // Sobre la barra lateral oscura los tonos base no llegan a AA: se aclaran.
+  const sidebarStatusColor = deltaStatusColor === '#DC2626'
+    ? '#F87171'
+    : deltaStatusColor === '#D97706'
+      ? '#FBBF24'
+      : '#34D399'
+  const syncStatus = (
+    <span className="adm-status" style={{ color: deltaStatusColor }}>
+      <span
+        className={`adm-status__dot${deltaLoadSummary?.status === 'loading' ? ' adm-pulse-dot' : ''}`}
+        style={{ background: deltaStatusColor }}
+      />
+      {deltaStatusLabel}
+      {lastUpdatedLabel && (
+        <span style={{ color: INK.soft, fontWeight: 500 }}>· Actualizado {lastUpdatedLabel}</span>
+      )}
+    </span>
+  )
 
   return (
-    <div className="latido-admin" style={{
-      minHeight: '100vh',
-      background: '#F4F7FC',
-      backgroundImage: 'radial-gradient(1200px 460px at 12% -8%, rgba(37,99,235,0.07), transparent 60%), radial-gradient(900px 420px at 96% 0%, rgba(124,58,237,0.06), transparent 62%)',
-      padding: isDesktop
-        ? '20px var(--latido-page-gutter) 48px'
-        : '14px var(--latido-page-gutter) calc(104px + env(safe-area-inset-bottom))',
-    }}>
-      <div style={{
-        maxWidth: isDesktop ? 1680 : 1180,
-        margin: '0 auto',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: isDesktop ? 20 : 0,
-      }}>
-        {isDesktop && (
-          <aside
-            className="adm-surface adm-scroll"
-            style={{
-              width: 252,
-              flexShrink: 0,
-              position: 'sticky',
-              top: 20,
-              maxHeight: 'calc(100vh - 40px)',
-              overflowY: 'auto',
-              borderRadius: R.xl,
-              padding: 12,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 4px 12px', borderBottom: `1px solid ${LINE}`, marginBottom: 12 }}>
-              <span style={{ width: 36, height: 36, borderRadius: R.sm, background: `linear-gradient(135deg,${C.primary},#7C3AED)`, color: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0, boxShadow: `0 8px 18px -8px ${veil(C.primary, 80)}` }}>
-                <AdminIcon name="brand" size={18} strokeWidth={2.2} />
-              </span>
-              <div style={{ minWidth: 0 }}>
-                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13.5, color: INK.strong, margin: 0, letterSpacing: -0.3 }}>Latido CRM</p>
-                <p style={{ fontFamily: PP, fontSize: 10, color: INK.soft, margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user?.email || 'Panel de administración'}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gap: 13 }}>
-              {NAV_GROUPS.map(group => (
-                <div key={group.label}>
-                  <p style={{ ...EYEBROW, fontSize: 9, margin: '0 0 6px', padding: '0 6px' }}>
-                    {group.label}
-                  </p>
-                  <div style={{ display: 'grid', gap: 2 }}>
-                    {group.items.map(id => {
-                      const item = navById.get(id)
-                      if (!item) return null
-                      const active = tab === item.id
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => switchTab(item.id)}
-                          className="adm-nav-item"
-                          data-active={active}
-                          aria-current={active ? 'page' : undefined}
-                          title={`${item.label} · ${item.value}`}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 9,
-                            width: '100%',
-                            border: 'none',
-                            borderRadius: R.sm,
-                            padding: '8px 9px',
-                            background: active ? item.bg : 'transparent',
-                            color: active ? item.color : INK.base,
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            position: 'relative',
-                          }}
-                        >
-                          <span style={{
-                            width: 27,
-                            height: 27,
-                            borderRadius: 8,
-                            background: active ? '#fff' : SURFACE_MUTED,
-                            color: active ? item.color : INK.soft,
-                            display: 'grid',
-                            placeItems: 'center',
-                            flexShrink: 0,
-                            boxShadow: active ? SH.sm : 'none',
-                          }}>
-                            <AdminIcon name={item.icon} size={14} strokeWidth={active ? 2.4 : 2} />
-                          </span>
-                          <span style={{ minWidth: 0, flex: 1 }}>
-                            <span style={{ display: 'block', fontFamily: PP, fontWeight: active ? 800 : 700, fontSize: 12, color: active ? item.color : INK.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {item.label}
-                            </span>
-                            <span className="adm-num" style={{ display: 'block', fontFamily: PP, fontWeight: 600, fontSize: 9.5, color: active ? item.color : INK.soft, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {item.value}
-                            </span>
-                          </span>
-                          {Number(item.alert) > 0 && (
-                            <span className="adm-num" style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: item.color, color: '#fff', fontFamily: PP, fontSize: 9.5, fontWeight: 800, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                              {item.alert}
-                            </span>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${LINE}`, display: 'grid', gap: 8 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: PP, fontSize: 10.5, fontWeight: 700, color: deltaStatusColor }}>
-                <span
-                  className={deltaLoadSummary?.status === 'loading' ? 'adm-pulse-dot' : undefined}
-                  style={{ width: 7, height: 7, borderRadius: 999, background: deltaStatusColor, flexShrink: 0 }}
-                />
-                {deltaStatusLabel}
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontFamily: PP, fontSize: 10.5, color: INK.soft }}>
-                <span>Pendientes</span>
-                <span className="adm-num" style={{
-                  fontWeight: 800,
-                  color: totalPendingActions ? '#92400E' : POSITIVE,
-                  background: totalPendingActions ? '#FEF3C7' : '#D1FAE5',
-                  borderRadius: 999,
-                  padding: '2px 8px',
-                }}>
-                  {totalPendingActions}
-                </span>
-              </span>
-              {lastUpdatedLabel && (
-                <p style={{ fontFamily: PP, fontSize: 10, color: INK.soft, margin: 0 }}>
-                  Actualizado {lastUpdatedLabel}
-                </p>
-              )}
-            </div>
-          </aside>
-        )}
-
-        <main style={{ minWidth: 0, flex: '1 1 0' }}>
-
-      {/* Cabecera: identidad de la sección, qué mide y controles de periodo */}
-      <div style={{
-        marginBottom: 14,
-        background: 'rgba(255,255,255,0.9)',
-        border: `1px solid ${LINE}`,
-        borderRadius: R.xl,
-        padding: isDesktop ? '15px 18px' : '14px 15px',
-        boxShadow: SH.md,
-        // En móvil no se fija: la cabecera completa robaría media pantalla y
-        // la navegación ya vive en la barra inferior.
-        position: isDesktop ? 'sticky' : 'static',
-        top: isDesktop ? 20 : undefined,
-        zIndex: 40,
-        backdropFilter: 'blur(18px)',
-        WebkitBackdropFilter: 'blur(18px)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 200, flex: '1 1 340px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <span style={{
-              width: 40,
-              height: 40,
-              borderRadius: R.sm,
-              background: tint(activeSectionDetails.color, 12),
-              color: activeSectionDetails.color,
-              display: 'grid',
-              placeItems: 'center',
-              flexShrink: 0,
-            }}>
-              <AdminIcon name={activeSection.icon} size={19} strokeWidth={2.2} />
+    <div className="latido-admin adm-app">
+      {isDesktop && (
+        <aside className="adm-sidebar" aria-label="Secciones del panel">
+          <div className="adm-sidebar__brand">
+            <span className="adm-sidebar__logo">
+              <AdminIcon name="brand" size={18} strokeWidth={2.2} />
             </span>
             <div style={{ minWidth: 0 }}>
-              <p style={{ ...EYEBROW, marginBottom: 3 }}>
-                Latido CRM{activeNavGroup ? ` · ${activeNavGroup.label}` : ''}
-              </p>
-              <h1 style={{ fontFamily: PP, fontWeight: 800, fontSize: isDesktop ? 23 : 20, color: INK.strong, margin: '0 0 4px', letterSpacing: -0.7, lineHeight: 1.15 }}>
-                {activeSection.label}
-              </h1>
-              <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.base, margin: 0, lineHeight: 1.5, maxWidth: 680 }}>
-                {activeSectionDetails.description}
-              </p>
+              <p className="adm-sidebar__title">Latido CRM</p>
+              <p className="adm-sidebar__subtitle">Panel de administración</p>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {topbarPeriodControl}
-            {refreshButton}
-          </div>
-        </div>
 
-        {isTabDataReady(tab) && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 10,
-            flexWrap: 'wrap',
-            marginTop: 12,
-            paddingTop: 11,
-            borderTop: `1px solid ${LINE}`,
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>
-              {String(activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`))
-                .split('·')
-                .map(part => part.trim())
-                .filter(Boolean)
-                .map(part => (
-                  <span
-                    key={part}
-                    className="adm-num"
-                    style={{
-                      fontFamily: PP,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: activeSectionDetails.color,
-                      background: tint(activeSectionDetails.color, 9),
-                      border: `1px solid ${veil(activeSectionDetails.color, 20)}`,
-                      borderRadius: 999,
-                      padding: '3px 9px',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {part}
-                  </span>
-                ))}
+          <nav className="adm-sidebar__nav" aria-label="Navegación admin">
+            {NAV_GROUPS.map(group => (
+              <div key={group.label}>
+                <p className="adm-sidebar__group-label">{group.label}</p>
+                <div className="adm-sidebar__links">
+                  {group.items.map(id => {
+                    const item = navById.get(id)
+                    if (!item) return null
+                    const active = tab === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        data-nav-id={item.id}
+                        onClick={() => switchTab(item.id)}
+                        className="adm-side-link"
+                        data-active={active}
+                        aria-current={active ? 'page' : undefined}
+                        title={`${item.label} · ${item.value}`}
+                        style={{ '--item-color': item.color }}
+                      >
+                        <span className="adm-side-link__icon">
+                          <AdminIcon name={item.icon} size={15} strokeWidth={active ? 2.4 : 2} />
+                        </span>
+                        <span className="adm-side-link__text">
+                          <span className="adm-side-link__label">{item.label}</span>
+                          <span className="adm-side-link__value adm-num">{item.value}</span>
+                        </span>
+                        {Number(item.alert) > 0 && (
+                          <span className="adm-side-link__badge adm-num">{item.alert}</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+
+          <div className="adm-sidebar__footer">
+            <span className="adm-status" style={{ color: sidebarStatusColor }}>
+              <span
+                className={`adm-status__dot${deltaLoadSummary?.status === 'loading' ? ' adm-pulse-dot' : ''}`}
+                style={{ background: sidebarStatusColor }}
+              />
+              {deltaStatusLabel}
             </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: PP, fontSize: 10.5, fontWeight: 700, color: deltaStatusColor }}>
-                <span
-                  className={deltaLoadSummary?.status === 'loading' ? 'adm-pulse-dot' : undefined}
-                  style={{ width: 6, height: 6, borderRadius: 999, background: deltaStatusColor, flexShrink: 0 }}
-                />
-                {deltaStatusLabel}
+            <span className="adm-sidebar__row">
+              <span>Pendientes</span>
+              <span className="adm-num" style={{
+                fontWeight: 800,
+                color: totalPendingActions ? '#92400E' : POSITIVE,
+                background: totalPendingActions ? '#FEF3C7' : '#D1FAE5',
+                borderRadius: 999,
+                padding: '2px 9px',
+              }}>
+                {totalPendingActions}
               </span>
-              {lastUpdatedLabel && (
-                <span style={{ fontFamily: PP, fontSize: 10.5, color: INK.soft }}>
-                  · Actualizado {lastUpdatedLabel}
-                </span>
-              )}
             </span>
+            {lastUpdatedLabel && (
+              <span style={{ color: '#7C8BA1' }}>Actualizado {lastUpdatedLabel}</span>
+            )}
+            <div className="adm-sidebar__user">
+              <span className="adm-avatar" aria-hidden="true">{(user?.email || 'A').slice(0, 1).toUpperCase()}</span>
+              <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user?.email || 'Panel de administración'}
+              </span>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      <div className="adm-main">
+        {/* Barra superior: dónde estoy y qué puedo hacer, siempre visible */}
+        <header className="adm-topbar">
+          <div className="adm-topbar__inner">
+            <span className="adm-topbar__icon" style={{ background: tint(sectionColor, 12), color: sectionColor }}>
+              <AdminIcon name={activeSection.icon} size={18} strokeWidth={2.2} />
+            </span>
+            <div className="adm-topbar__titles">
+              <p className="adm-topbar__crumb">
+                <span>Latido CRM</span>
+                {activeNavGroup && (
+                  <>
+                    <AdminIcon name="next" size={11} strokeWidth={2.4} />
+                    <span>{activeNavGroup.label}</span>
+                  </>
+                )}
+              </p>
+              <h1 className="adm-topbar__title">{activeSection.label}</h1>
+            </div>
+            <div className="adm-topbar__actions">
+              {isDesktop && topbarPeriodControl}
+              {refreshButton}
+            </div>
+          </div>
+        </header>
+
+        <main className="adm-content">
+      {/* Intro: qué mide la sección, periodo y estado de la carga */}
+      <section className="adm-intro" aria-label="Resumen de la sección">
+        <p className="adm-intro__desc">{activeSectionDetails.description}</p>
+        {!isDesktop && topbarPeriodControl && (
+          <div className="adm-intro__period">{topbarPeriodControl}</div>
+        )}
+        {isTabDataReady(tab) && (
+          <div className="adm-intro__meta">
+            <div className="adm-intro__chips">
+              {sectionChips.map(part => (
+                <span
+                  key={part}
+                  className="adm-num"
+                  style={{
+                    fontFamily: PP,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: sectionColor,
+                    background: tint(sectionColor, 9),
+                    border: `1px solid ${veil(sectionColor, 22)}`,
+                    borderRadius: 999,
+                    padding: '4px 10px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  {part}
+                </span>
+              ))}
+            </div>
+            {syncStatus}
           </div>
         )}
-      </div>
+      </section>
 
       {dataErrors.length > 0 && (
-        <div style={{ marginBottom: 14, border: '1px solid #FCA5A5', background: '#FEF2F2', borderRadius: R.lg, padding: '13px 15px', display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+        <div style={{ marginBottom: 16, border: '1px solid #FCA5A5', background: '#FEF2F2', borderRadius: R.lg, padding: '13px 15px', display: 'flex', gap: 11, alignItems: 'flex-start' }}>
           <span style={{ color: '#B91C1C', marginTop: 1 }}>
             <AdminIcon name="alert" size={17} />
           </span>
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12.5, color: '#B91C1C', margin: '0 0 4px' }}>
+            <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: '#B91C1C', margin: '0 0 4px' }}>
               Datos incompletos
             </p>
-            <p style={{ fontFamily: PP, fontSize: 11, color: '#991B1B', lineHeight: 1.55, margin: 0 }}>
+            <p style={{ fontFamily: PP, fontSize: 12, color: '#991B1B', lineHeight: 1.55, margin: 0, overflowWrap: 'anywhere' }}>
               {dataErrors.join(' · ')}
             </p>
           </div>
@@ -4979,13 +5081,13 @@ export default function Admin() {
 
       {!isTabDataReady(tab) && (
         isTabDataLoading(tab) ? (
-          <div style={{ display: 'grid', gap: 12, marginBottom: 14 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isDesktop ? 190 : 155}px, 1fr))`, gap: 10 }}>
+          <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
+            <div className="adm-kpi-grid" style={{ '--kpi-cols': 4, '--kpi-cols-md': 4, marginBottom: 0 }}>
               {[0, 1, 2, 3].map(index => (
-                <div key={index} className="adm-surface" style={{ padding: '14px 15px', display: 'grid', gap: 9 }}>
-                  <span className="adm-skeleton" style={{ height: 9, width: '55%', borderRadius: 999 }} />
-                  <span className="adm-skeleton" style={{ height: 22, width: '42%', borderRadius: 8 }} />
-                  <span className="adm-skeleton" style={{ height: 9, width: '80%', borderRadius: 999 }} />
+                <div key={index} className="adm-kpi" style={{ gap: 9 }}>
+                  <span className="adm-skeleton" style={{ height: 10, width: '55%', borderRadius: 999 }} />
+                  <span className="adm-skeleton" style={{ height: 24, width: '42%', borderRadius: 8 }} />
+                  <span className="adm-skeleton" style={{ height: 10, width: '80%', borderRadius: 999 }} />
                 </div>
               ))}
             </div>
@@ -4993,19 +5095,19 @@ export default function Admin() {
               <span className="adm-skeleton" style={{ height: 10, width: 160, borderRadius: 999 }} />
               <span className="adm-skeleton" style={{ height: 140, borderRadius: R.md }} />
             </div>
-            <p style={{ fontFamily: PP, fontSize: 11, color: INK.soft, margin: 0, textAlign: 'center' }}>
+            <p style={{ fontFamily: PP, fontSize: 12, color: INK.soft, margin: 0, textAlign: 'center' }}>
               Cargando {activeSection.label.toLowerCase()} · solo se consultan los datos de esta sección.
             </p>
           </div>
         ) : (
-          <div className="adm-surface" style={{ marginBottom: 14, textAlign: 'center', padding: '34px 20px', display: 'grid', gap: 8, justifyItems: 'center' }}>
-            <span style={{ width: 38, height: 38, borderRadius: R.sm, background: '#FFFBEB', color: '#B45309', display: 'grid', placeItems: 'center' }}>
+          <div className="adm-surface" style={{ marginBottom: 16, textAlign: 'center', padding: '34px 20px', display: 'grid', gap: 8, justifyItems: 'center' }}>
+            <span style={{ width: 40, height: 40, borderRadius: R.sm, background: '#FFFBEB', color: '#B45309', display: 'grid', placeItems: 'center' }}>
               <AdminIcon name="alert" size={18} />
             </span>
-            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 14, color: INK.strong, margin: 0 }}>
+            <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14.5, color: INK.strong, margin: 0 }}>
               Datos no disponibles
             </p>
-            <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.base, margin: 0 }}>
+            <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.base, margin: 0 }}>
               Usa Actualizar para volver a intentar esta consulta.
             </p>
           </div>
@@ -5014,30 +5116,35 @@ export default function Admin() {
 
       {/* Indicadores clave de la sección */}
       {isTabDataReady(tab) && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isDesktop ? 190 : 155}px, 1fr))`, gap: 10, marginBottom: 14 }}>
-          {sectionMetrics.map(metric => (
-            <SummaryMetric
-              key={metric.label}
-              label={metric.label}
-              value={metric.value}
-              hint={metric.hint}
-              color={metric.color}
-              trend={metric.trend}
-              trendInvert={metric.trendInvert}
-            />
-          ))}
-        </div>
+        <>
+          <BlockTitle>Indicadores clave</BlockTitle>
+          <KpiGrid count={sectionMetrics.length}>
+            {sectionMetrics.map(metric => (
+              <SummaryMetric
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+                hint={metric.hint}
+                color={metric.color}
+                trend={metric.trend}
+                trendInvert={metric.trendInvert}
+              />
+            ))}
+          </KpiGrid>
+        </>
       )}
 
       {/* Evolución del periodo */}
       {isTabDataReady(tab) && !loading && activeChart && tab !== 'partners' && (
-        <div style={{ marginBottom: 18 }}>
+        <div style={{ marginBottom: 20 }}>
+          <BlockTitle>Evolución</BlockTitle>
           {activeChart}
         </div>
       )}
 
       {isTabDataReady(tab) && loading && showChartPlaceholder && tab !== 'partners' && (
-        <div style={{ marginBottom: 18 }}>
+        <div style={{ marginBottom: 20 }}>
+          <BlockTitle>Evolución</BlockTitle>
           <div className="adm-surface" style={{ padding: 18, display: 'grid', gap: 12 }}>
             <span className="adm-skeleton" style={{ height: 10, width: 160, borderRadius: 999 }} />
             <span className="adm-skeleton" style={{ height: 26, width: 90, borderRadius: 8 }} />
@@ -5048,43 +5155,44 @@ export default function Admin() {
 
       {/* ── Estado general ─────────────────────────────── */}
       {tab === 'overview' && isTabDataReady('overview') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div className="adm-surface" style={{ padding: 0, overflow: 'hidden', borderRadius: R.xl }}>
+        <div className="adm-stack">
+          <BlockTitle>Rapport del periodo</BlockTitle>
+          <div className="adm-surface" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 0 }}>
-              <div style={{ padding: 22, background: `linear-gradient(135deg,${generalTrendColor} 0%,#2563EB 100%)`, color: '#fff' }}>
-                <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.9, opacity: 0.85 }}>
+              <div style={{ padding: 20, borderLeft: `4px solid ${generalTrendColor}`, background: tint(generalTrendColor, 5) }}>
+                <p style={{ ...EYEBROW, marginBottom: 8 }}>
                   Rapport {overviewPeriodLabel.toLowerCase()}
                 </p>
-                <h3 style={{ fontFamily: PP, fontWeight: 800, fontSize: 30, lineHeight: 1.05, margin: '0 0 8px', letterSpacing: -0.9 }}>
+                <h3 style={{ fontFamily: PP, fontWeight: 800, fontSize: 26, lineHeight: 1.1, margin: '0 0 8px', letterSpacing: -0.8, color: generalTrendColor }}>
                   {generalStatus}
                 </h3>
-                <p style={{ fontFamily: PP, fontSize: 12.5, lineHeight: 1.6, margin: '0 0 18px', opacity: 0.92 }}>
+                <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.6, margin: '0 0 16px', color: INK.base }}>
                   {activeUsersInOverviewRange.length} usuarios activos, {newUsersInOverviewRange} nuevos, {newBusinessesInOverviewRange} negocios, {recentListingsInOverviewRange} anuncios y {overviewEngagementText} en {overviewRangeText}.
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.24)', overflow: 'hidden' }}>
-                    <div className="adm-bar-fill" style={{ width: `${generalScore || 0}%`, height: '100%', background: '#fff' }} />
+                  <div className="adm-bar-track" style={{ flex: 1, height: 8 }}>
+                    <div className="adm-bar-fill" style={{ width: `${generalScore || 0}%`, height: '100%', background: generalTrendColor }} />
                   </div>
-                  <strong className="adm-num" style={{ fontFamily: PP, fontSize: 21, fontWeight: 800, letterSpacing: -0.5 }}>{generalScoreLabel}</strong>
+                  <strong className="adm-num" style={{ fontFamily: PP, fontSize: 20, fontWeight: 800, letterSpacing: -0.5, color: INK.strong }}>{generalScoreLabel}</strong>
                 </div>
               </div>
 
-              <div style={{ padding: 22, background: '#fff' }}>
+              <div style={{ padding: 20, background: '#fff' }}>
                 <p style={{ ...EYEBROW, marginBottom: 8 }}>
                   Lectura automática
                 </p>
-                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 21, color: INK.strong, margin: '0 0 8px', lineHeight: 1.2, letterSpacing: -0.5 }}>
+                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 19, color: INK.strong, margin: '0 0 8px', lineHeight: 1.25, letterSpacing: -0.4 }}>
                   La tendencia está {generalTrendLabel.toLowerCase()}.
                 </p>
-                <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.base, lineHeight: 1.6, margin: 0 }}>
+                <p style={{ fontFamily: PP, fontSize: 13, color: INK.base, lineHeight: 1.6, margin: 0 }}>
                   Se calcula sin IA, comparando {overviewComparisonText} en actividad, usuarios nuevos, negocios, anuncios, empleos, navegación, búsquedas, mensajes y reportes.
                 </p>
-                <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 15 }}>
-                  <Tag bg={generalTrend === 'Mejora' ? '#D1FAE5' : generalTrend === 'Empeora' ? '#FEE2E2' : '#FEF3C7'} color={generalTrendColor}>
+                <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 14 }}>
+                  <Tag size={11} bg={generalTrend === 'Mejora' ? '#D1FAE5' : generalTrend === 'Empeora' ? '#FEE2E2' : '#FEF3C7'} color={generalTrendColor}>
                     {generalTrendLabel}
                   </Tag>
-                  <Tag bg={SURFACE_MUTED} color={INK.base}>{overviewPeriodLabel}</Tag>
-                  <Tag bg={totalPendingActions ? '#FEF3C7' : '#D1FAE5'} color={totalPendingActions ? '#92400E' : '#047857'}>
+                  <Tag size={11} bg={SURFACE_MUTED} color={INK.base}>{overviewPeriodLabel}</Tag>
+                  <Tag size={11} bg={totalPendingActions ? '#FEF3C7' : '#D1FAE5'} color={totalPendingActions ? '#92400E' : '#047857'}>
                     {totalPendingActions} pendientes
                   </Tag>
                 </div>
@@ -5093,41 +5201,24 @@ export default function Admin() {
           </div>
 
           {/* Señales del periodo: una rejilla comparable, sin colores gritando */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 10 }}>
-            {overviewSignals.map(signal => (
-              <div key={signal.label} className="adm-surface adm-raise" style={{ padding: '13px 14px', display: 'grid', gap: 8 }}>
-                <p style={{ ...EYEBROW, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 999, background: signal.color, flexShrink: 0 }} />
-                  <span style={{ minWidth: 0 }}>{signal.label}</span>
-                </p>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
-                  <strong className="adm-num" style={{ fontFamily: PP, fontWeight: 800, fontSize: 25, color: INK.strong, lineHeight: 1, letterSpacing: -0.8 }}>
-                    {loading ? '···' : signal.value}
-                  </strong>
-                  <TrendChip value={signal.trend} size={10} />
-                </div>
-              </div>
-            ))}
+          <div>
+            <BlockTitle>Señales del periodo</BlockTitle>
+            <KpiGrid count={overviewSignals.length}>
+              {overviewSignals.map(signal => (
+                <SummaryMetric
+                  key={signal.label}
+                  label={signal.label}
+                  value={loading ? '···' : signal.value}
+                  color={signal.color}
+                  trend={signal.trend}
+                />
+              ))}
+            </KpiGrid>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 14 }}>
-            <AdminSectionCard
-              title="Sugerencias de mejora"
-              subtitle="Reglas simples basadas en actividad y carga pendiente."
-              icon={<AdminIcon name="insight" size={15} />}
-            >
-              <div style={{ display: 'grid', gap: 8 }}>
-                {(generalSuggestions.length ? generalSuggestions : ['El panel no detecta bloqueos fuertes ahora mismo. Mantén revisión y reportes al día.']).map((text, index) => (
-                  <div key={text} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', border: `1px solid ${LINE}`, borderRadius: R.md, background: SURFACE_MUTED }}>
-                    <span className="adm-num" style={{ width: 22, height: 22, borderRadius: 7, background: '#fff', color: C.primary, border: `1px solid ${veil(C.primary, 22)}`, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
-                      {index + 1}
-                    </span>
-                    <p style={{ fontFamily: PP, fontSize: 12, color: INK.base, margin: 0, lineHeight: 1.5 }}>{text}</p>
-                  </div>
-                ))}
-              </div>
-            </AdminSectionCard>
+          <BlockTitle>Qué atender ahora</BlockTitle>
 
+          <div className="adm-grid">
             <AdminSectionCard
               title="Cola operativa"
               subtitle="Qué necesita atención ahora. Pulsa para ir a la sección."
@@ -5144,21 +5235,38 @@ export default function Admin() {
                     type="button"
                     onClick={() => switchTab(item.tab)}
                     className="adm-action"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: `1px solid ${LINE}`, borderRadius: R.md, padding: '10px 12px', background: '#fff', cursor: 'pointer', textAlign: 'left' }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 52, border: `1px solid ${LINE}`, borderRadius: R.md, padding: '10px 12px', background: '#fff', cursor: 'pointer', textAlign: 'left' }}
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
-                      <span style={{ width: 26, height: 26, borderRadius: 8, background: item.value ? tint(item.color, 12) : SURFACE_MUTED, color: item.value ? item.color : INK.soft, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                        <AdminIcon name={item.icon} size={14} />
+                      <span style={{ width: 32, height: 32, borderRadius: 9, background: item.value ? tint(item.color, 12) : SURFACE_MUTED, color: item.value ? item.color : INK.soft, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                        <AdminIcon name={item.icon} size={16} />
                       </span>
-                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 700, color: INK.strong }}>{item.label}</span>
+                      <span style={{ fontFamily: PP, fontSize: 13, fontWeight: 600, color: INK.strong }}>{item.label}</span>
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                      <strong className="adm-num" style={{ fontFamily: PP, fontSize: 13, fontWeight: 800, color: item.value ? item.color : INK.soft }}>
+                      <strong className="adm-num" style={{ fontFamily: PP, fontSize: 15, fontWeight: 800, color: item.value ? item.color : INK.soft }}>
                         {item.value}
                       </strong>
                       <AdminIcon name="arrowRight" size={13} style={{ color: INK.soft }} />
                     </span>
                   </button>
+                ))}
+              </div>
+            </AdminSectionCard>
+
+            <AdminSectionCard
+              title="Sugerencias de mejora"
+              subtitle="Reglas simples basadas en actividad y carga pendiente."
+              icon={<AdminIcon name="insight" size={15} />}
+            >
+              <div style={{ display: 'grid', gap: 8 }}>
+                {(generalSuggestions.length ? generalSuggestions : ['El panel no detecta bloqueos fuertes ahora mismo. Mantén revisión y reportes al día.']).map((text, index) => (
+                  <div key={text} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', border: `1px solid ${LINE}`, borderRadius: R.md, background: SURFACE_MUTED }}>
+                    <span className="adm-num" style={{ width: 22, height: 22, borderRadius: 7, background: '#fff', color: C.primary, border: `1px solid ${veil(C.primary, 22)}`, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
+                      {index + 1}
+                    </span>
+                    <p style={{ fontFamily: PP, fontSize: 13, color: INK.base, margin: 0, lineHeight: 1.5 }}>{text}</p>
+                  </div>
                 ))}
               </div>
             </AdminSectionCard>
@@ -5168,18 +5276,19 @@ export default function Admin() {
 
       {/* -- Intereses y valoraciones ----------------------- */}
       {tab === 'feedback' && isTabDataReady('feedback') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Card style={{ padding: 18, background: 'linear-gradient(135deg,#FFFFFF 0%,#F7FAFF 55%,#FFF9EC 100%)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-              <div>
-                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 17, color: C.text, margin: '0 0 4px' }}>Participación y opinión general</p>
-                <p style={{ fontFamily: PP, fontSize: 11.5, color: C.light, lineHeight: 1.5, margin: 0 }}>Quién responde, cuántas respuestas hay y qué señales requieren atención.</p>
-              </div>
-              <Tag bg={identifiedFeedbackCoverage >= 20 ? '#ECFDF5' : '#FFFBEB'} color={identifiedFeedbackCoverage >= 20 ? '#047857' : '#B45309'}>
-                {identifiedFeedbackCoverage}% de participación identificada
-              </Tag>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 145px), 1fr))', gap: 9 }}>
+        <div className="adm-stack">
+          <BlockTitle>Participación</BlockTitle>
+          <div className="adm-surface" style={{ padding: 16 }}>
+            <CardHeader
+              title="Participación y opinión general"
+              subtitle="Quién responde, cuántas respuestas hay y qué señales requieren atención."
+              aside={(
+                <Tag size={11} bg={identifiedFeedbackCoverage >= 20 ? '#ECFDF5' : '#FFFBEB'} color={identifiedFeedbackCoverage >= 20 ? '#047857' : '#B45309'}>
+                  {identifiedFeedbackCoverage}% de participación identificada
+                </Tag>
+              )}
+            />
+            <div className="adm-mini-stats" style={{ '--adm-mini-min': '150px' }}>
               {[
                 { label:'Personas identificadas', value:identifiedFeedbackUserIds.size, hint:`de ${metricUsers.length} cuentas`, color:C.primary },
                 { label:'Valoraron Latido', value:starRatingPeople, hint:`${metricStarRatings.length} valoraciones`, color:'#B45309' },
@@ -5188,19 +5297,16 @@ export default function Admin() {
                 { label:'Comentarios escritos', value:writtenFeedbackComments, hint:'En valoración o utilidad', color:'#7C3AED' },
                 { label:'Señales a revisar', value:feedbackSignalsToReview, hint:`Frente a ${positiveFeedbackSignals} positivas`, color:'#B91C1C' },
               ].map(item => (
-                <div key={item.label} style={{ minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 11px', background: 'rgba(255,255,255,0.92)' }}>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 24, color: item.color, lineHeight: 1, margin: '0 0 6px' }}>{item.value}</p>
-                  <p style={{ fontFamily: PP, fontWeight: 850, fontSize: 10.5, color: C.text, margin: '0 0 3px' }}>{item.label}</p>
-                  <p style={{ fontFamily: PP, fontSize: 9.5, color: C.light, lineHeight: 1.35, margin: 0 }}>{item.hint}</p>
-                </div>
+                <MiniStat key={item.label} label={item.label} value={item.value} hint={item.hint} color={item.color} />
               ))}
             </div>
-            <p style={{ fontFamily: PP, fontSize: 10, color: C.light, lineHeight: 1.5, margin: '12px 1px 0' }}>
+            <p className="adm-card-note">
               “Personas identificadas” cuenta una sola vez a cada cuenta aunque haya respondido en varios apartados. Las respuestas anónimas de búsqueda se contabilizan aparte y la cuenta administradora está excluida.
             </p>
-          </Card>
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
+          <BlockTitle>Intereses</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '340px' }}>
             <InsightBarList
               title="Intereses seleccionados"
               subtitle="Preferencias actuales elegidas durante el registro o desde el perfil."
@@ -5209,34 +5315,30 @@ export default function Admin() {
               emptyText="Todavía no hay intereses seleccionados."
             />
 
-            <Card style={{ padding: 18, background: 'linear-gradient(180deg,#FFFFFF,#F7F3FF)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Cobertura de intereses</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>Cuántas cuentas han indicado al menos una preferencia.</p>
-                </div>
-                <Tag bg="#F3E8FF" color="#7C3AED">{interestCoverage}%</Tag>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 9 }}>
+            <div className="adm-surface" style={{ padding: 16, minWidth: 0 }}>
+              <CardHeader
+                title="Cobertura de intereses"
+                subtitle="Cuántas cuentas han indicado al menos una preferencia."
+                aside={<Tag size={11} bg="#F3E8FF" color="#7C3AED">{interestCoverage}%</Tag>}
+              />
+              <div className="adm-mini-stats" style={{ '--adm-mini-min': '130px' }}>
                 {[
                   { label:'Con intereses', value:usersWithInterests.length, color:'#7C3AED' },
                   { label:'Sin intereses', value:Math.max(0, metricUsers.length - usersWithInterests.length), color:'#D97706' },
                   { label:'Selecciones totales', value:selectedInterestCount, color:C.primary },
                   { label:'Media por cuenta', value:metricUsers.length ? (selectedInterestCount / metricUsers.length).toFixed(1) : '0.0', color:'#0F766E' },
                 ].map(item => (
-                  <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 11px', background: '#fff' }}>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 23, color: item.color, lineHeight: 1, margin: '0 0 5px' }}>{item.value}</p>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.light, margin: 0 }}>{item.label}</p>
-                  </div>
+                  <MiniStat key={item.label} label={item.label} value={item.value} color={item.color} />
                 ))}
               </div>
-              <p style={{ fontFamily: PP, fontSize: 10.5, color: C.mid, lineHeight: 1.5, margin: '13px 0 0' }}>
+              <p className="adm-card-note">
                 Cada persona puede elegir hasta tres intereses. Los datos se muestran agregados y excluyen la cuenta administradora.
               </p>
-            </Card>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 14 }}>
+          <BlockTitle>Utilidad de Latido</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '280px' }}>
             <InsightBarList
               title="¿Te parece útil Latido?"
               subtitle={`${metricUsefulnessFeedback.length} respuestas al nuevo banner de inicio.`}
@@ -5260,7 +5362,8 @@ export default function Admin() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 14 }}>
+          <BlockTitle>Valoraciones</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '300px' }}>
             <InsightBarList
               title="¿Qué te parece Latido?"
               subtitle={`Distribución de ${metricStarRatings.length} valoraciones · media ${overallRatingAverage || 0}/5.`}
@@ -5277,35 +5380,33 @@ export default function Admin() {
             />
           </div>
 
-          <Card style={{ padding: 18, background: 'linear-gradient(180deg,#FFFFFF,#F3FCF8)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 15 }}>
-              <div>
-                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>¿Encontraron lo que buscaban?</p>
-                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>Respuestas guardadas después de una búsqueda, independientemente del consentimiento de métricas.</p>
-              </div>
-              <Tag bg="#ECFDF5" color="#047857">
-                {directSearchResolution.total ? `${directSearchResolution.confirmedRate}% Sí` : 'Sin respuestas'}
-              </Tag>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 8 }}>
+          <BlockTitle>Búsquedas</BlockTitle>
+          <div className="adm-surface" style={{ padding: 16 }}>
+            <CardHeader
+              title="¿Encontraron lo que buscaban?"
+              subtitle="Respuestas guardadas después de una búsqueda, independientemente del consentimiento de métricas."
+              aside={(
+                <Tag size={11} bg="#ECFDF5" color="#047857">
+                  {directSearchResolution.total ? `${directSearchResolution.confirmedRate}% Sí` : 'Sin respuestas'}
+                </Tag>
+              )}
+            />
+            <div className="adm-mini-stats" style={{ '--adm-mini-min': '100px' }}>
               {[
                 { label:'Total', value:directSearchResolution.total, color:C.text },
                 { label:'Sí', value:directSearchResolution.yes, color:'#047857' },
                 { label:'Parcial', value:directSearchResolution.partial, color:'#B45309' },
                 { label:'No', value:directSearchResolution.no, color:'#B91C1C' },
               ].map(item => (
-                <div key={item.label} style={{ minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 8px', background: '#fff' }}>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 24, color: item.color, lineHeight: 1, margin: '0 0 5px' }}>{item.value}</p>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.light, margin: 0 }}>{item.label}</p>
-                </div>
+                <MiniStat key={item.label} label={item.label} value={item.value} color={item.color} />
               ))}
             </div>
-            <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, lineHeight: 1.5, margin: '12px 0 0' }}>
+            <p className="adm-card-note">
               {directSearchResolution.helpfulRate}% respondió Sí o Parcialmente.
             </p>
-          </Card>
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
+          <div className="adm-grid" style={{ '--adm-min': '340px' }}>
             <InsightBarList
               title="Búsquedas que necesitan mejorar"
               subtitle="Consultas respondidas como Parcialmente o No."
@@ -5322,23 +5423,24 @@ export default function Admin() {
             />
           </div>
 
-          <Card style={{ padding: 16, background: '#F8FAFF' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 11 }}>
-              <div>
-                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Explorar todas las respuestas</p>
-                <p style={{ fontFamily: PP, fontSize: 11, color: C.light, lineHeight: 1.45, margin: 0 }}>Busca por persona, email, comentario, motivo, consulta o resultado.</p>
-              </div>
-              <Tag bg="#E0F2FE" color="#0369A1">
-                {filteredFeedbackResponses} de {totalFeedbackResponses} registros visibles
-              </Tag>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'stretch', gap: 9, flexWrap: 'wrap' }}>
+          <BlockTitle>Respuestas individuales</BlockTitle>
+          <div className="adm-surface" style={{ padding: 16 }}>
+            <CardHeader
+              title="Explorar todas las respuestas"
+              subtitle="Busca por persona, email, comentario, motivo, consulta o resultado."
+              aside={(
+                <Tag size={11} bg="#E0F2FE" color="#0369A1">
+                  {filteredFeedbackResponses} de {totalFeedbackResponses} registros visibles
+                </Tag>
+              )}
+            />
+            <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, flexWrap: 'wrap' }}>
               <AdminFilterInput
                 value={feedbackSearch}
                 onChange={setFeedbackSearch}
                 placeholder="Buscar persona, comentario o búsqueda..."
               />
-              <div style={{ flex: '0 1 220px', minWidth: 'min(100%, 180px)' }}>
+              <div style={{ flex: '1 1 200px', minWidth: 0, maxWidth: isDesktop ? 260 : 'none' }}>
                 <AdminFilterSelect value={feedbackToneFilter} onChange={setFeedbackToneFilter} label="Filtrar respuestas por tipo">
                   <option value="all">Todas las respuestas</option>
                   <option value="positive">Positivas</option>
@@ -5351,61 +5453,48 @@ export default function Admin() {
                 <AdminButton icon="reset" onClick={() => { setFeedbackSearch(''); setFeedbackToneFilter('all') }}>Limpiar filtros</AdminButton>
               )}
             </div>
-          </Card>
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 14 }}>
-            <Card style={{ padding: 16, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Votos de utilidad</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Todas las personas, motivos y comentarios.</p>
-                </div>
-                <Tag bg="#ECFDF5" color="#047857">{filteredUsefulnessFeedback.length}/{metricUsefulnessFeedback.length}</Tag>
-              </div>
-              <div role="region" aria-label="Listado completo de votos de utilidad" tabIndex={0} style={{ display: 'grid', gap: 9, maxHeight: 560, overflowY: 'auto', paddingRight: 4, scrollbarGutter: 'stable' }}>
+          <div className="adm-grid" style={{ '--adm-min': '340px', alignItems: 'start' }}>
+            <div className="adm-surface" style={{ padding: 16, overflow: 'hidden', minWidth: 0 }}>
+              <CardHeader
+                title="Votos de utilidad"
+                subtitle="Todas las personas, motivos y comentarios."
+                aside={<Tag size={11} bg="#ECFDF5" color="#047857">{filteredUsefulnessFeedback.length}/{metricUsefulnessFeedback.length}</Tag>}
+              />
+              <div role="region" aria-label="Listado completo de votos de utilidad" tabIndex={0} className="adm-record-list adm-scroll" style={{ maxHeight: isDesktop ? 560 : 460, overflowY: 'auto', paddingRight: 4, scrollbarGutter: 'stable' }}>
                 {filteredUsefulnessFeedback.map(rating => {
                   const answerMeta = LATIDO_USEFULNESS_ANSWER_META[rating.usefulness_answer]
                   const profile = userProfilesById.get(rating.user_id)
                   const profileMeta = [profile?.email, profile?.canton ? `Cantón ${profile.canton}` : ''].filter(Boolean).join(' · ')
                   return (
-                    <div key={rating.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 9 }}>
-                        <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>
-                            {profile?.name || profile?.email || 'Usuario sin perfil'}
-                          </span>
-                          {profileMeta && <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.mid, marginTop: 2, overflowWrap: 'anywhere' }}>{profileMeta}</span>}
-                          <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(rating.usefulness_answered_at || rating.updated_at || rating.created_at)}</span>
-                        </span>
-                        <Tag bg={answerMeta.bg} color={answerMeta.color}>{answerMeta.label}</Tag>
-                      </div>
-                      <div style={{ borderRadius: 11, padding: '9px 10px', background: '#fff', border: `1px solid ${C.border}`, marginBottom: 7 }}>
-                        <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 800, letterSpacing: 0.55, color: C.light, margin: '0 0 3px', textTransform: 'uppercase' }}>Qué indicó</p>
-                        <p style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 750, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}>
-                          {LATIDO_USEFULNESS_DETAIL_LABELS[rating.usefulness_detail] || 'Sin opción adicional'}
-                        </p>
-                      </div>
-                      <p style={{ fontFamily: PP, fontSize: 10.5, color: rating.usefulness_comment ? C.text : C.light, fontStyle: rating.usefulness_comment ? 'normal' : 'italic', lineHeight: 1.5, margin: 0, padding: rating.usefulness_comment ? '8px 10px' : 0, borderRadius: 10, background: rating.usefulness_comment ? '#FFF' : 'transparent', overflowWrap: 'anywhere' }}>
-                        {rating.usefulness_comment ? `“${rating.usefulness_comment}”` : 'Sin comentario escrito'}
-                      </p>
+                    <div key={rating.id} className="adm-record">
+                      <FeedbackRecordHeader
+                        name={profile?.name || profile?.email || 'Usuario sin perfil'}
+                        meta={profileMeta}
+                        date={fmtDate(rating.usefulness_answered_at || rating.updated_at || rating.created_at)}
+                        tag={<Tag size={11} bg={answerMeta.bg} color={answerMeta.color}>{answerMeta.label}</Tag>}
+                      />
+                      <FeedbackField label="Qué indicó">
+                        {LATIDO_USEFULNESS_DETAIL_LABELS[rating.usefulness_detail] || 'Sin opción adicional'}
+                      </FeedbackField>
+                      <FeedbackComment text={rating.usefulness_comment} />
                     </div>
                   )
                 })}
                 {!filteredUsefulnessFeedback.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>{metricUsefulnessFeedback.length ? 'Ningún voto coincide con los filtros.' : 'Todavía no hay respuestas al banner.'}</p>
+                  <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.soft, margin: 0 }}>{metricUsefulnessFeedback.length ? 'Ningún voto coincide con los filtros.' : 'Todavía no hay respuestas al banner.'}</p>
                 )}
               </div>
-            </Card>
+            </div>
 
-            <Card style={{ padding: 16, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Valoraciones de Latido</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Las dos puntuaciones y el comentario completo.</p>
-                </div>
-                <Tag bg="#FFFBEB" color="#B45309">{filteredLatidoRatings.length}/{metricStarRatings.length}</Tag>
-              </div>
-              <div role="region" aria-label="Listado completo de valoraciones de Latido" tabIndex={0} style={{ display: 'grid', gap: 9, maxHeight: 560, overflowY: 'auto', paddingRight: 4, scrollbarGutter: 'stable' }}>
+            <div className="adm-surface" style={{ padding: 16, overflow: 'hidden', minWidth: 0 }}>
+              <CardHeader
+                title="Valoraciones de Latido"
+                subtitle="Las dos puntuaciones y el comentario completo."
+                aside={<Tag size={11} bg="#FFFBEB" color="#B45309">{filteredLatidoRatings.length}/{metricStarRatings.length}</Tag>}
+              />
+              <div role="region" aria-label="Listado completo de valoraciones de Latido" tabIndex={0} className="adm-record-list adm-scroll" style={{ maxHeight: isDesktop ? 560 : 460, overflowY: 'auto', paddingRight: 4, scrollbarGutter: 'stable' }}>
                 {filteredLatidoRatings.map(rating => {
                   const profile = userProfilesById.get(rating.user_id)
                   const profileMeta = [profile?.email, profile?.canton ? `Cantón ${profile.canton}` : ''].filter(Boolean).join(' · ')
@@ -5416,175 +5505,111 @@ export default function Admin() {
                       ? { label:'A revisar', color:'#B91C1C', bg:'#FEF2F2' }
                       : { label:'Intermedia', color:'#B45309', bg:'#FFFBEB' }
                   return (
-                    <div key={rating.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 9 }}>
-                        <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>{profile?.name || profile?.email || 'Usuario sin perfil'}</span>
-                          {profileMeta && <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.mid, marginTop: 2, overflowWrap: 'anywhere' }}>{profileMeta}</span>}
-                          <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(rating.updated_at || rating.created_at)}</span>
-                        </span>
-                        <Tag bg={toneMeta.bg} color={toneMeta.color}>{toneMeta.label}</Tag>
+                    <div key={rating.id} className="adm-record">
+                      <FeedbackRecordHeader
+                        name={profile?.name || profile?.email || 'Usuario sin perfil'}
+                        meta={profileMeta}
+                        date={fmtDate(rating.updated_at || rating.created_at)}
+                        tag={<Tag size={11} bg={toneMeta.bg} color={toneMeta.color}>{toneMeta.label}</Tag>}
+                      />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: 8 }}>
+                        <FeedbackField label="Latido" style={{ marginBottom: 0 }}>
+                          <span className="adm-num" style={{ fontSize: 15, color: '#B45309', fontWeight: 800 }}>★ {rating.overall_rating}/5</span>
+                        </FeedbackField>
+                        <FeedbackField label="Encuentra lo necesario" style={{ marginBottom: 0 }}>
+                          <span className="adm-num" style={{ fontSize: 15, color: '#047857', fontWeight: 800 }}>★ {rating.usefulness_rating}/5</span>
+                        </FeedbackField>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 7, marginBottom: 8 }}>
-                        <div style={{ borderRadius: 11, padding: '9px 8px', background: '#fff', border: `1px solid ${C.border}` }}>
-                          <p style={{ fontFamily: PP, fontSize: 9, color: C.light, fontWeight: 850, margin: '0 0 3px' }}>LATIDO</p>
-                          <p style={{ fontFamily: PP, fontSize: 14, color: '#B45309', fontWeight: 800, margin: 0 }}>★ {rating.overall_rating}/5</p>
-                        </div>
-                        <div style={{ borderRadius: 11, padding: '9px 8px', background: '#fff', border: `1px solid ${C.border}` }}>
-                          <p style={{ fontFamily: PP, fontSize: 9, color: C.light, fontWeight: 850, margin: '0 0 3px' }}>ENCUENTRA LO NECESARIO</p>
-                          <p style={{ fontFamily: PP, fontSize: 14, color: '#047857', fontWeight: 800, margin: 0 }}>★ {rating.usefulness_rating}/5</p>
-                        </div>
-                      </div>
-                      <p style={{ fontFamily: PP, fontSize: 10.5, color: rating.comment ? C.text : C.light, fontStyle: rating.comment ? 'normal' : 'italic', lineHeight: 1.5, margin: 0, padding: rating.comment ? '8px 10px' : 0, borderRadius: 10, background: rating.comment ? '#FFF' : 'transparent', overflowWrap: 'anywhere' }}>
-                        {rating.comment ? `“${rating.comment}”` : 'Sin comentario escrito'}
-                      </p>
+                      <FeedbackComment text={rating.comment} />
                     </div>
                   )
                 })}
                 {!filteredLatidoRatings.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>{metricStarRatings.length ? 'Ninguna valoración coincide con los filtros.' : 'Todavía no hay valoraciones.'}</p>
+                  <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.soft, margin: 0 }}>{metricStarRatings.length ? 'Ninguna valoración coincide con los filtros.' : 'Todavía no hay valoraciones.'}</p>
                 )}
               </div>
-            </Card>
+            </div>
 
-            <Card style={{ padding: 16, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 13 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Votos sobre búsquedas</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Persona, consulta, resultado, motivo y acción.</p>
-                </div>
-                <Tag bg="#E0F2FE" color="#0369A1">{filteredSearchFeedback.length}/{metricSearchFeedback.length}</Tag>
-              </div>
-              <div role="region" aria-label="Listado completo de votos sobre búsquedas" tabIndex={0} style={{ display: 'grid', gap: 9, maxHeight: 560, overflowY: 'auto', paddingRight: 4, scrollbarGutter: 'stable' }}>
+            <div className="adm-surface" style={{ padding: 16, overflow: 'hidden', minWidth: 0 }}>
+              <CardHeader
+                title="Votos sobre búsquedas"
+                subtitle="Persona, consulta, resultado, motivo y acción."
+                aside={<Tag size={11} bg="#E0F2FE" color="#0369A1">{filteredSearchFeedback.length}/{metricSearchFeedback.length}</Tag>}
+              />
+              <div role="region" aria-label="Listado completo de votos sobre búsquedas" tabIndex={0} className="adm-record-list adm-scroll" style={{ maxHeight: isDesktop ? 560 : 460, overflowY: 'auto', paddingRight: 4, scrollbarGutter: 'stable' }}>
                 {filteredSearchFeedback.map(item => {
                   const answerMeta = SEARCH_RESOLUTION_ANSWER_META[item.answer] || SEARCH_RESOLUTION_ANSWER_META.no
                   const profile = userProfilesById.get(item.user_id)
                   const profileMeta = [profile?.email, profile?.canton ? `Cantón ${profile.canton}` : ''].filter(Boolean).join(' · ')
                   return (
-                    <div key={item.id} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF', minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 9 }}>
-                        <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 11.5, color: C.text, overflowWrap: 'anywhere' }}>{profile?.name || profile?.email || 'Respuesta anónima'}</span>
-                          {profileMeta && <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.mid, marginTop: 2, overflowWrap: 'anywhere' }}>{profileMeta}</span>}
-                          <span style={{ display: 'block', fontFamily: PP, fontSize: 9.5, color: C.light, marginTop: 2 }}>{fmtDate(item.updated_at || item.created_at)}</span>
-                        </span>
-                        <Tag bg={answerMeta.bg} color={answerMeta.color}>{answerMeta.label}</Tag>
-                      </div>
-                      <div style={{ display: 'grid', gap: 6 }}>
-                        <div style={{ borderRadius: 11, padding: '9px 10px', background: '#fff', border: `1px solid ${C.border}` }}>
-                          <p style={{ fontFamily: PP, fontSize: 9, fontWeight: 800, letterSpacing: 0.55, color: C.light, margin: '0 0 3px', textTransform: 'uppercase' }}>Búsqueda</p>
-                          <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 850, color: C.text, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}>“{item.query}”</p>
-                        </div>
-                        <div style={{ display: 'grid', gap: 3, padding: '2px 1px' }}>
-                          <p style={{ fontFamily: PP, fontSize: 10, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}><strong>Resultado:</strong> {[item.result_label, humanizeFeedbackValue(item.result_type)].filter(Boolean).join(' · ') || 'Sin resultado identificado'}</p>
-                          <p style={{ fontFamily: PP, fontSize: 10, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}><strong>Motivo:</strong> {SEARCH_RESOLUTION_REASON_LABELS[item.reason] || 'No indicó motivo'}</p>
-                          <p style={{ fontFamily: PP, fontSize: 10, color: C.mid, lineHeight: 1.45, margin: 0, overflowWrap: 'anywhere' }}><strong>Acción previa:</strong> {item.had_solution_action ? (humanizeFeedbackValue(item.solution_action) || 'Acción registrada') : 'Ninguna'}</p>
-                          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, lineHeight: 1.45, margin: 0 }}><strong>Tiempo hasta votar:</strong> {formatFeedbackDuration(item.time_to_feedback_ms)}</p>
-                        </div>
-                      </div>
+                    <div key={item.id} className="adm-record">
+                      <FeedbackRecordHeader
+                        name={profile?.name || profile?.email || 'Respuesta anónima'}
+                        meta={profileMeta}
+                        date={fmtDate(item.updated_at || item.created_at)}
+                        tag={<Tag size={11} bg={answerMeta.bg} color={answerMeta.color}>{answerMeta.label}</Tag>}
+                      />
+                      <FeedbackField label="Búsqueda">
+                        <span style={{ fontWeight: 700, color: INK.strong }}>“{item.query}”</span>
+                      </FeedbackField>
+                      <dl style={{ display: 'grid', gap: 4, margin: 0, fontFamily: PP, fontSize: 12, lineHeight: 1.45, color: INK.base }}>
+                        {[
+                          ['Resultado', [item.result_label, humanizeFeedbackValue(item.result_type)].filter(Boolean).join(' · ') || 'Sin resultado identificado'],
+                          ['Motivo', SEARCH_RESOLUTION_REASON_LABELS[item.reason] || 'No indicó motivo'],
+                          ['Acción previa', item.had_solution_action ? (humanizeFeedbackValue(item.solution_action) || 'Acción registrada') : 'Ninguna'],
+                          ['Tiempo hasta votar', formatFeedbackDuration(item.time_to_feedback_ms)],
+                        ].map(([term, detail]) => (
+                          <div key={term} style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+                            <dt style={{ fontWeight: 700, color: INK.strong }}>{term}:</dt>
+                            <dd style={{ margin: 0, minWidth: 0, overflowWrap: 'anywhere' }}>{detail}</dd>
+                          </div>
+                        ))}
+                      </dl>
                     </div>
                   )
                 })}
                 {!filteredSearchFeedback.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>{metricSearchFeedback.length ? 'Ningún voto de búsqueda coincide con los filtros.' : 'Todavía no hay respuestas de búsqueda.'}</p>
+                  <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.soft, margin: 0 }}>{metricSearchFeedback.length ? 'Ningún voto de búsqueda coincide con los filtros.' : 'Todavía no hay respuestas de búsqueda.'}</p>
                 )}
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       )}
 
       {/* -- Uso de la app ---------------------------------- */}
       {tab === 'analytics' && isTabDataReady('analytics') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="adm-stack">
           {analyticsUnavailable && (
-            <Card style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
-              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>
-                Tracking pendiente de activar
-              </p>
-              <p style={{ fontFamily: PP, fontSize: 12, color: '#92400E', lineHeight: 1.55, margin: 0 }}>
-                El panel ya está preparado, pero Supabase no devuelve la tabla analytics_events. Cuando exista, aquí aparecerán páginas más usadas y búsquedas reales.
-              </p>
-            </Card>
+            <AdminNotice title="Tracking pendiente de activar">
+              El panel ya está preparado, pero Supabase no devuelve la tabla analytics_events. Cuando exista, aquí aparecerán páginas más usadas y búsquedas reales.
+            </AdminNotice>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
-            <Card style={{ padding: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Páginas más usadas</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Agrupado por sección en {analyticsRangeText}.</p>
-                </div>
-                <Tag bg="#E0F2FE" color="#0284C7">{pageViewEvents.length} vistas</Tag>
-              </div>
-
-              <div style={{ display: 'grid', gap: 11, minWidth: 0, overflow: 'hidden' }}>
-                {topPageRows.map((row, index) => (
-                  <div key={row.label} style={{ minWidth: 0, overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-                      <div style={{ minWidth: 0, maxWidth: '100%', flex: '1 1 0', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                        <span style={{ width: 24, height: 24, borderRadius: 9, background: '#E0F2FE', color: '#0284C7', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
-                          {index + 1}
-                        </span>
-                        <div style={{ minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
-                          <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
-                          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.sub}</p>
-                        </div>
-                      </div>
-                      <strong style={{ fontFamily: PP, fontSize: 12, color: '#0284C7', flexShrink: 0 }}>{row.value}</strong>
-                    </div>
-                    <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.max(8, Math.round((row.value / topPageMax) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#0284C7,#2563EB)' }} />
-                    </div>
-                  </div>
-                ))}
-                {!topPageRows.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>
-                    Todavía no hay vistas registradas. Empezará a llenarse cuando los usuarios naveguen con el tracking activo.
-                  </p>
-                )}
-              </div>
-            </Card>
-
-            <Card style={{ padding: 16, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Búsquedas frecuentes</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Términos escritos en búsqueda global, anuncios y comunidad en {analyticsRangeText}.</p>
-                </div>
-                <Tag bg={C.primaryLight} color={C.primary}>{searchEvents.length} búsquedas</Tag>
-              </div>
-
-              <div style={{ display: 'grid', gap: 11, minWidth: 0, overflow: 'hidden' }}>
-                {topSearchRows.map((row, index) => (
-                  <div key={row.label} style={{ minWidth: 0, overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-                      <div style={{ minWidth: 0, maxWidth: '100%', flex: '1 1 0', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                        <span style={{ width: 24, height: 24, borderRadius: 9, background: C.primaryLight, color: C.primary, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
-                          {index + 1}
-                        </span>
-                        <div style={{ minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
-                          <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
-                          <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '2px 0 0' }}>{row.sub}</p>
-                        </div>
-                      </div>
-                      <strong style={{ fontFamily: PP, fontSize: 12, color: C.primary, flexShrink: 0 }}>{row.value}</strong>
-                    </div>
-                    <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.max(8, Math.round((row.value / topSearchMax) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#2563EB,#10B981)' }} />
-                    </div>
-                  </div>
-                ))}
-                {!topSearchRows.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, lineHeight: 1.5 }}>
-                    Todavía no hay búsquedas registradas. Se guardan solo términos de 2 o más caracteres con una pequeña pausa.
-                  </p>
-                )}
-              </div>
-            </Card>
+          <BlockTitle>Páginas y búsquedas</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '340px' }}>
+            <InsightBarList
+              title="Páginas más usadas"
+              subtitle={`Agrupado por sección en ${analyticsRangeText}.`}
+              rows={topPageRows}
+              color="#0284C7"
+              showShare={false}
+              aside={<Tag size={11} bg="#E0F2FE" color="#0284C7">{pageViewEvents.length} vistas</Tag>}
+              emptyText="Todavía no hay vistas registradas. Empezará a llenarse cuando los usuarios naveguen con el tracking activo."
+            />
+            <InsightBarList
+              title="Búsquedas frecuentes"
+              subtitle={`Términos escritos en búsqueda global, anuncios y comunidad en ${analyticsRangeText}.`}
+              rows={topSearchRows}
+              color={C.primary}
+              showShare={false}
+              aside={<Tag size={11} bg={C.primaryLight} color={C.primary}>{searchEvents.length} búsquedas</Tag>}
+              emptyText="Todavía no hay búsquedas registradas. Se guardan solo términos de 2 o más caracteres con una pequeña pausa."
+            />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 14 }}>
+          <BlockTitle>Horas con más actividad</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '260px' }}>
             <InsightBarList
               title="Horas con más navegación"
               subtitle="Cuándo se abren más páginas de Latido."
@@ -5615,7 +5640,8 @@ export default function Admin() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 14 }}>
+          <BlockTitle>Días de la semana</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '260px' }}>
             <InsightBarList
               title="Días con más navegación"
               subtitle="Distribución semanal de vistas de página."
@@ -5637,6 +5663,62 @@ export default function Admin() {
               color="#059669"
               emptyText="Sin publicaciones recientes por día."
             />
+          </div>
+
+          <BlockTitle>Conversión de búsqueda</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '340px' }}>
+            <div className="adm-surface" style={{ padding: 16, minWidth: 0 }}>
+              <CardHeader
+                title="Embudo de búsqueda"
+                subtitle="Desde la consulta hasta una acción útil sobre el resultado."
+                aside={<Tag size={11} bg="#ECFDF5" color="#047857">{searchActionRate}% acción</Tag>}
+              />
+              <div className="adm-mini-stats" style={{ '--adm-mini-min': '110px' }}>
+                {[
+                  { label: 'Búsquedas únicas', value: searchConversion.searches, color: C.primary },
+                  { label: 'Con apertura', value: searchConversion.opened, color: '#059669' },
+                  { label: 'Con acción útil', value: searchSolutionActions, color: '#0F766E' },
+                  { label: 'Sin resultados', value: searchesWithoutResults, color: '#DC2626' },
+                ].map(item => (
+                  <MiniStat key={item.label} label={item.label} value={item.value} color={item.color} />
+                ))}
+              </div>
+            </div>
+
+            <div className="adm-surface" style={{ padding: 16, minWidth: 0 }}>
+              <CardHeader
+                title="Soluciones encontradas"
+                subtitle="Respuesta directa después de revisar un resultado."
+                aside={(
+                  <Tag size={11} bg="#ECFDF5" color="#047857">
+                    {searchResolution.total ? `${searchResolution.confirmedRate}% confirmada` : 'Sin respuestas'}
+                  </Tag>
+                )}
+              />
+              <div className="adm-mini-stats" style={{ '--adm-mini-min': '90px' }}>
+                {[
+                  { label: 'Respuestas', value: searchResolution.total, color: C.text },
+                  { label: 'Sí', value: searchResolution.yes, color: '#047857' },
+                  { label: 'Parcial', value: searchResolution.partial, color: '#B45309' },
+                  { label: 'No', value: searchResolution.no, color: '#B91C1C' },
+                ].map(item => (
+                  <MiniStat key={item.label} label={item.label} value={item.value} color={item.color} />
+                ))}
+              </div>
+              <p className="adm-card-note">
+                {searchResolution.helpfulRate}% respondió Sí o Parcialmente · {searchResolution.coverage}% de las búsquedas únicas tiene respuesta.
+              </p>
+            </div>
+          </div>
+
+          <div className="adm-grid" style={{ '--adm-min': '300px' }}>
+            <InsightBarList
+              title="Términos que abren resultados"
+              subtitle="Búsquedas que terminaron en clic o Enter sobre un resultado."
+              rows={topSearchActionRows}
+              color="#059669"
+              emptyText="Todavía no hay términos con apertura registrada."
+            />
             <InsightBarList
               title="Resultados abiertos"
               subtitle="Qué tipo de resultado abre la gente desde búsqueda."
@@ -5646,68 +5728,7 @@ export default function Admin() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
-            <Card style={{ padding: 16, background: 'linear-gradient(180deg,#FFFFFF,#F8FAFF)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Embudo de búsqueda</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Desde la consulta hasta una acción útil sobre el resultado.</p>
-                </div>
-                <Tag bg="#ECFDF5" color="#047857">{searchActionRate}% acción</Tag>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(92px, 1fr))', gap: 8 }}>
-                {[
-                  { label: 'Búsquedas únicas', value: searchConversion.searches, color: C.primary },
-                  { label: 'Con apertura', value: searchConversion.opened, color: '#059669' },
-                  { label: 'Con acción útil', value: searchSolutionActions, color: '#0F766E' },
-                  { label: 'Sin resultados', value: searchesWithoutResults, color: '#DC2626' },
-                ].map(item => (
-                  <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: '11px 10px', background: '#fff' }}>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 10, color: C.light, margin: 0 }}>{item.label}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card style={{ padding: 16, background: 'linear-gradient(180deg,#FFFFFF,#F3FCF8)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Soluciones encontradas</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Respuesta directa después de revisar un resultado.</p>
-                </div>
-                <Tag bg="#ECFDF5" color="#047857">
-                  {searchResolution.total ? `${searchResolution.confirmedRate}% confirmada` : 'Sin respuestas'}
-                </Tag>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 7 }}>
-                {[
-                  { label: 'Respuestas', value: searchResolution.total, color: C.text },
-                  { label: 'Sí', value: searchResolution.yes, color: '#047857' },
-                  { label: 'Parcial', value: searchResolution.partial, color: '#B45309' },
-                  { label: 'No', value: searchResolution.no, color: '#B91C1C' },
-                ].map(item => (
-                  <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 13, padding: '10px 8px', background: '#fff' }}>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 21, color: item.color, lineHeight: 1, margin: '0 0 4px' }}>{item.value}</p>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 9.5, color: C.light, margin: 0 }}>{item.label}</p>
-                  </div>
-                ))}
-              </div>
-              <p style={{ fontFamily: PP, fontSize: 10.5, color: C.mid, lineHeight: 1.5, margin: '11px 0 0' }}>
-                {searchResolution.helpfulRate}% respondió Sí o Parcialmente · {searchResolution.coverage}% de las búsquedas únicas tiene respuesta.
-              </p>
-            </Card>
-
-            <InsightBarList
-              title="Términos que abren resultados"
-              subtitle="Búsquedas que terminaron en clic o Enter sobre un resultado."
-              rows={topSearchActionRows}
-              color="#059669"
-              emptyText="Todavía no hay términos con apertura registrada."
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14 }}>
+          <div className="adm-grid" style={{ '--adm-min': '340px' }}>
             <InsightBarList
               title="Búsquedas que necesitan mejorar"
               subtitle="Consultas respondidas como Parcialmente o No."
@@ -5724,11 +5745,13 @@ export default function Admin() {
             />
           </div>
 
-          <Card style={{ padding: 16, background: '#fff' }}>
-            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
-            <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.55 }}>
-              La navegación, las búsquedas y las respuestas salen de analytics_events. Estas métricas representan las sesiones que aceptaron la analítica.
-            </p>
+          <BlockTitle>Metodología</BlockTitle>
+          <div className="adm-surface" style={{ padding: 16 }}>
+            <CardHeader
+              title="Cómo se mide"
+              subtitle="La navegación, las búsquedas y las respuestas salen de analytics_events. Estas métricas representan las sesiones que aceptaron la analítica."
+              icon={<AdminIcon name="info" size={15} />}
+            />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 10 }}>
               {[
                 { label: 'Páginas usadas', note: 'Agrupa rutas como Inicio, Anuncios, Comunidad, Mensajes o Detalle de anuncio.', color: '#0284C7' },
@@ -5739,47 +5762,31 @@ export default function Admin() {
                 { label: 'Contenido faltante', note: 'Muestra búsquedas sin resultados y los motivos indicados en respuestas parciales o negativas.', color: '#DC2626' },
                 { label: 'Horarios', note: 'Usa la hora local del created_at para detectar horas y días con más movimiento.', color: '#7C3AED' },
               ].map(item => (
-                <div key={item.label} style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 12, background: '#F8FAFF' }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 999, background: item.color, display: 'inline-block', marginBottom: 8 }} />
-                  <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: '0 0 4px' }}>{item.label}</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>{item.note}</p>
-                </div>
+                <MethodNote key={item.label} label={item.label} note={item.note} color={item.color} />
               ))}
             </div>
-          </Card>
+          </div>
         </div>
       )}
 
       {/* ── Partners ───────────────────────────────────── */}
-      {tab === 'partners' && (
-        <div style={{ display:'grid', gap:14, marginBottom:14 }}>
-          <PuntoHispanoPublishLinks />
-          <PuntoHispanoContacts />
-        </div>
-      )}
       {tab === 'partners' && isTabDataReady('partners') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="adm-stack" style={{ marginBottom: 16 }}>
           {analyticsUnavailable && (
-            <Card style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
-              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>
-                Métricas no disponibles
-              </p>
-              <p style={{ fontFamily: PP, fontSize: 12, color: '#92400E', lineHeight: 1.55, margin: 0 }}>
-                Esta sección usa analytics_events. Revisa la tabla o sus permisos si los clics no aparecen.
-              </p>
-            </Card>
+            <AdminNotice title="Métricas no disponibles">
+              Esta sección usa analytics_events. Revisa la tabla o sus permisos si los clics no aparecen.
+            </AdminNotice>
           )}
 
-          <Card style={{ boxSizing:'border-box', width:'100%', maxWidth:'100%', minWidth:0, padding: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-              <div>
-                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Colaboraciones</p>
-                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Selecciona un colaborador para consultar sus resultados por mes natural.</p>
-              </div>
-              <Tag bg="#EEF2FF" color="#4F46E5">{partnerMonthRange.monthLabel}</Tag>
-            </div>
+          <BlockTitle>Colaborador</BlockTitle>
+          <div className="adm-surface" style={{ boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, padding: 16 }}>
+            <CardHeader
+              title="Colaboraciones"
+              subtitle="Selecciona un colaborador para consultar sus resultados por mes natural."
+              aside={<Tag size={11} bg="#EEF2FF" color="#4F46E5">{partnerMonthRange.monthLabel}</Tag>}
+            />
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 230px), 1fr))', gap: 10 }}>
+            <div role="radiogroup" aria-label="Colaborador" className="adm-picker">
               {partnerOptions.map(partner => {
                 const active = selectedPartner?.id === partner.id
                 const clicks = partnerAnalyticsEvents.filter(event =>
@@ -5792,7 +5799,10 @@ export default function Admin() {
                   <button
                     key={partner.id}
                     type="button"
+                    role="radio"
+                    aria-checked={active}
                     onClick={() => setSelectedPartnerId(partner.id)}
+                    className="adm-action"
                     style={{
                       boxSizing: 'border-box',
                       minWidth: 0,
@@ -5801,54 +5811,59 @@ export default function Admin() {
                       alignItems: 'center',
                       gap: 11,
                       width: '100%',
+                      minHeight: 64,
                       padding: 12,
-                      borderRadius: 16,
-                      border: `1.5px solid ${active ? partner.color : C.border}`,
+                      borderRadius: R.md,
+                      border: `1px solid ${active ? partner.color : LINE}`,
                       background: active ? partner.tint : '#fff',
                       cursor: 'pointer',
                       textAlign: 'left',
-                      boxShadow: active ? `0 12px 28px ${partner.color}16` : 'none',
+                      boxShadow: active ? `0 0 0 1px ${partner.color}` : 'none',
                     }}
                   >
-                    <span style={{ width: 42, height: 42, borderRadius: 13, background: '#fff', border: `1px solid ${C.border}`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <span style={{ width: 42, height: 42, borderRadius: R.sm, background: '#fff', border: `1px solid ${LINE}`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                       <img src={partner.logo} alt="" style={{ width: 32, height: 32, objectFit: 'contain' }} />
                     </span>
                     <span style={{ minWidth: 0, flex: 1 }}>
-                      <strong style={{ display: 'block', fontFamily: PP, fontSize: 13, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{partner.name}</strong>
-                      <span style={{ display: 'block', maxWidth:'100%', fontFamily: PP, fontSize: 10, fontWeight: 800, color: active ? partner.color : C.light, marginTop: 3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      <strong style={{ display: 'block', fontFamily: PP, fontSize: 13.5, fontWeight: 700, color: INK.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{partner.name}</strong>
+                      <span className="adm-num" style={{ display: 'block', maxWidth: '100%', fontFamily: PP, fontSize: 11.5, fontWeight: 600, color: active ? partner.color : INK.soft, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {partner.isBusinessPartner ? `${partner.planKey === 'premium' ? 'Premium' : 'Básica'} · ` : ''}{clicks} salidas · {partnerMonthRange.monthLabel}
                       </span>
                     </span>
-                    <span aria-hidden="true" style={{ color: active ? partner.color : C.light, fontWeight: 800 }}>›</span>
+                    <span aria-hidden="true" style={{ color: active ? partner.color : INK.soft, display: 'grid' }}>
+                      <AdminIcon name={active ? 'check' : 'next'} size={16} strokeWidth={2.4} />
+                    </span>
                   </button>
                 )
               })}
             </div>
-          </Card>
+          </div>
 
           {!loading && activeChart && (
-            <div style={{ marginBottom: 10 }}>
+            <div>
+              <BlockTitle>Evolución</BlockTitle>
               {activeChart}
             </div>
           )}
 
           {loading && showChartPlaceholder && (
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: '16px', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontFamily: PP, fontSize: 12, color: C.light }}>Cargando gráfico...</span>
-              </div>
+            <div className="adm-surface" style={{ padding: 18, display: 'grid', gap: 12 }}>
+              <span className="adm-skeleton" style={{ height: 10, width: 160, borderRadius: 999 }} />
+              <span className="adm-skeleton" style={{ height: 120, borderRadius: R.md }} />
+              <span style={{ fontFamily: PP, fontSize: 12, color: INK.soft }}>Cargando gráfico...</span>
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 14 }}>
-            <Card style={{ padding: 16, background: 'linear-gradient(145deg,#FFFFFF,#F6F8FF)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 16 }}>
-                <span style={{ width: 46, height: 46, borderRadius: 15, background: '#fff', border: `1px solid ${C.border}`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                  <img src={selectedPartner?.logo} alt="" style={{ width: 35, height: 35, objectFit: 'contain' }} />
+          <BlockTitle>Origen y servicios</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '300px' }}>
+            <div className="adm-surface" style={{ padding: 16, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 6 }}>
+                <span style={{ width: 44, height: 44, borderRadius: R.md, background: '#fff', border: `1px solid ${LINE}`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  <img src={selectedPartner?.logo} alt="" style={{ width: 34, height: 34, objectFit: 'contain' }} />
                 </span>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>{selectedPartner?.name}</p>
-                  <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0 }}>Aperturas y contactos del colaborador en {partnerRangeText}.</p>
+                <div style={{ minWidth: 0 }}>
+                  <p className="adm-card-head__title">{selectedPartner?.name}</p>
+                  <p className="adm-card-head__subtitle">Aperturas y contactos del colaborador en {partnerRangeText}.</p>
                 </div>
               </div>
 
@@ -5859,18 +5874,18 @@ export default function Admin() {
                 const max = Math.max(partnerLandingClicks.length, partnerAppClicks.length, 1)
                 const share = partnerClickEvents.length ? Math.round((row.value / partnerClickEvents.length) * 100) : 0
                 return (
-                  <div key={row.label} style={{ marginTop: 13 }}>
+                  <div key={row.label} style={{ marginTop: 14 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text }}>{row.label}</span>
-                      <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: row.color }}>{row.value} · {share}%</span>
+                      <span style={{ fontFamily: PP, fontWeight: 600, fontSize: 12.5, color: INK.strong }}>{row.label}</span>
+                      <span className="adm-num" style={{ fontFamily: PP, fontWeight: 800, fontSize: 13, color: row.color }}>{row.value} · {share}%</span>
                     </div>
-                    <div style={{ height: 10, borderRadius: 999, overflow: 'hidden', background: C.bg }}>
-                      <div style={{ width: `${row.value ? Math.max(8, Math.round((row.value / max) * 100)) : 0}%`, height: '100%', borderRadius: 999, background: row.color }} />
+                    <div className="adm-bar-track" style={{ height: 8 }}>
+                      <div className="adm-bar-fill" style={{ width: `${row.value ? Math.max(8, Math.round((row.value / max) * 100)) : 0}%`, height: '100%', background: row.color }} />
                     </div>
                   </div>
                 )
               })}
-            </Card>
+            </div>
 
             <InsightBarList
               title="Origen de las salidas"
@@ -5887,92 +5902,98 @@ export default function Admin() {
               color="#0F766E"
               emptyText="Todavía no hay salidas desde una opción de servicio."
             />
-
           </div>
 
-          <Card style={{ padding: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-              <div>
-                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 16, color: C.text, margin: '0 0 3px' }}>Cuentas registradas por día</p>
-                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.5, margin: 0 }}>
-                  Cada perfil aparece una sola vez por fecha, aunque abra el partner varias veces. Las salidas sin una cuenta identificada no pueden mostrar email.
-                </p>
-              </div>
-              <Tag bg="#F3E8FF" color="#7C3AED">{partnerDailyAccounts.length} registros diarios</Tag>
-            </div>
+          <BlockTitle>Cuentas</BlockTitle>
+          <div className="adm-surface" style={{ padding: 16 }}>
+            <CardHeader
+              title="Cuentas registradas por día"
+              subtitle="Cada perfil aparece una sola vez por fecha, aunque abra el partner varias veces. Las salidas sin una cuenta identificada no pueden mostrar email."
+              aside={<Tag size={11} bg="#F3E8FF" color="#7C3AED">{partnerDailyAccounts.length} registros diarios</Tag>}
+            />
 
-            <div style={{ display: 'grid', gap: 9 }}>
+            <div
+              role="region"
+              aria-label="Cuentas registradas por día"
+              tabIndex={0}
+              className="adm-rows adm-scroll"
+              style={{ border: partnerDailyAccounts.length ? `1px solid ${LINE}` : 'none', borderRadius: R.md, maxHeight: 560, overflowY: 'auto' }}
+            >
               {partnerDailyAccounts.map(account => (
                 <div
                   key={account.key}
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'minmax(0, 1fr) auto',
-                    alignItems: 'center',
+                    alignItems: 'start',
                     gap: 12,
                     padding: '12px 13px',
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 15,
-                    background: '#F8FAFF',
+                    background: '#fff',
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text, margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 13, color: INK.strong, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {account.name}
                     </p>
-                    <p style={{ fontFamily: PP, fontSize: 11, color: C.mid, margin: 0, overflowWrap: 'anywhere' }}>
+                    <p style={{ fontFamily: PP, fontSize: 12, color: INK.base, margin: 0, overflowWrap: 'anywhere' }}>
                       {account.email}
                     </p>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                       {account.origins.map(origin => (
                         <Tag
                           key={origin}
+                          size={11}
                           bg={origin === 'Landing' ? '#EFF6FF' : '#ECFDF5'}
                           color={origin === 'Landing' ? '#2563EB' : '#0F766E'}
                         >
                           {origin}
                         </Tag>
                       ))}
-                      <Tag bg="#F3E8FF" color="#7C3AED">1 cuenta contabilizada</Tag>
+                      <Tag size={11} bg="#F3E8FF" color="#7C3AED">1 cuenta contabilizada</Tag>
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right', alignSelf: 'start' }}>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 11, color: C.text, margin: '0 0 3px', whiteSpace: 'nowrap' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <p className="adm-num" style={{ fontFamily: PP, fontWeight: 700, fontSize: 12.5, color: INK.strong, margin: '0 0 2px', whiteSpace: 'nowrap' }}>
                       {new Date(`${account.date}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                     </p>
-                    <p style={{ fontFamily: PP, fontSize: 9, color: C.light, margin: 0, whiteSpace: 'nowrap' }}>
+                    <p className="adm-num" style={{ fontFamily: PP, fontSize: 11, color: INK.soft, margin: 0, whiteSpace: 'nowrap' }}>
                       {new Date(`${account.date}T12:00:00`).toLocaleDateString('es-ES', { year: 'numeric' })}
                     </p>
                   </div>
                 </div>
               ))}
-
-              {!partnerDailyAccounts.length && (
-                <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.5, margin: 0 }}>
-                  Todavía no hay cuentas enviadas en el periodo seleccionado.
-                </p>
-              )}
             </div>
-          </Card>
 
-          <Card style={{ padding: 16, background: '#fff' }}>
-            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 4px' }}>Qué significa cada número</p>
-            <p style={{ fontFamily: PP, fontSize: 12, color: C.light, lineHeight: 1.6, margin: 0 }}>
+            {!partnerDailyAccounts.length && (
+              <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.soft, lineHeight: 1.5, margin: 0 }}>
+                Todavía no hay cuentas enviadas en el periodo seleccionado.
+              </p>
+            )}
+          </div>
+
+          <div className="adm-surface" style={{ padding: 16 }}>
+            <CardHeader title="Qué significa cada número" icon={<AdminIcon name="info" size={15} />} style={{ marginBottom: 8 }} />
+            <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.base, lineHeight: 1.65, margin: 0 }}>
               “Salidas registradas” cuenta cada apertura o contacto guardado en analytics_events y, por consentimiento, no equivale a todas las salidas posibles. “Cuentas por día” agrupa por perfil y fecha: tres clics de una misma cuenta hoy cuentan como una; si vuelve mañana, genera otra fila. “Landing” y “App” son partes del total. Las cuentas admin y test@g.com quedan excluidas.
             </p>
-          </Card>
+          </div>
+        </div>
+      )}
+
+      {tab === 'partners' && (
+        <div className="adm-stack">
+          <BlockTitle>Punto Hispano</BlockTitle>
+          <PuntoHispanoPublishLinks />
+          <PuntoHispanoContacts />
         </div>
       )}
 
       {/* ── Moderación ─────────────────────────────────── */}
       {tab === 'moderation' && isTabDataReady('moderation') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <Card style={{ padding: 16, background: '#FFFBEB', borderColor: '#FDE68A' }}>
-            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: '#92400E', margin: '0 0 5px' }}>Qué significa revisión</p>
-            <p style={{ fontFamily: PP, fontSize: 12, color: '#92400E', lineHeight: 1.55, margin: 0 }}>
-              Aquí aparecen publicaciones retenidas por filtros automáticos o marcadas para decisión manual. El objetivo es aprobar contenido válido, eliminar contenido problemático o bloquear al autor si el caso lo requiere.
-            </p>
-          </Card>
+        <div className="adm-stack" style={{ gap: 12 }}>
+          <AdminNotice tone="info" title="Qué significa revisión">
+            Aquí aparecen publicaciones retenidas por filtros automáticos o marcadas para decisión manual. El objetivo es aprobar contenido válido, eliminar contenido problemático o bloquear al autor si el caso lo requiere.
+          </AdminNotice>
           <AdminFilterBar
             footer={(
               <>
@@ -6002,27 +6023,27 @@ export default function Admin() {
           {filteredPendingQueue.length === 0 ? (
             <EmptyState variant="card" emoji="✅" text="No hay contenido pendiente con este filtro." />
           ) : pagedModeration.items.map(item => (
-            <Card key={item.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <Tag bg="#FEF3C7" color="#92400E">{STATUS_LABELS[item.status] || item.status}</Tag>
-                  <Tag bg={C.bg} color={C.mid}>{item.content_type}</Tag>
+            <article key={item.id} className="adm-surface adm-work-item">
+              <div className="adm-work-item__head">
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+                  <Tag size={11} bg="#FEF3C7" color="#92400E">{STATUS_LABELS[item.status] || item.status}</Tag>
+                  <Tag size={11} bg={SURFACE_MUTED} color={INK.base}>{item.content_type}</Tag>
                 </div>
-                <span style={{ fontFamily: PP, fontSize: 11, color: C.light, whiteSpace: 'nowrap' }}>{fmtDate(item.created_at)}</span>
+                <span className="adm-work-item__date">{fmtDate(item.created_at)}</span>
               </div>
               {renderContentSummary(item.content_type, item.content_id, item.excerpt)}
               {renderContentOwnerMeta(item)}
-              <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '8px 0 12px' }}>
+              <p className="adm-work-item__reason">
                 Motivo: {item.reason || 'Filtro automático'}{item.matched_term ? ` · término: "${item.matched_term}"` : ''}
               </p>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="adm-actions">
                 <AdminButton variant="success" icon="check" onClick={() => resolveQueueItem(item, 'approved')}>Aprobar</AdminButton>
                 <AdminButton variant="danger" icon="close" onClick={() => resolveQueueItem(item, 'rejected')}>Eliminar</AdminButton>
                 <AdminButton variant="danger" icon="ban" disabled={!canBanContentAuthor(item)} onClick={() => banContentAuthor(item)}>
                   {banAuthorButtonLabel(item)}
                 </AdminButton>
               </div>
-            </Card>
+            </article>
           ))}
           <AdminPagination
             page={pagedModeration.page}
@@ -6035,7 +6056,7 @@ export default function Admin() {
 
       {/* ── Reportes ───────────────────────────────────── */}
       {tab === 'reports' && isTabDataReady('reports') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="adm-stack" style={{ gap: 12 }}>
           <AdminFilterBar
             footer={(
               <>
@@ -6066,29 +6087,29 @@ export default function Admin() {
           {filteredPendingReports.length === 0 ? (
             <EmptyState variant="card" emoji="✅" text="No hay reportes pendientes con este filtro." />
           ) : pagedReports.items.map(report => (
-            <Card key={report.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <Tag bg="#FEE2E2" color="#B91C1C">{reasonLabel(report.reason)}</Tag>
-                  <Tag bg={C.bg} color={C.mid}>{report.content_type}</Tag>
+            <article key={report.id} className="adm-surface adm-work-item">
+              <div className="adm-work-item__head">
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+                  <Tag size={11} bg="#FEE2E2" color="#B91C1C">{reasonLabel(report.reason)}</Tag>
+                  <Tag size={11} bg={SURFACE_MUTED} color={INK.base}>{report.content_type}</Tag>
                 </div>
-                <span style={{ fontFamily: PP, fontSize: 11, color: C.light, whiteSpace: 'nowrap' }}>{fmtDate(report.created_at)}</span>
+                <span className="adm-work-item__date">{fmtDate(report.created_at)}</span>
               </div>
               {renderContentSummary(report.content_type, report.content_id)}
               {renderContentOwnerMeta(report)}
               {report.notes && (
-                <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, margin: '8px 0 0', fontStyle: 'italic' }}>
+                <p className="adm-work-item__quote">
                   "{report.notes}"
                 </p>
               )}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+              <div className="adm-actions" style={{ marginTop: 12 }}>
                 <AdminButton icon="check" onClick={() => updateReport(report, 'reviewed')}>Mantener</AdminButton>
                 <AdminButton variant="danger" icon="close" onClick={() => removeReportedContent(report)}>Eliminar contenido</AdminButton>
                 <AdminButton variant="danger" icon="ban" disabled={!canBanContentAuthor(report)} onClick={() => banContentAuthor(report)}>
                   {banAuthorButtonLabel(report)}
                 </AdminButton>
               </div>
-            </Card>
+            </article>
           ))}
           <AdminPagination
             page={pagedReports.page}
@@ -6101,42 +6122,39 @@ export default function Admin() {
 
       {/* ── Verificación de negocios ───────────────────────────────────── */}
       {tab === 'businessVerification' && isTabDataReady('businessVerification') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="adm-stack" style={{ gap: 12 }}>
+          <BlockTitle>Planes de Inicio</BlockTitle>
           {businessPromotionUnavailable ? (
-            <div style={{ padding:14, borderRadius:16, border:'1px solid #F59E0B', background:'#FFFBEB' }}>
-              <p style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:'#92400E', margin:'0 0 4px' }}>
-                Planes de Inicio pendientes de configurar
-              </p>
-              <p style={{ fontFamily:PP, fontSize:11, color:'#A16207', margin:0, lineHeight:1.55 }}>
-                Ejecuta el SQL de planes en Supabase para activar cupos, vigencia y rotación.
-              </p>
-            </div>
+            <AdminNotice title="Planes de Inicio pendientes de configurar">
+              Ejecuta el SQL de planes en Supabase para activar cupos, vigencia y rotación.
+            </AdminNotice>
           ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:8 }}>
+            <div className="adm-mini-stats" style={{ '--adm-mini-min': '170px' }}>
               {businessPromotionPlans.map(plan => plan.key !== 'free' ? (
-                <div key={plan.key} style={{ padding:12, borderRadius:16, border:`1px solid ${plan.color}44`, background:plan.background }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
-                    <div>
-                      <p style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:plan.color, margin:'0 0 4px' }}>{plan.label}</p>
-                      <p style={{ fontFamily:PP, fontWeight:800, fontSize:16, color:C.text, margin:0 }}>
+                <div key={plan.key} className="adm-mini-stat" style={{ background: '#fff', borderColor: veil(plan.color, 30), boxShadow: `inset 3px 0 0 ${plan.color}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, color: plan.color, margin: '0 0 4px' }}>{plan.label}</p>
+                      <p className="adm-num" style={{ fontFamily: PP, fontWeight: 800, fontSize: 18, color: INK.strong, margin: 0, letterSpacing: -0.3 }}>
                         {plan.availableSlots ?? '∞'} libres
                       </p>
                     </div>
                     {plan.key === 'featured' ? (
-                      <span style={{ border:`1px solid ${plan.color}55`, background:'#fff', color:plan.color, borderRadius:9, padding:'6px 8px', fontFamily:PP, fontWeight:800, fontSize:9 }}>
+                      <span style={{ border: `1px solid ${veil(plan.color, 35)}`, background: '#fff', color: plan.color, borderRadius: 8, padding: '5px 8px', fontFamily: PP, fontWeight: 700, fontSize: 11 }}>
                         Fijo
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => updateBusinessPromotionLimit(plan)}
-                        style={{ border:`1px solid ${plan.color}55`, background:'#fff', color:plan.color, borderRadius:9, padding:'6px 8px', fontFamily:PP, fontWeight:800, fontSize:9, cursor:'pointer' }}
+                        className="adm-action"
+                        style={{ border: `1px solid ${veil(plan.color, 35)}`, background: '#fff', color: plan.color, borderRadius: 8, padding: '6px 10px', minHeight: 32, fontFamily: PP, fontWeight: 700, fontSize: 11.5, cursor: 'pointer' }}
                       >
                         Editar
                       </button>
                     )}
                   </div>
-                  <p style={{ fontFamily:PP, fontSize:9, color:C.mid, margin:'5px 0 0' }}>
+                  <p className="adm-mini-stat__hint adm-num" style={{ marginTop: 6 }}>
                     {plan.activeCount || 0} activos de {plan.maxActive ?? '∞'} · peso {plan.rotationWeight}
                   </p>
                 </div>
@@ -6144,22 +6162,24 @@ export default function Admin() {
             </div>
           )}
 
+          <BlockTitle>Negocios</BlockTitle>
           {/* Cada estado de verificación es una pestaña con su recuento visible */}
-          <div className="adm-surface" style={{ display: 'grid', gridTemplateColumns: `repeat(${isDesktop ? BUSINESS_VERIFICATION_FILTERS.length : 2}, minmax(0, 1fr))`, gap: 6, padding: 6 }}>
+          <div className="adm-surface" role="tablist" aria-label="Estado de verificación" style={{ display: 'grid', gridTemplateColumns: `repeat(${isDesktop ? BUSINESS_VERIFICATION_FILTERS.length : 2}, minmax(0, 1fr))`, gap: 4, padding: 4 }}>
             {BUSINESS_VERIFICATION_FILTERS.map(item => {
               const active = businessVerificationFilter === item.id
               return (
                 <button
                   key={item.id}
                   type="button"
-                  aria-pressed={active}
+                  role="tab"
+                  aria-selected={active}
                   onClick={() => { setBusinessVerificationFilter(item.id); setBusinessPage(1) }}
                   className="adm-nav-item"
                   data-active={active}
                   style={{
                     fontFamily: PP,
-                    fontWeight: 700,
-                    fontSize: 11.5,
+                    fontWeight: active ? 700 : 600,
+                    fontSize: 12.5,
                     borderRadius: R.sm,
                     border: `1px solid ${active ? veil(item.color, 40) : 'transparent'}`,
                     background: active ? item.bg : 'transparent',
@@ -6173,12 +6193,11 @@ export default function Admin() {
                     justifyContent: 'center',
                     gap: 7,
                     textAlign: 'center',
-                    boxShadow: active ? SH.sm : 'none',
                   }}
                 >
                   {item.label}
                   <span className="adm-num" style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 800,
                     color: active ? item.color : INK.soft,
                     background: active ? '#fff' : SURFACE_MUTED,
@@ -6232,155 +6251,160 @@ export default function Admin() {
             const promotionEndsOn = promotionPlanKey === 'free'
               ? ''
               : formatPromotionEndDate(business.promotion_ends_at)
+            const scoreColor = details.score >= 80 ? '#10B981' : details.score >= 50 ? '#F59E0B' : '#EF4444'
+            const photoSize = isDesktop ? 72 : 56
 
             return (
-              <Card key={business.id}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <article key={business.id} className="adm-surface adm-work-item">
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
                   {business.photo_url ? (
                     <img
                       src={business.photo_url}
                       alt={business.name || 'Negocio'}
-                      style={{ width: 74, height: 74, objectFit: 'contain', borderRadius: 12, background: C.bg, border: `1px solid ${C.border}`, flexShrink: 0 }}
+                      style={{ width: photoSize, height: photoSize, objectFit: 'contain', borderRadius: R.md, background: SURFACE_MUTED, border: `1px solid ${LINE}`, flexShrink: 0 }}
                     />
                   ) : (
-                    <div style={{ width: 74, height: 74, borderRadius: 12, background: C.bg, display: 'grid', placeItems: 'center', fontSize: 28, flexShrink: 0 }}>🏪</div>
+                    <div style={{ width: photoSize, height: photoSize, borderRadius: R.md, background: SURFACE_MUTED, border: `1px solid ${LINE}`, display: 'grid', placeItems: 'center', fontSize: isDesktop ? 28 : 22, flexShrink: 0 }}>🏪</div>
                   )}
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:3 }}>
-                          <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: 0, overflowWrap: 'anywhere' }}>
-                            {business.name || 'Negocio sin nombre'}
-                          </p>
-                          {promotionPlanKey !== 'free' && (
-                            <Tag bg={promotionPlan.background} color={promotionPlan.color}>
-                              {promotionPlan.label}{promotionEndsOn ? ` · hasta ${promotionEndsOn}` : ''}
-                            </Tag>
-                          )}
-                        </div>
-                        <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, overflowWrap: 'anywhere' }}>
-                          {[business.category, business.city || business.canton].filter(Boolean).join(' · ') || 'Sin categoría'}
-                        </p>
-                      </div>
-                      <Tag bg={statusMeta.bg} color={statusMeta.color}>{statusMeta.label}</Tag>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                      <div style={{ flex: 1, height: 8, background: C.border, borderRadius: 999, overflow: 'hidden' }}>
-                        <div style={{ width: `${Math.min(details.score, 100)}%`, height: '100%', background: details.score >= 80 ? '#10B981' : details.score >= 50 ? '#F59E0B' : '#EF4444' }} />
-                      </div>
-                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, whiteSpace: 'nowrap' }}>
-                        {details.score}/100
-                      </span>
-                    </div>
-
-                    {description && (
-                      <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.55, margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {description}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                      <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 15, color: INK.strong, margin: 0, overflowWrap: 'anywhere', lineHeight: 1.3 }}>
+                        {business.name || 'Negocio sin nombre'}
                       </p>
+                      <Tag size={11} bg={statusMeta.bg} color={statusMeta.color} style={{ flexShrink: 0, overflow: 'visible' }}>{statusMeta.label}</Tag>
+                    </div>
+                    <p style={{ fontFamily: PP, fontSize: 12, color: INK.soft, margin: '3px 0 0', overflowWrap: 'anywhere' }}>
+                      {[business.category, business.city || business.canton].filter(Boolean).join(' · ') || 'Sin categoría'}
+                    </p>
+                    {promotionPlanKey !== 'free' && (
+                      <div style={{ marginTop: 6 }}>
+                        <Tag size={11} bg={promotionPlan.background} color={promotionPlan.color}>
+                          {promotionPlan.label}{promotionEndsOn ? ` · hasta ${promotionEndsOn}` : ''}
+                        </Tag>
+                      </div>
                     )}
+                  </div>
+                </div>
 
-                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
-                      {details.criteria.map(item => (
-                        <span
-                          key={item.id}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <div className="adm-bar-track" style={{ flex: 1, height: 8 }}>
+                    <div className="adm-bar-fill" style={{ width: `${Math.min(details.score, 100)}%`, height: '100%', background: scoreColor }} />
+                  </div>
+                  <span className="adm-num" style={{ fontFamily: PP, fontSize: 12.5, fontWeight: 800, color: INK.strong, whiteSpace: 'nowrap' }}>
+                    {details.score}/100
+                  </span>
+                </div>
+
+                {description && (
+                  <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.base, lineHeight: 1.55, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {description}
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+                  {details.criteria.map(item => (
+                    <span
+                      key={item.id}
+                      style={{
+                        fontFamily: PP,
+                        fontWeight: 600,
+                        fontSize: 11,
+                        color: item.passed ? '#065F46' : '#B91C1C',
+                        background: item.passed ? '#ECFDF5' : '#FEF2F2',
+                        borderRadius: 999,
+                        padding: '3px 9px',
+                      }}
+                    >
+                      {item.passed ? '✓' : '×'} {item.label} (+{item.points})
+                    </span>
+                  ))}
+                </div>
+
+                <p style={{ fontFamily: PP, fontSize: 12, color: INK.soft, margin: '0 0 12px', overflowWrap: 'anywhere', lineHeight: 1.5 }}>
+                  Contacto: {contactBits.length ? contactBits.join(' · ') : 'sin contacto'}{business.verification_notes ? ` · Nota: ${business.verification_notes}` : ''}
+                </p>
+
+                <div style={{ padding: 12, borderRadius: R.md, border: `1px solid ${LINE}`, background: SURFACE_MUTED, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 12.5, color: INK.strong, margin: 0 }}>
+                      Plan de rotación en Inicio
+                    </p>
+                    <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: promotionPlan.color }}>
+                      {businessPromotionLoading.has(business.id) ? 'Guardando...' : promotionPlan.label}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {businessPromotionPlans.map(plan => {
+                      const isCurrent = promotionPlanKey === plan.key
+                      const noAvailability = plan.key !== 'free'
+                        && !isCurrent
+                        && plan.availableSlots != null
+                        && plan.availableSlots <= 0
+                      const disabled = businessPromotionUnavailable
+                        || businessPromotionLoading.has(business.id)
+                        || (plan.key === 'free' && isCurrent)
+                        || (plan.key !== 'free' && (plan.enabled === false || noAvailability))
+
+                      return (
+                        <button
+                          key={plan.key}
+                          type="button"
+                          disabled={disabled}
+                          aria-pressed={isCurrent}
+                          onClick={() => setBusinessPromotion(business, plan.key)}
+                          title={noAvailability ? 'Plan completo' : isCurrent && plan.key !== 'free' ? 'Renovar o cambiar duración' : ''}
                           style={{
                             fontFamily: PP,
                             fontWeight: 700,
-                            fontSize: 10,
-                            color: item.passed ? '#065F46' : '#B91C1C',
-                            background: item.passed ? '#ECFDF5' : '#FEF2F2',
+                            fontSize: 11.5,
                             borderRadius: 999,
-                            padding: '3px 8px',
+                            border: `1.5px solid ${isCurrent ? plan.color : LINE_STRONG}`,
+                            background: isCurrent ? plan.background : '#fff',
+                            color: isCurrent ? plan.color : INK.base,
+                            padding: '7px 11px',
+                            minHeight: 34,
+                            cursor: disabled ? 'not-allowed' : 'pointer',
+                            opacity: disabled && !isCurrent ? 0.45 : 1,
                           }}
                         >
-                          {item.passed ? '✓' : '×'} {item.label} (+{item.points})
-                        </span>
-                      ))}
-                    </div>
-
-                    <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
-                      Contacto: {contactBits.length ? contactBits.join(' · ') : 'sin contacto'}{business.verification_notes ? ` · Nota: ${business.verification_notes}` : ''}
-                    </p>
-
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <div style={{ width:'100%', padding:10, borderRadius:14, border:`1px solid ${C.border}`, background:C.bg }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:8 }}>
-                          <p style={{ fontFamily:PP, fontWeight:800, fontSize:11, color:C.text, margin:0 }}>
-                            Plan de rotación en Inicio
-                          </p>
-                          <span style={{ fontFamily:PP, fontSize:9, fontWeight:800, color:promotionPlan.color }}>
-                            {businessPromotionLoading.has(business.id) ? 'Guardando...' : promotionPlan.label}
-                          </span>
-                        </div>
-                        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                          {businessPromotionPlans.map(plan => {
-                            const isCurrent = promotionPlanKey === plan.key
-                            const noAvailability = plan.key !== 'free'
-                              && !isCurrent
-                              && plan.availableSlots != null
-                              && plan.availableSlots <= 0
-                            const disabled = businessPromotionUnavailable
-                              || businessPromotionLoading.has(business.id)
-                              || (plan.key === 'free' && isCurrent)
-                              || (plan.key !== 'free' && (plan.enabled === false || noAvailability))
-
-                            return (
-                              <button
-                                key={plan.key}
-                                type="button"
-                                disabled={disabled}
-                                onClick={() => setBusinessPromotion(business, plan.key)}
-                                title={noAvailability ? 'Plan completo' : isCurrent && plan.key !== 'free' ? 'Renovar o cambiar duración' : ''}
-                                style={{
-                                  fontFamily:PP,
-                                  fontWeight:800,
-                                  fontSize:9,
-                                  borderRadius:999,
-                                  border:`1.5px solid ${isCurrent ? plan.color : C.border}`,
-                                  background:isCurrent ? plan.background : '#fff',
-                                  color:isCurrent ? plan.color : C.mid,
-                                  padding:'7px 9px',
-                                  cursor:disabled ? 'not-allowed' : 'pointer',
-                                  opacity:disabled && !isCurrent ? 0.45 : 1,
-                                }}
-                              >
-                                {plan.shortLabel}
-                                {plan.key !== 'free' && plan.availableSlots != null ? ` · ${plan.availableSlots}` : ''}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                      {BUSINESS_VERIFICATION_ACTIONS.map(action => {
-                        const isCurrent = details.status === action.id
-                        return (
-                          <button
-                            key={action.id}
-                            type="button"
-                            onClick={() => updateBusinessVerification(business, action.id)}
-                            style={{
-                              fontFamily: PP,
-                              fontWeight: 800,
-                              fontSize: 11,
-                              borderRadius: 10,
-                              border: `1.5px solid ${isCurrent ? action.color : action.bg}`,
-                              background: action.bg,
-                              color: action.color,
-                              padding: '9px 12px',
-                              cursor: 'pointer',
-                              boxShadow: isCurrent ? `0 0 0 3px ${action.bg}` : 'none',
-                            }}
-                          >
-                            {isCurrent ? 'Actual: ' : ''}{action.label}
-                          </button>
-                        )
-                      })}
-                    </div>
+                          {plan.shortLabel}
+                          {plan.key !== 'free' && plan.availableSlots != null ? ` · ${plan.availableSlots}` : ''}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
-              </Card>
+
+                <div className="adm-actions">
+                  {BUSINESS_VERIFICATION_ACTIONS.map(action => {
+                    const isCurrent = details.status === action.id
+                    return (
+                      <button
+                        key={action.id}
+                        type="button"
+                        aria-pressed={isCurrent}
+                        onClick={() => updateBusinessVerification(business, action.id)}
+                        style={{
+                          fontFamily: PP,
+                          fontWeight: 700,
+                          fontSize: 12,
+                          borderRadius: R.sm,
+                          border: `1.5px solid ${isCurrent ? action.color : action.bg}`,
+                          background: action.bg,
+                          color: action.color,
+                          padding: '9px 12px',
+                          minHeight: 38,
+                          cursor: 'pointer',
+                          boxShadow: isCurrent ? `0 0 0 3px ${action.bg}` : 'none',
+                        }}
+                      >
+                        {isCurrent ? 'Actual: ' : ''}{action.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </article>
             )
           })}
           <AdminPagination
@@ -6394,22 +6418,23 @@ export default function Admin() {
 
       {/* ── Live ───────────────────────────────────────── */}
       {tab === 'live' && isTabDataReady('live') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Card style={{ padding: 0, overflow: 'hidden', borderRadius: 24, boxShadow: '0 24px 60px rgba(15,23,42,0.08)' }}>
+        <div className="adm-stack">
+          <BlockTitle>Monitor en vivo</BlockTitle>
+          <div className="adm-surface" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 0 }}>
-              <div style={{ padding: 20, background: 'linear-gradient(135deg,#7C3AED 0%,#2563EB 58%,#0F766E 100%)', color: '#fff' }}>
-                <p style={{ fontFamily: PP, fontSize: 11, fontWeight: 800, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.86 }}>
+              <div style={{ padding: 20, borderLeft: '4px solid #7C3AED', background: tint('#7C3AED', 5) }}>
+                <p style={{ ...EYEBROW, marginBottom: 8 }}>
                   Monitor en vivo
                 </p>
-                <h3 style={{ fontFamily: PP, fontSize: 28, fontWeight: 800, lineHeight: 1.05, margin: '0 0 10px', letterSpacing: -0.7 }}>
+                <h3 style={{ fontFamily: PP, fontSize: 22, fontWeight: 800, lineHeight: 1.15, margin: '0 0 8px', letterSpacing: -0.6, color: INK.strong }}>
                   Actividad de Latido
                 </h3>
-                <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.5, margin: '0 0 18px', opacity: 0.86 }}>
+                <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.55, margin: '0 0 14px', color: INK.base }}>
                   Online ahora en tiempo real y métricas históricas de la última consulta.
                 </p>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.24)', borderRadius: 999, padding: '7px 10px', marginBottom: 12 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 999, background: presenceStatusMeta.color, boxShadow: `0 0 0 3px ${presenceStatusMeta.color}22` }} />
-                  <span style={{ fontFamily: PP, fontWeight: 800, fontSize: 11, color: '#fff' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#fff', border: `1px solid ${LINE}`, borderRadius: 999, padding: '6px 11px', marginBottom: 14 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 999, background: presenceStatusMeta.color, boxShadow: `0 0 0 3px ${veil(presenceStatusMeta.color, 18)}` }} />
+                  <span style={{ fontFamily: PP, fontWeight: 600, fontSize: 12, color: INK.strong }}>
                     Realtime: {presenceStatusMeta.label}
                   </span>
                 </div>
@@ -6419,159 +6444,149 @@ export default function Admin() {
                     { label: 'Hoy', value: activeUsersToday.length },
                     { label: '7 dias', value: activeUsersWeek.length },
                   ].map(item => (
-                    <div key={item.label} style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.24)', borderRadius: 16, padding: '11px 12px' }}>
-                      <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 22, margin: '0 0 3px', lineHeight: 1 }}>{loading ? '...' : item.value}</p>
-                      <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, margin: 0, opacity: 0.82 }}>{item.label}</p>
+                    <div key={item.label} className="adm-mini-stat" style={{ background: '#fff' }}>
+                      <p className="adm-mini-stat__value adm-num" style={{ color: '#7C3AED' }}>{loading ? '...' : item.value}</p>
+                      <p className="adm-mini-stat__label">{item.label}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ padding: 20, background: '#fff' }}>
+              <div style={{ padding: 20, background: '#fff', minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
-                  <div>
-                    <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, color: C.light, textTransform: 'uppercase', letterSpacing: 0.7, margin: '0 0 5px' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 600, color: INK.base, margin: '0 0 6px' }}>
                       {analyticsUnavailable ? 'Últimas conexiones en 14 días' : 'Visitantes únicos en 14 días'}
                     </p>
-                    <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 30, color: C.text, margin: 0, lineHeight: 1 }}>
+                    <p className="adm-num" style={{ fontFamily: PP, fontWeight: 800, fontSize: 28, color: INK.strong, margin: 0, lineHeight: 1, letterSpacing: -1 }}>
                       {loading ? '...' : liveLast14Total}
                     </p>
                   </div>
-                  <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 800, color: liveWeeklyTrend >= 0 ? '#047857' : '#B91C1C', background: liveWeeklyTrend >= 0 ? '#D1FAE5' : '#FEE2E2', borderRadius: 999, padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                  <span className="adm-num" style={{ fontFamily: PP, fontSize: 11.5, fontWeight: 700, color: liveWeeklyTrend >= 0 ? '#047857' : '#B91C1C', background: liveWeeklyTrend >= 0 ? '#D1FAE5' : '#FEE2E2', borderRadius: 999, padding: '5px 10px', whiteSpace: 'nowrap' }}>
                     {liveWeeklyTrend > 0 ? `+${liveWeeklyTrend}%` : liveWeeklyTrend < 0 ? `${liveWeeklyTrend}%` : 'estable'}
                   </span>
                 </div>
                 <SparkBarChart data={liveLast14Days} color="#7C3AED" />
               </div>
             </div>
-          </Card>
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 14 }}>
-            <Card style={{ padding: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Usuarios online</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Presencia conectada en tiempo real.</p>
-                </div>
-                <span style={{ width: 44, height: 44, borderRadius: 16, background: '#F3E8FF', color: '#7C3AED', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800 }}>
-                  {onlineUsers.length}
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <BlockTitle>Personas activas</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '300px', alignItems: 'start' }}>
+            <div className="adm-surface" style={{ padding: 16, minWidth: 0 }}>
+              <CardHeader
+                title="Usuarios online"
+                subtitle="Presencia conectada en tiempo real."
+                aside={(
+                  <span className="adm-num" style={{ minWidth: 40, height: 40, padding: '0 8px', boxSizing: 'border-box', borderRadius: R.md, background: '#F3E8FF', color: '#7C3AED', display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, fontSize: 15 }}>
+                    {onlineUsers.length}
+                  </span>
+                )}
+              />
+              <div className="adm-rows">
                 {onlineUsers.slice(0, 7).map(profile => (
-                  <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.border}`, borderRadius: 14, padding: '9px 10px', background: '#F8FAFF' }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 999, background: '#10B981', boxShadow: '0 0 0 4px rgba(16,185,129,0.14)' }} />
+                  <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0' }}>
+                    <span style={{ width: 9, height: 9, borderRadius: 999, background: '#10B981', boxShadow: '0 0 0 4px rgba(16,185,129,0.14)', flexShrink: 0, margin: '0 3px' }} />
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontFamily: PP, fontWeight: 600, fontSize: 13, color: INK.strong, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {profile.name || profile.email || 'Usuario'}
                       </p>
-                      <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0' }}>
+                      <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '2px 0 0' }}>
                         {profile.canton || 'Sin canton'}
                       </p>
                     </div>
-                    <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, color: '#047857', background: '#D1FAE5', borderRadius: 999, padding: '4px 7px' }}>
+                    <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: '#047857', background: '#D1FAE5', borderRadius: 999, padding: '3px 8px' }}>
                       online
                     </span>
                   </div>
                 ))}
-                {!onlineUsers.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, padding: '18px 0' }}>
-                    No hay usuarios online ahora mismo.
-                  </p>
-                )}
               </div>
-            </Card>
+              {!onlineUsers.length && (
+                <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.soft, margin: 0, padding: '12px 0' }}>
+                  No hay usuarios online ahora mismo.
+                </p>
+              )}
+            </div>
 
-            <Card style={{ padding: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
-                <div>
-                  <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Últimas señales</p>
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>Usuarios con actividad más reciente.</p>
-                </div>
-                <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 800, color: C.primary, background: C.primaryLight, borderRadius: 999, padding: '7px 10px' }}>
-                  {recentLiveUsers.length}
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="adm-surface" style={{ padding: 16, minWidth: 0 }}>
+              <CardHeader
+                title="Últimas señales"
+                subtitle="Usuarios con actividad más reciente."
+                aside={(
+                  <span className="adm-num" style={{ fontFamily: PP, fontSize: 12, fontWeight: 700, color: C.primary, background: C.primaryLight, borderRadius: 999, padding: '5px 10px' }}>
+                    {recentLiveUsers.length}
+                  </span>
+                )}
+              />
+              <div className="adm-rows">
                 {recentLiveUsers.map(profile => {
                   const isOnline = onlineUserIds.has(profile.id)
                   return (
-                    <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${C.border}`, padding: '8px 0' }}>
-                      <span style={{ flex: '0 0 auto', width: 34, height: 34, borderRadius: 12, background: isOnline ? '#D1FAE5' : C.bg, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 800, color: isOnline ? '#047857' : C.mid }}>
+                    <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0' }}>
+                      <span style={{ flex: '0 0 auto', width: 34, height: 34, borderRadius: 999, background: isOnline ? '#D1FAE5' : SURFACE_MUTED, border: `1px solid ${isOnline ? '#A7F3D0' : LINE}`, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 700, fontSize: 13, color: isOnline ? '#047857' : INK.base }}>
                         {(profile.name || profile.email || 'U').slice(0, 1).toUpperCase()}
                       </span>
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 12, color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p style={{ fontFamily: PP, fontWeight: 600, fontSize: 13, color: INK.strong, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {profile.name || profile.email || 'Usuario'}
                         </p>
-                        <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0' }}>
+                        <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '2px 0 0' }}>
                           {profile.canton || 'Sin canton'}
                         </p>
                       </div>
-                      <span style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, color: isOnline ? '#047857' : C.light, background: isOnline ? '#D1FAE5' : C.bg, borderRadius: 999, padding: '4px 7px', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: PP, fontSize: 11, fontWeight: 700, color: isOnline ? '#047857' : INK.soft, background: isOnline ? '#D1FAE5' : SURFACE_MUTED, borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>
                         {isOnline ? 'online' : fmtActivity(profile.last_seen_at)}
                       </span>
                     </div>
                   )
                 })}
-                {!recentLiveUsers.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0, padding: '18px 0' }}>
-                    Sin actividad registrada todavía.
-                  </p>
-                )}
               </div>
-            </Card>
+              {!recentLiveUsers.length && (
+                <p style={{ fontFamily: PP, fontSize: 12.5, color: INK.soft, margin: 0, padding: '12px 0' }}>
+                  Sin actividad registrada todavía.
+                </p>
+              )}
+            </div>
 
-            <Card style={{ padding: 16 }}>
-              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Actividad por cantón</p>
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Top de usuarios activos esta semana.</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {activeCantonRows.map(row => (
-                  <div key={row.label}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
-                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text }}>{row.label}</span>
-                      <span style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.primary }}>{row.value}</span>
-                    </div>
-                    <div style={{ height: 8, borderRadius: 999, background: C.bg, overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.max(8, Math.round((row.value / activeCantonMax) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#7C3AED,#10B981)' }} />
-                    </div>
-                  </div>
-                ))}
-                {!activeCantonRows.length && (
-                  <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: 0 }}>
-                    Todavía no hay actividad semanal para agrupar.
-                  </p>
-                )}
-              </div>
-            </Card>
+            <InsightBarList
+              title="Actividad por cantón"
+              subtitle="Top de usuarios activos esta semana."
+              rows={activeCantonRows}
+              color="#7C3AED"
+              showShare={false}
+              emptyText="Todavía no hay actividad semanal para agrupar."
+            />
+          </div>
 
-            <Card style={{ padding: 16, background: 'linear-gradient(180deg,#FFFFFF,#F8FAFF)' }}>
-              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Lectura rápida</p>
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px' }}>Resumen para decidir si hay que activar, revisar o esperar.</p>
-              <div style={{ display: 'grid', gap: 9 }}>
+          <BlockTitle>Lectura</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': '300px', alignItems: 'start' }}>
+            <div className="adm-surface" style={{ padding: 16, minWidth: 0 }}>
+              <CardHeader title="Lectura rápida" subtitle="Resumen para decidir si hay que activar, revisar o esperar." />
+              <div style={{ display: 'grid', gap: 8 }}>
                 {[
                   { label: 'Tracción diaria', value: `${liveTodayRate}%`, note: `${activeUsersToday.length} usuarios activos hoy`, color: C.primary },
                   { label: 'Retención semanal', value: `${liveWeekRate}%`, note: `${activeUsersWeek.length} usuarios activos en 7 días`, color: '#059669' },
                   { label: 'Sin registro', value: liveUntrackedUsers, note: 'usuarios antiguos sin last_seen_at todavía', color: '#D97706' },
                   { label: 'Reactivación real', value: liveInactiveUsers, note: 'con tracking, sin señal en 30 días', color: '#B45309' },
                 ].map(item => (
-                  <div key={item.label} style={{ display: 'grid', gridTemplateColumns: '76px 1fr', gap: 10, alignItems: 'center', border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 11px', background: '#fff' }}>
-                    <strong style={{ fontFamily: PP, fontSize: 22, fontWeight: 800, color: item.color, lineHeight: 1 }}>{item.value}</strong>
-                    <div>
-                      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: 0 }}>{item.label}</p>
-                      <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: '2px 0 0' }}>{item.note}</p>
+                  <div key={item.label} style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: 12, alignItems: 'center', border: `1px solid ${LINE}`, borderRadius: R.md, padding: '10px 12px', background: SURFACE_MUTED }}>
+                    <strong className="adm-num" style={{ fontFamily: PP, fontSize: 21, fontWeight: 800, color: item.color, lineHeight: 1 }}>{item.value}</strong>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 600, color: INK.strong, margin: 0 }}>{item.label}</p>
+                      <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '2px 0 0' }}>{item.note}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
 
-            <Card style={{ padding: 16, background: '#fff' }}>
-              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>Cómo se mide</p>
-              <p style={{ fontFamily: PP, fontSize: 12, color: C.light, margin: '0 0 14px', lineHeight: 1.5 }}>
-                La actividad empieza a ser fiable desde que Latido guarda presencia y última conexión.
-              </p>
-              <div style={{ display: 'grid', gap: 9 }}>
+            <div className="adm-surface" style={{ padding: 16, minWidth: 0 }}>
+              <CardHeader
+                title="Cómo se mide"
+                subtitle="La actividad empieza a ser fiable desde que Latido guarda presencia y última conexión."
+                icon={<AdminIcon name="info" size={15} />}
+              />
+              <div className="adm-rows">
                 {[
                   { label: 'Online ahora', note: 'Supabase Presence: usuarios con sesión conectada en este momento.', color: '#7C3AED' },
                   { label: 'Activos hoy/semana/mes', note: 'Usuarios cuyo profiles.last_seen_at cae dentro del día, los últimos 7 o los últimos 30 días.', color: C.primary },
@@ -6579,35 +6594,31 @@ export default function Admin() {
                   { label: 'Conexión live', note: `Estado actual del canal realtime: ${presenceStatusMeta.label}.`, color: presenceStatusMeta.color },
                   { label: 'Sin registro', note: 'Usuarios antiguos que aún no han vuelto a abrir la app desde que se activó el tracking.', color: '#D97706' },
                 ].map(item => (
-                  <div key={item.label} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 0', borderBottom: `1px solid ${C.border}` }}>
-                    <span style={{ width: 9, height: 9, borderRadius: 999, background: item.color, marginTop: 5, flexShrink: 0 }} />
-                    <div>
-                      <p style={{ fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text, margin: '0 0 2px' }}>{item.label}</p>
-                      <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>{item.note}</p>
+                  <div key={item.label} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 0' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 3, background: item.color, marginTop: 6, flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontFamily: PP, fontSize: 13, fontWeight: 600, color: INK.strong, margin: '0 0 2px' }}>{item.label}</p>
+                      <p style={{ fontFamily: PP, fontSize: 12, color: INK.base, margin: 0, lineHeight: 1.5 }}>{item.note}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       )}
 
       {/* ── Creadores ──────────────────────────────────── */}
       {tab === 'creators' && isTabDataReady('creators') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="adm-stack">
           {creatorsUnavailable && (
-            <Card style={{ borderColor: '#FCD34D', background: '#FFFBEB' }}>
-              <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13, color: '#92400E', margin: '0 0 4px' }}>
-                Sin acceso a la plataforma de creadores
-              </p>
-              <p style={{ fontFamily: PP, fontSize: 11, color: '#B45309', margin: 0, lineHeight: 1.5 }}>
-                Comprueba que tu cuenta esté en business_promotion_admins para que las políticas RLS de creator_profiles te dejen leer todo el directorio.
-              </p>
-            </Card>
+            <AdminNotice title="Sin acceso a la plataforma de creadores">
+              Comprueba que tu cuenta esté en business_promotion_admins para que las políticas RLS de creator_profiles te dejen leer todo el directorio.
+            </AdminNotice>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${isDesktop ? 340 : 280}px), 1fr))`, gap: 12 }}>
+          <BlockTitle>Directorio</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': isDesktop ? '340px' : '280px' }}>
             <AdminSectionCard
               title="Embudo del directorio"
               subtitle="Recorrido acumulado desde que una tarjeta aparece hasta que la comunidad la guarda."
@@ -6620,7 +6631,7 @@ export default function Admin() {
                 { label:'Clics a redes del creador', value:creatorStats.socialClicks, color:'#DB2777' },
               ]} />
               {creatorMetricIndex.updatedAt && (
-                <p style={{ fontFamily: PP, fontSize: 10, color: C.light, margin: '12px 0 0' }}>
+                <p className="adm-card-note">
                   Contadores acumulados · último registro {fmtActivity(creatorMetricIndex.updatedAt)}
                 </p>
               )}
@@ -6642,14 +6653,16 @@ export default function Admin() {
                     key={row.label}
                     type="button"
                     onClick={row.filter}
+                    className="adm-action"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: 10,
                       width: '100%',
-                      border: `1px solid ${C.border}`,
-                      borderRadius: 14,
+                      minHeight: 52,
+                      border: `1px solid ${LINE}`,
+                      borderRadius: R.md,
                       padding: '10px 12px',
                       background: '#fff',
                       cursor: 'pointer',
@@ -6657,17 +6670,21 @@ export default function Admin() {
                     }}
                   >
                     <span style={{ minWidth: 0 }}>
-                      <span style={{ display: 'block', fontFamily: PP, fontSize: 12, fontWeight: 800, color: C.text }}>{row.label}</span>
-                      <span style={{ display: 'block', fontFamily: PP, fontSize: 10, color: C.light, marginTop: 1 }}>{row.hint}</span>
+                      <span style={{ display: 'block', fontFamily: PP, fontSize: 13, fontWeight: 600, color: INK.strong }}>{row.label}</span>
+                      <span style={{ display: 'block', fontFamily: PP, fontSize: 11.5, color: INK.soft, marginTop: 1 }}>{row.hint}</span>
                     </span>
-                    <span style={{ fontFamily: PP, fontSize: 18, fontWeight: 800, color: row.color, flexShrink: 0 }}>{row.value}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <span className="adm-num" style={{ fontFamily: PP, fontSize: 18, fontWeight: 800, color: row.color }}>{row.value}</span>
+                      <AdminIcon name="next" size={14} style={{ color: INK.soft }} />
+                    </span>
                   </button>
                 ))}
               </div>
             </AdminSectionCard>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${isDesktop ? 320 : 280}px), 1fr))`, gap: 12 }}>
+          <BlockTitle>Rankings</BlockTitle>
+          <div className="adm-grid" style={{ '--adm-min': isDesktop ? '320px' : '280px' }}>
             <InsightBarList
               title="Creadores con más tracción"
               subtitle="Vistas de perfil + clics en su contenido."
@@ -6712,6 +6729,7 @@ export default function Admin() {
             />
           </div>
 
+          <BlockTitle>Listado de creadores</BlockTitle>
           <AdminChipFilter
             label="Filtro rápido por revisión"
             value={creatorReviewFilter}
@@ -6801,7 +6819,7 @@ export default function Admin() {
           </AdminFilterBar>
 
           {isDesktop ? (
-            <Card style={{ padding: 12 }}>
+            <div className="adm-surface" style={{ padding: 12 }}>
               <AdminDataTable
                 columns={creatorTableColumns}
                 rows={pagedCreators.items}
@@ -6818,7 +6836,7 @@ export default function Admin() {
                 total={filteredCreators.length}
                 onChange={setCreatorPage}
               />
-            </Card>
+            </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {!filteredCreators.length ? (
@@ -6839,7 +6857,7 @@ export default function Admin() {
 
       {/* ── Usuarios ───────────────────────────────────── */}
       {tab === 'users' && isTabDataReady('users') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="adm-stack" style={{ gap: 12 }}>
           <AdminFilterBar
             chips={(
               <ActiveFilters
@@ -6923,41 +6941,50 @@ export default function Admin() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredUsers.length === 0 ? (
                 <EmptyState variant="card" emoji="👤" text="No se encontraron usuarios." />
-              ) : pagedUsers.items.map(profile => (
-                <div key={profile.id} className="adm-surface" style={{ padding: '12px 14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13.5, color: INK.strong, margin: 0, overflowWrap: 'anywhere' }}>
-                          {profile.name || 'Sin nombre'}
+              ) : (
+                <div className="adm-surface adm-rows" style={{ overflow: 'hidden' }}>
+                  {pagedUsers.items.map(profile => (
+                    <div key={profile.id} style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '12px 14px' }}>
+                      <span
+                        aria-hidden="true"
+                        style={{ width: 36, height: 36, borderRadius: 999, flexShrink: 0, display: 'grid', placeItems: 'center', fontFamily: PP, fontWeight: 700, fontSize: 14, color: profile.banned ? '#B91C1C' : C.primary, background: profile.banned ? '#FEE2E2' : C.primaryLight }}
+                      >
+                        {(profile.name || profile.email || 'U').slice(0, 1).toUpperCase()}
+                      </span>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                          <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 14, color: INK.strong, margin: 0, overflowWrap: 'anywhere' }}>
+                            {profile.name || 'Sin nombre'}
+                          </p>
+                          {profile.banned && (
+                            <span style={{ fontFamily: PP, fontSize: 10.5, fontWeight: 700, letterSpacing: 0.4, color: '#B91C1C', background: '#FEE2E2', borderRadius: 999, padding: '2px 8px' }}>
+                              BANEADO
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontFamily: PP, fontSize: 12, color: INK.base, margin: '2px 0 0', overflowWrap: 'anywhere' }}>
+                          {profile.email || profile.id}
                         </p>
-                        {profile.banned && (
-                          <span style={{ fontFamily: PP, fontSize: 9.5, fontWeight: 800, letterSpacing: 0.4, color: '#B91C1C', background: '#FEE2E2', borderRadius: 999, padding: '2px 8px' }}>
-                            BANEADO
-                          </span>
+                        <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '2px 0 0' }}>
+                          {[profile.canton, profile.created_at ? `desde ${fmtDateShort(profile.created_at)}` : ''].filter(Boolean).join(' · ')}
+                        </p>
+                        {profile.banned && profile.banned_reason && (
+                          <p style={{ fontFamily: PP, fontSize: 12, color: '#B91C1C', margin: '5px 0 0' }}>
+                            Motivo: {profile.banned_reason}
+                          </p>
                         )}
                       </div>
-                      <p style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, margin: '3px 0 0', overflowWrap: 'anywhere' }}>
-                        {profile.email || profile.id}
-                        {profile.canton ? ` · ${profile.canton}` : ''}
-                        {profile.created_at ? ` · desde ${fmtDateShort(profile.created_at)}` : ''}
-                      </p>
-                      {profile.banned && profile.banned_reason && (
-                        <p style={{ fontFamily: PP, fontSize: 11, color: '#B91C1C', margin: '5px 0 0' }}>
-                          Motivo: {profile.banned_reason}
-                        </p>
-                      )}
+                      <AdminButton
+                        variant={profile.banned ? 'success' : 'danger'}
+                        icon={profile.banned ? 'reset' : 'ban'}
+                        onClick={() => setUserBanned(profile, !profile.banned)}
+                      >
+                        {profile.banned ? 'Desbanear' : 'Banear'}
+                      </AdminButton>
                     </div>
-                    <AdminButton
-                      variant={profile.banned ? 'success' : 'danger'}
-                      icon={profile.banned ? 'reset' : 'ban'}
-                      onClick={() => setUserBanned(profile, !profile.banned)}
-                    >
-                      {profile.banned ? 'Desbanear' : 'Banear'}
-                    </AdminButton>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
               <AdminPagination
                 page={pagedUsers.page}
                 pageCount={pagedUsers.pageCount}
@@ -6971,7 +6998,7 @@ export default function Admin() {
 
       {/* ── Contenido ──────────────────────────────────── */}
       {tab === 'content' && isTabDataReady('content') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="adm-stack" style={{ gap: 12 }}>
           <AdminFilterBar
             chips={(
               <ActiveFilters
@@ -7018,76 +7045,63 @@ export default function Admin() {
               <option value="hidden">Ocultos</option>
             </AdminFilterSelect>
           </AdminFilterBar>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
-          {/* Anuncios */}
-          <div>
-            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13, color: C.mid, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-              Anuncios ({filteredListings.length})
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {filteredListings.length === 0 ? (
-                <EmptyState variant="card" emoji="📭" text="Sin anuncios con estos filtros." />
-              ) : pagedListings.items.map(item => (
-                <Card key={item.id} style={{ padding: '12px 14px' }}>
-                  {renderContentSummary('listing', item.id)}
-                  <div style={{ display: 'flex', gap: 6, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Tag bg={item.active ? '#D1FAE5' : '#FEE2E2'} color={item.active ? '#065F46' : '#B91C1C'}>
-                      {item.active ? 'Activo' : 'Oculto'}
-                    </Tag>
-                    <span style={{ fontFamily: PP, fontSize: 11, color: C.light, flex: 1 }}>{fmtDate(item.created_at)}</span>
-                    <AdminButton
-                      variant={item.active ? 'danger' : 'success'}
-                      onClick={() => setContentActive('listing', item.id, !item.active)
-                        .catch(error => toast.error(error.message || 'No se pudo actualizar el anuncio'))}
-                    >
-                      {item.active ? 'Ocultar' : 'Activar'}
-                    </AdminButton>
-                  </div>
-                </Card>
-              ))}
-              <AdminPagination
-                page={pagedListings.page}
-                pageCount={pagedListings.pageCount}
-                total={filteredListings.length}
-                onChange={setListingPage}
-              />
-            </div>
-          </div>
 
-          {/* Empleos */}
-          <div>
-            <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 13, color: C.mid, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-              Empleos ({filteredJobs.length})
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {filteredJobs.length === 0 ? (
-                <EmptyState variant="card" emoji="📭" text="Sin empleos con estos filtros." />
-              ) : pagedJobs.items.map(item => (
-                <Card key={item.id} style={{ padding: '12px 14px' }}>
-                  {renderContentSummary('job', item.id)}
-                  <div style={{ display: 'flex', gap: 6, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Tag bg={item.active ? '#D1FAE5' : '#FEE2E2'} color={item.active ? '#065F46' : '#B91C1C'}>
-                      {item.active ? 'Activo' : 'Oculto'}
-                    </Tag>
-                    <span style={{ fontFamily: PP, fontSize: 11, color: C.light, flex: 1 }}>{fmtDate(item.created_at)}</span>
-                    <AdminButton
-                      variant={item.active ? 'danger' : 'success'}
-                      onClick={() => setContentActive('job', item.id, !item.active)
-                        .catch(error => toast.error(error.message || 'No se pudo actualizar el empleo'))}
-                    >
-                      {item.active ? 'Ocultar' : 'Activar'}
-                    </AdminButton>
+          <div className="adm-grid" style={{ '--adm-min': '320px', alignItems: 'start' }}>
+            {[
+              {
+                id: 'listing',
+                title: 'Anuncios',
+                items: filteredListings,
+                paged: pagedListings,
+                setPage: setListingPage,
+                emptyText: 'Sin anuncios con estos filtros.',
+                errorText: 'No se pudo actualizar el anuncio',
+              },
+              {
+                id: 'job',
+                title: 'Empleos',
+                items: filteredJobs,
+                paged: pagedJobs,
+                setPage: setJobPage,
+                emptyText: 'Sin empleos con estos filtros.',
+                errorText: 'No se pudo actualizar el empleo',
+              },
+            ].map(group => (
+              <section key={group.id} style={{ minWidth: 0 }}>
+                <BlockTitle>{group.title} ({group.items.length})</BlockTitle>
+                {group.items.length === 0 ? (
+                  <EmptyState variant="card" emoji="📭" text={group.emptyText} />
+                ) : (
+                  <div className="adm-surface adm-rows" style={{ overflow: 'hidden' }}>
+                    {group.paged.items.map(item => (
+                      <div key={item.id} style={{ padding: '14px 16px', minWidth: 0 }}>
+                        {renderContentSummary(group.id, item.id)}
+                        <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <Tag size={11} bg={item.active ? '#D1FAE5' : '#FEE2E2'} color={item.active ? '#065F46' : '#B91C1C'}>
+                            {item.active ? 'Activo' : 'Oculto'}
+                          </Tag>
+                          <span style={{ fontFamily: PP, fontSize: 11.5, color: INK.soft, flex: 1, minWidth: 0 }}>{fmtDate(item.created_at)}</span>
+                          <AdminButton
+                            variant={item.active ? 'danger' : 'success'}
+                            icon={item.active ? 'hide' : 'show'}
+                            onClick={() => setContentActive(group.id, item.id, !item.active)
+                              .catch(error => toast.error(error.message || group.errorText))}
+                          >
+                            {item.active ? 'Ocultar' : 'Activar'}
+                          </AdminButton>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </Card>
-              ))}
-              <AdminPagination
-                page={pagedJobs.page}
-                pageCount={pagedJobs.pageCount}
-                total={filteredJobs.length}
-                onChange={setJobPage}
-              />
-            </div>
-          </div>
+                )}
+                <AdminPagination
+                  page={group.paged.page}
+                  pageCount={group.paged.pageCount}
+                  total={group.items.length}
+                  onChange={group.setPage}
+                />
+              </section>
+            ))}
           </div>
         </div>
       )}
@@ -7098,65 +7112,49 @@ export default function Admin() {
         <>
           <button
             type="button"
-            className="latido-overlay-backdrop latido-backdrop-hitbox"
+            className="adm-sheet-backdrop"
             aria-label="Cerrar menú CRM"
             onClick={() => setCrmMenuOpen(false)}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 78,
-              background: 'rgba(15,23,42,0.22)',
-              border: 'none',
-              cursor: 'default',
-            }}
           />
           <div
-            className="latido-sheet-panel"
+            className="adm-sheet"
             role="dialog"
+            aria-modal="true"
             aria-label="Control CRM Latido"
-            style={{
-              position: 'fixed',
-              left: 12,
-              right: 12,
-              bottom: 'calc(82px + env(safe-area-inset-bottom))',
-              zIndex: 79,
-              maxWidth: 620,
-              margin: '0 auto',
-              background: '#fff',
-              border: '1px solid rgba(203,213,225,0.95)',
-              borderRadius: 26,
-              boxShadow: '0 24px 74px rgba(15,23,42,0.24)',
-              padding: 14,
-            }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-              <div>
-                <p style={{ fontFamily: PP, fontWeight: 800, fontSize: 15, color: C.text, margin: '0 0 3px' }}>
-                  Control CRM Latido
-                </p>
-                <p style={{ fontFamily: PP, fontSize: 11, color: C.light, margin: 0, lineHeight: 1.45 }}>
+            <span className="adm-sheet__handle" aria-hidden="true" />
+            <div className="adm-sheet__header">
+              <div style={{ minWidth: 0 }}>
+                <p className="adm-sheet__title">Control CRM Latido</p>
+                <p className="adm-sheet__subtitle">
                   Accesos completos del panel, sin duplicar información en la página.
                 </p>
               </div>
               <button
                 type="button"
+                className="adm-icon-btn"
+                aria-label="Cerrar"
                 onClick={() => setCrmMenuOpen(false)}
-                style={{ width: 34, height: 34, borderRadius: 13, border: `1px solid ${C.border}`, background: C.bg, color: C.mid, cursor: 'pointer', fontFamily: PP, fontWeight: 800 }}
               >
-                ×
+                <AdminIcon name="close" size={16} strokeWidth={2.4} />
               </button>
             </div>
-            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 12 }}>
-              <Tag bg={deltaStatusBg} color={deltaStatusColor}>{deltaStatusLabel}</Tag>
-              <Tag bg={C.bg} color={C.mid}>Carga delta</Tag>
+            <div className="adm-sheet__status">
+              <Tag bg={deltaStatusBg} color={deltaStatusColor} size={11}>{deltaStatusLabel}</Tag>
+              <Tag bg="#fff" color={INK.base} size={11} style={{ border: `1px solid ${LINE}` }}>Carga delta</Tag>
+              <Tag
+                bg={totalPendingActions ? '#FEF3C7' : '#D1FAE5'}
+                color={totalPendingActions ? '#92400E' : POSITIVE}
+                size={11}
+              >
+                {totalPendingActions} pendientes
+              </Tag>
             </div>
-            <div style={{ display: 'grid', gap: 10 }}>
+            <div className="adm-sheet__body">
               {NAV_GROUPS.map(group => (
-                <div key={group.label} style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 10, background: '#F8FAFC' }}>
-                  <p style={{ fontFamily: PP, fontSize: 10, fontWeight: 800, letterSpacing: 0.7, textTransform: 'uppercase', color: C.light, margin: '0 0 8px' }}>
-                    {group.label}
-                  </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(132px, 1fr))', gap: 7 }}>
+                <div key={group.label}>
+                  <p className="adm-sheet__group-label">{group.label}</p>
+                  <div className="adm-sheet__list">
                     {group.items.map(id => {
                       const item = navById.get(id)
                       if (!item) return null
@@ -7165,30 +7163,24 @@ export default function Admin() {
                         <button
                           key={item.id}
                           type="button"
+                          data-nav-id={item.id}
                           onClick={() => switchTab(item.id)}
-                          className="adm-nav-item"
+                          className="adm-sheet-link"
                           data-active={active}
-                          style={{
-                            border: `1px solid ${active ? veil(item.color, 40) : LINE_STRONG}`,
-                            borderRadius: R.md,
-                            background: active ? item.bg : '#fff',
-                            color: active ? item.color : INK.strong,
-                            cursor: 'pointer',
-                            padding: '9px 9px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            textAlign: 'left',
-                            boxShadow: active ? SH.sm : 'none',
-                          }}
+                          aria-current={active ? 'page' : undefined}
+                          style={{ '--item-color': item.color }}
                         >
-                          <span style={{ width: 29, height: 29, borderRadius: 9, background: active ? '#fff' : SURFACE_MUTED, color: active ? item.color : INK.soft, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                            <AdminIcon name={item.icon} size={15} />
+                          <span className="adm-sheet-link__icon">
+                            <AdminIcon name={item.icon} size={17} strokeWidth={2.2} />
                           </span>
-                          <span style={{ minWidth: 0 }}>
-                            <span style={{ display: 'block', fontFamily: PP, fontWeight: 800, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
-                            <span className="adm-num" style={{ display: 'block', fontFamily: PP, fontWeight: 600, fontSize: 9, color: active ? item.color : INK.soft, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</span>
+                          <span className="adm-sheet-link__text">
+                            <span className="adm-sheet-link__label">{item.label}</span>
+                            <span className="adm-sheet-link__value adm-num">{item.value}</span>
                           </span>
+                          {Number(item.alert) > 0 && (
+                            <span className="adm-count-badge adm-num" style={{ '--item-color': item.color }}>{item.alert}</span>
+                          )}
+                          <AdminIcon name="next" size={16} className="adm-sheet-link__chevron" />
                         </button>
                       )
                     })}
@@ -7201,104 +7193,48 @@ export default function Admin() {
       )}
 
       {!isDesktop && (
-      <nav
-        aria-label="Navegación admin"
-        style={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 80,
-          width: '100%',
-          boxSizing: 'border-box',
-          display: 'flex',
-          gap: 7,
-          overflowX: 'auto',
-          padding: '8px max(12px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-right))',
-          background: 'rgba(255,255,255,0.94)',
-          borderTop: '1px solid rgba(203,213,225,0.9)',
-          boxShadow: '0 -18px 58px rgba(15,23,42,0.14)',
-          backdropFilter: 'blur(18px)',
-          WebkitBackdropFilter: 'blur(18px)',
-        }}
-      >
-        {BOTTOM_NAV_ITEMS.map(item => {
-          const active = tab === item.id
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => switchTab(item.id)}
-              className="adm-nav-item"
-              data-active={active}
-              aria-current={active ? 'page' : undefined}
-              style={{
-                flex: '1 1 0',
-                minWidth: 0,
-                minHeight: 58,
-                borderRadius: R.md,
-                border: `1px solid ${active ? veil(item.color, 34) : 'transparent'}`,
-                background: active ? item.bg : 'transparent',
-                color: active ? item.color : INK.base,
-                cursor: 'pointer',
-                padding: '8px 3px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 4,
-                textAlign: 'center',
-                boxShadow: active ? SH.sm : 'none',
-                position: 'relative',
-              }}
-            >
-              <span style={{ width: 30, height: 30, borderRadius: 10, background: active ? '#fff' : SURFACE_MUTED, color: active ? item.color : INK.soft, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                <AdminIcon name={item.icon} size={16} strokeWidth={active ? 2.4 : 2} />
-              </span>
-              {Number(item.alert) > 0 && (
-                <span className="adm-num" style={{ position: 'absolute', top: 6, right: '50%', marginRight: -22, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: item.color, color: '#fff', fontFamily: PP, fontSize: 9, fontWeight: 800, display: 'grid', placeItems: 'center' }}>
-                  {item.alert}
+        <nav className="adm-tabbar" aria-label="Navegación admin">
+          {BOTTOM_NAV_ITEMS.map(item => {
+            const active = tab === item.id && !crmMenuOpen
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-nav-id={item.id}
+                onClick={() => switchTab(item.id)}
+                className="adm-tabbar__item"
+                data-active={active}
+                aria-current={active ? 'page' : undefined}
+                style={{ '--item-color': item.color }}
+              >
+                <span className="adm-tabbar__icon">
+                  <AdminIcon name={item.icon} size={20} strokeWidth={active ? 2.3 : 1.9} />
+                  {Number(item.alert) > 0 && (
+                    <span className="adm-tabbar__badge adm-num" style={{ '--badge-color': item.color }}>{item.alert}</span>
+                  )}
                 </span>
+                <span className="adm-tabbar__label">{item.short || item.label}</span>
+              </button>
+            )
+          })}
+          <button
+            type="button"
+            data-nav-menu
+            onClick={() => setCrmMenuOpen(open => !open)}
+            className="adm-tabbar__item"
+            data-active={menuNavActive}
+            aria-expanded={crmMenuOpen}
+            aria-haspopup="dialog"
+          >
+            <span className="adm-tabbar__icon">
+              <AdminIcon name="menu" size={20} strokeWidth={menuNavActive ? 2.3 : 1.9} />
+              {hiddenNavAlerts > 0 && (
+                <span className="adm-tabbar__badge adm-num">{hiddenNavAlerts}</span>
               )}
-              <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 9.5, letterSpacing: -0.1, lineHeight: 1.05, color: active ? item.color : INK.strong, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {item.short || item.label}
-              </span>
-            </button>
-          )
-        })}
-        <button
-          type="button"
-          onClick={() => setCrmMenuOpen(open => !open)}
-          className="adm-nav-item"
-          data-active={menuNavActive}
-          aria-expanded={crmMenuOpen}
-          style={{
-            flex: '1 1 0',
-            minWidth: 0,
-            minHeight: 58,
-            borderRadius: R.md,
-            border: `1px solid ${menuNavActive ? veil(C.primary, 30) : 'transparent'}`,
-            background: menuNavActive ? C.primaryLight : 'transparent',
-            color: menuNavActive ? C.primary : INK.base,
-            cursor: 'pointer',
-            padding: '8px 5px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            textAlign: 'center',
-            boxShadow: menuNavActive ? SH.sm : 'none',
-          }}
-        >
-          <span style={{ width: 30, height: 30, borderRadius: 10, background: menuNavActive ? '#fff' : SURFACE_MUTED, color: menuNavActive ? C.primary : INK.soft, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-            <AdminIcon name="menu" size={16} strokeWidth={2.4} />
-          </span>
-          <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 9.5, letterSpacing: -0.1, lineHeight: 1.05, color: menuNavActive ? C.primary : INK.strong, maxWidth: '100%', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Menú
-          </span>
-        </button>
-      </nav>
+            </span>
+            <span className="adm-tabbar__label">Más</span>
+          </button>
+        </nav>
       )}
     </div>
   )
