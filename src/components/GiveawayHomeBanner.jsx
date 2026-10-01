@@ -11,6 +11,16 @@ import {
 } from '../lib/giveaways'
 import './GiveawayHomeBanner.css'
 
+const COLLAPSE_KEY = `latido:giveaway-banner-collapsed:${GIVEAWAY.id}`
+
+function readCollapsed() {
+  try {
+    return window.localStorage.getItem(COLLAPSE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 function BannerCountdown({ remaining, compact = false }) {
   const units = [
     ['Días', remaining.days],
@@ -35,7 +45,7 @@ function BannerCountdown({ remaining, compact = false }) {
 // Tarjeta del sorteo en Inicio: foto enmarcada, datos clave y una sola acción.
 export default function GiveawayHomeBanner() {
   const { user } = useAuth()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(readCollapsed)
   const countdown = useCountdown(GIVEAWAY.endsAt)
 
   if (countdown.expired || !isGiveawayOpen(GIVEAWAY)) return null
@@ -44,6 +54,20 @@ export default function GiveawayHomeBanner() {
     user_id:user?.id || null,
     metadata:{ giveaway_id:GIVEAWAY.id, placement },
   })
+
+  const collapsePermanently = () => {
+    setCollapsed(true)
+    try {
+      window.localStorage.setItem(COLLAPSE_KEY, '1')
+    } catch {
+      // Sin almacenamiento, se mantiene contraído durante esta visita.
+    }
+  }
+
+  const handleExpandedClick = () => {
+    collapsePermanently()
+    trackClick('home_banner')
+  }
 
   if (collapsed) {
     return (
@@ -85,7 +109,7 @@ export default function GiveawayHomeBanner() {
           to={GIVEAWAY.path}
           className="gw-card__link"
           id="giveaway-home-card-content"
-          onClick={() => trackClick('home_banner')}
+          onClick={handleExpandedClick}
         >
           <span className="gw-card__media">
             <img
@@ -129,7 +153,7 @@ export default function GiveawayHomeBanner() {
         <button
           type="button"
           className="gw-card__toggle"
-          onClick={() => setCollapsed(true)}
+          onClick={collapsePermanently}
           aria-label="Contraer evento especial"
           aria-expanded="true"
           aria-controls="giveaway-home-card-content"
