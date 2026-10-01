@@ -67,6 +67,7 @@ const SynaPartnerContact = lazy(() => import('./pages/SynaPartnerContact'))
 const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
 const AlertasClientesPotenciales = lazy(() => import('./pages/AlertasClientesPotenciales'))
 const Virtus360Services = lazy(() => import('./pages/Virtus360Services'))
+const SantiagoCruz = lazy(() => import('./pages/SantiagoCruz'))
 const BusinessPartnerLanding = lazy(() => import('./pages/BusinessPartnerLanding'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
@@ -501,6 +502,7 @@ function AppShell() {
   const isRoot = pathname === '/'
   const isPartnerServices = pathname === '/servicios-suiza'
   const isVirtus360Services = pathname === '/servicios-virtus360'
+  const isSantiagoCruzLanding = pathname === '/santiago-cruz' || pathname === '/santiago-cruz/'
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
@@ -727,6 +729,19 @@ function AppShell() {
         <div ref={routeViewRef} className="latido-route-view latido-route-view--standalone">
           <Suspense fallback={<AppLoading />}>
             <Virtus360Services />
+          </Suspense>
+        </div>
+      </>
+    )
+  }
+
+  if (isSantiagoCruzLanding) {
+    return (
+      <>
+        <CookieConsent />
+        <div ref={routeViewRef} className="latido-route-view latido-route-view--standalone">
+          <Suspense fallback={<AppLoading />}>
+            <SantiagoCruz />
           </Suspense>
         </div>
       </>
