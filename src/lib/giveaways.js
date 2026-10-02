@@ -31,7 +31,9 @@ export const SANTIAGO_CRUZ_EVENT = {
   venue:'Plaza Zürich',
   address:'Badenerstrasse 109, 8004 Zürich',
   mapsUrl:'https://www.google.com/maps/search/?api=1&query=Plaza+Z%C3%BCrich+Badenerstrasse+109',
-  promoter:'Good News Productions AG',
+  organizer:'C² Concerts GmbH',
+  ticketProvider:'C² Concerts GmbH',
+  imageCredit:'Good News Productions AG',
   ticketsUrl:'https://www.ticketcorner.ch/event/santiago-cruz-sigo-en-pie-tour-2026-plaza-21638881/',
 }
 

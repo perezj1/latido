@@ -50,7 +50,8 @@ const CONDITIONS = [
   ['Si no responde', 'El premio se sortea de nuevo entre el resto de participaciones.'],
   ['Premio en efectivo', 'No canjeable por dinero.'],
   ['Datos', 'Solo los necesarios para gestionar el sorteo: nombre y email.'],
-  ['Ganadores e invitados', `El nombre de cada ganador se comunica a ${EVENT.promoter}, promotora del concierto, para incluirlo en la lista de invitados (Gästeliste).`],
+  ['Entradas', `${EVENT.ticketProvider}, organizadora del concierto, proporciona las entradas sorteadas.`],
+  ['Ganadores e invitados', `El nombre de cada ganador se comunica a ${EVENT.organizer} para gestionar la entrega de las entradas o su inclusión en la lista de invitados (Gästeliste).`],
 ]
 
 function errorMessage(error) {
@@ -505,6 +506,7 @@ export default function SantiagoCruz() {
                     <a className="sc-link" href={EVENT.mapsUrl} target="_blank" rel="noreferrer">Ver en el mapa</a>
                   </dd>
                 </div>
+                <div><dt>Organiza</dt><dd>{EVENT.organizer}</dd></div>
               </dl>
             </section>
 
@@ -540,7 +542,7 @@ export default function SantiagoCruz() {
                 <div className="sc-privacy">
                   <h3>Privacidad</h3>
                   <p>
-                    Los datos proporcionados se utilizarán exclusivamente para gestionar la participación y seleccionar y contactar a los ganadores. En caso de resultar ganador, el nombre podrá ser comunicado al organizador del concierto ({EVENT.promoter}) para su inclusión en la lista de invitados.
+                    Los datos proporcionados se utilizarán exclusivamente para gestionar la participación y seleccionar y contactar a los ganadores. En caso de resultar ganador, el nombre podrá ser comunicado al organizador del concierto y proveedor de las entradas ({EVENT.organizer}) para gestionar su entrega o la inclusión en la lista de invitados.
                   </p>
                   <p>
                     El email no se usará para enviar publicidad salvo que marques la casilla de novedades, que es opcional y no influye en el sorteo. Puedes retirar ese consentimiento cuando quieras escribiendo a info@latido.ch.
@@ -578,7 +580,7 @@ export default function SantiagoCruz() {
           <Link to="/privacidad">Privacidad</Link>
           <Link to="/impressum">Impressum</Link>
         </nav>
-        <small>Foto: {EVENT.promoter}. Vídeo: canal oficial de {EVENT.artist} en YouTube.</small>
+        <small>Foto: {EVENT.imageCredit}. Vídeo: canal oficial de {EVENT.artist} en YouTube.</small>
       </footer>
     </div>
   )
