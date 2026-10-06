@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, CalendarDays, ChevronUp, Info, MapPin, Ticket, X } from 'lucide-react'
+import { ArrowRight, CalendarDays, Check, ChevronUp, Info, MapPin, Ticket, X } from 'lucide-react'
 import GiveawayParticipationCard from './GiveawayParticipationCard'
 import { useAuth } from '../hooks/useAuth'
 import { useCountdown } from '../hooks/useCountdown'
 import { trackAnalyticsEvent } from '../lib/analytics'
+import { supabase } from '../lib/supabase'
 import {
   isGiveawayOpen,
   SANTIAGO_CRUZ_EVENT as EVENT,
@@ -13,6 +14,7 @@ import {
 import './GiveawayHomeBanner.css'
 
 const COLLAPSE_KEY = `latido:giveaway-banner-collapsed:${GIVEAWAY.id}`
+const PARTICIPATION_EVENT = `latido:giveaway-participated:${GIVEAWAY.id}`
 
 function readCollapsed() {
   try {
@@ -43,7 +45,7 @@ function BannerCountdown({ remaining, compact = false }) {
   )
 }
 
-function ParticipationModal({ open, onClose, source }) {
+function ParticipationModal({ open, onClose, onParticipated, source }) {
   const closeRef = useRef(null)
 
   useEffect(() => {
@@ -72,7 +74,7 @@ function ParticipationModal({ open, onClose, source }) {
         <button ref={closeRef} type="button" className="gw-modal__close" onClick={onClose} aria-label="Cerrar formulario">
           <X size={20} aria-hidden="true" />
         </button>
-        <GiveawayParticipationCard source={source} />
+        <GiveawayParticipationCard source={source} onParticipated={onParticipated} />
       </div>
     </div>
   )
@@ -90,12 +92,37 @@ export default function GiveawayHomeBanner({
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const [modalOpen, setModalOpen] = useState(false)
   const [promotionOpen, setPromotionOpen] = useState(true)
+  const [participating, setParticipating] = useState(false)
   const promotionCloseRef = useRef(null)
   const countdown = useCountdown(GIVEAWAY.endsAt)
   const giveawayVisible = !countdown.expired && isGiveawayOpen(GIVEAWAY)
   const contentId = `giveaway-${instanceId}-content`
   const closeParticipation = useCallback(() => setModalOpen(false), [])
   const closePromotion = useCallback(() => setPromotionOpen(false), [])
+  const markParticipating = useCallback(() => {
+    setParticipating(true)
+    window.dispatchEvent(new CustomEvent(PARTICIPATION_EVENT))
+  }, [])
+
+  useEffect(() => {
+    const syncParticipation = () => setParticipating(true)
+    window.addEventListener(PARTICIPATION_EVENT, syncParticipation)
+    return () => window.removeEventListener(PARTICIPATION_EVENT, syncParticipation)
+  }, [])
+
+  useEffect(() => {
+    if (!user?.id) {
+      setParticipating(false)
+      return undefined
+    }
+
+    let cancelled = false
+    setParticipating(false)
+    supabase.rpc('get_my_giveaway_entry', { p_giveaway_id:GIVEAWAY.id }).then(({ data }) => {
+      if (!cancelled && data?.status === 'already') setParticipating(true)
+    })
+    return () => { cancelled = true }
+  }, [user?.id])
 
   useEffect(() => {
     if (!giveawayVisible || !promotionalModal || !promotionOpen) return undefined
@@ -161,9 +188,9 @@ export default function GiveawayHomeBanner({
               </span>
               <BannerCountdown remaining={countdown} compact />
               <span className="gw-card__collapsed-cta">
-                <Ticket size={14} aria-hidden="true" />
-                Gana entradas gratis
-                <ArrowRight size={14} strokeWidth={2.4} aria-hidden="true" />
+                {participating ? <Check size={14} strokeWidth={2.6} aria-hidden="true" /> : <Ticket size={14} aria-hidden="true" />}
+                {participating ? 'Participando' : 'Gana entradas gratis'}
+                {!participating && <ArrowRight size={14} strokeWidth={2.4} aria-hidden="true" />}
               </span>
             </span>
           </Link>
@@ -215,15 +242,16 @@ export default function GiveawayHomeBanner({
                   Más información
                 </Link>
                 <button type="button" className="gw-card__cta" onClick={openParticipation}>
-                  <Ticket size={16} aria-hidden="true" />
-                  Participar gratis
+                  {participating ? <Check size={16} strokeWidth={2.6} aria-hidden="true" /> : <Ticket size={16} aria-hidden="true" />}
+                  {participating ? 'Participando' : 'Participar gratis'}
                 </button>
               </span>
             ) : (
               <span className="gw-card__footer">
                 <span className="gw-card__cta">
-                  Participar gratis
-                  <ArrowRight size={16} strokeWidth={2.4} aria-hidden="true" />
+                  {participating ? <Check size={16} strokeWidth={2.6} aria-hidden="true" /> : null}
+                  {participating ? 'Participando' : 'Participar gratis'}
+                  {!participating && <ArrowRight size={16} strokeWidth={2.4} aria-hidden="true" />}
                 </span>
               </span>
             )}
@@ -280,7 +308,7 @@ export default function GiveawayHomeBanner({
             </div>
           </div>
         )}
-        <ParticipationModal open={modalOpen} onClose={closeParticipation} source={`${analyticsPlacement}_modal`} />
+        <ParticipationModal open={modalOpen} onClose={closeParticipation} onParticipated={markParticipating} source={`${analyticsPlacement}_modal`} />
       </>
     )
   }
@@ -288,7 +316,7 @@ export default function GiveawayHomeBanner({
   return (
     <section className="latido-page-container gw-home" aria-label="Evento especial">
       {card}
-      <ParticipationModal open={modalOpen} onClose={closeParticipation} source={`${analyticsPlacement}_modal`} />
+      <ParticipationModal open={modalOpen} onClose={closeParticipation} onParticipated={markParticipating} source={`${analyticsPlacement}_modal`} />
     </section>
   )
 }
