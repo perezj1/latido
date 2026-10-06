@@ -117,7 +117,7 @@ const ADMIN_TAB_DATA_GROUPS = {
   feedback: ['users', 'feedback'],
   partners: ['users', 'businesses', 'analytics'],
   live: ['users', 'analytics'],
-  overview: ['users', 'reports', 'moderation', 'contentMetrics', 'businesses', 'analytics', 'messages', 'creators'],
+  overview: ['users', 'reports', 'moderation', 'contentMetrics', 'businesses', 'overviewSummary', 'creators'],
   businessVerification: ['businesses'],
   content: ['content'],
   reports: ['users', 'reports'],
@@ -333,6 +333,40 @@ async function fetchAdminReportsDelta({ cache, days, refresh }) {
     count:data.length,
     error:pendingRes.error || recentRes.error,
     delta:recentRes.delta,
+  }
+}
+
+async function fetchAdminDashboardSummary({ cache, days, refresh = false }) {
+  const safeDays = Math.max(1, Math.min(Number(days) || 7, ADMIN_MAX_DELTA_DAYS))
+  const cacheKey = `overview:summary:v1:${safeDays}`
+  const cached = !refresh ? cache.get(cacheKey) : null
+  if (cached) {
+    return {
+      ...cached,
+      delta:{ days:safeDays, cached:1, fetched:0 },
+    }
+  }
+
+  const response = await supabase.rpc('admin_dashboard_summary_v1', { p_days:safeDays })
+  if (response.error) {
+    return {
+      data:null,
+      count:0,
+      error:response.error,
+      delta:{ days:safeDays, cached:0, fetched:0 },
+    }
+  }
+
+  const result = {
+    data:response.data || null,
+    count:response.data ? 1 : 0,
+    error:null,
+    fetchedAt:new Date().toISOString(),
+  }
+  cache.set(cacheKey, result)
+  return {
+    ...result,
+    delta:{ days:safeDays, cached:0, fetched:1 },
   }
 }
 
@@ -727,6 +761,13 @@ function periodTrend(items, days) {
   const prev = full.slice(0, days).reduce((s, d) => s + d.count, 0)
   if (prev === 0) return cur > 0 ? 100 : 0
   return Math.round(((cur - prev) / prev) * 100)
+}
+
+function countTrend(currentValue, previousValue) {
+  const current = Math.max(0, Number(currentValue) || 0)
+  const previous = Math.max(0, Number(previousValue) || 0)
+  if (previous === 0) return current > 0 ? 100 : 0
+  return Math.round(((current - previous) / previous) * 100)
 }
 
 function scoreByTarget(value, target, maxScore) {
@@ -2064,6 +2105,8 @@ export default function Admin() {
   const [selectedPartnerId, setSelectedPartnerId] = useState(PARTNER_ANALYTICS_PARTNERS[0]?.id || '')
   const [messageEvents, setMessageEvents] = useState([])
   const [messagesUnavailable, setMessagesUnavailable] = useState(false)
+  const [overviewSummary, setOverviewSummary] = useState(null)
+  const [overviewSummaryUnavailable, setOverviewSummaryUnavailable] = useState(false)
   const [creatorProfiles, setCreatorProfiles] = useState([])
   const [creatorContents, setCreatorContents] = useState([])
   const [creatorMetricRows, setCreatorMetricRows] = useState([])
@@ -3170,7 +3213,7 @@ export default function Admin() {
   }
 
   function isRangeSensitiveGroup(group) {
-    return ['analytics', 'messages', 'contentMetrics', 'reports'].includes(group)
+    return ['analytics', 'messages', 'contentMetrics', 'reports', 'overviewSummary'].includes(group)
   }
 
   function groupHasRequiredRange(group, days) {
@@ -3218,12 +3261,19 @@ export default function Admin() {
     const force = options?.force === true
     const silent = options?.silent === true
     const requestedDays = Math.max(1, Math.min(Number(options?.days || getLoadDaysForTab(tab)) || 1, ADMIN_MAX_DELTA_DAYS))
+    const overviewSummaryDays = Math.max(1, Math.min(Number(options?.overviewSummaryDays || overviewDays) || 1, ADMIN_MAX_DELTA_DAYS))
     const requestedGroups = [...new Set(options?.groups || getAdminTabDataGroups(tab))]
-    const groups = requestedGroups.filter(group =>
-      !loadingDataGroupsRef.current.has(group)
-      && !(group === 'contentMetrics' && !force && loadedDataGroupsRef.current.has('content') && groupHasRequiredRange('contentMetrics', requestedDays))
-      && (force || !loadedDataGroupsRef.current.has(group) || !groupHasRequiredRange(group, requestedDays))
-    )
+    const groups = requestedGroups.filter(group => {
+      const requiredDays = group === 'overviewSummary' ? overviewSummaryDays : requestedDays
+      return !loadingDataGroupsRef.current.has(group)
+        && !(group === 'contentMetrics' && !force && loadedDataGroupsRef.current.has('content') && groupHasRequiredRange('contentMetrics', requestedDays))
+        && (
+          force
+          || !loadedDataGroupsRef.current.has(group)
+          || !groupHasRequiredRange(group, requiredDays)
+          || (group === 'overviewSummary' && Number(overviewSummary?.period?.days) !== overviewSummaryDays)
+        )
+    })
 
     if (!groups.length) return
 
@@ -3243,7 +3293,25 @@ export default function Admin() {
       const wantsContent = groups.includes('content')
       const wantsContentMetrics = groups.includes('contentMetrics')
       const contentGroup = wantsContent ? 'content' : 'contentMetrics'
-      const skipped = data => ({ data, count: data.length, error: null, skipped: true })
+      const skipped = data => ({
+        data,
+        count:Array.isArray(data) ? data.length : data ? 1 : 0,
+        error:null,
+        skipped:true,
+      })
+      let overviewSummaryRes = skipped(overviewSummary)
+      let overviewFallbackActive = false
+      if (groups.includes('overviewSummary')) {
+        overviewSummaryRes = await fetchAdminDashboardSummary({
+          cache:periodRowsCacheRef.current,
+          days:overviewSummaryDays,
+          refresh:force,
+        })
+        overviewFallbackActive = Boolean(overviewSummaryRes.error)
+        if (overviewFallbackActive) {
+          console.warn('Admin summary RPC unavailable; using row fallback:', overviewSummaryRes.error.message)
+        }
+      }
       const [
         reportsRes,
         queueRes,
@@ -3302,7 +3370,7 @@ export default function Admin() {
             })
           : skipped(recentJobs),
         groups.includes('businesses') ? fetchAllAdminRows({ table: 'providers' }) : skipped(businesses),
-        groups.includes('analytics') ? fetchAdminRowsForPeriod({
+        (groups.includes('analytics') || overviewFallbackActive) ? fetchAdminRowsForPeriod({
           cache:periodRowsCacheRef.current,
           cacheKey:'analytics:events',
           table: 'analytics_events',
@@ -3311,7 +3379,7 @@ export default function Admin() {
           refresh:force,
           transformQuery: query => query.in('event_type', ADMIN_ANALYTICS_EVENT_TYPES),
         }) : skipped(analyticsEvents),
-        groups.includes('messages') ? fetchAdminRowsForPeriod({
+        (groups.includes('messages') || overviewFallbackActive) ? fetchAdminRowsForPeriod({
           cache:periodRowsCacheRef.current,
           cacheKey:'messages:activity',
           table: 'messages',
@@ -3355,6 +3423,21 @@ export default function Admin() {
           : skipped(creatorMetricRows),
       ])
 
+      const overviewActivityRes = groups.includes('overviewSummary')
+        ? overviewFallbackActive
+          ? {
+              data:null,
+              count:(analyticsRes.data?.length || 0) + (messagesRes.data?.length || 0),
+              error:analyticsRes.error || messagesRes.error || null,
+              delta:{
+                days:overviewSummaryDays,
+                cached:(analyticsRes.delta?.cached || 0) + (messagesRes.delta?.cached || 0),
+                fetched:(analyticsRes.delta?.fetched || 0) + (messagesRes.delta?.fetched || 0),
+              },
+            }
+          : overviewSummaryRes
+        : skipped(overviewSummary)
+
       const responses = [
         ['reports', 'reportes', reportsRes],
         ['moderation', 'moderacion', queueRes],
@@ -3362,6 +3445,7 @@ export default function Admin() {
         [contentGroup, 'anuncios', listingsRes],
         [contentGroup, 'empleos', jobsRes],
         ['businesses', 'negocios', providersRes],
+        ['overviewSummary', 'resumen general', overviewActivityRes],
         ['analytics', 'analitica', analyticsRes],
         ['messages', 'mensajes', messagesRes],
         ['feedback', 'valoraciones de Latido', ratingsRes],
@@ -3394,6 +3478,30 @@ export default function Admin() {
         }
         setDataErrorsByGroup(previous => ({ ...previous, [group]: groupErrors.join(' · ') }))
       })
+
+      if (groups.includes('overviewSummary')) {
+        if (!overviewFallbackActive && !overviewSummaryRes.error) {
+          setOverviewSummary(overviewSummaryRes.data)
+          setOverviewSummaryUnavailable(false)
+          setAnalyticsUnavailable(false)
+          setMessagesUnavailable(false)
+        } else {
+          setOverviewSummary(null)
+          setOverviewSummaryUnavailable(true)
+          if (!analyticsRes.error) {
+            setAnalyticsEvents(analyticsRes.data)
+            setAnalyticsUnavailable(false)
+          } else {
+            setAnalyticsUnavailable(true)
+          }
+          if (!messagesRes.error) {
+            setMessageEvents(messagesRes.data)
+            setMessagesUnavailable(false)
+          } else {
+            setMessagesUnavailable(true)
+          }
+        }
+      }
 
       if (groups.includes('analytics') && !analyticsRes.error) {
         setAnalyticsEvents(analyticsRes.data)
@@ -3480,9 +3588,10 @@ export default function Admin() {
       if (wantsContent && !failedGroups.has('content')) loadedDataGroupsRef.current.add('contentMetrics')
       successfulGroups.forEach(group => {
         if (isRangeSensitiveGroup(group)) {
+          const loadedDays = group === 'overviewSummary' ? overviewSummaryDays : requestedDays
           dataRangeDaysByGroupRef.current.set(group, Math.max(
             dataRangeDaysByGroupRef.current.get(group) || 0,
-            requestedDays,
+            loadedDays,
           ))
         }
       })
@@ -4146,6 +4255,8 @@ export default function Admin() {
     interactions: overviewDays === 1 ? 20 : overviewDays === 7 ? 120 : 450,
     messages: overviewDays === 1 ? 1 : overviewDays === 7 ? 6 : 20,
   }
+  const overviewSummaryAnalytics = overviewSummary?.analytics || null
+  const overviewSummaryMessages = overviewSummary?.messages || null
   const overviewAnalyticsBaseEvents = analyticsEvents.filter(event =>
     !adminUserIds.has(event.user_id) && !String(event.path || '').startsWith('/admin-latido')
   )
@@ -4162,11 +4273,21 @@ export default function Admin() {
   const newContentInOverviewRange = countRecent(contentItems, overviewDays)
   const overviewTotalNewContent = newContentInOverviewRange + newBusinessesInOverviewRange
   const reportsInOverviewRange = countRecent(reports, overviewDays)
-  const overviewPageViews = overviewInteractionEvents.filter(event => event.event_type === 'page_view').length
-  const overviewSearches = overviewInteractionEvents.filter(event => event.event_type === 'search').length
-  const overviewSearchOpens = overviewInteractionEvents.filter(event => event.event_type === 'search_result_open').length
-  const overviewInteractionCount = overviewInteractionEvents.length
-  const overviewMessagesCount = overviewMessageEvents.length
+  const overviewPageViews = overviewSummaryAnalytics
+    ? Number(overviewSummaryAnalytics.page_views) || 0
+    : overviewInteractionEvents.filter(event => event.event_type === 'page_view').length
+  const overviewSearches = overviewSummaryAnalytics
+    ? Number(overviewSummaryAnalytics.searches) || 0
+    : overviewInteractionEvents.filter(event => event.event_type === 'search').length
+  const overviewSearchOpens = overviewSummaryAnalytics
+    ? Number(overviewSummaryAnalytics.search_opens) || 0
+    : overviewInteractionEvents.filter(event => event.event_type === 'search_result_open').length
+  const overviewInteractionCount = overviewSummaryAnalytics
+    ? Number(overviewSummaryAnalytics.interactions) || 0
+    : overviewInteractionEvents.length
+  const overviewMessagesCount = overviewSummaryMessages
+    ? Number(overviewSummaryMessages.total) || 0
+    : overviewMessageEvents.length
   const overviewEngagementCount = (analyticsUnavailable ? 0 : overviewInteractionCount) + (messagesUnavailable ? 0 : overviewMessagesCount)
   const overviewEngagementText = analyticsUnavailable && messagesUnavailable
     ? 'sin datos de interacción disponibles'
@@ -4174,17 +4295,27 @@ export default function Admin() {
   const userTrendInOverviewRange = periodTrend(metricUsers, overviewDays)
   const activeTrendInOverviewRange = analyticsUnavailable
     ? null
-    : uniquePeriodTrend(
-      livePageViewEvents.filter(event => event.user_id),
-      overviewDays,
-      event => event.user_id
-    )
+    : overviewSummaryAnalytics
+      ? countTrend(overviewSummaryAnalytics.visitors, overviewSummaryAnalytics.visitors_previous)
+      : uniquePeriodTrend(
+        livePageViewEvents.filter(event => event.user_id),
+        overviewDays,
+        event => event.user_id
+      )
   const businessTrendInOverviewRange = periodTrend(businesses, overviewDays)
   const listingTrendInOverviewRange = periodTrend(recentListings, overviewDays)
   const jobTrendInOverviewRange = periodTrend(recentJobs, overviewDays)
   const creatorContentTrendInOverviewRange = periodTrend(creatorContents, overviewDays)
-  const interactionTrendInOverviewRange = analyticsUnavailable ? null : periodTrend(overviewAnalyticsBaseEvents, overviewDays)
-  const messageTrendInOverviewRange = messagesUnavailable ? null : periodTrend(overviewMessageBaseEvents, overviewDays)
+  const interactionTrendInOverviewRange = analyticsUnavailable
+    ? null
+    : overviewSummaryAnalytics
+      ? countTrend(overviewSummaryAnalytics.interactions, overviewSummaryAnalytics.interactions_previous)
+      : periodTrend(overviewAnalyticsBaseEvents, overviewDays)
+  const messageTrendInOverviewRange = messagesUnavailable
+    ? null
+    : overviewSummaryMessages
+      ? countTrend(overviewSummaryMessages.total, overviewSummaryMessages.previous)
+      : periodTrend(overviewMessageBaseEvents, overviewDays)
   const reportsTrendInOverviewRange = periodTrend(reports, overviewDays)
   const lowContentThreshold = overviewDays === 1 ? 1 : overviewDays === 7 ? 3 : 5
   const overviewPerformanceTrends = [
@@ -4318,7 +4449,9 @@ export default function Admin() {
     : ['loading', 'partial'].includes(deltaLoadSummary?.status)
       ? '#FFFBEB'
       : '#ECFDF5'
-  const deltaStatusLabel = deltaLoadSummary?.status === 'loading'
+  const deltaStatusLabel = tab === 'overview' && overviewSummaryUnavailable
+    ? 'Modo compatible'
+    : deltaLoadSummary?.status === 'loading'
     ? `Cargando ${deltaLoadSummary.days || getLoadDaysForTab(tab)}d`
     : deltaLoadSummary?.status === 'partial'
       ? 'Carga parcial'
@@ -5156,6 +5289,11 @@ export default function Admin() {
       {/* ── Estado general ─────────────────────────────── */}
       {tab === 'overview' && isTabDataReady('overview') && (
         <div className="adm-stack">
+          {overviewSummaryUnavailable && (
+            <AdminNotice tone="info" title="Resumen SQL pendiente">
+              El panel sigue mostrando los datos mediante las consultas anteriores. Ejecuta supabase/admin_dashboard_summary.sql para activar la carga agregada.
+            </AdminNotice>
+          )}
           <BlockTitle>Rapport del periodo</BlockTitle>
           <div className="adm-surface" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 0 }}>
