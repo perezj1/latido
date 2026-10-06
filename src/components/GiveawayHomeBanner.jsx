@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, CalendarDays, ChevronUp, MapPin, Ticket } from 'lucide-react'
+import { ArrowRight, CalendarDays, ChevronUp, Info, MapPin, Ticket, X } from 'lucide-react'
+import GiveawayParticipationCard from './GiveawayParticipationCard'
 import { useAuth } from '../hooks/useAuth'
 import { useCountdown } from '../hooks/useCountdown'
 import { trackAnalyticsEvent } from '../lib/analytics'
@@ -42,13 +43,74 @@ function BannerCountdown({ remaining, compact = false }) {
   )
 }
 
-// Tarjeta del sorteo en Inicio: foto enmarcada, datos clave y una sola acción.
-export default function GiveawayHomeBanner() {
+function ParticipationModal({ open, onClose, source }) {
+  const closeRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return undefined
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', closeOnEscape)
+    window.requestAnimationFrame(() => closeRef.current?.focus())
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open, onClose])
+
+  if (!open) return null
+
+  return (
+    <div className="gw-modal gw-participation-theme" role="presentation" onMouseDown={event => {
+      if (event.target === event.currentTarget) onClose()
+    }}>
+      <div className="gw-modal__panel" role="dialog" aria-modal="true" aria-labelledby="gw-modal-title">
+        <h2 id="gw-modal-title" className="gw-modal__title">Participar en el sorteo</h2>
+        <button ref={closeRef} type="button" className="gw-modal__close" onClick={onClose} aria-label="Cerrar formulario">
+          <X size={20} aria-hidden="true" />
+        </button>
+        <GiveawayParticipationCard source={source} />
+      </div>
+    </div>
+  )
+}
+
+// Tarjeta del sorteo compartida por Inicio y la landing pública.
+export default function GiveawayHomeBanner({
+  analyticsPlacement = 'home_banner',
+  collapsible = true,
+  participationModal = false,
+  promotionalModal = false,
+  instanceId = analyticsPlacement,
+}) {
   const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(readCollapsed)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [promotionOpen, setPromotionOpen] = useState(true)
+  const promotionCloseRef = useRef(null)
   const countdown = useCountdown(GIVEAWAY.endsAt)
+  const giveawayVisible = !countdown.expired && isGiveawayOpen(GIVEAWAY)
+  const contentId = `giveaway-${instanceId}-content`
 
-  if (countdown.expired || !isGiveawayOpen(GIVEAWAY)) return null
+  useEffect(() => {
+    if (!giveawayVisible || !promotionalModal || !promotionOpen) return undefined
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setPromotionOpen(false)
+    }
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', closeOnEscape)
+    window.requestAnimationFrame(() => promotionCloseRef.current?.focus())
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [giveawayVisible, promotionalModal, promotionOpen])
+
+  if (!giveawayVisible) return null
 
   const trackClick = placement => trackAnalyticsEvent('giveaway_cta_click', {
     user_id:user?.id || null,
@@ -65,19 +127,25 @@ export default function GiveawayHomeBanner() {
   }
 
   const handleExpandedClick = () => {
-    collapsePermanently()
-    trackClick('home_banner')
+    if (collapsible) collapsePermanently()
+    trackClick(analyticsPlacement)
   }
 
-  if (collapsed) {
+  const openParticipation = () => {
+    trackClick(`${analyticsPlacement}_participate`)
+    if (promotionalModal) setPromotionOpen(false)
+    setModalOpen(true)
+  }
+
+  if (collapsible && collapsed) {
     return (
       <section className="latido-page-container gw-home" aria-label="Evento especial">
         <div className="gw-card gw-card--collapsed">
           <Link
-            id="giveaway-home-card-content"
+            id={contentId}
             to={GIVEAWAY.path}
             className="gw-card__collapsed-link"
-            onClick={() => trackClick('home_banner_collapsed')}
+            onClick={() => trackClick(`${analyticsPlacement}_collapsed`)}
           >
             <span className="gw-card__collapsed-media">
               <img src={GIVEAWAY.heroImage} alt="" loading="lazy" decoding="async" />
@@ -92,7 +160,7 @@ export default function GiveawayHomeBanner() {
               <BannerCountdown remaining={countdown} compact />
               <span className="gw-card__collapsed-cta">
                 <Ticket size={14} aria-hidden="true" />
-                Gana un pase gratis
+                Gana entradas gratis
                 <ArrowRight size={14} strokeWidth={2.4} aria-hidden="true" />
               </span>
             </span>
@@ -102,15 +170,8 @@ export default function GiveawayHomeBanner() {
     )
   }
 
-  return (
-    <section className="latido-page-container gw-home" aria-label="Evento especial">
-      <div className="gw-card">
-        <Link
-          to={GIVEAWAY.path}
-          className="gw-card__link"
-          id="giveaway-home-card-content"
-          onClick={handleExpandedClick}
-        >
+  const expandedContent = (
+    <>
           <span className="gw-card__media">
             <img
               className="gw-card__image"
@@ -141,26 +202,91 @@ export default function GiveawayHomeBanner() {
 
             <BannerCountdown remaining={countdown} />
 
-            <span className="gw-card__footer">
-              <span className="gw-card__cta">
-                Participar gratis
-                <ArrowRight size={16} strokeWidth={2.4} aria-hidden="true" />
+            {participationModal ? (
+              <span className="gw-card__footer gw-card__footer--split">
+                <Link
+                  to={GIVEAWAY.path}
+                  className="gw-card__more"
+                  onClick={() => trackClick(`${analyticsPlacement}_more_info`)}
+                >
+                  <Info size={16} aria-hidden="true" />
+                  Más información
+                </Link>
+                <button type="button" className="gw-card__cta" onClick={openParticipation}>
+                  <Ticket size={16} aria-hidden="true" />
+                  Participar gratis
+                </button>
               </span>
-            </span>
+            ) : (
+              <span className="gw-card__footer">
+                <span className="gw-card__cta">
+                  Participar gratis
+                  <ArrowRight size={16} strokeWidth={2.4} aria-hidden="true" />
+                </span>
+              </span>
+            )}
           </span>
-        </Link>
+    </>
+  )
 
-        <button
-          type="button"
-          className="gw-card__toggle"
-          onClick={collapsePermanently}
-          aria-label="Contraer evento especial"
-          aria-expanded="true"
-          aria-controls="giveaway-home-card-content"
-        >
-          <ChevronUp size={17} strokeWidth={2.4} />
-        </button>
-      </div>
+  const card = (
+    <div className="gw-card">
+        {participationModal ? (
+          <div className="gw-card__link" id={contentId}>
+            {expandedContent}
+          </div>
+        ) : (
+          <Link
+            to={GIVEAWAY.path}
+            className="gw-card__link"
+            id={contentId}
+            onClick={handleExpandedClick}
+          >
+            {expandedContent}
+          </Link>
+        )}
+
+        {collapsible && (
+          <button
+            type="button"
+            className="gw-card__toggle"
+            onClick={collapsePermanently}
+            aria-label="Contraer evento especial"
+            aria-expanded="true"
+            aria-controls={contentId}
+          >
+            <ChevronUp size={17} strokeWidth={2.4} />
+          </button>
+        )}
+    </div>
+  )
+
+  if (promotionalModal) {
+    return (
+      <>
+        {promotionOpen && (
+          <div className="gw-promo-modal" role="presentation" onMouseDown={event => {
+            if (event.target === event.currentTarget) setPromotionOpen(false)
+          }}>
+            <div className="gw-promo-modal__panel" role="dialog" aria-modal="true" aria-label="Evento especial: sorteo de Santiago Cruz">
+              <button ref={promotionCloseRef} type="button" className="gw-promo-modal__close" onClick={() => setPromotionOpen(false)} aria-label="Cerrar evento especial">
+                <X size={18} aria-hidden="true" />
+              </button>
+              <section className="latido-page-container gw-home" aria-label="Evento especial">
+                {card}
+              </section>
+            </div>
+          </div>
+        )}
+        <ParticipationModal open={modalOpen} onClose={() => setModalOpen(false)} source={`${analyticsPlacement}_modal`} />
+      </>
+    )
+  }
+
+  return (
+    <section className="latido-page-container gw-home" aria-label="Evento especial">
+      {card}
+      <ParticipationModal open={modalOpen} onClose={() => setModalOpen(false)} source={`${analyticsPlacement}_modal`} />
     </section>
   )
 }

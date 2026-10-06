@@ -1,7 +1,8 @@
 /* Landing especial · Santiago Cruz en Zürich (sorteo de pases dobles).
    Mismo lenguaje que la tarjeta de Inicio: superficies blancas, foto
    enmarcada, títulos en caja normal, iconos azul Latido y una acción clara. */
-.sc-page {
+.sc-page,
+.gw-participation-theme {
   --sc-accent: #2563EB;
   --sc-accent-strong: #1D4ED8;
   --sc-accent-subtle: #EFF6FF;
@@ -16,22 +17,29 @@
   --sc-green: #047857;
   --sc-radius: 24px;
   --sc-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 34px -24px rgba(15, 23, 42, 0.35);
+  color: var(--sc-ink);
+  font-family: 'Poppins', system-ui, sans-serif;
+}
+
+.sc-page {
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--sc-canvas);
-  color: var(--sc-ink);
-  font-family: 'Poppins', system-ui, sans-serif;
   /* clip (no hidden): hidden crearía un contenedor de scroll y rompería el sticky. */
   overflow-x: clip;
 }
 
 .sc-page *,
 .sc-page *::before,
-.sc-page *::after {
+.sc-page *::after,
+.gw-participation-theme *,
+.gw-participation-theme *::before,
+.gw-participation-theme *::after {
   box-sizing: border-box;
 }
 
-.sc-page :focus-visible {
+.sc-page :focus-visible,
+.gw-participation-theme :focus-visible {
   outline: 3px solid var(--sc-accent);
   outline-offset: 3px;
 }

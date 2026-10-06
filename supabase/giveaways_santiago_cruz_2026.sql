@@ -17,13 +17,13 @@ CREATE TABLE IF NOT EXISTS public.giveaways (
   CHECK (ends_at > starts_at)
 );
 
--- Fechas en hora de Suiza: el 23 de octubre aún rige el horario de verano (+02:00).
+-- Fechas en hora de Suiza: el 31 de octubre ya rige el horario estándar (+01:00).
 INSERT INTO public.giveaways (id, title, starts_at, ends_at, winners_count)
 VALUES (
   'santiago-cruz-zurich-2026',
   'Santiago Cruz en Zürich · 2 entradas dobles',
   '2026-10-01 00:00:00+02',
-  '2026-10-23 23:59:59+02',
+  '2026-10-31 23:59:59+01',
   2
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -200,7 +200,7 @@ GRANT EXECUTE ON FUNCTION public.get_my_giveaway_entry(TEXT) TO authenticated;
 NOTIFY pgrst, 'reload schema';
 COMMIT;
 
--- ── Cuando termine (viernes 23 de octubre, 23:59) ─────────────────────────
+-- ── Cuando termine (sábado 31 de octubre, 23:59) ───────────────────────
 -- Recuento:
 --   SELECT count(*) AS participantes,
 --          count(*) FILTER (WHERE user_id IS NOT NULL) AS con_cuenta,

@@ -1,20 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import {
   ArrowRight,
   CalendarDays,
-  Check,
   ChevronDown,
   Clock,
   Gift,
   MapPin,
   Play,
-  Share2,
-  ShieldCheck,
   Ticket,
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import GiveawayParticipationCard, { GiveawayShareButton } from '../components/GiveawayParticipationCard'
 import { useAuth } from '../hooks/useAuth'
 import { useCountdown } from '../hooks/useCountdown'
 import { trackAnalyticsEvent } from '../lib/analytics'
@@ -32,7 +28,6 @@ const VIDEO = {
 }
 
 const HERO_IMAGE = GIVEAWAY.heroImage
-const PAGE_PATH = GIVEAWAY.path
 
 const CONDITIONS = [
   ['Organizador del sorteo', 'Latido.ch (operador de Latido.ch), Zürich, Suiza · info@latido.ch'],
@@ -53,15 +48,6 @@ const CONDITIONS = [
   ['Entradas', `${EVENT.ticketProvider}, organizadora del concierto, proporciona las entradas sorteadas.`],
   ['Ganadores e invitados', `El nombre de cada ganador se comunica a ${EVENT.organizer} para gestionar la entrega de las entradas o su inclusión en la lista de invitados (Gästeliste).`],
 ]
-
-function errorMessage(error) {
-  const text = String(error?.message || '')
-  if (text.includes('invalid_email')) return 'Revisa el email: parece que no es válido.'
-  if (text.includes('invalid_name')) return 'Escribe tu nombre (al menos 2 letras).'
-  if (text.includes('giveaway_closed')) return 'El sorteo ya ha terminado.'
-  if (text.includes('giveaway_not_started')) return 'El sorteo todavía no ha empezado.'
-  return 'No hemos podido guardar tu participación. Inténtalo de nuevo en unos minutos.'
-}
 
 function track(eventType, metadata = {}, userId = null) {
   trackAnalyticsEvent(eventType, {
@@ -146,246 +132,6 @@ function VideoFacade() {
   )
 }
 
-function ShareButton({ className = 'sc-share', label = 'Compartir', userId }) {
-  const share = async () => {
-    const url = `${window.location.origin}${PAGE_PATH}`
-    const text = `🎤 ${EVENT.artist} en Zürich: participa gratis en el sorteo de ${GIVEAWAY.winners} entradas dobles en Latido.`
-    track('giveaway_share', { method:navigator.share ? 'native' : 'copy' }, userId)
-    if (navigator.share) {
-      try {
-        await navigator.share({ title:`${EVENT.artist} en Zürich · Sorteo Latido`, text, url })
-        return
-      } catch (error) {
-        if (error?.name === 'AbortError') return
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(`${text} ${url}`)
-      toast.success('Enlace copiado')
-    } catch {
-      window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank', 'noopener,noreferrer')
-    }
-  }
-
-  return (
-    <button type="button" className={className} onClick={share}>
-      <Share2 size={16} aria-hidden="true" />
-      <span>{label}</span>
-    </button>
-  )
-}
-
-function ParticipationCard({ onParticipated, giveawayEnded }) {
-  const { user, isLoggedIn, loading:authLoading, displayName } = useAuth()
-  const [form, setForm] = useState({ name:'', email:'', marketing:false, website:'' })
-  const [status, setStatus] = useState('idle')
-  const [entryEmail, setEntryEmail] = useState('')
-  const [error, setError] = useState('')
-  const nameRef = useRef(null)
-  const now = Date.now()
-  const closed = giveawayEnded || now > new Date(GIVEAWAY.endsAt).getTime()
-  const notStarted = now < new Date(GIVEAWAY.startsAt).getTime()
-
-  // Una cuenta que ya participó lo ve al entrar, sin tener que volver a pulsar.
-  useEffect(() => {
-    if (!isLoggedIn) return undefined
-    let cancelled = false
-    supabase.rpc('get_my_giveaway_entry', { p_giveaway_id:GIVEAWAY.id }).then(({ data }) => {
-      if (cancelled || !data?.status) return
-      setEntryEmail(data.email || user?.email || '')
-      setStatus('already')
-      onParticipated?.()
-    })
-    return () => { cancelled = true }
-  }, [isLoggedIn, user?.email, onParticipated])
-
-  const submit = async event => {
-    event.preventDefault()
-    if (status === 'submitting') return
-    setError('')
-
-    // Campo trampa: los bots lo rellenan, las personas no lo ven.
-    if (form.website) {
-      setStatus('entered')
-      return
-    }
-
-    if (!isLoggedIn) {
-      if (form.name.trim().length < 2) {
-        setError('Escribe tu nombre (al menos 2 letras).')
-        nameRef.current?.focus()
-        return
-      }
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(form.email.trim())) {
-        setError('Revisa el email: parece que no es válido.')
-        return
-      }
-    }
-
-    setStatus('submitting')
-    const { data, error:rpcError } = await supabase.rpc('enter_giveaway', {
-      p_giveaway_id:GIVEAWAY.id,
-      p_name:isLoggedIn ? displayName : form.name.trim(),
-      p_email:isLoggedIn ? user?.email : form.email.trim(),
-      p_marketing_consent:form.marketing,
-      p_source:new URLSearchParams(window.location.search).get('utm_source') || 'landing',
-    })
-
-    if (rpcError) {
-      if (String(rpcError.message || '').includes('giveaway_closed')) {
-        setStatus('closed')
-        return
-      }
-      setStatus('idle')
-      setError(errorMessage(rpcError))
-      return
-    }
-
-    setEntryEmail(data?.email || form.email.trim() || user?.email || '')
-    setStatus(data?.status === 'already' ? 'already' : 'entered')
-    onParticipated?.()
-    if (data?.status !== 'already') {
-      track('giveaway_entry', {
-        entry_type:isLoggedIn ? 'account' : 'guest',
-        marketing_consent:form.marketing,
-      }, user?.id || null)
-    }
-  }
-
-  if (status === 'entered' || status === 'already') {
-    return (
-      <div className="sc-card sc-card--success" role="status" aria-live="polite">
-        <span className="sc-success__icon" aria-hidden="true"><Check size={26} strokeWidth={3} /></span>
-        <h2 className="sc-card__title">¡Ya estás participando!</h2>
-        <p className="sc-card__text">
-          {status === 'already' ? 'Este email ya estaba en el sorteo. ' : ''}
-          Si ganas, te escribiremos{entryEmail ? <> a <strong>{entryEmail}</strong></> : ''} el {GIVEAWAY.drawLabel}.
-        </p>
-
-        {!isLoggedIn && (
-          <div className="sc-join">
-            <p>Únete a la comunidad hispanohablante en Suiza.</p>
-            <Link
-              to={`/auth?mode=register&next=${encodeURIComponent('/')}`}
-              className="sc-button sc-button--blue"
-              onClick={() => track('giveaway_signup_click')}
-            >
-              Crear mi perfil gratis
-            </Link>
-          </div>
-        )}
-
-        <div className="sc-share-box">
-          <p>¿Conoces a alguien que quiera ver a {EVENT.artist}?</p>
-          <ShareButton userId={user?.id || null} />
-        </div>
-      </div>
-    )
-  }
-
-  if (closed || status === 'closed') {
-    return (
-      <div className="sc-card" role="status">
-        <span className="sc-card__eyebrow">Sorteo finalizado</span>
-        <h2 className="sc-card__title">La participación está cerrada</h2>
-        <p className="sc-card__text">
-          El plazo terminó el {GIVEAWAY.endLabel}. Contactaremos por email con las personas ganadoras.
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <form className="sc-card" onSubmit={submit} noValidate>
-      <span className="sc-card__eyebrow">Sorteo gratuito</span>
-      <h2 className="sc-card__title">Participa en el sorteo</h2>
-
-      {notStarted ? (
-        <p className="sc-card__notice">El sorteo empieza el {GIVEAWAY.startLabel}.</p>
-      ) : authLoading ? (
-        <div className="sc-card__loading" aria-hidden="true" />
-      ) : isLoggedIn ? (
-        <div className="sc-account">
-          <span className="sc-account__avatar" aria-hidden="true">{(displayName || 'L').slice(0, 1).toUpperCase()}</span>
-          <span className="sc-account__text">
-            <small>Participas con tu cuenta de Latido</small>
-            <strong>{displayName}</strong>
-            <span>{user?.email}</span>
-          </span>
-        </div>
-      ) : (
-        <div className="sc-fields">
-          <label className="sc-field">
-            <span>Nombre</span>
-            <input
-              ref={nameRef}
-              type="text"
-              name="name"
-              autoComplete="name"
-              maxLength={80}
-              value={form.name}
-              onChange={event => setForm(previous => ({ ...previous, name:event.target.value }))}
-              placeholder="Tu nombre y apellido"
-              required
-            />
-          </label>
-          <label className="sc-field">
-            <span>Email</span>
-            <input
-              type="email"
-              name="email"
-              autoComplete="email"
-              inputMode="email"
-              maxLength={254}
-              value={form.email}
-              onChange={event => setForm(previous => ({ ...previous, email:event.target.value }))}
-              placeholder="tu@email.com"
-              required
-            />
-          </label>
-          <label className="sc-honeypot" aria-hidden="true">
-            Web
-            <input
-              type="text"
-              name="website"
-              tabIndex={-1}
-              autoComplete="off"
-              value={form.website}
-              onChange={event => setForm(previous => ({ ...previous, website:event.target.value }))}
-            />
-          </label>
-          <label className="sc-check">
-            <input
-              type="checkbox"
-              checked={form.marketing}
-              onChange={event => setForm(previous => ({ ...previous, marketing:event.target.checked }))}
-            />
-            <span>Quiero recibir novedades de Latido por email. <em>(opcional)</em></span>
-          </label>
-        </div>
-      )}
-
-      {error && <p className="sc-error" role="alert">{error}</p>}
-
-      {!notStarted && (
-        <button type="submit" className="sc-button sc-button--primary sc-button--block" disabled={status === 'submitting' || authLoading}>
-          <Ticket size={19} aria-hidden="true" />
-          {status === 'submitting' ? 'Guardando…' : 'Participar gratis'}
-        </button>
-      )}
-
-      <div className="sc-legal">
-        <p><ShieldCheck size={15} aria-hidden="true" /> Gratis · Sin compra · Sin cuenta</p>
-        <p>
-          Al participar aceptas las{' '}
-          <button type="button" className="sc-link" onClick={openConditions}>condiciones del sorteo</button>
-          {' '}y la <Link to="/privacidad" className="sc-link">política de privacidad</Link>.
-        </p>
-      </div>
-    </form>
-  )
-}
-
 export default function SantiagoCruz() {
   const { user } = useAuth()
   const [conditionsOpen, setConditionsOpen] = useState(false)
@@ -437,7 +183,7 @@ export default function SantiagoCruz() {
           <img src="/favicon.svg" alt="" width="30" height="30" />
           <span>Latido</span>
         </Link>
-        <ShareButton className="sc-topbar__share" label="Compartir" userId={user?.id || null} />
+        <GiveawayShareButton className="sc-topbar__share" label="Compartir" userId={user?.id || null} />
       </header>
 
       <section className="sc-hero" aria-labelledby="sc-title">
@@ -489,7 +235,7 @@ export default function SantiagoCruz() {
       <main className="sc-main">
         <div className="sc-layout">
           <aside className="sc-layout__form" id="participar" ref={formRef} aria-label="Participar en el sorteo">
-            <ParticipationCard onParticipated={markParticipated} giveawayEnded={countdown.expired} />
+            <GiveawayParticipationCard onParticipated={markParticipated} giveawayEnded={countdown.expired} onOpenConditions={openConditions} />
           </aside>
 
           <div className="sc-layout__content">
