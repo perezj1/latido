@@ -10,7 +10,7 @@ export const SANTIAGO_CRUZ_GIVEAWAY = {
   endLabel:'sábado 31 de octubre de 2026, 23:59 (hora de Suiza)',
   shortEndLabel:'31 oct · 23:59',
   startLabel:'1 de octubre de 2026',
-  drawLabel:'lunes 2 de noviembre de 2026',
+  drawLabel:'martes 3 de noviembre de 2026',
   shortEndDayLabel:'31 oct',
   winners:2,
   ticketsPerWinner:2,
