@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
+  ArrowLeft,
   ArrowRight,
   CalendarDays,
   ChevronDown,
@@ -134,6 +135,7 @@ function VideoFacade() {
 
 export default function SantiagoCruz() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [conditionsOpen, setConditionsOpen] = useState(false)
   const [participated, setParticipated] = useState(false)
   const [stickyVisible, setStickyVisible] = useState(false)
@@ -141,6 +143,12 @@ export default function SantiagoCruz() {
   const formRef = useRef(null)
   const markParticipated = useCallback(() => setParticipated(true), [])
   const countdown = useCountdown(GIVEAWAY.endsAt)
+
+  const goBack = () => {
+    track('giveaway_back', {}, user?.id || null)
+    const historyIndex = Number(window.history.state?.idx)
+    navigate(Number.isFinite(historyIndex) && historyIndex > 0 ? -1 : '/')
+  }
 
   // Botón fijo en móvil: solo cuando no se ve ni el del banner ni el formulario.
   useEffect(() => {
@@ -179,10 +187,15 @@ export default function SantiagoCruz() {
   return (
     <div className="sc-page">
       <header className="sc-topbar">
-        <Link to="/" className="sc-brand" aria-label="Ir a Latido.ch">
-          <img src="/favicon.svg" alt="" width="30" height="30" />
-          <span>Latido</span>
-        </Link>
+        <div className="sc-topbar__start">
+          <button type="button" className="sc-topbar__back" onClick={goBack} aria-label="Volver a la página anterior">
+            <ArrowLeft size={20} strokeWidth={2.4} aria-hidden="true" />
+          </button>
+          <Link to="/" className="sc-brand" aria-label="Ir a Latido.ch">
+            <img src="/favicon.svg" alt="" width="30" height="30" />
+            <span>Latido</span>
+          </Link>
+        </div>
         <GiveawayShareButton className="sc-topbar__share" label="Compartir" userId={user?.id || null} />
       </header>
 
