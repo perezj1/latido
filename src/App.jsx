@@ -35,6 +35,7 @@ import { AppNotificationsProvider } from './hooks/useAppNotifications'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
+const Club = lazy(() => import('./pages/Club'))
 const Home = lazy(() => import('./pages/Home'))
 const Explorar = lazy(() => import('./pages/Explorar'))
 const Tablon = lazy(() => import('./pages/Tablon'))
@@ -66,6 +67,7 @@ const SynaPartnerContact = lazy(() => import('./pages/SynaPartnerContact'))
 const DestacarNegocio = lazy(() => import('./pages/DestacarNegocio'))
 const AlertasClientesPotenciales = lazy(() => import('./pages/AlertasClientesPotenciales'))
 const Virtus360Services = lazy(() => import('./pages/Virtus360Services'))
+const SantiagoCruz = lazy(() => import('./pages/SantiagoCruz'))
 const BusinessPartnerLanding = lazy(() => import('./pages/BusinessPartnerLanding'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
@@ -500,10 +502,11 @@ function AppShell() {
   const isRoot = pathname === '/'
   const isPartnerServices = pathname === '/servicios-suiza'
   const isVirtus360Services = pathname === '/servicios-virtus360'
+  const isSantiagoCruzLanding = pathname === '/santiago-cruz' || pathname === '/santiago-cruz/'
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
-  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password' || isPuntoHispanoPublisher
+  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/club' || isPuntoHispanoPublisher
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -616,6 +619,7 @@ function AppShell() {
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'creadores', label:'Creadores', to:'/creadores' },
+      { id:'club', label:'Club', to:'/club' },
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
@@ -731,6 +735,19 @@ function AppShell() {
     )
   }
 
+  if (isSantiagoCruzLanding) {
+    return (
+      <>
+        <CookieConsent />
+        <div ref={routeViewRef} className="latido-route-view latido-route-view--standalone">
+          <Suspense fallback={<AppLoading />}>
+            <SantiagoCruz />
+          </Suspense>
+        </div>
+      </>
+    )
+  }
+
   if (isBusinessPartnerLanding) {
     return (
       <>
@@ -763,6 +780,7 @@ function AppShell() {
             <Route path="/publicar/punto-hispano/:linkToken" element={<PuntoHispanoPublicar />} />
             <Route path="/comunidades" element={<Comunidades />} />
             <Route path="/colaboraciones" element={<Colaboraciones />} />
+            <Route path="/club" element={<Club />} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />
