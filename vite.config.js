@@ -2,6 +2,7 @@ import dns from 'node:dns'
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import gelatoHandler from './api/gelato.js'
 import { resolveTikTokLink } from './api/tiktok-resolve.js'
 import tiktokMetadataHandler from './api/tiktok-metadata.js'
 
@@ -49,8 +50,60 @@ function tiktokResolverPlugin() {
   }
 }
 
+function gelatoDevPlugin() {
+  return {
+    name:'latido-gelato-dev-api',
+    configureServer(server) {
+      server.middlewares.use('/api/gelato', async (req, res) => {
+        const requestUrl = new URL(req.url || '/', 'http://localhost')
+        req.query = Object.fromEntries(requestUrl.searchParams)
+
+        if (req.method === 'POST') {
+          const chunks = []
+          let size = 0
+          for await (const chunk of req) {
+            size += chunk.length
+            if (size > 1_000_000) {
+              res.statusCode = 413
+              res.end(JSON.stringify({ error:'Solicitud demasiado grande.' }))
+              return
+            }
+            chunks.push(chunk)
+          }
+
+          try {
+            req.body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}
+          } catch {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error:'JSON no válido.' }))
+            return
+          }
+        }
+
+        res.status = code => {
+          res.statusCode = code
+          return res
+        }
+        res.json = payload => res.end(JSON.stringify(payload))
+        await gelatoHandler(req, res)
+      })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  // Vite reloads its config when an env file changes. Always copy the latest
+  // local Gelato values so a key that was replaced does not remain cached in
+  // the long-running development process.
+  for (const key of [
+    'GELATO_API_KEY',
+    'GELATO_PRODUCT_CATALOG_JSON',
+    'GELATO_STORE_ID',
+    'GELATO_STORE_NAME',
+  ]) {
+    if (env[key] !== undefined) process.env[key] = env[key]
+  }
   const eventfrogKey =
     env.EVENTFROG_API_KEY ||
     env.VITE_EVENTFROG_PUBLIC_API_KEY ||
@@ -79,7 +132,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), tiktokResolverPlugin()],
+    plugins: [react(), tiktokResolverPlugin(), gelatoDevPlugin()],
     resolve: {
       alias: {
         react: path.resolve(process.cwd(), 'node_modules/react'),

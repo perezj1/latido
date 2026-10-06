@@ -9,6 +9,7 @@ export default function Footer() {
     { label:'Guías', href:'/guias' },
     { label:'Empleos', href:'/tablon?cat=empleo' },
     { label:'Publicar', href:'/publicar' },
+    { label:'Club', href:'/club' },
   ]
 
   return (

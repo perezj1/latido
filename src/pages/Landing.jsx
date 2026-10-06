@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
 import CommunityPulse from '../components/CommunityPulse'
+import GiveawayHomeBanner from '../components/GiveawayHomeBanner'
 import HorizontalDragScroller from '../components/HorizontalDragScroller'
 import PublicPartnersSection from '../components/PublicPartnersSection'
 import { ChevronLeftIcon } from '../components/UI'
@@ -1108,6 +1109,29 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
     </div>
   </div>
 </section>
+
+      {/* ── SORTEO SANTIAGO CRUZ ──────────────────────────────── */}
+      <GiveawayHomeBanner
+        analyticsPlacement="landing_popup"
+        collapsible={false}
+        participationModal
+        promotionalModal
+      />
+
+      <section
+        aria-labelledby="landing-special-event-title"
+        style={{ background: 'linear-gradient(180deg, #EFF6FF 0%, #F8FAFF 100%)', padding: '42px 0 28px' }}
+      >
+        <div className="latido-page-container" style={{ paddingBottom: 0, textAlign: 'center' }}>
+          <p style={{ margin: '0 0 8px', color: C.primary, fontFamily: PP, fontSize: 11, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase' }}>
+            Evento especial
+          </p>
+          <h2 id="landing-special-event-title" style={{ margin: 0, color: C.text, fontFamily: PP, fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 900, letterSpacing: -0.7 }}>
+            Participa gratis en el sorteo de 2 entradas
+          </h2>
+        </div>
+        <GiveawayHomeBanner analyticsPlacement="landing_banner" collapsible={false} participationModal />
+      </section>
 
       <LandingCollaboratorsStrip />
 
