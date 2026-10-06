@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, CalendarDays, ChevronUp, Info, MapPin, Ticket, X } from 'lucide-react'
 import GiveawayParticipationCard from './GiveawayParticipationCard'
@@ -94,12 +94,14 @@ export default function GiveawayHomeBanner({
   const countdown = useCountdown(GIVEAWAY.endsAt)
   const giveawayVisible = !countdown.expired && isGiveawayOpen(GIVEAWAY)
   const contentId = `giveaway-${instanceId}-content`
+  const closeParticipation = useCallback(() => setModalOpen(false), [])
+  const closePromotion = useCallback(() => setPromotionOpen(false), [])
 
   useEffect(() => {
     if (!giveawayVisible || !promotionalModal || !promotionOpen) return undefined
     const previousOverflow = document.body.style.overflow
     const closeOnEscape = event => {
-      if (event.key === 'Escape') setPromotionOpen(false)
+      if (event.key === 'Escape') closePromotion()
     }
     document.body.style.overflow = 'hidden'
     document.addEventListener('keydown', closeOnEscape)
@@ -108,7 +110,7 @@ export default function GiveawayHomeBanner({
       document.body.style.overflow = previousOverflow
       document.removeEventListener('keydown', closeOnEscape)
     }
-  }, [giveawayVisible, promotionalModal, promotionOpen])
+  }, [closePromotion, giveawayVisible, promotionalModal, promotionOpen])
 
   if (!giveawayVisible) return null
 
@@ -266,10 +268,10 @@ export default function GiveawayHomeBanner({
       <>
         {promotionOpen && (
           <div className="gw-promo-modal" role="presentation" onMouseDown={event => {
-            if (event.target === event.currentTarget) setPromotionOpen(false)
+            if (event.target === event.currentTarget) closePromotion()
           }}>
             <div className="gw-promo-modal__panel" role="dialog" aria-modal="true" aria-label="Evento especial: sorteo de Santiago Cruz">
-              <button ref={promotionCloseRef} type="button" className="gw-promo-modal__close" onClick={() => setPromotionOpen(false)} aria-label="Cerrar evento especial">
+              <button ref={promotionCloseRef} type="button" className="gw-promo-modal__close" onClick={closePromotion} aria-label="Cerrar evento especial">
                 <X size={18} aria-hidden="true" />
               </button>
               <section className="latido-page-container gw-home" aria-label="Evento especial">
@@ -278,7 +280,7 @@ export default function GiveawayHomeBanner({
             </div>
           </div>
         )}
-        <ParticipationModal open={modalOpen} onClose={() => setModalOpen(false)} source={`${analyticsPlacement}_modal`} />
+        <ParticipationModal open={modalOpen} onClose={closeParticipation} source={`${analyticsPlacement}_modal`} />
       </>
     )
   }
@@ -286,7 +288,7 @@ export default function GiveawayHomeBanner({
   return (
     <section className="latido-page-container gw-home" aria-label="Evento especial">
       {card}
-      <ParticipationModal open={modalOpen} onClose={() => setModalOpen(false)} source={`${analyticsPlacement}_modal`} />
+      <ParticipationModal open={modalOpen} onClose={closeParticipation} source={`${analyticsPlacement}_modal`} />
     </section>
   )
 }

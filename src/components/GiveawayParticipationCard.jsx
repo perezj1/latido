@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Check, Share2, ShieldCheck, Ticket } from 'lucide-react'
+import { Check, LoaderCircle, Share2, ShieldCheck, Ticket } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent } from '../lib/analytics'
@@ -65,6 +65,7 @@ export default function GiveawayParticipationCard({
   const [entryEmail, setEntryEmail] = useState('')
   const [error, setError] = useState('')
   const nameRef = useRef(null)
+  const emailRef = useRef(null)
   const now = Date.now()
   const closed = giveawayEnded || now > new Date(GIVEAWAY.endsAt).getTime()
   const notStarted = now < new Date(GIVEAWAY.startsAt).getTime()
@@ -83,7 +84,7 @@ export default function GiveawayParticipationCard({
 
   const submit = async event => {
     event.preventDefault()
-    if (status === 'submitting') return
+    if (status === 'confirming') return
     setError('')
 
     if (form.website) {
@@ -100,11 +101,13 @@ export default function GiveawayParticipationCard({
       }
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(form.email.trim())) {
         setError('Revisa el email: parece que no es válido.')
+        emailRef.current?.focus()
         return
       }
     }
 
-    setStatus('submitting')
+    setEntryEmail(form.email.trim() || user?.email || '')
+    setStatus('confirming')
     const { data, error:rpcError } = await supabase.rpc('enter_giveaway', {
       p_giveaway_id:GIVEAWAY.id,
       p_name:isLoggedIn ? displayName : form.name.trim(),
@@ -124,6 +127,13 @@ export default function GiveawayParticipationCard({
     }
 
     setEntryEmail(data?.email || form.email.trim() || user?.email || '')
+    if (data?.status === 'already' && !isLoggedIn) {
+      setStatus('idle')
+      setError('Este email ya está participando en el sorteo. Prueba con otro.')
+      window.requestAnimationFrame(() => emailRef.current?.focus())
+      return
+    }
+
     setStatus(data?.status === 'already' ? 'already' : 'entered')
     onParticipated?.()
     if (data?.status !== 'already') {
@@ -133,6 +143,20 @@ export default function GiveawayParticipationCard({
         source,
       }, user?.id || null)
     }
+  }
+
+  if (status === 'confirming') {
+    return (
+      <div className="sc-card sc-card--success" role="status" aria-live="polite">
+        <span className="sc-success__icon sc-success__icon--loading" aria-hidden="true">
+          <LoaderCircle size={27} strokeWidth={2.5} />
+        </span>
+        <h2 className="sc-card__title">Confirmando tu participación…</h2>
+        <p className="sc-card__text">
+          Estamos registrando tu entrada{entryEmail ? <> para <strong>{entryEmail}</strong></> : ''}. Solo tardará un momento.
+        </p>
+      </div>
+    )
   }
 
   if (status === 'entered' || status === 'already') {
@@ -147,7 +171,7 @@ export default function GiveawayParticipationCard({
 
         {!isLoggedIn && (
           <div className="sc-join">
-            <p>Únete a la comunidad hispanohablante en Suiza.</p>
+            <p>Únete a Latido, la comunidad hispanohablante en Suiza.</p>
             <Link
               to={`/auth?mode=register&next=${encodeURIComponent('/')}`}
               className="sc-button sc-button--blue"
@@ -215,6 +239,7 @@ export default function GiveawayParticipationCard({
           <label className="sc-field">
             <span>Email</span>
             <input
+              ref={emailRef}
               type="email"
               name="email"
               autoComplete="email"
@@ -251,9 +276,9 @@ export default function GiveawayParticipationCard({
       {error && <p className="sc-error" role="alert">{error}</p>}
 
       {!notStarted && (
-        <button type="submit" className="sc-button sc-button--primary sc-button--block" disabled={status === 'submitting' || authLoading}>
+        <button type="submit" className="sc-button sc-button--primary sc-button--block" disabled={status === 'confirming' || authLoading}>
           <Ticket size={19} aria-hidden="true" />
-          {status === 'submitting' ? 'Guardando…' : 'Participar gratis'}
+          Participar gratis
         </button>
       )}
 
