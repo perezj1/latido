@@ -117,7 +117,9 @@ const ADMIN_TAB_DATA_GROUPS = {
   feedback: ['users', 'feedback'],
   partners: ['users', 'businesses', 'analytics'],
   live: ['users', 'analytics'],
-  overview: ['users', 'reports', 'moderation', 'contentMetrics', 'businesses', 'overviewSummary', 'creators'],
+  // Estado general se resuelve con una sola respuesta agregada. Los conjuntos
+  // detallados se cargan únicamente cuando el administrador abre su pestaña.
+  overview: ['overviewSummary'],
   businessVerification: ['businesses'],
   content: ['content'],
   reports: ['users', 'reports'],
@@ -3203,7 +3205,7 @@ export default function Admin() {
   }[presenceStatus] || { label: presenceStatus, color: '#64748B', bg: '#F1F5F9', note: 'Estado realtime' }
 
   function getLoadDaysForTab(tabId = tab) {
-    if (tabId === 'overview') return Math.min(ADMIN_ACTIVITY_RETENTION_DAYS, Math.max(overviewDays * 2, 14))
+    if (tabId === 'overview') return overviewDays
     if (tabId === 'analytics') return analyticsDays
     if (tabId === 'partners') return Math.min(ADMIN_MAX_DELTA_DAYS, getPartnerMonthlyLoadDays())
     if (tabId === 'live') return 14
@@ -3291,8 +3293,8 @@ export default function Admin() {
 
     try {
       const wantsContent = groups.includes('content')
-      const wantsContentMetrics = groups.includes('contentMetrics')
-      const contentGroup = wantsContent ? 'content' : 'contentMetrics'
+      let wantsContentMetrics = groups.includes('contentMetrics')
+      let contentGroup = wantsContent ? 'content' : 'contentMetrics'
       const skipped = data => ({
         data,
         count:Array.isArray(data) ? data.length : data ? 1 : 0,
@@ -3312,6 +3314,21 @@ export default function Admin() {
           console.warn('Admin summary RPC unavailable; using row fallback:', overviewSummaryRes.error.message)
         }
       }
+      // La función agregada es la vía rápida. Si todavía no está disponible,
+      // conservamos el comportamiento anterior sin marcar esos grupos como
+      // cargados, para que su pestaña siga haciendo una lectura fresca.
+      if (overviewFallbackActive) {
+        wantsContentMetrics = true
+        contentGroup = 'contentMetrics'
+      }
+      const wantsReports = groups.includes('reports') || overviewFallbackActive
+      const wantsModeration = groups.includes('moderation') || overviewFallbackActive
+      const wantsUsers = groups.includes('users') || overviewFallbackActive
+      const wantsBusinesses = groups.includes('businesses') || overviewFallbackActive
+      const wantsCreators = groups.includes('creators') || overviewFallbackActive
+      const rowDays = overviewFallbackActive
+        ? Math.min(ADMIN_ACTIVITY_RETENTION_DAYS, Math.max(overviewSummaryDays * 2, 14))
+        : requestedDays
       const [
         reportsRes,
         queueRes,
@@ -3327,16 +3344,16 @@ export default function Admin() {
         creatorContentsRes,
         creatorMetricsRes,
       ] = await Promise.all([
-        groups.includes('reports') ? fetchAdminReportsDelta({
+        wantsReports ? fetchAdminReportsDelta({
           cache:periodRowsCacheRef.current,
-          days:requestedDays,
+          days:rowDays,
           refresh:force,
         }) : skipped(reports),
-        groups.includes('moderation') ? fetchAllAdminRows({
+        wantsModeration ? fetchAllAdminRows({
           table: 'moderation_queue',
           transformQuery: query => query.eq('status', 'pending'),
         }) : skipped(queue),
-        groups.includes('users')
+        wantsUsers
           ? fetchAllAdminRows({ table: 'profiles', columns: 'id,name,email,canton,interests,banned,banned_reason,banned_at,created_at,last_seen_at' })
           : skipped(users),
         wantsContent
@@ -3350,7 +3367,7 @@ export default function Admin() {
               cacheKey:'listings:metrics',
               table: 'listings',
               columns:'id,active,created_at',
-              days:requestedDays,
+              days:rowDays,
               refresh:force,
             })
           : skipped(recentListings),
@@ -3365,17 +3382,17 @@ export default function Admin() {
               cacheKey:'jobs:metrics',
               table: 'jobs',
               columns:'id,active,created_at',
-              days:requestedDays,
+              days:rowDays,
               refresh:force,
             })
           : skipped(recentJobs),
-        groups.includes('businesses') ? fetchAllAdminRows({ table: 'providers' }) : skipped(businesses),
+        wantsBusinesses ? fetchAllAdminRows({ table: 'providers' }) : skipped(businesses),
         (groups.includes('analytics') || overviewFallbackActive) ? fetchAdminRowsForPeriod({
           cache:periodRowsCacheRef.current,
           cacheKey:'analytics:events',
           table: 'analytics_events',
           columns: 'id,event_type,path,search,user_id,session_id,metadata,created_at',
-          days:requestedDays,
+          days:rowDays,
           refresh:force,
           transformQuery: query => query.in('event_type', ADMIN_ANALYTICS_EVENT_TYPES),
         }) : skipped(analyticsEvents),
@@ -3384,7 +3401,7 @@ export default function Admin() {
           cacheKey:'messages:activity',
           table: 'messages',
           columns: 'id,sender_id,created_at',
-          days:requestedDays,
+          days:rowDays,
           refresh:force,
         }) : skipped(messageEvents),
         groups.includes('feedback')
@@ -3401,19 +3418,19 @@ export default function Admin() {
               orderColumn:'created_at',
             })
           : skipped(searchFeedback),
-        groups.includes('creators')
+        wantsCreators
           ? fetchAllAdminRows({
               table:'creator_profiles',
               columns:'id,owner_id,slug,name,handle,tagline,city,canton,reach,topics,socials,avatar_url,verified,active,status,review_status,helpful_count,saved_count,featured_content_ids,created_at,updated_at',
             })
           : skipped(creatorProfiles),
-        groups.includes('creators')
+        wantsCreators
           ? fetchAllAdminRows({
               table:'creator_contents',
               columns:'id,creator_id,title,url,platform,format,topic,canton,status,active,helpful_count,published_at,created_at,updated_at',
             })
           : skipped(creatorContents),
-        groups.includes('creators')
+        wantsCreators
           ? fetchAllAdminRows({
               table:'creator_metrics',
               columns:'creator_id,metric,content_id,count,updated_at',
@@ -3517,7 +3534,7 @@ export default function Admin() {
         setMessagesUnavailable(true)
         console.warn('Messages activity unavailable:', messagesRes.error.message)
       }
-      if (groups.includes('creators')) {
+      if (wantsCreators) {
         const creatorsFailed = Boolean(creatorProfilesRes.error)
         setCreatorsUnavailable(creatorsFailed)
         if (!creatorsFailed) setCreatorProfiles(creatorProfilesRes.data)
@@ -3532,8 +3549,8 @@ export default function Admin() {
         setSearchFeedback(searchFeedbackRes.data)
       }
 
-      const nextReports = groups.includes('reports') && !reportsRes.error ? reportsRes.data : []
-      const nextQueue = groups.includes('moderation') && !queueRes.error ? queueRes.data : []
+      const nextReports = wantsReports && !reportsRes.error ? reportsRes.data : []
+      const nextQueue = wantsModeration && !queueRes.error ? queueRes.data : []
       const relatedContent = await fetchAdminContentForItems([
         ...nextReports.filter(item => item.status === 'pending'),
         ...nextQueue,
@@ -3543,7 +3560,7 @@ export default function Admin() {
       const nextContent = new Map()
       ;(wantsContent ? listingsRes.data || [] : []).forEach(item => nextContent.set(`listing:${item.id}`, item))
       ;(wantsContent ? jobsRes.data || [] : []).forEach(item => nextContent.set(`job:${item.id}`, item))
-      ;(groups.includes('businesses') ? providersRes.data || [] : []).forEach(item => {
+      ;(wantsBusinesses ? providersRes.data || [] : []).forEach(item => {
         nextContent.set(`provider:${item.id}`, item)
         nextContent.set(`business:${item.id}`, item)
       })
@@ -3560,12 +3577,12 @@ export default function Admin() {
         }
       }
 
-      if (groups.includes('reports') && !reportsRes.error) setReports(nextReports)
-      if (groups.includes('moderation') && !queueRes.error) setQueue(nextQueue)
-      if (groups.includes('users') && !usersRes.error) setUsers(usersRes.data)
+      if (wantsReports && !reportsRes.error) setReports(nextReports)
+      if (wantsModeration && !queueRes.error) setQueue(nextQueue)
+      if (wantsUsers && !usersRes.error) setUsers(usersRes.data)
       if ((wantsContent || wantsContentMetrics) && !listingsRes.error) setRecentListings(listingsRes.data)
       if ((wantsContent || wantsContentMetrics) && !jobsRes.error) setRecentJobs(jobsRes.data)
-      if (groups.includes('businesses') && !providersRes.error) setBusinesses(providersRes.data)
+      if (wantsBusinesses && !providersRes.error) setBusinesses(providersRes.data)
       if (groups.includes('businesses')) await loadBusinessPromotionAvailability({ silent:true })
       if (nextContent.size) {
         setContentByKey(previous => {
@@ -4230,7 +4247,31 @@ export default function Admin() {
   const filteredJobs = recentJobs.filter(contentMatches)
   const pagedListings = paginate(filteredListings, listingPage)
   const pagedJobs = paginate(filteredJobs, jobPage)
-  const totalPendingActions = stats.queue + stats.reports + stats.businessVerification + creatorStats.pendingReview
+  const overviewSummaryUsers = overviewSummary?.users || null
+  const overviewSummaryContent = overviewSummary?.content || null
+  const overviewSummaryBusinesses = overviewSummary?.businesses || null
+  const overviewSummaryReports = overviewSummary?.reports || null
+  const overviewSummaryModeration = overviewSummary?.moderation || null
+  const overviewSummaryCreators = overviewSummary?.creators || null
+  const overviewPendingReports = overviewSummaryReports
+    ? Number(overviewSummaryReports.pending) || 0
+    : stats.reports
+  const overviewPendingModeration = overviewSummaryModeration
+    ? Number(overviewSummaryModeration.pending) || 0
+    : stats.queue
+  const overviewPendingBusinesses = overviewSummaryBusinesses
+    ? Number(overviewSummaryBusinesses.verification_pending) || 0
+    : stats.businessVerification
+  const overviewPendingCreators = overviewSummaryCreators
+    ? Number(overviewSummaryCreators.review_pending) || 0
+    : creatorStats.pendingReview
+  const overviewLiveCreators = overviewSummaryCreators
+    ? Number(overviewSummaryCreators.live) || 0
+    : creatorStats.live
+  const totalPendingActions = overviewPendingModeration
+    + overviewPendingReports
+    + overviewPendingBusinesses
+    + overviewPendingCreators
   const activePublications = recentListings.filter(item => item.active !== false).length + recentJobs.filter(item => item.active !== false).length
   const verifiedBusinessCount = businessVerificationCounts.verified || 0
   const adminHealth = totalPendingActions > 0 ? 'Requiere atencion' : 'Todo al dia'
@@ -4246,8 +4287,11 @@ export default function Admin() {
   const overviewPeriodLabel = overviewDays === 1 ? 'Hoy' : `${overviewDays} días`
   const overviewRangeText = overviewDays === 1 ? 'hoy, de 00:00 a 23:59' : `últimos ${overviewDays} días`
   const overviewComparisonText = overviewDays === 1 ? 'hoy con ayer' : `los últimos ${overviewDays} días con los ${overviewDays} anteriores`
+  const overviewTotalUsers = overviewSummaryUsers
+    ? Number(overviewSummaryUsers.total) || 0
+    : metricUsers.length
   const overviewTargets = {
-    activeUsers: Math.max(1, Math.ceil(metricUsers.length * (overviewDays === 1 ? 0.05 : overviewDays === 7 ? 0.14 : 0.25))),
+    activeUsers: Math.max(1, Math.ceil(overviewTotalUsers * (overviewDays === 1 ? 0.05 : overviewDays === 7 ? 0.14 : 0.25))),
     newUsers: overviewDays === 1 ? 1 : overviewDays === 7 ? 3 : 8,
     businesses: overviewDays === 1 ? 1 : overviewDays === 7 ? 1 : 3,
     listings: overviewDays === 1 ? 1 : overviewDays === 7 ? 4 : 12,
@@ -4263,16 +4307,35 @@ export default function Admin() {
   const overviewInteractionEvents = overviewAnalyticsBaseEvents.filter(event => isWithinRecentDays(event.created_at, overviewDays))
   const overviewMessageBaseEvents = messageEvents.filter(event => !event.sender_id || !adminUserIds.has(event.sender_id))
   const overviewMessageEvents = overviewMessageBaseEvents.filter(event => isWithinRecentDays(event.created_at, overviewDays))
-  const activeUsersInOverviewRange = metricUsers.filter(profile => isWithinRecentDays(profile.last_seen_at, overviewDays))
-  const recentListingsInOverviewRange = recentListings.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
-  const recentJobsInOverviewRange = recentJobs.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
-  const newCreatorContentInOverviewRange = creatorContents.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
-  const newCreatorsInOverviewRange = countRecent(creatorProfiles, overviewDays)
-  const newBusinessesInOverviewRange = countRecent(businesses, overviewDays)
-  const newUsersInOverviewRange = countRecent(metricUsers, overviewDays)
+  const activeUsersInOverviewRange = overviewSummaryUsers
+    ? Number(overviewSummaryUsers.active) || 0
+    : metricUsers.filter(profile => isWithinRecentDays(profile.last_seen_at, overviewDays)).length
+  const recentListingsInOverviewRange = overviewSummaryContent
+    ? Number(overviewSummaryContent.listings_new) || 0
+    : recentListings.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
+  const recentJobsInOverviewRange = overviewSummaryContent
+    ? Number(overviewSummaryContent.jobs_new) || 0
+    : recentJobs.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
+  const newCreatorContentInOverviewRange = overviewSummaryCreators
+    ? Number(overviewSummaryCreators.content_new) || 0
+    : creatorContents.filter(item => isWithinRecentDays(item.created_at, overviewDays)).length
+  const newCreatorsInOverviewRange = overviewSummaryCreators
+    ? Number(overviewSummaryCreators.new) || 0
+    : countRecent(creatorProfiles, overviewDays)
+  const newBusinessesInOverviewRange = overviewSummaryBusinesses
+    ? Number(overviewSummaryBusinesses.new) || 0
+    : countRecent(businesses, overviewDays)
+  const newUsersInOverviewRange = overviewSummaryUsers
+    ? Number(overviewSummaryUsers.new) || 0
+    : countRecent(metricUsers, overviewDays)
   const newContentInOverviewRange = countRecent(contentItems, overviewDays)
-  const overviewTotalNewContent = newContentInOverviewRange + newBusinessesInOverviewRange
-  const reportsInOverviewRange = countRecent(reports, overviewDays)
+  const overviewNewPublications = overviewSummaryContent
+    ? recentListingsInOverviewRange + recentJobsInOverviewRange
+    : newContentInOverviewRange
+  const overviewTotalNewContent = overviewNewPublications + newBusinessesInOverviewRange
+  const reportsInOverviewRange = overviewSummaryReports
+    ? Number(overviewSummaryReports.new) || 0
+    : countRecent(reports, overviewDays)
   const overviewPageViews = overviewSummaryAnalytics
     ? Number(overviewSummaryAnalytics.page_views) || 0
     : overviewInteractionEvents.filter(event => event.event_type === 'page_view').length
@@ -4292,7 +4355,9 @@ export default function Admin() {
   const overviewEngagementText = analyticsUnavailable && messagesUnavailable
     ? 'sin datos de interacción disponibles'
     : `${overviewEngagementCount} señales de interacción`
-  const userTrendInOverviewRange = periodTrend(metricUsers, overviewDays)
+  const userTrendInOverviewRange = overviewSummaryUsers
+    ? countTrend(overviewSummaryUsers.new, overviewSummaryUsers.new_previous)
+    : periodTrend(metricUsers, overviewDays)
   const activeTrendInOverviewRange = analyticsUnavailable
     ? null
     : overviewSummaryAnalytics
@@ -4302,10 +4367,18 @@ export default function Admin() {
         overviewDays,
         event => event.user_id
       )
-  const businessTrendInOverviewRange = periodTrend(businesses, overviewDays)
-  const listingTrendInOverviewRange = periodTrend(recentListings, overviewDays)
-  const jobTrendInOverviewRange = periodTrend(recentJobs, overviewDays)
-  const creatorContentTrendInOverviewRange = periodTrend(creatorContents, overviewDays)
+  const businessTrendInOverviewRange = overviewSummaryBusinesses
+    ? countTrend(overviewSummaryBusinesses.new, overviewSummaryBusinesses.new_previous)
+    : periodTrend(businesses, overviewDays)
+  const listingTrendInOverviewRange = overviewSummaryContent
+    ? countTrend(overviewSummaryContent.listings_new, overviewSummaryContent.listings_new_previous)
+    : periodTrend(recentListings, overviewDays)
+  const jobTrendInOverviewRange = overviewSummaryContent
+    ? countTrend(overviewSummaryContent.jobs_new, overviewSummaryContent.jobs_new_previous)
+    : periodTrend(recentJobs, overviewDays)
+  const creatorContentTrendInOverviewRange = overviewSummaryCreators
+    ? countTrend(overviewSummaryCreators.content_new, overviewSummaryCreators.content_new_previous)
+    : periodTrend(creatorContents, overviewDays)
   const interactionTrendInOverviewRange = analyticsUnavailable
     ? null
     : overviewSummaryAnalytics
@@ -4316,7 +4389,9 @@ export default function Admin() {
     : overviewSummaryMessages
       ? countTrend(overviewSummaryMessages.total, overviewSummaryMessages.previous)
       : periodTrend(overviewMessageBaseEvents, overviewDays)
-  const reportsTrendInOverviewRange = periodTrend(reports, overviewDays)
+  const reportsTrendInOverviewRange = overviewSummaryReports
+    ? countTrend(overviewSummaryReports.new, overviewSummaryReports.new_previous)
+    : periodTrend(reports, overviewDays)
   const lowContentThreshold = overviewDays === 1 ? 1 : overviewDays === 7 ? 3 : 5
   const overviewPerformanceTrends = [
     activeTrendInOverviewRange,
@@ -4336,7 +4411,7 @@ export default function Admin() {
   const overviewScoreAvailable = !analyticsUnavailable && !messagesUnavailable
   const calculatedGeneralScore = Math.max(0, Math.min(100,
     22
-    + scoreByTarget(activeUsersInOverviewRange.length, overviewTargets.activeUsers, 18)
+    + scoreByTarget(activeUsersInOverviewRange, overviewTargets.activeUsers, 18)
     + scoreByTarget(newUsersInOverviewRange, overviewTargets.newUsers, 10)
     + scoreByTarget(newBusinessesInOverviewRange, overviewTargets.businesses, 8)
     + scoreByTarget(recentListingsInOverviewRange, overviewTargets.listings, 10)
@@ -4371,23 +4446,23 @@ export default function Admin() {
   const generalTrendLabel = generalScore === null ? 'Sin calcular' : generalTrend
   const generalSuggestions = [
     totalPendingActions > 0 && `Resolver ${totalPendingActions} acciones pendientes para bajar fricción administrativa.`,
-    stats.queue > 0 && `Revisar ${stats.queue} elementos en cola antes de que se acumulen publicaciones bloqueadas.`,
-    stats.reports > 0 && `Atender ${stats.reports} reportes pendientes para mantener confianza y seguridad.`,
-    stats.businessVerification > 0 && `Verificar ${stats.businessVerification} negocios pendientes para mejorar confianza visual.`,
-    creatorStats.pendingReview > 0 && `Revisar ${creatorStats.pendingReview} creadores pendientes para que su contenido llegue al directorio.`,
-    creatorStats.withoutContent > 0 && `Acompañar a ${creatorStats.withoutContent} creadores sin contenido publicado.`,
-    activeUsersInOverviewRange.length < overviewTargets.activeUsers && `Subir actividad: hay ${activeUsersInOverviewRange.length} usuarios activos y el objetivo del periodo es ${overviewTargets.activeUsers}.`,
+    overviewPendingModeration > 0 && `Revisar ${overviewPendingModeration} elementos en cola antes de que se acumulen publicaciones bloqueadas.`,
+    overviewPendingReports > 0 && `Atender ${overviewPendingReports} reportes pendientes para mantener confianza y seguridad.`,
+    overviewPendingBusinesses > 0 && `Verificar ${overviewPendingBusinesses} negocios pendientes para mejorar confianza visual.`,
+    overviewPendingCreators > 0 && `Revisar ${overviewPendingCreators} creadores pendientes para que su contenido llegue al directorio.`,
+    loadedDataGroups.has('creators') && creatorStats.withoutContent > 0 && `Acompañar a ${creatorStats.withoutContent} creadores sin contenido publicado.`,
+    activeUsersInOverviewRange < overviewTargets.activeUsers && `Subir actividad: hay ${activeUsersInOverviewRange} usuarios activos y el objetivo del periodo es ${overviewTargets.activeUsers}.`,
     newUsersInOverviewRange === 0 && `Atraer usuarios nuevos: no hay altas registradas en ${overviewRangeText}.`,
     newBusinessesInOverviewRange === 0 && overviewDays > 1 && `Impulsar negocios: no hay negocios nuevos en ${overviewRangeText}.`,
-    newContentInOverviewRange < lowContentThreshold && `Impulsar publicaciones recientes: hay poca creación de contenido en ${overviewRangeText}.`,
+    overviewNewPublications < lowContentThreshold && `Impulsar publicaciones recientes: hay poca creación de contenido en ${overviewRangeText}.`,
     !analyticsUnavailable && overviewInteractionCount < Math.ceil(overviewTargets.interactions * 0.35) && `Revisar interacción: hay ${overviewInteractionCount} eventos de navegación/búsqueda en ${overviewRangeText}.`,
     !messagesUnavailable && overviewMessagesCount < Math.ceil(overviewTargets.messages * 0.35) && `Fomentar conversaciones: hay ${overviewMessagesCount} mensajes en ${overviewRangeText}.`,
     analyticsUnavailable && 'Conectar analytics_events para que el score mida interacción real de navegación y búsquedas.',
     messagesUnavailable && 'Revisar permisos de messages para que el score mida conversaciones reales.',
-    liveUntrackedUsers > metricUsers.length * 0.4 && 'Esperar unos días para leer actividad real: muchos usuarios antiguos aún no tienen last_seen_at.',
+    loadedDataGroups.has('users') && liveUntrackedUsers > metricUsers.length * 0.4 && 'Esperar unos días para leer actividad real: muchos usuarios antiguos aún no tienen last_seen_at.',
   ].filter(Boolean).slice(0, 5)
   const overviewSignals = [
-    { label: `Usuarios activos ${overviewMetricSuffix}`, value: activeUsersInOverviewRange.length, trend: activeTrendInOverviewRange, color: '#0F766E' },
+    { label: `Usuarios activos ${overviewMetricSuffix}`, value: activeUsersInOverviewRange, trend: activeTrendInOverviewRange, color: '#0F766E' },
     { label: `Usuarios nuevos ${overviewMetricSuffix}`, value: newUsersInOverviewRange, trend: userTrendInOverviewRange, color: C.primary },
     { label: `Negocios nuevos ${overviewMetricSuffix}`, value: newBusinessesInOverviewRange, trend: businessTrendInOverviewRange, color: '#059669' },
     { label: `Anuncios nuevos ${overviewMetricSuffix}`, value: recentListingsInOverviewRange, trend: listingTrendInOverviewRange, color: '#0284C7' },
@@ -4411,16 +4486,16 @@ export default function Admin() {
 
   const NAV_ITEMS = [
     { id: 'users', icon: 'users', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
-    { id: 'creators', icon: 'creators', label: 'Creadores', value: navValue('creators', `${creatorStats.live} activos`), color: '#DB2777', bg: '#FDF2F8', alert: creatorStats.pendingReview },
+    { id: 'creators', icon: 'creators', label: 'Creadores', value: navValue('creators', `${creatorStats.live} activos`), color: '#DB2777', bg: '#FDF2F8', alert: overviewPendingCreators },
     { id: 'analytics', icon: 'analytics', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
     { id: 'feedback', icon: 'feedback', label: 'Intereses y valoraciones', short: 'Valoración', value: navValue('feedback', `${totalFeedbackResponses} registros`), color: '#B45309', bg: '#FFFBEB' },
     { id: 'partners', icon: 'partners', label: 'Colaboraciones', value: navValue('partners', `${partnerClickEvents.length} salidas`), color: '#4F46E5', bg: '#EEF2FF' },
     { id: 'live', icon: 'live', label: 'Live', value: navValue('live', `${onlineUsers.length} online`), color: '#7C3AED', bg: '#F3E8FF' },
     { id: 'overview', icon: 'overview', label: 'Estado general', short: 'Estado', value: navValue('overview', generalScoreLabel), color: generalTrendColor, bg: generalTrend === 'Mejora' ? '#ECFDF5' : generalTrend === 'Empeora' ? '#FEF2F2' : '#FFFBEB' },
-    { id: 'businessVerification', icon: 'businessVerification', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5', alert: stats.businessVerification },
+    { id: 'businessVerification', icon: 'businessVerification', label: 'Negocios', value: navValue('businessVerification', `${stats.businessVerification} pend.`), color: '#059669', bg: '#ECFDF5', alert: overviewPendingBusinesses },
     { id: 'content', icon: 'content', label: 'Publicaciones', value: navValue('content', `${stats.content} items`), color: '#0284C7', bg: '#E0F2FE' },
-    { id: 'reports', icon: 'reports', label: 'Reportes', value: navValue('reports', `${stats.reports} pend.`), color: '#DC2626', bg: '#FEF2F2', alert: stats.reports },
-    { id: 'moderation', icon: 'moderation', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB', alert: stats.queue },
+    { id: 'reports', icon: 'reports', label: 'Reportes', value: navValue('reports', `${stats.reports} pend.`), color: '#DC2626', bg: '#FEF2F2', alert: overviewPendingReports },
+    { id: 'moderation', icon: 'moderation', label: 'Revisión', value: navValue('moderation', `${stats.queue} en cola`), color: '#D97706', bg: '#FFFBEB', alert: overviewPendingModeration },
   ]
 
   const navById = new Map(NAV_ITEMS.map(item => [item.id, item]))
@@ -4491,10 +4566,10 @@ export default function Admin() {
   const sectionMetrics = tab === 'overview'
     ? [
         { label: 'Estado', value: loading ? '...' : generalStatus, hint: `Índice operativo derivado: ${generalScoreLabel}`, color: generalTrendColor },
-        { label: `Usuarios activos ${overviewMetricSuffix}`, value: loading ? '...' : activeUsersInOverviewRange.length, hint: `${newUsersInOverviewRange} usuarios nuevos`, color: '#0F766E' },
+        { label: `Usuarios activos ${overviewMetricSuffix}`, value: loading ? '...' : activeUsersInOverviewRange, hint: `${newUsersInOverviewRange} usuarios nuevos`, color: '#0F766E' },
         { label: `Contenido ${overviewMetricSuffix}`, value: loading ? '...' : overviewTotalNewContent, hint: `${recentListingsInOverviewRange} anuncios · ${recentJobsInOverviewRange} empleos · ${newBusinessesInOverviewRange} negocios`, color: '#059669' },
         { label: 'Señales registradas', value: loading ? '...' : (analyticsUnavailable && messagesUnavailable ? 'No disp.' : overviewEngagementCount), hint: `${analyticsUnavailable ? 'sin analytics' : `${overviewPageViews} vistas · ${overviewSearches} búsquedas · ${overviewSearchOpens} aperturas`} · ${messagesUnavailable ? 'sin mensajes' : `${overviewMessagesCount} mensajes`}`, color: analyticsUnavailable && messagesUnavailable ? '#D97706' : '#0891B2' },
-        { label: `Creadores ${overviewMetricSuffix}`, value: loading ? '...' : creatorStats.live, hint: `${newCreatorsInOverviewRange} altas · ${newCreatorContentInOverviewRange} contenidos nuevos · ${creatorStats.pendingReview} por revisar`, color: '#DB2777', trend: creatorContentTrendInOverviewRange },
+        { label: `Creadores ${overviewMetricSuffix}`, value: loading ? '...' : overviewLiveCreators, hint: `${newCreatorsInOverviewRange} altas · ${newCreatorContentInOverviewRange} contenidos nuevos · ${overviewPendingCreators} por revisar`, color: '#DB2777', trend: creatorContentTrendInOverviewRange },
         { label: `Tendencia ${overviewMetricSuffix}`, value: loading ? '...' : generalTrend, hint: `Promedio ${overviewAverageTrend > 0 ? '+' : ''}${overviewAverageTrend}% · reportes ${reportsTrendInOverviewRange > 0 ? '+' : ''}${reportsTrendInOverviewRange}%`, color: generalTrendColor },
       ]
     : tab === 'live'
@@ -5305,7 +5380,7 @@ export default function Admin() {
                   {generalStatus}
                 </h3>
                 <p style={{ fontFamily: PP, fontSize: 13, lineHeight: 1.6, margin: '0 0 16px', color: INK.base }}>
-                  {activeUsersInOverviewRange.length} usuarios activos, {newUsersInOverviewRange} nuevos, {newBusinessesInOverviewRange} negocios, {recentListingsInOverviewRange} anuncios y {overviewEngagementText} en {overviewRangeText}.
+                  {activeUsersInOverviewRange} usuarios activos, {newUsersInOverviewRange} nuevos, {newBusinessesInOverviewRange} negocios, {recentListingsInOverviewRange} anuncios y {overviewEngagementText} en {overviewRangeText}.
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div className="adm-bar-track" style={{ flex: 1, height: 8 }}>
@@ -5364,9 +5439,9 @@ export default function Admin() {
             >
               <div style={{ display: 'grid', gap: 8 }}>
                 {[
-                  { label: 'Revisión de contenido', value: stats.queue, color: '#D97706', tab: 'moderation', icon: 'moderation' },
-                  { label: 'Reportes pendientes', value: stats.reports, color: '#DC2626', tab: 'reports', icon: 'reports' },
-                  { label: 'Negocios por verificar', value: stats.businessVerification, color: '#059669', tab: 'businessVerification', icon: 'businessVerification' },
+                  { label: 'Revisión de contenido', value: overviewPendingModeration, color: '#D97706', tab: 'moderation', icon: 'moderation' },
+                  { label: 'Reportes pendientes', value: overviewPendingReports, color: '#DC2626', tab: 'reports', icon: 'reports' },
+                  { label: 'Negocios por verificar', value: overviewPendingBusinesses, color: '#059669', tab: 'businessVerification', icon: 'businessVerification' },
                 ].map(item => (
                   <button
                     key={item.label}
