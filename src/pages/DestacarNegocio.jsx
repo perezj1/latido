@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
-import { SkeletonCard } from '../components/UI'
+import { BackButton, SkeletonCard } from '../components/UI'
 import { BUSINESS_PROMOTION_PLAN_DETAILS, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 
 const PENDING_STATUSES = new Set(['reserved', 'checkout_open', 'processing'])
@@ -428,12 +428,7 @@ export default function DestacarNegocio() {
   return (
     <div className="latido-page-container" style={{ maxWidth:620, paddingTop:24, paddingBottom:60 }}>
       <div>
-        <button
-          onClick={() => navigate('/perfil')}
-          style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.mid, background:'#fff', border:`1px solid ${C.border}`, borderRadius:12, padding:'9px 13px', cursor:'pointer', marginBottom:14 }}
-        >
-          Volver al perfil
-        </button>
+        <BackButton to="/perfil" style={{ marginBottom:14 }} />
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, margin:'0 0 12px' }}>
           <div>
             <p style={{ fontFamily:PP, fontWeight:900, fontSize:14, color:C.text, margin:'0 0 3px', lineHeight:1.2 }}>

@@ -104,6 +104,10 @@
   letter-spacing: -0.5px;
 }
 
+@media (max-width: 420px) {
+  .sc-topbar .sc-brand span { display: none; }
+}
+
 .sc-topbar__share {
   display: inline-flex;
   align-items: center;

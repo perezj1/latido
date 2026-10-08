@@ -6,13 +6,13 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { dismissZoneAlert, dismissZoneAlerts } from '../hooks/useZoneAlerts'
 import { markAllRead as markAllMessagesRead, markConvRead, useUnreadMessages } from '../hooks/useUnreadMessages'
-import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { useFavorites } from '../hooks/useFavorites'
 import { useAppNotifications } from '../hooks/useAppNotifications'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
+import ResourcePackagesStrip from '../components/ResourcePackagesStrip'
 import HorizontalDragScroller from '../components/HorizontalDragScroller'
 import PartnersSection from '../components/PartnersSection'
 import { C, CAT_COLORS, PP } from '../lib/theme'
@@ -25,6 +25,7 @@ import CreatorHomeSection from '../components/CreatorHomeSection'
 import GiveawayHomeBanner from '../components/GiveawayHomeBanner'
 import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
+import { getGuidePath } from '../lib/seo'
 import { getMissingColumnName } from '../lib/supabaseCompat'
 import {
   BUSINESS_ROTATION_INTERVAL_MS,
@@ -632,8 +633,6 @@ export default function Home() {
   const [savingCanton, setSavingCanton] = useState(false)
   const { needsActivation, refresh: refreshPush } = usePushActivation(user?.id)
   const businessRotationBucket = useTimedRotationBucket(BUSINESS_ROTATION_INTERVAL_MS)
-  const [selectedGuide, setSelectedGuide] = useState(null)
-  useOverlayHistory(!!selectedGuide, () => setSelectedGuide(null))
 
   const savedSearchEntityKeys = useMemo(() => new Set(savedSearchAlerts.map(alert => {
     const kind = alert.entity_kind === 'listing'
@@ -1686,13 +1685,14 @@ export default function Home() {
               assistantMode
               immersive
               searchEmoji="🔎"
-              placeholder="Buscar en Latido"
+              placeholder="¿Qué necesitas?"
               clearOnClose
               showImmersiveFilterButton={false}
               initialQuery={initialGlobalSearchQuery}
               openResultsOnMount={reopenSavedGlobalSearch}
               searchFilters={initialGlobalSearchFilters}
             />
+            <ResourcePackagesStrip />
           </div>
 
           {showAttentionSection && notifOpen && attentionPortalElement && createPortal(
@@ -2220,7 +2220,7 @@ export default function Home() {
                 {MOCK_DOCS.map(doc => {
                   const gc = GUIDE_COLORS[doc.cat] || { bg:C.bg, tc:C.primary }
                   return (
-                    <Card key={doc.id} onClick={() => setSelectedGuide(doc)} aria-label={`Abrir guía: ${doc.title}`} variant="outlined" padding="none" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, cursor:'pointer', background:'transparent', border:'none', boxShadow:'none' }}>
+                    <Card as={Link} to={getGuidePath(doc)} key={doc.id} aria-label={`Abrir guía: ${doc.title}`} variant="outlined" padding="none" style={{ flexShrink:0, width:HOME_CAROUSEL_CARD_WIDTH, cursor:'pointer', textDecoration:'none', background:'transparent', border:'none', boxShadow:'none' }}>
                       <div style={HOME_CAROUSEL_CARD_STYLE}>
                         <div style={HOME_CAROUSEL_MEDIA_STYLE}>
                           {doc.img ? (
@@ -2253,43 +2253,6 @@ export default function Home() {
           </section>
         )
       })()}
-
-      {/* Guide modal */}
-      {selectedGuide && (
-        <div onClick={() => setSelectedGuide(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:680, maxHeight:'85vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <div style={{ padding:'20px 20px 16px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
-              <div>
-                <span style={{ fontFamily:PP, fontWeight:700, fontSize:10, padding:'3px 10px', borderRadius:999, background: selectedGuide.level === 'Básico' ? '#D1FAE5' : '#FEF3C7', color: selectedGuide.level === 'Básico' ? '#065F46' : '#92400E', display:'inline-block', marginBottom:8 }}>
-                  {selectedGuide.level}
-                </span>
-                <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:'0 0 4px', lineHeight:1.3 }}>{selectedGuide.title}</h2>
-                <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0 }}>⏱ {selectedGuide.time}</p>
-              </div>
-              <button type="button" aria-label="Cerrar guía" onClick={() => setSelectedGuide(null)} style={{ background:C.bg, border:'none', borderRadius:10, width:32, height:32, fontSize:16, cursor:'pointer', flexShrink:0 }}>✕</button>
-            </div>
-            <div style={{ padding:'18px 20px 32px', overflowY:'auto', flex:1 }}>
-              {selectedGuide.img && (
-                <img
-                  src={selectedGuide.img}
-                  alt={selectedGuide.title}
-                  loading="lazy"
-                  decoding="async"
-                  style={{ width:'100%', height:210, objectFit:'cover', borderRadius:18, marginBottom:16, display:'block' }}
-                />
-              )}
-              {selectedGuide.content.split('\n').map((line, i) => (
-                <p key={i} style={{ fontFamily:PP, fontSize:13, color: line.startsWith('**') ? C.text : C.mid, fontWeight: line.startsWith('**') ? 700 : 400, lineHeight:1.7, margin:'0 0 5px' }}>
-                  {line.replace(/\*\*/g, '')}
-                </p>
-              ))}
-              <Link to="/guias" onClick={() => setSelectedGuide(null)} style={{ display:'inline-flex', marginTop:18, fontFamily:PP, fontWeight:700, fontSize:13, background:C.primary, color:'#fff', textDecoration:'none', borderRadius:12, padding:'12px 22px' }}>
-                Ver todo →
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       <section className="latido-page-container" style={{ paddingTop:42, paddingBottom:110 }}>
   <div style={{ background:'linear-gradient(135deg,#1E3A8A,#2563EB)', borderRadius:28, padding:'28px 24px', position:'relative', overflow:'hidden' }}>

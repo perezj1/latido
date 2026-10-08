@@ -37,6 +37,8 @@ import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent
 const Landing = lazy(() => import('./pages/Landing'))
 const Club = lazy(() => import('./pages/Club'))
 const Home = lazy(() => import('./pages/Home'))
+const ResourcePackage = lazy(() => import('./pages/ResourcePackage'))
+const ResourcePackages = lazy(() => import('./pages/ResourcePackages'))
 const Explorar = lazy(() => import('./pages/Explorar'))
 const Tablon = lazy(() => import('./pages/Tablon'))
 const Publicar = lazy(() => import('./pages/Publicar'))
@@ -772,6 +774,8 @@ function AppShell() {
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/paquetes" element={<ResourcePackages />} />
+            <Route path="/paquetes/:packageSlug" element={<ResourcePackage />} />
             <Route path="/explorar" element={<Explorar />} />
             <Route path="/tablon" element={<Tablon />} />
             <Route path="/anuncios/:adSlug" element={<Tablon />} />

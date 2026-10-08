@@ -11,6 +11,7 @@ import {
   getNegocioTypeMeta,
 } from './constants.js'
 import { getCreatorBySlug } from './creators.js'
+import { RESOURCE_PACKAGES, getResourcePackage, getResourcePackagePath } from './resourcePackages.js'
 
 export const SITE_URL = (import.meta.env?.VITE_SITE_URL || 'https://latido.ch').replace(/\/$/, '')
 export const SITE_NAME = 'Latido.ch'
@@ -29,6 +30,8 @@ export const DEFAULT_SEO = {
 }
 
 export const SEARCHABLE_SITE_PAGES = [
+  { id:'paquetes', icon:'📦', title:'Paquetes', section:'Paquetes de recursos', desc:'Recursos para llegar a Suiza, encontrar piso, buscar trabajo, criar una familia, mudarte y volver a tu país.', href:'/paquetes' },
+  ...RESOURCE_PACKAGES.map(resourcePackage => ({ id:`paquete-${resourcePackage.slug}`, icon:resourcePackage.emoji, title:resourcePackage.title, section:'Paquetes de recursos', desc:resourcePackage.description, href:getResourcePackagePath(resourcePackage) })),
   { id:'inicio', icon:'🏠', title:'Inicio', section:'Latido', desc:'Resumen de anuncios, empleos, negocios, eventos y guías.', href:'/' },
   { id:'tablon', icon:'📣', title:'Anuncios', section:'Anuncios', desc:'Vivienda, servicios, cuidados, compraventa y trámites de la comunidad.', href:'/tablon' },
   { id:'vivienda', icon:'🏠', title:'Vivienda', section:'Anuncios', desc:'Pisos, habitaciones, compañeros y alquileres temporales.', href:'/tablon?cat=vivienda' },
@@ -40,7 +43,7 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'comunidades', icon:'👥', title:'Grupos', section:'Comunidad', desc:'Grupos por país, ciudad, deporte, idioma e intereses.', href:'/comunidades?view=comunidades' },
   { id:'negocios', icon:'🏪', title:'Negocios latinos', section:'Comunidad', desc:'Directorio de restaurantes, tiendas, belleza, salud y servicios.', href:'/comunidades?view=negocios' },
   { id:'eventos', icon:'🎉', title:'Eventos latinos', section:'Comunidad', desc:'Conciertos, fiestas, quedadas, networking y planes familiares.', href:'/comunidades?view=eventos' },
-  { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
+  { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Paquetes y guías sobre permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
   { id:'creadores', icon:'🎙️', title:'Creadores', section:'Comunidad', desc:'Personas, profesionales y negocios que comparten experiencias, información y proyectos sobre Suiza.', href:'/comunidades?view=creadores' },
   { id:'club', icon:'🛍️', title:'Latido Club', section:'Latido', desc:'Camisetas, sudaderas, bolsas y carcasas con diseños originales de Latido Club.', href:'/club' },
   { id:'santiago-cruz', icon:'🎤', title:'Sorteo Santiago Cruz en Zürich', section:'Latido', desc:'Participa gratis y gana una de las 2 entradas dobles para Santiago Cruz en Plaza Zürich.', href:'/santiago-cruz' },
@@ -74,7 +77,7 @@ const ROUTE_SEO = [
   {
     path:'/guias',
     title:'Guías para vivir en Suiza | Latido.ch',
-    description:'Guías prácticas sobre permisos, trabajo, vivienda, salud, bancos e impuestos para vivir en Suiza.',
+    description:'Guías, anuncios y comunidad reunidos para cada etapa de tu vida en Suiza.',
   },
   {
     path:'/creadores',
@@ -465,6 +468,22 @@ export function getSeoForLocation(location = {}) {
   const pathname = normalizePath(location.pathname || '/')
   const params = new URLSearchParams(location.search || '')
 
+  if (pathname === '/paquetes') {
+    return withDefaults({ path:'/paquetes', title:'Paquetes de recursos para vivir en Suiza | Latido.ch', description:'Guías, anuncios y comunidad según lo que necesitas: llegar a Suiza, encontrar piso, buscar trabajo, mudarte, tener un bebé o volver a tu país.' })
+  }
+
+  if (pathname.startsWith('/paquetes/')) {
+    const resourcePackage = getResourcePackage(pathname.slice('/paquetes/'.length))
+    if (resourcePackage) {
+      return withDefaults({
+        path:getResourcePackagePath(resourcePackage),
+        title:`${resourcePackage.title} en Suiza | Latido.ch`,
+        description:resourcePackage.description,
+        socialDescription:resourcePackage.description,
+      })
+    }
+  }
+
   if (/^\/negocios\/[^/]+\/destacar$/.test(pathname)) {
     return withDefaults({
       path:pathname,
@@ -707,6 +726,8 @@ export function getStructuredData(seo = DEFAULT_SEO) {
       '@context':'https://schema.org',
       '@type':'Article',
       headline:seo.guide.title,
+        dateModified:seo.guide.reviewedAt,
+        citation:seo.guide.sources?.map(source => source.url),
       description:seo.description,
       image:seo.image,
       inLanguage:'es',
@@ -905,6 +926,8 @@ export function getEnhancedStructuredData(seo = DEFAULT_SEO) {
         '@context':'https://schema.org',
         '@type':'Article',
         headline:seo.guide.title,
+        dateModified:seo.guide.reviewedAt,
+        citation:seo.guide.sources?.map(source => source.url),
         description:seo.description,
         image:seo.image,
         inLanguage:'es',
@@ -1054,6 +1077,7 @@ export function getPublicSeoPages() {
     '/comunidades?view=eventos',
     '/comunidades?view=creadores',
     '/guias',
+    '/paquetes',
     '/creadores',
     '/club',
     '/santiago-cruz',
@@ -1064,6 +1088,7 @@ export function getPublicSeoPages() {
     '/cookies',
     '/terminos',
     '/descargo',
+    ...RESOURCE_PACKAGES.map(getResourcePackagePath),
   ].map(path => getSeoForLocation(new URL(path, SITE_URL)))
 
   const guidePages = MOCK_DOCS.map(getGuideSeo)

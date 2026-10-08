@@ -1,0 +1,435 @@
+.latido-resource-package {
+  max-width: 900px;
+  padding-top: 24px;
+  padding-bottom: 48px;
+  font-family: 'Poppins', sans-serif;
+  color: #14213D;
+}
+.latido-resource-package__hero {
+  padding: clamp(24px, 5vw, 40px);
+  border: 1px solid #DBEAFE;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #EFF6FF, #F8FAFF);
+}
+.latido-resource-package__emoji { display: block; font-size: 36px; margin-bottom: 14px; }
+.latido-resource-package__eyebrow {
+  margin: 0 0 8px;
+  color: #2563EB;
+  font-size: 11px;
+  font-weight: 700;
+}
+.latido-resource-package h1 { margin: 0 0 12px; font-size: clamp(27px, 5vw, 38px); font-weight: 800; line-height: 1.2; letter-spacing: -.7px; }
+.latido-resource-package__intro { max-width: 590px; margin: 0; color: #52627B; font-size: 14px; line-height: 1.8; }
+.latido-resource-package__resources { margin-top: 32px; }
+.latido-resource-package__section-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.latido-resource-package h2 { margin: 0 0 6px; font-size: 21px; font-weight: 800; }
+.latido-resource-package__section-header p { margin: 0; font-size: 12px; color: #64748B; line-height: 1.6; }
+.latido-resource-package__location { display: grid; gap: 5px; font-size: 11px; font-weight: 600; }
+.latido-resource-package__location select { min-height: 44px; padding: 8px 12px; border: 1px solid #DBEAFE; border-radius: 12px; background: #fff; font: inherit; font-size: 13px; color: #14213D; }
+.latido-resource-package__scope { margin: 14px 0 18px; color: #64748B; font-size: 11px; line-height: 1.6; }
+.latido-resource-package__list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; list-style: none; margin: 0; padding: 0; }
+.latido-resource-package__list li { min-width: 0; }
+.latido-resource-package__card { display: flex; align-items: flex-start; gap: 14px; height: 100%; box-sizing: border-box; padding: 22px; border: 1px solid #E2E8F0; border-radius: 18px; background: #fff; color: inherit; text-decoration: none; transition: border-color .16s ease, background .16s ease; }
+.latido-resource-package__card:hover { border-color: #93C5FD; background: #F8FBFF; }
+.latido-resource-package__resource-icon { display: grid; place-items: center; flex-shrink: 0; width: 42px; height: 42px; border-radius: 13px; background: #EFF6FF; font-size: 22px; }
+.latido-resource-package__card-body { min-width: 0; }
+.latido-resource-package__step { display: block; color: #64748B; font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+.latido-resource-package h3, .latido-package-catalog__card h3 { margin: 0 0 8px; font-size: 15px; font-weight: 700; line-height: 1.4; }
+.latido-resource-package__card p { margin: 0 0 14px; color: #64748B; font-size: 12px; line-height: 1.7; }
+.latido-resource-package__action { display: inline-flex; align-items: center; gap: 6px; color: #2563EB; font-size: 12px; font-weight: 700; }
+.latido-resource-package__account { display: block; margin-top: 8px; font-size: 10px; color: #64748B; }
+.latido-resource-package__more { margin-top: 32px; padding-top: 22px; border-top: 1px solid #E2E8F0; }
+.latido-resource-package__more > p { margin: 0; font-size: 16px; font-weight: 700; }
+.latido-resource-package a:focus-visible, .latido-resource-package select:focus-visible { outline: 2px solid #2563EB; outline-offset: 4px; }
+.latido-package-catalog { font-family: 'Poppins', sans-serif; color: #14213D; }
+.latido-package-catalog h2 { margin: 0 0 6px; font-size: 21px; font-weight: 800; }
+.latido-package-catalog input:focus-visible, .latido-package-catalog__card:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; }
+.latido-package-catalog__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.latido-package-catalog__card { display: flex; flex-direction: column; min-width: 0; padding: 22px; border: 1px solid #E2EAF4; border-radius: 18px; background: #fff; color: inherit; text-decoration: none; transition: border-color .16s ease, background .16s ease; }
+.latido-package-catalog__card:hover { border-color: #93C5FD; background: #F8FBFF; }
+.latido-package-catalog__card .latido-resource-packages__emoji { width: 48px; height: 48px; background: #EFF6FF; box-shadow: none; font-size: 25px; margin-bottom: 16px; }
+.latido-package-catalog__card p { flex: 1; margin: 0 0 18px; color: #64748B; font-size: 12px; line-height: 1.7; }
+.latido-package-catalog__progress { display: grid; gap: 7px; margin: -4px 0 16px; }
+.latido-package-catalog__progress-label { display: inline-flex; align-items: center; gap: 5px; color: #1D4ED8; font-size: 12px; font-weight: 700; }
+.latido-package-catalog__progress-bar { display: block; height: 6px; overflow: hidden; border-radius: 999px; background: #E2EAF4; }
+.latido-package-catalog__progress-bar > span { display: block; height: 100%; border-radius: inherit; background: #2563EB; }
+.latido-package-catalog__card.is-complete .latido-package-catalog__progress-label { color: #047857; }
+.latido-package-catalog__card.is-complete .latido-package-catalog__progress-bar > span { background: #10B981; }
+@media (max-width: 800px) { .latido-package-catalog__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  .latido-resource-package__list { grid-template-columns: minmax(0, 1fr); }
+  .latido-resource-package__card { padding: 18px; }
+  .latido-resource-package__location { width: 100%; }
+}
+@media (max-width: 420px) {
+  .latido-package-catalog__grid { grid-template-columns: minmax(0, 1fr); }
+  .latido-package-catalog__card { padding: 20px; }
+}
+
+/* ── Paquete de ayuda (detalle): progreso y pasos en línea de tiempo ── */
+.rp-page {
+  max-width: 760px;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  padding-bottom: 56px;
+  font-family: 'Poppins', sans-serif;
+  color: #0F172A;
+}
+
+.rp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.rp-compactbar { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: #fff; border-bottom: 1px solid var(--latido-color-border); box-shadow: 0 2px 8px rgba(15, 23, 42, .06); }
+.rp-compactbar__content { max-width: 760px; display: flex; align-items: center; gap: 8px; padding: calc(10px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left)); }
+.rp-compactbar__title { flex: 1; min-width: 0; margin: 0; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 700; line-height: 1.4; color: #0F172A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.rp-hero { padding-top: 4px; }
+
+.rp-hero__eyebrow {
+  display: inline-flex;
+  margin: 0 0 16px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #EFF4FF;
+  color: #2563EB;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rp-hero__title { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.rp-hero__emoji { display: grid; place-items: center; width: 52px; height: 52px; flex-shrink: 0; border-radius: 16px; background: #EFF4FF; font-size: 28px; line-height: 1; }
+.rp-hero__title h1 { min-width: 0; margin: 0; font-size: clamp(24px, 5vw, 30px); font-weight: 800; line-height: 1.25; letter-spacing: -.5px; overflow-wrap: anywhere; }
+.rp-hero__intro { margin: 0; color: #475569; font-size: 15px; line-height: 1.6; }
+.rp-hero__share { margin-top: 16px; }
+
+/* Progreso: "Llevas 2 de 5" */
+.rp-progress {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid #E2EAF4;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.rp-progress__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.rp-progress__head strong { font-size: 15px; font-weight: 800; }
+
+.rp-progress__head span {
+  color: #00A86B;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-progress__bar {
+  display: grid;
+  grid-template-columns: repeat(var(--rp-step-count), minmax(0, 1fr));
+  gap: 6px;
+  height: 8px;
+}
+
+.rp-progress__segment {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #E8EEF6;
+  transition: background .2s ease;
+}
+.rp-progress__segment.is-done { background: #2563EB; }
+
+.rp-progress__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 12px 0 0;
+  color: #94A3B8;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.rp-progress__note svg { flex-shrink: 0; margin-top: 2px; }
+
+.rp-progress__note a { color: #1D4ED8; font-weight: 700; }
+
+/* Encabezado de pasos y zona */
+.rp-steps {
+  margin-top: 36px;
+}
+
+.rp-steps__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rp-steps__header h2 {
+  margin: 0 0 4px;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+}
+
+.rp-steps__intro {
+  margin: -4px 0 16px;
+  color: #5F6F85;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rp-zone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 4px 0 12px;
+  border: 1px solid #E2EAF4;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.rp-zone svg { flex-shrink: 0; color: #2563EB; }
+
+.rp-zone select {
+  max-width: clamp(80px, 28vw, 112px);
+  min-height: 38px;
+  padding: 0 10px 0 2px;
+  border: 0;
+  background: transparent;
+  color: #0F172A;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rp-zone select:focus { outline: none; }
+
+.rp-zone:focus-within {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .14);
+}
+
+/* Lista de pasos: tarjetas a todo el ancho; la posición va en "1/5". */
+.rp-timeline {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rp-step__card {
+  position: relative;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #E2EAF4;
+  border-radius: 20px;
+  background: #fff;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.rp-step.is-current .rp-step__card {
+  border-color: #93C5FD;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .08), 0 16px 32px -22px rgba(37, 99, 235, .55);
+}
+
+.rp-step.is-done .rp-step__card { border-color: #BBF7D0; background: #FBFEFC; }
+.rp-step.is-done .rp-step__card h3 { color: #475569; }
+
+.rp-step__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 44px;
+}
+
+/* "1/5": posición del paso dentro del paquete. */
+.rp-step__count {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #F1F5F9;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.rp-step.is-current .rp-step__count { background: #EFF6FF; color: #1D4ED8; }
+.rp-step.is-done .rp-step__count { background: #ECFDF5; color: #047857; }
+
+.rp-step__emoji {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: #EFF6FF;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.rp-step__titles { min-width: 0; }
+
+.rp-step__kind {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: #5F6F85;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.rp-step__kind em {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.rp-step__kind em.is-done { background: #ECFDF5; color: #047857; }
+
+.rp-step__card h3 {
+  margin: 3px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rp-step__card p {
+  margin: 12px 0 16px;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.rp-step__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.rp-step__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: #2563EB;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background .18s ease;
+}
+
+.rp-step__cta:hover { background: #1D4ED8; }
+
+.rp-step.is-done .rp-step__cta { background: #EFF6FF; color: #1D4ED8; }
+.rp-step.is-done .rp-step__cta:hover { background: #DBEAFE; }
+
+.rp-step__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #E2EAF4;
+  border-radius: 12px;
+  background: #fff;
+  color: #475569;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .18s ease, color .18s ease;
+}
+
+.rp-step__toggle:hover { border-color: #A7F3D0; color: #047857; }
+.rp-step.is-done .rp-step__toggle:hover { border-color: #CBD5E1; color: #0F172A; }
+
+/* Móvil: los dos botones a todo el ancho, uno debajo del otro. */
+@media (max-width: 639px) {
+  .rp-step__actions {
+    display: grid;
+    gap: 8px;
+  }
+  .rp-step__cta,
+  .rp-step__toggle { justify-content: center; }
+}
+
+.rp-step__note {
+  display: block;
+  margin-top: 8px;
+  color: #5F6F85;
+  font-size: 11.5px;
+}
+
+.rp-complete {
+  margin-top: 24px;
+  padding: 22px 18px;
+  border: 1px solid #A7F3D0;
+  border-radius: 20px;
+  background: #ECFDF5;
+  text-align: center;
+}
+
+.rp-complete > span { display: block; margin-bottom: 12px; font-size: 32px; line-height: 1.2; }
+.rp-complete h2 { margin: 0 0 8px; color: #0F172A; font-size: 20px; font-weight: 800; line-height: 1.3; }
+.rp-complete p { max-width: 440px; margin: 0 auto; color: #52627A; font-size: 14px; line-height: 1.6; }
+.rp-complete .share-button:hover { background: #1D4ED8 !important; color: #fff !important; }
+
+.rp-more {
+  margin-top: 32px;
+  padding-top: 22px;
+  border-top: 1px solid #E2EAF4;
+}
+
+.rp-more .latido-resource-packages__label {
+  color: #0F172A;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.rp-page a:focus-visible,
+.rp-page button:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 3px;
+}
+
+@media (min-width: 640px) {
+  .rp-hero__emoji { width: 60px; height: 60px; font-size: 32px; }
+  .rp-step__card { padding: 22px 24px; }
+  .rp-step__count { top: 22px; right: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-progress__bar span,
+  .rp-step__card,
+  .rp-step__cta { transition: none; }
+}

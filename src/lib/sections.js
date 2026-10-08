@@ -58,11 +58,11 @@ export const EXPLORE_SECTIONS = [
     gradient:'linear-gradient(150deg, #FF6F68 0%, #D22B24 100%)',
   },
   {
-    id:'grupos',
-    emoji:'👥',
-    label:'Grupos',
-    desc:'Comunidades y chats por ciudad o interés',
-    to:'/comunidades?view=comunidades',
+    id:'guias',
+    emoji:'📚',
+    label:'Guías',
+    desc:'Paquetes y guías para vivir en Suiza',
+    to:'/guias',
     color:'#3FD3E8',
     ink:'#0296AB',
     gradient:'linear-gradient(150deg, #3FD3E8 0%, #0296AB 100%)',
@@ -72,12 +72,13 @@ export const EXPLORE_SECTIONS = [
 // Superficies secundarias: no son secciones propias, pero en movil no habia
 // ninguna via para llegar a ellas.
 export const EXPLORE_EXTRAS = [
-  { id:'guias', emoji:'📚', label:'Guías', desc:'Permisos, trabajo, salud y dinero', to:'/guias' },
+  { id:'paquetes', emoji:'📦', label:'Paquetes', desc:'Recursos según lo que necesitas ahora', to:'/paquetes' },
+  { id:'grupos', emoji:'👥', label:'Grupos', desc:'Comunidades y chats por ciudad o interés', to:'/comunidades?view=comunidades' },
 ]
 
 // Rutas que pertenecen a Explorar. El area de perfil de creador (/creadores/alta
 // y /creadores/mi-perfil) queda fuera a proposito: vive en Perfil.
-const EXPLORE_ROUTE = /^\/(?:explorar|tablon|anuncios|empleos|comunidades|negocios|eventos|guias|creadores|colaboraciones)(?:\/|$)/
+const EXPLORE_ROUTE = /^\/(?:explorar|tablon|anuncios|empleos|comunidades|negocios|eventos|guias|creadores|colaboraciones|paquetes)(?:\/|$)/
 
 export function isCreatorProfileRoute(pathname='') {
   return pathname === '/creadores/alta' || pathname.startsWith('/creadores/mi-perfil')
@@ -89,6 +90,8 @@ export function isExploreRoute(pathname='') {
 
 export function getActiveSection(pathname='', search='') {
   const params = new URLSearchParams(search)
+
+  if (pathname.startsWith('/guias') || pathname.startsWith('/paquetes')) return 'guias'
 
   if (pathname.startsWith('/comunidades')) {
     const view = params.get('view')

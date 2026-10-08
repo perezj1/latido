@@ -19,7 +19,7 @@ import {
   subscribeRecentlyViewed,
 } from '../lib/recentlyViewed'
 import { C, PP } from '../lib/theme'
-import { Sheet } from './UI'
+import { BackButton, Sheet } from './UI'
 import PartnerServicesPromo, { getPartnerServiceMatch } from './PartnerServicesPromo'
 import { getEffectiveBusinessPromotionPlan } from '../lib/businessPromotion'
 import { getBusinessPartnerCardDestinationOverride } from '../lib/businessPartnerOverrides'
@@ -591,14 +591,6 @@ function SearchGlyph({ size=22 }) {
     <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-4-4" />
-    </svg>
-  )
-}
-
-function BackGlyph({ size=22 }) {
-  return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m15 18-6-6 6-6" />
     </svg>
   )
 }
@@ -3171,9 +3163,7 @@ export default function GlobalSearch({
               <p className="latido-search-experience__page-title">{pageTitle}</p>
             )}
             {(!pageMode || immersiveView !== 'start') && (
-              <button
-                type="button"
-                className="latido-search-experience__back"
+              <BackButton
                 onClick={() => {
                   if (immersiveView === 'results') {
                     setImmersiveView(q.trim().length > 0 ? 'preview' : 'start')
@@ -3183,10 +3173,7 @@ export default function GlobalSearch({
                     if (!pageMode) navigate('/', { replace:true })
                   }
                 }}
-                aria-label={immersiveView === 'results' ? 'Volver a las sugerencias' : pageMode ? 'Volver' : 'Volver a Inicio'}
-              >
-                <BackGlyph />
-              </button>
+                aria-label={immersiveView === 'results' ? 'Volver a las sugerencias' : pageMode ? 'Volver' : 'Volver a Inicio'} />
             )}
 
             <form

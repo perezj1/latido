@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Check, ChevronDown, ChevronRight, ChevronUp, Trash2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { Btn, ChevronLeftIcon, EmptyState, IconButton, ImageUploadField, Input } from '../components/UI'
+import { BackButton, Btn, EmptyState, IconButton, ImageUploadField, Input } from '../components/UI'
 import {
   CreatorAppContentCard,
   CreatorAvatar,
@@ -397,7 +397,7 @@ export default function CreadorPanel() {
       <div className="creator-public-shell creator-profile-editor-shell">
         <section className="creator-social-profile creator-social-profile--editor" style={{ '--creator-accent':creator.accent || C.primary }}>
           <div className="creator-social-profile__topbar">
-            <Link to="/perfil" aria-label="Volver a Mi perfil"><ChevronLeftIcon size={20} /></Link>
+            <BackButton to="/perfil" aria-label="Volver a Mi perfil" />
             <div>
               <strong>{formatCreatorHandle(creator.handle) || creator.name}</strong>
               <span>Editor del perfil</span>

@@ -1,17 +1,42 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { forwardRef, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Link } from 'react-router-dom'
 import { C, CAT_COLORS, PP } from '../lib/theme'
 import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption } from '../lib/constants'
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
 
-export function ChevronLeftIcon({ size=22 }) {
+export function ChevronLeftIcon({ size=22, style }) {
   return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" style={style} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="m15 18-6-6 6-6" />
     </svg>
   )
 }
+
+export const BackButton = forwardRef(function BackButton({ to, onClick, className='', style={}, ...props }, ref) {
+  const Component = to ? Link : 'button'
+  return (
+    <Component
+      {...props}
+      ref={ref}
+      {...(to ? { to } : { type:'button' })}
+      onClick={onClick}
+      aria-label={props['aria-label'] || 'Volver'}
+      className={['latido-back-pill', className].filter(Boolean).join(' ')}
+      style={{
+        display:'inline-flex', alignItems:'center', justifyContent:'center',
+        width:44, height:44, minHeight:44, padding:0,
+        borderRadius:999, border:`1px solid ${C.border}`, background:'#fff', color:C.text,
+        fontFamily:PP, fontSize:13, fontWeight:600, lineHeight:1, textDecoration:'none',
+        whiteSpace:'nowrap', flexShrink:0, cursor:'pointer', boxSizing:'border-box',
+        boxShadow:'0 8px 22px rgba(15,23,42,0.16)', ...style,
+      }}
+    >
+      <ChevronLeftIcon size={22} style={{ width:22, height:22, flexShrink:0 }} />
+    </Component>
+  )
+})
 
 // ── Button ─────────────────────────────────────────────────────
 export function Button({
@@ -460,26 +485,20 @@ export function Sheet({ show, onClose, title, children, syncHistory=true, zIndex
 }
 
 // ── Modal (centered) ───────────────────────────────────────────
-export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncHistory=true, actions=null, showHeader=true, headerVariant='bar', contentStyle={} }) {
+export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncHistory=true, actions=null, showHeader=true, headerVariant='bar', compactOnScroll=false, scrollResetKey, contentStyle={} }) {
   useOverlayHistory(show, onClose, syncHistory)
   const scrollerRef = useRef(null)
+  const [compactHeader, setCompactHeader] = useState(false)
   const floatingHeader = showHeader && headerVariant === 'floating'
   const barHeader = showHeader && !floatingHeader
-  const headerButtonStyle = {
-    width:38,
-    height:38,
-    borderRadius:'50%',
-    border:`1px solid ${C.border}`,
-    background:'#fff',
-    color:C.text,
-    cursor:'pointer',
-    fontSize:20,
-    lineHeight:1,
-    display:'flex',
-    alignItems:'center',
-    justifyContent:'center',
-    flexShrink:0,
-    boxShadow:'0 8px 22px rgba(15,23,42,0.16)',
+
+  const updateHeader = event => {
+    if (!floatingHeader || !compactOnScroll) return
+    const scroller = event.currentTarget
+    const hero = scroller.querySelector('[data-detail-hero]')
+    if (hero) {
+      setCompactHeader(hero.getBoundingClientRect().bottom <= scroller.getBoundingClientRect().top)
+    }
   }
 
   useEffect(() => {
@@ -490,36 +509,26 @@ export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncH
   }, [show])
 
   useEffect(() => {
+    setCompactHeader(false)
     if (show) scrollerRef.current?.scrollTo({ top:0, left:0, behavior:'instant' })
-  }, [show, title])
+  }, [show, title, scrollResetKey])
 
   if (!show) return null
   const overlay = (
-    <div ref={scrollerRef} className="fade-in latido-fullpage-enter no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', overflowX:'hidden', scrollbarWidth:'none', msOverflowStyle:'none', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}>
+    <div ref={scrollerRef} onScroll={updateHeader} className="fade-in latido-fullpage-enter no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', overflowX:'hidden', scrollbarWidth:'none', msOverflowStyle:'none', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}>
       {floatingHeader && (
-        <div style={{ position:'sticky', top:0, zIndex:30, height:0, pointerEvents:'none' }}>
-          <div className="latido-page-container" style={{ maxWidth:760, paddingTop:'calc(16px + env(safe-area-inset-top))', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
-            <button
-              onClick={onClose}
-              aria-label="Volver"
-              style={{ ...headerButtonStyle, pointerEvents:'auto' }}
-            >
-              <ChevronLeftIcon />
-            </button>
+        <div data-detail-header={compactHeader ? 'compact' : 'floating'} style={{ position:compactHeader ? 'sticky' : 'relative', top:compactHeader ? 0 : undefined, zIndex:30, height:0, pointerEvents:'none' }}>
+          <div className="latido-page-container" style={{ maxWidth:760, padding:compactHeader ? 'calc(10px + env(safe-area-inset-top)) 12px 10px' : 'calc(12px + env(safe-area-inset-top)) 12px 0', display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, background:compactHeader ? '#fff' : undefined, borderBottom:compactHeader ? `1px solid ${C.border}` : undefined, boxShadow:compactHeader ? '0 2px 8px rgba(15,23,42,0.06)' : undefined, pointerEvents:compactHeader ? 'auto' : 'none' }}>
+            <BackButton onClick={onClose} style={{ pointerEvents:'auto' }} />
+            {compactHeader && <p title={title} style={{ minWidth:0, flex:1, fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</p>}
             {actions && <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0, pointerEvents:'auto' }}>{actions}</div>}
           </div>
         </div>
       )}
       {barHeader && (
-        <div style={{ position:'sticky', top:0, zIndex:20, background:'rgba(255,255,255,0.96)', borderBottom:`1px solid ${C.border}`, backdropFilter:'blur(10px)' }}>
+        <div style={{ position:'relative', zIndex:20, background:'rgba(255,255,255,0.96)', borderBottom:`1px solid ${C.border}`, backdropFilter:'blur(10px)' }}>
           <div style={{ maxWidth:760, margin:'0 auto', padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
-            <button
-              onClick={onClose}
-              aria-label="Volver"
-              style={{ width:38, height:38, borderRadius:'50%', border:`1px solid ${C.border}`, background:'#fff', color:C.text, cursor:'pointer', fontSize:20, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
-            >
-              <ChevronLeftIcon />
-            </button>
+            <BackButton onClick={onClose} />
             <div style={{ minWidth:0, flex:1 }}>
               {eyebrow && <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:0.8, margin:'0 0 1px', textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eyebrow}</p>}
               {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</p>}
