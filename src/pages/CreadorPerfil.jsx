@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Ellipsis, Heart, Pencil, Star, Trash2 } from 'lucide-react'
-import { ChevronLeftIcon, EmptyState } from '../components/UI'
+import { BackButton, EmptyState } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import {
   CREATOR_FEATURED_CONTENTS,
@@ -294,7 +294,7 @@ export default function CreadorPerfil() {
       <div className="creator-public-shell" style={{ paddingTop:22 }}>
         <section className="creator-social-profile" style={{ '--creator-accent':creator.accent || C.primary }}>
           <div className="creator-social-profile__topbar">
-            <Link to="/comunidades?view=creadores" aria-label="Volver a Creadores"><ChevronLeftIcon size={20} /></Link>
+            <BackButton to="/comunidades?view=creadores" aria-label="Volver a Creadores" />
             <div>
               <strong>{formatCreatorHandle(creator.handle) || creator.name}</strong>
               <span>Perfil en Latido</span>

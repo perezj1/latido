@@ -1,4 +1,5 @@
-import { Link, useSearchParams } from 'react-router-dom'
+import { BackButton } from '../components/UI'
+import { useSearchParams } from 'react-router-dom'
 import PuntoHispanoContactForm from '../components/PuntoHispanoContactForm'
 import './PuntoHispanoContact.css'
 
@@ -9,7 +10,7 @@ export default function PuntoHispanoContact() {
 
   return (
     <main className="ph-contact-page">
-      <Link className="ph-back" to="/">← Volver a Latido</Link>
+      <BackButton to="/" style={{ marginBottom:16 }} />
       <section className="ph-contact-card" aria-labelledby="ph-contact-title">
         <p className="ph-eyebrow">Punto Hispano · Atención en español</p>
         <h1 id="ph-contact-title">¿En qué podemos ayudarte?</h1>

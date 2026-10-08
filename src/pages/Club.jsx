@@ -1,3 +1,4 @@
+import { BackButton } from '../components/UI'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -1314,7 +1315,7 @@ export default function Club() {
     <div className="club-page">
       <header className="club-nav">
         <div className="club-nav__inner">
-          <Link to="/" className="club-back"><ArrowLeft size={17} /> Volver a Latido</Link>
+          <BackButton to="/" />
           <Link to="/club" className="club-brand" aria-label="Latido Club, inicio">
             <img src="/brand/latido-horizontal-black.webp" alt="Latido Club" />
           </Link>

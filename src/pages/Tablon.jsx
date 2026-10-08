@@ -9,6 +9,9 @@ import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_TYPES, formatAdLoc
 import { Avatar, Card, EmptyState, FullPageOverlay, ImageLightbox, PhotoGallery, PrivacyTag, ReviewForm, ReviewList, Sheet, SkeletonCard, Stars, Tag } from '../components/UI'
 import FavoriteButton from '../components/FavoriteButton'
 import DetailActionBar from '../components/DetailActionBar'
+import DetailHeaderActions from '../components/DetailHeaderActions'
+import { buildShareUrl } from '../components/ShareButton'
+import { returnWithinApp } from '../lib/navigation'
 import GlobalSearch from '../components/GlobalSearch'
 import SavedSearchButton from '../components/SavedSearchButton'
 import SavedSearchPrompt from '../components/SavedSearchPrompt'
@@ -538,7 +541,7 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
 
   return (
     <div style={{ background:'#fff' }}>
-      <div style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
+      <div data-detail-hero style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
         {photos.length > 1 ? (
           <div style={{ padding:'10px 14px 0' }}>
             <PhotoGallery photos={photos.slice(1)} mainPhoto={coverPhoto} />
@@ -792,7 +795,7 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
 
   return (
     <div style={{ background:'#fff' }}>
-      <div style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
+      <div data-detail-hero style={{ background:'#fff', borderBottom:`1px solid ${C.border}` }}>
         {job.logo_url ? (
           <div style={{ width:'100%', height:'min(58vh, 460px)', minHeight:260, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', padding:0, boxSizing:'border-box' }}>
             <img src={job.logo_url} alt={job.company || job.title} loading="eager" fetchpriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
@@ -1269,7 +1272,7 @@ export default function Tablon() {
   const closeAdDetails = () => {
     setSelectedAd(null)
     if (isCleanAdRoute) {
-      navigate('/tablon', { replace:true })
+      returnWithinApp(navigate, '/tablon')
       return
     }
     const p = new URLSearchParams(searchParams)
@@ -1291,7 +1294,7 @@ export default function Tablon() {
   const closeJobDetails = () => {
     setSelectedJob(null)
     if (isCleanJobRoute) {
-      navigate('/tablon?cat=empleo', { replace:true })
+      returnWithinApp(navigate, '/tablon?cat=empleo')
       return
     }
     const p = new URLSearchParams(searchParams)
@@ -2425,9 +2428,16 @@ export default function Tablon() {
       <FullPageOverlay
         show={!!selectedAd}
         onClose={closeAdDetails}
-        title="Anuncio"
+        title={selectedAd?.title || 'Anuncio'}
+        scrollResetKey={selectedAd?.id}
         syncHistory={false}
         headerVariant="floating"
+        compactOnScroll
+        actions={selectedAd && <DetailHeaderActions
+          share={{ title:selectedAd.title || 'Anuncio en Latido', text:getAdShareText(selectedAd), url:buildShareUrl(getAdPath(selectedAd)), ariaLabel:'Compartir anuncio' }}
+          isFav={isFavorite('ads', selectedAd.id)}
+          onToggleFavorite={() => toggleFavorite('ads', selectedAd.id)}
+        />}
       >
         {selectedAd && (
           <AdDetail
@@ -2450,9 +2460,16 @@ export default function Tablon() {
       <FullPageOverlay
         show={!!selectedJob}
         onClose={closeJobDetails}
-        title="Empleo"
+        title={selectedJob?.title || selectedJob?.company || 'Empleo'}
+        scrollResetKey={selectedJob?.id}
         syncHistory={false}
         headerVariant="floating"
+        compactOnScroll
+        actions={selectedJob && <DetailHeaderActions
+          share={{ title:selectedJob.title || selectedJob.company || 'Empleo en Latido', text:getJobShareText(selectedJob), url:buildShareUrl(getJobPath(selectedJob)), ariaLabel:'Compartir empleo' }}
+          isFav={isFavorite('jobs', selectedJob.id)}
+          onToggleFavorite={() => toggleFavorite('jobs', selectedJob.id)}
+        />}
       >
         {selectedJob && (
           <JobDetail

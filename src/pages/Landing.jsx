@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import GlobalSearch from '../components/GlobalSearch'
+import ResourcePackagesStrip from '../components/ResourcePackagesStrip'
 import CommunityPulse from '../components/CommunityPulse'
 import GiveawayHomeBanner from '../components/GiveawayHomeBanner'
 import HorizontalDragScroller from '../components/HorizontalDragScroller'
 import PublicPartnersSection from '../components/PublicPartnersSection'
-import { ChevronLeftIcon } from '../components/UI'
+import { BackButton } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
@@ -805,13 +806,8 @@ function MenuPanel({ menuPage, setMenuPage }) {
   return (
     <div className="no-scroll" style={{ position: 'fixed', inset: 0, zIndex: 150, background: '#fff', overflowY: 'auto', display: 'flex', flexDirection: 'column', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
       {/* Panel header */}
-      <div style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${C.border}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 14, zIndex: 1, flexShrink: 0 }}>
-        <button
-          onClick={() => setMenuPage(null)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: C.bg, border: 'none', borderRadius: 10, padding: '8px 14px', cursor: 'pointer', fontFamily: PP, fontWeight: 600, fontSize: 13, color: C.mid }}
-        >
-          <ChevronLeftIcon size={17} /> Volver
-        </button>
+      <div style={{ position: 'relative', background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${C.border}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 14, zIndex: 1, flexShrink: 0 }}>
+        <BackButton onClick={() => setMenuPage(null)} />
         <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 16, color: C.text }}>{title}</span>
       </div>
       {/* Panel content */}
@@ -1139,17 +1135,18 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
       <Reveal style={{ position: 'relative', zIndex: 10 }}>
         <div style={{ background: '#fff', padding:'48px var(--latido-page-gutter)', borderBottom: `1px solid ${C.border}` }}>
           <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
-            <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 6 }}>¿Qué necesitas hoy?</p>
+            <p style={{ fontFamily: PP, fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 6 }}>Encuentra lo que necesitas, en español</p>
             <p style={{ fontFamily: PP, fontSize: 13, color: C.mid, marginBottom: 18 }}>Pisos, empleo, cuidadoras, trámites, grupos y mucho más</p>
             <GlobalSearch
               size="lg"
               assistantMode
               immersive
               assistantLabelColor={C.primaryDark}
-              placeholder="Ej.: busco piso en Zürich hasta 3.000 CHF"
+              placeholder="¿Qué necesitas?"
               clearOnClose
               showImmersiveFilterButton={false}
             />
+            <ResourcePackagesStrip tone="dark" />
           </div>
         </div>
       </Reveal>

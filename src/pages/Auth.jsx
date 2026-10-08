@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowRight, ChevronLeft } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { trackAnalyticsEvent } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
-import { Btn, ChevronLeftIcon, Input, Select } from '../components/UI'
+import { BackButton, Btn, ChevronLeftIcon, Input, Select } from '../components/UI'
 import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
@@ -389,13 +389,9 @@ function AuthFlowScreen({ variant, hero, dots=null, onBack, backTo, onSkip, skip
 
       <header className="latido-auth-flow__topbar">
         {backTo ? (
-          <Link to={backTo} className="latido-auth-pill" aria-label="Volver a Latido" title="Volver">
-            <ChevronLeft size={18} aria-hidden="true" />
-          </Link>
+          <BackButton to={backTo} aria-label="Volver a Latido" />
         ) : onBack ? (
-          <button type="button" className="latido-auth-pill" onClick={onBack} aria-label="Volver" title="Volver">
-            <ChevronLeft size={18} aria-hidden="true" />
-          </button>
+          <BackButton onClick={onBack} />
         ) : <span aria-hidden="true" />}
         {onSkip
           ? <button type="button" className="latido-auth-flow__skip" onClick={onSkip}>{skipLabel}</button>
@@ -571,10 +567,7 @@ function AuthFormScreen({ onBack, variant='', children }) {
     <section className={`latido-auth-form-screen${variant ? ` latido-auth-form-screen--${variant}` : ''}`}>
       {onBack && (
         <header className="latido-auth-form-screen__topbar">
-          <button type="button" onClick={onBack} aria-label="Volver">
-            <ChevronLeft size={17} aria-hidden="true" />
-            Volver
-          </button>
+          <BackButton onClick={onBack} />
         </header>
       )}
       <main className="latido-auth-form-screen__content">

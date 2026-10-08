@@ -1,16 +1,7 @@
+import { BackButton } from '../components/UI'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft,
-  ArrowRight,
-  CalendarDays,
-  ChevronDown,
-  Clock,
-  Gift,
-  MapPin,
-  Play,
-  Ticket,
-} from 'lucide-react'
+import { ArrowRight, CalendarDays, ChevronDown, Clock, Gift, MapPin, Play, Ticket } from 'lucide-react'
 import GiveawayParticipationCard, { GiveawayShareButton } from '../components/GiveawayParticipationCard'
 import { useAuth } from '../hooks/useAuth'
 import { useCountdown } from '../hooks/useCountdown'
@@ -188,9 +179,7 @@ export default function SantiagoCruz() {
     <div className="sc-page">
       <header className="sc-topbar">
         <div className="sc-topbar__start">
-          <button type="button" className="sc-topbar__back" onClick={goBack} aria-label="Volver a la página anterior">
-            <ArrowLeft size={20} strokeWidth={2.4} aria-hidden="true" />
-          </button>
+          <BackButton onClick={goBack} aria-label="Volver a la página anterior" />
           <Link to="/" className="sc-brand" aria-label="Ir a Latido.ch">
             <img src="/favicon.svg" alt="" width="30" height="30" />
             <span>Latido</span>

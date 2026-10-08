@@ -1,0 +1,178 @@
+/* Recorrido de una guía dentro de sus paquetes de ayuda. */
+
+/* Bloque final */
+.gj {
+  display: grid;
+  gap: 14px;
+  margin: 24px 0;
+  font-family: 'Poppins', sans-serif;
+  color: #0F172A;
+}
+
+.gj-next {
+  padding: 18px;
+  border: 1px solid #BFDBFE;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 14px 30px -24px rgba(37, 99, 235, .6);
+}
+
+.gj-next__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  color: #2563EB;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.gj-next h2 {
+  margin: 0 0 12px;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+}
+
+.gj-next__step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px 12px 12px;
+  border: 1px solid #E2EAF4;
+  border-radius: 16px;
+  background: #F8FAFF;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .18s ease, background .18s ease;
+}
+
+.gj-next__step:hover { border-color: #93C5FD; background: #fff; }
+.gj-next__step > svg { flex-shrink: 0; color: #2563EB; }
+
+.gj-next__emoji {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #EFF6FF;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.gj-next__text {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gj-next__text small { color: #5F6F85; font-size: 11.5px; font-weight: 600; }
+.gj-next__text strong { font-size: 14.5px; font-weight: 700; line-height: 1.35; }
+
+.gj-next__last {
+  margin: 0;
+  color: #475569;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.gj-next__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 14px;
+}
+
+.gj-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 13px;
+  background: #2563EB;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -12px rgba(37, 99, 235, .8);
+  transition: background .18s ease;
+}
+
+.gj-primary:hover { background: #1D4ED8; }
+
+.gj-secondary {
+  color: #1D4ED8;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.gj-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #047857;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* "Esta guía forma parte de" */
+.gj-member h3 {
+  margin: 0 0 10px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gj-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gj-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 14px 0 10px;
+  border: 1px solid #E2EAF4;
+  border-radius: 999px;
+  background: #fff;
+  color: #0F172A;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color .18s ease, color .18s ease;
+}
+
+.gj-chip:hover { border-color: #93C5FD; color: #1D4ED8; }
+.gj-chip span { font-size: 17px; line-height: 1; }
+
+.gj a:focus-visible,
+.gj button:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 3px;
+}
+
+@media (max-width: 479px) {
+  .gj-next__actions { flex-direction: column; align-items: stretch; }
+  .gj-primary { width: 100%; }
+  .gj-secondary { text-align: center; }
+  .gj-done { justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gj-next__step,
+  .gj-primary,
+  .gj-chip { transition: none; }
+}

@@ -1,3 +1,4 @@
+import RelatedBusinessCard from '../components/RelatedBusinessCard'
 import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -21,7 +22,7 @@ import {
   EVENTO_TYPES,
 } from '../lib/constants'
 import { C, PP } from '../lib/theme'
-import { Card, ChevronLeftIcon, EmptyState, FullPageOverlay, ImageLightbox, InfoBanner, Modal, PhotoGallery, ReviewForm, ReviewList, Sheet, SkeletonCard, Stars, Tag } from '../components/UI'
+import { BackButton, Card, EmptyState, FullPageOverlay, ImageLightbox, InfoBanner, Modal, PhotoGallery, ReviewForm, ReviewList, Sheet, SkeletonCard, Stars, Tag } from '../components/UI'
 import EventfrogCalendar from '../components/EventfrogCalendar'
 import CreatorCommunityView, { CreatorCommunityToolbar } from '../components/CreatorCommunityView'
 import SectionTabs from '../components/SectionTabs'
@@ -42,7 +43,7 @@ import { getThumbnailImageUrl, handleThumbnailImageError, resolveImageUrl } from
 import { isNationwideLocation, matchesCantonOrNationwide } from '../lib/locationScope'
 import { markShareCardShared } from '../lib/shareCardReminder'
 import { buildSearchProfile, scoreSearchFields } from '../lib/naturalSearch'
-import { rotateItems } from '../lib/rotation'
+import { compareDirectoryBusinesses, getDirectoryBusinessPlan, rotateDirectoryBusinesses } from '../lib/businessDirectoryRanking'
 import { rememberRecentlyViewed } from '../lib/recentlyViewed'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import {
@@ -220,14 +221,6 @@ const LIST_MEDIA_STYLE = { width:'100%', height:'100%', objectFit:'contain', dis
 const LIST_FALLBACK_STYLE = { width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:38 }
 const CLAMP_1 = { minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }
 const CLAMP_2 = { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }
-const BUSINESS_DIRECTORY_PRIORITY = {
-  premium:0,
-  basic:1,
-  featured:2,
-  free:3,
-}
-const BUSINESS_DIRECTORY_PLAN_ORDER = ['premium', 'basic', 'featured', 'free']
-
 const DIRECTORY_SEARCH_RESULT_TYPES = {
   negocios:['business'],
   comunidades:['community'],
@@ -414,15 +407,6 @@ function normalizeProvider(provider) {
     photo_url: resolveImageUrl(provider.photo_url),
     contacts: Array.isArray(provider.contacts) ? provider.contacts : null,
   }
-}
-
-function getDirectoryBusinessPlan(business) {
-  if (business.promotionPlan && business.promotionPlan !== 'free') return business.promotionPlan
-  return business.featured ? 'featured' : 'free'
-}
-
-function getDirectoryBusinessPriority(business) {
-  return BUSINESS_DIRECTORY_PRIORITY[getDirectoryBusinessPlan(business)] ?? BUSINESS_DIRECTORY_PRIORITY.free
 }
 
 function getDirectoryBusinessPlanLabel(business) {
@@ -661,23 +645,6 @@ function RelatedCommunityCard({ group, onClick }) {
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{group.name}</p>
         <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 4px', ...CLAMP_1 }}>{category?.label || 'Grupo'}</p>
         <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{group.city}</p>
-      </div>
-    </button>
-  )
-}
-
-function RelatedBusinessCard({ business, photosMap={}, onClick }) {
-  const category = getNegocioTypeMeta(business.type)
-  const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
-  return (
-    <button type="button" onClick={onClick} style={{ width:156, flex:'0 0 156px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden', padding:0, textAlign:'left', cursor:'pointer' }}>
-      <div style={{ height:112, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:34 }}>
-        {photos[0] ? <img src={getThumbnailImageUrl(photos[0])} onError={event => handleThumbnailImageError(event, photos[0])} alt={business.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} /> : business.emoji}
-      </div>
-      <div style={{ padding:10 }}>
-        <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{business.name}</p>
-        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 4px', ...CLAMP_1 }}>{category?.label || 'Negocio'}</p>
-        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{business.city}</p>
       </div>
     </button>
   )
@@ -964,13 +931,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
             </div>
           )}
           <div style={{ position:'absolute', inset:0, pointerEvents:'none', background:'linear-gradient(180deg,rgba(15,23,42,0.08) 0%,rgba(15,23,42,0) 42%,rgba(15,23,42,0.06) 100%)' }} />
-          <button
-            onClick={onClose}
-            aria-label="Volver"
-            style={{ ...floatingButtonStyle, position:'absolute', top:'calc(16px + env(safe-area-inset-top))', left:16, cursor:'pointer', fontSize:20, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', padding:0 }}
-          >
-            <ChevronLeftIcon size={22} />
-          </button>
+          <BackButton onClick={onClose} style={{ position:'absolute', top:'calc(16px + env(safe-area-inset-top))', left:16 }} />
           {planLabel && (
             <span style={{ position:'absolute', left:'50%', bottom:14, transform:'translateX(-50%)', zIndex:2, display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, background:'#fff', border:`1.5px solid ${C.primaryMid}`, borderRadius:999, padding:'7px 14px', boxShadow:'0 10px 22px rgba(37,99,235,0.16)', whiteSpace:'nowrap' }}>
               {planLabel}
@@ -2084,24 +2045,13 @@ export default function Comunidades() {
     .sort((a, b) => {
       const searchDiff = b.searchScore - a.searchScore
       if (hasSearch && searchDiff) return searchDiff
-      const planDiff = getDirectoryBusinessPriority(a.business) - getDirectoryBusinessPriority(b.business)
-      if (planDiff) return planDiff
-      if (searchDiff) return searchDiff
-      if (a.business.featured !== b.business.featured) return b.business.featured ? 1 : -1
-      const recommendationDiff = (businessRecommendations[b.business.id] || 0) - (businessRecommendations[a.business.id] || 0)
-      if (recommendationDiff) return recommendationDiff
-      return String(b.business.created_at || '').localeCompare(String(a.business.created_at || ''))
+      return compareDirectoryBusinesses(a.business, b.business, businessRecommendations)
     })
     .map(item => item.business)
   const filteredNeg = businessSort === 'recommended'
     ? hasSearch
       ? baseOrderedBusinesses
-      : BUSINESS_DIRECTORY_PLAN_ORDER.flatMap(plan =>
-        rotateItems(
-          baseOrderedBusinesses.filter(business => getDirectoryBusinessPlan(business) === plan),
-          businessDirectoryRotationBucket,
-        )
-      )
+      : rotateDirectoryBusinesses(baseOrderedBusinesses, businessDirectoryRotationBucket)
     : [...baseOrderedBusinesses].sort((a, b) => {
       if (businessSort === 'rating') {
         const ratingDiff = (averageRating(businessReviews[b.id] || []) ?? -1) - (averageRating(businessReviews[a.id] || []) ?? -1)

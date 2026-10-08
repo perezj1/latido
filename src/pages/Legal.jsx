@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
-import { ChevronLeftIcon } from '../components/UI'
+import { BackButton } from '../components/UI'
 import { C, PP } from '../lib/theme'
 
 const DOCS = [
@@ -813,9 +813,7 @@ export default function Legal() {
 
   return (
     <div className="latido-page-container latido-page-container--reading" style={{ paddingTop:32, paddingBottom:100 }}>
-      <Link to="/" style={{ fontFamily:PP, fontSize:12, color:C.primary, textDecoration:'none', display:'inline-flex', alignItems:'center', gap:4, marginBottom:20 }}>
-        <ChevronLeftIcon size={16} /> Volver
-      </Link>
+      <BackButton to="/" style={{ marginBottom:20 }} />
 
       {/* Tab nav */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:28 }}>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import { PUNTO_HISPANO_PROVIDER_ID, PUNTO_HISPANO_CONTACT_URL } from '../lib/puntoHispano'
-import { ChevronLeftIcon } from '../components/UI'
+import { BackButton } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { getNegocioTypeMeta } from '../lib/constants'
@@ -60,11 +60,7 @@ function UnavailableLanding() {
           <span className="see-cobar-latido-mark"><img src="/favicon.svg" alt="" /></span>
           <span>Latido</span>
         </Link>
-        <Link className="see-cobar-back" to="/">
-          <span className="see-cobar-back-icon" aria-hidden="true"><ChevronLeftIcon size={18} /></span>
-          <span className="see-cobar-back-full">Volver a Latido</span>
-          <span className="see-cobar-back-short">Volver</span>
-        </Link>
+        <BackButton to="/" />
       </header>
       <main className="bpl-empty">
         <img src="/favicon.svg" alt="" />
@@ -200,11 +196,7 @@ export default function BusinessPartnerLanding() {
             <span>{provider.name}</span>
           </span>
         </div>
-        <Link className="see-cobar-back" to="/">
-          <span className="see-cobar-back-icon" aria-hidden="true"><ChevronLeftIcon size={18} /></span>
-          <span className="see-cobar-back-full">Volver a Latido</span>
-          <span className="see-cobar-back-short">Volver</span>
-        </Link>
+        <BackButton to="/" />
       </header>
 
       <section className="see-hero bpl-hero">
