@@ -1,27 +1,31 @@
 import { Link } from 'react-router-dom'
 import { Check, ChevronRight } from 'lucide-react'
 import { usePackageProgress } from '../hooks/usePackageProgress'
+import HorizontalDragScroller from './HorizontalDragScroller'
 import { RESOURCE_PACKAGES, getResourcePackagePath } from '../lib/resourcePackages'
 
 export default function ResourcePackagesStrip({
   tone='light',
   excludeSlug='',
-  packages=RESOURCE_PACKAGES.filter(resourcePackage => resourcePackage.featured),
+  packages,
+  scrollable=false,
   heading='¿Por dónde quieres empezar?',
   headingAs:Heading='p',
   showAllLink=true,
   className='',
 }) {
   const { completedIn } = usePackageProgress()
+  const availablePackages = packages ?? (scrollable ? RESOURCE_PACKAGES : RESOURCE_PACKAGES.filter(resourcePackage => resourcePackage.featured))
+  const ItemsContainer = scrollable ? HorizontalDragScroller : 'div'
 
   return (
-    <nav className={`latido-resource-packages latido-resource-packages--${tone} ${className}`} aria-label="Paquetes de recursos de Latido">
+    <nav className={`latido-resource-packages latido-resource-packages--${tone}${scrollable ? ' latido-resource-packages--scrollable' : ''} ${className}`} aria-label="Paquetes de recursos de Latido">
       <div className="latido-resource-packages__heading">
         <Heading className="latido-resource-packages__label">{heading}</Heading>
         {showAllLink && <Link className="latido-resource-packages__all" to="/guias">Ver todos<ChevronRight size={14} aria-hidden="true" /></Link>}
       </div>
-      <div className="latido-resource-packages__items">
-        {packages.filter(resourcePackage => resourcePackage.slug !== excludeSlug).map(resourcePackage => {
+      <ItemsContainer className="latido-resource-packages__items" {...(scrollable ? { label:'Paquetes para tu situación' } : {})}>
+        {availablePackages.filter(resourcePackage => resourcePackage.slug !== excludeSlug).map(resourcePackage => {
           const total = resourcePackage.resources.length
           const done = completedIn(resourcePackage.slug, resourcePackage.resources.map(resource => resource.id))
           const complete = total > 0 && done === total
@@ -52,7 +56,7 @@ export default function ResourcePackagesStrip({
             </Link>
           )
         })}
-      </div>
+      </ItemsContainer>
     </nav>
   )
 }

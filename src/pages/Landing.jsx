@@ -1146,7 +1146,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
               clearOnClose
               showImmersiveFilterButton={false}
             />
-            <ResourcePackagesStrip tone="dark" />
+            <ResourcePackagesStrip tone="dark" scrollable />
           </div>
         </div>
       </Reveal>

@@ -4701,6 +4701,18 @@ img[data-latido-img-state="loaded"] {
   gap: 8px;
 }
 
+.latido-resource-packages--scrollable .latido-resource-packages__items {
+  grid-auto-columns: calc((100% - 24px) / 3.15);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0;
+}
+
+@media (min-width: 640px) {
+  .latido-resource-packages--scrollable .latido-resource-packages__items { grid-auto-columns: clamp(220px, 30%, 320px); }
+}
+
 .latido-resource-packages__link {
   position: relative;
   display: flex;

@@ -1692,7 +1692,7 @@ export default function Home() {
               openResultsOnMount={reopenSavedGlobalSearch}
               searchFilters={initialGlobalSearchFilters}
             />
-            <ResourcePackagesStrip />
+            <ResourcePackagesStrip scrollable />
           </div>
 
           {showAttentionSection && notifOpen && attentionPortalElement && createPortal(
