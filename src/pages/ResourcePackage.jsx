@@ -186,7 +186,7 @@ export default function ResourcePackage() {
                   <p>{resource.description}</p>
                   <div className="rp-step__actions">
                     <Link className="rp-step__cta" to={step.path}>
-                      {resource.action}
+                      <span>{resource.action}</span>
                       <ArrowRight size={15} strokeWidth={2.4} aria-hidden="true" />
                     </Link>
                     <button
@@ -196,8 +196,10 @@ export default function ResourcePackage() {
                       aria-label={stepDone ? `Marcar "${resource.title}" como pendiente` : `Marcar "${resource.title}" como hecho`}
                       onClick={() => setStepDone(slug, step.id)}
                     >
-                      {!stepDone && <Check size={15} strokeWidth={2.6} aria-hidden="true" />}
-                      {stepDone ? 'Desmarcar' : 'Marcar hecho'}
+                      <span className="rp-step__check" aria-hidden="true">
+                        {stepDone && <Check size={14} strokeWidth={2.6} />}
+                      </span>
+                      Hecho
                     </button>
                   </div>
                   {resource.requiresAccount && !isLoggedIn && <span className="rp-step__note">Necesitas una cuenta gratuita</span>}

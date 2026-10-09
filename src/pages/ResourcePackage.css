@@ -327,42 +327,50 @@
 }
 
 .rp-step__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: stretch;
+  gap: 8px;
 }
 
 .rp-step__cta {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  min-height: 44px;
-  padding: 0 18px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
   border-radius: 12px;
   background: #2563EB;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
-  transition: background .18s ease;
+  text-align: center;
+  line-height: 1.4;
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
 }
 
+.rp-step__cta > span { min-width: 0; overflow-wrap: anywhere; }
+.rp-step__cta > svg { flex-shrink: 0; }
 .rp-step__cta:hover { background: #1D4ED8; }
 
-.rp-step.is-done .rp-step__cta { background: #EFF6FF; color: #1D4ED8; }
-.rp-step.is-done .rp-step__cta:hover { background: #DBEAFE; }
+.rp-step.is-done .rp-step__cta { border-color: #CBD5E1; background: #fff; color: #1D4ED8; }
+.rp-step.is-done .rp-step__cta:hover { background: #EFF6FF; }
 
 .rp-step__toggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  min-height: 44px;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
   padding: 0 14px;
-  border: 1px solid #E2EAF4;
+  border: 1px solid #CBD5E1;
   border-radius: 12px;
   background: #fff;
-  color: #475569;
+  color: #0F172A;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -373,14 +381,21 @@
 .rp-step__toggle:hover { border-color: #A7F3D0; color: #047857; }
 .rp-step.is-done .rp-step__toggle:hover { border-color: #CBD5E1; color: #0F172A; }
 
-/* Móvil: los dos botones a todo el ancho, uno debajo del otro. */
-@media (max-width: 639px) {
-  .rp-step__actions {
-    display: grid;
-    gap: 8px;
-  }
-  .rp-step__cta,
-  .rp-step__toggle { justify-content: center; }
+.rp-step__check {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #92958F;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.rp-step.is-done .rp-step__check {
+  border-color: #008A00;
+  background: #008A00;
+  color: #fff;
 }
 
 .rp-step__note {
