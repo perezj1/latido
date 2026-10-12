@@ -1,69 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessPath } from '../lib/seo'
 import { resolveImageUrl } from '../lib/imageVariants'
-import { getGuideBusinesses } from '../lib/guideBusinesses'
+import { getBusinessGuideMatches, getGuideBusinesses } from '../lib/guideBusinesses'
 import { BUSINESS_ROTATION_INTERVAL_MS } from '../lib/businessPromotion'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
 import HorizontalDragScroller from './HorizontalDragScroller'
 import RelatedBusinessCard from './RelatedBusinessCard'
+import useGuideBusinessDirectory from '../hooks/useGuideBusinessDirectory'
+import './GuideRelatedBusinesses.css'
 
-const PAGE_SIZE = 500
-const COLUMNS = 'id,name,category,city,canton,description,services,photo_url,featured,active,created_at,promotion_plan,promotion_starts_at,promotion_ends_at'
-
-async function fetchGuideDirectory() {
-  const rows = []
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await supabase.from('providers').select(COLUMNS)
-      .eq('active', true).order('id').range(from, from + PAGE_SIZE - 1)
-    if (error) throw error
-    rows.push(...(data || []))
-    if ((data || []).length < PAGE_SIZE) return rows.map(row => ({
-      ...row,
-      type:row.category,
-      emoji:getNegocioTypeMeta(row.category)?.label?.split(' ')[0] || '🏪',
-      photo_url:resolveImageUrl(row.photo_url),
-    }))
-  }
-}
-
-export default function GuideRelatedBusinesses({ guide }) {
+export default function GuideRelatedBusinesses({ guide, heading='Negocios relacionados', headingAs:Heading='h2', className='', hideWhenEmpty=false }) {
   const navigate = useNavigate()
-  const [directory, setDirectory] = useState([])
-  const [recommendations, setRecommendations] = useState({})
-  const [status, setStatus] = useState('loading')
+  const { directory, recommendations, status, retry } = useGuideBusinessDirectory()
   const [photosMap, setPhotosMap] = useState({})
-  const [attempt, setAttempt] = useState(0)
   const rotationBucket = useTimedRotationBucket(BUSINESS_ROTATION_INTERVAL_MS)
-
-  useEffect(() => {
-    let cancelled = false
-    setStatus('loading')
-    const load = async () => {
-      const [providers, recommendationCounts] = await Promise.allSettled([
-        fetchGuideDirectory(),
-        supabase.rpc('get_business_recommendation_counts'),
-      ])
-      if (cancelled) return
-      if (providers.status === 'rejected') {
-        setStatus('error')
-        return
-      }
-      setDirectory(providers.value)
-      const counts = {}
-      if (recommendationCounts.status === 'fulfilled' && !recommendationCounts.value.error) {
-        for (const row of recommendationCounts.value.data || []) {
-          if (row?.business_id) counts[row.business_id] = Number(row.recommendation_count || 0)
-        }
-      }
-      setRecommendations(counts)
-      setStatus('ready')
-    }
-    load()
-    return () => { cancelled = true }
-  }, [attempt])
 
   const related = useMemo(() => getGuideBusinesses(guide, directory, recommendations, Date.now()),
     [guide, directory, recommendations, rotationBucket])
@@ -93,16 +45,24 @@ export default function GuideRelatedBusinesses({ guide }) {
     return () => { cancelled = true }
   }, [relatedIds])
 
+  if (hideWhenEmpty && status === 'ready' && related.length === 0) return null
+
   return (
-    <section className="latido-guide-businesses" aria-label="Negocios relacionados con esta guía" aria-busy={status === 'loading'}>
-      <h2>Negocios relacionados</h2>
-      {status === 'loading' && <p className="latido-guide-businesses-status" role="status">Buscando negocios para esta guía…</p>}
+    <section className={`latido-guide-businesses ${className}`} aria-label={heading} aria-busy={status === 'loading'}>
+      <Heading>{heading}</Heading>
+      {status === 'loading' && <p className="latido-guide-businesses-status" role="status">Buscando negocios relacionados…</p>}
       {status === 'error' && <p className="latido-guide-businesses-status" role="status">
-        No hemos podido cargar los negocios. <button type="button" onClick={() => setAttempt(value => value + 1)}>Reintentar</button>
+        No hemos podido cargar los negocios. <button type="button" onClick={retry}>Reintentar</button>
       </p>}
       {status === 'ready' && related.length === 0 && <p className="latido-guide-businesses-status">Todavía no hay negocios relacionados con esta guía en Latido.</p>}
       {status === 'ready' && related.length > 0 && <HorizontalDragScroller className="latido-guide-businesses-rail" label="Negocios relacionados; desliza para ver más">
-        {related.map(business => <RelatedBusinessCard key={business.id} business={business} photosMap={photosMap} onClick={() => navigate(getBusinessPath(business))} />)}
+        {related.map(business => <RelatedBusinessCard
+          key={business.id}
+          business={business}
+          photosMap={photosMap}
+          supportingText={getBusinessGuideMatches(business, guide).slice(0, 2).map(term => ['rav', 'orp', 'cv', 'ahv', 'avs', 'syna', 'unia'].includes(term) ? term.toUpperCase() : term).join(' · ')}
+          onClick={() => navigate(getBusinessPath(business))}
+        />)}
       </HorizontalDragScroller>}
     </section>
   )

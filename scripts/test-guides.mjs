@@ -6,7 +6,9 @@ import { RESOURCE_PACKAGES, getResourcePackage, getResourcePackagePath, getPacka
 import { getGuideBusinesses, isBusinessRelatedToGuide } from '../src/lib/guideBusinesses.js'
 import { BUSINESS_ROTATION_INTERVAL_MS } from '../src/lib/businessPromotion.js'
 import { JOBLI_PROVIDER_ID } from '../src/lib/businessPartnerOverrides.js'
+import { PUNTO_HISPANO_PROVIDER_ID } from '../src/lib/puntoHispano.js'
 import { compareDirectoryBusinesses, getDirectoryBusinessPlan, rankDirectoryBusinesses } from '../src/lib/businessDirectoryRanking.js'
+import { getPackageSteps } from '../src/lib/packageSteps.js'
 
 const guide = id => MOCK_DOCS.find(item => item.id === id)
 assert.equal(MOCK_DOCS.length, 19)
@@ -90,6 +92,53 @@ assert.ok(isBusinessRelatedToGuide(business('moving', 'free', {services:['Mudanz
 assert.ok(isBusinessRelatedToGuide(business('baby', 'free', {services:['Matrona']}), guide('d17')))
 assert.ok(isBusinessRelatedToGuide(business('return', 'free', {services:['Segundo pilar']}), guide('d18')))
 assert.ok(isBusinessRelatedToGuide(business('family', 'free', {services:['Cuidado infantil']}), guide('d19')))
+
+// Public employment offices, providers with description-only services and unions
+// must remain eligible without admitting unrelated high-priority businesses.
+const rav = business('rav', 'free', {name:'RAV (Oficina de empleo)', category:'empleo', services:null, description:'Servicio público suizo de empleo.'})
+const ayuda = business('ayuda', 'free', {name:'Tu Ayuda en Suiza', services:null, description:'Gestiones relacionadas con RAV y desempleo.'})
+const syna = business('syna', 'free', {name:'SYNA', category:'otro', services:null, description:'Sindicato para trabajadores.'})
+const legal = business('legal', 'free', {services:['Derecho y asesoría legal']})
+assert.ok(isBusinessRelatedToGuide(rav, guide('d15')))
+assert.ok(isBusinessRelatedToGuide(ayuda, guide('d15')))
+assert.ok(isBusinessRelatedToGuide(syna, guide('d15')))
+assert.ok(isBusinessRelatedToGuide(syna, guide('d10')))
+assert.ok(isBusinessRelatedToGuide(legal, guide('d10')))
+assert.ok(!isBusinessRelatedToGuide(rav, guide('d2')))
+assert.ok(isBusinessRelatedToGuide(business('ett', 'free', {category:'empleo', services:null, description:'Agencia de colocación de personal y trabajo temporal.'}), guide('d14')))
+assert.ok(isBusinessRelatedToGuide(business('housing', 'free', {category:'vivienda', services:null, description:'Portal inmobiliario con alquiler de pisos.'}), guide('d9')))
+assert.ok(isBusinessRelatedToGuide(business('partner-description', 'premium', {services:null, partner_card_description:'Asesoría laboral en español'}), guide('d10')))
+assert.ok(isBusinessRelatedToGuide(business('string-services', 'free', {services:'Asesoría laboral'}), guide('d10')))
+assert.ok(isBusinessRelatedToGuide(business('structured-services', 'free', {services:[{name:'Asesoría laboral'}]}), guide('d10')))
+assert.ok(isBusinessRelatedToGuide(business('both-descriptions', 'free', {services:null, description:'Atención en español', desc:'Trámites RAV'}), guide('d15')))
+assert.ok(!isBusinessRelatedToGuide(business('hairdresser', 'premium', {category:'belleza', services:['Corte de cabello'], description:'Atención en alemán y español'}), guide('d6')))
+assert.ok(!isBusinessRelatedToGuide(business('dance', 'premium', {category:'otro', services:['Alquiler de estudio'], description:'Las clases de baile pueden ser en alemán.'}), guide('d16')))
+assert.ok(!isBusinessRelatedToGuide(business('car-rental', 'premium', {category:'vehiculos', services:['Alquiler de coches']}), guide('d9')))
+assert.ok(!isBusinessRelatedToGuide(business('car-insurance', 'premium', {services:['Seguros de coche']}), guide('d3')))
+assert.ok(!isBusinessRelatedToGuide(business('criminal-only', 'premium', {name:'Abogado penalista', services:['Derecho penal', 'Defensa de oficio']}), guide('d10')))
+const catalogProvider = business(PUNTO_HISPANO_PROVIDER_ID, 'premium', {services:['Gestoría']})
+for (const id of ['d1', 'd2', 'd3', 'd4', 'd10', 'd12', 'd15', 'd16', 'd17']) {
+  assert.ok(isBusinessRelatedToGuide(catalogProvider, guide(id)), `${id} should read the published service catalogue`)
+}
+assert.ok(!isBusinessRelatedToGuide(business('another-provider', 'premium', {services:['Gestoría']}), guide('d3')))
+assert.ok(!isBusinessRelatedToGuide({...catalogProvider, active:false}, guide('d3')))
+
+for (const resourcePackage of RESOURCE_PACKAGES) {
+  for (const step of getPackageSteps(resourcePackage)) {
+    if (step.guide) assert.equal(step.businessContext, step.guide)
+    if (step.businessContext) assert.ok(step.businessContext.relatedBusinessTerms.length)
+  }
+}
+const unemployedSteps = getPackageSteps(getResourcePackage('sin-trabajo'))
+assert.ok(isBusinessRelatedToGuide(rav, unemployedSteps.find(step => step.id === 'guia').businessContext))
+assert.ok(isBusinessRelatedToGuide(syna, unemployedSteps.find(step => step.id === 'derechos').businessContext))
+assert.ok(isBusinessRelatedToGuide(rav, unemployedSteps.find(step => step.id === 'ofertas').businessContext))
+assert.ok(isBusinessRelatedToGuide(ayuda, unemployedSteps.find(step => step.id === 'tramites').businessContext))
+assert.ok(isBusinessRelatedToGuide(rav, unemployedSteps.find(step => step.id === 'tramites').businessContext))
+const childcare = getPackageSteps(getResourcePackage('llego-con-ninos')).find(step => step.id === 'cuidados').businessContext
+assert.ok(isBusinessRelatedToGuide(business('childcare', 'free', {services:['Cuidado de niños']}), childcare))
+assert.ok(!isBusinessRelatedToGuide(business('insurance', 'premium', {services:['Seguro de salud']}), childcare))
+assert.equal(getPackageSteps(getResourcePackage('me-mudo')).find(step => step.id === 'muebles').businessContext, null)
 
 const rows = [
   business('free'), business('featured','featured'), business('basic','basic'),

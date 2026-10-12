@@ -17,11 +17,6 @@
 .latido-guide-sources li { padding: 0; margin-bottom: 10px; }
 .latido-guide-sources a { color: #1d4ed8; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
 .latido-guide-sources a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; border-radius: 3px; }
-.latido-guide-businesses { margin-top: 22px; padding-top: 18px; border-top: 1px solid #dbeafe; margin-bottom: 22px; font-family: 'Poppins', sans-serif; }
-.latido-guide-businesses h2 { font-weight: 800; font-size: 18px; color: #0f172a; margin: 0 0 14px; }
-.latido-guide-businesses p.latido-guide-businesses-status { color: #64748b; font-size: 12px; margin: 0; }
-.latido-guide-businesses-rail { display: flex; gap: 10px; overflow-x: auto; margin: 0 -20px; padding: 0 20px 4px; align-items: stretch; }
-.latido-guide-businesses button:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
 .latido-guide-page { padding-top: 24px; padding-bottom: 100px; }
 .latido-guide-page-body { max-width: 760px; margin: 0 auto; padding: 24px 20px; background: #fff; border: 1px solid #dbeafe; border-radius: 20px; }
 .latido-guide-page-header h1 { font-family: 'Poppins', sans-serif; font-size: clamp(23px, 4vw, 32px); font-weight: 800; line-height: 1.35; color: #0f172a; margin: 0 0 20px; overflow-wrap: anywhere; }

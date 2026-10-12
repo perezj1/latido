@@ -22,7 +22,7 @@ export default function ResourcePackagesStrip({
     <nav className={`latido-resource-packages latido-resource-packages--${tone}${scrollable ? ' latido-resource-packages--scrollable' : ''} ${className}`} aria-label="Paquetes de recursos de Latido">
       <div className="latido-resource-packages__heading">
         <Heading className="latido-resource-packages__label">{heading}</Heading>
-        {showAllLink && <Link className="latido-resource-packages__all" to="/guias">Ver todos<ChevronRight size={14} aria-hidden="true" /></Link>}
+        {showAllLink && <Link className="latido-resource-packages__all" to="/paquetes">Ver todos<ChevronRight size={14} aria-hidden="true" /></Link>}
       </div>
       <ItemsContainer className="latido-resource-packages__items" {...(scrollable ? { label:'Paquetes para tu situación' } : {})}>
         {availablePackages.filter(resourcePackage => resourcePackage.slug !== excludeSlug).map(resourcePackage => {

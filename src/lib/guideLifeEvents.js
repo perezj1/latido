@@ -5,9 +5,10 @@ const section = (heading, paragraphs = [], bullets = [], note = '') => ({ headin
 
 export const LIFE_EVENT_GUIDE_REVISIONS = {
   d15: {
+    relatedBusinessCategories:['empleo'],
     reviewedAt:'2026-10-08',
     summary:'Si tu empleo termina, separa tres tareas: buscar trabajo desde ahora, registrarte en el RAV y tramitar las posibles prestaciones con una caja de desempleo.',
-    relatedBusinessTerms:['desempleo', 'rav', 'derecho laboral', 'derecho del trabajo', 'derechos laborales', 'asesoría laboral', 'asesoramiento laboral', 'contratos de trabajo', 'sindicato', 'sindicatos', 'búsqueda de empleo', 'currículum', 'curriculum', 'orientación laboral'],
+    relatedBusinessTerms:['desempleo', 'rav', 'orp', 'urc', 'paro', 'caja de desempleo', 'caisse de chômage', 'arbeitslosenkasse', 'derecho laboral', 'derecho del trabajo', 'derechos laborales', 'asesoría laboral', 'asesoramiento laboral', 'contratos de trabajo', 'sindicato', 'sindicatos', 'syna', 'unia', 'búsqueda de empleo', 'currículum', 'cv', 'orientación laboral'],
     sections:[
       section('Empieza antes de tu último día', ['Busca empleo desde que sabes que tu puesto termina y conserva las pruebas de cada candidatura. Revisa el preaviso y pide tu certificado de trabajo o una confirmación de empleo.'], [
         'Guarda contrato, carta de despido, nóminas y certificados laborales.',
@@ -37,7 +38,7 @@ export const LIFE_EVENT_GUIDE_REVISIONS = {
   d16: {
     reviewedAt:'2026-10-08',
     summary:'Una lista práctica para mudarte dentro de Suiza: salir del alquiler, comunicar el domicilio, coordinar servicios y documentar la entrega del piso.',
-    relatedBusinessTerms:['mudanza', 'mudanzas', 'transporte de muebles', 'limpieza de fin de alquiler', 'limpieza final', 'limpieza de pisos', 'alquiler', 'arrendamiento', 'cambio de domicilio'],
+    relatedBusinessTerms:['mudanza', 'mudanzas', 'transporte de muebles', 'limpieza de fin de alquiler', 'limpieza final', 'limpieza de pisos', 'limpieza de viviendas', 'limpieza de apartamentos', 'entrega del piso', 'derecho de arrendamiento', 'contratos de alquiler', 'cambio de domicilio', 'umzug', 'umzüge', 'déménagement', 'déménagements'],
     sections:[
       section('Revisa el contrato antes de fijar la salida', ['Comprueba preaviso y fechas de rescisión. Comunica la baja por escrito y guarda prueba de recepción. En una vivienda familiar, verifica las firmas necesarias. Salir antes de la fecha acordada no cancela por sí solo la obligación de pagar. Si propones un inquilino sustituto, confirma que se cumplen los requisitos y conserva la respuesta.']),
       section('Organiza transporte y servicios', [], [
@@ -67,7 +68,7 @@ export const LIFE_EVENT_GUIDE_REVISIONS = {
   d17: {
     reviewedAt:'2026-10-08',
     summary:'Qué preguntar sobre el seguro, qué organizar antes del nacimiento y cómo comprobar los permisos y prestaciones de maternidad.',
-    relatedBusinessTerms:['maternidad', 'embarazo', 'matrona', 'matronas', 'ginecología', 'ginecologia', 'pediatría', 'pediatria', 'pediatra', 'postparto', 'seguro de salud', 'seguros de salud', 'krankenkasse', 'cuidado infantil'],
+    relatedBusinessTerms:['maternidad', 'embarazo', 'matrona', 'matronas', 'ginecología', 'ginecólogo', 'ginecóloga', 'pediatría', 'pediatra', 'pediatras', 'postparto', 'seguro de salud', 'seguros de salud', 'salud y complementarios', 'krankenkasse', 'cuidado infantil', 'hebamme', 'nacimiento'],
     sections:[
       section('Organiza el seguimiento y el parto', ['Contacta con tu profesional sanitario y acuerda el seguimiento y el lugar del parto. Pregunta cómo reservar las citas, qué documentación necesita el centro y si puedes disponer de atención o apoyo lingüístico que entiendas.'], [
         'Prepara identificación, tarjeta del seguro e información clínica que debas compartir.',
@@ -94,7 +95,7 @@ export const LIFE_EVENT_GUIDE_REVISIONS = {
   d18: {
     reviewedAt:'2026-10-08',
     summary:'Antes de salir definitivamente de Suiza, coordina la baja, el alquiler, los seguros y tus cotizaciones. Las reglas cambian según nacionalidad, destino y situación laboral.',
-    relatedBusinessTerms:['salida de suiza', 'retorno', 'repatriación', 'mudanza internacional', 'mudanzas internacionales', 'pensiones', 'segundo pilar', 'tercer pilar', 'declaración fiscal', 'asesoría fiscal', 'trámites de salida'],
+    relatedBusinessTerms:['salida de suiza', 'salidas de suiza', 'retorno', 'repatriación', 'mudanza internacional', 'mudanzas internacionales', 'pensiones', 'pensionskasse', 'freizügigkeit', 'segundo pilar', 'tercer pilar', 'declaración fiscal', 'asesoría fiscal', 'trámites de salida', 'baja municipal'],
     sections:[
       section('Confirma tu salida con el municipio', ['Consulta al registro de habitantes cómo notificar una salida al extranjero, cuándo hacerlo y cómo obtener el certificado de baja. Facilita tu dirección futura. Los canales y documentos varían entre municipios; eUmzugCH no debe darse por válido para cualquier salida internacional.'], [], 'Si tu salida es temporal o quieres conservar un permiso, habla con migración antes de darte de baja. No asumas que el permiso seguirá siendo válido después.'),
       section('Cierra vivienda y contratos por separado', ['La baja municipal no cancela el alquiler ni los contratos privados. Revisa los preavisos, acuerda la entrega del piso y solicita confirmación de cada baja.'], [
@@ -124,7 +125,7 @@ export const LIFE_EVENT_GUIDE_REVISIONS = {
   d19: {
     reviewedAt:'2026-10-08',
     summary:'Organiza la llegada de tu familia: permiso y documentación, escolarización, cuidados, seguro de salud y una red de apoyo cerca de casa.',
-    relatedBusinessTerms:['reagrupación', 'reagrupacion', 'cuidado infantil', 'cuidado de niños', 'niñera', 'niñero', 'au pair', 'guardería', 'guarderia', 'kita', 'pediatría', 'pediatria', 'pediatra', 'clases de alemán', 'clases de francés', 'traducción oficial', 'seguro de salud'],
+    relatedBusinessTerms:['reagrupación', 'cuidado infantil', 'cuidado de niños', 'niñera', 'niñero', 'au pair', 'guardería', 'guarderías', 'kita', 'pediatría', 'pediatra', 'pediatras', 'clases de alemán', 'clases de francés', 'traducción oficial', 'traducción jurada', 'seguro de salud', 'escolarización', 'apoyo escolar'],
     sections:[
       section('Aclara primero residencia y documentación', ['Comprueba con migración la vía de entrada y residencia de cada integrante de la familia. La nacionalidad, tu permiso y el parentesco influyen; una autorización para ti no resuelve por sí sola la situación de tus hijos.'], [
         'Prepara documentos de identidad, nacimiento y parentesco.',
