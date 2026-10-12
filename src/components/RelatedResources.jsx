@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { resolveImageUrl } from '../lib/imageVariants'
+import { CANTONS } from '../lib/constants'
 import { getGuideBusinesses } from '../lib/guideBusinesses'
 import { getRelatedAdContext, getRelatedAdsExplorePath, mergeRelatedResources, selectRelatedAds } from '../lib/relatedResources'
 import { useTimedRotationBucket } from '../hooks/useTimedRotationBucket'
@@ -51,7 +52,9 @@ export default function RelatedResources({guide,resource,canton='',heading='Recu
   const loading = (filter !== 'ad' && businessLoading) || (filter !== 'business' && adsLoading)
   const failed = (filter !== 'ad' && businessFailed) || (filter !== 'business' && adsFailed)
   if (hideWhenEmpty && !businessLoading && !adsLoading && !businessFailed && !adsFailed && !combined.length) return null
-  const emptyText = filter === 'ad' ? 'Todavía no hay anuncios disponibles para este paso en la zona seleccionada.' : filter === 'business' ? 'Todavía no hay negocios relacionados con este paso.' : 'Todavía no hay recursos disponibles para este paso.'
+  const cantonName = CANTONS.find(item => item.code === canton)?.name || 'Suiza'
+  const emptyType = filter === 'ad' ? 'anuncios' : filter === 'business' ? 'negocios' : 'recursos'
+  const emptyText = `Aún no hay ${emptyType} para este paso en ${cantonName}.`
   const retry = () => {
     if (filter !== 'ad' && businessFailed) retryBusinesses()
     if (filter !== 'business' && adsFailed) retryAds()
@@ -72,15 +75,15 @@ export default function RelatedResources({guide,resource,canton='',heading='Recu
     </div>
     <div className="related-resources__summary">
       <span aria-live="polite">{filter === 'all' ? 'Anuncios y negocios para ayudarte' : filter === 'ad' ? 'Anuncios relacionados con este paso' : 'Profesionales y entidades relacionados'}</span>
-      {filter !== 'all' && <Link to={filter === 'ad' ? adsHref : businessHref}>Explorar más<ArrowRight size={12} aria-hidden="true" /></Link>}
+      {filter !== 'all' && visible.length > 0 && <Link to={filter === 'ad' ? adsHref : businessHref}>Explorar más<ArrowRight size={12} aria-hidden="true" /></Link>}
     </div>
     <div id={`${id}-results`} aria-busy={loading}>
       {visible.length > 0 && <HorizontalDragScroller className="related-resources__rail" label="Recursos recomendados; desliza para ver más" key={filter}>
         {visible.map(item => <RelatedResourceCard key={`${item.kind}:${item.row.resourceKind || ''}:${item.row.id}`} item={item} guide={guide} photosMap={photosMap} />)}
       </HorizontalDragScroller>}
       {!visible.length && loading && <div className="related-resources__loading" role="status"><span className="related-resources__sr">Buscando recursos relacionados…</span>{[0,1].map(n => <div className="related-resources__skeleton" key={n} aria-hidden="true"><div /><span /><span /></div>)}</div>}
-      {!visible.length && !loading && !failed && <div className="related-resources__empty"><span className="related-resources__empty-emoji" aria-hidden="true">🔎</span><strong>Aún no hay recursos para mostrar</strong><span>{emptyText}</span>
-        <div>{filter !== 'business' && <Link to={adsHref}>Explorar anuncios<ArrowRight size={12} aria-hidden="true" /></Link>}{filter !== 'ad' && <Link to={businessHref}>Explorar negocios<ArrowRight size={12} aria-hidden="true" /></Link>}</div>
+      {!visible.length && !loading && !failed && <div className="related-resources__empty"><span className="related-resources__empty-emoji" aria-hidden="true">🔎</span><strong>{emptyText}</strong><span>{filter === 'business' ? 'Da a conocer tu negocio a la comunidad.' : 'Comparte lo que ofreces y ayuda a la comunidad.'}</span>
+        <div>{filter !== 'business' && <Link to="/publicar">Publica tu anuncio<ArrowRight size={12} aria-hidden="true" /></Link>}{filter !== 'ad' && <Link to="/registrar-negocio">Publica tu negocio<ArrowRight size={12} aria-hidden="true" /></Link>}</div>
       </div>}
       {failed && <div className="related-resources__status" role="status">{filter === 'all' ? 'Algunos recursos no se han podido cargar.' : filter === 'ad' ? 'No hemos podido cargar todos los anuncios.' : 'No hemos podido cargar los negocios.'} <button type="button" onClick={retry}>Reintentar</button></div>}
       {visible.length > 0 && loading && <span className="related-resources__status" role="status">Cargando más recursos…</span>}
