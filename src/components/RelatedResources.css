@@ -7,7 +7,8 @@
 .related-resources__filters > button[aria-pressed=true] .related-resources__count { background:#ffffff26; color:#fff; }
 .related-resources__summary { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 10px; margin-bottom:12px; font-size:10px; line-height:1.5; color:#64748b; }
 .related-resources__summary > a { display:inline-flex; align-items:center; gap:4px; color:#2563eb; font-size:10px; font-weight:600; text-decoration:none; padding:4px 0; }
-.related-resources__rail { display:flex; align-items:stretch; gap:10px; overflow-x:auto; margin:0 -20px; padding:0 20px 4px; scroll-snap-type:x proximity; scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
+.related-resources__rail { display:flex; align-items:stretch; gap:10px; overflow-x:auto; margin:0 -20px; padding:0 20px 4px; scroll-snap-type:x proximity; scrollbar-width:none; }
+.related-resources__rail::-webkit-scrollbar { display:none; }
 .related-resources__empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:22px 14px; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc; color:#64748b; text-align:center; font-size:11px; }
 .related-resources__empty-emoji { font-size:25px; margin-bottom:2px; }
 .related-resources__empty > strong { color:#334155; font-size:12px; font-weight:600; }
