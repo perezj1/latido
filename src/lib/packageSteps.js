@@ -9,8 +9,10 @@ import {
 } from './resourcePackages.js'
 
 // La guía se abre con el paquete como contexto para no perder el recorrido.
-export function getGuideStepPath(guide, resourcePackage) {
-  return `${getGuidePath(guide)}?paquete=${encodeURIComponent(resourcePackage.slug)}`
+export function getGuideStepPath(guide, resourcePackage, canton=null) {
+  const params = new URLSearchParams({paquete:resourcePackage.slug})
+  if (canton !== null) params.set('canton',canton || 'all')
+  return `${getGuidePath(guide)}?${params}`
 }
 
 // Non-guide tasks need their own topic, rather than the whole package's terms.
@@ -58,7 +60,7 @@ export function getPackageSteps(resourcePackage, canton='') {
       guide,
       businessContext:guide || getPackageResourceBusinessContext(resource, resourcePackage),
       kind:guide ? 'Guía' : getPackageResourceKind(resource),
-      path:guide ? getGuideStepPath(guide, resourcePackage) : getPackageResourcePath(resource, canton),
+      path:guide ? getGuideStepPath(guide, resourcePackage, canton) : getPackageResourcePath(resource, canton),
     }
   })
 }

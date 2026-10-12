@@ -1,5 +1,0 @@
-.latido-guide-businesses { margin-top: 22px; padding-top: 18px; border-top: 1px solid #dbeafe; margin-bottom: 22px; font-family: 'Poppins', sans-serif; }
-.latido-guide-businesses > :is(h2, h3, h4) { font-weight: 800; font-size: 18px; color: #0f172a; margin: 0 0 14px; }
-.latido-guide-businesses p.latido-guide-businesses-status { color: #64748b; font-size: 12px; margin: 0; }
-.latido-guide-businesses-rail { display: flex; gap: 10px; overflow-x: auto; margin: 0 -20px; padding: 0 20px 4px; align-items: stretch; }
-.latido-guide-businesses button:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }

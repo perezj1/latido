@@ -17,6 +17,7 @@
     "test:notifications": "node scripts/test-notifications.mjs",
     "test:search": "node scripts/test-search.mjs",
     "test:guides": "node scripts/test-guides.mjs",
+    "test:resources": "node scripts/test-related-resources.mjs",
     "test:guides:browser": "node scripts/test-guides-browser.mjs",
     "test:punto-hispano": "node scripts/test-punto-hispano.mjs",
     "vapid:keys": "node scripts/generate-vapid-keys.mjs"

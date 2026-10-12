@@ -1,14 +1,19 @@
 import { C } from '../lib/theme'
 import { Tag, InfoBanner, BackButton } from './UI'
 import GuideArticle from './GuideArticle'
-import GuideRelatedBusinesses from './GuideRelatedBusinesses'
+import RelatedResources from './RelatedResources'
+import { useAuth } from '../hooks/useAuth'
+import { useSearchParams } from 'react-router-dom'
 import GuidePackageJourney, { useGuideJourney } from './GuidePackageJourney'
-import { getResourcePackagePath } from '../lib/resourcePackages'
+import { getResourcePackagePath, normalizePackageCanton } from '../lib/resourcePackages'
 
 export default function GuideDetailPage({ guide }) {
   const journey = useGuideJourney(guide)
+  const { userCanton } = useAuth()
+  const [searchParams] = useSearchParams()
+  const canton = normalizePackageCanton(searchParams.has('canton') ? searchParams.get('canton') : userCanton)
   // Si se llega desde un paquete, "Atrás" vuelve a sus pasos.
-  const backTo = journey.fromPackage ? getResourcePackagePath(journey.active.resourcePackage) : '/guias'
+  const backTo = journey.fromPackage ? `${getResourcePackagePath(journey.active.resourcePackage)}?canton=${canton || 'all'}` : '/guias'
 
   return (
     <div className="latido-page-container latido-page-container--content latido-guide-page">
@@ -25,7 +30,7 @@ export default function GuideDetailPage({ guide }) {
         <GuideArticle guide={guide} />
         <InfoBanner emoji="⚠️" title="Aviso" text="Esta guía es orientativa. Para casos específicos consulta la administración cantonal o un asesor certificado." />
         <GuidePackageJourney key={`${guide.id}:${journey.active?.resourcePackage.slug || ''}`} journey={journey} />
-        <GuideRelatedBusinesses key={guide.id} guide={guide} />
+        <RelatedResources key={guide.id} guide={guide} canton={canton} />
       </div>
     </div>
   )
