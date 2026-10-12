@@ -408,9 +408,9 @@
   font-size: 11.5px;
 }
 
-.rp-step__businesses { margin-bottom: 0; }
-.rp-step__businesses > h4 { font-size: 13px; }
-.rp-step__businesses .latido-guide-businesses-rail { margin-inline: 0; padding-inline: 0; }
+.rp-step__resources { margin-bottom: 0; }
+.rp-step__resources > h4 { font-size: 13px; }
+.rp-step__resources .related-resources__rail { margin-inline:0; padding-inline:0; }
 
 .rp-complete {
   margin-top: 24px;

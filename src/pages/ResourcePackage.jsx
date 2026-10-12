@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth'
 import { usePackageProgress } from '../hooks/usePackageProgress'
 import ShareButton, { buildShareUrl } from '../components/ShareButton'
 import ResourcePackagesStrip from '../components/ResourcePackagesStrip'
-import GuideRelatedBusinesses from '../components/GuideRelatedBusinesses'
+import RelatedResources from '../components/RelatedResources'
 import { CANTONS } from '../lib/constants'
 import { getResourcePackage, getResourcePackagePath, normalizePackageCanton } from '../lib/resourcePackages'
 import { getPackageSteps } from '../lib/packageSteps'
@@ -204,12 +204,13 @@ export default function ResourcePackage() {
                     </button>
                   </div>
                   {resource.requiresAccount && !isLoggedIn && <span className="rp-step__note">Necesitas una cuenta gratuita</span>}
-                  {step.businessContext && <GuideRelatedBusinesses
+                  {step.businessContext && <RelatedResources
                     guide={step.businessContext}
-                    heading="Negocios recomendados para este paso"
+                    resource={step.resource}
+                    canton={canton}
+                    heading="Recursos recomendados"
                     headingAs="h4"
-                    className="rp-step__businesses"
-                    hideWhenEmpty
+                    className="rp-step__resources"
                   />}
                 </div>
               </li>

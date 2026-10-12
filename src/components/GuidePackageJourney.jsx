@@ -17,12 +17,14 @@ export function useGuideJourney(guide) {
 export default function GuidePackageJourney({ journey }) {
   const navigate = useNavigate()
   const { userCanton } = useAuth()
+  const [searchParams] = useSearchParams()
   const { isDone, setStepDone } = usePackageProgress()
   if (!journey?.active) return null
 
   const { resourcePackage, resource, index } = journey.active
-  const packagePath = getResourcePackagePath(resourcePackage)
-  const steps = getPackageSteps(resourcePackage, normalizePackageCanton(userCanton))
+  const canton = normalizePackageCanton(searchParams.has('canton') ? searchParams.get('canton') : userCanton)
+  const packagePath = `${getResourcePackagePath(resourcePackage)}?canton=${canton || 'all'}`
+  const steps = getPackageSteps(resourcePackage,canton)
   const next = steps[index + 1] || null
   const done = isDone(resourcePackage.slug, resource.id)
 
