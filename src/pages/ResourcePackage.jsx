@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth'
 import { usePackageProgress } from '../hooks/usePackageProgress'
 import ShareButton, { buildShareUrl } from '../components/ShareButton'
 import ResourcePackagesStrip from '../components/ResourcePackagesStrip'
+import GuideRelatedBusinesses from '../components/GuideRelatedBusinesses'
 import { CANTONS } from '../lib/constants'
 import { getResourcePackage, getResourcePackagePath, normalizePackageCanton } from '../lib/resourcePackages'
 import { getPackageSteps } from '../lib/packageSteps'
@@ -57,7 +58,7 @@ export default function ResourcePackage() {
       {compactHeader && createPortal(
         <div className="rp-compactbar" data-detail-header="compact">
           <div className="latido-page-container rp-compactbar__content">
-            <BackButton to="/guias" />
+            <BackButton to="/paquetes" />
             <p className="rp-compactbar__title" title={resourcePackage.title}>{resourcePackage.title}</p>
             <ShareButton
               title={`${resourcePackage.title} · Latido`}
@@ -71,7 +72,7 @@ export default function ResourcePackage() {
         </div>, document.body,
       )}
       <div className="rp-topbar">
-        <BackButton to="/guias" style={{ boxShadow:'none' }} />
+        <BackButton to="/paquetes" style={{ boxShadow:'none' }} />
         <ShareButton
           title={`${resourcePackage.title} · Latido`}
           text={resourcePackage.description}
@@ -203,6 +204,13 @@ export default function ResourcePackage() {
                     </button>
                   </div>
                   {resource.requiresAccount && !isLoggedIn && <span className="rp-step__note">Necesitas una cuenta gratuita</span>}
+                  {step.businessContext && <GuideRelatedBusinesses
+                    guide={step.businessContext}
+                    heading="Negocios recomendados para este paso"
+                    headingAs="h4"
+                    className="rp-step__businesses"
+                    hideWhenEmpty
+                  />}
                 </div>
               </li>
             )

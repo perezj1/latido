@@ -7,8 +7,9 @@ import { getBusinessPromotionDisplayLabel } from '../lib/businessPromotion'
 const CLAMP_1 = { minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }
 const CLAMP_2 = { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', minWidth:0, overflowWrap:'anywhere', wordBreak:'break-word' }
 
-export default function RelatedBusinessCard({ business, photosMap={}, onClick }) {
+export default function RelatedBusinessCard({ business, photosMap={}, onClick, supportingText='' }) {
   const category = getNegocioTypeMeta(business.type)
+  const categoryLabel = category?.label || ({ empleo:'💼 Empleo y orientación', vivienda:'🏠 Vivienda' }[business.type]) || 'Negocio'
   const photos = photosMap[business.id] || (business.photo_url ? [business.photo_url] : [])
   const planLabel = getBusinessPromotionDisplayLabel(business, getDirectoryBusinessPlan(business))
   return (
@@ -23,8 +24,9 @@ export default function RelatedBusinessCard({ business, photosMap={}, onClick })
       </div>
       <div style={{ padding:planLabel ? '24px 10px 10px' : 10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{business.name}</p>
-        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 4px', ...CLAMP_1 }}>{category?.label || 'Negocio'}</p>
+        <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 4px', ...CLAMP_1 }}>{categoryLabel}</p>
         <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{business.city}</p>
+        {supportingText && <p title={supportingText} style={{ fontFamily:PP, fontSize:10, color:C.primary, lineHeight:1.4, margin:'7px 0 0', ...CLAMP_2 }}>{supportingText}</p>}
       </div>
     </button>
   )

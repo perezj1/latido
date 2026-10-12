@@ -227,11 +227,14 @@
 /* Lista de pasos: tarjetas a todo el ancho; la posición va en "1/5". */
 .rp-timeline {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
+
+.rp-step { min-width: 0; }
 
 .rp-step__card {
   position: relative;
@@ -404,6 +407,10 @@
   color: #5F6F85;
   font-size: 11.5px;
 }
+
+.rp-step__businesses { margin-bottom: 0; }
+.rp-step__businesses > h4 { font-size: 13px; }
+.rp-step__businesses .latido-guide-businesses-rail { margin-inline: 0; padding-inline: 0; }
 
 .rp-complete {
   margin-top: 24px;

@@ -6,7 +6,7 @@ const section = (heading, paragraphs = [], bullets = [], note = '') => ({ headin
 export const GUIDE_REVISIONS = {
   d1: {
     summary:'Qué cambia entre L, B y C, cómo empezar y qué depende de tu nacionalidad y del cantón.',
-    relatedBusinessTerms:['permiso de residencia', 'permisos de residencia', 'permisos y registro', 'gestión de permisos', 'reagrupación', 'inmigración', 'migración', 'extranjería', 'residencia en suiza'],
+    relatedBusinessTerms:['permiso de residencia', 'permisos de residencia', 'permisos y registro', 'gestión de permisos', 'reagrupación', 'inmigración', 'migración', 'extranjería', 'residencia en suiza', 'trámites de residencia', 'derecho migratorio', 'relocation'],
     sections:[
       section('Empieza por tu situación', ['Las reglas distinguen entre ciudadanos de la UE/AELC y de terceros países. Tener residencia en España no equivale a tener nacionalidad española. El motivo de estancia también importa: empleo, estudios, familia o residencia sin actividad laboral.']),
       section('Si vienes a trabajar desde la UE/AELC', ['Para un empleo de más de tres meses, regístrate en tu municipio dentro de los 14 días de llegada y antes de empezar. Los trabajos de hasta tres meses suelen seguir un procedimiento de notificación.'], [
@@ -27,7 +27,7 @@ export const GUIDE_REVISIONS = {
   },
   d2: {
     summary:'Retención en nómina, declaración posterior y el plazo del 31 de marzo: cuándo actuar y qué comprobar.',
-    relatedBusinessTerms:['impuestos', 'declaración de renta', 'declaración fiscal', 'quellensteuer', 'fiscal', 'steuer', 'fiduciaria'],
+    relatedBusinessTerms:['impuestos', 'impuesto sobre la renta', 'declaración de renta', 'declaración fiscal', 'quellensteuer', 'fiscal', 'fiscalidad', 'steuer', 'fiduciaria', 'fiduciaire', 'treuhand', 'contabilidad'],
     sections:[
       section('Qué es la Quellensteuer', ['Es la retención fiscal que el empleador descuenta del salario. Suele aplicarse a trabajadores extranjeros residentes sin permiso C, con excepciones, por ejemplo si el cónyuge es suizo o tiene C. No sustituye siempre a una declaración posterior.']),
       section('Cuándo debes declarar después', ['Para residentes sujetos a retención, un salario bruto anual de **CHF 120.000 o más** obliga a la imposición ordinaria posterior (NOV). Otros ingresos o patrimonio también pueden obligarte; los umbrales dependen del cantón. No sumes sin más los salarios de la pareja para aplicar el umbral individual.']),
@@ -41,7 +41,7 @@ export const GUIDE_REVISIONS = {
   },
   d3: {
     summary:'Seguro básico, franquicia, modelos y cambio de compañía sin promesas de ahorro ni precios desactualizados.',
-    relatedBusinessTerms:['krankenkasse', 'seguro de salud', 'seguro médico', 'seguros de salud', 'seguros médicos', 'seguro básico', 'seguros', 'primas'],
+    relatedBusinessTerms:['krankenkasse', 'seguro de salud', 'seguro médico', 'seguros de salud', 'salud y complementarios', 'seguros médicos', 'seguro básico', 'seguros sanitarios', 'aseguradora de salud', 'reducción de primas', 'prämienverbilligung'],
     sections:[
       section('Al llegar: tres meses para asegurarte', ['En general, debes contratar el seguro básico obligatorio dentro de los **tres meses** de establecerte en Suiza. Si lo haces a tiempo, la cobertura y las primas se remontan al inicio de residencia. Cada miembro de la familia necesita su propio seguro; existen excepciones que debe reconocer la autoridad competente.']),
       section('Compara el mismo seguro', ['Las prestaciones del seguro básico están definidas por ley. Cambian la prima, el modelo de acceso y la atención administrativa. Usa **Priminfo**, el comparador oficial, con tu municipio, edad y la prima del año que vas a contratar. No mezcles el básico con un seguro complementario, que tiene otras condiciones de admisión.']),
@@ -60,7 +60,7 @@ export const GUIDE_REVISIONS = {
   },
   d4: {
     summary:'Documentos habituales, costes que comparar y cómo comprobar qué protección tiene tu dinero.',
-    relatedBusinessTerms:['cuenta bancaria', 'cuentas bancarias', 'banca', 'bancario', 'bancaria', 'servicios financieros', 'banco y servicios básicos'],
+    relatedBusinessTerms:['cuenta bancaria', 'cuentas bancarias', 'abrir cuenta', 'apertura de cuenta', 'banca', 'bancario', 'bancaria', 'servicios bancarios', 'banco y servicios básicos', 'postfinance', 'neon', 'yuh', 'ubs', 'raiffeisen'],
     sections:[
       section('No necesitas una recomendación personal', ['Abrir una cuenta depende de las comprobaciones de identidad y de la política del banco. Ninguna entidad está obligada a aceptar cualquier solicitud. Pregunta si admite tu situación concreta: recién llegado, permiso en trámite o residencia fuera de Suiza.']),
       section('Prepara la documentación', [], ['Pasaporte o documento de identidad vigente.', 'Permiso de residencia o justificante de registro, si la entidad lo solicita.', 'Dirección y residencia fiscal; pueden pedir números de identificación fiscal.', 'Información sobre empleo, origen de fondos y uso previsto de la cuenta.']),
@@ -75,7 +75,7 @@ export const GUIDE_REVISIONS = {
   },
   d5: {
     summary:'Diferencias entre Kita y escuela pública, cómo pedir plaza y dónde consultar ayudas municipales.',
-    relatedBusinessTerms:['guardería', 'guarderías', 'kita', 'kinder', 'apoyo escolar', 'clases para niños', 'cuidado infantil', 'niñera'],
+    relatedBusinessTerms:['guardería', 'guarderías', 'kita', 'kinder', 'apoyo escolar', 'clases para niños', 'cuidado infantil', 'cuidado de niños', 'niñera', 'niñeras', 'niñero', 'escolarización', 'escuela infantil', 'educación infantil'],
     sections:[
       section('Kita y escuela son servicios distintos', ['La Kita ofrece cuidado infantil antes de la escolarización y, según el centro, para otras edades. Sus plazas, horarios y precios dependen del proveedor y de las ayudas locales. No existe una tarifa nacional ni una lista de espera igual para toda Suiza.']),
       section('Cómo pedir una plaza de Kita', [], ['Pregunta en tu municipio por centros autorizados y posibles subvenciones.', 'Indica edad, fecha de inicio y días de asistencia; consulta varias opciones con antelación.', 'Pide por escrito el precio que pagarías con tus ingresos y ayudas.', 'Revisa adaptación, comidas, días festivos, ausencias y preaviso de baja antes de firmar.']),
@@ -90,7 +90,7 @@ export const GUIDE_REVISIONS = {
   },
   d6: {
     summary:'Cómo escoger un curso útil, buscar apoyo local y comprobar qué certificado sirve para tu trámite.',
-    relatedBusinessTerms:['alemán', 'deutsch', 'idiomas', 'escuela de idiomas', 'curso de alemán', 'clases de alemán', 'sprachschule'],
+    relatedBusinessTerms:['clases de alemán', 'curso de alemán', 'cursos de alemán', 'academia de alemán', 'escuela de alemán', 'aprender alemán', 'enseñanza de alemán', 'profesor de alemán', 'profesora de alemán', 'alemán para hispanohablantes', 'alemán con ñ', 'deutschschule', 'deutschkurs', 'sprachschule', 'escuela de idiomas', 'formación en idiomas'],
     sections:[
       section('Elige según dónde vives', ['En la Suiza alemana conviven el alemán estándar escrito y el dialecto hablado. Un curso de alemán estándar sirve como base; añade práctica de conversación para el día a día. En cantones francófonos o italófonos, comprueba primero qué lengua necesitas para trabajar y realizar tus trámites.']),
       section('Busca apoyo cerca de ti', ['Las oficinas cantonales y municipales de integración pueden orientar sobre cursos, ofertas locales y posibles ayudas. La disponibilidad, el precio y las condiciones cambian por localidad. Consulta allí antes de contratar un curso largo.']),
@@ -106,7 +106,7 @@ export const GUIDE_REVISIONS = {
   },
   d7: {
     summary:'Quién puede venir contigo, por qué cambia entre UE/AELC y terceros países y qué preparar antes de solicitar.',
-    relatedBusinessTerms:['reagrupación', 'inmigración', 'extranjería', 'permiso de residencia', 'permisos de residencia', 'derecho migratorio'],
+    relatedBusinessTerms:['reagrupación', 'inmigración', 'extranjería', 'permiso de residencia', 'permisos de residencia', 'derecho migratorio', 'migración', 'familiennachzug', 'regroupement familial'],
     sections:[
       section('Primero identifica qué reglas se aplican', ['La reagrupación depende de tu nacionalidad, permiso y parentesco. No existe una espera general de un año para todos los titulares de un B ni un salario mínimo mensual único para toda Suiza.']),
       section('Ciudadanos UE/AELC', ['En general, pueden reagrupar al cónyuge, hijos y nietos menores de 21 años o dependientes, y ascendientes dependientes. Para estudiantes el círculo familiar es más limitado. Se exige alojamiento adecuado y, en los supuestos correspondientes, acreditar dependencia económica.']),
@@ -121,7 +121,7 @@ export const GUIDE_REVISIONS = {
   },
   d8: {
     summary:'Los tres pilares, importes de 2026 y la primera paga adicional de AHV/AVS en diciembre.',
-    relatedBusinessTerms:['pensión', 'pensiones', 'jubilación', 'ahv', 'avs', 'tercer pilar', '3a', 'previsión', 'vorsorge'],
+    relatedBusinessTerms:['pensión', 'pensiones', 'jubilación', 'ahv', 'avs', 'pensionskasse', 'freizügigkeit', 'segundo pilar', 'tercer pilar', '2º pilar', '3er pilar', '3a', 'previsión', 'vorsorge'],
     sections:[
       section('Tres pilares, funciones distintas', ['El primer pilar es AHV/AVS. El segundo es la previsión profesional y resulta obligatorio para empleados que cumplen sus condiciones; no es simplemente un ahorro voluntario. El tercero es ahorro privado, con modalidades como el pilar 3a.']),
       section('Qué se descuenta de tu nómina', ['La cotización conjunta AHV/IV/EO es del **10,6 % del salario**, repartida por mitades entre trabajador y empleador. No incluye todos los demás descuentos sociales. Los empleados cotizan desde el 1 de enero posterior a cumplir 17 años; las personas sin actividad, desde el 1 de enero posterior a cumplir 20, salvo reglas especiales.']),
@@ -140,8 +140,9 @@ export const GUIDE_REVISIONS = {
     ],
   },
   d9: {
+    relatedBusinessCategories:['vivienda'],
     summary:'Prepara tu candidatura, entiende alquiler y gastos y protege la fianza antes de firmar.',
-    relatedBusinessTerms:['inmobiliaria', 'inmobiliario', 'alquiler de vivienda', 'búsqueda de vivienda', 'búsqueda de piso', 'mudanza', 'mudanzas', 'reubicación', 'relocation', 'derecho de arrendamiento'],
+    relatedBusinessTerms:['inmobiliaria', 'inmobiliario', 'alquiler de vivienda', 'alquiler de viviendas', 'alquiler de pisos', 'alquiler de habitaciones', 'alquiler de piso', 'pisos y habitaciones', 'búsqueda de vivienda', 'búsqueda de piso', 'reubicación', 'relocation', 'derecho de arrendamiento', 'arrendamientos', 'contratos de alquiler', 'portal inmobiliario', 'sección inmobiliaria'],
     sections:[
       section('Define un presupuesto completo', ['Separa alquiler base, gastos adicionales (Nebenkosten), electricidad y otros servicios. El anuncio no siempre incluye todo. Pregunta qué gastos se facturan a cuenta y cuáles a tanto alzado, y deja margen para la mudanza y la fianza.']),
       section('Prepara tu candidatura', [], ['Identificación y permiso o situación de residencia.', 'Justificantes de ingresos o contrato laboral, si te los piden.', 'Extracto del registro de deudas (Betreibungsregisterauszug), cuando sea necesario; solicitud y coste dependen de la oficina.', 'Presentación breve con personas que vivirán allí y fecha prevista de entrada.']),
@@ -156,7 +157,7 @@ export const GUIDE_REVISIONS = {
   },
   d10: {
     summary:'Vacaciones, preaviso, enfermedad y qué revisar en tu contrato o convenio colectivo.',
-    relatedBusinessTerms:['derecho laboral', 'asesoría laboral', 'asesoramiento laboral', 'abogado laboral', 'abogada laboral', 'laboralista', 'contratos de trabajo'],
+    relatedBusinessTerms:['derecho laboral', 'derecho del trabajo', 'derechos laborales', 'asesoría laboral', 'asesoramiento laboral', 'abogado laboral', 'abogada laboral', 'laboralista', 'contratos de trabajo', 'sindicato', 'sindicatos', 'syna', 'unia', 'syndicat', 'gewerkschaft', 'asesoría legal', 'asesoría jurídica', 'asesoramiento jurídico', 'abogacía', 'arbeitsrecht', 'droit du travail'],
     sections:[
       section('Contrato y convenio: empieza aquí', ['Revisa salario, jornada, prueba, vacaciones, preaviso y convenio colectivo (CCT/GAV). Suiza no tiene un salario mínimo federal general: puede existir uno cantonal o del convenio. La 13.ª paga no es obligatoria para todos; comprueba si está pactada.']),
       section('Vacaciones y horas extra', ['El mínimo legal de vacaciones es de **cuatro semanas al año**, y cinco hasta cumplir 20 años. El contrato o convenio puede mejorar esa cifra. Anota tus horas: las horas por encima del contrato y las que superan el máximo legal no siguen siempre la misma compensación.']),
@@ -175,7 +176,7 @@ export const GUIDE_REVISIONS = {
   },
   d11: {
     summary:'Compara cuánto llega al destinatario, entiende el cambio CHF/EUR y evita confundir SEPA con gratuidad.',
-    relatedBusinessTerms:['remesas', 'envío de dinero', 'enviar dinero', 'transferencias internacionales', 'cambio de divisas', 'cambio de moneda'],
+    relatedBusinessTerms:['remesas', 'envío de dinero', 'envíos de dinero', 'enviar dinero', 'transferencias internacionales', 'transferencia internacional', 'cambio de divisas', 'cambio de moneda', 'money transfer', 'western union', 'moneygram', 'wise', 'ria money'],
     sections:[
       section('Compara el importe que recibe la otra persona', ['Pide presupuestos para el mismo importe, moneda, forma de pago y momento. Un servicio sin comisión puede incluir margen en el cambio; otro puede añadir costes de tarjeta o de bancos intermediarios. Las tarifas y promociones cambian, así que no elijas por una clasificación antigua.']),
       section('De Suiza a España', ['Suiza participa en SEPA, que permite transferencias en **euros** entre entidades participantes. SEPA no garantiza que una transferencia desde Suiza sea gratuita. Si partes de francos, comprueba quién convierte a euros y con qué tipo de cambio; el banco receptor también puede aplicar condiciones.']),
@@ -190,7 +191,7 @@ export const GUIDE_REVISIONS = {
   },
   d13: {
     summary:'El plazo de 12 meses también afecta al carnet español. Consulta el canje según el país de expedición.',
-    relatedBusinessTerms:['carnet de conducir', 'permiso de conducir', 'licencia de conducir', 'autoescuela', 'fahrschule', 'canje de carnet', 'canje de licencia'],
+    relatedBusinessTerms:['carnet de conducir', 'permiso de conducir', 'licencia de conducir', 'autoescuela', 'fahrschule', 'canje de carnet', 'canje de licencia', 'canje de permiso', 'auto école', 'escuela de conducción'],
     sections:[
       section('Al mudarte: cuenta los 12 meses', ['Con carácter general, puedes conducir con un permiso extranjero válido durante los primeros **12 meses de residencia**. Después necesitas el permiso suizo para seguir conduciendo aquí. Esto también afecta a permisos españoles: no son válidos indefinidamente por ser de la UE. Hay reglas especiales para conducción profesional.']),
       section('Importa dónde se expidió el permiso', ['No se decide solo por tu nacionalidad. Para un permiso español ordinario, el canje normalmente no exige prueba de conducción. Para permisos de otros países puede exigirse una prueba de control (Kontrollfahrt) y, según categoría, otros requisitos. No significa que toda persona de Latinoamérica deba empezar desde cero.'], [], 'La prueba de control solo permite un intento. Si no la superas, tendrás que obtener el permiso suizo mediante el procedimiento completo; prepárala con antelación.'),
@@ -205,8 +206,9 @@ export const GUIDE_REVISIONS = {
     ],
   },
   d14: {
+    relatedBusinessCategories:['empleo'],
     summary:'Qué hace una agencia temporal, cómo comprobar su autorización y qué revisar antes de una misión.',
-    relatedBusinessTerms:['trabajo temporal', 'personal temporal', 'agencia de empleo', 'agencia de colocación', 'colocación laboral', 'reclutamiento', 'selección de personal', 'personalverleih', 'temporär', 'búsqueda de empleo', 'búsqueda de trabajo', 'carta de motivación', 'cartas de presentación', 'currículum'],
+    relatedBusinessTerms:['trabajo temporal', 'personal temporal', 'agencia de empleo', 'agencia de colocación', 'colocación laboral', 'colocación de personal', 'reclutamiento', 'selección de personal', 'personalverleih', 'temporär', 'búsqueda de empleo', 'búsqueda de trabajo', 'carta de motivación', 'cartas de presentación', 'currículum', 'cv', 'rav', 'orp', 'ett', 'orientación laboral'],
     sections:[
       section('Temporal no es lo mismo que colocación', ['En la cesión temporal de personal, la agencia suele ser tu empleador y te asigna a una empresa cliente. En la colocación, la agencia te conecta con una empresa que te contrata directamente. Pregunta quién firma tu contrato y paga tu salario.']),
       section('Comprueba la agencia', ['La intermediación y la cesión profesional de personal están reguladas y pueden exigir autorización cantonal y, para actividad transfronteriza, federal. Consulta el registro oficial desde el portal de empleo de la Confederación. Un anuncio o una marca conocida no sustituyen esa comprobación.']),
@@ -222,7 +224,7 @@ export const GUIDE_REVISIONS = {
   },
   d12: {
     summary:'Distingue reconocimiento profesional y admisión académica, y encuentra la autoridad correcta para tu profesión.',
-    relatedBusinessTerms:['reconocimiento de títulos', 'reconocimiento de diplomas', 'homologación', 'convalidación', 'traducción jurada', 'traducciones juradas', 'traducción oficial', 'traducciones oficiales', 'traducciones generales y oficiales'],
+    relatedBusinessTerms:['reconocimiento de títulos', 'reconocimiento de diplomas', 'homologación', 'convalidación', 'traducción jurada', 'traducciones juradas', 'traducción oficial', 'traducciones oficiales', 'traducciones generales y oficiales', 'traducción certificada', 'traducciones certificadas', 'apostilla', 'apostillas', 'legalizaciones'],
     sections:[
       section('Primero: ¿tu profesión está regulada?', ['Busca la profesión y el lugar donde quieres ejercer en **recognition.swiss**. Si está regulada, puede ser necesario reconocer la cualificación o cumplir un procedimiento específico. Si no lo está, normalmente puedes trabajar sin reconocimiento obligatorio; el empleador decide si tu formación encaja y puede pedir una evaluación.']),
       section('La autoridad cambia según la profesión', ['No existe una oficina única para todos los títulos. El buscador oficial indica el organismo competente y el procedimiento. Medicina, farmacia, enfermería y docencia siguen vías diferentes; no envíes el expediente a una organización solo porque esté relacionada con tu sector.']),
