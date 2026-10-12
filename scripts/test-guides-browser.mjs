@@ -26,6 +26,7 @@ const providers = [
   provider('hairdresser', 'Peluquería de prueba', ['Corte de cabello'], {...promoted('exclusive'), category:'belleza', description:'Atención en alemán y español.'}),
   provider('language', 'Escuela de alemán', ['Clases de alemán'], {category:'otro'}),
   provider('rental', 'Alquiler de coches', ['Alquiler de coches'], {category:'vehiculos'}),
+  provider('0e1e602e-dda4-4e78-aa67-5027cf43620b', '360 Virtus GmbH', ['Gestoría', 'Trámites y papeleo'], {photo_url:'/partners/virtus360/logo.svg'}),
 ]
 const browser = await chromium.launch({executablePath:process.env.LATIDO_TEST_CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless:true})
 
@@ -91,6 +92,14 @@ try {
     const languageRail = page.getByRole('region', {name:'Negocios relacionados'})
     await languageRail.getByRole('button', {name:/Escuela de alemán/}).waitFor()
     assert.equal(await languageRail.getByRole('button').count(), 1)
+    await page.goto(`${baseUrl}/paquetes/acabo-de-llegar`)
+    const paperwork = page.locator('.rp-step').nth(3).locator('.latido-guide-businesses')
+    const virtusCard = paperwork.getByRole('button',{name:/360 Virtus GmbH/})
+    await virtusCard.waitFor()
+    assert.match(await virtusCard.innerText(), /Premium/)
+    assert.equal(await paperwork.locator('.latido-guide-businesses-rail > button > div:last-child > p:first-child').first().textContent(),'360 Virtus GmbH')
+    assert.doesNotMatch(await virtusCard.innerText(), /gestoría · gestoria/i)
+    await paperwork.screenshot({path:path.join(outputDir,`virtus-paperwork-${viewport.width}.png`),animations:'disabled'})
     assert.deepEqual(test.errors, [])
     await test.context.close()
   }
@@ -104,7 +113,7 @@ try {
   assert.equal(retryTest.requestCount(), failedRequests + 1)
   assert.deepEqual(retryTest.errors, [])
   await retryTest.context.close()
-  console.log(`Package navigation, per-step relevance, promotion order, shared requests, retry, progress and responsive layout passed. Screenshots: ${outputDir}`)
+  console.log(`Package navigation, per-step relevance, editorial Premium priority, promotion order, shared requests, retry, progress and responsive layout passed. Screenshots: ${outputDir}`)
 } finally {
   await browser.close()
 }

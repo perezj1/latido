@@ -1,5 +1,6 @@
 import { BUSINESS_ROTATION_INTERVAL_MS, getEffectiveBusinessPromotionPlan } from './businessPromotion.js'
 import { rotateItems } from './rotation.js'
+import { getEditorialDirectoryPartner } from './editorialBusinessPartners.js'
 
 // Shared by the business directory and the related businesses in guides.
 // Every tier rotates equally within itself; paid tiers stay ahead of free ones.
@@ -9,6 +10,8 @@ export function getDirectoryBusinessPlan(business, now = Date.now()) {
   const plan = business.promotion_plan != null
     ? getEffectiveBusinessPromotionPlan(business, now)
     : business.promotionPlan || getEffectiveBusinessPromotionPlan(business, now)
+  if (plan === 'exclusive') return plan
+  if (getEditorialDirectoryPartner(business)) return 'premium'
   if (plan !== 'free' && BUSINESS_DIRECTORY_PLAN_ORDER.includes(plan)) return plan
   return business.featured ? 'featured' : 'free'
 }

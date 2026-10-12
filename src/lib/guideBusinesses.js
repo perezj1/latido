@@ -2,6 +2,7 @@ import { normalizeSearchText } from './naturalSearch.js'
 import { rankDirectoryBusinesses } from './businessDirectoryRanking.js'
 import { PUNTO_HISPANO_PROVIDER_ID } from './puntoHispano.js'
 import { PUNTO_HISPANO_SERVICES } from './puntoHispanoServices.js'
+import { getEditorialDirectoryPartner } from './editorialBusinessPartners.js'
 
 export function getBusinessGuideMatches(business, guide) {
   if (!business?.id || business.active === false) return []
@@ -17,14 +18,20 @@ export function getBusinessGuideMatches(business, guide) {
   const catalogServices = business.id === PUNTO_HISPANO_PROVIDER_ID
     ? PUNTO_HISPANO_SERVICES.flatMap(group => group.services.map(service => service.label))
     : []
+  const partner = getEditorialDirectoryPartner(business)
   const fields = [business.name, business.description, business.desc,
     business.partner_card_title, business.partner_card_description,
+    partner?.description, ...(partner?.services || []),
     ...catalogServices,
     ...services.map(service => typeof service === 'string' ? service : service?.label || service?.name)]
     .filter(Boolean).map(value => ` ${normalizeSearchText(value)} `)
+  const seen = new Set()
   return (guide?.relatedBusinessTerms || []).filter(term => {
-    const phrase = ` ${normalizeSearchText(term)} `
-    return fields.some(field => field.includes(phrase))
+    const normalized = normalizeSearchText(term)
+    if (!normalized || seen.has(normalized)) return false
+    if (!fields.some(field => field.includes(` ${normalized} `))) return false
+    seen.add(normalized)
+    return true
   })
 }
 
