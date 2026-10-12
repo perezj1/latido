@@ -1,3 +1,4 @@
+import { EDITORIAL_PREMIUM_PARTNERS, getEditorialPremiumPartner } from '../lib/editorialBusinessPartners'
 import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -665,110 +666,6 @@ const BUSINESS_SEARCH_PRIORITY = {
   basic:1,
   featured:2,
   free:3,
-}
-
-const EDITORIAL_PREMIUM_PARTNERS = [
-  {
-    id:'punto-hispano',
-    providerId:PUNTO_HISPANO_PROVIDER_ID,
-    name:'Punto Hispano',
-    aliases:['punto hispano', 'punto hispano asesoria'],
-    type:'asesoria_tramites',
-    city:'Zürich',
-    canton:'ZH',
-    description:'Gestoría, asesoría, alquiler, vivienda, seguros e idiomas en Suiza con atención en español.',
-    services:['Alquiler', 'Gestoría', 'Vivienda', 'Seguros', 'Idiomas'],
-    categories:['negocios', 'servicios', 'documentos', 'vivienda'],
-    image:'/partners/punto-hispano/logo.webp',
-    href:'/servicios-suiza',
-  },
-  {
-    id:'suiza-en-espanol',
-    name:'Suiza en Español',
-    aliases:['suiza en espanol', 'suiza espanol'],
-    type:'asesoria_tramites',
-    city:'Suiza',
-    canton:'',
-    description:'Orientación en español sobre seguros, previsión y llegada a Suiza.',
-    services:['Seguro de salud', 'Tercer pilar', 'Curso para llegar'],
-    categories:['negocios', 'servicios', 'documentos'],
-    image:'/partners/suiza-en-espanol/logo-see.webp',
-    href:'/servicios-suiza?partner=suiza-en-espanol&from=global-search',
-  },
-  {
-    id:'virtus360',
-    name:'Virtus360',
-    aliases:['360 virtus gmbh', 'virtus360'],
-    type:'asesoria_tramites',
-    city:'Horgen',
-    canton:'ZH',
-    description:'Gestoría, finanzas, seguros, impuestos, contabilidad y trámites para vivir o emprender en Suiza.',
-    services:['Gestoría', 'Finanzas', 'Seguros', 'Impuestos', 'Contabilidad'],
-    categories:['negocios', 'servicios', 'documentos'],
-    image:'/partners/virtus360/logo.svg',
-    href:'/servicios-virtus360',
-  },
-  {
-    id:'bellini',
-    name:'Bellini Personal AG',
-    aliases:['bellini', 'bellini personal ag'],
-    type:'empleo',
-    city:'Luzern',
-    canton:'LU',
-    description:'Empleo temporal, selección de personal y oportunidades laborales en construcción en Suiza.',
-    services:['Empleo', 'Trabajo temporal', 'Construcción', 'Asesoramiento laboral'],
-    categories:['negocios', 'empleo', 'servicios'],
-    image:'/partners/bellini/logo-wide.svg',
-    href:'/colaboradores/bellini',
-  },
-  {
-    id:'syna',
-    name:'Syna',
-    aliases:['syna'],
-    type:'empleo',
-    city:'Luzern',
-    canton:'LU',
-    description:'Acompañamiento para trabajadores sobre empleo, contratos, salarios, derechos laborales y sindicatos en Suiza.',
-    services:['Trabajo', 'Derechos laborales', 'Contratos', 'Salarios', 'Sindicato'],
-    categories:['negocios', 'empleo', 'servicios'],
-    image:'/partners/syna/logo.svg',
-    href:'/colaboradores/syna',
-  },
-  {
-    id:'gilda',
-    name:'GILDA by de Matos',
-    aliases:['gilda', 'gilda by de matos', 'de matos'],
-    type:'restaurante',
-    city:'Luzern',
-    canton:'LU',
-    description:'Tapas de autor, cocina española, wine bar, lunch y platos para compartir en Lucerna.',
-    services:['Tapas', 'Cocina española', 'Wine bar', 'Lunch'],
-    categories:['negocios'],
-    image:'/partners/gilda/logo.png',
-    href:'https://www.dematos-luzern.ch/cafeweinbar',
-  },
-  {
-    id:'mira',
-    name:'mira',
-    aliases:['mira'],
-    type:'asesoria_tramites',
-    city:'Suiza',
-    canton:'',
-    description:'Información, asesoramiento y acompañamiento intercultural para personas migrantes en Suiza.',
-    services:['Información', 'Asesoramiento', 'Migración', 'Intercambio'],
-    categories:['negocios', 'servicios', 'documentos'],
-    image:'/partners/mira/mira-removebg-preview.png',
-    href:'/colaboradores/mira',
-  },
-]
-
-function getEditorialPremiumPartner(business) {
-  const normalizedName = normalizeSearchText(business?.name)
-  if (!normalizedName) return null
-  return EDITORIAL_PREMIUM_PARTNERS.find(partner => (
-    (partner.providerId && partner.providerId === business?.id)
-    || partner.aliases.includes(normalizedName)
-  )) || null
 }
 
 function getCacheKey(isLoggedIn) {

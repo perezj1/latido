@@ -3,7 +3,8 @@ import { MOCK_DOCS } from '../src/lib/constants.js'
 import { GUIDE_REVIEW_DATE } from '../src/lib/guides.js'
 import { getGuideById, getGuideBySlug, getGuidePath, getBusinessPath, getSeoForLocation, getPublicSeoPages, SEARCHABLE_SITE_PAGES } from '../src/lib/seo.js'
 import { RESOURCE_PACKAGES, getResourcePackage, getResourcePackagePath, getPackageResourcePath } from '../src/lib/resourcePackages.js'
-import { getGuideBusinesses, isBusinessRelatedToGuide } from '../src/lib/guideBusinesses.js'
+import { getGuideBusinesses, getBusinessGuideMatches, isBusinessRelatedToGuide } from '../src/lib/guideBusinesses.js'
+import { EDITORIAL_PREMIUM_PARTNERS, getEditorialDirectoryPartner, getEditorialPremiumPartner } from '../src/lib/editorialBusinessPartners.js'
 import { BUSINESS_ROTATION_INTERVAL_MS } from '../src/lib/businessPromotion.js'
 import { JOBLI_PROVIDER_ID } from '../src/lib/businessPartnerOverrides.js'
 import { PUNTO_HISPANO_PROVIDER_ID } from '../src/lib/puntoHispano.js'
@@ -175,3 +176,21 @@ assert.equal(getGuideBusinesses(guide('d2'), [...manyFree, highlighted], {}, now
 assert.match(getBusinessPath(ordered[0]), /^\/negocios\/exclusive--/)
 assert.deepEqual(getGuideBusinesses(guide('d2'), [], [], now), [])
 console.log('19 guides and 9 packages: sources, review dates, linked guides, local filters, catalogue/search/SEO routes, relevance, directory priority and rotation passed')
+
+const editorial = id => EDITORIAL_PREMIUM_PARTNERS.find(partner => partner.id === id)
+const virtus = {id:editorial('virtus360').providerId,name:'360 Virtus GmbH',category:'asesoria_tramites',active:true,promotion_plan:'free',featured:false,description:'Gestoría y trámites y papeleo para particulares'}
+const bellini = {id:editorial('bellini').providerId,name:'Bellini Personal AG',category:'otro',active:true,promotion_plan:'featured',promotion_starts_at:'2020-01-01',promotion_ends_at:'2100-01-01',description:'Trabajo temporal en construcción'}
+const arrivalPaperwork = getPackageSteps(getResourcePackage('acabo-de-llegar')).find(step => step.id === 'tramites').businessContext
+assert.equal(getDirectoryBusinessPlan(virtus,now), 'premium')
+assert.equal(getDirectoryBusinessPlan(bellini,now), 'premium')
+assert.equal(getEditorialPremiumPartner({id:editorial('syna').providerId,name:'SYNA Luzern'}).id, 'syna', 'Search and directory recognise the existing SYNA row')
+assert.equal(getEditorialDirectoryPartner({...virtus,id:'unverified-copy'}),null, 'A copied name must not grant directory Premium placement')
+assert.equal(getDirectoryBusinessPlan({...virtus,id:'unverified-copy'},now),'free')
+assert.equal(getEditorialDirectoryPartner({...virtus,active:false}),null)
+assert.equal(getDirectoryBusinessPlan({...virtus,promotion_plan:'exclusive',promotion_starts_at:'2020-01-01',promotion_ends_at:'2100-01-01'},now),'exclusive')
+assert.equal(getGuideBusinesses(arrivalPaperwork,[virtus,business('free', 'free', {services:['Gestoría']})],{},now)[0].id,virtus.id)
+assert.equal(getGuideBusinesses(guide('d14'),[bellini,business('free', 'free', {services:['Trabajo temporal']})],{},now)[0].id,bellini.id)
+assert.ok(!isBusinessRelatedToGuide(virtus,guide('d10')), 'Premium does not bypass the labor-law relevance filter')
+assert.ok(!isBusinessRelatedToGuide(bellini,arrivalPaperwork), 'Employment partner does not appear in general paperwork')
+assert.deepEqual(getBusinessGuideMatches(virtus,{relatedBusinessTerms:['gestoría','gestoria','']}),['gestoría'])
+console.log('Verified editorial partners: Premium consistency, no duplicated rows, topic filtering, higher tier preservation and unique match labels passed')
