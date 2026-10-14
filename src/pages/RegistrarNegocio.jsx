@@ -236,6 +236,7 @@ export default function RegistrarNegocio() {
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       <Btn onClick={() => setShareCardOpen(true)} disabled={!publishedBusiness}>Comparte tu negocio</Btn>
+      {publishedBusiness?.id && <button type="button" onClick={() => navigate(`/card/negocios?negocio=${encodeURIComponent(publishedBusiness.id)}`)} className="latido-button latido-button--secondary latido-button--md latido-button--block" style={{ marginTop:10 }}>Gestionar ofertas en Tarjeta Latido</button>}
       <button onClick={() => navigate('/')} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
         Volver a Latido
       </button>

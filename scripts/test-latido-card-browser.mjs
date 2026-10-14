@@ -88,6 +88,9 @@ try {
     digitalCalls = 0,
     businessSetupCalls = [],
     membershipMode = 'active',
+    businessMode = 'multiple',
+    offerPublishCalls = [],
+    failNextOffer = false,
     newBusinessActive = false,
     newBusinessOffers = []
   let physicalRequest = null,
@@ -211,7 +214,9 @@ try {
             active: newBusinessActive,
             participating: newBusinessActive
           }
-        ],
+        ].filter((business) =>
+          businessMode === 'none' ? false : businessMode === 'single' ? business.id === 'new' : true
+        ),
         offers:
           args.p_provider === 'restaurant'
             ? [offer, special]
@@ -230,11 +235,16 @@ try {
     }
     if (name === 'lc_save_offer') {
       assert.equal(args.p_provider, 'new')
+      offerPublishCalls.push(args)
+      if (failNextOffer) {
+        failNextOffer = false
+        return respond(route, { message: 'Unavailable before commit' }, 503)
+      }
       newBusinessOffers.push({
         ...args.p_offer,
-        id: 'new-offer',
+        id: `new-offer-${newBusinessOffers.length}`,
         active: true,
-        requires_claim: false
+        requires_claim: args.p_offer.requires_claim
       })
       return respond(route, 'new-offer')
     }
@@ -659,15 +669,67 @@ try {
     path: path.join(output, 'physical-admin-mobile.png')
   })
   await page.goto(`${origin}/card/negocios`)
+  await page.getByAltText('QR interno del negocio').waitFor()
+  assert.equal(
+    await page.getByLabel('Selecciona tu negocio').inputValue(),
+    'restaurant',
+    'An existing business is selected automatically'
+  )
   await page.getByLabel('Selecciona tu negocio').selectOption('new')
-  await page.getByRole('heading', { name: 'Crear una ventaja', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Punto Hispano Asesoría', exact: true }).waitFor()
   await page.getByText('Participación gratuita', { exact: true }).waitFor()
   await page.getByAltText('QR interno del negocio').waitFor()
   assert.equal(newBusinessActive, true, 'No administrator admission is required')
+  const creator = page.locator('details.lc-business-fold').filter({ hasText: 'Crear oferta' })
+  const scanners = page
+    .locator('details.lc-business-fold')
+    .filter({ hasText: 'Scanners vinculados' })
+  assert.equal(await creator.evaluate((el) => el.open), false)
+  assert.equal(await scanners.evaluate((el) => el.open), false)
+  const qrBox = await page.getByAltText('QR interno del negocio').boundingBox()
+  const qrPanelBox = await page.locator('.lc-business-qr').boundingBox()
+  assert.ok(Math.abs(qrBox.x + qrBox.width / 2 - qrPanelBox.x - qrPanelBox.width / 2) < 2)
+  await scanners.locator('summary').click()
+  await scanners
+    .getByText(
+      'Todavía no hay personal conectado. Comparte el QR del negocio para vincular sus dispositivos.',
+      { exact: true }
+    )
+    .waitFor()
+  await scanners.locator('summary').click()
+  await creator.locator('summary').click()
+  await creator.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await creator.getByRole('heading', { name: 'Paso 1 de 3 · Tu oferta', exact: true }).waitFor()
   await page.getByLabel('Título', { exact: true }).fill('10 % de bienvenida')
+  await creator.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-business-wizard-step-1.png')
+  })
+  await creator.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await creator.getByRole('heading', { name: 'Paso 2 de 3 · Cómo se usa', exact: true }).waitFor()
   await page.getByLabel('Válido hasta (hora local)').fill('2027-12-31T18:00')
-  await page.getByRole('button', { name: 'Publicar ventaja', exact: true }).click()
-  await page.getByRole('heading', { name: '10 % de bienvenida', exact: true }).waitFor()
+  await creator.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-business-wizard-step-2.png')
+  })
+  await creator.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await creator.getByRole('heading', { name: 'Paso 3 de 3 · Revisar', exact: true }).waitFor()
+  await creator.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-business-wizard-review.png')
+  })
+  await creator.getByRole('button', { name: 'Anterior', exact: true }).click()
+  assert.equal(await page.getByLabel('Válido hasta (hora local)').inputValue(), '2027-12-31T18:00')
+  await creator.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await creator.getByRole('button', { name: 'Publicar oferta', exact: true }).click()
+  await page
+    .locator('.lc-offer')
+    .getByRole('heading', { name: '10 % de bienvenida', exact: true })
+    .waitFor()
+  await page.waitForFunction(
+    () => !document.querySelector('.lc-offer-wizard')?.closest('details')?.open
+  )
+  assert.equal(await creator.evaluate((el) => el.open), false)
   await page.getByAltText('QR interno del negocio').waitFor()
   assert.ok(
     businessSetupCalls.some(
@@ -687,6 +749,53 @@ try {
     path: path.join(output, 'card-business-desktop.png'),
     fullPage: true
   })
+  await creator.locator('summary').click()
+  await creator.getByLabel('Tipo de ventaja').selectOption('gift')
+  await creator.getByLabel('Título', { exact: true }).fill('Regalo de bienvenida')
+  await creator.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await creator.getByRole('radio', { name: /Promoción especial/ }).check()
+  await creator.getByLabel('Unidades disponibles').fill('5')
+  await creator.getByLabel('Válido hasta (hora local)').fill('2027-12-31T18:00')
+  await creator.getByRole('button', { name: 'Continuar', exact: true }).click()
+  failNextOffer = true
+  await creator.getByRole('button', { name: 'Publicar oferta', exact: true }).click()
+  await creator.getByRole('alert').waitFor()
+  assert.equal(await creator.evaluate((el) => el.open), true)
+  await creator.getByRole('heading', { name: 'Regalo de bienvenida', exact: true }).waitFor()
+  await creator.getByRole('button', { name: 'Publicar oferta', exact: true }).click()
+  await page
+    .locator('.lc-offer')
+    .getByRole('heading', { name: 'Regalo de bienvenida', exact: true })
+    .waitFor()
+  await page.waitForFunction(
+    () => !document.querySelector('.lc-offer-wizard')?.closest('details')?.open
+  )
+  const specialPayload = offerPublishCalls.at(-1).p_offer
+  assert.equal(specialPayload.benefit_value, null)
+  assert.equal(specialPayload.stock_total, 5)
+  assert.equal(specialPayload.usage_period, 'lifetime')
+  assert.equal(specialPayload.usage_limit, 1)
+  businessMode = 'single'
+  await page.reload()
+  await page.getByAltText('QR interno del negocio').waitFor()
+  await page.getByRole('heading', { name: 'Punto Hispano Asesoría', exact: true }).waitFor()
+  assert.equal(
+    await page.getByLabel('Selecciona tu negocio').count(),
+    0,
+    'One business does not need a selector'
+  )
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-business-single-mobile.png'),
+    fullPage: true
+  })
+  businessMode = 'none'
+  await page.reload()
+  await page.getByRole('link', { name: 'Registrar mi negocio', exact: true }).waitFor()
+  assert.equal(await page.getByLabel('Selecciona tu negocio').count(), 0)
+  assert.equal(await page.getByAltText('QR interno del negocio').count(), 0)
+  businessMode = 'multiple'
   await page.evaluate(() => localStorage.removeItem('sb-card-test-auth-token'))
   await page.goto(copiedOfferLink)
   const accountCta = page.getByRole('link', {

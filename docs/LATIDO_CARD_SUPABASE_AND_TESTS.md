@@ -105,12 +105,26 @@ de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
    se renueva cada cinco minutos. En **Disponibles**, activar el café: baja la
    disponibilidad de 20 a 19 y aparece en **Activas**. Desactivar la reserva
    devuelve la unidad mientras la oferta sigue vigente.
-4. Entrar como propietario, abrir `/card/negocios` y seleccionar el restaurante.
+4. Entrar con la misma cuenta que registró el negocio y abrir `/card/negocios`.
+   Su negocio se abre automáticamente, sin una selección inicial. Cuando hay
+   varios, el selector está al final de la página. Con uno solo no hay selector.
    Comprobar que puede gestionar ofertas y Scanner sin tener membresía.
-   El negocio se incorpora directamente al seleccionarlo; no necesita aprobación
-   previa de Latido. El QR privado aparece abajo, en **Tu QR de negocio para los
+   El QR privado aparece centrado abajo, en **Tu QR de negocio para los
    trabajadores**. Vincular otro navegador/dispositivo y
    abrir `/scanner/`. Ese acceso tiene sesión propia.
+
+   **Scanners vinculados** empieza plegado y explica los accesos del personal.
+   Pulsar el título para consultar dispositivos y aprobar o revocar accesos.
+   **Crear oferta** también empieza plegado. Abrirlo y completar los tres pasos:
+   **Tu oferta** (tipo, valor, título y descripción), **Cómo se usa** (ventaja incluida
+   o promoción, compra mínima, límites, unidades y vigencia) y **Revisar**.
+   El último paso permite comprobar los datos antes de **Publicar oferta**.
+   **Anterior** conserva el borrador; un fallo de publicación conserva la revisión.
+   Cambiar de negocio reinicia el formulario para no publicar en otro establecimiento.
+
+   Después de registrar un negocio en la app, **Gestionar ofertas en Tarjeta Latido**
+   abre directamente ese negocio. No se relacionan negocios por coincidencia de
+   email o nombre: se usa la cuenta propietaria guardada en `providers.user_id`.
 5. En Scanner, leer el QR del socio. Marcar la comprobación de condiciones y
    canjear el 15 %. Un segundo intento debe mostrar el límite mensual.
    Reclamar de nuevo el café si se liberó, escanear y canjearlo una vez.

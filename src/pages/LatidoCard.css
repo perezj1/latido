@@ -869,6 +869,186 @@
   max-width: 60ch;
   margin: 16px auto;
 }
+.lc-business-qr .lc-qr {
+  display: block;
+  margin: 20px auto;
+}
+.lc-business-selected,
+.lc-business-empty {
+  text-align: center;
+}
+.lc-business-selected h2 {
+  font-size: 20px;
+}
+.lc-business-switcher {
+  margin-top: 24px;
+}
+.lc-business-fold summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  cursor: pointer;
+  list-style: none;
+}
+.lc-business-fold summary::-webkit-details-marker {
+  display: none;
+}
+.lc-business-fold summary::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-right: 2px solid var(--latido-color-text-muted);
+  border-bottom: 2px solid var(--latido-color-text-muted);
+  transform: rotate(45deg);
+  transition: transform 180ms ease;
+}
+.lc-business-fold[open] > summary::after {
+  transform: rotate(225deg);
+}
+.lc-business-fold summary strong {
+  display: block;
+  font-size: 15px;
+}
+.lc-business-fold summary small {
+  display: block;
+  color: var(--latido-color-text-muted);
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 5px;
+}
+.lc-business-fold summary:focus-visible {
+  outline: 3px solid var(--latido-color-accent-border);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+.lc-fold-body {
+  border-top: 1px solid var(--latido-color-border-subtle);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+.lc-fold-body > .lc-button {
+  display: flex;
+  margin: 12px auto;
+}
+.lc-wizard-steps {
+  list-style: none;
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+}
+.lc-wizard-steps li {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--latido-color-text-muted);
+}
+.lc-wizard-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: var(--latido-color-surface-subtle);
+  border: 1px solid var(--latido-color-border);
+  border-radius: 50%;
+  font-weight: 700;
+}
+.lc-wizard-steps li[aria-current='step'],
+.lc-wizard-steps li[data-complete='true'] {
+  color: var(--latido-color-accent);
+}
+.lc-wizard-steps li[aria-current='step'] > span {
+  background: var(--latido-color-accent);
+  color: white;
+  border-color: var(--latido-color-accent);
+}
+.lc-offer-wizard h2 {
+  font-size: 16px;
+  margin: 10px 0 0;
+}
+.lc-offer-wizard > p {
+  margin: 0;
+}
+.lc-offer-wizard h2:focus {
+  outline: none;
+}
+.lc-offer-kind {
+  display: grid;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.lc-offer-kind legend {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.lc-form .lc-offer-kind-choice {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--latido-color-border);
+  border-radius: var(--latido-radius-md);
+  cursor: pointer;
+}
+.lc-offer-kind-choice[data-selected='true'] {
+  background: var(--latido-color-accent-subtle);
+  border-color: var(--latido-color-accent-border);
+}
+.lc-form .lc-offer-kind-choice input {
+  width: 18px;
+  flex-shrink: 0;
+  accent-color: var(--latido-color-accent);
+}
+.lc-offer-kind-choice small {
+  display: block;
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 3px;
+  color: var(--latido-color-text-muted);
+}
+.lc-wizard-preview {
+  border: 1px solid var(--latido-color-border);
+  border-radius: var(--latido-radius-md);
+  padding: 16px;
+  background: var(--latido-color-surface-subtle);
+}
+.lc-wizard-preview dl {
+  margin: 12px 0;
+  font-size: 12px;
+}
+.lc-wizard-preview dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--latido-color-border-subtle);
+}
+.lc-wizard-preview dt {
+  color: var(--latido-color-text-muted);
+}
+.lc-wizard-preview dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+}
+.lc-wizard-actions {
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-business-fold summary::after {
+    transition: none;
+  }
+}
 @media (max-width: 760px) {
   .lc-links {
     gap: 4px;
