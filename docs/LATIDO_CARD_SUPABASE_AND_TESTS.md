@@ -28,9 +28,11 @@ el esquema de Latido; `app_notifications.sql` depende a su vez de
 | 2 | `supabase/latido_card_physical_requests.sql` | Solicitudes físicas, estados de entrega, notificaciones, cola email y auditoría |
 | 3 | `supabase/latido_card_self_service.sql` | Alta directa de negocios, suspensión por Latido y QR automático |
 | 4 | `supabase/latido_card_scanner_accounts.sql` | Usuario identificado, conexiones permanentes, revocación y eliminación de Scanner |
+| 5 | `supabase/latido_card_scanner_multibusiness.sql` | Lista de negocios del trabajador y reapertura autenticada sin volver a escanear el QR |
 
-**Si ya instalaste los tres primeros, ejecutar únicamente
-`supabase/latido_card_scanner_accounts.sql` para esta actualización.** No hay que cargar
+**Si ya instalaste los cuatro primeros, ejecutar únicamente
+`supabase/latido_card_scanner_multibusiness.sql` para esta actualización.** Si falta el
+cuarto, instalarlo antes del quinto. No hay que cargar
 otra vez los ejemplos ni modificar cuentas. Esta actualización también admite repetición.
 No reinstalar después los SQL anteriores: contienen las versiones previas de esos RPC.
 Los accesos anteriores vigentes pasan a permanentes; los caducados o revocados no
@@ -39,6 +41,16 @@ a su usuario. Eliminar una conexión bloquea su acceso y la oculta, conservando 
 La versión actualizada también hace que regenerar el QR retire las conexiones
 anteriores del listado. Si ya ejecutaste este último archivo, vuelve a ejecutar
 su contenido completo actualizado. No borra los canjes.
+
+El nuevo SQL no crea tablas ni desactiva RLS. Añade dos RPC accesibles solo a cuentas
+autenticadas: uno devuelve sus negocios vinculados sin secretos, el otro abre un
+Scanner en un nuevo navegador a partir de una conexión propia todavía vigente.
+Un acceso revocado, eliminado o de un negocio suspendido no permite reconectar.
+
+Para probar: conectar una cuenta de trabajador gratuita a dos negocios mediante
+QR/código; abrir «Mi negocio» y comprobar «Conectado a» con ambos nombres. Pulsar
+cada nombre abre su cámara. Repetir sin credenciales locales conservando la cuenta.
+Revocar todas las conexiones del trabajador a un negocio: desaparece de su lista.
 
 Ejecutar cada archivo completo en una consulta separada. Todos admiten repetición
 y conservan los datos existentes de Card. No crear manualmente columnas sueltas,
@@ -135,8 +147,10 @@ de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
    No requiere suscripción del trabajador. Probar también el campo para copiar
    si compartir/portapapeles no están disponibles. Un usuario sin negocios propios
    debe ver **Scanner** en «Mi negocio». No aparecen «Usar enlace de tarjeta» ni
-   «Solicitar acceso habitual». Rechazar la cámara, cerrar, reabrir y pulsar
-   **Volver a pedir permiso**; si está bloqueada en ajustes, permitirla allí.
+   «Solicitar acceso habitual». Rechazar la cámara y abrir **Cómo activar los
+   permisos de la cámara**. Verificar las tres opciones de navegador y los pasos
+   del sistema detectado. Permitirla en ajustes, recargar y reabrir Scanner.
+   Probar **Conectar con código**, tanto con código completo como con enlace.
    Confirmar que cerrar libera la cámara y que aceptar no añade diálogos propios.
 
    La primera vinculación requiere iniciar sesión en una cuenta de Latido con nombre

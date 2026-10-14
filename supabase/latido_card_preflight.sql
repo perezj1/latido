@@ -18,5 +18,6 @@ FROM (VALUES
  ('Solicitudes físicas', to_regclass('public.latido_card_physical_requests') IS NOT NULL),
  ('Cola email', to_regclass('public.latido_card_physical_email_queue') IS NOT NULL),
  ('Alta directa, QR automático y favoritas', to_regprocedure('public.lc_business_setup(uuid,text)') IS NOT NULL AND to_regclass('public.latido_card_saved_offers') IS NOT NULL),
- ('Scanner con cuenta y conexión permanente', EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='latido_card_scanner_sessions' AND column_name='linked_user_id'))
+ ('Scanner con cuenta y conexión permanente', EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='latido_card_scanner_sessions' AND column_name='linked_user_id')),
+ ('Scanner para varios negocios', to_regprocedure('public.lc_my_scanner_businesses()') IS NOT NULL AND to_regprocedure('public.lc_resume_scanner(uuid)') IS NOT NULL)
 ) AS componentes(componente, instalado);

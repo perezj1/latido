@@ -460,6 +460,63 @@
   background: var(--latido-color-surface-inverse);
   border-radius: var(--latido-radius-lg);
 }
+.lc-camera video[hidden] {
+  display: none;
+}
+.lc-camera-browser-options {
+  display: flex;
+  gap: 4px;
+  background: #f0f5ff;
+  padding: 4px;
+  border-radius: 16px;
+}
+.lc-camera-browser-options button {
+  flex: 1;
+  padding: 10px 5px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 12px;
+  color: #52617a;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+.lc-camera-browser-options button[aria-pressed='true'] {
+  background: white;
+  color: #245cf0;
+}
+.lc-camera-help ol {
+  padding-left: 22px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.lc-camera-help li + li {
+  margin-top: 12px;
+}
+.lc-staff-businesses {
+  display: grid;
+  gap: 12px;
+}
+.lc-staff-businesses button {
+  width: 100%;
+  flex-direction: column;
+  gap: 4px;
+}
+.lc-staff-businesses small {
+  font-weight: 400;
+}
+.lc-code-display {
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f0f5ff;
+  user-select: all;
+}
 .lc-camera {
   width: min(440px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);

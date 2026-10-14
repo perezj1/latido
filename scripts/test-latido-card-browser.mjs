@@ -270,15 +270,40 @@ try {
     })
   await context.route('**/*', async (route) => {
     const url = new URL(route.request().url())
-    if ((url.origin === origin && !url.pathname.startsWith('/card-test-api/')) || url.protocol === 'blob:') return route.continue()
-    assert.equal(
-      url.origin,
-      origin,
-      'No third-party request should leave the test'
+    if (
+      (url.origin === origin && !url.pathname.startsWith('/card-test-api/')) ||
+      url.protocol === 'blob:'
     )
+      return route.continue()
+    assert.equal(url.origin, origin, 'No third-party request should leave the test')
     if (route.request().method() === 'OPTIONS') return respond(route, null)
     const name = url.pathname.split('/').at(-1),
       args = route.request().method() === 'POST' ? route.request().postDataJSON() : {}
+    if (name === 'lc_my_scanner_businesses') {
+      const active = scannerConnections.filter((s) => s.linked_user_id === user.id && !s.revoked_at)
+      return respond(
+        route,
+        [...new Set(active.map((s) => s.provider_id))].map((id) => ({
+          id,
+          name: active.find((s) => s.provider_id === id).business_name,
+          session_ids: active.filter((s) => s.provider_id === id).map((s) => s.id)
+        }))
+      )
+    }
+    if (name === 'lc_resume_scanner') {
+      assert.equal(route.request().headers().authorization, 'Bearer test-token')
+      const source = scannerConnections.find(
+        (s) => s.provider_id === args.p_provider && s.linked_user_id === user.id && !s.revoked_at
+      )
+      if (!source) return respond(route, { message: 'FORBIDDEN' }, 400)
+      const connection = {
+        ...source,
+        id: `resumed-${scannerConnections.length}`,
+        token: 'd'.repeat(60) + String(scannerConnections.length).padStart(4, '0')
+      }
+      scannerConnections.push(connection)
+      return respond(route, { ...connection, session_id: connection.id })
+    }
     if (name === 'lc_open_scanner') {
       assert.equal(
         route.request().headers().authorization,
@@ -564,7 +589,9 @@ try {
   }
   const page = await context.newPage()
   page.on('pageerror', (err) => errors.push(err.message))
-  page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), reason: request.failure()?.errorText }))
+  page.on('requestfailed', (request) =>
+    failedRequests.push({ url: request.url(), reason: request.failure()?.errorText })
+  )
   await mkdir(output, { recursive: true })
   await page.goto(
     `${origin}/card/scanner/vincular#${new URLSearchParams({ token: scannerToken, fingerprint: scannerToken, label: 'Scanner' })}`
@@ -699,17 +726,54 @@ try {
     window.testCameraDenied = true
   })
   await page.getByRole('button', { name: 'Scanner', exact: true }).click()
-  await page.getByRole('alert').filter({ hasText: 'Permite el acceso a la cámara' }).waitFor()
+  await page.getByRole('alert').filter({ hasText: 'Activa los permisos de la cámara' }).waitFor()
+  assert.equal(await page.getByRole('button', { name: 'Volver a pedir permiso' }).count(), 0)
+  await page.getByText('Cómo activar los permisos de la cámara', { exact: true }).click()
+  const browserGuide = page.getByRole('group', { name: 'Elige tu navegador' })
+  assert.equal(await browserGuide.getByRole('button').count(), 3)
+  await page
+    .getByText(
+      useWebkit ? 'iPhone / iPad · ¿Cuál es tu navegador?' : 'Android · ¿Cuál es tu navegador?',
+      { exact: true }
+    )
+    .waitFor()
+  await browserGuide.getByRole('button', { name: 'Firefox', exact: true }).click()
+  assert.equal(
+    await browserGuide
+      .getByRole('button', { name: 'Firefox', exact: true })
+      .getAttribute('aria-pressed'),
+    'true'
+  )
+  assert.ok((await page.locator('.lc-camera-help ol').innerText()).includes('Firefox'))
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'scanner-camera-help.png'),
+    fullPage: true
+  })
+  await page.getByRole('button', { name: 'Conectar con código', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Conectar con código', exact: true }).waitFor()
+  await page
+    .getByText('Pide al encargado del negocio que comparta el código de conexión contigo.', {
+      exact: true
+    })
+    .waitFor()
+  await page.getByLabel('Código de conexión', { exact: true }).fill('incorrecto')
+  await page.getByRole('button', { name: 'Conectar', exact: true }).click()
+  await page.getByRole('alert').filter({ hasText: 'Pega el código completo' }).waitFor()
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
+  await page.getByRole('button', { name: 'Scanner', exact: true }).click()
+  await page.getByRole('alert').filter({ hasText: 'Activa los permisos de la cámara' }).waitFor()
   const deniedCalls = await page.evaluate(() => window.testCameraRequests)
   await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
   await page.getByRole('button', { name: 'Scanner', exact: true }).click()
-  await page.getByRole('alert').filter({ hasText: 'Permite el acceso a la cámara' }).waitFor()
+  await page.getByRole('alert').filter({ hasText: 'Activa los permisos de la cámara' }).waitFor()
   assert.equal(await page.evaluate(() => window.testCameraRequests), deniedCalls + 1)
   await page.evaluate(() => {
     window.testCameraDenied = false
     window.testCameraQrKind = 'blank'
   })
-  await page.getByRole('button', { name: 'Volver a pedir permiso', exact: true }).click()
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.getByRole('button', { name: 'Scanner', exact: true }).click()
   await page.waitForFunction(() => window.testCameraActive > 0)
   await page.getByRole('alert').waitFor({ state: 'detached' })
   await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
@@ -1199,10 +1263,7 @@ try {
   assert.equal(scannerOpenCalls.at(-1).p_link_token, 'e'.repeat(64))
   assert.equal(new URL(page.url()).pathname, '/scanner/')
   assert.equal(new URL(page.url()).search, '')
-  assert.equal(
-    await page.evaluate(() => localStorage.getItem('sb-127-auth-token')),
-    personalAuth
-  )
+  assert.equal(await page.evaluate(() => localStorage.getItem('sb-127-auth-token')), personalAuth)
   await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
   await page.getByRole('link', { name: 'Mi negocio', exact: true }).click()
   await page.getByAltText('QR interno del negocio').waitFor()
@@ -1273,13 +1334,58 @@ try {
   )
   businessMode = 'none'
   await page.goto(`${origin}/card/negocios`)
+  await page.getByRole('heading', { name: 'Conectado a', exact: true }).waitFor()
+  const staffList = page.locator('.lc-staff-businesses')
+  await page.waitForLoadState('networkidle')
+  assert.equal(await staffList.getByRole('button').count(), 2)
+  const beforeCachedSelection = scannerConnections.length
+  await staffList
+    .getByRole('button', { name: 'Punto Hispano Asesoría Abrir Scanner', exact: true })
+    .click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  assert.equal(
+    scannerConnections.length,
+    beforeCachedSelection,
+    'Switching business reuses the saved valid connection'
+  )
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.getByText('Punto Hispano Asesoría', { exact: true }).waitFor()
+  await page.goto(`${origin}/card/negocios`)
+  await page.getByRole('heading', { name: 'Conectado a', exact: true }).waitFor()
+  await page.waitForLoadState('networkidle')
+  await page.screenshot({
+    path: path.join(output, 'scanner-worker-businesses.png'),
+    fullPage: true
+  })
+  // A new device has no local operational credential but the authenticated
+  // account still has server-authorized connections to both businesses.
+  await page.evaluate(() => {
+    localStorage.removeItem('latido_card_scanner_v1')
+    localStorage.removeItem('latido_card_scanner_sessions_v1')
+  })
+  await staffList
+    .getByRole('button', { name: `${offer.business_name} Abrir Scanner`, exact: true })
+    .click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  assert.equal(scannerConnections.length, beforeCachedSelection + 1)
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.goto(`${origin}/card/negocios`)
   await page.getByRole('link', { name: 'Registrar mi negocio', exact: true }).waitFor()
+  await page.waitForLoadState('networkidle')
   assert.equal(await page.getByLabel('Selecciona tu negocio').count(), 0)
   assert.equal(await page.getByAltText('QR interno del negocio').count(), 0)
   const workerScanner = page.getByRole('link', { name: 'Scanner', exact: true })
   assert.equal(await workerScanner.getAttribute('href'), '/scanner/?camera=1')
   await workerScanner.click()
   await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.getByRole('button', { name: 'Conectar con código', exact: true }).click()
+  await page.getByLabel('Código de conexión', { exact: true }).fill('e'.repeat(64))
+  const beforeCodeConnection = scannerOpenCalls.length
+  await page.getByRole('button', { name: 'Conectar', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  assert.equal(scannerOpenCalls.length, beforeCodeConnection + 1)
+  assert.equal(scannerOpenCalls.at(-1).p_link_token, 'e'.repeat(64))
   await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
   businessMode = 'multiple'
   await page.evaluate(() => localStorage.removeItem('sb-127-auth-token'))

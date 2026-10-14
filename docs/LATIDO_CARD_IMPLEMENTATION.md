@@ -93,9 +93,10 @@ comprobación de solo lectura para no reinstalar esquemas de otras funciones.
    Instalar después `supabase/latido_card_self_service.sql` para alta directa,
    QR automático y favoritas. Si las dos anteriores ya están instaladas, ejecutar
    solamente esta actualización.
-   Instalar al final `supabase/latido_card_scanner_accounts.sql`: identidad del
-   usuario, conexiones permanentes y eliminación. Para actualizar una instalación
-   existente con los tres primeros SQL, ejecutar solo este último archivo.
+   Instalar después `supabase/latido_card_scanner_accounts.sql`: identidad del
+   usuario, conexiones permanentes y eliminación. Por último, instalar
+   `supabase/latido_card_scanner_multibusiness.sql` para empleados con varios negocios.
+   En instalaciones existentes, ejecutar solamente los archivos que falten, en orden.
 7. Ejecutar `npm run dev`. Abrir `/card`, `/card/negocios`, `/card/admin` y
    `/scanner/` según el rol. No aplicar primero en producción.
 
@@ -250,10 +251,34 @@ Scanner la transporta además en un fragmento temporal de la ruta de vinculació
 `src/main.jsx` lo captura y borra antes de Auth, onboarding y analítica. El fragmento
 no se envía al servidor HTTP ni se incluye en el `next` del login.
 
-Cada apertura o reintento llama `getUserMedia` sin cachear rechazos. No se añade
-un diálogo propio tras aceptar: el navegador decide si recuerda el permiso.
-**Volver a pedir permiso** reintenta en el mismo diálogo. JavaScript no puede
-deshacer un bloqueo permanente: se muestra ayuda para Safari/iPhone y Chrome/Android.
+Cada apertura llama `getUserMedia` sin cachear rechazos. El navegador muestra su
+solicitud nativa si procede y decide si recuerda el permiso. No hay botón «Volver
+a pedir permiso»: un rechazo muestra «Cómo activar los permisos de la cámara».
+La guía detecta iPhone/iPad (incluido iPad con agente de escritorio) o Android y
+ofrece tres opciones: Safari, Chrome/Brave y Firefox en iOS; Chrome, Brave y Firefox
+en Android. El bloqueo del sistema o del sitio se cambia en sus ajustes, nunca por
+JavaScript. Después se recarga y vuelve a abrir Scanner; no se pide micrófono.
+Los pasos se contrastaron con la documentación de
+[Apple](https://support.apple.com/guide/iphone/control-access-to-hardware-features-iph168c4bbd5/ios),
+[Safari](https://support.apple.com/en-il/guide/iphone/iphb01fc3c85/ios),
+[Chrome iOS](https://support.google.com/chrome/answer/2693767?co=GENIE.Platform%3DiOS&hl=es),
+[Chrome Android](https://support.google.com/chrome/answer/2693767?co=GENIE.Platform%3DAndroid&hl=es),
+[Brave](https://support.brave.app/hc/en-us/articles/360018205431-How-do-I-change-site-permissions)
+y [Firefox](https://support.mozilla.org/es/kb/como-administrar-los-permisos-de-tu-camara-y-micro).
+
+«Conectar con código» abre un modal para pegar el código privado de conexión
+(el mismo token aleatorio de 64 caracteres del QR) o el enlace del encargado.
+Debajo del QR del propietario aparecen el código y «Copiar código de conexión».
+No es un identificador público ni un PIN adivinable; regenerar el QR invalida
+también el código. Se mantiene el paso de identificación con cuenta gratuita.
+
+En «Mi negocio», «Conectado a» lista los negocios con conexiones vigentes de la
+cuenta actual. Pulsar un negocio valida y reutiliza su credencial local; en un
+nuevo navegador, `lc_resume_scanner` crea una credencial desde un acceso vigente
+de esa misma cuenta. El listado no concede gestión de ofertas o permisos de dueño.
+Se guardan varias credenciales operativas para cambiar de negocio sin desconectar
+los demás. Los canjes pendientes bloquean el cambio; la revocación se valida en
+servidor. Ejecutar `supabase/latido_card_scanner_multibusiness.sql` después de accounts.
 Usar HTTPS, vídeo `muted`/`playsInline`, cámara trasera preferida y alternativa
 genérica si no se encuentra. Liberar los tracks incluso si la autorización llega
 después de cerrar la cámara.

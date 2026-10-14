@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import LatidoCardCameraHelp from './LatidoCardCameraHelp'
 
 export default function LatidoCardCamera({
   onRead,
   onClose,
+  onConnectCode,
   hint = 'Encuadra el QR del negocio o de una Tarjeta Latido.'
 }) {
   const dialogRef = useRef(null)
   const videoRef = useRef(null)
   const readRef = useRef(onRead)
   const [error, setError] = useState('')
-  const [attempt, setAttempt] = useState(0)
   readRef.current = onRead
   useEffect(() => {
     dialogRef.current.showModal()
@@ -71,7 +72,7 @@ export default function LatidoCardCamera({
         if (!cancelled)
           setError(
             err?.name === 'NotAllowedError'
-              ? 'Permite el acceso a la cámara para escanear. Puedes volver a intentarlo.'
+              ? 'Activa los permisos de la cámara para poder escanear los QR de las tarjetas de Latido.'
               : err?.name === 'NotReadableError'
                 ? 'La cámara está ocupada. Cierra otras apps que la usen y vuelve a intentarlo.'
                 : 'No se pudo abrir la cámara. Comprueba el permiso y que la página use HTTPS.'
@@ -83,7 +84,7 @@ export default function LatidoCardCamera({
       cancelled = true
       stop()
     }
-  }, [attempt])
+  }, [])
   return (
     <dialog
       ref={dialogRef}
@@ -95,29 +96,22 @@ export default function LatidoCardCamera({
       }}
     >
       <h2 id="lc-camera-title">Scanner</h2>
-      <video ref={videoRef} muted playsInline autoPlay aria-label="Vista de la cámara" />
+      <video
+        ref={videoRef}
+        muted
+        playsInline
+        autoPlay
+        aria-label="Vista de la cámara"
+        hidden={!!error}
+      />
       {error ? <p role="alert">{error}</p> : <p>{hint}</p>}
-      {error && (
-        <>
-          <div className="lc-actions">
-            <button className="lc-button" onClick={() => setAttempt((n) => n + 1)}>
-              Volver a pedir permiso
-            </button>
-          </div>
-          <details className="lc-camera-help">
-            <summary>¿La cámara sigue bloqueada?</summary>
-            <p>
-              En iPhone: abre los ajustes del sitio en Safari y permite Cámara. En Android: Chrome →
-              Configuración → Configuración de sitios → Cámara → permite este sitio.
-            </p>
-            <p>
-              Si usas Latido instalada, revisa también los permisos de cámara del dispositivo.
-              Después, vuelve a intentarlo aquí.
-            </p>
-          </details>
-        </>
-      )}
+      {error && <LatidoCardCameraHelp />}
       <div className="lc-actions">
+        {onConnectCode && (
+          <button className="lc-button" onClick={onConnectCode}>
+            Conectar con código
+          </button>
+        )}
         <button className="lc-button lc-button--secondary" onClick={onClose} autoFocus>
           Cerrar cámara
         </button>

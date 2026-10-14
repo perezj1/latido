@@ -7,10 +7,12 @@ import {
   classifyLatidoQr,
   readScannerSession,
   storeScannerSession,
+  forgetScannerConnection,
   SCANNER_STORAGE_KEY,
   SCANNER_CONNECTION_KEY
 } from '../lib/latidoCardCore'
 import LatidoCardCamera from '../components/LatidoCardCamera'
+import LatidoCardConnectionCode from '../components/LatidoCardConnectionCode'
 import { offerUsageLabel, offerBenefitLabel } from '../lib/latidoCardCore'
 import '../pages/LatidoCard.css'
 
@@ -48,6 +50,12 @@ export default function ScannerApp() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [camera, setCamera] = useState(false)
+  const [codeOpen, setCodeOpen] = useState(false)
+  const openCode = () => {
+    if (workingRef.current || pendingRef.current) return
+    setCamera(false)
+    setCodeOpen(true)
+  }
   const [input, setInput] = useState(''),
     [label, setLabel] = useState('Scanner'),
     [result, setResult] = useState(null),
@@ -75,6 +83,9 @@ export default function ScannerApp() {
     }
   }, [])
   const clear = () => {
+    try {
+      forgetScannerConnection(sessionRef.current, storage())
+    } catch {}
     sessionRef.current = null
     setSession(null)
     setResult(null)
@@ -100,6 +111,9 @@ export default function ScannerApp() {
       } catch (err) {
         if (sessionRef.current?.token !== current.token) return
         if (String(err.message).includes('SCANNER_EXPIRED')) {
+          try {
+            forgetScannerConnection(current, storage())
+          } catch {}
           sessionRef.current = null
           setSession(null)
           if (!pendingRef.current) {
@@ -515,7 +529,30 @@ export default function ScannerApp() {
           )}
         </>
       )}
-      {camera && <LatidoCardCamera onRead={scanQr} onClose={() => setCamera(false)} />}
+      {!camera && !codeOpen && !pendingRef.current && (
+        <div className="lc-actions lc-spaced">
+          <button className="lc-button lc-button--secondary" disabled={busy} onClick={openCode}>
+            Conectar con código
+          </button>
+        </div>
+      )}
+      {camera && (
+        <LatidoCardCamera
+          onRead={scanQr}
+          onClose={() => setCamera(false)}
+          onConnectCode={openCode}
+        />
+      )}
+      {codeOpen && (
+        <LatidoCardConnectionCode
+          busy={busy}
+          onConnect={async (token) => {
+            await connect(token)
+            setCodeOpen(false)
+          }}
+          onClose={() => setCodeOpen(false)}
+        />
+      )}
       {session && !camera && (result || success) && (
         <button
           className="lc-scanner-fab"

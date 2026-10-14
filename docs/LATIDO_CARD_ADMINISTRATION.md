@@ -36,6 +36,8 @@ integración automática con una imprenta o un transportista.
    directa de negocios, sus QR automáticos y las favoritas de cada usuario.
    Instalar al final `supabase/latido_card_scanner_accounts.sql` para vincular
    cuentas del personal y mantener conexiones permanentes hasta revocar o desconectar.
+   Después, `supabase/latido_card_scanner_multibusiness.sql` permite que cada empleado
+   vea sus negocios vinculados y elija en cuál abrir Scanner.
 5. Confirmar que las cuentas administradoras tienen perfiles y que sus emails
    coinciden con `business_promotion_admins`. Esa tabla determina la autoridad
    del servidor y los destinatarios administrativos de los avisos.

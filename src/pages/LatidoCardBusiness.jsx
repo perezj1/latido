@@ -2,7 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ScanLine, Share2 } from 'lucide-react'
 import { cardRpc, scannerLinkUrl } from '../lib/latidoCard'
-import { cardErrorMessage } from '../lib/latidoCardCore'
+import {
+  cardErrorMessage,
+  extractCardToken,
+  readScannerConnections,
+  readScannerSession,
+  storeScannerSession,
+  forgetScannerConnection
+} from '../lib/latidoCardCore'
 import { shareScannerConnection } from '../lib/latidoCardShare'
 import LatidoCardQr from '../components/LatidoCardQr'
 import LatidoCardOfferWizard from '../components/LatidoCardOfferWizard'
@@ -36,6 +43,67 @@ export default function LatidoCardBusiness() {
     [loading, setLoading] = useState(true)
   const [shareNotice, setShareNotice] = useState(''),
     [manualStaffLink, setManualStaffLink] = useState('')
+  const [staffBusinesses, setStaffBusinesses] = useState([])
+  const [staffError, setStaffError] = useState('')
+  useEffect(() => {
+    let cancelled = false
+    const refresh = async () => {
+      try {
+        const connected = await cardRpc('lc_my_scanner_businesses')
+        if (!cancelled) {
+          setStaffBusinesses(connected)
+          setStaffError('')
+        }
+      } catch (err) {
+        if (!cancelled) setStaffError(cardErrorMessage(err))
+      }
+    }
+    refresh()
+    window.addEventListener('focus', refresh)
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', refresh)
+    }
+  }, [user.id])
+  const openStaffScanner = async (business) => {
+    if (busy) return
+    setBusy(true)
+    setStaffError('')
+    try {
+      if (JSON.parse(sessionStorage.getItem('latido_card_pending_redemption') || 'null')?.requestId)
+        throw new Error('PENDING_REDEMPTION')
+      const storage = { local: localStorage, temporary: sessionStorage }
+      const current = readScannerSession(storage)
+      const saved = [current, ...readScannerConnections(localStorage)].find(
+        (s) => s?.linked_user_id === user.id && business.session_ids.includes(s.session_id)
+      )
+      let next
+      if (saved) {
+        try {
+          const valid = await cardRpc('lc_scanner_status', { p_session_token: saved.token })
+          if (valid.linked_user_id !== user.id || !business.session_ids.includes(valid.session_id))
+            throw new Error('FORBIDDEN')
+          next = { ...saved, ...valid }
+        } catch (err) {
+          if (!String(err.message).includes('SCANNER_EXPIRED')) throw err
+          forgetScannerConnection(saved, storage)
+        }
+      }
+      if (!next) next = await cardRpc('lc_resume_scanner', { p_provider: business.id })
+      if (next.linked_user_id !== user.id || !next.persistent || next.expires_at)
+        throw new Error('FORBIDDEN')
+      storeScannerSession(next, storage)
+      window.location.assign('/scanner/?camera=1')
+    } catch (err) {
+      setStaffError(
+        err.message === 'PENDING_REDEMPTION'
+          ? 'Hay un canje pendiente de confirmar. Abre Scanner y confírmalo antes de cambiar de negocio.'
+          : cardErrorMessage(err)
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
   useEffect(() => {
     setManualStaffLink('')
     setShareNotice('')
@@ -89,6 +157,7 @@ export default function LatidoCardBusiness() {
     try {
       await fn()
       await load()
+      setStaffBusinesses(await cardRpc('lc_my_scanner_businesses'))
     } catch (err) {
       setError(cardErrorMessage(err))
     } finally {
@@ -99,6 +168,30 @@ export default function LatidoCardBusiness() {
   return (
     <div className="lc-page">
       <CardHeader />
+      {staffBusinesses.length > 0 && (
+        <section className="lc-panel">
+          <h2>Conectado a</h2>
+          <p className="lc-muted">Elige el negocio donde vas a escanear tarjetas.</p>
+          <div className="lc-staff-businesses">
+            {staffBusinesses.map((business) => (
+              <button
+                key={business.id}
+                className="lc-button lc-button--secondary"
+                disabled={busy}
+                onClick={() => openStaffScanner(business)}
+              >
+                <span>{business.name}</span>
+                <small>Abrir Scanner</small>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+      {staffError && (
+        <p className="lc-alert" role="alert">
+          {staffError}
+        </p>
+      )}
       <section className="lc-hero">
         <span className="lc-eyebrow">Negocios participantes</span>
         <h1>Más clientes para tu negocio.</h1>
@@ -346,6 +439,29 @@ export default function LatidoCardBusiness() {
           {link && (
             <div className="lc-spaced">
               <LatidoCardQr value={link} label="QR interno del negocio" />
+              <h3>Código de conexión</h3>
+              <p className="lc-code-display">
+                {extractCardToken(link, 'scanner', window.location.origin)}
+              </p>
+              <div className="lc-actions">
+                <button
+                  className="lc-button lc-button--secondary"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(
+                        extractCardToken(link, 'scanner', window.location.origin)
+                      )
+                      setShareNotice('Código copiado. Compártelo solo con tu personal.')
+                    } catch {
+                      setShareNotice(
+                        'Selecciona el código de arriba para copiarlo y enviarlo a tu personal.'
+                      )
+                    }
+                  }}
+                >
+                  Copiar código de conexión
+                </button>
+              </div>
               <div className="lc-actions lc-spaced">
                 <button
                   className="lc-button lc-button--secondary"

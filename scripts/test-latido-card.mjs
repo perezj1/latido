@@ -7,6 +7,8 @@ import {
   classifyLatidoQr,
   readScannerSession,
   storeScannerSession,
+  readScannerConnections,
+  forgetScannerConnection,
   SCANNER_STORAGE_KEY,
   SCANNER_CONNECTION_KEY,
   captureScannerHandoff
@@ -182,6 +184,18 @@ storeScannerSession(
 )
 assert.equal(local.getItem(SCANNER_STORAGE_KEY), null)
 assert.equal(readScannerSession({ local, temporary }).token, token)
+const businessSessionA = { token, session_id: 'a', linked_user_id: 'staff', persistent: true }
+const businessSessionB = { ...businessSessionA, token: 'b'.repeat(64), session_id: 'b' }
+storeScannerSession(businessSessionA, { local, temporary })
+storeScannerSession(businessSessionB, { local, temporary })
+assert.equal(readScannerConnections(local).length, 2)
+forgetScannerConnection(businessSessionA, { local, temporary })
+assert.equal(
+  readScannerSession({ local, temporary }).session_id,
+  'b',
+  'Removing another connection preserves the active business'
+)
+assert.equal(readScannerConnections(local).length, 1)
 storeScannerSession({ token, persistent: true, expires_at: null }, { local, temporary })
 let handoffHistory
 const location = {
@@ -946,6 +960,62 @@ try {
   await rejects('lc_scanner_status', [beforeRotation.token, false], 'SCANNER_EXPIRED')
   await as('member2')
   await rejects('lc_open_scanner', [accountLink.token, 'Caja'], 'SCANNER_LINK_INVALID')
+  await root('SELECT 1')
+  const multibusiness = await readFile(
+    new URL('../supabase/latido_card_scanner_multibusiness.sql', import.meta.url),
+    'utf8'
+  )
+  await db.exec(multibusiness)
+  await db.exec(multibusiness)
+  await as(null, 'anon')
+  await rejects('lc_my_scanner_businesses', [], 'permission denied')
+  await rejects('lc_resume_scanner', [ids.business], 'permission denied')
+  await as(null)
+  await rejects('lc_my_scanner_businesses', [], 'AUTH_REQUIRED')
+  await rejects('lc_resume_scanner', [ids.business], 'AUTH_REQUIRED')
+  await as('admin')
+  await rpc('lc_admin_business', [ids.business2, true])
+  await as('owner')
+  const multiLinkA = await rpc('lc_business_setup', [ids.business, null])
+  await as('owner2')
+  const multiLinkB = await rpc('lc_business_setup', [ids.business2, null])
+  await as('outsider')
+  assert.deepEqual(await rpc('lc_my_scanner_businesses'), [])
+  await rejects('lc_resume_scanner', [ids.business], 'FORBIDDEN')
+  const workerA = await rpc('lc_open_scanner', [multiLinkA.token, 'Móvil'])
+  await rpc('lc_open_scanner', [multiLinkB.token, 'Móvil'])
+  const workerBusinesses = await rpc('lc_my_scanner_businesses')
+  assert.equal(workerBusinesses.length, 2, 'An unpaid worker can connect to multiple businesses')
+  assert.ok(
+    workerBusinesses.find((b) => b.id === ids.business).session_ids.includes(workerA.session_id)
+  )
+  assert.ok(
+    !JSON.stringify(workerBusinesses).includes('token'),
+    'Business list exposes no invite/session secrets'
+  )
+  const resumedA = await rpc('lc_resume_scanner', [ids.business])
+  assert.equal(resumedA.provider_id, ids.business)
+  assert.equal(resumedA.linked_user_id, ids.outsider)
+  assert.equal(resumedA.expires_at, null)
+  assert.equal(
+    (await rpc('lc_my_scanner_businesses')).length,
+    2,
+    'Multiple devices do not duplicate the business list'
+  )
+  await as('member2')
+  assert.deepEqual(await rpc('lc_my_scanner_businesses'), [])
+  await rejects('lc_resume_scanner', [ids.business], 'FORBIDDEN')
+  await as('owner')
+  await rpc('lc_manage_scanner', [workerA.session_id, 'delete'])
+  await rpc('lc_manage_scanner', [resumedA.session_id, 'revoke'])
+  await as('outsider')
+  assert.equal((await rpc('lc_my_scanner_businesses')).length, 1)
+  await rejects('lc_resume_scanner', [ids.business], 'FORBIDDEN')
+  await as('admin')
+  await rpc('lc_admin_business', [ids.business2, false])
+  await as('outsider')
+  assert.deepEqual(await rpc('lc_my_scanner_businesses'), [])
+  await rejects('lc_resume_scanner', [ids.business2], 'BUSINESS_INACTIVE')
   await root('SELECT 1')
   const preflight = await readFile(
     new URL('../supabase/latido_card_preflight.sql', import.meta.url),

@@ -1,5 +1,31 @@
 export const SCANNER_STORAGE_KEY = 'latido_card_scanner_v1'
 export const SCANNER_CONNECTION_KEY = 'latido_card_scanner_connection_v1'
+export const SCANNER_SESSIONS_KEY = 'latido_card_scanner_sessions_v1'
+
+export function readScannerConnections(local) {
+  try {
+    const sessions = JSON.parse(local.getItem(SCANNER_SESSIONS_KEY) || '[]')
+    return Array.isArray(sessions)
+      ? sessions.filter((s) => s?.session_id && /^[a-f0-9]{64}$/.test(s.token))
+      : []
+  } catch {
+    return []
+  }
+}
+
+export function forgetScannerConnection(session, { local, temporary }) {
+  if (!session) return
+  local.setItem(
+    SCANNER_SESSIONS_KEY,
+    JSON.stringify(readScannerConnections(local).filter((s) => s.session_id !== session.session_id))
+  )
+  for (const target of [local, temporary]) {
+    try {
+      const active = JSON.parse(target.getItem(SCANNER_STORAGE_KEY) || 'null')
+      if (active?.token === session.token) target.removeItem(SCANNER_STORAGE_KEY)
+    } catch {}
+  }
+}
 
 // Capture the private fragment before Auth/onboarding redirects can change the
 // route. Fragments are never sent to the HTTP server or copied into login URLs.
@@ -71,6 +97,11 @@ export function storeScannerSession(session, { local, temporary }) {
   // Save before removing the fallback; unavailable storage must not lose access.
   selected.setItem(SCANNER_STORAGE_KEY, JSON.stringify(session))
   other.removeItem(SCANNER_STORAGE_KEY)
+  if (session.persistent && session.session_id) {
+    const saved = readScannerConnections(local).filter((s) => s.session_id !== session.session_id)
+    // Bound browser storage without revoking other valid server connections.
+    local.setItem(SCANNER_SESSIONS_KEY, JSON.stringify([...saved, session].slice(-100)))
+  }
 }
 
 export function readScannerSession({ local, temporary }, now = Date.now()) {
