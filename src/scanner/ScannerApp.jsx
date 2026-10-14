@@ -158,7 +158,7 @@ export default function ScannerApp() {
     const token = extractCardToken(raw, 'card', window.location.origin)
     setCamera(false)
     if (!token) {
-      setError('Este QR no es una Latido Card válida.')
+      setError('Este QR no es una Tarjeta Latido válida.')
       return
     }
     if (workingRef.current || pendingRef.current) return
@@ -317,7 +317,7 @@ export default function ScannerApp() {
                 disabled={busy}
                 onClick={() => setCamera(true)}
               >
-                {busy ? 'Consultando…' : 'Escanear Latido Card'}
+                {busy ? 'Consultando…' : 'Escanear Tarjeta Latido'}
               </button>
               <details className="lc-spaced">
                 <summary>Usar enlace de tarjeta</summary>

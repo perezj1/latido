@@ -511,7 +511,7 @@ function AppShell() {
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
-  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/club' || pathname === '/card/admin' || pathname === '/card/negocios' || isPuntoHispanoPublisher
+  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/club' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -791,7 +791,7 @@ function AppShell() {
             <Route path="/card" element={<LatidoCard />} />
             <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusiness /></ProtectedRoute>} />
             <Route path="/card/admin" element={<AdminRoute><LatidoCardAdmin /></AdminRoute>} />
-            <Route path="/c/:cardToken" element={<div className="lc-page"><h1>Latido Card</h1><p>Presenta este QR al personal de un negocio participante para consultar tus ventajas.</p><Link to="/card">Ir a Latido Card</Link></div>} />
+            <Route path="/c/:cardToken" element={<div className="lc-page"><h1>Tarjeta Latido</h1><p>Presenta este QR al personal de un negocio participante para consultar tus ventajas.</p><Link to="/card">Ir a Tarjeta Latido</Link></div>} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { cardRpc, scannerLinkUrl } from '../lib/latidoCard'
 import { cardErrorMessage } from '../lib/latidoCardCore'
 import LatidoCardQr from '../components/LatidoCardQr'
 import { CardHeader, OfferConditions } from './LatidoCard'
 import './LatidoCard.css'
+import { useAuth } from '../hooks/useAuth'
 
 const initialOffer = {
   title: '',
@@ -20,6 +21,14 @@ const initialOffer = {
   ends_at: ''
 }
 export default function LatidoCardBusiness() {
+  const { user } = useAuth()
+  const loadSequence = useRef(0)
+  const qrStorageKey = (id) => `lc-business-qr:${user.id}:${id}`
+  const cacheQr = (id, token) => {
+    try {
+      sessionStorage.setItem(qrStorageKey(id), token)
+    } catch {}
+  }
   const [provider, setProvider] = useState(''),
     [data, setData] = useState({ businesses: [], offers: [], sessions: [], history: [] })
   const [error, setError] = useState(''),
@@ -28,15 +37,34 @@ export default function LatidoCardBusiness() {
     [offer, setOffer] = useState(initialOffer),
     [loading, setLoading] = useState(true)
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current
     try {
-      setData(await cardRpc('lc_business_dashboard', { p_provider: provider || null }))
+      let next = await cardRpc('lc_business_dashboard', { p_provider: provider || null })
+      let nextLink = ''
+      if (provider && !next.businesses.find((b) => b.id === provider)?.suspended) {
+        let cached = null
+        try {
+          cached = sessionStorage.getItem(qrStorageKey(provider))
+        } catch {}
+        const result = await cardRpc('lc_business_setup', {
+          p_provider: provider,
+          p_link_token: cached
+        })
+        cacheQr(provider, result.token)
+        nextLink = scannerLinkUrl(result.token)
+        next = await cardRpc('lc_business_dashboard', { p_provider: provider })
+      }
+      if (sequence !== loadSequence.current) return
+      setData(next)
+      setLink(nextLink)
+      if (!provider && next.businesses.length) setProvider(next.businesses[0].id)
       setError('')
     } catch (err) {
-      setError(cardErrorMessage(err))
+      if (sequence === loadSequence.current) setError(cardErrorMessage(err))
     } finally {
-      setLoading(false)
+      if (sequence === loadSequence.current) setLoading(false)
     }
-  }, [provider])
+  }, [provider, user.id])
   useEffect(() => {
     load()
   }, [load])
@@ -60,9 +88,14 @@ export default function LatidoCardBusiness() {
       <section className="lc-hero">
         <span className="lc-eyebrow">Negocios participantes</span>
         <h1>Una ventaja para tu comunidad.</h1>
-        <p>Gestiona las ofertas de tu establecimiento y los dispositivos que pueden canjearlas.</p>
+        <p>Publica tus ventajas directamente y comparte el QR del negocio con tus trabajadores.</p>
         <p className="lc-badge lc-badge--included">
           Participación gratuita · Sin membresía de pago
+        </p>
+        <p className="lc-muted">
+          Sin aprobación previa. Las ofertas deben cumplir las{' '}
+          <Link to="/terminos">normas de Latido</Link>; Latido puede retirarlas y suspender la
+          participación.
         </p>
         <a className="lc-button lc-button--secondary" href="/scanner/">
           Abrir Latido Scanner
@@ -84,17 +117,21 @@ export default function LatidoCardBusiness() {
               onChange={(e) => {
                 setProvider(e.target.value)
                 setLink('')
+                setData((prev) => ({ ...prev, offers: [], sessions: [], history: [] }))
               }}
             >
               <option value="">Seleccionar…</option>
               {data.businesses.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
-                  {b.active ? '' : ' · Pendiente de participación'}
+                  {b.suspended ? ' · Suspendido por Latido' : ''}
                 </option>
               ))}
             </select>
           </label>
+          <Link className="lc-button lc-button--secondary" to="/registrar-negocio">
+            ➕ Agregar un negocio
+          </Link>
           {!data.businesses.length && (
             <p>
               Todavía no tienes negocios. <Link to="/registrar-negocio">Registrar un negocio</Link>.
@@ -102,51 +139,15 @@ export default function LatidoCardBusiness() {
           )}
         </div>
       )}
-      {selected && !selected.active && (
+      {selected?.suspended && (
         <p className="lc-alert">
-          Latido debe aprobar la participación de este establecimiento antes de publicar ventajas o
-          vincular Scanners.
+          Latido ha suspendido este negocio. Sus ofertas y accesos a Scanner están deshabilitados.
+          Contacta con Latido para revisar el caso.
         </p>
       )}
       {selected?.active && (
         <div className="lc-layout lc-spaced">
           <section>
-            <div className="lc-panel">
-              <h2>Acceso para el personal</h2>
-              <p>
-                El QR interno permite vincular Scanners de este negocio. Guárdalo donde solo tenga
-                acceso el personal.
-              </p>
-              <button
-                className="lc-button"
-                disabled={busy}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      'Se revocarán el QR interno y todos los Scanners actuales. ¿Generar un nuevo acceso?'
-                    )
-                  )
-                    run(async () => {
-                      const result = await cardRpc('lc_rotate_scanner_link', {
-                        p_provider: provider
-                      })
-                      setLink(scannerLinkUrl(result.token))
-                    })
-                }}
-              >
-                Generar nuevo QR y revocar accesos
-              </button>
-              {link && (
-                <div className="lc-spaced">
-                  <LatidoCardQr value={link} label="QR interno del negocio" />
-                  <p className="lc-secret">{link}</p>
-                  <p className="lc-muted">
-                    Este enlace se muestra una sola vez. Imprime el QR o consérvalo de forma
-                    privada.
-                  </p>
-                </div>
-              )}
-            </div>
             <div className="lc-panel">
               <h2>Scanners vinculados</h2>
               <button className="lc-button lc-button--secondary" onClick={load} disabled={busy}>
@@ -422,6 +423,46 @@ export default function LatidoCardBusiness() {
             ))}
           </section>
         </div>
+      )}
+      {selected?.active && !selected.suspended && (
+        <section className="lc-panel lc-business-qr">
+          <h2>Tu QR de negocio para los trabajadores</h2>
+          <p>
+            El QR interno permite vincular Scanners de este negocio. Guárdalo donde solo tenga
+            acceso el personal.
+          </p>
+          <button
+            className="lc-button"
+            disabled={busy}
+            onClick={() => {
+              if (
+                window.confirm(
+                  'Se revocarán el QR interno y todos los Scanners actuales. ¿Generar un nuevo acceso?'
+                )
+              )
+                run(async () => {
+                  const result = await cardRpc('lc_rotate_scanner_link', {
+                    p_provider: provider
+                  })
+                  cacheQr(provider, result.token)
+                  setLink(scannerLinkUrl(result.token))
+                })
+            }}
+          >
+            Regenerar QR y revocar accesos
+          </button>
+          {link && (
+            <div className="lc-spaced">
+              <LatidoCardQr value={link} label="QR interno del negocio" />
+              <p className="lc-secret">{link}</p>
+              <p className="lc-muted">
+                El QR se prepara automáticamente. Compártelo solo con tus trabajadores. Los QR
+                impresos siguen siendo válidos hasta que regeneres el acceso o Latido suspenda el
+                negocio.
+              </p>
+            </div>
+          )}
+        </section>
       )}
     </div>
   )

@@ -1,6 +1,6 @@
 # Latido Card: operaciones y administración de Latido
 
-Latido es el operador del programa: autoriza negocios, administra membresías,
+Latido es el operador del programa: modera negocios, administra membresías,
 recibe las solicitudes de tarjeta física, aprueba su preparación y registra
 emisión y entrega. El comercio únicamente consulta ventajas y confirma canjes.
 No recibe direcciones ni interviene en la fabricación de tarjetas.
@@ -32,6 +32,8 @@ integración automática con una imprenta o un transportista.
 2. Instalar `supabase/latido_card.sql`.
 3. Tener instalado `supabase/app_notifications.sql` y sus requisitos.
 4. Instalar `supabase/latido_card_physical_requests.sql`.
+   Después instalar `supabase/latido_card_self_service.sql` para la participación
+   directa de negocios, sus QR automáticos y las favoritas de cada usuario.
 5. Confirmar que las cuentas administradoras tienen perfiles y que sus emails
    coinciden con `business_promotion_admins`. Esa tabla determina la autoridad
    del servidor y los destinatarios administrativos de los avisos.
@@ -107,6 +109,20 @@ Latido también puede cerrar como cancelado un envío perdido o devuelto,
 dejando un motivo visible y permitiendo que el socio solicite una reposición.
 
 ## Datos y límites operativos
+
+Los negocios participan gratis sin aprobación previa. Al seleccionar su propio
+negocio, el propietario puede publicar ofertas y encuentra su QR para los
+trabajadores al final de la página. Abrir o actualizar esa página no revoca
+sesiones. El token se conserva en `sessionStorage`, separado por cuenta y negocio;
+se valida en el servidor antes de reutilizarlo. Otro navegador puede emitir otro
+enlace para el mismo negocio. Todos los QR impresos siguen válidos hasta la
+regeneración explícita o suspensión; la base conserva solo sus huellas.
+
+Latido puede **Retirar del programa** a un negocio por incumplimiento: desaparece
+del catálogo de ventajas y se revocan QR y sesiones. El propietario no puede
+revertir esa decisión. **Restablecer participación** permite continuar con un QR
+nuevo. Se conservan los canjes y la auditoría. Las desactivaciones administrativas
+existentes al instalar la actualización se conservan como suspensiones.
 
 Los destinatarios administrativos proceden de la configuración de Latido en la
 base, no del navegador del socio. El contacto del solicitante procede de su

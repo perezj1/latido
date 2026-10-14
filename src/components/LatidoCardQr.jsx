@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 
-export default function LatidoCardQr({ value, label = 'QR de Latido Card', downloadName }) {
+export default function LatidoCardQr({ value, label = 'QR de Tarjeta Latido', downloadName }) {
   const [src, setSrc] = useState('')
   const [error, setError] = useState(false)
   useEffect(() => {

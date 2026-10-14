@@ -86,7 +86,11 @@ export function cardErrorMessage(error) {
     OFFER_USED: 'Ya has utilizado esta promoción.',
     OFFER_CAPACITY:
       'El negocio puede tener una ventaja incluida y dos promociones especiales vigentes.',
-    BUSINESS_INACTIVE: 'El negocio todavía no está autorizado para participar en Latido Card.',
+    BUSINESS_SUSPENDED:
+      'Latido ha suspendido este negocio. Contacta con Latido para revisar el caso.',
+    SCANNER_LINK_RATE_LIMIT:
+      'Se han generado muchos QR para este negocio hoy. Reutiliza un QR existente o inténtalo mañana.',
+    BUSINESS_INACTIVE: 'El negocio no está activo en Tarjeta Latido.',
     FORBIDDEN: 'No tienes permiso para realizar esta operación.',
     AUTH_REQUIRED: 'Inicia sesión para continuar.',
     OFFER_TERMS_LOCKED:
@@ -98,7 +102,7 @@ export function cardErrorMessage(error) {
   const code = Object.keys(messages).find((key) => text.includes(key))
   if (code) return messages[code]
   if (error?.code === 'PGRST202' || error?.code === '42P01' || text.includes('lc_catalog')) {
-    return 'Latido Card todavía no está habilitado en este servidor. Falta instalar su migración.'
+    return 'Tarjeta Latido todavía no está habilitado en este servidor. Falta instalar su migración.'
   }
   return 'No se pudo confirmar la operación. Comprueba la conexión e inténtalo de nuevo.'
 }

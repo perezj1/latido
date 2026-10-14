@@ -83,7 +83,13 @@ try {
   }, cameraQr)
   let redeemCalls = [],
     receipt = null,
-    claimed = false
+    claimed = false,
+    savedOffers = [],
+    digitalCalls = 0,
+    businessSetupCalls = [],
+    membershipMode = 'active',
+    newBusinessActive = false,
+    newBusinessOffers = []
   let physicalRequest = null,
     physicalCalls = []
   const offer = {
@@ -198,13 +204,51 @@ try {
         businesses: [
           { id: 'restaurant', name: offer.business_name, active: true, participating: true },
           { id: 'salon', name: 'Peluquería Brisa Latina', active: true, participating: true },
-          { id: 'shop', name: 'Tienda Raíces', active: true, participating: true }
+          { id: 'shop', name: 'Tienda Raíces', active: true, participating: true },
+          {
+            id: 'new',
+            name: 'Punto Hispano Asesoría',
+            active: newBusinessActive,
+            participating: newBusinessActive
+          }
         ],
-        offers: args.p_provider === 'restaurant' ? [offer, special] : [],
+        offers:
+          args.p_provider === 'restaurant'
+            ? [offer, special]
+            : args.p_provider === 'new'
+              ? newBusinessOffers
+              : [],
         sessions: [],
         history: []
       })
-    if (name === 'lc_catalog') return respond(route, [offer, special, ...additionalExamples])
+    if (name === 'lc_business_setup') {
+      businessSetupCalls.push(args)
+      if (args.p_provider === 'new') newBusinessActive = true
+      return respond(route, {
+        token: args.p_link_token || (args.p_provider === 'new' ? 'e'.repeat(64) : scannerToken)
+      })
+    }
+    if (name === 'lc_save_offer') {
+      assert.equal(args.p_provider, 'new')
+      newBusinessOffers.push({
+        ...args.p_offer,
+        id: 'new-offer',
+        active: true,
+        requires_claim: false
+      })
+      return respond(route, 'new-offer')
+    }
+    if (name === 'lc_save_favorite') {
+      savedOffers = args.p_saved
+        ? [...new Set([...savedOffers, args.p_offer])]
+        : savedOffers.filter((id) => id !== args.p_offer)
+      return respond(route, null)
+    }
+    if (name === 'lc_catalog')
+      return respond(
+        route,
+        [offer, special, ...additionalExamples].map((o) => ({ ...o, claim: undefined }))
+      )
     if (name === 'lc_member_physical_requests') {
       const visible = physicalRequest ? { ...physicalRequest } : null
       if (visible)
@@ -288,7 +332,15 @@ try {
     }
     if (name === 'lc_member_home')
       return respond(route, {
-        membership: { member_number: 12847, active: true, valid_until: offer.ends_at },
+        membership:
+          membershipMode === 'none'
+            ? null
+            : {
+                member_number: 12847,
+                active: membershipMode === 'active',
+                valid_until: offer.ends_at
+              },
+        saved_offers: savedOffers,
         offers: [
           offer,
           {
@@ -300,11 +352,17 @@ try {
         ],
         history: []
       })
-    if (name === 'lc_issue_digital_card')
+    if (name === 'lc_issue_digital_card') {
+      digitalCalls++
       return respond(route, { token, expires_at: new Date(Date.now() + 300000).toISOString() })
+    }
     if (name === 'lc_claim_offer') {
       claimed = true
       return respond(route, { status: 'claimed' })
+    }
+    if (name === 'lc_release_claim') {
+      claimed = false
+      return respond(route, null)
     }
     if (name === 'user')
       return respond(route, {
@@ -322,7 +380,7 @@ try {
   await page.goto(`${origin}/scanner/link/${scannerToken}`)
   await page.getByLabel('Nombre de este Scanner').fill('Caja 1')
   await page.getByRole('button', { name: 'Continuar en navegador' }).click()
-  await page.getByRole('button', { name: 'Escanear Latido Card', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Escanear Tarjeta Latido', exact: true }).waitFor()
   assert.equal(
     new URL(page.url()).pathname,
     '/scanner/',
@@ -337,7 +395,7 @@ try {
     false,
     'Scanner must not create a personal auth session'
   )
-  await page.getByRole('button', { name: 'Escanear Latido Card', exact: true }).click()
+  await page.getByRole('button', { name: 'Escanear Tarjeta Latido', exact: true }).click()
   await page.getByRole('heading', { name: 'Ana · Socio #12847' }).waitFor()
   assert.equal(await page.getByRole('button', { name: 'Canjear', exact: true }).isDisabled(), true)
   await page.getByRole('checkbox').check()
@@ -354,7 +412,7 @@ try {
   await page.getByRole('button', { name: 'Cerrar acceso en este dispositivo' }).click()
   await page.getByRole('heading', { name: 'Vincular Scanner' }).waitFor()
   await page.goto(`${origin}/card`)
-  await page.getByRole('heading', { name: 'Tu comunidad también tiene ventajas.' }).waitFor()
+  await page.getByRole('heading', { name: 'Tu Tarjeta Latido te da más.' }).waitFor()
   await page.getByRole('heading', { name: 'Café gratis' }).waitFor()
   assert.equal(await page.locator('.lc-offer').count(), 6)
   for (const title of [
@@ -391,24 +449,50 @@ try {
     user
   )
   await page.goto(`${origin}/perfil`)
-  await page.getByRole('button', { name: /Mi Latido Card/ }).click()
+  await page.getByRole('button', { name: /Mi Tarjeta Latido/ }).click()
   assert.equal(new URL(page.url()).pathname, '/card')
-  await page.getByRole('button', { name: 'Mostrar mi QR digital' }).click()
-  await page.getByAltText('QR de Latido Card').waitFor()
+  await page.getByAltText('QR de Tarjeta Latido').waitFor()
+  assert.equal(digitalCalls, 1, 'The card is ready without a manual QR button')
+  await page.screenshot({ path: path.join(output, 'card-ready-mobile.png'), fullPage: true })
+  assert.equal(await page.locator('.lc-card-intro').count(), 0)
+  assert.equal(
+    await page.getByRole('navigation', { name: 'Navegación de Tarjeta Latido' }).count(),
+    1
+  )
+  assert.equal(
+    await page.getByRole('button', { name: 'Publicar', exact: true }).count(),
+    0,
+    'Bottom navigation must be hidden'
+  )
+  await page.getByRole('button', { name: 'Guardar 15 % desde CHF 50', exact: true }).click()
+  await page.getByRole('tab', { name: 'Guardadas', exact: true }).click()
+  assert.equal(await page.locator('.lc-offer-row').count(), 1)
+  await page.reload()
+  await page.getByAltText('QR de Tarjeta Latido').waitFor()
+  await page.getByRole('tab', { name: 'Guardadas', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Quitar de guardadas 15 % desde CHF 50', exact: true })
+    .waitFor()
+  await page.getByRole('tab', { name: 'Disponibles', exact: true }).click()
   assert.equal(
     await page
       .locator('.lc-offer')
       .filter({ hasText: 'Asesoría capilar' })
-      .getByRole('button', { name: 'Agotado', exact: true })
+      .getByRole('button', { name: 'Agotada', exact: true })
       .isDisabled(),
     true
   )
   await page
     .locator('.lc-offer')
     .filter({ hasText: 'Café gratis' })
-    .getByRole('button', { name: 'Reclamar', exact: true })
+    .getByRole('button', { name: 'Activar', exact: true })
     .click()
-  await page.getByRole('button', { name: 'Reclamado', exact: true }).waitFor()
+  await page.getByRole('tab', { name: 'Activadas', exact: true }).click()
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).waitFor()
+  await page.screenshot({ path: path.join(output, 'card-activated-mobile.png'), fullPage: true })
+  await page.getByRole('tab', { name: 'Disponibles', exact: true }).click()
+  assert.equal(await page.getByRole('heading', { name: 'Café gratis', exact: true }).count(), 0)
+  await page.getByText('⚙️ Gestionar mi tarjeta e historial', { exact: true }).click()
   await page.getByRole('button', { name: 'Solicitar tarjeta física', exact: true }).click()
   await page.getByLabel('Nombre para la entrega').fill('Ana Prueba')
   await page.getByLabel('Calle y número').fill('Calle Prueba 10')
@@ -422,6 +506,24 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.screenshot({ path: path.join(output, 'card-member-desktop.png'), fullPage: true })
+  membershipMode = 'none'
+  await page.reload()
+  await page.getByRole('link', { name: 'Solicitar mi tarjeta', exact: true }).waitFor()
+  assert.ok(
+    (
+      await page
+        .getByRole('link', { name: 'Solicitar mi tarjeta', exact: true })
+        .getAttribute('href')
+    ).startsWith('mailto:info@latido.ch')
+  )
+  assert.equal(await page.locator('.lc-member-card').count(), 0)
+  membershipMode = 'paused'
+  const callsBeforePause = digitalCalls
+  await page.reload()
+  await page.getByRole('link', { name: 'Solicitar reactivación', exact: true }).waitFor()
+  assert.equal(await page.getByAltText('QR de Tarjeta Latido').count(), 0)
+  assert.equal(digitalCalls, callsBeforePause)
+  membershipMode = 'active'
   await page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem('sb-card-test-auth-token'))
     stored.user = {
@@ -458,9 +560,22 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await queue.screenshot({ path: path.join(output, 'physical-admin-mobile.png') })
   await page.goto(`${origin}/card/negocios`)
-  await page.getByLabel('Selecciona tu negocio').selectOption('restaurant')
+  await page.getByLabel('Selecciona tu negocio').selectOption('new')
   await page.getByRole('heading', { name: 'Crear una ventaja', exact: true }).waitFor()
   await page.getByText('Participación gratuita · Sin membresía de pago', { exact: true }).waitFor()
+  await page.getByAltText('QR interno del negocio').waitFor()
+  assert.equal(newBusinessActive, true, 'No administrator admission is required')
+  await page.getByLabel('Título', { exact: true }).fill('10 % de bienvenida')
+  await page.getByLabel('Válido hasta (hora local)').fill('2027-12-31T18:00')
+  await page.getByRole('button', { name: 'Publicar ventaja', exact: true }).click()
+  await page.getByRole('heading', { name: '10 % de bienvenida', exact: true }).waitFor()
+  await page.getByAltText('QR interno del negocio').waitFor()
+  assert.ok(
+    businessSetupCalls.some(
+      (args) => args.p_provider === 'new' && args.p_link_token === 'e'.repeat(64)
+    ),
+    'Refresh reuses the cached QR'
+  )
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await page.screenshot({ path: path.join(output, 'card-business-mobile.png'), fullPage: true })
   await page.setViewportSize({ width: 1440, height: 1000 })

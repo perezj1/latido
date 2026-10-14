@@ -16,5 +16,6 @@ SELECT componente, CASE WHEN instalado THEN 'INSTALADO' ELSE 'PENDIENTE' END AS 
 FROM (VALUES
  ('Sistema Card', to_regclass('public.latido_card_memberships') IS NOT NULL),
  ('Solicitudes físicas', to_regclass('public.latido_card_physical_requests') IS NOT NULL),
- ('Cola email', to_regclass('public.latido_card_physical_email_queue') IS NOT NULL)
+ ('Cola email', to_regclass('public.latido_card_physical_email_queue') IS NOT NULL),
+ ('Alta directa, QR automático y favoritas', to_regprocedure('public.lc_business_setup(uuid,text)') IS NOT NULL AND to_regclass('public.latido_card_saved_offers') IS NOT NULL)
 ) AS componentes(componente, instalado);

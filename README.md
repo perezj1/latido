@@ -223,7 +223,7 @@ npm run test:search   # Calidad del buscador global
 
 ---
 
-## Latido Card (piloto)
+## Tarjeta Latido (piloto)
 
 Guía técnica y pasos de instalación: [docs/LATIDO_CARD_IMPLEMENTATION.md](docs/LATIDO_CARD_IMPLEMENTATION.md).
 Orden exacto de SQL, cuentas de prueba y ejemplos:
@@ -235,6 +235,8 @@ indicados en la guía. Las membresías del piloto son manuales. La solicitud y
 administración de tarjetas físicas se describen en
 [docs/LATIDO_CARD_ADMINISTRATION.md](docs/LATIDO_CARD_ADMINISTRATION.md).
 Los pagos reales y los servicios automáticos de impresión/transporte siguen pendientes.
+Si los dos SQL de Card ya están instalados, ejecutar únicamente
+`supabase/latido_card_self_service.sql` para actualizar negocios, QR y favoritas.
 
 Verificación: `npm run test:card`, `npm run test:card:browser` y `npm run build`.
 

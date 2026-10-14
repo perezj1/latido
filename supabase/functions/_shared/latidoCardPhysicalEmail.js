@@ -16,14 +16,14 @@ const escapeHtml = (value) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
 export function buildPhysicalCardEmail(job, appUrl = 'https://www.latido.ch') {
-  const ref = String(job.payload.reference || 'Latido Card'),
+  const ref = String(job.payload.reference || 'Tarjeta Latido'),
     status = STATUS[job.payload.status] || 'Actualizada'
   const admin = job.audience === 'admin',
     url = `${appUrl.replace(/\/+$/, '')}${admin ? '/card/admin' : '/card'}`
   const title = admin
     ? 'Nueva solicitud de tarjeta física'
     : job.payload.status === 'requested'
-      ? 'Hemos recibido tu solicitud de Latido Card'
+      ? 'Hemos recibido tu solicitud de Tarjeta Latido'
       : 'Tu tarjeta física tiene una actualización'
   const message = admin
     ? 'Hay una nueva solicitud pendiente. Abre la administración de Latido para revisar los datos de entrega y preparar la tarjeta.'

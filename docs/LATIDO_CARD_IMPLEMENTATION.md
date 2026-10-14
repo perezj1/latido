@@ -35,7 +35,8 @@ del QR conceda por sí sola autorización indefinida.
 | Scanner con cámara y entrada separada | Implementado |
 | Sesiones de turno y autorización habitual | Implementadas |
 | Límites, stock, idempotencia e historial | Implementados en PostgreSQL |
-| Creación de ofertas por propietario y suspensión | Implementadas |
+| Alta directa de negocios, ofertas y suspensión por Latido | Implementadas |
+| QR digital automático, QR de negocio automático y favoritas | Implementados |
 | Anulación de canjes por propietario/admin | Implementada |
 | Instalación y manifiesto de Scanner | Preparados; verificar móviles reales |
 | Cobro, renovación y sincronización Stripe | Pendientes |
@@ -50,26 +51,25 @@ del QR conceda por sí sola autorización indefinida.
 Precio confirmado por el usuario: **CHF 6,90 al mes para los socios que usan
 los beneficios**. Los negocios participan gratuitamente y no necesitan una
 membresía de pago para publicar descuentos ni utilizar Scanner. La admisión
-al programa depende de la aprobación de Latido, no de un plan de publicidad.
+al programa es directa por el propietario; Latido puede retirarlo por incumplimiento.
 
 Antes de implementar cobros reales: renovación, cancelación, política de
 impagos, reembolsos y periodo de acceso pagado.
 Definir tarjeta física incluida/opcional, entrega, reposición y coste.
-Cerrar el proceso de solicitud de participación y aprobación de ofertas.
-Actualmente Latido autoriza al negocio y el propietario publica
-directamente dentro de los límites permitidos.
+El propietario incorpora su negocio y publica directamente dentro de los límites
+permitidos. La suspensión por incumplimiento corresponde a Latido; el propietario
+no puede revertirla.
 
 Valores iniciales del piloto: turno de 8 horas; QR digital de 5 minutos;
 reserva de 7 días configurable entre 1 y 90; meses naturales en Europe/Zurich;
 una ventaja incluida y dos especiales vigentes por establecimiento; una
 reclamación utilizable por socio/oferta especial. No son tarifas comerciales.
 
-Accesos actuales: **Perfil → Mi Latido Card** abre `/card` para el socio;
+Accesos actuales: **Perfil → Mi Tarjeta Latido** abre `/card` para el socio;
 `/card/negocios` es el panel del propietario y `/card/admin` el de Latido.
-Falta añadir **Mi negocio en Latido Card** a Perfil, integrar la contratación
-mensual de CHF 6,90 y crear
-la solicitud de participación gratuita del negocio. El catálogo actual muestra
-las ofertas vigentes de negocios admitidos; no es todavía un directorio
+Falta añadir **Mi negocio en Tarjeta Latido** a Perfil e integrar la contratación
+y el cobro mensual de CHF 6,90. El alta de negocios ya es directa. El catálogo actual muestra
+las ofertas vigentes de negocios participantes; no es todavía un directorio
 independiente de todos los participantes.
 
 ## 4. Preparar el entorno
@@ -90,6 +90,9 @@ comprobación de solo lectura para no reinstalar esquemas de otras funciones.
 6. Instalar `supabase/latido_card.sql` en la base de desarrollo. Después de
    `app_notifications.sql`, instalar `supabase/latido_card_physical_requests.sql`.
    Ambas admiten repetición. No crean socios ni negocios activos.
+   Instalar después `supabase/latido_card_self_service.sql` para alta directa,
+   QR automático y favoritas. Si las dos anteriores ya están instaladas, ejecutar
+   solamente esta actualización.
 7. Ejecutar `npm run dev`. Abrir `/card`, `/card/negocios`, `/card/admin` y
    `/scanner/` según el rol. No aplicar primero en producción.
 
@@ -131,9 +134,9 @@ no son ejecutables por usuarios de la API.
 | Actor | RPC |
 | --- | --- |
 | Público | `lc_catalog` |
-| Socio autenticado | `lc_member_home`, `lc_issue_digital_card`, `lc_report_lost_card`, `lc_claim_offer`, `lc_release_claim` |
+| Socio autenticado | `lc_member_home`, `lc_issue_digital_card`, `lc_report_lost_card`, `lc_claim_offer`, `lc_release_claim`, `lc_save_favorite` |
 | Scanner con credencial | `lc_open_scanner`, `lc_scanner_status`, `lc_scan_card`, `lc_redeem`, `lc_close_scanner` |
-| Propietario/admin autenticado | `lc_business_dashboard`, `lc_save_offer`, `lc_set_offer_active`, `lc_rotate_scanner_link`, `lc_manage_scanner`, `lc_reverse_redemption` |
+| Propietario/admin autenticado | `lc_business_dashboard`, `lc_business_setup`, `lc_save_offer`, `lc_set_offer_active`, `lc_rotate_scanner_link`, `lc_manage_scanner`, `lc_reverse_redemption` |
 | Admin de Latido | `lc_admin_enroll`, `lc_admin_business`, `lc_admin_physical_card` |
 
 En `lc_redeem`, el establecimiento procede de la sesión validada. Nunca
@@ -146,17 +149,21 @@ nombre del socio y su número; no se entregan datos de contacto.
 1. Crear tres usuarios de prueba: admin, propietario y socio. Crear un negocio
    de desarrollo asociado al propietario.
 2. Admin abre `/card/admin`, introduce el UUID del socio y una vigencia futura.
-3. Admin autoriza el UUID del negocio. Puede emitir un QR físico para imprimir.
+3. El propietario selecciona su negocio: se incorpora sin aprobación previa y
+   obtiene automáticamente el QR para sus trabajadores. Latido puede emitir el
+   QR físico del socio y retirar negocios del programa por incumplimiento.
 4. Propietario abre `/card/negocios` y selecciona su establecimiento.
 5. Crea una oferta incluida: 15 %, desde CHF 50, un uso mensual y fecha futura.
 6. Crea una promoción especial: café gratis, 200 unidades, reserva de 7 días,
    un uso total. Esta promoción requiere reclamar.
-7. Genera el QR interno del negocio. Al regenerarlo se revocan tanto el enlace
+7. El QR interno se genera automáticamente y aparece al final de la página.
+   Al regenerarlo expresamente se revocan tanto el enlace
    anterior como todos los Scanners asociados. Guardarlo detrás de la barra.
 8. Empleado abre el enlace, da nombre al Scanner y obtiene un turno sin login.
 9. Para acceso habitual, empleado lo solicita y propietario lo autoriza desde
    su panel. Después Scanner consulta esa autorización y conserva el acceso.
-10. Socio abre `/card`, reclama el café y muestra el QR digital o el físico.
+10. Socio abre `/card` y ya ve su QR digital listo. Activa el café; puede presentar
+    la tarjeta digital o física. Guarda una oferta con la estrella para volver a ella.
 11. Empleado escanea dentro de Scanner, comprueba condiciones y selecciona la
     ventaja. No vuelve a introducir el importe de la caja.
 12. Empleado pulsa Canjear y espera confirmación antes de entregar la ventaja.
@@ -290,6 +297,7 @@ borrar tablas que ya contengan canjes auditables.
 ## 13. Archivos de referencia
 
 - `supabase/latido_card.sql`: esquema, permisos y operaciones atómicas.
+- `supabase/latido_card_self_service.sql`: alta directa, moderación, QR automático y favoritas.
 - `src/lib/latidoCardCore.js`: lectura segura de QR y almacenamiento Scanner.
 - `src/lib/latidoCard.js`: cliente de socio/propietario.
 - `src/pages/LatidoCard*.jsx` y CSS: socio, negocio y administración.

@@ -2,7 +2,7 @@
   "id": "/latido-scanner",
   "name": "Latido Scanner",
   "short_name": "Scanner",
-  "description": "Valida las Latido Cards de tus clientes.",
+  "description": "Valida las Tarjetas Latido de tus clientes.",
   "start_url": "/scanner/",
   "scope": "/scanner/",
   "display": "standalone",

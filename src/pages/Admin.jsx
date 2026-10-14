@@ -5229,7 +5229,7 @@ export default function Admin() {
               <h1 className="adm-topbar__title">{activeSection.label}</h1>
             </div>
             <div className="adm-topbar__actions">
-              <a href="/card/admin" className="adm-refresh" style={{textDecoration:'none'}} aria-label="Administrar Latido Card y tarjetas físicas">Card</a>
+              <a href="/card/admin" className="adm-refresh" style={{textDecoration:'none'}} aria-label="Administrar Tarjeta Latido y tarjetas físicas">Tarjeta Latido</a>
               {isDesktop && topbarPeriodControl}
               {refreshButton}
             </div>

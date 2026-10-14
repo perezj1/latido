@@ -91,6 +91,13 @@ const physicalMigration = await readFile(
 )
 await db.exec(physicalMigration)
 await db.exec(physicalMigration)
+await db.exec('ALTER TABLE public.providers ADD COLUMN photo_url text')
+const selfServiceMigration = await readFile(
+  new URL('../supabase/latido_card_self_service.sql', import.meta.url),
+  'utf8'
+)
+await db.exec(selfServiceMigration)
+await db.exec(selfServiceMigration)
 async function as(key, role = 'authenticated') {
   await db.exec(`RESET ROLE; SET ROLE ${role};`)
   await db.query("SELECT set_config('request.jwt.claims',$1,false)", [
@@ -514,6 +521,77 @@ try {
     ).rows[0].n,
     1
   )
+  // Owner starts without membership or administrator admission. Cached and new
+  // automatic QR links never disconnect workers; suspension cannot be bypassed.
+  const openBusiness = randomUUID()
+  await root('INSERT INTO providers(id,user_id,name,city) VALUES($1,$2,$3,$4)', [
+    openBusiness,
+    ids.owner2,
+    'Negocio libre',
+    'Bern'
+  ])
+  await as('outsider')
+  await rejects('lc_business_setup', [openBusiness, null], 'FORBIDDEN')
+  await as('owner2')
+  assert.equal((await rpc('lc_member_home')).membership, null)
+  const automaticLink = await rpc('lc_business_setup', [openBusiness, null])
+  assert.equal(
+    (await rpc('lc_business_setup', [openBusiness, automaticLink.token])).token,
+    automaticLink.token
+  )
+  const freeOffer = await rpc('lc_save_offer', [
+    openBusiness,
+    { ...offer, title: 'Oferta sin aprobación' }
+  ])
+  await as(null, 'anon')
+  await rejects('lc_business_setup', [openBusiness, null], 'permission denied')
+  const workerBeforeReload = await rpc('lc_open_scanner', [automaticLink.token, 'Caja libre'])
+  await as('owner2')
+  const anotherBrowserLink = await rpc('lc_business_setup', [openBusiness, null])
+  assert.notEqual(anotherBrowserLink.token, automaticLink.token)
+  await as(null, 'anon')
+  assert.equal(
+    (await rpc('lc_scanner_status', [workerBeforeReload.token, false])).session_id,
+    workerBeforeReload.session_id
+  )
+  await rpc('lc_open_scanner', [automaticLink.token, 'QR impreso aún válido'])
+  await rejects('lc_save_favorite', [freeOffer, true], 'permission denied')
+  await as('member')
+  await rpc('lc_save_favorite', [freeOffer, true])
+  await rpc('lc_save_favorite', [freeOffer, true])
+  assert.deepEqual((await rpc('lc_member_home')).saved_offers, [freeOffer])
+  await assert.rejects(
+    () => db.query('SELECT * FROM latido_card_saved_offers'),
+    /permission denied/
+  )
+  await as('member2')
+  assert.deepEqual((await rpc('lc_member_home')).saved_offers, [])
+  await rpc('lc_save_favorite', [freeOffer, false])
+  await as('member')
+  assert.deepEqual((await rpc('lc_member_home')).saved_offers, [freeOffer])
+  await rpc('lc_save_favorite', [freeOffer, false])
+  assert.deepEqual((await rpc('lc_member_home')).saved_offers, [])
+  await as('admin')
+  await rpc('lc_admin_business', [openBusiness, false])
+  await as('owner2')
+  await rejects('lc_business_setup', [openBusiness, anotherBrowserLink.token], 'BUSINESS_SUSPENDED')
+  await rejects(
+    'lc_save_offer',
+    [openBusiness, { ...offer, title: 'No permitido' }],
+    'BUSINESS_INACTIVE'
+  )
+  await as(null, 'anon')
+  await rejects('lc_scanner_status', [workerBeforeReload.token, false], 'SCANNER_EXPIRED')
+  await rejects('lc_open_scanner', [automaticLink.token, 'Bloqueado'], 'SCANNER_LINK_INVALID')
+  assert.ok(!(await rpc('lc_catalog')).some((o) => o.id === freeOffer))
+  await as('admin')
+  await rpc('lc_admin_business', [openBusiness, true])
+  await as('owner2')
+  assert.notEqual(
+    (await rpc('lc_business_setup', [openBusiness, automaticLink.token])).token,
+    automaticLink.token
+  )
+
   // Execute the exact optional Supabase examples, not a separate test seed.
   await root('SELECT 1')
   await db.exec(`CREATE TABLE auth.users(id uuid primary key,email text);

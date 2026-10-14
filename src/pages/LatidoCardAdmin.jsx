@@ -49,7 +49,7 @@ export default function LatidoCardAdmin() {
     return (
       <div className="lc-page">
         <CardHeader />
-        <p>No tienes acceso a la administración de Latido Card.</p>
+        <p>No tienes acceso a la administración de Tarjeta Latido.</p>
       </div>
     )
   return (
@@ -239,7 +239,7 @@ export default function LatidoCardAdmin() {
               <input required value={provider} onChange={(e) => setProvider(e.target.value)} />
             </label>
             <button className="lc-button" disabled={busy}>
-              Autorizar participación
+              Restablecer participación
             </button>
             <button
               type="button"
@@ -249,7 +249,7 @@ export default function LatidoCardAdmin() {
                 run(() => cardRpc('lc_admin_business', { p_provider: provider, p_active: false }))
               }
             >
-              Suspender participación
+              Retirar del programa
             </button>
           </form>
           <p className="lc-muted">

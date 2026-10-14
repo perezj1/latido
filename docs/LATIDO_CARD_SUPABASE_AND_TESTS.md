@@ -26,12 +26,17 @@ el esquema de Latido; `app_notifications.sql` depende a su vez de
 | --- | --- | --- |
 | 1 | `supabase/latido_card.sql` | Membresías, credenciales, negocios, ofertas, reservas, Scanner, canjes y permisos |
 | 2 | `supabase/latido_card_physical_requests.sql` | Solicitudes físicas, estados de entrega, notificaciones, cola email y auditoría |
+| 3 | `supabase/latido_card_self_service.sql` | Alta directa de negocios, suspensión por Latido, QR automático y ofertas guardadas |
+
+**Si ya instalaste los dos SQL anteriores, ejecutar únicamente
+`supabase/latido_card_self_service.sql` para esta actualización.** No hay que cargar
+otra vez los ejemplos ni modificar cuentas. Este archivo también admite repetición.
 
 Ejecutar cada archivo completo en una consulta separada. Ambos admiten repetición
 y conservan los datos existentes de Card. No crear manualmente columnas sueltas,
 quitar RLS o conceder acceso directo a las tablas para solucionar errores.
 
-Después, volver a ejecutar `latido_card_preflight.sql`: los tres componentes deben
+Después, volver a ejecutar `latido_card_preflight.sql`: todos los componentes deben
 mostrar `INSTALADO`. Las migraciones no activan socios o negocios reales ni cobran.
 
 ## 3. Comprobar tu acceso de administrador
@@ -94,14 +99,17 @@ de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
 ## 5. Recorrido manual de prueba
 
 1. Ejecutar `npm run dev` con las variables Supabase de desarrollo.
-2. Entrar como socio activo. **Perfil → Mi Latido Card** abre `/card`.
+2. Entrar como socio activo. **Perfil → Mi Tarjeta Latido** abre `/card`.
    Comprobar seis ventajas, nombre, número de socio y membresía activa.
-3. Pulsar **Mostrar mi QR digital**; el QR caduca a los cinco minutos.
-   Reclamar el café: baja la disponibilidad de 20 a 19. Liberar la reserva
+3. El QR digital aparece automáticamente en la tarjeta, arriba de la página;
+   se renueva cada cinco minutos. En **Disponibles**, activar el café: baja la
+   disponibilidad de 20 a 19 y aparece en **Activadas**. Desactivar la reserva
    devuelve la unidad mientras la oferta sigue vigente.
 4. Entrar como propietario, abrir `/card/negocios` y seleccionar el restaurante.
    Comprobar que puede gestionar ofertas y Scanner sin tener membresía.
-   Generar el QR privado del negocio, vincular otro navegador/dispositivo y
+   El negocio se incorpora directamente al seleccionarlo; no necesita aprobación
+   previa de Latido. El QR privado aparece abajo, en **Tu QR de negocio para los
+   trabajadores**. Vincular otro navegador/dispositivo y
    abrir `/scanner/`. Ese acceso tiene sesión propia.
 5. En Scanner, leer el QR del socio. Marcar la comprobación de condiciones y
    canjear el 15 %. Un segundo intento debe mostrar el límite mensual.
@@ -112,13 +120,27 @@ de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
    invalidar los accesos anteriores. Otro propietario no debe poder administrarlo.
 7. Entrar como socio pausado. Debe ver el catálogo sin botones para generar QR
    o reclamar promociones; el servidor debe rechazar las operaciones igualmente.
-8. Entrar como socio activo y solicitar tarjeta física con recogida o dirección
+8. Entrar como socio activo, abrir **Gestionar mi tarjeta e historial** y solicitar
+   tarjeta física con recogida o dirección
    ficticia suiza. Entrar como administrador en `/card/admin`: comprobar la cola
    y el aviso; aprobar, emitir/descargar el QR, preparar y marcar entregada
    (recogida) o enviada y después entregada (envío). Comprobar el estado del socio.
    Probar pérdida y reposición. Las notas internas solo se ven en administración.
 9. Antes del piloto, repetir con dos administradores a la vez, cámaras reales
    Android/iPhone, instalación PWA y una conexión interrumpida durante un canje.
+
+Guardar una oferta con la estrella y comprobar que aparece en **Guardadas** tras
+recargar. Otro usuario no debe ver esas favoritas. Desde administración,
+**Retirar del programa** oculta las ofertas y revoca accesos del negocio; el
+propietario no puede incorporarlo de nuevo. Solo Latido puede restablecerlo.
+
+La navegación inferior general de la app no se muestra en `/card` ni sus subrutas.
+La barra superior centrada con emojis permite volver al perfil, abrir la tarjeta,
+gestionar negocios y entrar en administración cuando corresponde.
+Quien tiene tarjeta ve su tarjeta primero; quien no tiene ve la información y
+un CTA. Durante el piloto, el CTA del usuario autenticado abre una solicitud por
+email a `info@latido.ch`, y el visitante entra primero en su cuenta. No activa ni
+cobra una membresía automáticamente.
 
 Las solicitudes físicas generan avisos y trabajos en la cola email. Mantener el
 worker SMTP desactivado durante estas pruebas con cuentas `.test`. La dirección,
