@@ -547,7 +547,7 @@
   .club-story__copy { padding: 64px 24px; }
   .club-process { padding: 70px 20px; }
   .club-process__steps { grid-template-columns: 1fr; }
-  .club-process__steps > div, .club-process__steps > div:not(:first-child) { padding: 24px 0; border-right: 0; border-bottom: 1px solid rgba(255,255,255,.2); }
+  .club-process__steps > div, .club-process__steps > div:not(:first-child), .club-process__steps > div:not(:last-child) { padding: 24px 0; border-right: 0; border-bottom: 1px solid rgba(255,255,255,.2); }
   .club-faq { gap: 28px; }
   .club-footer { padding: 34px 20px calc(110px + env(safe-area-inset-bottom)); flex-direction: column; text-align: center; }
   .club-floating-cart { right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); }
