@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { ScanLine } from 'lucide-react'
 import {
   cardErrorMessage,
   extractCardToken,
+  classifyLatidoQr,
   readScannerSession,
   storeScannerSession,
   SCANNER_STORAGE_KEY
@@ -16,10 +18,17 @@ const scannerClient = createClient(
   import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co',
   import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key',
   {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
   }
 )
-const storage = () => ({ local: window.localStorage, temporary: window.sessionStorage })
+const storage = () => ({
+  local: window.localStorage,
+  temporary: window.sessionStorage
+})
 async function rpc(name, params) {
   const { data, error } = await scannerClient.rpc(name, params)
   if (error) throw error
@@ -47,6 +56,10 @@ export default function ScannerApp() {
     [install, setInstall] = useState(null)
   const pendingRef = useRef(null),
     workingRef = useRef(false)
+  const launchRef = useRef({
+    link: extractCardToken(window.location.pathname, 'scanner', window.location.origin),
+    camera: new URLSearchParams(window.location.search).get('camera') === '1'
+  })
   const standalone =
     window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
   const save = useCallback((next) => {
@@ -81,11 +94,18 @@ export default function ScannerApp() {
           p_session_token: current.token,
           p_request_persistence: request
         })
+        if (sessionRef.current?.token !== current.token) return
         save({ ...current, ...next })
       } catch (err) {
+        if (sessionRef.current?.token !== current.token) return
         if (String(err.message).includes('SCANNER_EXPIRED')) {
           sessionRef.current = null
           setSession(null)
+          if (!pendingRef.current) {
+            setResult(null)
+            setCardToken('')
+            setSuccess(null)
+          }
           try {
             localStorage.removeItem(SCANNER_STORAGE_KEY)
             sessionStorage.removeItem(SCANNER_STORAGE_KEY)
@@ -97,11 +117,11 @@ export default function ScannerApp() {
     [save]
   )
   useEffect(() => {
-    const linked = extractCardToken(window.location.pathname, 'scanner', window.location.origin)
+    const linked = launchRef.current.link
     if (linked) {
       setInput(linked)
-      window.history.replaceState(null, '', '/scanner/')
     }
+    if (linked || launchRef.current.camera) window.history.replaceState(null, '', '/scanner/')
     let pending = null
     try {
       pending = JSON.parse(sessionStorage.getItem('latido_card_pending_redemption') || 'null')
@@ -138,17 +158,39 @@ export default function ScannerApp() {
     setCamera(false)
     if (!token) {
       setError('Utiliza el QR interno o el enlace de acceso de tu negocio.')
-      return
+      return false
     }
-    if (workingRef.current) return
+    if (workingRef.current) return false
+    if (pendingRef.current && sessionRef.current) {
+      setError('Confirma el canje pendiente antes de cambiar de negocio.')
+      return false
+    }
     workingRef.current = true
     setBusy(true)
     setError('')
     try {
-      save(await rpc('lc_open_scanner', { p_link_token: token, p_label: label }))
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
+      const fingerprint = Array.from(new Uint8Array(digest), (byte) =>
+        byte.toString(16).padStart(2, '0')
+      ).join('')
+      if (sessionRef.current?.link_fingerprint !== fingerprint) {
+        const next = await rpc('lc_open_scanner', {
+          p_link_token: token,
+          p_label: label
+        })
+        save({ ...next, link_fingerprint: fingerprint })
+      }
       setInput('')
+      if (!pendingRef.current) {
+        setResult(null)
+        setCardToken('')
+        setChecked(false)
+        setSuccess(null)
+      }
+      return true
     } catch (err) {
       setError(cardErrorMessage(err))
+      return false
     } finally {
       workingRef.current = false
       setBusy(false)
@@ -162,6 +204,10 @@ export default function ScannerApp() {
       return
     }
     if (workingRef.current || pendingRef.current) return
+    if (!sessionRef.current) {
+      setError('Primero escanea el QR interno de tu negocio para conectar este dispositivo.')
+      return
+    }
     workingRef.current = true
     setBusy(true)
     setError('')
@@ -182,11 +228,48 @@ export default function ScannerApp() {
       setBusy(false)
     }
   }
+  const scanQr = async (raw) => {
+    setCamera(false)
+    const qr = classifyLatidoQr(raw, window.location.origin)
+    if (!qr) {
+      setError('Escanea el QR interno de un negocio o una Tarjeta Latido.')
+      return
+    }
+    if (qr.kind === 'scanner') await connect(qr.token)
+    else await read(qr.token)
+  }
+  const openCamera = () => {
+    if (workingRef.current || pendingRef.current) return
+    setError('')
+    setResult(null)
+    setCardToken('')
+    setChecked(false)
+    setSuccess(null)
+    setCamera(true)
+  }
+  useEffect(() => {
+    const launch = launchRef.current
+    if (!launch.camera || pendingRef.current) return
+    let cancelled = false
+    const start = async () => {
+      if (launch.link && !(await connect(launch.link))) return
+      if (!cancelled) setCamera(true)
+    }
+    start()
+    return () => {
+      cancelled = true
+    }
+  }, [])
   const redeem = async (offer) => {
     if (workingRef.current) return
     let pending = pendingRef.current
     if (!pending) {
-      pending = { requestId: crypto.randomUUID(), offerId: offer.id, cardToken, result }
+      pending = {
+        requestId: crypto.randomUUID(),
+        offerId: offer.id,
+        cardToken,
+        result
+      }
       pendingRef.current = pending
       try {
         sessionStorage.setItem('latido_card_pending_redemption', JSON.stringify(pending))
@@ -245,43 +328,55 @@ export default function ScannerApp() {
         </p>
       )}
       {!session ? (
-        <section className="lc-panel">
+        <section className="lc-panel lc-scanner-start">
           <span className="lc-eyebrow">Personal del establecimiento</span>
-          <h1>Vincular Scanner</h1>
-          <p>Escanea el QR interno de tu negocio. No necesitas una cuenta de empleado.</p>
-          <form
-            className="lc-form"
-            onSubmit={(e) => {
-              e.preventDefault()
-              connect(input)
-            }}
-          >
-            <label>
-              Nombre de este Scanner
-              <input maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} />
-            </label>
-            <label>
-              Enlace interno del negocio
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Pega el enlace del QR"
-                autoComplete="off"
-              />
-            </label>
-            <button className="lc-button" disabled={busy || !input}>
-              {busy ? 'Vinculando…' : 'Continuar en navegador'}
-            </button>
-          </form>
+          <h1>Escanea y conecta.</h1>
+          <p>
+            {input && launchRef.current.link
+              ? 'Tu enlace de negocio está listo. Pulsa Scanner para conectar y escanear tarjetas.'
+              : 'Empieza con el QR de tu negocio. Después, escanea las tarjetas de tus clientes.'}
+          </p>
           <div className="lc-actions">
             <button
-              className="lc-button lc-button--secondary"
-              disabled={busy}
-              onClick={() => setCamera(true)}
+              className="lc-button lc-button--large"
+              disabled={busy || !!pendingRef.current}
+              onClick={async () => {
+                if (input && launchRef.current.link) {
+                  if (await connect(input)) setCamera(true)
+                } else openCamera()
+              }}
             >
-              Escanear QR del negocio
+              <ScanLine size={24} aria-hidden="true" /> Scanner
             </button>
           </div>
+          <p className="lc-muted">No necesitas una cuenta de empleado.</p>
+          <details className="lc-spaced">
+            <summary>Vincular con un enlace o poner nombre al dispositivo</summary>
+            <form
+              className="lc-form"
+              onSubmit={(e) => {
+                e.preventDefault()
+                connect(input)
+              }}
+            >
+              <label>
+                Nombre de este Scanner
+                <input maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} />
+              </label>
+              <label>
+                Enlace interno del negocio
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Pega el enlace del QR"
+                  autoComplete="off"
+                />
+              </label>
+              <button className="lc-button" disabled={busy || !input}>
+                {busy ? 'Vinculando…' : 'Continuar en navegador'}
+              </button>
+            </form>
+          </details>
         </section>
       ) : (
         <>
@@ -312,13 +407,12 @@ export default function ScannerApp() {
           )}
           {!result && !success && (
             <>
-              <button
-                className="lc-button lc-button--large"
-                disabled={busy}
-                onClick={() => setCamera(true)}
-              >
-                {busy ? 'Consultando…' : 'Escanear Tarjeta Latido'}
+              <button className="lc-button lc-button--large" disabled={busy} onClick={openCamera}>
+                <ScanLine size={24} aria-hidden="true" /> {busy ? 'Consultando…' : 'Scanner'}
               </button>
+              <p className="lc-muted lc-scanner-hint">
+                Escanea una tarjeta de cliente o el QR de otro negocio.
+              </p>
               <details className="lc-spaced">
                 <summary>Usar enlace de tarjeta</summary>
                 <form
@@ -432,7 +526,9 @@ export default function ScannerApp() {
                 onClick={async () => {
                   setBusy(true)
                   try {
-                    await rpc('lc_close_scanner', { p_session_token: sessionRef.current.token })
+                    await rpc('lc_close_scanner', {
+                      p_session_token: sessionRef.current.token
+                    })
                     clear()
                   } catch (err) {
                     setError(cardErrorMessage(err))
@@ -447,8 +543,15 @@ export default function ScannerApp() {
           )}
         </>
       )}
-      {camera && (
-        <LatidoCardCamera onRead={session ? read : connect} onClose={() => setCamera(false)} />
+      {camera && <LatidoCardCamera onRead={scanQr} onClose={() => setCamera(false)} />}
+      {session && !camera && (result || success) && (
+        <button
+          className="lc-scanner-fab"
+          disabled={busy || !!pendingRef.current}
+          onClick={openCamera}
+        >
+          <ScanLine size={24} aria-hidden="true" /> Scanner
+        </button>
       )}
       {!standalone && (
         <section className="lc-panel lc-spaced">

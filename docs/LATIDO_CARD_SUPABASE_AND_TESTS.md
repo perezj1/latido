@@ -113,6 +113,14 @@ de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
    trabajadores**. Vincular otro navegador/dispositivo y
    abrir `/scanner/`. Ese acceso tiene sesión propia.
 
+   El propietario puede pulsar el botón flotante **Scanner**: se conecta al
+   negocio seleccionado y abre directamente la cámara. El personal pulsa
+   **Scanner** y escanea primero el QR privado del negocio, luego el de un cliente
+   desde la misma cámara. Los campos de vinculación manual están plegados.
+   Comprobar que una tarjeta sin negocio vinculado no consulta datos del socio;
+   cerrar la cámara libera el dispositivo. Un canje pendiente bloquea nuevos
+   escaneos y cambios de negocio. Este cambio de interfaz no necesita nuevo SQL.
+
    **Scanners vinculados** empieza plegado y explica los accesos del personal.
    Pulsar el título para consultar dispositivos y aprobar o revocar accesos.
    **Crear oferta** también empieza plegado. Abrirlo y completar los tres pasos:

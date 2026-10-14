@@ -15,6 +15,17 @@ export function extractCardToken(value, kind = 'card', base = 'https://latido.ch
   }
 }
 
+// Camera QRs include their route. A bare token is ambiguous and is only
+// accepted by the separate, explicitly labelled manual entry forms.
+export function classifyLatidoQr(value, base = 'https://latido.ch') {
+  if (/^[a-f0-9]{64}$/.test(String(value || '').trim())) return null
+  for (const kind of ['scanner', 'card']) {
+    const token = extractCardToken(value, kind, base)
+    if (token) return { kind, token }
+  }
+  return null
+}
+
 export function offerUsageLabel(offer) {
   if (offer.usage_period === 'unlimited') return 'Sin límite de usos'
   const limit = offer.usage_limit || 1

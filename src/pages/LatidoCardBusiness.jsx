@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { ScanLine } from 'lucide-react'
 import { cardRpc, scannerLinkUrl } from '../lib/latidoCard'
 import { cardErrorMessage } from '../lib/latidoCardCore'
 import LatidoCardQr from '../components/LatidoCardQr'
@@ -22,7 +23,12 @@ export default function LatidoCardBusiness() {
     } catch {}
   }
   const [provider, setProvider] = useState(''),
-    [data, setData] = useState({ businesses: [], offers: [], sessions: [], history: [] })
+    [data, setData] = useState({
+      businesses: [],
+      offers: [],
+      sessions: [],
+      history: []
+    })
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [link, setLink] = useState(''),
@@ -30,7 +36,9 @@ export default function LatidoCardBusiness() {
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current
     try {
-      let next = await cardRpc('lc_business_dashboard', { p_provider: provider || null })
+      let next = await cardRpc('lc_business_dashboard', {
+        p_provider: provider || null
+      })
       if (sequence !== loadSequence.current) return
       setData(next)
       const chosen =
@@ -89,11 +97,6 @@ export default function LatidoCardBusiness() {
         <h1>Más clientes para tu negocio.</h1>
         <p>Atrae a la comunidad Latido y haz que vuelva con tus ofertas.</p>
         <span className="lc-badge lc-badge--included">Participación gratuita</span>
-        <div className="lc-actions">
-          <a className="lc-button lc-button--secondary" href="/scanner/">
-            Abrir Latido Scanner
-          </a>
-        </div>
       </section>
       {error && (
         <div className="lc-alert" role="alert">
@@ -267,7 +270,10 @@ export default function LatidoCardBusiness() {
                   onPublish={async (draft) => {
                     setBusy(true)
                     try {
-                      await cardRpc('lc_save_offer', { p_provider: provider, p_offer: draft })
+                      await cardRpc('lc_save_offer', {
+                        p_provider: provider,
+                        p_offer: draft
+                      })
                       await load()
                       if (createPanelRef.current) createPanelRef.current.open = false
                     } finally {
@@ -287,7 +293,10 @@ export default function LatidoCardBusiness() {
                   disabled={busy}
                   onClick={() =>
                     run(() =>
-                      cardRpc('lc_set_offer_active', { p_offer: o.id, p_active: !o.active })
+                      cardRpc('lc_set_offer_active', {
+                        p_offer: o.id,
+                        p_active: !o.active
+                      })
                     )
                   }
                 >
@@ -351,7 +360,12 @@ export default function LatidoCardBusiness() {
                     loadedProvider.current = null
                     setProvider(event.target.value)
                     setLink('')
-                    setData((previous) => ({ ...previous, offers: [], sessions: [], history: [] }))
+                    setData((previous) => ({
+                      ...previous,
+                      offers: [],
+                      sessions: [],
+                      history: []
+                    }))
                   }}
                 >
                   {data.businesses.map((business) => (
@@ -369,6 +383,11 @@ export default function LatidoCardBusiness() {
             </Link>
           </div>
         </section>
+      )}
+      {selected?.active && !selected.suspended && link && (
+        <a className="lc-scanner-fab" href={`${link}?camera=1`}>
+          <ScanLine size={24} aria-hidden="true" /> Scanner
+        </a>
       )}
     </div>
   )

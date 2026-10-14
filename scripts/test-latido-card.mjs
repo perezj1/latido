@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { PGlite } from '@electric-sql/pglite'
 import {
   extractCardToken,
+  classifyLatidoQr,
   readScannerSession,
   storeScannerSession,
   SCANNER_STORAGE_KEY
@@ -102,6 +103,18 @@ assert.equal(extractCardToken(`javascript:alert(1)`), null)
 assert.equal(extractCardToken(`https://latido.ch/scanner/link/${token}`), null)
 assert.equal(extractCardToken(`https://latido.ch/scanner/link/${token}`, 'scanner'), token)
 assert.equal(extractCardToken('LC-000001'), null)
+assert.deepEqual(classifyLatidoQr(`https://latido.ch/c/${token}`), {
+  kind: 'card',
+  token
+})
+assert.deepEqual(classifyLatidoQr(`https://latido.ch/scanner/link/${token}`), {
+  kind: 'scanner',
+  token
+})
+assert.equal(classifyLatidoQr(token), null, 'A bare token must not be guessed as a business QR')
+assert.equal(classifyLatidoQr(`https://evil.test/scanner/link/${token}`), null)
+assert.equal(classifyLatidoQr(`javascript:alert(1)`), null)
+assert.equal(classifyLatidoQr(`https://latido.ch/card?oferta=${token}`), null)
 const fake = () => ({
   values: new Map(),
   getItem(k) {
@@ -117,7 +130,11 @@ const fake = () => ({
 const local = fake(),
   temporary = fake()
 storeScannerSession(
-  { token, persistent: false, expires_at: new Date(Date.now() + 10000).toISOString() },
+  {
+    token,
+    persistent: false,
+    expires_at: new Date(Date.now() + 10000).toISOString()
+  },
   { local, temporary }
 )
 assert.equal(local.getItem(SCANNER_STORAGE_KEY), null)
@@ -389,7 +406,12 @@ try {
   await rpc('lc_set_offer_active', [oid, false])
   const unlimited = await rpc('lc_save_offer', [
     ids.business,
-    { ...offer, title: '10 % siempre', usage_period: 'unlimited', benefit_value: 10 }
+    {
+      ...offer,
+      title: '10 % siempre',
+      usage_period: 'unlimited',
+      benefit_value: 10
+    }
   ])
   const freshLink = await rpc('lc_rotate_scanner_link', [ids.business])
   await as(null, 'anon')
@@ -514,7 +536,11 @@ try {
   await as('member')
   const nextRequest = await rpc('lc_request_physical_card', [
     randomUUID(),
-    { fulfillment: 'pickup', recipient_name: 'José Prueba', address_line1: 'Must not persist' },
+    {
+      fulfillment: 'pickup',
+      recipient_name: 'José Prueba',
+      address_line1: 'Must not persist'
+    },
     'replacement'
   ])
   assert.equal(nextRequest.address_line1, '')

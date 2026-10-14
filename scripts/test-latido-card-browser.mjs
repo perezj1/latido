@@ -47,17 +47,42 @@ try {
   }
   if (!ready) throw new Error(`Vite failed to start: ${serverOutput.slice(-1000)}`)
   browser = await chromium.launch({ headless: true })
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
-  const cameraQr = await QRCode.toDataURL(`${origin}/c/${token}`, { width: 480, margin: 4 })
-  await context.addInitScript(async (qr) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 }
+  })
+  const cameraQrs = {
+    card: await QRCode.toDataURL(`${origin}/c/${token}`, {
+      width: 480,
+      margin: 4
+    }),
+    business: await QRCode.toDataURL(`${origin}/scanner/link/${scannerToken}`, {
+      width: 480,
+      margin: 4
+    }),
+    invalid: await QRCode.toDataURL(`https://evil.test/scanner/link/${scannerToken}`, {
+      width: 480,
+      margin: 4
+    })
+  }
+  await context.addInitScript(async (qrs) => {
     // Exercise the real decoder with a video stream containing a generated QR.
     // Hardware camera permission remains a separate real-device acceptance test.
     if (!navigator.mediaDevices) return
+    window.testCameraQrKind = 'blank'
+    window.testCameraActive = 0
     Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
       value: async () => {
-        const img = new Image()
-        img.src = qr
-        await img.decode()
+        if (window.testCameraDenied)
+          throw Object.assign(new Error('Denied'), { name: 'NotAllowedError' })
+        const images = {}
+        await Promise.all(
+          Object.entries(qrs).map(async ([kind, qr]) => {
+            const img = new Image()
+            img.src = qr
+            await img.decode()
+            images[kind] = img
+          })
+        )
         const canvas = document.createElement('canvas')
         canvas.width = 640
         canvas.height = 640
@@ -65,14 +90,17 @@ try {
           const ctx = canvas.getContext('2d')
           ctx.fillStyle = 'white'
           ctx.fillRect(0, 0, 640, 640)
-          ctx.drawImage(img, 80, 80, 480, 480)
+          const img = images[window.testCameraQrKind]
+          if (img) ctx.drawImage(img, 80, 80, 480, 480)
         }
         draw()
         const timer = setInterval(draw, 80),
           stream = canvas.captureStream(12)
         stream.getTracks().forEach((track) => {
+          window.testCameraActive++
           const stop = track.stop.bind(track)
           track.stop = () => {
+            if (track.readyState !== 'ended') window.testCameraActive--
             clearInterval(timer)
             stop()
           }
@@ -80,7 +108,7 @@ try {
         return stream
       }
     })
-  }, cameraQr)
+  }, cameraQrs)
   let redeemCalls = [],
     receipt = null,
     claimed = false,
@@ -93,6 +121,9 @@ try {
     failNextOffer = false,
     newBusinessActive = false,
     newBusinessOffers = []
+  const scannerOpenCalls = [],
+    cardScanCalls = []
+  let scannerBusinessName = '[TEST] Restaurante Sabor Latino'
   let physicalRequest = null,
     physicalCalls = []
   const offer = {
@@ -165,7 +196,11 @@ try {
     }
   ]
   const respond = (route, body, status = 200) =>
-    route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
+    route.fulfill({
+      status,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    })
   await context.route('**/*', async (route) => {
     const url = new URL(route.request().url())
     if (url.origin === origin || url.protocol === 'blob:') return route.continue()
@@ -176,27 +211,41 @@ try {
     )
     const name = url.pathname.split('/').at(-1),
       args = route.request().method() === 'POST' ? route.request().postDataJSON() : {}
-    if (name === 'lc_open_scanner')
+    if (name === 'lc_open_scanner') {
+      scannerOpenCalls.push(args)
+      scannerBusinessName =
+        args.p_link_token === 'e'.repeat(64) ? 'Punto Hispano Asesoría' : offer.business_name
       return respond(route, {
         token: sessionToken,
         session_id: 'session-1',
-        business_name: offer.business_name,
+        business_name: scannerBusinessName,
         persistent: false,
         expires_at: new Date(Date.now() + 8 * 3600000).toISOString()
       })
+    }
     if (name === 'lc_scanner_status')
       return respond(route, {
         session_id: 'session-1',
-        business_name: offer.business_name,
+        business_name: scannerBusinessName,
         persistent: false,
         expires_at: new Date(Date.now() + 8 * 3600000).toISOString()
       })
-    if (name === 'lc_scan_card')
-      return respond(route, { member_name: 'Ana', member_number: 12847, offers: [offer] })
+    if (name === 'lc_scan_card') {
+      cardScanCalls.push(args)
+      return respond(route, {
+        member_name: 'Ana',
+        member_number: 12847,
+        offers: [offer]
+      })
+    }
     if (name === 'lc_redeem') {
       redeemCalls.push(args)
       if (!receipt) {
-        receipt = { id: 'redemption-1', redeemed_at: new Date().toISOString(), reversed: false }
+        receipt = {
+          id: 'redemption-1',
+          redeemed_at: new Date().toISOString(),
+          reversed: false
+        }
         return respond(route, { message: 'Transport failed after commit' }, 503)
       }
       return respond(route, receipt)
@@ -205,9 +254,24 @@ try {
     if (name === 'lc_business_dashboard')
       return respond(route, {
         businesses: [
-          { id: 'restaurant', name: offer.business_name, active: true, participating: true },
-          { id: 'salon', name: 'Peluquería Brisa Latina', active: true, participating: true },
-          { id: 'shop', name: 'Tienda Raíces', active: true, participating: true },
+          {
+            id: 'restaurant',
+            name: offer.business_name,
+            active: true,
+            participating: true
+          },
+          {
+            id: 'salon',
+            name: 'Peluquería Brisa Latina',
+            active: true,
+            participating: true
+          },
+          {
+            id: 'shop',
+            name: 'Tienda Raíces',
+            active: true,
+            participating: true
+          },
           {
             id: 'new',
             name: 'Punto Hispano Asesoría',
@@ -257,7 +321,10 @@ try {
     if (name === 'lc_catalog')
       return respond(
         route,
-        [offer, special, ...additionalExamples].map((o) => ({ ...o, claim: undefined }))
+        [offer, special, ...additionalExamples].map((o) => ({
+          ...o,
+          claim: undefined
+        }))
       )
     if (name === 'lc_member_physical_requests') {
       const visible = physicalRequest ? { ...physicalRequest } : null
@@ -271,7 +338,10 @@ try {
           'contact_email'
         ])
           delete visible[key]
-      return respond(route, { issued_before: false, requests: visible ? [visible] : [] })
+      return respond(route, {
+        issued_before: false,
+        requests: visible ? [visible] : []
+      })
     }
     if (name === 'lc_request_physical_card') {
       physicalCalls.push(args)
@@ -338,7 +408,11 @@ try {
         version: physicalRequest.version + 1,
         credential_id: 'credential-1'
       }
-      return respond(route, { token, member_number: 12847, reference: physicalRequest.reference })
+      return respond(route, {
+        token,
+        member_number: 12847,
+        reference: physicalRequest.reference
+      })
     }
     if (name === 'lc_member_home')
       return respond(route, {
@@ -364,7 +438,10 @@ try {
       })
     if (name === 'lc_issue_digital_card') {
       digitalCalls++
-      return respond(route, { token, expires_at: new Date(Date.now() + 300000).toISOString() })
+      return respond(route, {
+        token,
+        expires_at: new Date(Date.now() + 300000).toISOString()
+      })
     }
     if (name === 'lc_claim_offer') {
       claimed = true
@@ -387,10 +464,52 @@ try {
   })
   const page = await context.newPage()
   page.on('pageerror', (err) => errors.push(err.message))
+  await mkdir(output, { recursive: true })
+  await page.goto(`${origin}/scanner/?camera=1`)
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  assert.equal(new URL(page.url()).search, '', 'Camera launch is not repeated on reload')
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'scanner-camera-mobile.png')
+  })
+  await page.evaluate(() => {
+    window.testCameraQrKind = 'card'
+  })
+  await page.getByRole('alert').filter({ hasText: 'Primero escanea el QR interno' }).waitFor()
+  assert.equal(cardScanCalls.length, 0, 'No customer access before linking a business')
+  await page.evaluate(() => {
+    window.testCameraQrKind = 'invalid'
+  })
+  await page.getByRole('button', { name: 'Scanner', exact: true }).click()
+  await page.getByRole('alert').filter({ hasText: 'Escanea el QR interno de un negocio' }).waitFor()
+  assert.equal(scannerOpenCalls.length, 0, 'External QRs cannot grant access')
+  await page.evaluate(() => {
+    window.testCameraQrKind = 'business'
+  })
+  await page.getByRole('button', { name: 'Scanner', exact: true }).click()
+  await page.getByText(offer.business_name, { exact: true }).waitFor()
+  assert.equal(scannerOpenCalls.length, 1)
+  assert.equal(scannerOpenCalls[0].p_link_token, scannerToken)
+  await page.waitForFunction(() => window.testCameraActive === 0)
+  await page.getByRole('button', { name: 'Cerrar acceso en este dispositivo' }).click()
+  await page.getByRole('heading', { name: 'Escanea y conecta.' }).waitFor()
   await page.goto(`${origin}/scanner/link/${scannerToken}`)
+  assert.equal(await page.locator('details').first().evaluate((el) => el.open), false)
+  await page.getByRole('button', { name: 'Scanner', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.getByRole('button', { name: 'Cerrar acceso en este dispositivo' }).click()
+  await page.getByRole('heading', { name: 'Escanea y conecta.' }).waitFor()
+  await page.goto(`${origin}/scanner/link/${scannerToken}`)
+  await page
+    .getByText('Vincular con un enlace o poner nombre al dispositivo', {
+      exact: true
+    })
+    .click()
   await page.getByLabel('Nombre de este Scanner').fill('Caja 1')
   await page.getByRole('button', { name: 'Continuar en navegador' }).click()
-  await page.getByRole('button', { name: 'Escanear Tarjeta Latido', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Scanner', exact: true }).waitFor()
+  assert.equal(scannerOpenCalls.at(-1).p_label, 'Caja 1')
   assert.equal(
     new URL(page.url()).pathname,
     '/scanner/',
@@ -405,13 +524,44 @@ try {
     false,
     'Scanner must not create a personal auth session'
   )
-  await page.getByRole('button', { name: 'Escanear Tarjeta Latido', exact: true }).click()
+  await page.evaluate(() => {
+    window.testCameraQrKind = 'blank'
+  })
+  await page.getByRole('button', { name: 'Scanner', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  await page.waitForFunction(() => window.testCameraActive > 0)
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => window.testCameraActive === 0)
+  await page.evaluate(() => {
+    window.testCameraDenied = true
+  })
+  await page.getByRole('button', { name: 'Scanner', exact: true }).click()
+  await page.getByRole('alert').filter({ hasText: 'Permite el acceso a la cámara' }).waitFor()
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.evaluate(() => {
+    window.testCameraDenied = false
+    window.testCameraQrKind = 'card'
+  })
+  await page.getByRole('button', { name: 'Scanner', exact: true }).click()
   await page.getByRole('heading', { name: 'Ana · Socio #12847' }).waitFor()
   assert.equal(await page.getByRole('button', { name: 'Canjear', exact: true }).isDisabled(), true)
   await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Canjear', exact: true }).click()
   await page.getByRole('button', { name: 'Reintentar el mismo canje' }).waitFor()
-  await page.reload()
+  assert.equal(await page.getByRole('button', { name: 'Scanner', exact: true }).isDisabled(), true)
+  const opensBeforePendingReload = scannerOpenCalls.length
+  await page.goto(`${origin}/scanner/link/${'e'.repeat(64)}?camera=1`)
+  await page.getByRole('button', { name: 'Reintentar el mismo canje' }).waitFor()
+  assert.equal(
+    await page.getByRole('dialog').count(),
+    0,
+    'Pending redemption blocks automatic camera launch'
+  )
+  assert.equal(
+    scannerOpenCalls.length,
+    opensBeforePendingReload,
+    'Do not replace access during a pending redemption'
+  )
   await page.getByRole('button', { name: 'Reintentar el mismo canje' }).click()
   await page.getByRole('heading', { name: '✓ Ventaja utilizada' }).waitFor()
   assert.equal(redeemCalls.length, 2)
@@ -424,7 +574,7 @@ try {
   })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await page.getByRole('button', { name: 'Cerrar acceso en este dispositivo' }).click()
-  await page.getByRole('heading', { name: 'Vincular Scanner' }).waitFor()
+  await page.getByRole('heading', { name: 'Escanea y conecta.' }).waitFor()
   await page.goto(`${origin}/card`)
   await page.getByRole('heading', { name: 'Tu Tarjeta Latido te da más.' }).waitFor()
   await page.getByRole('heading', { name: 'Café gratis' }).waitFor()
@@ -490,7 +640,9 @@ try {
   assert.equal(await page.getByRole('tab', { name: 'Guardadas', exact: true }).count(), 0)
   assert.equal(
     await page
-      .getByText('Listo para escanear · Se renueva automáticamente', { exact: true })
+      .getByText('Listo para escanear · Se renueva automáticamente', {
+        exact: true
+      })
       .count(),
     0
   )
@@ -518,13 +670,19 @@ try {
     })
   )
   await page
-    .getByRole('button', { name: 'Compartir [TEST] 15 % desde CHF 50', exact: true })
+    .getByRole('button', {
+      name: 'Compartir [TEST] 15 % desde CHF 50',
+      exact: true
+    })
     .click()
   const nativeShared = await page.evaluate(() => window.testSharedOffer)
   assert.equal(new URL(nativeShared.url).searchParams.get('oferta'), offer.id)
   assert.ok(!JSON.stringify(nativeShared).includes(token))
   await page.evaluate(() => {
-    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: undefined
+    })
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: {
@@ -551,7 +709,10 @@ try {
     })
   )
   await page.getByRole('button', { name: 'Compartir Café gratis', exact: true }).click()
-  const manualSharePanel = page.getByRole('region', { name: 'Compartir oferta', exact: true })
+  const manualSharePanel = page.getByRole('region', {
+    name: 'Compartir oferta',
+    exact: true
+  })
   await manualSharePanel.waitFor()
   assert.equal(
     await manualSharePanel.getByLabel('Enlace de la oferta').inputValue(),
@@ -632,7 +793,10 @@ try {
     stored.user = {
       ...stored.user,
       email: 'admin@test.example',
-      user_metadata: { name: 'Admin Latido', latido_onboarding_completed: true }
+      user_metadata: {
+        name: 'Admin Latido',
+        latido_onboarding_completed: true
+      }
     }
     localStorage.setItem('sb-card-test-auth-token', JSON.stringify(stored))
   })
@@ -790,11 +954,48 @@ try {
     path: path.join(output, 'card-business-single-mobile.png'),
     fullPage: true
   })
+  const personalAuth = await page.evaluate(() => localStorage.getItem('sb-card-test-auth-token'))
+  const ownerScanner = page.getByRole('link', { name: 'Scanner', exact: true })
+  assert.equal(
+    new URL(await ownerScanner.getAttribute('href')).pathname,
+    `/scanner/link/${'e'.repeat(64)}`
+  )
+  const opensBeforeOwnerLaunch = scannerOpenCalls.length
+  await ownerScanner.click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  assert.equal(scannerOpenCalls.length, opensBeforeOwnerLaunch + 1)
+  assert.equal(scannerOpenCalls.at(-1).p_link_token, 'e'.repeat(64))
+  assert.equal(new URL(page.url()).pathname, '/scanner/')
+  assert.equal(new URL(page.url()).search, '')
+  assert.equal(
+    await page.evaluate(() => localStorage.getItem('sb-card-test-auth-token')),
+    personalAuth
+  )
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.getByRole('link', { name: 'Mi negocio', exact: true }).click()
+  await page.getByAltText('QR interno del negocio').waitFor()
+  await page.getByRole('link', { name: 'Scanner', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  assert.equal(
+    scannerOpenCalls.length,
+    opensBeforeOwnerLaunch + 1,
+    'Reuse the existing access for the same business'
+  )
+  await page.evaluate(() => {
+    window.testCameraQrKind = 'business'
+  })
+  await page.getByText(offer.business_name, { exact: true }).waitFor()
+  assert.equal(
+    scannerOpenCalls.at(-1).p_link_token,
+    scannerToken,
+    'A linked Scanner also recognizes business QRs'
+  )
   businessMode = 'none'
-  await page.reload()
+  await page.goto(`${origin}/card/negocios`)
   await page.getByRole('link', { name: 'Registrar mi negocio', exact: true }).waitFor()
   assert.equal(await page.getByLabel('Selecciona tu negocio').count(), 0)
   assert.equal(await page.getByAltText('QR interno del negocio').count(), 0)
+  assert.equal(await page.getByRole('link', { name: 'Scanner', exact: true }).count(), 0)
   businessMode = 'multiple'
   await page.evaluate(() => localStorage.removeItem('sb-card-test-auth-token'))
   await page.goto(copiedOfferLink)
@@ -821,7 +1022,7 @@ try {
   assert.equal(new URL(page.url()).searchParams.get('next'), nextOfferPath)
   assert.deepEqual(errors, [])
   console.log(
-    'Latido Card browser: QR decoding, Scanner isolation, idempotent retry, claims, digital QR, physical request and admin fulfillment passed.'
+    'Latido Card browser: unified business/customer QR camera, floating Scanner access, camera cleanup, Scanner isolation, idempotent retry, claims, digital QR, physical request and admin fulfillment passed.'
   )
   console.log(`Screenshots: ${output}`)
 } finally {

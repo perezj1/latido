@@ -159,7 +159,10 @@ nombre del socio y su número; no se entregan datos de contacto.
 7. El QR interno se genera automáticamente y aparece al final de la página.
    Al regenerarlo expresamente se revocan tanto el enlace
    anterior como todos los Scanners asociados. Guardarlo detrás de la barra.
-8. Empleado abre el enlace, da nombre al Scanner y obtiene un turno sin login.
+8. Propietario pulsa el botón flotante **Scanner** en «Mi negocio»: se vincula
+   al establecimiento seleccionado y abre la cámara. El personal abre `/scanner/`,
+   pulsa **Scanner** y escanea el QR privado del negocio para obtener un turno sin
+   login. El nombre del dispositivo y la entrada manual quedan plegados.
 9. Para acceso habitual, empleado lo solicita y propietario lo autoriza desde
    su panel. Después Scanner consulta esa autorización y conserva el acceso.
 10. Socio abre `/card` y ya ve su QR digital listo. Activa el café; puede presentar
@@ -202,6 +205,24 @@ tener presente este efecto y comunicarlo en caso de retirada.
 `scanner/index.html` es una segunda entrada de Vite. Tiene su propio
 manifiesto, sesión y cliente Supabase sin autenticación persistente de usuario.
 No cargar presencia, notificaciones, analítica o la navegación de Latido allí.
+
+Una sola cámara distingue las rutas `/scanner/link/<token>` (vincular negocio)
+y `/c/<token>` (consultar tarjeta). Un QR de tarjeta sin acceso al negocio muestra
+una indicación para vincular primero, sin consultar datos del socio. Rechazar
+otros dominios y tokens sin ruta en la cámara; los formularios manuales sí aceptan
+tokens porque indican expresamente qué tipo esperan. Escanear nunca canjea solo:
+el trabajador comprueba las condiciones y pulsa **Canjear**.
+
+El acceso flotante del propietario usa el enlace privado del negocio seleccionado
+con `?camera=1`. Scanner retira inmediatamente el token y el parámetro de la URL.
+Reutiliza la sesión del mismo enlace mediante su huella SHA-256 local; para otro
+negocio obtiene un nuevo acceso y limpia la tarjeta consultada. La huella solo
+evita repetir la vinculación; el servidor sigue validando cada consulta y canje.
+Si hay un canje pendiente, no abrir la cámara ni sustituir el acceso: resolver el
+mismo intento primero. La ventana de cámara usa un diálogo modal, permite cerrar
+con el botón o Escape y libera la cámara al cerrar o detectar un QR.
+
+Esta simplificación usa los RPC existentes y **no requiere SQL adicional**.
 
 `public/scanner/manifest.json`: id `/latido-scanner`, start_url y scope
 `/scanner/`. No colocar tokens en el manifiesto ni en la URL de arranque.

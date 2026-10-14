@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 
-export default function LatidoCardCamera({ onRead, onClose }) {
+export default function LatidoCardCamera({
+  onRead,
+  onClose,
+  hint = 'Encuadra el QR del negocio o de una Tarjeta Latido.'
+}) {
+  const dialogRef = useRef(null)
   const videoRef = useRef(null)
   const readRef = useRef(onRead)
   const [error, setError] = useState('')
   readRef.current = onRead
   useEffect(() => {
+    dialogRef.current.showModal()
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     let cancelled = false,
       controls,
       captured = false
@@ -39,15 +47,27 @@ export default function LatidoCardCamera({ onRead, onClose }) {
     return () => {
       cancelled = true
       controls?.stop()
+      document.body.style.overflow = previousOverflow
     }
   }, [])
   return (
-    <section className="lc-camera" aria-label="Lector de QR">
+    <dialog
+      ref={dialogRef}
+      className="lc-camera"
+      aria-labelledby="lc-camera-title"
+      onCancel={(e) => {
+        e.preventDefault()
+        onClose()
+      }}
+    >
+      <h2 id="lc-camera-title">Scanner</h2>
       <video ref={videoRef} muted playsInline autoPlay aria-label="Vista de la cámara" />
-      {error ? <p role="alert">{error}</p> : <p>Encuadra el QR de la tarjeta.</p>}
-      <button className="lc-button lc-button--secondary" onClick={onClose}>
-        Cerrar cámara
-      </button>
-    </section>
+      {error ? <p role="alert">{error}</p> : <p>{hint}</p>}
+      <div className="lc-actions">
+        <button className="lc-button lc-button--secondary" onClick={onClose} autoFocus>
+          Cerrar cámara
+        </button>
+      </div>
+    </dialog>
   )
 }
