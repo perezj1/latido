@@ -31,7 +31,7 @@ export default function LatidoCardCustomerCode() {
         if (!/^\d{6}$/.test(next?.code) || !Number.isFinite(Date.parse(next.expires_at)))
           throw new Error('INVALID_CODE_RESPONSE')
         setValue(next)
-        // Expiry does not issue a replacement. Only opening the card again does.
+        // Expiry does not issue a replacement; reopening or the button does.
         expiryTimer = setTimeout(
           () => setExpired(true),
           Math.max(0, Date.parse(next.expires_at) - Date.now())
@@ -71,13 +71,27 @@ export default function LatidoCardCustomerCode() {
           </output>
           <small>
             {expired
-              ? 'Código caducado. Vuelve a abrir Mi tarjeta.'
+              ? 'Código caducado.'
               : `Válido hasta ${new Date(value.expires_at).toLocaleTimeString('es-CH', {
                   hour: '2-digit',
                   minute: '2-digit',
                   timeZone: 'Europe/Zurich'
                 })}`}
           </small>
+          {expired && (
+            <button
+              className="lc-button lc-button--secondary"
+              disabled={busy}
+              onClick={() => {
+                if (busy) return
+                setBusy(true)
+                request.current = null
+                setAttempt((n) => n + 1)
+              }}
+            >
+              Generar nuevo código
+            </button>
+          )}
         </>
       ) : busy ? (
         <p role="status">Preparando código…</p>

@@ -287,8 +287,9 @@ servidor. Ejecutar `supabase/latido_card_scanner_multibusiness.sql` después de 
 
 Al abrir «Mi tarjeta», el socio activo recibe automáticamente 6 cifras (dos grupos
 de tres). Cada nueva apertura o regreso desde segundo plano genera un código distinto.
-No se renueva automáticamente al pasar cinco minutos: si caduca, se indica que hay
-que volver a abrir la tarjeta. No se utiliza el número de socio público. El personal ya conectado pulsa
+No se renueva automáticamente al pasar cinco minutos: al caducar aparece
+«Generar nuevo código» para renovarlo sin cerrar la tarjeta. También se puede reabrir.
+No se utiliza el número de socio público. El personal ya conectado pulsa
 «Introducir manualmente», escribe el código y consulta las mismas ventajas del QR.
 También se ofrece este botón desde la cámara, aunque sus permisos estén bloqueados.
 

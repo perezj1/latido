@@ -61,7 +61,8 @@ Revocar todas las conexiones del trabajador a un negocio: desaparece de su lista
 1. Cliente con membresía activa: abrir **Mi tarjeta**. El código se prepara automáticamente.
 2. El cliente enseña sus **6 cifras**, en dos grupos de tres. Se genera uno distinto
    al reabrir o regresar a la tarjeta; no se renueva solo por pasar cinco minutos.
-   Conserva la caducidad de 5 minutos: al caducar, volver a abrir Mi tarjeta.
+   Conserva la caducidad de 5 minutos: al caducar aparece **Generar nuevo código**.
+   Pulsarlo crea otro sin salir de la página. También se puede volver a abrir Mi tarjeta.
 3. Personal conectado al negocio: abrir **Scanner → Introducir manualmente**.
 4. Escribir las cifras y pulsar **Consultar tarjeta**. También se admite pegarlas con espacios.
 5. Aparecen el socio y sus ventajas para ese negocio. Marcar la comprobación y pulsar **Canjear**.

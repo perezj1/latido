@@ -1479,15 +1479,38 @@ try {
   await codeOutput.waitFor()
   const initialOpenCode = await codeOutput.innerText()
   const openedCodeCalls = customerCodeCalls
+  assert.equal(
+    await page.getByRole('button', { name: 'Generar nuevo código', exact: true }).count(),
+    0
+  )
   customerCodeClockOffset = 300001
   await page.clock.fastForward(300001)
-  await page.getByText('Código caducado. Vuelve a abrir Mi tarjeta.', { exact: true }).waitFor()
+  await page.getByText('Código caducado.', { exact: true }).waitFor()
   await page.waitForLoadState('networkidle')
   assert.equal(customerCodeCalls, openedCodeCalls, 'Five minutes open does not issue another code')
   assert.equal(await codeOutput.innerText(), initialOpenCode)
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-code-expired.png'),
+    fullPage: true
+  })
+  await page.getByRole('button', { name: 'Generar nuevo código', exact: true }).click()
+  await page.waitForFunction((previous) => {
+    const output = document.querySelector('[aria-label="Código del cliente"]')
+    return output && output.textContent.trim() !== previous
+  }, initialOpenCode)
+  assert.equal(
+    customerCodeCalls,
+    openedCodeCalls + 1,
+    'The expired-code button issues one fresh code without navigation'
+  )
+  assert.equal(
+    await page.getByRole('button', { name: 'Generar nuevo código', exact: true }).count(),
+    0
+  )
   await page.reload()
   await codeOutput.waitFor()
-  assert.equal(customerCodeCalls, openedCodeCalls + 1, 'Reopening the card generates a fresh code')
+  assert.equal(customerCodeCalls, openedCodeCalls + 2, 'Reopening the card generates a fresh code')
   assert.notEqual(await codeOutput.innerText(), initialOpenCode)
   const beforeForegroundCode = await codeOutput.innerText()
   await page.evaluate(() => {
@@ -1502,7 +1525,7 @@ try {
   }, beforeForegroundCode)
   assert.equal(
     customerCodeCalls,
-    openedCodeCalls + 2,
+    openedCodeCalls + 3,
     'Returning to the card from the background also creates a fresh code'
   )
   if (errors.length) console.error('Failed requests:', failedRequests.slice(0, 8))
