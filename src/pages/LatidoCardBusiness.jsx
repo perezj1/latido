@@ -87,19 +87,14 @@ export default function LatidoCardBusiness() {
       <CardHeader />
       <section className="lc-hero">
         <span className="lc-eyebrow">Negocios participantes</span>
-        <h1>Una ventaja para tu comunidad.</h1>
-        <p>Publica tus ventajas directamente y comparte el QR del negocio con tus trabajadores.</p>
-        <p className="lc-badge lc-badge--included">
-          Participación gratuita · Sin membresía de pago
-        </p>
-        <p className="lc-muted">
-          Sin aprobación previa. Las ofertas deben cumplir las{' '}
-          <Link to="/terminos">normas de Latido</Link>; Latido puede retirarlas y suspender la
-          participación.
-        </p>
-        <a className="lc-button lc-button--secondary" href="/scanner/">
-          Abrir Latido Scanner
-        </a>
+        <h1>Más clientes para tu negocio.</h1>
+        <p>Atrae a la comunidad Latido y haz que vuelva con tus ofertas.</p>
+        <span className="lc-badge lc-badge--included">Participación gratuita</span>
+        <div className="lc-actions">
+          <a className="lc-button lc-button--secondary" href="/scanner/">
+            Abrir Latido Scanner
+          </a>
+        </div>
       </section>
       {error && (
         <p className="lc-alert" role="alert">

@@ -94,8 +94,8 @@ try {
     physicalCalls = []
   const offer = {
     id: '00000000-0000-4000-8000-000000000001',
-    title: '15 % desde CHF 50',
-    business_name: 'Restaurante Sabor Latino',
+    title: '[TEST] 15 % desde CHF 50',
+    business_name: '[TEST] Restaurante Sabor Latino',
     city: 'Zürich',
     minimum_spend: 50,
     benefit_type: 'percent',
@@ -507,7 +507,9 @@ try {
       }
     })
   )
-  await page.getByRole('button', { name: 'Compartir 15 % desde CHF 50', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Compartir [TEST] 15 % desde CHF 50', exact: true })
+    .click()
   const nativeShared = await page.evaluate(() => window.testSharedOffer)
   assert.equal(new URL(nativeShared.url).searchParams.get('oferta'), offer.id)
   assert.ok(!JSON.stringify(nativeShared).includes(token))
@@ -546,7 +548,7 @@ try {
     copiedOfferLink
   )
   await manualSharePanel.getByRole('button', { name: 'Cerrar', exact: true }).click()
-  const compactOffer = page.locator('.lc-offer-row').filter({ hasText: '15 % desde CHF 50' })
+  const compactOffer = page.locator('.lc-offer-row').filter({ hasText: '[TEST] 15 % desde CHF 50' })
   await compactOffer.getByRole('button', { name: 'Ver detalles', exact: true }).click()
   assert.equal(
     await compactOffer.getByText(/No acumulable con otras ventajas Latido/).isVisible(),
@@ -659,7 +661,7 @@ try {
   await page.goto(`${origin}/card/negocios`)
   await page.getByLabel('Selecciona tu negocio').selectOption('new')
   await page.getByRole('heading', { name: 'Crear una ventaja', exact: true }).waitFor()
-  await page.getByText('Participación gratuita · Sin membresía de pago', { exact: true }).waitFor()
+  await page.getByText('Participación gratuita', { exact: true }).waitFor()
   await page.getByAltText('QR interno del negocio').waitFor()
   assert.equal(newBusinessActive, true, 'No administrator admission is required')
   await page.getByLabel('Título', { exact: true }).fill('10 % de bienvenida')
