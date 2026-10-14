@@ -64,9 +64,10 @@ reserva de 7 días configurable entre 1 y 90; meses naturales en Europe/Zurich;
 una ventaja incluida y dos especiales vigentes por establecimiento; una
 reclamación utilizable por socio/oferta especial. No son tarifas comerciales.
 
-Accesos actuales: `/card` para el socio, `/card/negocios` para el propietario y
-`/card/admin` para Latido. Falta añadir **Mi Latido Card** y **Mi negocio en
-Latido Card** a Perfil, integrar la contratación mensual de CHF 6,90 y crear
+Accesos actuales: **Perfil → Mi Latido Card** abre `/card` para el socio;
+`/card/negocios` es el panel del propietario y `/card/admin` el de Latido.
+Falta añadir **Mi negocio en Latido Card** a Perfil, integrar la contratación
+mensual de CHF 6,90 y crear
 la solicitud de participación gratuita del negocio. El catálogo actual muestra
 las ofertas vigentes de negocios admitidos; no es todavía un directorio
 independiente de todos los participantes.

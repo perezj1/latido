@@ -2211,6 +2211,7 @@ export default function Perfil() {
     {
       title: 'Mi actividad',
       items: [
+        { icon:'💳', color:'#EFF6FF', label:'Mi Latido Card', sub:'Tu tarjeta y ventajas de socio', action:() => navigate('/card') },
         { icon:'📣', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
         { icon:'📝', color:'#EFF6FF', label:'Mi lista', sub:'Lo que necesitas y lo que ya has conseguido', action:() => setMyListOpen(true) },
         ...(hasEmploymentRequest ? [{

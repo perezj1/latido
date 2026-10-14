@@ -317,7 +317,9 @@ try {
       ),
     user
   )
-  await page.reload()
+  await page.goto(`${origin}/perfil`)
+  await page.getByRole('button',{name:/Mi Latido Card/}).click()
+  assert.equal(new URL(page.url()).pathname,'/card')
   await page.getByRole('button', { name: 'Mostrar mi QR digital' }).click()
   await page.getByAltText('QR de Latido Card').waitFor()
   await page.getByRole('button', { name: 'Reclamar', exact: true }).click()
