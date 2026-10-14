@@ -755,6 +755,108 @@ try {
     2
   )
   await root('SELECT 1')
+  // Upgrade existing connections without reviving previously revoked/expired
+  // devices. Identity is always taken from the authenticated profile.
+  await as('owner')
+  const accountLink = await rpc('lc_business_setup', [ids.business, null])
+  await as(null, 'anon')
+  const legacyActive = await rpc('lc_open_scanner', [accountLink.token, 'Legacy active'])
+  const legacyExpired = await rpc('lc_open_scanner', [accountLink.token, 'Legacy expired'])
+  const legacyRevoked = await rpc('lc_open_scanner', [accountLink.token, 'Legacy revoked'])
+  await rpc('lc_close_scanner', [legacyRevoked.token])
+  await root(
+    "UPDATE latido_card_scanner_sessions SET expires_at=now()-interval '1 second' WHERE id=$1",
+    [legacyExpired.session_id]
+  )
+  const accountsMigration = await readFile(
+    new URL('../supabase/latido_card_scanner_accounts.sql', import.meta.url),
+    'utf8'
+  )
+  await db.exec(accountsMigration)
+  await db.exec(accountsMigration)
+  await as(null, 'anon')
+  assert.equal((await rpc('lc_scanner_status', [legacyActive.token, false])).expires_at, null)
+  await rejects('lc_scanner_status', [legacyExpired.token, false], 'SCANNER_EXPIRED')
+  await rejects('lc_scanner_status', [legacyRevoked.token, false], 'SCANNER_EXPIRED')
+  await rejects('lc_open_scanner', [accountLink.token, 'Forged name'], 'permission denied')
+  await as(null)
+  await rejects('lc_open_scanner', [accountLink.token, 'Forged name'], 'AUTH_REQUIRED')
+  await root("UPDATE profiles SET name='' WHERE id=$1", [ids.outsider])
+  await as('outsider')
+  await rejects('lc_open_scanner', [accountLink.token, 'Forged name'], 'PROFILE_NAME_REQUIRED')
+  await root("UPDATE profiles SET name='outsider' WHERE id=$1", [ids.outsider])
+  await as('outsider')
+  const permanent = await rpc('lc_open_scanner', [accountLink.token, 'Different user name'])
+  assert.equal(permanent.linked_user_id, ids.outsider)
+  assert.equal(permanent.user_name, 'outsider', 'A device label cannot impersonate a profile name')
+  assert.equal(permanent.persistent, true)
+  assert.equal(permanent.expires_at, null)
+  await as(null, 'anon')
+  assert.equal(
+    (await rpc('lc_scanner_status', [permanent.token, true])).persistence_requested,
+    false
+  )
+  const permanentOffer = (await rpc('lc_scan_card', [permanent.token, replacementDigital.token]))
+    .offers[0]
+  assert.ok(permanentOffer)
+  await rpc('lc_redeem', [
+    permanent.token,
+    replacementDigital.token,
+    permanentOffer.id,
+    randomUUID()
+  ])
+  await as('owner2')
+  await rejects('lc_business_dashboard', [ids.business], 'FORBIDDEN')
+  await rejects('lc_manage_scanner', [permanent.session_id, 'delete'], 'FORBIDDEN')
+  await as('owner')
+  const connectedDashboard = await rpc('lc_business_dashboard', [ids.business])
+  assert.equal(
+    connectedDashboard.sessions.find((s) => s.id === permanent.session_id).token_hash,
+    undefined
+  )
+  assert.equal(
+    connectedDashboard.sessions.find((s) => s.id === permanent.session_id).user_name,
+    'outsider'
+  )
+  assert.ok(connectedDashboard.history.some((r) => r.scanner_label === 'outsider'))
+  await rpc('lc_manage_scanner', [permanent.session_id, 'delete'])
+  assert.ok(
+    !(await rpc('lc_business_dashboard', [ids.business])).sessions.some(
+      (s) => s.id === permanent.session_id
+    )
+  )
+  assert.ok(
+    (await rpc('lc_business_dashboard', [ids.business])).history.some(
+      (r) => r.scanner_label === 'outsider'
+    ),
+    'Removal preserves redemption history'
+  )
+  await as(null, 'anon')
+  await rejects('lc_scanner_status', [permanent.token, false], 'SCANNER_EXPIRED')
+  await as('member2')
+  const accountRevoked = await rpc('lc_open_scanner', [accountLink.token, 'Caja'])
+  const accountClosed = await rpc('lc_open_scanner', [accountLink.token, 'Caja'])
+  await as('owner')
+  await rpc('lc_manage_scanner', [accountRevoked.session_id, 'revoke'])
+  await as(null, 'anon')
+  await rejects('lc_scanner_status', [accountRevoked.token, false], 'SCANNER_EXPIRED')
+  await rpc('lc_close_scanner', [accountClosed.token])
+  await rejects('lc_scanner_status', [accountClosed.token, false], 'SCANNER_EXPIRED')
+  await as('owner')
+  assert.ok(
+    (await rpc('lc_business_dashboard', [ids.business])).sessions.find(
+      (s) => s.id === accountClosed.session_id
+    ).disconnected_at
+  )
+  await as('member2')
+  const beforeRotation = await rpc('lc_open_scanner', [accountLink.token, 'Caja'])
+  await as('owner')
+  await rpc('lc_rotate_scanner_link', [ids.business])
+  await as(null, 'anon')
+  await rejects('lc_scanner_status', [beforeRotation.token, false], 'SCANNER_EXPIRED')
+  await as('member2')
+  await rejects('lc_open_scanner', [accountLink.token, 'Caja'], 'SCANNER_LINK_INVALID')
+  await root('SELECT 1')
   const preflight = await readFile(
     new URL('../supabase/latido_card_preflight.sql', import.meta.url),
     'utf8'
@@ -768,7 +870,7 @@ try {
   ).rows
   assert.ok(privileged.every((f) => f.proconfig?.includes('search_path=public')))
   console.log(
-    'Latido Card: PostgreSQL migrations, permissions, stock, expiry, limits, idempotency, physical fulfillment, private notes, audit, email retries and repeatable Supabase examples passed.'
+    'Latido Card: PostgreSQL migrations, permanent account-bound Scanner, revocation/removal, permissions, stock, expiry, idempotency, physical fulfillment, audit, email retries and repeatable examples passed.'
   )
 } finally {
   await db.close()

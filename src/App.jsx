@@ -38,6 +38,7 @@ const Landing = lazy(() => import('./pages/Landing'))
 const Club = lazy(() => import('./pages/Club'))
 const LatidoCard = lazy(() => import('./pages/LatidoCard'))
 const LatidoCardBusiness = lazy(() => import('./pages/LatidoCardBusiness'))
+const LatidoCardScannerConnect = lazy(() => import('./pages/LatidoCardScannerConnect'))
 const LatidoCardAdmin = lazy(() => import('./pages/LatidoCardAdmin'))
 const Home = lazy(() => import('./pages/Home'))
 const ResourcePackage = lazy(() => import('./pages/ResourcePackage'))
@@ -790,6 +791,7 @@ function AppShell() {
             <Route path="/club" element={<Club />} />
             <Route path="/card" element={<LatidoCard />} />
             <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusiness /></ProtectedRoute>} />
+            <Route path="/card/scanner/vincular" element={<ProtectedRoute><LatidoCardScannerConnect /></ProtectedRoute>} />
             <Route path="/card/admin" element={<AdminRoute><LatidoCardAdmin /></AdminRoute>} />
             <Route path="/c/:cardToken" element={<div className="lc-page"><h1>Tarjeta Latido</h1><p>Presenta este QR al personal de un negocio participante para consultar tus ventajas.</p><Link to="/card">Ir a Tarjeta Latido</Link></div>} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />

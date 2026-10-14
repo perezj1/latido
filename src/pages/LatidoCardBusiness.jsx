@@ -141,7 +141,10 @@ export default function LatidoCardBusiness() {
       {selected?.active && (
         <div className="lc-layout lc-spaced">
           <section>
-            <details className="lc-panel lc-business-fold" key={`scanners-${provider}`}>
+            <details
+              className="lc-panel lc-business-fold lc-scanner-connections"
+              key={`scanners-${provider}`}
+            >
               <summary>
                 <span>
                   <strong>Scanners vinculados</strong>
@@ -150,41 +153,29 @@ export default function LatidoCardBusiness() {
               </summary>
               <div className="lc-fold-body">
                 <button className="lc-button lc-button--secondary" onClick={load} disabled={busy}>
-                  Actualizar solicitudes
+                  Actualizar conexiones
                 </button>
                 <ul className="lc-history">
                   {data.sessions.map((s) => (
                     <li key={s.id}>
-                      <strong>{s.label}</strong>
+                      <strong>{s.user_name || 'Usuario sin identificar'}</strong>
+                      <small>{s.label}</small>
+                      {!s.user_name && (
+                        <small>Vuelve a vincular este dispositivo con una cuenta de Latido.</small>
+                      )}
                       <small>
-                        {s.revoked_at
-                          ? 'Revocado'
-                          : s.persistent
-                            ? 'Acceso habitual'
-                            : Date.parse(s.expires_at) <= Date.now()
+                        {s.disconnected_at
+                          ? 'Desconectado'
+                          : s.revoked_at
+                            ? 'Revocado'
+                            : s.expires_at && Date.parse(s.expires_at) <= Date.now()
                               ? 'Caducado'
-                              : `Turno hasta ${new Date(s.expires_at).toLocaleTimeString('es-CH', { timeZone: 'Europe/Zurich' })}`}
+                              : s.persistent && !s.expires_at
+                                ? 'Conexión permanente'
+                                : 'Vuelve a vincular tu cuenta'}
                       </small>
-                      {!s.revoked_at && (
-                        <div className="lc-actions">
-                          {s.persistence_requested &&
-                            !s.persistent &&
-                            Date.parse(s.expires_at) > Date.now() && (
-                              <button
-                                className="lc-button"
-                                disabled={busy}
-                                onClick={() =>
-                                  run(() =>
-                                    cardRpc('lc_manage_scanner', {
-                                      p_session: s.id,
-                                      p_action: 'approve'
-                                    })
-                                  )
-                                }
-                              >
-                                Autorizar acceso habitual
-                              </button>
-                            )}
+                      <div className="lc-actions">
+                        {!s.revoked_at && (
                           <button
                             className="lc-button lc-button--danger"
                             disabled={busy}
@@ -199,8 +190,19 @@ export default function LatidoCardBusiness() {
                           >
                             Revocar
                           </button>
-                        </div>
-                      )}
+                        )}
+                        <button
+                          className="lc-button lc-button--secondary"
+                          disabled={busy}
+                          onClick={() =>
+                            run(() =>
+                              cardRpc('lc_manage_scanner', { p_session: s.id, p_action: 'delete' })
+                            )
+                          }
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>

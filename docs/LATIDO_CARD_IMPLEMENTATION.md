@@ -19,11 +19,11 @@ solo reclama promociones especiales. El comercio aplica el beneficio en su
 caja habitual. Latido no procesa la venta del comercio ni conoce su importe.
 
 Scanner es una PWA operativa de `/scanner/`, independiente de la cuenta
-personal de Latido. Los empleados no necesitan cuentas. El propietario sí
-usa su cuenta para gestionar ofertas y accesos. El QR privado del negocio
-autoriza un turno; el propietario aprueba el acceso habitual de cada Scanner.
-Esta aprobación es una decisión de implementación para evitar que una copia
-del QR conceda por sí sola autorización indefinida.
+personal de Latido para las consultas y canjes. El personal inicia sesión en
+su cuenta de Latido al vincular el dispositivo: el servidor obtiene su nombre
+del perfil. El QR privado del negocio concede conexión permanente, sin
+aprobación adicional, hasta revocación, eliminación o desconexión. No requiere
+membresía de pago. El propietario usa su cuenta para gestionar ofertas y accesos.
 
 ## 2. Alcance y estado de esta entrega
 
@@ -33,7 +33,7 @@ del QR conceda por sí sola autorización indefinida.
 | Catálogo, reclamación y liberación de reservas | Implementados |
 | QR digital y emisión/revocación del físico | Implementados |
 | Scanner con cámara y entrada separada | Implementado |
-| Sesiones de turno y autorización habitual | Implementadas |
+| Conexiones permanentes e identificación del usuario | Implementadas |
 | Límites, stock, idempotencia e historial | Implementados en PostgreSQL |
 | Alta directa de negocios, ofertas y suspensión por Latido | Implementadas |
 | QR digital automático, QR de negocio automático y compartir ofertas | Implementados |
@@ -60,7 +60,7 @@ El propietario incorpora su negocio y publica directamente dentro de los límite
 permitidos. La suspensión por incumplimiento corresponde a Latido; el propietario
 no puede revertirla.
 
-Valores iniciales del piloto: turno de 8 horas; QR digital de 5 minutos;
+Valores actuales del piloto: Scanner permanente hasta revocar o desconectar; QR digital de 5 minutos;
 reserva de 7 días configurable entre 1 y 90; meses naturales en Europe/Zurich;
 una ventaja incluida y dos especiales vigentes por establecimiento; una
 reclamación utilizable por socio/oferta especial. No son tarifas comerciales.
@@ -93,6 +93,9 @@ comprobación de solo lectura para no reinstalar esquemas de otras funciones.
    Instalar después `supabase/latido_card_self_service.sql` para alta directa,
    QR automático y favoritas. Si las dos anteriores ya están instaladas, ejecutar
    solamente esta actualización.
+   Instalar al final `supabase/latido_card_scanner_accounts.sql`: identidad del
+   usuario, conexiones permanentes y eliminación. Para actualizar una instalación
+   existente con los tres primeros SQL, ejecutar solo este último archivo.
 7. Ejecutar `npm run dev`. Abrir `/card`, `/card/negocios`, `/card/admin` y
    `/scanner/` según el rol. No aplicar primero en producción.
 
@@ -120,8 +123,9 @@ Las credenciales son aleatorias de 64 caracteres hexadecimales; solo se
 guarda SHA-256. No incluir email, UUID del usuario ni número secuencial en
 la credencial. Los tokens emitidos se muestran una sola vez. El Scanner
 necesita conservar su propia credencial en el navegador: solo se guarda en
-localStorage después de la autorización habitual del servidor, y en
-sessionStorage durante el turno. Estas áreas son accesibles a JavaScript;
+localStorage tras la vinculación autenticada del servidor. La conexión no tiene
+caducidad horaria; el servidor comprueba revocación y estado del negocio en cada uso.
+Estas áreas son accesibles a JavaScript;
 mantener protección frente a XSS y no introducir scripts externos en Scanner.
 
 ## 6. API y autorización
@@ -135,7 +139,8 @@ no son ejecutables por usuarios de la API.
 | --- | --- |
 | Público | `lc_catalog` |
 | Socio autenticado | `lc_member_home`, `lc_issue_digital_card`, `lc_report_lost_card`, `lc_claim_offer`, `lc_release_claim`, `lc_save_favorite` |
-| Scanner con credencial | `lc_open_scanner`, `lc_scanner_status`, `lc_scan_card`, `lc_redeem`, `lc_close_scanner` |
+| Usuario autenticado con QR privado de negocio | `lc_open_scanner` |
+| Scanner con credencial | `lc_scanner_status`, `lc_scan_card`, `lc_redeem`, `lc_close_scanner` |
 | Propietario/admin autenticado | `lc_business_dashboard`, `lc_business_setup`, `lc_save_offer`, `lc_set_offer_active`, `lc_rotate_scanner_link`, `lc_manage_scanner`, `lc_reverse_redemption` |
 | Admin de Latido | `lc_admin_enroll`, `lc_admin_business`, `lc_admin_physical_card` |
 
@@ -161,10 +166,11 @@ nombre del socio y su número; no se entregan datos de contacto.
    anterior como todos los Scanners asociados. Guardarlo detrás de la barra.
 8. Propietario pulsa el botón flotante **Scanner** en «Mi negocio»: se vincula
    al establecimiento seleccionado y abre la cámara. El personal abre `/scanner/`,
-   pulsa **Scanner** y escanea el QR privado del negocio para obtener un turno sin
-   login. El nombre del dispositivo y la entrada manual quedan plegados.
-9. Para acceso habitual, empleado lo solicita y propietario lo autoriza desde
-   su panel. Después Scanner consulta esa autorización y conserva el acceso.
+   pulsa **Scanner** y escanea el QR privado del negocio. La vinculación usa su
+   cuenta de Latido; si falta sesión, se solicita login y se conserva el enlace.
+   El nombre opcional del dispositivo y la entrada manual quedan plegados.
+9. El acceso es permanente desde el inicio. El panel muestra el nombre de usuario;
+   propietario puede revocar o eliminar, y el trabajador desconectar su dispositivo.
 10. Socio abre `/card` y ya ve su QR digital listo. Activa el café; puede presentar
     la tarjeta digital o física. Compartir una oferta abre el menú del móvil o copia
     su enlace público. El destinatario puede crear su cuenta conservando esa oferta.
@@ -215,14 +221,21 @@ el trabajador comprueba las condiciones y pulsa **Canjear**.
 
 El acceso flotante del propietario usa el enlace privado del negocio seleccionado
 con `?camera=1`. Scanner retira inmediatamente el token y el parámetro de la URL.
-Reutiliza la sesión del mismo enlace mediante su huella SHA-256 local; para otro
+Reutiliza la sesión del mismo enlace mediante su huella SHA-256 local, verificando
+primero que el servidor todavía acepta el token; para otro
 negocio obtiene un nuevo acceso y limpia la tarjeta consultada. La huella solo
 evita repetir la vinculación; el servidor sigue validando cada consulta y canje.
 Si hay un canje pendiente, no abrir la cámara ni sustituir el acceso: resolver el
 mismo intento primero. La ventana de cámara usa un diálogo modal, permite cerrar
 con el botón o Escape y libera la cámara al cerrar o detectar un QR.
 
-Esta simplificación usa los RPC existentes y **no requiere SQL adicional**.
+La vinculación autenticada se completa en `/card/scanner/vincular`, protegida por
+login. El QR pendiente se conserva solo en sessionStorage, durante un máximo de
+una hora; no aparece en la URL de login ni en la del enlace de vuelta. La página
+de vinculación llama `lc_open_scanner` con Auth; Scanner sigue usando su cliente
+separado sin Auth. El SQL necesario es `latido_card_scanner_accounts.sql`.
+Los accesos históricos sin cuenta no permiten inferir un nombre: se conservan
+como «Usuario sin identificar» hasta que el dispositivo vuelva a vincularse.
 
 `public/scanner/manifest.json`: id `/latido-scanner`, start_url y scope
 `/scanner/`. No colocar tokens en el manifiesto ni en la URL de arranque.
@@ -281,9 +294,9 @@ credencial se emitió y mantener vigente solo la física actual.
 
 Informes: canjes netos, socios distintos por negocio y oferta, reservas
 caducadas y uso por periodo. No llamarlos facturación, visitas verificadas o
-ahorro generado sin datos adicionales. Scanner identifica el dispositivo,
-no la persona empleada. Añadir cuentas de empleados solo si se requiere esa
-trazabilidad más adelante.
+ahorro generado sin datos adicionales. Scanner identifica el dispositivo y la
+cuenta que lo vinculó. El nombre proviene del perfil, nunca del campo opcional
+de nombre del dispositivo. Eliminar conexiones conserva el historial de canjes.
 
 ## 12. Verificación y despliegue
 
@@ -306,7 +319,7 @@ como vídeo y guarda capturas en `output/latido-card/`.
 
 Antes de piloto: cámaras reales Android/iPhone, tarjetas impresas, instalación
 y almacenamiento independientes, dos Scanners canjeando la misma ventaja a
-la vez, dos socios reclamando la última unidad, caducidad de turno y QR,
+la vez, dos socios reclamando la última unidad, revocación de accesos y caducidad de QR,
 mes natural/cambio de horario, apagado y revocación de negocios, respuestas
 perdidas tras commit y correcciones de canje.
 

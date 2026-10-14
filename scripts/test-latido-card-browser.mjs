@@ -122,7 +122,9 @@ try {
     newBusinessActive = false,
     newBusinessOffers = []
   const scannerOpenCalls = [],
-    cardScanCalls = []
+    cardScanCalls = [],
+    scannerConnections = [],
+    scannerManageCalls = []
   let scannerBusinessName = '[TEST] Restaurante Sabor Latino'
   let physicalRequest = null,
     physicalCalls = []
@@ -212,24 +214,35 @@ try {
     const name = url.pathname.split('/').at(-1),
       args = route.request().method() === 'POST' ? route.request().postDataJSON() : {}
     if (name === 'lc_open_scanner') {
+      assert.equal(
+        route.request().headers().authorization,
+        'Bearer test-token',
+        'Only authenticated app binding can create Scanner access'
+      )
       scannerOpenCalls.push(args)
       scannerBusinessName =
         args.p_link_token === 'e'.repeat(64) ? 'Punto Hispano Asesoría' : offer.business_name
-      return respond(route, {
-        token: sessionToken,
-        session_id: 'session-1',
+      const connection = {
+        token: sessionToken.slice(0, 60) + String(scannerOpenCalls.length).padStart(4, '0'),
+        id: `session-${scannerOpenCalls.length}`,
         business_name: scannerBusinessName,
-        persistent: false,
-        expires_at: new Date(Date.now() + 8 * 3600000).toISOString()
-      })
+        provider_id: args.p_link_token === 'e'.repeat(64) ? 'new' : 'restaurant',
+        linked_user_id: user.id,
+        user_id: user.id,
+        user_name: 'Ana',
+        label: args.p_label,
+        persistent: true,
+        expires_at: null
+      }
+      scannerConnections.push(connection)
+      return respond(route, { ...connection, session_id: connection.id })
     }
-    if (name === 'lc_scanner_status')
-      return respond(route, {
-        session_id: 'session-1',
-        business_name: scannerBusinessName,
-        persistent: false,
-        expires_at: new Date(Date.now() + 8 * 3600000).toISOString()
-      })
+    if (name === 'lc_scanner_status') {
+      const connection = scannerConnections.find((s) => s.token === args.p_session_token)
+      if (!connection || connection.revoked_at)
+        return respond(route, { message: 'SCANNER_EXPIRED' }, 400)
+      return respond(route, { ...connection, session_id: connection.id })
+    }
     if (name === 'lc_scan_card') {
       cardScanCalls.push(args)
       return respond(route, {
@@ -250,7 +263,20 @@ try {
       }
       return respond(route, receipt)
     }
-    if (name === 'lc_close_scanner') return respond(route, null)
+    if (name === 'lc_close_scanner') {
+      const connection = scannerConnections.find((s) => s.token === args.p_session_token)
+      assert.ok(connection)
+      connection.revoked_at = connection.disconnected_at = new Date().toISOString()
+      return respond(route, null)
+    }
+    if (name === 'lc_manage_scanner') {
+      scannerManageCalls.push(args)
+      const connection = scannerConnections.find((s) => s.id === args.p_session)
+      assert.ok(connection)
+      connection.revoked_at = new Date().toISOString()
+      if (args.p_action === 'delete') connection.hidden_at = connection.revoked_at
+      return respond(route, null)
+    }
     if (name === 'lc_business_dashboard')
       return respond(route, {
         businesses: [
@@ -287,7 +313,9 @@ try {
             : args.p_provider === 'new'
               ? newBusinessOffers
               : [],
-        sessions: [],
+        sessions: scannerConnections
+          .filter((s) => s.provider_id === args.p_provider && !s.hidden_at)
+          .map(({ token: _token, ...row }) => row),
         history: []
       })
     if (name === 'lc_business_setup') {
@@ -462,6 +490,12 @@ try {
       return respond(route, { name: 'Ana', interests: [], banned: false })
     return respond(route, [])
   })
+  const user = {
+    id: '00000000-0000-4000-8000-000000000099',
+    email: 'ana@test.example',
+    app_metadata: { provider: 'email' },
+    user_metadata: { name: 'Ana', latido_onboarding_completed: true }
+  }
   const page = await context.newPage()
   page.on('pageerror', (err) => errors.push(err.message))
   await mkdir(output, { recursive: true })
@@ -487,18 +521,43 @@ try {
     window.testCameraQrKind = 'business'
   })
   await page.getByRole('button', { name: 'Scanner', exact: true }).click()
+  await page.waitForURL('**/auth?**')
+  assert.equal(new URL(page.url()).searchParams.get('next'), '/card/scanner/vincular')
+  assert.equal(scannerOpenCalls.length, 0, 'Business binding requires a real account')
+  await page.evaluate(
+    (user) =>
+      localStorage.setItem(
+        'sb-card-test-auth-token',
+        JSON.stringify({
+          access_token: 'test-token',
+          refresh_token: 'test-refresh',
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          user
+        })
+      ),
+    user
+  )
+  await page.goto(`${origin}/card/scanner/vincular`)
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
   await page.getByText(offer.business_name, { exact: true }).waitFor()
   assert.equal(scannerOpenCalls.length, 1)
   assert.equal(scannerOpenCalls[0].p_link_token, scannerToken)
   await page.waitForFunction(() => window.testCameraActive === 0)
-  await page.getByRole('button', { name: 'Cerrar acceso en este dispositivo' }).click()
+  await page.getByRole('button', { name: 'Desconectar este dispositivo' }).click()
   await page.getByRole('heading', { name: 'Escanea y conecta.' }).waitFor()
   await page.goto(`${origin}/scanner/link/${scannerToken}`)
-  assert.equal(await page.locator('details').first().evaluate((el) => el.open), false)
+  assert.equal(
+    await page
+      .locator('details')
+      .first()
+      .evaluate((el) => el.open),
+    false
+  )
   await page.getByRole('button', { name: 'Scanner', exact: true }).click()
   await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
   await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
-  await page.getByRole('button', { name: 'Cerrar acceso en este dispositivo' }).click()
+  await page.getByRole('button', { name: 'Desconectar este dispositivo' }).click()
   await page.getByRole('heading', { name: 'Escanea y conecta.' }).waitFor()
   await page.goto(`${origin}/scanner/link/${scannerToken}`)
   await page
@@ -508,8 +567,23 @@ try {
     .click()
   await page.getByLabel('Nombre de este Scanner').fill('Caja 1')
   await page.getByRole('button', { name: 'Continuar en navegador' }).click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
   await page.getByRole('button', { name: 'Scanner', exact: true }).waitFor()
   assert.equal(scannerOpenCalls.at(-1).p_label, 'Caja 1')
+  await page.getByText('Ana · Conexión permanente', { exact: true }).waitFor()
+  const persistentAccess = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('latido_card_scanner_v1'))
+  )
+  assert.equal(persistentAccess.persistent, true)
+  assert.equal(persistentAccess.expires_at, null)
+  assert.equal(persistentAccess.user_name, 'Ana')
+  assert.equal(await page.evaluate(() => sessionStorage.getItem('latido_card_scanner_v1')), null)
+  const reopenedScanner = await context.newPage()
+  await reopenedScanner.goto(`${origin}/scanner/`)
+  await reopenedScanner.getByText('Ana · Conexión permanente', { exact: true }).waitFor()
+  assert.equal(scannerOpenCalls.length, 3, 'A new tab reuses permanent local access')
+  await reopenedScanner.close()
   assert.equal(
     new URL(page.url()).pathname,
     '/scanner/',
@@ -520,9 +594,9 @@ try {
     '/scanner/manifest.json'
   )
   assert.equal(
-    await page.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith('sb-'))),
-    false,
-    'Scanner must not create a personal auth session'
+    await page.evaluate(() => JSON.parse(localStorage.getItem('sb-card-test-auth-token')).user.id),
+    user.id,
+    'Scanner must preserve the personal account used for binding'
   )
   await page.evaluate(() => {
     window.testCameraQrKind = 'blank'
@@ -562,6 +636,25 @@ try {
     opensBeforePendingReload,
     'Do not replace access during a pending redemption'
   )
+  await page.evaluate((token) => {
+    sessionStorage.setItem(
+      'latido_card_scanner_connection_v1',
+      JSON.stringify({
+        token,
+        label: 'Scanner',
+        created_at: Date.now(),
+        fingerprint: JSON.parse(localStorage.getItem('latido_card_scanner_v1')).link_fingerprint
+      })
+    )
+  }, scannerToken)
+  await page.goto(`${origin}/card/scanner/vincular`)
+  await page.getByRole('alert').filter({ hasText: 'Hay un canje pendiente de confirmar' }).waitFor()
+  assert.equal(
+    scannerOpenCalls.length,
+    opensBeforePendingReload,
+    'The authenticated bridge also protects a pending redemption'
+  )
+  await page.goto(`${origin}/scanner/`)
   await page.getByRole('button', { name: 'Reintentar el mismo canje' }).click()
   await page.getByRole('heading', { name: '✓ Ventaja utilizada' }).waitFor()
   assert.equal(redeemCalls.length, 2)
@@ -573,8 +666,9 @@ try {
     fullPage: true
   })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
-  await page.getByRole('button', { name: 'Cerrar acceso en este dispositivo' }).click()
+  await page.getByRole('button', { name: 'Desconectar este dispositivo' }).click()
   await page.getByRole('heading', { name: 'Escanea y conecta.' }).waitFor()
+  await page.evaluate(() => localStorage.removeItem('sb-card-test-auth-token'))
   await page.goto(`${origin}/card`)
   await page.getByRole('heading', { name: 'Tu Tarjeta Latido te da más.' }).waitFor()
   await page.getByRole('heading', { name: 'Café gratis' }).waitFor()
@@ -597,12 +691,6 @@ try {
     path: path.join(output, 'card-public-mobile.png'),
     fullPage: true
   })
-  const user = {
-    id: '00000000-0000-4000-8000-000000000099',
-    email: 'ana@test.example',
-    app_metadata: { provider: 'email' },
-    user_metadata: { name: 'Ana', latido_onboarding_completed: true }
-  }
   await page.evaluate(
     (user) =>
       localStorage.setItem(
@@ -981,6 +1069,55 @@ try {
     opensBeforeOwnerLaunch + 1,
     'Reuse the existing access for the same business'
   )
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.getByRole('link', { name: 'Mi negocio', exact: true }).click()
+  await page.getByAltText('QR interno del negocio').waitFor()
+  const accountScanners = page
+    .locator('details.lc-business-fold')
+    .filter({ hasText: 'Scanners vinculados' })
+  await accountScanners.locator('summary').click()
+  const activeConnection = accountScanners
+    .getByRole('listitem')
+    .filter({ hasText: 'Conexión permanente' })
+  await activeConnection.getByText('Ana', { exact: true }).waitFor()
+  assert.equal(await accountScanners.getByText(/Turno hasta/).count(), 0)
+  assert.equal(
+    await accountScanners.getByRole('button', { name: 'Autorizar acceso habitual' }).count(),
+    0
+  )
+  await accountScanners.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'scanner-accounts-mobile.png')
+  })
+  const revokedId = scannerConnections.at(-1).id
+  await activeConnection.getByRole('button', { name: 'Revocar', exact: true }).click()
+  await accountScanners.getByText('Revocado', { exact: true }).waitFor()
+  assert.deepEqual(scannerManageCalls.at(-1), { p_session: revokedId, p_action: 'revoke' })
+  await accountScanners.locator('summary').click()
+  await page.getByRole('link', { name: 'Scanner', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  assert.equal(
+    scannerOpenCalls.length,
+    opensBeforeOwnerLaunch + 2,
+    'A revoked connection cannot be reused'
+  )
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.getByRole('link', { name: 'Mi negocio', exact: true }).click()
+  await page.getByAltText('QR interno del negocio').waitFor()
+  await accountScanners.locator('summary').click()
+  const removedId = scannerConnections.at(-1).id
+  await activeConnection.getByRole('button', { name: 'Eliminar', exact: true }).click()
+  await activeConnection.waitFor({ state: 'detached' })
+  assert.deepEqual(scannerManageCalls.at(-1), { p_session: removedId, p_action: 'delete' })
+  assert.equal(await accountScanners.getByText('Conexión permanente', { exact: true }).count(), 0)
+  const disconnectedScanner = await context.newPage()
+  await disconnectedScanner.goto(`${origin}/scanner/`)
+  await disconnectedScanner.getByRole('heading', { name: 'Escanea y conecta.' }).waitFor()
+  await disconnectedScanner.getByRole('alert').filter({ hasText: 'revocado' }).waitFor()
+  await disconnectedScanner.close()
+  await accountScanners.locator('summary').click()
+  await page.getByRole('link', { name: 'Scanner', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
   await page.evaluate(() => {
     window.testCameraQrKind = 'business'
   })
@@ -1022,7 +1159,7 @@ try {
   assert.equal(new URL(page.url()).searchParams.get('next'), nextOfferPath)
   assert.deepEqual(errors, [])
   console.log(
-    'Latido Card browser: unified business/customer QR camera, floating Scanner access, camera cleanup, Scanner isolation, idempotent retry, claims, digital QR, physical request and admin fulfillment passed.'
+    'Latido Card browser: account-bound permanent Scanner, revoke/delete/disconnect, unified QR camera, pending redemption protection, Scanner isolation, claims, physical request and admin fulfillment passed.'
   )
   console.log(`Screenshots: ${output}`)
 } finally {

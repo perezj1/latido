@@ -34,6 +34,8 @@ integración automática con una imprenta o un transportista.
 4. Instalar `supabase/latido_card_physical_requests.sql`.
    Después instalar `supabase/latido_card_self_service.sql` para la participación
    directa de negocios, sus QR automáticos y las favoritas de cada usuario.
+   Instalar al final `supabase/latido_card_scanner_accounts.sql` para vincular
+   cuentas del personal y mantener conexiones permanentes hasta revocar o desconectar.
 5. Confirmar que las cuentas administradoras tienen perfiles y que sus emails
    coinciden con `business_promotion_admins`. Esa tabla determina la autoridad
    del servidor y los destinatarios administrativos de los avisos.

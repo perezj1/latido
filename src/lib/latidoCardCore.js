@@ -1,4 +1,5 @@
 export const SCANNER_STORAGE_KEY = 'latido_card_scanner_v1'
+export const SCANNER_CONNECTION_KEY = 'latido_card_scanner_connection_v1'
 
 export function extractCardToken(value, kind = 'card', base = 'https://latido.ch') {
   const input = String(value || '').trim()
@@ -67,6 +68,8 @@ export function readScannerSession({ local, temporary }, now = Date.now()) {
 export function cardErrorMessage(error) {
   const text = String(error?.message || error || '')
   const messages = {
+    PROFILE_NAME_REQUIRED:
+      'Añade tu nombre en el perfil de Latido antes de vincular este dispositivo.',
     PHYSICAL_REQUEST_ALREADY_OPEN:
       'Ya tienes una solicitud de tarjeta en curso. Puedes consultarla aquí.',
     PHYSICAL_REQUEST_RATE_LIMIT: 'Has enviado varias solicitudes hoy. Vuelve a intentarlo mañana.',

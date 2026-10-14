@@ -27,12 +27,17 @@ el esquema de Latido; `app_notifications.sql` depende a su vez de
 | 1 | `supabase/latido_card.sql` | Membresías, credenciales, negocios, ofertas, reservas, Scanner, canjes y permisos |
 | 2 | `supabase/latido_card_physical_requests.sql` | Solicitudes físicas, estados de entrega, notificaciones, cola email y auditoría |
 | 3 | `supabase/latido_card_self_service.sql` | Alta directa de negocios, suspensión por Latido y QR automático |
+| 4 | `supabase/latido_card_scanner_accounts.sql` | Usuario identificado, conexiones permanentes, revocación y eliminación de Scanner |
 
-**Si ya instalaste los dos SQL anteriores, ejecutar únicamente
-`supabase/latido_card_self_service.sql` para esta actualización.** No hay que cargar
-otra vez los ejemplos ni modificar cuentas. Este archivo también admite repetición.
+**Si ya instalaste los tres primeros, ejecutar únicamente
+`supabase/latido_card_scanner_accounts.sql` para esta actualización.** No hay que cargar
+otra vez los ejemplos ni modificar cuentas. Esta actualización también admite repetición.
+No reinstalar después los SQL anteriores: contienen las versiones previas de esos RPC.
+Los accesos anteriores vigentes pasan a permanentes; los caducados o revocados no
+se reactivan. Los antiguos se crearon sin cuenta: volver a vincularlos para identificar
+a su usuario. Eliminar una conexión bloquea su acceso y la oculta, conservando sus canjes.
 
-Ejecutar cada archivo completo en una consulta separada. Ambos admiten repetición
+Ejecutar cada archivo completo en una consulta separada. Todos admiten repetición
 y conservan los datos existentes de Card. No crear manualmente columnas sueltas,
 quitar RLS o conceder acceso directo a las tablas para solucionar errores.
 
@@ -119,10 +124,16 @@ de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
    desde la misma cámara. Los campos de vinculación manual están plegados.
    Comprobar que una tarjeta sin negocio vinculado no consulta datos del socio;
    cerrar la cámara libera el dispositivo. Un canje pendiente bloquea nuevos
-   escaneos y cambios de negocio. Este cambio de interfaz no necesita nuevo SQL.
+   escaneos y cambios de negocio. Para identificar usuarios y hacer permanente
+   el acceso, instalar `latido_card_scanner_accounts.sql` como se indica arriba.
 
-   **Scanners vinculados** empieza plegado y explica los accesos del personal.
-   Pulsar el título para consultar dispositivos y aprobar o revocar accesos.
+   La primera vinculación requiere iniciar sesión en una cuenta de Latido con nombre
+   en su perfil; no necesita membresía ni pago. Scanner mantiene después su acceso
+   propio en localStorage, sin caducidad horaria. Abrir otra pestaña y comprobarlo.
+   **Scanners vinculados** empieza plegado y muestra el nombre de la cuenta conectada
+   y «Conexión permanente». **Revocar** bloquea el dispositivo; **Eliminar** también
+   lo retira del listado. **Desconectar este dispositivo** cierra el acceso desde Scanner.
+   Verificar que las tres acciones impiden nuevas consultas y canjes con el token anterior.
    **Crear oferta** también empieza plegado. Abrirlo y completar los tres pasos:
    **Tu oferta** (tipo, valor, título y descripción), **Cómo se usa** (ventaja incluida
    o promoción, compra mínima, límites, unidades y vigencia) y **Revisar**.

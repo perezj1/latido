@@ -7,7 +7,8 @@ import {
   classifyLatidoQr,
   readScannerSession,
   storeScannerSession,
-  SCANNER_STORAGE_KEY
+  SCANNER_STORAGE_KEY,
+  SCANNER_CONNECTION_KEY
 } from '../lib/latidoCardCore'
 import LatidoCardCamera from '../components/LatidoCardCamera'
 import { offerUsageLabel, offerBenefitLabel } from '../lib/latidoCardCore'
@@ -134,7 +135,7 @@ export default function ScannerApp() {
         'Hay un canje pendiente de confirmar. Reintenta la misma operación antes de continuar.'
       )
     }
-    status()
+    if (pending || !(linked && launchRef.current.camera)) status()
     const interval = setInterval(() => {
       if (!workingRef.current) status()
     }, 30000)
@@ -173,21 +174,17 @@ export default function ScannerApp() {
       const fingerprint = Array.from(new Uint8Array(digest), (byte) =>
         byte.toString(16).padStart(2, '0')
       ).join('')
-      if (sessionRef.current?.link_fingerprint !== fingerprint) {
-        const next = await rpc('lc_open_scanner', {
-          p_link_token: token,
-          p_label: label
+      sessionStorage.setItem(
+        SCANNER_CONNECTION_KEY,
+        JSON.stringify({
+          token,
+          label,
+          fingerprint,
+          created_at: Date.now()
         })
-        save({ ...next, link_fingerprint: fingerprint })
-      }
-      setInput('')
-      if (!pendingRef.current) {
-        setResult(null)
-        setCardToken('')
-        setChecked(false)
-        setSuccess(null)
-      }
-      return true
+      )
+      window.location.assign('/card/scanner/vincular')
+      return false
     } catch (err) {
       setError(cardErrorMessage(err))
       return false
@@ -349,7 +346,9 @@ export default function ScannerApp() {
               <ScanLine size={24} aria-hidden="true" /> Scanner
             </button>
           </div>
-          <p className="lc-muted">No necesitas una cuenta de empleado.</p>
+          <p className="lc-muted">
+            Vincula el dispositivo con tu cuenta de Latido. Participación gratuita.
+          </p>
           <details className="lc-spaced">
             <summary>Vincular con un enlace o poner nombre al dispositivo</summary>
             <form
@@ -382,9 +381,10 @@ export default function ScannerApp() {
         <>
           <p className="lc-eyebrow">{session.business_name}</p>
           <p className="lc-muted">
-            {session.persistent
-              ? 'Acceso habitual autorizado'
-              : `Acceso de turno hasta ${new Date(session.expires_at).toLocaleTimeString('es-CH', { timeZone: 'Europe/Zurich' })}`}
+            {session.user_name || 'Dispositivo anterior sin usuario identificado'} ·{' '}
+            {session.persistent && !session.expires_at
+              ? 'Conexión permanente'
+              : 'Vuelve a vincular tu cuenta'}
           </p>
           {success && (
             <section className="lc-alert lc-success" role="status">
@@ -509,17 +509,6 @@ export default function ScannerApp() {
           )}
           {!pendingRef.current && (
             <div className="lc-actions lc-spaced">
-              {!session.persistent && (
-                <button
-                  className="lc-button lc-button--secondary"
-                  disabled={busy}
-                  onClick={() => status(true)}
-                >
-                  {session.persistence_requested
-                    ? 'Comprobar autorización habitual'
-                    : 'Solicitar acceso habitual al propietario'}
-                </button>
-              )}
               <button
                 className="lc-button lc-button--secondary"
                 disabled={busy}
@@ -537,7 +526,7 @@ export default function ScannerApp() {
                   }
                 }}
               >
-                Cerrar acceso en este dispositivo
+                Desconectar este dispositivo
               </button>
             </div>
           )}

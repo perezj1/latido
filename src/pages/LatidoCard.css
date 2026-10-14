@@ -513,6 +513,9 @@
   cursor: default;
   transform: none;
 }
+.lc-page:has(.lc-scanner-connections[open]) .lc-scanner-fab {
+  display: none;
+}
 .lc-scanner-fab:focus-visible {
   outline: 3px solid var(--latido-color-accent);
   outline-offset: 4px;
