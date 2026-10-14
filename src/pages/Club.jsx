@@ -56,12 +56,16 @@ const CATEGORY_FILTERS = [
 ]
 
 const productPurchaseType = product => (
-  product?.purchaseType === 'addon' || ['bolsas', 'carcasas'].includes(product?.category)
+  product?.category !== 'bolsas'
+    && (product?.purchaseType === 'addon' || product?.category === 'carcasas')
     ? 'addon'
     : 'base'
 )
 
-const cartHasGarment = cart => cart.some(item => item.purchaseType !== 'addon')
+const cartHasGarment = cart => cart.some(item => (
+  ['camisetas', 'sudaderas'].includes(item.category)
+  || (!item.category && /^(camiseta|sudadera)/i.test(item.shortName || item.name || ''))
+))
 
 const COLOR_ORDER = ['Blanco', 'Natural', 'Arena', 'Ash', 'ring spun sports grey', 'Negro', 'Único']
 
@@ -260,7 +264,7 @@ const FALLBACK_PRODUCTS = [
     description: 'Bolsa de algodón natural con el diseño granate, asas largas, costuras reforzadas y 10 litros de capacidad.',
     price: 17.9,
     compareAtPrice: 24.9,
-    purchaseType: 'addon',
+    purchaseType: 'base',
     image: '/club/totebag-hablas-espanol-granate.jpg',
     images: [{ url: '/club/totebag-hablas-espanol-granate.jpg', label: 'Frontal' }],
     imageFallback: '/club/totebag-hablas-espanol-granate.jpg',
@@ -287,7 +291,9 @@ function readCart() {
     return Array.isArray(parsed)
       ? parsed.filter(item => isVisibleProduct({
           category: item.category || (/^carcasa/i.test(item.shortName || item.name || '') ? 'carcasas' : undefined),
-        }))
+        })).map(item => item.category === 'bolsas' || /^bolsa/i.test(item.shortName || item.name || '')
+          ? { ...item, category: 'bolsas', purchaseType: 'base' }
+          : item)
       : []
   } catch {
     return []
@@ -475,7 +481,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
   }), [products])
 
   const garmentChoices = useMemo(() => (
-    catalogChoices(products, item => productPurchaseType(item) === 'base')
+    catalogChoices(products, item => ['camisetas', 'sudaderas'].includes(item.category))
   ), [products])
 
   const designs = useMemo(() => {
@@ -668,7 +674,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
             <span className="club-shop__tab-copy">
               <strong>{category.label}</strong>
               <small>
-                {category.count} {category.count === 1 ? 'diseño' : 'diseños'} · {['bolsas', 'carcasas'].includes(category.id) ? `+${money(category.price)} con tu prenda` : money(category.price)}
+                {category.count} {category.count === 1 ? 'diseño' : 'diseños'} · {category.id === 'carcasas' ? `+${money(category.price)} con tu prenda` : money(category.price)}
               </small>
             </span>
           </button>
@@ -997,7 +1003,7 @@ function CartSuggestionShelf({ title, choices, onChoose }) {
           <button key={choice.key} type="button" onClick={() => onChoose(choice)}>
             <span><ProductArtwork image={choice.image} alt="" /></span>
             <b>{choice.label}</b>
-            <small>{choice.categoryLabel} · {choice.categoryId === 'bolsas' || choice.categoryId === 'carcasas' ? '+' : ''}{money(choice.price)}</small>
+            <small>{choice.categoryLabel} · {choice.categoryId === 'carcasas' ? '+' : ''}{money(choice.price)}</small>
           </button>
         ))}
       </div>
@@ -1010,10 +1016,10 @@ function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onB
   const hasGarment = cartHasGarment(cart)
   const hasOrphanAddon = cart.some(item => item.purchaseType === 'addon') && !hasGarment
   const addonChoices = useMemo(() => (
-    catalogChoices(products, item => productPurchaseType(item) === 'addon')
+    catalogChoices(products, item => item.category === 'bolsas' || productPurchaseType(item) === 'addon')
   ), [products])
   const garmentChoices = useMemo(() => (
-    catalogChoices(products, item => productPurchaseType(item) === 'base')
+    catalogChoices(products, item => ['camisetas', 'sudaderas'].includes(item.category))
   ), [products])
 
   useEffect(() => {
@@ -1471,7 +1477,7 @@ export default function Club() {
             <details><summary>¿Cuánto tarda el envío?<Plus size={18} /></summary><p>El plazo de entrega estimado es de 10 a 15 días desde la confirmación del pago, incluyendo la fabricación bajo demanda y el envío a Suiza. Los envíos no incluyen número de seguimiento: si pasados 15 días no has recibido tu pedido, responde al email de confirmación y lo revisamos.</p></details>
             <details><summary>¿Dónde introduzco mi dirección?<Plus size={18} /></summary><p>Después de revisar la bolsa pasarás al pago seguro de Stripe. Allí indicarás tu email, teléfono y dirección de entrega una sola vez.</p></details>
             <details><summary>¿Dónde se fabrica?<Plus size={18} /></summary><p>Nuestro proveedor asigna cada pedido al centro de producción más cercano al destino, siempre que el producto y el color estén disponibles.</p></details>
-            <details><summary>¿Puedo comprar un complemento por separado?<Plus size={18} /></summary><p>Por ahora los complementos solo se venden junto a una camiseta o sudadera, porque producirlos y enviarlos por separado encarecería demasiado su precio.</p></details>
+            <details><summary>¿Puedo comprar una bolsa por separado?<Plus size={18} /></summary><p>Sí. Puedes comprar una bolsa por separado o combinarla con otros productos de la colección. No necesitas añadir una camiseta o sudadera.</p></details>
             <details><summary>¿Puedo cambiar la talla?<Plus size={18} /></summary><p>Las prendas se producen bajo demanda, por eso conviene revisar bien la talla antes de pagar. Si recibes una pieza con un defecto de producción, escríbenos para revisarlo.</p></details>
           </div>
         </section>
