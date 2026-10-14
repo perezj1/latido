@@ -149,7 +149,7 @@ email a `info@latido.ch`, y el visitante entra primero en su cuenta. No activa n
 cobra una membresía automáticamente.
 
 La interfaz tiene solo **Disponibles** y **Activas**, debajo de **Ventajas para ti**.
-Las filas muestran título, negocio, límite y vigencia; **Ver condiciones** despliega
+Las filas muestran título, negocio, límite y vigencia; **Ver detalles** despliega
 el detalle completo. Ya no hay Guardadas. La tabla y RPC de favoritas de la versión
 anterior se conservan por compatibilidad; compartir ofertas no necesita SQL nuevo.
 

@@ -558,13 +558,13 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 220px);
   gap: 24px;
-  align-items: center;
+  align-items: end;
   margin-top: 24px;
 }
 .lc-card-owner {
   display: grid;
-  gap: 6px;
-  text-align: center;
+  gap: 4px;
+  text-align: left;
   overflow-wrap: anywhere;
 }
 .lc-card-owner p {
@@ -592,14 +592,32 @@
   margin-bottom: 6px;
 }
 .lc-offer-tabs {
+  position: relative;
   display: flex;
-  gap: 28px;
+  justify-content: center;
+  gap: 12px;
   padding: 0;
   background: transparent;
   border-bottom: 1px solid var(--latido-color-border);
   margin-bottom: 16px;
 }
+.lc-offer-tabs::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: calc(50% - 138px);
+  width: 132px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--latido-color-accent);
+  transition: transform 240ms var(--latido-ease-standard);
+  pointer-events: none;
+}
+.lc-offer-tabs[data-active='activated']::after {
+  transform: translateX(144px);
+}
 .lc-offer-tabs button {
+  width: 132px;
   border: 0;
   border-bottom: 3px solid transparent;
   background: transparent;
@@ -609,13 +627,30 @@
     600 13px/1.4 'Poppins',
     sans-serif;
   cursor: pointer;
+  transition: color 180ms ease;
 }
 .lc-offer-tabs button[aria-selected='true'] {
-  border-bottom-color: var(--latido-color-accent);
   color: var(--latido-color-accent);
 }
+.lc-offer-tabs button:hover {
+  color: var(--latido-color-accent);
+}
+.lc-benefits [role='tabpanel'],
+.lc-offer-expanded:not([hidden]) {
+  animation: lc-offer-enter 180ms ease-out;
+}
+@keyframes lc-offer-enter {
+  from {
+    opacity: 0.4;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .lc-offer-tabs button:focus-visible,
-.lc-offer-details summary:focus-visible,
+.lc-share-offer:focus-visible,
 .lc-card-management summary:focus-visible {
   outline: 3px solid var(--latido-color-accent-border);
   outline-offset: 2px;
@@ -629,6 +664,7 @@
   display: none;
 }
 .lc-offer-row {
+  position: relative;
   display: grid;
   grid-template-columns: 74px minmax(0, 1fr);
   gap: 16px;
@@ -669,6 +705,7 @@
 }
 .lc-offer-row h3 {
   font-size: 16px;
+  padding-right: 40px;
   margin: 0 0 3px;
 }
 .lc-offer-row p.lc-offer-business {
@@ -683,22 +720,14 @@
   line-height: 1.5;
   margin: 0;
 }
-.lc-offer-details {
-  margin: 2px 0 0;
+.lc-offer-expanded {
+  margin-top: 10px;
 }
-.lc-offer-details summary {
-  width: fit-content;
-  color: var(--latido-color-text-muted);
-  font-size: 10px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 5px 0;
-}
-.lc-offer-details p {
+.lc-offer-expanded p {
   font-size: 12px;
   margin: 5px 0;
 }
-.lc-offer-details small {
+.lc-offer-expanded small {
   margin: 0 0 8px;
 }
 .lc-offer-row small.lc-offer-state {
@@ -711,12 +740,47 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 12px;
+}
+.lc-share-offer {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--latido-color-border);
+  border-radius: 50%;
+  color: var(--latido-color-accent);
+  background: var(--latido-color-surface);
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    transform 180ms ease;
+}
+.lc-share-offer:hover {
+  background: var(--latido-color-accent-subtle);
+}
+.lc-share-offer:active {
+  transform: scale(0.94);
 }
 .lc-offer-footer .lc-button {
   padding: 10px 12px;
   min-height: 40px;
   font-size: 11px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-offer-tabs::after,
+  .lc-offer-tabs button,
+  .lc-share-offer {
+    transition: none;
+  }
+  .lc-benefits [role='tabpanel'],
+  .lc-offer-expanded:not([hidden]) {
+    animation: none;
+  }
 }
 .lc-offer-footer .lc-badge {
   margin: 0;

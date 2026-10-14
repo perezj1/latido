@@ -76,6 +76,7 @@ export default function LatidoCard() {
     [notice, setNotice] = useState(''),
     [qrRetry, setQrRetry] = useState(0)
   const [tab, setTab] = useState('available')
+  const [expandedOffers, setExpandedOffers] = useState(() => new Set())
   const tabId = useId()
   const refresh = useCallback(async () => {
     setError('')
@@ -286,7 +287,12 @@ export default function LatidoCard() {
               <h2>Ventajas para ti</h2>
               <span className="lc-badge">{offers.length} ventajas</span>
             </div>
-            <div className="lc-offer-tabs" role="tablist" aria-label="Tus ventajas">
+            <div
+              className="lc-offer-tabs"
+              role="tablist"
+              aria-label="Tus ventajas"
+              data-active={tab}
+            >
               {tabs.map(([key, label]) => (
                 <button
                   key={key}
@@ -315,7 +321,12 @@ export default function LatidoCard() {
                 </button>
               ))}
             </div>
-            <div role="tabpanel" id={`${tabId}-panel`} aria-labelledby={`${tabId}-${tab}`}>
+            <div
+              key={tab}
+              role="tabpanel"
+              id={`${tabId}-panel`}
+              aria-labelledby={`${tabId}-${tab}`}
+            >
               {sharedOfferId && !sharedOffer && (
                 <p className="lc-alert">
                   Esta oferta ya no está disponible. Descubre las ventajas actuales de Latido.
@@ -333,11 +344,20 @@ export default function LatidoCard() {
               <div className="lc-offer-list">
                 {offers.map((offer) => {
                   const activated = offer.claim?.status === 'claimed'
+                  const expanded = expandedOffers.has(offer.id)
                   return (
                     <article
                       className={`lc-offer lc-offer-row ${offer.id === sharedOfferId ? 'lc-offer-row--shared' : ''}`}
                       key={offer.id}
                     >
+                      <button
+                        className="lc-share-offer"
+                        aria-label={`Compartir ${offer.title}`}
+                        title="Compartir oferta"
+                        onClick={() => share(offer)}
+                      >
+                        <Share2 size={17} aria-hidden="true" />
+                      </button>
                       <div className="lc-offer-media">
                         {offer.business_photo_url ? (
                           <img
@@ -370,10 +390,6 @@ export default function LatidoCard() {
                             timeZone: 'Europe/Zurich'
                           })}
                         </small>
-                        <details className="lc-offer-details">
-                          <summary>Ver condiciones</summary>
-                          <OfferConditions offer={offer} />
-                        </details>
                         {(activated || (!member?.active && offer.remaining === 0)) && (
                           <small className="lc-offer-state">
                             {activated
@@ -383,12 +399,19 @@ export default function LatidoCard() {
                         )}
                         <div className="lc-offer-footer">
                           <button
-                            className="lc-button lc-button--secondary lc-share-offer"
-                            aria-label={`Compartir ${offer.title}`}
-                            onClick={() => share(offer)}
+                            className="lc-button lc-button--secondary"
+                            aria-expanded={expanded}
+                            aria-controls={`lc-offer-details-${offer.id}`}
+                            onClick={() =>
+                              setExpandedOffers((previous) => {
+                                const next = new Set(previous)
+                                if (next.has(offer.id)) next.delete(offer.id)
+                                else next.add(offer.id)
+                                return next
+                              })
+                            }
                           >
-                            <Share2 size={15} aria-hidden="true" />
-                            Compartir
+                            Ver detalles
                           </button>
                           {offer.requires_claim ? (
                             <div className="lc-offer-activation">
@@ -421,6 +444,13 @@ export default function LatidoCard() {
                               </span>
                             )
                           )}
+                        </div>
+                        <div
+                          className="lc-offer-expanded"
+                          id={`lc-offer-details-${offer.id}`}
+                          hidden={!expanded}
+                        >
+                          <OfferConditions offer={offer} />
                         </div>
                       </div>
                     </article>

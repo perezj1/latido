@@ -407,7 +407,11 @@ try {
   assert.equal(redeemCalls.length, 2)
   assert.equal(redeemCalls[0].p_request_id, redeemCalls[1].p_request_id)
   await mkdir(output, { recursive: true })
-  await page.screenshot({ path: path.join(output, 'scanner-mobile.png'), fullPage: true })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'scanner-mobile.png'),
+    fullPage: true
+  })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await page.getByRole('button', { name: 'Cerrar acceso en este dispositivo' }).click()
   await page.getByRole('heading', { name: 'Vincular Scanner' }).waitFor()
@@ -428,7 +432,11 @@ try {
     )
   )
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
-  await page.screenshot({ path: path.join(output, 'card-public-mobile.png'), fullPage: true })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-public-mobile.png'),
+    fullPage: true
+  })
   const user = {
     id: '00000000-0000-4000-8000-000000000099',
     email: 'ana@test.example',
@@ -453,7 +461,11 @@ try {
   assert.equal(new URL(page.url()).pathname, '/card')
   await page.getByAltText('QR de Tarjeta Latido').waitFor()
   assert.equal(digitalCalls, 1, 'The card is ready without a manual QR button')
-  await page.screenshot({ path: path.join(output, 'card-ready-mobile.png'), fullPage: true })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-ready-mobile.png'),
+    fullPage: true
+  })
   assert.equal(await page.locator('.lc-card-intro').count(), 0)
   assert.equal(
     await page.getByRole('navigation', { name: 'Navegación de Tarjeta Latido' }).count(),
@@ -535,12 +547,12 @@ try {
   )
   await manualSharePanel.getByRole('button', { name: 'Cerrar', exact: true }).click()
   const compactOffer = page.locator('.lc-offer-row').filter({ hasText: '15 % desde CHF 50' })
-  await compactOffer.getByText('Ver condiciones', { exact: true }).click()
+  await compactOffer.getByRole('button', { name: 'Ver detalles', exact: true }).click()
   assert.equal(
     await compactOffer.getByText(/No acumulable con otras ventajas Latido/).isVisible(),
     true
   )
-  await compactOffer.getByText('Ver condiciones', { exact: true }).click()
+  await compactOffer.getByRole('button', { name: 'Ver detalles', exact: true }).click()
   assert.equal(
     await page
       .locator('.lc-offer')
@@ -556,7 +568,11 @@ try {
     .click()
   await page.getByRole('tab', { name: 'Activas', exact: true }).click()
   await page.getByRole('button', { name: 'Desactivar', exact: true }).waitFor()
-  await page.screenshot({ path: path.join(output, 'card-activated-mobile.png'), fullPage: true })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-activated-mobile.png'),
+    fullPage: true
+  })
   await page.getByRole('tab', { name: 'Disponibles', exact: true }).click()
   assert.equal(await page.getByRole('heading', { name: 'Café gratis', exact: true }).count(), 0)
   await page.getByText('⚙️ Gestionar mi tarjeta e historial', { exact: true }).click()
@@ -569,10 +585,18 @@ try {
   await page.getByText('LCP-000044 · Solicitada', { exact: true }).waitFor()
   assert.equal(physicalCalls.length, 1)
   assert.equal(physicalCalls[0].p_details.postal_code, '6004')
-  await page.screenshot({ path: path.join(output, 'card-member-mobile.png'), fullPage: true })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-member-mobile.png'),
+    fullPage: true
+  })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await page.setViewportSize({ width: 1440, height: 1000 })
-  await page.screenshot({ path: path.join(output, 'card-member-desktop.png'), fullPage: true })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-member-desktop.png'),
+    fullPage: true
+  })
   membershipMode = 'none'
   await page.reload()
   await page.getByRole('link', { name: 'Solicitar mi tarjeta', exact: true }).waitFor()
@@ -614,7 +638,10 @@ try {
   await queue.getByLabel('Mensaje visible para el socio').fill('Tu tarjeta está en camino.')
   await queue.getByLabel('Enlace de seguimiento (HTTPS)').fill('https://post.example/track/test')
   await queue.getByRole('button', { name: 'Enviada', exact: true }).click()
-  await queue.screenshot({ path: path.join(output, 'physical-admin-desktop.png') })
+  await queue.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'physical-admin-desktop.png')
+  })
   await queue.getByRole('button', { name: 'Entregada', exact: true }).click()
   await queue.getByLabel('Estado de solicitudes').selectOption('all')
   await queue
@@ -625,7 +652,10 @@ try {
   assert.equal(physicalRequest.internal_note, 'Nota privada para preparación')
   await page.setViewportSize({ width: 390, height: 844 })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
-  await queue.screenshot({ path: path.join(output, 'physical-admin-mobile.png') })
+  await queue.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'physical-admin-mobile.png')
+  })
   await page.goto(`${origin}/card/negocios`)
   await page.getByLabel('Selecciona tu negocio').selectOption('new')
   await page.getByRole('heading', { name: 'Crear una ventaja', exact: true }).waitFor()
@@ -644,9 +674,17 @@ try {
     'Refresh reuses the cached QR'
   )
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
-  await page.screenshot({ path: path.join(output, 'card-business-mobile.png'), fullPage: true })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-business-mobile.png'),
+    fullPage: true
+  })
   await page.setViewportSize({ width: 1440, height: 1000 })
-  await page.screenshot({ path: path.join(output, 'card-business-desktop.png'), fullPage: true })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-business-desktop.png'),
+    fullPage: true
+  })
   await page.evaluate(() => localStorage.removeItem('sb-card-test-auth-token'))
   await page.goto(copiedOfferLink)
   const accountCta = page.getByRole('link', {
@@ -661,7 +699,11 @@ try {
   )
   assert.equal(nextOfferPath, `/card?oferta=${special.id}`)
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.screenshot({ path: path.join(output, 'card-shared-offer-mobile.png'), fullPage: true })
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(output, 'card-shared-offer-mobile.png'),
+    fullPage: true
+  })
   await accountCta.click()
   assert.equal(new URL(page.url()).pathname, '/auth')
   assert.equal(new URL(page.url()).searchParams.get('mode'), 'register')
