@@ -226,6 +226,8 @@ npm run test:search   # Calidad del buscador global
 ## Latido Card (piloto)
 
 Guía técnica y pasos de instalación: [docs/LATIDO_CARD_IMPLEMENTATION.md](docs/LATIDO_CARD_IMPLEMENTATION.md).
+Orden exacto de SQL, cuentas de prueba y ejemplos:
+[docs/LATIDO_CARD_SUPABASE_AND_TESTS.md](docs/LATIDO_CARD_SUPABASE_AND_TESTS.md).
 
 Rutas: `/card`, `/card/negocios`, `/card/admin` y `/scanner/`.
 Instala `supabase/latido_card.sql` en una base de desarrollo con los requisitos

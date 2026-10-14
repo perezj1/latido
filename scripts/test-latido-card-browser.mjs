@@ -89,7 +89,8 @@ try {
   const offer = {
     id: '00000000-0000-4000-8000-000000000001',
     title: '15 % desde CHF 50',
-    business_name: 'Restaurante Prueba',
+    business_name: 'Restaurante Sabor Latino',
+    city: 'Zürich',
     minimum_spend: 50,
     benefit_type: 'percent',
     benefit_value: 15,
@@ -97,6 +98,7 @@ try {
     usage_limit: 1,
     ends_at: new Date(Date.now() + 86400000).toISOString(),
     requires_claim: false,
+    active: true,
     available: true,
     remaining: null
   }
@@ -111,6 +113,48 @@ try {
     minimum_spend: 0,
     usage_period: 'lifetime'
   }
+  const additionalExamples = [
+    {
+      ...offer,
+      id: '00000000-0000-4000-8000-000000000003',
+      business_name: 'Peluquería Brisa Latina',
+      city: 'Luzern',
+      title: '10 % en tu corte',
+      benefit_value: 10,
+      minimum_spend: 0,
+      usage_period: 'unlimited'
+    },
+    {
+      ...offer,
+      id: '00000000-0000-4000-8000-000000000004',
+      business_name: 'Tienda Raíces',
+      city: 'Bern',
+      title: 'CHF 10 desde CHF 80',
+      benefit_type: 'fixed',
+      benefit_value: 10,
+      minimum_spend: 80
+    },
+    {
+      ...special,
+      id: '00000000-0000-4000-8000-000000000005',
+      business_name: 'Peluquería Brisa Latina',
+      city: 'Luzern',
+      title: 'Asesoría capilar',
+      benefit_type: 'service',
+      remaining: 0,
+      description: 'Asesoría de 15 minutos con cita previa.'
+    },
+    {
+      ...special,
+      id: '00000000-0000-4000-8000-000000000006',
+      business_name: 'Tienda Raíces',
+      city: 'Bern',
+      title: '2×1 en productos seleccionados',
+      benefit_type: 'two_for_one',
+      remaining: 9,
+      claim: { status: 'used', expires_at: offer.ends_at }
+    }
+  ]
   const respond = (route, body, status = 200) =>
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
   await context.route('**/*', async (route) => {
@@ -127,14 +171,14 @@ try {
       return respond(route, {
         token: sessionToken,
         session_id: 'session-1',
-        business_name: 'Restaurante Prueba',
+        business_name: offer.business_name,
         persistent: false,
         expires_at: new Date(Date.now() + 8 * 3600000).toISOString()
       })
     if (name === 'lc_scanner_status')
       return respond(route, {
         session_id: 'session-1',
-        business_name: 'Restaurante Prueba',
+        business_name: offer.business_name,
         persistent: false,
         expires_at: new Date(Date.now() + 8 * 3600000).toISOString()
       })
@@ -149,7 +193,18 @@ try {
       return respond(route, receipt)
     }
     if (name === 'lc_close_scanner') return respond(route, null)
-    if (name === 'lc_catalog') return respond(route, [offer, special])
+    if (name === 'lc_business_dashboard')
+      return respond(route, {
+        businesses: [
+          { id: 'restaurant', name: offer.business_name, active: true, participating: true },
+          { id: 'salon', name: 'Peluquería Brisa Latina', active: true, participating: true },
+          { id: 'shop', name: 'Tienda Raíces', active: true, participating: true }
+        ],
+        offers: args.p_provider === 'restaurant' ? [offer, special] : [],
+        sessions: [],
+        history: []
+      })
+    if (name === 'lc_catalog') return respond(route, [offer, special, ...additionalExamples])
     if (name === 'lc_member_physical_requests') {
       const visible = physicalRequest ? { ...physicalRequest } : null
       if (visible)
@@ -236,7 +291,12 @@ try {
         membership: { member_number: 12847, active: true, valid_until: offer.ends_at },
         offers: [
           offer,
-          { ...special, claim: claimed ? { status: 'claimed', expires_at: offer.ends_at } : null }
+          {
+            ...special,
+            remaining: claimed ? 19 : 20,
+            claim: claimed ? { status: 'claimed', expires_at: offer.ends_at } : null
+          },
+          ...additionalExamples
         ],
         history: []
       })
@@ -296,6 +356,19 @@ try {
   await page.goto(`${origin}/card`)
   await page.getByRole('heading', { name: 'Tu comunidad también tiene ventajas.' }).waitFor()
   await page.getByRole('heading', { name: 'Café gratis' }).waitFor()
+  assert.equal(await page.locator('.lc-offer').count(), 6)
+  for (const title of [
+    '10 % en tu corte',
+    'CHF 10 desde CHF 80',
+    'Asesoría capilar',
+    '2×1 en productos seleccionados'
+  ])
+    await page.getByRole('heading', { name: title, exact: true }).waitFor()
+  assert.ok(
+    (await page.locator('.lc-page').evaluate((el) => getComputedStyle(el).fontFamily)).includes(
+      'Poppins'
+    )
+  )
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await page.screenshot({ path: path.join(output, 'card-public-mobile.png'), fullPage: true })
   const user = {
@@ -318,11 +391,23 @@ try {
     user
   )
   await page.goto(`${origin}/perfil`)
-  await page.getByRole('button',{name:/Mi Latido Card/}).click()
-  assert.equal(new URL(page.url()).pathname,'/card')
+  await page.getByRole('button', { name: /Mi Latido Card/ }).click()
+  assert.equal(new URL(page.url()).pathname, '/card')
   await page.getByRole('button', { name: 'Mostrar mi QR digital' }).click()
   await page.getByAltText('QR de Latido Card').waitFor()
-  await page.getByRole('button', { name: 'Reclamar', exact: true }).click()
+  assert.equal(
+    await page
+      .locator('.lc-offer')
+      .filter({ hasText: 'Asesoría capilar' })
+      .getByRole('button', { name: 'Agotado', exact: true })
+      .isDisabled(),
+    true
+  )
+  await page
+    .locator('.lc-offer')
+    .filter({ hasText: 'Café gratis' })
+    .getByRole('button', { name: 'Reclamar', exact: true })
+    .click()
   await page.getByRole('button', { name: 'Reclamado', exact: true }).waitFor()
   await page.getByRole('button', { name: 'Solicitar tarjeta física', exact: true }).click()
   await page.getByLabel('Nombre para la entrega').fill('Ana Prueba')
@@ -372,6 +457,14 @@ try {
   await page.setViewportSize({ width: 390, height: 844 })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await queue.screenshot({ path: path.join(output, 'physical-admin-mobile.png') })
+  await page.goto(`${origin}/card/negocios`)
+  await page.getByLabel('Selecciona tu negocio').selectOption('restaurant')
+  await page.getByRole('heading', { name: 'Crear una ventaja', exact: true }).waitFor()
+  await page.getByText('Participación gratuita · Sin membresía de pago', { exact: true }).waitFor()
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+  await page.screenshot({ path: path.join(output, 'card-business-mobile.png'), fullPage: true })
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.screenshot({ path: path.join(output, 'card-business-desktop.png'), fullPage: true })
   assert.deepEqual(errors, [])
   console.log(
     'Latido Card browser: QR decoding, Scanner isolation, idempotent retry, claims, digital QR, physical request and admin fulfillment passed.'

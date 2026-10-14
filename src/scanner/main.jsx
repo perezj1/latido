@@ -1,13 +1,15 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import '@fontsource/poppins/latin-400.css'
+import '@fontsource/poppins/latin-500.css'
 import '@fontsource/poppins/latin-600.css'
 import '@fontsource/poppins/latin-700.css'
 import '@fontsource/poppins/latin-800.css'
+import '../styles/tokens.css'
 import ScannerApp from './ScannerApp'
 
 document.body.style.margin = '0'
-document.body.style.background = '#f8faff'
+document.body.style.background = 'var(--latido-color-surface-canvas)'
 createRoot(document.getElementById('root')).render(<ScannerApp />)
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   navigator.serviceWorker

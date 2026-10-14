@@ -61,6 +61,9 @@ export default function LatidoCardBusiness() {
         <span className="lc-eyebrow">Negocios participantes</span>
         <h1>Una ventaja para tu comunidad.</h1>
         <p>Gestiona las ofertas de tu establecimiento y los dispositivos que pueden canjearlas.</p>
+        <p className="lc-badge lc-badge--included">
+          Participación gratuita · Sin membresía de pago
+        </p>
         <a className="lc-button lc-button--secondary" href="/scanner/">
           Abrir Latido Scanner
         </a>

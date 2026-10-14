@@ -514,6 +514,64 @@ try {
     ).rows[0].n,
     1
   )
+  // Execute the exact optional Supabase examples, not a separate test seed.
+  await root('SELECT 1')
+  await db.exec(`CREATE TABLE auth.users(id uuid primary key,email text);
+    ALTER TABLE public.providers ADD COLUMN category text;
+    ALTER TABLE public.providers ADD COLUMN canton text;
+    ALTER TABLE public.providers ADD COLUMN description text;
+    ALTER TABLE public.providers ADD COLUMN active boolean DEFAULT false;`)
+  const demoSql = await readFile(
+    new URL('../supabase/latido_card_test_examples.sql', import.meta.url),
+    'utf8'
+  )
+  await assert.rejects(() => db.exec(demoSql), /Faltan cuentas Auth/)
+  await db.exec('ROLLBACK')
+  for (const key of ['card.socio', 'card.inactivo', 'card.negocio']) {
+    ids[key] = randomUUID()
+    await db.query('INSERT INTO auth.users VALUES($1,$2)', [ids[key], `${key}@latido.test`])
+    await db.query('INSERT INTO profiles VALUES($1,$2,$3)', [ids[key], key, `${key}@latido.test`])
+  }
+  const jobsBeforeDemo = (
+    await db.query('SELECT count(*)::int AS n FROM latido_card_physical_email_queue')
+  ).rows[0].n
+  await db.exec(demoSql)
+  await db.exec(demoSql)
+  assert.equal(
+    (await db.query('SELECT count(*)::int AS n FROM latido_card_physical_email_queue')).rows[0].n,
+    jobsBeforeDemo
+  )
+  await as('card.socio')
+  const demoHome = await rpc('lc_member_home')
+  assert.equal(demoHome.membership.active, true)
+  const demoOffers = demoHome.offers.filter((o) => o.title.startsWith('[TEST]'))
+  assert.equal(demoOffers.length, 6)
+  assert.deepEqual(
+    new Set(demoOffers.map((o) => o.benefit_type)),
+    new Set(['percent', 'fixed', 'gift', 'service', 'two_for_one'])
+  )
+  const demoGift = demoOffers.find((o) => o.benefit_type === 'gift')
+  await rpc('lc_claim_offer', [demoGift.id])
+  await root('SELECT 1')
+  await db.exec(demoSql)
+  await as('card.socio')
+  assert.equal((await rpc('lc_member_home')).offers.find((o) => o.id === demoGift.id).remaining, 19)
+  await as('card.inactivo')
+  assert.equal((await rpc('lc_member_home')).membership.active, false)
+  await rejects('lc_issue_digital_card', [], 'MEMBERSHIP_INACTIVE')
+  await as('card.negocio')
+  assert.equal((await rpc('lc_member_home')).membership, null)
+  assert.equal(
+    (await rpc('lc_business_dashboard', ['ca4d0000-0000-4000-8000-000000000101'])).offers.length,
+    2
+  )
+  await root('SELECT 1')
+  const preflight = await readFile(
+    new URL('../supabase/latido_card_preflight.sql', import.meta.url),
+    'utf8'
+  )
+  const readiness = await db.exec(preflight)
+  assert.ok(readiness[0].rows.every((row) => row.estado === 'OK'))
   const privileged = (
     await db.query(
       "SELECT proname,prosecdef,proconfig FROM pg_proc WHERE proname LIKE 'lc_%' AND prosecdef"
@@ -521,7 +579,7 @@ try {
   ).rows
   assert.ok(privileged.every((f) => f.proconfig?.includes('search_path=public')))
   console.log(
-    'Latido Card: PostgreSQL migrations, permissions, stock, expiry, limits, idempotency, physical fulfillment, private notes, audit and email retries passed.'
+    'Latido Card: PostgreSQL migrations, permissions, stock, expiry, limits, idempotency, physical fulfillment, private notes, audit, email retries and repeatable Supabase examples passed.'
   )
 } finally {
   await db.close()

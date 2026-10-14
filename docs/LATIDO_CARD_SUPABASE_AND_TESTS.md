@@ -1,0 +1,156 @@
+# Latido Card: SQL manual y pruebas
+
+Esta entrega se trabaja en la rama `latidoCard`. Los SQL se ejecutan manualmente;
+no se ha cambiado ninguna base remota. Los ejemplos son ficticios y están marcados
+con `[TEST]`. Usar un proyecto Supabase de desarrollo para esos datos.
+
+## 1. Comprobar la instalación existente
+
+En Supabase, abrir **SQL Editor → New query**. Copiar el contenido completo de
+`supabase/latido_card_preflight.sql` y pulsar **Run**. Es una consulta de solo lectura.
+
+La primera tabla debe mostrar seis `OK`. La segunda puede mostrar `PENDIENTE`
+si todavía no se ha instalado Card. Si un requisito muestra `FALTA`, detener la
+instalación y resolver esa dependencia primero. No ejecutar todo `schema.sql`
+o `business_promotion_plans.sql` sobre una base existente para intentar arreglarlo:
+esos archivos también contienen configuración y datos de otras funciones de Latido.
+
+Card reutiliza `profiles`, `providers`, la lista y función de administradores
+existentes, y `app_notifications`. En una base nueva hay que preparar primero
+el esquema de Latido; `app_notifications.sql` depende a su vez de
+`creator_platform.sql` y `message_read_status.sql`.
+
+## 2. Ejecutar estos SQL en este orden
+
+| Orden | Archivo completo en SQL Editor | Qué instala |
+| --- | --- | --- |
+| 1 | `supabase/latido_card.sql` | Membresías, credenciales, negocios, ofertas, reservas, Scanner, canjes y permisos |
+| 2 | `supabase/latido_card_physical_requests.sql` | Solicitudes físicas, estados de entrega, notificaciones, cola email y auditoría |
+
+Ejecutar cada archivo completo en una consulta separada. Ambos admiten repetición
+y conservan los datos existentes de Card. No crear manualmente columnas sueltas,
+quitar RLS o conceder acceso directo a las tablas para solucionar errores.
+
+Después, volver a ejecutar `latido_card_preflight.sql`: los tres componentes deben
+mostrar `INSTALADO`. Las migraciones no activan socios o negocios reales ni cobran.
+
+## 3. Comprobar tu acceso de administrador
+
+La autorización real procede de `business_promotion_admins`:
+
+```sql
+SELECT email FROM public.business_promotion_admins ORDER BY email;
+```
+
+Si tu cuenta registrada no aparece, añadir únicamente el email de tu cuenta
+administradora, sustituyendo el texto entre comillas:
+
+```sql
+INSERT INTO public.business_promotion_admins(email)
+SELECT lower(email) FROM public.profiles
+WHERE lower(email) = lower('TU_EMAIL_ADMIN_REGISTRADO')
+ON CONFLICT (email) DO NOTHING;
+```
+
+Si no inserta filas y tu email no estaba ya, comprobar que el perfil existe.
+La lista se comparte con la administración de promociones de Latido: añadir
+un email concede acceso administrativo a esas funciones también.
+Configurar ese mismo email en `VITE_ADMIN_EMAILS` y reiniciar el servidor de la app.
+Cerrar y abrir sesión si se ha cambiado el email. No añadir las cuentas de socio
+o negocio como administradores.
+
+## 4. Cargar los ejemplos opcionales
+
+En **Authentication → Users → Add user**, crear estas cuentas de prueba con
+contraseñas que tú elijas y **Auto Confirm User** activado. Comprobar que el
+proceso de alta de Latido ha creado sus filas en `public.profiles`:
+
+| Email de prueba | Escenario |
+| --- | --- |
+| `card.socio@latido.test` | Socio activo durante 30 días |
+| `card.inactivo@latido.test` | Membresía pausada: ve el catálogo y no puede usar ventajas |
+| `card.negocio@latido.test` | Propietario de tres negocios, sin membresía de pago |
+
+El dominio `.test` no recibe correos. Estas cuentas sirven para pruebas de interfaz,
+base de datos y permisos. Para probar entregas SMTP, usar después otra cuenta de
+prueba con un buzón controlado y autorizarla desde el panel de administración.
+
+Ejecutar **`supabase/latido_card_test_examples.sql`** completo. Se detiene sin crear
+datos si faltan las cuentas/perfiles o detecta una colisión con otros registros.
+No crea solicitudes físicas, QR ni emails. Es idempotente: repetirlo conserva
+las reservas, canjes, estados y fechas anteriores; no reinicia el escenario.
+
+| Negocio ficticio | Ventaja incluida | Promoción especial |
+| --- | --- | --- |
+| Restaurante Sabor Latino, Zürich | 15 % desde CHF 50, una vez por mes natural | Café gratis, 20 reservas |
+| Peluquería Brisa Latina, Luzern | 10 % en tu corte, sin límite de visitas | Asesoría capilar, 5 reservas |
+| Tienda Raíces, Bern | CHF 10 desde CHF 80, una vez por mes natural | 2×1 en productos seleccionados, 10 reservas |
+
+Todas duran 60 días desde la primera carga. Las especiales deben reclamarse,
+reservan stock durante 7 días y se usan una vez por socio/oferta. No son ofertas
+comerciales reales. Los tres negocios aparecen en el directorio de esta base
+de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
+
+## 5. Recorrido manual de prueba
+
+1. Ejecutar `npm run dev` con las variables Supabase de desarrollo.
+2. Entrar como socio activo. **Perfil → Mi Latido Card** abre `/card`.
+   Comprobar seis ventajas, nombre, número de socio y membresía activa.
+3. Pulsar **Mostrar mi QR digital**; el QR caduca a los cinco minutos.
+   Reclamar el café: baja la disponibilidad de 20 a 19. Liberar la reserva
+   devuelve la unidad mientras la oferta sigue vigente.
+4. Entrar como propietario, abrir `/card/negocios` y seleccionar el restaurante.
+   Comprobar que puede gestionar ofertas y Scanner sin tener membresía.
+   Generar el QR privado del negocio, vincular otro navegador/dispositivo y
+   abrir `/scanner/`. Ese acceso tiene sesión propia.
+5. En Scanner, leer el QR del socio. Marcar la comprobación de condiciones y
+   canjear el 15 %. Un segundo intento debe mostrar el límite mensual.
+   Reclamar de nuevo el café si se liberó, escanear y canjearlo una vez.
+   El empleado aplica el descuento en su caja habitual.
+6. Comprobar el canje en **Mis usos** y en el historial del negocio.
+   El propietario puede anularlo con un motivo. Rotar el QR del negocio debe
+   invalidar los accesos anteriores. Otro propietario no debe poder administrarlo.
+7. Entrar como socio pausado. Debe ver el catálogo sin botones para generar QR
+   o reclamar promociones; el servidor debe rechazar las operaciones igualmente.
+8. Entrar como socio activo y solicitar tarjeta física con recogida o dirección
+   ficticia suiza. Entrar como administrador en `/card/admin`: comprobar la cola
+   y el aviso; aprobar, emitir/descargar el QR, preparar y marcar entregada
+   (recogida) o enviada y después entregada (envío). Comprobar el estado del socio.
+   Probar pérdida y reposición. Las notas internas solo se ven en administración.
+9. Antes del piloto, repetir con dos administradores a la vez, cámaras reales
+   Android/iPhone, instalación PWA y una conexión interrumpida durante un canje.
+
+Las solicitudes físicas generan avisos y trabajos en la cola email. Mantener el
+worker SMTP desactivado durante estas pruebas con cuentas `.test`. La dirección,
+notas privadas y credenciales no deben llegar al negocio ni al Scanner.
+
+## 6. Pruebas automáticas sin tocar Supabase
+
+```powershell
+npm run test:card
+npm run test:card:browser
+npm run test:notifications
+npm run build
+```
+
+`test:card` usa PostgreSQL aislado (PGlite), instala dos veces las migraciones,
+ejecuta el mismo SQL de ejemplos, comprueba que se puede repetir sin perder una
+reserva y prueba permisos, límites, canjes y solicitudes físicas.
+
+`test:card:browser` usa una API simulada local. Muestra seis ejemplos y escenarios
+agotado/usado, prueba un QR con el decodificador real, el acceso desde Perfil,
+reservas, solicitud física y administración. Guarda capturas en
+`output/latido-card/`. Requiere Chromium de Playwright instalado
+(`npx playwright install chromium` si hace falta). No envía correos ni usa la
+base remota. Esto no sustituye las pruebas de concurrencia y dispositivo real.
+
+## 7. SQL de emails: más adelante
+
+**No ejecutar todavía `supabase/latido_card_physical_email_cron.sql`.**
+Activarlo cuando se despliegue `latido_card_physical_email`, estén configurados
+SMTP y los secretos del worker y Vault, y se haya probado con un buzón controlado.
+Seguir `docs/LATIDO_CARD_ADMINISTRATION.md`. El cron es opcional para esta fase;
+las solicitudes y las notificaciones dentro de Latido funcionan sin él.
+
+El precio mostrado es **CHF 6,90 al mes**; los cobros y renovaciones automáticas
+siguen pendientes. Los ejemplos usan activación manual del piloto.

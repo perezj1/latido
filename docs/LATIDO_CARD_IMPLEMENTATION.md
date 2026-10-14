@@ -74,6 +74,10 @@ independiente de todos los participantes.
 
 ## 4. Preparar el entorno
 
+El orden exacto de SQL, cuentas y ejemplos está en
+[SQL manual y pruebas](LATIDO_CARD_SUPABASE_AND_TESTS.md). Empezar por su
+comprobación de solo lectura para no reinstalar esquemas de otras funciones.
+
 1. Trabajar en `latidoCard`: `git switch latidoCard`.
 2. Ejecutar `npm ci`. Se mantiene el requisito Node >=20.19 del proyecto.
 3. Configurar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` para un proyecto

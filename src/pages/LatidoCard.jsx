@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { cardRpc, cardUrl } from '../lib/latidoCard'
 import { cardErrorMessage, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
@@ -16,9 +16,11 @@ export function CardHeader() {
         Latido Card
       </Link>
       <nav className="lc-links" aria-label="Latido Card">
-        <Link to="/">Latido</Link>
-        <Link to="/card">Mi tarjeta y ventajas</Link>
-        <Link to="/card/negocios">Mi negocio</Link>
+        <Link to="/perfil">Mi perfil</Link>
+        <NavLink to="/card" end>
+          Mi tarjeta y ventajas
+        </NavLink>
+        <NavLink to="/card/negocios">Mi negocio</NavLink>
         {isAdmin && <Link to="/admin-latido">Panel Latido</Link>}
       </nav>
     </header>
@@ -101,6 +103,13 @@ export default function LatidoCard() {
           Presenta tu Latido Card física o digital en los negocios participantes. Las ventajas de
           socio están incluidas; solo tienes que reclamar las promociones especiales.
         </p>
+        <div className="lc-hero-facts">
+          <span className="lc-price">
+            CHF 6,90 <small>/ mes · socios</small>
+          </span>
+          <span>💳 Física y digital</span>
+          <span>🤝 Negocios: participación gratuita</span>
+        </div>
         {!user && (
           <Link className="lc-button" to="/auth?next=%2Fcard">
             Entrar en Latido
@@ -133,7 +142,12 @@ export default function LatidoCard() {
         <div className="lc-layout">
           <aside>
             <section className="lc-card">
-              <span className="lc-eyebrow">Latido</span>
+              <div className="lc-card-top">
+                <span className="lc-eyebrow">Latido · Tu comunidad</span>
+                <span className="lc-card-status">
+                  {member ? (member.active ? '● Activa' : 'Inactiva') : 'Tarjeta de socio'}
+                </span>
+              </div>
               <h2>CARD</h2>
               <p>{user ? displayName : 'Tu tarjeta de socio'}</p>
               {member ? (
@@ -218,8 +232,14 @@ export default function LatidoCard() {
               </section>
             )}
           </aside>
-          <section>
-            <h2>Ventajas en negocios participantes</h2>
+          <section aria-label="Ventajas en negocios participantes">
+            <div className="lc-section-heading">
+              <div>
+                <h2>Ventajas en negocios participantes</h2>
+                <p className="lc-muted">Descubre lo que tu comunidad tiene para ti.</p>
+              </div>
+              <span className="lc-badge">{data.offers.length} ventajas</span>
+            </div>
             {!data.offers.length && (
               <div className="lc-panel">
                 <p>
@@ -231,9 +251,24 @@ export default function LatidoCard() {
             <div className="lc-grid">
               {data.offers.map((offer) => (
                 <article className="lc-offer" key={offer.id}>
-                  <span className="lc-badge">
-                    {offer.requires_claim ? 'Promoción especial' : 'Incluido con tu membresía'}
-                  </span>
+                  <div className="lc-offer-top">
+                    <span className="lc-offer-icon" aria-hidden="true">
+                      {
+                        {
+                          percent: '🎟️',
+                          fixed: '🛍️',
+                          gift: '🎁',
+                          service: '🤝',
+                          two_for_one: '✨'
+                        }[offer.benefit_type]
+                      }
+                    </span>
+                    <span
+                      className={`lc-badge ${offer.requires_claim ? 'lc-badge--special' : 'lc-badge--included'}`}
+                    >
+                      {offer.requires_claim ? 'Promoción especial' : 'Incluido con tu membresía'}
+                    </span>
+                  </div>
                   <p className="lc-eyebrow">
                     {offer.business_name}
                     {offer.city ? ` · ${offer.city}` : ''}
@@ -249,7 +284,9 @@ export default function LatidoCard() {
                             ? `Reclamado · hasta ${new Date(offer.claim.expires_at).toLocaleDateString('es-CH')}`
                             : offer.claim?.status === 'expired'
                               ? 'Reserva caducada'
-                              : 'Disponible para reclamar'}
+                              : offer.remaining === 0
+                                ? 'Agotado por el momento'
+                                : 'Disponible para reclamar'}
                         {offer.remaining !== null && ` · ${offer.remaining} disponibles`}
                       </p>
                       {member?.active && offer.claim?.status !== 'used' && (
@@ -265,9 +302,11 @@ export default function LatidoCard() {
                           >
                             {offer.claim?.status === 'claimed'
                               ? 'Reclamado'
-                              : busy === offer.id
-                                ? 'Reclamando…'
-                                : 'Reclamar'}
+                              : offer.remaining === 0
+                                ? 'Agotado'
+                                : busy === offer.id
+                                  ? 'Reclamando…'
+                                  : 'Reclamar'}
                           </button>
                           {offer.claim?.status === 'claimed' && (
                             <button

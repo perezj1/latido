@@ -126,6 +126,9 @@ solicitud física no cobra ni supone que la entrega o reposición sea gratuita.
 
 ## Verificación
 
+Para el orden exacto de SQL y un escenario con tres negocios y seis ventajas,
+seguir [SQL manual y pruebas](LATIDO_CARD_SUPABASE_AND_TESTS.md).
+
 `npm run test:card` comprueba permisos, duplicados, datos privados, transiciones,
 versión, reemisión, cancelación, auditoría y recuperación de avisos.
 `npm run test:card:browser` prueba solicitud del socio y circuito de aprobación,
