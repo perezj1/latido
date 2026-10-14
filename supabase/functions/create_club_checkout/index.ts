@@ -101,7 +101,7 @@ const PRODUCT_CONFIG:Record<string, ProductConfig> = {
     shortName:'Sudadera Improvisar · Blanco', price:34.9, optionLabel:'Talla', purchaseType:'base',
   },
   '9b2e0872-ffc6-4bbe-8615-eec669e36da4': {
-    shortName:'Bolsa Latido Logo', price:17.9, optionLabel:'Color', purchaseType:'addon',
+    shortName:'Bolsa Latido Logo', price:17.9, optionLabel:'Color', purchaseType:'base',
   },
   'e23cd355-eb48-4844-862a-98592e7757f7': {
     shortName:'Camiseta Latido Logo · Negra', price:24.9, optionLabel:'Talla', purchaseType:'base',
@@ -116,7 +116,7 @@ const PRODUCT_CONFIG:Record<string, ProductConfig> = {
     shortName:'Sudadera Latido Club', price:34.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'bd807369-b74d-483d-9065-fb994ca7bb38': {
-    shortName:'Bolsa de tela Latido Club', price:17.9, optionLabel:'Color', purchaseType:'addon',
+    shortName:'Bolsa de tela Latido Club', price:17.9, optionLabel:'Color', purchaseType:'base',
   },
   '7e2bab53-6962-4fc7-ab8c-f8009c6f5754': {
     shortName:'Carcasa Hablas Español', price:21.9, optionLabel:'Modelo', purchaseType:'addon',
@@ -315,7 +315,8 @@ Deno.serve(async req => {
         unit_amount:unitAmount,
         quantity,
         line_total:unitAmount * quantity,
-        purchase_type:configured.product.purchaseType === 'addon' ? 'addon' : 'base',
+        purchase_type:PRODUCT_CONFIG[configured.product.id || sku.split(':')[1]]?.purchaseType
+          || (configured.product.purchaseType === 'addon' ? 'addon' : 'base'),
       }
     })
 
