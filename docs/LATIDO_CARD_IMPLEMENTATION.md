@@ -47,17 +47,29 @@ del QR conceda por sí sola autorización indefinida.
 
 ## 3. Decisiones por cerrar
 
-Antes de implementar cobros reales: precio CHF, periodicidad, renovación,
-cancelación, política de impagos, reembolsos y periodo de acceso pagado.
+Precio confirmado por el usuario: **CHF 6,90 al mes para los socios que usan
+los beneficios**. Los negocios participan gratuitamente y no necesitan una
+membresía de pago para publicar descuentos ni utilizar Scanner. La admisión
+al programa depende de la aprobación de Latido, no de un plan de publicidad.
+
+Antes de implementar cobros reales: renovación, cancelación, política de
+impagos, reembolsos y periodo de acceso pagado.
 Definir tarjeta física incluida/opcional, entrega, reposición y coste.
-Confirmar participación gratuita del comercio y proceso de aprobación de
-ofertas. Actualmente Latido autoriza al negocio y el propietario publica
+Cerrar el proceso de solicitud de participación y aprobación de ofertas.
+Actualmente Latido autoriza al negocio y el propietario publica
 directamente dentro de los límites permitidos.
 
 Valores iniciales del piloto: turno de 8 horas; QR digital de 5 minutos;
 reserva de 7 días configurable entre 1 y 90; meses naturales en Europe/Zurich;
 una ventaja incluida y dos especiales vigentes por establecimiento; una
 reclamación utilizable por socio/oferta especial. No son tarifas comerciales.
+
+Accesos actuales: `/card` para el socio, `/card/negocios` para el propietario y
+`/card/admin` para Latido. Falta añadir **Mi Latido Card** y **Mi negocio en
+Latido Card** a Perfil, integrar la contratación mensual de CHF 6,90 y crear
+la solicitud de participación gratuita del negocio. El catálogo actual muestra
+las ofertas vigentes de negocios admitidos; no es todavía un directorio
+independiente de todos los participantes.
 
 ## 4. Preparar el entorno
 

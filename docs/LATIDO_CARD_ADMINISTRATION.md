@@ -119,8 +119,10 @@ No borrar pedidos o historiales para solucionar errores de emisión.
 
 La primera versión entrega hasta 100 solicitudes por filtro, 40 usuarios por
 búsqueda y 200 negocios en el selector. Añadir paginación al crecer el programa.
-Las membresías siguen siendo manuales para piloto; esta solicitud no cobra ni
-supone que una tarjeta o reposición sea gratuita.
+Las membresías siguen siendo manuales para piloto. El precio confirmado para
+los socios es CHF 6,90 al mes; los negocios participan gratis y no necesitan
+contratar esa membresía. El pago mensual todavía no está integrado. La
+solicitud física no cobra ni supone que la entrega o reposición sea gratuita.
 
 ## Verificación
 
