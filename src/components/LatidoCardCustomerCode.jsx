@@ -1,70 +1,99 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cardRpc } from '../lib/latidoCard'
 import { cardErrorMessage } from '../lib/latidoCardCore'
 
 export default function LatidoCardCustomerCode() {
   const [value, setValue] = useState(null)
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')
   const [expired, setExpired] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const request = useRef(null)
   useEffect(() => {
-    if (!value) return
-    const timer = setTimeout(
-      () => {
-        setValue(null)
-        setExpired(true)
-      },
-      Math.max(0, Date.parse(value.expires_at) - Date.now())
-    )
-    return () => clearTimeout(timer)
-  }, [value])
+    let stopped = false,
+      refreshing = false,
+      expiryTimer
+    let wasHidden = document.visibilityState === 'hidden'
+    const openCode = async (reuse = false) => {
+      if (stopped || refreshing || document.visibilityState === 'hidden') return
+      refreshing = true
+      clearTimeout(expiryTimer)
+      setBusy(true)
+      setValue(null)
+      setExpired(false)
+      setError('')
+      // React StrictMode replays this effect; reuse its initial request rather
+      // than generating two codes and displaying one already revoked.
+      if (!reuse || !request.current) request.current = cardRpc('lc_issue_card_code')
+      try {
+        const next = await request.current
+        if (stopped) return
+        if (!/^\d{6}$/.test(next?.code) || !Number.isFinite(Date.parse(next.expires_at)))
+          throw new Error('INVALID_CODE_RESPONSE')
+        setValue(next)
+        // Expiry does not issue a replacement. Only opening the card again does.
+        expiryTimer = setTimeout(
+          () => setExpired(true),
+          Math.max(0, Date.parse(next.expires_at) - Date.now())
+        )
+      } catch (err) {
+        if (!stopped) {
+          request.current = null
+          setError(cardErrorMessage(err))
+        }
+      } finally {
+        refreshing = false
+        if (!stopped) setBusy(false)
+      }
+    }
+    openCode(true)
+    const onVisible = () => {
+      if (document.visibilityState === 'hidden') wasHidden = true
+      else if (wasHidden) {
+        wasHidden = false
+        openCode()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      stopped = true
+      clearTimeout(expiryTimer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [attempt])
   return (
     <div className="lc-client-code">
       {value ? (
         <>
           <small>Código para el personal</small>
           <output aria-label="Código del cliente">
-            {value.code.slice(0, 5)} {value.code.slice(5)}
+            {value.code.slice(0, 3)} {value.code.slice(3)}
           </output>
           <small>
-            Válido hasta{' '}
-            {new Date(value.expires_at).toLocaleTimeString('es-CH', {
-              hour: '2-digit',
-              minute: '2-digit',
-              timeZone: 'Europe/Zurich'
-            })}
+            {expired
+              ? 'Código caducado. Vuelve a abrir Mi tarjeta.'
+              : `Válido hasta ${new Date(value.expires_at).toLocaleTimeString('es-CH', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'Europe/Zurich'
+                })}`}
           </small>
         </>
-      ) : (
+      ) : busy ? (
+        <p role="status">Preparando código…</p>
+      ) : null}
+      {error && (
         <>
+          <p role="alert">{error}</p>
           <button
             className="lc-button lc-button--secondary"
             disabled={busy}
-            onClick={async () => {
-              if (busy) return
-              setBusy(true)
-              setError('')
-              try {
-                const next = await cardRpc('lc_issue_card_code')
-                if (!/^\d{10}$/.test(next?.code) || !Number.isFinite(Date.parse(next.expires_at)))
-                  throw new Error('INVALID_CODE_RESPONSE')
-                setValue(next)
-                setExpired(false)
-              } catch (err) {
-                setError(cardErrorMessage(err))
-              } finally {
-                setBusy(false)
-              }
-            }}
+            onClick={() => setAttempt((n) => n + 1)}
           >
-            {busy ? 'Preparando código…' : expired ? 'Generar otro código' : 'Mostrar código'}
+            Reintentar código
           </button>
-          <small>
-            {expired ? 'El código ha caducado.' : 'Para consultar tu tarjeta sin cámara.'}
-          </small>
         </>
       )}
-      {error && <p role="alert">{error}</p>}
     </div>
   )
 }

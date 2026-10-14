@@ -13,7 +13,7 @@ import './LatidoCard.css'
 // Only this authenticated app page creates a connection. The operational
 // Scanner keeps its own token and never imports the personal Auth client.
 export default function LatidoCardScannerConnect() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, profileMetaLoaded } = useAuth()
   const navigate = useNavigate()
   const [handoffReady, setHandoffReady] = useState(() => !window.location.hash)
   const [request] = useState(() => {
@@ -57,7 +57,9 @@ export default function LatidoCardScannerConnect() {
     }
   }, [handoffReady, request, authLoading, user?.id, navigate])
   useEffect(() => {
-    if (!request || !user?.id || authLoading || !handoffReady) return
+    // Finish Auth's profile fetch before leaving this document for Scanner.
+    // WebKit can reject a query started during that immediate redirect.
+    if (!request || !user?.id || authLoading || !profileMetaLoaded || !handoffReady) return
     try {
       const pending = JSON.parse(sessionStorage.getItem('latido_card_pending_redemption') || 'null')
       if (pending?.requestId) {
@@ -129,7 +131,7 @@ export default function LatidoCardScannerConnect() {
     return () => {
       cancelled = true
     }
-  }, [request, user?.id, attempt, authLoading, handoffReady])
+  }, [request, user?.id, attempt, authLoading, profileMetaLoaded, handoffReady])
   return (
     <main className="lc-page lc-scanner">
       <section className="lc-panel lc-scanner-start">

@@ -35,6 +35,9 @@ el esquema de Latido; `app_notifications.sql` depende a su vez de
 `supabase/latido_card_manual_codes.sql` para esta actualización.** Si faltan los
 anteriores, instalarlos primero en el orden de la tabla. No hay que cargar
 otra vez los ejemplos ni modificar cuentas. Esta actualización también admite repetición.
+Si ya instalaste el sexto archivo, vuelve a ejecutar su contenido completo actualizado
+para pasar de diez a seis cifras. Conserva los canjes y permite reutilizar códigos
+caducados; no concede acceso directo a las tablas.
 No reinstalar después los SQL anteriores: contienen las versiones previas de esos RPC.
 Los accesos anteriores vigentes pasan a permanentes; los caducados o revocados no
 se reactivan. Los antiguos se crearon sin cuenta: volver a vincularlos para identificar
@@ -43,7 +46,7 @@ La versión actualizada también hace que regenerar el QR retire las conexiones
 anteriores del listado. Si ya ejecutaste este último archivo, vuelve a ejecutar
 su contenido completo actualizado. No borra los canjes.
 
-El nuevo SQL no crea tablas ni desactiva RLS. Añade dos RPC accesibles solo a cuentas
+El SQL de varios negocios (archivo 5) no crea tablas ni desactiva RLS. Añade dos RPC accesibles solo a cuentas
 autenticadas: uno devuelve sus negocios vinculados sin secretos, el otro abre un
 Scanner en un nuevo navegador a partir de una conexión propia todavía vigente.
 Un acceso revocado, eliminado o de un negocio suspendido no permite reconectar.
@@ -55,8 +58,10 @@ Revocar todas las conexiones del trabajador a un negocio: desaparece de su lista
 
 ### Prueba rápida sin cámara
 
-1. Cliente con membresía activa: abrir **Mi tarjeta → Mostrar código**.
-2. El cliente enseña un código de 10 cifras, separado en dos grupos. Dura 5 minutos.
+1. Cliente con membresía activa: abrir **Mi tarjeta**. El código se prepara automáticamente.
+2. El cliente enseña sus **6 cifras**, en dos grupos de tres. Se genera uno distinto
+   al reabrir o regresar a la tarjeta; no se renueva solo por pasar cinco minutos.
+   Conserva la caducidad de 5 minutos: al caducar, volver a abrir Mi tarjeta.
 3. Personal conectado al negocio: abrir **Scanner → Introducir manualmente**.
 4. Escribir las cifras y pulsar **Consultar tarjeta**. También se admite pegarlas con espacios.
 5. Aparecen el socio y sus ventajas para ese negocio. Marcar la comprobación y pulsar **Canjear**.

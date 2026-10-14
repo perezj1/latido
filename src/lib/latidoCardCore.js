@@ -124,6 +124,7 @@ export function readScannerSession({ local, temporary }, now = Date.now()) {
 export function cardErrorMessage(error) {
   const text = String(error?.message || error || '')
   const messages = {
+    CARD_CODE_CAPACITY: 'No se pudo preparar tu código. Vuelve a intentarlo dentro de un momento.',
     CARD_CODE_INVALID:
       'El código no es válido o ha caducado. Pide al cliente que muestre uno nuevo.',
     CARD_CODE_RATE_LIMIT:

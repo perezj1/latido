@@ -24,14 +24,14 @@ export default function LatidoCardManualEntry({ onRead, onClose, busy }) {
       }}
     >
       <h2 id="lc-manual-title">Introducir manualmente</h2>
-      <p>Pide al cliente que abra «Mi tarjeta» y pulse «Mostrar código».</p>
+      <p>Pide al cliente que abra «Mi tarjeta» y te muestre su código.</p>
       <form
         className="lc-form"
         onSubmit={async (event) => {
           event.preventDefault()
           const normalized = code.replace(/[\s-]/g, '')
-          if (!/^\d{10}$/.test(normalized)) {
-            setError('Introduce las 10 cifras del código del cliente.')
+          if (!/^\d{6}$/.test(normalized)) {
+            setError('Introduce las 6 cifras del código del cliente.')
             return
           }
           setError('')
@@ -49,11 +49,11 @@ export default function LatidoCardManualEntry({ onRead, onClose, busy }) {
             className="lc-manual-code-input"
             value={code}
             onChange={(event) => setCode(event.target.value)}
-            placeholder="12345 67890"
+            placeholder="123 456"
             inputMode="numeric"
             autoComplete="off"
             autoFocus
-            maxLength={15}
+            maxLength={9}
             disabled={busy}
             required
           />

@@ -1017,12 +1017,33 @@ try {
   assert.deepEqual(await rpc('lc_my_scanner_businesses'), [])
   await rejects('lc_resume_scanner', [ids.business2], 'BUSINESS_INACTIVE')
   await root('SELECT 1')
+  // Upgrade the previous schema with a permanent code_hash UNIQUE constraint.
+  await root(`CREATE TABLE public.latido_card_manual_codes (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(), membership_id uuid NOT NULL REFERENCES latido_card_memberships(id),
+    code_hash text NOT NULL UNIQUE, expires_at timestamptz NOT NULL, revoked_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now())`)
+  const legacyCodeId = randomUUID()
+  await root(
+    `INSERT INTO latido_card_manual_codes(id,membership_id,code_hash,expires_at)
+    SELECT $1,id,public.lc_hash('4829173605'),now()+interval '5 minutes'
+    FROM latido_card_memberships WHERE user_id=$2`,
+    [legacyCodeId, ids.member]
+  )
   const manualMigration = await readFile(
     new URL('../supabase/latido_card_manual_codes.sql', import.meta.url),
     'utf8'
   )
   await db.exec(manualMigration)
   await db.exec(manualMigration)
+  assert.equal(
+    (
+      await root('SELECT count(*)::int AS n FROM latido_card_manual_codes WHERE id=$1', [
+        legacyCodeId
+      ])
+    ).rows[0].n,
+    1,
+    'The six-digit migration preserves existing code history'
+  )
   const manualBusiness = randomUUID()
   await root('INSERT INTO providers(id,user_id,name,city) VALUES($1,$2,$3,$4)', [
     manualBusiness,
@@ -1047,8 +1068,15 @@ try {
   await as('member')
   const beforeManualQr = await rpc('lc_issue_digital_card')
   const customerCode = await rpc('lc_issue_card_code')
-  assert.match(customerCode.code, /^\d{10}$/)
+  assert.match(customerCode.code, /^\d{6}$/)
   assert.ok(Date.parse(customerCode.expires_at) > Date.now())
+  await root(
+    `INSERT INTO latido_card_manual_codes(membership_id,code_hash,expires_at,revoked_at)
+    SELECT id,public.lc_hash($1),now()-interval '1 minute',now()
+    FROM latido_card_memberships WHERE user_id=$2`,
+    [customerCode.code, ids.member2]
+  )
+  await as('member')
   await as(null, 'anon')
   await rejects('lc_issue_card_code', [], 'permission denied')
   await assert.rejects(
@@ -1067,7 +1095,7 @@ try {
   )
   const manualRead = await rpc('lc_scan_card_code', [
     manualScanner.token,
-    `${customerCode.code.slice(0, 5)} ${customerCode.code.slice(5)}`
+    `${customerCode.code.slice(0, 3)} ${customerCode.code.slice(3)}`
   ])
   assert.match(manualRead.card_token, /^[a-f0-9]{64}$/)
   assert.deepEqual(

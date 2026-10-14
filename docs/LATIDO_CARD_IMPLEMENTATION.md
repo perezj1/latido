@@ -285,14 +285,19 @@ servidor. Ejecutar `supabase/latido_card_scanner_multibusiness.sql` después de 
 
 ### Consulta manual del cliente
 
-El socio activo pulsa «Mostrar código» en su tarjeta y enseña 10 cifras (dos grupos
-de cinco). No se utiliza el número de socio público. El personal ya conectado pulsa
+Al abrir «Mi tarjeta», el socio activo recibe automáticamente 6 cifras (dos grupos
+de tres). Cada nueva apertura o regreso desde segundo plano genera un código distinto.
+No se renueva automáticamente al pasar cinco minutos: si caduca, se indica que hay
+que volver a abrir la tarjeta. No se utiliza el número de socio público. El personal ya conectado pulsa
 «Introducir manualmente», escribe el código y consulta las mismas ventajas del QR.
 También se ofrece este botón desde la cámara, aunque sus permisos estén bloqueados.
 
 `lc_issue_card_code` exige cuenta y membresía activa, genera un código aleatorio
 desde UUID v4, almacena solo su hash y lo limita a cinco minutos. Emitir otro código
 revoca los anteriores y sus credenciales manuales. Máximo 30 emisiones por socio/hora.
+Solo los hashes de códigos vigentes son únicos: se conserva el historial por UUID
+y se pueden reutilizar combinaciones caducadas sin agotar las seis cifras. El código
+nuevo no repite el último del socio, y la búsqueda de uno libre tiene un límite.
 `lc_scan_card_code` exige un Scanner vigente; limita a 5 intentos fallidos por cuenta/minuto
 y 30 fallidos por negocio/minuto. Las consultas válidas no gastan ese presupuesto;
 tienen un límite aparte de 60 por cuenta/minuto y 300 por negocio/minuto. Los errores

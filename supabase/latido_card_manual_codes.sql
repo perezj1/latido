@@ -4,12 +4,15 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS public.latido_card_manual_codes (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  membership_id UUID NOT NULL REFERENCES public.latido_card_memberships(id),
- code_hash TEXT NOT NULL UNIQUE,
+ code_hash TEXT NOT NULL,
  expires_at TIMESTAMPTZ NOT NULL,
  revoked_at TIMESTAMPTZ,
  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS lc_manual_codes_member_idx ON public.latido_card_manual_codes(membership_id);
+-- Six-digit codes must be reusable after expiry; history keeps its own UUID.
+ALTER TABLE public.latido_card_manual_codes DROP CONSTRAINT IF EXISTS latido_card_manual_codes_code_hash_key;
+CREATE UNIQUE INDEX IF NOT EXISTS lc_manual_codes_live_hash_idx ON public.latido_card_manual_codes(code_hash) WHERE revoked_at IS NULL;
 CREATE TABLE IF NOT EXISTS public.latido_card_code_attempts (
  scope TEXT PRIMARY KEY,
  window_started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -27,7 +30,7 @@ CREATE INDEX IF NOT EXISTS lc_credentials_manual_idx ON public.latido_card_crede
 
 CREATE OR REPLACE FUNCTION public.lc_issue_card_code() RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-DECLARE m public.latido_card_memberships; code TEXT; cid UUID;
+DECLARE m public.latido_card_memberships; code TEXT; cid UUID; previous_hash TEXT; tries INTEGER;
  expiry TIMESTAMPTZ:=now()+interval '5 minutes';
 BEGIN
  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'AUTH_REQUIRED'; END IF;
@@ -35,15 +38,21 @@ BEGIN
  IF NOT public.lc_active_member(m.id) THEN RAISE EXCEPTION 'MEMBERSHIP_INACTIVE'; END IF;
  IF (SELECT count(*) FROM public.latido_card_manual_codes WHERE membership_id=m.id
   AND created_at>now()-interval '1 hour')>=30 THEN RAISE EXCEPTION 'CARD_CODE_ISSUE_LIMIT'; END IF;
+ SELECT code_hash INTO previous_hash FROM public.latido_card_manual_codes WHERE membership_id=m.id
+  ORDER BY (revoked_at IS NULL) DESC,created_at DESC LIMIT 1;
  UPDATE public.latido_card_manual_codes SET revoked_at=now() WHERE membership_id=m.id AND revoked_at IS NULL;
  UPDATE public.latido_card_credentials SET revoked_at=now() WHERE membership_id=m.id AND manual_code_id IS NOT NULL AND revoked_at IS NULL;
- LOOP
+ FOR tries IN 1..100 LOOP
   -- UUID v4's random first 40 bits; no predictable member number, no random().
-  code:=lpad(((('x'||substr(replace(gen_random_uuid()::text,'-',''),1,10))::bit(40)::bigint)%10000000000)::text,10,'0');
+  code:=lpad(((('x'||substr(replace(gen_random_uuid()::text,'-',''),1,10))::bit(40)::bigint)%1000000)::text,6,'0');
+  IF public.lc_hash(code)=previous_hash THEN CONTINUE; END IF;
+  UPDATE public.latido_card_manual_codes SET revoked_at=now()
+   WHERE code_hash=public.lc_hash(code) AND revoked_at IS NULL AND expires_at<=now();
   INSERT INTO public.latido_card_manual_codes(membership_id,code_hash,expires_at)
-   VALUES(m.id,public.lc_hash(code),expiry) ON CONFLICT(code_hash) DO NOTHING RETURNING id INTO cid;
+   VALUES(m.id,public.lc_hash(code),expiry) ON CONFLICT(code_hash) WHERE revoked_at IS NULL DO NOTHING RETURNING id INTO cid;
   EXIT WHEN cid IS NOT NULL;
  END LOOP;
+ IF cid IS NULL THEN RAISE EXCEPTION 'CARD_CODE_CAPACITY'; END IF;
  RETURN jsonb_build_object('code',code,'expires_at',expiry);
 END $$;
 REVOKE ALL ON FUNCTION public.lc_issue_card_code() FROM PUBLIC,anon,authenticated;
@@ -73,8 +82,8 @@ BEGIN
   THEN blocked:=true; END IF;
  END LOOP;
  IF blocked THEN RETURN jsonb_build_object('error','CARD_CODE_RATE_LIMIT'); END IF;
- IF code !~ '^[0-9]{10}$' THEN RETURN jsonb_build_object('error','CARD_CODE_INVALID'); END IF;
- SELECT * INTO c FROM public.latido_card_manual_codes WHERE code_hash=public.lc_hash(code);
+ IF code !~ '^[0-9]{6}$' THEN RETURN jsonb_build_object('error','CARD_CODE_INVALID'); END IF;
+ SELECT * INTO c FROM public.latido_card_manual_codes WHERE code_hash=public.lc_hash(code) AND revoked_at IS NULL AND expires_at>now();
  IF c.id IS NULL THEN RETURN jsonb_build_object('error','CARD_CODE_INVALID'); END IF;
  -- Same lock order as issuing/renewing the customer's credentials.
  PERFORM 1 FROM public.latido_card_memberships WHERE id=c.membership_id FOR UPDATE;

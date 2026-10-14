@@ -172,6 +172,8 @@ try {
     claimed = false,
     savedOffers = [],
     digitalCalls = 0,
+    customerCodeCalls = 0,
+    customerCodeClockOffset = 0,
     businessSetupCalls = [],
     membershipMode = 'active',
     businessMode = 'multiple',
@@ -347,7 +349,7 @@ try {
         (s) => s.token === args.p_session_token && !s.revoked_at
       )
       if (!connected) return respond(route, { message: 'SCANNER_EXPIRED' }, 400)
-      if (args.p_code !== '4829173605') return respond(route, { error: 'CARD_CODE_INVALID' })
+      if (args.p_code !== '482736') return respond(route, { error: 'CARD_CODE_INVALID' })
       return respond(route, {
         card_token: 'f'.repeat(64),
         card: {
@@ -571,16 +573,18 @@ try {
         ],
         history: []
       })
-    if (name === 'lc_issue_card_code')
+    if (name === 'lc_issue_card_code') {
+      customerCodeCalls++
       return respond(route, {
-        code: '4829173605',
-        expires_at: new Date(Date.now() + 300000).toISOString()
+        code: String(482735 + customerCodeCalls).padStart(6, '0'),
+        expires_at: new Date(Date.now() + customerCodeClockOffset + 300000).toISOString()
       })
+    }
     if (name === 'lc_issue_digital_card') {
       digitalCalls++
       return respond(route, {
         token,
-        expires_at: new Date(Date.now() + 300000).toISOString()
+        expires_at: new Date(Date.now() + customerCodeClockOffset + 300000).toISOString()
       })
     }
     if (name === 'lc_claim_offer') {
@@ -779,8 +783,8 @@ try {
   await page.getByRole('dialog', { name: 'Introducir manualmente', exact: true }).waitFor()
   await page.getByLabel('Código del cliente', { exact: true }).fill('123')
   await page.getByRole('button', { name: 'Consultar tarjeta', exact: true }).click()
-  await page.getByRole('alert').filter({ hasText: 'Introduce las 10 cifras' }).waitFor()
-  await page.getByLabel('Código del cliente', { exact: true }).fill('11111 11111')
+  await page.getByRole('alert').filter({ hasText: 'Introduce las 6 cifras' }).waitFor()
+  await page.getByLabel('Código del cliente', { exact: true }).fill('111 111')
   await page.getByRole('button', { name: 'Consultar tarjeta', exact: true }).click()
   await page.getByRole('alert').filter({ hasText: 'El código no es válido' }).waitFor()
   assert.equal(await page.evaluate(() => window.testCameraRequests), cameraRequestsBeforeManual)
@@ -818,7 +822,7 @@ try {
   await page.getByRole('heading', { name: 'Ana · Socio #12847' }).waitFor()
   // Same result and redemption pipeline, now entered manually with no camera.
   await page.getByRole('button', { name: 'Introducir manualmente', exact: true }).click()
-  await page.getByLabel('Código del cliente', { exact: true }).fill('48291 73605')
+  await page.getByLabel('Código del cliente', { exact: true }).fill('482 736')
   const requestsBeforeLookup = await page.evaluate(() => window.testCameraRequests)
   await page.getByRole('button', { name: 'Consultar tarjeta', exact: true }).click()
   await page.getByRole('dialog').waitFor({ state: 'detached' })
@@ -920,12 +924,13 @@ try {
   assert.equal(new URL(page.url()).pathname, '/card')
   await page.getByAltText('QR de Tarjeta Latido').waitFor()
   assert.equal(digitalCalls, 1, 'The card is ready without a manual QR button')
-  await page.getByRole('button', { name: 'Mostrar código', exact: true }).click()
   await page.getByLabel('Código del cliente', { exact: true }).waitFor()
   assert.equal(
-    await page.getByLabel('Código del cliente', { exact: true }).innerText(),
-    '48291 73605'
+    customerCodeCalls,
+    1,
+    'Opening the card issues one code automatically, including in StrictMode'
   )
+  assert.equal(await page.getByLabel('Código del cliente', { exact: true }).innerText(), '482 736')
   await page.screenshot({
     animations: 'disabled',
     path: path.join(output, 'card-ready-mobile.png'),
@@ -1464,6 +1469,42 @@ try {
   assert.equal(new URL(page.url()).pathname, '/auth')
   assert.equal(new URL(page.url()).searchParams.get('mode'), 'register')
   assert.equal(new URL(page.url()).searchParams.get('next'), nextOfferPath)
+  // Expiry must not regenerate while the card stays open. Reopening it does.
+  await page.waitForLoadState('networkidle')
+  membershipMode = 'active'
+  await page.evaluate((auth) => localStorage.setItem('sb-127-auth-token', auth), personalAuth)
+  await page.clock.install({ time: Date.now() })
+  await page.goto(`${origin}/card`)
+  const codeOutput = page.getByLabel('Código del cliente', { exact: true })
+  await codeOutput.waitFor()
+  const initialOpenCode = await codeOutput.innerText()
+  const openedCodeCalls = customerCodeCalls
+  customerCodeClockOffset = 300001
+  await page.clock.fastForward(300001)
+  await page.getByText('Código caducado. Vuelve a abrir Mi tarjeta.', { exact: true }).waitFor()
+  await page.waitForLoadState('networkidle')
+  assert.equal(customerCodeCalls, openedCodeCalls, 'Five minutes open does not issue another code')
+  assert.equal(await codeOutput.innerText(), initialOpenCode)
+  await page.reload()
+  await codeOutput.waitFor()
+  assert.equal(customerCodeCalls, openedCodeCalls + 1, 'Reopening the card generates a fresh code')
+  assert.notEqual(await codeOutput.innerText(), initialOpenCode)
+  const beforeForegroundCode = await codeOutput.innerText()
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
+    document.dispatchEvent(new Event('visibilitychange'))
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' })
+    document.dispatchEvent(new Event('visibilitychange'))
+  })
+  await page.waitForFunction((previous) => {
+    const output = document.querySelector('[aria-label="Código del cliente"]')
+    return output && output.textContent.trim() !== previous
+  }, beforeForegroundCode)
+  assert.equal(
+    customerCodeCalls,
+    openedCodeCalls + 2,
+    'Returning to the card from the background also creates a fresh code'
+  )
   if (errors.length) console.error('Failed requests:', failedRequests.slice(0, 8))
   assert.deepEqual(errors, [])
   console.log(
