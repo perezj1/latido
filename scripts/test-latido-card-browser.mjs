@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { chromium } from '@playwright/test'
+import { chromium, webkit, devices } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import QRCode from 'qrcode'
 
-const port = 5194,
+const useWebkit = process.argv.includes('--webkit')
+const port = useWebkit ? 5195 : 5194,
   origin = `http://127.0.0.1:${port}`,
   token = 'a'.repeat(64),
   scannerToken = 'b'.repeat(64),
@@ -16,7 +17,7 @@ const server = spawn(
   {
     env: {
       ...process.env,
-      VITE_SUPABASE_URL: 'https://card-test.supabase.co',
+      VITE_SUPABASE_URL: `${origin}/card-test-api`,
       VITE_SUPABASE_ANON_KEY: 'card-test-public-key',
       VITE_ADMIN_EMAILS: 'admin@test.example'
     },
@@ -32,8 +33,9 @@ server.stderr.on('data', (data) => {
   serverOutput += data
 })
 let browser
-const output = path.resolve('output/latido-card')
+const output = path.resolve(useWebkit ? 'output/latido-card/webkit' : 'output/latido-card')
 const errors = []
+const failedRequests = []
 try {
   let ready = false
   for (let n = 0; n < 100; n++) {
@@ -46,9 +48,11 @@ try {
     await new Promise((r) => setTimeout(r, 100))
   }
   if (!ready) throw new Error(`Vite failed to start: ${serverOutput.slice(-1000)}`)
-  browser = await chromium.launch({ headless: true })
+  browser = await (useWebkit ? webkit : chromium).launch({ headless: true })
   const context = await browser.newContext({
-    viewport: { width: 390, height: 844 }
+    ...devices[useWebkit ? 'iPhone 13' : 'Pixel 7'],
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1
   })
   const cameraQrs = {
     card: await QRCode.toDataURL(`${origin}/c/${token}`, {
@@ -67,11 +71,50 @@ try {
   await context.addInitScript(async (qrs) => {
     // Exercise the real decoder with a video stream containing a generated QR.
     // Hardware camera permission remains a separate real-device acceptance test.
-    if (!navigator.mediaDevices) return
+    // Windows WebKit has no native media capture. Supply a synthetic preview
+    // there while still exercising the real ZXing decoder and camera lifecycle.
+    const syntheticPreview =
+      !navigator.mediaDevices || !document.createElement('canvas').captureStream
+    if (!navigator.mediaDevices) Object.defineProperty(navigator, 'mediaDevices', { value: {} })
+    if (syntheticPreview) {
+      Object.defineProperty(HTMLVideoElement.prototype, 'srcObject', {
+        configurable: true,
+        get() {
+          return this.testStream || null
+        },
+        set(stream) {
+          this.testStream = stream
+        }
+      })
+      for (const [name, value] of Object.entries({
+        videoWidth: 640,
+        videoHeight: 640,
+        paused: false,
+        ended: false,
+        currentTime: 1,
+        readyState: 4
+      })) {
+        Object.defineProperty(HTMLVideoElement.prototype, name, {
+          configurable: true,
+          get() {
+            return value
+          }
+        })
+      }
+      HTMLVideoElement.prototype.play = async function () {}
+      const drawImage = CanvasRenderingContext2D.prototype.drawImage
+      CanvasRenderingContext2D.prototype.drawImage = function (source, ...args) {
+        if (source instanceof HTMLVideoElement && source.testStream?.testCanvas)
+          source = source.testStream.testCanvas
+        return drawImage.call(this, source, ...args)
+      }
+    }
     window.testCameraQrKind = 'blank'
     window.testCameraActive = 0
+    window.testCameraRequests = 0
     Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
       value: async () => {
+        window.testCameraRequests++
         if (window.testCameraDenied)
           throw Object.assign(new Error('Denied'), { name: 'NotAllowedError' })
         const images = {}
@@ -94,8 +137,23 @@ try {
           if (img) ctx.drawImage(img, 80, 80, 480, 480)
         }
         draw()
-        const timer = setInterval(draw, 80),
-          stream = canvas.captureStream(12)
+        const timer = setInterval(draw, 80)
+        const simulatedTrack = {
+          kind: 'video',
+          readyState: 'live',
+          getCapabilities: () => ({}),
+          getSettings: () => ({}),
+          stop() {
+            this.readyState = 'ended'
+          }
+        }
+        const stream = syntheticPreview
+          ? {
+              testCanvas: canvas,
+              getTracks: () => [simulatedTrack],
+              getVideoTracks: () => [simulatedTrack]
+            }
+          : canvas.captureStream(12)
         stream.getTracks().forEach((track) => {
           window.testCameraActive++
           const stop = track.stop.bind(track)
@@ -201,16 +259,24 @@ try {
     route.fulfill({
       status,
       contentType: 'application/json',
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      headers: {
+        'access-control-allow-origin': origin,
+        'access-control-allow-credentials': 'true',
+        'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+        'access-control-allow-headers':
+          'authorization,apikey,x-client-info,content-type,accept,prefer,accept-profile,content-profile,x-supabase-api-version'
+      }
     })
   await context.route('**/*', async (route) => {
     const url = new URL(route.request().url())
-    if (url.origin === origin || url.protocol === 'blob:') return route.continue()
+    if ((url.origin === origin && !url.pathname.startsWith('/card-test-api/')) || url.protocol === 'blob:') return route.continue()
     assert.equal(
-      url.hostname,
-      'card-test.supabase.co',
+      url.origin,
+      origin,
       'No third-party request should leave the test'
     )
+    if (route.request().method() === 'OPTIONS') return respond(route, null)
     const name = url.pathname.split('/').at(-1),
       args = route.request().method() === 'POST' ? route.request().postDataJSON() : {}
     if (name === 'lc_open_scanner') {
@@ -498,7 +564,20 @@ try {
   }
   const page = await context.newPage()
   page.on('pageerror', (err) => errors.push(err.message))
+  page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), reason: request.failure()?.errorText }))
   await mkdir(output, { recursive: true })
+  await page.goto(
+    `${origin}/card/scanner/vincular#${new URLSearchParams({ token: scannerToken, fingerprint: scannerToken, label: 'Scanner' })}`
+  )
+  await page.waitForURL('**/auth?**')
+  assert.ok(!page.url().includes(scannerToken))
+  assert.equal(
+    await page.evaluate(
+      () => JSON.parse(sessionStorage.getItem('latido_card_scanner_connection_v1')).token
+    ),
+    scannerToken,
+    'Recover the invite when iOS opens a different browser context'
+  )
   await page.goto(`${origin}/scanner/?camera=1`)
   await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
   assert.equal(new URL(page.url()).search, '', 'Camera launch is not repeated on reload')
@@ -523,11 +602,21 @@ try {
   await page.getByRole('button', { name: 'Scanner', exact: true }).click()
   await page.waitForURL('**/auth?**')
   assert.equal(new URL(page.url()).searchParams.get('next'), '/card/scanner/vincular')
+  assert.ok(!page.url().includes(scannerToken), 'No private token in the login URL')
+  await page
+    .getByText('Conecta con el negocio usando tu cuenta de Latido.', { exact: false })
+    .waitFor()
+  await page.getByRole('button', { name: 'Créala gratis', exact: true }).click()
+  await page.getByRole('heading', { name: 'Crea tu cuenta', exact: true }).waitFor()
+  assert.equal(new URL(page.url()).searchParams.get('next'), '/card/scanner/vincular')
+  await page
+    .getByText('Esta cuenta gratuita identifica tu acceso como trabajador.', { exact: false })
+    .waitFor()
   assert.equal(scannerOpenCalls.length, 0, 'Business binding requires a real account')
   await page.evaluate(
     (user) =>
       localStorage.setItem(
-        'sb-card-test-auth-token',
+        'sb-127-auth-token',
         JSON.stringify({
           access_token: 'test-token',
           refresh_token: 'test-refresh',
@@ -594,7 +683,7 @@ try {
     '/scanner/manifest.json'
   )
   assert.equal(
-    await page.evaluate(() => JSON.parse(localStorage.getItem('sb-card-test-auth-token')).user.id),
+    await page.evaluate(() => JSON.parse(localStorage.getItem('sb-127-auth-token')).user.id),
     user.id,
     'Scanner must preserve the personal account used for binding'
   )
@@ -611,9 +700,25 @@ try {
   })
   await page.getByRole('button', { name: 'Scanner', exact: true }).click()
   await page.getByRole('alert').filter({ hasText: 'Permite el acceso a la cámara' }).waitFor()
+  const deniedCalls = await page.evaluate(() => window.testCameraRequests)
   await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  await page.getByRole('button', { name: 'Scanner', exact: true }).click()
+  await page.getByRole('alert').filter({ hasText: 'Permite el acceso a la cámara' }).waitFor()
+  assert.equal(await page.evaluate(() => window.testCameraRequests), deniedCalls + 1)
   await page.evaluate(() => {
     window.testCameraDenied = false
+    window.testCameraQrKind = 'blank'
+  })
+  await page.getByRole('button', { name: 'Volver a pedir permiso', exact: true }).click()
+  await page.waitForFunction(() => window.testCameraActive > 0)
+  await page.getByRole('alert').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
+  assert.equal(await page.getByText('Usar enlace de tarjeta', { exact: true }).count(), 0)
+  assert.equal(
+    await page.getByText('Solicitar acceso habitual al propietario', { exact: true }).count(),
+    0
+  )
+  await page.evaluate(() => {
     window.testCameraQrKind = 'card'
   })
   await page.getByRole('button', { name: 'Scanner', exact: true }).click()
@@ -668,9 +773,12 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await page.getByRole('button', { name: 'Desconectar este dispositivo' }).click()
   await page.getByRole('heading', { name: 'Escanea y conecta.' }).waitFor()
-  await page.evaluate(() => localStorage.removeItem('sb-card-test-auth-token'))
+  await page.evaluate(() => localStorage.removeItem('sb-127-auth-token'))
   await page.goto(`${origin}/card`)
-  await page.getByRole('heading', { name: 'Tu Tarjeta Latido te da más.' }).waitFor()
+  await page.getByRole('heading', { name: 'Ahorra en los negocios de tu comunidad' }).waitFor()
+  await page
+    .locator('.lc-card-intro')
+    .screenshot({ animations: 'disabled', path: path.join(output, 'card-new-user-mobile.png') })
   await page.getByRole('heading', { name: 'Café gratis' }).waitFor()
   assert.equal(await page.locator('.lc-offer').count(), 6)
   for (const title of [
@@ -694,7 +802,7 @@ try {
   await page.evaluate(
     (user) =>
       localStorage.setItem(
-        'sb-card-test-auth-token',
+        'sb-127-auth-token',
         JSON.stringify({
           access_token: 'test-token',
           refresh_token: 'test-refresh',
@@ -705,6 +813,9 @@ try {
     user
   )
   await page.goto(`${origin}/perfil`)
+  // Allow the existing profile's creator-data preload to settle before leaving
+  // that route; WebKit reports requests attempted by a discarded document.
+  await page.waitForLoadState('networkidle')
   await page.getByRole('button', { name: /Mi Tarjeta Latido/ }).click()
   assert.equal(new URL(page.url()).pathname, '/card')
   await page.getByAltText('QR de Tarjeta Latido').waitFor()
@@ -877,7 +988,7 @@ try {
   assert.equal(digitalCalls, callsBeforePause)
   membershipMode = 'active'
   await page.evaluate(() => {
-    const stored = JSON.parse(localStorage.getItem('sb-card-test-auth-token'))
+    const stored = JSON.parse(localStorage.getItem('sb-127-auth-token'))
     stored.user = {
       ...stored.user,
       email: 'admin@test.example',
@@ -886,7 +997,7 @@ try {
         latido_onboarding_completed: true
       }
     }
-    localStorage.setItem('sb-card-test-auth-token', JSON.stringify(stored))
+    localStorage.setItem('sb-127-auth-token', JSON.stringify(stored))
   })
   await page.goto(`${origin}/card/admin`)
   page.on('dialog', (dialog) => dialog.accept())
@@ -1042,7 +1153,40 @@ try {
     path: path.join(output, 'card-business-single-mobile.png'),
     fullPage: true
   })
-  const personalAuth = await page.evaluate(() => localStorage.getItem('sb-card-test-auth-token'))
+  const personalAuth = await page.evaluate(() => localStorage.getItem('sb-127-auth-token'))
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (data) => {
+        window.testStaffShare = data
+      }
+    })
+  )
+  await page.getByRole('button', { name: 'Compartir enlace con el personal', exact: true }).click()
+  const staffInvite = await page.evaluate(() => window.testStaffShare)
+  const sharedStaffLink = staffInvite.url
+  assert.equal(new URL(sharedStaffLink).pathname, `/scanner/link/${'e'.repeat(64)}`)
+  assert.equal(new URL(sharedStaffLink).searchParams.get('camera'), '1')
+  assert.ok(staffInvite.text.includes('cuenta gratis'))
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text) => {
+          window.testStaffCopy = text
+        }
+      }
+    })
+  })
+  await page.getByRole('button', { name: 'Compartir enlace con el personal', exact: true }).click()
+  await page.getByRole('status').filter({ hasText: 'Enlace copiado' }).waitFor()
+  assert.ok((await page.evaluate(() => window.testStaffCopy)).endsWith(sharedStaffLink))
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined })
+  )
+  await page.getByRole('button', { name: 'Compartir enlace con el personal', exact: true }).click()
+  assert.equal(await page.getByLabel('Enlace para el personal').inputValue(), sharedStaffLink)
   const ownerScanner = page.getByRole('link', { name: 'Scanner', exact: true })
   assert.equal(
     new URL(await ownerScanner.getAttribute('href')).pathname,
@@ -1056,7 +1200,7 @@ try {
   assert.equal(new URL(page.url()).pathname, '/scanner/')
   assert.equal(new URL(page.url()).search, '')
   assert.equal(
-    await page.evaluate(() => localStorage.getItem('sb-card-test-auth-token')),
+    await page.evaluate(() => localStorage.getItem('sb-127-auth-token')),
     personalAuth
   )
   await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
@@ -1132,9 +1276,24 @@ try {
   await page.getByRole('link', { name: 'Registrar mi negocio', exact: true }).waitFor()
   assert.equal(await page.getByLabel('Selecciona tu negocio').count(), 0)
   assert.equal(await page.getByAltText('QR interno del negocio').count(), 0)
-  assert.equal(await page.getByRole('link', { name: 'Scanner', exact: true }).count(), 0)
+  const workerScanner = page.getByRole('link', { name: 'Scanner', exact: true })
+  assert.equal(await workerScanner.getAttribute('href'), '/scanner/?camera=1')
+  await workerScanner.click()
+  await page.getByRole('dialog', { name: 'Scanner', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Cerrar cámara', exact: true }).click()
   businessMode = 'multiple'
-  await page.evaluate(() => localStorage.removeItem('sb-card-test-auth-token'))
+  await page.evaluate(() => localStorage.removeItem('sb-127-auth-token'))
+  const opensBeforeSharedInvite = scannerOpenCalls.length
+  await page.goto(sharedStaffLink)
+  await page.waitForURL('**/auth?**')
+  await page.getByRole('button', { name: 'Créala gratis', exact: true }).click()
+  await page.getByRole('heading', { name: 'Crea tu cuenta', exact: true }).waitFor()
+  assert.equal(new URL(page.url()).searchParams.get('next'), '/card/scanner/vincular')
+  assert.equal(
+    scannerOpenCalls.length,
+    opensBeforeSharedInvite,
+    'A shared link connects without scanning but still requires the worker account'
+  )
   await page.goto(copiedOfferLink)
   const accountCta = page.getByRole('link', {
     name: 'Crear cuenta y conseguir mi tarjeta',
@@ -1157,11 +1316,42 @@ try {
   assert.equal(new URL(page.url()).pathname, '/auth')
   assert.equal(new URL(page.url()).searchParams.get('mode'), 'register')
   assert.equal(new URL(page.url()).searchParams.get('next'), nextOfferPath)
+  if (errors.length) console.error('Failed requests:', failedRequests.slice(0, 8))
   assert.deepEqual(errors, [])
   console.log(
     'Latido Card browser: account-bound permanent Scanner, revoke/delete/disconnect, unified QR camera, pending redemption protection, Scanner isolation, claims, physical request and admin fulfillment passed.'
   )
   console.log(`Screenshots: ${output}`)
+} catch (err) {
+  for (const page of browser?.contexts().flatMap((context) => context.pages()) || []) {
+    console.error(
+      (
+        await page
+          .locator('body')
+          .innerText()
+          .catch(() => '')
+      ).slice(0, 1200)
+    )
+    console.error(
+      await page
+        .evaluate(() => ({
+          streams: window.testCameraActive,
+          requests: window.testCameraRequests,
+          capture: typeof document.createElement('canvas').captureStream,
+          video: Array.from(document.querySelectorAll('video')).map((v) => ({
+            width: v.videoWidth,
+            height: v.videoHeight,
+            paused: v.paused,
+            ready: v.readyState,
+            error: v.error?.message
+          }))
+        }))
+        .catch(() => ({}))
+    )
+    await mkdir(output, { recursive: true })
+    await page.screenshot({ path: path.join(output, 'failure.png') }).catch(() => {})
+  }
+  throw err
 } finally {
   await browser?.close()
   server.kill()

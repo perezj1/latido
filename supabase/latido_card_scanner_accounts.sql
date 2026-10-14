@@ -80,4 +80,18 @@ BEGIN
  JOIN public.latido_card_scanner_sessions s ON s.id=r.scanner_session_id LEFT JOIN public.profiles p ON p.id=s.linked_user_id
  WHERE r.provider_id=p_provider ORDER BY r.redeemed_at DESC LIMIT 100) x));
 END $$;
+CREATE OR REPLACE FUNCTION public.lc_rotate_scanner_link(p_provider UUID) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE tok TEXT:=public.lc_new_token();
+BEGIN
+ IF NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+ PERFORM 1 FROM public.latido_card_businesses WHERE provider_id=p_provider AND active FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'BUSINESS_INACTIVE'; END IF;
+ UPDATE public.latido_card_scanner_links SET revoked_at=now() WHERE provider_id=p_provider AND revoked_at IS NULL;
+ -- Remove old connections from the list while preserving their redemption history.
+ UPDATE public.latido_card_scanner_sessions SET revoked_at=coalesce(revoked_at,now()),hidden_at=coalesce(hidden_at,now())
+ WHERE provider_id=p_provider AND hidden_at IS NULL;
+ INSERT INTO public.latido_card_scanner_links(provider_id,token_hash) VALUES(p_provider,public.lc_hash(tok));
+ RETURN jsonb_build_object('token',tok);
+END $$;
 COMMIT;

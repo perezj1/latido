@@ -9,6 +9,11 @@ import '@fontsource/poppins/latin-800.css'
 import '@fontsource/poppins/latin-900.css'
 import App from './App.jsx'
 import './index.css'
+import { captureScannerHandoff } from './lib/latidoCardCore'
+
+try {
+  captureScannerHandoff(window.location, window.sessionStorage, window.history)
+} catch {}
 
 // Prevent browser from restoring scroll position on back/forward navigation
 if ('scrollRestoration' in window.history) {

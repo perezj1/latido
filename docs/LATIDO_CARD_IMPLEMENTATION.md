@@ -215,8 +215,9 @@ No cargar presencia, notificaciones, analítica o la navegación de Latido allí
 Una sola cámara distingue las rutas `/scanner/link/<token>` (vincular negocio)
 y `/c/<token>` (consultar tarjeta). Un QR de tarjeta sin acceso al negocio muestra
 una indicación para vincular primero, sin consultar datos del socio. Rechazar
-otros dominios y tokens sin ruta en la cámara; los formularios manuales sí aceptan
-tokens porque indican expresamente qué tipo esperan. Escanear nunca canjea solo:
+otros dominios y tokens sin ruta en la cámara. La entrada manual de vinculación
+del negocio permanece plegada; se retira «Usar enlace de tarjeta» de clientes.
+Escanear nunca canjea solo:
 el trabajador comprueba las condiciones y pulsa **Canjear**.
 
 El acceso flotante del propietario usa el enlace privado del negocio seleccionado
@@ -236,6 +237,30 @@ de vinculación llama `lc_open_scanner` con Auth; Scanner sigue usando su client
 separado sin Auth. El SQL necesario es `latido_card_scanner_accounts.sql`.
 Los accesos históricos sin cuenta no permiten inferir un nombre: se conservan
 como «Usuario sin identificar» hasta que el dispositivo vuelva a vincularse.
+
+«Mi negocio» también muestra **Scanner** cuando el usuario no es propietario.
+**Compartir enlace con el personal** abre el menú nativo o copia un enlace
+privado `/scanner/link/<token>?camera=1`. Si el portapapeles está bloqueado,
+muestra un campo para copiarlo. Al abrir el enlace, el trabajador inicia sesión
+o crea su cuenta gratuita y se conecta sin escanear. No necesita membresía.
+Si confirma el email en otra ventana, puede volver a abrir el mismo enlace.
+
+Para recuperar la invitación si una PWA abre Auth en otro contexto del navegador,
+Scanner la transporta además en un fragmento temporal de la ruta de vinculación.
+`src/main.jsx` lo captura y borra antes de Auth, onboarding y analítica. El fragmento
+no se envía al servidor HTTP ni se incluye en el `next` del login.
+
+Cada apertura o reintento llama `getUserMedia` sin cachear rechazos. No se añade
+un diálogo propio tras aceptar: el navegador decide si recuerda el permiso.
+**Volver a pedir permiso** reintenta en el mismo diálogo. JavaScript no puede
+deshacer un bloqueo permanente: se muestra ayuda para Safari/iPhone y Chrome/Android.
+Usar HTTPS, vídeo `muted`/`playsInline`, cámara trasera preferida y alternativa
+genérica si no se encuentra. Liberar los tracks incluso si la autorización llega
+después de cerrar la cámara.
+
+Regenerar el QR bloquea los enlaces anteriores y retira las conexiones del panel
+mediante `hidden_at`, conservando los canjes. Volver a ejecutar la versión
+actualizada de `supabase/latido_card_scanner_accounts.sql` si ya se había instalado.
 
 `public/scanner/manifest.json`: id `/latido-scanner`, start_url y scope
 `/scanner/`. No colocar tokens en el manifiesto ni en la URL de arranque.
@@ -304,6 +329,8 @@ de nombre del dispositivo. Eliminar conexiones conserva el historial de canjes.
 npm run test:card
 npx playwright install chromium
 npm run test:card:browser
+node node_modules/playwright/cli.js install webkit
+npm run test:card:webkit
 npm run test:auth
 deno check --node-modules-dir=auto supabase/functions/latido_card_physical_email/index.ts
 npm run build
@@ -316,6 +343,15 @@ sustituye pruebas de transacciones simultáneas en conexiones PostgreSQL reales.
 El test de navegador arranca Vite en 5194, intercepta todas las peticiones
 remotas con fixtures, decodifica un QR real mediante una cámara simulada
 como vídeo y guarda capturas en `output/latido-card/`.
+Chromium usa un perfil Android y WebKit un perfil iPhone. Windows WebKit no
+expone captura de medios: la prueba inyecta tracks y fotogramas sintéticos,
+manteniendo el decodificador ZXing real. Comprueba rechazos, reapertura, reintento,
+cierre, enlaces compartidos, registro gratuito y eliminación de tokens de la URL.
+La emulación no sustituye los permisos nativos ni cámaras físicas de móviles.
+La vinculación de Scanner no monta las precargas de comunidad ni los recordatorios
+de compartir negocios. La actividad del perfil se actualiza mientras la página
+está abierta; se evitan fetch asíncronos desde `pagehide`/`beforeunload`, que Safari
+puede bloquear al abandonar el documento.
 
 Antes de piloto: cámaras reales Android/iPhone, tarjetas impresas, instalación
 y almacenamiento independientes, dos Scanners canjeando la misma ventaja a

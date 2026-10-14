@@ -7,10 +7,17 @@ import {
   classifyLatidoQr,
   readScannerSession,
   storeScannerSession,
-  SCANNER_STORAGE_KEY
+  SCANNER_STORAGE_KEY,
+  SCANNER_CONNECTION_KEY,
+  captureScannerHandoff
 } from '../src/lib/latidoCardCore.js'
 import { buildPhysicalCardEmail } from '../supabase/functions/_shared/latidoCardPhysicalEmail.js'
-import { cardOfferShareData, shareCardOffer } from '../src/lib/latidoCardShare.js'
+import {
+  cardOfferShareData,
+  shareCardOffer,
+  scannerConnectionShareData,
+  shareScannerConnection
+} from '../src/lib/latidoCardShare.js'
 
 const sharedExample = {
   id: randomUUID(),
@@ -97,6 +104,42 @@ assert.equal(
 )
 
 const token = 'a'.repeat(64)
+const staffShare = scannerConnectionShareData(
+  `https://latido.ch/scanner/link/${token}`,
+  'Negocio A',
+  'https://latido.ch'
+)
+assert.equal(new URL(staffShare.url).searchParams.get('camera'), '1')
+assert.equal(new URL(staffShare.url).pathname, `/scanner/link/${token}`)
+assert.ok(staffShare.text.includes('cuenta gratis'))
+assert.throws(
+  () =>
+    scannerConnectionShareData(
+      `https://evil.test/scanner/link/${token}`,
+      'Negocio A',
+      'https://latido.ch'
+    ),
+  /SCANNER_LINK_INVALID/
+)
+assert.equal(
+  (
+    await shareScannerConnection(
+      staffShare.url,
+      'Negocio A',
+      {
+        share: async () => {
+          throw Object.assign(new Error(), { name: 'AbortError' })
+        }
+      },
+      'https://latido.ch'
+    )
+  ).status,
+  'cancelled'
+)
+assert.equal(
+  (await shareScannerConnection(staffShare.url, 'Negocio A', {}, 'https://latido.ch')).status,
+  'manual'
+)
 assert.equal(extractCardToken(`https://latido.ch/c/${token}`), token)
 assert.equal(extractCardToken(`https://evil.test/c/${token}`), null)
 assert.equal(extractCardToken(`javascript:alert(1)`), null)
@@ -140,6 +183,41 @@ storeScannerSession(
 assert.equal(local.getItem(SCANNER_STORAGE_KEY), null)
 assert.equal(readScannerSession({ local, temporary }).token, token)
 storeScannerSession({ token, persistent: true, expires_at: null }, { local, temporary })
+let handoffHistory
+const location = {
+  pathname: '/card/scanner/vincular',
+  search: '',
+  hash: `#${new URLSearchParams({ token, fingerprint: token, label: 'Caja' })}`
+}
+assert.equal(
+  captureScannerHandoff(
+    location,
+    temporary,
+    {
+      replaceState: (_state, _title, url) => {
+        handoffHistory = url
+      }
+    },
+    123
+  ),
+  true
+)
+assert.equal(handoffHistory, '/card/scanner/vincular')
+assert.equal(JSON.parse(temporary.getItem(SCANNER_CONNECTION_KEY)).token, token)
+assert.equal(captureScannerHandoff({ ...location, pathname: '/auth' }, temporary, {}), false)
+assert.equal(captureScannerHandoff({ ...location, hash: '#token=invalid' }, temporary, {}), false)
+assert.equal(
+  captureScannerHandoff(
+    location,
+    {
+      setItem: () => {
+        throw new Error('Blocked')
+      }
+    },
+    {}
+  ),
+  false
+)
 assert.equal(temporary.getItem(SCANNER_STORAGE_KEY), null)
 assert.equal(readScannerSession({ local, temporary }).persistent, true)
 temporary.setItem(SCANNER_STORAGE_KEY, 'not-json')
@@ -851,7 +929,19 @@ try {
   await as('member2')
   const beforeRotation = await rpc('lc_open_scanner', [accountLink.token, 'Caja'])
   await as('owner')
+  const historyBeforeRotation = (await rpc('lc_business_dashboard', [ids.business])).history.length
   await rpc('lc_rotate_scanner_link', [ids.business])
+  const afterRotation = await rpc('lc_business_dashboard', [ids.business])
+  assert.equal(
+    afterRotation.sessions.length,
+    0,
+    'Regeneration removes previous connections from the panel'
+  )
+  assert.equal(
+    afterRotation.history.length,
+    historyBeforeRotation,
+    'Regeneration preserves redemption history'
+  )
   await as(null, 'anon')
   await rejects('lc_scanner_status', [beforeRotation.token, false], 'SCANNER_EXPIRED')
   await as('member2')

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ScanLine } from 'lucide-react'
+import { ScanLine, Share2 } from 'lucide-react'
 import { cardRpc, scannerLinkUrl } from '../lib/latidoCard'
 import { cardErrorMessage } from '../lib/latidoCardCore'
+import { shareScannerConnection } from '../lib/latidoCardShare'
 import LatidoCardQr from '../components/LatidoCardQr'
 import LatidoCardOfferWizard from '../components/LatidoCardOfferWizard'
 import { CardHeader, OfferConditions } from './LatidoCard'
@@ -33,6 +34,12 @@ export default function LatidoCardBusiness() {
     [busy, setBusy] = useState(false),
     [link, setLink] = useState(''),
     [loading, setLoading] = useState(true)
+  const [shareNotice, setShareNotice] = useState(''),
+    [manualStaffLink, setManualStaffLink] = useState('')
+  useEffect(() => {
+    setManualStaffLink('')
+    setShareNotice('')
+  }, [link])
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current
     try {
@@ -339,11 +346,40 @@ export default function LatidoCardBusiness() {
           {link && (
             <div className="lc-spaced">
               <LatidoCardQr value={link} label="QR interno del negocio" />
-              <p className="lc-secret">{link}</p>
+              <div className="lc-actions lc-spaced">
+                <button
+                  className="lc-button lc-button--secondary"
+                  disabled={busy}
+                  onClick={async () => {
+                    setShareNotice('')
+                    setManualStaffLink('')
+                    try {
+                      const shared = await shareScannerConnection(link, selected.name)
+                      if (shared.status === 'copied')
+                        setShareNotice('Enlace copiado. Envíalo solo a tu personal.')
+                      if (shared.status === 'manual') setManualStaffLink(shared.url)
+                    } catch (err) {
+                      setError(cardErrorMessage(err))
+                    }
+                  }}
+                >
+                  <Share2 size={18} aria-hidden="true" /> Compartir enlace con el personal
+                </button>
+              </div>
+              {shareNotice && (
+                <p className="lc-muted" role="status">
+                  {shareNotice}
+                </p>
+              )}
+              {manualStaffLink && (
+                <label className="lc-form lc-spaced">
+                  Enlace para el personal
+                  <input readOnly value={manualStaffLink} onFocus={(e) => e.target.select()} />
+                </label>
+              )}
               <p className="lc-muted">
-                El QR se prepara automáticamente. Compártelo solo con tus trabajadores. Los QR
-                impresos siguen siendo válidos hasta que regeneres el acceso o Latido suspenda el
-                negocio.
+                El QR se prepara automáticamente. Compártelo solo con tus trabajadores. Regenera el
+                QR para crear uno nuevo y eliminar las conexiones antiguas.
               </p>
             </div>
           )}
@@ -386,11 +422,16 @@ export default function LatidoCardBusiness() {
           </div>
         </section>
       )}
-      {selected?.active && !selected.suspended && link && (
-        <a className="lc-scanner-fab" href={`${link}?camera=1`}>
-          <ScanLine size={24} aria-hidden="true" /> Scanner
-        </a>
-      )}
+      <a
+        className="lc-scanner-fab"
+        href={
+          selected?.active && !selected.suspended && link
+            ? `${link}?camera=1`
+            : '/scanner/?camera=1'
+        }
+      >
+        <ScanLine size={24} aria-hidden="true" /> Scanner
+      </a>
     </div>
   )
 }

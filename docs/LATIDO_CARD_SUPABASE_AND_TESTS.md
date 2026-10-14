@@ -36,6 +36,9 @@ No reinstalar después los SQL anteriores: contienen las versiones previas de es
 Los accesos anteriores vigentes pasan a permanentes; los caducados o revocados no
 se reactivan. Los antiguos se crearon sin cuenta: volver a vincularlos para identificar
 a su usuario. Eliminar una conexión bloquea su acceso y la oculta, conservando sus canjes.
+La versión actualizada también hace que regenerar el QR retire las conexiones
+anteriores del listado. Si ya ejecutaste este último archivo, vuelve a ejecutar
+su contenido completo actualizado. No borra los canjes.
 
 Ejecutar cada archivo completo en una consulta separada. Todos admiten repetición
 y conservan los datos existentes de Card. No crear manualmente columnas sueltas,
@@ -126,6 +129,15 @@ de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
    cerrar la cámara libera el dispositivo. Un canje pendiente bloquea nuevos
    escaneos y cambios de negocio. Para identificar usuarios y hacer permanente
    el acceso, instalar `latido_card_scanner_accounts.sql` como se indica arriba.
+
+   Probar **Compartir enlace con el personal**: conecta sin escanear tras login
+   o registro gratuito. Confirmar que mantiene el destino durante el registro.
+   No requiere suscripción del trabajador. Probar también el campo para copiar
+   si compartir/portapapeles no están disponibles. Un usuario sin negocios propios
+   debe ver **Scanner** en «Mi negocio». No aparecen «Usar enlace de tarjeta» ni
+   «Solicitar acceso habitual». Rechazar la cámara, cerrar, reabrir y pulsar
+   **Volver a pedir permiso**; si está bloqueada en ajustes, permitirla allí.
+   Confirmar que cerrar libera la cámara y que aceptar no añade diálogos propios.
 
    La primera vinculación requiere iniciar sesión en una cuenta de Latido con nombre
    en su perfil; no necesita membresía ni pago. Scanner mantiene después su acceso

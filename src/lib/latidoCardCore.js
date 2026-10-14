@@ -1,6 +1,31 @@
 export const SCANNER_STORAGE_KEY = 'latido_card_scanner_v1'
 export const SCANNER_CONNECTION_KEY = 'latido_card_scanner_connection_v1'
 
+// Capture the private fragment before Auth/onboarding redirects can change the
+// route. Fragments are never sent to the HTTP server or copied into login URLs.
+export function captureScannerHandoff(location, temporary, history, now = Date.now()) {
+  if (location.pathname !== '/card/scanner/vincular' || !location.hash) return false
+  const params = new URLSearchParams(location.hash.slice(1))
+  const token = params.get('token'),
+    fingerprint = params.get('fingerprint')
+  if (!/^[a-f0-9]{64}$/.test(token) || !/^[a-f0-9]{64}$/.test(fingerprint)) return false
+  try {
+    temporary.setItem(
+      SCANNER_CONNECTION_KEY,
+      JSON.stringify({
+        token,
+        fingerprint,
+        label: (params.get('label') || 'Scanner').slice(0, 80),
+        created_at: now
+      })
+    )
+    history.replaceState(null, '', `${location.pathname}${location.search || ''}`)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function extractCardToken(value, kind = 'card', base = 'https://latido.ch') {
   const input = String(value || '').trim()
   if (/^[a-f0-9]{64}$/.test(input)) return input

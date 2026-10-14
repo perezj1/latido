@@ -6,6 +6,7 @@ import { cardRpc, cardUrl } from '../lib/latidoCard'
 import { cardErrorMessage, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
 import { shareCardOffer } from '../lib/latidoCardShare'
 import LatidoCardQr from '../components/LatidoCardQr'
+import LatidoCardIntro from '../components/LatidoCardIntro'
 import LatidoCardPhysicalRequest from '../components/LatidoCardPhysicalRequest'
 import './LatidoCard.css'
 
@@ -242,45 +243,12 @@ export default function LatidoCard() {
               </div>
             </section>
           ) : (
-            <section className="lc-hero lc-card-intro">
-              <span className="lc-eyebrow">Una tarjeta. Tu comunidad. Tus ventajas.</span>
-              <h1>
-                {sharedOffer
-                  ? 'Esta ventaja también puede ser tuya.'
-                  : 'Tu Tarjeta Latido te da más.'}
-              </h1>
-              <p>
-                {sharedOffer ? (
-                  <>
-                    <strong>{sharedOffer.title}</strong> en {sharedOffer.business_name}. Crea tu
-                    cuenta y únete al club de ventajas de Latido.
-                  </>
-                ) : (
-                  'Descuentos y ventajas en los negocios de tu comunidad. Lleva tu tarjeta física o presenta el QR digital desde aquí.'
-                )}
-              </p>
-              <div className="lc-hero-facts">
-                <span className="lc-price">
-                  CHF 6,90 <small>/ mes</small>
-                </span>
-                <span>💳 Física y digital</span>
-                <span>🤝 Negocios: participación gratuita</span>
-              </div>
-              {user ? (
-                <a className="lc-button" href={requestCardUrl}>
-                  Solicitar mi tarjeta
-                </a>
-              ) : (
-                <Link className="lc-button" to={accountUrl}>
-                  {sharedOffer ? 'Crear cuenta y conseguir mi tarjeta' : 'Quiero mi Tarjeta Latido'}
-                </Link>
-              )}
-              <small className="lc-intro-note">
-                {user
-                  ? 'La activación del piloto se solicita por email a Latido.'
-                  : 'Entra en tu cuenta para solicitarla.'}
-              </small>
-            </section>
+            <LatidoCardIntro
+              user={user}
+              accountUrl={accountUrl}
+              requestUrl={requestCardUrl}
+              sharedOffer={sharedOffer}
+            />
           )}
           <section className="lc-benefits" aria-label="Ventajas en negocios participantes">
             <div className="lc-section-heading">

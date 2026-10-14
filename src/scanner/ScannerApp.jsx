@@ -183,7 +183,11 @@ export default function ScannerApp() {
           created_at: Date.now()
         })
       )
-      window.location.assign('/card/scanner/vincular')
+      // iOS can open the Auth step in Safari outside the installed Scanner.
+      // Carry the private handoff in a fragment, never in the login query/logs.
+      window.location.assign(
+        `/card/scanner/vincular#${new URLSearchParams({ token, label, fingerprint })}`
+      )
       return false
     } catch (err) {
       setError(cardErrorMessage(err))
@@ -347,7 +351,8 @@ export default function ScannerApp() {
             </button>
           </div>
           <p className="lc-muted">
-            Vincula el dispositivo con tu cuenta de Latido. Participación gratuita.
+            Vincula el dispositivo con tu cuenta de Latido. Si todavía no tienes cuenta, crea una
+            gratis al conectar. No necesitas una membresía de pago.
           </p>
           <details className="lc-spaced">
             <summary>Vincular con un enlace o poner nombre al dispositivo</summary>
@@ -413,28 +418,6 @@ export default function ScannerApp() {
               <p className="lc-muted lc-scanner-hint">
                 Escanea una tarjeta de cliente o el QR de otro negocio.
               </p>
-              <details className="lc-spaced">
-                <summary>Usar enlace de tarjeta</summary>
-                <form
-                  className="lc-form"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    read(input)
-                  }}
-                >
-                  <label>
-                    Enlace del QR
-                    <input
-                      autoComplete="off"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                    />
-                  </label>
-                  <button className="lc-button" disabled={busy || !input}>
-                    Consultar tarjeta
-                  </button>
-                </form>
-              </details>
             </>
           )}
           {result && (

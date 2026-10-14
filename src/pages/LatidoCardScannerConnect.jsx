@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { cardRpc } from '../lib/latidoCard'
 import {
@@ -13,9 +13,23 @@ import './LatidoCard.css'
 // Only this authenticated app page creates a connection. The operational
 // Scanner keeps its own token and never imports the personal Auth client.
 export default function LatidoCardScannerConnect() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const navigate = useNavigate()
+  const [handoffReady, setHandoffReady] = useState(() => !window.location.hash)
   const [request] = useState(() => {
     try {
+      const fragment = new URLSearchParams(window.location.hash.slice(1))
+      if (fragment.has('token')) {
+        const token = fragment.get('token'),
+          fingerprint = fragment.get('fingerprint')
+        if (!/^[a-f0-9]{64}$/.test(token) || !/^[a-f0-9]{64}$/.test(fingerprint)) return null
+        return {
+          token,
+          fingerprint,
+          label: (fragment.get('label') || 'Scanner').slice(0, 80),
+          created_at: Date.now()
+        }
+      }
       const value = JSON.parse(sessionStorage.getItem(SCANNER_CONNECTION_KEY) || 'null')
       if (/^[a-f0-9]{64}$/.test(value?.token) && value.created_at > Date.now() - 3600000)
         return value
@@ -26,7 +40,24 @@ export default function LatidoCardScannerConnect() {
     [attempt, setAttempt] = useState(0)
   const operation = useRef(null)
   useEffect(() => {
-    if (!request || !user?.id) return
+    if (!handoffReady) {
+      try {
+        if (request) sessionStorage.setItem(SCANNER_CONNECTION_KEY, JSON.stringify(request))
+        navigate('/card/scanner/vincular', { replace: true })
+        setHandoffReady(true)
+      } catch {
+        setError('Permite el almacenamiento del navegador para continuar con la conexión.')
+      }
+      return
+    }
+    if (!authLoading && !user && request) {
+      navigate(`/auth?${new URLSearchParams({ mode: 'login', next: '/card/scanner/vincular' })}`, {
+        replace: true
+      })
+    }
+  }, [handoffReady, request, authLoading, user?.id, navigate])
+  useEffect(() => {
+    if (!request || !user?.id || authLoading || !handoffReady) return
     try {
       const pending = JSON.parse(sessionStorage.getItem('latido_card_pending_redemption') || 'null')
       if (pending?.requestId) {
@@ -98,7 +129,7 @@ export default function LatidoCardScannerConnect() {
     return () => {
       cancelled = true
     }
-  }, [request, user?.id, attempt])
+  }, [request, user?.id, attempt, authLoading, handoffReady])
   return (
     <main className="lc-page lc-scanner">
       <section className="lc-panel lc-scanner-start">

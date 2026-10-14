@@ -345,15 +345,14 @@ function UserPresenceSync() {
     markLastSeen()
     const lastSeenInterval = window.setInterval(markLastSeen, 60_000)
     const presenceInterval = window.setInterval(trackUserPresence, 30_000)
-    const onPageHide = () => { markLastSeen() }
+    // Safari blocks ordinary async fetches started while a document unloads.
+    // Record activity through the existing heartbeat and visibility/focus updates.
     const onVisible = () => {
       if (document.visibilityState && document.visibilityState !== 'visible') return
       markLastSeen()
       trackUserPresence()
     }
 
-    window.addEventListener('pagehide', onPageHide)
-    window.addEventListener('beforeunload', onPageHide)
     window.addEventListener('focus', onVisible)
     document.addEventListener('visibilitychange', onVisible)
 
@@ -363,8 +362,6 @@ function UserPresenceSync() {
       window.clearInterval(presenceInterval)
       stopPresence()
       stopEmailNotificationPresence()
-      window.removeEventListener('pagehide', onPageHide)
-      window.removeEventListener('beforeunload', onPageHide)
       window.removeEventListener('focus', onVisible)
       document.removeEventListener('visibilitychange', onVisible)
     }
@@ -791,7 +788,7 @@ function AppShell() {
             <Route path="/club" element={<Club />} />
             <Route path="/card" element={<LatidoCard />} />
             <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusiness /></ProtectedRoute>} />
-            <Route path="/card/scanner/vincular" element={<ProtectedRoute><LatidoCardScannerConnect /></ProtectedRoute>} />
+            <Route path="/card/scanner/vincular" element={<LatidoCardScannerConnect />} />
             <Route path="/card/admin" element={<AdminRoute><LatidoCardAdmin /></AdminRoute>} />
             <Route path="/c/:cardToken" element={<div className="lc-page"><h1>Tarjeta Latido</h1><p>Presenta este QR al personal de un negocio participante para consultar tus ventajas.</p><Link to="/card">Ir a Tarjeta Latido</Link></div>} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
@@ -843,17 +840,29 @@ function AppShell() {
   )
 }
 
+function AppCommunityExtras() {
+  const { pathname } = useLocation()
+  // The short Scanner handoff needs Auth only. Background community requests
+  // can resume after the user returns to the app, instead of outliving this page.
+  if (pathname.startsWith('/card/scanner/')) return null
+  return (
+    <>
+      <CreatorDirectorySync />
+      <ShareCardReminder />
+    </>
+  )
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <AppNotificationsProvider>
           <Seo />
-          <CreatorDirectorySync />
+          <AppCommunityExtras />
           <ScrollToTop />
           <OfflineNotice />
           <InAppNotificationAlert />
-          <ShareCardReminder />
           <Toaster
             position="top-center"
             toastOptions={{
