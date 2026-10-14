@@ -9,6 +9,91 @@ import {
   SCANNER_STORAGE_KEY
 } from '../src/lib/latidoCardCore.js'
 import { buildPhysicalCardEmail } from '../supabase/functions/_shared/latidoCardPhysicalEmail.js'
+import { cardOfferShareData, shareCardOffer } from '../src/lib/latidoCardShare.js'
+
+const sharedExample = {
+  id: randomUUID(),
+  title: 'Café gratis',
+  business_name: 'Café Latino',
+  benefit_type: 'gift',
+  token: 'private-token',
+  claim: { id: 'private-reservation' }
+}
+const shareData = cardOfferShareData(sharedExample, 'https://latido.ch')
+assert.equal(new URL(shareData.url).pathname, '/card')
+assert.equal(new URL(shareData.url).searchParams.get('oferta'), sharedExample.id)
+assert.ok(!JSON.stringify(shareData).includes('private-'))
+let nativeShare, copiedShare
+assert.equal(
+  (
+    await shareCardOffer(
+      sharedExample,
+      {
+        share: async (data) => {
+          nativeShare = data
+        }
+      },
+      'https://latido.ch'
+    )
+  ).status,
+  'shared'
+)
+assert.deepEqual(nativeShare, shareData)
+assert.equal(
+  (
+    await shareCardOffer(
+      sharedExample,
+      {
+        share: async () => {
+          throw Object.assign(new Error('Cancelled'), { name: 'AbortError' })
+        },
+        clipboard: {
+          writeText: async () => {
+            throw new Error('Must not copy after cancel')
+          }
+        }
+      },
+      'https://latido.ch'
+    )
+  ).status,
+  'cancelled'
+)
+assert.equal(
+  (
+    await shareCardOffer(
+      sharedExample,
+      {
+        share: async () => {
+          throw new Error('Unavailable')
+        },
+        clipboard: {
+          writeText: async (text) => {
+            copiedShare = text
+          }
+        }
+      },
+      'https://latido.ch'
+    )
+  ).status,
+  'copied'
+)
+assert.ok(copiedShare.endsWith(shareData.url))
+assert.equal(
+  (
+    await shareCardOffer(
+      sharedExample,
+      {
+        clipboard: {
+          writeText: async () => {
+            throw new Error('Permission denied')
+          }
+        }
+      },
+      'https://latido.ch'
+    )
+  ).status,
+  'manual'
+)
 
 const token = 'a'.repeat(64)
 assert.equal(extractCardToken(`https://latido.ch/c/${token}`), token)

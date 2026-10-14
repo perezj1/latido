@@ -26,7 +26,7 @@ el esquema de Latido; `app_notifications.sql` depende a su vez de
 | --- | --- | --- |
 | 1 | `supabase/latido_card.sql` | Membresías, credenciales, negocios, ofertas, reservas, Scanner, canjes y permisos |
 | 2 | `supabase/latido_card_physical_requests.sql` | Solicitudes físicas, estados de entrega, notificaciones, cola email y auditoría |
-| 3 | `supabase/latido_card_self_service.sql` | Alta directa de negocios, suspensión por Latido, QR automático y ofertas guardadas |
+| 3 | `supabase/latido_card_self_service.sql` | Alta directa de negocios, suspensión por Latido y QR automático |
 
 **Si ya instalaste los dos SQL anteriores, ejecutar únicamente
 `supabase/latido_card_self_service.sql` para esta actualización.** No hay que cargar
@@ -103,7 +103,7 @@ de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
    Comprobar seis ventajas, nombre, número de socio y membresía activa.
 3. El QR digital aparece automáticamente en la tarjeta, arriba de la página;
    se renueva cada cinco minutos. En **Disponibles**, activar el café: baja la
-   disponibilidad de 20 a 19 y aparece en **Activadas**. Desactivar la reserva
+   disponibilidad de 20 a 19 y aparece en **Activas**. Desactivar la reserva
    devuelve la unidad mientras la oferta sigue vigente.
 4. Entrar como propietario, abrir `/card/negocios` y seleccionar el restaurante.
    Comprobar que puede gestionar ofertas y Scanner sin tener membresía.
@@ -129,8 +129,14 @@ de desarrollo y participan gratis, sin cambiar ningún plan de publicidad.
 9. Antes del piloto, repetir con dos administradores a la vez, cámaras reales
    Android/iPhone, instalación PWA y una conexión interrumpida durante un canje.
 
-Guardar una oferta con la estrella y comprobar que aparece en **Guardadas** tras
-recargar. Otro usuario no debe ver esas favoritas. Desde administración,
+Pulsar **Compartir** en una oferta: en móvil abre el menú de compartir; cuando no
+está disponible, copia el texto y el enlace. Si el navegador bloquea el portapapeles,
+muestra un campo para copiarlo manualmente. Abrir ese enlace sin sesión: la oferta
+aparece primero y el CTA permite crear una cuenta conservando el destino
+`/card?oferta=UUID`. El enlace contiene el ID público de la oferta, nunca un QR ni
+una reserva personal. Una oferta caducada muestra un aviso y las ventajas actuales.
+
+Desde administración,
 **Retirar del programa** oculta las ofertas y revoca accesos del negocio; el
 propietario no puede incorporarlo de nuevo. Solo Latido puede restablecerlo.
 
@@ -141,6 +147,11 @@ Quien tiene tarjeta ve su tarjeta primero; quien no tiene ve la información y
 un CTA. Durante el piloto, el CTA del usuario autenticado abre una solicitud por
 email a `info@latido.ch`, y el visitante entra primero en su cuenta. No activa ni
 cobra una membresía automáticamente.
+
+La interfaz tiene solo **Disponibles** y **Activas**, debajo de **Ventajas para ti**.
+Las filas muestran título, negocio, límite y vigencia; **Ver condiciones** despliega
+el detalle completo. Ya no hay Guardadas. La tabla y RPC de favoritas de la versión
+anterior se conservan por compatibilidad; compartir ofertas no necesita SQL nuevo.
 
 Las solicitudes físicas generan avisos y trabajos en la cola email. Mantener el
 worker SMTP desactivado durante estas pruebas con cuentas `.test`. La dirección,

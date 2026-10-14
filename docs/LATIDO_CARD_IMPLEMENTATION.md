@@ -36,7 +36,7 @@ del QR conceda por sí sola autorización indefinida.
 | Sesiones de turno y autorización habitual | Implementadas |
 | Límites, stock, idempotencia e historial | Implementados en PostgreSQL |
 | Alta directa de negocios, ofertas y suspensión por Latido | Implementadas |
-| QR digital automático, QR de negocio automático y favoritas | Implementados |
+| QR digital automático, QR de negocio automático y compartir ofertas | Implementados |
 | Anulación de canjes por propietario/admin | Implementada |
 | Instalación y manifiesto de Scanner | Preparados; verificar móviles reales |
 | Cobro, renovación y sincronización Stripe | Pendientes |
@@ -163,7 +163,8 @@ nombre del socio y su número; no se entregan datos de contacto.
 9. Para acceso habitual, empleado lo solicita y propietario lo autoriza desde
    su panel. Después Scanner consulta esa autorización y conserva el acceso.
 10. Socio abre `/card` y ya ve su QR digital listo. Activa el café; puede presentar
-    la tarjeta digital o física. Guarda una oferta con la estrella para volver a ella.
+    la tarjeta digital o física. Compartir una oferta abre el menú del móvil o copia
+    su enlace público. El destinatario puede crear su cuenta conservando esa oferta.
 11. Empleado escanea dentro de Scanner, comprueba condiciones y selecciona la
     ventaja. No vuelve a introducir el importe de la caja.
 12. Empleado pulsa Canjear y espera confirmación antes de entregar la ventaja.

@@ -497,7 +497,7 @@
   }
 }
 
-/* Tarjeta first, followed by the coupon list. */
+/* Card and compact public offers. */
 .lc-member-page {
   max-width: 900px;
   padding-bottom: 40px;
@@ -512,36 +512,65 @@
   font-size: 11px;
   margin-top: 12px;
 }
+.lc-hero {
+  text-align: center;
+}
+.lc-hero h1,
+.lc-hero p {
+  margin-left: auto;
+  margin-right: auto;
+}
+.lc-hero-facts,
+.lc-actions {
+  justify-content: center;
+}
+.lc-panel > .lc-button,
+.lc-offer:not(.lc-offer-row) > .lc-button,
+.lc-card-management .lc-history .lc-button {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px auto;
+}
+.lc-form > .lc-button {
+  justify-self: center;
+  width: min(100%, 280px);
+}
+.lc-card-management > .lc-button {
+  display: flex;
+  margin: 12px auto;
+}
 .lc-member-card {
   max-width: 760px;
-  margin: 0 auto 28px;
+  margin: 0 auto 24px;
   padding: 24px;
-  min-height: 280px;
 }
 .lc-member-card h1 {
   margin: 0;
-  font-size: 24px;
-  letter-spacing: -0.7px;
-  font-style: italic;
+  font:
+    800 22px/1.2 'Poppins',
+    system-ui,
+    sans-serif;
+  letter-spacing: -0.6px;
   color: white;
 }
 .lc-card-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 220px);
   gap: 24px;
-  align-items: end;
-  margin-top: 28px;
+  align-items: center;
+  margin-top: 24px;
 }
 .lc-card-owner {
   display: grid;
-  gap: 5px;
-  padding-bottom: 10px;
+  gap: 6px;
+  text-align: center;
   overflow-wrap: anywhere;
 }
 .lc-card-owner p {
   font-weight: 600;
   font-size: 16px;
-  margin-bottom: 14px;
+  margin: 0 0 10px;
 }
 .lc-card-owner strong {
   font-size: 22px;
@@ -551,44 +580,42 @@
   text-align: center;
 }
 .lc-member-card .lc-qr {
-  margin: 0 auto 10px;
+  display: block;
+  margin: 0 auto;
   width: 200px;
   max-width: 100%;
-}
-.lc-card-code small {
-  display: block;
-  font-size: 10px;
-  line-height: 1.5;
 }
 .lc-benefits {
   margin: 24px 0;
 }
+.lc-benefits .lc-section-heading {
+  margin-bottom: 6px;
+}
 .lc-offer-tabs {
   display: flex;
-  background: var(--latido-color-accent);
-  padding: 6px 6px 0;
-  border-radius: 16px 16px 0 0;
-  margin-bottom: 24px;
+  gap: 28px;
+  padding: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--latido-color-border);
+  margin-bottom: 16px;
 }
 .lc-offer-tabs button {
-  flex: 1;
-  min-width: 0;
   border: 0;
-  border-bottom: 4px solid transparent;
+  border-bottom: 3px solid transparent;
   background: transparent;
-  color: white;
-  padding: 16px 8px;
+  color: var(--latido-color-text-muted);
+  padding: 12px 2px;
   font:
     600 13px/1.4 'Poppins',
     sans-serif;
   cursor: pointer;
 }
 .lc-offer-tabs button[aria-selected='true'] {
-  border-bottom-color: var(--latido-color-brand-100);
-  background: rgba(255, 255, 255, 0.12);
+  border-bottom-color: var(--latido-color-accent);
+  color: var(--latido-color-accent);
 }
 .lc-offer-tabs button:focus-visible,
-.lc-save-offer:focus-visible,
+.lc-offer-details summary:focus-visible,
 .lc-card-management summary:focus-visible {
   outline: 3px solid var(--latido-color-accent-border);
   outline-offset: 2px;
@@ -603,102 +630,126 @@
 }
 .lc-offer-row {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 16px;
   border: 0;
   border-bottom: 1px solid var(--latido-color-border);
   border-radius: 0;
   box-shadow: none;
   margin: 0;
-  padding: 24px;
+  padding: 16px 20px;
 }
 .lc-offer-row:last-child {
   border-bottom: 0;
 }
+.lc-offer-row--shared {
+  background: var(--latido-color-accent-subtle);
+}
 .lc-offer-media {
-  position: relative;
-  align-self: start;
-  min-height: 150px;
-  padding: 18px 8px;
-  border-radius: 16px;
+  align-self: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 14px;
   background: var(--latido-color-accent-subtle);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
   overflow: hidden;
 }
-.lc-offer-media > span:first-child {
-  font-size: 52px;
+.lc-offer-media > span {
+  font-size: 34px;
 }
 .lc-offer-media img {
   width: 100%;
-  max-height: 125px;
+  height: 100%;
   object-fit: cover;
-  border-radius: 10px;
-}
-.lc-offer-value {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--latido-color-accent-strong);
-  text-align: center;
 }
 .lc-offer-copy {
   min-width: 0;
 }
 .lc-offer-row h3 {
-  font-size: 19px;
-  margin: 0 0 10px;
+  font-size: 16px;
+  margin: 0 0 3px;
 }
-.lc-offer-row .lc-offer-top {
-  margin-bottom: 10px;
+.lc-offer-row p.lc-offer-business {
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0 0 5px;
+  color: var(--latido-color-accent-strong);
+  font-weight: 600;
 }
-.lc-offer-row .lc-badge {
-  text-align: left;
+.lc-offer-row small.lc-offer-meta {
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 0;
 }
-.lc-save-offer {
-  flex-shrink: 0;
-  border: 0;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  font-size: 29px;
-  background: transparent;
+.lc-offer-details {
+  margin: 2px 0 0;
+}
+.lc-offer-details summary {
+  width: fit-content;
   color: var(--latido-color-text-muted);
+  font-size: 10px;
+  font-weight: 500;
   cursor: pointer;
+  padding: 5px 0;
 }
-.lc-save-offer[aria-pressed='true'] {
-  color: var(--latido-color-warning-text);
+.lc-offer-details p {
+  font-size: 12px;
+  margin: 5px 0;
 }
-.lc-save-offer:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.lc-offer-details small {
+  margin: 0 0 8px;
+}
+.lc-offer-row small.lc-offer-state {
+  margin: 0;
+  font-size: 10px;
 }
 .lc-offer-footer {
   display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 20px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
 }
-.lc-offer-footer strong {
-  font-size: 13px;
-  color: var(--latido-color-accent-strong);
+.lc-offer-footer .lc-button {
+  padding: 10px 12px;
+  min-height: 40px;
+  font-size: 11px;
 }
-.lc-offer-footer small {
-  margin: 4px 0 0;
+.lc-offer-footer .lc-badge {
+  margin: 0;
 }
 .lc-offer-activation {
-  flex-shrink: 0;
-  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lc-offer-activation small {
+  font-size: 9px;
+  margin: 0;
 }
 .lc-offer-activation .lc-button {
-  margin-top: 8px;
-  min-width: 98px;
+  min-width: 80px;
+}
+.lc-share-panel {
+  text-align: center;
+}
+.lc-share-panel label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+.lc-share-panel input {
+  width: 100%;
+  border: 1px solid var(--latido-color-border-strong);
+  border-radius: var(--latido-radius-md);
+  padding: 12px;
+  font: inherit;
 }
 .lc-card-management {
-  margin-top: 28px;
+  margin-top: 24px;
 }
 .lc-card-management summary {
   cursor: pointer;
@@ -713,9 +764,6 @@
 .lc-business-qr {
   margin-top: 28px;
   text-align: center;
-}
-.lc-business-qr .lc-actions {
-  justify-content: center;
 }
 .lc-business-qr > p {
   max-width: 52ch;
@@ -736,10 +784,9 @@
   }
   .lc-member-card {
     padding: 20px;
-    min-height: 220px;
   }
   .lc-member-card h1 {
-    font-size: 18px;
+    font-size: 17px;
   }
   .lc-card-body {
     grid-template-columns: minmax(0, 1fr) minmax(0, 145px);
@@ -747,11 +794,11 @@
     margin-top: 24px;
   }
   .lc-card-owner p {
-    font-size: 12px;
+    font-size: 13px;
     margin-bottom: 8px;
   }
   .lc-card-owner strong {
-    font-size: 17px;
+    font-size: 18px;
   }
   .lc-card-owner small {
     font-size: 9px;
@@ -759,47 +806,26 @@
   .lc-member-card .lc-qr {
     width: 145px;
   }
-  .lc-card-code small {
-    font-size: 8px;
-  }
   .lc-offer-row {
-    grid-template-columns: 85px minmax(0, 1fr);
-    gap: 14px;
-    padding: 18px 14px;
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
   }
   .lc-offer-media {
-    min-height: 100px;
-    padding: 14px 6px;
-    gap: 10px;
+    width: 54px;
+    height: 64px;
     border-radius: 12px;
   }
-  .lc-offer-media > span:first-child {
-    font-size: 34px;
-  }
-  .lc-offer-value {
-    font-size: 10px;
+  .lc-offer-media > span {
+    font-size: 29px;
   }
   .lc-offer-row h3 {
-    font-size: 15px;
-  }
-  .lc-offer-row p {
-    font-size: 12px;
-  }
-  .lc-offer-row small {
-    font-size: 10px;
-  }
-  .lc-offer-row .lc-badge {
-    font-size: 9px;
-  }
-  .lc-offer-footer {
-    align-items: start;
-    flex-direction: column;
-    gap: 10px;
+    font-size: 14px;
   }
   .lc-offer-activation {
-    align-self: end;
+    justify-content: center;
   }
-  .lc-offer-footer strong {
-    font-size: 12px;
+  .lc-offer-activation small {
+    max-width: 85px;
   }
 }

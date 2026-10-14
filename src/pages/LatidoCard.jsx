@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useId, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { Link, NavLink, useSearchParams } from 'react-router-dom'
+import { Share2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { cardRpc, cardUrl } from '../lib/latidoCard'
 import { cardErrorMessage, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
+import { shareCardOffer } from '../lib/latidoCardShare'
 import LatidoCardQr from '../components/LatidoCardQr'
 import LatidoCardPhysicalRequest from '../components/LatidoCardPhysicalRequest'
 import './LatidoCard.css'
@@ -56,7 +58,17 @@ const requestCardUrl =
 
 export default function LatidoCard() {
   const { user, displayName, loading: authLoading } = useAuth()
-  const [data, setData] = useState({ membership: null, offers: [], history: [], saved_offers: [] })
+  const [data, setData] = useState({ membership: null, offers: [], history: [] })
+  const [searchParams] = useSearchParams()
+  const sharedOfferId = searchParams.get('oferta')
+  const [manualShare, setManualShare] = useState(null)
+  const sharePanelRef = useRef(null)
+  useEffect(() => {
+    if (manualShare) {
+      sharePanelRef.current?.focus()
+      sharePanelRef.current?.scrollIntoView({ block: 'center' })
+    }
+  }, [manualShare])
   const [loading, setLoading] = useState(true),
     [error, setError] = useState(''),
     [busy, setBusy] = useState('')
@@ -71,7 +83,7 @@ export default function LatidoCard() {
       setData(
         user
           ? await cardRpc('lc_member_home')
-          : { membership: null, offers: await cardRpc('lc_catalog'), history: [], saved_offers: [] }
+          : { membership: null, offers: await cardRpc('lc_catalog'), history: [] }
       )
     } catch (err) {
       setError(cardErrorMessage(err))
@@ -138,18 +150,28 @@ export default function LatidoCard() {
       setBusy('')
     }
   }
-  const saved = data.saved_offers || []
-  const offers = data.offers.filter((o) =>
-    tab === 'saved'
-      ? saved.includes(o.id)
-      : tab === 'activated'
+  const offers = data.offers
+    .filter((o) =>
+      tab === 'activated'
         ? member?.active && (o.requires_claim ? o.claim?.status === 'claimed' : o.available)
         : o.claim?.status !== 'claimed' && o.claim?.status !== 'used'
-  )
+    )
+    .sort((a, b) => Number(b.id === sharedOfferId) - Number(a.id === sharedOfferId))
+  const sharedOffer = data.offers.find((o) => o.id === sharedOfferId)
+  useEffect(() => {
+    if (sharedOffer?.claim?.status === 'claimed') setTab('activated')
+  }, [sharedOfferId, sharedOffer?.claim?.status])
+  const accountUrl = `/auth?${new URLSearchParams({ ...(sharedOfferId ? { mode: 'register' } : {}), next: `/card${sharedOfferId ? `?oferta=${encodeURIComponent(sharedOfferId)}` : ''}` })}`
+  const share = async (offer) => {
+    setNotice('')
+    const result = await shareCardOffer(offer)
+    if (result.status === 'copied')
+      setNotice('Oferta copiada. Ya puedes enviarla por WhatsApp, mensaje o email.')
+    if (result.status === 'manual') setManualShare({ title: offer.title, url: result.url })
+  }
   const tabs = [
     ['available', 'Disponibles'],
-    ['activated', 'Activadas'],
-    ['saved', 'Guardadas']
+    ['activated', 'Activas']
   ]
   return (
     <div className="lc-page lc-member-page">
@@ -205,7 +227,6 @@ export default function LatidoCard() {
                       ) : (
                         <p role="status">Preparando tu QR…</p>
                       )}
-                      <small>Listo para escanear · Se renueva automáticamente</small>
                     </>
                   ) : (
                     <>
@@ -222,10 +243,20 @@ export default function LatidoCard() {
           ) : (
             <section className="lc-hero lc-card-intro">
               <span className="lc-eyebrow">Una tarjeta. Tu comunidad. Tus ventajas.</span>
-              <h1>Tu Tarjeta Latido te da más.</h1>
+              <h1>
+                {sharedOffer
+                  ? 'Esta ventaja también puede ser tuya.'
+                  : 'Tu Tarjeta Latido te da más.'}
+              </h1>
               <p>
-                Descuentos y ventajas en los negocios de tu comunidad. Lleva tu tarjeta física o
-                presenta el QR digital desde aquí.
+                {sharedOffer ? (
+                  <>
+                    <strong>{sharedOffer.title}</strong> en {sharedOffer.business_name}. Crea tu
+                    cuenta y únete al club de ventajas de Latido.
+                  </>
+                ) : (
+                  'Descuentos y ventajas en los negocios de tu comunidad. Lleva tu tarjeta física o presenta el QR digital desde aquí.'
+                )}
               </p>
               <div className="lc-hero-facts">
                 <span className="lc-price">
@@ -239,8 +270,8 @@ export default function LatidoCard() {
                   Solicitar mi tarjeta
                 </a>
               ) : (
-                <Link className="lc-button" to="/auth?next=%2Fcard">
-                  Quiero mi Tarjeta Latido
+                <Link className="lc-button" to={accountUrl}>
+                  {sharedOffer ? 'Crear cuenta y conseguir mi tarjeta' : 'Quiero mi Tarjeta Latido'}
                 </Link>
               )}
               <small className="lc-intro-note">
@@ -251,6 +282,10 @@ export default function LatidoCard() {
             </section>
           )}
           <section className="lc-benefits" aria-label="Ventajas en negocios participantes">
+            <div className="lc-section-heading">
+              <h2>Ventajas para ti</h2>
+              <span className="lc-badge">{offers.length} ventajas</span>
+            </div>
             <div className="lc-offer-tabs" role="tablist" aria-label="Tus ventajas">
               {tabs.map(([key, label]) => (
                 <button
@@ -281,33 +316,28 @@ export default function LatidoCard() {
               ))}
             </div>
             <div role="tabpanel" id={`${tabId}-panel`} aria-labelledby={`${tabId}-${tab}`}>
-              <div className="lc-section-heading">
-                <h2>
-                  {tab === 'available'
-                    ? 'Ventajas para ti'
-                    : tab === 'activated'
-                      ? 'Tus ventajas activadas'
-                      : 'Tus ventajas guardadas'}
-                </h2>
-                <span className="lc-badge">{offers.length} ventajas</span>
-              </div>
+              {sharedOfferId && !sharedOffer && (
+                <p className="lc-alert">
+                  Esta oferta ya no está disponible. Descubre las ventajas actuales de Latido.
+                </p>
+              )}
               {!offers.length && (
                 <div className="lc-panel">
                   <p>
-                    {tab === 'saved'
-                      ? 'Guarda las ventajas que te interesen pulsando la estrella.'
-                      : tab === 'activated'
-                        ? 'Las ventajas incluidas de tu membresía y las promociones que actives aparecerán aquí.'
-                        : 'Pronto encontrarás nuevas ventajas de tu comunidad.'}
+                    {tab === 'activated'
+                      ? 'Las ventajas incluidas de tu membresía y las promociones que actives aparecerán aquí.'
+                      : 'Pronto encontrarás nuevas ventajas de tu comunidad.'}
                   </p>
                 </div>
               )}
               <div className="lc-offer-list">
                 {offers.map((offer) => {
                   const activated = offer.claim?.status === 'claimed'
-                  const isSaved = saved.includes(offer.id)
                   return (
-                    <article className="lc-offer lc-offer-row" key={offer.id}>
+                    <article
+                      className={`lc-offer lc-offer-row ${offer.id === sharedOfferId ? 'lc-offer-row--shared' : ''}`}
+                      key={offer.id}
+                    >
                       <div className="lc-offer-media">
                         {offer.business_photo_url ? (
                           <img
@@ -321,56 +351,47 @@ export default function LatidoCard() {
                         ) : (
                           <span aria-hidden="true">{offerIcons[offer.benefit_type]}</span>
                         )}
-                        <span className="lc-offer-value">{offerBenefitLabel(offer)}</span>
                       </div>
                       <div className="lc-offer-copy">
-                        <div className="lc-offer-top">
-                          <span
-                            className={`lc-badge ${offer.requires_claim ? 'lc-badge--special' : 'lc-badge--included'}`}
-                          >
-                            {offer.requires_claim ? 'Promoción especial' : 'Incluida en tu tarjeta'}
-                          </span>
-                          <button
-                            className="lc-save-offer"
-                            aria-label={`${isSaved ? 'Quitar de guardadas' : 'Guardar'} ${offer.title}`}
-                            aria-pressed={isSaved}
-                            disabled={!!busy}
-                            onClick={() => {
-                              if (!user) {
-                                setNotice('Entra en tu cuenta para guardar ventajas.')
-                                return
-                              }
-                              act(`save-${offer.id}`, () =>
-                                cardRpc('lc_save_favorite', {
-                                  p_offer: offer.id,
-                                  p_saved: !isSaved
-                                })
-                              )
-                            }}
-                          >
-                            {isSaved ? '★' : '☆'}
-                          </button>
-                        </div>
                         <h3>{offer.title}</h3>
-                        <OfferConditions offer={offer} />
+                        <p className="lc-offer-business">
+                          {offer.business_name}
+                          {offer.city && ` · ${offer.city}`}
+                        </p>
+                        <small className="lc-offer-meta">
+                          {Number(offer.minimum_spend) > 0 && (
+                            <>Desde CHF {Number(offer.minimum_spend)} · </>
+                          )}
+                          {offer.usage_period === 'unlimited'
+                            ? 'Sin límite'
+                            : `${offer.usage_limit || 1} uso${(offer.usage_limit || 1) > 1 ? 's' : ''}${offer.usage_period === 'month' ? '/mes' : ''}`}{' '}
+                          · Hasta{' '}
+                          {new Date(offer.ends_at).toLocaleDateString('es-CH', {
+                            timeZone: 'Europe/Zurich'
+                          })}
+                        </small>
+                        <details className="lc-offer-details">
+                          <summary>Ver condiciones</summary>
+                          <OfferConditions offer={offer} />
+                        </details>
+                        {(activated || (!member?.active && offer.remaining === 0)) && (
+                          <small className="lc-offer-state">
+                            {activated
+                              ? `Activa hasta ${new Date(offer.claim.expires_at).toLocaleDateString('es-CH', { timeZone: 'Europe/Zurich' })}`
+                              : 'Agotada por el momento'}
+                          </small>
+                        )}
                         <div className="lc-offer-footer">
-                          <div>
-                            <strong>{offer.business_name}</strong>
-                            {offer.city && <small>{offer.city}</small>}
-                          </div>
+                          <button
+                            className="lc-button lc-button--secondary lc-share-offer"
+                            aria-label={`Compartir ${offer.title}`}
+                            onClick={() => share(offer)}
+                          >
+                            <Share2 size={15} aria-hidden="true" />
+                            Compartir
+                          </button>
                           {offer.requires_claim ? (
                             <div className="lc-offer-activation">
-                              <small>
-                                {activated
-                                  ? `Activada hasta ${new Date(offer.claim.expires_at).toLocaleDateString('es-CH')}`
-                                  : offer.claim?.status === 'used'
-                                    ? 'Utilizada'
-                                    : offer.remaining === 0
-                                      ? 'Agotada por el momento'
-                                      : offer.remaining !== null
-                                        ? `${offer.remaining} disponibles`
-                                        : 'Disponible'}
-                              </small>
                               {member?.active && offer.claim?.status !== 'used' && (
                                 <button
                                   className={`lc-button ${activated ? 'lc-button--secondary' : ''}`}
@@ -408,6 +429,34 @@ export default function LatidoCard() {
               </div>
             </div>
           </section>
+          {manualShare && (
+            <section
+              className="lc-panel lc-share-panel"
+              aria-label="Compartir oferta"
+              ref={sharePanelRef}
+              tabIndex={-1}
+            >
+              <h2>Comparte esta oferta</h2>
+              <p>{manualShare.title}</p>
+              <label>
+                Enlace de la oferta
+                <input
+                  readOnly
+                  value={manualShare.url}
+                  onFocus={(event) => event.target.select()}
+                />
+              </label>
+              <p className="lc-muted">
+                Copia el enlace y envíalo a quien quieras invitar a Latido.
+              </p>
+              <button
+                className="lc-button lc-button--secondary"
+                onClick={() => setManualShare(null)}
+              >
+                Cerrar
+              </button>
+            </section>
+          )}
           {member && (
             <details className="lc-panel lc-card-management">
               <summary>⚙️ Gestionar mi tarjeta e historial</summary>

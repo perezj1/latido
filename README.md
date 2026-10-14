@@ -237,6 +237,8 @@ administración de tarjetas físicas se describen en
 Los pagos reales y los servicios automáticos de impresión/transporte siguen pendientes.
 Si los dos SQL de Card ya están instalados, ejecutar únicamente
 `supabase/latido_card_self_service.sql` para actualizar negocios, QR y favoritas.
+La interfaz actual usa **Disponibles** y **Activas**, con **Compartir** en cada
+oferta. Compartir y los ajustes visuales no requieren una migración adicional.
 
 Verificación: `npm run test:card`, `npm run test:card:browser` y `npm run build`.
 

@@ -464,16 +464,83 @@ try {
     0,
     'Bottom navigation must be hidden'
   )
-  await page.getByRole('button', { name: 'Guardar 15 % desde CHF 50', exact: true }).click()
-  await page.getByRole('tab', { name: 'Guardadas', exact: true }).click()
-  assert.equal(await page.locator('.lc-offer-row').count(), 1)
-  await page.reload()
-  await page.getByAltText('QR de Tarjeta Latido').waitFor()
-  await page.getByRole('tab', { name: 'Guardadas', exact: true }).click()
+  assert.equal(await page.getByRole('tab').count(), 2)
+  assert.equal(await page.getByRole('tab', { name: 'Guardadas', exact: true }).count(), 0)
+  assert.equal(
+    await page
+      .getByText('Listo para escanear · Se renueva automáticamente', { exact: true })
+      .count(),
+    0
+  )
+  const headingBox = await page
+    .getByRole('heading', { name: 'Ventajas para ti', exact: true })
+    .boundingBox()
+  const tabsBox = await page
+    .getByRole('tablist', { name: 'Tus ventajas', exact: true })
+    .boundingBox()
+  assert.ok(headingBox.y < tabsBox.y)
+  assert.ok(
+    (await page.locator('.lc-offer-row').first().boundingBox()).height < 220,
+    'Coupons should stay compact'
+  )
+  assert.equal(
+    await page.locator('.lc-member-card h1').evaluate((el) => getComputedStyle(el).fontStyle),
+    'normal'
+  )
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (data) => {
+        window.testSharedOffer = data
+      }
+    })
+  )
+  await page.getByRole('button', { name: 'Compartir 15 % desde CHF 50', exact: true }).click()
+  const nativeShared = await page.evaluate(() => window.testSharedOffer)
+  assert.equal(new URL(nativeShared.url).searchParams.get('oferta'), offer.id)
+  assert.ok(!JSON.stringify(nativeShared).includes(token))
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (value) => {
+          window.testCopiedOffer = value
+        }
+      }
+    })
+  })
+  await page.getByRole('button', { name: 'Compartir Café gratis', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Quitar de guardadas 15 % desde CHF 50', exact: true })
+    .getByText('Oferta copiada. Ya puedes enviarla por WhatsApp, mensaje o email.', { exact: true })
     .waitFor()
-  await page.getByRole('tab', { name: 'Disponibles', exact: true }).click()
+  const copiedOfferLink = (await page.evaluate(() => window.testCopiedOffer)).split('\n').at(-1)
+  assert.equal(new URL(copiedOfferLink).searchParams.get('oferta'), special.id)
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          throw new Error('Permission denied')
+        }
+      }
+    })
+  )
+  await page.getByRole('button', { name: 'Compartir Café gratis', exact: true }).click()
+  const manualSharePanel = page.getByRole('region', { name: 'Compartir oferta', exact: true })
+  await manualSharePanel.waitFor()
+  assert.equal(
+    await manualSharePanel.getByLabel('Enlace de la oferta').inputValue(),
+    copiedOfferLink
+  )
+  await manualSharePanel.getByRole('button', { name: 'Cerrar', exact: true }).click()
+  const compactOffer = page.locator('.lc-offer-row').filter({ hasText: '15 % desde CHF 50' })
+  await compactOffer.getByText('Ver condiciones', { exact: true }).click()
+  assert.equal(
+    await compactOffer.getByText(/No acumulable con otras ventajas Latido/).isVisible(),
+    true
+  )
+  await compactOffer.getByText('Ver condiciones', { exact: true }).click()
   assert.equal(
     await page
       .locator('.lc-offer')
@@ -487,7 +554,7 @@ try {
     .filter({ hasText: 'Café gratis' })
     .getByRole('button', { name: 'Activar', exact: true })
     .click()
-  await page.getByRole('tab', { name: 'Activadas', exact: true }).click()
+  await page.getByRole('tab', { name: 'Activas', exact: true }).click()
   await page.getByRole('button', { name: 'Desactivar', exact: true }).waitFor()
   await page.screenshot({ path: path.join(output, 'card-activated-mobile.png'), fullPage: true })
   await page.getByRole('tab', { name: 'Disponibles', exact: true }).click()
@@ -580,6 +647,25 @@ try {
   await page.screenshot({ path: path.join(output, 'card-business-mobile.png'), fullPage: true })
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.screenshot({ path: path.join(output, 'card-business-desktop.png'), fullPage: true })
+  await page.evaluate(() => localStorage.removeItem('sb-card-test-auth-token'))
+  await page.goto(copiedOfferLink)
+  const accountCta = page.getByRole('link', {
+    name: 'Crear cuenta y conseguir mi tarjeta',
+    exact: true
+  })
+  await accountCta.waitFor()
+  assert.equal(await page.locator('.lc-offer-row--shared h3').innerText(), 'Café gratis')
+  assert.equal(await page.locator('.lc-offer-row').first().locator('h3').innerText(), 'Café gratis')
+  const nextOfferPath = new URL(await accountCta.getAttribute('href'), origin).searchParams.get(
+    'next'
+  )
+  assert.equal(nextOfferPath, `/card?oferta=${special.id}`)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.screenshot({ path: path.join(output, 'card-shared-offer-mobile.png'), fullPage: true })
+  await accountCta.click()
+  assert.equal(new URL(page.url()).pathname, '/auth')
+  assert.equal(new URL(page.url()).searchParams.get('mode'), 'register')
+  assert.equal(new URL(page.url()).searchParams.get('next'), nextOfferPath)
   assert.deepEqual(errors, [])
   console.log(
     'Latido Card browser: QR decoding, Scanner isolation, idempotent retry, claims, digital QR, physical request and admin fulfillment passed.'
