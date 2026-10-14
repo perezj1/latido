@@ -1,5 +1,7 @@
 export const APP_NOTIFICATION_KINDS = Object.freeze({
   MESSAGE:'message',
+  CARD_PHYSICAL_REQUEST:'card_physical_request',
+  CARD_PHYSICAL_STATUS:'card_physical_status',
   CREATOR_FOLLOW:'creator_follow',
   CREATOR_HELPFUL:'creator_helpful',
   CONTENT_HELPFUL:'content_helpful',
@@ -13,6 +15,8 @@ export const APP_NOTIFICATION_KINDS = Object.freeze({
 })
 
 const KIND_ORDER = [
+  APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST,
+  APP_NOTIFICATION_KINDS.CARD_PHYSICAL_STATUS,
   APP_NOTIFICATION_KINDS.MESSAGE,
   APP_NOTIFICATION_KINDS.CREATOR_FOLLOW,
   APP_NOTIFICATION_KINDS.CREATOR_HELPFUL,
@@ -61,6 +65,10 @@ function describeNotificationGroup(kind, rows) {
   const targetTitle = String(data.target_title || '').trim()
 
   switch (kind) {
+    case APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST:
+      return { icon:'💳', title:count===1?'Nueva solicitud de tarjeta física':`${count} solicitudes de tarjeta física`, body:count===1?`${data.reference || 'Solicitud'} · Revisa la entrega y la emisión.`:'Abre la bandeja de Latido Card para gestionarlas.', href:'/card/admin' }
+    case APP_NOTIFICATION_KINDS.CARD_PHYSICAL_STATUS:
+      return { icon:'💳', title:'Novedades de tu tarjeta física', body:count===1?`${data.reference || 'Tu solicitud'} · Consulta su estado en Latido Card.`:'Consulta la preparación y entrega de tu tarjeta.', href:'/card' }
     case APP_NOTIFICATION_KINDS.MESSAGE:
       return {
         icon:'💬',

@@ -56,6 +56,25 @@ export function readScannerSession({ local, temporary }, now = Date.now()) {
 export function cardErrorMessage(error) {
   const text = String(error?.message || error || '')
   const messages = {
+    PHYSICAL_REQUEST_ALREADY_OPEN:
+      'Ya tienes una solicitud de tarjeta en curso. Puedes consultarla aquí.',
+    PHYSICAL_REQUEST_RATE_LIMIT: 'Has enviado varias solicitudes hoy. Vuelve a intentarlo mañana.',
+    PHYSICAL_REQUEST_KIND_INVALID:
+      'El tipo de solicitud ha cambiado. Actualiza la página antes de continuar.',
+    PHYSICAL_DETAILS_INVALID:
+      'Comprueba el nombre y los datos de entrega. El envío requiere una dirección y código postal suizos.',
+    PHYSICAL_REQUEST_IN_PROGRESS:
+      'La tarjeta ya está en preparación. Contacta con Latido para cambiar esta solicitud.',
+    PHYSICAL_REQUEST_CHANGED:
+      'Otro administrador ha actualizado esta solicitud. Actualiza la bandeja antes de continuar.',
+    PHYSICAL_REQUEST_NOT_FOUND: 'No se encontró esta solicitud.',
+    PHYSICAL_STATUS_INVALID: 'Este cambio de estado no corresponde al paso actual de la solicitud.',
+    PHYSICAL_CARD_ALREADY_ISSUED:
+      'Esta solicitud ya tiene una tarjeta emitida. Utiliza la reemisión si necesitas otro QR.',
+    PHYSICAL_CARD_INVALID:
+      'El QR asociado a esta solicitud está bloqueado. Reemite la tarjeta antes de continuar con la entrega.',
+    CONTACT_EMAIL_REQUIRED:
+      'Necesitamos un email de contacto en tu perfil para gestionar la solicitud.',
     SCANNER_EXPIRED: 'El acceso a Scanner ha caducado o se ha revocado. Vuelve a vincularlo.',
     SCANNER_LINK_INVALID:
       'El QR del negocio ya no es válido. Solicita el QR actual al propietario.',

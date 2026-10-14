@@ -229,8 +229,10 @@ Guía técnica y pasos de instalación: [docs/LATIDO_CARD_IMPLEMENTATION.md](doc
 
 Rutas: `/card`, `/card/negocios`, `/card/admin` y `/scanner/`.
 Instala `supabase/latido_card.sql` en una base de desarrollo con los requisitos
-indicados en la guía. Las membresías del piloto son manuales; los pagos reales
-y la logística de tarjetas físicas todavía no están implementados.
+indicados en la guía. Las membresías del piloto son manuales. La solicitud y
+administración de tarjetas físicas se describen en
+[docs/LATIDO_CARD_ADMINISTRATION.md](docs/LATIDO_CARD_ADMINISTRATION.md).
+Los pagos reales y los servicios automáticos de impresión/transporte siguen pendientes.
 
 Verificación: `npm run test:card`, `npm run test:card:browser` y `npm run build`.
 

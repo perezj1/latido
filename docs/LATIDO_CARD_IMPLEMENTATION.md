@@ -39,7 +39,8 @@ del QR conceda por sí sola autorización indefinida.
 | Anulación de canjes por propietario/admin | Implementada |
 | Instalación y manifiesto de Scanner | Preparados; verificar móviles reales |
 | Cobro, renovación y sincronización Stripe | Pendientes |
-| Impresión, pedidos y envío de tarjeta | Pendientes |
+| Solicitud, preparación y seguimiento de tarjeta física | Implementados; impresión/transporte reales son manuales |
+| Avisos a Latido y socio, cola email y auditoría | Implementados; activar función/cron en desarrollo |
 | Informes mensuales, buscador avanzado y panel integrado | Pendientes |
 | Verificación con cámaras físicas y carga concurrente | Pendiente antes de piloto |
 | Wallet de Apple/Google | Fase posterior |
@@ -69,8 +70,9 @@ reclamación utilizable por socio/oferta especial. No son tarifas comerciales.
 5. Revisar los administradores de `business_promotion_admins`. La variable
    frontend `VITE_ADMIN_EMAILS` solo controla la presentación; el servidor
    determina el permiso real. Ambos listados deben ser coherentes.
-6. Instalar `supabase/latido_card.sql` en la base de desarrollo. Está dentro
-   de una transacción y admite repetición. No crea socios ni negocios activos.
+6. Instalar `supabase/latido_card.sql` en la base de desarrollo. Después de
+   `app_notifications.sql`, instalar `supabase/latido_card_physical_requests.sql`.
+   Ambas admiten repetición. No crean socios ni negocios activos.
 7. Ejecutar `npm run dev`. Abrir `/card`, `/card/negocios`, `/card/admin` y
    `/scanner/` según el rol. No aplicar primero en producción.
 
@@ -86,6 +88,10 @@ reclamación utilizable por socio/oferta especial. No son tarifas comerciales.
 | `latido_card_scanner_links` | Huella del QR privado de vinculación |
 | `latido_card_scanner_sessions` | Permiso de cada navegador/instalación |
 | `latido_card_redemptions` | Canje, petición única, condiciones y anulación |
+| `latido_card_physical_requests` | Solicitud, dirección, entrega, tarjeta emitida y notas |
+| `latido_card_physical_events` | Historial de cada solicitud con actor y fecha |
+| `latido_card_physical_email_queue` | Avisos persistentes, reintentos y resultado de envío |
+| `latido_card_admin_audit` | Cambios de membresía, participación y credenciales físicas |
 
 No reutilizar `club_orders`: son pedidos de ropa. Tampoco reinterpretar los
 planes de promoción del directorio como ofertas de socios.
@@ -215,10 +221,13 @@ de una suscripción; distinguir acceso promocional/manual de acceso pagado.
 
 ## 11. Fase de tarjetas físicas e informes
 
-Crear trabajos de emisión con socio, dirección de entrega estrictamente
-necesaria, estado de impresión/envío y reposición. Acceso restringido a
-administración. No reutilizar automáticamente el proveedor de impresión de
-ropa para tarjetas: seleccionar y comprobar un proveedor específico después.
+La petición de tarjeta física y la administración de entrega están
+implementadas. Seguir [LATIDO_CARD_ADMINISTRATION.md](LATIDO_CARD_ADMINISTRATION.md)
+para configurar los avisos y probar el circuito operativo. El socio puede
+pedir envío en Suiza o recogida coordinada; Latido aprueba, emite el QR,
+prepara y registra la entrega. La producción y transporte son manuales.
+No reutilizar automáticamente el proveedor de impresión de ropa para tarjetas:
+seleccionar y comprobar un proveedor específico después.
 
 Diseño limpio, nombre mínimo y número público. Exportar QR con resolución
 adecuada, margen y contraste; probar una impresión real. Registrar qué
@@ -237,6 +246,7 @@ npm run test:card
 npx playwright install chromium
 npm run test:card:browser
 npm run test:auth
+deno check --node-modules-dir=auto supabase/functions/latido_card_physical_email/index.ts
 npm run build
 ```
 

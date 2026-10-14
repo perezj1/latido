@@ -4,9 +4,11 @@ import { useAuth } from '../hooks/useAuth'
 import { cardRpc, cardUrl } from '../lib/latidoCard'
 import { cardErrorMessage, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
 import LatidoCardQr from '../components/LatidoCardQr'
+import LatidoCardPhysicalRequest from '../components/LatidoCardPhysicalRequest'
 import './LatidoCard.css'
 
 export function CardHeader() {
+  const { isAdmin } = useAuth()
   return (
     <header className="lc-top">
       <Link className="lc-brand" to="/card">
@@ -17,6 +19,7 @@ export function CardHeader() {
         <Link to="/">Latido</Link>
         <Link to="/card">Mi tarjeta y ventajas</Link>
         <Link to="/card/negocios">Mi negocio</Link>
+        {isAdmin && <Link to="/admin-latido">Panel Latido</Link>}
       </nav>
     </header>
   )
@@ -105,7 +108,7 @@ export default function LatidoCard() {
         )}
         {isAdmin && (
           <Link className="lc-button lc-button--secondary" to="/card/admin">
-            Administrar piloto
+            Administración Latido Card
           </Link>
         )}
       </section>
@@ -189,6 +192,13 @@ export default function LatidoCard() {
               <p className="lc-muted">
                 La inscripción de esta primera versión se gestiona mediante invitación al piloto.
               </p>
+            )}
+            {member && (
+              <LatidoCardPhysicalRequest
+                key={user.id}
+                active={member.active}
+                displayName={displayName}
+              />
             )}
             {!!data.history.length && (
               <section className="lc-panel lc-spaced">

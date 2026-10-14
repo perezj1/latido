@@ -1,13 +1,28 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { CardHeader } from './LatidoCard'
 import { cardRpc, cardUrl } from '../lib/latidoCard'
 import { cardErrorMessage } from '../lib/latidoCardCore'
 import LatidoCardQr from '../components/LatidoCardQr'
+import LatidoCardPhysicalAdmin from '../components/LatidoCardPhysicalAdmin'
 import './LatidoCard.css'
 
 export default function LatidoCardAdmin() {
   const { isAdmin } = useAuth()
+  const [overview, setOverview] = useState({ stats: {}, members: [], businesses: [] }),
+    [search, setSearch] = useState('')
+  const loadOverview = useCallback(async () => {
+    if (!isAdmin) return
+    try {
+      setOverview(await cardRpc('lc_admin_overview', { p_search: search }))
+      setError('')
+    } catch (err) {
+      setError(cardErrorMessage(err))
+    }
+  }, [isAdmin, search])
+  useEffect(() => {
+    if (isAdmin) loadOverview()
+  }, [isAdmin])
   const [user, setUser] = useState(''),
     [until, setUntil] = useState(''),
     [provider, setProvider] = useState(''),
@@ -22,6 +37,7 @@ export default function LatidoCardAdmin() {
     setNotice('')
     try {
       await fn()
+      await loadOverview()
       setNotice('Operación completada.')
     } catch (err) {
       setError(cardErrorMessage(err))
@@ -41,10 +57,10 @@ export default function LatidoCardAdmin() {
       <CardHeader />
       <section className="lc-hero">
         <span className="lc-eyebrow">Administración · Piloto</span>
-        <h1>Preparar socios y negocios.</h1>
+        <h1>Latido administra cada tarjeta.</h1>
         <p>
-          Las altas de esta fase son manuales. No se realiza ningún cobro ni se activa una membresía
-          desde una página de pago.
+          Gestiona socios, negocios, solicitudes de tarjeta física y entrega. Las altas del piloto
+          son manuales y no realizan cobros.
         </p>
       </section>
       {error && (
@@ -57,6 +73,61 @@ export default function LatidoCardAdmin() {
           {notice}
         </p>
       )}
+      <div className="lc-grid">
+        {[
+          ['Socios activos', overview.stats.active_members],
+          ['Solicitudes nuevas', overview.stats.pending_requests],
+          ['Tarjetas en curso', overview.stats.in_progress],
+          ['Emails pendientes', overview.stats.email_pending],
+          ['Emails fallidos', overview.stats.email_failed]
+        ].map(([label, value]) => (
+          <div className="lc-panel" key={label}>
+            <span className="lc-eyebrow">{label}</span>
+            <h2>{value ?? '—'}</h2>
+          </div>
+        ))}
+      </div>
+      <form
+        className="lc-form lc-panel"
+        onSubmit={(e) => {
+          e.preventDefault()
+          loadOverview()
+        }}
+      >
+        <label>
+          Buscar socio por nombre o email
+          <input value={search} onChange={(e) => setSearch(e.target.value)} maxLength={120} />
+        </label>
+        <button className="lc-button lc-button--secondary">Buscar socios</button>
+        <label>
+          Seleccionar usuario
+          <select
+            value={overview.members.some((m) => m.id === user) ? user : ''}
+            onChange={(e) => {
+              const found = overview.members.find((m) => m.id === e.target.value)
+              setUser(e.target.value)
+              setPhysical(null)
+              if (found?.valid_until) {
+                const date = new Date(found.valid_until)
+                setUntil(
+                  new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .slice(0, 16)
+                )
+              }
+              setStatus(found?.status || 'active')
+            }}
+          >
+            <option value="">Seleccionar…</option>
+            {overview.members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name || m.email} · {m.email}
+                {m.member_number ? ` · Socio #${m.member_number}` : ' · Sin membresía'}
+              </option>
+            ))}
+          </select>
+        </label>
+      </form>
       <div className="lc-grid">
         <section className="lc-panel">
           <h2>Membresía de un socio</h2>
@@ -140,6 +211,22 @@ export default function LatidoCardAdmin() {
         </section>
         <section className="lc-panel">
           <h2>Participación de un negocio</h2>
+          <div className="lc-form">
+            <label>
+              Seleccionar negocio
+              <select
+                value={overview.businesses.some((b) => b.id === provider) ? provider : ''}
+                onChange={(e) => setProvider(e.target.value)}
+              >
+                <option value="">Seleccionar…</option>
+                {overview.businesses.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} · {b.participating ? 'Participante' : 'Pendiente'}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <form
             className="lc-form"
             onSubmit={(e) => {
@@ -171,6 +258,31 @@ export default function LatidoCardAdmin() {
           </p>
         </section>
       </div>
+      <LatidoCardPhysicalAdmin onChange={loadOverview} />
+      {!!overview.audit?.length && (
+        <details className="lc-panel lc-spaced">
+          <summary>Registro de administración Latido</summary>
+          <ul className="lc-history">
+            {overview.audit.map((event, index) => (
+              <li key={index}>
+                {{
+                  latido_card_memberships: 'Membresía',
+                  latido_card_businesses: 'Participación de negocio',
+                  latido_card_credentials: 'Tarjeta física'
+                }[event.entity_type] || 'Registro'}{' '}
+                · {event.action === 'INSERT' ? 'Alta' : 'Actualización'}
+                <small>
+                  {new Date(event.created_at).toLocaleString('es-CH', {
+                    timeZone: 'Europe/Zurich'
+                  })}{' '}
+                  · {event.actor_name}
+                </small>
+                <span className="lc-muted">Referencia {event.entity_id}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   )
 }

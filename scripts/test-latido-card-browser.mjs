@@ -17,7 +17,8 @@ const server = spawn(
     env: {
       ...process.env,
       VITE_SUPABASE_URL: 'https://card-test.supabase.co',
-      VITE_SUPABASE_ANON_KEY: 'card-test-public-key'
+      VITE_SUPABASE_ANON_KEY: 'card-test-public-key',
+      VITE_ADMIN_EMAILS: 'admin@test.example'
     },
     stdio: 'pipe',
     windowsHide: true
@@ -83,6 +84,8 @@ try {
   let redeemCalls = [],
     receipt = null,
     claimed = false
+  let physicalRequest = null,
+    physicalCalls = []
   const offer = {
     id: '00000000-0000-4000-8000-000000000001',
     title: '15 % desde CHF 50',
@@ -147,6 +150,87 @@ try {
     }
     if (name === 'lc_close_scanner') return respond(route, null)
     if (name === 'lc_catalog') return respond(route, [offer, special])
+    if (name === 'lc_member_physical_requests') {
+      const visible = physicalRequest ? { ...physicalRequest } : null
+      if (visible)
+        for (const key of [
+          'internal_note',
+          'version',
+          'emails',
+          'events',
+          'credential_id',
+          'contact_email'
+        ])
+          delete visible[key]
+      return respond(route, { issued_before: false, requests: visible ? [visible] : [] })
+    }
+    if (name === 'lc_request_physical_card') {
+      physicalCalls.push(args)
+      physicalRequest = {
+        ...args.p_details,
+        id: '00000000-0000-4000-8000-000000000044',
+        reference: 'LCP-000044',
+        kind: args.p_kind,
+        status: 'requested',
+        country: 'CH',
+        public_note: '',
+        internal_note: '',
+        tracking_url: '',
+        version: 1,
+        member_number: 12847,
+        contact_email: 'ana@test.example',
+        created_at: new Date().toISOString(),
+        events: [],
+        emails: []
+      }
+      return respond(route, physicalRequest)
+    }
+    if (name === 'lc_admin_overview')
+      return respond(route, {
+        stats: {
+          active_members: 1,
+          pending_requests: physicalRequest?.status === 'requested' ? 1 : 0,
+          in_progress: 1,
+          email_pending: 2,
+          email_failed: 0
+        },
+        members: [],
+        businesses: [],
+        audit: []
+      })
+    if (name === 'lc_admin_physical_queue')
+      return respond(
+        route,
+        physicalRequest &&
+          (args.p_status === 'all' ||
+            args.p_status === physicalRequest.status ||
+            (args.p_status === 'open' &&
+              !['delivered', 'rejected', 'cancelled'].includes(physicalRequest.status)))
+          ? [physicalRequest]
+          : []
+      )
+    if (name === 'lc_admin_update_physical_request') {
+      assert.equal(args.p_expected_version, physicalRequest.version)
+      physicalRequest = {
+        ...physicalRequest,
+        status: args.p_status,
+        public_note: args.p_public_note,
+        internal_note: args.p_internal_note,
+        tracking_url: args.p_tracking_url,
+        version: physicalRequest.version + 1
+      }
+      return respond(route, null)
+    }
+    if (name === 'lc_admin_issue_request_card') {
+      assert.equal(args.p_expected_version, physicalRequest.version)
+      physicalRequest = {
+        ...physicalRequest,
+        status: 'printing',
+        version: physicalRequest.version + 1,
+        credential_id: 'credential-1'
+      }
+      return respond(route, { token, member_number: 12847, reference: physicalRequest.reference })
+    }
     if (name === 'lc_member_home')
       return respond(route, {
         membership: { member_number: 12847, active: true, valid_until: offer.ends_at },
@@ -238,13 +322,57 @@ try {
   await page.getByAltText('QR de Latido Card').waitFor()
   await page.getByRole('button', { name: 'Reclamar', exact: true }).click()
   await page.getByRole('button', { name: 'Reclamado', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Solicitar tarjeta física', exact: true }).click()
+  await page.getByLabel('Nombre para la entrega').fill('Ana Prueba')
+  await page.getByLabel('Calle y número').fill('Calle Prueba 10')
+  await page.getByLabel('Código postal').fill('6004')
+  await page.getByLabel('Localidad').fill('Luzern')
+  await page.getByRole('button', { name: 'Enviar solicitud a Latido', exact: true }).click()
+  await page.getByText('LCP-000044 · Solicitada', { exact: true }).waitFor()
+  assert.equal(physicalCalls.length, 1)
+  assert.equal(physicalCalls[0].p_details.postal_code, '6004')
   await page.screenshot({ path: path.join(output, 'card-member-mobile.png'), fullPage: true })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.screenshot({ path: path.join(output, 'card-member-desktop.png'), fullPage: true })
+  await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem('sb-card-test-auth-token'))
+    stored.user = {
+      ...stored.user,
+      email: 'admin@test.example',
+      user_metadata: { name: 'Admin Latido', latido_onboarding_completed: true }
+    }
+    localStorage.setItem('sb-card-test-auth-token', JSON.stringify(stored))
+  })
+  await page.goto(`${origin}/card/admin`)
+  page.on('dialog', (dialog) => dialog.accept())
+  await page.getByRole('heading', { name: 'Latido administra cada tarjeta.' }).waitFor()
+  const queue = page.locator('#solicitudes')
+  await queue.getByRole('button', { name: 'Aprobada', exact: true }).click()
+  await queue.getByRole('button', { name: 'Emitir QR y pasar a impresión', exact: true }).click()
+  await queue.getByAltText('QR de impresión de la solicitud').waitFor()
+  await queue.getByRole('link', { name: 'Descargar QR para impresión' }).waitFor()
+  await queue.getByRole('button', { name: 'Preparada', exact: true }).click()
+  await queue.getByText('Entrega, notas e historial', { exact: true }).click()
+  await queue.getByLabel('Nota interna de Latido').fill('Nota privada para preparación')
+  await queue.getByLabel('Mensaje visible para el socio').fill('Tu tarjeta está en camino.')
+  await queue.getByLabel('Enlace de seguimiento (HTTPS)').fill('https://post.example/track/test')
+  await queue.getByRole('button', { name: 'Enviada', exact: true }).click()
+  await queue.screenshot({ path: path.join(output, 'physical-admin-desktop.png') })
+  await queue.getByRole('button', { name: 'Entregada', exact: true }).click()
+  await queue.getByLabel('Estado de solicitudes').selectOption('all')
+  await queue
+    .locator('.lc-badge')
+    .filter({ hasText: /^Entregada$/ })
+    .waitFor()
+  assert.equal(physicalRequest.status, 'delivered')
+  assert.equal(physicalRequest.internal_note, 'Nota privada para preparación')
+  await page.setViewportSize({ width: 390, height: 844 })
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+  await queue.screenshot({ path: path.join(output, 'physical-admin-mobile.png') })
   assert.deepEqual(errors, [])
   console.log(
-    'Latido Card browser: real QR video decoding, Scanner isolation, reload/retry idempotency, claim, digital QR and responsive layouts passed.'
+    'Latido Card browser: QR decoding, Scanner isolation, idempotent retry, claims, digital QR, physical request and admin fulfillment passed.'
   )
   console.log(`Screenshots: ${output}`)
 } finally {

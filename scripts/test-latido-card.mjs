@@ -8,6 +8,7 @@ import {
   storeScannerSession,
   SCANNER_STORAGE_KEY
 } from '../src/lib/latidoCardCore.js'
+import { buildPhysicalCardEmail } from '../supabase/functions/_shared/latidoCardPhysicalEmail.js'
 
 const token = 'a'.repeat(64)
 assert.equal(extractCardToken(`https://latido.ch/c/${token}`), token)
@@ -80,6 +81,16 @@ await db.query('INSERT INTO providers VALUES($1,$2,$3,$4),($5,$6,$7,$8)', [
 const migration = await readFile(new URL('../supabase/latido_card.sql', import.meta.url), 'utf8')
 await db.exec(migration)
 await db.exec(migration) // Rerunning must not erase credentials or fail on objects.
+const notificationsSchema = (
+  await readFile(new URL('../supabase/app_notifications.sql', import.meta.url), 'utf8')
+).split('-- One interaction creates')[0]
+await db.exec(notificationsSchema)
+const physicalMigration = await readFile(
+  new URL('../supabase/latido_card_physical_requests.sql', import.meta.url),
+  'utf8'
+)
+await db.exec(physicalMigration)
+await db.exec(physicalMigration)
 async function as(key, role = 'authenticated') {
   await db.exec(`RESET ROLE; SET ROLE ${role};`)
   await db.query("SELECT set_config('request.jwt.claims',$1,false)", [
@@ -92,6 +103,13 @@ async function root(sql, params = []) {
 }
 async function rpc(name, args = []) {
   const params = args.map((_, i) => `$${i + 1}`).join(',')
+  if (name === 'lc_claim_physical_emails')
+    return (
+      await db.query(
+        `SELECT coalesce(jsonb_agg(row),'[]'::jsonb) AS result FROM public.${name}(${params}) row`,
+        args
+      )
+    ).rows[0].result
   return (await db.query(`SELECT public.${name}(${params}) AS result`, args)).rows[0].result
 }
 async function rejects(name, args, code) {
@@ -288,6 +306,192 @@ try {
   await rpc('lc_redeem', [freshSession.token, replacementDigital.token, unlimited, randomUUID()])
   await rpc('lc_close_scanner', [freshSession.token])
   await rejects('lc_scanner_status', [freshSession.token, false], 'SCANNER_EXPIRED')
+  // Physical requests belong to Latido administration, never to a merchant.
+  await as('owner')
+  await rejects('lc_admin_physical_queue', ['open'], 'FORBIDDEN')
+  await assert.rejects(
+    () => db.query('SELECT * FROM latido_card_physical_requests'),
+    /permission denied/
+  )
+  await as(null, 'anon')
+  await assert.rejects(() => rpc('lc_member_physical_requests'), /permission denied/)
+  await as('member')
+  const details = {
+    fulfillment: 'shipping',
+    recipient_name: 'José Prueba',
+    address_line1: 'Calle Prueba 10',
+    address_line2: '2.º',
+    postal_code: '6004',
+    city: 'Luzern'
+  }
+  await rejects(
+    'lc_request_physical_card',
+    [randomUUID(), { ...details, postal_code: 'bad' }, 'replacement'],
+    'PHYSICAL_DETAILS_INVALID'
+  )
+  await rejects(
+    'lc_request_physical_card',
+    [randomUUID(), details, 'initial'],
+    'PHYSICAL_REQUEST_KIND_INVALID'
+  )
+  const physicalRequestId = randomUUID()
+  const request = await rpc('lc_request_physical_card', [physicalRequestId, details, 'replacement'])
+  assert.equal(request.status, 'requested')
+  assert.ok(request.reference.startsWith('LCP-'))
+  assert.equal(
+    (await rpc('lc_request_physical_card', [physicalRequestId, details, 'replacement'])).id,
+    request.id
+  )
+  await rejects(
+    'lc_request_physical_card',
+    [randomUUID(), details, 'replacement'],
+    'PHYSICAL_REQUEST_ALREADY_OPEN'
+  )
+  assert.equal((await rpc('lc_member_physical_requests')).requests.length, 1)
+  assert.equal((await rpc('lc_member_physical_requests')).requests[0].internal_note, undefined)
+  await as('member2')
+  assert.equal((await rpc('lc_member_physical_requests')).requests.length, 0)
+  await rejects('lc_cancel_physical_request', [request.id], 'FORBIDDEN')
+  await rejects(
+    'lc_request_physical_card',
+    [physicalRequestId, details, 'replacement'],
+    'REQUEST_CONFLICT'
+  )
+  await as('admin')
+  const inbox = await rpc('lc_admin_physical_queue', ['open'])
+  assert.equal(inbox[0].recipient_name, 'José Prueba')
+  assert.equal(inbox[0].emails.length, 2)
+  assert.equal((await rpc('lc_admin_overview', ['member'])).stats.pending_requests, 1)
+  await rejects(
+    'lc_admin_update_physical_request',
+    [request.id, 1, 'shipped', '', '', ''],
+    'PHYSICAL_STATUS_INVALID'
+  )
+  await rpc('lc_admin_update_physical_request', [
+    request.id,
+    1,
+    'approved',
+    'Prepararemos tu tarjeta.',
+    'Nota privada de Latido',
+    ''
+  ])
+  await rejects(
+    'lc_admin_update_physical_request',
+    [request.id, 1, 'approved', '', '', ''],
+    'PHYSICAL_REQUEST_CHANGED'
+  )
+  const printed = await rpc('lc_admin_issue_request_card', [request.id, 2, false])
+  assert.equal(printed.reference, request.reference)
+  await rejects(
+    'lc_admin_issue_request_card',
+    [request.id, 3, false],
+    'PHYSICAL_CARD_ALREADY_ISSUED'
+  )
+  const reprinted = await rpc('lc_admin_issue_request_card', [request.id, 3, true])
+  assert.notEqual(reprinted.token, printed.token)
+  await as('member')
+  await rejects('lc_cancel_physical_request', [request.id], 'PHYSICAL_REQUEST_IN_PROGRESS')
+  assert.equal((await rpc('lc_member_physical_requests')).requests[0].internal_note, undefined)
+  await as('admin')
+  await rpc('lc_admin_update_physical_request', [
+    request.id,
+    4,
+    'ready',
+    'Lista para envío.',
+    'Nota interna',
+    ''
+  ])
+  await rpc('lc_admin_update_physical_request', [
+    request.id,
+    5,
+    'shipped',
+    'En camino.',
+    'Nota interna',
+    'https://post.example/track/test'
+  ])
+  await rpc('lc_admin_update_physical_request', [
+    request.id,
+    6,
+    'delivered',
+    'Entregada.',
+    'Nota interna',
+    'https://post.example/track/test'
+  ])
+  const completed = (await rpc('lc_admin_physical_queue', ['delivered']))[0]
+  assert.equal(completed.events.length, 7)
+  await as('member')
+  const nextRequest = await rpc('lc_request_physical_card', [
+    randomUUID(),
+    { fulfillment: 'pickup', recipient_name: 'José Prueba', address_line1: 'Must not persist' },
+    'replacement'
+  ])
+  assert.equal(nextRequest.address_line1, '')
+  await rpc('lc_cancel_physical_request', [nextRequest.id])
+  const lostShipment = await rpc('lc_request_physical_card', [randomUUID(), details, 'replacement'])
+  await as('admin')
+  await rpc('lc_admin_update_physical_request', [lostShipment.id, 1, 'approved', '', '', ''])
+  await rpc('lc_admin_issue_request_card', [lostShipment.id, 2, false])
+  await rpc('lc_admin_update_physical_request', [lostShipment.id, 3, 'ready', '', '', ''])
+  await rpc('lc_admin_update_physical_request', [lostShipment.id, 4, 'shipped', '', '', ''])
+  await as('member')
+  await rpc('lc_report_lost_card')
+  await as('admin')
+  await rejects(
+    'lc_admin_update_physical_request',
+    [lostShipment.id, 5, 'delivered', '', '', ''],
+    'PHYSICAL_CARD_INVALID'
+  )
+  await rpc('lc_admin_update_physical_request', [
+    lostShipment.id,
+    5,
+    'cancelled',
+    'Envío perdido; solicita reposición.',
+    '',
+    ''
+  ])
+  await as('member')
+  await rpc('lc_request_physical_card', [randomUUID(), details, 'replacement'])
+  await as('owner')
+  await assert.rejects(() => rpc('lc_claim_physical_emails', [20]), /permission denied/)
+  await as(null, 'service_role')
+  const mailJobs = await rpc('lc_claim_physical_emails', [50])
+  assert.ok(mailJobs.length > 2)
+  assert.equal((await rpc('lc_claim_physical_emails', [50])).length, 0)
+  const job = mailJobs[0]
+  assert.equal(await rpc('lc_finish_physical_email', [job.id, randomUUID(), true, '']), false)
+  assert.equal(
+    await rpc('lc_finish_physical_email', [job.id, job.lease_id, false, 'SMTP_FAILED']),
+    true
+  )
+  const sent = mailJobs[1]
+  assert.equal(await rpc('lc_finish_physical_email', [sent.id, sent.lease_id, true, '']), true)
+  const email = buildPhysicalCardEmail({
+    ...job,
+    payload: {
+      ...job.payload,
+      reference: '<script>Bad</script>',
+      address_line1: 'secret address',
+      token: 'secret token',
+      internal_note: 'secret note'
+    }
+  })
+  assert.ok(!email.html.includes('<script>'))
+  assert.ok(email.html.includes('&lt;script&gt;'))
+  assert.ok(!email.text.includes('secret address'))
+  assert.ok(!email.text.includes('secret token'))
+  assert.ok(!email.text.includes('secret note'))
+  await root(
+    "UPDATE latido_card_physical_email_queue SET attempts=8,status='sending',lease_until=now()-interval '1 minute' WHERE id=$1",
+    [job.id]
+  )
+  await as(null, 'service_role')
+  await rpc('lc_claim_physical_emails', [50])
+  await as('admin')
+  await rpc('lc_admin_retry_physical_email', [job.id])
+  assert.ok((await rpc('lc_admin_overview', [''])).stats.email_pending > 0)
+  const administrativeAudit = (await rpc('lc_admin_overview', [''])).audit
+  assert.ok(administrativeAudit.some((row) => row.actor_id === ids.admin))
+  assert.ok(administrativeAudit.every((row) => !('token_hash' in row.metadata)))
   await root('SELECT 1')
   await assert.rejects(
     () => db.query("UPDATE latido_card_offers SET title='Cambio' WHERE id=$1", [oid]),
@@ -317,7 +521,7 @@ try {
   ).rows
   assert.ok(privileged.every((f) => f.proconfig?.includes('search_path=public')))
   console.log(
-    'Latido Card: core, repeatable PostgreSQL migration, permissions, stock, expiry, usage limits, reversals and idempotency passed.'
+    'Latido Card: PostgreSQL migrations, permissions, stock, expiry, limits, idempotency, physical fulfillment, private notes, audit and email retries passed.'
   )
 } finally {
   await db.close()
