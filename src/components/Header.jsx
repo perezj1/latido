@@ -6,12 +6,12 @@ import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
 
 const PUBLISH_OPTIONS = [
-  { emoji:'📣', label:'Anuncio',   sub:'Vivienda, servicios, cuidados, compraventa o trámites', to:'/publicar' },
-  { emoji:'💼', label:'Empleo',    sub:'Oferta o solicitud de empleo', to:'/publicar-empleo' },
-  { emoji:'🏪', label:'Negocio',   sub:'Restaurante, tienda, servicio o profesional', to:'/registrar-negocio' },
-  { emoji:'🎬', label:'Contenido', sub:'Un vídeo, artículo o publicación tuya', to:'/publicar-contenido' },
-  { emoji:'👥', label:'Grupo',     sub:'Comunidad, chat o grupo de interés', to:'/registrar-comunidad' },
-  { emoji:'🎉', label:'Evento',    sub:'Actividad con fecha: fiesta, concierto o quedada', to:'/publicar-evento' },
+  { emoji:'📣', label:'Anuncio',   sub:'Anuncia todo lo que ofreces, lo que buscas o lo que vendes.', to:'/publicar' },
+  { emoji:'💼', label:'Empleo',    sub:'Publica una oferta de trabajo o el empleo que buscas.', to:'/publicar-empleo' },
+  { emoji:'🏪', label:'Negocio',   sub:'Da a conocer tu negocio y sus servicios.', to:'/registrar-negocio' },
+  { emoji:'🎬', label:'Contenido', sub:'Comparte vídeos, da a conocer tus redes sociales y tu contenido.', to:'/publicar-contenido' },
+  { emoji:'👥', label:'Grupo',     sub:'Crea un grupo para conectar con otras personas.', to:'/registrar-comunidad' },
+  { emoji:'🎉', label:'Evento',    sub:'Publica una actividad e invita a participar.', to:'/publicar-evento' },
 ]
 const NAV_GUEST = [
   { href:'/tablon', label:'📣 Anuncios' },
