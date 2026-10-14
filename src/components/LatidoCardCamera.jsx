@@ -5,6 +5,7 @@ export default function LatidoCardCamera({
   onRead,
   onClose,
   onConnectCode,
+  onManualInput,
   hint = 'Encuadra el QR del negocio o de una Tarjeta Latido.'
 }) {
   const dialogRef = useRef(null)
@@ -107,6 +108,11 @@ export default function LatidoCardCamera({
       {error ? <p role="alert">{error}</p> : <p>{hint}</p>}
       {error && <LatidoCardCameraHelp />}
       <div className="lc-actions">
+        {onManualInput && (
+          <button className="lc-button" onClick={onManualInput}>
+            Introducir manualmente
+          </button>
+        )}
         {onConnectCode && (
           <button className="lc-button" onClick={onConnectCode}>
             Conectar con código

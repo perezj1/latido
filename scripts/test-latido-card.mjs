@@ -1017,6 +1017,181 @@ try {
   assert.deepEqual(await rpc('lc_my_scanner_businesses'), [])
   await rejects('lc_resume_scanner', [ids.business2], 'BUSINESS_INACTIVE')
   await root('SELECT 1')
+  const manualMigration = await readFile(
+    new URL('../supabase/latido_card_manual_codes.sql', import.meta.url),
+    'utf8'
+  )
+  await db.exec(manualMigration)
+  await db.exec(manualMigration)
+  const manualBusiness = randomUUID()
+  await root('INSERT INTO providers(id,user_id,name,city) VALUES($1,$2,$3,$4)', [
+    manualBusiness,
+    ids.owner,
+    'Manual café',
+    'Zürich'
+  ])
+  await as('owner')
+  const manualLink = await rpc('lc_business_setup', [manualBusiness, null])
+  const manualOffer = await rpc('lc_save_offer', [
+    manualBusiness,
+    {
+      ...offer,
+      title: 'Ventaja manual',
+      requires_claim: false,
+      usage_period: 'unlimited',
+      stock_total: null
+    }
+  ])
+  await as('outsider')
+  const manualScanner = await rpc('lc_open_scanner', [manualLink.token, 'Caja manual'])
+  await as('member')
+  const beforeManualQr = await rpc('lc_issue_digital_card')
+  const customerCode = await rpc('lc_issue_card_code')
+  assert.match(customerCode.code, /^\d{10}$/)
+  assert.ok(Date.parse(customerCode.expires_at) > Date.now())
+  await as(null, 'anon')
+  await rejects('lc_issue_card_code', [], 'permission denied')
+  await assert.rejects(
+    () => db.query('SELECT * FROM latido_card_manual_codes'),
+    /permission denied/
+  )
+  await assert.rejects(
+    () => db.query('SELECT * FROM latido_card_code_attempts'),
+    /permission denied/
+  )
+  await rejects('lc_scan_card_code', [token, customerCode.code], 'SCANNER_EXPIRED')
+  assert.equal(
+    (await rpc('lc_scan_card_code', [manualScanner.token, '1'])).error,
+    'CARD_CODE_INVALID',
+    'A public member number cannot be used as a credential'
+  )
+  const manualRead = await rpc('lc_scan_card_code', [
+    manualScanner.token,
+    `${customerCode.code.slice(0, 5)} ${customerCode.code.slice(5)}`
+  ])
+  assert.match(manualRead.card_token, /^[a-f0-9]{64}$/)
+  assert.deepEqual(
+    manualRead.card,
+    await rpc('lc_scan_card', [manualScanner.token, beforeManualQr.token])
+  )
+  await as('member')
+  await rpc('lc_issue_digital_card')
+  await as(null, 'anon')
+  assert.equal(
+    (await rpc('lc_scan_card', [manualScanner.token, manualRead.card_token])).member_number,
+    manualRead.card.member_number,
+    'QR renewal preserves an in-progress manual lookup'
+  )
+  const manualRequest = randomUUID()
+  const manualReceipt = await rpc('lc_redeem', [
+    manualScanner.token,
+    manualRead.card_token,
+    manualOffer,
+    manualRequest
+  ])
+  assert.ok(manualReceipt.id)
+  await as('member')
+  const nextCustomerCode = await rpc('lc_issue_card_code')
+  assert.notEqual(nextCustomerCode.code, customerCode.code)
+  await as(null, 'anon')
+  assert.equal(
+    (await rpc('lc_scan_card_code', [manualScanner.token, customerCode.code])).error,
+    'CARD_CODE_INVALID'
+  )
+  await rejects('lc_scan_card', [manualScanner.token, manualRead.card_token], 'CARD_INVALID')
+  assert.equal(
+    (
+      await rpc('lc_redeem', [
+        manualScanner.token,
+        manualRead.card_token,
+        manualOffer,
+        manualRequest
+      ])
+    ).id,
+    manualReceipt.id,
+    'A committed manual redemption can be retried after code regeneration'
+  )
+  const newManualRead = await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])
+  assert.ok(newManualRead.card_token)
+  await as('admin')
+  await rpc('lc_admin_enroll', [ids.member, validUntil, 'paused'])
+  await as('member')
+  await rejects('lc_issue_card_code', [], 'MEMBERSHIP_INACTIVE')
+  await as(null, 'anon')
+  assert.equal(
+    (await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])).error,
+    'CARD_CODE_INVALID'
+  )
+  for (let i = 0; i < 2; i++)
+    assert.equal(
+      (await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])).error,
+      'CARD_CODE_INVALID'
+    )
+  assert.equal(
+    (await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])).error,
+    'CARD_CODE_RATE_LIMIT'
+  )
+  const attempts = await root('SELECT attempts FROM latido_card_code_attempts WHERE scope=$1', [
+    `user:${ids.outsider}`
+  ])
+  assert.equal(
+    attempts.rows[0].attempts,
+    8,
+    'Failed guesses persist instead of rolling back rate limits'
+  )
+  await root("UPDATE latido_card_code_attempts SET window_started_at=now()-interval '2 minutes'")
+  await root(
+    "UPDATE latido_card_manual_codes SET expires_at=now()-interval '1 second' WHERE code_hash=public.lc_hash($1)",
+    [nextCustomerCode.code]
+  )
+  await as('admin')
+  await rpc('lc_admin_enroll', [ids.member, validUntil, 'active'])
+  await as(null, 'anon')
+  assert.equal(
+    (await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])).error,
+    'CARD_CODE_INVALID'
+  )
+  await as('member')
+  const freshManualCode = await rpc('lc_issue_card_code')
+  await as(null, 'anon')
+  for (let i = 0; i < 6; i++)
+    assert.ok(
+      (await rpc('lc_scan_card_code', [manualScanner.token, freshManualCode.code])).card_token,
+      'Valid customer lookups do not use the failed-guess budget'
+    )
+  const failedBudget = await root(
+    'SELECT failed_attempts FROM latido_card_code_attempts WHERE scope=$1',
+    [`user:${ids.outsider}`]
+  )
+  assert.equal(failedBudget.rows[0].failed_attempts, 1)
+  await root('UPDATE latido_card_code_attempts SET attempts=60 WHERE scope=$1', [
+    `user:${ids.outsider}`
+  ])
+  await as(null, 'anon')
+  assert.equal(
+    (await rpc('lc_scan_card_code', [manualScanner.token, freshManualCode.code])).error,
+    'CARD_CODE_RATE_LIMIT',
+    'Valid requests also have a separate high-volume limit'
+  )
+  await root("UPDATE latido_card_code_attempts SET window_started_at=now()-interval '2 minutes'")
+  await as(null, 'anon')
+  assert.ok(
+    (await rpc('lc_scan_card_code', [manualScanner.token, freshManualCode.code])).card_token
+  )
+  await root('UPDATE latido_card_code_attempts SET failed_attempts=30 WHERE scope=$1', [
+    `business:${manualBusiness}`
+  ])
+  await as(null, 'anon')
+  assert.equal(
+    (await rpc('lc_scan_card_code', [manualScanner.token, freshManualCode.code])).error,
+    'CARD_CODE_RATE_LIMIT',
+    'Business limits cannot be bypassed by changing devices'
+  )
+  await as('owner')
+  await rpc('lc_manage_scanner', [manualScanner.session_id, 'revoke'])
+  await as(null, 'anon')
+  await rejects('lc_scan_card_code', [manualScanner.token, freshManualCode.code], 'SCANNER_EXPIRED')
+  await root('SELECT 1')
   const preflight = await readFile(
     new URL('../supabase/latido_card_preflight.sql', import.meta.url),
     'utf8'

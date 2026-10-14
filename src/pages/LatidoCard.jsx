@@ -6,6 +6,7 @@ import { cardRpc, cardUrl } from '../lib/latidoCard'
 import { cardErrorMessage, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
 import { shareCardOffer } from '../lib/latidoCardShare'
 import LatidoCardQr from '../components/LatidoCardQr'
+import LatidoCardCustomerCode from '../components/LatidoCardCustomerCode'
 import LatidoCardIntro from '../components/LatidoCardIntro'
 import LatidoCardPhysicalRequest from '../components/LatidoCardPhysicalRequest'
 import './LatidoCard.css'
@@ -241,6 +242,7 @@ export default function LatidoCard() {
                   )}
                 </div>
               </div>
+              {member.active && <LatidoCardCustomerCode key={user?.id} />}
             </section>
           ) : (
             <LatidoCardIntro

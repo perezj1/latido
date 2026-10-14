@@ -13,6 +13,7 @@ import {
 } from '../lib/latidoCardCore'
 import LatidoCardCamera from '../components/LatidoCardCamera'
 import LatidoCardConnectionCode from '../components/LatidoCardConnectionCode'
+import LatidoCardManualEntry from '../components/LatidoCardManualEntry'
 import { offerUsageLabel, offerBenefitLabel } from '../lib/latidoCardCore'
 import '../pages/LatidoCard.css'
 
@@ -51,6 +52,17 @@ export default function ScannerApp() {
     [error, setError] = useState(''),
     [camera, setCamera] = useState(false)
   const [codeOpen, setCodeOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
+  const openManual = () => {
+    if (workingRef.current || pendingRef.current || !sessionRef.current) return
+    setError('')
+    setResult(null)
+    setCardToken('')
+    setChecked(false)
+    setSuccess(null)
+    setCamera(false)
+    setManualOpen(true)
+  }
   const openCode = () => {
     if (workingRef.current || pendingRef.current) return
     setCamera(false)
@@ -243,6 +255,29 @@ export default function ScannerApp() {
       setBusy(false)
     }
   }
+  const readManual = async (code) => {
+    if (workingRef.current || pendingRef.current) throw new Error('CARD_CODE_PENDING')
+    if (!sessionRef.current) throw new Error('SCANNER_EXPIRED')
+    workingRef.current = true
+    setBusy(true)
+    setError('')
+    try {
+      const next = await rpc('lc_scan_card_code', {
+        p_session_token: sessionRef.current.token,
+        p_code: code
+      })
+      if (next?.error) throw new Error(next.error)
+      if (!/^[a-f0-9]{64}$/.test(next?.card_token) || !next.card)
+        throw new Error('INVALID_CARD_RESPONSE')
+      setCardToken(next.card_token)
+      setResult(next.card)
+      setChecked(false)
+      setSuccess(null)
+    } finally {
+      workingRef.current = false
+      setBusy(false)
+    }
+  }
   const scanQr = async (raw) => {
     setCamera(false)
     const qr = classifyLatidoQr(raw, window.location.origin)
@@ -429,6 +464,17 @@ export default function ScannerApp() {
               <button className="lc-button lc-button--large" disabled={busy} onClick={openCamera}>
                 <ScanLine size={24} aria-hidden="true" /> {busy ? 'Consultando…' : 'Scanner'}
               </button>
+              {!camera && !manualOpen && !codeOpen && (
+                <div className="lc-actions lc-spaced">
+                  <button
+                    className="lc-button lc-button--secondary"
+                    disabled={busy || !!pendingRef.current}
+                    onClick={openManual}
+                  >
+                    Introducir manualmente
+                  </button>
+                </div>
+              )}
               <p className="lc-muted lc-scanner-hint">
                 Escanea una tarjeta de cliente o el QR de otro negocio.
               </p>
@@ -529,7 +575,18 @@ export default function ScannerApp() {
           )}
         </>
       )}
-      {!camera && !codeOpen && !pendingRef.current && (
+      {session && (result || success) && !camera && !manualOpen && !codeOpen && (
+        <div className="lc-actions lc-spaced">
+          <button
+            className="lc-button lc-button--secondary"
+            disabled={busy || !!pendingRef.current}
+            onClick={openManual}
+          >
+            Introducir manualmente
+          </button>
+        </div>
+      )}
+      {!camera && !codeOpen && !manualOpen && !pendingRef.current && (
         <div className="lc-actions lc-spaced">
           <button className="lc-button lc-button--secondary" disabled={busy} onClick={openCode}>
             Conectar con código
@@ -540,7 +597,8 @@ export default function ScannerApp() {
         <LatidoCardCamera
           onRead={scanQr}
           onClose={() => setCamera(false)}
-          onConnectCode={openCode}
+          onConnectCode={!session ? openCode : undefined}
+          onManualInput={session ? openManual : undefined}
         />
       )}
       {codeOpen && (
@@ -551,6 +609,13 @@ export default function ScannerApp() {
             setCodeOpen(false)
           }}
           onClose={() => setCodeOpen(false)}
+        />
+      )}
+      {manualOpen && (
+        <LatidoCardManualEntry
+          busy={busy}
+          onRead={readManual}
+          onClose={() => setManualOpen(false)}
         />
       )}
       {session && !camera && (result || success) && (

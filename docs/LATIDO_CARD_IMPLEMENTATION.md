@@ -97,6 +97,8 @@ comprobación de solo lectura para no reinstalar esquemas de otras funciones.
    usuario, conexiones permanentes y eliminación. Por último, instalar
    `supabase/latido_card_scanner_multibusiness.sql` para empleados con varios negocios.
    En instalaciones existentes, ejecutar solamente los archivos que falten, en orden.
+   Instalar también `supabase/latido_card_manual_codes.sql` al final para consulta de
+   clientes mediante código temporal sin cámara.
 7. Ejecutar `npm run dev`. Abrir `/card`, `/card/negocios`, `/card/admin` y
    `/scanner/` según el rol. No aplicar primero en producción.
 
@@ -256,7 +258,8 @@ solicitud nativa si procede y decide si recuerda el permiso. No hay botón «Vol
 a pedir permiso»: un rechazo muestra «Cómo activar los permisos de la cámara».
 La guía detecta iPhone/iPad (incluido iPad con agente de escritorio) o Android y
 ofrece tres opciones: Safari, Chrome/Brave y Firefox en iOS; Chrome, Brave y Firefox
-en Android. El bloqueo del sistema o del sitio se cambia en sus ajustes, nunca por
+en Android. La guía principal tiene tres pasos cortos; los ajustes avanzados del sitio
+están plegados. El bloqueo del sistema o del sitio se cambia en sus ajustes, nunca por
 JavaScript. Después se recarga y vuelve a abrir Scanner; no se pide micrófono.
 Los pasos se contrastaron con la documentación de
 [Apple](https://support.apple.com/guide/iphone/control-access-to-hardware-features-iph168c4bbd5/ios),
@@ -279,6 +282,33 @@ de esa misma cuenta. El listado no concede gestión de ofertas o permisos de due
 Se guardan varias credenciales operativas para cambiar de negocio sin desconectar
 los demás. Los canjes pendientes bloquean el cambio; la revocación se valida en
 servidor. Ejecutar `supabase/latido_card_scanner_multibusiness.sql` después de accounts.
+
+### Consulta manual del cliente
+
+El socio activo pulsa «Mostrar código» en su tarjeta y enseña 10 cifras (dos grupos
+de cinco). No se utiliza el número de socio público. El personal ya conectado pulsa
+«Introducir manualmente», escribe el código y consulta las mismas ventajas del QR.
+También se ofrece este botón desde la cámara, aunque sus permisos estén bloqueados.
+
+`lc_issue_card_code` exige cuenta y membresía activa, genera un código aleatorio
+desde UUID v4, almacena solo su hash y lo limita a cinco minutos. Emitir otro código
+revoca los anteriores y sus credenciales manuales. Máximo 30 emisiones por socio/hora.
+`lc_scan_card_code` exige un Scanner vigente; limita a 5 intentos fallidos por cuenta/minuto
+y 30 fallidos por negocio/minuto. Las consultas válidas no gastan ese presupuesto;
+tienen un límite aparte de 60 por cuenta/minuto y 300 por negocio/minuto. Los errores
+esperados se devuelven en JSON para que PostgreSQL no revierta los contadores.
+
+Al validar, se emite una credencial aleatoria de 64 caracteres hexadecimales con la misma caducidad
+que el código. Se obtiene el resultado desde `lc_scan_card` y se usa el flujo existente
+de `lc_redeem`, con sus permisos, stock, límites y UUID de idempotencia. Consultar no
+canjea. Renovar el QR del cliente no revoca estas credenciales manuales: se distinguen
+por `manual_code_id` en `latido_card_credentials`. La recuperación de un canje ya
+confirmado funciona aunque después caduque o se regenere el código.
+
+La ruta de vinculación y su login no montan las notificaciones de comunidad ni la
+sincronización de presencia: la conexión redirige inmediatamente a la entrada
+Scanner, y WebKit puede rechazar consultas de fondo al descartar ese documento.
+Las rutas habituales de Latido mantienen estas funciones.
 Usar HTTPS, vídeo `muted`/`playsInline`, cámara trasera preferida y alternativa
 genérica si no se encuentra. Liberar los tracks incluso si la autorización llega
 después de cerrar la cámara.

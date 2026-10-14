@@ -29,10 +29,11 @@ el esquema de Latido; `app_notifications.sql` depende a su vez de
 | 3 | `supabase/latido_card_self_service.sql` | Alta directa de negocios, suspensión por Latido y QR automático |
 | 4 | `supabase/latido_card_scanner_accounts.sql` | Usuario identificado, conexiones permanentes, revocación y eliminación de Scanner |
 | 5 | `supabase/latido_card_scanner_multibusiness.sql` | Lista de negocios del trabajador y reapertura autenticada sin volver a escanear el QR |
+| 6 | `supabase/latido_card_manual_codes.sql` | Código temporal del cliente y consulta sin cámara, con límite de intentos |
 
-**Si ya instalaste los cuatro primeros, ejecutar únicamente
-`supabase/latido_card_scanner_multibusiness.sql` para esta actualización.** Si falta el
-cuarto, instalarlo antes del quinto. No hay que cargar
+**Si ya instalaste los cinco primeros, ejecutar únicamente
+`supabase/latido_card_manual_codes.sql` para esta actualización.** Si faltan los
+anteriores, instalarlos primero en el orden de la tabla. No hay que cargar
 otra vez los ejemplos ni modificar cuentas. Esta actualización también admite repetición.
 No reinstalar después los SQL anteriores: contienen las versiones previas de esos RPC.
 Los accesos anteriores vigentes pasan a permanentes; los caducados o revocados no
@@ -51,6 +52,20 @@ Para probar: conectar una cuenta de trabajador gratuita a dos negocios mediante
 QR/código; abrir «Mi negocio» y comprobar «Conectado a» con ambos nombres. Pulsar
 cada nombre abre su cámara. Repetir sin credenciales locales conservando la cuenta.
 Revocar todas las conexiones del trabajador a un negocio: desaparece de su lista.
+
+### Prueba rápida sin cámara
+
+1. Cliente con membresía activa: abrir **Mi tarjeta → Mostrar código**.
+2. El cliente enseña un código de 10 cifras, separado en dos grupos. Dura 5 minutos.
+3. Personal conectado al negocio: abrir **Scanner → Introducir manualmente**.
+4. Escribir las cifras y pulsar **Consultar tarjeta**. También se admite pegarlas con espacios.
+5. Aparecen el socio y sus ventajas para ese negocio. Marcar la comprobación y pulsar **Canjear**.
+
+Comprobar código erróneo/caducado, membresía inactiva, Scanner revocado y bloqueo tras
+varios intentos. El número de socio por sí solo no concede acceso. Consultar el código
+no canjea ventajas. La consulta manual conserva los mismos límites, reservas y canjes
+que la consulta con QR. El código del cliente es diferente al código privado del negocio.
+El nuevo SQL habilita RLS en ambas tablas nuevas y no concede acceso directo a usuarios.
 
 Ejecutar cada archivo completo en una consulta separada. Todos admiten repetición
 y conservan los datos existentes de Card. No crear manualmente columnas sueltas,

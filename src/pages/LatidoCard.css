@@ -463,6 +463,37 @@
 .lc-camera video[hidden] {
   display: none;
 }
+.lc-client-code {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(255 255 255 / 25%);
+  text-align: center;
+}
+.lc-client-code output {
+  display: block;
+  font:
+    700 26px 'Poppins',
+    sans-serif;
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.lc-client-code small {
+  font-size: 11px;
+}
+.lc-client-code p {
+  font-size: 12px;
+}
+.lc-form input.lc-manual-code-input {
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  letter-spacing: 2px;
+  font:
+    600 22px/1.5 'Poppins',
+    sans-serif;
+}
 .lc-camera-browser-options {
   display: flex;
   gap: 4px;

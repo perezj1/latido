@@ -15,27 +15,23 @@ export default function LatidoCardCameraHelp() {
   let steps
   if (ios && selected === 0) {
     steps = [
-      'Abre latido.ch en Safari. Toca el menú de página junto a la dirección y luego Más (…) → Ajustes del sitio web.',
-      'En Cámara, elige Permitir para latido.ch. Si no aparece, ve a Ajustes del iPhone → Apps → Safari → Cámara y elige Preguntar.',
-      'Vuelve a Latido, recarga la página y abre Scanner. Pulsa Permitir si Safari lo solicita.'
+      'Abre Ajustes en tu iPhone.',
+      'Busca Safari → Cámara y marca Preguntar.',
+      'Vuelve a Latido. Recarga, abre Scanner y pulsa Permitir.'
     ]
   } else if (ios) {
     const browser = selected === 2 ? 'Firefox' : 'Chrome o Brave'
     steps = [
-      `Abre Ajustes del iPhone → Privacidad y seguridad → Cámara. Activa ${browser} si aparece en la lista. También puedes revisar Ajustes → Apps → tu navegador → Cámara.`,
-      selected === 1
-        ? 'En Chrome, abre latido.ch y toca el icono de cámara junto a la dirección para cambiar el permiso del sitio. En Brave, revisa los permisos del sitio si tu versión muestra esta opción.'
-        : 'Vuelve a Firefox y abre de nuevo latido.ch. Si aparece la solicitud de cámara, pulsa Permitir.',
-      'Recarga Latido y abre Scanner. Si el navegador sigue bloqueando la cámara y no ofrece ajustes del sitio, abre latido.ch en Safari y sigue la pestaña Safari.'
+      'Abre Ajustes → Privacidad y seguridad → Cámara.',
+      `Activa la cámara para ${browser}.`,
+      'Vuelve a Latido. Recarga, abre Scanner y pulsa Permitir.'
     ]
   } else if (android) {
     const browser = tabs[selected]
     steps = [
-      `Abre Ajustes del móvil → Aplicaciones → ${browser} → Permisos → Cámara. Elige Permitir mientras se usa la aplicación.`,
-      selected === 2
-        ? 'En Firefox, abre latido.ch y toca el candado junto a la dirección. Si indica Cámara bloqueada, borra ese permiso para que vuelva a preguntar.'
-        : `En ${browser}, abre el menú ⋮ → Configuración → Configuración de sitios → Cámara. Activa las solicitudes y permite latido.ch en la lista de sitios bloqueados.`,
-      'Comprueba que el acceso general a Cámara esté activado en los ajustes rápidos del móvil. Vuelve a Latido, recarga y abre Scanner; pulsa Permitir si aparece la solicitud.'
+      `Abre Ajustes → Aplicaciones → ${browser}.`,
+      'En Permisos → Cámara, elige Permitir al usar la aplicación.',
+      'Vuelve a Latido. Recarga, abre Scanner y pulsa Permitir.'
     ]
   } else {
     steps = [
@@ -66,9 +62,18 @@ export default function LatidoCardCameraHelp() {
         ))}
       </ol>
       <p className="lc-muted">
-        Los nombres de los ajustes pueden variar según la versión. Latido no puede cambiar estos
-        permisos por ti.
+        ¿Sigue bloqueada? Puedes introducir el código del cliente sin usar la cámara.
       </p>
+      <details>
+        <summary>Si ya lo permití y sigue sin funcionar</summary>
+        <p>
+          {ios && selected === 0
+            ? 'En Safari, abre latido.ch. Toca el menú junto a la dirección → Más (…) → Ajustes del sitio web → Cámara → Permitir.'
+            : android && selected !== 2
+              ? `En ${tabs[selected]}, abre ⋮ → Configuración → Configuración de sitios → Cámara. Busca latido.ch y permite su cámara.`
+              : 'Abre latido.ch y revisa el permiso de cámara junto a la dirección del sitio. Si no aparece, prueba Safari en iPhone o Chrome en Android.'}
+        </p>
+      </details>
     </details>
   )
 }

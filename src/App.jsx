@@ -770,7 +770,7 @@ function AppShell() {
     <>
       <CookieConsent showBanner={false} />
       <PushRegistrationSync />
-      <UserPresenceSync />
+      {!isScannerConnectionRoute(location) && <UserPresenceSync />}
       <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen || hideAppNavigation ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:'#fff' }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
@@ -853,16 +853,34 @@ function AppCommunityExtras() {
   )
 }
 
+function isScannerConnectionRoute(location) {
+  return location.pathname.startsWith('/card/scanner') ||
+    (location.pathname === '/auth' &&
+      new URLSearchParams(location.search).get('next') === '/card/scanner/vincular')
+}
+
+// The connection bridge immediately leaves for the standalone Scanner. Avoid
+// starting community queries while Safari is discarding that document.
+function AppNotificationScope({ children }) {
+  const location = useLocation()
+  if (isScannerConnectionRoute(location)) return children
+  return (
+    <AppNotificationsProvider>
+      <InAppNotificationAlert />
+      {children}
+    </AppNotificationsProvider>
+  )
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <AppNotificationsProvider>
+        <AppNotificationScope>
           <Seo />
           <AppCommunityExtras />
           <ScrollToTop />
           <OfflineNotice />
-          <InAppNotificationAlert />
           <Toaster
             position="top-center"
             toastOptions={{
@@ -875,7 +893,7 @@ export default function App() {
           </Routes>
           <SearchResolutionPrompt />
           <VercelTelemetry />
-        </AppNotificationsProvider>
+        </AppNotificationScope>
       </BrowserRouter>
     </AuthProvider>
   )

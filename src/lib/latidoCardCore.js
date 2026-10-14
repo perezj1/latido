@@ -124,6 +124,12 @@ export function readScannerSession({ local, temporary }, now = Date.now()) {
 export function cardErrorMessage(error) {
   const text = String(error?.message || error || '')
   const messages = {
+    CARD_CODE_INVALID:
+      'El código no es válido o ha caducado. Pide al cliente que muestre uno nuevo.',
+    CARD_CODE_RATE_LIMIT:
+      'Has hecho varios intentos. Espera un minuto antes de probar otro código.',
+    CARD_CODE_ISSUE_LIMIT: 'Has generado varios códigos. Vuelve a intentarlo más tarde.',
+    CARD_CODE_PENDING: 'Confirma el canje pendiente antes de consultar otra tarjeta.',
     PROFILE_NAME_REQUIRED:
       'Añade tu nombre en el perfil de Latido antes de vincular este dispositivo.',
     PHYSICAL_REQUEST_ALREADY_OPEN:
