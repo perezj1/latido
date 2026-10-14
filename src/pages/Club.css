@@ -160,7 +160,7 @@
 
 /* Configurador de la colección */
 .club-shop { display: grid; gap: 18px; }
-.club-shop__tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.club-shop__tabs { display: grid; grid-template-columns: repeat(var(--club-category-count, 4), minmax(0, 1fr)); gap: 10px; }
 .club-shop__tabs::-webkit-scrollbar { display: none; }
 .club-shop__tabs button { display: grid; min-width: 0; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border: 1px solid #dce2eb; border-radius: 18px; color: var(--club-ink); background: #fff; text-align: left; cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
 .club-shop__tabs button:hover:not(:disabled) { border-color: rgba(23,87,232,.5); transform: translateY(-1px); box-shadow: 0 10px 24px rgba(16,32,74,.07); }
