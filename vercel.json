@@ -1,6 +1,22 @@
 {
   "headers": [
     {
+      "source": "/scanner/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+      ]
+    },
+    {
+      "source": "/c/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+      ]
+    },
+    {
       "source": "/sw.js",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
@@ -15,5 +31,10 @@
       ]
     }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/scanner", "destination": "/scanner/index.html" },
+    { "source": "/scanner/", "destination": "/scanner/index.html" },
+    { "source": "/scanner/link/:token", "destination": "/scanner/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

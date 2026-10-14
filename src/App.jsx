@@ -36,6 +36,9 @@ import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Club = lazy(() => import('./pages/Club'))
+const LatidoCard = lazy(() => import('./pages/LatidoCard'))
+const LatidoCardBusiness = lazy(() => import('./pages/LatidoCardBusiness'))
+const LatidoCardAdmin = lazy(() => import('./pages/LatidoCardAdmin'))
 const Home = lazy(() => import('./pages/Home'))
 const ResourcePackage = lazy(() => import('./pages/ResourcePackage'))
 const ResourcePackages = lazy(() => import('./pages/ResourcePackages'))
@@ -173,7 +176,7 @@ function VercelTelemetry() {
   const analyticsConsent = useAnalyticsConsent()
   const location = useLocation()
 
-  if (!analyticsConsent || !isAnalyticsEnabled()) return null
+  if (!analyticsConsent || !isAnalyticsEnabled() || location.pathname.startsWith('/c/')) return null
 
   return (
     <>
@@ -785,6 +788,10 @@ function AppShell() {
             <Route path="/comunidades" element={<Comunidades />} />
             <Route path="/colaboraciones" element={<Colaboraciones />} />
             <Route path="/club" element={<Club />} />
+            <Route path="/card" element={<LatidoCard />} />
+            <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusiness /></ProtectedRoute>} />
+            <Route path="/card/admin" element={<AdminRoute><LatidoCardAdmin /></AdminRoute>} />
+            <Route path="/c/:cardToken" element={<div className="lc-page"><h1>Latido Card</h1><p>Presenta este QR al personal de un negocio participante para consultar tus ventajas.</p><Link to="/card">Ir a Latido Card</Link></div>} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />

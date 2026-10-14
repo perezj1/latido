@@ -19,6 +19,7 @@ const NAV_GUEST = [
   { href:'/comunidades', label:'🤝 Comunidad' },
   { href:'/creadores', label:'🎙️ Creadores' },
   { href:'/club', label:'🛍️ Club' },
+  { href:'/card', label:'♥ Card' },
   { href:'/colaboraciones', label:'🚀 Para Empresas' },
 ]
 
@@ -29,6 +30,7 @@ const NAV_USER = [
   { href:'/comunidades', label:'🤝 Comunidad' },
   { href:'/comunidades?view=creadores', label:'🎙️ Creadores' },
   { href:'/club', label:'🛍️ Club' },
+  { href:'/card', label:'♥ Card' },
   { href:'/colaboraciones', label:'🚀 Para Empresas' },
   { href:'/mensajes', label:'💬 Mensajes' },
 ]

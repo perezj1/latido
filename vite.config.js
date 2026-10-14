@@ -91,6 +91,19 @@ function gelatoDevPlugin() {
   }
 }
 
+function scannerRoutingPlugin() {
+  return {
+    name:'latido-scanner-entry',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        const pathname=(req.url || '').split('?')[0]
+        if (/^\/scanner\/?$/.test(pathname) || /^\/scanner\/link\/[^/]+\/?$/.test(pathname)) req.url='/scanner/index.html'
+        next()
+      })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   // Vite reloads its config when an env file changes. Always copy the latest
@@ -132,7 +145,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), tiktokResolverPlugin(), gelatoDevPlugin()],
+    plugins: [react(), tiktokResolverPlugin(), gelatoDevPlugin(), scannerRoutingPlugin()],
     resolve: {
       alias: {
         react: path.resolve(process.cwd(), 'node_modules/react'),
@@ -188,6 +201,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       rollupOptions: {
+        input: { main:path.resolve('index.html'), scanner:path.resolve('scanner/index.html') },
         output: {
           manualChunks: {
             react:['react', 'react-dom', 'react-router-dom'],

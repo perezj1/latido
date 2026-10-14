@@ -223,4 +223,15 @@ npm run test:search   # Calidad del buscador global
 
 ---
 
+## Latido Card (piloto)
+
+Guía técnica y pasos de instalación: [docs/LATIDO_CARD_IMPLEMENTATION.md](docs/LATIDO_CARD_IMPLEMENTATION.md).
+
+Rutas: `/card`, `/card/negocios`, `/card/admin` y `/scanner/`.
+Instala `supabase/latido_card.sql` en una base de desarrollo con los requisitos
+indicados en la guía. Las membresías del piloto son manuales; los pagos reales
+y la logística de tarjetas físicas todavía no están implementados.
+
+Verificación: `npm run test:card`, `npm run test:card:browser` y `npm run build`.
+
 *Hecho con 💙 para la comunidad hispanohablante en Suiza*

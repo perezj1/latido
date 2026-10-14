@@ -20,6 +20,8 @@
     "test:resources": "node scripts/test-related-resources.mjs",
     "test:guides:browser": "node scripts/test-guides-browser.mjs",
     "test:punto-hispano": "node scripts/test-punto-hispano.mjs",
+    "test:card": "node scripts/test-latido-card.mjs",
+    "test:card:browser": "node scripts/test-latido-card-browser.mjs",
     "vapid:keys": "node scripts/generate-vapid-keys.mjs"
   },
   "dependencies": {
@@ -27,8 +29,11 @@
     "@supabase/supabase-js": "^2.39.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
     "html-to-image": "^1.11.13",
     "lucide-react": "^1.28.0",
+    "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
@@ -36,6 +41,8 @@
     "run": "^1.5.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "@playwright/test": "^1.64.1",
     "@vitejs/plugin-react": "^5.2.0",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",

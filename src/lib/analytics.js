@@ -5,6 +5,8 @@ import { hasAnalyticsConsent } from './cookieConsent'
 const SESSION_KEY = 'latido_analytics_session_id'
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 const DYNAMIC_ROUTES = [
+  [/^\/c\/[^/]+\/?$/, '/c/[token]'],
+  [/^\/scanner(?:\/.*)?$/, '/scanner'],
   [/^\/publicar\/punto-hispano\/[^/]+\/?$/, '/publicar/punto-hispano/[token]'],
   [/^\/anuncios\/[^/]+\/?$/, '/anuncios/[adSlug]'],
   [/^\/empleos\/[^/]+\/?$/, '/empleos/[jobSlug]'],
@@ -59,6 +61,7 @@ export function sanitizeVercelAnalyticsEvent(event) {
 
   try {
     const url = new URL(event.url, window.location.origin)
+    if (url.pathname.startsWith('/c/') || url.pathname.startsWith('/scanner/')) return null
     url.pathname = getAnalyticsRoute(url.pathname)
     url.search = ''
     url.hash = ''
