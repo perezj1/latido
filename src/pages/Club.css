@@ -118,13 +118,13 @@
 .club-manifesto svg { color: var(--club-red); }
 
 .club-designs { width: min(1240px, calc(100% - 40px)); margin: 0 auto; padding: 100px 0 20px; }
-.club-designs__heading { max-width: 690px; margin: 0 auto 44px; text-align: center; }
+.club-designs__heading { max-width: 900px; margin: 0 auto 44px; text-align: center; }
 .club-designs__heading > span { color: var(--club-red); font-size: 11px; font-weight: 900; letter-spacing: 1.8px; text-transform: uppercase; }
 .club-designs__heading h2 { margin: 10px 0 12px; font-size: clamp(36px, 5vw, 64px); font-weight: 900; line-height: 1.02; letter-spacing: -3px; }
-.club-designs__heading p { max-width: 560px; margin: 0 auto; color: #68738c; font-size: 13px; line-height: 1.7; }
-.club-designs__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; }
+.club-designs__heading p { max-width: 580px; margin: 0 auto; color: #68738c; font-size: 13px; line-height: 1.7; }
+.club-designs__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .club-design-card { overflow: hidden; border: 1px solid rgba(16,32,74,.1); border-radius: 24px; background: #fff; box-shadow: 0 14px 42px rgba(16,32,74,.06); }
-.club-design-card__visual { position: relative; display: grid; width: 100%; height: 400px; overflow: hidden; place-items: center; padding: 26px; border: 0; background: var(--design-tone); cursor: zoom-in; }
+.club-design-card__visual { position: relative; display: grid; width: 100%; height: auto; aspect-ratio: 1 / 1.02; overflow: hidden; place-items: center; padding: 26px; border: 0; background: var(--design-tone); cursor: zoom-in; }
 .club-design-card img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 12px 18px rgba(16,32,74,.1)); }
 .club-design-card__visual > span { position: absolute; right: 16px; bottom: 16px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border-radius: 999px; color: var(--club-ink); background: rgba(255,255,255,.9); box-shadow: 0 8px 24px rgba(16,32,74,.12); font-size: 9px; font-weight: 800; opacity: 0; transform: translateY(5px); transition: .2s ease; }
 .club-design-card__visual:hover > span, .club-design-card__visual:focus-visible > span { opacity: 1; transform: translateY(0); }
@@ -133,7 +133,9 @@
 .club-design-card--cafe img { transform: scale(1.3); filter: none; }
 .club-design-card--atardecer .club-design-card__visual { padding: 18px; }
 .club-design-card--atardecer img { transform: scale(1.08); filter: none; }
-.club-design-card h3 { margin: 0; padding: 18px 20px; color: var(--club-ink); font-size: 12px; line-height: 1.4; }
+.club-design-card__copy { padding: 18px 20px 20px; }
+.club-design-card h3 { margin: 0; color: var(--club-ink); font-size: 13px; font-weight: 800; line-height: 1.4; }
+.club-design-card p { margin: 5px 0 0; color: #68738c; font-size: 12px; line-height: 1.55; }
 
 .club-collection, .club-faq { width: min(1240px, calc(100% - 40px)); margin: 0 auto; padding: 110px 0; }
 .club-section-heading { display: grid; margin-bottom: 54px; grid-template-columns: 1fr minmax(280px, 430px); align-items: end; gap: 40px; }
@@ -203,7 +205,6 @@
 .club-config__heading h3 { margin: 0; font-weight: 900; color: var(--club-ink); font-size: clamp(22px, 2.3vw, 30px); line-height: 1.12; letter-spacing: -1px; }
 .club-config__price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 10px; }
 .club-config__price strong { font-size: 22px; letter-spacing: -.5px; }
-.club-config__price del { color: #929bad; font-size: 14px; font-weight: 700; }
 .club-config__price span { color: #7b8498; font-size: 10px; font-weight: 600; }
 .club-config__description { margin: 14px 0 0; color: #68738b; font-size: 12px; line-height: 1.65; }
 .club-config__addon-note { margin: 13px 0 0; padding: 11px 13px; border-radius: 11px; color: #6a5270; background: #fbf2fc; font-size: 10px; font-weight: 650; line-height: 1.55; }
@@ -398,7 +399,6 @@
 .club-checkout-steps strong { color: var(--club-ink); font-size: 13px; }
 .club-checkout-payment__trust { display: flex; align-items: center; gap: 7px; margin: 26px 0 0; padding: 11px 13px; border-radius: 12px; color: #08796f; background: #ebf8f6; font-size: 11px; font-weight: 700; }
 .club-checkout-payment__trust svg { flex: 0 0 auto; }
-.club-order-savings { margin: -8px 0 16px; color: #08796f; font-size: 11px; font-weight: 700; text-align: right; }
 .club-address-form { display: grid; gap: 13px; padding: 26px; background: #fff; }
 .club-address-form label { display: grid; gap: 6px; color: #4f5b76; font-size: 10px; font-weight: 800; }
 .club-address-form label em { color: #9299aa; font-size: 9px; font-style: normal; font-weight: 500; }
@@ -474,7 +474,7 @@
   .club-designs__grid { display: flex; gap: 14px; margin: 0 -20px; padding: 4px 20px 26px; overflow-x: auto; overscroll-behavior-x: contain; scroll-padding-inline: 20px; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .club-designs__grid::-webkit-scrollbar { display: none; }
   .club-design-card { flex: 0 0 min(42%, 300px); box-shadow: 0 10px 26px rgba(16,32,74,.06); scroll-snap-align: start; }
-  .club-design-card__visual { height: 340px; }
+  .club-design-card__visual { aspect-ratio: 1; }
   .club-section-heading { grid-template-columns: 1fr; align-items: start; }
   .club-collection-benefits { width: 100%; max-width: 620px; }
   .club-story { grid-template-columns: 1fr; }
@@ -528,9 +528,11 @@
   .club-designs__heading h2 { font-size: 38px; letter-spacing: -2px; }
   .club-designs__grid { gap: 10px; margin: 0 -16px; padding: 4px 16px 22px; scroll-padding-inline: 16px; }
   .club-design-card { flex-basis: 64%; }
-  .club-design-card__visual { height: 250px; padding: 14px; }
+  .club-design-card__visual { padding: 14px; }
   .club-design-card--logo .club-design-card__visual { padding: 24px; }
-  .club-design-card h3 { padding: 13px; font-size: 10px; }
+  .club-design-card__copy { padding: 13px 13px 15px; }
+  .club-design-card h3 { font-size: 11px; }
+  .club-design-card p { font-size: 10px; }
   .club-collection, .club-faq { width: calc(100% - 32px); padding: 72px 0; }
   .club-section-heading { margin-bottom: 30px; grid-template-columns: 1fr; gap: 16px; }
   .club-section-heading h2, .club-story h2 { font-size: 39px; letter-spacing: -2px; }

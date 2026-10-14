@@ -14,6 +14,7 @@ import {
   Minus,
   Plus,
   ShieldCheck,
+  Shirt,
   ShoppingBag,
   Sparkles,
   Truck,
@@ -125,34 +126,23 @@ const CLUB_DESIGNS = [
   {
     id: 'hablas-espanol',
     name: '¿Tú también hablas español?',
+    story: 'La pregunta que se te escapa cuando oyes tu idioma en el tranvía.',
     image: '/club/products/hablas-espanol-granate-trasera.webp',
     alt: 'Diseño tipográfico granate ¿Tú también hablas español? de Latido Club',
     tone: '#F4F2EE',
   },
   {
-    id: 'logo',
-    name: 'Firma Latido Club',
-    image: '/brand/latido-horizontal-black.webp',
-    alt: 'Firma horizontal de Latido Club con corazón multicolor',
-    tone: '#E8F1FF',
-  },
-  {
     id: 'cafe',
     name: 'Café en Suiza · Te despierta el precio',
+    story: 'Un espresso a cinco francos. Ya no necesitas cafeína.',
     image: '/club/designs/cafe-trasera-en-suiza-texto-negro.png',
     alt: 'Diseño Café en Suiza, te despierta el precio, de Latido Club',
     tone: '#E9FAF7',
   },
   {
-    id: 'latido-logo-camiseta',
-    name: 'Símbolo Latido · Tu estilo también habla español',
-    image: '/club/designs/latido-logo-camiseta.webp',
-    alt: 'Símbolo multicolor de Latido Club con el lema Tu estilo también habla español',
-    tone: '#ECEEF1',
-  },
-  {
     id: 'atardecer',
     name: 'Atardecer al mediodía',
+    story: 'Diciembre en Suiza: a las 16:30 ya es de noche.',
     image: '/club/designs/atardecer-al-mediodia.png',
     alt: 'Diseño Atardecer al mediodía en amarillo y azul de Latido Club',
     tone: '#FFF5D6',
@@ -160,9 +150,26 @@ const CLUB_DESIGNS = [
   {
     id: 'improvisar',
     name: 'Improvisar · De 16:40 a 17:10',
+    story: 'En Suiza, hasta la improvisación tiene horario.',
     image: '/club/products/improvisar-trasera-texto-negro.png',
     alt: 'Diseño Improvisar con un reloj y el horario de 16:40 a 17:10 de Latido Club',
     tone: '#F7E7D5',
+  },
+  {
+    id: 'latido-logo-camiseta',
+    name: 'Símbolo Latido · Tu estilo también habla español',
+    story: 'El símbolo multicolor de Latido y el lema que lo resume todo.',
+    image: '/club/designs/latido-logo-camiseta.webp',
+    alt: 'Símbolo multicolor de Latido Club con el lema Tu estilo también habla español',
+    tone: '#ECEEF1',
+  },
+  {
+    id: 'logo',
+    name: 'Firma Latido Club',
+    story: 'Nuestra firma, discreta, para llevar a diario.',
+    image: '/brand/latido-horizontal-black.webp',
+    alt: 'Firma horizontal de Latido Club con corazón multicolor',
+    tone: '#E8F1FF',
   },
 ]
 
@@ -648,12 +655,12 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
 
   let buttonLabel = isAddon
     ? `Añadir como complemento · +${money(product.price)}`
-    : `Añadir a la bolsa · ${money(product.price)}`
+    : `Añadir al pedido · ${money(product.price)}`
   if (!orderable) buttonLabel = product.availabilityMessage || 'Disponible próximamente'
   else if (isAddon && !hasGarment) buttonLabel = 'Añade primero una camiseta o sudadera'
   else if (missingGroup) buttonLabel = `Elige tu ${missingGroup.name.toLowerCase()} para continuar`
   else if (pendingAddon && !isAddon) buttonLabel = `Añadir los dos · ${money(product.price + pendingAddon.product.price)}`
-  else if (justAdded) buttonLabel = 'Añadido a tu bolsa'
+  else if (justAdded) buttonLabel = 'Añadido a tu pedido'
 
   return (
     <div className="club-shop">
@@ -745,9 +752,6 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
             <h3>{productTitle(product)}</h3>
             <div className="club-config__price">
               <strong>{isAddon ? '+' : ''}{money(product.price)}</strong>
-              {Number(product.compareAtPrice) > Number(product.price) && (
-                <del>{money(product.compareAtPrice)}</del>
-              )}
               <span>{isAddon ? 'Precio de promoción · Complemento para tu camiseta o sudadera' : 'Precio de promoción · IVA y envío a Suiza incluidos'}</span>
             </div>
             {isAddon && (
@@ -852,7 +856,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
                       ))}
                     </div>
                   )}
-                  {needsChoice && <p className="club-config__hint" role="alert">Selecciona tu {group.name.toLowerCase()} para añadir el artículo a la bolsa.</p>}
+                  {needsChoice && <p className="club-config__hint" role="alert">Selecciona tu {group.name.toLowerCase()} para añadir el artículo al pedido.</p>}
                 </fieldset>
               )
             })}
@@ -911,7 +915,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
             )}
             <div className="club-config__benefits" aria-label="Ventajas del producto">
               <span><Truck size={15} /><b>Envío incluido</b></span>
-              <span><Clock size={15} /><b>Entrega en 10-15 días</b></span>
+              <span><Clock size={15} /><b>Hecho para ti · 10-15 días</b></span>
               <span><ShieldCheck size={15} /><b>Pago seguro con Stripe</b></span>
             </div>
             {catalogStatus === 'loading' && (
@@ -1044,16 +1048,16 @@ function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onB
         <div className="club-drawer__header">
           <div>
             <span>Tu selección</span>
-            <h2 id="club-cart-title">Bolsa Club</h2>
+            <h2 id="club-cart-title">Tu pedido</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Cerrar bolsa"><X size={20} /></button>
+          <button type="button" onClick={onClose} aria-label="Cerrar pedido"><X size={20} /></button>
         </div>
 
         {cart.length === 0 ? (
           <div className="club-cart-empty">
             <span><ShoppingBag size={28} /></span>
-            <h3>Tu bolsa está esperando</h3>
-            <p>Elige tu prenda favorita de la nueva colección de Latido Club.</p>
+            <h3>Todavía no has elegido nada</h3>
+            <p>Elige un diseño, el color y tu talla. El envío a Suiza está incluido.</p>
             <button type="button" onClick={onClose}>Ver la colección</button>
           </div>
         ) : (
@@ -1102,11 +1106,6 @@ function CheckoutModal({ open, cart, onClose }) {
   const [error, setError] = useState('')
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const total = subtotal
-  const savings = cart.reduce((sum, item) => (
-    Number(item.compareAtPrice) > Number(item.price)
-      ? sum + (item.compareAtPrice - item.price) * item.quantity
-      : sum
-  ), 0)
 
   useEffect(() => {
     if (!open) return undefined
@@ -1137,7 +1136,7 @@ function CheckoutModal({ open, cart, onClose }) {
       if (invokeError || !data?.url) {
         const code = await functionErrorCode(invokeError, data)
         const messages = {
-          PRODUCT_NOT_AVAILABLE:'Una variante de tu bolsa ya no está disponible. Actualiza la página y vuelve a elegirla.',
+          PRODUCT_NOT_AVAILABLE:'Uno de los artículos de tu pedido ya no está disponible. Actualiza la página y vuelve a elegirlo.',
           ADDON_REQUIRES_GARMENT:'Los complementos solo pueden comprarse junto con una camiseta o sudadera.',
           CLUB_CATALOG_UNAVAILABLE:'No pudimos comprobar la disponibilidad de los productos. Inténtalo de nuevo en unos minutos.',
           TOO_MANY_CHECKOUTS:'Has iniciado varios pagos. Espera unos minutos antes de volver a intentarlo.',
@@ -1194,7 +1193,6 @@ function CheckoutModal({ open, cart, onClose }) {
             <div className="club-order-total"><span>Productos</span><strong>{money(subtotal)}</strong></div>
             <div className="club-order-line club-order-line--shipping"><span>Envío a Suiza<small>Entrega estimada en 10-15 días</small></span><strong>Incluido</strong></div>
             <div className="club-grand-total"><span>Total</span><strong>{money(total)}</strong></div>
-            {savings > 0 && <p className="club-order-savings">Ahorras {money(savings)} con el precio de lanzamiento.</p>}
 
             {error && <p className="club-checkout-error" role="alert">{error}</p>}
 
@@ -1307,7 +1305,7 @@ export default function Club() {
       return lines.reduce((next, line) => addCartLine(next, line), current)
     })
     setCartOpen(true)
-    toast.success(bundledAddon ? 'Prenda y complemento añadidos a tu bolsa' : 'Artículo añadido a tu bolsa')
+    toast.success(bundledAddon ? 'Prenda y complemento añadidos a tu pedido' : 'Añadido a tu pedido')
     return true
   }
 
@@ -1338,9 +1336,9 @@ export default function Club() {
           <Link to="/club" className="club-brand" aria-label="Latido Club, inicio">
             <img src="/brand/latido-horizontal-black.webp" alt="Latido Club" />
           </Link>
-          <button type="button" className="club-cart-button" onClick={() => setCartOpen(true)} aria-label={`Abrir bolsa, ${itemCount} artículos`}>
+          <button type="button" className="club-cart-button" onClick={() => setCartOpen(true)} aria-label={`Abrir pedido, ${itemCount} artículos`}>
             <ShoppingBag size={18} />
-            <span>Bolsa</span>
+            <span>Pedido</span>
             {itemCount > 0 && <b>{itemCount}</b>}
           </button>
         </div>
@@ -1352,10 +1350,10 @@ export default function Club() {
             <div>
               {paymentReturn.status === 'success' ? <Check size={20} /> : <ArrowLeft size={20} />}
               <span>
-                <strong>{paymentReturn.status === 'success' ? 'Estamos confirmando tu pago' : 'Pago cancelado'}</strong>
+                <strong>{paymentReturn.status === 'success' ? '¡Gracias por tu pedido!' : 'Pago cancelado'}</strong>
                 {paymentReturn.status === 'success'
-                  ? `Recibirás la confirmación por email${paymentReturn.reference ? ` del pedido ${paymentReturn.reference}` : ''}. Tu pedido llegará en un plazo estimado de 10 a 15 días.`
-                  : 'No se ha realizado ningún cargo. Tu selección sigue en la bolsa.'}
+                  ? `Estamos confirmando el pago. Recibirás un email${paymentReturn.reference ? ` con el pedido ${paymentReturn.reference}` : ''} y empezaremos a fabricar tu prenda, que llegará en un plazo estimado de 10 a 15 días.`
+                  : 'No se ha realizado ningún cargo. Tu selección sigue guardada en tu pedido.'}
               </span>
               <button type="button" onClick={() => setPaymentReturn(null)} aria-label="Cerrar aviso"><X size={17} /></button>
             </div>
@@ -1365,19 +1363,19 @@ export default function Club() {
           <div className="club-hero__shape club-hero__shape--one" />
           <div className="club-hero__shape club-hero__shape--two" />
           <div className="club-hero__content">
-            <p className="club-kicker"><Sparkles size={15} /> Nueva colección · 2026</p>
+            <p className="club-kicker"><Sparkles size={15} /> Colección otoño-invierno · 2026</p>
             <h1><span>Tu estilo</span><span>también habla</span><em>español.</em></h1>
-            <p className="club-hero__copy">Camisetas, sudaderas y accesorios creados para llevar contigo el idioma, el humor y las conexiones que te hacen sentir en casa.</p>
-            <a href="#coleccion" className="club-hero__cta">Descubrir la colección <ChevronRight size={18} /></a>
+            <p className="club-hero__copy">Camisetas, sudaderas y bolsas con el humor y el idioma de quienes vivimos Suiza en español. Para el tranvía, la oficina o el domingo en el lago.</p>
+            <a href="#coleccion" className="club-hero__cta">Elige tu prenda <ChevronRight size={18} /></a>
             <div className="club-hero__trust">
-              <span><Leaf size={16} /> Diseñado por Latido Club</span>
-              <span><Truck size={16} /> Producido bajo demanda</span>
+              <span><Truck size={16} /> Envío incluido a toda Suiza</span>
+              <span><Leaf size={16} /> Hecho bajo pedido, sin excedentes</span>
             </div>
           </div>
           <div className="club-hero__collage" aria-hidden="true">
             <div className="club-hero-card club-hero-card--shirt"><img src="/club/hero-camiseta-logo-blanca.webp" alt="" /></div>
             <div className="club-hero-card club-hero-card--case"><img src="/club/totebag-hablas-espanol-granate.jpg" alt="" /></div>
-            <span className="club-scribble">Diseños con<br />identidad.</span>
+            <span className="club-scribble">Si lo entiendes,<br />es para ti.</span>
           </div>
         </section>
 
@@ -1389,9 +1387,9 @@ export default function Club() {
 
         <section className="club-designs" aria-labelledby="club-designs-title">
           <div className="club-designs__heading">
-            <span>El lenguaje de la colección</span>
-            <h2 id="club-designs-title">Diseños para reconocernos.</h2>
-            <p>La firma de Latido Club, nuestro símbolo multicolor y mensajes cotidianos que convierten una prenda en el comienzo de una conversación.</p>
+            <span>Los diseños</span>
+            <h2 id="club-designs-title">Cosas que solo entiende quien vive en Suiza.</h2>
+            <p>Frases y símbolos sacados del día a día: el precio del café, los inviernos que oscurecen a media tarde y la espontaneidad con horario. Cada diseño tiene su historia.</p>
           </div>
           <div className="club-designs__grid">
             {CLUB_DESIGNS.map(design => (
@@ -1400,7 +1398,10 @@ export default function Club() {
                   <img src={design.image} alt={design.alt} loading="lazy" decoding="async" />
                   <span><Maximize2 size={15} /> Ampliar</span>
                 </button>
-                <h3>{design.name}</h3>
+                <div className="club-design-card__copy">
+                  <h3>{design.name}</h3>
+                  <p>{design.story}</p>
+                </div>
               </article>
             ))}
           </div>
@@ -1410,13 +1411,13 @@ export default function Club() {
           <div className="club-section-heading">
             <div>
               <span>01 / La colección</span>
-              <h2>Elige cómo<br />llevar tu Latido.</h2>
-              <p>Elige el artículo, el diseño y el color. Los precios de las prendas incluyen el envío a Suiza.</p>
+              <h2>Camiseta, playera,<br />remera o polera.</h2>
+              <p>La llames como la llames, aquí todas hablan español. Elige el artículo, el diseño, el color y tu talla.</p>
             </div>
-            <div className="club-collection-benefits" aria-label="Ventajas de Latido Club">
-              <div><Truck size={22} /><span><strong>Envío incluido</strong><small>En camisetas y sudaderas</small></span></div>
-              <div><Leaf size={22} /><span><strong>Calidad premium</strong><small>Impresión duradera</small></span></div>
-              <div><Sparkles size={22} /><span><strong>Diseños originales</strong><small>Hechos para conectar</small></span></div>
+            <div className="club-collection-benefits" aria-label="Ventajas de la colección">
+              <div><Truck size={22} /><span><strong>Envío incluido</strong><small>A toda Suiza</small></span></div>
+              <div><Shirt size={22} /><span><strong>Algodón de alto gramaje</strong><small>En todas las camisetas</small></span></div>
+              <div><Leaf size={22} /><span><strong>Hecho bajo pedido</strong><small>Sin excedentes</small></span></div>
             </div>
           </div>
           <ClubConfigurator
@@ -1430,13 +1431,13 @@ export default function Club() {
           <aside className="club-support-note" aria-labelledby="club-support-title">
             <span className="club-support-note__icon"><Heart fill="currentColor" size={20} aria-hidden="true" /></span>
             <div className="club-support-note__copy">
-              <strong id="club-support-title">Tu compra también apoya a la comunidad.</strong>
-              <p>Los beneficios de cada pedido ayudan a mantener Latido, la plataforma de la comunidad hispanohablante en Suiza. Y seguimos trabajando para mejorar la calidad y los precios de la colección. ¡Gracias por tu apoyo!</p>
+              <strong id="club-support-title">Cada pedido ayuda a mantener Latido.</strong>
+              <p>Los beneficios de la colección mantienen las guías, el tablón y el directorio que te ayudan a vivir Suiza en español. Porque todos llegamos un día sin saber por dónde empezar. ¡Gracias por tu apoyo!</p>
             </div>
             <ul className="club-support-note__list" aria-label="Lo que ayudas a mantener">
-              <li><Check size={14} aria-hidden="true" /> Encuentra todo lo que necesitas</li>
-              <li><Check size={14} aria-hidden="true" /> Conecta con la comunidad</li>
-              <li><Check size={14} aria-hidden="true" /> Vive Suiza más fácil y en español</li>
+              <li><Check size={14} aria-hidden="true" /> Guías de permisos, trabajo y vivienda</li>
+              <li><Check size={14} aria-hidden="true" /> Anuncios y ofertas de empleo</li>
+              <li><Check size={14} aria-hidden="true" /> Negocios y eventos en español</li>
             </ul>
           </aside>
         </section>
@@ -1448,13 +1449,13 @@ export default function Club() {
           </div>
           <div className="club-story__copy">
             <span>02 / Por qué existe</span>
-            <h2>Una colección con propósito.</h2>
-            <p>Latido Club nace para celebrar esa sensación de encontrar a alguien que comparte tu idioma, aunque estés lejos de casa.</p>
+            <h2>¿Tú también hablas español?</h2>
+            <p>Es la pregunta que sale sola cuando oyes tu idioma en el tranvía, en el súper o en la oficina. Latido Club nace para celebrar ese momento, en un país con cuatro idiomas oficiales.</p>
             <p>Cada pieza se produce solo cuando la pides: menos excedentes y una red de producción que busca fabricar cerca del destino.</p>
             <div className="club-story__points">
               <div><Leaf size={20} /><span><strong>Sin stock innecesario</strong>Producimos una a una.</span></div>
               <div><Truck size={20} /><span><strong>Producción cercana</strong>Fabricamos lo más cerca posible de ti.</span></div>
-              <div><Heart size={20} /><span><strong>Hecho para conectar</strong>Diseños que hablan de nosotros.</span></div>
+              <div><Heart size={20} /><span><strong>Diseños propios</strong>Nacen de la vida diaria en Suiza.</span></div>
             </div>
           </div>
         </section>
@@ -1474,8 +1475,9 @@ export default function Club() {
         <section className="club-faq">
           <div><span>Antes de pedir</span><h2>Preguntas frecuentes</h2></div>
           <div className="club-faq__list">
+            <details><summary>¿Cuánto cuesta el envío?<Plus size={18} /></summary><p>Nada: el envío a cualquier dirección de Suiza está incluido en el precio de todos los productos, también si compras una sola bolsa.</p></details>
             <details><summary>¿Cuánto tarda el envío?<Plus size={18} /></summary><p>El plazo de entrega estimado es de 10 a 15 días desde la confirmación del pago, incluyendo la fabricación bajo demanda y el envío a Suiza. Los envíos no incluyen número de seguimiento: si pasados 15 días no has recibido tu pedido, responde al email de confirmación y lo revisamos.</p></details>
-            <details><summary>¿Dónde introduzco mi dirección?<Plus size={18} /></summary><p>Después de revisar la bolsa pasarás al pago seguro de Stripe. Allí indicarás tu email, teléfono y dirección de entrega una sola vez.</p></details>
+            <details><summary>¿Dónde introduzco mi dirección?<Plus size={18} /></summary><p>Después de revisar tu pedido pasarás al pago seguro de Stripe. Allí indicarás tu email, teléfono y dirección de entrega una sola vez.</p></details>
             <details><summary>¿Dónde se fabrica?<Plus size={18} /></summary><p>Nuestro proveedor asigna cada pedido al centro de producción más cercano al destino, siempre que el producto y el color estén disponibles.</p></details>
             <details><summary>¿Puedo comprar una bolsa por separado?<Plus size={18} /></summary><p>Sí. Puedes comprar una bolsa por separado o combinarla con otros productos de la colección. No necesitas añadir una camiseta o sudadera.</p></details>
             <details><summary>¿Puedo cambiar la talla?<Plus size={18} /></summary><p>Las prendas se producen bajo demanda, por eso conviene revisar bien la talla antes de pagar. Si recibes una pieza con un defecto de producción, escríbenos para revisarlo.</p></details>
@@ -1485,12 +1487,12 @@ export default function Club() {
 
       <footer className="club-footer">
         <div><img src="/brand/latido-horizontal-white.webp" alt="Latido Club" /></div>
-        <p>Hecho con corazón para los hispanohablantes en Suiza</p>
+        <p>Diseñado para la Suiza que habla español</p>
         <Link to="/">latido.ch</Link>
       </footer>
 
       <button type="button" className={`club-floating-cart${itemCount ? ' is-visible' : ''}`} onClick={() => setCartOpen(true)}>
-        <ShoppingBag size={18} /><span>Ver bolsa</span><b>{itemCount}</b>
+        <ShoppingBag size={18} /><span>Ver pedido</span><b>{itemCount}</b>
       </button>
 
       <CartDrawer

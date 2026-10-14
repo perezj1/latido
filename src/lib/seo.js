@@ -82,9 +82,9 @@ const ROUTE_SEO = [
   },
   {
     path:'/club',
-    title:'Latido Club — Camisetas, sudaderas y accesorios',
+    title:'Latido Club — Camisetas, sudaderas y bolsas',
     description:'Tu estilo también habla español. Descubre camisetas, sudaderas y bolsas de Latido Club producidas bajo demanda.',
-    socialDescription:'Diseños para reconocernos, conectar y llevar tu idioma contigo. Descubre la colección de Latido Club.',
+    socialDescription:'Camisetas, sudaderas y bolsas con el humor y el idioma de quienes vivimos Suiza en español.',
     image:'/club/club-lifestyle-horizonte-v4.webp',
   },
   {
