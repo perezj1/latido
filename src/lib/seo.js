@@ -45,7 +45,7 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'eventos', icon:'🎉', title:'Eventos latinos', section:'Comunidad', desc:'Conciertos, fiestas, quedadas, networking y planes familiares.', href:'/comunidades?view=eventos' },
   { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Paquetes y guías sobre permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
   { id:'creadores', icon:'🎙️', title:'Creadores', section:'Comunidad', desc:'Personas, profesionales y negocios que comparten experiencias, información y proyectos sobre Suiza.', href:'/comunidades?view=creadores' },
-  { id:'club', icon:'🛍️', title:'Latido Club', section:'Latido', desc:'Camisetas, sudaderas, bolsas y carcasas con diseños originales de Latido Club.', href:'/club' },
+  { id:'club', icon:'🛍️', title:'Latido Club', section:'Latido', desc:'Camisetas, sudaderas y bolsas con diseños originales de Latido Club.', href:'/club' },
   { id:'santiago-cruz', icon:'🎤', title:'Sorteo Santiago Cruz en Zürich', section:'Latido', desc:'Participa gratis y gana una de las 2 entradas dobles para Santiago Cruz en Plaza Zürich.', href:'/santiago-cruz' },
   { id:'servicios-suiza', icon:'🇨🇭', title:'Servicios para vivir en Suiza', section:'Servicios', desc:'Seguro médico, tercer pilar y preparación para llegar a Suiza, con orientación en español.', href:'/servicios-suiza' },
   { id:'servicios-virtus360', icon:'360', title:'Gestoría y finanzas con Virtus360', section:'Servicios', desc:'Trámites, impuestos, seguros, mudanza y contabilidad en colaboración con Virtus360.', href:'/servicios-virtus360' },
@@ -87,7 +87,7 @@ const ROUTE_SEO = [
   {
     path:'/club',
     title:'Latido Club — Camisetas, sudaderas y accesorios',
-    description:'Tu estilo también habla español. Descubre camisetas, sudaderas, bolsas y carcasas de Latido Club producidas bajo demanda.',
+    description:'Tu estilo también habla español. Descubre camisetas, sudaderas y bolsas de Latido Club producidas bajo demanda.',
     socialDescription:'Diseños para reconocernos, conectar y llevar tu idioma contigo. Descubre la colección de Latido Club.',
     image:'/club/club-lifestyle-horizonte-v4.webp',
   },

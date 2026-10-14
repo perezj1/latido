@@ -25,6 +25,9 @@ import { supabase } from '../lib/supabase'
 import './Club.css'
 
 const CART_STORAGE_KEY = 'latido-club-cart-v1'
+// Vaciar este conjunto para volver a mostrar las carcasas; conservamos el catálogo.
+const HIDDEN_CATEGORIES = new Set(['carcasas'])
+const isVisibleProduct = product => !HIDDEN_CATEGORIES.has(product.category)
 
 const COLOR_SWATCHES = {
   blanco: '#ffffff',
@@ -223,8 +226,8 @@ const FALLBACK_PRODUCTS = [
     shortName: 'Camiseta Hablas Español',
     eyebrow: 'Diseño tipográfico',
     description: 'Camiseta unisex de algodón de alto gramaje: mensaje minimalista delante y diseño granate grande en la espalda.',
-    price: 36.9,
-    compareAtPrice: 39.9,
+    price: 24.9,
+    compareAtPrice: 34.9,
     image: '/club/products/camiseta-hablas-blanca-frontal.webp',
     images: [
       ...hablasFallbackMockups({
@@ -256,7 +259,8 @@ const FALLBACK_PRODUCTS = [
     shortName: 'Bolsa Hablas Español',
     eyebrow: 'Diseño tipográfico',
     description: 'Bolsa de algodón natural con el diseño granate, asas largas, costuras reforzadas y 10 litros de capacidad.',
-    price: 24.9,
+    price: 17.9,
+    compareAtPrice: 24.9,
     purchaseType: 'addon',
     image: '/club/totebag-hablas-espanol-granate.jpg',
     images: [{ url: '/club/totebag-hablas-espanol-granate.jpg', label: 'Frontal' }],
@@ -281,7 +285,11 @@ const money = value => new Intl.NumberFormat('de-CH', {
 function readCart() {
   try {
     const parsed = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]')
-    return Array.isArray(parsed) ? parsed : []
+    return Array.isArray(parsed)
+      ? parsed.filter(item => isVisibleProduct({
+          category: item.category || (/^carcasa/i.test(item.shortName || item.name || '') ? 'carcasas' : undefined),
+        }))
+      : []
   } catch {
     return []
   }
@@ -423,6 +431,7 @@ function cartLine(product, option, image) {
   return {
     sku: option.sku,
     productId: product.id,
+    category: product.category,
     name: product.name,
     shortName: product.shortName,
     image,
@@ -455,7 +464,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
   const galleryRef = useRef(null)
   const optionsRef = useRef(null)
 
-  const categories = useMemo(() => CATEGORY_FILTERS.map(category => {
+  const categories = useMemo(() => CATEGORY_FILTERS.filter(category => !HIDDEN_CATEGORIES.has(category.id)).map(category => {
     const matches = products.filter(product => product.category === category.id)
     const representative = matches.find(product => productSupportsColor(product, 'Blanco')) || matches[0]
     return {
@@ -643,7 +652,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
 
   return (
     <div className="club-shop">
-      <div className="club-shop__tabs" role="tablist" aria-label="Tipo de artículo">
+      <div className="club-shop__tabs" style={{ '--club-category-count': categories.length }} role="tablist" aria-label="Tipo de artículo">
         {categories.map(category => (
           <button
             key={category.id}
@@ -734,7 +743,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
               {Number(product.compareAtPrice) > Number(product.price) && (
                 <del>{money(product.compareAtPrice)}</del>
               )}
-              <span>{isAddon ? 'Complemento para tu camiseta o sudadera' : 'Precio de lanzamiento · IVA y envío a Suiza incluidos'}</span>
+              <span>{isAddon ? 'Precio de promoción · Complemento para tu camiseta o sudadera' : 'Precio de promoción · IVA y envío a Suiza incluidos'}</span>
             </div>
             {isAddon && (
               <p className="club-config__addon-note">
@@ -1124,7 +1133,7 @@ function CheckoutModal({ open, cart, onClose }) {
         const code = await functionErrorCode(invokeError, data)
         const messages = {
           PRODUCT_NOT_AVAILABLE:'Una variante de tu bolsa ya no está disponible. Actualiza la página y vuelve a elegirla.',
-          ADDON_REQUIRES_GARMENT:'Las bolsas y carcasas solo pueden comprarse junto con una camiseta o sudadera.',
+          ADDON_REQUIRES_GARMENT:'Los complementos solo pueden comprarse junto con una camiseta o sudadera.',
           CLUB_CATALOG_UNAVAILABLE:'No pudimos comprobar la disponibilidad de los productos. Inténtalo de nuevo en unos minutos.',
           TOO_MANY_CHECKOUTS:'Has iniciado varios pagos. Espera unos minutos antes de volver a intentarlo.',
           CHECKOUT_NOT_CONFIGURED:'El pago seguro todavía no está configurado.',
@@ -1199,6 +1208,7 @@ function CheckoutModal({ open, cart, onClose }) {
 export default function Club() {
   const [cart, setCart] = useState(readCart)
   const [products, setProducts] = useState(FALLBACK_PRODUCTS)
+  const visibleProducts = useMemo(() => products.filter(isVisibleProduct), [products])
   const [catalogStatus, setCatalogStatus] = useState('loading')
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
@@ -1215,13 +1225,17 @@ export default function Club() {
   useEffect(() => {
     if (catalogStatus !== 'connected') return
     setCart(current => {
-      const refreshed = current.map(item => {
+      const refreshed = current.filter(item => {
+        const product = products.find(entry => entry.id === item.productId)
+        return isVisibleProduct(product || item)
+      }).map(item => {
         const product = products.find(entry => entry.id === item.productId)
         if (!product) return item
         return {
           ...item,
           name: product.name,
           shortName: product.shortName,
+          category: product.category,
           price: product.price,
           compareAtPrice: product.compareAtPrice,
           purchaseType: productPurchaseType(product),
@@ -1269,7 +1283,7 @@ export default function Club() {
     }
     const purchaseType = productPurchaseType(product)
     if (purchaseType === 'addon' && !hasGarment) {
-      toast.error('Las bolsas y carcasas solo están disponibles junto con una camiseta o sudadera.')
+      toast.error('Los complementos solo están disponibles junto con una camiseta o sudadera.')
       return false
     }
     if (bundledAddon && (
@@ -1401,7 +1415,7 @@ export default function Club() {
             </div>
           </div>
           <ClubConfigurator
-            products={products}
+            products={visibleProducts}
             catalogStatus={catalogStatus}
             hasGarment={hasGarment}
             selectionRequest={selectionRequest}
@@ -1458,7 +1472,7 @@ export default function Club() {
             <details><summary>¿Cuánto tarda el envío?<Plus size={18} /></summary><p>El plazo de entrega estimado es de 10 a 15 días desde la confirmación del pago, incluyendo la fabricación bajo demanda y el envío a Suiza. Los envíos no incluyen número de seguimiento: si pasados 15 días no has recibido tu pedido, responde al email de confirmación y lo revisamos.</p></details>
             <details><summary>¿Dónde introduzco mi dirección?<Plus size={18} /></summary><p>Después de revisar la bolsa pasarás al pago seguro de Stripe. Allí indicarás tu email, teléfono y dirección de entrega una sola vez.</p></details>
             <details><summary>¿Dónde se fabrica?<Plus size={18} /></summary><p>Nuestro proveedor asigna cada pedido al centro de producción más cercano al destino, siempre que el producto y el color estén disponibles.</p></details>
-            <details><summary>¿Puedo comprar una bolsa o carcasa por separado?<Plus size={18} /></summary><p>Por ahora solo se venden junto a una camiseta o sudadera, porque producirlas y enviarlas por separado encarecería demasiado su precio.</p></details>
+            <details><summary>¿Puedo comprar un complemento por separado?<Plus size={18} /></summary><p>Por ahora los complementos solo se venden junto a una camiseta o sudadera, porque producirlos y enviarlos por separado encarecería demasiado su precio.</p></details>
             <details><summary>¿Puedo cambiar la talla?<Plus size={18} /></summary><p>Las prendas se producen bajo demanda, por eso conviene revisar bien la talla antes de pagar. Si recibes una pieza con un defecto de producción, escríbenos para revisarlo.</p></details>
           </div>
         </section>
@@ -1477,7 +1491,7 @@ export default function Club() {
       <CartDrawer
         open={cartOpen}
         cart={cart}
-        products={products}
+        products={visibleProducts}
         onClose={() => setCartOpen(false)}
         onQuantity={changeQuantity}
         onCheckout={() => { setCartOpen(false); setCheckoutOpen(true) }}
