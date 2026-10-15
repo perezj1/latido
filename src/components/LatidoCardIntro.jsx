@@ -1,32 +1,25 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BadgePercent, Heart, HeartPulse, QrCode, Store } from 'lucide-react'
+import { ArrowRight, BadgePercent, Heart, BadgeCheck, Store } from 'lucide-react'
+import { LatidoMembershipCard } from './LatidoMembershipCard'
 
 export default function LatidoCardIntro({ user, accountUrl, requestUrl, sharedOffer }) {
   return (
     <section className="lc-card-intro">
-      <div className="lc-intro-sample" role="img" aria-label="Ejemplo de Tarjeta Latido">
-        <div className="lc-intro-sample-top" aria-hidden="true">
-          <strong>
-            <HeartPulse size={22} /> Latido
-          </strong>
-          <span>Socio</span>
-        </div>
-        <div className="lc-intro-sample-bottom" aria-hidden="true">
-          <div>
-            <small>Tarjeta de ventajas</small>
-            <strong>•••• 2481</strong>
-          </div>
-          <span>
-            <QrCode size={30} />
-          </span>
+      <div className="lc-intro-card-preview" role="img" aria-label="Ejemplo de Tarjeta Latido">
+        <div aria-hidden="true">
+          <LatidoMembershipCard
+            sample
+            member={{ member_number: 1, active: true }}
+            holderName="Tu nombre"
+          />
         </div>
       </div>
       <p className="lc-intro-label">Tarjeta Latido</p>
       <h1>Ahorra en los negocios de tu comunidad</h1>
       {sharedOffer && (
         <p className="lc-intro-shared">
-          <strong>{sharedOffer.title}</strong> en {sharedOffer.business_name}. Esta ventaja también
-          puede ser tuya.
+          <strong>{sharedOffer.title}</strong> en {sharedOffer.business_name}. Este descuento también
+          puede ser tuyo.
         </p>
       )}
       <ul className="lc-intro-benefits">
@@ -34,13 +27,13 @@ export default function LatidoCardIntro({ user, accountUrl, requestUrl, sharedOf
           <span>
             <BadgePercent size={20} aria-hidden="true" />
           </span>
-          Descuentos y ventajas exclusivas
+          Descuentos exclusivos
         </li>
         <li>
           <span>
-            <QrCode size={20} aria-hidden="true" />
+            <BadgeCheck size={20} aria-hidden="true" />
           </span>
-          Tarjeta física o QR en tu móvil
+          Muestra tu descuento desde el móvil
         </li>
         <li>
           <span>

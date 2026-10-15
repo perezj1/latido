@@ -18,6 +18,3 @@ verify_jwt = false
 
 [functions.latido_saved_search_email]
 verify_jwt = false
-
-[functions.latido_card_physical_email]
-verify_jwt = false

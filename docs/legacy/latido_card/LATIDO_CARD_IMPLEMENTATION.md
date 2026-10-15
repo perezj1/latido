@@ -1,3 +1,5 @@
+> ARCHIVADO: sistema anterior. No seguir estos pasos. [Guía vigente](../../LATIDO_CARD_MINIMAL.md).
+
 # Latido Card — guía de implementación
 
 Fecha: 14 de octubre de 2026. Rama: `latidoCard`, creada desde `main` en

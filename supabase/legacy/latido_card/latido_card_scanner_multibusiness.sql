@@ -1,3 +1,5 @@
+-- ARCHIVED: retired Scanner/physical-card system. Do not run for the minimal version.
+-- Current instructions: docs/LATIDO_CARD_MINIMAL.md
 -- Run AFTER latido_card_scanner_accounts.sql. Rerunnable.
 -- Account-owned connections only; never exposes business invite secrets.
 BEGIN;

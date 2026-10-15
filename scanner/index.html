@@ -1,7 +1,32 @@
 <!doctype html>
-<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="robots" content="noindex,nofollow,noarchive"/><meta name="referrer" content="no-referrer"/>
-<meta name="theme-color" content="#2563eb"/><meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-title" content="Latido Scanner"/><meta name="description" content="Scanner para el personal de negocios participantes en Tarjeta Latido."/>
-<link rel="manifest" href="/scanner/manifest.json"/><link rel="icon" href="/favicon.svg"/><link rel="apple-touch-icon" href="/apple-touch-icon-180.png"/>
-<title>Latido Scanner</title></head><body><div id="root"></div><script type="module" src="/src/scanner/main.jsx"></script></body></html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Tarjeta Latido</title>
+  </head>
+  <body>
+    <h1>Tarjeta Latido</h1>
+    <p>Ahora el cliente muestra su ventaja al personal. Ya no necesitas Scanner.</p>
+    <a href="/card">Abrir Tarjeta Latido</a>
+    <script type="module">
+      import { retireLegacyCardStorage } from '/src/lib/latidoCardLegacy.js'
+      retireLegacyCardStorage()
+      try {
+        const registrations = (await navigator.serviceWorker?.getRegistrations()) || []
+        await Promise.all(
+          registrations
+            .filter((r) => new URL(r.scope).pathname.startsWith('/scanner/'))
+            .map((r) => r.unregister())
+        )
+        const names = await caches.keys()
+        await Promise.all(
+          names.filter((n) => n.startsWith('lc-scanner-')).map((n) => caches.delete(n))
+        )
+      } catch {}
+      window.location.replace('/card')
+    </script>
+  </body>
+</html>

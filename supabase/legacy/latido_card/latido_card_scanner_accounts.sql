@@ -1,3 +1,5 @@
+-- ARCHIVED: retired Scanner/physical-card system. Do not run for the minimal version.
+-- Current instructions: docs/LATIDO_CARD_MINIMAL.md
 -- Apply AFTER latido_card.sql and latido_card_self_service.sql.
 -- Scanner connections identify a Latido account and last until revoked/closed.
 -- Rerunnable. Keeps redemptions and revoked/expired historical connections.

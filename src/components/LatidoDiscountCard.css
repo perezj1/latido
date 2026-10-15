@@ -1,0 +1,513 @@
+.lc-discounts-page {
+  background: #f4f6fb;
+}
+.lc-benefits .lc-offer-list {
+  display: grid;
+  gap: 0;
+  max-width: 440px;
+  margin: 0 auto;
+  border: 1px solid #dce5f5;
+  border-radius: 24px;
+  overflow: hidden;
+}
+.lc-discount-card.lc-offer-row {
+  display: block;
+  padding: 14px 12px;
+  border: 0;
+  border-bottom: 1px solid #dce5f5;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+  color: #0d1530;
+}
+.lc-discount-card.lc-offer-row:last-child {
+  border-bottom: 0;
+}
+.lc-discount-card--shared {
+  outline: 2px solid #c5d6ff;
+  outline-offset: -2px;
+}
+.lc-discount-main {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 36px;
+  gap: 10px;
+  align-items: flex-start;
+}
+.lc-discount-main > .lc-discount-photo {
+  align-self: center;
+  width: 56px;
+  height: 64px;
+}
+.lc-discount-info,
+.lc-use-info {
+  flex: 1;
+  min-width: 0;
+}
+.lc-discount-photo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 60px;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: #edf2ff;
+  color: #2f5bd8;
+  overflow: hidden;
+}
+.lc-discount-photo::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    #f9a719 0 16.66%,
+    #fa2f35 16.66% 33.33%,
+    #4a76ef 33.33% 50%,
+    #24bfe2 50% 66.66%,
+    #24e2c9 66.66% 83.33%,
+    #03aa98 83.33% 100%
+  );
+}
+.lc-discount-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lc-discount-photo-emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+.lc-discount-photo--small .lc-discount-photo-emoji {
+  font-size: 24px;
+}
+.lc-discount-photo--small {
+  flex-basis: 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+}
+.lc-discount-photo--small::after {
+  height: 3px;
+}
+.lc-discount-business {
+  display: block;
+  margin-top: 4px;
+  color: #2f5bd8;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.lc-discount-card .lc-discount-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.lc-discount-summary {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #5b6478;
+}
+.lc-discount-summary p {
+  margin: 0;
+}
+.lc-discount-details {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f4f6fb;
+  animation: lc-discount-enter 180ms ease-out;
+}
+.lc-discount-details > p {
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0;
+}
+.lc-discount-details ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.lc-discount-details li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #5b6478;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.lc-discount-details li > svg {
+  color: #8993a6;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.lc-discount-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 8px;
+  margin: 10px 0 0 66px;
+}
+.lc-discount-details-toggle {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  min-height: 44px;
+  min-width: 0;
+  padding: 8px 6px;
+  border: 1px solid #dce5f5;
+  border-radius: 14px;
+  background: #f2f6ff;
+  color: #2f5bd8;
+  font:
+    600 11px/1.5 'Poppins',
+    sans-serif;
+  cursor: pointer;
+}
+.lc-discount-details-toggle > svg {
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+}
+.lc-discount-details-toggle[aria-expanded='true'] > svg {
+  transform: rotate(180deg);
+}
+.lc-discount-buttons {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+.lc-discount-share {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid #e6e9f2;
+  border-radius: 50%;
+  background: white;
+  color: #2461eb;
+  cursor: pointer;
+}
+.lc-discount-card .lc-discount-primary {
+  min-height: 44px;
+  min-width: 0;
+  padding: 8px 6px;
+  font-size: 11px;
+  border: 1px solid transparent;
+}
+.lc-discount-card .lc-discount-primary:hover:not(:disabled) {
+  background: #194dcc;
+}
+@media (max-width: 360px) {
+  .lc-discount-actions {
+    margin-left: 0;
+  }
+}
+.lc-discount-primary {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 8px;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 18px;
+  background: #2461eb;
+  color: #fff;
+  font:
+    600 15px/1.5 'Poppins',
+    sans-serif;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+.lc-discount-primary:hover:not(:disabled) {
+  background: #194dcc;
+}
+.lc-discount-primary:active:not(:disabled) {
+  transform: scale(0.99);
+}
+.lc-discount-primary:disabled,
+.lc-confirm-cancel:disabled,
+.lc-use-reopen:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.lc-discount-history {
+  padding: 4px 18px;
+  border-radius: 24px;
+  background: white;
+  box-shadow:
+    0 1px 2px rgb(13 21 48 / 5%),
+    0 12px 32px -18px rgb(13 21 48 / 25%);
+}
+.lc-discount-history > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  list-style: none;
+  cursor: pointer;
+}
+.lc-discount-history > summary::-webkit-details-marker {
+  display: none;
+}
+.lc-discount-history-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: #eaf0ff;
+  color: #2f5bd8;
+  border-radius: 12px;
+}
+.lc-discount-history summary > strong {
+  flex: 1;
+  color: #0d1530;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.lc-discount-history summary > span:not(.lc-discount-history-icon) {
+  font-size: 12px;
+  color: #7d879a;
+  white-space: nowrap;
+}
+.lc-discount-history-chevron {
+  color: #8993a6;
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+}
+.lc-discount-history[open] .lc-discount-history-chevron {
+  transform: rotate(180deg);
+}
+.lc-discount-history-hint {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #5b6478;
+  line-height: 1.6;
+}
+.lc-discount-history > ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lc-use-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 0;
+  border-top: 1px solid #e6e9f2;
+}
+.lc-use-row:first-child {
+  border-top: 0;
+}
+.lc-use-row .lc-use-info h3 {
+  margin: 0;
+  color: #0d1530;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.lc-use-info > span {
+  font-size: 13px;
+  color: #5b6478;
+}
+.lc-use-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.lc-use-meta > time {
+  font-size: 12px;
+  color: #7d879a;
+  font-variant-numeric: tabular-nums;
+}
+.lc-use-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #007f72;
+  background: #dcfbf6;
+}
+.lc-use-reopen {
+  border: 0;
+  background: none;
+  color: #2f5bd8;
+  padding: 8px 0 0;
+  font:
+    600 12px/1.5 'Poppins',
+    sans-serif;
+  cursor: pointer;
+}
+.lc-confirm-sheet {
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  max-width: 380px;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  margin: auto;
+  border: 0;
+  border-radius: 26px;
+  padding: 24px 20px 16px;
+  background: white;
+  color: #0d1530;
+  text-align: center;
+  font:
+    400 13px/1.5 'Poppins',
+    sans-serif;
+  box-shadow: 0 20px 60px #0d153033;
+  animation: lc-discount-enter 200ms ease-out;
+}
+.lc-confirm-sheet::backdrop {
+  background: rgb(13 21 48 / 50%);
+}
+.lc-confirm-clock {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  background: #eaf0ff;
+  color: #2f5bd8;
+  border-radius: 50%;
+}
+.lc-confirm-sheet #lc-confirm-title {
+  margin: 14px 0 0;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.lc-confirm-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-top: 18px;
+  background: #f4f6fb;
+  border-radius: 16px;
+  text-align: left;
+}
+.lc-confirm-summary > div:last-child {
+  min-width: 0;
+}
+.lc-confirm-summary strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.lc-confirm-summary span {
+  display: block;
+  font-size: 13px;
+  color: #5b6478;
+}
+.lc-confirm-notice {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #e6e9f2;
+  border-radius: 16px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5b6478;
+}
+.lc-confirm-notice > svg {
+  color: #2f5bd8;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.lc-confirm-notice p {
+  margin: 0;
+}
+.lc-confirm-notice strong {
+  color: #0d1530;
+  font-weight: 600;
+}
+.lc-confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+.lc-confirm-cancel {
+  min-height: 48px;
+  border: 1px solid #f3b6bb;
+  border-radius: 14px;
+  background: #fff4f4;
+  color: #b4232a;
+  font:
+    600 15px/1.5 'Poppins',
+    sans-serif;
+  cursor: pointer;
+}
+.lc-confirm-cancel:hover:not(:disabled) {
+  background: #ffe8e8;
+}
+.lc-discount-primary:focus-visible,
+.lc-discount-share:focus-visible,
+.lc-discount-details-toggle:focus-visible,
+.lc-use-reopen:focus-visible,
+.lc-confirm-cancel:focus-visible,
+.lc-discount-history > summary:focus-visible {
+  outline: 3px solid #4a76ef;
+  outline-offset: 3px;
+}
+@keyframes lc-discount-enter {
+  from {
+    opacity: 0.5;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 480px) {
+  .lc-confirm-sheet {
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 12px);
+    margin: 0;
+    border-radius: 26px 26px 0 0;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-discount-details,
+  .lc-confirm-sheet {
+    animation: none;
+  }
+  .lc-discount-primary,
+  .lc-discount-details-toggle > svg,
+  .lc-discount-history-chevron {
+    transition: none;
+  }
+}

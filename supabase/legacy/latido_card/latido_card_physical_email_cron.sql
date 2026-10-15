@@ -1,3 +1,5 @@
+-- ARCHIVED: retired Scanner/physical-card system. Do not run for the minimal version.
+-- Current instructions: docs/LATIDO_CARD_MINIMAL.md
 -- Apply in development AFTER deployment/testing of latido_card_physical_email.
 -- Store these in Supabase Vault first (do not commit their values):
 -- latido_project_url: project's https://...supabase.co URL

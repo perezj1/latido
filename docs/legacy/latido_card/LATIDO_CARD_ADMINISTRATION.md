@@ -1,3 +1,5 @@
+> ARCHIVADO: sistema anterior. No seguir estos pasos. [Guía vigente](../../LATIDO_CARD_MINIMAL.md).
+
 # Latido Card: operaciones y administración de Latido
 
 Latido es el operador del programa: modera negocios, administra membresías,

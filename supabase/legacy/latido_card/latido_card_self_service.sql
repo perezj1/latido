@@ -1,3 +1,5 @@
+-- ARCHIVED: retired Scanner/physical-card system. Do not run for the minimal version.
+-- Current instructions: docs/LATIDO_CARD_MINIMAL.md
 -- Tarjeta Latido: open business participation, automatic private QR and saved offers.
 -- Apply after latido_card.sql and latido_card_physical_requests.sql.
 -- Rerunnable; does not create paid memberships or send emails.

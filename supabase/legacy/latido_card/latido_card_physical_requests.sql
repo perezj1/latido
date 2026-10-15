@@ -1,3 +1,5 @@
+-- ARCHIVED: retired Scanner/physical-card system. Do not run for the minimal version.
+-- Current instructions: docs/LATIDO_CARD_MINIMAL.md
 -- Latido operations: apply after latido_card.sql and app_notifications.sql.
 BEGIN;
 DO $$ BEGIN

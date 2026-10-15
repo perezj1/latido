@@ -92,6 +92,10 @@ export default function ShareCardReminder() {
         })))
         setBusinessesLoaded(true)
       })
+      .catch(() => {
+        // A navigation or offline connection must not leave a rejected background request.
+        if (active) setBusinessesLoaded(true)
+      })
 
     return () => {
       active = false

@@ -560,6 +560,15 @@ export function getSeoForLocation(location = {}) {
     }
   }
 
+  if (pathname === '/card' || pathname.startsWith('/card/')) {
+    return withDefaults({
+      path:'/card',
+      title:'Tarjeta Latido | Descuentos en tu comunidad',
+      description:'Descubre los descuentos de los negocios participantes. Úsalos desde tu móvil con Tarjeta Latido.',
+      robots:pathname.startsWith('/card/validacion/') ? 'noindex, nofollow, noarchive' : 'noindex, follow',
+    })
+  }
+
   if (isPrivatePath(pathname)) {
     return withDefaults({
       path:pathname,

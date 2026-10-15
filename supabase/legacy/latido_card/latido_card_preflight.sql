@@ -1,3 +1,5 @@
+-- ARCHIVED: retired Scanner/physical-card system. Do not run for the minimal version.
+-- Current instructions: docs/LATIDO_CARD_MINIMAL.md
 -- SOLO LECTURA. Ejecutar primero en Supabase SQL Editor.
 -- Todos los requisitos deben mostrar OK antes de instalar Latido Card.
 -- No reinstalar schema.sql ni business_promotion_plans.sql sobre una app existente.

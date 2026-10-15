@@ -1,3 +1,5 @@
+> ARCHIVADO: sistema anterior. No seguir estos pasos. [Guía vigente](../../LATIDO_CARD_MINIMAL.md).
+
 # Latido Card: SQL manual y pruebas
 
 Esta entrega se trabaja en la rama `latidoCard`. Los SQL se ejecutan manualmente;

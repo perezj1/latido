@@ -2,1239 +2,356 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { PGlite } from '@electric-sql/pglite'
-import {
-  extractCardToken,
-  classifyLatidoQr,
-  readScannerSession,
-  storeScannerSession,
-  readScannerConnections,
-  forgetScannerConnection,
-  SCANNER_STORAGE_KEY,
-  SCANNER_CONNECTION_KEY,
-  captureScannerHandoff
-} from '../src/lib/latidoCardCore.js'
-import { buildPhysicalCardEmail } from '../supabase/functions/_shared/latidoCardPhysicalEmail.js'
-import {
-  cardOfferShareData,
-  shareCardOffer,
-  scannerConnectionShareData,
-  shareScannerConnection
-} from '../src/lib/latidoCardShare.js'
+import { offerUsageLabel, remainingValidationSeconds } from '../src/lib/latidoCardCore.js'
+import { cardOfferShareData, shareCardBusiness } from '../src/lib/latidoCardShare.js'
 
-const sharedExample = {
-  id: randomUUID(),
-  title: 'Café gratis',
-  business_name: 'Café Latino',
-  benefit_type: 'gift',
-  token: 'private-token',
-  claim: { id: 'private-reservation' }
-}
-const shareData = cardOfferShareData(sharedExample, 'https://latido.ch')
-assert.equal(new URL(shareData.url).pathname, '/card')
-assert.equal(new URL(shareData.url).searchParams.get('oferta'), sharedExample.id)
-assert.ok(!JSON.stringify(shareData).includes('private-'))
-let nativeShare, copiedShare
+const read = (name) => readFile(new URL(`../supabase/${name}`, import.meta.url), 'utf8')
+const minimal = await read('latido_card_minimal.sql'),
+  cleanup = await read('latido_card_cleanup_legacy.sql'),
+  activate = await read('latido_card_activate_offers.sql'),
+  verify = await read('latido_card_verify.sql')
+assert.equal(offerUsageLabel({ usage_period: 'week', usage_limit: 2 }), '2 usos por semana')
 assert.equal(
-  (
-    await shareCardOffer(
-      sharedExample,
-      {
-        share: async (data) => {
-          nativeShare = data
-        }
-      },
-      'https://latido.ch'
-    )
-  ).status,
-  'shared'
+  remainingValidationSeconds(
+    { valid: true, expires_at: '2026-10-15T12:05:00Z', server_now: '2026-10-15T12:00:00Z' },
+    1000,
+    3000
+  ),
+  298
 )
-assert.deepEqual(nativeShare, shareData)
+assert.equal(remainingValidationSeconds({ valid: false }, 1000, 3000), 0)
 assert.equal(
-  (
-    await shareCardOffer(
-      sharedExample,
-      {
-        share: async () => {
-          throw Object.assign(new Error('Cancelled'), { name: 'AbortError' })
-        },
-        clipboard: {
-          writeText: async () => {
-            throw new Error('Must not copy after cancel')
-          }
-        }
-      },
-      'https://latido.ch'
-    )
-  ).status,
-  'cancelled'
+  remainingValidationSeconds(
+    { valid: true, expires_at: '2026-10-15T12:05:00Z', server_now: '2026-10-15T12:00:00Z' },
+    1000,
+    400000
+  ),
+  0
 )
-assert.equal(
-  (
-    await shareCardOffer(
-      sharedExample,
-      {
-        share: async () => {
-          throw new Error('Unavailable')
-        },
-        clipboard: {
-          writeText: async (text) => {
-            copiedShare = text
-          }
-        }
-      },
-      'https://latido.ch'
-    )
-  ).status,
-  'copied'
-)
-assert.ok(copiedShare.endsWith(shareData.url))
-assert.equal(
-  (
-    await shareCardOffer(
-      sharedExample,
-      {
-        clipboard: {
-          writeText: async () => {
-            throw new Error('Permission denied')
-          }
-        }
-      },
-      'https://latido.ch'
-    )
-  ).status,
-  'manual'
-)
-
-const token = 'a'.repeat(64)
-const staffShare = scannerConnectionShareData(
-  `https://latido.ch/scanner/link/${token}`,
-  'Negocio A',
+const shared = cardOfferShareData(
+  {
+    id: randomUUID(),
+    title: 'Café',
+    business_name: 'Café A',
+    benefit_type: 'gift',
+    secret: 'private'
+  },
   'https://latido.ch'
 )
-assert.equal(new URL(staffShare.url).searchParams.get('camera'), '1')
-assert.equal(new URL(staffShare.url).pathname, `/scanner/link/${token}`)
-assert.ok(staffShare.text.includes('cuenta gratis'))
-assert.throws(
-  () =>
-    scannerConnectionShareData(
-      `https://evil.test/scanner/link/${token}`,
-      'Negocio A',
-      'https://latido.ch'
-    ),
-  /SCANNER_LINK_INVALID/
-)
-assert.equal(
-  (
-    await shareScannerConnection(
-      staffShare.url,
-      'Negocio A',
-      {
-        share: async () => {
-          throw Object.assign(new Error(), { name: 'AbortError' })
-        }
-      },
-      'https://latido.ch'
-    )
-  ).status,
-  'cancelled'
-)
-assert.equal(
-  (await shareScannerConnection(staffShare.url, 'Negocio A', {}, 'https://latido.ch')).status,
-  'manual'
-)
-assert.equal(extractCardToken(`https://latido.ch/c/${token}`), token)
-assert.equal(extractCardToken(`https://evil.test/c/${token}`), null)
-assert.equal(extractCardToken(`javascript:alert(1)`), null)
-assert.equal(extractCardToken(`https://latido.ch/scanner/link/${token}`), null)
-assert.equal(extractCardToken(`https://latido.ch/scanner/link/${token}`, 'scanner'), token)
-assert.equal(extractCardToken('LC-000001'), null)
-assert.deepEqual(classifyLatidoQr(`https://latido.ch/c/${token}`), {
-  kind: 'card',
-  token
-})
-assert.deepEqual(classifyLatidoQr(`https://latido.ch/scanner/link/${token}`), {
-  kind: 'scanner',
-  token
-})
-assert.equal(classifyLatidoQr(token), null, 'A bare token must not be guessed as a business QR')
-assert.equal(classifyLatidoQr(`https://evil.test/scanner/link/${token}`), null)
-assert.equal(classifyLatidoQr(`javascript:alert(1)`), null)
-assert.equal(classifyLatidoQr(`https://latido.ch/card?oferta=${token}`), null)
-const fake = () => ({
-  values: new Map(),
-  getItem(k) {
-    return this.values.get(k) || null
-  },
-  setItem(k, v) {
-    this.values.set(k, v)
-  },
-  removeItem(k) {
-    this.values.delete(k)
-  }
-})
-const local = fake(),
-  temporary = fake()
-storeScannerSession(
+assert.ok(!JSON.stringify(shared).includes('private'))
+let publicBusiness
+await shareCardBusiness(
+  'business-id',
+  'Café A',
   {
-    token,
-    persistent: false,
-    expires_at: new Date(Date.now() + 10000).toISOString()
+    share: async (data) => {
+      publicBusiness = data
+    }
   },
-  { local, temporary }
+  'https://latido.ch'
 )
-assert.equal(local.getItem(SCANNER_STORAGE_KEY), null)
-assert.equal(readScannerSession({ local, temporary }).token, token)
-const businessSessionA = { token, session_id: 'a', linked_user_id: 'staff', persistent: true }
-const businessSessionB = { ...businessSessionA, token: 'b'.repeat(64), session_id: 'b' }
-storeScannerSession(businessSessionA, { local, temporary })
-storeScannerSession(businessSessionB, { local, temporary })
-assert.equal(readScannerConnections(local).length, 2)
-forgetScannerConnection(businessSessionA, { local, temporary })
-assert.equal(
-  readScannerSession({ local, temporary }).session_id,
-  'b',
-  'Removing another connection preserves the active business'
-)
-assert.equal(readScannerConnections(local).length, 1)
-storeScannerSession({ token, persistent: true, expires_at: null }, { local, temporary })
-let handoffHistory
-const location = {
-  pathname: '/card/scanner/vincular',
-  search: '',
-  hash: `#${new URLSearchParams({ token, fingerprint: token, label: 'Caja' })}`
-}
-assert.equal(
-  captureScannerHandoff(
-    location,
-    temporary,
-    {
-      replaceState: (_state, _title, url) => {
-        handoffHistory = url
-      }
-    },
-    123
-  ),
-  true
-)
-assert.equal(handoffHistory, '/card/scanner/vincular')
-assert.equal(JSON.parse(temporary.getItem(SCANNER_CONNECTION_KEY)).token, token)
-assert.equal(captureScannerHandoff({ ...location, pathname: '/auth' }, temporary, {}), false)
-assert.equal(captureScannerHandoff({ ...location, hash: '#token=invalid' }, temporary, {}), false)
-assert.equal(
-  captureScannerHandoff(
-    location,
-    {
-      setItem: () => {
-        throw new Error('Blocked')
-      }
-    },
-    {}
-  ),
-  false
-)
-assert.equal(temporary.getItem(SCANNER_STORAGE_KEY), null)
-assert.equal(readScannerSession({ local, temporary }).persistent, true)
-temporary.setItem(SCANNER_STORAGE_KEY, 'not-json')
-assert.equal(readScannerSession({ local, temporary }).token, token)
+assert.equal(publicBusiness.url, 'https://latido.ch/card/negocio/business-id')
 
-const db = new PGlite()
-const ids = {
-  admin: randomUUID(),
-  owner: randomUUID(),
-  owner2: randomUUID(),
-  member: randomUUID(),
-  member2: randomUUID(),
-  outsider: randomUUID(),
-  business: randomUUID(),
-  business2: randomUUID()
-}
-await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
-CREATE SCHEMA auth;
-CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
-CREATE TABLE public.profiles(id uuid primary key,name text,email text);
-CREATE TABLE public.providers(id uuid primary key,user_id uuid references profiles(id),name text,city text);
-CREATE TABLE public.business_promotion_admins(email text primary key);
-CREATE FUNCTION public.is_business_promotion_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$
- SELECT EXISTS(SELECT 1 FROM public.business_promotion_admins WHERE email=(nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'email')) $$;
-GRANT USAGE ON SCHEMA public,auth TO anon,authenticated;
-GRANT EXECUTE ON FUNCTION auth.uid() TO anon,authenticated;`)
-for (const [key, id] of Object.entries(ids).filter(([key]) => !key.startsWith('business'))) {
-  await db.query('INSERT INTO profiles VALUES($1,$2,$3)', [id, key, `${key}@latido.test`])
-}
-await db.query('INSERT INTO business_promotion_admins VALUES($1)', ['admin@latido.test'])
-await db.query('INSERT INTO providers VALUES($1,$2,$3,$4),($5,$6,$7,$8)', [
-  ids.business,
-  ids.owner,
-  'Restaurante A',
-  'Zürich',
-  ids.business2,
-  ids.owner2,
-  'Café B',
-  'Luzern'
-])
-const migration = await readFile(new URL('../supabase/latido_card.sql', import.meta.url), 'utf8')
-await db.exec(migration)
-await db.exec(migration) // Rerunning must not erase credentials or fail on objects.
-const notificationsSchema = (
-  await readFile(new URL('../supabase/app_notifications.sql', import.meta.url), 'utf8')
-).split('-- One interaction creates')[0]
-await db.exec(notificationsSchema)
-const physicalMigration = await readFile(
-  new URL('../supabase/latido_card_physical_requests.sql', import.meta.url),
-  'utf8'
-)
-await db.exec(physicalMigration)
-await db.exec(physicalMigration)
-await db.exec('ALTER TABLE public.providers ADD COLUMN photo_url text')
-const selfServiceMigration = await readFile(
-  new URL('../supabase/latido_card_self_service.sql', import.meta.url),
-  'utf8'
-)
-await db.exec(selfServiceMigration)
-await db.exec(selfServiceMigration)
-async function as(key, role = 'authenticated') {
-  await db.exec(`RESET ROLE; SET ROLE ${role};`)
-  await db.query("SELECT set_config('request.jwt.claims',$1,false)", [
-    JSON.stringify(key ? { sub: ids[key], email: `${key}@latido.test` } : {})
+for (const upgrade of [false, true]) {
+  const db = new PGlite()
+  const ids = Object.fromEntries(
+    ['admin', 'owner', 'member', 'other', 'inactive', 'business'].map((key) => [key, randomUUID()])
+  )
+  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+    CREATE SCHEMA auth;
+    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
+    CREATE TABLE profiles(id uuid PRIMARY KEY,name text,email text);
+    CREATE TABLE providers(id uuid PRIMARY KEY,user_id uuid REFERENCES profiles(id),name text,city text,photo_url text);
+    CREATE TABLE business_promotion_admins(email text PRIMARY KEY);
+    CREATE FUNCTION is_business_promotion_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM business_promotion_admins WHERE email=(nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'email')) $$;
+    GRANT USAGE ON SCHEMA public,auth TO anon,authenticated;
+    GRANT EXECUTE ON FUNCTION auth.uid() TO anon,authenticated;
+    CREATE SCHEMA cron;
+    CREATE TABLE cron.job(jobid bigint PRIMARY KEY,jobname text);
+    INSERT INTO cron.job VALUES(1,'latido-card-physical-email'),(2,'another-latido-job');
+    CREATE FUNCTION cron.unschedule(p_jobid bigint) RETURNS boolean LANGUAGE plpgsql AS $$ BEGIN DELETE FROM cron.job WHERE jobid=p_jobid; RETURN true; END $$;`)
+  for (const key of ['admin', 'owner', 'member', 'other', 'inactive'])
+    await db.query('INSERT INTO profiles VALUES($1,$2,$3)', [ids[key], key, `${key}@latido.test`])
+  await db.query('INSERT INTO business_promotion_admins VALUES($1)', ['admin@latido.test'])
+  await db.query('INSERT INTO providers VALUES($1,$2,$3,$4,NULL)', [
+    ids.business,
+    ids.owner,
+    'Restaurante A',
+    'Zürich'
   ])
-}
-async function root(sql, params = []) {
-  await db.exec('RESET ROLE')
-  return db.query(sql, params)
-}
-async function rpc(name, args = []) {
-  const params = args.map((_, i) => `$${i + 1}`).join(',')
-  if (name === 'lc_claim_physical_emails')
-    return (
+  const as = async (key, role = 'authenticated') => {
+    await db.exec(`RESET ROLE; SET ROLE ${role};`)
+    await db.query("SELECT set_config('request.jwt.claims',$1,false)", [
+      JSON.stringify(key ? { sub: ids[key], email: `${key}@latido.test` } : {})
+    ])
+  }
+  const root = async (sql, args = []) => {
+    await db.exec('RESET ROLE')
+    return db.query(sql, args)
+  }
+  const rpc = async (name, args = []) =>
+    (
       await db.query(
-        `SELECT coalesce(jsonb_agg(row),'[]'::jsonb) AS result FROM public.${name}(${params}) row`,
+        `SELECT public.${name}(${args.map((_, i) => `$${i + 1}`).join(',')}) AS result`,
         args
       )
     ).rows[0].result
-  return (await db.query(`SELECT public.${name}(${params}) AS result`, args)).rows[0].result
-}
-async function rejects(name, args, code) {
-  await assert.rejects(() => rpc(name, args), new RegExp(code))
-}
-try {
-  await as('outsider')
-  await rejects(
-    'lc_admin_enroll',
-    [ids.member, new Date(Date.now() + 86400000), 'active'],
-    'FORBIDDEN'
-  )
-  await assert.rejects(
-    () => db.query('SELECT * FROM public.latido_card_memberships'),
-    /permission denied/
-  )
-  await as(null, 'anon')
-  await assert.rejects(() => rpc('lc_new_token'), /permission denied/)
-  await assert.rejects(() => rpc('lc_member_home'), /permission denied/)
-  await assert.rejects(() => rpc('lc_card_member', [token]), /permission denied/)
-  await as('admin')
-  const validUntil = new Date(Date.now() + 90 * 86400000).toISOString()
-  const mid = await rpc('lc_admin_enroll', [ids.member, validUntil, 'active'])
-  await rpc('lc_admin_enroll', [ids.member2, validUntil, 'active'])
-  await rpc('lc_admin_business', [ids.business, true])
-  await rpc('lc_admin_business', [ids.business2, true])
-  const physical = await rpc('lc_admin_physical_card', [ids.member])
-  const physical2 = await rpc('lc_admin_physical_card', [ids.member2])
-  await as('owner')
-  const offer = {
-    title: '15 % desde CHF 50',
-    description: 'No acumulable',
-    benefit_type: 'percent',
-    benefit_value: 15,
-    minimum_spend: 50,
-    usage_period: 'month',
-    usage_limit: 1,
-    ends_at: validUntil
+  let legacyId
+  if (upgrade) {
+    await db.exec(await read('legacy/latido_card/latido_card.sql'))
+    const notifications = (await read('app_notifications.sql')).split(
+      '-- One interaction creates'
+    )[0]
+    await db.exec(notifications)
+    for (const file of [
+      'physical_requests',
+      'self_service',
+      'scanner_accounts',
+      'scanner_multibusiness',
+      'manual_codes'
+    ])
+      await db.exec(await read(`legacy/latido_card/latido_card_${file}.sql`))
+    await as('admin')
+    await rpc('lc_admin_enroll', [ids.member, new Date(Date.now() + 86400000).toISOString()])
+    await rpc('lc_admin_business', [ids.business, true])
+    await as('owner')
+    const link = await rpc('lc_business_setup', [ids.business, null])
+    const session = await rpc('lc_open_scanner', [link.token, 'Historical worker'])
+    const oid = await rpc('lc_save_offer', [
+      ids.business,
+      {
+        title: 'Historical offer',
+        benefit_type: 'percent',
+        benefit_value: 15,
+        minimum_spend: 50,
+        ends_at: new Date(Date.now() + 86400000).toISOString(),
+        usage_period: 'unlimited'
+      }
+    ])
+    await as('member')
+    const card = await rpc('lc_issue_digital_card')
+    legacyId = (await rpc('lc_redeem', [session.token, card.token, oid, randomUUID()])).id
+    await rpc('lc_issue_card_code')
+    await rpc('lc_request_physical_card', [
+      randomUUID(),
+      { fulfillment: 'pickup', recipient_name: 'Test member' },
+      'initial'
+    ])
+    await root('UPDATE latido_card_offers SET active=false WHERE id=$1', [oid])
   }
-  const oid = await rpc('lc_save_offer', [ids.business, offer])
-  await rejects('lc_save_offer', [ids.business, offer], 'OFFER_CAPACITY')
-  await rejects('lc_save_offer', [ids.business2, offer], 'FORBIDDEN')
-  await rejects('lc_business_dashboard', [ids.business2], 'FORBIDDEN')
-  const special = await rpc('lc_save_offer', [
-    ids.business,
-    {
-      ...offer,
-      title: 'Café gratis',
-      requires_claim: true,
-      stock_total: 1,
-      benefit_type: 'gift',
-      benefit_value: null,
-      usage_period: 'lifetime'
-    }
-  ])
-  const link = await rpc('lc_rotate_scanner_link', [ids.business])
-  await as(null, 'anon')
-  const session = await rpc('lc_open_scanner', [link.token, 'Caja 1'])
-  const session2 = await rpc('lc_open_scanner', [link.token, 'Caja 2'])
-  const status = await rpc('lc_scanner_status', [session.token, true])
-  assert.equal(status.persistent, false)
-  await as('owner')
-  await rpc('lc_manage_scanner', [session.session_id, 'approve'])
-  await as(null, 'anon')
-  assert.equal((await rpc('lc_scanner_status', [session.token, false])).persistent, true)
-  const scan = await rpc('lc_scan_card', [session.token, physical.token])
-  assert.equal(scan.offers.length, 1)
-  assert.equal(scan.offers[0].id, oid)
-  assert.equal(scan.member_name, 'member')
-  assert.equal(scan.email, undefined)
-  await as('member')
-  const digital = await rpc('lc_issue_digital_card')
-  const digital2 = await rpc('lc_issue_digital_card')
-  await rpc('lc_claim_offer', [special])
-  await rpc('lc_claim_offer', [special])
-  await as('member2')
-  await rejects('lc_claim_offer', [special], 'OFFER_SOLD_OUT')
-  await as('member')
-  await rpc('lc_release_claim', [special])
-  await as('member2')
-  await rpc('lc_claim_offer', [special])
-  await rpc('lc_release_claim', [special])
-  await as('member')
-  await rpc('lc_claim_offer', [special])
-  await as(null, 'anon')
-  assert.equal((await rpc('lc_scan_card', [session.token, physical.token])).offers.length, 2)
-  await rejects('lc_scan_card', [session.token, digital.token], 'CARD_INVALID')
-  assert.equal(
-    (await rpc('lc_scan_card', [session.token, digital2.token])).member_number,
-    physical.member_number
+  await db.exec(minimal)
+  await db.exec(minimal)
+  await db.exec(cleanup)
+  await db.exec(cleanup)
+  await db.exec(minimal)
+  await db.exec(activate)
+  await db.exec(activate)
+  const verification = await db.exec(verify)
+  assert.ok(
+    verification[0].rows.every((r) => r.ok),
+    JSON.stringify(verification[0].rows)
   )
-  const req = randomUUID(),
-    receipt = await rpc('lc_redeem', [session.token, physical.token, oid, req])
-  assert.equal((await rpc('lc_redeem', [session.token, physical.token, oid, req])).id, receipt.id)
-  await rejects(
-    'lc_redeem',
-    [session2.token, physical.token, oid, randomUUID()],
-    'OFFER_UNAVAILABLE'
-  )
-  await rejects('lc_redeem', [session.token, token, oid, req], 'REQUEST_CONFLICT')
-  await rejects('lc_redeem', [session.token, physical2.token, oid, req], 'REQUEST_CONFLICT')
-  await rpc('lc_redeem', [session.token, physical.token, special, randomUUID()])
-  await as('member')
-  await rejects('lc_claim_offer', [special], 'OFFER_USED')
-  assert.equal((await rpc('lc_member_home')).history.length, 2)
-  await as('outsider')
-  await rejects('lc_reverse_redemption', [receipt.id, 'Error de caja'], 'FORBIDDEN')
-  await as('owner')
-  await rpc('lc_reverse_redemption', [receipt.id, 'Error de caja'])
-  await rpc('lc_reverse_redemption', [receipt.id, 'Segundo intento'])
-  await as(null, 'anon')
-  const next = await rpc('lc_redeem', [session.token, physical.token, oid, randomUUID()])
-  await root(
-    "UPDATE latido_card_redemptions SET redeemed_at=(date_trunc('month',now() AT TIME ZONE 'Europe/Zurich') AT TIME ZONE 'Europe/Zurich')-interval '1 second' WHERE id=$1",
-    [next.id]
-  )
-  await as(null, 'anon')
-  await rpc('lc_redeem', [session.token, physical.token, oid, randomUUID()])
-  await root(
-    "UPDATE latido_card_credentials SET expires_at=now()-interval '1 second' WHERE token_hash=public.lc_hash($1)",
-    [digital2.token]
-  )
-  await as(null, 'anon')
-  await rejects('lc_scan_card', [session.token, digital2.token], 'CARD_INVALID')
-  await as('member')
-  await rpc('lc_report_lost_card')
-  const replacementDigital = await rpc('lc_issue_digital_card')
-  await as(null, 'anon')
-  await rejects('lc_scan_card', [session.token, physical.token], 'CARD_INVALID')
-  assert.equal(
-    (await rpc('lc_scan_card', [session.token, replacementDigital.token])).member_number,
-    physical.member_number
-  )
-  // Lost/expired card may still retrieve its own already-committed receipt.
-  assert.equal((await rpc('lc_redeem', [session.token, physical.token, oid, req])).reversed, true)
-  await as('admin')
-  await rpc('lc_admin_enroll', [ids.member, validUntil, 'paused'])
-  await as(null, 'anon')
-  await rejects('lc_scan_card', [session.token, replacementDigital.token], 'MEMBERSHIP_INACTIVE')
-  await as('admin')
-  await rpc('lc_admin_enroll', [ids.member, validUntil, 'active'])
-  await as('owner2')
-  const foreignOffer = await rpc('lc_save_offer', [ids.business2, offer])
-  await as(null, 'anon')
-  await rejects(
-    'lc_redeem',
-    [session.token, replacementDigital.token, foreignOffer, randomUUID()],
-    'OFFER_UNAVAILABLE'
-  )
-  await root(
-    "UPDATE latido_card_scanner_sessions SET expires_at=now()-interval '1 second' WHERE id=$1",
-    [session2.session_id]
-  )
-  await as(null, 'anon')
-  await rejects('lc_scanner_status', [session2.token, false], 'SCANNER_EXPIRED')
-  await as('owner')
-  await rpc('lc_rotate_scanner_link', [ids.business])
-  await as(null, 'anon')
-  await rejects('lc_open_scanner', [link.token, 'Intruso'], 'SCANNER_LINK_INVALID')
-  await rejects('lc_scanner_status', [session.token, false], 'SCANNER_EXPIRED')
-  await as('owner')
-  const stockOffer = await rpc('lc_save_offer', [
-    ids.business,
-    {
-      ...offer,
-      title: 'Último postre',
-      requires_claim: true,
-      stock_total: 1,
-      benefit_type: 'gift',
-      benefit_value: null,
-      usage_period: 'lifetime'
-    }
-  ])
-  await as('member')
-  await rpc('lc_claim_offer', [stockOffer])
-  await root(
-    "UPDATE latido_card_claims SET expires_at=now()-interval '1 second' WHERE offer_id=$1",
-    [stockOffer]
-  )
-  await as('member2')
-  await rpc('lc_claim_offer', [stockOffer])
-  await as('member')
-  await rejects('lc_claim_offer', [stockOffer], 'OFFER_SOLD_OUT')
-  await as('owner')
-  await rpc('lc_set_offer_active', [oid, false])
-  const unlimited = await rpc('lc_save_offer', [
-    ids.business,
-    {
-      ...offer,
-      title: '10 % siempre',
-      usage_period: 'unlimited',
-      benefit_value: 10
-    }
-  ])
-  const freshLink = await rpc('lc_rotate_scanner_link', [ids.business])
-  await as(null, 'anon')
-  const freshSession = await rpc('lc_open_scanner', [freshLink.token, 'Caja nueva'])
-  await rpc('lc_redeem', [freshSession.token, replacementDigital.token, unlimited, randomUUID()])
-  await rpc('lc_redeem', [freshSession.token, replacementDigital.token, unlimited, randomUUID()])
-  await rpc('lc_close_scanner', [freshSession.token])
-  await rejects('lc_scanner_status', [freshSession.token, false], 'SCANNER_EXPIRED')
-  // Physical requests belong to Latido administration, never to a merchant.
-  await as('owner')
-  await rejects('lc_admin_physical_queue', ['open'], 'FORBIDDEN')
-  await assert.rejects(
-    () => db.query('SELECT * FROM latido_card_physical_requests'),
-    /permission denied/
-  )
-  await as(null, 'anon')
-  await assert.rejects(() => rpc('lc_member_physical_requests'), /permission denied/)
-  await as('member')
-  const details = {
-    fulfillment: 'shipping',
-    recipient_name: 'José Prueba',
-    address_line1: 'Calle Prueba 10',
-    address_line2: '2.º',
-    postal_code: '6004',
-    city: 'Luzern'
+  if (legacyId) {
+    const row = (await root('SELECT * FROM latido_card_redemptions WHERE id=$1', [legacyId]))
+      .rows[0]
+    assert.equal(row.source, 'legacy_scanner')
+    assert.equal(row.legacy_metadata.scanner_label, 'Historical worker')
+    assert.ok(await root('SELECT * FROM latido_card_archive.latido_card_scanner_sessions'))
+    assert.equal(
+      (
+        await root(
+          'SELECT count(*)::int AS total FROM latido_card_archive.latido_card_physical_requests'
+        )
+      ).rows[0].total,
+      1
+    )
+    assert.ok(
+      (
+        await root(
+          'SELECT count(*)::int AS total FROM latido_card_archive.latido_card_physical_email_queue'
+        )
+      ).rows[0].total > 0
+    )
+    await as('member')
+    await assert.rejects(
+      () => db.query('SELECT * FROM latido_card_archive.latido_card_physical_requests'),
+      /permission denied/
+    )
   }
-  await rejects(
-    'lc_request_physical_card',
-    [randomUUID(), { ...details, postal_code: 'bad' }, 'replacement'],
-    'PHYSICAL_DETAILS_INVALID'
-  )
-  await rejects(
-    'lc_request_physical_card',
-    [randomUUID(), details, 'initial'],
-    'PHYSICAL_REQUEST_KIND_INVALID'
-  )
-  const physicalRequestId = randomUUID()
-  const request = await rpc('lc_request_physical_card', [physicalRequestId, details, 'replacement'])
-  assert.equal(request.status, 'requested')
-  assert.ok(request.reference.startsWith('LCP-'))
-  assert.equal(
-    (await rpc('lc_request_physical_card', [physicalRequestId, details, 'replacement'])).id,
-    request.id
-  )
-  await rejects(
-    'lc_request_physical_card',
-    [randomUUID(), details, 'replacement'],
-    'PHYSICAL_REQUEST_ALREADY_OPEN'
-  )
-  assert.equal((await rpc('lc_member_physical_requests')).requests.length, 1)
-  assert.equal((await rpc('lc_member_physical_requests')).requests[0].internal_note, undefined)
-  await as('member2')
-  assert.equal((await rpc('lc_member_physical_requests')).requests.length, 0)
-  await rejects('lc_cancel_physical_request', [request.id], 'FORBIDDEN')
-  await rejects(
-    'lc_request_physical_card',
-    [physicalRequestId, details, 'replacement'],
-    'REQUEST_CONFLICT'
-  )
-  await as('admin')
-  const inbox = await rpc('lc_admin_physical_queue', ['open'])
-  assert.equal(inbox[0].recipient_name, 'José Prueba')
-  assert.equal(inbox[0].emails.length, 2)
-  assert.equal((await rpc('lc_admin_overview', ['member'])).stats.pending_requests, 1)
-  await rejects(
-    'lc_admin_update_physical_request',
-    [request.id, 1, 'shipped', '', '', ''],
-    'PHYSICAL_STATUS_INVALID'
-  )
-  await rpc('lc_admin_update_physical_request', [
-    request.id,
-    1,
-    'approved',
-    'Prepararemos tu tarjeta.',
-    'Nota privada de Latido',
-    ''
+  assert.deepEqual((await root('SELECT jobname FROM cron.job')).rows, [
+    { jobname: 'another-latido-job' }
   ])
-  await rejects(
-    'lc_admin_update_physical_request',
-    [request.id, 1, 'approved', '', '', ''],
-    'PHYSICAL_REQUEST_CHANGED'
-  )
-  const printed = await rpc('lc_admin_issue_request_card', [request.id, 2, false])
-  assert.equal(printed.reference, request.reference)
-  await rejects(
-    'lc_admin_issue_request_card',
-    [request.id, 3, false],
-    'PHYSICAL_CARD_ALREADY_ISSUED'
-  )
-  const reprinted = await rpc('lc_admin_issue_request_card', [request.id, 3, true])
-  assert.notEqual(reprinted.token, printed.token)
+  await as(null, 'anon')
+  assert.deepEqual(await rpc('lc_catalog'), [])
+  await assert.rejects(() => rpc('lc_use_offer', [randomUUID(), randomUUID()]), /permission denied/)
+  await assert.rejects(() => db.query('SELECT * FROM latido_card_memberships'), /permission denied/)
   await as('member')
-  await rejects('lc_cancel_physical_request', [request.id], 'PHYSICAL_REQUEST_IN_PROGRESS')
-  assert.equal((await rpc('lc_member_physical_requests')).requests[0].internal_note, undefined)
-  await as('admin')
-  await rpc('lc_admin_update_physical_request', [
-    request.id,
-    4,
-    'ready',
-    'Lista para envío.',
-    'Nota interna',
-    ''
-  ])
-  await rpc('lc_admin_update_physical_request', [
-    request.id,
-    5,
-    'shipped',
-    'En camino.',
-    'Nota interna',
-    'https://post.example/track/test'
-  ])
-  await rpc('lc_admin_update_physical_request', [
-    request.id,
-    6,
-    'delivered',
-    'Entregada.',
-    'Nota interna',
-    'https://post.example/track/test'
-  ])
-  const completed = (await rpc('lc_admin_physical_queue', ['delivered']))[0]
-  assert.equal(completed.events.length, 7)
-  await as('member')
-  const nextRequest = await rpc('lc_request_physical_card', [
-    randomUUID(),
-    {
-      fulfillment: 'pickup',
-      recipient_name: 'José Prueba',
-      address_line1: 'Must not persist'
-    },
-    'replacement'
-  ])
-  assert.equal(nextRequest.address_line1, '')
-  await rpc('lc_cancel_physical_request', [nextRequest.id])
-  const lostShipment = await rpc('lc_request_physical_card', [randomUUID(), details, 'replacement'])
-  await as('admin')
-  await rpc('lc_admin_update_physical_request', [lostShipment.id, 1, 'approved', '', '', ''])
-  await rpc('lc_admin_issue_request_card', [lostShipment.id, 2, false])
-  await rpc('lc_admin_update_physical_request', [lostShipment.id, 3, 'ready', '', '', ''])
-  await rpc('lc_admin_update_physical_request', [lostShipment.id, 4, 'shipped', '', '', ''])
-  await as('member')
-  await rpc('lc_report_lost_card')
-  await as('admin')
-  await rejects(
-    'lc_admin_update_physical_request',
-    [lostShipment.id, 5, 'delivered', '', '', ''],
-    'PHYSICAL_CARD_INVALID'
-  )
-  await rpc('lc_admin_update_physical_request', [
-    lostShipment.id,
-    5,
-    'cancelled',
-    'Envío perdido; solicita reposición.',
-    '',
-    ''
-  ])
-  await as('member')
-  await rpc('lc_request_physical_card', [randomUUID(), details, 'replacement'])
+  await assert.rejects(() => rpc('lc_admin_overview'), /FORBIDDEN/)
+  await assert.rejects(() => rpc('lc_join_card_business', [ids.business]), /FORBIDDEN/)
   await as('owner')
-  await assert.rejects(() => rpc('lc_claim_physical_emails', [20]), /permission denied/)
-  await as(null, 'service_role')
-  const mailJobs = await rpc('lc_claim_physical_emails', [50])
-  assert.ok(mailJobs.length > 2)
-  assert.equal((await rpc('lc_claim_physical_emails', [50])).length, 0)
-  const job = mailJobs[0]
-  assert.equal(await rpc('lc_finish_physical_email', [job.id, randomUUID(), true, '']), false)
-  assert.equal(
-    await rpc('lc_finish_physical_email', [job.id, job.lease_id, false, 'SMTP_FAILED']),
-    true
-  )
-  const sent = mailJobs[1]
-  assert.equal(await rpc('lc_finish_physical_email', [sent.id, sent.lease_id, true, '']), true)
-  const email = buildPhysicalCardEmail({
-    ...job,
-    payload: {
-      ...job.payload,
-      reference: '<script>Bad</script>',
-      address_line1: 'secret address',
-      token: 'secret token',
-      internal_note: 'secret note'
-    }
-  })
-  assert.ok(!email.html.includes('<script>'))
-  assert.ok(email.html.includes('&lt;script&gt;'))
-  assert.ok(!email.text.includes('secret address'))
-  assert.ok(!email.text.includes('secret token'))
-  assert.ok(!email.text.includes('secret note'))
-  await root(
-    "UPDATE latido_card_physical_email_queue SET attempts=8,status='sending',lease_until=now()-interval '1 minute' WHERE id=$1",
-    [job.id]
-  )
-  await as(null, 'service_role')
-  await rpc('lc_claim_physical_emails', [50])
+  await rpc('lc_join_card_business', [ids.business])
   await as('admin')
-  await rpc('lc_admin_retry_physical_email', [job.id])
-  assert.ok((await rpc('lc_admin_overview', [''])).stats.email_pending > 0)
-  const administrativeAudit = (await rpc('lc_admin_overview', [''])).audit
-  assert.ok(administrativeAudit.some((row) => row.actor_id === ids.admin))
-  assert.ok(administrativeAudit.every((row) => !('token_hash' in row.metadata)))
-  await root('SELECT 1')
+  for (const key of ['member', 'other'])
+    await rpc('lc_admin_enroll', [ids[key], new Date(Date.now() + 86400000 * 60).toISOString()])
+  const makeOffer = async (overrides = {}) => {
+    await as('owner')
+    return rpc('lc_save_offer', [
+      ids.business,
+      {
+        title: '15 % desde CHF 50',
+        description: 'En restaurante',
+        benefit_type: 'percent',
+        benefit_value: 15,
+        minimum_spend: 50,
+        usage_period: 'month',
+        usage_limit: 1,
+        ends_at: new Date(Date.now() + 86400000 * 50).toISOString(),
+        ...overrides
+      }
+    ])
+  }
+  let oid = await makeOffer()
+  await as(null, 'anon')
+  const local = await rpc('lc_business_benefits', [ids.business])
+  assert.equal(local.business.name, 'Restaurante A')
+  assert.equal(local.offers[0].id, oid)
+  assert.ok(!JSON.stringify(local).includes('user_id'))
+  await as('inactive')
+  await assert.rejects(() => rpc('lc_use_offer', [oid, randomUUID()]), /MEMBERSHIP_INACTIVE/)
+  await as('member')
+  const request = randomUUID(),
+    receipt = await rpc('lc_use_offer', [oid, request])
+  assert.equal(receipt.valid, true)
+  assert.equal(receipt.offer.minimum_spend, 50)
+  assert.ok(Date.parse(receipt.expires_at) - Date.parse(receipt.redeemed_at) <= 300000)
+  assert.equal((await rpc('lc_use_offer', [oid, request])).id, receipt.id)
+  assert.equal((await rpc('lc_use_offer', [oid, randomUUID()])).id, receipt.id)
+  const home = await rpc('lc_member_home')
+  assert.equal(home.offers[0].available, false)
+  assert.equal(home.offers[0].used_count, 1)
+  assert.ok(home.offers[0].next_available_at)
+  assert.equal(home.offers[0].validation.id, receipt.id)
+  await as('other')
+  await assert.rejects(() => rpc('lc_validation', [receipt.id]), /VALIDATION_NOT_FOUND/)
+  await assert.rejects(() => rpc('lc_use_offer', [oid, request]), /REQUEST_CONFLICT/)
+  await root(
+    "UPDATE latido_card_redemptions SET display_valid_until=now()-interval '1 second' WHERE id=$1",
+    [receipt.id]
+  )
+  await as('member')
+  assert.equal((await rpc('lc_validation', [receipt.id])).valid, false)
+  assert.equal(
+    (await rpc('lc_use_offer', [oid, request])).valid,
+    false,
+    'Committed retries cannot restart the timer'
+  )
+  await assert.rejects(() => rpc('lc_use_offer', [oid, randomUUID()]), /OFFER_UNAVAILABLE/)
   await assert.rejects(
-    () => db.query("UPDATE latido_card_offers SET title='Cambio' WHERE id=$1", [oid]),
+    () => root('UPDATE latido_card_offers SET minimum_spend=99 WHERE id=$1', [oid]),
     /OFFER_TERMS_LOCKED/
   )
-  await assert.rejects(
-    () =>
-      db.query(
-        "INSERT INTO latido_card_offers(provider_id,title,benefit_type,benefit_value,ends_at) VALUES($1,'Inválida','percent',NULL,now()+interval '1 day')",
-        [ids.business]
-      ),
-    /check constraint/
-  )
-  assert.equal(
-    (
-      await db.query(
-        'SELECT count(*)::integer AS n FROM latido_card_redemptions WHERE request_id=$1',
-        [req]
-      )
-    ).rows[0].n,
-    1
-  )
-  // Owner starts without membership or administrator admission. Cached and new
-  // automatic QR links never disconnect workers; suspension cannot be bypassed.
-  const openBusiness = randomUUID()
-  await root('INSERT INTO providers(id,user_id,name,city) VALUES($1,$2,$3,$4)', [
-    openBusiness,
-    ids.owner2,
-    'Negocio libre',
-    'Bern'
-  ])
-  await as('outsider')
-  await rejects('lc_business_setup', [openBusiness, null], 'FORBIDDEN')
-  await as('owner2')
-  assert.equal((await rpc('lc_member_home')).membership, null)
-  const automaticLink = await rpc('lc_business_setup', [openBusiness, null])
-  assert.equal(
-    (await rpc('lc_business_setup', [openBusiness, automaticLink.token])).token,
-    automaticLink.token
-  )
-  const freeOffer = await rpc('lc_save_offer', [
-    openBusiness,
-    { ...offer, title: 'Oferta sin aprobación' }
-  ])
-  await as(null, 'anon')
-  await rejects('lc_business_setup', [openBusiness, null], 'permission denied')
-  const workerBeforeReload = await rpc('lc_open_scanner', [automaticLink.token, 'Caja libre'])
-  await as('owner2')
-  const anotherBrowserLink = await rpc('lc_business_setup', [openBusiness, null])
-  assert.notEqual(anotherBrowserLink.token, automaticLink.token)
-  await as(null, 'anon')
-  assert.equal(
-    (await rpc('lc_scanner_status', [workerBeforeReload.token, false])).session_id,
-    workerBeforeReload.session_id
-  )
-  await rpc('lc_open_scanner', [automaticLink.token, 'QR impreso aún válido'])
-  await rejects('lc_save_favorite', [freeOffer, true], 'permission denied')
-  await as('member')
-  await rpc('lc_save_favorite', [freeOffer, true])
-  await rpc('lc_save_favorite', [freeOffer, true])
-  assert.deepEqual((await rpc('lc_member_home')).saved_offers, [freeOffer])
-  await assert.rejects(
-    () => db.query('SELECT * FROM latido_card_saved_offers'),
-    /permission denied/
-  )
-  await as('member2')
-  assert.deepEqual((await rpc('lc_member_home')).saved_offers, [])
-  await rpc('lc_save_favorite', [freeOffer, false])
-  await as('member')
-  assert.deepEqual((await rpc('lc_member_home')).saved_offers, [freeOffer])
-  await rpc('lc_save_favorite', [freeOffer, false])
-  assert.deepEqual((await rpc('lc_member_home')).saved_offers, [])
-  await as('admin')
-  await rpc('lc_admin_business', [openBusiness, false])
-  await as('owner2')
-  await rejects('lc_business_setup', [openBusiness, anotherBrowserLink.token], 'BUSINESS_SUSPENDED')
-  await rejects(
-    'lc_save_offer',
-    [openBusiness, { ...offer, title: 'No permitido' }],
-    'BUSINESS_INACTIVE'
-  )
-  await as(null, 'anon')
-  await rejects('lc_scanner_status', [workerBeforeReload.token, false], 'SCANNER_EXPIRED')
-  await rejects('lc_open_scanner', [automaticLink.token, 'Bloqueado'], 'SCANNER_LINK_INVALID')
-  assert.ok(!(await rpc('lc_catalog')).some((o) => o.id === freeOffer))
-  await as('admin')
-  await rpc('lc_admin_business', [openBusiness, true])
-  await as('owner2')
-  assert.notEqual(
-    (await rpc('lc_business_setup', [openBusiness, automaticLink.token])).token,
-    automaticLink.token
-  )
-
-  // Execute the exact optional Supabase examples, not a separate test seed.
-  await root('SELECT 1')
-  await db.exec(`CREATE TABLE auth.users(id uuid primary key,email text);
-    ALTER TABLE public.providers ADD COLUMN category text;
-    ALTER TABLE public.providers ADD COLUMN canton text;
-    ALTER TABLE public.providers ADD COLUMN description text;
-    ALTER TABLE public.providers ADD COLUMN active boolean DEFAULT false;`)
-  const demoSql = await readFile(
-    new URL('../supabase/latido_card_test_examples.sql', import.meta.url),
-    'utf8'
-  )
-  await assert.rejects(() => db.exec(demoSql), /Faltan cuentas Auth/)
-  await db.exec('ROLLBACK')
-  for (const key of ['card.socio', 'card.inactivo', 'card.negocio']) {
-    ids[key] = randomUUID()
-    await db.query('INSERT INTO auth.users VALUES($1,$2)', [ids[key], `${key}@latido.test`])
-    await db.query('INSERT INTO profiles VALUES($1,$2,$3)', [ids[key], key, `${key}@latido.test`])
-  }
-  const jobsBeforeDemo = (
-    await db.query('SELECT count(*)::int AS n FROM latido_card_physical_email_queue')
-  ).rows[0].n
-  await db.exec(demoSql)
-  await db.exec(demoSql)
-  assert.equal(
-    (await db.query('SELECT count(*)::int AS n FROM latido_card_physical_email_queue')).rows[0].n,
-    jobsBeforeDemo
-  )
-  await as('card.socio')
-  const demoHome = await rpc('lc_member_home')
-  assert.equal(demoHome.membership.active, true)
-  const demoOffers = demoHome.offers.filter((o) => o.title.startsWith('[TEST]'))
-  assert.equal(demoOffers.length, 6)
-  assert.deepEqual(
-    new Set(demoOffers.map((o) => o.benefit_type)),
-    new Set(['percent', 'fixed', 'gift', 'service', 'two_for_one'])
-  )
-  const demoGift = demoOffers.find((o) => o.benefit_type === 'gift')
-  await rpc('lc_claim_offer', [demoGift.id])
-  await root('SELECT 1')
-  await db.exec(demoSql)
-  await as('card.socio')
-  assert.equal((await rpc('lc_member_home')).offers.find((o) => o.id === demoGift.id).remaining, 19)
-  await as('card.inactivo')
-  assert.equal((await rpc('lc_member_home')).membership.active, false)
-  await rejects('lc_issue_digital_card', [], 'MEMBERSHIP_INACTIVE')
-  await as('card.negocio')
-  assert.equal((await rpc('lc_member_home')).membership, null)
-  assert.equal(
-    (await rpc('lc_business_dashboard', ['ca4d0000-0000-4000-8000-000000000101'])).offers.length,
-    2
-  )
-  await root('SELECT 1')
-  // Upgrade existing connections without reviving previously revoked/expired
-  // devices. Identity is always taken from the authenticated profile.
   await as('owner')
-  const accountLink = await rpc('lc_business_setup', [ids.business, null])
-  await as(null, 'anon')
-  const legacyActive = await rpc('lc_open_scanner', [accountLink.token, 'Legacy active'])
-  const legacyExpired = await rpc('lc_open_scanner', [accountLink.token, 'Legacy expired'])
-  const legacyRevoked = await rpc('lc_open_scanner', [accountLink.token, 'Legacy revoked'])
-  await rpc('lc_close_scanner', [legacyRevoked.token])
-  await root(
-    "UPDATE latido_card_scanner_sessions SET expires_at=now()-interval '1 second' WHERE id=$1",
-    [legacyExpired.session_id]
-  )
-  const accountsMigration = await readFile(
-    new URL('../supabase/latido_card_scanner_accounts.sql', import.meta.url),
-    'utf8'
-  )
-  await db.exec(accountsMigration)
-  await db.exec(accountsMigration)
-  await as(null, 'anon')
-  assert.equal((await rpc('lc_scanner_status', [legacyActive.token, false])).expires_at, null)
-  await rejects('lc_scanner_status', [legacyExpired.token, false], 'SCANNER_EXPIRED')
-  await rejects('lc_scanner_status', [legacyRevoked.token, false], 'SCANNER_EXPIRED')
-  await rejects('lc_open_scanner', [accountLink.token, 'Forged name'], 'permission denied')
-  await as(null)
-  await rejects('lc_open_scanner', [accountLink.token, 'Forged name'], 'AUTH_REQUIRED')
-  await root("UPDATE profiles SET name='' WHERE id=$1", [ids.outsider])
-  await as('outsider')
-  await rejects('lc_open_scanner', [accountLink.token, 'Forged name'], 'PROFILE_NAME_REQUIRED')
-  await root("UPDATE profiles SET name='outsider' WHERE id=$1", [ids.outsider])
-  await as('outsider')
-  const permanent = await rpc('lc_open_scanner', [accountLink.token, 'Different user name'])
-  assert.equal(permanent.linked_user_id, ids.outsider)
-  assert.equal(permanent.user_name, 'outsider', 'A device label cannot impersonate a profile name')
-  assert.equal(permanent.persistent, true)
-  assert.equal(permanent.expires_at, null)
-  await as(null, 'anon')
-  assert.equal(
-    (await rpc('lc_scanner_status', [permanent.token, true])).persistence_requested,
-    false
-  )
-  const permanentOffer = (await rpc('lc_scan_card', [permanent.token, replacementDigital.token]))
-    .offers[0]
-  assert.ok(permanentOffer)
-  await rpc('lc_redeem', [
-    permanent.token,
-    replacementDigital.token,
-    permanentOffer.id,
-    randomUUID()
-  ])
-  await as('owner2')
-  await rejects('lc_business_dashboard', [ids.business], 'FORBIDDEN')
-  await rejects('lc_manage_scanner', [permanent.session_id, 'delete'], 'FORBIDDEN')
+  await assert.rejects(() => rpc('lc_reverse_redemption', [receipt.id, '']), /REASON_REQUIRED/)
+  await rpc('lc_reverse_redemption', [receipt.id, 'Customer tapped by mistake'])
+  await as('member')
+  const renewed = await rpc('lc_use_offer', [oid, randomUUID()])
+  assert.notEqual(renewed.id, receipt.id)
+  await as('admin')
+  await rpc('lc_admin_business', [ids.business, false])
+  await as('member')
+  assert.equal((await rpc('lc_validation', [renewed.id])).valid, false)
   await as('owner')
-  const connectedDashboard = await rpc('lc_business_dashboard', [ids.business])
-  assert.equal(
-    connectedDashboard.sessions.find((s) => s.id === permanent.session_id).token_hash,
-    undefined
-  )
-  assert.equal(
-    connectedDashboard.sessions.find((s) => s.id === permanent.session_id).user_name,
-    'outsider'
-  )
-  assert.ok(connectedDashboard.history.some((r) => r.scanner_label === 'outsider'))
-  await rpc('lc_manage_scanner', [permanent.session_id, 'delete'])
-  assert.ok(
-    !(await rpc('lc_business_dashboard', [ids.business])).sessions.some(
-      (s) => s.id === permanent.session_id
+  await assert.rejects(() => rpc('lc_join_card_business', [ids.business]), /BUSINESS_SUSPENDED/)
+  await as('admin')
+  await rpc('lc_admin_business', [ids.business, true])
+  await root('UPDATE latido_card_offers SET active=false WHERE id=$1', [oid])
+  for (const period of ['day', 'week', 'month', 'lifetime', 'unlimited']) {
+    oid = await makeOffer({ usage_period: period })
+    await as('member')
+    const r = await rpc('lc_use_offer', [oid, randomUUID()])
+    await root(
+      "UPDATE latido_card_redemptions SET display_valid_until=now()-interval '1 second' WHERE id=$1",
+      [r.id]
     )
-  )
-  assert.ok(
-    (await rpc('lc_business_dashboard', [ids.business])).history.some(
-      (r) => r.scanner_label === 'outsider'
-    ),
-    'Removal preserves redemption history'
-  )
-  await as(null, 'anon')
-  await rejects('lc_scanner_status', [permanent.token, false], 'SCANNER_EXPIRED')
-  await as('member2')
-  const accountRevoked = await rpc('lc_open_scanner', [accountLink.token, 'Caja'])
-  const accountClosed = await rpc('lc_open_scanner', [accountLink.token, 'Caja'])
-  await as('owner')
-  await rpc('lc_manage_scanner', [accountRevoked.session_id, 'revoke'])
-  await as(null, 'anon')
-  await rejects('lc_scanner_status', [accountRevoked.token, false], 'SCANNER_EXPIRED')
-  await rpc('lc_close_scanner', [accountClosed.token])
-  await rejects('lc_scanner_status', [accountClosed.token, false], 'SCANNER_EXPIRED')
-  await as('owner')
-  assert.ok(
-    (await rpc('lc_business_dashboard', [ids.business])).sessions.find(
-      (s) => s.id === accountClosed.session_id
-    ).disconnected_at
-  )
-  await as('member2')
-  const beforeRotation = await rpc('lc_open_scanner', [accountLink.token, 'Caja'])
-  await as('owner')
-  const historyBeforeRotation = (await rpc('lc_business_dashboard', [ids.business])).history.length
-  await rpc('lc_rotate_scanner_link', [ids.business])
-  const afterRotation = await rpc('lc_business_dashboard', [ids.business])
-  assert.equal(
-    afterRotation.sessions.length,
-    0,
-    'Regeneration removes previous connections from the panel'
-  )
-  assert.equal(
-    afterRotation.history.length,
-    historyBeforeRotation,
-    'Regeneration preserves redemption history'
-  )
-  await as(null, 'anon')
-  await rejects('lc_scanner_status', [beforeRotation.token, false], 'SCANNER_EXPIRED')
-  await as('member2')
-  await rejects('lc_open_scanner', [accountLink.token, 'Caja'], 'SCANNER_LINK_INVALID')
-  await root('SELECT 1')
-  const multibusiness = await readFile(
-    new URL('../supabase/latido_card_scanner_multibusiness.sql', import.meta.url),
-    'utf8'
-  )
-  await db.exec(multibusiness)
-  await db.exec(multibusiness)
-  await as(null, 'anon')
-  await rejects('lc_my_scanner_businesses', [], 'permission denied')
-  await rejects('lc_resume_scanner', [ids.business], 'permission denied')
-  await as(null)
-  await rejects('lc_my_scanner_businesses', [], 'AUTH_REQUIRED')
-  await rejects('lc_resume_scanner', [ids.business], 'AUTH_REQUIRED')
-  await as('admin')
-  await rpc('lc_admin_business', [ids.business2, true])
-  await as('owner')
-  const multiLinkA = await rpc('lc_business_setup', [ids.business, null])
-  await as('owner2')
-  const multiLinkB = await rpc('lc_business_setup', [ids.business2, null])
-  await as('outsider')
-  assert.deepEqual(await rpc('lc_my_scanner_businesses'), [])
-  await rejects('lc_resume_scanner', [ids.business], 'FORBIDDEN')
-  const workerA = await rpc('lc_open_scanner', [multiLinkA.token, 'Móvil'])
-  await rpc('lc_open_scanner', [multiLinkB.token, 'Móvil'])
-  const workerBusinesses = await rpc('lc_my_scanner_businesses')
-  assert.equal(workerBusinesses.length, 2, 'An unpaid worker can connect to multiple businesses')
-  assert.ok(
-    workerBusinesses.find((b) => b.id === ids.business).session_ids.includes(workerA.session_id)
-  )
-  assert.ok(
-    !JSON.stringify(workerBusinesses).includes('token'),
-    'Business list exposes no invite/session secrets'
-  )
-  const resumedA = await rpc('lc_resume_scanner', [ids.business])
-  assert.equal(resumedA.provider_id, ids.business)
-  assert.equal(resumedA.linked_user_id, ids.outsider)
-  assert.equal(resumedA.expires_at, null)
-  assert.equal(
-    (await rpc('lc_my_scanner_businesses')).length,
-    2,
-    'Multiple devices do not duplicate the business list'
-  )
-  await as('member2')
-  assert.deepEqual(await rpc('lc_my_scanner_businesses'), [])
-  await rejects('lc_resume_scanner', [ids.business], 'FORBIDDEN')
-  await as('owner')
-  await rpc('lc_manage_scanner', [workerA.session_id, 'delete'])
-  await rpc('lc_manage_scanner', [resumedA.session_id, 'revoke'])
-  await as('outsider')
-  assert.equal((await rpc('lc_my_scanner_businesses')).length, 1)
-  await rejects('lc_resume_scanner', [ids.business], 'FORBIDDEN')
-  await as('admin')
-  await rpc('lc_admin_business', [ids.business2, false])
-  await as('outsider')
-  assert.deepEqual(await rpc('lc_my_scanner_businesses'), [])
-  await rejects('lc_resume_scanner', [ids.business2], 'BUSINESS_INACTIVE')
-  await root('SELECT 1')
-  // Upgrade the previous schema with a permanent code_hash UNIQUE constraint.
-  await root(`CREATE TABLE public.latido_card_manual_codes (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(), membership_id uuid NOT NULL REFERENCES latido_card_memberships(id),
-    code_hash text NOT NULL UNIQUE, expires_at timestamptz NOT NULL, revoked_at timestamptz,
-    created_at timestamptz NOT NULL DEFAULT now())`)
-  const legacyCodeId = randomUUID()
-  await root(
-    `INSERT INTO latido_card_manual_codes(id,membership_id,code_hash,expires_at)
-    SELECT $1,id,public.lc_hash('4829173605'),now()+interval '5 minutes'
-    FROM latido_card_memberships WHERE user_id=$2`,
-    [legacyCodeId, ids.member]
-  )
-  const manualMigration = await readFile(
-    new URL('../supabase/latido_card_manual_codes.sql', import.meta.url),
-    'utf8'
-  )
-  await db.exec(manualMigration)
-  await db.exec(manualMigration)
-  assert.equal(
-    (
-      await root('SELECT count(*)::int AS n FROM latido_card_manual_codes WHERE id=$1', [
-        legacyCodeId
-      ])
-    ).rows[0].n,
-    1,
-    'The six-digit migration preserves existing code history'
-  )
-  const manualBusiness = randomUUID()
-  await root('INSERT INTO providers(id,user_id,name,city) VALUES($1,$2,$3,$4)', [
-    manualBusiness,
-    ids.owner,
-    'Manual café',
-    'Zürich'
-  ])
-  await as('owner')
-  const manualLink = await rpc('lc_business_setup', [manualBusiness, null])
-  const manualOffer = await rpc('lc_save_offer', [
-    manualBusiness,
-    {
-      ...offer,
-      title: 'Ventaja manual',
-      requires_claim: false,
-      usage_period: 'unlimited',
-      stock_total: null
+    await as('member')
+    if (period === 'unlimited')
+      assert.notEqual((await rpc('lc_use_offer', [oid, randomUUID()])).id, r.id)
+    else {
+      await assert.rejects(() => rpc('lc_use_offer', [oid, randomUUID()]), /OFFER_UNAVAILABLE/)
+      if (period !== 'lifetime') {
+        await root(
+          "UPDATE latido_card_redemptions SET redeemed_at=public.lc_period_start($1)-interval '1 second' WHERE id=$2",
+          [period, r.id]
+        )
+        await as('member')
+        assert.ok((await rpc('lc_use_offer', [oid, randomUUID()])).valid)
+      }
     }
-  ])
-  await as('outsider')
-  const manualScanner = await rpc('lc_open_scanner', [manualLink.token, 'Caja manual'])
+    await root('UPDATE latido_card_offers SET active=false WHERE id=$1', [oid])
+  }
+  oid = await makeOffer({
+    title: 'Café gratis',
+    benefit_type: 'gift',
+    benefit_value: null,
+    minimum_spend: 0,
+    requires_claim: true,
+    stock_total: 1,
+    usage_period: 'lifetime',
+    usage_limit: 1
+  })
   await as('member')
-  const beforeManualQr = await rpc('lc_issue_digital_card')
-  const customerCode = await rpc('lc_issue_card_code')
-  assert.match(customerCode.code, /^\d{6}$/)
-  assert.ok(Date.parse(customerCode.expires_at) > Date.now())
-  await root(
-    `INSERT INTO latido_card_manual_codes(membership_id,code_hash,expires_at,revoked_at)
-    SELECT id,public.lc_hash($1),now()-interval '1 minute',now()
-    FROM latido_card_memberships WHERE user_id=$2`,
-    [customerCode.code, ids.member2]
-  )
+  const reservation = await rpc('lc_claim_offer', [oid])
+  assert.equal((await rpc('lc_claim_offer', [oid])).id, reservation.id)
+  await as('other')
+  await assert.rejects(() => rpc('lc_claim_offer', [oid]), /OFFER_SOLD_OUT/)
   await as('member')
-  await as(null, 'anon')
-  await rejects('lc_issue_card_code', [], 'permission denied')
-  await assert.rejects(
-    () => db.query('SELECT * FROM latido_card_manual_codes'),
-    /permission denied/
-  )
-  await assert.rejects(
-    () => db.query('SELECT * FROM latido_card_code_attempts'),
-    /permission denied/
-  )
-  await rejects('lc_scan_card_code', [token, customerCode.code], 'SCANNER_EXPIRED')
-  assert.equal(
-    (await rpc('lc_scan_card_code', [manualScanner.token, '1'])).error,
-    'CARD_CODE_INVALID',
-    'A public member number cannot be used as a credential'
-  )
-  const manualRead = await rpc('lc_scan_card_code', [
-    manualScanner.token,
-    `${customerCode.code.slice(0, 3)} ${customerCode.code.slice(3)}`
-  ])
-  assert.match(manualRead.card_token, /^[a-f0-9]{64}$/)
-  assert.deepEqual(
-    manualRead.card,
-    await rpc('lc_scan_card', [manualScanner.token, beforeManualQr.token])
-  )
-  await as('member')
-  await rpc('lc_issue_digital_card')
-  await as(null, 'anon')
-  assert.equal(
-    (await rpc('lc_scan_card', [manualScanner.token, manualRead.card_token])).member_number,
-    manualRead.card.member_number,
-    'QR renewal preserves an in-progress manual lookup'
-  )
-  const manualRequest = randomUUID()
-  const manualReceipt = await rpc('lc_redeem', [
-    manualScanner.token,
-    manualRead.card_token,
-    manualOffer,
-    manualRequest
-  ])
-  assert.ok(manualReceipt.id)
-  await as('member')
-  const nextCustomerCode = await rpc('lc_issue_card_code')
-  assert.notEqual(nextCustomerCode.code, customerCode.code)
-  await as(null, 'anon')
-  assert.equal(
-    (await rpc('lc_scan_card_code', [manualScanner.token, customerCode.code])).error,
-    'CARD_CODE_INVALID'
-  )
-  await rejects('lc_scan_card', [manualScanner.token, manualRead.card_token], 'CARD_INVALID')
-  assert.equal(
-    (
-      await rpc('lc_redeem', [
-        manualScanner.token,
-        manualRead.card_token,
-        manualOffer,
-        manualRequest
-      ])
-    ).id,
-    manualReceipt.id,
-    'A committed manual redemption can be retried after code regeneration'
-  )
-  const newManualRead = await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])
-  assert.ok(newManualRead.card_token)
-  await as('admin')
-  await rpc('lc_admin_enroll', [ids.member, validUntil, 'paused'])
-  await as('member')
-  await rejects('lc_issue_card_code', [], 'MEMBERSHIP_INACTIVE')
-  await as(null, 'anon')
-  assert.equal(
-    (await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])).error,
-    'CARD_CODE_INVALID'
-  )
-  for (let i = 0; i < 2; i++)
-    assert.equal(
-      (await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])).error,
-      'CARD_CODE_INVALID'
-    )
-  assert.equal(
-    (await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])).error,
-    'CARD_CODE_RATE_LIMIT'
-  )
-  const attempts = await root('SELECT attempts FROM latido_card_code_attempts WHERE scope=$1', [
-    `user:${ids.outsider}`
-  ])
-  assert.equal(
-    attempts.rows[0].attempts,
-    8,
-    'Failed guesses persist instead of rolling back rate limits'
-  )
-  await root("UPDATE latido_card_code_attempts SET window_started_at=now()-interval '2 minutes'")
-  await root(
-    "UPDATE latido_card_manual_codes SET expires_at=now()-interval '1 second' WHERE code_hash=public.lc_hash($1)",
-    [nextCustomerCode.code]
-  )
-  await as('admin')
-  await rpc('lc_admin_enroll', [ids.member, validUntil, 'active'])
-  await as(null, 'anon')
-  assert.equal(
-    (await rpc('lc_scan_card_code', [manualScanner.token, nextCustomerCode.code])).error,
-    'CARD_CODE_INVALID'
-  )
-  await as('member')
-  const freshManualCode = await rpc('lc_issue_card_code')
-  await as(null, 'anon')
-  for (let i = 0; i < 6; i++)
-    assert.ok(
-      (await rpc('lc_scan_card_code', [manualScanner.token, freshManualCode.code])).card_token,
-      'Valid customer lookups do not use the failed-guess budget'
-    )
-  const failedBudget = await root(
-    'SELECT failed_attempts FROM latido_card_code_attempts WHERE scope=$1',
-    [`user:${ids.outsider}`]
-  )
-  assert.equal(failedBudget.rows[0].failed_attempts, 1)
-  await root('UPDATE latido_card_code_attempts SET attempts=60 WHERE scope=$1', [
-    `user:${ids.outsider}`
-  ])
-  await as(null, 'anon')
-  assert.equal(
-    (await rpc('lc_scan_card_code', [manualScanner.token, freshManualCode.code])).error,
-    'CARD_CODE_RATE_LIMIT',
-    'Valid requests also have a separate high-volume limit'
-  )
-  await root("UPDATE latido_card_code_attempts SET window_started_at=now()-interval '2 minutes'")
-  await as(null, 'anon')
-  assert.ok(
-    (await rpc('lc_scan_card_code', [manualScanner.token, freshManualCode.code])).card_token
-  )
-  await root('UPDATE latido_card_code_attempts SET failed_attempts=30 WHERE scope=$1', [
-    `business:${manualBusiness}`
-  ])
-  await as(null, 'anon')
-  assert.equal(
-    (await rpc('lc_scan_card_code', [manualScanner.token, freshManualCode.code])).error,
-    'CARD_CODE_RATE_LIMIT',
-    'Business limits cannot be bypassed by changing devices'
-  )
+  await rpc('lc_release_claim', [oid])
+  await as('other')
+  const used = await rpc('lc_use_offer', [oid, randomUUID()])
+  assert.equal(used.valid, true, 'A limited offer activates directly without claiming first')
+  assert.equal((await rpc('lc_use_offer', [oid, randomUUID()])).id, used.id)
+  assert.equal((await rpc('lc_member_home')).offers.find((o) => o.id === oid).claim.status, 'used')
   await as('owner')
-  await rpc('lc_manage_scanner', [manualScanner.session_id, 'revoke'])
-  await as(null, 'anon')
-  await rejects('lc_scan_card_code', [manualScanner.token, freshManualCode.code], 'SCANNER_EXPIRED')
-  await root('SELECT 1')
-  const preflight = await readFile(
-    new URL('../supabase/latido_card_preflight.sql', import.meta.url),
-    'utf8'
+  await rpc('lc_reverse_redemption', [used.id, 'Wrong benefit'])
+  await as('other')
+  assert.equal(
+    (await rpc('lc_member_home')).offers.find((o) => o.id === oid).claim.status,
+    'claimed'
   )
-  const readiness = await db.exec(preflight)
-  assert.ok(readiness[0].rows.every((row) => row.estado === 'OK'))
-  const privileged = (
-    await db.query(
-      "SELECT proname,prosecdef,proconfig FROM pg_proc WHERE proname LIKE 'lc_%' AND prosecdef"
-    )
-  ).rows
-  assert.ok(privileged.every((f) => f.proconfig?.includes('search_path=public')))
-  console.log(
-    'Latido Card: PostgreSQL migrations, permanent account-bound Scanner, revocation/removal, permissions, stock, expiry, idempotency, physical fulfillment, audit, email retries and repeatable examples passed.'
+  await root(
+    "UPDATE latido_card_claims SET expires_at=now()-interval '1 second' WHERE offer_id=$1",
+    [oid]
   )
-} finally {
+  await as('other')
+  const usedAgain = await rpc('lc_use_offer', [oid, randomUUID()])
+  assert.equal(
+    usedAgain.valid,
+    true,
+    'An expired legacy reservation is renewed and consumed atomically'
+  )
+  await as('member')
+  await assert.rejects(() => rpc('lc_use_offer', [oid, randomUUID()]), /OFFER_SOLD_OUT/)
+  await as('other')
+  const usedHistory = (await rpc('lc_member_home')).history.find((row) => row.id === usedAgain.id)
+  assert.equal(usedHistory.provider_id, ids.business)
+  assert.equal(usedHistory.offer_snapshot.title, 'Café gratis')
+  // Calendar/DST: a Swiss day at the March transition is 23 hours, October 25.
+  const periods = await root(
+    `SELECT lc_period_start('day','2026-03-29T12:00Z') AS spring_start,lc_next_period('day','2026-03-29T12:00Z') AS spring_end,lc_period_start('day','2026-10-25T12:00Z') AS fall_start,lc_next_period('day','2026-10-25T12:00Z') AS fall_end,lc_next_period('month','2026-10-15T12:00Z') AS next_month,lc_period_start('week','2026-10-18T12:00Z') AS week_start`
+  )
+  const dates = periods.rows[0]
+  assert.equal((new Date(dates.spring_end) - new Date(dates.spring_start)) / 3600000, 23)
+  assert.equal((new Date(dates.fall_end) - new Date(dates.fall_start)) / 3600000, 25)
+  assert.equal(new Date(dates.next_month).toISOString(), '2026-10-31T23:00:00.000Z')
+  assert.equal(new Date(dates.week_start).toISOString(), '2026-10-11T22:00:00.000Z')
+  await as('owner')
+  const dashboard = await rpc('lc_business_dashboard', [ids.business])
+  assert.equal(dashboard.sessions, undefined)
+  assert.ok(dashboard.history.length)
+  await as('admin')
+  assert.equal((await rpc('lc_admin_overview')).stats.active_members, 2)
+  await as('member')
+  await assert.rejects(() => rpc('lc_business_dashboard', [ids.business]), /FORBIDDEN/)
   await db.close()
+  console.log(`Card minimal: ${upgrade ? 'legacy upgrade + archive' : 'fresh install'} passed`)
 }

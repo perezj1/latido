@@ -225,21 +225,20 @@ npm run test:search   # Calidad del buscador global
 
 ## Tarjeta Latido (piloto)
 
-Guía técnica y pasos de instalación: [docs/LATIDO_CARD_IMPLEMENTATION.md](docs/LATIDO_CARD_IMPLEMENTATION.md).
-Orden exacto de SQL, cuentas de prueba y ejemplos:
-[docs/LATIDO_CARD_SUPABASE_AND_TESTS.md](docs/LATIDO_CARD_SUPABASE_AND_TESTS.md).
+Guía vigente, funcionamiento, migración y pruebas: [docs/LATIDO_CARD_MINIMAL.md](docs/LATIDO_CARD_MINIMAL.md).
 
-Rutas: `/card`, `/card/negocios`, `/card/admin` y `/scanner/`.
-Instala `supabase/latido_card.sql` en una base de desarrollo con los requisitos
-indicados en la guía. Las membresías del piloto son manuales. La solicitud y
-administración de tarjetas físicas se describen en
-[docs/LATIDO_CARD_ADMINISTRATION.md](docs/LATIDO_CARD_ADMINISTRATION.md).
-Los pagos reales y los servicios automáticos de impresión/transporte siguen pendientes.
-Si los dos SQL de Card ya están instalados, ejecutar únicamente
-`supabase/latido_card_self_service.sql` para actualizar negocios, QR y favoritas.
-La interfaz actual usa **Disponibles** y **Activas**, con **Compartir** en cada
-oferta. Compartir y los ajustes visuales no requieren una migración adicional.
+El cliente pulsa **Activar**, confirma con **Usar ahora** y muestra una validación animada de cinco minutos.
+Todas las ofertas se activan igual, sin reclamar previamente; se agrupan en **Disponibles** y **Usadas**.
+Cada negocio tiene un QR público estable para sus pegatinas. El personal aplica
+el descuento en su caja, sin Scanner ni cuenta. Los negocios participan gratis.
+Las membresías del piloto se activan manualmente; el cobro automático sigue pendiente.
 
-Verificación: `npm run test:card`, `npm run test:card:browser` y `npm run build`.
+SQL manual, en orden: `supabase/latido_card_minimal.sql`,
+`supabase/latido_card_cleanup_legacy.sql`, `supabase/latido_card_verify.sql`.
+Los scripts anteriores están archivados en `supabase/legacy/latido_card/` y no deben reinstalarse.
+Si la versión mínima ya está instalada, esta actualización solo necesita `supabase/latido_card_activate_offers.sql`.
+
+Verificación: `npm run test:card`, `npm run test:card:browser`,
+`npm run test:card:webkit`, `npm run test:auth` y `npm run build`.
 
 *Hecho con 💙 para la comunidad hispanohablante en Suiza*

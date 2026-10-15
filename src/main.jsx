@@ -9,12 +9,9 @@ import '@fontsource/poppins/latin-800.css'
 import '@fontsource/poppins/latin-900.css'
 import App from './App.jsx'
 import './index.css'
-import { captureScannerHandoff } from './lib/latidoCardCore'
+import { retireLegacyCardStorage } from './lib/latidoCardLegacy'
 
-try {
-  captureScannerHandoff(window.location, window.sessionStorage, window.history)
-} catch {}
-
+retireLegacyCardStorage()
 // Prevent browser from restoring scroll position on back/forward navigation
 if ('scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual'

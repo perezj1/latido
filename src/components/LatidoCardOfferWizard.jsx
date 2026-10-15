@@ -94,7 +94,7 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
         <>
           <p className="lc-muted">Elige qué recibe el cliente y dale un título claro.</p>
           <label>
-            Tipo de ventaja
+            Tipo de descuento
             <select
               value={offer.benefit_type}
               onChange={(event) => set('benefit_type', event.target.value)}
@@ -145,13 +145,17 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
       {step === 2 && (
         <>
           <p className="lc-muted">
-            Decide si la ventaja está incluida o si el socio debe activarla.
+            Elige un descuento habitual o una promoción especial.
           </p>
           <fieldset className="lc-offer-kind">
             <legend>Cómo accede el socio</legend>
             {[
-              [false, 'Ventaja incluida', 'Presenta su tarjeta y la usa.'],
-              [true, 'Promoción especial', 'La activa primero y reserva una unidad.']
+              [false, 'Descuento incluido', 'Presenta su tarjeta y la usa.'],
+              [
+                true,
+                'Promoción especial',
+                'Una unidad por socio. Se descuenta al confirmar el uso.'
+              ]
             ].map(([value, label, help]) => (
               <label
                 key={label}
@@ -204,18 +208,6 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
                   onChange={(event) => set('stock_total', event.target.value)}
                 />
               </label>
-              <label>
-                Días para usar la reserva
-                <input
-                  required
-                  type="number"
-                  min="1"
-                  max="90"
-                  step="1"
-                  value={offer.claim_days}
-                  onChange={(event) => set('claim_days', Number(event.target.value))}
-                />
-              </label>
               <p className="lc-muted">Cada socio puede usar esta promoción una vez.</p>
             </>
           ) : (
@@ -226,6 +218,8 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
                   value={offer.usage_period}
                   onChange={(event) => set('usage_period', event.target.value)}
                 >
+                  <option value="day">Por día</option>
+                  <option value="week">Por semana (lunes a domingo)</option>
                   <option value="month">Por mes natural</option>
                   <option value="lifetime">Una vez en total</option>
                   <option value="unlimited">Sin límite</option>
@@ -269,7 +263,7 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
           </p>
           <article className="lc-wizard-preview">
             <span className="lc-badge">
-              {offer.requires_claim ? 'Promoción especial' : 'Ventaja incluida'}
+              {offer.requires_claim ? 'Promoción especial' : 'Descuento incluido'}
             </span>
             <h3>{offer.title}</h3>
             <p>{offerBenefitLabel(offer)}</p>
@@ -297,16 +291,12 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
                     <dt>Unidades</dt>
                     <dd>{offer.stock_total}</dd>
                   </div>
-                  <div>
-                    <dt>Reserva</dt>
-                    <dd>{offer.claim_days} días</dd>
-                  </div>
                 </>
               )}
             </dl>
-            <small>No acumulable con otras ventajas Latido.</small>
+            <small>No acumulable con otros descuentos Latido.</small>
           </article>
-          <p className="lc-muted">Si recibe reservas o canjes, sus condiciones quedan fijadas.</p>
+          <p className="lc-muted">Cuando se utilice, sus condiciones quedarán fijadas.</p>
         </>
       )}
       <div className="lc-actions lc-wizard-actions">
@@ -328,7 +318,7 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
         </button>
       </div>
       <small className="lc-muted">
-        Puedes tener una ventaja incluida y dos promociones especiales vigentes.
+        Puedes tener un descuento incluido y dos promociones especiales vigentes.
       </small>
     </form>
   )

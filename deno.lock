@@ -10,8 +10,6 @@
     "npm:@vercel/analytics@^2.0.1": "2.0.1_react@18.3.1",
     "npm:@vercel/speed-insights@2": "2.0.0_react@18.3.1",
     "npm:@vitejs/plugin-react@^5.2.0": "5.2.0_vite@7.3.6__picomatch@4.0.7_@babel+core@7.29.7",
-    "npm:@zxing/browser@~0.1.5": "0.1.5_@zxing+library@0.21.3",
-    "npm:@zxing/library@~0.21.3": "0.21.3",
     "npm:autoprefixer@^10.4.16": "10.6.1_postcss@8.5.28",
     "npm:html-to-image@^1.11.13": "1.11.13",
     "npm:lucide-react@^1.28.0": "1.47.0_react@18.3.1",
@@ -657,27 +655,6 @@
         "react-refresh",
         "vite"
       ]
-    },
-    "@zxing/browser@0.1.5_@zxing+library@0.21.3": {
-      "integrity": "sha512-4Lmrn/il4+UNb87Gk8h1iWnhj39TASEHpd91CwwSJtY5u+wa0iH9qS0wNLAWbNVYXR66WmT5uiMhZ7oVTrKfxw==",
-      "dependencies": [
-        "@zxing/library"
-      ],
-      "optionalDependencies": [
-        "@zxing/text-encoding"
-      ]
-    },
-    "@zxing/library@0.21.3": {
-      "integrity": "sha512-hZHqFe2JyH/ZxviJZosZjV+2s6EDSY0O24R+FQmlWZBZXP9IqMo7S3nb3+2LBWxodJQkSurdQGnqE7KXqrYgow==",
-      "dependencies": [
-        "ts-custom-error"
-      ],
-      "optionalDependencies": [
-        "@zxing/text-encoding"
-      ]
-    },
-    "@zxing/text-encoding@0.9.0": {
-      "integrity": "sha512-U/4aVJ2mxI0aDNI8Uq0wEhMgY+u4CNtEb0om3+y3+niDAsoTCOB33UF0sxpzqzdqXLqmvc+vZyAt4O8pPdfkwA=="
     },
     "ansi-regex@5.0.1": {
       "integrity": "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="
@@ -1413,9 +1390,6 @@
         "is-number"
       ]
     },
-    "ts-custom-error@3.3.1": {
-      "integrity": "sha512-5OX1tzOjxWEgsr/YEUWSuPrQ00deKLh6D7OTWcvNHm12/7QPyRh8SYpyWvA4IZv8H/+GQWQEh/kwo95Q9OVW1A=="
-    },
     "ts-interface-checker@0.1.13": {
       "integrity": "sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA=="
     },
@@ -1506,8 +1480,6 @@
         "npm:@vercel/analytics@^2.0.1",
         "npm:@vercel/speed-insights@2",
         "npm:@vitejs/plugin-react@^5.2.0",
-        "npm:@zxing/browser@~0.1.5",
-        "npm:@zxing/library@~0.21.3",
         "npm:autoprefixer@^10.4.16",
         "npm:html-to-image@^1.11.13",
         "npm:lucide-react@^1.28.0",

@@ -1,12 +1,12 @@
-import { extractCardToken, offerBenefitLabel } from './latidoCardCore.js'
+import { offerBenefitLabel } from './latidoCardCore.js'
 
-// Share the public offer ID, never a membership/Scanner credential or a reservation.
+// Share the public offer ID, never a private validation or reservation.
 export function cardOfferShareData(offer, origin = window.location.origin) {
   const url = new URL('/card', origin)
   url.searchParams.set('oferta', offer.id)
   return {
     title: `${offer.title} · Tarjeta Latido`,
-    text: `${offerBenefitLabel(offer)} en ${offer.business_name}. Crea tu cuenta en Latido y únete al club de ventajas con tu Tarjeta Latido por CHF 6,90 al mes.`,
+    text: `${offerBenefitLabel(offer)} en ${offer.business_name}. Crea tu cuenta en Latido y únete al club de descuentos con tu Tarjeta Latido por CHF 6,90 al mes.`,
     url: url.href
   }
 }
@@ -15,27 +15,20 @@ export async function shareCardOffer(offer, nav = navigator, origin = window.loc
   return shareLatidoLink(cardOfferShareData(offer, origin), nav)
 }
 
-// This private capability link is shared deliberately by the business owner,
-// exclusively with staff. It grants no access without an authenticated account.
-export function scannerConnectionShareData(link, businessName, origin = window.location.origin) {
-  const token = extractCardToken(link, 'scanner', origin)
-  if (!token) throw new Error('SCANNER_LINK_INVALID')
-  const url = new URL(`/scanner/link/${token}`, origin)
-  url.searchParams.set('camera', '1')
-  return {
-    title: `Conectar con ${businessName} · Latido Scanner`,
-    text: `Conéctate al equipo de ${businessName} en Latido Scanner. Abre este enlace e inicia sesión o crea una cuenta gratis. No necesitas una suscripción de pago.`,
-    url: url.href
-  }
-}
-
-export async function shareScannerConnection(
-  link,
+export function shareCardBusiness(
+  providerId,
   businessName,
   nav = navigator,
   origin = window.location.origin
 ) {
-  return shareLatidoLink(scannerConnectionShareData(link, businessName, origin), nav)
+  return shareLatidoLink(
+    {
+      title: `${businessName} · Tarjeta Latido`,
+      text: `Descubre tus descuentos de Tarjeta Latido en ${businessName}.`,
+      url: new URL(`/card/negocio/${providerId}`, origin).href
+    },
+    nav
+  )
 }
 
 async function shareLatidoLink(data, nav) {

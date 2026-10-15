@@ -1,0 +1,194 @@
+.lc-membership-summary {
+  max-width: 440px;
+  margin: 24px auto;
+}
+.lc-membership-card {
+  --lc-card-ink: #fff;
+  --lc-card-muted: rgb(255 255 255 / 62%);
+  --lc-card-status: #24e2c9;
+  container-type: inline-size;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1.586;
+  border-radius: 22px;
+  background: #0d1530;
+  color: var(--lc-card-ink);
+  font-family: 'Poppins', system-ui, sans-serif;
+  box-shadow: 0 20px 40px -16px rgb(13 21 48 / 55%);
+  transition:
+    background-color 240ms ease,
+    color 240ms ease,
+    box-shadow 240ms ease;
+}
+.lc-membership-card * {
+  box-sizing: border-box;
+  margin: 0;
+}
+.lc-membership-card__glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(80cqw 60cqw at 100% 100%, rgb(74 118 239 / 60%), transparent 70%),
+    radial-gradient(60cqw 45cqw at 100% 0%, rgb(36 191 226 / 22%), transparent 70%),
+    radial-gradient(60cqw 50cqw at 0% 100%, rgb(3 170 152 / 30%), transparent 70%);
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+.lc-membership-card__watermark {
+  position: absolute;
+  width: 84cqw;
+  right: -26cqw;
+  bottom: -30cqw;
+  opacity: 0.14;
+  filter: grayscale(1) invert(1);
+  mix-blend-mode: screen;
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+.lc-membership-card__inner {
+  position: absolute;
+  inset: 0;
+  padding: 5.5cqw 6cqw 7.5cqw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.lc-membership-card__top,
+.lc-membership-card__brand,
+.lc-membership-card__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lc-membership-card__brand {
+  gap: 2.6cqw;
+}
+.lc-membership-card__logo {
+  width: 10.5cqw;
+  height: 10.5cqw;
+  padding: 0.9cqw;
+  border-radius: 2.8cqw;
+  background: #fff;
+  display: block;
+}
+.lc-membership-card__brand-name {
+  font-size: 5.2cqw;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.lc-membership-card__subtitle {
+  margin-top: 0.8cqw;
+  font-size: 2.7cqw;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lc-card-muted);
+}
+.lc-membership-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.4cqw;
+  padding: 1.2cqw 2.8cqw;
+  border-radius: 999px;
+  font-size: 2.9cqw;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--lc-card-status);
+  background: rgb(36 226 201 / 14%);
+  border: 1px solid rgb(36 226 201 / 40%);
+}
+.lc-membership-card__status > span {
+  width: 1.6cqw;
+  height: 1.6cqw;
+  border-radius: 50%;
+  background: var(--lc-card-status);
+  box-shadow: 0 0 0 0.8cqw rgb(36 226 201 / 20%);
+}
+.lc-membership-card__status[data-active='false'] {
+  color: #ff8a8d;
+  background: rgb(250 47 53 / 14%);
+  border-color: rgb(250 47 53 / 45%);
+}
+.lc-membership-card__status[data-active='false'] > span {
+  background: #fa2f35;
+  box-shadow: 0 0 0 0.8cqw rgb(250 47 53 / 20%);
+}
+.lc-membership-card__label {
+  display: block;
+  font-size: 2.6cqw;
+  line-height: 1.6;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lc-card-muted);
+}
+.lc-membership-card__number {
+  margin-top: 0.6cqw;
+  font-size: 9cqw;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+.lc-membership-card__number[data-long='true'] {
+  font-size: 6cqw;
+  letter-spacing: 0.04em;
+}
+.lc-membership-card__bottom {
+  align-items: flex-end;
+  gap: 5cqw;
+}
+.lc-membership-card__bottom > div {
+  min-width: 0;
+}
+.lc-membership-card__bottom > div:last-child {
+  text-align: right;
+  flex-shrink: 0;
+}
+.lc-membership-card .lc-membership-card__value {
+  display: block;
+  margin-top: 0.5cqw;
+  font-size: 4.6cqw;
+  line-height: 1.3;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lc-membership-card__stripe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.6cqw;
+  background: linear-gradient(
+    90deg,
+    #f9a719 0 16.66%,
+    #fa2f35 16.66% 33.33%,
+    #4a76ef 33.33% 50%,
+    #24bfe2 50% 66.66%,
+    #24e2c9 66.66% 83.33%,
+    #03aa98 83.33% 100%
+  );
+}
+.lc-membership-hint {
+  text-align: center;
+  color: var(--latido-color-text-muted);
+  font-size: 11px;
+  margin: 14px 8px 0;
+}
+.lc-intro-card-preview {
+  max-width: 340px;
+  margin: 4px auto 32px;
+  transform: rotate(-4deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-membership-card,
+  .lc-membership-card__glow {
+    transition: none;
+  }
+}

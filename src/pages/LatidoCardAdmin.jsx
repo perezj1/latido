@@ -1,66 +1,46 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
-import { CardHeader } from './LatidoCard'
-import { cardRpc, cardUrl } from '../lib/latidoCard'
+import { useEffect, useState } from 'react'
+import { cardRpc } from '../lib/latidoCard'
 import { cardErrorMessage } from '../lib/latidoCardCore'
-import LatidoCardQr from '../components/LatidoCardQr'
-import LatidoCardPhysicalAdmin from '../components/LatidoCardPhysicalAdmin'
+import { CardHeader, cardDate } from './LatidoCard'
 import './LatidoCard.css'
 
 export default function LatidoCardAdmin() {
-  const { isAdmin } = useAuth()
-  const [overview, setOverview] = useState({ stats: {}, members: [], businesses: [] }),
-    [search, setSearch] = useState('')
-  const loadOverview = useCallback(async () => {
-    if (!isAdmin) return
-    try {
-      setOverview(await cardRpc('lc_admin_overview', { p_search: search }))
-      setError('')
-    } catch (err) {
-      setError(cardErrorMessage(err))
-    }
-  }, [isAdmin, search])
-  useEffect(() => {
-    if (isAdmin) loadOverview()
-  }, [isAdmin])
-  const [user, setUser] = useState(''),
-    [until, setUntil] = useState(''),
-    [provider, setProvider] = useState(''),
-    [status, setStatus] = useState('active'),
-    [busy, setBusy] = useState(false),
+  const [overview, setOverview] = useState({ members: [], businesses: [], stats: {}, audit: [] })
+  const [search, setSearch] = useState(''),
+    [user, setUser] = useState(''),
+    [provider, setProvider] = useState('')
+  const [until, setUntil] = useState(''),
+    [status, setStatus] = useState('active')
+  const [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
-    [notice, setNotice] = useState(''),
-    [physical, setPhysical] = useState(null)
-  const run = async (fn) => {
+    [notice, setNotice] = useState('')
+  const load = async () => setOverview(await cardRpc('lc_admin_overview', { p_search: search }))
+  useEffect(() => {
+    load().catch((err) => setError(cardErrorMessage(err)))
+  }, [])
+  const run = async (action) => {
+    if (busy) return
     setBusy(true)
     setError('')
-    setNotice('')
     try {
-      await fn()
-      await loadOverview()
-      setNotice('Operación completada.')
+      await action()
+      await load()
+      setNotice('Cambios guardados.')
     } catch (err) {
       setError(cardErrorMessage(err))
     } finally {
       setBusy(false)
     }
   }
-  if (!isAdmin)
-    return (
-      <div className="lc-page">
-        <CardHeader />
-        <p>No tienes acceso a la administración de Tarjeta Latido.</p>
-      </div>
-    )
   return (
     <div className="lc-page">
       <CardHeader />
       <section className="lc-hero">
-        <span className="lc-eyebrow">Administración · Piloto</span>
-        <h1>Latido administra cada tarjeta.</h1>
+        <span className="lc-eyebrow">Administración Latido</span>
+        <h1>Socios, negocios y descuentos.</h1>
         <p>
-          Gestiona socios, negocios, solicitudes de tarjeta física y entrega. Las altas del piloto
-          son manuales y no realizan cobros.
+          Gestiona las membresías y retira los negocios que incumplan las normas. Las altas del
+          piloto son manuales y no realizan cobros.
         </p>
       </section>
       {error && (
@@ -75,52 +55,52 @@ export default function LatidoCardAdmin() {
       )}
       <div className="lc-grid">
         {[
-          ['Socios activos', overview.stats.active_members],
-          ['Solicitudes nuevas', overview.stats.pending_requests],
-          ['Tarjetas en curso', overview.stats.in_progress],
-          ['Emails pendientes', overview.stats.email_pending],
-          ['Emails fallidos', overview.stats.email_failed]
-        ].map(([label, value]) => (
-          <div className="lc-panel" key={label}>
+          ['Socios activos', 'active_members'],
+          ['Negocios activos', 'active_businesses'],
+          ['Descuentos vigentes', 'active_offers'],
+          ['Usos registrados', 'uses']
+        ].map(([label, key]) => (
+          <section className="lc-panel" key={key}>
             <span className="lc-eyebrow">{label}</span>
-            <h2>{value ?? '—'}</h2>
-          </div>
+            <h2>{overview.stats[key] ?? '—'}</h2>
+          </section>
         ))}
       </div>
       <form
-        className="lc-form lc-panel"
+        className="lc-form lc-panel lc-spaced"
         onSubmit={(e) => {
           e.preventDefault()
-          loadOverview()
+          run(load)
         }}
       >
         <label>
           Buscar socio por nombre o email
-          <input value={search} onChange={(e) => setSearch(e.target.value)} maxLength={120} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} maxLength={100} />
         </label>
-        <button className="lc-button lc-button--secondary">Buscar socios</button>
+        <button className="lc-button lc-button--secondary" disabled={busy}>
+          Buscar socios
+        </button>
         <label>
           Seleccionar usuario
           <select
-            value={overview.members.some((m) => m.id === user) ? user : ''}
+            value={user}
             onChange={(e) => {
-              const found = overview.members.find((m) => m.id === e.target.value)
               setUser(e.target.value)
-              setPhysical(null)
-              if (found?.valid_until) {
-                const date = new Date(found.valid_until)
-                setUntil(
-                  new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-                    .toISOString()
-                    .slice(0, 16)
-                )
-              }
-              setStatus(found?.status || 'active')
+              const member = overview.members.find((m) => m.user_id === e.target.value)
+              setStatus(member?.status || 'active')
+              const date = member?.valid_until ? new Date(member.valid_until) : null
+              setUntil(
+                date
+                  ? new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                      .toISOString()
+                      .slice(0, 16)
+                  : ''
+              )
             }}
           >
             <option value="">Seleccionar…</option>
             {overview.members.map((m) => (
-              <option key={m.id} value={m.id}>
+              <option key={m.user_id} value={m.user_id}>
                 {m.name || m.email} · {m.email}
                 {m.member_number ? ` · Socio #${m.member_number}` : ' · Sin membresía'}
               </option>
@@ -128,7 +108,7 @@ export default function LatidoCardAdmin() {
           </select>
         </label>
       </form>
-      <div className="lc-grid">
+      <div className="lc-grid lc-spaced">
         <section className="lc-panel">
           <h2>Membresía de un socio</h2>
           <form
@@ -146,14 +126,7 @@ export default function LatidoCardAdmin() {
           >
             <label>
               UUID del usuario
-              <input
-                required
-                value={user}
-                onChange={(e) => {
-                  setUser(e.target.value)
-                  setPhysical(null)
-                }}
-              />
+              <input required value={user} onChange={(e) => setUser(e.target.value)} />
             </label>
             <label>
               Vigencia hasta
@@ -176,59 +149,24 @@ export default function LatidoCardAdmin() {
               Guardar membresía
             </button>
           </form>
-          <div className="lc-actions">
-            <button
-              className="lc-button lc-button--secondary"
-              disabled={busy || !user}
-              onClick={() => {
-                if (
-                  window.confirm(
-                    'Se invalidará cualquier tarjeta física anterior de este socio. ¿Emitir una nueva?'
-                  )
-                )
-                  run(async () =>
-                    setPhysical(await cardRpc('lc_admin_physical_card', { p_user: user }))
-                  )
-              }}
-            >
-              Emitir tarjeta física
-            </button>
-          </div>
-          {physical && (
-            <>
-              <LatidoCardQr
-                value={cardUrl(physical.token)}
-                label="QR para imprimir en la tarjeta física"
-              />
-              <p>Socio #{physical.member_number}</p>
-              <p className="lc-secret">{cardUrl(physical.token)}</p>
-              <p className="lc-muted">
-                Guarda el QR para impresión. El servidor conserva solo su huella, no permite
-                recuperarlo después.
-              </p>
-            </>
-          )}
         </section>
         <section className="lc-panel">
           <h2>Participación de un negocio</h2>
           <div className="lc-form">
             <label>
               Seleccionar negocio
-              <select
-                value={overview.businesses.some((b) => b.id === provider) ? provider : ''}
-                onChange={(e) => setProvider(e.target.value)}
-              >
+              <select value={provider} onChange={(e) => setProvider(e.target.value)}>
                 <option value="">Seleccionar…</option>
                 {overview.businesses.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name} · {b.participating ? 'Participante' : 'Pendiente'}
+                    {b.name} · {b.active ? 'Participante' : 'Retirado'}
                   </option>
                 ))}
               </select>
             </label>
           </div>
           <form
-            className="lc-form"
+            className="lc-form lc-spaced"
             onSubmit={(e) => {
               e.preventDefault()
               run(() => cardRpc('lc_admin_business', { p_provider: provider, p_active: true }))
@@ -253,36 +191,31 @@ export default function LatidoCardAdmin() {
             </button>
           </form>
           <p className="lc-muted">
-            El propietario gestiona sus ofertas desde Mi negocio. Las autorizaciones se comprueban
-            en el servidor.
+            Al retirarlo, sus descuentos y validaciones dejan de estar disponibles. Su QR público
+            conserva la misma dirección.
           </p>
         </section>
       </div>
-      <LatidoCardPhysicalAdmin onChange={loadOverview} />
-      {!!overview.audit?.length && (
-        <details className="lc-panel lc-spaced">
-          <summary>Registro de administración Latido</summary>
-          <ul className="lc-history">
-            {overview.audit.map((event, index) => (
-              <li key={index}>
+      <details className="lc-panel lc-spaced">
+        <summary>Registro de administración Latido</summary>
+        <ul className="lc-history">
+          {overview.audit.map((event) => (
+            <li key={event.id}>
+              <strong>
                 {{
                   latido_card_memberships: 'Membresía',
                   latido_card_businesses: 'Participación de negocio',
-                  latido_card_credentials: 'Tarjeta física'
-                }[event.entity_type] || 'Registro'}{' '}
-                · {event.action === 'INSERT' ? 'Alta' : 'Actualización'}
-                <small>
-                  {new Date(event.created_at).toLocaleString('es-CH', {
-                    timeZone: 'Europe/Zurich'
-                  })}{' '}
-                  · {event.actor_name}
-                </small>
-                <span className="lc-muted">Referencia {event.entity_id}</span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
+                  latido_card_redemptions: 'Anulación de uso'
+                }[event.entity_type] || 'Registro histórico'}
+              </strong>
+              <small>
+                {cardDate(event.created_at)} · {event.actor_name} · {event.action}
+              </small>
+              <span className="lc-muted">Referencia {event.entity_id}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
     </div>
   )
 }

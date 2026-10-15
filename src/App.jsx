@@ -38,7 +38,7 @@ const Landing = lazy(() => import('./pages/Landing'))
 const Club = lazy(() => import('./pages/Club'))
 const LatidoCard = lazy(() => import('./pages/LatidoCard'))
 const LatidoCardBusiness = lazy(() => import('./pages/LatidoCardBusiness'))
-const LatidoCardScannerConnect = lazy(() => import('./pages/LatidoCardScannerConnect'))
+const LatidoCardValidation = lazy(() => import('./pages/LatidoCardValidation'))
 const LatidoCardAdmin = lazy(() => import('./pages/LatidoCardAdmin'))
 const Home = lazy(() => import('./pages/Home'))
 const ResourcePackage = lazy(() => import('./pages/ResourcePackage'))
@@ -177,7 +177,7 @@ function VercelTelemetry() {
   const analyticsConsent = useAnalyticsConsent()
   const location = useLocation()
 
-  if (!analyticsConsent || !isAnalyticsEnabled() || location.pathname.startsWith('/c/')) return null
+  if (!analyticsConsent || !isAnalyticsEnabled() || location.pathname.startsWith('/c/') || location.pathname.startsWith('/card/validacion/')) return null
 
   return (
     <>
@@ -770,7 +770,7 @@ function AppShell() {
     <>
       <CookieConsent showBanner={false} />
       <PushRegistrationSync />
-      {!isScannerConnectionRoute(location) && <UserPresenceSync />}
+      <UserPresenceSync />
       <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen || hideAppNavigation ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:'#fff' }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
@@ -788,9 +788,11 @@ function AppShell() {
             <Route path="/club" element={<Club />} />
             <Route path="/card" element={<LatidoCard />} />
             <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusiness /></ProtectedRoute>} />
-            <Route path="/card/scanner/vincular" element={<LatidoCardScannerConnect />} />
+            <Route path="/card/negocio/:providerId" element={<LatidoCard />} />
+            <Route path="/card/validacion/:redemptionId" element={<ProtectedRoute><LatidoCardValidation /></ProtectedRoute>} />
+            <Route path="/card/scanner/*" element={<Navigate to="/card" replace />} />
             <Route path="/card/admin" element={<AdminRoute><LatidoCardAdmin /></AdminRoute>} />
-            <Route path="/c/:cardToken" element={<div className="lc-page"><h1>Tarjeta Latido</h1><p>Presenta este QR al personal de un negocio participante para consultar tus ventajas.</p><Link to="/card">Ir a Tarjeta Latido</Link></div>} />
+            <Route path="/c/:cardToken" element={<div className="lc-page"><h1>Tarjeta Latido</h1><p>Este QR antiguo ha dejado de utilizarse. Abre tus descuentos y pulsa «Activar» cuando estés en el negocio.</p><Link to="/card">Abrir mis descuentos</Link></div>} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />
@@ -842,9 +844,8 @@ function AppShell() {
 
 function AppCommunityExtras() {
   const { pathname } = useLocation()
-  // The short Scanner handoff needs Auth only. Background community requests
-  // can resume after the user returns to the app, instead of outliving this page.
-  if (pathname.startsWith('/card/scanner/')) return null
+  // Keep the Card flow focused; directory/share reminders belong to the community app.
+  if (pathname === '/card' || pathname.startsWith('/card/') || pathname.startsWith('/c/')) return null
   return (
     <>
       <CreatorDirectorySync />
@@ -853,20 +854,11 @@ function AppCommunityExtras() {
   )
 }
 
-function isScannerConnectionRoute(location) {
-  return location.pathname.startsWith('/card/scanner') ||
-    (location.pathname === '/auth' &&
-      new URLSearchParams(location.search).get('next') === '/card/scanner/vincular')
-}
-
-// The connection bridge immediately leaves for the standalone Scanner. Avoid
-// starting community queries while Safari is discarding that document.
 function AppNotificationScope({ children }) {
-  const location = useLocation()
-  if (isScannerConnectionRoute(location)) return children
+  const { pathname } = useLocation()
   return (
     <AppNotificationsProvider>
-      <InAppNotificationAlert />
+      {!pathname.startsWith('/card/validacion/') && <InAppNotificationAlert />}
       {children}
     </AppNotificationsProvider>
   )

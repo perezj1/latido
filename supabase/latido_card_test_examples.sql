@@ -1,4 +1,4 @@
--- OPCIONAL: SOLO EN UN PROYECTO DE DESARROLLO, después de los dos SQL de Card.
+-- OPCIONAL: SOLO EN DESARROLLO, después de minimal, cleanup_legacy y verify.
 -- Crear primero estas 3 cuentas en Authentication > Users > Add user,
 -- con contraseña propia y Auto Confirm User activado. El alta debe crear profiles.
 -- No se crean contraseñas ni se insertan usuarios directamente en auth.users.

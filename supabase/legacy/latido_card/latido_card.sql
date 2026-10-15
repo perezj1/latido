@@ -1,3 +1,5 @@
+-- ARCHIVED: retired Scanner/physical-card system. Do not run for the minimal version.
+-- Current instructions: docs/LATIDO_CARD_MINIMAL.md
 -- Latido Card pilot. Run after schema.sql and business_promotion_plans.sql.
 -- No live payment, membership or business is created by this migration.
 BEGIN;

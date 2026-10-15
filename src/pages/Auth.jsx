@@ -581,14 +581,12 @@ export default function Auth() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const nextPath = getSafeNextPath(searchParams.get('next'))
-  const isScannerAccess = nextPath === '/card/scanner/vincular'
   const [pwa] = useState(() => isStandalonePwa())
   const isPartnerAccess = nextPath.startsWith('/servicios-suiza') || nextPath.startsWith('/colaboradores/')
   const authEntryPoint = isPartnerAccess ? 'partner' : nextPath === '/' ? 'general' : 'protected_route'
   const [mode, setMode] = useState(() => {
     const requestedMode = searchParams.get('mode')
     if (requestedMode === 'login' || requestedMode === 'register') return requestedMode
-    if (isScannerAccess) return 'login'
     if (searchParams.get('oauth') === 'google' || searchParams.get('password') === 'updated') return 'login'
     return 'welcome'
   })
@@ -609,7 +607,7 @@ export default function Auth() {
     const requestedMode = searchParams.get('mode')
     const routeMode = requestedMode === 'login' || requestedMode === 'register'
       ? requestedMode
-      : isScannerAccess || searchParams.get('oauth') === 'google' || searchParams.get('password') === 'updated'
+      : searchParams.get('oauth') === 'google' || searchParams.get('password') === 'updated'
         ? 'login'
         : 'welcome'
 
@@ -980,7 +978,6 @@ export default function Auth() {
           Inicia sesión para acceder a la información y los servicios de nuestros colaboradores.
         </p>
       )}
-      {isScannerAccess && <p className="latido-auth-notice">Conecta con el negocio usando tu cuenta de Latido. Si no tienes cuenta, créala gratis. No necesitas suscribirte al club.</p>}
 
       <Input label="Email" type="email" placeholder="tu@email.com" value={form.email} onChange={e => s('email', e.target.value)} required error={errors.email} errorKey="email" />
       <Input
@@ -1091,7 +1088,6 @@ export default function Auth() {
           Crea tu cuenta gratuita para acceder a la información y los servicios de nuestros colaboradores.
         </p>
       )}
-      {isScannerAccess && step === 0 && <p className="latido-auth-notice">Esta cuenta gratuita identifica tu acceso como trabajador. Al terminar, volverás a conectar con tu negocio.</p>}
 
       {step === 0 && (
         <>

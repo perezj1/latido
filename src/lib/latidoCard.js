@@ -6,5 +6,4 @@ export async function cardRpc(name, params = {}) {
   return data
 }
 
-export const cardUrl = (token) => `${window.location.origin}/c/${token}`
-export const scannerLinkUrl = (token) => `${window.location.origin}/scanner/link/${token}`
+export const businessCardUrl = (providerId) => `${window.location.origin}/card/negocio/${providerId}`

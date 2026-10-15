@@ -92,6 +92,7 @@ function gelatoDevPlugin() {
 }
 
 function scannerRoutingPlugin() {
+  // Compatibility entry only: old Scanner links now retire its worker and open Card.
   return {
     name:'latido-scanner-entry',
     configureServer(server) {
