@@ -65,6 +65,7 @@ export default function LatidoDiscountCard({
           <h3 className="lc-discount-title">{offer.title}</h3>
           <Link className="lc-discount-business" to={`/card/negocio/${offer.provider_id}`}>
             {offer.business_name}
+            {offer.city && ` · ${offer.city}`}
           </Link>
           <div className="lc-discount-summary">
             <p>
