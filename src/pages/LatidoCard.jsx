@@ -391,15 +391,6 @@ export default function LatidoCard() {
                       onShare={shareOffer}
                     />
                   ))}
-              {tab === 'available' && providerId && used.length > 0 && (
-                <LatidoDiscountHistory
-                  key="recent"
-                  items={used}
-                  memberActive={Boolean(member?.active)}
-                  busy={busy}
-                  onActivate={activateOffer}
-                />
-              )}
               {!visible.length && (
                 <p className="lc-centered lc-muted">
                   {tab === 'used'
