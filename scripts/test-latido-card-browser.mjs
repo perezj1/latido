@@ -421,7 +421,7 @@ try {
   await mkdir(output, { recursive: true })
   const businessPath = `/card/negocio/${providerId}?oferta=${offer.id}`
   await page.goto(origin + businessPath)
-  await page.getByRole('heading', { name: 'Descuentos de este negocio', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Ofertas de este negocio', exact: true }).waitFor()
   await page.getByRole('link', { name: 'Inicia sesión', exact: true }).click()
   await page.waitForURL('**/auth?**')
   assert.equal(new URL(page.url()).searchParams.get('next'), businessPath)
@@ -429,17 +429,71 @@ try {
   await page.getByPlaceholder('Tu contraseña').fill('Test-password-123!')
   await page.getByRole('button', { name: 'Entrar →', exact: true }).click()
   await page.waitForURL(origin + businessPath)
-  await page.locator('.lc-member-strip-heading').waitFor()
-  await page.locator('.lc-member-strip-action').getByText('Ver tarjeta', { exact: true }).waitFor()
+  await page.getByRole('heading', { name: offer.business_name, exact: true }).waitFor()
   await page
     .getByRole('region', { name: 'Negocio', exact: true })
     .getByRole('img', { name: `Imagen de ${offer.business_name}` })
     .waitFor()
   assert.equal(
     await page.getByRole('searchbox').count(),
-    0,
-    'Small catalogs do not need a search box'
+    1,
+    'Business offers always have a scoped search box'
   )
+  assert.equal(
+    await page.locator('.lc-discount-business').count(),
+    0,
+    'The business name is not repeated on each local offer'
+  )
+  assert.equal(
+    await page.locator('.lc-membership-summary').count(),
+    0,
+    'The business page focuses on its offers'
+  )
+  await page.getByRole('button', { name: 'Compartir negocio', exact: true }).click()
+  assert.equal(
+    await page.evaluate(() => window.lastSharedLink.url),
+    origin + `/card/negocio/${providerId}`
+  )
+  const scopedSearch = page.getByRole('searchbox', {
+    name: 'Buscar en las ofertas de este negocio',
+    exact: true
+  })
+  await scopedSearch.fill('sin-coincidencias-xyz')
+  await page.getByText('No hay ofertas que coincidan con tu búsqueda.', { exact: true }).waitFor()
+  assert.equal(
+    await page.locator('.lc-discount-card').count(),
+    0,
+    'Search also filters an offer opened from a shared link'
+  )
+  await scopedSearch.fill('')
+  await page.getByRole('tab', { name: 'Disponibles (2)', exact: true }).waitFor()
+  await scopedSearch.blur()
+  await page.screenshot({ path: path.join(output, 'business-detail-mobile.png'), fullPage: true })
+  await page.setViewportSize({ width: 320, height: 568 })
+  assert.ok(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    'Business offers fit a narrow phone'
+  )
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole('link', { name: 'Volver a los negocios', exact: true }).click()
+  await page.waitForURL(origin + '/card')
+  await page.locator('.lc-member-strip-heading').waitFor()
+  await page.locator('.lc-member-strip-action').getByText('Ver tarjeta', { exact: true }).waitFor()
+  const firstAccordion = page.locator('.lc-discount-card').filter({ hasText: offer.title })
+  const secondAccordion = page.locator('.lc-discount-card').filter({ hasText: special.title })
+  await firstAccordion.locator('.lc-discount-business').click()
+  assert.equal(page.url(), origin + '/card', 'The business name toggles details without navigating')
+  assert.equal(await firstAccordion.locator('.lc-discount-details').isVisible(), true)
+  await secondAccordion.locator('.lc-discount-business').click()
+  assert.equal(await firstAccordion.locator('.lc-discount-details').isVisible(), false)
+  assert.equal(await secondAccordion.locator('.lc-discount-details').isVisible(), true)
+  assert.equal(await page.locator('.lc-discount-details:visible').count(), 1)
+  await firstAccordion.locator('.lc-discount-open').click()
+  assert.equal(await firstAccordion.locator('.lc-discount-details').isVisible(), true)
+  assert.equal(await secondAccordion.locator('.lc-discount-details').isVisible(), false)
+  await firstAccordion.locator('.lc-discount-open').click()
+  assert.equal(await page.locator('.lc-discount-details:visible').count(), 0)
+  await page.getByRole('link', { name: 'Mi negocio', exact: true }).waitFor()
   assert.match(
     await page.locator('.lc-links').innerText(),
     /💳[\s\S]*🏪/,
@@ -515,7 +569,7 @@ try {
   await page.waitForURL(origin + '/card')
   await page.locator('.lc-member-strip-heading').waitFor()
   await page.goto(origin + businessPath)
-  await page.locator('.lc-member-strip-heading').waitFor()
+  await page.getByRole('heading', { name: offer.business_name, exact: true }).waitFor()
   const refreshFailureText =
     'No se pudieron actualizar tus descuentos. Comprueba tu conexión; volveremos a intentarlo.'
   homeFailures = 1
@@ -539,7 +593,7 @@ try {
   await page.getByRole('button', { name: 'Reintentar', exact: true }).waitFor()
   homeFailures = 0
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await page.locator('.lc-member-strip-heading').waitFor()
+  await page.getByRole('heading', { name: offer.business_name, exact: true }).waitFor()
   assert.equal(
     await page.getByRole('alert').filter({ hasText: refreshFailureText }).count(),
     0,
@@ -821,6 +875,49 @@ try {
   )
   assert.equal(await page.getByRole('button', { name: /^(Activar|Mostrar)$/ }).count(), 0)
   await page.screenshot({ path: path.join(output, 'member-mobile.png'), fullPage: true })
+  // Local history shows each used offer once, using its latest redemption, without actions.
+  const usesBeforeBusinessVisit = useCalls.length
+  const duplicateUse = {
+    ...receipts[0],
+    id: '00000000-0000-4000-8000-000000000970',
+    redeemed_at: new Date(Date.now() + 1000).toISOString()
+  }
+  receipts.push(duplicateUse)
+  await page.goto(origin + `/card/negocio/${providerId}`)
+  await page.getByRole('tab', { name: 'Usadas (2)', exact: true }).click()
+  assert.equal(await page.locator('.lc-business-used-offer').count(), 2)
+  assert.equal(
+    await page.locator('.lc-business-used-offer button, .lc-business-used-offer a').count(),
+    0
+  )
+  assert.equal(
+    await page
+      .locator('.lc-business-used-offer')
+      .filter({ hasText: offer.title })
+      .locator('time')
+      .getAttribute('datetime'),
+    duplicateUse.redeemed_at
+  )
+  await scopedSearch.fill(special.title)
+  assert.equal(await page.locator('.lc-business-used-offer').count(), 1)
+  await scopedSearch.fill('sin-coincidencias-xyz')
+  await page.getByText('No hay ofertas que coincidan con tu búsqueda.', { exact: true }).waitFor()
+  await scopedSearch.fill('')
+  await page.screenshot({ path: path.join(output, 'business-used-mobile.png'), fullPage: true })
+  await page.getByRole('tab', { name: 'Usadas (2)', exact: true }).focus()
+  await page.keyboard.press('ArrowLeft')
+  await page.locator('#lc-tab-available[aria-selected="true"]').waitFor()
+  await page.locator('.lc-business-offer-guide summary').click()
+  await page.getByText('Confirma el uso para activar tu oferta.', { exact: true }).waitFor()
+  assert.equal(
+    useCalls.length,
+    usesBeforeBusinessVisit,
+    'Browsing business offers and history never consumes a use'
+  )
+  receipts.pop()
+  await page.getByRole('link', { name: 'Volver a los negocios', exact: true }).click()
+  await page.waitForURL(origin + '/card')
+  await page.locator('.lc-member-strip-heading').waitFor()
   await page.getByRole('link', { name: 'Mi negocio', exact: true }).click()
   await page.getByRole('heading', { name: 'El QR de tu negocio', exact: true }).waitFor()
   await page.getByAltText(`QR público de ${offer.business_name}`).waitFor()
@@ -965,27 +1062,113 @@ try {
     origin + `/card/negocio/${provider2}`,
     'Copy follows the selected business'
   )
-  // Verify the retained wizard offers daily and weekly caps in its second step.
-  await page.getByRole('button', { name: 'Crear mi descuento', exact: true }).click()
-  const offerModal = page.getByRole('dialog', { name: 'Crear descuento', exact: true })
+  // Walk the four-step composer, its validation, bundle variants and review edits.
+  await page.getByRole('button', { name: 'Crear mi oferta', exact: true }).click()
+  const offerModal = page.getByRole('dialog', { name: 'Crear oferta', exact: true })
+  const nextOfferStep = () =>
+    offerModal.getByRole('button', { name: 'Siguiente', exact: true }).click()
+  const changeOffer = () =>
+    offerModal.getByRole('button', { name: 'Cambiar la oferta', exact: true }).click()
   await offerModal.waitFor()
+  await offerModal.getByText('Paso 1 de 4', { exact: true }).waitFor()
+  await offerModal.screenshot({ path: path.join(output, 'offer-step-1-mobile.png') })
+  await page.setViewportSize({ width: 320, height: 568 })
+  const nextOnSmallScreen = await offerModal
+    .getByRole('button', { name: 'Siguiente', exact: true })
+    .boundingBox()
+  assert.ok(
+    nextOnSmallScreen.y >= 0 && nextOnSmallScreen.y + nextOnSmallScreen.height <= 568,
+    'Navigation stays visible on a small mobile screen'
+  )
+  assert.ok(
+    await offerModal
+      .locator('.lc-create-body')
+      .evaluate((element) => element.scrollHeight > element.clientHeight)
+  )
+  await offerModal.screenshot({ path: path.join(output, 'offer-step-1-small-mobile.png') })
+  await page.setViewportSize({ width: 390, height: 844 })
   await offerModal.getByRole('radio', { name: '15 %', exact: true }).check()
-  await offerModal.locator('.lc-offer-value-number').getByText('15 %', { exact: true }).waitFor()
-  await offerModal.getByRole('radio', { name: 'Importe CHF', exact: true }).check()
-  await offerModal.locator('.lc-offer-value-unit').getByText('CHF', { exact: true }).waitFor()
-  await offerModal.getByRole('radio', { name: 'Porcentaje %', exact: true }).check()
+  await nextOfferStep()
+  await offerModal.getByRole('radio', { name: /^En algo concreto/ }).check()
+  await nextOfferStep()
+  await offerModal.getByRole('alert').getByText('Escribe el producto o servicio.').waitFor()
+  await offerModal.getByLabel('¿Qué producto o servicio?').fill('el corte de pelo')
+  await offerModal.screenshot({ path: path.join(output, 'offer-step-2-mobile.png') })
+  await nextOfferStep()
+  await offerModal.screenshot({ path: path.join(output, 'offer-step-3-mobile.png') })
+  await nextOfferStep()
+  await offerModal
+    .locator('.lc-offer-preview-info > strong')
+    .getByText('15 % en el corte de pelo', { exact: true })
+    .waitFor()
+  await offerModal.screenshot({ path: path.join(output, 'offer-review-mobile.png') })
   assert.equal(await offerModal.getByRole('button', { name: 'Activar', exact: true }).count(), 0)
-  await offerModal.locator('.lc-create-options summary').click()
-  await page.getByLabel('Título').fill('10 % de descuento')
+  assert.equal(await offerModal.getByLabel('Válido hasta (hora local)').count(), 1)
+  await changeOffer()
+  await offerModal.getByRole('radio', { name: /^Cantidad fija/ }).check()
+  await offerModal.getByRole('radio', { name: 'Otro', exact: true }).check()
+  await offerModal.getByLabel('Cantidad de la oferta').fill('0')
+  await nextOfferStep()
+  await offerModal
+    .getByRole('alert')
+    .getByText('Escribe una cantidad válida para la oferta.')
+    .waitFor()
+  await offerModal.getByLabel('Cantidad de la oferta').fill('5.50')
+  await nextOfferStep()
+  await nextOfferStep()
+  await nextOfferStep()
+  await offerModal
+    .locator('.lc-offer-preview-info > strong')
+    .getByText('CHF 5.50 en el corte de pelo', { exact: true })
+    .waitFor()
+  await changeOffer()
+  await offerModal.getByRole('radio', { name: /^2x1 o similar/ }).check()
+  await offerModal.screenshot({ path: path.join(output, 'offer-combo-mobile.png') })
+  await offerModal.getByRole('radio', { name: '3x2', exact: true }).check()
+  await nextOfferStep()
+  await nextOfferStep()
+  await nextOfferStep()
+  await offerModal.locator('.lc-offer-value-number').getByText('3x2', { exact: true }).waitFor()
+  await changeOffer()
+  await offerModal.getByRole('radio', { name: '2.ª a mitad', exact: true }).check()
+  await nextOfferStep()
+  await nextOfferStep()
+  await nextOfferStep()
+  await offerModal.locator('.lc-offer-value-number').getByText('−50 %', { exact: true }).waitFor()
+  await changeOffer()
+  await offerModal.getByRole('radio', { name: /^Regalo/ }).check()
+  await nextOfferStep()
+  await offerModal.getByRole('alert').getByText('Escribe qué regalas.').waitFor()
+  await offerModal.getByLabel('¿Qué regalas?').fill('un café')
+  await nextOfferStep()
+  await offerModal.getByRole('radio', { name: /^Con cualquier compra/ }).check()
+  await nextOfferStep()
+  await nextOfferStep()
+  await offerModal
+    .locator('.lc-offer-preview-info > strong')
+    .getByText('Regalo: un café con tu compra', { exact: true })
+    .waitFor()
+  await changeOffer()
+  await offerModal.getByRole('radio', { name: /^Otro beneficio/ }).check()
+  await offerModal.getByLabel('Describe el beneficio').fill('Primera consulta gratis')
+  await nextOfferStep()
+  await offerModal.getByText('Paso 2 de 3', { exact: true }).waitFor()
+  await nextOfferStep()
+  await offerModal.getByText('Paso 3 de 3', { exact: true }).waitFor()
+  await offerModal
+    .locator('.lc-offer-preview-info > strong')
+    .getByText('Primera consulta gratis', { exact: true })
+    .waitFor()
   await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
   await page.getByRole('button', { name: 'Mis ofertas', exact: true }).click()
   await page.getByText('Aún no has publicado descuentos.', { exact: true }).waitFor()
   await page.getByRole('button', { name: 'Crear oferta', exact: true }).click()
   assert.equal(
-    await page.getByLabel('Título').inputValue(),
-    '10 % de descuento',
+    await offerModal.locator('.lc-offer-preview-info > strong').innerText(),
+    'Primera consulta gratis',
     'Closing the modal and viewing offers preserves the draft'
   )
+  await offerModal.locator('.lc-create-options summary').click()
   assert.ok(await page.getByLabel('Frecuencia').locator('option[value="day"]').count())
   assert.ok(await page.getByLabel('Frecuencia').locator('option[value="week"]').count())
   assert.equal(
@@ -994,7 +1177,7 @@ try {
   )
   await page.getByLabel('Válido hasta (hora local)').fill('2027-01-01T12:00')
   await page
-    .getByText('El socio activa el descuento y lo confirma al pagar en tu negocio.', {
+    .getByText('El socio activa la oferta en Latido.', {
       exact: true
     })
     .waitFor()
@@ -1010,16 +1193,14 @@ try {
   await invitation.waitFor()
   await page.waitForLoadState('networkidle')
   await invitation.getByRole('heading', { name: 'Dales un motivo para visitarte' }).waitFor()
-  assert.equal(
-    await invitation.getByRole('radio').count(),
-    0,
-    'Invitation has no percentage choices'
-  )
-  assert.equal(
-    await invitation.getByText('Elige un descuento para empezar', { exact: true }).count(),
-    0
-  )
+  for (const label of ['10 %', '2x1', 'Regalo', 'Otro'])
+    assert.equal(await invitation.getByRole('button', { name: label, exact: true }).count(), 1)
   await invitation.locator('.lc-offer-preview').getByText('Zürich', { exact: true }).waitFor()
+  await invitation.getByRole('button', { name: 'Comparte tu negocio', exact: true }).click()
+  assert.equal(
+    await page.evaluate(() => window.lastSharedLink.url),
+    origin + `/negocios/${provider2}`
+  )
   assert.equal(await page.locator('dialog[open], [role="dialog"]').count(), 1)
   assert.ok((await invitation.boundingBox()).height <= 844)
   await page.screenshot({
@@ -1046,23 +1227,21 @@ try {
   await page.reload()
   await invitation.waitFor()
   await page.waitForLoadState('networkidle')
-  await invitation.getByRole('button', { name: 'Crear mi descuento', exact: true }).click()
+  await invitation.getByRole('button', { name: '2x1', exact: true }).click()
   await offerModal.waitFor()
   assert.equal(
     new URL(page.url()).pathname,
     '/',
     'Offering a discount keeps the current page behind the modal'
   )
-  assert.equal(
-    await offerModal.locator('.lc-offer-preview-info > strong').innerText(),
-    '10 % de descuento'
-  )
+  await offerModal.getByRole('radio', { name: /^2x1 o similar/ }).waitFor()
+  assert.equal(await offerModal.getByRole('radio', { name: '2x1', exact: true }).isChecked(), true)
   await offerModal.getByText('Peluquería Latina', { exact: true }).first().waitFor()
   assert.equal(await page.locator('dialog[open]').count(), 1)
   await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
   await page.goto(origin + `/?crear-oferta=${provider2}`)
   await offerModal.waitFor()
-  await offerModal.locator('.lc-create-preview').waitFor()
+  await offerModal.getByRole('heading', { name: '¿Qué quieres ofrecer?', exact: true }).waitFor()
   await page.waitForLoadState('networkidle')
   await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
   assert.equal(new URL(page.url()).searchParams.has('crear-oferta'), false)
@@ -1101,24 +1280,27 @@ try {
   assert.equal(await page.getByText('Profesional desbloqueado', { exact: true }).count(), 0)
   businesses = businesses.map((item) => (item.id === provider2 ? { ...item, active: false } : item))
   const joinsBeforeInvite = rpcCalls.filter((name) => name === 'lc_join_card_business').length
-  await page.getByRole('button', { name: 'Crear mi descuento', exact: true }).click()
+  await page.getByRole('button', { name: 'Crear mi oferta', exact: true }).click()
   await offerModal.waitFor()
-  const titleField = offerModal.getByRole('textbox', { name: 'Título', exact: true })
-  await offerModal.locator('.lc-create-options summary').click()
-  await titleField.fill('Oferta para la comunidad')
+  await offerModal.getByRole('radio', { name: /^Otro beneficio/ }).check()
+  await offerModal.getByLabel('Describe el beneficio').fill('Oferta para la comunidad')
   assert.equal(new URL(page.url()).pathname, '/registrar-negocio')
   assert.equal(
     rpcCalls.filter((name) => name === 'lc_join_card_business').length,
     joinsBeforeInvite,
     'Viewing the modal never enrolls an empty business'
   )
-  await offerModal.getByLabel('Válido hasta (hora local)').fill('2027-01-01T12:00')
-  await offerModal.getByRole('button', { name: 'Publicar descuento', exact: true }).click()
-  await page
-    .getByText('Tu descuento ya está publicado en Tarjeta Latido.', { exact: false })
-    .waitFor()
+  await nextOfferStep()
+  await nextOfferStep()
+  await offerModal.locator('.lc-create-options summary').click()
+  await offerModal.getByLabel('Válido hasta (hora local)').fill('')
+  await offerModal.getByText('Sin compra mínima · Sin fecha de fin', { exact: true }).waitFor()
+  await offerModal.getByRole('button', { name: 'Publicar oferta', exact: true }).click()
+  await page.getByText('Tu oferta ya está publicada en Tarjeta Latido.', { exact: false }).waitFor()
   assert.equal(savedOffers.at(-1).p_provider, provider2)
   assert.equal(savedOffers.at(-1).p_offer.title, 'Oferta para la comunidad')
+  assert.equal(savedOffers.at(-1).p_offer.ends_at, 'infinity')
+  assert.equal(savedOffers.at(-1).p_offer.benefit_type, 'service')
   assert.equal(
     rpcCalls.filter((name) => name === 'lc_join_card_business').length,
     joinsBeforeInvite,
@@ -1278,14 +1460,14 @@ try {
     .getByRole('link', { name: 'Ver descuentos de Café Encuentro · Genève', exact: true })
     .click()
   await page.waitForURL(origin + `/card/negocio/${discoveryOffers[11].provider_id}`)
-  await page.getByRole('heading', { name: 'Descuentos de este negocio', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Ofertas de este negocio', exact: true }).waitFor()
   await page.getByRole('heading', { name: 'Descuento 12', exact: true }).waitFor()
   assert.equal(
     await page.locator('.lc-discount-card').count(),
     1,
     'Opening a business shows only its discounts'
   )
-  await page.getByRole('link', { name: 'Mi tarjeta', exact: true }).click()
+  await page.getByRole('link', { name: 'Volver a los negocios', exact: true }).click()
   await page.waitForURL(origin + '/card')
   await page.locator('#lc-business-directory li').first().waitFor()
   await businessSearch.fill('sin-coincidencias-xyz')
@@ -1304,7 +1486,7 @@ try {
   await page.goto(origin + '/card/negocio/' + emptyBusinessId)
   await page.getByText('Todavía no hay descuentos disponibles aquí.', { exact: true }).waitFor()
   assert.equal(await page.locator('.lc-offer-list--empty').count(), 1)
-  await page.getByRole('link', { name: 'Mi tarjeta', exact: true }).click()
+  await page.getByRole('link', { name: 'Volver a los negocios', exact: true }).click()
   await page.waitForURL(origin + '/card')
   await page.locator('#lc-business-directory li').first().waitFor()
   assert.equal(await page.locator('.lc-discount-card').count(), 10)

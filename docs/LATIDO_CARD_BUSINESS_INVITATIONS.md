@@ -1,6 +1,6 @@
 # Invitación de negocios a Tarjeta Latido
 
-Tras publicar un negocio visible se ofrece crear el primer descuento como siguiente paso opcional, sin el aviso automático «Profesional desbloqueado». Un negocio enviado a revisión no recibe esa invitación todavía. «Crear mi descuento» abre el modal «Crear descuento» sobre la pantalla actual. El negocio ya está seleccionado y no se navega a «Mi negocio». Cerrar conserva el borrador para ese negocio durante la sesión de la app.
+Tras publicar un negocio visible se ofrece crear la primera oferta como siguiente paso opcional, sin el aviso automático «Profesional desbloqueado». Un negocio enviado a revisión no recibe esa invitación todavía. «Crear mi oferta» abre el modal «Crear oferta» sobre la pantalla actual. El negocio ya está seleccionado y no se navega a «Mi negocio». Cerrar conserva el borrador para ese negocio durante la sesión de la app.
 
 El correo abre `/?crear-oferta=<id>`: muestra el mismo modal sobre el inicio. Si hace falta iniciar sesión, se conserva el destino. Los enlaces anteriores `/card/negocios?negocio=<id>&crear=1` siguen abriendo el modal por compatibilidad. Abrir el formulario solo consulta los permisos; el alta en Tarjeta Latido y la publicación de la oferta se guardan en una única transacción con `lc_save_offer`. Si la oferta falla, el negocio no queda inscrito. Solo los negocios con al menos un descuento activo y vigente aparecen en «Negocios participantes».
 
@@ -8,9 +8,11 @@ Los propietarios que aún no hayan creado descuentos reciben el mismo mensaje al
 
 El servidor limita el modal y el correo a propietarios reales de negocios publicados, con al menos un negocio no suspendido. No cuenta como propietario un administrador que solo gestiona negocios ajenos. Cualquier descuento anterior del propietario, incluso pausado, vencido o borrado, evita la invitación para crear el primero. El recordatorio dentro de un negocio vacío también permite ofrecer descuentos para ese negocio concreto.
 
-Se retira el antiguo aviso automático «Tu negocio en una tarjeta». Compartir el negocio sigue disponible como acción manual desde su ficha y después de publicarlo. La invitación para ofrecer descuentos se mantiene con el título «Dales un motivo para visitarte», una tarjeta de ejemplo con el nombre y la ciudad reales y el único CTA principal «Crear mi descuento». No hay porcentajes preseleccionables ni el texto «Elige un descuento» en la invitación. Se conserva el término «socios».
+Se retira el antiguo aviso automático «Tu negocio en una tarjeta». Compartir el negocio sigue disponible como acción manual desde su ficha y después de publicarlo. La invitación se mantiene con el título «Dales un motivo para visitarte», una tarjeta de ejemplo con el nombre y la ciudad reales y el CTA principal «Crear mi oferta». Los accesos «10 %», «2x1», «Regalo» y «Otro» abren el mismo modal con esa opción seleccionada. Se conserva el término «socios» y los emojis.
 
-«Crear descuento» utiliza un formulario único con vista previa en directo. Los valores rápidos están dentro del formulario, junto con importe CHF, regalos, servicios y 2 × 1. Las opciones avanzadas conservan condiciones, límite por día o semana y unidades limitadas. Se mantiene la fecha de fin requerida por el flujo actual. Esta actualización visual no necesita SQL adicional.
+«Crear oferta» guía por cuatro pasos: tipo de oferta, dónde se aplica, usos por socio y revisión con vista previa. «Otro beneficio» omite el paso de alcance y muestra tres pasos. El título se genera a partir de las elecciones y «Cambiar» permite revisarlas antes de publicar. Las opciones avanzadas conservan condiciones, límite por día o semana y unidades limitadas. La navegación y el botón de cierre permanecen visibles mientras se desplaza el contenido.
+
+La fecha de fin es opcional: se guarda como `infinity` de PostgreSQL, compatible con el RPC y los límites existentes, y se muestra «Sin fecha de fin». No se inventa una fecha futura ni se cambia el esquema. Las variantes 3x2 y segunda unidad a mitad se guardan como beneficios descritos (`service`) con su título generado; 2x1 mantiene `two_for_one`. La tarjeta, el directorio y el texto compartido conservan el beneficio concreto. Esta actualización no necesita SQL adicional.
 
 ## Activación
 

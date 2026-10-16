@@ -23,12 +23,14 @@ export default function LatidoCardOfferProvider({ children }) {
   const [params, setParams] = useSearchParams()
   const [business, setBusiness] = useState(null)
   const [open, setOpen] = useState(false)
+  const [initialSelection, setInitialSelection] = useState(null)
   const [revision, setRevision] = useState(0)
   const [publishedProvider, setPublishedProvider] = useState('')
   useEffect(() => {
     setOpen(false)
     setBusiness(null)
     setPublishedProvider('')
+    setInitialSelection(null)
   }, [user?.id])
   useEffect(() => {
     setOpen(false)
@@ -50,13 +52,14 @@ export default function LatidoCardOfferProvider({ children }) {
     setOpen(true)
   }, [loading, user?.id, queryProvider, navigate])
   const openOffer = useCallback(
-    (target) => {
+    (target, selection) => {
       if (!target?.id) return
       if (!user?.id) {
         navigate(`/auth?next=${encodeURIComponent(cardInvitationPath(target.id))}`)
         return
       }
       setBusiness(target)
+      setInitialSelection(selection ? { ...selection } : null)
       setOpen(true)
     },
     [user?.id, navigate]
@@ -83,6 +86,7 @@ export default function LatidoCardOfferProvider({ children }) {
             key={`${user.id}:${business.id}`}
             providerId={business.id}
             open={open}
+            initialSelection={initialSelection}
             onClose={closeOffer}
             onPublished={() => {
               setPublishedProvider(business.id)

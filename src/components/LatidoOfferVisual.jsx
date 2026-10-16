@@ -1,5 +1,5 @@
 import { Repeat2 } from 'lucide-react'
-import { offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
+import { offerBenefitLabel, offerComboLabel, offerUsageLabel } from '../lib/latidoCardCore'
 import './LatidoOfferVisual.css'
 
 const amount = (value) =>
@@ -9,15 +9,18 @@ const amount = (value) =>
 
 export function OfferBenefitBadge({ offer }) {
   const value = amount(offer.benefit_value)
+  const combo = offerComboLabel(offer)
   const [number, unit] =
     offer.benefit_type === 'percent'
       ? [`${value} %`, 'dto.']
       : offer.benefit_type === 'fixed'
         ? [value, 'CHF']
-        : offer.benefit_type === 'two_for_one'
-          ? ['2 × 1', 'promo']
+        : combo
+          ? combo === '2.ª a mitad'
+            ? ['−50 %', '2.ª ud.']
+            : [combo, 'oferta']
           : offer.benefit_type === 'service'
-            ? ['🤝', 'Servicio']
+            ? ['✨', 'Ventaja']
             : ['🎁', 'Regalo']
   return (
     <span
@@ -25,6 +28,7 @@ export function OfferBenefitBadge({ offer }) {
       role="img"
       aria-label={offerBenefitLabel(offer)}
       data-long={number.length > 6}
+      data-benefit={combo ? 'combo' : offer.benefit_type}
     >
       <span className="lc-offer-value-number">{number}</span>
       <span className="lc-offer-value-unit">{unit}</span>

@@ -8,7 +8,13 @@ import { useLatidoBusinessDisplay } from '../hooks/useLatidoBusinessDisplay'
 import '../pages/LatidoCard.css'
 import './LatidoCardOfferModal.css'
 
-export default function LatidoCardOfferModal({ providerId, open, onClose, onPublished }) {
+export default function LatidoCardOfferModal({
+  providerId,
+  open,
+  onClose,
+  onPublished,
+  initialSelection
+}) {
   const dialogRef = useRef(null),
     titleRef = useRef(null)
   const titleId = useId()
@@ -75,7 +81,7 @@ export default function LatidoCardOfferModal({ providerId, open, onClose, onPubl
       <div className="lc-offer-modal-header">
         <div>
           <h2 id={titleId} ref={titleRef} tabIndex={-1}>
-            Crear descuento
+            Crear oferta
           </h2>
           {business && <p>{business.name}</p>}
         </div>
@@ -107,11 +113,12 @@ export default function LatidoCardOfferModal({ providerId, open, onClose, onPubl
           <div hidden={loading || Boolean(error)}>
             <LatidoCardOfferForm
               business={displayBusiness}
+              initialSelection={initialSelection}
               onPublish={async (offer) => {
                 setBusy(true)
                 try {
                   await cardRpc('lc_save_offer', { p_provider: providerId, p_offer: offer })
-                  toast.success('Descuento publicado. Ya está disponible para la comunidad.')
+                  toast.success('Oferta publicada. Ya está disponible para la comunidad.')
                   onPublished()
                 } finally {
                   setBusy(false)

@@ -1,9 +1,11 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Eye } from 'lucide-react'
+import { Check, Eye, Share2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { useLatidoCardOffer } from './LatidoCardOfferProvider'
 import { useLatidoBusinessDisplay } from '../hooks/useLatidoBusinessDisplay'
 import LatidoOfferPreview from './LatidoOfferVisual'
+import { shareLatidoBusinessProfile } from '../lib/latidoCardShare'
 import { CARD_INVITATION_TITLE, CARD_INVITATION_DESCRIPTION } from '../lib/latidoCardInvitation'
 import './LatidoCardBusinessInvitation.css'
 
@@ -18,6 +20,8 @@ export default function LatidoCardBusinessInvitation({
   const titleRef = useRef(null)
   const { openOffer, publishedProvider } = useLatidoCardOffer()
   const displayBusiness = useLatidoBusinessDisplay(business)
+  const [sharing, setSharing] = useState(false)
+  const [manualLink, setManualLink] = useState('')
   useEffect(() => {
     if (!modal) return undefined
     const opener = document.activeElement
@@ -34,7 +38,12 @@ export default function LatidoCardBusinessInvitation({
     }
   }, [modal])
   if (!modal && publishedProvider === business.id)
-    return <p role="status">✅ Tu descuento ya está publicado en Tarjeta Latido.</p>
+    return <p role="status">✅ Tu oferta ya está publicada en Tarjeta Latido.</p>
+  const create = (selection) => {
+    if (onCreate) onCreate(displayBusiness, selection)
+    else openOffer(displayBusiness, selection)
+    if (modal) onDismiss()
+  }
   const content = (
     <section className="lc-business-invitation" aria-labelledby={titleId}>
       <div className="lc-invitation-visual">
@@ -63,23 +72,30 @@ export default function LatidoCardBusinessInvitation({
             Publicado
           </li>
           <li aria-current="step">
-            <span>2</span>Tu descuento
+            <span>2</span>Tu oferta
           </li>
         </ol>
         <h2 id={titleId} ref={titleRef} tabIndex={modal ? -1 : undefined}>
           {CARD_INVITATION_TITLE}
         </h2>
         <p>{CARD_INVITATION_DESCRIPTION}</p>
-        <button
-          type="button"
-          className="lc-business-invitation-cta"
-          onClick={() => {
-            if (onCreate) onCreate(displayBusiness)
-            else openOffer(displayBusiness)
-            if (modal) onDismiss()
-          }}
-        >
-          Crear mi descuento
+        <p className="lc-invitation-choose" id={`${titleId}-choose`}>
+          Elige una oferta para empezar
+        </p>
+        <div className="lc-invitation-quick" role="group" aria-labelledby={`${titleId}-choose`}>
+          {[
+            ['10 %', { type: 'percent', value: '10' }],
+            ['2x1', { type: 'combo' }],
+            ['Regalo', { type: 'gift' }],
+            ['Otro', { type: 'other' }]
+          ].map(([label, selection]) => (
+            <button key={label} type="button" onClick={() => create(selection)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <button type="button" className="lc-business-invitation-cta" onClick={() => create()}>
+          Crear mi oferta
         </button>
         <p className="lc-invitation-reassurance">
           <span>
@@ -91,6 +107,29 @@ export default function LatidoCardBusinessInvitation({
             Tú pones las condiciones
           </span>
         </p>
+        <button
+          type="button"
+          className="lc-business-invitation-share"
+          disabled={sharing}
+          onClick={async () => {
+            setSharing(true)
+            try {
+              const result = await shareLatidoBusinessProfile(business.id, displayBusiness.name)
+              if (result.status === 'copied') toast.success('Enlace copiado')
+              setManualLink(result.status === 'manual' ? result.url : '')
+            } finally {
+              setSharing(false)
+            }
+          }}
+        >
+          <Share2 size={18} aria-hidden="true" /> Comparte tu negocio
+        </button>
+        {manualLink && (
+          <label className="lc-invitation-manual-link">
+            Enlace de tu negocio
+            <input readOnly value={manualLink} onFocus={(event) => event.target.select()} />
+          </label>
+        )}
         {onDismiss && (
           <button type="button" className="lc-business-invitation-later" onClick={onDismiss}>
             Lo haré más tarde

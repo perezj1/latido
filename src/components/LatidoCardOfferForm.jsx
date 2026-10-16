@@ -1,340 +1,540 @@
-import { useEffect, useRef, useState } from 'react'
-import { Eye, Info } from 'lucide-react'
-import { cardErrorMessage } from '../lib/latidoCardCore'
+import { useEffect, useId, useRef, useState } from 'react'
+import { CalendarDays, Repeat2, ShoppingBag, Sparkles, Tag } from 'lucide-react'
+import { cardErrorMessage, offerUsageLabel } from '../lib/latidoCardCore'
+import {
+  createOfferPayload,
+  draftOfferName,
+  draftOfferScope,
+  initialOfferDraft,
+  offerCombos
+} from '../lib/latidoCardOfferDraft'
 import LatidoOfferPreview from './LatidoOfferVisual'
 import './LatidoCardOfferForm.css'
 
-const initial = {
-  title: '',
-  description: '',
-  benefit_type: 'percent',
-  benefit_value: '10',
-  minimum_spend: '0',
-  requires_claim: false,
-  activation_mode: 'manual',
-  stock_total: '',
-  claim_days: 7,
-  usage_period: 'month',
-  usage_limit: 1,
-  ends_at: ''
-}
 const types = [
-  ['percent', 'Porcentaje %'],
-  ['fixed', 'Importe CHF'],
-  ['gift', '🎁 Regalo'],
-  ['service', '🤝 Servicio'],
-  ['two_for_one', '✨ 2 × 1']
+  ['percent', '%', 'Descuento %', 'Ej.: 10 % menos', 'blue'],
+  ['fixed', 'CHF', 'Cantidad fija', 'Ej.: 5 CHF menos', 'amber'],
+  ['combo', '2x1', '2x1 o similar', 'Ej.: 2x1, 3x2', 'pink'],
+  ['gift', '🎁', 'Regalo', 'Ej.: un café gratis', 'green'],
+  [
+    'other',
+    '✨',
+    'Otro beneficio',
+    'Lo describes tú: envío gratis, primera consulta gratis…',
+    'blue'
+  ]
 ]
+const stepNames = { 1: 'Tu oferta', 2: 'Dónde se aplica', 3: 'Usos por socio', 4: 'Revisar' }
 
-function defaultTitle(offer, detail) {
-  const suffix = detail.trim()
-  if (offer.benefit_type === 'percent')
-    return `${offer.benefit_value || '…'} % ${suffix || 'de descuento'}`
-  if (offer.benefit_type === 'fixed')
-    return `CHF ${offer.benefit_value || '…'} ${suffix || 'de descuento'}`
-  if (offer.benefit_type === 'two_for_one') return `2 × 1${suffix ? ` ${suffix}` : ''}`
-  return suffix || (offer.benefit_type === 'gift' ? 'Regalo para socios' : 'Servicio incluido')
+function Choice({ name, value, checked, onChange, icon, title, description, tone, recommended }) {
+  return (
+    <label className="lc-create-choice">
+      <input type="radio" name={name} value={value} checked={checked} onChange={onChange} />
+      <span className="lc-create-choice-box">
+        <span className={`lc-create-choice-icon lc-create-tone-${tone}`} aria-hidden="true">
+          {icon}
+        </span>
+        <span className="lc-create-choice-copy">
+          <strong>
+            {title}
+            {recommended && <small className="lc-create-recommended">Recomendado</small>}
+          </strong>
+          <span>{description}</span>
+        </span>
+        {name !== 'offer-type' && <span className="lc-create-choice-dot" aria-hidden="true" />}
+      </span>
+    </label>
+  )
 }
 
-export default function LatidoCardOfferForm({ business, onPublish }) {
-  const [offer, setOffer] = useState(initial)
-  const [detail, setDetail] = useState(''),
-    [customValue, setCustomValue] = useState(false)
+export default function LatidoCardOfferForm({ business, onPublish, initialSelection }) {
+  const [draft, setDraft] = useState(initialOfferDraft)
+  const [step, setStep] = useState(1)
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('')
-  const formRef = useRef(null),
-    dateRef = useRef(null),
-    valueRef = useRef(null)
-  const monetary = ['percent', 'fixed'].includes(offer.benefit_type)
-  const preview = { ...offer, title: offer.title.trim() || defaultTitle(offer, detail) }
-  const values = offer.benefit_type === 'percent' ? ['5', '10', '15', '20'] : ['5', '10', '20']
-  const set = (key, value) => {
-    setError('')
-    setOffer((previous) => ({ ...previous, [key]: value }))
-  }
+  const bodyRef = useRef(null),
+    headingRef = useRef(null),
+    optionsRef = useRef(null)
+  const titleId = useId()
+  const steps = draft.type === 'other' ? [1, 3, 4] : [1, 2, 3, 4]
+  const position = steps.indexOf(step)
+  const monetary = ['percent', 'fixed'].includes(draft.type)
+  const values = draft.type === 'fixed' ? ['5', '10', '20'] : ['5', '10', '15', '20']
+  const preview = createOfferPayload(draft)
   useEffect(() => {
-    if (customValue) valueRef.current?.focus()
-  }, [customValue])
+    if (!initialSelection) return
+    setDraft((previous) => ({
+      ...previous,
+      type: initialSelection.type,
+      value: initialSelection.value || '10',
+      combo: '2x1',
+      customValue: false
+    }))
+    setStep(1)
+    setError('')
+  }, [initialSelection])
+  useEffect(() => {
+    bodyRef.current.scrollTop = 0
+    headingRef.current?.focus({ preventScroll: true })
+  }, [step])
+  const set = (key, value) => {
+    setDraft((previous) => ({ ...previous, [key]: value }))
+    setError('')
+  }
+  const go = (next) => {
+    setError('')
+    setStep(next)
+  }
+  const validateStep = () => {
+    if (step === 1) {
+      if (
+        monetary &&
+        (!Number.isFinite(Number(draft.value)) ||
+          Number(draft.value) <= 0 ||
+          Number(draft.value) > (draft.type === 'percent' ? 100 : 99999999.99))
+      )
+        return 'Escribe una cantidad válida para la oferta.'
+      if (draft.type === 'gift' && !draft.gift.trim()) return 'Escribe qué regalas.'
+      if (draft.type === 'other' && draft.benefit.trim().length < 3)
+        return 'Describe el beneficio con al menos tres caracteres.'
+    }
+    if (step === 2 && draft.scope === 'specific' && !draft.detail.trim())
+      return 'Escribe el producto o servicio.'
+    if (step === 4 && draft.ends_at && Date.parse(draft.ends_at) <= Date.now())
+      return 'Elige una fecha futura o déjala vacía si la oferta no tiene fecha de fin.'
+    return ''
+  }
   const submit = async (event) => {
     event.preventDefault()
-    if (busy || !formRef.current.reportValidity()) return
-    if (preview.title.length < 3) {
-      setError('Escribe un título de al menos tres caracteres.')
+    if (busy) return
+    const message = validateStep()
+    if (message) {
+      setError(message)
       return
     }
-    if (!offer.ends_at || Date.parse(offer.ends_at) <= Date.now()) {
-      dateRef.current.setCustomValidity('Elige una fecha futura para tu descuento.')
-      dateRef.current.reportValidity()
+    for (const input of bodyRef.current.querySelectorAll('input,textarea,select')) {
+      if (!input.checkValidity()) {
+        if (optionsRef.current?.contains(input)) optionsRef.current.open = true
+        input.reportValidity()
+        return
+      }
+    }
+    if (step !== 4) {
+      go(steps[position + 1])
       return
     }
     setBusy(true)
     setError('')
     try {
-      await onPublish({
-        ...offer,
-        title: preview.title,
-        benefit_value: monetary ? Number(offer.benefit_value) : null,
-        minimum_spend: Number(offer.minimum_spend || 0),
-        stock_total: offer.requires_claim ? Number(offer.stock_total) : null,
-        usage_limit: Number(offer.usage_limit),
-        ends_at: new Date(offer.ends_at).toISOString()
-      })
-      setOffer(initial)
-      setDetail('')
-      setCustomValue(false)
+      await onPublish(createOfferPayload(draft))
+      setDraft(initialOfferDraft())
+      setStep(1)
     } catch (err) {
       setError(cardErrorMessage(err))
     } finally {
       setBusy(false)
     }
   }
+  const reviewRow = (label, value, destination, accessibleName) => (
+    <div>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+      <button type="button" onClick={() => go(destination)} aria-label={accessibleName}>
+        Cambiar
+      </button>
+    </div>
+  )
   return (
-    <form className="lc-form lc-create-form" ref={formRef} onSubmit={submit}>
-      <section className="lc-create-preview" aria-label="Vista previa">
+    <form className="lc-form lc-create-form" onSubmit={submit} noValidate>
+      <div className="lc-create-progress" aria-live="polite">
         <p>
-          <Eye size={14} aria-hidden="true" />
-          Así lo verán los socios
+          <strong>
+            Paso {position + 1} de {steps.length}
+          </strong>{' '}
+          · {stepNames[step]}
         </p>
-        <LatidoOfferPreview offer={preview} business={business} />
-      </section>
-      <fieldset className="lc-create-group" disabled={busy}>
-        <legend>Tipo de descuento</legend>
-        <div className="lc-create-segments lc-create-types">
-          {types.map(([type, label]) => (
-            <label key={type}>
-              <input
-                type="radio"
-                name="benefit-type"
-                value={type}
-                checked={offer.benefit_type === type}
-                onChange={() => {
-                  setOffer((previous) => ({ ...previous, benefit_type: type, benefit_value: '10' }))
-                  setCustomValue(false)
-                  setError('')
-                }}
-              />
-              <span>{label}</span>
-            </label>
+        <div aria-hidden="true">
+          {steps.map((item, index) => (
+            <span key={item} data-done={index <= position} />
           ))}
         </div>
-      </fieldset>
-      {monetary && (
-        <fieldset className="lc-create-group" disabled={busy}>
-          <legend>¿Cuánto descuento?</legend>
-          <div className="lc-create-segments lc-create-values">
-            {values.map((value) => (
-              <label key={value}>
-                <input
-                  type="radio"
-                  name="benefit-value"
-                  checked={!customValue && offer.benefit_value === value}
-                  onChange={() => {
-                    set('benefit_value', value)
-                    setCustomValue(false)
-                  }}
-                />
-                <span>{offer.benefit_type === 'percent' ? `${value} %` : `CHF ${value}`}</span>
-              </label>
-            ))}
-            <label>
-              <input
-                type="radio"
-                name="benefit-value"
-                checked={customValue}
-                onChange={() => setCustomValue(true)}
-              />
-              <span>Otro</span>
-            </label>
-          </div>
-          {customValue && (
-            <label className="lc-create-value-input">
-              Valor del descuento
-              <span>
-                <input
-                  ref={valueRef}
-                  type="number"
-                  required
-                  min="0.01"
-                  max={offer.benefit_type === 'percent' ? 100 : undefined}
-                  step="0.01"
-                  value={offer.benefit_value}
-                  onChange={(event) => set('benefit_value', event.target.value)}
-                />
-                {offer.benefit_type === 'percent' ? '%' : 'CHF'}
-              </span>
-            </label>
-          )}
-        </fieldset>
-      )}
-      <label>
-        ¿En qué se aplica? <small>Opcional</small>
-        <input
-          disabled={busy}
-          value={detail}
-          maxLength={60}
-          placeholder="Ej.: en tu corte, en la primera consulta"
-          onChange={(event) => setDetail(event.target.value)}
-        />
-      </label>
-      {!offer.requires_claim && (
-        <fieldset className="lc-create-group" disabled={busy}>
-          <legend>¿Cada cuánto puede usarlo un socio?</legend>
-          <div className="lc-create-segments">
-            {[
-              ['unlimited', 'Sin límite'],
-              ['month', '1 al mes'],
-              ['lifetime', 'Solo 1 vez']
-            ].map(([period, label]) => (
-              <label key={period}>
-                <input
-                  type="radio"
-                  name="usage-period"
-                  checked={
-                    offer.usage_period === period &&
-                    (period === 'unlimited' || Number(offer.usage_limit) === 1)
-                  }
-                  onChange={() => {
-                    setOffer((previous) => ({ ...previous, usage_period: period, usage_limit: 1 }))
-                    setError('')
-                  }}
-                />
-                <span>{label}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
-      <label>
-        Válido hasta (hora local)
-        <input
-          ref={dateRef}
-          disabled={busy}
-          type="datetime-local"
-          required
-          value={offer.ends_at}
-          onChange={(event) => {
-            event.target.setCustomValidity('')
-            set('ends_at', event.target.value)
-          }}
-        />
-      </label>
-      <details className="lc-create-options">
-        <summary>
-          <strong>Más opciones</strong>
-          <span>
-            {Number(offer.minimum_spend) > 0
-              ? `Mínimo CHF ${offer.minimum_spend}`
-              : 'Sin compra mínima'}
-            {offer.requires_claim ? ' · Promoción limitada' : ''}
-          </span>
-        </summary>
-        <fieldset className="lc-create-advanced" disabled={busy}>
-          <label>
-            Título
-            <input
-              minLength={3}
-              maxLength={120}
-              value={offer.title}
-              placeholder={defaultTitle(offer, detail)}
-              onChange={(event) => set('title', event.target.value)}
-            />
-          </label>
-          <label>
-            Condiciones
-            <textarea
-              maxLength={2000}
-              value={offer.description}
-              placeholder="Ej.: válido con cita previa."
-              onChange={(event) => set('description', event.target.value)}
-            />
-          </label>
-          <label>
-            Compra mínima CHF
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={offer.minimum_spend}
-              onChange={(event) => set('minimum_spend', event.target.value)}
-            />
-          </label>
-          <label className="lc-create-stock-toggle">
-            <input
-              type="checkbox"
-              checked={offer.requires_claim}
-              onChange={(event) => {
-                setError('')
-                setOffer((previous) => ({
-                  ...previous,
-                  requires_claim: event.target.checked,
-                  usage_period: event.target.checked ? 'lifetime' : 'month',
-                  usage_limit: 1,
-                  stock_total: ''
-                }))
-              }}
-            />
-            <span>Promoción especial con unidades limitadas</span>
-          </label>
-          {offer.requires_claim ? (
-            <label>
-              Unidades disponibles
-              <input
-                required
-                type="number"
-                min="1"
-                step="1"
-                value={offer.stock_total}
-                onChange={(event) => set('stock_total', event.target.value)}
-              />
-              <small>Una unidad por socio. Se descuenta al confirmar el uso.</small>
-            </label>
-          ) : (
+      </div>
+      <div className="lc-create-body" ref={bodyRef}>
+        <fieldset className="lc-create-step" disabled={busy} aria-labelledby={titleId}>
+          <h2 id={titleId} ref={headingRef} tabIndex={-1}>
+            {step === 1
+              ? '¿Qué quieres ofrecer?'
+              : step === 2
+                ? '¿En qué se aplica la oferta?'
+                : step === 3
+                  ? '¿Cuántas veces puede usarlo cada socio?'
+                  : 'Revisa y publica'}
+          </h2>
+          <p className="lc-create-intro">
+            {step === 1
+              ? 'Elige el tipo de oferta para los socios.'
+              : step === 2
+                ? draft.type === 'gift'
+                  ? 'Elige con qué compra recibirá el regalo.'
+                  : 'Puede ser en todo o solo en algo concreto.'
+                : step === 3
+                  ? 'Tú decides. Podrás revisarlo antes de publicar.'
+                  : 'Así verán tu oferta los socios:'}
+          </p>
+          {step === 1 && (
             <>
-              <label>
-                Frecuencia
-                <select
-                  value={offer.usage_period}
-                  onChange={(event) => set('usage_period', event.target.value)}
-                >
-                  <option value="day">Por día</option>
-                  <option value="week">Por semana (lunes a domingo)</option>
-                  <option value="month">Por mes natural</option>
-                  <option value="lifetime">En total</option>
-                  <option value="unlimited">Sin límite</option>
-                </select>
-              </label>
-              {offer.usage_period !== 'unlimited' && (
+              <div className="lc-create-type-grid" role="group" aria-label="Tipo de oferta">
+                {types.map(([type, icon, title, description, tone]) => (
+                  <Choice
+                    key={type}
+                    name="offer-type"
+                    value={type}
+                    checked={draft.type === type}
+                    onChange={() => {
+                      set('type', type)
+                      if (['percent', 'fixed'].includes(type))
+                        setDraft((previous) => ({ ...previous, value: '10', customValue: false }))
+                    }}
+                    {...{ icon, title, description, tone }}
+                  />
+                ))}
+              </div>
+              {monetary && (
+                <fieldset className="lc-create-group">
+                  <legend>¿Cuánto?</legend>
+                  <div className="lc-create-segments lc-create-values">
+                    {values.map((value) => (
+                      <label key={value}>
+                        <input
+                          type="radio"
+                          name="offer-value"
+                          checked={!draft.customValue && draft.value === value}
+                          onChange={() => {
+                            set('value', value)
+                            setDraft((previous) => ({ ...previous, customValue: false }))
+                          }}
+                        />
+                        <span>{draft.type === 'percent' ? `${value} %` : `CHF ${value}`}</span>
+                      </label>
+                    ))}
+                    <label>
+                      <input
+                        type="radio"
+                        name="offer-value"
+                        checked={draft.customValue}
+                        onChange={() => set('customValue', true)}
+                      />
+                      <span>Otro</span>
+                    </label>
+                  </div>
+                  {draft.customValue && (
+                    <label className="lc-create-value-input">
+                      Cantidad de la oferta
+                      <span>
+                        <input
+                          type="number"
+                          required
+                          min="0.01"
+                          max={draft.type === 'percent' ? 100 : 99999999.99}
+                          step="0.01"
+                          value={draft.value}
+                          onChange={(event) => set('value', event.target.value)}
+                          autoFocus
+                        />
+                        {draft.type === 'percent' ? '%' : 'CHF'}
+                      </span>
+                    </label>
+                  )}
+                </fieldset>
+              )}
+              {draft.type === 'combo' && (
+                <fieldset className="lc-create-group">
+                  <legend>¿Qué oferta?</legend>
+                  <div className="lc-create-segments">
+                    {Object.entries(offerCombos).map(([value, combo]) => (
+                      <label key={value}>
+                        <input
+                          type="radio"
+                          name="offer-combo"
+                          checked={draft.combo === value}
+                          onChange={() => set('combo', value)}
+                        />
+                        <span>{value === 'second_half' ? '2.ª a mitad' : combo.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="lc-create-help">{offerCombos[draft.combo].help}</p>
+                </fieldset>
+              )}
+              {draft.type === 'gift' && (
                 <label>
-                  Usos permitidos
+                  ¿Qué regalas?
                   <input
                     required
-                    type="number"
-                    min="1"
-                    max="1000"
-                    step="1"
-                    value={offer.usage_limit}
-                    onChange={(event) => set('usage_limit', event.target.value)}
+                    maxLength={40}
+                    value={draft.gift}
+                    placeholder="Ej.: un café, un postre, una muestra"
+                    onChange={(event) => set('gift', event.target.value)}
                   />
+                </label>
+              )}
+              {draft.type === 'other' && (
+                <label>
+                  Describe el beneficio
+                  <input
+                    required
+                    minLength={3}
+                    maxLength={50}
+                    value={draft.benefit}
+                    placeholder="Ej.: primera consulta gratis"
+                    onChange={(event) => set('benefit', event.target.value)}
+                  />
+                  <small>Será el título de tu oferta. Escríbelo corto y claro.</small>
                 </label>
               )}
             </>
           )}
+          {step === 2 && (
+            <>
+              <div className="lc-create-choice-list" role="group" aria-label="Dónde se aplica">
+                <Choice
+                  name="offer-scope"
+                  value="all"
+                  checked={draft.scope === 'all'}
+                  onChange={() => set('scope', 'all')}
+                  icon={<ShoppingBag size={20} />}
+                  tone="green"
+                  title={draft.type === 'gift' ? 'Con cualquier compra' : 'En todo'}
+                  description="En cualquier compra en tu negocio."
+                />
+                <Choice
+                  name="offer-scope"
+                  value="specific"
+                  checked={draft.scope === 'specific'}
+                  onChange={() => set('scope', 'specific')}
+                  icon={<Tag size={20} />}
+                  tone="pink"
+                  title={draft.type === 'gift' ? 'Con algo concreto' : 'En algo concreto'}
+                  description="Un producto o un servicio."
+                />
+              </div>
+              {draft.scope === 'specific' && (
+                <label>
+                  ¿Qué producto o servicio?
+                  <input
+                    required
+                    maxLength={60}
+                    value={draft.detail}
+                    placeholder="Ej.: el corte de pelo, el menú del día"
+                    onChange={(event) => set('detail', event.target.value)}
+                    autoFocus
+                  />
+                  <small>Aparecerá en el título: «{preview.title}».</small>
+                </label>
+              )}
+            </>
+          )}
+          {step === 3 && (
+            <div className="lc-create-choice-list" role="group" aria-label="Usos por socio">
+              <Choice
+                name="offer-usage"
+                value="month"
+                checked={draft.usage_period === 'month' && Number(draft.usage_limit) === 1}
+                onChange={() => {
+                  set('usage_period', 'month')
+                  setDraft((previous) => ({ ...previous, usage_limit: 1, requires_claim: false }))
+                }}
+                icon={<CalendarDays size={20} />}
+                tone="blue"
+                title="Una vez al mes"
+                description="Puede volver a usarlo cada mes."
+                recommended
+              />
+              <Choice
+                name="offer-usage"
+                value="unlimited"
+                checked={draft.usage_period === 'unlimited'}
+                onChange={() => {
+                  set('usage_period', 'unlimited')
+                  setDraft((previous) => ({ ...previous, usage_limit: 1, requires_claim: false }))
+                }}
+                icon={<Repeat2 size={20} />}
+                tone="green"
+                title="Siempre que venga"
+                description="Sin límite de usos."
+              />
+              <Choice
+                name="offer-usage"
+                value="lifetime"
+                checked={draft.usage_period === 'lifetime' && Number(draft.usage_limit) === 1}
+                onChange={() => {
+                  set('usage_period', 'lifetime')
+                  setDraft((previous) => ({ ...previous, usage_limit: 1 }))
+                }}
+                icon={<Sparkles size={20} />}
+                tone="amber"
+                title="Solo una vez"
+                description="Perfecto para atraer clientes nuevos."
+              />
+              {!['month', 'unlimited', 'lifetime'].includes(draft.usage_period) ||
+              Number(draft.usage_limit) > 1 ? (
+                <p className="lc-create-help">
+                  Configuración personalizada: {offerUsageLabel(preview)}. Puedes cambiarla en las
+                  opciones avanzadas.
+                </p>
+              ) : null}
+            </div>
+          )}
+          {step === 4 && (
+            <>
+              <section className="lc-create-preview" aria-label="Vista previa">
+                <LatidoOfferPreview offer={preview} business={business} />
+              </section>
+              <dl className="lc-create-review">
+                {reviewRow('Oferta', draftOfferName(draft), 1, 'Cambiar la oferta')}
+                {draft.type !== 'other' &&
+                  reviewRow('Se aplica', draftOfferScope(draft), 2, 'Cambiar dónde se aplica')}
+                {reviewRow('Usos', offerUsageLabel(preview), 3, 'Cambiar los usos')}
+              </dl>
+              <details className="lc-create-options" ref={optionsRef}>
+                <summary>
+                  <strong>Opciones avanzadas (opcional)</strong>
+                  <span>
+                    {Number(draft.minimum_spend) > 0
+                      ? `Mínimo CHF ${draft.minimum_spend}`
+                      : 'Sin compra mínima'}{' '}
+                    · {draft.ends_at ? 'Con fecha de fin' : 'Sin fecha de fin'}
+                    {draft.requires_claim ? ' · Unidades limitadas' : ''}
+                  </span>
+                </summary>
+                <div className="lc-create-advanced">
+                  <label>
+                    Compra mínima CHF
+                    <input
+                      type="number"
+                      min="0"
+                      max="99999999.99"
+                      step="0.01"
+                      value={draft.minimum_spend}
+                      onChange={(event) => set('minimum_spend', event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Válido hasta (hora local)
+                    <input
+                      type="datetime-local"
+                      value={draft.ends_at}
+                      onChange={(event) => set('ends_at', event.target.value)}
+                    />
+                    <small>Déjalo vacío si no tiene fecha de fin.</small>
+                  </label>
+                  <label>
+                    Condiciones
+                    <textarea
+                      maxLength={2000}
+                      value={draft.description}
+                      placeholder="Ej.: válido con cita previa."
+                      onChange={(event) => set('description', event.target.value)}
+                    />
+                  </label>
+                  <label className="lc-create-stock-toggle">
+                    <input
+                      type="checkbox"
+                      checked={draft.requires_claim}
+                      onChange={(event) => {
+                        set('requires_claim', event.target.checked)
+                        setDraft((previous) => ({
+                          ...previous,
+                          usage_period: event.target.checked ? 'lifetime' : 'month',
+                          usage_limit: 1,
+                          stock_total: ''
+                        }))
+                      }}
+                    />
+                    <span>Promoción especial con unidades limitadas</span>
+                  </label>
+                  {draft.requires_claim ? (
+                    <label>
+                      Unidades disponibles
+                      <input
+                        required
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={draft.stock_total}
+                        onChange={(event) => set('stock_total', event.target.value)}
+                      />
+                      <small>Una unidad por socio. Se descuenta al confirmar el uso.</small>
+                    </label>
+                  ) : (
+                    <>
+                      <label>
+                        Frecuencia
+                        <select
+                          value={draft.usage_period}
+                          onChange={(event) => set('usage_period', event.target.value)}
+                        >
+                          <option value="day">Por día</option>
+                          <option value="week">Por semana (lunes a domingo)</option>
+                          <option value="month">Por mes natural</option>
+                          <option value="lifetime">En total</option>
+                          <option value="unlimited">Sin límite</option>
+                        </select>
+                      </label>
+                      {draft.usage_period !== 'unlimited' && (
+                        <label>
+                          Usos permitidos
+                          <input
+                            required
+                            type="number"
+                            min="1"
+                            max="1000"
+                            step="1"
+                            value={draft.usage_limit}
+                            onChange={(event) => set('usage_limit', event.target.value)}
+                          />
+                        </label>
+                      )}
+                    </>
+                  )}
+                </div>
+              </details>
+              <div className="lc-create-how">
+                <strong>¿Cómo funciona?</strong>
+                <ol>
+                  <li>El socio activa la oferta en Latido.</li>
+                  <li>Al pagar, te enseña la pantalla con el descuento.</li>
+                  <li>
+                    Revisa abajo que la fecha y la hora sean correctas y aplica el descuento.
+                  </li>
+                </ol>
+              </div>
+              <p className="lc-create-fine">No acumulable con otras ofertas Latido.</p>
+            </>
+          )}
         </fieldset>
-      </details>
-      <p className="lc-create-notice">
-        <Info size={18} aria-hidden="true" />
-        <span>El socio activa el descuento y lo confirma al pagar en tu negocio.</span>
-      </p>
+      </div>
       <footer className="lc-create-footer">
         {error && (
           <p className="lc-alert" role="alert">
             {error}
           </p>
         )}
-        <button className="lc-button" disabled={busy}>
-          {busy ? 'Publicando…' : 'Publicar descuento'}
-        </button>
-        <p>No acumulable con otros descuentos Latido.</p>
+        <div>
+          {position > 0 && (
+            <button
+              type="button"
+              className="lc-button lc-button--secondary"
+              disabled={busy}
+              onClick={() => go(steps[position - 1])}
+            >
+              Atrás
+            </button>
+          )}
+          <button type="submit" className="lc-button" disabled={busy}>
+            {busy ? 'Publicando…' : step === 4 ? 'Publicar oferta' : 'Siguiente'}
+          </button>
+        </div>
       </footer>
     </form>
   )

@@ -31,6 +31,22 @@ export function shareCardBusiness(
   )
 }
 
+export function shareLatidoBusinessProfile(
+  providerId,
+  businessName,
+  nav = navigator,
+  origin = window.location.origin
+) {
+  return shareLatidoLink(
+    {
+      title: `${businessName} en Latido`,
+      text: 'Descubre este negocio en Latido.',
+      url: new URL(`/negocios/${providerId}`, origin).href
+    },
+    nav
+  )
+}
+
 async function shareLatidoLink(data, nav) {
   if (typeof nav.share === 'function') {
     try {

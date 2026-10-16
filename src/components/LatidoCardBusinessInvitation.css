@@ -205,3 +205,70 @@
     font-size: 22px;
   }
 }
+.lc-invitation-content .lc-invitation-choose {
+  margin: 22px 0 10px;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 700;
+}
+.lc-invitation-quick {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.lc-invitation-quick button {
+  min-height: 44px;
+  padding: 8px 4px;
+  border: 1px solid #dbe1ed;
+  border-radius: 11px;
+  color: #172033;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lc-invitation-quick button:hover {
+  background: #f3f6ff;
+  border-color: #2955ee;
+}
+.lc-invitation-quick button:focus-visible {
+  outline: 3px solid #ffb020;
+  outline-offset: 2px;
+}
+.lc-business-invitation-share {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 20px;
+  border: 1px solid #dbe1ed;
+  border-radius: 14px;
+  background: #fff;
+  color: #2955ee;
+  font:
+    600 13px 'Poppins',
+    sans-serif;
+  cursor: pointer;
+}
+.lc-business-invitation-share:focus-visible {
+  outline: 3px solid #ffb020;
+  outline-offset: 2px;
+}
+.lc-invitation-manual-link {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 12px;
+}
+.lc-invitation-manual-link input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #dbe1ed;
+  border-radius: 10px;
+  font: inherit;
+}

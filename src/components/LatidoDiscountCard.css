@@ -101,13 +101,25 @@
 }
 .lc-discount-business {
   display: block;
+  width: 100%;
   margin-top: 4px;
-  color: #2f5bd8;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #556070;
   text-decoration: none;
+  text-align: left;
+  font-family: inherit;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.45;
   overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.lc-discount-business:focus-visible {
+  outline: 3px solid #4a76ef;
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 .lc-discount-city {
   color: #556070;
@@ -158,7 +170,7 @@
   color: #596479;
 }
 .lc-discount-card--unavailable .lc-discount-business {
-  color: #526689;
+  color: #667087;
 }
 .lc-discount-summary .lc-discount-availability {
   margin-top: 6px;

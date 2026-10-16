@@ -166,7 +166,7 @@ export default function LatidoCardBusiness() {
           {!business.suspended && !data.offers.length && businessView === null && (
             <LatidoCardBusinessInvitation
               business={business}
-              onCreate={(target) => openOffer(target)}
+                onCreate={(target, selection) => openOffer(target, selection)}
             />
           )}
           {business.suspended ? (

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, MapPin, Search } from 'lucide-react'
 import { DiscountBusinessPhoto } from './LatidoDiscountCard'
+import { offerComboLabel } from '../lib/latidoCardCore'
 import './LatidoCardDiscovery.css'
 
 export const CARD_PREVIEW_LIMIT = 10
@@ -92,7 +93,7 @@ export default function LatidoCardDiscovery({
     >
       <h2 id="lc-businesses-title">Negocios participantes</h2>
       <p className="lc-discovery-description">
-        Descubre los negocios con descuentos para la comunidad hispanohablante.
+        Descubre los negocios con ofertas para la comunidad hispanohablante.
       </p>
       {error ? (
         <p className="lc-alert" role="alert">
@@ -119,8 +120,8 @@ export default function LatidoCardDiscovery({
                 ? `Hasta −${best} %`
                 : fixed
                   ? `−CHF ${fixed}`
-                  : available.some((offer) => offer.benefit_type === 'two_for_one')
-                    ? '2 × 1'
+                  : available.some((offer) => offerComboLabel(offer))
+                    ? offerComboLabel(available.find((offer) => offerComboLabel(offer)))
                     : available.some((offer) => offer.benefit_type === 'gift')
                       ? 'Regalo'
                       : 'Beneficio'
@@ -148,7 +149,7 @@ export default function LatidoCardDiscovery({
                       )}
                       <span className="lc-discovery-business-cta">
                         <span className="lc-directory-benefit">{badge}</span>
-                        <span>{`${available.length} ${available.length === 1 ? 'descuento' : 'descuentos'}`}</span>
+                        <span>{`${available.length} ${available.length === 1 ? 'oferta' : 'ofertas'}`}</span>
                       </span>
                     </span>
                     <ChevronRight size={18} aria-hidden="true" />

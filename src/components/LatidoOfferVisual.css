@@ -8,8 +8,24 @@
   width: 56px;
   height: 62px;
   border-radius: 16px;
-  background: #d12c53;
-  color: #fff;
+  background: #e7edff;
+  color: #1d44cc;
+}
+.lc-offer-value[data-benefit='fixed'] {
+  background: #fff3dc;
+  color: #975900;
+}
+.lc-offer-value[data-benefit='combo'] {
+  background: #ffe5ef;
+  color: #cc1757;
+}
+.lc-offer-value[data-benefit='gift'] {
+  background: #e4f7ee;
+  color: #007e66;
+}
+.lc-offer-value[data-benefit='service'] {
+  background: #f0eaff;
+  color: #6941cf;
 }
 .lc-offer-value-number {
   font-size: 17px;

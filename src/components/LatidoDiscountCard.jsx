@@ -1,7 +1,21 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Check, Clock3, Info, ReceiptText, Share2, Store } from 'lucide-react'
-import { offerAvailability, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
+import {
+  CalendarDays,
+  Check,
+  Clock3,
+  Info,
+  ReceiptText,
+  Repeat2,
+  Share2,
+  Store
+} from 'lucide-react'
+import {
+  offerAvailability,
+  offerBenefitLabel,
+  offerHasEnd,
+  offerUsageLabel
+} from '../lib/latidoCardCore'
 import { OfferBenefitBadge, OfferBrandStripe, OfferUsageChip } from './LatidoOfferVisual'
 import './LatidoDiscountCard.css'
 
@@ -46,9 +60,11 @@ export default function LatidoDiscountCard({
   onShare,
   manualShareUrl,
   hideJoinAction = false,
-  actionLabel = 'Activar'
+  actionLabel = 'Activar',
+  inBusiness = false,
+  expanded = false,
+  onToggleDetails
 }) {
-  const [expanded, setExpanded] = useState(false)
   const detailsId = useId()
   const availability = offerAvailability(offer, { memberActive })
   const daysLeft = Math.ceil((Date.parse(offer.ends_at) - Date.now()) / 86400000)
@@ -81,9 +97,9 @@ export default function LatidoDiscountCard({
   )
   return (
     <article
-      className={`lc-offer-row lc-discount-card ${shared ? 'lc-discount-card--shared' : ''} ${availability.unavailable ? 'lc-discount-card--unavailable' : ''}`}
+      className={`lc-offer-row lc-discount-card ${inBusiness ? 'lc-discount-card--in-business' : ''} ${shared ? 'lc-discount-card--shared' : ''} ${availability.unavailable ? 'lc-discount-card--unavailable' : ''}`}
       onClick={(event) => {
-        if (!event.target.closest('button, a, input, label')) setExpanded((value) => !value)
+        if (!event.target.closest('button, a, input, label')) onToggleDetails()
       }}
     >
       <div className="lc-discount-main">
@@ -94,15 +110,23 @@ export default function LatidoDiscountCard({
               className="lc-discount-open"
               aria-expanded={expanded}
               aria-controls={detailsId}
-              onClick={() => setExpanded((value) => !value)}
+              onClick={onToggleDetails}
             >
               {offer.title}
             </button>
           </h3>
-          <Link className="lc-discount-business" to={`/card/negocio/${offer.provider_id}`}>
-            {offer.business_name}
-            {offer.city && <span className="lc-discount-city"> · {offer.city}</span>}
-          </Link>
+          {!inBusiness && (
+            <button
+              type="button"
+              className="lc-discount-business"
+              aria-expanded={expanded}
+              aria-controls={detailsId}
+              onClick={onToggleDetails}
+            >
+              {offer.business_name}
+              {offer.city && <span className="lc-discount-city"> · {offer.city}</span>}
+            </button>
+          )}
         </div>
         <button
           className="lc-discount-share"
@@ -112,20 +136,36 @@ export default function LatidoDiscountCard({
           <Share2 size={19} aria-hidden="true" />
         </button>
       </div>
+      {inBusiness && offer.requires_claim && (
+        <p className="lc-business-offer-limit">
+          <Clock3 size={13} aria-hidden="true" />
+          Promoción limitada
+          {offer.remaining != null
+            ? ` · ${Number(offer.remaining) > 0 ? `Quedan ${offer.remaining}` : 'Agotada'}`
+            : ''}
+        </p>
+      )}
       <div className="lc-discount-summary">
         <div className="lc-discount-bottom">
           <OfferUsageChip offer={offer} />
           {action}
         </div>
-        <div className="lc-discount-tags">
-          {offer.requires_claim && <span>Promoción limitada</span>}
-          {daysLeft > 0 && daysLeft <= 3 && (
-            <span>Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}</span>
-          )}
-          {offer.remaining != null && (
-            <span>{Number(offer.remaining) > 0 ? `Quedan ${offer.remaining}` : 'Agotado'}</span>
-          )}
-        </div>
+        {!inBusiness && (
+          <div className="lc-discount-tags">
+            {offer.requires_claim && <span>Promoción limitada</span>}
+            {daysLeft > 0 && daysLeft <= 3 && (
+              <span>Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}</span>
+            )}
+            {offer.remaining != null && (
+              <span>{Number(offer.remaining) > 0 ? `Quedan ${offer.remaining}` : 'Agotado'}</span>
+            )}
+          </div>
+        )}
+        {inBusiness && daysLeft > 0 && daysLeft <= 3 && (
+          <p className="lc-discount-availability">
+            Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}
+          </p>
+        )}
         {availability.message && <p className="lc-discount-availability">{availability.message}</p>}
       </div>
       <div className="lc-discount-details" id={detailsId} hidden={!expanded}>
@@ -136,12 +176,18 @@ export default function LatidoDiscountCard({
             <span>{minimum(offer)}</span>
           </li>
           <li>
+            <Repeat2 size={17} aria-hidden="true" />
             <span>{offerUsageLabel(offer)}</span>
           </li>
-          {offer.ends_at && (
+          {offerHasEnd(offer) ? (
             <li>
               <CalendarDays size={17} aria-hidden="true" />
               <span>Válido hasta el {date(offer.ends_at)}</span>
+            </li>
+          ) : (
+            <li>
+              <CalendarDays size={17} aria-hidden="true" />
+              <span>Sin fecha de fin</span>
             </li>
           )}
           {offer.remaining != null && (
@@ -163,7 +209,26 @@ export default function LatidoDiscountCard({
   )
 }
 
-export function LatidoDiscountHistory({ items }) {
+export function LatidoDiscountHistory({ items, inBusiness = false }) {
+  if (inBusiness)
+    return (
+      <ul className="lc-business-used-offers">
+        {items.map((offer) => (
+          <li key={offer.id}>
+            <article className="lc-business-used-offer">
+              <div>
+                <OfferBenefitBadge offer={offer} />
+                <h3>{offer.title}</h3>
+              </div>
+              <span className="lc-business-used-date">
+                <Check size={13} aria-hidden="true" />
+                Usada el <time dateTime={offer.redeemed_at}>{date(offer.redeemed_at)}</time>
+              </span>
+            </article>
+          </li>
+        ))}
+      </ul>
+    )
   return (
     <div className="lc-discount-history">
       <ul>

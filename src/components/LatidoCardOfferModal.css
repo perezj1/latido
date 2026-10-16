@@ -1,5 +1,5 @@
 .lc-offer-modal.lc-page {
-  width: min(540px, calc(100% - 24px));
+  width: min(440px, calc(100% - 24px));
   max-height: calc(100dvh - 24px);
   padding: 0;
   margin: auto;
@@ -7,7 +7,7 @@
   border-radius: 24px;
   background: #fff;
   box-shadow: 0 24px 80px #10182d40;
-  overflow: auto;
+  overflow: hidden;
 }
 .lc-offer-modal::backdrop {
   background: #10182d88;
@@ -21,8 +21,20 @@
   flex-shrink: 0;
 }
 .lc-offer-modal .lc-offer-modal-content {
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   min-height: 0;
+  padding: 0;
+}
+.lc-offer-modal-content > div:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.lc-offer-modal-content > p,
+.lc-offer-modal-content > div[role='alert'] {
+  padding: 18px;
 }
 .lc-offer-modal-header {
   display: flex;
@@ -35,6 +47,8 @@
 .lc-offer-modal-header h2 {
   margin: 0;
   outline: none;
+  font-size: 20px;
+  font-weight: 800;
 }
 .lc-offer-modal-header p {
   margin: 4px 0 0;
@@ -65,5 +79,13 @@
 @media print {
   .lc-offer-modal {
     display: none !important;
+  }
+}
+@media (max-width: 599px) {
+  .lc-offer-modal.lc-page {
+    width: 100%;
+    margin: auto auto 0;
+    border-radius: 26px 26px 0 0;
+    border-bottom: 0;
   }
 }

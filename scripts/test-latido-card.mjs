@@ -4,10 +4,66 @@ import { randomUUID } from 'node:crypto'
 import { PGlite } from '@electric-sql/pglite'
 import {
   offerAvailability,
+  offerBenefitLabel,
+  offerComboLabel,
+  offerHasEnd,
   offerUsageLabel,
   remainingValidationSeconds
 } from '../src/lib/latidoCardCore.js'
 import { cardOfferShareData, shareCardBusiness } from '../src/lib/latidoCardShare.js'
+import {
+  createOfferPayload,
+  draftOfferScope,
+  initialOfferDraft
+} from '../src/lib/latidoCardOfferDraft.js'
+
+const draft = initialOfferDraft()
+const noEndOffer = createOfferPayload(draft)
+assert.equal(noEndOffer.ends_at, 'infinity')
+assert.equal(offerHasEnd(noEndOffer), false)
+assert.equal(offerHasEnd({ ends_at: '2027-01-01T12:00:00Z' }), true)
+assert.equal(noEndOffer.title, '10 % de descuento')
+assert.equal(draftOfferScope({ ...draft, scope: 'specific', detail: 'en el corte' }), 'En el corte')
+assert.equal(
+  draftOfferScope({ ...draft, type: 'gift', scope: 'specific', detail: 'con el menú' }),
+  'Con el menú'
+)
+assert.equal(
+  createOfferPayload({ ...draft, scope: 'specific', detail: 'en el corte' }).title,
+  '10 % en el corte'
+)
+assert.equal(
+  createOfferPayload({
+    ...draft,
+    type: 'gift',
+    gift: 'un café',
+    scope: 'specific',
+    detail: 'con el menú'
+  }).title,
+  'Regalo: un café con el menú'
+)
+for (const combo of ['2x1', '3x2', 'second_half']) {
+  const payload = createOfferPayload({ ...draft, type: 'combo', combo })
+  assert.equal(payload.benefit_type, combo === '2x1' ? 'two_for_one' : 'service')
+  assert.equal(payload.benefit_value, null)
+  assert.equal(offerComboLabel(payload), combo === 'second_half' ? '2.ª a mitad' : combo)
+  if (combo !== '2x1') assert.equal(offerBenefitLabel(payload), payload.title)
+}
+const custom = createOfferPayload({
+  ...draft,
+  type: 'other',
+  benefit: 'envío gratis',
+  scope: 'specific',
+  detail: 'stale scope',
+  requires_claim: true,
+  stock_total: 12,
+  usage_period: 'unlimited',
+  usage_limit: 10
+})
+assert.equal(custom.title, 'Envío gratis')
+assert.equal(custom.usage_period, 'lifetime')
+assert.equal(custom.usage_limit, 1)
+assert.equal(custom.stock_total, 12)
 
 const read = (name) => readFile(new URL(`../supabase/${name}`, import.meta.url), 'utf8')
 const minimal = await read('latido_card_minimal.sql'),
@@ -337,7 +393,7 @@ for (const upgrade of [false, true]) {
       }
     ])
   }
-  let oid = await makeOffer()
+  let oid = await makeOffer({ ends_at: 'infinity' })
   await as(null, 'anon')
   assert.deepEqual(
     await rpc('lc_participating_businesses'),
@@ -347,6 +403,7 @@ for (const upgrade of [false, true]) {
   const local = await rpc('lc_business_benefits', [ids.business])
   assert.equal(local.business.name, 'Restaurante A')
   assert.equal(local.offers[0].id, oid)
+  assert.equal(local.offers[0].ends_at, 'infinity', 'Offers without an end date remain public')
   assert.equal(local.offers[0].activation_mode, 'manual', 'Existing/default offers remain manual')
   assert.ok(!JSON.stringify(local).includes('user_id'))
   await as('inactive')

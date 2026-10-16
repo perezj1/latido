@@ -14,11 +14,15 @@ import {
   cardErrorMessage,
   offerAvailability,
   offerBenefitLabel,
+  offerHasEnd,
   offerUsageLabel
 } from '../lib/latidoCardCore'
 import { shareCardOffer } from '../lib/latidoCardShare'
 import LatidoCardIntro from '../components/LatidoCardIntro'
 import LatidoMembershipCardSummary from '../components/LatidoMembershipCard'
+import LatidoCardBusinessDetail, {
+  BusinessOfferGuide
+} from '../components/LatidoCardBusinessDetail'
 import LatidoCardDiscovery, {
   CARD_PREVIEW_LIMIT,
   CardListLimit,
@@ -27,8 +31,7 @@ import LatidoCardDiscovery, {
 } from '../components/LatidoCardDiscovery'
 import LatidoDiscountCard, {
   LatidoDiscountConfirmation,
-  LatidoDiscountHistory,
-  DiscountBusinessPhoto
+  LatidoDiscountHistory
 } from '../components/LatidoDiscountCard'
 import './LatidoCard.css'
 import './LatidoCardCustomer.css'
@@ -84,7 +87,7 @@ export function OfferConditions({ offer }) {
         {Number(offer.minimum_spend) > 0 && <>Compras desde CHF {Number(offer.minimum_spend)} · </>}
         {offerUsageLabel(offer)}
         <br />
-        Válido hasta {cardDate(offer.ends_at)}
+        {offerHasEnd(offer) ? `Válido hasta ${cardDate(offer.ends_at)}` : 'Sin fecha de fin'}
         <br />
         No acumulable con otros descuentos Latido.
       </small>
@@ -118,6 +121,10 @@ export default function LatidoCard() {
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState('available'),
     [confirm, setConfirm] = useState(null)
+  const [expandedOfferId, setExpandedOfferId] = useState(null)
+  useEffect(() => {
+    setExpandedOfferId(null)
+  }, [providerId, user?.id, tab, query, city])
   useEffect(() => {
     setTab(params.get('vista') === 'usadas' ? 'used' : 'available')
   }, [params])
@@ -283,7 +290,7 @@ export default function LatidoCard() {
   const offers = (data.offers || [])
     .filter((offer) => !providerId || (business && offer.provider_id === providerId))
     .sort((a, b) => Number(b.id === params.get('oferta')) - Number(a.id === params.get('oferta')))
-  const used = data.history
+  const usedRecords = data.history
     .filter((record) => !record.reversed_at)
     .map((record) => {
       const current = offers.find((offer) => offer.id === record.offer_id)
@@ -308,8 +315,20 @@ export default function LatidoCard() {
       }
     })
     .filter((offer) => !providerId || offer.provider_id === providerId)
+  const seenUsed = new Set()
+  const used = providerId
+    ? [...usedRecords]
+        .sort((a, b) => Date.parse(b.redeemed_at) - Date.parse(a.redeemed_at))
+        .filter((offer) => {
+          if (seenUsed.has(offer.id)) return false
+          seenUsed.add(offer.id)
+          return true
+        })
+    : usedRecords
   const sharedOffer =
-    tab === 'available' ? offers.find((offer) => offer.id === params.get('oferta')) : null
+    !providerId && tab === 'available'
+      ? offers.find((offer) => offer.id === params.get('oferta'))
+      : null
   const visitorHighlights =
     !member &&
     !providerId &&
@@ -338,7 +357,15 @@ export default function LatidoCard() {
     (offer) =>
       (!city || offer.city === city) &&
       matchesCardSearch(
-        [offer.title, offer.business_name, offer.city, offer.description, offerBenefitLabel(offer)],
+        providerId
+          ? [offer.title, offer.description, offerBenefitLabel(offer)]
+          : [
+              offer.title,
+              offer.business_name,
+              offer.city,
+              offer.description,
+              offerBenefitLabel(offer)
+            ],
         query
       )
   )
@@ -378,11 +405,31 @@ export default function LatidoCard() {
       manualShareUrl={manualShare?.offerId === offer.id ? manualShare.url : ''}
       hideJoinAction={!member?.active}
       actionLabel={providerId ? 'Usar ahora' : 'Activar'}
+      inBusiness={Boolean(providerId)}
+      expanded={expandedOfferId === offer.id}
+      onToggleDetails={() =>
+        setExpandedOfferId((current) => (current === offer.id ? null : offer.id))
+      }
     />
   )
   return (
-    <div className="lc-page lc-member-page lc-discounts-page">
-      <CardHeader />
+    <div
+      className={`lc-page lc-member-page lc-discounts-page${providerId ? ' lc-business-detail-page' : ''}`}
+    >
+      {providerId ? (
+        <LatidoCardBusinessDetail
+          business={business}
+          count={offers.length}
+          query={query}
+          loading={loading}
+          onQuery={(value) => {
+            setQuery(value)
+            setShowAll(false)
+          }}
+        />
+      ) : (
+        <CardHeader />
+      )}
       {error && (
         <div className="lc-alert" role="alert">
           <p>{error}</p>
@@ -406,17 +453,6 @@ export default function LatidoCard() {
         </div>
       ) : error && !member && !data.offers.length ? null : (
         <>
-          {providerId && business && (
-            <section className="lc-business-heading" aria-label="Negocio">
-              <DiscountBusinessPhoto
-                offer={{ business_name: business.name, business_photo_url: business.photo_url }}
-              />
-              <div>
-                <h1>{business.name}</h1>
-                <p>{business.city}</p>
-              </div>
-            </section>
-          )}
           {!providerId && membership}
           {!member && !providerId && (
             <LatidoCardIntro
@@ -433,10 +469,18 @@ export default function LatidoCard() {
               }
             />
           )}
-          {!member && providerId && (
+          {!member?.active && providerId && (
             <section className="lc-business-join">
-              <p>Consigue estos descuentos con Tarjeta Latido por CHF 6,90 al mes.</p>
-              {user ? (
+              <p>
+                {member
+                  ? 'Tu membresía está inactiva. Renueva tu tarjeta para usar estas ofertas.'
+                  : 'Consigue estas ofertas con Tarjeta Latido por CHF 6,90 al mes.'}
+              </p>
+              {member ? (
+                <a className="lc-button lc-intro-cta" href={renewUrl}>
+                  Renovar mi tarjeta
+                </a>
+              ) : user ? (
                 <a className="lc-button lc-intro-cta" href={requestUrl}>
                   Solicitar mi tarjeta
                 </a>
@@ -474,22 +518,23 @@ export default function LatidoCard() {
           <section className="lc-benefits" aria-labelledby="lc-benefits-title">
             <div className="lc-benefits-heading">
               <h2 id="lc-benefits-title">
-                {providerId ? 'Descuentos de este negocio' : 'Descuentos para ti'}
+                {providerId ? 'Ofertas de este negocio' : 'Descuentos para ti'}
               </h2>
-              <CardHowItWorks />
+              {!providerId && <CardHowItWorks />}
             </div>
-            {(offers.length >= 6 || directory.length >= 6 || used.length >= 6 || query) && (
-              <CardSearch
-                label="Buscar descuentos y negocios"
-                placeholder="Descuento, negocio o ciudad"
-                value={query}
-                onChange={(value) => {
-                  setQuery(value)
-                  setShowAll(false)
-                }}
-              />
-            )}
-            {cities.length > 1 && (
+            {!providerId &&
+              (offers.length >= 6 || directory.length >= 6 || used.length >= 6 || query) && (
+                <CardSearch
+                  label="Buscar descuentos y negocios"
+                  placeholder="Descuento, negocio o ciudad"
+                  value={query}
+                  onChange={(value) => {
+                    setQuery(value)
+                    setShowAll(false)
+                  }}
+                />
+              )}
+            {!providerId && cities.length > 1 && (
               <label className="lc-city-select">
                 Ciudad
                 <select
@@ -512,12 +557,12 @@ export default function LatidoCard() {
             <div
               className="lc-offer-tabs"
               role="tablist"
-              aria-label="Tus descuentos"
+              aria-label={providerId ? 'Ofertas' : 'Tus descuentos'}
               data-active={tab}
             >
               {[
                 ['available', 'Disponibles', offers.length],
-                ['used', 'Usados', used.length]
+                ['used', providerId ? 'Usadas' : 'Usados', used.length]
               ].map(([id, label, count]) => (
                 <button
                   key={id}
@@ -558,14 +603,20 @@ export default function LatidoCard() {
               className={'lc-offer-list ' + (!visible.length ? 'lc-offer-list--empty' : '')}
             >
               {tab === 'used'
-                ? visible.length > 0 && <LatidoDiscountHistory items={shown} />
+                ? visible.length > 0 && (
+                    <LatidoDiscountHistory items={shown} inBusiness={Boolean(providerId)} />
+                  )
                 : shown.map((offer) => renderOffer(offer))}
               {!visible.length && (
                 <p className="lc-empty-state">
                   {query.trim() || city
-                    ? 'No encontramos descuentos con esa búsqueda.'
+                    ? providerId
+                      ? 'No hay ofertas que coincidan con tu búsqueda.'
+                      : 'No encontramos descuentos con esa búsqueda.'
                     : tab === 'used'
-                      ? 'Aquí aparecerán los descuentos que hayas usado.'
+                      ? providerId
+                        ? 'Aquí aparecerán las ofertas que hayas usado en este negocio.'
+                        : 'Aquí aparecerán los descuentos que hayas usado.'
                       : 'Todavía no hay descuentos disponibles aquí.'}
                 </p>
               )}
@@ -575,11 +626,11 @@ export default function LatidoCard() {
               expanded={showAll}
               onToggle={() => setShowAll((value) => !value)}
               controls="lc-offers"
-              noun={tab === 'used' ? 'usos' : 'descuentos'}
+              noun={providerId ? 'ofertas' : tab === 'used' ? 'usos' : 'descuentos'}
             />
+            {providerId && <BusinessOfferGuide />}
           </section>
-          {providerId && membership}
-          {member && annualUses > 0 && (
+          {!providerId && member && annualUses > 0 && (
             <p className="lc-year-uses">
               Has usado {data.history.length >= 100 ? 'al menos ' : ''}
               {annualUses} {annualUses === 1 ? 'descuento' : 'descuentos'} este año.
@@ -593,11 +644,6 @@ export default function LatidoCard() {
               query={query}
               city={city}
             />
-          )}
-          {providerId && (
-            <Link className="lc-all-discounts" to="/card">
-              ← Todos los descuentos
-            </Link>
           )}
           {!member?.active && (
             <CardJoinBar>

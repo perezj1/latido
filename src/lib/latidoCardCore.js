@@ -10,11 +10,25 @@ export function offerUsageLabel(offer) {
   return `${limit} ${limit === 1 ? 'uso' : 'usos'} ${period[offer.usage_period] || 'en total'}`
 }
 
+export function offerHasEnd(offer) {
+  return Number.isFinite(Date.parse(offer.ends_at))
+}
+
+export function offerComboLabel(offer) {
+  if (offer.benefit_type === 'two_for_one') return '2x1'
+  if (offer.benefit_type !== 'service') return ''
+  if (/^3[x×]2(?:\s|$)/i.test(offer.title || '')) return '3x2'
+  if (/^2\.ª unidad a mitad de precio(?:\s|$)/i.test(offer.title || '')) return '2.ª a mitad'
+  return ''
+}
+
 export function offerBenefitLabel(offer) {
   if (offer.benefit_type === 'percent') return `${Number(offer.benefit_value)} % de descuento`
   if (offer.benefit_type === 'fixed') return `CHF ${Number(offer.benefit_value)} de descuento`
   if (offer.benefit_type === 'two_for_one') return '2 × 1'
-  return offer.benefit_type === 'service' ? 'Servicio incluido' : 'Regalo incluido'
+  return offer.benefit_type === 'service'
+    ? offer.title || 'Beneficio para socios'
+    : 'Regalo incluido'
 }
 
 export function remainingValidationSeconds(receipt, verifiedAt, now = performance.now()) {
