@@ -1,6 +1,55 @@
 .lc-membership-summary {
   max-width: 560px;
-  margin: 24px auto;
+  margin: 12px auto 20px;
+}
+.lc-member-strip {
+  background: #fff;
+  border: 1px solid #dce5f5;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.lc-member-strip summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+}
+.lc-member-strip summary::-webkit-details-marker {
+  display: none;
+}
+.lc-member-strip summary > span:nth-child(2) {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+.lc-member-strip summary > span:nth-child(2) > span {
+  color: #536075;
+  font-size: 12px;
+}
+.lc-member-strip-action {
+  color: #2455c4;
+  font-size: 12px;
+  font-weight: 600;
+}
+.lc-member-strip > .lc-membership-card {
+  margin: 0 auto 12px;
+  width: calc(100% - 24px);
+  max-width: 400px;
+}
+.lc-membership-expiry {
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 12px;
+  background: #fff4d6;
+  color: #684400;
+  font-size: 13px;
+}
+.lc-membership-expiry a {
+  color: inherit;
+  font-weight: 600;
 }
 .lc-membership-card {
   --lc-card-ink: #0f172a;
@@ -208,7 +257,7 @@
 }
 .lc-membership-renewal p {
   margin: 4px 0 0;
-  font-size: 11px;
+  font-size: 12px;
   color: #5b6478;
 }
 .lc-membership-renewal .lc-button {
@@ -217,9 +266,8 @@
   font-size: 12px;
 }
 .lc-intro-card-preview {
-  max-width: 340px;
-  margin: 4px auto 32px;
-  transform: rotate(-4deg);
+  max-width: 210px;
+  margin: 20px auto;
 }
 @media (prefers-reduced-motion: reduce) {
   .lc-membership-card {

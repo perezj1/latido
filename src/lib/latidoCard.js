@@ -6,4 +6,5 @@ export async function cardRpc(name, params = {}) {
   return data
 }
 
-export const businessCardUrl = (providerId) => `${window.location.origin}/card/negocio/${providerId}`
+export const businessCardUrl = (providerId) =>
+  `${window.location.origin}/card/negocio/${providerId}`

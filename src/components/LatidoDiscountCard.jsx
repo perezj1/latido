@@ -1,16 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  CalendarDays,
-  Check,
-  ChevronDown,
-  Clock3,
-  History,
-  Info,
-  ReceiptText,
-  Share2,
-  Store
-} from 'lucide-react'
+import { CalendarDays, Check, Clock3, Info, ReceiptText, Share2, Store } from 'lucide-react'
 import { offerAvailability, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
 import './LatidoDiscountCard.css'
 
@@ -53,29 +43,93 @@ export default function LatidoDiscountCard({
   shared,
   onActivate,
   onShare,
-  manualShareUrl
+  manualShareUrl,
+  hideJoinAction = false,
+  actionLabel = 'Activar'
 }) {
   const [expanded, setExpanded] = useState(false)
   const detailsId = useId()
   const availability = offerAvailability(offer, { memberActive })
+  const daysLeft = Math.ceil((Date.parse(offer.ends_at) - Date.now()) / 86400000)
+  const compactTitle = String(offer.title || '')
+    .toLocaleLowerCase('es')
+    .replace(/\s/g, '')
+  const repeatsBenefit =
+    offer.benefit_type === 'percent'
+      ? compactTitle.includes(`${Number(offer.benefit_value)}%`)
+      : offer.benefit_type === 'fixed'
+        ? compactTitle.includes(`chf${Number(offer.benefit_value)}`)
+        : offer.benefit_type === 'two_for_one'
+          ? /2[×x]1/.test(compactTitle)
+          : compactTitle.includes(
+              offerBenefitLabel(offer).toLocaleLowerCase('es').replace(/\s/g, '')
+            )
+  const action = (
+    <div className="lc-discount-actions">
+      {(!hideJoinAction || memberActive) && (
+        <div className="lc-discount-buttons">
+          {!memberActive ? (
+            user ? (
+              <a className="lc-discount-primary" href={requestUrl}>
+                {memberInactive ? 'Renovar' : 'Conseguir tarjeta'}
+              </a>
+            ) : (
+              <Link className="lc-discount-primary" to={loginUrl}>
+                Inicia sesión
+              </Link>
+            )
+          ) : (
+            <button
+              className="lc-discount-primary"
+              disabled={busy || availability.unavailable}
+              onClick={() => onActivate(offer)}
+            >
+              {actionLabel}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
   return (
     <article
       className={`lc-offer-row lc-discount-card ${shared ? 'lc-discount-card--shared' : ''} ${availability.unavailable ? 'lc-discount-card--unavailable' : ''}`}
+      onClick={(event) => {
+        if (!event.target.closest('button, a, input, label')) setExpanded((value) => !value)
+      }}
     >
       <div className="lc-discount-main">
         <DiscountBusinessPhoto offer={offer} />
         <div className="lc-discount-info">
-          <h3 className="lc-discount-title">{offer.title}</h3>
+          <h3 className="lc-discount-title">
+            <button
+              className="lc-discount-open"
+              aria-expanded={expanded}
+              aria-controls={detailsId}
+              onClick={() => setExpanded((value) => !value)}
+            >
+              {offer.title}
+            </button>
+          </h3>
           <Link className="lc-discount-business" to={`/card/negocio/${offer.provider_id}`}>
             {offer.business_name}
             {offer.city && ` · ${offer.city}`}
           </Link>
+          {!repeatsBenefit && <p className="lc-discount-benefit">{offerBenefitLabel(offer)}</p>}
           <div className="lc-discount-summary">
-            <p>
-              {offerBenefitLabel(offer)}
-              {Number(offer.minimum_spend) > 0 && ` · Desde CHF ${Number(offer.minimum_spend)}`}
-            </p>
-            <p>{offerUsageLabel(offer)}</p>
+            <div className="lc-discount-bottom">
+              <p>{offerUsageLabel(offer)}</p>
+              {action}
+            </div>
+            <div className="lc-discount-tags">
+              {offer.requires_claim && <span>Promoción limitada</span>}
+              {daysLeft > 0 && daysLeft <= 3 && (
+                <span>Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}</span>
+              )}
+              {offer.remaining != null && (
+                <span>{Number(offer.remaining) > 0 ? `Quedan ${offer.remaining}` : 'Agotado'}</span>
+              )}
+            </div>
             {availability.message && (
               <p className="lc-discount-availability">{availability.message}</p>
             )}
@@ -96,16 +150,15 @@ export default function LatidoDiscountCard({
             <ReceiptText size={17} aria-hidden="true" />
             <span>{minimum(offer)}</span>
           </li>
+          <li>
+            <span>{offerUsageLabel(offer)}</span>
+          </li>
           {offer.ends_at && (
             <li>
               <CalendarDays size={17} aria-hidden="true" />
               <span>Válido hasta el {date(offer.ends_at)}</span>
             </li>
           )}
-          <li>
-            <Info size={17} aria-hidden="true" />
-            <span>No acumulable con otros descuentos Latido.</span>
-          </li>
           {offer.remaining != null && (
             <li>
               <Store size={17} aria-hidden="true" />
@@ -113,38 +166,6 @@ export default function LatidoDiscountCard({
             </li>
           )}
         </ul>
-      </div>
-      <div className="lc-discount-actions">
-        <button
-          className="lc-discount-details-toggle"
-          aria-expanded={expanded}
-          aria-controls={detailsId}
-          onClick={() => setExpanded((value) => !value)}
-        >
-          {expanded ? 'Ocultar detalles' : 'Mostrar detalles'}
-          <ChevronDown size={12} aria-hidden="true" />
-        </button>
-        <div className="lc-discount-buttons">
-          {!memberActive ? (
-            user ? (
-              <a className="lc-discount-primary" href={requestUrl}>
-                {memberInactive ? 'Renovar' : 'Conseguir tarjeta'}
-              </a>
-            ) : (
-              <Link className="lc-discount-primary" to={loginUrl}>
-                Inicia sesión
-              </Link>
-            )
-          ) : (
-            <button
-              className="lc-discount-primary"
-              disabled={busy || availability.unavailable}
-              onClick={() => onActivate(offer)}
-            >
-              Activar
-            </button>
-          )}
-        </div>
       </div>
       {manualShareUrl && (
         <label className="lc-discount-share-link">
@@ -156,22 +177,9 @@ export default function LatidoDiscountCard({
   )
 }
 
-export function LatidoDiscountHistory({ items, total = items.length, initiallyOpen = false }) {
+export function LatidoDiscountHistory({ items }) {
   return (
-    <details className="lc-discount-history" open={initiallyOpen}>
-      <summary>
-        <span className="lc-discount-history-icon">
-          <History size={22} aria-hidden="true" />
-        </span>
-        <strong>Historial de usos</strong>
-        <span>
-          {total} {total === 1 ? 'uso' : 'usos'}
-        </span>
-        <ChevronDown className="lc-discount-history-chevron" size={20} aria-hidden="true" />
-      </summary>
-      <p className="lc-discount-history-hint">
-        Se guarda cada vez que usas un descuento. El negocio lo aplica en su caja.
-      </p>
+    <div className="lc-discount-history">
       <ul>
         {items.map((offer) => (
           <li className="lc-use-row" key={offer.redemptionId}>
@@ -183,14 +191,14 @@ export function LatidoDiscountHistory({ items, total = items.length, initiallyOp
                 <time dateTime={offer.redeemed_at}>{date(offer.redeemed_at)}</time>
                 <span className="lc-use-pill">
                   <Check size={12} aria-hidden="true" />
-                  Usada
+                  Usado
                 </span>
               </div>
             </div>
           </li>
         ))}
       </ul>
-    </details>
+    </div>
   )
 }
 
@@ -238,8 +246,11 @@ export function LatidoDiscountConfirmation({ offer, onClose, onConfirm, busy, er
       <div className="lc-confirm-notice">
         <Info size={20} aria-hidden="true" />
         <p>
-          Tendrás <strong>5 minutos</strong> para enseñarlo en caja. El uso quedará guardado en tu
-          historial.
+          <strong>Actívalo cuando vayas a pagar.</strong> Tendrás hasta <strong>5 minutos</strong>{' '}
+          para enseñarlo en caja.{' '}
+          {offer.usage_period !== 'unlimited' || offer.requires_claim
+            ? 'Al confirmar se consume un uso, aunque pasen los 5 minutos sin enseñarlo.'
+            : 'El uso quedará guardado en tu historial.'}
         </p>
       </div>
       {error && (

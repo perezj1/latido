@@ -72,7 +72,7 @@
   gap: 2px;
   padding: 5px 8px;
   border-radius: var(--latido-radius-md);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
   color: var(--latido-color-text-secondary);
@@ -565,22 +565,11 @@
   margin-bottom: 16px;
 }
 .lc-offer-tabs::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: calc(50% - 138px);
-  width: 132px;
-  height: 3px;
-  border-radius: 3px;
-  background: var(--latido-color-accent);
-  transition: transform 240ms var(--latido-ease-standard);
-  pointer-events: none;
-}
-.lc-offer-tabs[data-active='used']::after {
-  transform: translateX(144px);
+  content: none;
 }
 .lc-offer-tabs button {
-  width: 132px;
+  flex: 1;
+  min-width: 0;
   border: 0;
   border-bottom: 3px solid transparent;
   background: transparent;
@@ -594,6 +583,7 @@
 }
 .lc-offer-tabs button[aria-selected='true'] {
   color: var(--latido-color-accent);
+  border-bottom-color: currentColor;
 }
 .lc-offer-tabs button:hover {
   color: var(--latido-color-accent);

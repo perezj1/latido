@@ -229,7 +229,7 @@ Guía vigente, funcionamiento, migración y pruebas: [docs/LATIDO_CARD_MINIMAL.m
 
 Todos los descuentos usan **Activar → Usar ahora** al comprar, con confirmación antes de registrar
 el uso y una validación animada de cinco minutos. **Disponibles** conserva los descuentos gastados
-con su próxima disponibilidad; **Usadas** es un historial sin acciones de activación.
+con su próxima disponibilidad; **Usados** es un historial abierto sin acciones de activación.
 Los socios con membresía inactiva ven su tarjeta real y **Renovar**, sin el anuncio de alta.
 Las ofertas pausadas permiten **Borrar**, conservando su historial.
 Cada negocio tiene un QR público estable para sus pegatinas. El personal aplica
@@ -242,8 +242,13 @@ Los scripts anteriores están archivados en `supabase/legacy/latido_card/` y no 
 Si la versión mínima y la activación directa ya están instaladas, el nuevo directorio solo necesita
 `supabase/latido_card_business_directory.sql`. Para activación y borrado, ejecutar después
 `supabase/latido_card_offer_activation.sql` y finalmente `supabase/latido_card_verify.sql`.
-El buscador filtra descuentos y negocios por nombre o ciudad. Cada lista muestra primero diez
-resultados y permite abrirlos todos; cada negocio enlaza con sus descuentos actuales.
+La vista del socio muestra una franja compacta con **Ver tarjeta**. Se mantienen los emojis.
+La cabecera de inicio también ofrece este acceso, con número y vigencia reales de la membresía.
+Un solo buscador encuentra descuentos y negocios, con un único selector de ciudad.
+La ayuda abre un modal desde el título; volver de la validación lleva a `/card`. Cada lista muestra diez
+resultados y permite abrirlos todos. Los negocios sin ofertas se marcan **Próximamente**.
+La validación muestra título y condiciones, usa Wake Lock si está disponible y avisa del último minuto.
+Estos cambios de interfaz no requieren SQL nuevo.
 
 Verificación: `npm run test:card`, `npm run test:card:browser`,
 `npm run test:card:webkit`, `npm run test:auth` y `npm run build`.

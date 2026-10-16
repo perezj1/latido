@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Search } from 'lucide-react'
 import { DiscountBusinessPhoto } from './LatidoDiscountCard'
@@ -36,7 +36,7 @@ export function CardSearch({ label, placeholder, value, onChange }) {
 }
 
 export function CardListLimit({ total, expanded, onToggle, controls, noun }) {
-  if (!total) return null
+  if (total <= CARD_PREVIEW_LIMIT) return null
   return (
     <div className="lc-discovery-limit">
       <p role="status">
@@ -58,11 +58,28 @@ export function CardListLimit({ total, expanded, onToggle, controls, noun }) {
   )
 }
 
-export default function LatidoCardDiscovery({ businesses, error }) {
-  const [query, setQuery] = useState('')
+export default function LatidoCardDiscovery({
+  businesses,
+  offers = [],
+  error,
+  query = '',
+  city = ''
+}) {
   const [expanded, setExpanded] = useState(false)
-  const matches = businesses.filter((business) =>
-    matchesCardSearch([business.name, business.city], query)
+  useEffect(() => setExpanded(false), [query, city])
+  const matches = businesses.filter(
+    (business) =>
+      (!city || business.city === city) &&
+      matchesCardSearch(
+        [
+          business.name,
+          business.city,
+          ...offers
+            .filter((offer) => offer.provider_id === business.id)
+            .flatMap((offer) => [offer.title, offer.description])
+        ],
+        query
+      )
   )
   const shown = expanded ? matches : matches.slice(0, CARD_PREVIEW_LIMIT)
   return (
@@ -75,15 +92,6 @@ export default function LatidoCardDiscovery({ businesses, error }) {
       <p className="lc-discovery-description">
         Descubre los negocios con descuentos para la comunidad hispanohablante.
       </p>
-      <CardSearch
-        label="Buscar negocios"
-        placeholder="Nombre del negocio o ciudad"
-        value={query}
-        onChange={(value) => {
-          setQuery(value)
-          setExpanded(false)
-        }}
-      />
       {error ? (
         <p className="lc-alert" role="alert">
           {error}
@@ -91,25 +99,47 @@ export default function LatidoCardDiscovery({ businesses, error }) {
       ) : (
         <>
           <ul className="lc-discovery-businesses" id="lc-business-directory">
-            {shown.map((business) => (
-              <li key={business.id}>
-                <Link
-                  to={`/card/negocio/${business.id}`}
-                  aria-label={`Ver descuentos de ${business.name}${business.city ? ` · ${business.city}` : ''}`}
-                >
-                  <DiscountBusinessPhoto
-                    offer={{ business_name: business.name, business_photo_url: business.photo_url }}
-                    small
-                  />
-                  <span className="lc-discovery-business-info">
-                    <strong>{business.name}</strong>
-                    {business.city && <span>{business.city}</span>}
-                    <span className="lc-discovery-business-cta">Ver descuentos</span>
-                  </span>
-                  <ArrowRight size={18} aria-hidden="true" />
-                </Link>
-              </li>
-            ))}
+            {shown.map((business) => {
+              const available = offers.filter((offer) => offer.provider_id === business.id)
+              const best = Math.max(
+                0,
+                ...available
+                  .filter((offer) => offer.benefit_type === 'percent')
+                  .map((offer) => Number(offer.benefit_value))
+              )
+              const Entry = available.length ? Link : 'div'
+              return (
+                <li key={business.id}>
+                  <Entry
+                    className="lc-directory-entry"
+                    {...(available.length
+                      ? {
+                          to: `/card/negocio/${business.id}`,
+                          'aria-label': `Ver descuentos de ${business.name}${business.city ? ` · ${business.city}` : ''}`
+                        }
+                      : {})}
+                  >
+                    <DiscountBusinessPhoto
+                      offer={{
+                        business_name: business.name,
+                        business_photo_url: business.photo_url
+                      }}
+                      small
+                    />
+                    <span className="lc-discovery-business-info">
+                      <strong>{business.name}</strong>
+                      {business.city && <span>{business.city}</span>}
+                      <span className="lc-discovery-business-cta">
+                        {available.length
+                          ? `${available.length} ${available.length === 1 ? 'descuento' : 'descuentos'}${best ? ` · hasta ${best} %` : ''}`
+                          : 'Próximamente'}
+                      </span>
+                    </span>
+                    {available.length > 0 && <ArrowRight size={18} aria-hidden="true" />}
+                  </Entry>
+                </li>
+              )
+            })}
           </ul>
           {!matches.length && (
             <p className="lc-centered lc-muted">

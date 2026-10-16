@@ -64,6 +64,8 @@ export function LatidoMembershipCard({ member, holderName, sample = false }) {
 }
 
 export default function LatidoMembershipCardSummary({ member, holderName, renewUrl }) {
+  const days = Math.ceil((Date.parse(member.valid_until) - Date.now()) / 86400000)
+  const card = <LatidoMembershipCard member={member} holderName={holderName} />
   return (
     <section className="lc-membership-summary" aria-label="Mi Tarjeta Latido">
       {!member.active && renewUrl && (
@@ -77,12 +79,32 @@ export default function LatidoMembershipCardSummary({ member, holderName, renewU
           </a>
         </div>
       )}
-      <LatidoMembershipCard member={member} holderName={holderName} />
-      <p className="lc-membership-hint">
-        {member.active
-          ? 'Pulsa «Activar» cuando estés en el negocio y confirma antes de mostrar el descuento.'
-          : 'Renueva tu membresía para volver a utilizar los descuentos.'}
-      </p>
+      {member.active ? (
+        <details className="lc-member-strip">
+          <summary>
+            <span aria-hidden="true">💳</span>
+            <span>
+              <strong>Socio nº {String(member.member_number).padStart(4, '0')}</strong>
+              <span>
+                Activa hasta{' '}
+                {new Date(member.valid_until).toLocaleDateString('es-CH', {
+                  timeZone: 'Europe/Zurich'
+                })}
+              </span>
+            </span>
+            <span className="lc-member-strip-action">Ver tarjeta</span>
+          </summary>
+          {card}
+        </details>
+      ) : (
+        card
+      )}
+      {member.active && days >= 0 && Date.parse(member.valid_until) - Date.now() < 7 * 86400000 && (
+        <p className="lc-membership-expiry" role="status">
+          Tu membresía {days <= 1 ? 'vence en menos de 24 horas' : `vence en ${days} días`}.{' '}
+          <a href={renewUrl}>Renovar</a>
+        </p>
+      )}
     </section>
   )
 }

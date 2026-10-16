@@ -12,7 +12,7 @@
 }
 .lc-discount-card.lc-offer-row {
   display: block;
-  padding: 14px 12px;
+  padding: 10px 12px;
   border: 0;
   border-bottom: 1px solid #dce5f5;
   border-radius: 0;
@@ -38,6 +38,36 @@
   width: 56px;
   height: 64px;
 }
+.lc-discount-open {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 5px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 24px;
+}
+.lc-discount-open:focus-visible {
+  outline: 3px solid #4a76ef;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.lc-discount-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.lc-discount-tags > span {
+  font-size: 12px;
+  font-weight: 500;
+  color: #684400;
+}
 .lc-discount-info,
 .lc-use-info {
   flex: 1;
@@ -54,21 +84,6 @@
   background: #edf2ff;
   color: #2f5bd8;
   overflow: hidden;
-}
-.lc-discount-photo::after {
-  content: '';
-  position: absolute;
-  inset: auto 0 0;
-  height: 4px;
-  background: linear-gradient(
-    90deg,
-    #f9a719 0 16.66%,
-    #fa2f35 16.66% 33.33%,
-    #4a76ef 33.33% 50%,
-    #24bfe2 50% 66.66%,
-    #24e2c9 66.66% 83.33%,
-    #03aa98 83.33% 100%
-  );
 }
 .lc-discount-photo img {
   display: block;
@@ -89,15 +104,12 @@
   height: 48px;
   border-radius: 13px;
 }
-.lc-discount-photo--small::after {
-  height: 3px;
-}
 .lc-discount-business {
   display: block;
   margin-top: 4px;
   color: #2f5bd8;
   text-decoration: none;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -111,12 +123,31 @@
 }
 .lc-discount-summary {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
   color: #5b6478;
 }
 .lc-discount-summary p {
   margin: 0;
+}
+.lc-discount-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.lc-discount-bottom > p {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+.lc-discount-bottom .lc-discount-actions {
+  margin: 0;
+  width: 100px;
+  min-width: 100px;
+}
+.lc-discount-bottom .lc-discount-actions .lc-discount-buttons {
+  width: 100%;
 }
 .lc-discount-card.lc-discount-card--unavailable {
   background: #f7f8fb;
@@ -125,10 +156,10 @@
   opacity: 0.55;
 }
 .lc-discount-card--unavailable .lc-discount-title {
-  color: #7b8496;
+  color: #596479;
 }
 .lc-discount-card--unavailable .lc-discount-business {
-  color: #7486b1;
+  color: #526689;
 }
 .lc-discount-summary .lc-discount-availability {
   margin-top: 6px;
@@ -144,7 +175,7 @@
   display: grid;
   gap: 6px;
   margin-top: 12px;
-  font-size: 11px;
+  font-size: 12px;
   text-align: left;
 }
 .lc-discount-share-link input {
@@ -192,10 +223,22 @@
 }
 .lc-discount-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   gap: 8px;
-  margin: 10px 0 0 66px;
+  margin: 6px 0 0 66px;
+}
+.lc-discount-actions:has(.lc-discount-buttons) {
+  justify-items: end;
+}
+.lc-discount-actions .lc-discount-buttons {
+  width: min(100%, 160px);
+}
+.lc-discount-actions:empty {
+  display: none;
+}
+.lc-discount-actions:not(:has(.lc-discount-buttons)) {
+  display: none;
 }
 .lc-discount-details-toggle {
   display: inline-flex;
@@ -242,7 +285,7 @@
   min-height: 44px;
   min-width: 0;
   padding: 8px 6px;
-  font-size: 11px;
+  font-size: 13px;
   border: 1px solid transparent;
 }
 .lc-discount-card .lc-discount-primary:hover:not(:disabled) {
@@ -376,7 +419,7 @@
 }
 .lc-use-meta > time {
   font-size: 12px;
-  color: #7d879a;
+  color: #536075;
   font-variant-numeric: tabular-nums;
 }
 .lc-use-pill {
@@ -385,7 +428,7 @@
   gap: 3px;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: #007f72;
   background: #dcfbf6;
@@ -487,17 +530,17 @@
 }
 .lc-confirm-cancel {
   min-height: 48px;
-  border: 1px solid #f3b6bb;
+  border: 1px solid #dce5f5;
   border-radius: 14px;
-  background: #fff4f4;
-  color: #b4232a;
+  background: #f2f6ff;
+  color: #2455c4;
   font:
     600 15px/1.5 'Poppins',
     sans-serif;
   cursor: pointer;
 }
 .lc-confirm-cancel:hover:not(:disabled) {
-  background: #ffe8e8;
+  background: #e7efff;
 }
 .lc-discount-primary:focus-visible,
 .lc-discount-share:focus-visible,
@@ -538,4 +581,11 @@
   .lc-discount-history-chevron {
     transition: none;
   }
+}
+
+.lc-discount-benefit {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5b6478;
 }

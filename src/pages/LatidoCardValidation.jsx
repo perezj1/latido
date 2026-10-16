@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { cardRpc } from '../lib/latidoCard'
-import { cardErrorMessage, remainingValidationSeconds } from '../lib/latidoCardCore'
+import {
+  cardErrorMessage,
+  offerUsageLabel,
+  remainingValidationSeconds
+} from '../lib/latidoCardCore'
 import './LatidoCard.css'
 import './LatidoCardValidation.css'
 
@@ -71,6 +75,60 @@ export default function LatidoCardValidation() {
   const seconds = remainingValidationSeconds(receipt, verifiedAt, now)
   const valid = !checking && !error && seconds > 0
   const offer = receipt?.offer
+  const vibrated = useRef(null)
+  useEffect(() => {
+    if (valid && vibrated.current !== redemptionId) {
+      vibrated.current = redemptionId
+      try {
+        navigator.vibrate?.(40)
+      } catch {}
+    }
+  }, [valid, redemptionId])
+  useEffect(() => {
+    if (!receipt?.valid || error || seconds <= 0) return
+    let active = true,
+      lock = null,
+      requesting = false
+    const acquire = async () => {
+      if (
+        !active ||
+        requesting ||
+        lock ||
+        document.visibilityState !== 'visible' ||
+        !navigator.wakeLock
+      )
+        return
+      requesting = true
+      try {
+        const requested = await navigator.wakeLock.request('screen')
+        if (!active || document.visibilityState !== 'visible') await requested.release()
+        else {
+          lock = requested
+          requested.addEventListener('release', () => {
+            if (lock === requested) lock = null
+          })
+        }
+      } catch {
+      } finally {
+        requesting = false
+      }
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') acquire()
+      else {
+        const previous = lock
+        lock = null
+        previous?.release().catch(() => {})
+      }
+    }
+    acquire()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      active = false
+      document.removeEventListener('visibilitychange', onVisibility)
+      lock?.release().catch(() => {})
+    }
+  }, [receipt?.valid, redemptionId, Boolean(error), seconds > 0])
   const benefit = offer?.benefit_type
   const discount =
     benefit === 'percent'
@@ -106,7 +164,9 @@ export default function LatidoCardValidation() {
         }).format(serverDate)
       : ''
   return (
-    <main className={`lc-page lc-validation ${valid ? 'lc-validation--valid' : ''}`}>
+    <main
+      className={`lc-page lc-validation ${valid ? 'lc-validation--valid' : ''} ${valid && seconds <= 60 ? 'lc-validation--ending' : ''}`}
+    >
       <Link className="lc-brand" to="/card">
         <img src="/favicon.svg" alt="" /> Tarjeta Latido
       </Link>
@@ -116,10 +176,11 @@ export default function LatidoCardValidation() {
             <>
               <span className="lc-proof-status" role="status">
                 <span aria-hidden="true" />
-                Tarjeta activa
+                Descuento válido
               </span>
               <div className="lc-proof-label lc-proof-business-label">Descuento en</div>
               <h1 id="lc-proof-title">{receipt.business_name}</h1>
+              <p className="lc-proof-offer-title">{offer.title}</p>
               <div className="lc-proof-discount">
                 <strong className="lc-proof-amount" data-kind={benefit}>
                   {discount}
@@ -131,6 +192,13 @@ export default function LatidoCardValidation() {
                   ? `Desde CHF ${Number(receipt.offer.minimum_spend)}`
                   : 'Sin compra mínima'}
               </span>
+              <p
+                className="lc-proof-conditions"
+                tabIndex={0}
+                aria-label="Condiciones del descuento"
+              >
+                {offer.description || offerUsageLabel(offer)}
+              </p>
               <div className="lc-proof-tear" aria-hidden="true" />
               <div className="lc-proof-seal" aria-hidden="true">
                 <div>
@@ -189,10 +257,7 @@ export default function LatidoCardValidation() {
           )}
         </section>
       </div>
-      <Link
-        className="lc-button lc-button--secondary"
-        to={receipt ? `/card/negocio/${receipt.provider_id}?vista=usadas` : '/card?vista=usadas'}
-      >
+      <Link className="lc-button lc-button--secondary" to="/card">
         Volver a mi tarjeta
       </Link>
     </main>

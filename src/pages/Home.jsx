@@ -12,6 +12,7 @@ import { useFavorites } from '../hooks/useFavorites'
 import { useAppNotifications } from '../hooks/useAppNotifications'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
+import HomeLatidoCard from '../components/HomeLatidoCard'
 import ResourcePackagesStrip from '../components/ResourcePackagesStrip'
 import HorizontalDragScroller from '../components/HorizontalDragScroller'
 import PartnersSection from '../components/PartnersSection'
@@ -1679,6 +1680,7 @@ export default function Home() {
           </div>
 
           <div className="hero-search-wrap">
+            <HomeLatidoCard />
             <GlobalSearch
               key={reopenSavedGlobalSearch ? `saved-search-${routerLocation.key}` : 'home-search'}
               size="lg"
