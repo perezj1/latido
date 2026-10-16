@@ -1,4 +1,3 @@
-import { useId } from 'react'
 import './LatidoMembershipCard.css'
 
 export function LatidoMembershipCard({ member, holderName, sample = false, id }) {
@@ -67,9 +66,8 @@ export function LatidoMembershipCard({ member, holderName, sample = false, id })
 }
 
 export default function LatidoMembershipCardSummary({ member, holderName, renewUrl }) {
-  const cardId = useId()
   const days = Math.ceil((Date.parse(member.valid_until) - Date.now()) / 86400000)
-  const card = <LatidoMembershipCard member={member} holderName={holderName} id={cardId} />
+  const card = <LatidoMembershipCard member={member} holderName={holderName} />
   return (
     <section className="lc-membership-summary" aria-label="Mi Tarjeta Latido">
       {!member.active && renewUrl && (
@@ -96,9 +94,6 @@ export default function LatidoMembershipCardSummary({ member, holderName, renewU
                 })}
               </span>
             </span>
-            <a className="lc-member-strip-action" href={`#${cardId}`}>
-              Ver tarjeta
-            </a>
           </div>
           {card}
         </div>

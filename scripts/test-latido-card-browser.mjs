@@ -478,7 +478,6 @@ try {
   await page.getByRole('link', { name: 'Volver a los negocios', exact: true }).click()
   await page.waitForURL(origin + '/card')
   await page.locator('.lc-member-strip-heading').waitFor()
-  await page.locator('.lc-member-strip-action').getByText('Ver tarjeta', { exact: true }).waitFor()
   const firstAccordion = page.locator('.lc-discount-card').filter({ hasText: offer.title })
   const secondAccordion = page.locator('.lc-discount-card').filter({ hasText: special.title })
   await firstAccordion.locator('.lc-discount-business').click()

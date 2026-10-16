@@ -77,31 +77,55 @@
   text-underline-offset: 3px;
   cursor: pointer;
 }
-.lc-help-link:focus-visible,
-.lc-city-select select:focus-visible {
+.lc-help-link:focus-visible {
   outline: 3px solid #4a76ef;
   outline-offset: 3px;
   border-radius: 6px;
 }
 .lc-city-select {
-  display: grid;
-  gap: 6px;
-  margin: 0 0 14px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  margin: 0 0 16px auto;
+  padding: 4px 9px;
+  border: 1px solid #d5ddec;
+  border-radius: 999px;
+  background: #fff;
   color: #536075;
-  font-size: 12px;
+  font: 500 11px/1.4 'Poppins', sans-serif;
+  cursor: pointer;
 }
 .lc-city-select select {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   width: 100%;
-  min-width: 0;
-  min-height: 46px;
-  padding: 10px 12px;
-  border: 1px solid #dce5f5;
-  border-radius: 14px;
-  background: #fff;
-  color: #0d1530;
-  font:
-    400 16px/1.4 'Poppins',
-    sans-serif;
+  height: 100%;
+  opacity: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.lc-city-select:focus-within {
+  outline: 3px solid #4a76ef;
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+.lc-city-select-pin {
+  font-size: 12px;
+  line-height: 1;
+}
+.lc-city-select > svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: inherit;
+  pointer-events: none;
 }
 .lc-business-heading {
   display: flex;

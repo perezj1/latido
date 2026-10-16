@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import toast from 'react-hot-toast'
+import { ChevronDown } from 'lucide-react'
 import { cardRpc } from '../lib/latidoCard'
 import {
   cardErrorMessage,
@@ -536,7 +537,8 @@ export default function LatidoCard() {
               )}
             {!providerId && cities.length > 1 && (
               <label className="lc-city-select">
-                Ciudad
+                <span className="lc-city-select-pin" aria-hidden="true">📍</span>
+                <span aria-hidden="true">{city || 'Todas las ciudades'}</span>
                 <select
                   aria-label="Ciudad"
                   value={city}
@@ -552,6 +554,7 @@ export default function LatidoCard() {
                     </option>
                   ))}
                 </select>
+                <ChevronDown size={15} aria-hidden="true" />
               </label>
             )}
             <div
