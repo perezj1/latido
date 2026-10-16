@@ -72,6 +72,43 @@ const special = {
   remaining: 2,
   available: false
 }
+const discoveryOffers = Array.from({ length: 12 }, (_, index) => ({
+  ...offer,
+  id: `00000000-0000-4000-8000-${String(300 + index).padStart(12, '0')}`,
+  provider_id: `00000000-0000-4000-8000-${String(200 + index).padStart(12, '0')}`,
+  title: `Descuento ${index + 1}`,
+  business_name: index === 11 ? 'Café Encuentro' : `Negocio ${String(index + 1).padStart(2, '0')}`,
+  city: index === 11 ? 'Genève' : 'Berna',
+  activation_mode: index === 11 ? 'automatic' : 'manual',
+  business_photo_url: null,
+  usage_period: 'unlimited',
+  available: true
+}))
+const emptyBusinessId = '00000000-0000-4000-8000-000000000250'
+const discoveryBusinesses = [
+  {
+    id: providerId,
+    name: offer.business_name,
+    city: offer.city,
+    photo_url: offer.business_photo_url
+  },
+  ...discoveryOffers.map((item) => ({
+    id: item.provider_id,
+    name: item.business_name,
+    city: item.city,
+    photo_url: item.business_photo_url
+  })),
+  { id: emptyBusinessId, name: 'Negocio sin descuentos', city: 'Basilea', photo_url: null }
+]
+let discoveryMode = false,
+  directoryFailure = false
+const pausedOffer = {
+  ...offer,
+  id: '00000000-0000-4000-8000-000000000050',
+  title: 'Oferta pausada',
+  active: false
+}
+let pausedDeleted = false
 let receipt = null,
   failFirstUse = true,
   membershipActive = true,
@@ -121,6 +158,24 @@ try {
   })
   await context.addInitScript(() => {
     window.cameraRequests = 0
+    window.printRequests = 0
+    window.print = () => {
+      window.printRequests++
+    }
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text) => {
+          window.lastCopiedText = text
+        }
+      }
+    })
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (data) => {
+        window.lastSharedLink = data
+      }
+    })
     if (navigator.mediaDevices)
       navigator.mediaDevices.getUserMedia = () => {
         window.cameraRequests++
@@ -141,7 +196,20 @@ try {
     if (name === 'profiles' && route.request().headers().accept?.includes('vnd.pgrst.object'))
       return respond(route, { id: user.id, name: 'Ana', interests: [], banned: false })
     if (name.startsWith('lc_')) rpcCalls.push(name)
-    if (name === 'lc_catalog') return respond(route, [offer, special])
+    if (name === 'lc_catalog')
+      return respond(route, [offer, special, ...(discoveryMode ? discoveryOffers : [])])
+    if (name === 'lc_participating_businesses') {
+      if (directoryFailure)
+        return respond(route, { code: 'PGRST202', message: 'Function missing' }, 404)
+      return respond(
+        route,
+        discoveryMode
+          ? discoveryBusinesses
+          : businesses
+              .filter((item) => item.active && item.participating)
+              .map((item) => ({ id: item.id, name: item.name, city: 'Zürich', photo_url: null }))
+      )
+    }
     if (name === 'lc_member_home')
       return respond(route, {
         membership: {
@@ -168,7 +236,8 @@ try {
             used_count: receipts.filter((r) => r.offer_id === special.id).length,
             remaining: special.remaining - receipts.filter((r) => r.offer_id === special.id).length,
             claim: receipts.some((r) => r.offer_id === special.id) ? { status: 'used' } : null
-          }
+          },
+          ...(discoveryMode ? discoveryOffers : [])
         ],
         history: receipts.map((r) => ({
           id: r.id,
@@ -184,18 +253,24 @@ try {
       })
     if (name === 'lc_business_benefits')
       return respond(route, {
-        business: businesses.find((b) => b.id === args.p_provider),
-        offers: [offer, special].filter((o) => o.provider_id === args.p_provider)
+        business: (discoveryMode ? discoveryBusinesses : businesses).find(
+          (b) => b.id === args.p_provider
+        ),
+        offers: [offer, special, ...(discoveryMode ? discoveryOffers : [])].filter(
+          (o) => o.provider_id === args.p_provider
+        )
       })
     if (name === 'lc_use_offer') {
       useCalls.push(args)
       if (!receipt || receipt.offer_id !== args.p_offer) {
-        const selected = args.p_offer === offer.id ? offer : special
+        const selected = [offer, special, ...discoveryOffers].find(
+          (item) => item.id === args.p_offer
+        )
         receipt = {
           id: `00000000-0000-4000-8000-${String(100 + receipts.length).padStart(12, '0')}`,
           offer_id: selected.id,
-          provider_id: providerId,
-          business_name: offer.business_name,
+          provider_id: selected.provider_id,
+          business_name: selected.business_name,
           offer: selected,
           valid: true,
           server_now: new Date().toISOString(),
@@ -222,12 +297,20 @@ try {
     if (name === 'lc_business_dashboard')
       return respond(route, {
         businesses,
-        offers: args.p_provider === providerId ? [offer, special] : [],
+        offers:
+          args.p_provider === providerId
+            ? [offer, special, ...(!pausedDeleted ? [pausedOffer] : [])]
+            : [],
         history: receipt
           ? [{ id: receipt.id, title: offer.title, redeemed_at: receipt.redeemed_at }]
           : []
       })
     if (name === 'lc_join_card_business') return respond(route, null)
+    if (name === 'lc_delete_offer') {
+      assert.equal(args.p_offer, pausedOffer.id)
+      pausedDeleted = true
+      return respond(route, null)
+    }
     if (name === 'lc_admin_overview')
       return respond(route, {
         members: [{ user_id: user.id, name: 'Ana', email: user.email }],
@@ -245,7 +328,7 @@ try {
   await mkdir(output, { recursive: true })
   const businessPath = `/card/negocio/${providerId}?oferta=${offer.id}`
   await page.goto(origin + businessPath)
-  await page.getByRole('heading', { name: offer.business_name, exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Descuentos para ti', exact: true }).waitFor()
   await page.getByRole('link', { name: 'Inicia sesión para usar tus descuentos' }).click()
   await page.waitForURL('**/auth?**')
   assert.equal(new URL(page.url()).searchParams.get('next'), businessPath)
@@ -254,6 +337,11 @@ try {
   await page.getByRole('button', { name: 'Entrar →', exact: true }).click()
   await page.waitForURL(origin + businessPath)
   await page.getByRole('heading', { name: 'Ana', exact: true }).waitFor()
+  assert.ok(
+    (await page.getByRole('navigation', { name: 'Navegación de Tarjeta Latido' }).boundingBox())
+      .height < 65,
+    'Card navigation stays compact'
+  )
   assert.equal(
     await page
       .getByText('No se pudo guardar la sesión. Inténtalo de nuevo.', { exact: true })
@@ -369,6 +457,11 @@ try {
     'rgb(255, 255, 255)'
   )
   await page.getByText('15%', { exact: true }).waitFor()
+  assert.match(
+    await page.locator('.lc-proof-meta time').innerText(),
+    /\d{2}\/\d{2}\/\d{4}.*\d{2}:\d{2}:\d{2}/
+  )
+  assert.equal(await page.locator('.lc-proof-meta').getByText(/^Hora/).count(), 0)
   assert.ok(await page.locator('.lc-proof-seal').count())
   assert.equal(useCalls.length, 2)
   assert.equal(useCalls[0].p_request_id, useCalls[1].p_request_id, 'Retry reuses the request UUID')
@@ -379,6 +472,14 @@ try {
   receipt.business_name = '[TEST] Peluquería Brisa Latina'
   await page.reload()
   await page.getByText('Tarjeta activa', { exact: true }).waitFor()
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => {}))
+    )
+  )
   for (const viewport of [
     { width: 390, height: 844 },
     { width: 390, height: 720 },
@@ -455,6 +556,116 @@ try {
   await page.getByRole('link', { name: 'Mi negocio', exact: true }).click()
   await page.getByRole('heading', { name: 'El QR de tu negocio', exact: true }).waitFor()
   await page.getByAltText(`QR público de ${offer.business_name}`).waitFor()
+  const qrPanel = page.locator('.lc-business-qr')
+  const businessCard = page.locator('.lc-business-current')
+  const createBounds = await businessCard
+    .getByRole('button', { name: 'Crear oferta', exact: true })
+    .boundingBox()
+  const publishedBounds = await businessCard
+    .getByRole('button', { name: 'Mis ofertas', exact: true })
+    .boundingBox()
+  assert.ok(
+    publishedBounds.x + publishedBounds.width <= createBounds.x &&
+      Math.abs(publishedBounds.y - createBounds.y) < 1,
+    'Business actions share one row with published offers on the left'
+  )
+  assert.equal(
+    await page.getByRole('heading', { name: 'Tus ofertas', exact: true }).count(),
+    0,
+    'Offers stay folded until requested'
+  )
+  const qrBounds = await qrPanel.boundingBox()
+  assert.ok(createBounds.y < qrBounds.y, 'Creating a discount takes priority over the QR')
+  assert.deepEqual(
+    await page.locator('#lc-business-sticker').locator('strong,h3,p,small').allTextContents(),
+    ['TARJETA LATIDO', offer.business_name, 'Escanea para obtener descuentos']
+  )
+  assert.equal(
+    await qrPanel.getByRole('link').count(),
+    0,
+    'No extra preview link below the public URL'
+  )
+  await qrPanel.getByRole('button', { name: 'Copiar enlace público', exact: true }).click()
+  await qrPanel.getByText('Copiado', { exact: true }).waitFor()
+  assert.equal(
+    await page.evaluate(() => window.lastCopiedText),
+    origin + `/card/negocio/${providerId}`
+  )
+  await qrPanel.getByRole('button', { name: 'Compartir', exact: true }).click()
+  assert.equal(
+    await page.evaluate(() => window.lastSharedLink.url),
+    origin + `/card/negocio/${providerId}`
+  )
+  await qrPanel.getByRole('button', { name: 'Imprimir', exact: true }).click()
+  assert.equal(await page.evaluate(() => window.printRequests), 1)
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 }
+  ]) {
+    await page.setViewportSize(viewport)
+    const printBounds = await qrPanel
+      .getByRole('button', { name: 'Imprimir', exact: true })
+      .boundingBox()
+    const shareBounds = await qrPanel
+      .getByRole('button', { name: 'Compartir', exact: true })
+      .boundingBox()
+    const publicUrlBounds = await qrPanel
+      .getByLabel('Enlace público', { exact: true })
+      .boundingBox()
+    const copyBounds = await qrPanel
+      .getByRole('button', { name: 'Copiar enlace público', exact: true })
+      .boundingBox()
+    assert.ok(
+      Math.abs(printBounds.y - shareBounds.y) < 1 &&
+        printBounds.x + printBounds.width <= shareBounds.x,
+      'Print and Share stay side by side'
+    )
+    assert.ok(
+      Math.abs(publicUrlBounds.y - copyBounds.y) < 1 &&
+        publicUrlBounds.x + publicUrlBounds.width <= copyBounds.x,
+      'Copy stays to the right of the public URL'
+    )
+  }
+  await qrPanel.screenshot({ path: path.join(output, 'business-qr-mobile.png') })
+  await page.emulateMedia({ media: 'print' })
+  assert.equal(
+    await page.locator('.lc-offer-create').evaluate((el) => getComputedStyle(el).display),
+    'none'
+  )
+  assert.equal(
+    await page.locator('#lc-business-sticker').evaluate((el) => getComputedStyle(el).visibility),
+    'visible'
+  )
+  assert.equal(
+    await page.locator('.lc-public-link').evaluate((el) => getComputedStyle(el).display),
+    'none'
+  )
+  await page
+    .locator('#lc-business-sticker')
+    .screenshot({ path: path.join(output, 'business-qr-print.png') })
+  await page.emulateMedia({ media: 'screen' })
+  await businessCard.getByRole('button', { name: 'Mis ofertas', exact: true }).click()
+  await page.getByRole('heading', { name: 'Tus ofertas', exact: true }).waitFor()
+  const pausedCard = page.locator('article.lc-offer').filter({ hasText: pausedOffer.title })
+  assert.equal(
+    await page
+      .locator('article.lc-offer')
+      .filter({ hasText: offer.title })
+      .getByRole('button', { name: 'Borrar', exact: true })
+      .count(),
+    0
+  )
+  page.once('dialog', (dialog) => dialog.dismiss())
+  await pausedCard.getByRole('button', { name: 'Borrar', exact: true }).click()
+  assert.ok(!rpcCalls.includes('lc_delete_offer'), 'Cancelling deletion does nothing')
+  page.once('dialog', (dialog) => dialog.accept())
+  await pausedCard.getByRole('button', { name: 'Borrar', exact: true }).click()
+  await page
+    .getByRole('status')
+    .filter({ hasText: 'Descuento borrado. El historial se conserva.' })
+    .waitFor()
+  await pausedCard.waitFor({ state: 'detached' })
+  assert.equal(await pausedCard.count(), 0)
   assert.equal(
     await page.locator('.lc-public-link input').inputValue(),
     origin + `/card/negocio/${providerId}`
@@ -474,12 +685,32 @@ try {
     await page.locator('.lc-public-link input').inputValue(),
     origin + `/card/negocio/${provider2}`
   )
+  await page.getByRole('button', { name: 'Copiar enlace público', exact: true }).click()
+  await page.getByText('Copiado', { exact: true }).waitFor()
+  assert.equal(
+    await page.evaluate(() => window.lastCopiedText),
+    origin + `/card/negocio/${provider2}`,
+    'Copy follows the selected business'
+  )
   // Verify the retained wizard offers daily and weekly caps in its second step.
-  await page.getByText('Crear un descuento o promoción', { exact: true }).click()
+  await page.getByRole('button', { name: 'Crear oferta', exact: true }).click()
   await page.getByLabel('Título').fill('10 % de descuento')
+  await page.getByRole('button', { name: 'Mis ofertas', exact: true }).click()
+  await page.getByText('Aún no has publicado descuentos.', { exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Crear oferta', exact: true }).click()
+  assert.equal(
+    await page.getByLabel('Título').inputValue(),
+    '10 % de descuento',
+    'Switching panels preserves the draft'
+  )
   await page.getByRole('button', { name: /Continuar/ }).click()
   assert.ok(await page.getByLabel('Frecuencia').locator('option[value="day"]').count())
   assert.ok(await page.getByLabel('Frecuencia').locator('option[value="week"]').count())
+  await page.getByRole('radio', { name: /Activación automática/ }).check()
+  await page.getByLabel('Válido hasta (hora local)').fill('2027-01-01T12:00')
+  await page.getByRole('button', { name: /Continuar/ }).click()
+  await page.getByText('Automática: mostrar la tarjeta', { exact: true }).waitFor()
+  await page.screenshot({ path: path.join(output, 'wizard-automatic-mobile.png'), fullPage: true })
   user.email = 'admin@test.example'
   await page.evaluate(
     (auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)),
@@ -500,6 +731,97 @@ try {
     session()
   )
   await page.goto(origin + '/card')
+  discoveryMode = true
+  await page.reload()
+  await page.getByRole('heading', { name: 'Ana', exact: true }).waitFor()
+  const discountsRegion = page.getByRole('region', { name: 'Descuentos para ti', exact: true })
+  const businessesRegion = page.getByRole('region', { name: 'Negocios participantes', exact: true })
+  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 10)
+  assert.equal(await businessesRegion.locator('li').count(), 10)
+  assert.equal(await discountsRegion.getByText('Historial de usos', { exact: true }).count(), 0)
+  await discountsRegion.getByRole('button', { name: 'Mostrar todos (12)', exact: true }).click()
+  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 12)
+  assert.equal(
+    await businessesRegion.locator('li').count(),
+    10,
+    'Expanding discounts does not expand businesses'
+  )
+  await discountsRegion.getByRole('button', { name: 'Mostrar menos', exact: true }).click()
+  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 10)
+  const discountSearch = page.getByRole('searchbox', { name: 'Buscar descuentos', exact: true })
+  await discountSearch.fill('cafe geneve')
+  assert.equal(
+    await discountsRegion.locator('.lc-discount-card').count(),
+    1,
+    'Search ignores accents across business and city'
+  )
+  const usesBeforeAuto = useCalls.length
+  await discountsRegion.getByText('Activada', { exact: true }).waitFor()
+  assert.equal(useCalls.length, usesBeforeAuto, 'Automatic activation does not consume on listing')
+  await discountsRegion.getByRole('button', { name: 'Mostrar', exact: true }).click()
+  await page.waitForURL('**/card/validacion/**')
+  await page.getByText('Tarjeta activa', { exact: true }).waitFor()
+  assert.equal(await page.getByRole('dialog').count(), 0, 'Automatic offers skip confirmation')
+  assert.equal(useCalls.length, usesBeforeAuto + 1)
+  await page.goto(origin + '/card')
+  await page.locator('#lc-business-directory li').first().waitFor()
+  await discountSearch.fill('sin-coincidencias-xyz')
+  await discountsRegion
+    .getByText('No encontramos descuentos con esa búsqueda.', { exact: true })
+    .waitFor()
+  await discountSearch.fill('')
+  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 10)
+  await businessesRegion.getByRole('button', { name: 'Mostrar todos (14)', exact: true }).click()
+  assert.equal(await businessesRegion.locator('li').count(), 14)
+  const businessSearch = page.getByRole('searchbox', { name: 'Buscar negocios', exact: true })
+  await businessSearch.fill('cafe geneve')
+  assert.equal(await businessesRegion.locator('li').count(), 1)
+  await businessesRegion
+    .getByRole('link', { name: 'Ver descuentos de Café Encuentro · Genève', exact: true })
+    .click()
+  await page.waitForURL(origin + `/card/negocio/${discoveryOffers[11].provider_id}`)
+  await page.getByRole('heading', { name: 'Descuentos para ti', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Descuento 12', exact: true }).waitFor()
+  assert.equal(
+    await page.locator('.lc-discount-card').count(),
+    1,
+    'Opening a business shows only its discounts'
+  )
+  await page.getByRole('link', { name: 'Mi tarjeta', exact: true }).click()
+  await page.waitForURL(origin + '/card')
+  await page.locator('#lc-business-directory li').first().waitFor()
+  await businessSearch.fill('sin-coincidencias-xyz')
+  await businessesRegion
+    .getByText('No encontramos negocios con esa búsqueda.', { exact: true })
+    .waitFor()
+  await businessSearch.fill('')
+  assert.equal(await businessesRegion.locator('li').count(), 10, 'A new search resets the preview')
+  await businessesRegion.getByRole('button', { name: 'Mostrar todos (14)', exact: true }).click()
+  await businessesRegion
+    .getByRole('link', { name: 'Ver descuentos de Negocio sin descuentos · Basilea', exact: true })
+    .click()
+  await page.waitForURL(origin + `/card/negocio/${emptyBusinessId}`)
+  await page.getByRole('heading', { name: 'Descuentos para ti', exact: true }).waitFor()
+  await page.getByText('Todavía no hay descuentos disponibles aquí.', { exact: true }).waitFor()
+  await page.getByRole('link', { name: 'Mi tarjeta', exact: true }).click()
+  await page.waitForURL(origin + '/card')
+  await page.getByRole('heading', { name: 'Negocios participantes', exact: true }).waitFor()
+  await page.locator('#lc-business-directory li').first().waitFor()
+  assert.equal(await page.locator('.lc-discount-card').count(), 10)
+  directoryFailure = true
+  await page.reload()
+  await page.locator('.lc-discovery').getByRole('alert').waitFor()
+  assert.equal(
+    await page.locator('.lc-discount-card').count(),
+    10,
+    'A missing directory migration does not break discounts'
+  )
+  directoryFailure = false
+  await page.reload()
+  await page.locator('#lc-business-directory li').first().waitFor()
+  await businessesRegion.screenshot({ path: path.join(output, 'directory-mobile.png') })
+  await discountsRegion.screenshot({ path: path.join(output, 'discount-search-mobile.png') })
+  discoveryMode = false
   membershipActive = false
   await page.reload()
   await page.getByRole('heading', { name: 'Ahorra en los negocios de tu comunidad' }).waitFor()

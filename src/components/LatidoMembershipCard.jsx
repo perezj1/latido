@@ -62,7 +62,7 @@ export default function LatidoMembershipCardSummary({ member, holderName }) {
     <section className="lc-membership-summary" aria-label="Mi Tarjeta Latido">
       <LatidoMembershipCard member={member} holderName={holderName} />
       <p className="lc-membership-hint">
-        Elige un descuento, pulsa «Activar» y muestra la pantalla al personal.
+        Elige un descuento y pulsa «Mostrar» o «Activar» para enseñarlo al personal.
       </p>
     </section>
   )

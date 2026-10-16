@@ -13,6 +13,12 @@ import { cardErrorMessage, offerBenefitLabel, offerUsageLabel } from '../lib/lat
 import { shareCardOffer } from '../lib/latidoCardShare'
 import LatidoCardIntro from '../components/LatidoCardIntro'
 import LatidoMembershipCardSummary from '../components/LatidoMembershipCard'
+import LatidoCardDiscovery, {
+  CARD_PREVIEW_LIMIT,
+  CardListLimit,
+  CardSearch,
+  matchesCardSearch
+} from '../components/LatidoCardDiscovery'
 import LatidoDiscountCard, {
   LatidoDiscountConfirmation,
   LatidoDiscountHistory
@@ -21,6 +27,8 @@ import './LatidoCard.css'
 
 export function CardHeader() {
   const { isAdmin } = useAuth()
+  const { pathname } = useLocation()
+  const cardSelected = pathname === '/card' || pathname.startsWith('/card/negocio/')
   return (
     <header className="lc-top">
       <Link className="lc-brand" to="/card">
@@ -31,9 +39,9 @@ export function CardHeader() {
         <Link to="/perfil">
           <span aria-hidden="true">👤</span>Mi perfil
         </Link>
-        <NavLink to="/card" end>
+        <Link to="/card" aria-current={cardSelected ? 'page' : undefined}>
           <span aria-hidden="true">💳</span>Mi tarjeta
-        </NavLink>
+        </Link>
         <NavLink to="/card/negocios">
           <span aria-hidden="true">🏪</span>Mi negocio
         </NavLink>
@@ -74,6 +82,10 @@ export default function LatidoCard() {
   const [params] = useSearchParams()
   const [data, setData] = useState({ offers: [], history: [], membership: null })
   const [business, setBusiness] = useState(null)
+  const [directory, setDirectory] = useState([]),
+    [directoryError, setDirectoryError] = useState('')
+  const [query, setQuery] = useState(''),
+    [showAll, setShowAll] = useState(false)
   const [loading, setLoading] = useState(true),
     [error, setError] = useState('')
   const [notice, setNotice] = useState(''),
@@ -83,6 +95,15 @@ export default function LatidoCard() {
   useEffect(() => {
     setTab(params.get('vista') === 'usadas' ? 'used' : 'available')
   }, [params])
+  useEffect(() => {
+    setQuery('')
+    setShowAll(false)
+  }, [tab, providerId])
+  useEffect(() => {
+    if (!loading && location.hash === '#lc-participating-businesses') {
+      document.getElementById('lc-participating-businesses')?.scrollIntoView()
+    }
+  }, [loading, location.hash, providerId])
   const [useError, setUseError] = useState(''),
     [manualShare, setManualShare] = useState('')
   const actionLock = useRef(false),
@@ -93,13 +114,18 @@ export default function LatidoCard() {
   const accountUrl = `/auth?mode=register&next=${encodeURIComponent(next)}`
   const refresh = useCallback(async () => {
     const sequence = ++loadSequence.current
-    const [home, local] = await Promise.all([
+    const [home, local, participants] = await Promise.all([
       user
         ? cardRpc('lc_member_home')
         : cardRpc('lc_catalog').then((offers) => ({ offers, history: [], membership: null })),
       providerId
         ? cardRpc('lc_business_benefits', { p_provider: providerId })
-        : Promise.resolve(null)
+        : Promise.resolve(null),
+      providerId
+        ? Promise.resolve(null)
+        : cardRpc('lc_participating_businesses')
+            .then((items) => ({ items, error: '' }))
+            .catch((err) => ({ items: [], error: cardErrorMessage(err) }))
     ])
     if (sequence === loadSequence.current) {
       // Once the server confirms a recorded attempt, a future visit may start a new one.
@@ -113,6 +139,8 @@ export default function LatidoCard() {
       }
       setData(home)
       setBusiness(local?.business || null)
+      setDirectory(participants?.items || [])
+      setDirectoryError(participants?.error || '')
     }
   }, [user?.id, providerId])
   useEffect(() => {
@@ -148,12 +176,12 @@ export default function LatidoCard() {
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [refresh, authLoading])
-  const useOffer = async () => {
-    if (actionLock.current || !confirm || !user) return
+  const useOffer = async (offer) => {
+    if (actionLock.current || !offer || !user) return
     actionLock.current = true
     setBusy(true)
     setUseError('')
-    const key = `lc-use:${user.id}:${confirm.id}`
+    const key = `lc-use:${user.id}:${offer.id}`
     try {
       if (!pending.current[key]) {
         try {
@@ -165,7 +193,7 @@ export default function LatidoCard() {
         } catch {}
       }
       const receipt = await cardRpc('lc_use_offer', {
-        p_offer: confirm.id,
+        p_offer: offer.id,
         p_request_id: pending.current[key]
       })
       try {
@@ -182,7 +210,8 @@ export default function LatidoCard() {
   }
   const activateOffer = (offer) => {
     setUseError('')
-    setConfirm(offer)
+    if (offer.activation_mode === 'automatic') useOffer(offer)
+    else setConfirm(offer)
   }
   const shareOffer = async (offer) => {
     const result = await shareCardOffer(offer)
@@ -222,7 +251,7 @@ export default function LatidoCard() {
       }
     })
     .filter((offer) => !providerId || offer.provider_id === providerId)
-  const visible =
+  const eligible =
     tab === 'used'
       ? used
       : offers.filter((offer) => {
@@ -234,6 +263,13 @@ export default function LatidoCard() {
             (!offer.requires_claim || reserved || offer.remaining === null || offer.remaining > 0)
           )
         })
+  const visible = eligible.filter((offer) =>
+    matchesCardSearch(
+      [offer.title, offer.business_name, offer.city, offer.description, offerBenefitLabel(offer)],
+      query
+    )
+  )
+  const shown = showAll ? visible : visible.slice(0, CARD_PREVIEW_LIMIT)
   const sharedOffer = offers.find((offer) => offer.id === params.get('oferta'))
   return (
     <div className="lc-page lc-member-page lc-discounts-page">
@@ -242,18 +278,6 @@ export default function LatidoCard() {
         <p role="status">Cargando tus descuentos…</p>
       ) : (
         <>
-          {providerId && (
-            <section className="lc-panel lc-business-current">
-              <span className="lc-eyebrow">Tus descuentos aquí</span>
-              <h1>{business?.name || 'Negocio no disponible'}</h1>
-              <p>
-                {business
-                  ? business.city
-                  : 'Este negocio no participa actualmente en Tarjeta Latido.'}
-              </p>
-              <Link to="/card">Ver todos los negocios</Link>
-            </section>
-          )}
           {member?.active ? (
             <LatidoMembershipCardSummary
               member={member}
@@ -360,6 +384,15 @@ export default function LatidoCard() {
                 </button>
               ))}
             </div>
+            <CardSearch
+              label="Buscar descuentos"
+              placeholder="Descuento, negocio o ciudad"
+              value={query}
+              onChange={(value) => {
+                setQuery(value)
+                setShowAll(false)
+              }}
+            />
             <div
               id="lc-offers"
               role="tabpanel"
@@ -367,17 +400,18 @@ export default function LatidoCard() {
               className="lc-offer-list"
             >
               {tab === 'used'
-                ? used.length > 0 && (
+                ? visible.length > 0 && (
                     <LatidoDiscountHistory
                       key="used"
-                      items={used}
+                      items={shown}
+                      total={visible.length}
                       initiallyOpen
                       memberActive={Boolean(member?.active)}
                       busy={busy}
                       onActivate={activateOffer}
                     />
                   )
-                : visible.map((offer) => (
+                : shown.map((offer) => (
                     <LatidoDiscountCard
                       key={offer.id}
                       offer={offer}
@@ -393,13 +427,23 @@ export default function LatidoCard() {
                   ))}
               {!visible.length && (
                 <p className="lc-centered lc-muted">
-                  {tab === 'used'
-                    ? 'Aquí aparecerán los descuentos que hayas usado.'
-                    : 'Todavía no hay descuentos disponibles aquí.'}
+                  {query.trim()
+                    ? 'No encontramos descuentos con esa búsqueda.'
+                    : tab === 'used'
+                      ? 'Aquí aparecerán los descuentos que hayas usado.'
+                      : 'Todavía no hay descuentos disponibles aquí.'}
                 </p>
               )}
             </div>
+            <CardListLimit
+              total={visible.length}
+              expanded={showAll}
+              onToggle={() => setShowAll((value) => !value)}
+              controls="lc-offers"
+              noun={tab === 'used' ? 'usos' : 'descuentos'}
+            />
           </section>
+          {!providerId && <LatidoCardDiscovery businesses={directory} error={directoryError} />}
         </>
       )}
       {error && (
@@ -407,11 +451,19 @@ export default function LatidoCard() {
           {error}
         </p>
       )}
+      {useError && !confirm && (
+        <p className="lc-alert" role="alert">
+          {useError}
+        </p>
+      )}
       {confirm && (
         <LatidoDiscountConfirmation
           offer={confirm}
-          onClose={() => setConfirm(null)}
-          onConfirm={useOffer}
+          onClose={() => {
+            setConfirm(null)
+            setUseError('')
+          }}
+          onConfirm={() => useOffer(confirm)}
           busy={busy}
           error={useError}
         />

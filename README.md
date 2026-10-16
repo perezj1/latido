@@ -227,8 +227,10 @@ npm run test:search   # Calidad del buscador global
 
 Guía vigente, funcionamiento, migración y pruebas: [docs/LATIDO_CARD_MINIMAL.md](docs/LATIDO_CARD_MINIMAL.md).
 
-El cliente pulsa **Activar**, confirma con **Usar ahora** y muestra una validación animada de cinco minutos.
-Todas las ofertas se activan igual, sin reclamar previamente; se agrupan en **Disponibles** y **Usadas**.
+El negocio elige activación automática (**Activada → Mostrar**, sin confirmación) o manual
+(**Activar → Usar ahora** al comprar). Ambas abren una validación animada de cinco minutos.
+El uso se registra al mostrarlo, sin reclamar previamente; se agrupan en **Disponibles** y **Usadas**.
+Las ofertas pausadas permiten **Borrar**, conservando su historial.
 Cada negocio tiene un QR público estable para sus pegatinas. El personal aplica
 el descuento en su caja, sin Scanner ni cuenta. Los negocios participan gratis.
 Las membresías del piloto se activan manualmente; el cobro automático sigue pendiente.
@@ -236,7 +238,11 @@ Las membresías del piloto se activan manualmente; el cobro automático sigue pe
 SQL manual, en orden: `supabase/latido_card_minimal.sql`,
 `supabase/latido_card_cleanup_legacy.sql`, `supabase/latido_card_verify.sql`.
 Los scripts anteriores están archivados en `supabase/legacy/latido_card/` y no deben reinstalarse.
-Si la versión mínima ya está instalada, esta actualización solo necesita `supabase/latido_card_activate_offers.sql`.
+Si la versión mínima y la activación directa ya están instaladas, el nuevo directorio solo necesita
+`supabase/latido_card_business_directory.sql`. Para activación y borrado, ejecutar después
+`supabase/latido_card_offer_activation.sql` y finalmente `supabase/latido_card_verify.sql`.
+El buscador filtra descuentos y negocios por nombre o ciudad. Cada lista muestra primero diez
+resultados y permite abrirlos todos; cada negocio enlaza con sus descuentos actuales.
 
 Verificación: `npm run test:card`, `npm run test:card:browser`,
 `npm run test:card:webkit`, `npm run test:auth` y `npm run build`.

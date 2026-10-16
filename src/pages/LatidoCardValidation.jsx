@@ -88,15 +88,22 @@ export default function LatidoCardValidation() {
       : benefit === 'two_for_one'
         ? ''
         : 'incluido'
-  const serverClock =
+  const serverDate =
+    receipt && Number.isFinite(verifiedAt)
+      ? new Date(Date.parse(receipt.server_now) + Math.max(0, now - verifiedAt))
+      : null
+  const serverDateTime =
     receipt && Number.isFinite(verifiedAt)
       ? new Intl.DateTimeFormat('es-CH', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
           hour12: false,
           timeZone: 'Europe/Zurich'
-        }).format(new Date(Date.parse(receipt.server_now) + Math.max(0, now - verifiedAt)))
+        }).format(serverDate)
       : ''
   return (
     <main className={`lc-page lc-validation ${valid ? 'lc-validation--valid' : ''}`}>
@@ -148,9 +155,7 @@ export default function LatidoCardValidation() {
                 <span>
                   Socio <strong>{receipt.member_reference}</strong>
                 </span>
-                <span>
-                  Hora <strong>{serverClock}</strong>
-                </span>
+                <time dateTime={serverDate?.toISOString()}>{serverDateTime}</time>
               </div>
               <div className="lc-proof-stripe" aria-hidden="true" />
             </>

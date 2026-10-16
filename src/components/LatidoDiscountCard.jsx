@@ -55,6 +55,7 @@ export default function LatidoDiscountCard({
 }) {
   const [expanded, setExpanded] = useState(false)
   const detailsId = useId()
+  const automatic = offer.activation_mode === 'automatic'
   return (
     <article
       className={`lc-offer-row lc-discount-card ${shared ? 'lc-discount-card--shared' : ''}`}
@@ -73,6 +74,7 @@ export default function LatidoDiscountCard({
               {Number(offer.minimum_spend) > 0 && ` · Desde CHF ${Number(offer.minimum_spend)}`}
             </p>
             <p>{offerUsageLabel(offer)}</p>
+            {automatic && memberActive && <span className="lc-discount-activated">Activada</span>}
           </div>
         </div>
         <button
@@ -135,7 +137,7 @@ export default function LatidoDiscountCard({
               disabled={busy || (!offer.requires_claim && !offer.available)}
               onClick={() => onActivate(offer)}
             >
-              Activar
+              {automatic ? 'Mostrar' : 'Activar'}
             </button>
           )}
         </div>
@@ -146,6 +148,7 @@ export default function LatidoDiscountCard({
 
 export function LatidoDiscountHistory({
   items,
+  total = items.length,
   initiallyOpen = false,
   memberActive,
   busy,
@@ -159,7 +162,7 @@ export function LatidoDiscountHistory({
         </span>
         <strong>Historial de usos</strong>
         <span>
-          {items.length} {items.length === 1 ? 'uso' : 'usos'}
+          {total} {total === 1 ? 'uso' : 'usos'}
         </span>
         <ChevronDown className="lc-discount-history-chevron" size={20} aria-hidden="true" />
       </summary>
@@ -182,7 +185,7 @@ export function LatidoDiscountHistory({
               </div>
               {memberActive && Date.parse(offer.validation?.expires_at) > Date.now() && (
                 <button className="lc-use-reopen" disabled={busy} onClick={() => onActivate(offer)}>
-                  Activar
+                  {offer.activation_mode === 'automatic' ? 'Mostrar' : 'Activar'}
                 </button>
               )}
             </div>

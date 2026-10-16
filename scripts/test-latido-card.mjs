@@ -9,6 +9,8 @@ const read = (name) => readFile(new URL(`../supabase/${name}`, import.meta.url),
 const minimal = await read('latido_card_minimal.sql'),
   cleanup = await read('latido_card_cleanup_legacy.sql'),
   activate = await read('latido_card_activate_offers.sql'),
+  directory = await read('latido_card_business_directory.sql'),
+  activation = await read('latido_card_offer_activation.sql'),
   verify = await read('latido_card_verify.sql')
 assert.equal(offerUsageLabel({ usage_period: 'week', usage_limit: 2 }), '2 usos por semana')
 assert.equal(
@@ -146,6 +148,16 @@ for (const upgrade of [false, true]) {
   await db.exec(minimal)
   await db.exec(activate)
   await db.exec(activate)
+  await db.exec('DROP FUNCTION public.lc_participating_businesses()')
+  await db.exec(directory)
+  await db.exec(directory)
+  if (upgrade) {
+    await db.exec(
+      'ALTER TABLE public.latido_card_offers DROP COLUMN activation_mode; ALTER TABLE public.latido_card_offers DROP COLUMN deleted_at; DROP FUNCTION public.lc_delete_offer(uuid)'
+    )
+  }
+  await db.exec(activation)
+  await db.exec(activation)
   const verification = await db.exec(verify)
   assert.ok(
     verification[0].rows.every((r) => r.ok),
@@ -190,6 +202,27 @@ for (const upgrade of [false, true]) {
   await assert.rejects(() => rpc('lc_join_card_business', [ids.business]), /FORBIDDEN/)
   await as('owner')
   await rpc('lc_join_card_business', [ids.business])
+  await as(null, 'anon')
+  assert.deepEqual(
+    await rpc('lc_participating_businesses'),
+    [{ id: ids.business, name: 'Restaurante A', city: 'Zürich', photo_url: null }],
+    'The public directory includes participants without offers and only public fields'
+  )
+  await root('UPDATE latido_card_businesses SET active=false WHERE provider_id=$1', [ids.business])
+  await as(null, 'anon')
+  assert.deepEqual(await rpc('lc_participating_businesses'), [])
+  await root('UPDATE latido_card_businesses SET active=true,suspended=true WHERE provider_id=$1', [
+    ids.business
+  ])
+  await as(null, 'anon')
+  assert.deepEqual(
+    await rpc('lc_participating_businesses'),
+    [],
+    'Suspended businesses are never public'
+  )
+  await root('UPDATE latido_card_businesses SET suspended=false WHERE provider_id=$1', [
+    ids.business
+  ])
   await as('admin')
   for (const key of ['member', 'other'])
     await rpc('lc_admin_enroll', [ids[key], new Date(Date.now() + 86400000 * 60).toISOString()])
@@ -215,6 +248,7 @@ for (const upgrade of [false, true]) {
   const local = await rpc('lc_business_benefits', [ids.business])
   assert.equal(local.business.name, 'Restaurante A')
   assert.equal(local.offers[0].id, oid)
+  assert.equal(local.offers[0].activation_mode, 'manual', 'Existing/default offers remain manual')
   assert.ok(!JSON.stringify(local).includes('user_id'))
   await as('inactive')
   await assert.rejects(() => rpc('lc_use_offer', [oid, randomUUID()]), /MEMBERSHIP_INACTIVE/)
@@ -335,6 +369,49 @@ for (const upgrade of [false, true]) {
   const usedHistory = (await rpc('lc_member_home')).history.find((row) => row.id === usedAgain.id)
   assert.equal(usedHistory.provider_id, ids.business)
   assert.equal(usedHistory.offer_snapshot.title, 'Café gratis')
+  const automaticId = await makeOffer({
+    title: 'Descuento automático',
+    activation_mode: 'automatic',
+    usage_period: 'unlimited'
+  })
+  await as('member')
+  const autoHome = await rpc('lc_member_home')
+  assert.equal(autoHome.offers.find((item) => item.id === automaticId).activation_mode, 'automatic')
+  assert.ok(
+    !autoHome.history.some((item) => item.offer_id === automaticId),
+    'Listing automatic offers never consumes them'
+  )
+  const autoRequest = randomUUID()
+  const automaticReceipt = await rpc('lc_use_offer', [automaticId, autoRequest])
+  assert.equal(automaticReceipt.offer.activation_mode, 'automatic')
+  assert.equal((await rpc('lc_use_offer', [automaticId, autoRequest])).id, automaticReceipt.id)
+  await assert.rejects(() => rpc('lc_delete_offer', [automaticId]), /FORBIDDEN/)
+  await as(null, 'anon')
+  await assert.rejects(() => rpc('lc_delete_offer', [automaticId]), /permission denied/)
+  await as('owner')
+  await assert.rejects(() => rpc('lc_delete_offer', [automaticId]), /OFFER_PAUSE_REQUIRED/)
+  await assert.rejects(
+    () => root("UPDATE latido_card_offers SET activation_mode='manual' WHERE id=$1", [automaticId]),
+    /OFFER_TERMS_LOCKED/
+  )
+  await as('owner')
+  await rpc('lc_set_offer_active', [automaticId, false])
+  await rpc('lc_delete_offer', [automaticId])
+  await rpc('lc_delete_offer', [automaticId])
+  assert.ok(
+    !(await rpc('lc_business_dashboard', [ids.business])).offers.some(
+      (item) => item.id === automaticId
+    )
+  )
+  await assert.rejects(() => rpc('lc_set_offer_active', [automaticId, true]), /OFFER_UNAVAILABLE/)
+  await as('member')
+  assert.equal((await rpc('lc_validation', [automaticReceipt.id])).valid, false)
+  assert.ok(
+    (await rpc('lc_member_home')).history.some((item) => item.id === automaticReceipt.id),
+    'Deleting an offer preserves customer history'
+  )
+  assert.ok(!(await rpc('lc_catalog')).some((item) => item.id === automaticId))
+  await assert.rejects(() => makeOffer({ activation_mode: 'invalid' }), /check constraint/)
   // Calendar/DST: a Swiss day at the March transition is 23 hours, October 25.
   const periods = await root(
     `SELECT lc_period_start('day','2026-03-29T12:00Z') AS spring_start,lc_next_period('day','2026-03-29T12:00Z') AS spring_end,lc_period_start('day','2026-10-25T12:00Z') AS fall_start,lc_next_period('day','2026-10-25T12:00Z') AS fall_end,lc_next_period('month','2026-10-15T12:00Z') AS next_month,lc_period_start('week','2026-10-18T12:00Z') AS week_start`

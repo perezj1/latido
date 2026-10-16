@@ -8,6 +8,7 @@ const initialOffer = {
   benefit_value: '10',
   minimum_spend: '0',
   requires_claim: false,
+  activation_mode: 'manual',
   stock_total: '',
   claim_days: 7,
   usage_period: 'month',
@@ -29,7 +30,7 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
     setOffer((previous) => ({ ...previous, [key]: value }))
   }
   useEffect(() => {
-    if (formRef.current?.closest('details')?.open) headingRef.current?.focus()
+    if (formRef.current && !formRef.current.closest('[hidden]')) headingRef.current?.focus()
   }, [step])
   const submit = async (event) => {
     event.preventDefault()
@@ -144,13 +145,11 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
       )}
       {step === 2 && (
         <>
-          <p className="lc-muted">
-            Elige un descuento habitual o una promoción especial.
-          </p>
+          <p className="lc-muted">Elige un descuento habitual o una promoción especial.</p>
           <fieldset className="lc-offer-kind">
-            <legend>Cómo accede el socio</legend>
+            <legend>Tipo de oferta</legend>
             {[
-              [false, 'Descuento incluido', 'Presenta su tarjeta y la usa.'],
+              [false, 'Descuento incluido', 'Un descuento habitual para socios.'],
               [
                 true,
                 'Promoción especial',
@@ -176,6 +175,34 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
                       stock_total: ''
                     }))
                   }}
+                />
+                <span>
+                  <strong>{label}</strong>
+                  <small>{help}</small>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <fieldset className="lc-offer-kind">
+            <legend>Cómo lo activa el cliente</legend>
+            {[
+              [
+                'automatic',
+                'Activación automática',
+                'Aparece activada. Solo necesita pulsar Mostrar y enseñar la tarjeta.'
+              ],
+              ['manual', 'Activación manual', 'Debe activar el descuento cuando realice la compra.']
+            ].map(([value, label, help]) => (
+              <label
+                key={value}
+                className="lc-offer-kind-choice"
+                data-selected={offer.activation_mode === value}
+              >
+                <input
+                  type="radio"
+                  name="activation-mode"
+                  checked={offer.activation_mode === value}
+                  onChange={() => set('activation_mode', value)}
                 />
                 <span>
                   <strong>{label}</strong>
@@ -269,6 +296,14 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
             <p>{offerBenefitLabel(offer)}</p>
             {offer.description && <p>{offer.description}</p>}
             <dl>
+              <div>
+                <dt>Activación</dt>
+                <dd>
+                  {offer.activation_mode === 'automatic'
+                    ? 'Automática: mostrar la tarjeta'
+                    : 'Manual: activar al comprar'}
+                </dd>
+              </div>
               <div>
                 <dt>Compra mínima</dt>
                 <dd>

@@ -36,6 +36,7 @@ export function cardErrorMessage(error) {
     FORBIDDEN: 'No tienes permiso para realizar esta operación.',
     AUTH_REQUIRED: 'Inicia sesión para continuar.',
     OFFER_TERMS_LOCKED: 'Esta oferta ya tiene actividad. Crea otra para cambiar sus condiciones.',
+    OFFER_PAUSE_REQUIRED: 'Pausa el descuento antes de borrarlo.',
     VALIDATION_NOT_FOUND: 'Esta validación no pertenece a tu cuenta o ya no existe.',
     REASON_REQUIRED: 'Escribe el motivo de la anulación.',
     REQUEST_CONFLICT: 'Este intento corresponde a otra operación. Consulta el historial.'

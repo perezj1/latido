@@ -50,11 +50,11 @@
 }
 .lc-links {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   justify-content: center;
   width: 100%;
   max-width: 760px;
-  padding: 8px;
+  padding: 5px;
   border-radius: var(--latido-radius-lg);
   background: color-mix(in srgb, var(--latido-color-accent) 7%, transparent);
   border: 1px solid color-mix(in srgb, var(--latido-color-accent) 14%, transparent);
@@ -64,16 +64,17 @@
 .lc-links a {
   display: inline-flex;
   align-items: center;
-  min-height: 56px;
+  min-height: 44px;
   flex: 1;
   min-width: 0;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 12px;
+  gap: 2px;
+  padding: 5px 8px;
   border-radius: var(--latido-radius-md);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1.3;
   color: var(--latido-color-text-secondary);
   text-decoration: none;
   transition:
@@ -510,8 +511,8 @@
   padding-bottom: 40px;
 }
 .lc-links a > span {
-  font-size: 20px;
-  line-height: 1.2;
+  font-size: 16px;
+  line-height: 1;
 }
 .lc-intro-note {
   display: block;
@@ -759,6 +760,51 @@
   margin-top: 28px;
   text-align: center;
 }
+.lc-offer-create {
+  margin: 0 0 24px;
+}
+.lc-business-management-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 340px;
+  margin: 16px auto 0;
+}
+.lc-business-management-actions .lc-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 8px;
+  font-size: 12px;
+}
+.lc-offer-create-body {
+  margin-top: 12px;
+  padding: 20px;
+  border: 1px solid var(--latido-color-border);
+  border-radius: 20px;
+  background: white;
+}
+.lc-offer-create-body > p {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--latido-color-text-muted);
+}
+#lc-create-title:focus,
+#lc-published-offers-title:focus {
+  outline: none;
+}
+.lc-qr-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 340px;
+  margin: 16px auto 0;
+}
+.lc-qr-actions .lc-button {
+  min-width: 0;
+  padding-inline: 8px;
+  font-size: 12px;
+}
 .lc-business-qr > p {
   max-width: 52ch;
   margin: 12px auto;
@@ -971,13 +1017,25 @@
   display: grid;
   gap: 8px;
   font-size: 11px;
-  margin: 20px auto;
+  max-width: 340px;
+  margin: 16px auto 0;
+}
+.lc-public-link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.lc-public-link-row .lc-button {
+  padding-inline: 10px;
+  font-size: 11px;
 }
 .lc-public-link input {
   min-width: 0;
   width: 100%;
   padding: 12px;
-  font: inherit;
+  font:
+    400 16px/1.4 'Poppins',
+    sans-serif;
   border-radius: 12px;
   border: 1px solid var(--latido-color-border);
 }
@@ -1000,11 +1058,12 @@
 .lc-business-sticker h3 {
   margin: 12px 0 0;
 }
-.lc-business-sticker p {
-  margin: 4px;
-}
-.lc-business-sticker small {
+.lc-business-sticker .lc-business-sticker-caption {
   margin-top: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
 }
 .lc-business-sticker .lc-qr {
   width: min(100%, 260px);
@@ -1012,7 +1071,7 @@
   margin: 8px auto;
 }
 @media print {
-  body * {
+  body:has(:where(#lc-business-sticker)) * {
     visibility: hidden !important;
   }
   #lc-business-sticker,
@@ -1028,6 +1087,17 @@
     margin: 0;
     print-color-adjust: exact;
   }
+  .lc-page:has(#lc-business-sticker) > :not(.lc-business-qr),
+  .lc-business-qr > :not(#lc-business-sticker) {
+    display: none !important;
+  }
+  .lc-page:has(#lc-business-sticker),
+  .lc-business-qr {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0;
+    box-shadow: none;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1042,7 +1112,7 @@
     padding: 22px;
   }
   .lc-links a {
-    padding: 8px 4px;
+    padding: 5px 4px;
     font-size: 10px;
   }
   .lc-offer-row {
