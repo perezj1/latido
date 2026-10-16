@@ -21,6 +21,8 @@
     "test:guides:browser": "node scripts/test-guides-browser.mjs",
     "test:punto-hispano": "node scripts/test-punto-hispano.mjs",
     "test:card": "node scripts/test-latido-card.mjs",
+    "test:card:invitations": "node scripts/test-latido-card-invitations.mjs",
+    "card:invitations": "node scripts/send-latido-card-invitations.mjs",
     "test:card:browser": "node scripts/test-latido-card-browser.mjs",
     "test:card:webkit": "node scripts/test-latido-card-browser.mjs --webkit",
     "vapid:keys": "node scripts/generate-vapid-keys.mjs"

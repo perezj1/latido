@@ -8,24 +8,19 @@
   border-radius: 16px;
   overflow: hidden;
 }
-.lc-member-strip summary {
+.lc-member-strip-heading {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px;
-  cursor: pointer;
-  list-style: none;
   font-size: 13px;
 }
-.lc-member-strip summary::-webkit-details-marker {
-  display: none;
-}
-.lc-member-strip summary > span:nth-child(2) {
+.lc-member-strip-heading > span:nth-child(2) {
   flex: 1;
   display: grid;
   gap: 2px;
 }
-.lc-member-strip summary > span:nth-child(2) > span {
+.lc-member-strip-heading > span:nth-child(2) > span {
   color: #536075;
   font-size: 12px;
 }
@@ -33,6 +28,12 @@
   color: #2455c4;
   font-size: 12px;
   font-weight: 600;
+  text-decoration: none;
+}
+.lc-member-strip-action:focus-visible {
+  outline: 3px solid #4a76ef;
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 .lc-member-strip > .lc-membership-card {
   margin: 0 auto 12px;

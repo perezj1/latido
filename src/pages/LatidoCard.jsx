@@ -175,7 +175,10 @@ export default function LatidoCard() {
           }
           setData(home)
           setBusiness(local?.business || null)
-          setDirectory(participants?.items || [])
+          const offeringBusinesses = new Set((home.offers || []).map((offer) => offer.provider_id))
+          setDirectory(
+            (participants?.items || []).filter((item) => offeringBusinesses.has(item.id))
+          )
           setDirectoryError(participants?.error || '')
           setError('')
           toast.dismiss(refreshToast)

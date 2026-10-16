@@ -1,0 +1,207 @@
+.lc-business-invitation {
+  font-family: 'Poppins', sans-serif;
+  color: #10182d;
+  background: #fff;
+  border: 1px solid #dbe4ff;
+  border-radius: 24px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgb(15 23 42 / 6%);
+  text-align: left;
+  margin: 18px 0;
+}
+.lc-business-invitation-emoji {
+  display: block;
+  font-size: 34px;
+  margin-bottom: 10px;
+}
+.lc-business-invitation .lc-business-invitation-label {
+  color: #52627c;
+  font-size: 11px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+.lc-business-invitation .lc-invitation-content h2 {
+  outline: none;
+  font-size: 24px;
+  line-height: 1.35;
+  letter-spacing: -0.4px;
+  margin: 0 0 16px;
+  font-weight: 800;
+}
+.lc-business-invitation p {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+.lc-business-invitation .lc-business-invitation-terms {
+  background: #f0f5ff;
+  padding: 13px;
+  border-radius: 14px;
+  margin: 18px 0;
+  color: #24427b;
+  font-weight: 600;
+}
+.lc-business-invitation-cta {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: #245ff3;
+  color: #fff;
+  font:
+    700 15px/1.5 'Poppins',
+    sans-serif;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+}
+.lc-invitation-visual {
+  position: relative;
+  overflow: hidden;
+  background: #eef3ff;
+  padding: 18px 22px 22px;
+}
+.lc-invitation-visual::before,
+.lc-invitation-visual::after {
+  content: '';
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.lc-invitation-visual::before {
+  left: -70px;
+  top: -70px;
+  background: #dbe7ff;
+}
+.lc-invitation-visual::after {
+  right: -80px;
+  bottom: -80px;
+  background: #d2f7ed;
+}
+.lc-invitation-example-label {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0 0 12px;
+  color: #52627c;
+  font-size: 10px;
+  font-weight: 600;
+}
+.lc-invitation-visual .lc-offer-preview {
+  position: relative;
+  z-index: 1;
+  max-width: 350px;
+  margin: 0 auto;
+  box-shadow: 0 8px 20px #2348a010;
+}
+.lc-invitation-content {
+  padding: 22px;
+}
+.lc-invitation-steps {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  margin: 0 0 20px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #667085;
+}
+.lc-invitation-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lc-invitation-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #2a55df;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.lc-invitation-steps li > .lc-invitation-step-done {
+  background: #e4f8ef;
+  color: #12a27a;
+}
+.lc-invitation-steps li[aria-current='step'] {
+  color: #2a55df;
+}
+.lc-business-invitation .lc-invitation-reassurance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin: 14px 0 0;
+  color: #556070;
+  font-size: 10px;
+  font-weight: 500;
+}
+.lc-invitation-reassurance > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.lc-invitation-reassurance svg {
+  color: #12a27a;
+}
+.lc-business-invitation-later {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 7px;
+  border: 0;
+  background: transparent;
+  color: #52627c;
+  font:
+    600 12px 'Poppins',
+    sans-serif;
+  cursor: pointer;
+}
+.lc-business-invitation-cta:focus-visible,
+.lc-business-invitation-later:focus-visible {
+  outline: 3px solid #92b6ff;
+  outline-offset: 3px;
+}
+.lc-business-invitation-dialog {
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  width: min(430px, calc(100% - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  background: #fff;
+  box-shadow: 0 24px 80px #10182d40;
+}
+.lc-business-invitation-dialog::backdrop {
+  background: #10182d88;
+  backdrop-filter: blur(3px);
+}
+.lc-business-invitation-dialog .lc-business-invitation {
+  border: 0;
+  margin: 0;
+}
+@media (max-width: 360px) {
+  .lc-business-invitation {
+    padding: 0;
+  }
+  .lc-business-invitation h2 {
+    font-size: 22px;
+  }
+}

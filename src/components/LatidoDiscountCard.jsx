@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CalendarDays, Check, Clock3, Info, ReceiptText, Share2, Store } from 'lucide-react'
 import { offerAvailability, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
+import { OfferBenefitBadge, OfferBrandStripe, OfferUsageChip } from './LatidoOfferVisual'
 import './LatidoDiscountCard.css'
 
 const date = (value) => new Date(value).toLocaleDateString('es-CH', { timeZone: 'Europe/Zurich' })
@@ -51,19 +52,6 @@ export default function LatidoDiscountCard({
   const detailsId = useId()
   const availability = offerAvailability(offer, { memberActive })
   const daysLeft = Math.ceil((Date.parse(offer.ends_at) - Date.now()) / 86400000)
-  const compactTitle = String(offer.title || '')
-    .toLocaleLowerCase('es')
-    .replace(/\s/g, '')
-  const repeatsBenefit =
-    offer.benefit_type === 'percent'
-      ? compactTitle.includes(`${Number(offer.benefit_value)}%`)
-      : offer.benefit_type === 'fixed'
-        ? compactTitle.includes(`chf${Number(offer.benefit_value)}`)
-        : offer.benefit_type === 'two_for_one'
-          ? /2[×x]1/.test(compactTitle)
-          : compactTitle.includes(
-              offerBenefitLabel(offer).toLocaleLowerCase('es').replace(/\s/g, '')
-            )
   const action = (
     <div className="lc-discount-actions">
       {(!hideJoinAction || memberActive) && (
@@ -99,7 +87,7 @@ export default function LatidoDiscountCard({
       }}
     >
       <div className="lc-discount-main">
-        <DiscountBusinessPhoto offer={offer} />
+        <OfferBenefitBadge offer={offer} />
         <div className="lc-discount-info">
           <h3 className="lc-discount-title">
             <button
@@ -113,27 +101,8 @@ export default function LatidoDiscountCard({
           </h3>
           <Link className="lc-discount-business" to={`/card/negocio/${offer.provider_id}`}>
             {offer.business_name}
-            {offer.city && ` · ${offer.city}`}
+            {offer.city && <span className="lc-discount-city"> · {offer.city}</span>}
           </Link>
-          {!repeatsBenefit && <p className="lc-discount-benefit">{offerBenefitLabel(offer)}</p>}
-          <div className="lc-discount-summary">
-            <div className="lc-discount-bottom">
-              <p>{offerUsageLabel(offer)}</p>
-              {action}
-            </div>
-            <div className="lc-discount-tags">
-              {offer.requires_claim && <span>Promoción limitada</span>}
-              {daysLeft > 0 && daysLeft <= 3 && (
-                <span>Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}</span>
-              )}
-              {offer.remaining != null && (
-                <span>{Number(offer.remaining) > 0 ? `Quedan ${offer.remaining}` : 'Agotado'}</span>
-              )}
-            </div>
-            {availability.message && (
-              <p className="lc-discount-availability">{availability.message}</p>
-            )}
-          </div>
         </div>
         <button
           className="lc-discount-share"
@@ -142,6 +111,22 @@ export default function LatidoDiscountCard({
         >
           <Share2 size={19} aria-hidden="true" />
         </button>
+      </div>
+      <div className="lc-discount-summary">
+        <div className="lc-discount-bottom">
+          <OfferUsageChip offer={offer} />
+          {action}
+        </div>
+        <div className="lc-discount-tags">
+          {offer.requires_claim && <span>Promoción limitada</span>}
+          {daysLeft > 0 && daysLeft <= 3 && (
+            <span>Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}</span>
+          )}
+          {offer.remaining != null && (
+            <span>{Number(offer.remaining) > 0 ? `Quedan ${offer.remaining}` : 'Agotado'}</span>
+          )}
+        </div>
+        {availability.message && <p className="lc-discount-availability">{availability.message}</p>}
       </div>
       <div className="lc-discount-details" id={detailsId} hidden={!expanded}>
         <p>{offer.description || offerBenefitLabel(offer)}</p>
@@ -173,6 +158,7 @@ export default function LatidoDiscountCard({
           <input readOnly value={manualShareUrl} onFocus={(event) => event.target.select()} />
         </label>
       )}
+      <OfferBrandStripe />
     </article>
   )
 }

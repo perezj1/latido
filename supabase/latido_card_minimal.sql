@@ -106,8 +106,9 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
 $$;
 CREATE OR REPLACE FUNCTION public.lc_can_manage(p_provider UUID) RETURNS BOOLEAN
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
- SELECT auth.uid() IS NOT NULL AND (public.lc_is_admin() OR EXISTS (
- SELECT 1 FROM public.providers WHERE id=p_provider AND user_id=auth.uid()))
+ SELECT auth.uid() IS NOT NULL AND EXISTS (
+ SELECT 1 FROM public.providers p WHERE p.id=p_provider AND to_jsonb(p)->>'deleted_at' IS NULL
+ AND (p.user_id=auth.uid() OR public.lc_is_admin()))
 $$;
 CREATE OR REPLACE FUNCTION public.lc_active_member(p_id UUID) RETURNS BOOLEAN
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
@@ -129,6 +130,9 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
  ORDER BY lower(p.name),p.id),'[]'::jsonb)
  FROM public.latido_card_businesses b JOIN public.providers p ON p.id=b.provider_id
  WHERE b.active AND NOT b.suspended
+ AND coalesce((to_jsonb(p)->>'active')::boolean,true) AND to_jsonb(p)->>'deleted_at' IS NULL
+ AND EXISTS (SELECT 1 FROM public.latido_card_offers o WHERE o.provider_id=b.provider_id
+   AND o.active AND to_jsonb(o)->>'deleted_at' IS NULL AND o.starts_at<=now() AND o.ends_at>now())
 $$;
 CREATE OR REPLACE FUNCTION public.lc_catalog() RETURNS JSONB
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
@@ -175,6 +179,15 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE oid UUID;
 BEGIN
  IF NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+ -- Publication and program enrollment are one transaction. Invalid offers roll both back.
+ PERFORM 1 FROM public.providers p WHERE p.id=p_provider
+   AND coalesce((to_jsonb(p)->>'active')::boolean,true) FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'BUSINESS_INACTIVE'; END IF;
+ IF NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+ INSERT INTO public.latido_card_businesses(provider_id,active) VALUES(p_provider,true) ON CONFLICT DO NOTHING;
+ PERFORM 1 FROM public.latido_card_businesses WHERE provider_id=p_provider AND suspended FOR UPDATE;
+ IF FOUND THEN RAISE EXCEPTION 'BUSINESS_SUSPENDED'; END IF;
+ UPDATE public.latido_card_businesses SET active=true WHERE provider_id=p_provider AND NOT active;
  PERFORM 1 FROM public.latido_card_businesses WHERE provider_id=p_provider AND active AND NOT suspended FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'BUSINESS_INACTIVE'; END IF;
  IF (SELECT count(*) FROM public.latido_card_offers WHERE provider_id=p_provider AND active AND ends_at>now() AND requires_claim=coalesce((p_offer->>'requires_claim')::boolean,false))
@@ -349,6 +362,8 @@ DECLARE b public.latido_card_businesses;
 BEGIN
  PERFORM 1 FROM public.providers WHERE id=p_provider FOR UPDATE;
  IF NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.latido_card_offers WHERE provider_id=p_provider AND active
+   AND deleted_at IS NULL AND starts_at<=now() AND ends_at>now()) THEN RAISE EXCEPTION 'OFFER_REQUIRED'; END IF;
  INSERT INTO public.latido_card_businesses(provider_id,active) VALUES(p_provider,true) ON CONFLICT DO NOTHING;
  SELECT * INTO b FROM public.latido_card_businesses WHERE provider_id=p_provider FOR UPDATE;
  IF b.suspended THEN RAISE EXCEPTION 'BUSINESS_SUSPENDED'; END IF;
@@ -358,6 +373,7 @@ CREATE OR REPLACE FUNCTION public.lc_admin_business(p_provider UUID,p_active BOO
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 BEGIN
  IF NOT public.lc_is_admin() THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+ IF NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
  INSERT INTO public.latido_card_businesses(provider_id,active,suspended) VALUES(p_provider,p_active,NOT p_active)
  ON CONFLICT(provider_id) DO UPDATE SET active=excluded.active,suspended=excluded.suspended;
 END $$;
@@ -366,7 +382,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 BEGIN
  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'AUTH_REQUIRED'; END IF;
  IF p_provider IS NOT NULL AND NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
- RETURN jsonb_build_object('businesses',(SELECT coalesce(jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'participating',b.provider_id IS NOT NULL,'active',coalesce(b.active,false),'suspended',coalesce(b.suspended,false)) ORDER BY p.name),'[]'::jsonb) FROM public.providers p LEFT JOIN public.latido_card_businesses b ON b.provider_id=p.id WHERE p.user_id=auth.uid() OR public.lc_is_admin()),
+ RETURN jsonb_build_object('businesses',(SELECT coalesce(jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'participating',b.provider_id IS NOT NULL,'active',coalesce(b.active,false),'suspended',coalesce(b.suspended,false)) ORDER BY p.name),'[]'::jsonb) FROM public.providers p LEFT JOIN public.latido_card_businesses b ON b.provider_id=p.id WHERE to_jsonb(p)->>'deleted_at' IS NULL AND (p.user_id=auth.uid() OR public.lc_is_admin())),
  'offers',(SELECT coalesce(jsonb_agg(o ORDER BY o.created_at DESC),'[]'::jsonb) FROM public.latido_card_offers o WHERE o.provider_id=p_provider AND o.deleted_at IS NULL),
  'history',(SELECT coalesce(jsonb_agg(x),'[]'::jsonb) FROM (SELECT r.id,r.offer_snapshot->>'title' AS title,r.redeemed_at,r.reversed_at,r.source FROM public.latido_card_redemptions r WHERE r.provider_id=p_provider ORDER BY r.redeemed_at DESC LIMIT 100) x));
 END $$;
@@ -390,5 +406,64 @@ GRANT EXECUTE ON FUNCTION public.lc_catalog(),public.lc_business_benefits(UUID),
 GRANT EXECUTE ON FUNCTION public.lc_member_home(),public.lc_claim_offer(UUID),public.lc_release_claim(UUID),public.lc_use_offer(UUID,UUID),public.lc_validation(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.lc_business_dashboard(UUID),public.lc_join_card_business(UUID),public.lc_save_offer(UUID,JSONB),public.lc_set_offer_active(UUID,BOOLEAN),public.lc_delete_offer(UUID),public.lc_reverse_redemption(UUID,TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.lc_admin_overview(TEXT),public.lc_admin_enroll(UUID,TIMESTAMPTZ,TEXT),public.lc_admin_business(UUID,BOOLEAN) TO authenticated;
+-- Preserve optional owner invitations when this installer is re-run after the add-on.
+DO $$ BEGIN
+ IF to_regprocedure('public.lc_business_invitation()') IS NOT NULL THEN
+  GRANT EXECUTE ON FUNCTION public.lc_business_invitation() TO authenticated;
+ END IF;
+END $$;
 NOTIFY pgrst,'reload schema';
+-- Removing a publication retains the private records needed by its usage history.
+ALTER TABLE public.providers ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+ALTER TABLE public.providers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS lc_hide_deleted_providers ON public.providers;
+CREATE POLICY lc_hide_deleted_providers ON public.providers AS RESTRICTIVE
+  FOR ALL TO anon,authenticated USING(deleted_at IS NULL) WITH CHECK(deleted_at IS NULL);
+
+CREATE OR REPLACE FUNCTION public.lc_archive_deleted_business() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+BEGIN
+  -- Unrelated businesses keep the existing DELETE behaviour and guards.
+  PERFORM 1 FROM public.latido_card_businesses WHERE provider_id=OLD.id FOR UPDATE;
+  IF NOT FOUND THEN RETURN OLD; END IF;
+  UPDATE public.providers SET active=false,deleted_at=clock_timestamp() WHERE id=OLD.id;
+  UPDATE public.latido_card_businesses SET active=false,suspended=true WHERE provider_id=OLD.id;
+  UPDATE public.latido_card_offers SET active=false WHERE provider_id=OLD.id AND active;
+  -- Suppress the physical DELETE: provider/offers/receipts retain their foreign keys.
+  RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION public.lc_archive_deleted_business() FROM PUBLIC,anon,authenticated;
+-- PostgreSQL runs BEFORE triggers alphabetically. Existing subscription deletion guards
+-- (prevent_provider_delete_with_active_subscription) must run before this archive action.
+DROP TRIGGER IF EXISTS zz_lc_archive_deleted_business ON public.providers;
+CREATE TRIGGER zz_lc_archive_deleted_business BEFORE DELETE ON public.providers
+FOR EACH ROW EXECUTE FUNCTION public.lc_archive_deleted_business();
+
+CREATE OR REPLACE FUNCTION public.lc_can_manage(p_provider UUID) RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$
+ SELECT auth.uid() IS NOT NULL AND EXISTS (
+ SELECT 1 FROM public.providers p WHERE p.id=p_provider AND p.deleted_at IS NULL
+ AND (p.user_id=auth.uid() OR public.lc_is_admin()))
+$$;
+CREATE OR REPLACE FUNCTION public.lc_admin_business(p_provider UUID,p_active BOOLEAN) RETURNS VOID
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+BEGIN
+ IF NOT public.lc_is_admin() OR NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+ INSERT INTO public.latido_card_businesses(provider_id,active,suspended) VALUES(p_provider,p_active,NOT p_active)
+ ON CONFLICT(provider_id) DO UPDATE SET active=excluded.active,suspended=excluded.suspended;
+END $$;
+CREATE OR REPLACE FUNCTION public.lc_business_dashboard(p_provider UUID DEFAULT NULL) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'AUTH_REQUIRED'; END IF;
+ IF p_provider IS NOT NULL AND NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+ RETURN jsonb_build_object('businesses',(SELECT coalesce(jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'participating',b.provider_id IS NOT NULL,'active',coalesce(b.active,false),'suspended',coalesce(b.suspended,false)) ORDER BY p.name),'[]'::jsonb) FROM public.providers p LEFT JOIN public.latido_card_businesses b ON b.provider_id=p.id WHERE p.deleted_at IS NULL AND (p.user_id=auth.uid() OR public.lc_is_admin())),
+ 'offers',(SELECT coalesce(jsonb_agg(o ORDER BY o.created_at DESC),'[]'::jsonb) FROM public.latido_card_offers o WHERE o.provider_id=p_provider AND o.deleted_at IS NULL),
+ 'history',(SELECT coalesce(jsonb_agg(x),'[]'::jsonb) FROM (SELECT r.id,r.offer_snapshot->>'title' AS title,r.redeemed_at,r.reversed_at,r.source FROM public.latido_card_redemptions r WHERE r.provider_id=p_provider ORDER BY r.redeemed_at DESC LIMIT 100) x));
+END $$;
+NOTIFY pgrst,'reload schema';
+
+-- Retire empty registrations left by the previous manager preview, preserving all history.
+UPDATE public.latido_card_businesses b SET active=false WHERE b.active
+AND NOT EXISTS (SELECT 1 FROM public.latido_card_offers o WHERE o.provider_id=b.provider_id);
 COMMIT;

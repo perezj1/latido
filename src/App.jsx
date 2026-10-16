@@ -31,6 +31,7 @@ import SearchResolutionPrompt from './components/SearchResolutionPrompt'
 import LatidoUsefulnessBanner from './components/LatidoUsefulnessBanner'
 import InAppNotificationAlert from './components/InAppNotificationAlert'
 import ShareCardReminder from './components/ShareCardReminder'
+import LatidoCardOfferProvider from './components/LatidoCardOfferProvider'
 import { AppNotificationsProvider } from './hooks/useAppNotifications'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
@@ -858,8 +859,10 @@ function AppNotificationScope({ children }) {
   const { pathname } = useLocation()
   return (
     <AppNotificationsProvider>
+      <LatidoCardOfferProvider>
       {!pathname.startsWith('/card/validacion/') && <InAppNotificationAlert />}
       {children}
+      </LatidoCardOfferProvider>
     </AppNotificationsProvider>
   )
 }

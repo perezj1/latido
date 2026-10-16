@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Search } from 'lucide-react'
+import { ChevronRight, MapPin, Search } from 'lucide-react'
 import { DiscountBusinessPhoto } from './LatidoDiscountCard'
 import './LatidoCardDiscovery.css'
 
@@ -67,8 +67,10 @@ export default function LatidoCardDiscovery({
 }) {
   const [expanded, setExpanded] = useState(false)
   useEffect(() => setExpanded(false), [query, city])
+  const businessesWithOffers = new Set(offers.map((offer) => offer.provider_id))
   const matches = businesses.filter(
     (business) =>
+      businessesWithOffers.has(business.id) &&
       (!city || business.city === city) &&
       matchesCardSearch(
         [
@@ -107,36 +109,50 @@ export default function LatidoCardDiscovery({
                   .filter((offer) => offer.benefit_type === 'percent')
                   .map((offer) => Number(offer.benefit_value))
               )
-              const Entry = available.length ? Link : 'div'
+              const fixed = Math.max(
+                0,
+                ...available
+                  .filter((offer) => offer.benefit_type === 'fixed')
+                  .map((offer) => Number(offer.benefit_value))
+              )
+              const badge = best
+                ? `Hasta −${best} %`
+                : fixed
+                  ? `−CHF ${fixed}`
+                  : available.some((offer) => offer.benefit_type === 'two_for_one')
+                    ? '2 × 1'
+                    : available.some((offer) => offer.benefit_type === 'gift')
+                      ? 'Regalo'
+                      : 'Beneficio'
               return (
                 <li key={business.id}>
-                  <Entry
+                  <Link
                     className="lc-directory-entry"
-                    {...(available.length
-                      ? {
-                          to: `/card/negocio/${business.id}`,
-                          'aria-label': `Ver descuentos de ${business.name}${business.city ? ` · ${business.city}` : ''}`
-                        }
-                      : {})}
+                    to={`/card/negocio/${business.id}`}
+                    aria-label={`Ver descuentos de ${business.name}${business.city ? ` · ${business.city}` : ''}`}
                   >
                     <DiscountBusinessPhoto
                       offer={{
                         business_name: business.name,
-                        business_photo_url: business.photo_url
+                        business_photo_url: business.photo_url || available[0]?.business_photo_url
                       }}
                       small
                     />
                     <span className="lc-discovery-business-info">
                       <strong>{business.name}</strong>
-                      {business.city && <span>{business.city}</span>}
+                      {business.city && (
+                        <span className="lc-directory-city">
+                          <MapPin size={13} aria-hidden="true" />
+                          {business.city}
+                        </span>
+                      )}
                       <span className="lc-discovery-business-cta">
-                        {available.length
-                          ? `${available.length} ${available.length === 1 ? 'descuento' : 'descuentos'}${best ? ` · hasta ${best} %` : ''}`
-                          : 'Próximamente'}
+                        <span className="lc-directory-benefit">{badge}</span>
+                        <span>{`${available.length} ${available.length === 1 ? 'descuento' : 'descuentos'}`}</span>
                       </span>
                     </span>
-                    {available.length > 0 && <ArrowRight size={18} aria-hidden="true" />}
-                  </Entry>
+                    <ChevronRight size={18} aria-hidden="true" />
+                  </Link>
                 </li>
               )
             })}

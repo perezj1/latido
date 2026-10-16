@@ -15,6 +15,8 @@ const minimal = await read('latido_card_minimal.sql'),
   activate = await read('latido_card_activate_offers.sql'),
   directory = await read('latido_card_business_directory.sql'),
   activation = await read('latido_card_offer_activation.sql'),
+  deletion = await read('latido_card_business_deletion.sql'),
+  participation = await read('latido_card_business_participation.sql'),
   verify = await read('latido_card_verify.sql')
 assert.equal(offerUsageLabel({ usage_period: 'week', usage_limit: 2 }), '2 usos por semana')
 const monthlyUsed = offerAvailability(
@@ -103,7 +105,7 @@ for (const upgrade of [false, true]) {
     CREATE SCHEMA auth;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
     CREATE TABLE profiles(id uuid PRIMARY KEY,name text,email text);
-    CREATE TABLE providers(id uuid PRIMARY KEY,user_id uuid REFERENCES profiles(id),name text,city text,photo_url text);
+    CREATE TABLE providers(id uuid PRIMARY KEY,user_id uuid REFERENCES profiles(id),name text,city text,photo_url text,active boolean DEFAULT true);
     CREATE TABLE business_promotion_admins(email text PRIMARY KEY);
     CREATE FUNCTION is_business_promotion_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM business_promotion_admins WHERE email=(nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'email')) $$;
     GRANT USAGE ON SCHEMA public,auth TO anon,authenticated;
@@ -198,6 +200,36 @@ for (const upgrade of [false, true]) {
   }
   await db.exec(activation)
   await db.exec(activation)
+  await db.exec(deletion)
+  await db.exec(deletion)
+  const emptyParticipant = randomUUID()
+  await db.query('INSERT INTO providers(id,user_id,name) VALUES($1,$2,$3)', [
+    emptyParticipant,
+    ids.inactive,
+    'Sin descuentos'
+  ])
+  await db.query('INSERT INTO latido_card_businesses(provider_id,active) VALUES($1,true)', [
+    emptyParticipant
+  ])
+  await db.exec(participation)
+  await db.exec(participation)
+  assert.equal(
+    (
+      await db.query('SELECT active FROM latido_card_businesses WHERE provider_id=$1', [
+        emptyParticipant
+      ])
+    ).rows[0].active,
+    false
+  )
+  await db.query(`UPDATE latido_card_businesses SET active=true WHERE provider_id=$1`, [
+    emptyParticipant
+  ])
+  await db.query(
+    `INSERT INTO latido_card_offers(provider_id,title,benefit_type,starts_at,ends_at) VALUES
+    ($1,'Expired offer','gift',now()-interval '2 days',now()-interval '1 day'),
+    ($1,'Future offer','gift',now()+interval '1 day',now()+interval '2 days')`,
+    [emptyParticipant]
+  )
   const verification = await db.exec(verify)
   assert.ok(
     verification[0].rows.every((r) => r.ok),
@@ -241,12 +273,34 @@ for (const upgrade of [false, true]) {
   await assert.rejects(() => rpc('lc_admin_overview'), /FORBIDDEN/)
   await assert.rejects(() => rpc('lc_join_card_business', [ids.business]), /FORBIDDEN/)
   await as('owner')
-  await rpc('lc_join_card_business', [ids.business])
+  await assert.rejects(() => rpc('lc_join_card_business', [ids.business]), /OFFER_REQUIRED/)
+  const beforeFailedPublication = (
+    await root('SELECT * FROM latido_card_businesses WHERE provider_id=$1', [ids.business])
+  ).rows
+  await as('owner')
+  await assert.rejects(
+    () =>
+      rpc('lc_save_offer', [
+        ids.business,
+        {
+          title: 'x',
+          benefit_type: 'percent',
+          benefit_value: 10,
+          ends_at: new Date(Date.now() + 86400000).toISOString()
+        }
+      ]),
+    /check constraint/
+  )
+  assert.deepEqual(
+    (await root('SELECT * FROM latido_card_businesses WHERE provider_id=$1', [ids.business])).rows,
+    beforeFailedPublication,
+    'A failed first offer never enrolls or reactivates a business'
+  )
   await as(null, 'anon')
   assert.deepEqual(
     await rpc('lc_participating_businesses'),
-    [{ id: ids.business, name: 'Restaurante A', city: 'Zürich', photo_url: null }],
-    'The public directory includes participants without offers and only public fields'
+    [],
+    'The public directory excludes empty registrations and businesses with only paused, expired or future offers'
   )
   await root('UPDATE latido_card_businesses SET active=false WHERE provider_id=$1', [ids.business])
   await as(null, 'anon')
@@ -285,6 +339,11 @@ for (const upgrade of [false, true]) {
   }
   let oid = await makeOffer()
   await as(null, 'anon')
+  assert.deepEqual(
+    await rpc('lc_participating_businesses'),
+    [{ id: ids.business, name: 'Restaurante A', city: 'Zürich', photo_url: null }],
+    'Publishing the first offer enrolls the business and exposes only public directory fields'
+  )
   const local = await rpc('lc_business_benefits', [ids.business])
   assert.equal(local.business.name, 'Restaurante A')
   assert.equal(local.offers[0].id, oid)
@@ -339,6 +398,12 @@ for (const upgrade of [false, true]) {
   await as('admin')
   await rpc('lc_admin_business', [ids.business, true])
   await root('UPDATE latido_card_offers SET active=false WHERE id=$1', [oid])
+  await as(null, 'anon')
+  assert.deepEqual(
+    await rpc('lc_participating_businesses'),
+    [],
+    'Pausing the last offer removes the business from the directory'
+  )
   for (const period of ['day', 'week', 'month', 'lifetime', 'unlimited']) {
     oid = await makeOffer({ usage_period: period })
     await as('member')
@@ -469,6 +534,80 @@ for (const upgrade of [false, true]) {
   assert.equal((await rpc('lc_admin_overview')).stats.active_members, 2)
   await as('member')
   await assert.rejects(() => rpc('lc_business_dashboard', [ids.business]), /FORBIDDEN/)
+  // A business publication can be removed without destroying its offers or member history.
+  await db.exec('RESET ROLE')
+  await db.exec(`GRANT SELECT,UPDATE,DELETE ON providers TO anon,authenticated;
+    CREATE POLICY test_provider_read ON providers FOR SELECT USING(true);
+    CREATE POLICY test_provider_update ON providers FOR UPDATE USING(user_id=auth.uid());
+    CREATE POLICY test_provider_delete ON providers FOR DELETE USING(user_id=auth.uid());
+    CREATE FUNCTION test_subscription_guard() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+      IF current_setting('test.block_delete',true)='true' THEN RAISE EXCEPTION 'ACTIVE_BUSINESS_SUBSCRIPTION'; END IF;
+      RETURN OLD;
+    END $$;
+    CREATE TRIGGER prevent_provider_delete_with_active_subscription BEFORE DELETE ON providers
+      FOR EACH ROW EXECUTE FUNCTION test_subscription_guard();
+    UPDATE latido_card_offers SET active=false;`)
+  await as('owner')
+  const retiringOffer = await makeOffer({ usage_period: 'unlimited' })
+  await as('member')
+  const retiringReceipt = await rpc('lc_use_offer', [retiringOffer, randomUUID()])
+  assert.equal(retiringReceipt.valid, true)
+  const historyBeforeDelete = (await rpc('lc_member_home')).history.length
+  await as('other')
+  await db.query('DELETE FROM providers WHERE id=$1', [ids.business])
+  assert.equal(
+    (await root('SELECT deleted_at FROM providers WHERE id=$1', [ids.business])).rows[0].deleted_at,
+    null
+  )
+  await as('owner')
+  await db.query("SELECT set_config('test.block_delete','true',false)")
+  await assert.rejects(
+    () => db.query('DELETE FROM providers WHERE id=$1', [ids.business]),
+    /ACTIVE_BUSINESS_SUBSCRIPTION/
+  )
+  await db.query("SELECT set_config('test.block_delete','false',false)")
+  await db.query('DELETE FROM providers WHERE id=$1', [ids.business])
+  assert.equal(
+    (await db.query('SELECT * FROM providers WHERE id=$1', [ids.business])).rows.length,
+    0,
+    'Retired publication is hidden from its owner too'
+  )
+  await db.query('UPDATE providers SET active=true,deleted_at=null WHERE id=$1', [ids.business])
+  await assert.rejects(() => rpc('lc_join_card_business', [ids.business]), /FORBIDDEN/)
+  assert.ok(
+    !(await rpc('lc_business_dashboard')).businesses.some((item) => item.id === ids.business)
+  )
+  const retired = (
+    await root('SELECT active,deleted_at FROM providers WHERE id=$1', [ids.business])
+  ).rows[0]
+  assert.equal(retired.active, false)
+  assert.ok(retired.deleted_at)
+  assert.equal(
+    (await root('SELECT active FROM latido_card_offers WHERE id=$1', [retiringOffer])).rows[0]
+      .active,
+    false
+  )
+  await as('member')
+  assert.equal((await rpc('lc_member_home')).history.length, historyBeforeDelete)
+  assert.equal((await rpc('lc_validation', [retiringReceipt.id])).valid, false)
+  await as(null, 'anon')
+  assert.equal(
+    (await db.query('SELECT * FROM providers WHERE id=$1', [ids.business])).rows.length,
+    0
+  )
+  assert.ok(!(await rpc('lc_catalog')).some((item) => item.provider_id === ids.business))
+  assert.ok(!(await rpc('lc_participating_businesses')).some((item) => item.id === ids.business))
+  await as('admin')
+  await assert.rejects(() => rpc('lc_admin_business', [ids.business, true]), /FORBIDDEN/)
+  const unrelated = randomUUID()
+  await root('INSERT INTO providers(id,user_id,name) VALUES($1,$2,$3)', [
+    unrelated,
+    ids.owner,
+    'No Card participation'
+  ])
+  await as('owner')
+  await db.query('DELETE FROM providers WHERE id=$1', [unrelated])
+  assert.equal((await root('SELECT * FROM providers WHERE id=$1', [unrelated])).rows.length, 0)
   await db.close()
   console.log(`Card minimal: ${upgrade ? 'legacy upgrade + archive' : 'fresh install'} passed`)
 }

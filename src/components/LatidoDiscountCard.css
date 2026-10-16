@@ -3,25 +3,20 @@
 }
 .lc-benefits .lc-offer-list {
   display: grid;
-  gap: 0;
+  gap: 12px;
   max-width: 440px;
   margin: 0 auto;
-  border: 1px solid #dce5f5;
-  border-radius: 24px;
-  overflow: hidden;
 }
 .lc-discount-card.lc-offer-row {
   display: block;
-  padding: 10px 12px;
-  border: 0;
-  border-bottom: 1px solid #dce5f5;
-  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+  padding: 16px 16px 20px;
+  border: 1px solid #e3e7ef;
+  border-radius: 18px;
   background: #fff;
   box-shadow: none;
   color: #0d1530;
-}
-.lc-discount-card.lc-offer-row:last-child {
-  border-bottom: 0;
 }
 .lc-discount-card--shared {
   outline: 2px solid #c5d6ff;
@@ -65,7 +60,7 @@
 }
 .lc-discount-tags > span {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: #684400;
 }
 .lc-discount-info,
@@ -110,19 +105,23 @@
   color: #2f5bd8;
   text-decoration: none;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
+.lc-discount-city {
+  color: #556070;
+  font-weight: 500;
+}
 .lc-discount-card .lc-discount-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
 .lc-discount-summary {
-  margin-top: 6px;
+  margin-top: 14px;
   font-size: 12px;
   line-height: 1.6;
   color: #5b6478;
@@ -136,8 +135,8 @@
   gap: 8px;
   justify-content: space-between;
 }
-.lc-discount-bottom > p {
-  flex: 1;
+.lc-discount-bottom > .lc-offer-usage-chip {
+  flex: 0 1 auto;
   min-width: 0;
   line-height: 1.4;
 }
@@ -152,7 +151,7 @@
 .lc-discount-card.lc-discount-card--unavailable {
   background: #f7f8fb;
 }
-.lc-discount-card--unavailable .lc-discount-photo {
+.lc-discount-card--unavailable .lc-offer-value {
   opacity: 0.55;
 }
 .lc-discount-card--unavailable .lc-discount-title {
@@ -285,7 +284,8 @@
   min-height: 44px;
   min-width: 0;
   padding: 8px 6px;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 700;
   border: 1px solid transparent;
 }
 .lc-discount-card .lc-discount-primary:hover:not(:disabled) {

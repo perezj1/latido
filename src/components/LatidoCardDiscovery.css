@@ -5,7 +5,7 @@
 }
 .lc-discovery > h2,
 .lc-discovery-description {
-  text-align: center;
+  text-align: left;
 }
 .lc-discovery-description {
   margin: 8px 0 18px;
@@ -91,13 +91,44 @@
   overflow-wrap: anywhere;
 }
 .lc-discovery-business-info strong {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: #0d1530;
 }
-.lc-discovery-business-info .lc-discovery-business-cta,
 .lc-discovery-businesses a > svg {
-  color: #2461eb;
+  color: #7a8394;
+}
+.lc-directory-city {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.lc-directory-city svg {
+  flex-shrink: 0;
+}
+.lc-discovery-business-cta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #556070;
+}
+.lc-directory-benefit {
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: #d12c53;
+  color: #fff;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.lc-discovery-businesses .lc-discount-photo--small {
+  width: 52px;
+  height: 52px;
+  flex-basis: 52px;
+  border-radius: 15px;
 }
 .lc-discovery-businesses a > svg {
   flex-shrink: 0;

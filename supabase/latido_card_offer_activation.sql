@@ -57,6 +57,15 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE oid UUID;
 BEGIN
  IF NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+ -- Publication and program enrollment are one transaction. Invalid offers roll both back.
+ PERFORM 1 FROM public.providers p WHERE p.id=p_provider
+   AND coalesce((to_jsonb(p)->>'active')::boolean,true) FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'BUSINESS_INACTIVE'; END IF;
+ IF NOT public.lc_can_manage(p_provider) THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+ INSERT INTO public.latido_card_businesses(provider_id,active) VALUES(p_provider,true) ON CONFLICT DO NOTHING;
+ PERFORM 1 FROM public.latido_card_businesses WHERE provider_id=p_provider AND suspended FOR UPDATE;
+ IF FOUND THEN RAISE EXCEPTION 'BUSINESS_SUSPENDED'; END IF;
+ UPDATE public.latido_card_businesses SET active=true WHERE provider_id=p_provider AND NOT active;
  PERFORM 1 FROM public.latido_card_businesses WHERE provider_id=p_provider AND active AND NOT suspended FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'BUSINESS_INACTIVE'; END IF;
  IF (SELECT count(*) FROM public.latido_card_offers WHERE provider_id=p_provider AND active AND ends_at>now() AND requires_claim=coalesce((p_offer->>'requires_claim')::boolean,false))

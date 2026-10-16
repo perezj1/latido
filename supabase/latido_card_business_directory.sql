@@ -8,6 +8,9 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
  ORDER BY lower(p.name),p.id),'[]'::jsonb)
  FROM public.latido_card_businesses b JOIN public.providers p ON p.id=b.provider_id
  WHERE b.active AND NOT b.suspended
+ AND coalesce((to_jsonb(p)->>'active')::boolean,true) AND to_jsonb(p)->>'deleted_at' IS NULL
+ AND EXISTS (SELECT 1 FROM public.latido_card_offers o WHERE o.provider_id=b.provider_id
+   AND o.active AND to_jsonb(o)->>'deleted_at' IS NULL AND o.starts_at<=now() AND o.ends_at>now())
 $$;
 REVOKE ALL ON FUNCTION public.lc_participating_businesses() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.lc_participating_businesses() TO anon,authenticated;

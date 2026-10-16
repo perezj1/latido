@@ -35,7 +35,8 @@ server.stderr.on('data', (data) => {
 const output = path.resolve(`output/latido-card/${useWebkit ? 'webkit' : 'chromium'}`)
 const errors = [],
   rpcCalls = [],
-  useCalls = []
+  useCalls = [],
+  savedOffers = []
 const providerId = '00000000-0000-4000-8000-000000000010',
   provider2 = '00000000-0000-4000-8000-000000000011'
 const user = {
@@ -111,7 +112,8 @@ const pausedOffer = {
   title: 'Oferta pausada',
   active: false
 }
-let pausedDeleted = false
+let pausedDeleted = false,
+  invitationEligible = false
 let receipt = null,
   failFirstUse = true,
   membershipActive = true,
@@ -240,7 +242,17 @@ try {
     if (name === 'token') return respond(route, session())
     if (name === 'user') return respond(route, user)
     if (name === 'eventfrog') return respond(route, { events: [] })
+    if (name === 'providers' && route.request().method() === 'POST')
+      return respond(route, { id: provider2 })
     if (name === 'providers' && url.searchParams.has('user_id')) return respond(route, [])
+    if (name === 'providers' && url.searchParams.get('id')?.startsWith('eq.')) {
+      const id = url.searchParams.get('id').slice(3)
+      const business = [...businesses, ...discoveryBusinesses].find((item) => item.id === id)
+      return respond(
+        route,
+        business ? { ...business, city: business.city || 'Zürich', category: 'belleza' } : null
+      )
+    }
     if (name === 'providers')
       return respond(
         route,
@@ -360,6 +372,10 @@ try {
             valid: Date.parse(receipt.expires_at) > Date.now() && !receipt.reversed
           })
         : respond(route, { message: 'VALIDATION_NOT_FOUND' }, 400)
+    if (name === 'lc_business_invitation')
+      return respond(route, {
+        business: invitationEligible ? { id: provider2, name: 'Peluquería Latina' } : null
+      })
     if (name === 'lc_business_dashboard')
       return respond(route, {
         businesses: ownsBusiness ? businesses : [],
@@ -371,7 +387,12 @@ try {
           ? [{ id: receipt.id, title: offer.title, redeemed_at: receipt.redeemed_at }]
           : []
       })
-    if (name === 'lc_join_card_business') return respond(route, null)
+    if (name === 'lc_join_card_business') {
+      businesses = businesses.map((item) =>
+        item.id === args.p_provider ? { ...item, active: true, participating: true } : item
+      )
+      return respond(route, null)
+    }
     if (name === 'lc_delete_offer') {
       assert.equal(args.p_offer, pausedOffer.id)
       pausedDeleted = true
@@ -386,7 +407,13 @@ try {
       })
     if (name === 'lc_admin_enroll') return respond(route, user.id)
     if (name === 'lc_admin_business') return respond(route, null)
-    if (name === 'lc_save_offer') return respond(route, offer.id)
+    if (name === 'lc_save_offer') {
+      businesses = businesses.map((item) =>
+        item.id === args.p_provider ? { ...item, active: true, participating: true } : item
+      )
+      savedOffers.push(args)
+      return respond(route, offer.id)
+    }
     return respond(route, [])
   })
   page = await context.newPage()
@@ -402,7 +429,7 @@ try {
   await page.getByPlaceholder('Tu contraseña').fill('Test-password-123!')
   await page.getByRole('button', { name: 'Entrar →', exact: true }).click()
   await page.waitForURL(origin + businessPath)
-  await page.locator('.lc-member-strip summary').waitFor()
+  await page.locator('.lc-member-strip-heading').waitFor()
   await page.locator('.lc-member-strip-action').getByText('Ver tarjeta', { exact: true }).waitFor()
   await page
     .getByRole('region', { name: 'Negocio', exact: true })
@@ -433,16 +460,14 @@ try {
   const membershipCard = page.locator('.lc-membership-summary .lc-membership-card')
   await page.evaluate(() => document.fonts.ready)
   assert.equal(await membershipCard.getAttribute('data-appearance'), 'light')
-  await page.locator('.lc-member-strip summary').click()
   await membershipCard.screenshot({
     path: path.join(output, 'membership-light-mobile.png'),
     animations: 'disabled'
   })
-  await page.locator('.lc-member-strip summary').click()
   assert.equal(await page.getByRole('radio', { name: /Clara|Oscura/ }).count(), 0)
   await page.evaluate((id) => localStorage.setItem(`latido-card-appearance:${id}`, 'dark'), user.id)
   await page.reload()
-  await page.locator('.lc-member-strip summary').waitFor()
+  await page.locator('.lc-member-strip-heading').waitFor()
   assert.equal(await membershipCard.getAttribute('data-appearance'), 'light')
   assert.equal(
     await page
@@ -488,9 +513,9 @@ try {
   homeFailures = 0
   await homeCardLink.click()
   await page.waitForURL(origin + '/card')
-  await page.locator('.lc-member-strip summary').waitFor()
+  await page.locator('.lc-member-strip-heading').waitFor()
   await page.goto(origin + businessPath)
-  await page.locator('.lc-member-strip summary').waitFor()
+  await page.locator('.lc-member-strip-heading').waitFor()
   const refreshFailureText =
     'No se pudieron actualizar tus descuentos. Comprueba tu conexión; volveremos a intentarlo.'
   homeFailures = 1
@@ -514,14 +539,14 @@ try {
   await page.getByRole('button', { name: 'Reintentar', exact: true }).waitFor()
   homeFailures = 0
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await page.locator('.lc-member-strip summary').waitFor()
+  await page.locator('.lc-member-strip-heading').waitFor()
   assert.equal(
     await page.getByRole('alert').filter({ hasText: refreshFailureText }).count(),
     0,
     'A successful refresh clears a previous load error'
   )
   const discountCard = page.locator('.lc-offer-row').filter({ hasText: offer.title })
-  await discountCard.getByRole('img', { name: `Imagen de ${offer.business_name}` }).waitFor()
+  await discountCard.locator('.lc-offer-value-number').getByText('15 %', { exact: true }).waitFor()
   await page.evaluate(() => {
     window.originalShare = navigator.share
     window.originalClipboard = navigator.clipboard
@@ -879,10 +904,7 @@ try {
   }
   await qrPanel.screenshot({ path: path.join(output, 'business-qr-mobile.png') })
   await page.emulateMedia({ media: 'print' })
-  assert.equal(
-    await page.locator('.lc-offer-create').evaluate((el) => getComputedStyle(el).display),
-    'none'
-  )
+  assert.equal(await page.locator('.lc-offer-modal[open]').count(), 0)
   assert.equal(
     await page.locator('#lc-business-sticker').evaluate((el) => getComputedStyle(el).visibility),
     'visible'
@@ -944,17 +966,26 @@ try {
     'Copy follows the selected business'
   )
   // Verify the retained wizard offers daily and weekly caps in its second step.
-  await page.getByRole('button', { name: 'Crear oferta', exact: true }).click()
+  await page.getByRole('button', { name: 'Crear mi descuento', exact: true }).click()
+  const offerModal = page.getByRole('dialog', { name: 'Crear descuento', exact: true })
+  await offerModal.waitFor()
+  await offerModal.getByRole('radio', { name: '15 %', exact: true }).check()
+  await offerModal.locator('.lc-offer-value-number').getByText('15 %', { exact: true }).waitFor()
+  await offerModal.getByRole('radio', { name: 'Importe CHF', exact: true }).check()
+  await offerModal.locator('.lc-offer-value-unit').getByText('CHF', { exact: true }).waitFor()
+  await offerModal.getByRole('radio', { name: 'Porcentaje %', exact: true }).check()
+  assert.equal(await offerModal.getByRole('button', { name: 'Activar', exact: true }).count(), 0)
+  await offerModal.locator('.lc-create-options summary').click()
   await page.getByLabel('Título').fill('10 % de descuento')
+  await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
   await page.getByRole('button', { name: 'Mis ofertas', exact: true }).click()
   await page.getByText('Aún no has publicado descuentos.', { exact: true }).waitFor()
   await page.getByRole('button', { name: 'Crear oferta', exact: true }).click()
   assert.equal(
     await page.getByLabel('Título').inputValue(),
     '10 % de descuento',
-    'Switching panels preserves the draft'
+    'Closing the modal and viewing offers preserves the draft'
   )
-  await page.getByRole('button', { name: /Continuar/ }).click()
   assert.ok(await page.getByLabel('Frecuencia').locator('option[value="day"]').count())
   assert.ok(await page.getByLabel('Frecuencia').locator('option[value="week"]').count())
   assert.equal(
@@ -962,12 +993,138 @@ try {
     0
   )
   await page.getByLabel('Válido hasta (hora local)').fill('2027-01-01T12:00')
-  await page.getByRole('button', { name: /Continuar/ }).click()
-  await page.getByText('Activar y confirmar en el negocio', { exact: true }).waitFor()
+  await page
+    .getByText('El socio activa el descuento y lo confirma al pagar en tu negocio.', {
+      exact: true
+    })
+    .waitFor()
   await page.screenshot({
     path: path.join(output, 'wizard-confirmation-mobile.png'),
     fullPage: true
   })
+  await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
+  // One optional invitation at app entry; dismissal persists and its CTA opens the right wizard.
+  invitationEligible = true
+  await page.goto(origin + '/')
+  const invitation = page.locator('.lc-business-invitation-dialog')
+  await invitation.waitFor()
+  await page.waitForLoadState('networkidle')
+  await invitation.getByRole('heading', { name: 'Dales un motivo para visitarte' }).waitFor()
+  assert.equal(
+    await invitation.getByRole('radio').count(),
+    0,
+    'Invitation has no percentage choices'
+  )
+  assert.equal(
+    await invitation.getByText('Elige un descuento para empezar', { exact: true }).count(),
+    0
+  )
+  await invitation.locator('.lc-offer-preview').getByText('Zürich', { exact: true }).waitFor()
+  assert.equal(await page.locator('dialog[open], [role="dialog"]').count(), 1)
+  assert.ok((await invitation.boundingBox()).height <= 844)
+  await page.screenshot({
+    path: path.join(output, 'business-invitation-mobile.png'),
+    fullPage: true
+  })
+  await page.keyboard.press('Escape')
+  await invitation.waitFor({ state: 'detached' })
+  await page.reload()
+  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(1300)
+  assert.equal(
+    await invitation.count(),
+    0,
+    'Dismissed invitation does not reopen on the next visit'
+  )
+  await page.evaluate(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('latido_share_card_reminder_v1:benefits:')) {
+        localStorage.setItem(key, JSON.stringify({ lastShownAt: Date.now() - 31 * 86400000 }))
+      }
+    }
+  })
+  await page.reload()
+  await invitation.waitFor()
+  await page.waitForLoadState('networkidle')
+  await invitation.getByRole('button', { name: 'Crear mi descuento', exact: true }).click()
+  await offerModal.waitFor()
+  assert.equal(
+    new URL(page.url()).pathname,
+    '/',
+    'Offering a discount keeps the current page behind the modal'
+  )
+  assert.equal(
+    await offerModal.locator('.lc-offer-preview-info > strong').innerText(),
+    '10 % de descuento'
+  )
+  await offerModal.getByText('Peluquería Latina', { exact: true }).first().waitFor()
+  assert.equal(await page.locator('dialog[open]').count(), 1)
+  await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
+  await page.goto(origin + `/?crear-oferta=${provider2}`)
+  await offerModal.waitFor()
+  await offerModal.locator('.lc-create-preview').waitFor()
+  await page.waitForLoadState('networkidle')
+  await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
+  assert.equal(new URL(page.url()).searchParams.has('crear-oferta'), false)
+  await page.waitForLoadState('networkidle')
+  invitationEligible = false
+  // Landing is an option inside promotion. Publication ends with an inline invitation, not an upsell popup.
+  await page.goto(origin + '/registrar-negocio')
+  await page.getByRole('button', { name: /Belleza/ }).click()
+  await page.getByRole('button', { name: 'Continuar →', exact: true }).click()
+  await page.getByPlaceholder('Ej: El Rincón Colombiano').fill('Peluquería Latina')
+  await page.getByPlaceholder('Nombre de la ciudad').fill('Zürich')
+  await page.locator('.latido-page-container--form select').selectOption('ZH')
+  await page.getByPlaceholder('Ej: Bahnhofstrasse 10, 8001 Zürich').fill('Bahnhofstrasse 10')
+  await page.getByRole('button', { name: 'Continuar →', exact: true }).click()
+  await page.getByPlaceholder('hola@minegocio.ch').fill('negocio@test.example')
+  await page.getByRole('button', { name: 'Continuar →', exact: true }).click()
+  assert.equal(
+    await page.getByRole('button', { name: 'Landing page en Latido', exact: true }).count(),
+    0
+  )
+  await page.getByRole('switch', { name: 'Activar potenciar tu negocio', exact: true }).click()
+  const promotion = page
+    .locator('section')
+    .filter({ has: page.getByRole('button', { name: 'Potenciar tu negocio', exact: false }) })
+  await promotion.getByRole('button', { name: 'Landing page en Latido', exact: true }).waitFor()
+  await promotion.screenshot({ path: path.join(output, 'promotion-with-landing-mobile.png') })
+  await page
+    .getByRole('button', { name: 'Continuar solo con el perfil gratuito', exact: true })
+    .click()
+  await page.getByRole('button', { name: '🏪 Registrar negocio', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'No te pierdas nada', exact: true })
+    .getByRole('button', { name: 'Ahora no', exact: true })
+    .click()
+  await page.getByRole('heading', { name: '¡Negocio publicado!', exact: true }).waitFor()
+  assert.equal(await page.getByText('Profesional desbloqueado', { exact: true }).count(), 0)
+  businesses = businesses.map((item) => (item.id === provider2 ? { ...item, active: false } : item))
+  const joinsBeforeInvite = rpcCalls.filter((name) => name === 'lc_join_card_business').length
+  await page.getByRole('button', { name: 'Crear mi descuento', exact: true }).click()
+  await offerModal.waitFor()
+  const titleField = offerModal.getByRole('textbox', { name: 'Título', exact: true })
+  await offerModal.locator('.lc-create-options summary').click()
+  await titleField.fill('Oferta para la comunidad')
+  assert.equal(new URL(page.url()).pathname, '/registrar-negocio')
+  assert.equal(
+    rpcCalls.filter((name) => name === 'lc_join_card_business').length,
+    joinsBeforeInvite,
+    'Viewing the modal never enrolls an empty business'
+  )
+  await offerModal.getByLabel('Válido hasta (hora local)').fill('2027-01-01T12:00')
+  await offerModal.getByRole('button', { name: 'Publicar descuento', exact: true }).click()
+  await page
+    .getByText('Tu descuento ya está publicado en Tarjeta Latido.', { exact: false })
+    .waitFor()
+  assert.equal(savedOffers.at(-1).p_provider, provider2)
+  assert.equal(savedOffers.at(-1).p_offer.title, 'Oferta para la comunidad')
+  assert.equal(
+    rpcCalls.filter((name) => name === 'lc_join_card_business').length,
+    joinsBeforeInvite,
+    'Publication uses a single atomic save, with no separate business signup'
+  )
+  assert.equal(await page.locator('dialog[open]').count(), 0)
   user.email = 'admin@test.example'
   await page.evaluate(
     (auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)),
@@ -990,12 +1147,12 @@ try {
   await page.goto(origin + '/card')
   discoveryMode = true
   await page.reload()
-  await page.locator('.lc-member-strip summary').waitFor()
+  await page.locator('.lc-member-strip-heading').waitFor()
   const discountsRegion = page.getByRole('region', { name: 'Descuentos para ti', exact: true })
   const businessesRegion = page.getByRole('region', { name: 'Negocios participantes', exact: true })
   assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 10)
   assert.equal(await businessesRegion.locator('li').count(), 10)
-  assert.equal(await page.locator('.lc-member-strip[open]').count(), 0)
+  assert.equal(await membershipCard.isVisible(), true, 'Membership card is always visible')
   await page.evaluate(() =>
     Promise.all(
       document
@@ -1015,8 +1172,8 @@ try {
     'Available discounts come before already-used ones'
   )
   assert.ok(
-    firstDiscount.y < 560,
-    `First discount is visible without scrolling: ${firstDiscount.y}`
+    firstDiscount.y > (await membershipCard.boundingBox()).y,
+    'Discounts follow the open membership card'
   )
   await page.screenshot({ path: path.join(output, 'compact-member-mobile.png') })
   assert.equal(await page.getByRole('combobox').count(), 1, 'Only the city filter is present')
@@ -1057,6 +1214,14 @@ try {
   await page.keyboard.press('Escape')
   await helpDialog.waitFor({ state: 'detached' })
   assert.equal(await helpButton.evaluate((el) => el === document.activeElement), true)
+  assert.equal(
+    await page
+      .getByRole('combobox', { name: 'Ciudad', exact: true })
+      .locator('option[value="Basilea"]')
+      .count(),
+    0,
+    'Empty business registrations do not add cities to the filter'
+  )
   await page.getByRole('combobox', { name: 'Ciudad', exact: true }).selectOption('Genève')
   assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 1)
   assert.equal(await businessesRegion.locator('li').count(), 1)
@@ -1103,8 +1268,8 @@ try {
     .waitFor()
   await discountSearch.fill('')
   assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 10)
-  await businessesRegion.getByRole('button', { name: 'Mostrar todos (14)', exact: true }).click()
-  assert.equal(await businessesRegion.locator('li').count(), 14)
+  await businessesRegion.getByRole('button', { name: 'Mostrar todos (13)', exact: true }).click()
+  assert.equal(await businessesRegion.locator('li').count(), 13)
   const businessSearch = discountSearch
   assert.equal(await page.getByRole('searchbox').count(), 1)
   await businessSearch.fill('cafe geneve')
@@ -1129,13 +1294,12 @@ try {
     .waitFor()
   await businessSearch.fill('')
   assert.equal(await businessesRegion.locator('li').count(), 10, 'A new search resets the preview')
-  await businessesRegion.getByRole('button', { name: 'Mostrar todos (14)', exact: true }).click()
+  await businessesRegion.getByRole('button', { name: 'Mostrar todos (13)', exact: true }).click()
   const upcoming = businessesRegion.locator('li').filter({ hasText: 'Negocio sin descuentos' })
-  await upcoming.getByText('Próximamente', { exact: true }).waitFor()
   assert.equal(
-    await upcoming.getByRole('link').count(),
+    await upcoming.count(),
     0,
-    'Upcoming businesses do not open an empty page'
+    'Businesses without discounts are excluded even when an older directory API returns them'
   )
   await page.goto(origin + '/card/negocio/' + emptyBusinessId)
   await page.getByText('Todavía no hay descuentos disponibles aquí.', { exact: true }).waitFor()

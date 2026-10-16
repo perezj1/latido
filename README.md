@@ -242,13 +242,19 @@ Los scripts anteriores están archivados en `supabase/legacy/latido_card/` y no 
 Si la versión mínima y la activación directa ya están instaladas, el nuevo directorio solo necesita
 `supabase/latido_card_business_directory.sql`. Para activación y borrado, ejecutar después
 `supabase/latido_card_offer_activation.sql` y finalmente `supabase/latido_card_verify.sql`.
-La vista del socio muestra una franja compacta con **Ver tarjeta**. Se mantienen los emojis.
+La vista del socio muestra su tarjeta completa siempre abierta, con los emojis de Latido.
 La cabecera de inicio también ofrece este acceso, con número y vigencia reales de la membresía.
 Un solo buscador encuentra descuentos y negocios, con un único selector de ciudad.
 La ayuda abre un modal desde el título; volver de la validación lleva a `/card`. Cada lista muestra diez
-resultados y permite abrirlos todos. Los negocios sin ofertas se marcan **Próximamente**.
+resultados y permite abrirlos todos. En «Negocios participantes» solo aparecen negocios con descuentos activos y vigentes.
 La validación muestra título y condiciones, usa Wake Lock si está disponible y avisa del último minuto.
 Estos cambios de interfaz no requieren SQL nuevo.
+
+La invitación opcional para que los negocios publiquen su primer descuento incluye modal, acceso directo y campaña de email. Su SQL y activación están en [docs/LATIDO_CARD_BUSINESS_INVITATIONS.md](docs/LATIDO_CARD_BUSINESS_INVITATIONS.md).
+
+«Crear oferta» abre un modal desde cualquier invitación. La landing page se elige dentro de «Potenciar tu negocio». Para corregir el borrado de publicaciones vinculadas a Card, aplicar [supabase/latido_card_business_deletion.sql](supabase/latido_card_business_deletion.sql); conserva el historial y retira la publicación, según [esta guía](docs/LATIDO_CARD_BUSINESS_DELETION.md).
+
+El alta del negocio y su primera oferta se guardan juntas. Para actualizar instalaciones existentes y ocultar del directorio los registros sin descuentos vigentes, aplicar después [supabase/latido_card_business_participation.sql](supabase/latido_card_business_participation.sql).
 
 Verificación: `npm run test:card`, `npm run test:card:browser`,
 `npm run test:card:webkit`, `npm run test:auth` y `npm run build`.

@@ -5,12 +5,14 @@ import { cardRpc, businessCardUrl } from '../lib/latidoCard'
 import { cardErrorMessage } from '../lib/latidoCardCore'
 import { shareCardBusiness } from '../lib/latidoCardShare'
 import LatidoCardQr from '../components/LatidoCardQr'
-import LatidoCardOfferWizard from '../components/LatidoCardOfferWizard'
+import { useLatidoCardOffer } from '../components/LatidoCardOfferProvider'
+import LatidoCardBusinessInvitation from '../components/LatidoCardBusinessInvitation'
 import { CardHeader, OfferConditions, cardDate } from './LatidoCard'
 import './LatidoCard.css'
 
 export default function LatidoCardBusiness() {
   const [params] = useSearchParams()
+  const { openOffer, revision } = useLatidoCardOffer()
   const [provider, setProvider] = useState('')
   const [data, setData] = useState({ businesses: [], offers: [], history: [] })
   const [error, setError] = useState(''),
@@ -27,9 +29,7 @@ export default function LatidoCardBusiness() {
   }, [provider])
   useEffect(() => {
     if (businessView) {
-      document
-        .getElementById(businessView === 'create' ? 'lc-create-title' : 'lc-published-offers-title')
-        ?.focus({ preventScroll: true })
+      document.getElementById('lc-published-offers-title')?.focus({ preventScroll: true })
     }
   }, [businessView])
   const [reversal, setReversal] = useState(null),
@@ -44,8 +44,6 @@ export default function LatidoCardBusiness() {
       if (version === generation.current) setData(initial)
       return
     }
-    if (!selected.suspended && !selected.active)
-      await cardRpc('lc_join_card_business', { p_provider: selected.id })
     const detail = await cardRpc('lc_business_dashboard', { p_provider: selected.id })
     if (version === generation.current) {
       setData(detail)
@@ -60,7 +58,7 @@ export default function LatidoCardBusiness() {
     return () => {
       ++generation.current
     }
-  }, [refresh])
+  }, [refresh, revision])
   const run = async (action) => {
     if (lock.current) return
     lock.current = true
@@ -101,7 +99,7 @@ export default function LatidoCardBusiness() {
       {!loading && !business && (
         <section className="lc-hero lc-business-hero">
           <span className="lc-eyebrow">Negocios participantes</span>
-          <h1>Más clientes para tu negocio.</h1>
+          <h1>Tu negocio y la comunidad, más cerca.</h1>
           <p>
             Ofrece descuentos a la comunidad Latido. El cliente muestra su pantalla y tú aplicas el
             beneficio.
@@ -134,7 +132,11 @@ export default function LatidoCardBusiness() {
             <span className="lc-eyebrow">Mi negocio</span>
             <h1>{business.name}</h1>
             <span className="lc-badge">
-              {business.suspended ? 'Participación suspendida' : 'Participando en Tarjeta Latido'}
+              {business.suspended
+                ? 'Participación suspendida'
+                : business.active
+                  ? 'Participando en Tarjeta Latido'
+                  : 'Publica tu primer descuento'}
             </span>
             {!business.suspended && (
               <div className="lc-business-management-actions">
@@ -153,16 +155,20 @@ export default function LatidoCardBusiness() {
                   type="button"
                   className="lc-button"
                   aria-controls="lc-create-offer"
-                  aria-expanded={businessView === 'create'}
-                  onClick={() =>
-                    setBusinessView((current) => (current === 'create' ? null : 'create'))
-                  }
+                  aria-haspopup="dialog"
+                  onClick={() => openOffer(business)}
                 >
                   Crear oferta
                 </button>
               </div>
             )}
           </section>
+          {!business.suspended && !data.offers.length && businessView === null && (
+            <LatidoCardBusinessInvitation
+              business={business}
+              onCreate={(target) => openOffer(target)}
+            />
+          )}
           {business.suspended ? (
             <p className="lc-alert">
               Latido ha retirado este negocio del programa. Contacta con Latido para revisar su
@@ -170,27 +176,6 @@ export default function LatidoCardBusiness() {
             </p>
           ) : (
             <>
-              <section
-                className="lc-offer-create lc-offer-create-body"
-                id="lc-create-offer"
-                aria-labelledby="lc-create-title"
-                hidden={businessView !== 'create'}
-              >
-                <h2 id="lc-create-title" tabIndex={-1}>
-                  Crear oferta
-                </h2>
-                <p>Un descuento incluido y hasta dos promociones especiales vigentes.</p>
-                <LatidoCardOfferWizard
-                  key={provider}
-                  businessName={business.name}
-                  onPublish={async (offer) => {
-                    await cardRpc('lc_save_offer', { p_provider: provider, p_offer: offer })
-                    setNotice('Descuento publicado. Tu QR ya muestra la nueva oferta.')
-                    await refresh()
-                    setBusinessView('offers')
-                  }}
-                />
-              </section>
               <section
                 className="lc-panel lc-spaced"
                 id="lc-published-offers"

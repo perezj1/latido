@@ -1,0 +1,134 @@
+.lc-offer-value {
+  display: flex;
+  flex: 0 0 56px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 56px;
+  height: 62px;
+  border-radius: 16px;
+  background: #d12c53;
+  color: #fff;
+}
+.lc-offer-value-number {
+  font-size: 17px;
+  line-height: 1.1;
+  font-weight: 800;
+  white-space: nowrap;
+  letter-spacing: -0.5px;
+}
+.lc-offer-value[data-long='true'] .lc-offer-value-number {
+  font-size: 13px;
+  letter-spacing: -0.7px;
+}
+.lc-offer-value-unit {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.lc-offer-brand-stripe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  height: 4px;
+  overflow: hidden;
+}
+.lc-offer-brand-stripe > span {
+  flex: 9;
+  background: #4c6ef5;
+}
+.lc-offer-brand-stripe > span:nth-child(1) {
+  flex: 6;
+  background: #f7a928;
+}
+.lc-offer-brand-stripe > span:nth-child(2) {
+  flex: 11;
+  background: #ef4b6c;
+}
+.lc-offer-brand-stripe > span:nth-child(4) {
+  background: #22b8e6;
+}
+.lc-offer-brand-stripe > span:nth-child(5) {
+  background: #3fd9c2;
+}
+.lc-offer-brand-stripe > span:nth-child(6) {
+  flex: 8;
+  background: #13a386;
+}
+.lc-offer-usage-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #f4f6fa;
+  color: #556070;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.lc-offer-usage-chip svg {
+  flex-shrink: 0;
+}
+.lc-offer-preview {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 16px 20px;
+  border: 1px solid #e3e7ef;
+  border-radius: 18px;
+  background: #fff;
+  color: #0f172a;
+  font-family: 'Poppins', sans-serif;
+  text-align: left;
+}
+.lc-offer-preview-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.lc-offer-preview-info {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+.lc-offer-preview-info > strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.lc-offer-preview .lc-offer-preview-info > p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #556070;
+  overflow-wrap: anywhere;
+}
+.lc-offer-preview-info b {
+  color: #2a55df;
+  font-weight: 600;
+}
+.lc-offer-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+.lc-offer-preview-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: #2a55df;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}

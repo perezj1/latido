@@ -1,0 +1,175 @@
+.lc-create-form {
+  gap: 22px;
+}
+.lc-create-preview {
+  padding: 14px;
+  background: #f4f6fa;
+  border-radius: 16px;
+}
+.lc-create-preview > p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: #556070;
+  font-size: 11px;
+  font-weight: 600;
+}
+.lc-create-group,
+.lc-create-advanced {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.lc-create-group legend {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.lc-create-segments {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.lc-create-segments > label {
+  position: relative;
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  cursor: pointer;
+}
+.lc-create-types > label {
+  flex-basis: 28%;
+}
+.lc-create-types > label:nth-child(-n + 2) {
+  flex-basis: 40%;
+}
+.lc-create-form .lc-create-segments input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.lc-create-segments span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 9px 5px;
+  border: 1px solid #d5dbe6;
+  border-radius: 11px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+.lc-create-segments input:checked + span {
+  border-color: #2a55df;
+  background: #eef3ff;
+  color: #2a55df;
+  box-shadow: inset 0 0 0 1px #2a55df;
+}
+.lc-create-segments input:focus-visible + span {
+  outline: 3px solid #ffb020;
+  outline-offset: 2px;
+}
+.lc-create-form small {
+  font-size: 11px;
+  font-weight: 400;
+  color: #667085;
+}
+.lc-create-value-input {
+  margin-top: 12px;
+}
+.lc-create-value-input > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #2a55df;
+}
+.lc-create-options {
+  border: 1px solid #e3e7ef;
+  border-radius: 14px;
+}
+.lc-create-options summary {
+  padding: 14px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.lc-create-options summary > span {
+  display: block;
+  margin: 3px 0 0 14px;
+  font-size: 11px;
+  color: #667085;
+}
+.lc-create-advanced {
+  display: grid;
+  gap: 16px;
+  padding: 4px 14px 16px;
+}
+.lc-create-stock-toggle {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 8px !important;
+}
+.lc-create-stock-toggle input {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+}
+.lc-create-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: #556070;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.lc-create-notice svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #2a55df;
+}
+.lc-create-footer {
+  display: grid;
+  gap: 9px;
+  padding-top: 4px;
+}
+.lc-create-footer > .lc-button {
+  width: 100%;
+  min-height: 52px;
+  font-size: 15px;
+  border-radius: 16px;
+}
+.lc-create-footer > p:not(.lc-alert) {
+  margin: 0;
+  color: #667085;
+  text-align: center;
+  font-size: 10px;
+}
+@media (max-width: 360px) {
+  .lc-create-preview {
+    padding: 10px;
+  }
+  .lc-create-preview .lc-offer-preview {
+    padding: 12px 12px 18px;
+  }
+  .lc-create-preview .lc-offer-preview-head {
+    gap: 8px;
+  }
+  .lc-create-values {
+    gap: 4px;
+  }
+  .lc-create-values span {
+    font-size: 10px;
+  }
+}

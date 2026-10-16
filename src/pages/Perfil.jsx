@@ -1895,7 +1895,11 @@ export default function Perfil() {
         })
         return
       }
-      toast.error(error?.message || 'No se pudo eliminar la publicación')
+      const cardReferenceBlocked = item.kind === 'business' && error?.code === '23503'
+        && /latido_card/.test(error?.message || '')
+      toast.error(cardReferenceBlocked
+        ? 'No se pudo retirar el negocio de Tarjeta Latido. Falta actualizar el borrado de negocios en Supabase.'
+        : error?.message || 'No se pudo eliminar la publicación')
     } finally {
       setDeletingKey('')
     }

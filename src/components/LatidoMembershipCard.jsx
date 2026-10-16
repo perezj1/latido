@@ -1,6 +1,7 @@
+import { useId } from 'react'
 import './LatidoMembershipCard.css'
 
-export function LatidoMembershipCard({ member, holderName, sample = false }) {
+export function LatidoMembershipCard({ member, holderName, sample = false, id }) {
   const number = String(member.member_number ?? '—').padStart(4, '0')
   const until = member.valid_until
     ? new Intl.DateTimeFormat('es-ES', {
@@ -13,6 +14,8 @@ export function LatidoMembershipCard({ member, holderName, sample = false }) {
   const Holder = sample ? 'span' : 'h1'
   return (
     <article
+      id={id}
+      tabIndex={id ? -1 : undefined}
       className="lc-membership-card"
       data-appearance="light"
       aria-label={`Tarjeta Latido de ${holderName}`}
@@ -64,8 +67,9 @@ export function LatidoMembershipCard({ member, holderName, sample = false }) {
 }
 
 export default function LatidoMembershipCardSummary({ member, holderName, renewUrl }) {
+  const cardId = useId()
   const days = Math.ceil((Date.parse(member.valid_until) - Date.now()) / 86400000)
-  const card = <LatidoMembershipCard member={member} holderName={holderName} />
+  const card = <LatidoMembershipCard member={member} holderName={holderName} id={cardId} />
   return (
     <section className="lc-membership-summary" aria-label="Mi Tarjeta Latido">
       {!member.active && renewUrl && (
@@ -80,8 +84,8 @@ export default function LatidoMembershipCardSummary({ member, holderName, renewU
         </div>
       )}
       {member.active ? (
-        <details className="lc-member-strip">
-          <summary>
+        <div className="lc-member-strip">
+          <div className="lc-member-strip-heading">
             <span aria-hidden="true">💳</span>
             <span>
               <strong>Socio nº {String(member.member_number).padStart(4, '0')}</strong>
@@ -92,10 +96,12 @@ export default function LatidoMembershipCardSummary({ member, holderName, renewU
                 })}
               </span>
             </span>
-            <span className="lc-member-strip-action">Ver tarjeta</span>
-          </summary>
+            <a className="lc-member-strip-action" href={`#${cardId}`}>
+              Ver tarjeta
+            </a>
+          </div>
           {card}
-        </details>
+        </div>
       ) : (
         card
       )}

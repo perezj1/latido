@@ -62,6 +62,7 @@ export function cardErrorMessage(
     OFFER_USED: 'Ya has utilizado esta promoción.',
     OFFER_CAPACITY: 'Puedes publicar un descuento incluido y dos promociones especiales vigentes.',
     BUSINESS_SUSPENDED: 'Latido ha retirado este negocio del programa. Contacta con Latido.',
+    OFFER_REQUIRED: 'Publica un descuento para participar en Tarjeta Latido.',
     BUSINESS_INACTIVE: 'Este negocio no está participando en Tarjeta Latido.',
     FORBIDDEN: 'No tienes permiso para realizar esta operación.',
     AUTH_REQUIRED: 'Inicia sesión para continuar.',
