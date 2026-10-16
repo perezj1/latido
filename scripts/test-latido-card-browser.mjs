@@ -53,7 +53,7 @@ const offer = {
   benefit_value: 15,
   usage_period: 'month',
   usage_limit: 1,
-  ends_at: new Date(Date.now() + 86400000).toISOString(),
+  ends_at: new Date(Date.now() + 86400000 * 90).toISOString(),
   requires_claim: false,
   active: true,
   available: true,
@@ -112,6 +112,8 @@ let pausedDeleted = false
 let receipt = null,
   failFirstUse = true,
   membershipActive = true,
+  hasMembership = true,
+  homeFailures = 0,
   businesses = [
     { id: providerId, name: offer.business_name, active: true, participating: true },
     { id: provider2, name: 'Peluquería Latina', active: true, participating: true }
@@ -210,14 +212,22 @@ try {
               .map((item) => ({ id: item.id, name: item.name, city: 'Zürich', photo_url: null }))
       )
     }
-    if (name === 'lc_member_home')
+    if (name === 'lc_member_home') {
+      if (homeFailures > 0) {
+        homeFailures--
+        return respond(route, { message: 'Temporary connection failure' }, 503)
+      }
       return respond(route, {
-        membership: {
-          active: membershipActive,
-          status: membershipActive ? 'active' : 'paused',
-          member_number: 2481,
-          valid_until: offer.ends_at
-        },
+        membership: hasMembership
+          ? {
+              active: membershipActive,
+              status: membershipActive ? 'active' : 'paused',
+              member_number: 2481,
+              valid_until: membershipActive
+                ? offer.ends_at
+                : new Date(Date.now() - 86400000).toISOString()
+            }
+          : null,
         offers: [
           {
             ...offer,
@@ -251,6 +261,7 @@ try {
           display_valid_until: r.expires_at
         }))
       })
+    }
     if (name === 'lc_business_benefits')
       return respond(route, {
         business: (discoveryMode ? discoveryBusinesses : businesses).find(
@@ -351,19 +362,16 @@ try {
   assert.equal(await page.locator('.lc-membership-summary .lc-qr').count(), 0)
   const membershipCard = page.locator('.lc-membership-summary .lc-membership-card')
   await page.evaluate(() => document.fonts.ready)
-  assert.equal(await membershipCard.getAttribute('data-appearance'), 'dark')
+  assert.equal(await membershipCard.getAttribute('data-appearance'), 'light')
   await membershipCard.screenshot({
-    path: path.join(output, 'membership-dark-mobile.png'),
+    path: path.join(output, 'membership-light-mobile.png'),
     animations: 'disabled'
   })
   assert.equal(await page.getByRole('radio', { name: /Clara|Oscura/ }).count(), 0)
-  await page.evaluate(
-    (id) => localStorage.setItem(`latido-card-appearance:${id}`, 'light'),
-    user.id
-  )
+  await page.evaluate((id) => localStorage.setItem(`latido-card-appearance:${id}`, 'dark'), user.id)
   await page.reload()
   await page.getByRole('heading', { name: 'Ana', exact: true }).waitFor()
-  assert.equal(await membershipCard.getAttribute('data-appearance'), 'dark')
+  assert.equal(await membershipCard.getAttribute('data-appearance'), 'light')
   assert.equal(
     await page
       .getByRole('button', { name: /Scanner|tarjeta física|Generar nuevo código/i })
@@ -371,8 +379,79 @@ try {
     0
   )
   assert.equal(await page.getByRole('button', { name: 'Reclamar', exact: true }).count(), 0)
+  const refreshFailureText =
+    'No se pudieron actualizar tus descuentos. Comprueba tu conexión; volveremos a intentarlo.'
+  homeFailures = 1
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.getByText(refreshFailureText, { exact: true }).waitFor()
+  assert.equal(
+    await page.locator('.lc-discount-card').count(),
+    2,
+    'A background failure keeps the last catalog'
+  )
+  assert.equal(
+    await page.getByText(/No se pudo confirmar la operación/).count(),
+    0,
+    'Refresh errors describe loading, not consumption'
+  )
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.getByText(refreshFailureText, { exact: true }).waitFor({ state: 'hidden' })
+  homeFailures = 10
+  await page.reload()
+  await page.getByRole('alert').filter({ hasText: refreshFailureText }).waitFor()
+  await page.getByRole('button', { name: 'Reintentar', exact: true }).waitFor()
+  homeFailures = 0
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.getByRole('heading', { name: 'Ana', exact: true }).waitFor()
+  assert.equal(
+    await page.getByRole('alert').filter({ hasText: refreshFailureText }).count(),
+    0,
+    'A successful refresh clears a previous load error'
+  )
   const discountCard = page.locator('.lc-offer-row').filter({ hasText: offer.title })
   await discountCard.getByRole('img', { name: `Imagen de ${offer.business_name}` }).waitFor()
+  await page.evaluate(() => {
+    window.originalShare = navigator.share
+    window.originalClipboard = navigator.clipboard
+    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
+  })
+  const offerShareButton = discountCard.getByRole('button', {
+    name: `Compartir ${offer.title}`,
+    exact: true
+  })
+  await offerShareButton.click()
+  const copiedToast = page.getByText('Enlace de la oferta copiado.', { exact: true })
+  await copiedToast.waitFor()
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await page.waitForFunction(() => {
+    const message = [...document.querySelectorAll('[role="status"]')].find(
+      (el) => el.textContent.trim() === 'Enlace de la oferta copiado.'
+    )
+    if (!message) return false
+    const bounds = message.getBoundingClientRect()
+    return bounds.top >= 0 && bounds.bottom <= innerHeight
+  })
+  const copiedToastBounds = await copiedToast.boundingBox()
+  assert.ok(
+    copiedToastBounds.y >= 0 && copiedToastBounds.y + copiedToastBounds.height <= 844,
+    'Copy feedback stays in view when scrolled'
+  )
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined })
+  )
+  await offerShareButton.click()
+  const inlineShare = discountCard.getByLabel('Enlace de la oferta', { exact: true })
+  await inlineShare.waitFor()
+  assert.equal(await inlineShare.inputValue(), origin + `/card?oferta=${offer.id}`)
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: window.originalShare })
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: window.originalClipboard
+    })
+  })
+  await offerShareButton.click()
+  await inlineShare.waitFor({ state: 'detached' })
   const detailsButton = discountCard.getByRole('button', { name: 'Mostrar detalles', exact: true })
   const activateButton = discountCard.getByRole('button', { name: 'Activar', exact: true })
   const detailsBounds = await detailsButton.boundingBox()
@@ -542,8 +621,20 @@ try {
   assert.equal(await page.locator('.lc-use-row').count(), 1)
   await page.getByRole('tab', { name: 'Disponibles', exact: true }).click()
   await page.getByRole('heading', { name: special.title, exact: true }).waitFor()
-  assert.equal(await page.getByRole('heading', { name: offer.title, exact: true }).count(), 0)
-  await page.getByRole('button', { name: 'Activar', exact: true }).click()
+  const usedMonthlyCard = page.locator('.lc-discount-card').filter({ hasText: offer.title })
+  await usedMonthlyCard.getByText(/^Disponible de nuevo el/).waitFor()
+  assert.equal(
+    await usedMonthlyCard.getByRole('button', { name: 'Activar', exact: true }).isDisabled(),
+    true
+  )
+  await usedMonthlyCard.screenshot({
+    path: path.join(output, 'used-discount-available-mobile.png')
+  })
+  await page
+    .locator('.lc-discount-card')
+    .filter({ hasText: special.title })
+    .getByRole('button', { name: 'Activar', exact: true })
+    .click()
   await page.getByRole('button', { name: 'Usar ahora', exact: true }).click()
   await page.getByText('Tarjeta activa', { exact: true }).waitFor()
   await page.getByText('Regalo', { exact: true }).waitFor()
@@ -552,6 +643,12 @@ try {
   await page.getByRole('link', { name: 'Volver a mi tarjeta', exact: true }).click()
   await page.locator('#lc-tab-used[aria-selected="true"]').waitFor()
   assert.equal(await page.locator('.lc-use-row').count(), 2)
+  assert.equal(
+    await page.locator('.lc-use-row button').count(),
+    0,
+    'History never offers activation or reopening, even for a live receipt'
+  )
+  assert.equal(await page.getByRole('button', { name: /^(Activar|Mostrar)$/ }).count(), 0)
   await page.screenshot({ path: path.join(output, 'member-mobile.png'), fullPage: true })
   await page.getByRole('link', { name: 'Mi negocio', exact: true }).click()
   await page.getByRole('heading', { name: 'El QR de tu negocio', exact: true }).waitFor()
@@ -706,11 +803,17 @@ try {
   await page.getByRole('button', { name: /Continuar/ }).click()
   assert.ok(await page.getByLabel('Frecuencia').locator('option[value="day"]').count())
   assert.ok(await page.getByLabel('Frecuencia').locator('option[value="week"]').count())
-  await page.getByRole('radio', { name: /Activación automática/ }).check()
+  assert.equal(
+    await page.getByRole('radio', { name: /Activación automática|Activación manual/ }).count(),
+    0
+  )
   await page.getByLabel('Válido hasta (hora local)').fill('2027-01-01T12:00')
   await page.getByRole('button', { name: /Continuar/ }).click()
-  await page.getByText('Automática: mostrar la tarjeta', { exact: true }).waitFor()
-  await page.screenshot({ path: path.join(output, 'wizard-automatic-mobile.png'), fullPage: true })
+  await page.getByText('Activar y confirmar en el negocio', { exact: true }).waitFor()
+  await page.screenshot({
+    path: path.join(output, 'wizard-confirmation-mobile.png'),
+    fullPage: true
+  })
   user.email = 'admin@test.example'
   await page.evaluate(
     (auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)),
@@ -739,8 +842,8 @@ try {
   assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 10)
   assert.equal(await businessesRegion.locator('li').count(), 10)
   assert.equal(await discountsRegion.getByText('Historial de usos', { exact: true }).count(), 0)
-  await discountsRegion.getByRole('button', { name: 'Mostrar todos (12)', exact: true }).click()
-  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 12)
+  await discountsRegion.getByRole('button', { name: 'Mostrar todos (14)', exact: true }).click()
+  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 14)
   assert.equal(
     await businessesRegion.locator('li').count(),
     10,
@@ -756,12 +859,18 @@ try {
     'Search ignores accents across business and city'
   )
   const usesBeforeAuto = useCalls.length
-  await discountsRegion.getByText('Activada', { exact: true }).waitFor()
+  assert.equal(await discountsRegion.getByText('Activada', { exact: true }).count(), 0)
   assert.equal(useCalls.length, usesBeforeAuto, 'Automatic activation does not consume on listing')
-  await discountsRegion.getByRole('button', { name: 'Mostrar', exact: true }).click()
+  await discountsRegion.getByRole('button', { name: 'Activar', exact: true }).click()
+  await page.getByRole('dialog', { name: '¿Usar este descuento ahora?' }).waitFor()
+  assert.equal(useCalls.length, usesBeforeAuto, 'Legacy automatic offers also require confirmation')
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
+  assert.equal(useCalls.length, usesBeforeAuto)
+  await discountsRegion.getByRole('button', { name: 'Activar', exact: true }).click()
+  await page.getByRole('button', { name: 'Usar ahora', exact: true }).click()
   await page.waitForURL('**/card/validacion/**')
   await page.getByText('Tarjeta activa', { exact: true }).waitFor()
-  assert.equal(await page.getByRole('dialog').count(), 0, 'Automatic offers skip confirmation')
+  assert.equal(await page.getByRole('dialog').count(), 0)
   assert.equal(useCalls.length, usesBeforeAuto + 1)
   await page.goto(origin + '/card')
   await page.locator('#lc-business-directory li').first().waitFor()
@@ -823,6 +932,27 @@ try {
   await discountsRegion.screenshot({ path: path.join(output, 'discount-search-mobile.png') })
   discoveryMode = false
   membershipActive = false
+  await page.reload()
+  await page.locator('.lc-membership-summary').getByText('Inactiva', { exact: true }).waitFor()
+  assert.equal(await page.locator('.lc-membership-card__number').innerText(), '2481')
+  assert.equal(await page.locator('.lc-intro-card-preview').count(), 0)
+  assert.equal(
+    await page.getByRole('heading', { name: 'Ahorra en los negocios de tu comunidad' }).count(),
+    0
+  )
+  const renewal = page
+    .locator('.lc-membership-renewal')
+    .getByRole('link', { name: 'Renovar', exact: true })
+  assert.match(await renewal.getAttribute('href'), /^mailto:info@latido\.ch\?subject=Renovar/)
+  assert.equal(
+    await page.getByRole('link', { name: 'Solicitar mi tarjeta', exact: true }).count(),
+    0
+  )
+  await page.screenshot({
+    path: path.join(output, 'inactive-membership-mobile.png'),
+    fullPage: true
+  })
+  hasMembership = false
   await page.reload()
   await page.getByRole('heading', { name: 'Ahorra en los negocios de tu comunidad' }).waitFor()
   assert.equal(await page.getByText('Tarjeta física o QR en tu móvil', { exact: true }).count(), 0)

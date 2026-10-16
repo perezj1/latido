@@ -2,7 +2,11 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { PGlite } from '@electric-sql/pglite'
-import { offerUsageLabel, remainingValidationSeconds } from '../src/lib/latidoCardCore.js'
+import {
+  offerAvailability,
+  offerUsageLabel,
+  remainingValidationSeconds
+} from '../src/lib/latidoCardCore.js'
 import { cardOfferShareData, shareCardBusiness } from '../src/lib/latidoCardShare.js'
 
 const read = (name) => readFile(new URL(`../supabase/${name}`, import.meta.url), 'utf8')
@@ -13,6 +17,42 @@ const minimal = await read('latido_card_minimal.sql'),
   activation = await read('latido_card_offer_activation.sql'),
   verify = await read('latido_card_verify.sql')
 assert.equal(offerUsageLabel({ usage_period: 'week', usage_limit: 2 }), '2 usos por semana')
+const monthlyUsed = offerAvailability(
+  {
+    usage_period: 'month',
+    usage_limit: 1,
+    used_count: 1,
+    next_available_at: '2026-10-31T23:00:00Z'
+  },
+  { memberActive: true, now: Date.parse('2026-10-16T12:00:00Z') }
+)
+assert.equal(monthlyUsed.unavailable, true)
+assert.match(monthlyUsed.message, /Disponible de nuevo el 1 nov/)
+assert.equal(
+  offerAvailability(
+    { usage_period: 'unlimited', used_count: 10, available: true },
+    { memberActive: true }
+  ).unavailable,
+  false
+)
+assert.equal(
+  offerAvailability({ requires_claim: true, claim: { status: 'used' }, remaining: 0 }).message,
+  'Ya has utilizado este descuento.'
+)
+assert.equal(
+  offerAvailability({ requires_claim: true, remaining: 0 }).message,
+  'Sin unidades disponibles.'
+)
+assert.equal(
+  offerAvailability({ requires_claim: true, claim: { status: 'claimed' }, remaining: 0 })
+    .unavailable,
+  false
+)
+assert.equal(
+  offerAvailability({ available: false }, { memberActive: false }).unavailable,
+  false,
+  'Inactive membership is not mistaken for an unavailable offer'
+)
 assert.equal(
   remainingValidationSeconds(
     { valid: true, expires_at: '2026-10-15T12:05:00Z', server_now: '2026-10-15T12:00:00Z' },

@@ -183,34 +183,9 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
               </label>
             ))}
           </fieldset>
-          <fieldset className="lc-offer-kind">
-            <legend>Cómo lo activa el cliente</legend>
-            {[
-              [
-                'automatic',
-                'Activación automática',
-                'Aparece activada. Solo necesita pulsar Mostrar y enseñar la tarjeta.'
-              ],
-              ['manual', 'Activación manual', 'Debe activar el descuento cuando realice la compra.']
-            ].map(([value, label, help]) => (
-              <label
-                key={value}
-                className="lc-offer-kind-choice"
-                data-selected={offer.activation_mode === value}
-              >
-                <input
-                  type="radio"
-                  name="activation-mode"
-                  checked={offer.activation_mode === value}
-                  onChange={() => set('activation_mode', value)}
-                />
-                <span>
-                  <strong>{label}</strong>
-                  <small>{help}</small>
-                </span>
-              </label>
-            ))}
-          </fieldset>
+          <p className="lc-muted">
+            El cliente activa y confirma el descuento cuando compra en tu negocio.
+          </p>
           <label>
             Compra mínima CHF
             <input
@@ -297,12 +272,8 @@ export default function LatidoCardOfferWizard({ businessName, onPublish }) {
             {offer.description && <p>{offer.description}</p>}
             <dl>
               <div>
-                <dt>Activación</dt>
-                <dd>
-                  {offer.activation_mode === 'automatic'
-                    ? 'Automática: mostrar la tarjeta'
-                    : 'Manual: activar al comprar'}
-                </dd>
+                <dt>Cómo se usa</dt>
+                <dd>Activar y confirmar en el negocio</dd>
               </div>
               <div>
                 <dt>Compra mínima</dt>

@@ -118,15 +118,44 @@
 .lc-discount-summary p {
   margin: 0;
 }
-.lc-discount-activated {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #dcfbf6;
-  color: #007f72;
-  font-size: 10px;
-  font-weight: 600;
+.lc-discount-card.lc-discount-card--unavailable {
+  background: #f7f8fb;
+}
+.lc-discount-card--unavailable .lc-discount-photo {
+  opacity: 0.55;
+}
+.lc-discount-card--unavailable .lc-discount-title {
+  color: #7b8496;
+}
+.lc-discount-card--unavailable .lc-discount-business {
+  color: #7486b1;
+}
+.lc-discount-summary .lc-discount-availability {
+  margin-top: 6px;
+  font-weight: 500;
+  color: #5b6478;
+}
+.lc-discount-card--unavailable .lc-discount-primary:disabled {
+  background: #dce2ed;
+  color: #667087;
+  opacity: 1;
+}
+.lc-discount-share-link {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 11px;
+  text-align: left;
+}
+.lc-discount-share-link input {
+  min-width: 0;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #dce5f5;
+  border-radius: 12px;
+  font:
+    400 16px/1.4 'Poppins',
+    sans-serif;
 }
 .lc-discount-details {
   margin-top: 14px;
@@ -253,8 +282,7 @@
   transform: scale(0.99);
 }
 .lc-discount-primary:disabled,
-.lc-confirm-cancel:disabled,
-.lc-use-reopen:disabled {
+.lc-confirm-cancel:disabled {
   opacity: 0.55;
   cursor: default;
 }
@@ -361,16 +389,6 @@
   font-weight: 600;
   color: #007f72;
   background: #dcfbf6;
-}
-.lc-use-reopen {
-  border: 0;
-  background: none;
-  color: #2f5bd8;
-  padding: 8px 0 0;
-  font:
-    600 12px/1.5 'Poppins',
-    sans-serif;
-  cursor: pointer;
 }
 .lc-confirm-sheet {
   box-sizing: border-box;
@@ -484,7 +502,6 @@
 .lc-discount-primary:focus-visible,
 .lc-discount-share:focus-visible,
 .lc-discount-details-toggle:focus-visible,
-.lc-use-reopen:focus-visible,
 .lc-confirm-cancel:focus-visible,
 .lc-discount-history > summary:focus-visible {
   outline: 3px solid #4a76ef;

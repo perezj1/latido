@@ -227,9 +227,10 @@ npm run test:search   # Calidad del buscador global
 
 Guía vigente, funcionamiento, migración y pruebas: [docs/LATIDO_CARD_MINIMAL.md](docs/LATIDO_CARD_MINIMAL.md).
 
-El negocio elige activación automática (**Activada → Mostrar**, sin confirmación) o manual
-(**Activar → Usar ahora** al comprar). Ambas abren una validación animada de cinco minutos.
-El uso se registra al mostrarlo, sin reclamar previamente; se agrupan en **Disponibles** y **Usadas**.
+Todos los descuentos usan **Activar → Usar ahora** al comprar, con confirmación antes de registrar
+el uso y una validación animada de cinco minutos. **Disponibles** conserva los descuentos gastados
+con su próxima disponibilidad; **Usadas** es un historial sin acciones de activación.
+Los socios con membresía inactiva ven su tarjeta real y **Renovar**, sin el anuncio de alta.
 Las ofertas pausadas permiten **Borrar**, conservando su historial.
 Cada negocio tiene un QR público estable para sus pegatinas. El personal aplica
 el descuento en su caja, sin Scanner ni cuenta. Los negocios participan gratis.

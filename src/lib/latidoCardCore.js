@@ -23,7 +23,37 @@ export function remainingValidationSeconds(receipt, verifiedAt, now = performanc
   return Math.max(0, Math.ceil((lifetime - Math.max(0, now - verifiedAt)) / 1000))
 }
 
-export function cardErrorMessage(error) {
+export function offerAvailability(offer, { memberActive = false, now = Date.now() } = {}) {
+  const used =
+    offer.claim?.status === 'used' ||
+    (offer.usage_period !== 'unlimited' &&
+      Number(offer.used_count || 0) >= Number(offer.usage_limit || 1))
+  if (used) {
+    const next = Date.parse(offer.next_available_at)
+    const message =
+      Number.isFinite(next) && next > now
+        ? `Disponible de nuevo el ${new Intl.DateTimeFormat('es-CH', { day: 'numeric', month: 'short', timeZone: 'Europe/Zurich' }).format(new Date(next))}`
+        : 'Ya has utilizado este descuento.'
+    return { unavailable: true, message }
+  }
+  if (
+    offer.requires_claim &&
+    offer.claim?.status !== 'claimed' &&
+    offer.remaining != null &&
+    Number(offer.remaining) <= 0
+  ) {
+    return { unavailable: true, message: 'Sin unidades disponibles.' }
+  }
+  if (memberActive && !offer.requires_claim && offer.available === false) {
+    return { unavailable: true, message: 'No disponible en este momento.' }
+  }
+  return { unavailable: false, message: '' }
+}
+
+export function cardErrorMessage(
+  error,
+  fallback = 'No se pudo confirmar la operación. Comprueba la conexión y vuelve a intentarlo.'
+) {
   const text = String(error?.message || error || '')
   const messages = {
     MEMBERSHIP_INACTIVE: 'Tu membresía no está activa.',
@@ -45,5 +75,5 @@ export function cardErrorMessage(error) {
   if (code) return messages[code]
   if (error?.code === 'PGRST202' || error?.code === '42P01')
     return 'Falta instalar la actualización de Tarjeta Latido en este servidor.'
-  return 'No se pudo confirmar la operación. Comprueba la conexión y vuelve a intentarlo.'
+  return fallback
 }

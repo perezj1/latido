@@ -11,7 +11,7 @@ import {
   Share2,
   Store
 } from 'lucide-react'
-import { offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
+import { offerAvailability, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
 import './LatidoDiscountCard.css'
 
 const date = (value) => new Date(value).toLocaleDateString('es-CH', { timeZone: 'Europe/Zurich' })
@@ -45,20 +45,22 @@ export function DiscountBusinessPhoto({ offer, small = false }) {
 export default function LatidoDiscountCard({
   offer,
   memberActive,
+  memberInactive = false,
   user,
   loginUrl,
   requestUrl,
   busy,
   shared,
   onActivate,
-  onShare
+  onShare,
+  manualShareUrl
 }) {
   const [expanded, setExpanded] = useState(false)
   const detailsId = useId()
-  const automatic = offer.activation_mode === 'automatic'
+  const availability = offerAvailability(offer, { memberActive })
   return (
     <article
-      className={`lc-offer-row lc-discount-card ${shared ? 'lc-discount-card--shared' : ''}`}
+      className={`lc-offer-row lc-discount-card ${shared ? 'lc-discount-card--shared' : ''} ${availability.unavailable ? 'lc-discount-card--unavailable' : ''}`}
     >
       <div className="lc-discount-main">
         <DiscountBusinessPhoto offer={offer} />
@@ -74,7 +76,9 @@ export default function LatidoDiscountCard({
               {Number(offer.minimum_spend) > 0 && ` · Desde CHF ${Number(offer.minimum_spend)}`}
             </p>
             <p>{offerUsageLabel(offer)}</p>
-            {automatic && memberActive && <span className="lc-discount-activated">Activada</span>}
+            {availability.message && (
+              <p className="lc-discount-availability">{availability.message}</p>
+            )}
           </div>
         </div>
         <button
@@ -124,7 +128,7 @@ export default function LatidoDiscountCard({
           {!memberActive ? (
             user ? (
               <a className="lc-discount-primary" href={requestUrl}>
-                Conseguir tarjeta
+                {memberInactive ? 'Renovar' : 'Conseguir tarjeta'}
               </a>
             ) : (
               <Link className="lc-discount-primary" to={loginUrl}>
@@ -134,26 +138,25 @@ export default function LatidoDiscountCard({
           ) : (
             <button
               className="lc-discount-primary"
-              disabled={busy || (!offer.requires_claim && !offer.available)}
+              disabled={busy || availability.unavailable}
               onClick={() => onActivate(offer)}
             >
-              {automatic ? 'Mostrar' : 'Activar'}
+              Activar
             </button>
           )}
         </div>
       </div>
+      {manualShareUrl && (
+        <label className="lc-discount-share-link">
+          Enlace de la oferta
+          <input readOnly value={manualShareUrl} onFocus={(event) => event.target.select()} />
+        </label>
+      )}
     </article>
   )
 }
 
-export function LatidoDiscountHistory({
-  items,
-  total = items.length,
-  initiallyOpen = false,
-  memberActive,
-  busy,
-  onActivate
-}) {
+export function LatidoDiscountHistory({ items, total = items.length, initiallyOpen = false }) {
   return (
     <details className="lc-discount-history" open={initiallyOpen}>
       <summary>
@@ -183,11 +186,6 @@ export function LatidoDiscountHistory({
                   Usada
                 </span>
               </div>
-              {memberActive && Date.parse(offer.validation?.expires_at) > Date.now() && (
-                <button className="lc-use-reopen" disabled={busy} onClick={() => onActivate(offer)}>
-                  {offer.activation_mode === 'automatic' ? 'Mostrar' : 'Activar'}
-                </button>
-              )}
             </div>
           </li>
         ))}

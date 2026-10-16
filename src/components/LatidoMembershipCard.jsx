@@ -14,10 +14,9 @@ export function LatidoMembershipCard({ member, holderName, sample = false }) {
   return (
     <article
       className="lc-membership-card"
-      data-appearance="dark"
+      data-appearance="light"
       aria-label={`Tarjeta Latido de ${holderName}`}
     >
-      <div className="lc-membership-card__glow" aria-hidden="true" />
       <img className="lc-membership-card__watermark" src="/favicon.svg" alt="" aria-hidden="true" />
       <div className="lc-membership-card__inner">
         <div className="lc-membership-card__top">
@@ -52,17 +51,37 @@ export function LatidoMembershipCard({ member, holderName, sample = false }) {
           </div>
         </div>
       </div>
-      <div className="lc-membership-card__stripe" aria-hidden="true" />
+      <div className="lc-membership-card__stripe" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
     </article>
   )
 }
 
-export default function LatidoMembershipCardSummary({ member, holderName }) {
+export default function LatidoMembershipCardSummary({ member, holderName, renewUrl }) {
   return (
     <section className="lc-membership-summary" aria-label="Mi Tarjeta Latido">
+      {!member.active && renewUrl && (
+        <div className="lc-membership-renewal">
+          <div>
+            <strong>Tu membresía está inactiva</strong>
+            <p>Solicita la renovación por email a Latido.</p>
+          </div>
+          <a className="lc-button" href={renewUrl}>
+            Renovar
+          </a>
+        </div>
+      )}
       <LatidoMembershipCard member={member} holderName={holderName} />
       <p className="lc-membership-hint">
-        Elige un descuento y pulsa «Mostrar» o «Activar» para enseñarlo al personal.
+        {member.active
+          ? 'Pulsa «Activar» cuando estés en el negocio y confirma antes de mostrar el descuento.'
+          : 'Renueva tu membresía para volver a utilizar los descuentos.'}
       </p>
     </section>
   )

@@ -8,6 +8,7 @@ import {
   useSearchParams
 } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import toast from 'react-hot-toast'
 import { cardRpc } from '../lib/latidoCard'
 import { cardErrorMessage, offerBenefitLabel, offerUsageLabel } from '../lib/latidoCardCore'
 import { shareCardOffer } from '../lib/latidoCardShare'
@@ -73,6 +74,10 @@ export const cardDate = (value) =>
   new Date(value).toLocaleDateString('es-CH', { timeZone: 'Europe/Zurich' })
 const requestUrl =
   'mailto:info@latido.ch?subject=Tarjeta%20Latido%20-%20Membres%C3%ADa%20CHF%206%2C90%20al%20mes'
+const renewUrl = 'mailto:info@latido.ch?subject=Renovar%20Tarjeta%20Latido'
+const refreshToast = 'lc-card-refresh'
+const loadErrorText =
+  'No se pudieron actualizar tus descuentos. Comprueba tu conexión; volveremos a intentarlo.'
 
 export default function LatidoCard() {
   const { user, displayName, loading: authLoading } = useAuth()
@@ -88,8 +93,7 @@ export default function LatidoCard() {
     [showAll, setShowAll] = useState(false)
   const [loading, setLoading] = useState(true),
     [error, setError] = useState('')
-  const [notice, setNotice] = useState(''),
-    [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState('available'),
     [confirm, setConfirm] = useState(null)
   useEffect(() => {
@@ -105,67 +109,83 @@ export default function LatidoCard() {
     }
   }, [loading, location.hash, providerId])
   const [useError, setUseError] = useState(''),
-    [manualShare, setManualShare] = useState('')
+    [manualShare, setManualShare] = useState(null)
   const actionLock = useRef(false),
     pending = useRef({}),
     loadSequence = useRef(0)
   const next = `${location.pathname}${location.search}`
   const loginUrl = `/auth?mode=login&next=${encodeURIComponent(next)}`
   const accountUrl = `/auth?mode=register&next=${encodeURIComponent(next)}`
-  const refresh = useCallback(async () => {
-    const sequence = ++loadSequence.current
-    const [home, local, participants] = await Promise.all([
-      user
-        ? cardRpc('lc_member_home')
-        : cardRpc('lc_catalog').then((offers) => ({ offers, history: [], membership: null })),
-      providerId
-        ? cardRpc('lc_business_benefits', { p_provider: providerId })
-        : Promise.resolve(null),
-      providerId
-        ? Promise.resolve(null)
-        : cardRpc('lc_participating_businesses')
-            .then((items) => ({ items, error: '' }))
-            .catch((err) => ({ items: [], error: cardErrorMessage(err) }))
-    ])
-    if (sequence === loadSequence.current) {
-      // Once the server confirms a recorded attempt, a future visit may start a new one.
-      // This also reconciles requests whose first response was lost before a reload.
-      for (const recorded of home.history || []) {
-        const key = `lc-use:${user?.id}:${recorded.offer_id}`
-        try {
-          if (sessionStorage.getItem(key) === recorded.request_id) sessionStorage.removeItem(key)
-        } catch {}
-        if (pending.current[key] === recorded.request_id) delete pending.current[key]
+  const refresh = useCallback(
+    async ({ background = false } = {}) => {
+      const sequence = ++loadSequence.current
+      try {
+        const [home, local, participants] = await Promise.all([
+          user
+            ? cardRpc('lc_member_home')
+            : cardRpc('lc_catalog').then((offers) => ({ offers, history: [], membership: null })),
+          providerId
+            ? cardRpc('lc_business_benefits', { p_provider: providerId })
+            : Promise.resolve(null),
+          providerId
+            ? Promise.resolve(null)
+            : cardRpc('lc_participating_businesses')
+                .then((items) => ({ items, error: '' }))
+                .catch((err) => ({
+                  items: [],
+                  error: cardErrorMessage(
+                    err,
+                    'No se pudieron actualizar los negocios participantes. Comprueba tu conexión.'
+                  )
+                }))
+        ])
+        if (sequence === loadSequence.current) {
+          // Once the server confirms a recorded attempt, a future visit may start a new one.
+          // This also reconciles requests whose first response was lost before a reload.
+          for (const recorded of home.history || []) {
+            const key = `lc-use:${user?.id}:${recorded.offer_id}`
+            try {
+              if (sessionStorage.getItem(key) === recorded.request_id)
+                sessionStorage.removeItem(key)
+            } catch {}
+            if (pending.current[key] === recorded.request_id) delete pending.current[key]
+          }
+          setData(home)
+          setBusiness(local?.business || null)
+          setDirectory(participants?.items || [])
+          setDirectoryError(participants?.error || '')
+          setError('')
+          toast.dismiss(refreshToast)
+        }
+      } catch (err) {
+        if (sequence === loadSequence.current) {
+          const message = cardErrorMessage(err, loadErrorText)
+          if (background) toast.error(message, { id: refreshToast, duration: 6000 })
+          else setError(message)
+        }
+      } finally {
+        if (sequence === loadSequence.current) setLoading(false)
       }
-      setData(home)
-      setBusiness(local?.business || null)
-      setDirectory(participants?.items || [])
-      setDirectoryError(participants?.error || '')
-    }
-  }, [user?.id, providerId])
+    },
+    [user?.id, providerId]
+  )
   useEffect(() => {
     if (authLoading) return
-    let cancelled = false
     setLoading(true)
     setError('')
     setConfirm(null)
+    setUseError('')
+    setManualShare(null)
     refresh()
-      .catch((err) => {
-        if (!cancelled) setError(cardErrorMessage(err))
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
     return () => {
-      cancelled = true
       ++loadSequence.current
+      toast.dismiss(refreshToast)
     }
   }, [refresh, authLoading])
   useEffect(() => {
     if (authLoading) return
     const onVisible = () => {
-      if (document.visibilityState === 'visible')
-        refresh().catch((err) => setError(cardErrorMessage(err)))
+      if (document.visibilityState === 'visible') refresh({ background: true })
     }
     window.addEventListener('focus', onVisible)
     document.addEventListener('visibilitychange', onVisible)
@@ -210,13 +230,24 @@ export default function LatidoCard() {
   }
   const activateOffer = (offer) => {
     setUseError('')
-    if (offer.activation_mode === 'automatic') useOffer(offer)
-    else setConfirm(offer)
+    setConfirm(offer)
   }
   const shareOffer = async (offer) => {
-    const result = await shareCardOffer(offer)
-    if (result.status === 'manual') setManualShare(result.url)
-    if (result.status === 'copied') setNotice('Enlace de la oferta copiado.')
+    setManualShare(null)
+    toast.dismiss('lc-card-share')
+    try {
+      const result = await shareCardOffer(offer)
+      if (result.status === 'manual') {
+        setManualShare({ offerId: offer.id, url: result.url })
+        toast('Copia el enlace que aparece en este descuento.', { id: 'lc-card-share' })
+      }
+      if (result.status === 'copied')
+        toast.success('Enlace de la oferta copiado.', { id: 'lc-card-share' })
+    } catch {
+      toast.error('No se pudo compartir el descuento. Vuelve a intentarlo.', {
+        id: 'lc-card-share'
+      })
+    }
   }
   const member = data.membership
   const offers = (data.offers || [])
@@ -243,26 +274,11 @@ export default function LatidoCard() {
           )?.business_photo_url,
         used: true,
         redemptionId: record.id,
-        redeemed_at: record.redeemed_at,
-        validation:
-          record.source === 'member' && Date.parse(record.display_valid_until) > Date.now()
-            ? { id: record.id, expires_at: record.display_valid_until }
-            : null
+        redeemed_at: record.redeemed_at
       }
     })
     .filter((offer) => !providerId || offer.provider_id === providerId)
-  const eligible =
-    tab === 'used'
-      ? used
-      : offers.filter((offer) => {
-          const capped = offer.usage_period !== 'unlimited' && offer.used_count >= offer.usage_limit
-          const reserved = offer.claim?.status === 'claimed'
-          return (
-            !capped &&
-            offer.claim?.status !== 'used' &&
-            (!offer.requires_claim || reserved || offer.remaining === null || offer.remaining > 0)
-          )
-        })
+  const eligible = tab === 'used' ? used : offers
   const visible = eligible.filter((offer) =>
     matchesCardSearch(
       [offer.title, offer.business_name, offer.city, offer.description, offerBenefitLabel(offer)],
@@ -274,14 +290,30 @@ export default function LatidoCard() {
   return (
     <div className="lc-page lc-member-page lc-discounts-page">
       <CardHeader />
+      {error && (
+        <div className="lc-alert" role="alert">
+          <p>{error}</p>
+          <button
+            className="lc-button lc-button--secondary"
+            disabled={loading}
+            onClick={() => {
+              setLoading(true)
+              refresh()
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
       {loading ? (
         <p role="status">Cargando tus descuentos…</p>
-      ) : (
+      ) : error && !data.membership && !data.offers.length ? null : (
         <>
-          {member?.active ? (
+          {member ? (
             <LatidoMembershipCardSummary
               member={member}
               holderName={displayName || 'Miembro Latido'}
+              renewUrl={renewUrl}
             />
           ) : (
             <>
@@ -317,30 +349,7 @@ export default function LatidoCard() {
                   ¿Ya eres socio? <Link to={loginUrl}>Inicia sesión para usar tus descuentos</Link>
                 </p>
               )}
-              {member && (
-                <p className="lc-alert">
-                  Tu membresía está inactiva. Contacta con Latido para renovarla.
-                </p>
-              )}
             </>
-          )}
-          {notice && (
-            <p className="lc-alert lc-success" role="status">
-              {notice}
-            </p>
-          )}
-          {manualShare && (
-            <div className="lc-panel">
-              <label>
-                Copiar enlace de la oferta
-                <input
-                  aria-label="Enlace de la oferta"
-                  readOnly
-                  value={manualShare}
-                  onFocus={(e) => e.target.select()}
-                />
-              </label>
-            </div>
           )}
           <section className="lc-benefits" aria-labelledby="lc-benefits-title">
             <h2 id="lc-benefits-title" className="lc-centered">
@@ -406,9 +415,6 @@ export default function LatidoCard() {
                       items={shown}
                       total={visible.length}
                       initiallyOpen
-                      memberActive={Boolean(member?.active)}
-                      busy={busy}
-                      onActivate={activateOffer}
                     />
                   )
                 : shown.map((offer) => (
@@ -416,13 +422,15 @@ export default function LatidoCard() {
                       key={offer.id}
                       offer={offer}
                       memberActive={Boolean(member?.active)}
+                      memberInactive={Boolean(member && !member.active)}
                       user={user}
                       loginUrl={loginUrl}
-                      requestUrl={requestUrl}
+                      requestUrl={member ? renewUrl : requestUrl}
                       busy={busy}
                       shared={offer.id === params.get('oferta')}
                       onActivate={activateOffer}
                       onShare={shareOffer}
+                      manualShareUrl={manualShare?.offerId === offer.id ? manualShare.url : ''}
                     />
                   ))}
               {!visible.length && (
@@ -445,16 +453,6 @@ export default function LatidoCard() {
           </section>
           {!providerId && <LatidoCardDiscovery businesses={directory} error={directoryError} />}
         </>
-      )}
-      {error && (
-        <p className="lc-alert" role="alert">
-          {error}
-        </p>
-      )}
-      {useError && !confirm && (
-        <p className="lc-alert" role="alert">
-          {useError}
-        </p>
       )}
       {confirm && (
         <LatidoDiscountConfirmation

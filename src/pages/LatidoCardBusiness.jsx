@@ -205,11 +205,7 @@ export default function LatidoCardBusiness() {
                   <article className="lc-offer" key={offer.id}>
                     <h3>{offer.title}</h3>
                     <OfferConditions offer={offer} />
-                    <small>
-                      {offer.activation_mode === 'automatic'
-                        ? 'Activación automática: el cliente muestra la tarjeta.'
-                        : 'Activación manual: el cliente activa el descuento al comprar.'}
-                    </small>
+                    <small>El cliente activa y confirma el descuento al comprar.</small>
                     <div className="lc-actions">
                       <button
                         className="lc-button lc-button--secondary"
