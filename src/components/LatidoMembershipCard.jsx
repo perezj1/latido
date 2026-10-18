@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { CreditCard } from 'lucide-react'
+import { OfferBrandStripe } from './LatidoOfferVisual'
 import './LatidoMembershipCard.css'
 
 export function LatidoMembershipCard({ member, holderName, sample = false, id }) {
@@ -65,9 +68,29 @@ export function LatidoMembershipCard({ member, holderName, sample = false, id })
   )
 }
 
-export default function LatidoMembershipCardSummary({ member, holderName, renewUrl }) {
+export default function LatidoMembershipCardSummary({
+  member,
+  holderName,
+  renewUrl,
+  historyCount = 0,
+  historyOpen,
+  onHistoryToggle,
+  history
+}) {
+  const [cardOpen, setCardOpen] = useState(false)
   const days = Math.ceil((Date.parse(member.valid_until) - Date.now()) / 86400000)
   const card = <LatidoMembershipCard member={member} holderName={holderName} />
+  const historyButton = historyCount > 0 && (
+    <button
+      type="button"
+      className="lc-text-button"
+      aria-expanded={Boolean(historyOpen)}
+      aria-controls="lc-member-history"
+      onClick={onHistoryToggle}
+    >
+      Usados ({historyCount})
+    </button>
+  )
   return (
     <section className="lc-membership-summary" aria-label="Mi Tarjeta Latido">
       {!member.active && renewUrl && (
@@ -82,24 +105,62 @@ export default function LatidoMembershipCardSummary({ member, holderName, renewU
         </div>
       )}
       {member.active ? (
-        <div className="lc-member-strip">
+        <div className="lc-member-strip lc-socio-mini">
+          <img className="lc-mini-watermark" src="/favicon.svg" alt="" aria-hidden="true" />
           <div className="lc-member-strip-heading">
-            <span aria-hidden="true">💳</span>
+            <span className="lc-mini-logo" aria-hidden="true">
+              <img src="/favicon.svg" alt="" />
+            </span>
             <span>
-              <strong>Socio nº {String(member.member_number).padStart(4, '0')}</strong>
+              <span className="lc-mini-label">SOCIO Nº</span>
+              <strong>{String(member.member_number).padStart(4, '0')}</strong>
               <span>
-                Activa hasta{' '}
+                Válida hasta{' '}
                 {new Date(member.valid_until).toLocaleDateString('es-CH', {
                   timeZone: 'Europe/Zurich'
                 })}
               </span>
             </span>
           </div>
-          {card}
+          <div className="lc-membership-controls">
+            <span className="lc-mini-active">Activa</span>
+            <button
+              type="button"
+              className="lc-text-button"
+              aria-expanded={cardOpen}
+              aria-controls="lc-full-membership"
+              onClick={() => setCardOpen((value) => !value)}
+            >
+              <>
+                <CreditCard size={14} aria-hidden="true" />
+                {cardOpen ? 'Ocultar tarjeta' : 'Ver tarjeta'}
+              </>
+            </button>
+          </div>
+          <OfferBrandStripe />
         </div>
       ) : (
-        card
+        <button
+          type="button"
+          className="lc-text-button"
+          aria-expanded={cardOpen}
+          aria-controls="lc-full-membership"
+          onClick={() => setCardOpen((value) => !value)}
+        >
+          <>
+            <CreditCard size={14} aria-hidden="true" />
+            {cardOpen ? 'Ocultar tarjeta' : 'Ver tarjeta'}
+          </>
+        </button>
       )}
+      {member.active && historyButton && (
+        <div className="lc-member-history-shortcut">{historyButton}</div>
+      )}
+      <div id="lc-full-membership" hidden={!cardOpen}>
+        {card}
+      </div>
+      {!member.active && historyButton}
+      {history}
       {member.active && days >= 0 && Date.parse(member.valid_until) - Date.now() < 7 * 86400000 && (
         <p className="lc-membership-expiry" role="status">
           Tu membresía {days <= 1 ? 'vence en menos de 24 horas' : `vence en ${days} días`}.{' '}

@@ -36,8 +36,10 @@ import { AppNotificationsProvider } from './hooks/useAppNotifications'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
+const LatidoCardLanding = lazy(() => import('./pages/LatidoCardLanding'))
 const Club = lazy(() => import('./pages/Club'))
 const LatidoCard = lazy(() => import('./pages/LatidoCard'))
+const LatidoCardPrint = lazy(() => import('./pages/LatidoCardPrint'))
 const LatidoCardBusiness = lazy(() => import('./pages/LatidoCardBusiness'))
 const LatidoCardValidation = lazy(() => import('./pages/LatidoCardValidation'))
 const LatidoCardAdmin = lazy(() => import('./pages/LatidoCardAdmin'))
@@ -510,7 +512,8 @@ function AppShell() {
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
-  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/club' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher
+  const isCardLanding = pathname === '/tarjeta-latido' || pathname === '/tarjeta-latido/'
+  const hideAppNavigation = isCardLanding || pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/club' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -624,6 +627,7 @@ function AppShell() {
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'creadores', label:'Creadores', to:'/creadores' },
       { id:'club', label:'Club', to:'/club' },
+      { id:'tarjeta-latido', label:'Tarjeta Latido', to:'/tarjeta-latido' },
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
@@ -772,7 +776,7 @@ function AppShell() {
       <CookieConsent showBanner={false} />
       <PushRegistrationSync />
       <UserPresenceSync />
-      <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen || hideAppNavigation ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:'#fff' }}>
+      <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen || hideAppNavigation ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:isCardLanding ? 'visible' : 'hidden', background:'#fff' }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -787,7 +791,9 @@ function AppShell() {
             <Route path="/comunidades" element={<Comunidades />} />
             <Route path="/colaboraciones" element={<Colaboraciones />} />
             <Route path="/club" element={<Club />} />
+            <Route path="/tarjeta-latido" element={<LatidoCardLanding />} />
             <Route path="/card" element={<LatidoCard />} />
+            <Route path="/card/material/:providerId" element={<LatidoCardPrint />} />
             <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusiness /></ProtectedRoute>} />
             <Route path="/card/negocio/:providerId" element={<LatidoCard />} />
             <Route path="/card/validacion/:redemptionId" element={<ProtectedRoute><LatidoCardValidation /></ProtectedRoute>} />

@@ -6,6 +6,7 @@ import {
   draftOfferName,
   draftOfferScope,
   initialOfferDraft,
+  zurichEndOfDay,
   offerCombos
 } from '../lib/latidoCardOfferDraft'
 import LatidoOfferPreview from './LatidoOfferVisual'
@@ -47,7 +48,14 @@ function Choice({ name, value, checked, onChange, icon, title, description, tone
   )
 }
 
-export default function LatidoCardOfferForm({ business, onPublish, initialSelection }) {
+export default function LatidoCardOfferForm({
+  business,
+  onPublish,
+  initialSelection,
+  promotionOnly = false,
+  promotionUnavailable = false,
+  onStepChange
+}) {
   const [draft, setDraft] = useState(initialOfferDraft)
   const [step, setStep] = useState(1)
   const [busy, setBusy] = useState(false),
@@ -65,20 +73,30 @@ export default function LatidoCardOfferForm({ business, onPublish, initialSelect
     if (!initialSelection) return
     setDraft((previous) => ({
       ...previous,
-      type: initialSelection.type,
+      ...initialSelection,
+      type: initialSelection.type || previous.type,
       value: initialSelection.value || '10',
-      combo: '2x1',
-      customValue: false
+      combo: initialSelection.combo || '2x1',
+      customValue: Boolean(initialSelection.customValue)
     }))
     setStep(1)
     setError('')
   }, [initialSelection])
   useEffect(() => {
+    onStepChange?.(step)
+  }, [step, onStepChange])
+  useEffect(() => {
     bodyRef.current.scrollTop = 0
     headingRef.current?.focus({ preventScroll: true })
   }, [step])
   const set = (key, value) => {
-    setDraft((previous) => ({ ...previous, [key]: value }))
+    setDraft((previous) => ({
+      ...previous,
+      [key]: value,
+      ...(['type', 'value', 'combo', 'gift', 'benefit', 'scope', 'detail'].includes(key)
+        ? { legacy_title: '' }
+        : {})
+    }))
     setError('')
   }
   const go = (next) => {
@@ -100,7 +118,7 @@ export default function LatidoCardOfferForm({ business, onPublish, initialSelect
     }
     if (step === 2 && draft.scope === 'specific' && !draft.detail.trim())
       return 'Escribe el producto o servicio.'
-    if (step === 4 && draft.ends_at && Date.parse(draft.ends_at) <= Date.now())
+    if (step === 4 && draft.ends_at && Date.parse(zurichEndOfDay(draft.ends_at)) <= Date.now())
       return 'Elige una fecha futura o déjala vacía si la oferta no tiene fecha de fin.'
     return ''
   }
@@ -183,6 +201,12 @@ export default function LatidoCardOfferForm({ business, onPublish, initialSelect
           </p>
           {step === 1 && (
             <>
+              {draft.legacy_title && (
+                <p className="lc-create-help">
+                  Esta oferta es anterior al editor. Conservamos su título; revisa el alcance si
+                  cambias la oferta.
+                </p>
+              )}
               <div className="lc-create-type-grid" role="group" aria-label="Tipo de oferta">
                 {types.map(([type, icon, title, description, tone]) => (
                   <Choice
@@ -266,6 +290,53 @@ export default function LatidoCardOfferForm({ business, onPublish, initialSelect
                   <p className="lc-create-help">{offerCombos[draft.combo].help}</p>
                 </fieldset>
               )}
+              {draft.type === 'fixed' && (
+                <fieldset className="lc-create-group">
+                  <legend>¿Desde qué compra?</legend>
+                  <div className="lc-create-segments">
+                    {['0', '20', '50', 'other'].map((value) => (
+                      <label key={value}>
+                        <input
+                          type="radio"
+                          name="minimum-spend"
+                          checked={
+                            value === 'other'
+                              ? Boolean(draft.customMinimum)
+                              : !draft.customMinimum && String(draft.minimum_spend) === value
+                          }
+                          onChange={() => {
+                            set('customMinimum', value === 'other')
+                            if (value !== 'other') set('minimum_spend', value)
+                          }}
+                        />
+                        <span>
+                          {value === '0'
+                            ? 'Sin mínimo'
+                            : value === 'other'
+                              ? 'Otro'
+                              : `CHF ${value}`}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {(draft.customMinimum ||
+                    !['0', '20', '50'].includes(String(draft.minimum_spend))) && (
+                    <label>
+                      Compra mínima CHF
+                      <input
+                        type="number"
+                        min="0"
+                        max="99999999.99"
+                        step="0.01"
+                        required
+                        value={draft.minimum_spend}
+                        onChange={(e) => set('minimum_spend', e.target.value)}
+                      />
+                    </label>
+                  )}
+                  <p className="lc-create-help">Recomendado: al menos el doble del descuento.</p>
+                </fieldset>
+              )}
               {draft.type === 'gift' && (
                 <label>
                   ¿Qué regalas?
@@ -334,15 +405,40 @@ export default function LatidoCardOfferForm({ business, onPublish, initialSelect
               )}
             </>
           )}
-          {step === 3 && (
+          {step === 3 && draft.requires_claim && (
+            <div className="lc-create-group">
+              <p>Promoción limitada: cada socio puede usar una unidad en total.</p>
+              <label>
+                Unidades disponibles
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={draft.stock_total}
+                  onChange={(event) => set('stock_total', event.target.value)}
+                />
+              </label>
+            </div>
+          )}
+          {step === 3 && !draft.requires_claim && (
             <div className="lc-create-choice-list" role="group" aria-label="Usos por socio">
               <Choice
                 name="offer-usage"
                 value="month"
-                checked={draft.usage_period === 'month' && Number(draft.usage_limit) === 1}
+                checked={
+                  !draft.requires_claim &&
+                  draft.usage_period === 'month' &&
+                  Number(draft.usage_limit) === 1
+                }
                 onChange={() => {
                   set('usage_period', 'month')
-                  setDraft((previous) => ({ ...previous, usage_limit: 1, requires_claim: false }))
+                  setDraft((previous) => ({
+                    ...previous,
+                    usage_limit: 1,
+                    requires_claim: promotionOnly,
+                    ...(promotionOnly ? { usage_period: 'lifetime' } : {})
+                  }))
                 }}
                 icon={<CalendarDays size={20} />}
                 tone="blue"
@@ -353,10 +449,15 @@ export default function LatidoCardOfferForm({ business, onPublish, initialSelect
               <Choice
                 name="offer-usage"
                 value="unlimited"
-                checked={draft.usage_period === 'unlimited'}
+                checked={!draft.requires_claim && draft.usage_period === 'unlimited'}
                 onChange={() => {
                   set('usage_period', 'unlimited')
-                  setDraft((previous) => ({ ...previous, usage_limit: 1, requires_claim: false }))
+                  setDraft((previous) => ({
+                    ...previous,
+                    usage_limit: 1,
+                    requires_claim: promotionOnly,
+                    ...(promotionOnly ? { usage_period: 'lifetime' } : {})
+                  }))
                 }}
                 icon={<Repeat2 size={20} />}
                 tone="green"
@@ -408,25 +509,30 @@ export default function LatidoCardOfferForm({ business, onPublish, initialSelect
                   </span>
                 </summary>
                 <div className="lc-create-advanced">
+                  {draft.type !== 'fixed' && (
+                    <label>
+                      Compra mínima CHF
+                      <input
+                        type="number"
+                        min="0"
+                        max="99999999.99"
+                        step="0.01"
+                        value={draft.minimum_spend}
+                        onChange={(event) => set('minimum_spend', event.target.value)}
+                      />
+                    </label>
+                  )}
                   <label>
-                    Compra mínima CHF
+                    Válido hasta
                     <input
-                      type="number"
-                      min="0"
-                      max="99999999.99"
-                      step="0.01"
-                      value={draft.minimum_spend}
-                      onChange={(event) => set('minimum_spend', event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    Válido hasta (hora local)
-                    <input
-                      type="datetime-local"
+                      type="date"
+                      aria-label="Válido hasta"
                       value={draft.ends_at}
                       onChange={(event) => set('ends_at', event.target.value)}
                     />
-                    <small>Déjalo vacío si no tiene fecha de fin.</small>
+                    <small>
+                      Hasta las 23:59:59 en Zúrich. Déjalo vacío si no tiene fecha de fin.
+                    </small>
                   </label>
                   <label>
                     Condiciones
@@ -441,6 +547,7 @@ export default function LatidoCardOfferForm({ business, onPublish, initialSelect
                     <input
                       type="checkbox"
                       checked={draft.requires_claim}
+                      disabled={promotionOnly || (promotionUnavailable && !draft.requires_claim)}
                       onChange={(event) => {
                         set('requires_claim', event.target.checked)
                         setDraft((previous) => ({
@@ -502,11 +609,9 @@ export default function LatidoCardOfferForm({ business, onPublish, initialSelect
               <div className="lc-create-how">
                 <strong>¿Cómo funciona?</strong>
                 <ol>
-                  <li>El socio activa la oferta en Latido.</li>
-                  <li>Al pagar, te enseña la pantalla con el descuento.</li>
-                  <li>
-                    Revisa abajo que la fecha y la hora sean correctas y aplica el descuento.
-                  </li>
+                  <li>Los socios ven tu oferta en Latido.</li>
+                  <li>En caja te enseñan la pantalla del descuento.</li>
+                  <li>Tú aplicas el descuento.</li>
                 </ol>
               </div>
               <p className="lc-create-fine">No acumulable con otras ofertas Latido.</p>

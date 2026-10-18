@@ -14,10 +14,63 @@ import { cardOfferShareData, shareCardBusiness } from '../src/lib/latidoCardShar
 import {
   createOfferPayload,
   draftOfferScope,
-  initialOfferDraft
+  initialOfferDraft,
+  offerToDraft,
+  zurichEndOfDay
 } from '../src/lib/latidoCardOfferDraft.js'
+import {
+  businessBenefit,
+  membershipMailUrl,
+  offerCapacity
+} from '../src/lib/latidoCardExperience.js'
+import { cardPublicSeo, renderCardShareHtml } from '../src/lib/latidoCardSeo.js'
 
 const draft = initialOfferDraft()
+assert.equal(zurichEndOfDay('2027-01-10'), '2027-01-10T22:59:59.000Z')
+assert.equal(zurichEndOfDay('2027-07-10'), '2027-07-10T21:59:59.000Z')
+assert.equal(zurichEndOfDay('2027-03-28'), '2027-03-28T21:59:59.000Z')
+assert.equal(zurichEndOfDay('2027-10-31'), '2027-10-31T22:59:59.000Z')
+const originalDraft = {
+  ...draft,
+  type: 'combo',
+  combo: '3x2',
+  scope: 'specific',
+  detail: 'el menú',
+  ends_at: '2027-07-10'
+}
+const roundTripOffer = createOfferPayload(originalDraft)
+assert.deepEqual(createOfferPayload(offerToDraft(roundTripOffer)), roundTripOffer)
+const legacyOffer = { ...roundTripOffer, original_draft: null, title: 'Combo especial para dos' }
+assert.equal(createOfferPayload(offerToDraft(legacyOffer)).title, legacyOffer.title)
+const mail = new URL(
+  membershipMailUrl({
+    user: { email: 'ana+latido@example.com' },
+    name: 'Ana Núñez',
+    member: { member_number: 2481 },
+    renew: true
+  })
+)
+assert.match(mail.searchParams.get('body'), /Ana Núñez/)
+assert.match(mail.searchParams.get('body'), /ana\+latido@example.com/)
+assert.match(mail.searchParams.get('body'), /2481/)
+assert.equal(
+  offerCapacity([{ active: true, ends_at: 'infinity', requires_claim: false }]).regular.length,
+  1
+)
+assert.equal(offerCapacity([{ active: true, ends_at: '2020-01-01' }]).regular.length, 0)
+assert.equal(businessBenefit([{ benefit_type: 'percent', benefit_value: 15 }]), 'Hasta −15 %')
+const publicSeo = cardPublicSeo({
+  business: { id: 'business', name: 'Café <Latido>', city: 'Zürich', photo_url: '/cafe.jpg' },
+  offers: [{ benefit_type: 'percent', benefit_value: 15 }]
+})
+assert.match(publicSeo.description, /Hasta −15 % para socios en Zürich/)
+assert.match(
+  renderCardShareHtml(
+    '<html><head><title>Latido</title></head><body><div id="root"></div></body></html>',
+    publicSeo
+  ),
+  /Café &lt;Latido&gt;/
+)
 const noEndOffer = createOfferPayload(draft)
 assert.equal(noEndOffer.ends_at, 'infinity')
 assert.equal(offerHasEnd(noEndOffer), false)
@@ -73,7 +126,9 @@ const minimal = await read('latido_card_minimal.sql'),
   activation = await read('latido_card_offer_activation.sql'),
   deletion = await read('latido_card_business_deletion.sql'),
   participation = await read('latido_card_business_participation.sql'),
-  verify = await read('latido_card_verify.sql')
+  verify = await read('latido_card_verify.sql'),
+  experience = await read('latido_card_experience.sql'),
+  notifications = await read('latido_card_notifications.sql')
 assert.equal(offerUsageLabel({ usage_period: 'week', usage_limit: 2 }), '2 usos por semana')
 const monthlyUsed = offerAvailability(
   {
@@ -286,10 +341,19 @@ for (const upgrade of [false, true]) {
     ($1,'Future offer','gift',now()+interval '1 day',now()+interval '2 days')`,
     [emptyParticipant]
   )
+  await db.exec(experience)
+  await db.exec(experience)
+  await db.exec(
+    `CREATE TABLE IF NOT EXISTS app_notifications(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),recipient_id uuid REFERENCES profiles(id),kind text,source_id text,data jsonb,created_at timestamptz DEFAULT now(),CONSTRAINT app_notifications_kind_check CHECK (kind IN ('message')),UNIQUE(recipient_id,kind,source_id));`
+  )
+  await db.exec(notifications)
+  await db.exec(notifications)
   const verification = await db.exec(verify)
+  const checks = verification.flatMap((result) => result.rows).filter((row) => 'ok' in row)
+  assert.equal(checks.length, 11)
   assert.ok(
-    verification[0].rows.every((r) => r.ok),
-    JSON.stringify(verification[0].rows)
+    checks.every((row) => row.ok),
+    JSON.stringify(checks)
   )
   if (legacyId) {
     const row = (await root('SELECT * FROM latido_card_redemptions WHERE id=$1', [legacyId]))
@@ -397,7 +461,7 @@ for (const upgrade of [false, true]) {
   await as(null, 'anon')
   assert.deepEqual(
     await rpc('lc_participating_businesses'),
-    [{ id: ids.business, name: 'Restaurante A', city: 'Zürich', photo_url: null }],
+    [{ id: ids.business, name: 'Restaurante A', city: 'Zürich', category: null, photo_url: null }],
     'Publishing the first offer enrolls the business and exposes only public directory fields'
   )
   const local = await rpc('lc_business_benefits', [ids.business])
@@ -421,6 +485,29 @@ for (const upgrade of [false, true]) {
   assert.equal(home.offers[0].used_count, 1)
   assert.ok(home.offers[0].next_available_at)
   assert.equal(home.offers[0].validation.id, receipt.id)
+  assert.ok(home.server_now)
+  await as('owner')
+  const results = await rpc('lc_business_dashboard', [ids.business])
+  assert.equal(results.summary.total_uses, upgrade ? 2 : 1)
+  assert.equal(results.summary.month_uses, upgrade ? 2 : 1)
+  assert.equal(results.summary.month_members, 1)
+  assert.match(results.history[0].member_reference, /^•••• \d{4}$/)
+  assert.ok(!JSON.stringify(results).includes(ids.member))
+  await assert.rejects(() => rpc('lc_update_offer', [oid, noEndOffer]), /OFFER_TERMS_LOCKED/)
+  const firstNotices = await root('SELECT * FROM app_notifications WHERE source_id=$1', [
+    `first:${ids.business}`
+  ])
+  assert.equal(firstNotices.rows.length, upgrade ? 0 : 1)
+  await as('member')
+  assert.equal((await rpc('lc_notification_preferences')).new_offers, false)
+  assert.equal((await rpc('lc_notification_preferences', [true, 'Zürich'])).new_offers, true)
+  await assert.rejects(
+    () => db.query('SELECT * FROM latido_card_notification_preferences'),
+    /permission denied/
+  )
+  await as('other')
+  assert.equal((await rpc('lc_notification_preferences')).new_offers, false)
+  await assert.rejects(() => rpc('lc_send_scheduled_notifications'), /permission denied/)
   await as('other')
   await assert.rejects(() => rpc('lc_validation', [receipt.id]), /VALIDATION_NOT_FOUND/)
   await assert.rejects(() => rpc('lc_use_offer', [oid, request]), /REQUEST_CONFLICT/)
@@ -507,6 +594,14 @@ for (const upgrade of [false, true]) {
   assert.equal(used.valid, true, 'A limited offer activates directly without claiming first')
   assert.equal((await rpc('lc_use_offer', [oid, randomUUID()])).id, used.id)
   assert.equal((await rpc('lc_member_home')).offers.find((o) => o.id === oid).claim.status, 'used')
+  assert.equal(
+    (
+      await root('SELECT count(*) AS count FROM app_notifications WHERE source_id=$1', [
+        `stock:${oid}`
+      ])
+    ).rows[0].count,
+    1
+  )
   await as('owner')
   await rpc('lc_reverse_redemption', [used.id, 'Wrong benefit'])
   await as('other')
@@ -665,6 +760,117 @@ for (const upgrade of [false, true]) {
   await as('owner')
   await db.query('DELETE FROM providers WHERE id=$1', [unrelated])
   assert.equal((await root('SELECT * FROM providers WHERE id=$1', [unrelated])).rows.length, 0)
+  // Exercise edits/replacements in a separate business, including rollback at capacity.
+  const managedBusiness = randomUUID()
+  await root('INSERT INTO providers(id,user_id,name,city) VALUES($1,$2,$3,$4)', [
+    managedBusiness,
+    ids.owner,
+    'Experience test',
+    'Zürich'
+  ])
+  await as('owner')
+  const editable = await rpc('lc_save_offer', [managedBusiness, noEndOffer])
+  const updatedPayload = createOfferPayload({ ...draft, value: '15' })
+  assert.equal(await rpc('lc_update_offer', [editable, updatedPayload]), editable)
+  assert.equal(
+    (await rpc('lc_business_dashboard', [managedBusiness])).offers[0].title,
+    '15 % de descuento'
+  )
+  assert.equal(
+    (await rpc('lc_business_dashboard', [managedBusiness])).offers[0].original_draft.value,
+    '15'
+  )
+  await assert.rejects(
+    () => rpc('lc_replace_offer', [editable, { ...updatedPayload, benefit_value: -5 }]),
+    /check constraint/
+  )
+  assert.equal(
+    (await rpc('lc_business_dashboard', [managedBusiness])).offers[0].active,
+    true,
+    'Failed replacement restores the old active offer'
+  )
+  await as('other')
+  await assert.rejects(() => rpc('lc_update_offer', [editable, updatedPayload]), /FORBIDDEN/)
+  await assert.rejects(() => rpc('lc_replace_offer', [editable, updatedPayload]), /FORBIDDEN/)
+  await root(
+    "UPDATE latido_card_memberships SET status='active',valid_until=now()+interval '30 days' WHERE user_id=$1",
+    [ids.member]
+  )
+  await as('member')
+  const oldReceipt = await rpc('lc_use_offer', [editable, randomUUID()])
+  await as('owner')
+  await assert.rejects(() => rpc('lc_update_offer', [editable, noEndOffer]), /OFFER_TERMS_LOCKED/)
+  const replacement = await rpc('lc_replace_offer', [editable, noEndOffer])
+  const versions = (await rpc('lc_business_dashboard', [managedBusiness])).offers
+  assert.equal(versions.find((o) => o.id === editable).active, false)
+  assert.equal(versions.find((o) => o.id === replacement).active, true)
+  await as('member')
+  assert.equal(
+    (await rpc('lc_member_home')).history.find((r) => r.id === oldReceipt.id).offer_snapshot.title,
+    updatedPayload.title
+  )
+  await as('owner')
+  // More than the 100-row history cap: results must still count all uses.
+  await root(
+    `INSERT INTO latido_card_redemptions(request_id,membership_id,offer_id,provider_id,offer_snapshot,redeemed_at)
+    SELECT gen_random_uuid(),m.id,$1,$2,$3::jsonb,now()-interval '1 minute' FROM latido_card_memberships m CROSS JOIN generate_series(1,120) s WHERE m.user_id=$4`,
+    [replacement, managedBusiness, JSON.stringify(noEndOffer), ids.member]
+  )
+  await as('owner')
+  const aggregate = await rpc('lc_business_dashboard', [managedBusiness])
+  assert.equal(aggregate.history.length, 100)
+  assert.equal(aggregate.summary.total_uses, 121)
+  assert.equal(aggregate.summary.month_uses, 121)
+  assert.equal(aggregate.summary.month_members, 1)
+  const endingOffer = await rpc('lc_save_offer', [
+    managedBusiness,
+    {
+      ...noEndOffer,
+      requires_claim: true,
+      stock_total: 10,
+      usage_period: 'lifetime',
+      usage_limit: 1,
+      ends_at: new Date(Date.now() + 3 * 86400000).toISOString()
+    }
+  ])
+  await root(
+    "UPDATE latido_card_memberships SET valid_until=now()+interval '7 days' WHERE user_id=$1",
+    [ids.member]
+  )
+  // Scheduled delivery is idempotent and consent can be withdrawn.
+  await root(
+    "UPDATE latido_card_notification_preferences SET enabled_at=now()-interval '1 day',last_new_offers_at=NULL WHERE user_id=$1",
+    [ids.member]
+  )
+  const delivered = (await root('SELECT lc_send_scheduled_notifications() AS sent')).rows[0].sent
+  assert.ok(delivered >= 1)
+  assert.equal((await root('SELECT lc_send_scheduled_notifications() AS sent')).rows[0].sent, 0)
+  const newOffersNotices = await root(
+    "SELECT * FROM app_notifications WHERE kind='card_member' AND source_id LIKE 'new-offers:%'"
+  )
+  assert.equal(newOffersNotices.rows.length, 1)
+  assert.equal(
+    (
+      await root('SELECT count(*) AS count FROM app_notifications WHERE source_id LIKE $1', [
+        `ending:${endingOffer}:%`
+      ])
+    ).rows[0].count,
+    1
+  )
+  assert.equal(
+    (
+      await root(
+        "SELECT count(*) AS count FROM app_notifications WHERE recipient_id=$1 AND source_id LIKE 'membership:%'",
+        [ids.member]
+      )
+    ).rows[0].count,
+    1
+  )
+  await as('member')
+  assert.equal((await rpc('lc_notification_preferences', [false, 'Zürich'])).new_offers, false)
+  await as(null, 'anon')
+  await assert.rejects(() => rpc('lc_notification_preferences'), /permission denied/)
+  await assert.rejects(() => rpc('lc_update_offer', [replacement, noEndOffer]), /permission denied/)
   await db.close()
   console.log(`Card minimal: ${upgrade ? 'legacy upgrade + archive' : 'fresh install'} passed`)
 }

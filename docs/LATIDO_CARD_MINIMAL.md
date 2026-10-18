@@ -1,134 +1,105 @@
-# Tarjeta Latido: versión mínima
+﻿# Tarjeta Latido: funcionamiento e integración
 
-Esta guía sustituye las tres guías anteriores de Card. El cliente realiza el uso; el personal mira la pantalla y aplica el descuento en su caja. Los negocios participan gratis. La membresía de cliente sigue siendo CHF 6,90/mes.
+Tarjeta Latido ofrece descuentos a la comunidad hispanohablante en Suiza. Los negocios participan gratis; la membresía del cliente cuesta CHF 6,90 al mes. La activación sigue siendo manual por email. No hay pagos ni renovaciones automáticas.
 
-La invitación a negocios, el modal de primera oferta y la campaña de correo se describen en [LATIDO_CARD_BUSINESS_INVITATIONS.md](LATIDO_CARD_BUSINESS_INVITATIONS.md). Ese módulo requiere su SQL adicional y el despliegue de la función de correo.
+La revisión de octubre de 2026 se detalla en [LATIDO_CARD_EXPERIENCE_REVIEW.md](LATIDO_CARD_EXPERIENCE_REVIEW.md), con decisiones por tarea, capturas de antes/después, pruebas y propuestas pendientes.
 
-## 1. Flujo que implementamos
+La landing pública para socios y negocios está en `/tarjeta-latido`, accesible desde la landing principal. La revisión visual del 18 de octubre se describe en [LATIDO_CARD_LANDING_REVIEW.md](LATIDO_CARD_LANDING_REVIEW.md).
 
-1. El cliente entra desde la cabecera de inicio mediante **Ver tarjeta** (también desde **Perfil → Tarjeta Latido**) y elige un descuento. La cabecera muestra su número y vigencia reales; una membresía inactiva se identifica como tal. Sin membresía o si falla la consulta queda un acceso general, sin datos de ejemplo. También puede leer la pegatina del local con la cámara normal del móvil: abre `/card/negocio/<id>` con los descuentos actuales de ese negocio.
-2. Si necesita iniciar sesión, el login conserva la dirección del negocio y `?oferta=<id>` para devolverlo al mismo sitio. Un visitante puede consultar los descuentos antes de hacerse socio.
-3. Los descuentos muestran **Activar**; en la página de un negocio el botón dice **Usar ahora**. Ambos abren la misma confirmación, también para las ofertas antiguas configuradas como automáticas. No hay un paso de reclamar ni reservar por adelantado. **Disponibles** conserva los descuentos gastados, atenuados y sin poder activarlos, con su próxima fecha cuando corresponda. **Usados** muestra directamente los registros, incluso de ofertas caducadas, pausadas o borradas, sin desplegable ni acciones para activarlos o reabrirlos.
-4. Tocar el título o el contenido de una tarjeta despliega las condiciones; el título funciona también como botón accesible con teclado. La confirmación «¿Usar este descuento ahora?» recuerda activarlo al pagar y advierte que un uso limitado se consume aunque caduque la pantalla. **Cancelar** tiene estilo secundario y no registra nada.
-5. Solo **Usar ahora**, dentro de la confirmación, llama a `lc_use_offer`. Consultar la lista o pulsar **Activar** no consume usos ni unidades. El servidor comprueba cuenta, membresía vigente, negocio, oferta, unidades y límite. Para promociones limitadas, reserva y consume una unidad en la misma transacción que registra el uso. Cancelar o fallar la operación no deja una reserva nueva.
-6. Se abre `/card/validacion/<id>` con el diseño blanco de ticket: nombre del negocio, título y condiciones de la oferta, beneficio grande, compra mínima, estado **Descuento válido**, sello animado, cuenta atrás, fecha y hora suizas sin etiqueta y referencia de socio enmascarada. Dura como máximo cinco minutos; nunca supera la vigencia de la membresía o de la oferta. La barra pasa a naranja durante el último minuto. Al abrir se solicita una vibración corta y mantener la pantalla encendida si el navegador lo permite; se libera Wake Lock al salir, caducar o perder validez, y se vuelve a solicitar al regresar a la pestaña.
-7. El cliente enseña esa pantalla. El personal verifica el negocio y las condiciones de compra y aplica el descuento en su propia caja. No necesita Latido, cuenta, teléfono ni scanner.
-8. El uso aparece en ambos historiales. Al terminar los cinco minutos, la pantalla deja de mostrar que es válida. Un descuento limitado queda usado; los periódicos vuelven según su calendario; uno ilimitado permite otro uso.
+## 1. Experiencia del socio
 
-**Límite del modelo:** la comprobación del personal es visual. El contador y la animación ayudan a distinguir una captura estática, pero no impiden pantallas falsas ni compartir una validación durante su ventana. El historial acredita que el cliente solicitó mostrar el descuento; no acredita una compra, su importe o el descuento realmente aplicado. No usar esta V1 como verificación fuerte de beneficios de alto valor.
+1. Entra desde Inicio, Perfil o el menú, o escanea el QR público del negocio con la cámara normal del móvil. Puede consultar las ofertas antes de solicitar su tarjeta. Login conserva la dirección del negocio y la oferta.
+2. El socio ve número y vigencia en una franja compacta. **Ver tarjeta** abre y cierra su tarjeta real, cerrada inicialmente. **Usados** abre el historial personal y la cifra anual, sin acciones para activar usos antiguos.
+3. Un buscador, la ciudad y el tipo de oferta filtran **Descuentos / Negocios** desde un mismo selector, sin chips de categorías. Inicio guarda un **cantón**, no una ciudad: se usa su nombre si coincide con una ciudad del catálogo. Sin coincidencia se muestran todas las ciudades con un aviso. Cada lista conserva su previsualización de diez elementos.
+4. Activar o Usar ahora abre la confirmación existente. Consultar o cancelar no consume nada. Solo confirmar llama a `lc_use_offer` con un UUID idempotente. El servidor comprueba membresía, negocio, condiciones, existencias y límites.
+5. Se abre `/card/validacion/:id` con el ticket existente: negocio, beneficio, condiciones, contador, animación, fecha y hora suizas y referencia de socio enmascarada. Dura como máximo cinco minutos; nunca supera la vigencia de membresía u oferta. La confirmación y la validación no se modifican en esta revisión.
+6. El cliente muestra la pantalla. El personal comprueba visualmente negocio, contador y fecha y hora, y aplica el descuento en su caja. No necesita cuenta, scanner, códigos ni PIN.
+7. Si sale mientras la validación sigue vigente, el aviso superior en `/card` y en la página del negocio vuelve a **la misma validación**, sin registrar otro uso. El contador usa `server_now` y tiempo monotónico, no la hora del dispositivo. Desaparece al caducar.
+8. Los descuentos gastados permanecen atenuados con su próxima disponibilidad. El historial conserva ofertas caducadas, pausadas o borradas.
 
-## 2. Qué conserva y qué retira
+La página pública del negocio muestra ofertas y los datos públicos de local que existan: dirección, teléfono, horario, mapa y enlace a su ficha de Latido. No tiene buscador ni pestañas; puede publicar como máximo tres ofertas simultáneas. Debajo aparece **Ya usaste aquí** con el historial local y su diseño actual.
 
-La ficha pública `/card/negocio/:id` tiene cabecera azul con foto o emoji, ciudad, número de ofertas y acciones de volver y compartir. El buscador filtra las ofertas del negocio, también las usadas. Las tarjetas no repiten el nombre del negocio y usan colores suaves según el beneficio. «Usadas» muestra una tarjeta por oferta con la fecha de su uso más reciente, sin acciones; el historial completo sigue conservado. Volver abre la página normal de la tarjeta, que sigue mostrándose abierta. La guía de uso es desplegable y la activación mantiene la confirmación previa.
+Los visitantes ven el título centrado y, justo debajo, la ilustración de tarjeta blanca inclinada con franja multicolor y círculos de porcentaje y negocio. Siguen las tres ventajas, precio y solicitud. Se retira por ahora la tarjeta de ejemplo con «0001» y «Tu nombre», además del bloque de cálculo de ahorro. «Cómo funciona» contiene solo una lista numerada: «Elige tu descuento», «Actívalo», «Muéstralo al pagar y ahorra»; también se usa en la ayuda del socio. Las ofertas reales aparecen en el catálogo. Los correos de solicitud y renovación incluyen nombre, email de cuenta y número de socio cuando existe.
 
-Se conservan socios, números de socio, membresías, negocios, ofertas, reservas, usos anteriores, anulaciones y auditoría administrativa. Latido conserva la autoridad de suspender negocios, gestionar membresías y revisar actividad.
+**Límite del modelo:** la comprobación es visual. Contador y animación ayudan a distinguir una captura estática, pero no impiden pantallas falsas ni compartir una validación durante su vigencia. El historial registra descuentos solicitados y mostrados; no acredita ventas, importes ni descuentos aplicados en caja.
 
-Se retiran la app separada Scanner, la cámara dentro de Latido, guías de permisos, cuentas/conexiones de trabajadores, enlaces privados del negocio, QR personales, credenciales y códigos de seis cifras. También se retiran solicitudes de tarjetas físicas, impresión personal, entrega y correos de envío, conforme a la decisión del proyecto.
+## 2. Mi negocio
 
-La limpieza SQL **archiva** las tablas retiradas en `latido_card_archive`, sin acceso desde anon/authenticated. No las destruye ni expone ese esquema por la API. Los usos antiguos mantienen el identificador y nombre del scanner en `redemptions.legacy_metadata`. No hay que crear de nuevo las cuentas de prueba existentes ni volver a cargar ejemplos si ya están instalados.
+1. Un propietario no necesita membresía de socio. La cabecera contiene nombre, estado, selector de negocio, alta de otro negocio y enlace al editor de Perfil. Consultar el panel o formulario no inscribe al negocio; inscripción y primera oferta se publican atómicamente.
+2. El registro desde Card conserva `?origen=tarjeta`, incluso al iniciar sesión. Los planes opcionales permanecen cerrados y desactivados. La pantalla final se centra en crear oferta, con una sola salida. Si está pendiente de revisión, explica que deberá aprobarse antes: `lc_save_offer` exige `providers.active=true`. No se promete un plazo inexistente.
+3. **Resultados** muestra una sola cifra: descuentos usados este mes en tu negocio, excluyendo anulaciones. Se calcula en el servidor para el mes suizo, no a partir del historial limitado a cien filas.
+4. **Tus ofertas**, siempre visible, conserva la vista previa actual y añade estado, usos mensuales y menú. Los estados son Activa, Pausada, Caducada y Agotada. Solo las pausadas permiten Borrar, con confirmación y conservación del historial.
+5. **Crear oferta** es el CTA fijo inferior, con espacio reservado para no tapar el contenido. Se permite un descuento habitual y dos promociones limitadas activas sin caducar. No se muestran recuentos de ocupación. Solo al crear otra oferta se plantea crear una promoción o pausar el habitual; con todo ocupado se desactiva el CTA y se explica el límite. El servidor mantiene la autoridad y el error `OFFER_CAPACITY`.
+6. El formulario mantiene cuatro pasos (tres para Otro), título automático y vista previa. Los descuentos CHF preguntan el mínimo al inicio; el mínimo porcentual queda avanzado. La fecha pide solo día y se guarda a las 23:59:59 en `Europe/Zurich`, con horario de verano. Sin fecha se guarda `infinity`. Las promociones explican una unidad por socio.
+7. Las ofertas sin actividad permiten **Editar** con `lc_update_offer`. Reservas, incluso liberadas, y usos bloquean los términos con `OFFER_TERMS_LOCKED`. Con actividad, **Crear nueva versión** usa `lc_replace_offer`: pausa y crea en una transacción. Si falla, revierte también la pausa.
+8. Los borradores nuevos se conservan en `original_draft`, privado. Los combos y beneficios libres no se reconstruyen fielmente desde el título. Las ofertas antiguas conservan el título hasta cambiar los campos que lo generan.
+9. Publicar mantiene el diálogo con resultado y vista previa. La primera oferta ofrece el mismo material simplificado del gestor. Las siguientes recuerdan que el QR no cambia.
+10. **Actividad** muestra veinte usos inicialmente, ampliables, con fecha y hora suizas, referencia de cuatro dígitos y estado. Anular uso está dentro del menú y exige un motivo. Son usos mostrados por socios, no ventas verificadas.
+11. **Material para tu local** está plegado. Ofrece solo **Descargar imagen**, **Compartir imagen** y el enlace público con **Copiar** al lado. Compartir envía un archivo PNG; si no hay soporte de archivos en Web Share, descarga la imagen y avisa. Cancelar no genera error. Sin ofertas vigentes no muestra QR. Las rutas imprimibles existentes siguen disponibles, sin botones de impresión en este material. PNG usa el mismo diseño a resolución triple.
+12. Latido conserva la autoridad para gestionar membresías y suspender negocios. El propietario no puede revertir una suspensión.
 
-La tarjeta de socio utiliza únicamente el diseño claro gris del modelo adjunto, sin QR personal ni selector de apariencia. La pantalla que muestra el descuento mantiene el diseño blanco de ticket del ejemplo. Ambas muestran datos reales; el reloj usa horario suizo. Este ajuste visual no requiere SQL adicional.
+El QR es público y estable, basado en el UUID del negocio. Nunca contiene identidad de socio, reservas ni credenciales.
 
-La vista de socio activo empieza con su número y vigencia y la tarjeta clara completa, siempre visible y sin desplegable. El acceso **Ver tarjeta** desde inicio abre esta vista; el enlace dentro del resumen lleva a la tarjeta sin ocultarla. Avisa si vence en menos de siete días. El menú conserva los emojis de Latido, añade un enlace al inicio y muestra Mi negocio solo a propietarios o administradores. Las fotos y emojis no llevan franjas de colores ni etiquetas superpuestas. El beneficio aparece como texto cuando el título no lo indica ya. Se conservan la ciudad, el límite de uso, las promociones limitadas, las unidades y los vencimientos próximos. Compartir sigue arriba a la derecha y tocar el título abre el panel gris, sin flechas de despliegue. Se retira el apartado Condiciones generales.
+## 3. Integración y avisos
 
-Un único buscador encuentra descuentos y negocios sin distinguir mayúsculas ni tildes y se oculta en catálogos de menos de seis elementos. Un selector de ciudad filtra ambas listas, con Todas las ciudades como valor inicial. No hay chips por ciudad ni filtros de categoría u ordenación. Cada lista muestra diez resultados con Mostrar todos/menos solo cuando hay más; no aparece Mostrando 2 de 2. El directorio muestra cantidad de descuentos y mejor porcentaje. Solo incluye negocios con al menos un descuento activo y vigente; no muestra registros vacíos ni entradas «Próximamente».
+Las fichas y listados de negocios de Inicio, Explorar y búsqueda muestran el mejor beneficio. Comparten una consulta pública por sesión, invalidada al modificar ofertas desde el gestor. GlobalSearch encuentra ofertas por título, negocio y ciudad y abre `/card/negocio/:id?oferta=:offerId`.
 
-Los visitantes ven una presentación con beneficios, precio, tarjeta de ejemplo pequeña e inicio de sesión junto al CTA. En catálogos grandes se destacan tres ofertas reales, dentro del límite inicial de diez. El CTA fijo aparece al desplazarse más allá del principal. Las ofertas compartidas aparecen justo bajo el titular, sin duplicarse en la lista. La página de un negocio empieza con su foto y nombre, después las ofertas y luego la tarjeta de socio y el enlace a todos los descuentos. La ayuda es un enlace de texto «¿Cómo funciona?» junto al título de descuentos: abre un modal con tres pasos y se cierra con Cerrar, Escape o al tocar el fondo. **Volver a mi tarjeta**, desde cualquier estado de la validación, lleva a `/card`, con Disponibles seleccionado y sin filtro, título ni cabecera de negocio. El recuento anual usa el historial recibido (máximo cien registros); si se alcanza ese máximo se presenta como mínimo, no como total exhaustivo. Estas mejoras no requieren SQL nuevo; las notificaciones y los accesos directos de instalación quedan para una fase posterior.
+`api/card-share.js` sirve el HTML construido con etiquetas sociales específicas, escapadas y obtenidas mediante RPC público. Las reescrituras incluyen `/card` y `/card/negocio/:id`; la función incluye `dist/index.html` y conserva la SPA. Si falla el catálogo se sirve la app con etiquetas generales y sin caché de esa respuesta. Las páginas permanecen en `noindex, follow` hasta decisión del propietario.
 
-## 3. SQL manual de Supabase, en este orden
+Los avisos reutilizan `app_notifications`: primer socio, pocas unidades, oferta próxima a terminar, resumen semanal y membresía próxima a vencer. Las novedades locales requieren consentimiento expreso y revocable y un mínimo de siete días entre entregas. Se entregan dentro de Latido; no se crea otro sistema de email ni se solicitan permisos push.
 
-Las mejoras de confirmación común, avisos flotantes, recuperación de conexión, disponibilidad futura e historial de solo consulta no necesitan SQL nuevo. La configuración `activation_mode` se conserva por compatibilidad, pero la interfaz ya no permite elegirla ni omite la confirmación. Las altas nuevas envían el modo manual. Un socio con membresía inactiva ve su tarjeta real con **Inactiva** y un botón **Renovar** que solicita la renovación por email a Latido. Solo quienes aún no tienen membresía ven el anuncio y la tarjeta de ejemplo.
+El trabajo pg_cron `latido-card-notifications` ejecuta la función privada cada hora al minuto 15. Las fechas usan `Europe/Zurich`; las claves únicas impiden duplicados. El lunes se resume la semana anterior completa. Si no está instalada la extensión, la migración no la instala ni altera otros trabajos: debe completarse la planificación en desarrollo. El aviso de pocas unidades se emite una vez por promoción al quedar dos o menos.
 
-Los avisos de copia y los fallos de actualización en segundo plano usan `react-hot-toast`; los errores de uso permanecen dentro de la confirmación. Si compartir no puede copiar el enlace, lo muestra en el propio descuento. Una actualización correcta borra el error anterior y descarta respuestas antiguas para que no reaparezcan avisos ya resueltos.
+Los eventos de medición respetan el consentimiento analítico, sin datos personales ni identificadores de oferta, negocio o uso. Incluyen el paso de abandono y las acciones del QR. La validación sigue completamente excluida; el uso se mide en la confirmación anterior.
 
-**Activación y borrado de ofertas en una instalación mínima existente:** ejecutar [`supabase/latido_card_offer_activation.sql`](../supabase/latido_card_offer_activation.sql), después `latido_card_verify.sql`. Si todavía falta el directorio, ejecutar antes `latido_card_business_directory.sql`. La verificación actual tiene siete comprobaciones. El esquema conserva los modos antiguos por compatibilidad; la interfaz actual confirma todos los usos y crea las ofertas nuevas en modo manual. La actualización es transaccional y se puede repetir.
+Las propuestas de Inicio, nombre Tienda, indexación y panel único están en la revisión; no se han aplicado.
 
-En **Tus ofertas**, solo las pausadas tienen **Borrar**. El servidor comprueba propietario o administrador y exige que estén pausadas. El borrado las oculta de gestión y catálogo y bloquea su reactivación, conservando sus usos, condiciones y auditoría. No se borran físicamente las filas con historial.
+## 4. SQL manual
 
-Ejecutar cada archivo completo en SQL Editor del **mismo proyecto Supabase** de Latido. No ejecutar scripts de `supabase/legacy/latido_card/`: corresponden al sistema retirado. El instalador es válido tanto si Card ya estaba instalado como si todavía no lo estaba; presupone que la base normal de Latido ya contiene `profiles`, `providers` y `is_business_promotion_admin()`.
+En una **instalación actual**, después de los módulos de activación, borrado y participación y con `app_notifications.sql` instalado:
 
-| Orden | Archivo | Resultado |
-|---|---|---|
-| 1 | [`supabase/latido_card_minimal.sql`](../supabase/latido_card_minimal.sql) | Instala/actualiza las seis tablas vigentes, las nuevas funciones, los límites diarios/semanales y los permisos. Retira el acceso de la app a todas las API antiguas. No activa socios ni cobra dinero. |
-| 2 | [`supabase/latido_card_cleanup_legacy.sql`](../supabase/latido_card_cleanup_legacy.sql) | Detiene exclusivamente el cron `latido-card-physical-email`, elimina las funciones retiradas y mueve sus tablas al archivo privado. Conserva los usos e identifica su procedencia antigua. |
-| 3 | [`supabase/latido_card_verify.sql`](../supabase/latido_card_verify.sql) | Solo lectura. Las siete comprobaciones deben devolver `ok = true`; muestra también las cantidades de datos conservados. |
-| Opcional, solo desarrollo | [`supabase/latido_card_test_examples.sql`](../supabase/latido_card_test_examples.sql) | Añade seis ofertas ficticias y dos membresías de prueba si todavía no existen. No ejecutar en producción. |
+1. [latido_card_experience.sql](../supabase/latido_card_experience.sql): categoría pública, datos del local, `server_now`, resumen, referencia enmascarada, borrador privado, edición y reemplazo.
+2. [latido_card_notifications.sql](../supabase/latido_card_notifications.sql): preferencias por RPC, avisos y planificación cuando pg_cron existe.
+3. [latido_card_verify.sql](../supabase/latido_card_verify.sql): once comprobaciones deben devolver `ok=true`, además del recuento informativo de tablas.
 
-Los archivos 1 y 2 usan transacciones y se pueden repetir. No es necesario ejecutar de nuevo `schema.sql`, los SQL del Scanner ni `email_cron`. Si el editor avisa de operaciones que modifican objetos, se debe a la sustitución de restricciones/funciones y al archivado. Las tablas vigentes y archivadas quedan con RLS habilitado y sin permisos directos para clientes de la app; **no necesita que el editor añada sus propias políticas**.
+Los módulos nuevos usan transacción y pueden repetirse. **No se han ejecutado en Supabase. Nunca ejecutarlos automáticamente en producción.** No volver a instalar módulos antiguos después de los nuevos: restaurarían versiones anteriores de los RPC.
 
-**Nuevo directorio, con la versión mínima y la activación directa ya instaladas:** ejecuta únicamente [`supabase/latido_card_business_directory.sql`](../supabase/latido_card_business_directory.sql) y después [`supabase/latido_card_verify.sql`](../supabase/latido_card_verify.sql). La nueva consulta pública es de solo lectura, no borra datos y se puede reinstalar. El instalador actual ya la incluye; no hace falta repetir el instalador ni la limpieza en un proyecto actualizado.
+Para una **instalación nueva o anterior al modelo mínimo**, aplicar primero, en orden: `latido_card_minimal.sql`, `latido_card_cleanup_legacy.sql`, `latido_card_business_directory.sql`, `latido_card_offer_activation.sql`, `latido_card_business_deletion.sql` y `latido_card_business_participation.sql`. Después los dos módulos nuevos y la verificación. El módulo de avisos requiere la infraestructura normal de `app_notifications.sql`.
 
-**Si todavía no actualizaste la activación de la versión mínima anterior:** ejecuta [`supabase/latido_card_activate_offers.sql`](../supabase/latido_card_activate_offers.sql) para esta actualización de «Disponibles / Usadas» y activación directa de promociones. Es transaccional, se puede repetir y no borra datos. Después puedes repetir `latido_card_verify.sql`. Las instalaciones nuevas ya incluyen estas funciones en `latido_card_minimal.sql` y no necesitan ejecutar el archivo adicional.
+Las invitaciones opcionales y su correo se describen en [LATIDO_CARD_BUSINESS_INVITATIONS.md](LATIDO_CARD_BUSINESS_INVITATIONS.md). Los ejemplos de `latido_card_test_examples.sql` son solo para desarrollo. No ejecutar scripts de `legacy/` en una instalación vigente.
 
-Si la Edge Function `latido_card_physical_email` llegó a desplegarse, elimínala o desactívala en **Supabase → Edge Functions** después del paso 2. SQL no elimina despliegues de Edge Functions. Ya se ha retirado su configuración del repositorio y el cron queda detenido; no borres SMTP, `latido_project_url`, pg_cron, pg_net ni otros recursos compartidos de Latido. El código anterior permanece en `supabase/legacy/latido_card/functions/` como referencia, fuera de la carpeta de despliegue.
+La limpieza archiva tablas retiradas en `latido_card_archive` y detiene exclusivamente el antiguo cron de tarjetas físicas, conservando usos y auditoría. Si llegó a desplegarse `latido_card_physical_email`, debe desactivarse por separado; no borrar SMTP, pg_cron, pg_net ni recursos compartidos.
 
-Para activar una cuenta real durante el piloto: el administrador de Latido abre `/card/admin`, busca su perfil, selecciona usuario y vigencia y guarda la membresía. **El cobro recurrente automático todavía no está integrado.** El CTA del piloto solicita la activación por email a Latido; no debe presentarse como una suscripción que ya cobra o renueva automáticamente. Stripe y sus webhooks requieren otro trabajo antes de comercializar el cobro automático.
+Durante el piloto, el administrador activa un perfil y su vigencia en `/card/admin`. No debe presentarse como un cobro o una suscripción recurrente ya integrados.
 
-## 4. Administración y negocios
+## 5. Contrato técnico y seguridad
 
-1. Un propietario con negocios registrados entra en **Mi negocio**. Se selecciona uno automáticamente y se registra gratis en el programa si no está suspendido. No necesita una membresía personal de pago.
-2. Si tiene varios, el selector inferior permite cambiar el negocio que gestiona. Si no tiene ninguno, se muestra **Registrar mi negocio**.
-3. Obtiene un QR público y estable basado en el UUID del negocio. La pegatina muestra **TARJETA LATIDO**, el nombre del negocio, el QR y **Escanea para obtener descuentos** en azul debajo del código. Debajo están **Imprimir** y **Compartir**, uno junto al otro, y el enlace público con **Copiar** a la derecha. Nunca incluye identidad de socio, reservas ni credenciales. Cambiar, pausar o publicar una oferta no cambia la pegatina.
-4. La tarjeta **Mi negocio** incluye dos botones compactos bajo el nombre y el estado: **Mis ofertas** a la izquierda con estilo secundario y **Crear oferta** en azul a la derecha. Mis ofertas abre las ofertas debajo de la tarjeta; Crear oferta abre un modal. Las invitaciones también abren ese modal sobre su pantalla actual, sin navegar al gestor. Cerrar conserva el borrador, mientras que cambiar de negocio inicia un formulario nuevo. Abrir el gestor o el modal solo consulta los datos; el alta en el programa se realiza al publicar la primera oferta. El formulario guía por tipo de oferta, alcance, usos por socio y revisión con vista previa. Otro beneficio omite el alcance. Las condiciones, la fecha de fin opcional, los límites por día o semana y las unidades limitadas siguen en Opciones avanzadas. Sin fecha de fin se guarda como `infinity` de PostgreSQL. Al publicar se confirma el resultado sin salir de la pantalla de origen. El QR queda debajo. Se permite un descuento habitual y hasta dos promociones limitadas vigentes por negocio.
-5. Los límites son por día suizo, semana de lunes a domingo, mes natural, total o ilimitados. Las promociones especiales permiten un uso total por socio y descuentan existencias al confirmar **Usar**. Se conservan las reservas anteriores: una que siga vigente se utiliza sin consumir otra unidad; una que haya caducado necesita unidades disponibles al activar. Una anulación restituye disponibilidad según las condiciones existentes.
-6. Después de reservas o usos no se pueden cambiar las condiciones de una oferta. Se pausa y crea otra versión. Las nuevas condiciones aparecen con el mismo QR de negocio.
-7. El historial del negocio muestra usos registrados. El propietario o Latido puede anular uno indicando motivo. Una anulación invalida su pantalla y restituye disponibilidad según las condiciones.
-8. Latido gestiona membresías y puede **Retirar del programa** un negocio. Sus ofertas desaparecen y las pantallas abiertas dejan de validarse al comprobar de nuevo el servidor. El propietario no puede quitarse la suspensión. Restablecer participación conserva el enlace público.
+Las tablas principales conservadas son `latido_card_memberships`, `latido_card_businesses`, `latido_card_offers`, `latido_card_claims`, `latido_card_redemptions` y `latido_card_admin_audit`. Se añade `latido_card_notification_preferences` para consentimiento, ciudad y última entrega.
 
-## 5. Guía técnica para continuar el desarrollo
+Todo dato de Card pasa por RPC `SECURITY DEFINER`, con `search_path` fijo y autorización interna. Las tablas tienen RLS y no conceden permisos directos a anon/authenticated. El catálogo solo expone campos públicos. Los agregados no contienen identidades de clientes; el historial del negocio limita la referencia a cuatro dígitos.
 
-### Datos vigentes
+- Públicos: `lc_catalog`, `lc_participating_businesses`, `lc_business_benefits`.
+- Cuenta: `lc_member_home`, `lc_use_offer`, `lc_validation`, `lc_notification_preferences`.
+- Propietario: `lc_business_dashboard`, `lc_save_offer`, `lc_update_offer`, `lc_replace_offer`, `lc_set_offer_active`, `lc_delete_offer`, `lc_reverse_redemption`.
+- Administración: `lc_admin_overview`, `lc_admin_enroll`, `lc_admin_business`.
+- Servicio: `lc_send_scheduled_notifications`, restringido al propietario de la función y `service_role`.
 
-| Tabla pública | Contenido |
-|---|---|
-| `latido_card_memberships` | Perfil, número único, estado y vigencia; fuente de activación |
-| `latido_card_businesses` | Negocio participante, actividad y suspensión administrativa |
-| `latido_card_offers` | Condiciones, fecha, existencias, tipo y frecuencia de uso |
-| `latido_card_claims` | Reserva única por socio/oferta, estado y caducidad |
-| `latido_card_redemptions` | Petición idempotente, socio, oferta, negocio, copia de condiciones, fecha, vencimiento de pantalla y anulación |
-| `latido_card_admin_audit` | Actor y cambios administrativos; no credenciales privadas |
+Publicación y edición bloquean el proveedor para serializar capacidad; el uso bloquea membresía y oferta. Las reservas vigentes se reutilizan sin consumir otra unidad; una vencida necesita disponibilidad. Anular invalida la pantalla y restituye disponibilidad según condiciones.
 
-Todo acceso de la app pasa por funciones revisadas `SECURITY DEFINER` con `search_path` fijo y autorización interna. No añadir permisos directos de escritura a estas tablas para implementar botones.
+La confirmación conserva su UUID en `sessionStorage` antes de pedir el uso. Una respuesta perdida se reintenta con ese UUID y devuelve el mismo uso y vencimiento. El servidor reutiliza también una validación abierta de la misma oferta. Los periodos son días suizos, semanas de lunes a domingo y meses naturales, no intervalos fijos.
 
-### Funciones y rutas
+La validación mantiene su reloj monotónico, Wake Lock cuando está disponible, vibración inicial y comprobaciones al regresar de segundo plano y cada treinta segundos. Sin conexión no muestra estado válido. Solo puede consultarla su usuario; su URL no es un cupón transferible. Sigue excluida de caché, indexación y telemetría. Compartir solo usa enlaces públicos o el PNG del QR público del negocio.
 
-- Catálogo público: `lc_catalog`, `lc_business_benefits(p_provider)` y `lc_participating_businesses()` (solo identificador, nombre, ciudad y foto de participantes activos y no suspendidos).
-- Cuenta del cliente: `lc_member_home`, `lc_use_offer(p_offer,p_request_id)`, `lc_validation(p_redemption)`. Las funciones de reservas permanecen para compatibilidad con los datos anteriores; la interfaz ya no las llama directamente.
-- Propietario: `lc_business_dashboard`, `lc_join_card_business`, `lc_save_offer`, `lc_set_offer_active`, `lc_delete_offer` (solo pausadas), `lc_reverse_redemption`.
-- Administrador: `lc_admin_overview`, `lc_admin_enroll`, `lc_admin_business`.
-- Pantallas: `src/pages/LatidoCard.jsx`, `LatidoCardValidation.jsx`, `LatidoCardBusiness.jsx`, `LatidoCardAdmin.jsx`. El perfil principal mantiene su acceso a `/card`.
-- Componentes reutilizados: `LatidoCardIntro`, `LatidoCardOfferForm`, `LatidoCardQr` (solo QR público).
+Las rutas Scanner y `/c/:token` conservan el aviso de retirada y la limpieza de credenciales antiguas. No restaurar API del Scanner ni cuentas de trabajadores.
 
-### Reintentos, tiempo y autorización
+## 6. Verificación
 
-La confirmación genera un UUID y lo conserva en `sessionStorage` antes de la petición. Si la respuesta se pierde después del registro, el siguiente intento lleva el mismo UUID. El servidor devuelve el mismo uso, con su vencimiento original. Recargar o volver del segundo plano consulta ese registro y no consume otro uso. También reutiliza una validación abierta de la misma oferta aunque llegue otra petición, para evitar doble clic entre pestañas. Para una oferta ilimitada se crea otro uso cuando termina la ventana anterior.
+Ejecutar `npm run test:card`, `npm run test:card:browser`, `npm run test:card:webkit`, `npm run test:card:invitations`, `npm run test:auth`, `npm run test:notifications`, `npm run test:search`, `npm run lint` y `npm run build`. Tras construir, ejecutar `npm run test:card:share`.
 
-Las operaciones bloquean la membresía y la oferta en la base de datos. Los límites cuentan los usos no anulados; las reservas se serializan por oferta para respetar existencias. Los periodos usan `Europe/Zurich`, con cambios de horario de verano, y no intervalos fijos de 24 horas o 30 días. El vencimiento sale del servidor; el navegador calcula el contador con tiempo monotónico, vuelve a comprobar al recuperar visibilidad y cada 30 segundos. Si falla la conexión, no muestra el estado válido. Una suspensión o anulación remota puede tardar hasta ese intervalo en reflejarse en una pantalla ya visible.
+PGlite prueba instalación nueva y actualización histórica, repetición de migraciones, permisos, idempotencia, límites, términos, rollback del reemplazo, agregados sobre más de cien usos, consentimiento y deduplicación. Las fechas incluyen ambos cambios de horario de Zúrich.
 
-La validación solo puede consultarla su propio usuario autenticado. Su URL no es un cupón transferible. La app y el servicio worker excluyen esa ruta del caché, las cabeceras impiden almacenamiento e indexación y la telemetría de Vercel omite la pantalla privada. No añadir datos privados a enlaces de ofertas compartidos.
+Los navegadores simulan solo API de localhost, sin tocar Supabase real. Cubren confirmación y validación existentes, recuperación, registro, invitaciones, gestión, PNG, impresión, filtros y navegación en 390 px, 320 px, escritorio y movimiento reducido. Las capturas anteriores están en `output/latido-card/before`; las actuales, en `chromium` y `webkit`.
 
-### Retirada de instalaciones anteriores
+Antes de publicar quedan las comprobaciones con dos móviles reales, lectura del QR impreso y revisión de la función social y reescrituras en una Preview de Vercel. Las pruebas locales no sustituyen esos entornos.
 
-`/scanner/` y los enlaces antiguos de vinculación muestran una página de retirada que limpia credenciales locales, retira el worker antiguo y abre `/card`. Se conserva `public/scanner/sw.js` únicamente para desinstalar el worker de dispositivos anteriores; no es una segunda app. Las tarjetas antiguas `/c/<token>` explican el nuevo acceso. Un acceso directo instalado puede seguir llamándose Scanner hasta que el usuario lo quite; ya no tiene permisos operativos en el servidor.
-
-## 6. Verificación antes de publicar
-
-Ejecutar:
-
-```sh
-npm run test:card
-npm run test:card:browser
-npm run test:card:webkit
-npm run test:auth
-npm run build
-```
-
-La prueba de base de datos usa PostgreSQL embebido PGlite con roles y RLS, tanto instalación nueva como actualización completa del modelo antiguo y archivado. Comprueba permisos, acceso entre usuarios, idempotencia, caducidad, límites, horarios suizos, reservas, existencias, suspensiones y anulaciones. Las pruebas de navegador simulan las API **en localhost**, sin tocar Supabase real, e incluyen login con retorno al negocio, confirmación, respuesta perdida tras registro, validación y recarga, reservas y gestión del QR público. Las capturas se guardan en `output/latido-card/`.
-
-Completar después una prueba con Supabase de desarrollo y dos móviles reales (iPhone/Safari y Android/Chrome): leer la pegatina desde la cámara del sistema, iniciar sesión, mostrar la pantalla, comprobar la expiración y volver desde segundo plano. Las pruebas Chromium/WebKit con viewport móvil no sustituyen esos dispositivos ni prueban el lector de QR del sistema operativo. Verificar además impresión física de la pegatina y su lectura desde una distancia normal.
-
-No se han ejecutado los SQL en Supabase ni desplegado la app como parte de estos cambios. No hacer commit o push hasta la autorización del propietario.
-
-El borrado de publicaciones vinculadas a Card conserva su historial privado y retira el negocio del directorio. Para una instalación existente, aplicar `supabase/latido_card_business_deletion.sql`; ver [la guía de borrado](LATIDO_CARD_BUSINESS_DELETION.md).
-
-El alta del negocio se confirma en la misma transacción que publica su primer descuento. Una publicación fallida no crea participantes vacíos. En instalaciones existentes, aplicar después `supabase/latido_card_business_participation.sql`: actualiza esa operación y el directorio, y desactiva los antiguos registros sin ninguna oferta sin borrar datos ni historial. `lc_join_card_business` se conserva por compatibilidad, pero rechaza altas sin un descuento vigente. El directorio oculta también negocios con todas las ofertas pausadas o vencidas, y vuelve a mostrarlos cuando tengan una vigente.
+No se ha desplegado la app ni aplicado SQL en Supabase. No hacer commit ni push sin autorización expresa del propietario.

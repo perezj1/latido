@@ -37,8 +37,26 @@ const errors = [],
   rpcCalls = [],
   useCalls = [],
   savedOffers = []
+let notificationPreference = { new_offers: false, city: '' }
+let failPreferenceSave = false
+const preferenceWrites = []
 const providerId = '00000000-0000-4000-8000-000000000010',
   provider2 = '00000000-0000-4000-8000-000000000011'
+const housingAd = {
+  id: '00000000-0000-4000-8000-000000000555',
+  title: 'Habitaciones individuales y dobles',
+  cat: 'vivienda',
+  sub: 'Se ofrece habitación',
+  type: 'ofrece',
+  desc: 'Habitaciones disponibles en Zürich.',
+  user: 'Negocio de prueba',
+  canton: 'ZH',
+  city: 'Zürich',
+  price: 'CHF 900/mes',
+  privacy: 'public',
+  active: true,
+  created_at: new Date().toISOString()
+}
 const user = {
   id: '00000000-0000-4000-8000-000000000099',
   email: 'ana@test.example',
@@ -52,6 +70,7 @@ const offer = {
   business_name: 'Restaurante Sabor Latino',
   business_photo_url: '/partners/punto-hispano/logo.webp',
   city: 'Zürich',
+  category: 'restaurante',
   minimum_spend: 50,
   benefit_type: 'percent',
   benefit_value: 15,
@@ -81,6 +100,7 @@ const discoveryOffers = Array.from({ length: 12 }, (_, index) => ({
   id: `00000000-0000-4000-8000-${String(300 + index).padStart(12, '0')}`,
   provider_id: `00000000-0000-4000-8000-${String(200 + index).padStart(12, '0')}`,
   title: `Descuento ${index + 1}`,
+  category: index % 2 ? 'belleza' : 'restaurante',
   business_name: index === 11 ? 'Café Encuentro' : `Negocio ${String(index + 1).padStart(2, '0')}`,
   city: index === 11 ? 'Genève' : 'Berna',
   activation_mode: index === 11 ? 'automatic' : 'manual',
@@ -217,6 +237,10 @@ try {
         }
       }
     })
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: ({ files }) => files?.every((file) => file.type === 'image/png' && file.size > 1000)
+    })
     Object.defineProperty(navigator, 'share', {
       configurable: true,
       value: async (data) => {
@@ -242,6 +266,8 @@ try {
     if (name === 'token') return respond(route, session())
     if (name === 'user') return respond(route, user)
     if (name === 'eventfrog') return respond(route, { events: [] })
+    if (name === 'missing-business-photo.png') return respond(route, {}, 404)
+    if (name === 'listings') return respond(route, [housingAd])
     if (name === 'providers' && route.request().method() === 'POST')
       return respond(route, { id: provider2 })
     if (name === 'providers' && url.searchParams.has('user_id')) return respond(route, [])
@@ -267,6 +293,14 @@ try {
     if (name.startsWith('lc_')) rpcCalls.push(name)
     if (name === 'lc_catalog')
       return respond(route, [offer, special, ...(discoveryMode ? discoveryOffers : [])])
+    if (name === 'lc_notification_preferences') {
+      if (typeof args.p_enabled === 'boolean') {
+        preferenceWrites.push(args)
+        if (failPreferenceSave) return respond(route, { message: 'Temporary error' }, 503)
+        notificationPreference = { new_offers: args.p_enabled, city: args.p_city }
+      }
+      return respond(route, notificationPreference)
+    }
     if (name === 'lc_participating_businesses') {
       if (directoryFailure)
         return respond(route, { code: 'PGRST202', message: 'Function missing' }, 404)
@@ -285,6 +319,7 @@ try {
         return respond(route, { message: 'Temporary connection failure' }, 503)
       }
       return respond(route, {
+        server_now: new Date().toISOString(),
         membership: hasMembership
           ? {
               active: membershipActive,
@@ -312,7 +347,11 @@ try {
             available: false,
             used_count: receipts.filter((r) => r.offer_id === special.id).length,
             remaining: special.remaining - receipts.filter((r) => r.offer_id === special.id).length,
-            claim: receipts.some((r) => r.offer_id === special.id) ? { status: 'used' } : null
+            claim: receipts.some((r) => r.offer_id === special.id) ? { status: 'used' } : null,
+            validation:
+              receipts.find(
+                (r) => r.offer_id === special.id && Date.parse(r.expires_at) > Date.now()
+              ) || null
           },
           ...(discoveryMode ? discoveryOffers : [])
         ],
@@ -331,9 +370,17 @@ try {
     }
     if (name === 'lc_business_benefits')
       return respond(route, {
-        business: (discoveryMode ? discoveryBusinesses : businesses).find(
-          (b) => b.id === args.p_provider
-        ),
+        business: {
+          ...(discoveryMode ? discoveryBusinesses : businesses).find(
+            (b) => b.id === args.p_provider
+          ),
+          ...(args.p_provider === providerId
+            ? { photo_url: '/card-test-api/missing-business-photo.png' }
+            : {}),
+          address: 'Bahnhofstrasse 10',
+          phone: '+41 44 123 45 67',
+          hours: 'Lunes a viernes, 9–18 h'
+        },
         offers: [offer, special, ...(discoveryMode ? discoveryOffers : [])].filter(
           (o) => o.provider_id === args.p_provider
         )
@@ -378,10 +425,16 @@ try {
       })
     if (name === 'lc_business_dashboard')
       return respond(route, {
+        server_now: new Date().toISOString(),
+        summary: { month_uses: 1, month_members: 1, total_uses: 1 },
         businesses: ownsBusiness ? businesses : [],
         offers:
           args.p_provider === providerId
-            ? [offer, special, ...(!pausedDeleted ? [pausedOffer] : [])]
+            ? [
+                { ...offer, has_activity: true, month_uses: 1 },
+                special,
+                ...(!pausedDeleted ? [pausedOffer] : [])
+              ]
             : [],
         history: receipt
           ? [{ id: receipt.id, title: offer.title, redeemed_at: receipt.redeemed_at }]
@@ -417,8 +470,106 @@ try {
     return respond(route, [])
   })
   page = await context.newPage()
+  page.setDefaultTimeout(15000)
   page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => {
+    if (/Maximum update depth|Too many re-renders/.test(message.text())) errors.push(message.text())
+  })
   await mkdir(output, { recursive: true })
+  // The main landing leads to the new, standalone card landing on mobile.
+  await page.goto(origin + '/')
+  await page.waitForLoadState('networkidle')
+  const promotionClose = page.getByRole('button', { name: 'Cerrar evento especial', exact: true })
+  if (await promotionClose.isVisible()) await promotionClose.click()
+  const necessaryCookies = page.getByRole('button', { name: 'Solo necesarias', exact: true })
+  if (await necessaryCookies.isVisible()) await necessaryCookies.click()
+  await page.getByRole('button', { name: 'Menú', exact: true }).click()
+  await page
+    .locator('.latido-nav-menu')
+    .getByRole('link', { name: 'Tarjeta Latido', exact: true })
+    .click()
+  await page.waitForURL(origin + '/tarjeta-latido')
+  await page
+    .getByRole('heading', {
+      name: 'Apoya los negocios de tu comunidad y obtén descuentos',
+      exact: true
+    })
+    .waitFor()
+  assert.equal(await page.locator('.lc-landing [data-vista="negocios"]').isVisible(), false)
+  assert.equal(
+    await page.locator('.lc-landing [href="#"]').count(),
+    0,
+    'Landing CTAs never use placeholder links'
+  )
+  assert.match(
+    await page.locator('[data-vista="socios"] .precio .boton').getAttribute('href'),
+    /auth\?mode=register&next=%2Fcard/
+  )
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: width === 320 ? 568 : 900 })
+    await page
+      .getByRole('heading', {
+        name: 'Apoya los negocios de tu comunidad y obt\u00e9n descuentos',
+        exact: true
+      })
+      .waitFor()
+    assert.equal(
+      await page.getByRole('button', { name: 'Socios', exact: true }).getAttribute('aria-pressed'),
+      'true'
+    )
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    )
+    assert.ok(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      `Member landing fits ${width}px`
+    )
+    await page.screenshot({
+      path: path.join(output, `landing-members-${width}.png`),
+      fullPage: true
+    })
+    await page.getByRole('button', { name: 'Negocios', exact: true }).click()
+    await page
+      .getByRole('heading', { name: 'Haz que más personas descubran tu negocio', exact: true })
+      .waitFor()
+    assert.equal(await page.locator('.lc-landing [data-vista="socios"]').isVisible(), false)
+    assert.equal(
+      await page.locator('[data-vista="negocios"] .precio .boton').getAttribute('href'),
+      '/registrar-negocio?origen=tarjeta'
+    )
+    assert.ok(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      `Business landing fits ${width}px`
+    )
+    await page.screenshot({
+      path: path.join(output, `landing-business-${width}.png`),
+      fullPage: true
+    })
+    await page.getByRole('button', { name: 'Socios', exact: true }).click()
+    await page
+      .getByRole('heading', {
+        name: 'Apoya los negocios de tu comunidad y obt\u00e9n descuentos',
+        exact: true
+      })
+      .waitFor()
+  }
+  await page.goto(origin + '/tarjeta-latido/')
+  await page
+    .getByRole('heading', {
+      name: 'Apoya los negocios de tu comunidad y obt\u00e9n descuentos',
+      exact: true
+    })
+    .waitFor()
+  assert.equal(await page.locator('.bottom-nav').count(), 0)
+  await page.goto(origin + '/tarjeta-latido#registro')
+  await page
+    .getByRole('heading', { name: 'Haz que más personas descubran tu negocio', exact: true })
+    .waitFor()
+  assert.equal(
+    await page.getByRole('button', { name: 'Negocios', exact: true }).getAttribute('aria-pressed'),
+    'true'
+  )
+  await page.setViewportSize({ width: 390, height: 844 })
   const businessPath = `/card/negocio/${providerId}?oferta=${offer.id}`
   await page.goto(origin + businessPath)
   await page.getByRole('heading', { name: 'Ofertas de este negocio', exact: true }).waitFor()
@@ -434,40 +585,17 @@ try {
     .getByRole('region', { name: 'Negocio', exact: true })
     .getByRole('img', { name: `Imagen de ${offer.business_name}` })
     .waitFor()
-  assert.equal(
-    await page.getByRole('searchbox').count(),
-    1,
-    'Business offers always have a scoped search box'
-  )
-  assert.equal(
-    await page.locator('.lc-discount-business').count(),
-    0,
-    'The business name is not repeated on each local offer'
-  )
-  assert.equal(
-    await page.locator('.lc-membership-summary').count(),
-    0,
-    'The business page focuses on its offers'
-  )
+  await page.waitForFunction((expected) => {
+    const image = document.querySelector('.lc-business-detail-identity .lc-business-image img')
+    return image?.getAttribute('src') === expected && image.complete && image.naturalWidth > 0
+  }, offer.business_photo_url)
+  assert.equal(await page.getByRole('searchbox').count(), 0)
+  assert.equal(await page.getByRole('tab').count(), 0)
   await page.getByRole('button', { name: 'Compartir negocio', exact: true }).click()
   assert.equal(
     await page.evaluate(() => window.lastSharedLink.url),
     origin + `/card/negocio/${providerId}`
   )
-  const scopedSearch = page.getByRole('searchbox', {
-    name: 'Buscar en las ofertas de este negocio',
-    exact: true
-  })
-  await scopedSearch.fill('sin-coincidencias-xyz')
-  await page.getByText('No hay ofertas que coincidan con tu búsqueda.', { exact: true }).waitFor()
-  assert.equal(
-    await page.locator('.lc-discount-card').count(),
-    0,
-    'Search also filters an offer opened from a shared link'
-  )
-  await scopedSearch.fill('')
-  await page.getByRole('tab', { name: 'Disponibles (2)', exact: true }).waitFor()
-  await scopedSearch.blur()
   await page.screenshot({ path: path.join(output, 'business-detail-mobile.png'), fullPage: true })
   await page.setViewportSize({ width: 320, height: 568 })
   assert.ok(
@@ -478,6 +606,30 @@ try {
   await page.getByRole('link', { name: 'Volver a los negocios', exact: true }).click()
   await page.waitForURL(origin + '/card')
   await page.locator('.lc-member-strip-heading').waitFor()
+  const alerts = page.locator('#lc-card-alerts')
+  await alerts.getByRole('button', { name: 'Activar', exact: true }).click()
+  await alerts.getByRole('alert').waitFor()
+  await alerts.getByLabel('Ciudad para las alertas', { exact: true }).selectOption('Zürich')
+  failPreferenceSave = true
+  await alerts.getByRole('button', { name: 'Activar', exact: true }).click()
+  await alerts.getByRole('alert').waitFor()
+  assert.equal(
+    await alerts.locator('.lc-alerts-active').count(),
+    0,
+    'A failed save does not pretend that alerts are enabled'
+  )
+  failPreferenceSave = false
+  await alerts.getByRole('button', { name: 'Activar', exact: true }).click()
+  await alerts.getByRole('status').filter({ hasText: 'Alertas activadas' }).waitFor()
+  assert.deepEqual(preferenceWrites.at(-1), { p_enabled: true, p_city: 'Zürich' })
+  await page.reload()
+  await alerts.getByRole('status').filter({ hasText: 'Alertas activadas' }).waitFor()
+  await page.getByRole('link', { name: 'Alertas de descuentos', exact: true }).click()
+  await alerts.screenshot({ path: path.join(output, 'alerts-enabled-mobile.png') })
+  await alerts.getByRole('button', { name: 'Desactivar', exact: true }).click()
+  await alerts.getByRole('button', { name: 'Activar', exact: true }).waitFor()
+  assert.deepEqual(preferenceWrites.at(-1), { p_enabled: false, p_city: 'Zürich' })
+  await page.goto(origin + '/card')
   const firstAccordion = page.locator('.lc-discount-card').filter({ hasText: offer.title })
   const secondAccordion = page.locator('.lc-discount-card').filter({ hasText: special.title })
   await firstAccordion.locator('.lc-discount-business').click()
@@ -495,8 +647,7 @@ try {
   await page.getByRole('link', { name: 'Mi negocio', exact: true }).waitFor()
   assert.match(
     await page.locator('.lc-links').innerText(),
-    /💳[\s\S]*🏪/,
-    'Navigation keeps Latido emojis'
+    /🎟️[\s\S]*Descuentos[\s\S]*🏪[\s\S]*Mi negocio/
   )
   assert.ok(
     (await page.getByRole('navigation', { name: 'Navegación de Tarjeta Latido' }).boundingBox())
@@ -513,6 +664,7 @@ try {
   const membershipCard = page.locator('.lc-membership-summary .lc-membership-card')
   await page.evaluate(() => document.fonts.ready)
   assert.equal(await membershipCard.getAttribute('data-appearance'), 'light')
+  await page.getByRole('button', { name: 'Ver tarjeta', exact: true }).click()
   await membershipCard.screenshot({
     path: path.join(output, 'membership-light-mobile.png'),
     animations: 'disabled'
@@ -542,13 +694,26 @@ try {
   await page
     .locator('.hero-section')
     .screenshot({ path: path.join(output, 'home-membership-mobile.png'), animations: 'disabled' })
+  // Review-only mockup for D5: the production Home component is unchanged.
+  const originalHomeInfo = await homeCardLink.locator('.home-latido-card-info').innerHTML()
+  await homeCardLink.locator('.home-latido-card-info').evaluate((element) => {
+    const heading = document.createElement('strong'),
+      caption = document.createElement('span')
+    heading.textContent = 'Tarjeta Latido'
+    caption.textContent = '2 descuentos en Zürich'
+    element.replaceChildren(heading, caption)
+  })
+  await homeCardLink.screenshot({ path: path.join(output, 'proposal-home-discounts-mobile.png') })
+  await homeCardLink.locator('.home-latido-card-info').evaluate((element, html) => {
+    element.innerHTML = html
+  }, originalHomeInfo)
   await page.setViewportSize({ width: 320, height: 568 })
   const homeCardBounds = await homeCardLink.boundingBox()
   assert.ok(homeCardBounds.x >= 0 && homeCardBounds.x + homeCardBounds.width <= 320)
   await page.setViewportSize({ width: 390, height: 844 })
   await homeCardLink.click()
   await page.waitForURL(origin + '/card')
-  await page.getByRole('heading', { name: 'Descuentos para ti', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Ofertas disponibles', exact: true }).waitFor()
   membershipActive = false
   await page.goto(origin + '/')
   await homeCardLink.getByText('Membresía inactiva', { exact: true }).waitFor()
@@ -603,6 +768,10 @@ try {
   await page.evaluate(() => {
     window.originalShare = navigator.share
     window.originalClipboard = navigator.clipboard
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: ({ files }) => files?.every((file) => file.type === 'image/png' && file.size > 1000)
+    })
     Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
   })
   const offerShareButton = discountCard.getByRole('button', {
@@ -634,6 +803,10 @@ try {
   await inlineShare.waitFor()
   assert.equal(await inlineShare.inputValue(), origin + `/card?oferta=${offer.id}`)
   await page.evaluate(() => {
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: ({ files }) => files?.every((file) => file.type === 'image/png' && file.size > 1000)
+    })
     Object.defineProperty(navigator, 'share', { configurable: true, value: window.originalShare })
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -707,8 +880,24 @@ try {
   await page.getByRole('dialog').getByRole('button', { name: 'Usar ahora', exact: true }).click()
   await page.waitForURL('**/card/validacion/**')
   await page.getByText('Descuento válido', { exact: true }).waitFor()
+  const originalValidationUrl = page.url(),
+    recordedUses = useCalls.length
+  await page.getByRole('link', { name: 'Volver a mi tarjeta', exact: true }).click()
+  await page.evaluate(() => {
+    window.cardTestRealNow = Date.now
+    Date.now = () => window.cardTestRealNow() + 12 * 3600000
+  })
+  await page.getByRole('link', { name: /Tienes un descuento abierto/ }).waitFor()
+  await page.evaluate(() => {
+    Date.now = window.cardTestRealNow
+    delete window.cardTestRealNow
+  })
+  await page.getByRole('link', { name: /Tienes un descuento abierto/ }).click()
+  await page.waitForURL(originalValidationUrl)
+  await page.getByText('Descuento válido', { exact: true }).waitFor()
+  assert.equal(useCalls.length, recordedUses, 'Reopening the validation never records another use')
   await page.waitForFunction(() => window.wakeRequests > 0)
-  assert.deepEqual(await page.evaluate(() => window.cardVibrations), [40])
+  assert.deepEqual(await page.evaluate(() => window.cardVibrations), [40, 40])
   await page.evaluate(() => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
     document.dispatchEvent(new Event('visibilitychange'))
@@ -722,7 +911,7 @@ try {
   await page.waitForFunction(() => window.wakeRequests >= 2)
   assert.deepEqual(
     await page.evaluate(() => window.cardVibrations),
-    [40],
+    [40, 40],
     'Revalidation does not vibrate again'
   )
   await page.locator('.lc-proof-offer-title').getByText(offer.title, { exact: true }).waitFor()
@@ -736,7 +925,7 @@ try {
     /\d{2}\/\d{2}\/\d{4}.*\d{2}:\d{2}:\d{2}/
   )
   assert.equal(await page.locator('.lc-proof-meta').getByText(/^Hora/).count(), 0)
-  assert.ok(await page.locator('.lc-proof-seal').count())
+  await page.locator('.lc-proof-seal').waitFor()
   assert.equal(useCalls.length, 2)
   assert.equal(useCalls[0].p_request_id, useCalls[1].p_request_id, 'Retry reuses the request UUID')
   assert.equal(useCalls[0].p_offer, offer.id)
@@ -829,18 +1018,18 @@ try {
   assert.equal(await page.getByText('Descuento válido', { exact: true }).count(), 0)
   await page.getByRole('link', { name: 'Volver a mi tarjeta', exact: true }).click()
   await page.waitForURL(origin + '/card')
-  await page.getByRole('heading', { name: 'Descuentos para ti', exact: true }).waitFor()
-  await page.locator('#lc-tab-available[aria-selected="true"]').waitFor()
+  await page.getByRole('heading', { name: 'Ofertas disponibles', exact: true }).waitFor()
+  await page.locator('#lc-offers').waitFor()
   assert.equal(
     await page.locator('.lc-business-heading').count(),
     0,
     'Returning shows the normal card page, without a business heading'
   )
-  await page.getByRole('tab', { name: /^Usados \(/ }).click()
-  await page.locator('#lc-tab-used[aria-selected="true"]').waitFor()
+  await page.getByRole('button', { name: /^Usados \(/ }).click()
+  await page.locator('#lc-member-history').waitFor()
   await page.getByText('Usado', { exact: true }).first().waitFor()
   assert.equal(await page.locator('.lc-use-row').count(), 1)
-  await page.getByRole('tab', { name: /^Disponibles \(/ }).click()
+  await page.getByRole('button', { name: /^Usados \(/ }).click()
   await page.getByRole('heading', { name: special.title, exact: true }).waitFor()
   const usedMonthlyCard = page.locator('.lc-discount-card').filter({ hasText: offer.title })
   await usedMonthlyCard.getByText(/^Disponible de nuevo el/).waitFor()
@@ -861,330 +1050,236 @@ try {
   await page.getByText('Regalo', { exact: true }).waitFor()
   assert.equal(useCalls.at(-1).p_offer, special.id)
   assert.ok(!rpcCalls.includes('lc_claim_offer'))
+  const limitedValidationUrl = page.url(),
+    limitedUseCount = useCalls.length
+  await page.getByRole('link', { name: 'Volver a mi tarjeta', exact: true }).click()
+  await page.getByRole('link', { name: /Tienes un descuento abierto/ }).click()
+  await page.waitForURL(limitedValidationUrl)
+  await page.getByText('Descuento válido', { exact: true }).waitFor()
+  assert.equal(
+    useCalls.length,
+    limitedUseCount,
+    'A consumed limited offer reopens the same validation without consuming again'
+  )
   await page.getByRole('link', { name: 'Volver a mi tarjeta', exact: true }).click()
   await page.waitForURL(origin + '/card')
-  await page.locator('#lc-tab-available[aria-selected="true"]').waitFor()
-  await page.getByRole('tab', { name: /^Usados \(/ }).click()
-  await page.locator('#lc-tab-used[aria-selected="true"]').waitFor()
+  await page.locator('#lc-offers').waitFor()
+  await page.getByRole('button', { name: /^Usados \(/ }).click()
+  await page.locator('#lc-member-history').waitFor()
   assert.equal(await page.locator('.lc-use-row').count(), 2)
   assert.equal(
     await page.locator('.lc-use-row button').count(),
     0,
     'History never offers activation or reopening, even for a live receipt'
   )
-  assert.equal(await page.getByRole('button', { name: /^(Activar|Mostrar)$/ }).count(), 0)
   await page.screenshot({ path: path.join(output, 'member-mobile.png'), fullPage: true })
-  // Local history shows each used offer once, using its latest redemption, without actions.
   const usesBeforeBusinessVisit = useCalls.length
-  const duplicateUse = {
-    ...receipts[0],
-    id: '00000000-0000-4000-8000-000000000970',
-    redeemed_at: new Date(Date.now() + 1000).toISOString()
-  }
-  receipts.push(duplicateUse)
   await page.goto(origin + `/card/negocio/${providerId}`)
-  await page.getByRole('tab', { name: 'Usadas (2)', exact: true }).click()
+  await page.getByRole('heading', { name: 'Ya usaste aquí', exact: true }).waitFor()
   assert.equal(await page.locator('.lc-business-used-offer').count(), 2)
-  assert.equal(
-    await page.locator('.lc-business-used-offer button, .lc-business-used-offer a').count(),
-    0
-  )
-  assert.equal(
-    await page
-      .locator('.lc-business-used-offer')
-      .filter({ hasText: offer.title })
-      .locator('time')
-      .getAttribute('datetime'),
-    duplicateUse.redeemed_at
-  )
-  await scopedSearch.fill(special.title)
-  assert.equal(await page.locator('.lc-business-used-offer').count(), 1)
-  await scopedSearch.fill('sin-coincidencias-xyz')
-  await page.getByText('No hay ofertas que coincidan con tu búsqueda.', { exact: true }).waitFor()
-  await scopedSearch.fill('')
-  await page.screenshot({ path: path.join(output, 'business-used-mobile.png'), fullPage: true })
-  await page.getByRole('tab', { name: 'Usadas (2)', exact: true }).focus()
-  await page.keyboard.press('ArrowLeft')
-  await page.locator('#lc-tab-available[aria-selected="true"]').waitFor()
-  await page.locator('.lc-business-offer-guide summary').click()
-  await page.getByText('Confirma el uso para activar tu oferta.', { exact: true }).waitFor()
-  assert.equal(
-    useCalls.length,
-    usesBeforeBusinessVisit,
-    'Browsing business offers and history never consumes a use'
-  )
-  receipts.pop()
+  assert.equal(await page.getByRole('searchbox').count(), 0)
+  assert.equal(useCalls.length, usesBeforeBusinessVisit)
   await page.getByRole('link', { name: 'Volver a los negocios', exact: true }).click()
-  await page.waitForURL(origin + '/card')
-  await page.locator('.lc-member-strip-heading').waitFor()
   await page.getByRole('link', { name: 'Mi negocio', exact: true }).click()
-  await page.getByRole('heading', { name: 'El QR de tu negocio', exact: true }).waitFor()
-  await page.getByAltText(`QR público de ${offer.business_name}`).waitFor()
-  await page.evaluate(() =>
-    Promise.all(
-      document
-        .getAnimations()
-        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
-        .map((animation) => animation.finished.catch(() => {}))
-    )
+  await page.getByRole('heading', { name: 'Tus ofertas', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Actividad', exact: true }).waitFor()
+  await page.locator('.lc-business-month-result').waitFor()
+  assert.match(
+    await page.locator('.lc-business-month-result').innerText(),
+    /Descuentos usados este mes en tu negocio/
   )
-  const qrPanel = page.locator('.lc-business-qr')
-  const businessCard = page.locator('.lc-business-current')
-  const createBounds = await businessCard
-    .getByRole('button', { name: 'Crear oferta', exact: true })
-    .boundingBox()
-  const publishedBounds = await businessCard
-    .getByRole('button', { name: 'Mis ofertas', exact: true })
-    .boundingBox()
-  assert.ok(
-    publishedBounds.x + publishedBounds.width <= createBounds.x &&
-      Math.abs(publishedBounds.y - createBounds.y) < 1,
-    `Business actions share one row with published offers on the left: ${JSON.stringify({ createBounds, publishedBounds })}`
-  )
-  assert.equal(
-    await page.getByRole('heading', { name: 'Tus ofertas', exact: true }).count(),
-    0,
-    'Offers stay folded until requested'
-  )
-  const qrBounds = await qrPanel.boundingBox()
-  assert.ok(createBounds.y < qrBounds.y, 'Creating a discount takes priority over the QR')
-  assert.deepEqual(
-    await page.locator('#lc-business-sticker').locator('strong,h3,p,small').allTextContents(),
-    ['TARJETA LATIDO', offer.business_name, 'Escanea para obtener descuentos']
-  )
-  assert.equal(
-    await qrPanel.getByRole('link').count(),
-    0,
-    'No extra preview link below the public URL'
-  )
-  await qrPanel.getByRole('button', { name: 'Copiar enlace público', exact: true }).click()
-  await qrPanel.getByText('Copiado', { exact: true }).waitFor()
+  assert.equal(await page.getByText(/socios distintos|Descuento habitual \d\/1/).count(), 0)
+  assert.equal(await page.getByRole('button', { name: 'Mis ofertas', exact: true }).count(), 0)
+  const material = page
+    .locator('details')
+    .filter({ has: page.locator('summary').getByText('Material para tu local', { exact: true }) })
+  assert.equal(await material.evaluate((el) => el.open), false)
+  await material.locator('summary').click()
+  await material.getByAltText(`QR público de ${offer.business_name}`).waitFor()
+  await material.getByRole('button', { name: 'Copiar enlace público', exact: true }).click()
+  await material.getByText('Copiado', { exact: true }).waitFor()
   assert.equal(
     await page.evaluate(() => window.lastCopiedText),
     origin + `/card/negocio/${providerId}`
   )
-  await qrPanel.getByRole('button', { name: 'Compartir', exact: true }).click()
   assert.equal(
-    await page.evaluate(() => window.lastSharedLink.url),
-    origin + `/card/negocio/${providerId}`
+    await material.getByRole('button').count(),
+    3,
+    'Only download, image sharing and copy remain'
   )
-  await qrPanel.getByRole('button', { name: 'Imprimir', exact: true }).click()
-  assert.equal(await page.evaluate(() => window.printRequests), 1)
-  for (const viewport of [
-    { width: 320, height: 568 },
-    { width: 390, height: 844 }
-  ]) {
-    await page.setViewportSize(viewport)
-    const printBounds = await qrPanel
-      .getByRole('button', { name: 'Imprimir', exact: true })
-      .boundingBox()
-    const shareBounds = await qrPanel
-      .getByRole('button', { name: 'Compartir', exact: true })
-      .boundingBox()
-    const publicUrlBounds = await qrPanel
-      .getByLabel('Enlace público', { exact: true })
-      .boundingBox()
-    const copyBounds = await qrPanel
-      .getByRole('button', { name: 'Copiar enlace público', exact: true })
-      .boundingBox()
-    assert.ok(
-      Math.abs(printBounds.y - shareBounds.y) < 1 &&
-        printBounds.x + printBounds.width <= shareBounds.x,
-      'Print and Share stay side by side'
-    )
-    assert.ok(
-      Math.abs(publicUrlBounds.y - copyBounds.y) < 1 &&
-        publicUrlBounds.x + publicUrlBounds.width <= copyBounds.x,
-      'Copy stays to the right of the public URL'
-    )
-  }
-  await qrPanel.screenshot({ path: path.join(output, 'business-qr-mobile.png') })
-  await page.emulateMedia({ media: 'print' })
-  assert.equal(await page.locator('.lc-offer-modal[open]').count(), 0)
-  assert.equal(
-    await page.locator('#lc-business-sticker').evaluate((el) => getComputedStyle(el).visibility),
-    'visible'
+  assert.equal(await material.getByRole('link').count(), 0)
+  await material.getByRole('button', { name: 'Compartir imagen', exact: true }).click()
+  assert.deepEqual(
+    await page.evaluate(() => {
+      const data = window.lastSharedLink
+      return { type: data.files?.[0]?.type, image: data.files?.[0]?.size > 1000, url: data.url }
+    }),
+    { type: 'image/png', image: true, url: undefined }
   )
-  assert.equal(
-    await page.locator('.lc-public-link').evaluate((el) => getComputedStyle(el).display),
-    'none'
-  )
+  await page.evaluate(() => {
+    window.originalCanShare = navigator.canShare
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => false })
+  })
+  const shareFallbackDownload = page.waitForEvent('download')
+  await material.getByRole('button', { name: 'Compartir imagen', exact: true }).click()
+  assert.match((await shareFallbackDownload).suggestedFilename(), /\.png$/)
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: window.originalCanShare
+    })
+  })
+  const qrDownload = page.waitForEvent('download')
+  await material.getByRole('button', { name: 'Descargar imagen', exact: true }).click()
+  const downloadedImage = await qrDownload
+  assert.match(downloadedImage.suggestedFilename(), /\.png$/)
+  await downloadedImage.saveAs(path.join(output, 'business-material.png'))
+  const imagePixels = await page.evaluate(async () => {
+    const file = window.lastSharedLink.files[0]
+    const href = URL.createObjectURL(file)
+    try {
+      const image = new Image()
+      image.src = href
+      await image.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(image, 0, 0)
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+      let black = 0,
+        blue = 0
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] < 50 && pixels[i + 1] < 50 && pixels[i + 2] < 50) black++
+        if (pixels[i] < 80 && pixels[i + 2] > 150) blue++
+      }
+      return { black, blue }
+    } finally {
+      URL.revokeObjectURL(href)
+    }
+  })
+  assert.ok(imagePixels.black > 1000, 'The exported PNG contains the QR pixels')
+  assert.ok(imagePixels.blue > 1000, 'The exported PNG contains the branded sticker')
   await page
-    .locator('#lc-business-sticker')
-    .screenshot({ path: path.join(output, 'business-qr-print.png') })
-  await page.emulateMedia({ media: 'screen' })
-  await businessCard.getByRole('button', { name: 'Mis ofertas', exact: true }).click()
-  await page.getByRole('heading', { name: 'Tus ofertas', exact: true }).waitFor()
-  const pausedCard = page.locator('article.lc-offer').filter({ hasText: pausedOffer.title })
+    .getByText('Imagen descargada. Puedes compartirla desde tus archivos.', { exact: true })
+    .waitFor({ state: 'hidden' })
+  await material.screenshot({ path: path.join(output, 'business-material-mobile.png') })
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: width === 320 ? 568 : 844 })
+    assert.ok(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      `Business layout fits ${width}px`
+    )
+    const createBox = await page
+      .getByRole('button', { name: 'Crear oferta', exact: true })
+      .boundingBox()
+    assert.ok(
+      createBox.y >= 0 && createBox.y + createBox.height <= page.viewportSize().height,
+      'Create offer stays within the viewport after scrolling'
+    )
+    assert.equal(
+      await page.locator('.lc-business-create-bar').evaluate((el) => getComputedStyle(el).position),
+      'fixed'
+    )
+    await page.screenshot({ path: path.join(output, `business-${width}.png`), fullPage: true })
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
+  const printable = await context.newPage()
+  await printable.goto(origin + `/card/material/${providerId}`)
+  await printable.getByAltText(`QR público de ${offer.business_name}`).waitFor()
+  await printable.emulateMedia({ media: 'print' })
+  assert.equal(await printable.locator('.lc-print-controls').isVisible(), false)
+  await printable.screenshot({ path: path.join(output, 'business-qr-print.png') })
+  await printable.goto(origin + `/card/material/${providerId}?tipo=guia`)
+  await printable
+    .getByRole('heading', { name: 'Cómo aplicar un descuento Tarjeta Latido', exact: true })
+    .waitFor()
+  assert.equal(await printable.locator('.lc-staff-guide li').count(), 3)
+  await printable.screenshot({ path: path.join(output, 'staff-guide-a6.png') })
+  await printable.close()
+  await page.getByRole('button', { name: 'Crear oferta', exact: true }).click()
+  await page
+    .getByRole('heading', { name: 'Ya tienes tu descuento habitual activo', exact: true })
+    .waitFor()
+  await page.getByRole('button', { name: 'Crear una promoción limitada', exact: true }).click()
+  let offerModal = page.getByRole('dialog', { name: 'Crear oferta', exact: true })
+  await offerModal.getByText('Paso 1 de 4', { exact: true }).waitFor()
+  await offerModal.getByRole('button', { name: 'Siguiente', exact: true }).click()
+  await offerModal.getByRole('button', { name: 'Siguiente', exact: true }).click()
+  await offerModal.getByLabel('Unidades disponibles', { exact: true }).fill('10')
+  await offerModal.getByRole('button', { name: 'Siguiente', exact: true }).click()
+  await offerModal.locator('.lc-create-options summary').click()
   assert.equal(
-    await page
-      .locator('article.lc-offer')
-      .filter({ hasText: offer.title })
-      .getByRole('button', { name: 'Borrar', exact: true })
-      .count(),
-    0
+    await offerModal.getByLabel('Promoción especial con unidades limitadas').isChecked(),
+    true
   )
+  assert.equal(
+    await offerModal.getByLabel('Promoción especial con unidades limitadas').isDisabled(),
+    true
+  )
+  await page.keyboard.press('Escape')
+  await page.getByLabel('Negocio que quieres gestionar', { exact: true }).selectOption(provider2)
+  await page.getByRole('heading', { name: 'Peluquería Latina', exact: true, level: 1 }).waitFor()
+  await page.locator('summary').getByText('Material para tu local', { exact: true }).click()
+  await page.getByText('Publica tu primera oferta para obtener tu QR.', { exact: true }).waitFor()
+  assert.equal(await page.locator('img.lc-qr').count(), 0)
+  await page.getByRole('button', { name: 'Crear oferta', exact: true }).click()
+  await offerModal.getByRole('heading', { name: '¿Qué quieres ofrecer?', exact: true }).waitFor()
+  await offerModal.getByRole('radio', { name: /^Cantidad fija/ }).check()
+  await offerModal
+    .getByRole('group', { name: '¿Desde qué compra?', exact: true })
+    .getByRole('radio', { name: 'CHF 20', exact: true })
+    .check()
+  await offerModal.screenshot({ path: path.join(output, 'offer-fixed-minimum-mobile.png') })
+  for (let i = 0; i < 3; i++)
+    await offerModal.getByRole('button', { name: 'Siguiente', exact: true }).click()
+  await offerModal.locator('.lc-create-options summary').click()
+  assert.equal(
+    await offerModal.getByLabel('Válido hasta', { exact: true }).getAttribute('type'),
+    'date'
+  )
+  await offerModal.getByLabel('Válido hasta', { exact: true }).fill('2027-07-10')
+  await offerModal.getByText('Los socios ven tu oferta en Latido.', { exact: true }).waitFor()
+  await page.setViewportSize({ width: 320, height: 568 })
+  assert.ok(
+    (await offerModal.getByRole('button', { name: 'Publicar oferta', exact: true }).boundingBox())
+      .y < 568
+  )
+  await offerModal.screenshot({ path: path.join(output, 'offer-review-320.png') })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await offerModal.screenshot({ path: path.join(output, 'offer-review-mobile.png') })
+  await offerModal.getByRole('button', { name: 'Publicar oferta', exact: true }).click()
+  const success = page.getByRole('dialog', { name: '¡Oferta publicada!', exact: true })
+  await success
+    .getByRole('heading', { name: 'Siguiente paso: pon tu QR en la caja', exact: true })
+    .waitFor()
+  assert.equal(savedOffers.at(-1).p_offer.minimum_spend, 20)
+  assert.equal(savedOffers.at(-1).p_offer.ends_at, '2027-07-10T21:59:59.000Z')
+  assert.ok(savedOffers.at(-1).p_offer.original_draft)
+  await success.getByAltText('QR público de Peluquería Latina').waitFor()
+  await success.screenshot({ path: path.join(output, 'first-offer-success-mobile.png') })
+  const successDownload = page.waitForEvent('download')
+  await success.getByRole('button', { name: 'Descargar imagen', exact: true }).click()
+  assert.match((await successDownload).suggestedFilename(), /.png$/)
+  await success.getByRole('button', { name: 'Cerrar', exact: true }).click()
+  assert.equal(await page.locator('dialog[open]').count(), 0)
+  // Existing offers open prefilled, and used terms create a replacement.
+  await page.getByLabel('Negocio que quieres gestionar', { exact: true }).selectOption(providerId)
+  const managed = page.locator('.lc-managed-offer').filter({ hasText: offer.title })
+  await managed.locator('summary').click()
+  await managed.getByRole('button', { name: 'Crear nueva versión', exact: true }).click()
+  const replacement = page.getByRole('dialog', { name: 'Crear nueva versión', exact: true })
+  await replacement.getByRole('heading', { name: '¿Qué quieres ofrecer?', exact: true }).waitFor()
+  assert.equal(await replacement.getByRole('radio', { name: /^Descuento %/ }).isChecked(), true)
+  await page.keyboard.press('Escape')
+  const pausedCard = page.locator('.lc-managed-offer').filter({ hasText: pausedOffer.title })
+  await pausedCard.locator('summary').click()
   page.once('dialog', (dialog) => dialog.dismiss())
   await pausedCard.getByRole('button', { name: 'Borrar', exact: true }).click()
-  assert.ok(!rpcCalls.includes('lc_delete_offer'), 'Cancelling deletion does nothing')
+  assert.ok(!rpcCalls.includes('lc_delete_offer'))
   page.once('dialog', (dialog) => dialog.accept())
   await pausedCard.getByRole('button', { name: 'Borrar', exact: true }).click()
-  await page
-    .getByRole('status')
-    .filter({ hasText: 'Descuento borrado. El historial se conserva.' })
-    .waitFor()
   await pausedCard.waitFor({ state: 'detached' })
-  assert.equal(await pausedCard.count(), 0)
-  assert.equal(
-    await page.locator('.lc-public-link input').inputValue(),
-    origin + `/card/negocio/${providerId}`
-  )
-  assert.equal(await page.getByRole('button', { name: /Scanner|revocar|cámara/i }).count(), 0)
-  assert.equal(
-    await page
-      .locator('details')
-      .first()
-      .evaluate((e) => e.open),
-    false
-  )
-  await page.screenshot({ path: path.join(output, 'business-mobile.png'), fullPage: true })
-  await page.getByLabel('Selecciona el negocio que quieres gestionar').selectOption(provider2)
-  await page.getByRole('heading', { name: 'Peluquería Latina', exact: true }).first().waitFor()
-  assert.equal(
-    await page.locator('.lc-public-link input').inputValue(),
-    origin + `/card/negocio/${provider2}`
-  )
-  await page.getByRole('button', { name: 'Copiar enlace público', exact: true }).click()
-  await page.getByText('Copiado', { exact: true }).waitFor()
-  assert.equal(
-    await page.evaluate(() => window.lastCopiedText),
-    origin + `/card/negocio/${provider2}`,
-    'Copy follows the selected business'
-  )
-  // Walk the four-step composer, its validation, bundle variants and review edits.
-  await page.getByRole('button', { name: 'Crear mi oferta', exact: true }).click()
-  const offerModal = page.getByRole('dialog', { name: 'Crear oferta', exact: true })
-  const nextOfferStep = () =>
-    offerModal.getByRole('button', { name: 'Siguiente', exact: true }).click()
-  const changeOffer = () =>
-    offerModal.getByRole('button', { name: 'Cambiar la oferta', exact: true }).click()
-  await offerModal.waitFor()
-  await offerModal.getByText('Paso 1 de 4', { exact: true }).waitFor()
-  await offerModal.screenshot({ path: path.join(output, 'offer-step-1-mobile.png') })
-  await page.setViewportSize({ width: 320, height: 568 })
-  const nextOnSmallScreen = await offerModal
-    .getByRole('button', { name: 'Siguiente', exact: true })
-    .boundingBox()
-  assert.ok(
-    nextOnSmallScreen.y >= 0 && nextOnSmallScreen.y + nextOnSmallScreen.height <= 568,
-    'Navigation stays visible on a small mobile screen'
-  )
-  assert.ok(
-    await offerModal
-      .locator('.lc-create-body')
-      .evaluate((element) => element.scrollHeight > element.clientHeight)
-  )
-  await offerModal.screenshot({ path: path.join(output, 'offer-step-1-small-mobile.png') })
-  await page.setViewportSize({ width: 390, height: 844 })
-  await offerModal.getByRole('radio', { name: '15 %', exact: true }).check()
-  await nextOfferStep()
-  await offerModal.getByRole('radio', { name: /^En algo concreto/ }).check()
-  await nextOfferStep()
-  await offerModal.getByRole('alert').getByText('Escribe el producto o servicio.').waitFor()
-  await offerModal.getByLabel('¿Qué producto o servicio?').fill('el corte de pelo')
-  await offerModal.screenshot({ path: path.join(output, 'offer-step-2-mobile.png') })
-  await nextOfferStep()
-  await offerModal.screenshot({ path: path.join(output, 'offer-step-3-mobile.png') })
-  await nextOfferStep()
-  await offerModal
-    .locator('.lc-offer-preview-info > strong')
-    .getByText('15 % en el corte de pelo', { exact: true })
-    .waitFor()
-  await offerModal.screenshot({ path: path.join(output, 'offer-review-mobile.png') })
-  assert.equal(await offerModal.getByRole('button', { name: 'Activar', exact: true }).count(), 0)
-  assert.equal(await offerModal.getByLabel('Válido hasta (hora local)').count(), 1)
-  await changeOffer()
-  await offerModal.getByRole('radio', { name: /^Cantidad fija/ }).check()
-  await offerModal.getByRole('radio', { name: 'Otro', exact: true }).check()
-  await offerModal.getByLabel('Cantidad de la oferta').fill('0')
-  await nextOfferStep()
-  await offerModal
-    .getByRole('alert')
-    .getByText('Escribe una cantidad válida para la oferta.')
-    .waitFor()
-  await offerModal.getByLabel('Cantidad de la oferta').fill('5.50')
-  await nextOfferStep()
-  await nextOfferStep()
-  await nextOfferStep()
-  await offerModal
-    .locator('.lc-offer-preview-info > strong')
-    .getByText('CHF 5.50 en el corte de pelo', { exact: true })
-    .waitFor()
-  await changeOffer()
-  await offerModal.getByRole('radio', { name: /^2x1 o similar/ }).check()
-  await offerModal.screenshot({ path: path.join(output, 'offer-combo-mobile.png') })
-  await offerModal.getByRole('radio', { name: '3x2', exact: true }).check()
-  await nextOfferStep()
-  await nextOfferStep()
-  await nextOfferStep()
-  await offerModal.locator('.lc-offer-value-number').getByText('3x2', { exact: true }).waitFor()
-  await changeOffer()
-  await offerModal.getByRole('radio', { name: '2.ª a mitad', exact: true }).check()
-  await nextOfferStep()
-  await nextOfferStep()
-  await nextOfferStep()
-  await offerModal.locator('.lc-offer-value-number').getByText('−50 %', { exact: true }).waitFor()
-  await changeOffer()
-  await offerModal.getByRole('radio', { name: /^Regalo/ }).check()
-  await nextOfferStep()
-  await offerModal.getByRole('alert').getByText('Escribe qué regalas.').waitFor()
-  await offerModal.getByLabel('¿Qué regalas?').fill('un café')
-  await nextOfferStep()
-  await offerModal.getByRole('radio', { name: /^Con cualquier compra/ }).check()
-  await nextOfferStep()
-  await nextOfferStep()
-  await offerModal
-    .locator('.lc-offer-preview-info > strong')
-    .getByText('Regalo: un café con tu compra', { exact: true })
-    .waitFor()
-  await changeOffer()
-  await offerModal.getByRole('radio', { name: /^Otro beneficio/ }).check()
-  await offerModal.getByLabel('Describe el beneficio').fill('Primera consulta gratis')
-  await nextOfferStep()
-  await offerModal.getByText('Paso 2 de 3', { exact: true }).waitFor()
-  await nextOfferStep()
-  await offerModal.getByText('Paso 3 de 3', { exact: true }).waitFor()
-  await offerModal
-    .locator('.lc-offer-preview-info > strong')
-    .getByText('Primera consulta gratis', { exact: true })
-    .waitFor()
-  await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
-  await page.getByRole('button', { name: 'Mis ofertas', exact: true }).click()
-  await page.getByText('Aún no has publicado descuentos.', { exact: true }).waitFor()
-  await page.getByRole('button', { name: 'Crear oferta', exact: true }).click()
-  assert.equal(
-    await offerModal.locator('.lc-offer-preview-info > strong').innerText(),
-    'Primera consulta gratis',
-    'Closing the modal and viewing offers preserves the draft'
-  )
-  await offerModal.locator('.lc-create-options summary').click()
-  assert.ok(await page.getByLabel('Frecuencia').locator('option[value="day"]').count())
-  assert.ok(await page.getByLabel('Frecuencia').locator('option[value="week"]').count())
-  assert.equal(
-    await page.getByRole('radio', { name: /Activación automática|Activación manual/ }).count(),
-    0
-  )
-  await page.getByLabel('Válido hasta (hora local)').fill('2027-01-01T12:00')
-  await page
-    .getByText('El socio activa la oferta en Latido.', {
-      exact: true
-    })
-    .waitFor()
-  await page.screenshot({
-    path: path.join(output, 'wizard-confirmation-mobile.png'),
-    fullPage: true
-  })
-  await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
   // One optional invitation at app entry; dismissal persists and its CTA opens the right wizard.
   invitationEligible = true
   await page.goto(origin + '/')
@@ -1195,10 +1290,9 @@ try {
   for (const label of ['10 %', '2x1', 'Regalo', 'Otro'])
     assert.equal(await invitation.getByRole('button', { name: label, exact: true }).count(), 1)
   await invitation.locator('.lc-offer-preview').getByText('Zürich', { exact: true }).waitFor()
-  await invitation.getByRole('button', { name: 'Comparte tu negocio', exact: true }).click()
   assert.equal(
-    await page.evaluate(() => window.lastSharedLink.url),
-    origin + `/negocios/${provider2}`
+    await invitation.getByRole('button', { name: 'Comparte tu negocio', exact: true }).count(),
+    0
   )
   assert.equal(await page.locator('dialog[open], [role="dialog"]').count(), 1)
   assert.ok((await invitation.boundingBox()).height <= 844)
@@ -1247,7 +1341,7 @@ try {
   await page.waitForLoadState('networkidle')
   invitationEligible = false
   // Landing is an option inside promotion. Publication ends with an inline invitation, not an upsell popup.
-  await page.goto(origin + '/registrar-negocio')
+  await page.goto(origin + '/registrar-negocio?origen=tarjeta')
   await page.getByRole('button', { name: /Belleza/ }).click()
   await page.getByRole('button', { name: 'Continuar →', exact: true }).click()
   await page.getByPlaceholder('Ej: El Rincón Colombiano').fill('Peluquería Latina')
@@ -1261,6 +1355,7 @@ try {
     await page.getByRole('button', { name: 'Landing page en Latido', exact: true }).count(),
     0
   )
+  await page.getByText('Opcional. Puedes activarlo más tarde', { exact: true }).waitFor()
   await page.getByRole('switch', { name: 'Activar potenciar tu negocio', exact: true }).click()
   const promotion = page
     .locator('section')
@@ -1277,6 +1372,14 @@ try {
     .click()
   await page.getByRole('heading', { name: '¡Negocio publicado!', exact: true }).waitFor()
   assert.equal(await page.getByText('Profesional desbloqueado', { exact: true }).count(), 0)
+  await page.screenshot({
+    path: path.join(output, 'registration-next-offer-mobile.png'),
+    fullPage: true
+  })
+  assert.equal(
+    await page.getByRole('button', { name: 'Comparte tu negocio', exact: true }).count(),
+    0
+  )
   businesses = businesses.map((item) => (item.id === provider2 ? { ...item, active: false } : item))
   const joinsBeforeInvite = rpcCalls.filter((name) => name === 'lc_join_card_business').length
   await page.getByRole('button', { name: 'Crear mi oferta', exact: true }).click()
@@ -1289,13 +1392,14 @@ try {
     joinsBeforeInvite,
     'Viewing the modal never enrolls an empty business'
   )
-  await nextOfferStep()
-  await nextOfferStep()
+  await offerModal.getByRole('button', { name: 'Siguiente', exact: true }).click()
+  await offerModal.getByRole('button', { name: 'Siguiente', exact: true }).click()
   await offerModal.locator('.lc-create-options summary').click()
-  await offerModal.getByLabel('Válido hasta (hora local)').fill('')
+  await offerModal.getByLabel('Válido hasta', { exact: true }).fill('')
   await offerModal.getByText('Sin compra mínima · Sin fecha de fin', { exact: true }).waitFor()
   await offerModal.getByRole('button', { name: 'Publicar oferta', exact: true }).click()
-  await page.getByText('Tu oferta ya está publicada en Tarjeta Latido.', { exact: false }).waitFor()
+  await page.getByRole('dialog', { name: '¡Oferta publicada!', exact: true }).waitFor()
+  await page.getByRole('dialog').getByRole('button', { name: 'Cerrar', exact: true }).click()
   assert.equal(savedOffers.at(-1).p_provider, provider2)
   assert.equal(savedOffers.at(-1).p_offer.title, 'Oferta para la comunidad')
   assert.equal(savedOffers.at(-1).p_offer.ends_at, 'infinity')
@@ -1328,274 +1432,175 @@ try {
   await page.goto(origin + '/card')
   discoveryMode = true
   await page.reload()
-  await page.locator('.lc-member-strip-heading').waitFor()
-  const discountsRegion = page.getByRole('region', { name: 'Descuentos para ti', exact: true })
-  const businessesRegion = page.getByRole('region', { name: 'Negocios participantes', exact: true })
-  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 10)
-  assert.equal(await businessesRegion.locator('li').count(), 10)
-  assert.equal(await membershipCard.isVisible(), true, 'Membership card is always visible')
-  await page.evaluate(() =>
-    Promise.all(
-      document
-        .getAnimations()
-        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
-        .map((animation) => animation.finished.catch(() => {}))
-    )
-  )
-  const firstDiscount = await discountsRegion.locator('.lc-discount-card').first().boundingBox()
-  assert.equal(
-    await discountsRegion
-      .locator('.lc-discount-card')
-      .first()
-      .getAttribute('class')
-      .then((value) => value.includes('lc-discount-card--unavailable')),
-    false,
-    'Available discounts come before already-used ones'
-  )
-  assert.ok(
-    firstDiscount.y > (await membershipCard.boundingBox()).y,
-    'Discounts follow the open membership card'
-  )
-  await page.screenshot({ path: path.join(output, 'compact-member-mobile.png') })
-  assert.equal(await page.getByRole('combobox').count(), 1, 'Only the city filter is present')
-  assert.equal(await page.getByLabel('Categoría', { exact: true }).count(), 0)
-  assert.equal(await page.getByLabel('Ordenar', { exact: true }).count(), 0)
-  assert.equal(await page.getByText('Condiciones generales', { exact: true }).count(), 0)
-  assert.equal(await page.locator('.lc-how-it-works').count(), 0)
-  assert.equal(await page.locator('.lc-discount-open svg, .lc-discount-badge').count(), 0)
-  assert.ok(
-    ['none', 'normal'].includes(
-      await businessesRegion
-        .locator('.lc-discount-photo')
-        .first()
-        .evaluate((el) => getComputedStyle(el, '::after').content)
-    ),
-    'Business photos have no color stripe'
-  )
-  const helpButton = page.getByRole('button', { name: '¿Cómo funciona?', exact: true })
-  const helpBounds = await helpButton.boundingBox()
-  const headingBounds = await page
-    .getByRole('heading', { name: 'Descuentos para ti', exact: true })
-    .boundingBox()
-  assert.ok(
-    helpBounds.x > headingBounds.x &&
-      Math.abs(helpBounds.y + helpBounds.height / 2 - headingBounds.y - headingBounds.height / 2) <
-        3,
-    'Help is a text link alongside the heading'
-  )
-  await helpButton.click()
-  const helpDialog = page.getByRole('dialog', { name: '¿Cómo funciona?', exact: true })
-  await helpDialog.waitFor()
-  assert.equal(await helpDialog.locator('li').count(), 3)
-  await helpDialog.screenshot({ path: path.join(output, 'how-it-works-modal.png') })
-  await helpDialog.getByRole('button', { name: 'Cerrar', exact: true }).click()
-  await helpDialog.waitFor({ state: 'detached' })
-  await helpButton.click()
-  await helpDialog.waitFor()
-  await page.keyboard.press('Escape')
-  await helpDialog.waitFor({ state: 'detached' })
-  assert.equal(await helpButton.evaluate((el) => el === document.activeElement), true)
-  assert.equal(
-    await page
-      .getByRole('combobox', { name: 'Ciudad', exact: true })
-      .locator('option[value="Basilea"]')
-      .count(),
-    0,
-    'Empty business registrations do not add cities to the filter'
-  )
-  await page.getByRole('combobox', { name: 'Ciudad', exact: true }).selectOption('Genève')
-  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 1)
-  assert.equal(await businessesRegion.locator('li').count(), 1)
-  await page.getByRole('combobox', { name: 'Ciudad', exact: true }).selectOption('')
-  assert.equal(await discountsRegion.getByText('Historial de usos', { exact: true }).count(), 0)
-  await discountsRegion.getByRole('button', { name: 'Mostrar todos (14)', exact: true }).click()
-  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 14)
-  assert.equal(
-    await businessesRegion.locator('li').count(),
-    10,
-    'Expanding discounts does not expand businesses'
-  )
-  await discountsRegion.getByRole('button', { name: 'Mostrar menos', exact: true }).click()
-  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 10)
-  const discountSearch = page.getByRole('searchbox', {
-    name: 'Buscar descuentos y negocios',
-    exact: true
-  })
-  await discountSearch.fill('cafe geneve')
-  assert.equal(
-    await discountsRegion.locator('.lc-discount-card').count(),
-    1,
-    'Search ignores accents across business and city'
-  )
-  const usesBeforeAuto = useCalls.length
-  assert.equal(await discountsRegion.getByText('Activada', { exact: true }).count(), 0)
-  assert.equal(useCalls.length, usesBeforeAuto, 'Automatic activation does not consume on listing')
-  await discountsRegion.getByRole('button', { name: /^(Activar|Usar ahora)$/ }).click()
-  await page.getByRole('dialog', { name: '¿Usar este descuento ahora?' }).waitFor()
-  assert.equal(useCalls.length, usesBeforeAuto, 'Legacy automatic offers also require confirmation')
-  await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
-  assert.equal(useCalls.length, usesBeforeAuto)
-  await discountsRegion.getByRole('button', { name: /^(Activar|Usar ahora)$/ }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Usar ahora', exact: true }).click()
-  await page.waitForURL('**/card/validacion/**')
-  await page.getByText('Descuento válido', { exact: true }).waitFor()
-  assert.equal(await page.getByRole('dialog').count(), 0)
-  assert.equal(useCalls.length, usesBeforeAuto + 1)
-  await page.goto(origin + '/card')
-  await page.locator('#lc-business-directory li').first().waitFor()
-  await discountSearch.fill('sin-coincidencias-xyz')
-  await discountsRegion
-    .getByText('No encontramos descuentos con esa búsqueda.', { exact: true })
-    .waitFor()
-  await discountSearch.fill('')
-  assert.equal(await discountsRegion.locator('.lc-discount-card').count(), 10)
-  await businessesRegion.getByRole('button', { name: 'Mostrar todos (13)', exact: true }).click()
-  assert.equal(await businessesRegion.locator('li').count(), 13)
-  const businessSearch = discountSearch
-  assert.equal(await page.getByRole('searchbox').count(), 1)
-  await businessSearch.fill('cafe geneve')
-  assert.equal(await businessesRegion.locator('li').count(), 1)
-  await businessesRegion
-    .getByRole('link', { name: 'Ver descuentos de Café Encuentro · Genève', exact: true })
-    .click()
-  await page.waitForURL(origin + `/card/negocio/${discoveryOffers[11].provider_id}`)
-  await page.getByRole('heading', { name: 'Ofertas de este negocio', exact: true }).waitFor()
-  await page.getByRole('heading', { name: 'Descuento 12', exact: true }).waitFor()
-  assert.equal(
-    await page.locator('.lc-discount-card').count(),
-    1,
-    'Opening a business shows only its discounts'
-  )
-  await page.getByRole('link', { name: 'Volver a los negocios', exact: true }).click()
-  await page.waitForURL(origin + '/card')
-  await page.locator('#lc-business-directory li').first().waitFor()
-  await businessSearch.fill('sin-coincidencias-xyz')
-  await businessesRegion
-    .getByText('No encontramos negocios con esa búsqueda.', { exact: true })
-    .waitFor()
-  await businessSearch.fill('')
-  assert.equal(await businessesRegion.locator('li').count(), 10, 'A new search resets the preview')
-  await businessesRegion.getByRole('button', { name: 'Mostrar todos (13)', exact: true }).click()
-  const upcoming = businessesRegion.locator('li').filter({ hasText: 'Negocio sin descuentos' })
-  assert.equal(
-    await upcoming.count(),
-    0,
-    'Businesses without discounts are excluded even when an older directory API returns them'
-  )
-  await page.goto(origin + '/card/negocio/' + emptyBusinessId)
-  await page.getByText('Todavía no hay descuentos disponibles aquí.', { exact: true }).waitFor()
-  assert.equal(await page.locator('.lc-offer-list--empty').count(), 1)
-  await page.getByRole('link', { name: 'Volver a los negocios', exact: true }).click()
-  await page.waitForURL(origin + '/card')
-  await page.locator('#lc-business-directory li').first().waitFor()
-  assert.equal(await page.locator('.lc-discount-card').count(), 10)
-  directoryFailure = true
-  await page.reload()
-  await page.locator('.lc-discovery').getByRole('alert').waitFor()
-  assert.equal(
-    await page.locator('.lc-discount-card').count(),
-    10,
-    'A missing directory migration does not break discounts'
-  )
-  directoryFailure = false
-  await page.reload()
-  await page.locator('#lc-business-directory li').first().waitFor()
-  await businessesRegion.screenshot({ path: path.join(output, 'directory-mobile.png') })
-  await discountsRegion.screenshot({ path: path.join(output, 'discount-search-mobile.png') })
-  ownsBusiness = false
-  membershipValidUntil = new Date(Date.now() + 86400000 * 2).toISOString()
-  await page.reload()
+  await page.getByRole('heading', { name: 'Ofertas disponibles', exact: true }).waitFor()
+  const discounts = page.getByRole('region', { name: 'Ofertas disponibles', exact: true })
+  await page.getByLabel('Ciudad', { exact: true }).selectOption('Genève')
+  assert.equal(await discounts.locator('.lc-discount-card').count(), 1)
+  await page.getByRole('button', { name: 'Negocios', exact: true }).click()
+  assert.equal(await page.locator('#lc-business-directory li').count(), 1)
+  await page.getByLabel('Ciudad', { exact: true }).selectOption('')
   await page
-    .locator('.lc-membership-expiry')
-    .getByRole('link', { name: 'Renovar', exact: true })
-    .waitFor()
+    .getByRole('searchbox', { name: 'Buscar descuentos y negocios', exact: true })
+    .fill('cafe geneve')
+  assert.equal(await page.locator('#lc-business-directory li').count(), 1)
+  await page
+    .getByRole('group', { name: 'Ver', exact: true })
+    .getByRole('button', { name: 'Descuentos', exact: true })
+    .click()
+  assert.equal(await discounts.locator('.lc-discount-card').count(), 1)
+  await page.getByRole('searchbox', { name: 'Buscar descuentos y negocios', exact: true }).fill('')
+  const typeFilters = page.getByRole('group', { name: 'Tipo de oferta', exact: true })
+  await typeFilters.getByRole('button', { name: 'Regalos', exact: true }).click()
+  assert.equal(await discounts.locator('.lc-discount-card').count(), 1)
+  await page.getByRole('button', { name: 'Negocios', exact: true }).click()
+  assert.equal(await page.locator('#lc-business-directory li').count(), 1)
+  await page
+    .getByRole('group', { name: 'Ver', exact: true })
+    .getByRole('button', { name: 'Descuentos', exact: true })
+    .click()
+  await typeFilters.getByRole('button', { name: '2x1', exact: true }).click()
+  assert.equal(await discounts.locator('.lc-discount-card').count(), 0)
+  await typeFilters.getByRole('button', { name: 'Todo', exact: true }).click()
+  assert.equal(await page.locator('.lc-category-filters').count(), 0)
+  assert.ok(await discounts.locator('.lc-discount-card').count())
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 320, height: 568 })
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+  await page.screenshot({
+    path: path.join(output, 'member-320-reduced-motion.png'),
+    fullPage: true
+  })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.screenshot({ path: path.join(output, 'member-desktop.png'), fullPage: true })
+  await page.goto(origin + '/explorar')
+  await page.locator('input[aria-label="Buscar en Latido"]:visible').fill('Sabor')
+  const offerResult = page
+    .locator('button')
+    .filter({ hasText: 'Oferta para socios' })
+    .filter({ hasText: offer.title })
+    .first()
+  await offerResult.waitFor()
+  await offerResult.click()
+  await page.waitForURL(origin + `/card/negocio/${providerId}?oferta=${offer.id}`)
+  await page.getByRole('heading', { name: 'Ofertas de este negocio', exact: true }).waitFor()
+  await page.goto(origin + '/card')
+  await page.setViewportSize({ width: 390, height: 844 })
+  ownsBusiness = false
+  await page.reload()
+  await page.waitForLoadState('networkidle')
   assert.equal(
-    await page.locator('.lc-links').getByRole('link', { name: 'Mi negocio', exact: true }).count(),
-    0
+    await page.locator('.lc-links').count(),
+    1,
+    'Customers have the discounts tab without business access'
   )
-  await page.getByRole('link', { name: 'Volver al inicio de Latido', exact: true }).waitFor()
-  ownsBusiness = true
-  membershipValidUntil = null
-  discoveryMode = false
+  await page.getByRole('link', { name: /¿Tienes un negocio/ }).waitFor()
+  const firstDiscount = await discounts.locator('.lc-discount-card').first().boundingBox()
+  assert.ok(firstDiscount.y < 844, 'A discount appears in the first mobile screen')
+  await page.screenshot({ path: path.join(output, 'member-mobile.png'), fullPage: true })
   membershipActive = false
   await page.reload()
-  await page.locator('.lc-membership-summary').getByText('Inactiva', { exact: true }).waitFor()
-  assert.equal(await page.locator('.lc-membership-card__number').innerText(), '2481')
-  assert.equal(await page.locator('.lc-intro-card-preview').count(), 0)
-  assert.equal(
-    await page.getByRole('heading', { name: 'Ahorra en los negocios de tu comunidad' }).count(),
-    0
-  )
   const renewal = page
     .locator('.lc-membership-renewal')
     .getByRole('link', { name: 'Renovar', exact: true })
-  assert.match(await renewal.getAttribute('href'), /^mailto:info@latido\.ch\?subject=Renovar/)
-  assert.equal(
-    await page.getByRole('link', { name: 'Solicitar mi tarjeta', exact: true }).count(),
-    0
-  )
-  await page.screenshot({
-    path: path.join(output, 'inactive-membership-mobile.png'),
-    fullPage: true
-  })
+  await renewal.waitFor()
+  const mail = new URL(await renewal.getAttribute('href'))
+  assert.match(mail.searchParams.get('body'), /ana@test.example/)
+  assert.match(mail.searchParams.get('body'), /2481/)
   hasMembership = false
-  await page.goto(origin + '/')
-  await homeCardLink.getByText('Tarjeta Latido', { exact: true }).waitFor()
-  await page.waitForLoadState('networkidle')
-  assert.equal(await homeCardLink.getByText(/Socio nº/).count(), 0)
-  await homeCardLink.click()
-  await page.waitForURL(origin + '/card')
-  await page.getByRole('heading', { name: 'Ahorra en los negocios de tu comunidad' }).waitFor()
-  assert.equal(await page.getByText('Tarjeta física o QR en tu móvil', { exact: true }).count(), 0)
-  assert.equal(await page.evaluate(() => window.cameraRequests), 0)
-  await page.screenshot({ path: path.join(output, 'intro-mobile.png'), fullPage: true })
-  discoveryMode = true
   await page.evaluate(() => localStorage.removeItem('sb-127-auth-token'))
   await page.goto(origin + '/card')
   await page
-    .locator('.lc-intro-login')
-    .getByRole('link', { name: 'Inicia sesión', exact: true })
+    .getByRole('heading', { name: 'Ahorra en los negocios de tu comunidad', exact: true })
     .waitFor()
-  assert.equal(await page.locator('.lc-visitor-highlights .lc-discount-card').count(), 3)
-  assert.equal(
-    await page.locator('.lc-discount-card').count(),
-    10,
-    'Visitor preview stays limited to ten discounts overall'
+  assert.equal(await page.getByRole('tab').count(), 0)
+  assert.equal(await page.locator('.lc-intro-card-preview').count(), 0)
+  const introTitle = await page.locator('.lc-intro-presentation h1').boundingBox()
+  const illustration = await page.locator('.lc-intro-illustration').boundingBox()
+  const benefits = await page.locator('.lc-intro-benefits').boundingBox()
+  assert.ok(
+    illustration.y > introTitle.y && illustration.y < benefits.y,
+    'The tilted card sits below the headline'
   )
+  assert.equal(await page.locator('.lc-intro-benefits li').count(), 3)
+  assert.equal(await page.locator('.lc-intro-how .lc-usage-steps li').count(), 3)
+  await page.setViewportSize({ width: 320, height: 568 })
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.screenshot({
+    path: path.join(output, 'visitor-320-reduced-motion.png'),
+    fullPage: true
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.screenshot({ path: path.join(output, 'visitor-mobile.png'), fullPage: true })
+  await page
+    .locator('.lc-intro-presentation')
+    .screenshot({ path: path.join(output, 'visitor-card-presentation.png') })
+  await page.goto(origin + `/card/negocio/${providerId}`)
+  await page.getByRole('link', { name: 'Ver ficha en Latido', exact: true }).waitFor()
+  assert.equal(await page.getByRole('searchbox').count(), 0)
+  assert.equal(await page.getByRole('tab').count(), 0)
+  await page.getByRole('link', { name: 'Cómo llegar', exact: true }).waitFor()
+  await page.screenshot({ path: path.join(output, 'business-detail-mobile.png'), fullPage: true })
+  await page.goto(origin + '/colaboraciones')
+  await page
+    .getByRole('heading', { name: 'Tarjeta Latido: gratis para tu negocio', exact: true })
+    .waitFor()
   assert.equal(
     await page
-      .locator('.lc-discount-card')
-      .getByRole('link', { name: /Conseguir tarjeta|Inicia sesión/ })
-      .count(),
-    0
+      .getByRole('link', { name: 'Crear una oferta gratis', exact: true })
+      .getAttribute('href'),
+    '/card/negocios'
   )
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
-  await page
-    .locator('.lc-sticky-join')
-    .getByRole('link', { name: 'Conseguir mi tarjeta', exact: true })
-    .waitFor()
-  await page.goto(origin + '/card?oferta=' + offer.id)
-  await page.locator('.lc-intro-card-preview').waitFor()
-  const sharedBounds = await page.locator('.lc-card-intro .lc-featured-offer').boundingBox()
-  const titleBounds = await page
-    .getByRole('heading', { name: 'Ahorra en los negocios de tu comunidad', exact: true })
-    .boundingBox()
-  assert.ok(
-    sharedBounds.y > titleBounds.y && sharedBounds.y < titleBounds.y + titleBounds.height + 40
-  )
-  assert.equal(await page.locator('.lc-discount-card').filter({ hasText: offer.title }).count(), 1)
-  await page.evaluate(() => {
-    localStorage.setItem('latido_card_scanner_v1', 'retired-secret')
-    sessionStorage.setItem('lc-business-qr:old', 'retired-secret')
+  await page.screenshot({
+    path: path.join(output, 'companies-invitation-mobile.png'),
+    fullPage: true
   })
-  await page.goto(origin + '/scanner/link/' + 'a'.repeat(64))
-  await page.waitForURL(origin + '/card')
-  assert.equal(await page.evaluate(() => localStorage.getItem('latido_card_scanner_v1')), null)
-  assert.equal(await page.evaluate(() => sessionStorage.getItem('lc-business-qr:old')), null)
+  // A business owner without a personal membership still sees every matching offer.
+  ownsBusiness = true
+  discoveryMode = false
+  await page.evaluate(
+    (auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)),
+    session()
+  )
+  await page.goto(origin + '/card')
+  await page.getByRole('heading', { name: 'Ofertas disponibles', exact: true }).waitFor()
+  const completeCatalog = page.getByRole('region', { name: 'Ofertas disponibles', exact: true })
+  assert.equal(
+    await completeCatalog.locator('.lc-discount-card').count(),
+    2,
+    'Highlights never remove the only offers from the filtered catalog'
+  )
+  await page.getByRole('link', { name: 'Mi negocio', exact: true }).waitFor()
+  await page.screenshot({
+    path: path.join(output, 'owner-without-membership-catalog.png'),
+    fullPage: true
+  })
+  // Tablón receives search results through a parent callback; its idle and search
+  // renders must settle, and both kinds of detail route must close normally.
+  await page.goto(origin + `/tablon?openAd=${housingAd.id}`)
+  await page.getByRole('heading', { name: housingAd.title, exact: true, level: 1 }).waitFor()
+  await page.getByRole('button', { name: 'Volver', exact: true }).click()
+  await page.waitForURL(origin + '/tablon')
+  await page
+    .getByRole('heading', { name: housingAd.title, exact: true, level: 1 })
+    .waitFor({ state: 'hidden' })
+  await page.goto(origin + `/anuncios/${housingAd.id}--habitaciones`)
+  await page.getByRole('heading', { name: housingAd.title, exact: true, level: 1 }).waitFor()
+  await page.getByRole('button', { name: 'Volver', exact: true }).click()
+  await page.waitForURL(origin + '/tablon')
+  await page
+    .getByRole('textbox', { name: 'Buscar en esta sección', exact: true })
+    .fill('Habitaciones')
+  await page.waitForLoadState('networkidle')
+  assert.ok(
+    !errors.some((message) => /Maximum update depth|Too many re-renders/.test(message)),
+    'Search result callbacks must not create a parent/child render loop'
+  )
+  assert.equal(await page.evaluate(() => window.cameraRequests), 0)
   assert.deepEqual(errors, [])
   assert.ok(!rpcCalls.some((name) => /scanner|physical|digital_card|card_code/.test(name)))
   console.log(
-    `${useWebkit ? 'WebKit iPhone' : 'Chromium Android'}: public QR, login return, confirmation, retry, receipt, expiry, claims, business QR and wizard passed`
+    `${useWebkit ? 'WebKit iPhone' : 'Chromium Android'}: confirmation and validation unchanged; recovery, capacity, QR/PNG/print, prefilled offers, shared filters, membership and visitor flows passed`
   )
 } catch (error) {
   await page

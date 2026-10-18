@@ -14,3 +14,20 @@ UNION ALL SELECT 'businesses',count(*) FROM public.latido_card_businesses
 UNION ALL SELECT 'offers',count(*) FROM public.latido_card_offers
 UNION ALL SELECT 'claims',count(*) FROM public.latido_card_claims
 UNION ALL SELECT 'redemptions (including old history)',count(*) FROM public.latido_card_redemptions;
+
+SELECT 'Experience RPCs are private and fixed-search-path' AS check_name,
+ count(*)=2 AND bool_and(p.prosecdef AND p.proconfig @> ARRAY['search_path=public']
+ AND has_function_privilege('authenticated',p.oid,'EXECUTE') AND NOT has_function_privilege('anon',p.oid,'EXECUTE')
+ AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) acl WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE')) AS ok
+ FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('lc_update_offer','lc_replace_offer');
+SELECT 'Offer draft preserved for editing' AS check_name, EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='latido_card_offers' AND column_name='original_draft') AS ok;
+
+SELECT 'Card notification preferences protected' AS check_name,
+ EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='latido_card_notification_preferences' AND c.relrowsecurity
+ AND NOT has_table_privilege('authenticated',c.oid,'SELECT,INSERT,UPDATE,DELETE') AND NOT has_table_privilege('anon',c.oid,'SELECT,INSERT,UPDATE,DELETE'))
+ AND has_function_privilege('authenticated','public.lc_notification_preferences(boolean,text)','EXECUTE')
+ AND NOT has_function_privilege('anon','public.lc_notification_preferences(boolean,text)','EXECUTE') AS ok;
+SELECT 'Scheduled Card notifications restricted to service' AS check_name,
+ has_function_privilege('service_role','public.lc_send_scheduled_notifications()','EXECUTE')
+ AND NOT has_function_privilege('authenticated','public.lc_send_scheduled_notifications()','EXECUTE')
+ AND NOT has_function_privilege('anon','public.lc_send_scheduled_notifications()','EXECUTE') AS ok;

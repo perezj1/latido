@@ -24,6 +24,8 @@ export default function LatidoCardOfferProvider({ children }) {
   const [business, setBusiness] = useState(null)
   const [open, setOpen] = useState(false)
   const [initialSelection, setInitialSelection] = useState(null)
+  const [operation, setOperation] = useState(null)
+  const [formRevision, setFormRevision] = useState(0)
   const [revision, setRevision] = useState(0)
   const [publishedProvider, setPublishedProvider] = useState('')
   useEffect(() => {
@@ -31,6 +33,7 @@ export default function LatidoCardOfferProvider({ children }) {
     setBusiness(null)
     setPublishedProvider('')
     setInitialSelection(null)
+    setOperation(null)
   }, [user?.id])
   useEffect(() => {
     setOpen(false)
@@ -49,20 +52,24 @@ export default function LatidoCardOfferProvider({ children }) {
       return
     }
     setBusiness({ id: queryProvider })
+    setOperation(null)
+    setInitialSelection(null)
     setOpen(true)
   }, [loading, user?.id, queryProvider, navigate])
   const openOffer = useCallback(
-    (target, selection) => {
+    (target, selection, options = null) => {
       if (!target?.id) return
       if (!user?.id) {
         navigate(`/auth?next=${encodeURIComponent(cardInvitationPath(target.id))}`)
         return
       }
       setBusiness(target)
+      setOperation(options)
+      if (options || operation) setFormRevision((n) => n + 1)
       setInitialSelection(selection ? { ...selection } : null)
       setOpen(true)
     },
-    [user?.id, navigate]
+    [user?.id, navigate, operation]
   )
   const closeOffer = () => {
     setOpen(false)
@@ -83,15 +90,15 @@ export default function LatidoCardOfferProvider({ children }) {
       {business && user?.id && (
         <Suspense fallback={null}>
           <OfferModal
-            key={`${user.id}:${business.id}`}
+            key={`${user.id}:${business.id}:${formRevision}`}
             providerId={business.id}
             open={open}
             initialSelection={initialSelection}
+            operation={operation}
             onClose={closeOffer}
             onPublished={() => {
               setPublishedProvider(business.id)
               setRevision((current) => current + 1)
-              closeOffer()
             }}
           />
         </Suspense>

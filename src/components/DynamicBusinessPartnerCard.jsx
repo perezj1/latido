@@ -1,6 +1,7 @@
 import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useEffect, useState } from 'react'
 import PartnerCard from './PartnerCard'
+import LatidoCardBusinessBenefit from './LatidoCardBusinessBenefit'
 import BusinessPartnerContactModal from './BusinessPartnerContactModal'
 import PuntoHispanoContactModal from './PuntoHispanoContactModal'
 import { useAuth } from '../hooks/useAuth'
@@ -103,6 +104,7 @@ export default function DynamicBusinessPartnerCard({
         }}
         title={partner.title}
         description={partner.description}
+        benefit={<LatidoCardBusinessBenefit providerId={partner.id} />}
         services={services}
         cta={partner.id === PUNTO_HISPANO_PROVIDER_ID
           ? { label:'Contactar', button:true }

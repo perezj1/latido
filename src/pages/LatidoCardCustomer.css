@@ -3,34 +3,6 @@
   padding-top: 12px;
   padding-bottom: 110px;
 }
-.lc-discounts-page .lc-top {
-  gap: 8px;
-  margin-bottom: 14px;
-  align-items: stretch;
-}
-.lc-discounts-page .lc-brand {
-  font-size: 16px;
-  gap: 7px;
-}
-.lc-discounts-page .lc-brand img {
-  width: 24px;
-  height: 24px;
-}
-.lc-discounts-page .lc-links {
-  box-shadow: none;
-  padding: 3px;
-  border-radius: 14px;
-}
-.lc-discounts-page .lc-links a {
-  flex-direction: row;
-  min-height: 44px;
-  gap: 5px;
-  padding: 6px;
-  font-size: 12px;
-}
-.lc-discounts-page .lc-links a > span {
-  font-size: 16px;
-}
 .lc-discounts-page .lc-membership-summary {
   max-width: 440px;
 }
@@ -96,7 +68,9 @@
   border-radius: 999px;
   background: #fff;
   color: #536075;
-  font: 500 11px/1.4 'Poppins', sans-serif;
+  font:
+    500 11px/1.4 'Poppins',
+    sans-serif;
   cursor: pointer;
 }
 .lc-city-select select {
@@ -297,4 +271,37 @@
   .lc-loading > div {
     animation: none;
   }
+}
+.lc-card-intro .lc-intro-how {
+  margin: 24px 4px 20px;
+  padding-top: 22px;
+  border-top: 1px solid #e1e9f6;
+}
+.lc-intro-how h2 {
+  margin: 0 0 20px;
+  font-size: 20px;
+}
+.lc-intro-how .lc-usage-steps,
+.lc-help-modal .lc-usage-steps {
+  display: grid;
+  gap: 12px;
+  list-style: decimal;
+  padding: 0 0 0 24px;
+  margin: 0;
+  color: #112d64;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.lc-usage-steps li,
+.lc-help-modal .lc-usage-steps li {
+  display: list-item;
+  padding: 0 0 0 6px;
+  margin: 0;
+}
+.lc-usage-steps li::marker {
+  color: #2455c4;
+  font-weight: 600;
+}
+.lc-help-modal .lc-usage-steps {
+  margin-bottom: 24px;
 }

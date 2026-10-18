@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, MapPin, Search } from 'lucide-react'
-import { DiscountBusinessPhoto } from './LatidoDiscountCard'
-import { offerComboLabel } from '../lib/latidoCardCore'
+import LatidoCardBusinessImage from './LatidoCardBusinessImage'
+import { businessBenefit } from '../lib/latidoCardExperience'
 import './LatidoCardDiscovery.css'
 
 export const CARD_PREVIEW_LIMIT = 10
@@ -64,15 +64,21 @@ export default function LatidoCardDiscovery({
   offers = [],
   error,
   query = '',
-  city = ''
+  city = '',
+  category = ''
 }) {
   const [expanded, setExpanded] = useState(false)
-  useEffect(() => setExpanded(false), [query, city])
-  const businessesWithOffers = new Set(offers.map((offer) => offer.provider_id))
+  useEffect(() => setExpanded(false), [query, city, category])
+  const businessesWithOffers = new Set(
+    offers.filter((offer) => !city || offer.city === city).map((offer) => offer.provider_id)
+  )
   const matches = businesses.filter(
     (business) =>
       businessesWithOffers.has(business.id) &&
       (!city || business.city === city) &&
+      (!category ||
+        business.category === category ||
+        offers.some((o) => o.provider_id === business.id && o.category === category)) &&
       matchesCardSearch(
         [
           business.name,
@@ -104,27 +110,7 @@ export default function LatidoCardDiscovery({
           <ul className="lc-discovery-businesses" id="lc-business-directory">
             {shown.map((business) => {
               const available = offers.filter((offer) => offer.provider_id === business.id)
-              const best = Math.max(
-                0,
-                ...available
-                  .filter((offer) => offer.benefit_type === 'percent')
-                  .map((offer) => Number(offer.benefit_value))
-              )
-              const fixed = Math.max(
-                0,
-                ...available
-                  .filter((offer) => offer.benefit_type === 'fixed')
-                  .map((offer) => Number(offer.benefit_value))
-              )
-              const badge = best
-                ? `Hasta −${best} %`
-                : fixed
-                  ? `−CHF ${fixed}`
-                  : available.some((offer) => offerComboLabel(offer))
-                    ? offerComboLabel(available.find((offer) => offerComboLabel(offer)))
-                    : available.some((offer) => offer.benefit_type === 'gift')
-                      ? 'Regalo'
-                      : 'Beneficio'
+              const badge = businessBenefit(available)
               return (
                 <li key={business.id}>
                   <Link
@@ -132,13 +118,7 @@ export default function LatidoCardDiscovery({
                     to={`/card/negocio/${business.id}`}
                     aria-label={`Ver descuentos de ${business.name}${business.city ? ` · ${business.city}` : ''}`}
                   >
-                    <DiscountBusinessPhoto
-                      offer={{
-                        business_name: business.name,
-                        business_photo_url: business.photo_url || available[0]?.business_photo_url
-                      }}
-                      small
-                    />
+                    <LatidoCardBusinessImage business={business} offers={available} small />
                     <span className="lc-discovery-business-info">
                       <strong>{business.name}</strong>
                       {business.city && (

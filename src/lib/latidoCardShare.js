@@ -6,7 +6,7 @@ export function cardOfferShareData(offer, origin = window.location.origin) {
   url.searchParams.set('oferta', offer.id)
   return {
     title: `${offer.title} · Tarjeta Latido`,
-    text: `${offerBenefitLabel(offer)} en ${offer.business_name}. Crea tu cuenta en Latido y únete al club de descuentos con tu Tarjeta Latido por CHF 6,90 al mes.`,
+    text: `${offerBenefitLabel(offer)} en ${offer.business_name}. Crea tu cuenta en Latido y hazte socio de Tarjeta Latido por CHF 6,90 al mes.`,
     url: url.href
   }
 }

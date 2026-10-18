@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+import './LatidoCard.css'
 import { PanelPartners } from './Landing'
 
 export default function Colaboraciones() {
@@ -68,6 +70,12 @@ export default function Colaboraciones() {
         }
       `}</style>
       <div style={{ maxWidth:860, margin:'0 auto', width:'100%' }}>
+        <section className="lc-panel lc-company-invitation">
+          <span className="lc-eyebrow">Para tu negocio</span>
+          <h1>Tarjeta Latido: gratis para tu negocio</h1>
+          <ul><li>Participar es gratis.</li><li>Tú pones las condiciones.</li><li>Más clientes de la comunidad.</li></ul>
+          <Link className="lc-button" to="/card/negocios">Crear una oferta gratis</Link>
+        </section>
         <PanelPartners />
       </div>
     </div>

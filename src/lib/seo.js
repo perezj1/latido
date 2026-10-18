@@ -58,6 +58,7 @@ export const SEARCHABLE_SITE_PAGES = [
 ]
 
 const ROUTE_SEO = [
+  { path:'/tarjeta-latido', title:'Tarjeta Latido | Descuentos y negocios de tu comunidad', description:'Ahorra en negocios hispanohablantes de Suiza con Tarjeta Latido. CHF 6,90 al mes para socios; participar es gratis para negocios.' },
   {
     path:'/',
     title:'Latido.ch — Todo lo que necesitas en Suiza, en español',
@@ -1089,6 +1090,7 @@ export function getPublicSeoPages() {
     '/paquetes',
     '/creadores',
     '/club',
+    '/tarjeta-latido',
     '/santiago-cruz',
     '/servicios-suiza',
     '/servicios-virtus360',

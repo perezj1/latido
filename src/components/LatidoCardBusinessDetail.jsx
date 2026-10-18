@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, ChevronLeft, MapPin, Share2, Tag } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { getBusinessPath } from '../lib/seo'
 import { shareCardBusiness } from '../lib/latidoCardShare'
-import { DiscountBusinessPhoto } from './LatidoDiscountCard'
-import { CardSearch } from './LatidoCardDiscovery'
+import LatidoCardBusinessImage from './LatidoCardBusinessImage'
 import './LatidoCardBusinessDetail.css'
 
-export default function LatidoCardBusinessDetail({ business, count, query, onQuery, loading }) {
+export default function LatidoCardBusinessDetail({ business, offers = [], count, loading }) {
   const [sharing, setSharing] = useState(false)
   const [manualLink, setManualLink] = useState('')
   useEffect(() => setManualLink(''), [business?.id])
@@ -40,12 +40,7 @@ export default function LatidoCardBusinessDetail({ business, count, query, onQue
           </button>
         </div>
         <section className="lc-business-detail-identity" aria-label="Negocio" aria-busy={loading}>
-          <DiscountBusinessPhoto
-            offer={{
-              business_name: business?.name || 'Negocio',
-              business_photo_url: business?.photo_url
-            }}
-          />
+          <LatidoCardBusinessImage business={business} offers={offers} />
           <div>
             <h1>{business?.name || 'Ofertas del negocio'}</h1>
             {!loading && (
@@ -65,14 +60,53 @@ export default function LatidoCardBusinessDetail({ business, count, query, onQue
           </div>
         </section>
       </header>
-      <div className="lc-business-detail-search">
-        <CardSearch
-          label="Buscar en las ofertas de este negocio"
-          placeholder="Buscar en sus ofertas"
-          value={query}
-          onChange={onQuery}
-        />
-      </div>
+      {business && (
+        <section className="lc-business-public-info" aria-label="Información del local">
+          {business.address && (
+            <p>
+              📍 {business.address}
+              {business.city ? ` · ${business.city}` : ''}
+            </p>
+          )}
+          {business.phone && (
+            <p>
+              <a href={`tel:${business.phone.replace(/[^+0-9]/g, '')}`}>{business.phone}</a>
+            </p>
+          )}
+          {typeof business.hours === 'string' && business.hours && <p>Horario: {business.hours}</p>}
+          {business.hours && typeof business.hours === 'object' && (
+            <dl>
+              {Object.entries(business.hours).map(([day, hours]) => (
+                <div key={day}>
+                  <dt>{day}</dt>
+                  <dd>
+                    {typeof hours === 'string'
+                      ? hours
+                      : Array.isArray(hours)
+                        ? hours.join(' · ')
+                        : [hours?.open, hours?.close].filter(Boolean).join('–')}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <div className="lc-actions">
+            {business.address && (
+              <a
+                className="lc-text-button"
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([business.address, business.city, 'Suiza'].filter(Boolean).join(', '))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Cómo llegar
+              </a>
+            )}
+            <Link className="lc-text-button" to={getBusinessPath(business)}>
+              Ver ficha en Latido
+            </Link>
+          </div>
+        </section>
+      )}
       {manualLink && (
         <label className="lc-business-detail-share-link">
           Enlace del negocio

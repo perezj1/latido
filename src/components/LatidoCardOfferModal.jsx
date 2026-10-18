@@ -1,8 +1,15 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import toast from 'react-hot-toast'
+import { Link } from 'react-router-dom'
 import { cardRpc } from '../lib/latidoCard'
 import { cardErrorMessage } from '../lib/latidoCardCore'
+import { offerCapacity } from '../lib/latidoCardExperience'
+import { refreshCardBusinessAccess } from '../hooks/useCardBusinessAccess'
+import { useAuth } from '../hooks/useAuth'
+import { trackCardEvent } from '../lib/analytics'
+import { invalidateCardCatalog } from '../lib/latidoCardCatalog'
+import LatidoOfferPreview from './LatidoOfferVisual'
+import LatidoCardBusinessMaterial from './LatidoCardBusinessMaterial'
 import LatidoCardOfferForm from './LatidoCardOfferForm'
 import { useLatidoBusinessDisplay } from '../hooks/useLatidoBusinessDisplay'
 import '../pages/LatidoCard.css'
@@ -13,17 +20,43 @@ export default function LatidoCardOfferModal({
   open,
   onClose,
   onPublished,
-  initialSelection
+  initialSelection,
+  operation
 }) {
   const dialogRef = useRef(null),
     titleRef = useRef(null)
   const titleId = useId()
+  const { user } = useAuth()
   const [business, setBusiness] = useState(null)
   const displayBusiness = useLatidoBusinessDisplay(business)
   const [loading, setLoading] = useState(false),
     [error, setError] = useState('')
   const [busy, setBusy] = useState(false),
     [retry, setRetry] = useState(0)
+  const [offers, setOffers] = useState([]),
+    [success, setSuccess] = useState(null)
+  const [selection, setSelection] = useState(initialSelection)
+  const [capacityAccepted, setCapacityAccepted] = useState(false)
+  const progress = useRef({ step: 1, started: false, published: false })
+  const capacity = offerCapacity(offers)
+  useEffect(() => {
+    setSelection(initialSelection)
+    setCapacityAccepted(false)
+  }, [initialSelection])
+  useEffect(() => {
+    if (!open) {
+      setSuccess(null)
+      return
+    }
+    progress.current = { step: 1, started: false, published: false }
+    return () => {
+      if (progress.current.started && !progress.current.published)
+        trackCardEvent('form_abandon', {
+          step: progress.current.step,
+          mode: operation?.mode || 'create'
+        })
+    }
+  }, [open, operation?.mode])
   useEffect(() => {
     if (!open) return undefined
     const dialog = dialogRef.current
@@ -49,7 +82,10 @@ export default function LatidoCardOfferModal({
         const selected = data.businesses.find((item) => item.id === providerId)
         if (!selected) throw new Error('FORBIDDEN')
         if (selected.suspended) throw new Error('BUSINESS_SUSPENDED')
-        if (active) setBusiness(selected)
+        if (active) {
+          setBusiness(selected)
+          setOffers(data.offers || [])
+        }
       })
       .catch((err) => {
         if (active) setError(cardErrorMessage(err))
@@ -81,7 +117,15 @@ export default function LatidoCardOfferModal({
       <div className="lc-offer-modal-header">
         <div>
           <h2 id={titleId} ref={titleRef} tabIndex={-1}>
-            Crear oferta
+            {success
+              ? operation?.mode === 'edit'
+                ? '¡Oferta actualizada!'
+                : '¡Oferta publicada!'
+              : operation?.mode === 'edit'
+                ? 'Editar oferta'
+                : operation?.mode === 'replace'
+                  ? 'Crear nueva versión'
+                  : 'Crear oferta'}
           </h2>
           {business && <p>{business.name}</p>}
         </div>
@@ -109,23 +153,136 @@ export default function LatidoCardOfferModal({
             </button>
           </div>
         )}
-        {business && (
-          <div hidden={loading || Boolean(error)}>
-            <LatidoCardOfferForm
-              business={displayBusiness}
-              initialSelection={initialSelection}
-              onPublish={async (offer) => {
+        {success ? (
+          <div className="lc-offer-success" role="region" aria-label="Oferta publicada">
+            <LatidoOfferPreview offer={success.offer} business={displayBusiness} />
+            {success.first ? (
+              <>
+                <h3>Siguiente paso: pon tu QR en la caja</h3>
+                <LatidoCardBusinessMaterial business={business} />
+              </>
+            ) : (
+              <p>Tu QR no cambia: los clientes ya verán la nueva oferta.</p>
+            )}
+            <div className="lc-actions">
+              <Link
+                className="lc-button"
+                to={`/card/negocios?negocio=${providerId}`}
+                onClick={close}
+              >
+                Ir a Mi negocio
+              </Link>
+              <button className="lc-button lc-button--secondary" onClick={close}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        ) : business?.published === false ? (
+          <p>
+            Tu negocio está pendiente de revisión. Cuando esté aprobado podrás crear tu oferta
+            gratis aquí.
+          </p>
+        ) : business &&
+          !loading &&
+          !error &&
+          !operation &&
+          !capacityAccepted &&
+          (capacity.full || (capacity.regular.length > 0 && !selection?.requires_claim)) ? (
+          <div className="lc-capacity-notice">
+            <h3>
+              {capacity.full
+                ? 'Ya tienes todas las ofertas disponibles'
+                : 'Ya tienes tu descuento habitual activo'}
+            </h3>
+
+            {!capacity.full && (
+              <button
+                className="lc-button"
+                onClick={() => {
+                  setSelection({
+                    ...selection,
+                    requires_claim: true,
+                    usage_period: 'lifetime',
+                    usage_limit: 1
+                  })
+                  setCapacityAccepted(true)
+                }}
+              >
+                Crear una promoción limitada
+              </button>
+            )}
+            <button
+              className="lc-button lc-button--secondary"
+              disabled={busy}
+              onClick={async () => {
                 setBusy(true)
                 try {
-                  await cardRpc('lc_save_offer', { p_provider: providerId, p_offer: offer })
-                  toast.success('Oferta publicada. Ya está disponible para la comunidad.')
-                  onPublished()
+                  await cardRpc('lc_set_offer_active', {
+                    p_offer: capacity.regular[0].id,
+                    p_active: false
+                  })
+                  setOffers((items) =>
+                    items.map((o) =>
+                      o.id === capacity.regular[0].id ? { ...o, active: false } : o
+                    )
+                  )
+                  setCapacityAccepted(true)
+                } catch (err) {
+                  setError(cardErrorMessage(err))
                 } finally {
                   setBusy(false)
                 }
               }}
-            />
+            >
+              Pausar el actual
+            </button>
           </div>
+        ) : (
+          business && (
+            <div hidden={loading || Boolean(error)}>
+              <LatidoCardOfferForm
+                business={displayBusiness}
+                initialSelection={selection}
+                promotionOnly={!operation && capacity.regular.length > 0}
+                promotionUnavailable={
+                  capacity.promotions.length >= 2 && !operation?.offer?.requires_claim
+                }
+                onStepChange={(step) => {
+                  progress.current.step = step
+                  if (!progress.current.started) {
+                    progress.current.started = true
+                    progress.current.published = false
+                    trackCardEvent('form_start', { mode: operation?.mode || 'create' })
+                  }
+                }}
+                onPublish={async (offer) => {
+                  setBusy(true)
+                  try {
+                    if (operation?.mode === 'edit')
+                      await cardRpc('lc_update_offer', {
+                        p_offer_id: operation.offer.id,
+                        p_offer: offer
+                      })
+                    else if (operation?.mode === 'replace')
+                      await cardRpc('lc_replace_offer', {
+                        p_old: operation.offer.id,
+                        p_offer: offer
+                      })
+                    else await cardRpc('lc_save_offer', { p_provider: providerId, p_offer: offer })
+                    progress.current.published = true
+                    invalidateCardCatalog()
+                    trackCardEvent('offer_published', { mode: operation?.mode || 'create' })
+                    setSuccess({ offer, first: !offers.length })
+                    refreshCardBusinessAccess(user?.id).catch(() => {})
+                    onPublished()
+                    requestAnimationFrame(() => titleRef.current?.focus())
+                  } finally {
+                    setBusy(false)
+                  }
+                }}
+              />
+            </div>
+          )
         )}
       </div>
     </dialog>,

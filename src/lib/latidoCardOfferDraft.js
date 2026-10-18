@@ -17,6 +17,7 @@ export const initialOfferDraft = () => ({
   scope: 'all',
   detail: '',
   description: '',
+  legacy_title: '',
   minimum_spend: '0',
   requires_claim: false,
   stock_total: '',
@@ -24,6 +25,77 @@ export const initialOfferDraft = () => ({
   usage_limit: 1,
   ends_at: ''
 })
+
+// Convert a calendar day to its last second in Zurich, independently of the browser zone.
+export function zurichEndOfDay(day) {
+  if (!day) return 'infinity'
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day)
+  if (!match) throw new Error('INVALID_DATE')
+  const target = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 23, 59, 59)
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Zurich',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  })
+  let instant = target
+  for (let i = 0; i < 3; i++) {
+    const parts = Object.fromEntries(
+      formatter.formatToParts(new Date(instant)).map((p) => [p.type, p.value])
+    )
+    const local = Date.UTC(
+      +parts.year,
+      +parts.month - 1,
+      +parts.day,
+      +parts.hour,
+      +parts.minute,
+      +parts.second
+    )
+    instant += target - local
+  }
+  return new Date(instant).toISOString()
+}
+
+export function offerToDraft(offer) {
+  const saved = offer.original_draft
+  const fallback = initialOfferDraft()
+  const type = ['percent', 'fixed', 'gift'].includes(offer.benefit_type)
+    ? offer.benefit_type
+    : offer.benefit_type === 'two_for_one'
+      ? 'combo'
+      : 'other'
+  const day =
+    offer.ends_at && offer.ends_at !== 'infinity'
+      ? new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/Zurich',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).format(new Date(offer.ends_at))
+      : ''
+  return {
+    ...fallback,
+    type,
+    value: String(offer.benefit_value || 10),
+    customValue: true,
+    gift: offer.title.replace(/^Regalo:\s*/i, ''),
+    benefit: offer.title,
+    // Legacy titles cannot always be reconstructed. Preserve them until the owner changes the offer.
+    legacy_title: saved ? '' : offer.title,
+    ...(saved && typeof saved === 'object' ? saved : {}),
+    minimum_spend: String(offer.minimum_spend || 0),
+    description: offer.description || '',
+    requires_claim: Boolean(offer.requires_claim),
+    stock_total: String(offer.stock_total || ''),
+    usage_period: offer.usage_period,
+    usage_limit: offer.usage_limit,
+    ends_at: day
+  }
+}
 
 const prefixed = (text, prefix) =>
   new RegExp(`^${prefix}\\s`, 'i').test(text.trim()) ? text.trim() : `${prefix} ${text.trim()}`
@@ -56,7 +128,7 @@ export function createOfferPayload(draft) {
           ? `${name} ${specific ? prefixed(draft.detail, 'en') : 'en tus compras'}`
           : `${name} ${specific ? prefixed(draft.detail, 'en') : 'de descuento'}`
   return {
-    title,
+    title: draft.legacy_title || title,
     description: draft.description.trim(),
     // Other bundles are described benefits; never store 3x2 as a 2x1.
     benefit_type: monetary
@@ -75,6 +147,7 @@ export function createOfferPayload(draft) {
     usage_period: draft.requires_claim ? 'lifetime' : draft.usage_period,
     usage_limit: draft.requires_claim ? 1 : Number(draft.usage_limit),
     // PostgreSQL infinity is a real unbounded end, compatible with the existing RPC.
-    ends_at: draft.ends_at ? new Date(draft.ends_at).toISOString() : 'infinity'
+    ends_at: zurichEndOfDay(draft.ends_at),
+    original_draft: { ...draft }
   }
 }

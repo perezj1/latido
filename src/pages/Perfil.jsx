@@ -2634,8 +2634,8 @@ export default function Perfil() {
             {businessPublications.map(item => {
               const hasActivePlan = isBusinessPromotionActive(item.raw)
               return (
+                <div key={item.id}>
                 <PublicationManagementCard
-                  key={item.id}
                   item={item}
                   actionLabel={hasActivePlan ? 'Editar' : 'Destacar'}
                   actionAriaLabel={`${hasActivePlan ? 'Editar' : 'Destacar'} ${item.title || 'negocio'}`}
@@ -2648,6 +2648,8 @@ export default function Perfil() {
                       navigate(`/negocios/${item.id}/destacar`)
                     }}
                 />
+                <button type="button" onClick={() => { setProfessionalOpen(false); navigate(`/card/negocios?negocio=${item.id}`) }} style={{ minHeight:44, color:C.primary, background:'none', border:0, fontFamily:PP, fontWeight:700, cursor:'pointer' }}>Ofertas Tarjeta Latido →</button>
+                </div>
               )
             })}
           </div>
@@ -3007,6 +3009,7 @@ export default function Perfil() {
             const adNeedsReview = isAdDueForReview(item, adReviewConfirmations)
             return (
               <div key={deleteKey} style={{ marginBottom:10 }}>
+                {item.kind === 'business' && <button type="button" onClick={() => { setManageOpen(false); navigate(`/card/negocios?negocio=${item.id}`) }} style={{ minHeight:44, color:C.primary, background:'none', border:0, fontFamily:PP, fontWeight:700, cursor:'pointer' }}>Ofertas Tarjeta Latido →</button>}
                 <PublicationManagementCard
                   item={item}
                   expiredEvent={expiredEvent}
@@ -3048,6 +3051,7 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
             </div>
             <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
+            {actionItem.kind === 'business' && <Btn onClick={() => { setActionItem(null); navigate(`/card/negocios?negocio=${actionItem.id}`) }} variant="secondary" style={{ marginBottom:10 }}>Ofertas Tarjeta Latido</Btn>}
             {['ad', 'job'].includes(actionItem.kind) && actionItem.active && !actionItem.expired && (
               <button
                 onClick={() => handlePublicationLifecycle(actionItem, 'resolve')}

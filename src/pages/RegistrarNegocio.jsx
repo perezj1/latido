@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
@@ -13,10 +13,8 @@ import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
-import BusinessProfileShareModal from '../components/BusinessProfileShareModal'
 import { getPushStatus } from '../lib/pushNotifications'
-import { getBusinessPath } from '../lib/seo'
-import { markShareCardShared, markShareCardReminderShown } from '../lib/shareCardReminder'
+import { markShareCardReminderShown } from '../lib/shareCardReminder'
 import LatidoCardBusinessInvitation from '../components/LatidoCardBusinessInvitation'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { canUseWhatsappNumber } from '../lib/businessContact'
@@ -36,6 +34,9 @@ const LANDING_PAGE_MONTHLY_PRICE = 49
 export default function RegistrarNegocio() {
   const { isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const fromCard = params.get('origen') === 'tarjeta'
+  const authNext = `/auth?next=${encodeURIComponent(fromCard ? '/registrar-negocio?origen=tarjeta' : '/registrar-negocio')}`
   const [step, setStep] = useState(0)
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
@@ -43,7 +44,6 @@ export default function RegistrarNegocio() {
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [done, setDone] = useState(false)
   const [publishedBusiness, setPublishedBusiness] = useState(null)
-  const [shareCardOpen, setShareCardOpen] = useState(false)
   const [publishedForReview, setPublishedForReview] = useState(false)
   useEffect(() => {
     if (done && publishedBusiness?.id && !publishedForReview) {
@@ -172,8 +172,8 @@ export default function RegistrarNegocio() {
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
         Para registrar tu negocio necesitas una cuenta. Es gratis y sin spam.
       </p>
-      <Btn onClick={() => navigate('/auth')}>Crear cuenta gratis</Btn>
-      <button onClick={() => navigate('/auth')} style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.primary, background:'none', border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 0', width:'100%', cursor:'pointer', marginTop:10 }}>
+      <Btn onClick={() => navigate(authNext)}>Crear cuenta gratis</Btn>
+      <button onClick={() => navigate(authNext)} style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.primary, background:'none', border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 0', width:'100%', cursor:'pointer', marginTop:10 }}>
         Ya tengo cuenta — iniciar sesión
       </button>
     </div>
@@ -185,28 +185,13 @@ export default function RegistrarNegocio() {
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Negocio enviado a revisión' : '¡Negocio publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
         {publishedForReview
-          ? 'Tu negocio quedó oculto temporalmente hasta que el equipo lo revise.'
+          ? 'El equipo revisará tu negocio antes de hacerlo visible. Cuando esté aprobado, podrás crear tu oferta gratis desde Mi negocio en Tarjeta Latido. Tu QR estará disponible después de publicar la oferta.'
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       {!publishedForReview && publishedBusiness?.id && (
         <LatidoCardBusinessInvitation business={publishedBusiness} onDismiss={() => navigate('/')} />
       )}
-      <Btn onClick={() => setShareCardOpen(true)} disabled={!publishedBusiness}>Comparte tu negocio</Btn>
-      <button onClick={() => navigate('/')} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
-        Volver a Latido
-      </button>
-      {publishedBusiness && (
-        <BusinessProfileShareModal
-          business={publishedBusiness}
-          categoryLabel={NEGOCIO_TYPES_FORM.find(type => type.id === publishedBusiness.type)?.label || ''}
-          imageUrl={publishedBusiness.photo_url || ''}
-          url={getBusinessPath(publishedBusiness)}
-          isOwner
-          open={shareCardOpen}
-          onClose={() => setShareCardOpen(false)}
-          onShared={() => markShareCardShared('business', user?.id, publishedBusiness.id)}
-        />
-      )}
+      {publishedForReview && <button onClick={() => navigate('/card/negocios')} style={{ minHeight:44, background:'none', border:'none', cursor:'pointer', color:C.primary }}>Ir a Mi negocio</button>}
     </div>
   )
 
@@ -619,7 +604,7 @@ export default function RegistrarNegocio() {
                     ? `${selectedPlanOption.label}${paidLandingPageSelected ? ' + Landing' : ''} · CHF ${professionalTotal}/mes`
                     : professionalOptionsActive
                       ? 'Elige un plan para activarlo'
-                      : 'Opcional · elige un plan cuando quieras'}
+                      : fromCard ? 'Opcional. Puedes activarlo más tarde' : 'Opcional · elige un plan cuando quieras'}
                 </span>
               </span>
             </span>

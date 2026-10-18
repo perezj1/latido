@@ -2095,6 +2095,7 @@ export default function Home() {
                       <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         📍 {business.city}
                       </p>
+                      <LatidoCardBusinessBenefit providerId={business.id} />
                     </div>
                   </div>
                   </Link>
@@ -2322,3 +2323,4 @@ export default function Home() {
     </div>
   )
 }
+import LatidoCardBusinessBenefit from '../components/LatidoCardBusinessBenefit'

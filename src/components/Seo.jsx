@@ -41,7 +41,7 @@ function upsertJsonLd(data) {
   tag.textContent = JSON.stringify(data)
 }
 
-function applySeo(seo) {
+export function applySeo(seo) {
   document.documentElement.lang = 'es'
   document.title = seo.title || DEFAULT_SEO.title
   const socialDescription = seo.socialDescription || seo.description || DEFAULT_SEO.description

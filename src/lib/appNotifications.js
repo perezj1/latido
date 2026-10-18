@@ -1,4 +1,6 @@
 export const APP_NOTIFICATION_KINDS = Object.freeze({
+  CARD_BUSINESS:'card_business',
+  CARD_MEMBER:'card_member',
   MESSAGE:'message',
   CARD_PHYSICAL_REQUEST:'card_physical_request',
   CARD_PHYSICAL_STATUS:'card_physical_status',
@@ -15,6 +17,8 @@ export const APP_NOTIFICATION_KINDS = Object.freeze({
 })
 
 const KIND_ORDER = [
+  APP_NOTIFICATION_KINDS.CARD_BUSINESS,
+  APP_NOTIFICATION_KINDS.CARD_MEMBER,
   APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST,
   APP_NOTIFICATION_KINDS.CARD_PHYSICAL_STATUS,
   APP_NOTIFICATION_KINDS.MESSAGE,
@@ -65,6 +69,9 @@ function describeNotificationGroup(kind, rows) {
   const targetTitle = String(data.target_title || '').trim()
 
   switch (kind) {
+    case APP_NOTIFICATION_KINDS.CARD_BUSINESS:
+    case APP_NOTIFICATION_KINDS.CARD_MEMBER:
+      return { icon:'💳', title:count === 1 ? data.title || 'Novedades de Tarjeta Latido' : `${count} novedades de Tarjeta Latido`, body:count === 1 ? data.body || '' : 'Consulta tus avisos de Tarjeta Latido.', href:data.href || '/card' }
     case APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST:
       return { icon:'💳', title:count===1?'Nueva solicitud de tarjeta física':`${count} solicitudes de tarjeta física`, body:count===1?`${data.reference || 'Solicitud'} · Revisa la entrega y la emisión.`:'Abre la bandeja de Tarjeta Latido para gestionarlas.', href:'/card/admin' }
     case APP_NOTIFICATION_KINDS.CARD_PHYSICAL_STATUS:

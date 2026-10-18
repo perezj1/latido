@@ -66,6 +66,8 @@ import {
   parseResultRooms,
 } from '../lib/latidoAssistantSearch'
 import { getMyListMatchTerms } from '../lib/myList'
+import useCardCatalog from '../hooks/useCardCatalog'
+import LatidoCardBusinessBenefit from './LatidoCardBusinessBenefit'
 
 const BUSINESS_EMOJI = {
   restaurante:'🍽️',
@@ -154,6 +156,7 @@ function getSearchFilterControlStyle(value) {
 }
 
 const TYPE_COLORS = {
+  card_offer:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Oferta para socios' },
   ad:{ bg:'#DBEAFE', color:'#1D4ED8', label:'Anuncio' },
   job:{ bg:'#E0F2FE', color:'#0369A1', label:'Empleo' },
   community:{ bg:'#D1FAE5', color:'#065F46', label:'Grupo' },
@@ -966,7 +969,7 @@ function getBusinessPlanSearchLabel(business) {
   return ''
 }
 
-function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQuery = null) {
+function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQuery = null, cardOffers = []) {
   const semanticQuery = assistantQuery?.active ? assistantQuery.semanticQuery : query
   const profile = buildSearchProfile(semanticQuery)
   const hasSearchQuery = profile.normalized.length >= 2
@@ -978,6 +981,17 @@ function searchAll(query, datasets, isLoggedIn, allowBrowse = false, assistantQu
     : (assistantQuery?.scope?.professionalLabel || getSearchInterpretation(profile))
 
   const results = []
+  for (const offer of cardOffers) {
+    const searchScore = getSearchScore([
+      { value: offer.title, weight: 6 }, { value: offer.business_name, weight: 5 },
+      { value: offer.city, weight: 3 }, { value: offer.description, weight: 2 },
+      { value: 'tarjeta descuento socios oferta', weight: 1 }
+    ])
+    if (searchScore) results.push({ type:'card_offer', id:offer.id, icon:'💳', image:offer.business_photo_url,
+      label:offer.title, sub:`Oferta para socios · ${offer.business_name}${offer.city ? ` · ${offer.city}` : ''}`,
+      href:`/card/negocio/${offer.provider_id}?oferta=${offer.id}`, searchScore,
+      filterMeta:{ categories:['negocios', offer.category].filter(Boolean), city:offer.city, location:offer.city, canton:getCantonForCity(offer.city), intent:'ofrece' } })
+  }
   const metaSeparator = ' \u00B7 '
 
   for (const ad of datasets.ads) {
@@ -1475,6 +1489,7 @@ export default function GlobalSearch({
   const trackedSearchAttemptsRef = useRef(new Set())
 
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
+  const cardOffers = useCardCatalog()
   const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
   const [loadingData, setLoadingData] = useState(false)
   const [creatorDataVersion, setCreatorDataVersion] = useState(0)
@@ -1557,8 +1572,9 @@ export default function GlobalSearch({
       isLoggedIn,
       hasActiveSearchFilters(effectiveSearchFilters),
       assistantQuery,
+      cardOffers,
     ),
-    [assistantQuery, deferredQuery, isLoggedIn, searchDatasets, searchFilterKey]
+    [assistantQuery, deferredQuery, isLoggedIn, searchDatasets, searchFilterKey, cardOffers]
   )
 
   const searchFilteredResults = useMemo(
@@ -2950,6 +2966,7 @@ export default function GlobalSearch({
                           </p>
                           <p style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:'0 0 5px', lineHeight:1.25, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                             <HighlightSearchText text={result.label} tokens={highlightTokens} />
+                            {result.type === 'business' && <LatidoCardBusinessBenefit providerId={result.id} />}
                           </p>
                           <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.45, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                             <HighlightSearchText text={result.sub} tokens={highlightTokens} />
@@ -2987,6 +3004,7 @@ export default function GlobalSearch({
                         </p>
                       )}
                       <p style={{ fontFamily:PP, fontSize:11, color:C.mid, margin:0, lineHeight:1.45, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}><HighlightSearchText text={result.sub} tokens={highlightTokens} /></p>
+                      {result.type === 'business' && <LatidoCardBusinessBenefit providerId={result.id} />}
                     </div>
                     {result.privacy === 'private' && <span style={{ fontSize:12, marginTop:6, flexShrink:0 }}>🔒</span>}
                   </div>
@@ -3367,6 +3385,7 @@ export default function GlobalSearch({
                             </span>
                             {result.matchReason && <em>Coincide por: {result.matchReason}</em>}
                             <span><HighlightSearchText text={result.sub} tokens={highlightTokens} /></span>
+                            {result.type === 'business' && <LatidoCardBusinessBenefit providerId={result.id} />}
                           </span>
                         </button>
                       )
@@ -3490,6 +3509,7 @@ export default function GlobalSearch({
                           </span>
                           {result.matchReason && <em>Coincide por: {result.matchReason}</em>}
                           <span><HighlightSearchText text={result.sub} tokens={highlightTokens} /></span>
+                          {result.type === 'business' && <LatidoCardBusinessBenefit providerId={result.id} />}
                         </span>
                       </button>
                     )

@@ -1,64 +1,75 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { Share2, Printer, Copy } from 'lucide-react'
-import { cardRpc, businessCardUrl } from '../lib/latidoCard'
-import { cardErrorMessage } from '../lib/latidoCardCore'
-import { shareCardBusiness } from '../lib/latidoCardShare'
-import LatidoCardQr from '../components/LatidoCardQr'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { ChevronRight, MapPin, Pencil, Share2, Sparkles } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { shareCardOffer } from '../lib/latidoCardShare'
+import { cardRpc } from '../lib/latidoCard'
+import { cardErrorMessage, offerUsageLabel } from '../lib/latidoCardCore'
+import { liveOffers, offerCapacity, offerState } from '../lib/latidoCardExperience'
+import { offerToDraft } from '../lib/latidoCardOfferDraft'
+import { trackCardEvent } from '../lib/analytics'
+import { invalidateCardCatalog } from '../lib/latidoCardCatalog'
 import { useLatidoCardOffer } from '../components/LatidoCardOfferProvider'
-import LatidoCardBusinessInvitation from '../components/LatidoCardBusinessInvitation'
-import { CardHeader, OfferConditions, cardDate } from './LatidoCard'
+import LatidoCardBusinessMaterial from '../components/LatidoCardBusinessMaterial'
+import LatidoCardBusinessImage from '../components/LatidoCardBusinessImage'
+import { OfferBenefitBadge, OfferBrandStripe } from '../components/LatidoOfferVisual'
+import { CardHeader } from './LatidoCard'
 import './LatidoCard.css'
 
+const activityDate = (value) =>
+  new Date(value).toLocaleString('es-CH', {
+    timeZone: 'Europe/Zurich',
+    dateStyle: 'short',
+    timeStyle: 'short'
+  })
+
 export default function LatidoCardBusiness() {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
   const { openOffer, revision } = useLatidoCardOffer()
-  const [provider, setProvider] = useState('')
+  const provider = params.get('negocio') || ''
   const [data, setData] = useState({ businesses: [], offers: [], history: [] })
   const [error, setError] = useState(''),
-    [notice, setNotice] = useState(''),
-    [busy, setBusy] = useState(false),
+    [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(true)
-  const generation = useRef(0),
-    lock = useRef(false)
-  const publicLinkRef = useRef(null)
-  const [copiedLink, setCopiedLink] = useState('')
-  const [businessView, setBusinessView] = useState(null)
-  useEffect(() => {
-    setBusinessView(null)
-  }, [provider])
-  useEffect(() => {
-    if (businessView) {
-      document.getElementById('lc-published-offers-title')?.focus({ preventScroll: true })
-    }
-  }, [businessView])
+  const [historyLimit, setHistoryLimit] = useState(20)
   const [reversal, setReversal] = useState(null),
     [reason, setReason] = useState('')
+  const generation = useRef(0),
+    lock = useRef(false)
   const refresh = useCallback(async () => {
     const version = ++generation.current
     const initial = await cardRpc('lc_business_dashboard')
-    const selected =
-      initial.businesses.find((b) => b.id === (provider || params.get('negocio'))) ||
-      initial.businesses[0]
-    if (!selected) {
-      if (version === generation.current) setData(initial)
-      return
-    }
-    const detail = await cardRpc('lc_business_dashboard', { p_provider: selected.id })
+    const selected = initial.businesses.find((b) => b.id === provider) || initial.businesses[0]
+    const detail = selected
+      ? await cardRpc('lc_business_dashboard', { p_provider: selected.id })
+      : initial
     if (version === generation.current) {
-      setData(detail)
-      setProvider(selected.id)
+      setData({ ...detail, selectedProvider: selected?.id || '' })
+      setError('')
     }
-  }, [provider, params])
+  }, [provider])
   useEffect(() => {
+    let live = true
     setLoading(true)
+    setReversal(null)
+    setHistoryLimit(20)
     refresh()
-      .catch((err) => setError(cardErrorMessage(err)))
-      .finally(() => setLoading(false))
+      .catch((err) => {
+        if (live) setError(cardErrorMessage(err))
+      })
+      .finally(() => {
+        if (live) setLoading(false)
+      })
     return () => {
+      live = false
       ++generation.current
     }
   }, [refresh, revision])
+  useEffect(() => {
+    trackCardEvent('business_visit')
+  }, [])
   const run = async (action) => {
     if (lock.current) return
     lock.current = true
@@ -66,6 +77,7 @@ export default function LatidoCardBusiness() {
     setError('')
     try {
       await action()
+      invalidateCardCatalog()
       await refresh()
     } catch (err) {
       setError(cardErrorMessage(err))
@@ -74,39 +86,14 @@ export default function LatidoCardBusiness() {
       setBusy(false)
     }
   }
-  const business = data.businesses.find((b) => b.id === provider)
-  const qrUrl = provider ? businessCardUrl(provider) : ''
-  const copyPublicLink = async () => {
-    try {
-      await navigator.clipboard.writeText(qrUrl)
-    } catch {
-      const input = publicLinkRef.current
-      input?.focus()
-      input?.select()
-      input?.setSelectionRange(0, input.value.length)
-      try {
-        if (!document.execCommand('copy')) throw new Error('Copy unavailable')
-      } catch {
-        setNotice('El enlace está seleccionado. Usa Copiar en el menú de tu dispositivo.')
-        return
-      }
-    }
-    setCopiedLink(qrUrl)
-  }
+  const business = data.businesses.find((b) => b.id === data.selectedProvider) || data.businesses[0]
+  const capacity = offerCapacity(
+    data.offers,
+    data.server_now ? Date.parse(data.server_now) : undefined
+  )
   return (
-    <div className="lc-page lc-member-page">
+    <div className="lc-page lc-member-page lc-business-page lc-app-page">
       <CardHeader />
-      {!loading && !business && (
-        <section className="lc-hero lc-business-hero">
-          <span className="lc-eyebrow">Negocios participantes</span>
-          <h1>Tu negocio y la comunidad, más cerca.</h1>
-          <p>
-            Ofrece descuentos a la comunidad Latido. El cliente muestra su pantalla y tú aplicas el
-            beneficio.
-          </p>
-          <span className="lc-badge lc-badge--success">Participación gratuita</span>
-        </section>
-      )}
       {error && (
         <p className="lc-alert" role="alert">
           {error}
@@ -121,58 +108,84 @@ export default function LatidoCardBusiness() {
         <p role="status">Cargando tu negocio…</p>
       ) : !business ? (
         <section className="lc-panel lc-business-current">
-          <p>Registra tu negocio para ofrecer descuentos a la comunidad Latido.</p>
-          <Link className="lc-button" to="/registrar-negocio">
+          <span className="lc-eyebrow">Participación gratuita</span>
+          <h1>Tu negocio y la comunidad, más cerca.</h1>
+          <p>
+            Publica tu negocio y crea una oferta. Tú pones las condiciones y el descuento se aplica
+            en tu caja.
+          </p>
+          <Link className="lc-button" to="/registrar-negocio?origen=tarjeta">
             Registrar mi negocio
           </Link>
         </section>
       ) : (
         <>
           <section className="lc-panel lc-business-current">
-            <span className="lc-eyebrow">Mi negocio</span>
-            <h1>{business.name}</h1>
-            <span className="lc-badge">
-              {business.suspended
-                ? 'Participación suspendida'
-                : business.active
-                  ? 'Participando en Tarjeta Latido'
-                  : 'Publica tu primer descuento'}
-            </span>
-            {!business.suspended && (
-              <div className="lc-business-management-actions">
-                <button
-                  type="button"
-                  className="lc-button lc-button--secondary"
-                  aria-controls="lc-published-offers"
-                  aria-expanded={businessView === 'offers'}
-                  onClick={() =>
-                    setBusinessView((current) => (current === 'offers' ? null : 'offers'))
-                  }
-                >
-                  Mis ofertas
-                </button>
-                <button
-                  type="button"
-                  className="lc-button"
-                  aria-controls="lc-create-offer"
-                  aria-haspopup="dialog"
-                  onClick={() => openOffer(business)}
-                >
-                  Crear oferta
-                </button>
+            <div className="lc-business-profile-row">
+              <LatidoCardBusinessImage
+                business={business}
+                offers={data.offers}
+                className="lc-business-profile-logo"
+              />
+              <div>
+                <h1>{business.name}</h1>
+                <p className="lc-business-profile-meta">
+                  {business.city && (
+                    <span>
+                      <MapPin size={14} aria-hidden="true" />
+                      {business.city}
+                    </span>
+                  )}
+                  <span className="lc-badge">
+                    {business.suspended
+                      ? 'Participación suspendida'
+                      : business.published === false
+                        ? 'Pendiente de revisión'
+                        : 'Publicado'}
+                  </span>
+                </p>
               </div>
-            )}
+            </div>
+            <div className="lc-business-profile-actions">
+              <Link
+                className="lc-button lc-button--secondary"
+                to={'/perfil?editar=business:' + business.id}
+              >
+                <Pencil size={16} aria-hidden="true" />
+                Editar negocio
+              </Link>
+            </div>
+            <div className="lc-form lc-spaced">
+              <label>
+                Negocio que quieres gestionar
+                <select
+                  aria-label="Negocio que quieres gestionar"
+                  value={business.id}
+                  disabled={busy}
+                  onChange={(e) => {
+                    if (e.target.value === 'add') navigate('/registrar-negocio?origen=tarjeta')
+                    else setParams({ negocio: e.target.value })
+                  }}
+                >
+                  {data.businesses.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                  <option value="add">＋ Agregar un negocio</option>
+                </select>
+              </label>
+            </div>
           </section>
-          {!business.suspended && !data.offers.length && businessView === null && (
-            <LatidoCardBusinessInvitation
-              business={business}
-                onCreate={(target, selection) => openOffer(target, selection)}
-            />
-          )}
           {business.suspended ? (
             <p className="lc-alert">
               Latido ha retirado este negocio del programa. Contacta con Latido para revisar su
               participación.
+            </p>
+          ) : business.published === false ? (
+            <p className="lc-panel">
+              Tu negocio está pendiente de revisión. Cuando esté aprobado, podrás publicar tu
+              primera oferta gratis aquí.
             </p>
           ) : (
             <>
@@ -180,208 +193,246 @@ export default function LatidoCardBusiness() {
                 className="lc-panel lc-spaced"
                 id="lc-published-offers"
                 aria-labelledby="lc-published-offers-title"
-                hidden={businessView !== 'offers'}
               >
-                <h2 id="lc-published-offers-title" tabIndex={-1}>
-                  Tus ofertas
-                </h2>
-                {!data.offers.length && <p>Aún no has publicado descuentos.</p>}
-                {data.offers.map((offer) => (
-                  <article className="lc-offer" key={offer.id}>
-                    <h3>{offer.title}</h3>
-                    <OfferConditions offer={offer} />
-                    <small>El cliente activa y confirma el descuento al comprar.</small>
-                    <div className="lc-actions">
-                      <button
-                        className="lc-button lc-button--secondary"
-                        disabled={busy}
-                        onClick={() =>
-                          run(() =>
-                            cardRpc('lc_set_offer_active', {
-                              p_offer: offer.id,
-                              p_active: !offer.active
-                            })
-                          )
-                        }
-                      >
-                        {offer.active ? 'Pausar' : 'Reactivar'}
-                      </button>
-                      {!offer.active && (
+                <div className="lc-business-section-heading">
+                  <h2 id="lc-published-offers-title">Tus ofertas</h2>
+                  <span className="lc-muted">
+                    {data.offers.filter((offer) => offerState(offer) === 'Activa').length} activas
+                  </span>
+                </div>
+                {capacity.full && (
+                  <p role="status">
+                    Ya tienes todas las ofertas disponibles. Pausa una para publicar otra.
+                  </p>
+                )}
+                {!data.offers.length && (
+                  <p>Tu primera oferta empieza con un descuento para tu comunidad.</p>
+                )}
+                <div className="lc-managed-offers">
+                  {data.offers.map((offer) => (
+                    <article className="lc-managed-offer" key={offer.id}>
+                      <div className="lc-managed-offer-head">
+                        <OfferBenefitBadge offer={offer} />
+                        <div className="lc-managed-offer-info">
+                          <div className="lc-managed-offer-title">
+                            <h3>{offer.title}</h3>
+                            <span className="lc-badge" data-state={offerState(offer)}>
+                              {offerState(offer)}
+                            </span>
+                          </div>
+                          <p>{offerUsageLabel(offer)}</p>
+                          {offer.requires_claim && (
+                            <p className="lc-managed-offer-limit">
+                              Promoción limitada
+                              {offer.remaining != null ? ' · Quedan ' + offer.remaining : ''}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="lc-managed-offer-meta">
                         <button
-                          className="lc-button lc-button--danger"
+                          className="lc-text-button"
                           disabled={busy}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                '¿Borrar este descuento? Sus usos anteriores se conservarán en el historial.'
-                              )
-                            ) {
-                              run(async () => {
-                                await cardRpc('lc_delete_offer', { p_offer: offer.id })
-                                setNotice('Descuento borrado. El historial se conserva.')
+                          onClick={() =>
+                            openOffer(business, offerToDraft(offer), {
+                              mode: offer.has_activity ? 'replace' : 'edit',
+                              offer
+                            })
+                          }
+                        >
+                          <Pencil size={15} aria-hidden="true" />
+                          {offer.has_activity ? 'Crear nueva versión' : 'Editar'}
+                        </button>
+                        <button
+                          className="lc-text-button"
+                          onClick={async () => {
+                            try {
+                              const result = await shareCardOffer({
+                                ...offer,
+                                provider_id: business.id,
+                                business_name: business.name
                               })
+                              if (result.status === 'copied')
+                                toast.success('Enlace de la oferta copiado.')
+                              if (result.status === 'manual')
+                                setNotice('Enlace público de la oferta: ' + result.url)
+                            } catch {
+                              toast.error('No se pudo compartir la oferta. Vuelve a intentarlo.')
                             }
                           }}
                         >
-                          Borrar
+                          <Share2 size={15} aria-hidden="true" />
+                          Compartir
                         </button>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </section>
-              <section className="lc-panel lc-business-qr">
-                <h2>El QR de tu negocio</h2>
-                <p>
-                  Muestra a los clientes los descuentos de tu negocio. Colócalo en un sitio visible
-                  o compártelo.
-                </p>
-                <div className="lc-business-sticker" id="lc-business-sticker">
-                  <strong>TARJETA LATIDO</strong>
-                  <h3>{business.name}</h3>
-                  <LatidoCardQr value={qrUrl} label={`QR público de ${business.name}`} />
-                  <strong className="lc-business-sticker-caption">
-                    Escanea para obtener descuentos
-                  </strong>
+                        <details className="lc-action-menu">
+                          <summary aria-label={`Acciones de ${offer.title}`}>⋯</summary>
+                          <div>
+                            <button
+                              disabled={busy}
+                              onClick={() =>
+                                run(() =>
+                                  cardRpc('lc_set_offer_active', {
+                                    p_offer: offer.id,
+                                    p_active: !offer.active
+                                  })
+                                )
+                              }
+                            >
+                              {offer.active ? 'Pausar' : 'Reactivar'}
+                            </button>
+                            {!offer.active && (
+                              <button
+                                disabled={busy}
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      '¿Borrar este descuento? Sus usos anteriores se conservarán en el historial.'
+                                    )
+                                  )
+                                    run(async () => {
+                                      await cardRpc('lc_delete_offer', { p_offer: offer.id })
+                                      setNotice('Descuento borrado. El historial se conserva.')
+                                    })
+                                }}
+                              >
+                                Borrar
+                              </button>
+                            )}
+                          </div>
+                        </details>
+                      </div>
+                      <OfferBrandStripe />
+                    </article>
+                  ))}
                 </div>
-                <div className="lc-qr-actions">
-                  <button className="lc-button" onClick={() => window.print()}>
-                    <Printer size={18} />
-                    Imprimir
-                  </button>
+              </section>
+              <Link className="lc-professional-benefits" to="/colaboraciones">
+                <span>
+                  <Sparkles size={22} aria-hidden="true" />
+                </span>
+                <div>
+                  <strong>Ventajas profesionales</strong>
+                  <small>Más visibilidad para tu negocio</small>
+                </div>
+                <ChevronRight size={19} aria-hidden="true" />
+              </Link>
+              <section
+                className="lc-business-summary lc-panel"
+                aria-label="Resultados de tu negocio"
+              >
+                <h2>Resultados</h2>
+                {data.summary ? (
+                  <div className="lc-business-month-result">
+                    <p>Descuentos usados este mes en tu negocio</p>
+                    <strong>{data.summary.month_uses}</strong>
+                  </div>
+                ) : (
+                  <p className="lc-muted">
+                    El resumen estará disponible al actualizar el servicio de Tarjeta Latido.
+                  </p>
+                )}
+              </section>
+              <section className="lc-panel lc-spaced" aria-labelledby="lc-activity-title">
+                <h2 id="lc-activity-title">Actividad</h2>
+                <p className="lc-muted">Usos que los socios han mostrado en tu negocio.</p>
+                {!data.history.length && <p>Aquí verás los primeros usos de tus ofertas.</p>}
+                <ul className="lc-history">
+                  {data.history.slice(0, historyLimit).map((item) => (
+                    <li key={item.id}>
+                      <strong>{item.title}</strong>
+                      <small>
+                        {activityDate(item.redeemed_at)} · {item.member_reference || '••••'}
+                      </small>
+                      <small>{item.reversed_at ? 'Anulado' : 'Registrado'}</small>
+                      {!item.reversed_at && (
+                        <details className="lc-action-menu">
+                          <summary aria-label={`Acciones del uso de ${item.title}`}>⋯</summary>
+                          <div>
+                            <button
+                              onClick={() => {
+                                setReversal(item.id)
+                                setReason('')
+                              }}
+                            >
+                              Anular uso
+                            </button>
+                          </div>
+                        </details>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {data.history.length > historyLimit && (
                   <button
                     className="lc-button lc-button--secondary"
-                    onClick={async () => {
-                      const result = await shareCardBusiness(provider, business.name)
-                      if (result.status === 'copied') setNotice('Enlace del negocio copiado.')
-                      if (result.status === 'manual')
-                        setNotice('Copia el enlace público que aparece debajo del QR.')
+                    onClick={() => setHistoryLimit((n) => n + 20)}
+                  >
+                    Ver más
+                  </button>
+                )}
+                {reversal && (
+                  <form
+                    className="lc-form"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      run(async () => {
+                        await cardRpc('lc_reverse_redemption', {
+                          p_redemption: reversal,
+                          p_reason: reason
+                        })
+                        setReversal(null)
+                        setNotice('Uso anulado.')
+                      })
                     }}
                   >
-                    <Share2 size={18} />
-                    Compartir
-                  </button>
-                </div>
-                <div className="lc-public-link">
-                  <label htmlFor="lc-public-business-link">Enlace público</label>
-                  <div className="lc-public-link-row">
-                    <input
-                      id="lc-public-business-link"
-                      ref={publicLinkRef}
-                      readOnly
-                      value={qrUrl}
-                      onFocus={(e) => e.target.select()}
-                    />
-                    <button
-                      type="button"
-                      className="lc-button lc-button--secondary"
-                      aria-label="Copiar enlace público"
-                      onClick={copyPublicLink}
-                    >
-                      <Copy size={16} aria-hidden="true" />
-                      <span role="status">{copiedLink === qrUrl ? 'Copiado' : 'Copiar'}</span>
-                    </button>
-                  </div>
-                </div>
+                    <label>
+                      Motivo de la anulación
+                      <input
+                        autoFocus
+                        required
+                        minLength={3}
+                        maxLength={500}
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                      />
+                    </label>
+                    <div className="lc-actions">
+                      <button className="lc-button lc-button--danger" disabled={busy}>
+                        Confirmar anulación
+                      </button>
+                      <button
+                        type="button"
+                        className="lc-button lc-button--secondary"
+                        onClick={() => setReversal(null)}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                )}
               </section>
+              <details className="lc-panel lc-spaced">
+                <summary>Material para tu local</summary>
+                {liveOffers(data.offers).length ? (
+                  <LatidoCardBusinessMaterial key={business.id} business={business} />
+                ) : (
+                  <p>Publica tu primera oferta para obtener tu QR.</p>
+                )}
+              </details>
             </>
           )}
-          <details className="lc-panel lc-spaced">
-            <summary>Últimos usos registrados</summary>
-            <p className="lc-muted">
-              Los clientes registran el uso al mostrar el descuento. Estos datos no acreditan ventas
-              ni descuentos aplicados en caja.
-            </p>
-            <ul className="lc-history">
-              {data.history.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.title}</strong>
-                  <small>
-                    {cardDate(item.redeemed_at)} · {item.reversed_at ? 'Anulado' : 'Uso registrado'}
-                  </small>
-                  {!item.reversed_at && (
-                    <button
-                      className="lc-text-button"
-                      onClick={() => {
-                        setReversal(item.id)
-                        setReason('')
-                      }}
-                    >
-                      Anular uso
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {reversal && (
-              <form
-                className="lc-form"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  run(async () => {
-                    await cardRpc('lc_reverse_redemption', {
-                      p_redemption: reversal,
-                      p_reason: reason
-                    })
-                    setReversal(null)
-                    setNotice('Uso anulado.')
-                  })
-                }}
-              >
-                <label>
-                  Motivo de la anulación
-                  <input
-                    required
-                    minLength={3}
-                    maxLength={500}
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                  />
-                </label>
-                <div className="lc-actions">
-                  <button className="lc-button lc-button--danger" disabled={busy}>
-                    Confirmar anulación
-                  </button>
-                  <button
-                    type="button"
-                    className="lc-button lc-button--secondary"
-                    onClick={() => setReversal(null)}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            )}
-          </details>
         </>
       )}
-      {data.businesses.length > 1 && (
-        <div className="lc-form lc-spaced">
-          <label>
-            Selecciona el negocio que quieres gestionar
-            <select
-              value={provider}
-              disabled={busy || loading}
-              onChange={(e) => {
-                setProvider(e.target.value)
-                setError('')
-                setReversal(null)
-              }}
-            >
-              {data.businesses.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )}
-      {!!data.businesses.length && (
-        <div className="lc-actions lc-spaced">
-          <Link className="lc-button lc-button--secondary" to="/registrar-negocio">
-            ＋ Agregar un negocio
-          </Link>
+      {!loading && business && !business.suspended && business.published !== false && (
+        <div className="lc-business-create-bar">
+          <button
+            className="lc-button"
+            aria-haspopup="dialog"
+            disabled={busy || capacity.full}
+            onClick={() => openOffer(business)}
+          >
+            <span aria-hidden="true">+</span> Crear oferta
+          </button>
         </div>
       )}
     </div>
