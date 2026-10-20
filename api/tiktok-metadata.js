@@ -2,6 +2,7 @@ import { resolveTikTokLink } from './tiktok-resolve.js'
 
 const IMAGE_DOMAINS = ['tiktokcdn.com', 'tiktokcdn-eu.com', 'tiktokcdn-us.com', 'muscdn.com']
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+const UNAVAILABLE_THUMBNAIL = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180"><rect width="320" height="180" fill="#f3f4f6"/><circle cx="160" cy="78" r="28" fill="white"/><path d="m154 65 20 13-20 13z" fill="#475569"/><text x="160" y="132" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="16">TikTok</text></svg>'
 
 function httpError(message, statusCode = 502) {
   return Object.assign(new Error(message), { statusCode })
@@ -104,6 +105,17 @@ export default async function handler(req, res) {
         ? `/api/tiktok-metadata?thumbnail=1&url=${encodeURIComponent(metadata.resolved_url)}` : '',
     })
   } catch (error) {
+    // A cover is optional: keep its video card usable when TikTok is unavailable.
+    // Metadata requests used by the publishing form still report their errors.
+    if (query.get('thumbnail') === '1' && (error?.statusCode || 502) >= 500) {
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8')
+      res.setHeader('X-Content-Type-Options', 'nosniff')
+      res.setHeader('X-Latido-Thumbnail', 'unavailable')
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=60')
+      res.end(UNAVAILABLE_THUMBNAIL)
+      return
+    }
     res.setHeader('Cache-Control', 'no-store')
     sendJson(error?.statusCode || 502, { error:error?.message || 'No se pudieron leer los datos de TikTok.' })
   }

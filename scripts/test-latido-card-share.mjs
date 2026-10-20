@@ -2,9 +2,10 @@ import assert from 'node:assert/strict'
 import handler from '../api/card-share.js'
 
 const previousFetch = globalThis.fetch
-const previousEnv = { url: process.env.VITE_SUPABASE_URL, key: process.env.VITE_SUPABASE_ANON_KEY }
+const previousEnv = { url: process.env.VITE_SUPABASE_URL, key: process.env.VITE_SUPABASE_ANON_KEY, members: process.env.VITE_LATIDO_CARD_MEMBERS_ENABLED }
 process.env.VITE_SUPABASE_URL = 'https://card-test.invalid'
 process.env.VITE_SUPABASE_ANON_KEY = 'public-anon-test-key'
+process.env.VITE_LATIDO_CARD_MEMBERS_ENABLED = 'true'
 const provider = '00000000-0000-4000-8000-000000000010'
 const offerId = '00000000-0000-4000-8000-000000000001'
 const offer = {
@@ -76,6 +77,17 @@ try {
   const count = requests
   await request({ provider: 'invalid/../path', oferta: '<script>' })
   assert.equal(requests, count, 'Invalid identifiers never reach the backend')
+  for (const enabled of [undefined, 'false']) {
+    if (enabled === undefined) delete process.env.VITE_LATIDO_CARD_MEMBERS_ENABLED
+    else process.env.VITE_LATIDO_CARD_MEMBERS_ENABLED = enabled
+    const preview = await request({ provider, oferta: offerId })
+    assert.equal(preview.statusCode, 200)
+    assert.equal(preview.headers['Cache-Control'], 'no-store')
+    assert.equal(requests, count, 'Business launch must not fetch or expose public offer previews')
+    assert.ok(!preview.body.includes('Café &lt;Latido&gt;'))
+    assert.ok(!preview.body.includes('Hasta −15 % para socios'))
+  }
+  process.env.VITE_LATIDO_CARD_MEMBERS_ENABLED = 'true'
   globalThis.fetch = async () => {
     throw new Error('Offline')
   }
@@ -90,7 +102,8 @@ try {
   globalThis.fetch = previousFetch
   for (const [key, value] of [
     ['VITE_SUPABASE_URL', previousEnv.url],
-    ['VITE_SUPABASE_ANON_KEY', previousEnv.key]
+    ['VITE_SUPABASE_ANON_KEY', previousEnv.key],
+    ['VITE_LATIDO_CARD_MEMBERS_ENABLED', previousEnv.members]
   ]) {
     if (value === undefined) delete process.env[key]
     else process.env[key] = value

@@ -18,8 +18,9 @@ export default async function handler(req, res) {
     const origin = process.env.VITE_SITE_URL || 'https://latido.ch'
     const endpoint = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
     const anon = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+    const membersEnabled = process.env.VITE_LATIDO_CARD_MEMBERS_ENABLED === 'true'
     let seo = null
-    if (endpoint && anon && (UUID.test(provider) || UUID.test(offerId))) {
+    if (membersEnabled && endpoint && anon && (UUID.test(provider) || UUID.test(offerId))) {
       const rpc = async (name, params) => {
         const response = await fetch(`${endpoint}/rest/v1/rpc/${name}`, {
           method: 'POST',

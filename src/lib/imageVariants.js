@@ -2,6 +2,14 @@ const VARIANT_MARKER = /-(detail|thumb)(\.[a-z0-9]{2,5})$/i
 
 const IMAGE_URL_REPLACEMENTS = new Map([
   [
+    'https://beauty-rocio.ch/wp-content/uploads/2022/12/Design-ohne-Titel-1.png',
+    '/providers/beauty-rocio/logo.svg',
+  ],
+  [
+    'https://www.traducta.ch/sites/traducta.ch/files/agency-image/uebersetzungsbuero-traducta-luzern.jpg',
+    '/providers/traducta/logo.svg',
+  ],
+  [
     'https://images.unsplash.com/photo-1571266028243-3716f02d2d50?w=400&h=300&fit=crop',
     'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
   ],

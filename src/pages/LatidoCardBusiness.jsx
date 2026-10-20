@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronRight, MapPin, Pencil, Share2, Sparkles } from 'lucide-react'
+import { MapPin, Pencil, Share2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { shareCardOffer } from '../lib/latidoCardShare'
 import { cardRpc } from '../lib/latidoCard'
@@ -15,6 +15,7 @@ import LatidoCardBusinessImage from '../components/LatidoCardBusinessImage'
 import { OfferBenefitBadge, OfferBrandStripe } from '../components/LatidoOfferVisual'
 import { CardHeader } from './LatidoCard'
 import './LatidoCard.css'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 
 const activityDate = (value) =>
   new Date(value).toLocaleString('es-CH', {
@@ -42,7 +43,18 @@ export default function LatidoCardBusiness() {
     const version = ++generation.current
     const initial = await cardRpc('lc_business_dashboard')
     const selected = initial.businesses.find((b) => b.id === provider) || initial.businesses[0]
-    const detail = selected
+    const canLoadOffers = selected?.participating && !selected.suspended
+    // Preserve the business identity if loading its offers fails. Only load
+    // offer management for businesses that have joined and are not suspended.
+    if (version === generation.current) {
+      setData((current) => ({
+        ...initial,
+        offers: canLoadOffers && current.selectedProvider === selected.id ? current.offers : [],
+        history: canLoadOffers && current.selectedProvider === selected.id ? current.history : [],
+        selectedProvider: selected?.id || ''
+      }))
+    }
+    const detail = canLoadOffers
       ? await cardRpc('lc_business_dashboard', { p_provider: selected.id })
       : initial
     if (version === generation.current) {
@@ -90,8 +102,8 @@ export default function LatidoCardBusiness() {
   return (
     <div className="lc-page lc-member-page lc-business-page lc-app-page">
       <CardHeader />
-      {error && (
-        <p className="lc-alert" role="alert">
+      {error && business && (
+        <p className="lc-muted" role="alert">
           {error}
         </p>
       )}
@@ -102,13 +114,22 @@ export default function LatidoCardBusiness() {
       )}
       {loading ? (
         <p role="status">Cargando tu negocio…</p>
+      ) : error && !business ? (
+        <section className="lc-panel lc-business-current" role="alert">
+          <h1>No pudimos cargar tu negocio</h1>
+          <p>{error}</p>
+          <button className="lc-button" type="button" onClick={() => {
+            setLoading(true)
+            refresh().catch((err) => setError(cardErrorMessage(err))).finally(() => setLoading(false))
+          }}>Reintentar</button>
+        </section>
       ) : !business ? (
         <section className="lc-panel lc-business-current">
           <span className="lc-eyebrow">Participación gratuita</span>
           <h1>Tu negocio y la comunidad, más cerca.</h1>
           <p>
-            Publica tu negocio y crea una oferta. Tú pones las condiciones y el descuento se aplica
-            en tu caja.
+            Promociona tu negocio gratis y atrae más clientes de la comunidad. Publica tu negocio
+            y crea tu primera oferta con tus propias condiciones.
           </p>
           <Link className="lc-button" to="/registrar-negocio?origen=tarjeta">
             Registrar mi negocio
@@ -271,7 +292,7 @@ export default function LatidoCardBusiness() {
                             >
                               {offer.active ? 'Pausar' : 'Reactivar'}
                             </button>
-                            {!offer.active && (
+                            {CARD_MEMBERS_ENABLED && !offer.active && (
                               <button
                                 disabled={busy}
                                 onClick={() => {
@@ -297,17 +318,7 @@ export default function LatidoCardBusiness() {
                   ))}
                 </div>
               </section>
-              <Link className="lc-professional-benefits" to="/colaboraciones">
-                <span>
-                  <Sparkles size={22} aria-hidden="true" />
-                </span>
-                <div>
-                  <strong>Ventajas profesionales</strong>
-                  <small>Más visibilidad para tu negocio</small>
-                </div>
-                <ChevronRight size={19} aria-hidden="true" />
-              </Link>
-              <section
+              {CARD_MEMBERS_ENABLED && <section
                 className="lc-business-summary lc-panel"
                 aria-label="Resultados de tu negocio"
               >
@@ -322,8 +333,8 @@ export default function LatidoCardBusiness() {
                     El resumen estará disponible al actualizar el servicio de Tarjeta Latido.
                   </p>
                 )}
-              </section>
-              <section className="lc-panel lc-spaced" aria-labelledby="lc-activity-title">
+              </section>}
+              {CARD_MEMBERS_ENABLED && <section className="lc-panel lc-spaced" aria-labelledby="lc-activity-title">
                 <h2 id="lc-activity-title">Actividad</h2>
                 <p className="lc-muted">Usos que los socios han mostrado en tu negocio.</p>
                 {!data.history.length && <p>Aquí verás los primeros usos de tus ofertas.</p>}
@@ -401,15 +412,15 @@ export default function LatidoCardBusiness() {
                     </div>
                   </form>
                 )}
-              </section>
-              <details className="lc-panel lc-spaced">
+              </section>}
+              {CARD_MEMBERS_ENABLED && <details className="lc-panel lc-spaced">
                 <summary>Material para tu local</summary>
                 {liveOffers(data.offers).length ? (
                   <LatidoCardBusinessMaterial key={business.id} business={business} />
                 ) : (
                   <p>Publica tu primera oferta para obtener tu QR.</p>
                 )}
-              </details>
+              </details>}
             </>
           )}
         </>

@@ -4,9 +4,10 @@ import useCardCatalog from '../hooks/useCardCatalog'
 import { businessBenefit } from '../lib/latidoCardExperience'
 import { OfferBrandStripe } from './LatidoOfferVisual'
 import './LatidoCardBusinessBenefit.css'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 
 export default function LatidoCardBusinessBenefit({ providerId, block = false, pill = false }) {
-  const catalog = useCardCatalog()
+  const catalog = useCardCatalog(CARD_MEMBERS_ENABLED)
   const offers = catalog.filter((o) => o.provider_id === providerId)
   if (!offers.length) return null
   const benefit = businessBenefit(offers)

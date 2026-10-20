@@ -1,7 +1,7 @@
 import { Store } from 'lucide-react'
 import './LatidoCardIllustration.css'
 
-export default function LatidoCardIllustration() {
+export default function LatidoCardIllustration({ business = false }) {
   return (
     <div className="lc-intro-illustration" aria-hidden="true">
       <div className="lc-intro-plastic-card">
@@ -9,7 +9,7 @@ export default function LatidoCardIllustration() {
           <img src="/favicon.svg" alt="" />
           <div>
             <strong>Latido</strong>
-            <span>Tarjeta de socio</span>
+            <span>{business ? 'Para negocios' : 'Tarjeta de socio'}</span>
           </div>
         </div>
         <div className="lc-intro-plastic-lines">

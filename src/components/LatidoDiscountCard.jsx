@@ -68,6 +68,7 @@ export default function LatidoDiscountCard({
   onShare,
   manualShareUrl,
   hideJoinAction = false,
+  previewOnly = false,
   actionLabel = 'Activar',
   inBusiness = false,
   expanded = false,
@@ -189,7 +190,7 @@ export default function LatidoDiscountCard({
             <p className="lc-discount-availability">{availability.message}</p>
           )}
         </div>
-        {action}
+        {!previewOnly && action}
       </div>
       <div className="lc-discount-details" id={detailsId} hidden={!expanded}>
         <p>{offer.description || offerBenefitLabel(offer)}</p>

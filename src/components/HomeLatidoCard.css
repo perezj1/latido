@@ -20,6 +20,17 @@
     sans-serif;
   box-sizing: border-box;
 }
+.home-latido-card-logo.home-business-offer-logo {
+  background: #fff;
+  color: #64748b;
+}
+.home-latido-card-logo.home-business-offer-logo > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+.home-business-offer .home-latido-card-info b { color: #087c61; font-weight: 700; }
 .home-latido-card-watermark {
   position: absolute;
   z-index: -1;

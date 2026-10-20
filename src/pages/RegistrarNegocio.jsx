@@ -185,7 +185,7 @@ export default function RegistrarNegocio() {
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Negocio enviado a revisión' : '¡Negocio publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
         {publishedForReview
-          ? 'El equipo revisará tu negocio antes de hacerlo visible. Cuando esté aprobado, podrás crear tu oferta gratis desde Mi negocio en Tarjeta Latido. Tu QR estará disponible después de publicar la oferta.'
+          ? 'El equipo revisará tu negocio antes de hacerlo visible. Cuando esté aprobado, podrás crear tu oferta gratis desde Mi negocio en Tarjeta Latido.'
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       {!publishedForReview && publishedBusiness?.id && (

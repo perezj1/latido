@@ -4,11 +4,13 @@ import { useAuth } from '../hooks/useAuth'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { C, PP } from '../lib/theme'
 import { Avatar } from './UI'
+import useCardBusinessAccess from '../hooks/useCardBusinessAccess'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 
 const PUBLISH_OPTIONS = [
   { emoji:'📣', label:'Anuncio',   sub:'Anuncia todo lo que ofreces, lo que buscas o lo que vendes.', to:'/publicar' },
   { emoji:'💼', label:'Empleo',    sub:'Publica una oferta de trabajo o el empleo que buscas.', to:'/publicar-empleo' },
-  { emoji:'🏪', label:'Negocio',   sub:'Da a conocer tu negocio y crea una oferta gratis para socios', to:'/registrar-negocio' },
+  { emoji:'🏪', label:'Negocio',   sub:'Da a conocer tu negocio y crea una oferta gratis', to:'/registrar-negocio' },
   { emoji:'🎬', label:'Contenido', sub:'Comparte vídeos, da a conocer tus redes sociales y tu contenido.', to:'/publicar-contenido' },
   { emoji:'👥', label:'Grupo',     sub:'Crea un grupo para conectar con otras personas.', to:'/registrar-comunidad' },
   { emoji:'🎉', label:'Evento',    sub:'Publica una actividad e invita a participar.', to:'/publicar-evento' },
@@ -43,7 +45,11 @@ export default function Header({ transparent }) {
   const navigate = useNavigate()
   const { isLoggedIn, user, displayName, signOut, avatarUrl } = useAuth()
   const { needsActivation: needsPushActivation } = usePushActivation(user?.id)
-  const NAV = isLoggedIn ? NAV_USER : NAV_GUEST
+  const { hasBusiness, participating } = useCardBusinessAccess()
+  const NAV = (isLoggedIn ? NAV_USER : NAV_GUEST).flatMap(link => {
+    if (link.href !== '/card' || CARD_MEMBERS_ENABLED) return [link]
+    return hasBusiness ? [{ href: participating ? '/card/negocios' : '/tarjeta-latido#negocios', label: '🏪 Ofertas para tu negocio' }] : []
+  })
   const isProfilePage = pathname === '/perfil' || pathname.startsWith('/perfil/')
 
   useEffect(() => {

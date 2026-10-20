@@ -13,6 +13,7 @@ import {
 import CreatorProfileShareButton from './CreatorProfileShareButton'
 import LatidoCardBusinessInvitation from './LatidoCardBusinessInvitation'
 import { cardRpc } from '../lib/latidoCard'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 
 const BLOCKED_PATH_PREFIXES = [
   '/auth',
@@ -95,7 +96,7 @@ export default function ShareCardReminder() {
     if (BLOCKED_PATH_PREFIXES.some(prefix => location.pathname.startsWith(prefix))) return undefined
 
     const candidates = [
-      reminderCandidate('benefits', benefitBusiness, user.id),
+      CARD_MEMBERS_ENABLED ? reminderCandidate('benefits', benefitBusiness, user.id) : null,
       creator?.active !== false && creator?.status !== 'draft'
         ? reminderCandidate('creator', creator, user.id)
         : null,

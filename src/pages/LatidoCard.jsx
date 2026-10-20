@@ -48,6 +48,8 @@ import LatidoDiscountCard, {
 import './LatidoCard.css'
 import './LatidoCardCustomer.css'
 import './LatidoCardApp.css'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
+import LatidoCardPreview from './LatidoCardPreview'
 
 export function CardHeader({ alerts = false, onAlertsOpen }) {
   const { isAdmin } = useAuth()
@@ -66,8 +68,8 @@ export function CardHeader({ alerts = false, onAlertsOpen }) {
         >
           <ArrowLeft size={20} aria-hidden="true" />
         </button>
-        <span className="lc-app-header-title">Tarjeta Latido</span>
-        {alerts && (
+        <span className="lc-app-header-title">{CARD_MEMBERS_ENABLED ? 'Tarjeta Latido' : 'Ofertas para negocios'}</span>
+        {CARD_MEMBERS_ENABLED && alerts && (
           <button
             className="lc-header-round"
             type="button"
@@ -90,7 +92,7 @@ export function CardHeader({ alerts = false, onAlertsOpen }) {
             Mi negocio
           </NavLink>
         )}
-        {isAdmin && (
+        {CARD_MEMBERS_ENABLED && isAdmin && (
           <NavLink to="/card/admin">
             <span aria-hidden="true">🛠️</span>
             Administración
@@ -123,6 +125,10 @@ const loadErrorText =
   'No se pudieron actualizar tus descuentos. Comprueba tu conexión; volveremos a intentarlo.'
 
 export default function LatidoCard() {
+  return CARD_MEMBERS_ENABLED ? <LatidoCardMember /> : <LatidoCardPreview />
+}
+
+function LatidoCardMember() {
   const { user, displayName, userCanton, loading: authLoading } = useAuth()
   const { providerId } = useParams()
   const location = useLocation(),

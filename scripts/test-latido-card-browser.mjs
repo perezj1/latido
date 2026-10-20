@@ -4,6 +4,7 @@ import { chromium, webkit, devices, expect } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
+const businessPreview = process.argv.includes('--business-preview')
 const useWebkit = process.argv.includes('--webkit'),
   port = useWebkit ? 5195 : 5194,
   origin = `http://127.0.0.1:${port}`
@@ -15,6 +16,7 @@ const server = spawn(
       ...process.env,
       VITE_SUPABASE_URL: `${origin}/card-test-api`,
       VITE_SUPABASE_ANON_KEY: 'card-test-public-key',
+      VITE_LATIDO_CARD_MEMBERS_ENABLED: businessPreview ? 'false' : 'true',
       VITE_ADMIN_EMAILS: 'admin@test.example',
       VITE_EVENTFROG_PROXY_URL: `${origin}/card-test-api/eventfrog`,
       VITE_EVENTFROG_EMBED_KEY: ''
@@ -35,6 +37,7 @@ server.stderr.on('data', (data) => {
 const output = path.resolve(`output/latido-card/${useWebkit ? 'webkit' : 'chromium'}`)
 const errors = [],
   rpcCalls = [],
+  dashboardRequests = [],
   useCalls = [],
   savedOffers = []
 let notificationPreference = { new_offers: false, canton: '' }
@@ -42,6 +45,14 @@ let failPreferenceSave = false
 const preferenceWrites = []
 const providerId = '00000000-0000-4000-8000-000000000010',
   provider2 = '00000000-0000-4000-8000-000000000011'
+const archivedBusiness = {
+  id: '00000000-0000-4000-8000-000000000012',
+  name: 'Negocio archivado',
+  participating: true,
+  active: true,
+  suspended: false,
+  deleted_at: '2026-10-16T12:40:47.471389Z'
+}
 const housingAd = {
   id: '00000000-0000-4000-8000-000000000555',
   title: 'Habitaciones individuales y dobles',
@@ -271,6 +282,10 @@ try {
     if (name === 'providers' && route.request().method() === 'POST')
       return respond(route, { id: provider2 })
     if (name === 'providers' && url.searchParams.has('user_id')) return respond(route, [])
+    if (name === 'providers' && url.searchParams.get('id')?.startsWith('in.')) {
+      assert.equal(url.searchParams.get('deleted_at'), 'is.null')
+      return respond(route, businesses.filter((item) => !item.deleted_at).map(({ id }) => ({ id })))
+    }
     if (name === 'providers' && url.searchParams.get('id')?.startsWith('eq.')) {
       const id = url.searchParams.get('id').slice(3)
       const business = [...businesses, ...discoveryBusinesses].find((item) => item.id === id)
@@ -424,11 +439,22 @@ try {
       return respond(route, {
         business: invitationEligible ? { id: provider2, name: 'Peluquería Latina' } : null
       })
+    if (name === 'lc_business_dashboard') dashboardRequests.push(args)
+    if (businessPreview && name === 'lc_business_dashboard' && args.p_provider &&
+      (businesses.find((item) => item.id === args.p_provider)?.participating === false ||
+        businesses.find((item) => item.id === args.p_provider)?.suspended ||
+        businesses.find((item) => item.id === args.p_provider)?.deleted_at))
+      return respond(route, { message: 'FORBIDDEN' }, 400)
     if (name === 'lc_business_dashboard')
       return respond(route, {
         server_now: new Date().toISOString(),
         summary: { month_uses: 1, month_members: 1, total_uses: 1 },
-        businesses: ownsBusiness ? businesses : [],
+        businesses: ownsBusiness ? businesses.map((item) => {
+          if (!businessPreview) return item
+          const legacy = { ...item, photo_url: undefined }
+          delete legacy.deleted_at
+          return legacy
+        }) : [],
         offers:
           args.p_provider === providerId
             ? [
@@ -483,12 +509,149 @@ try {
   })
   page = await context.newPage()
   page.setDefaultTimeout(15000)
+  // WebKit can report canceled mocked requests as access-control errors when
+  // a hard navigation interrupts initialization. Finish the current page's
+  // requests before changing documents; keep every pageerror assertion enabled.
+  const navigate = async (url) => {
+    await page.waitForLoadState('networkidle')
+    return page.goto(url)
+  }
+  const reloadPage = async () => {
+    await page.waitForLoadState('networkidle')
+    return page.reload()
+  }
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => {
     if (/Maximum update depth|Too many re-renders/.test(message.text())) errors.push(message.text())
   })
   await mkdir(output, { recursive: true })
-  await page.goto(origin + '/')
+  if (businessPreview) {
+    await navigate(origin + '/')
+    await page.waitForLoadState('networkidle')
+    assert.equal(await page.locator('a[href="/tarjeta-latido"], .home-latido-carousel, .home-business-offer').count(), 0)
+    await navigate(origin + '/card')
+    await page.waitForURL(origin + '/')
+    await page.waitForLoadState('networkidle')
+    await navigate(origin + '/colaboraciones')
+    const more = page.getByRole('link', { name: 'Más información', exact: true })
+    assert.equal(await more.getAttribute('href'), '/tarjeta-latido#negocios')
+    await more.click()
+    await page.getByRole('heading', { name: 'Promocionar los negocios hispanohablantes', exact: true }).waitFor()
+    assert.equal(await page.getByRole('button', { name: 'Socios', exact: true }).count(), 0)
+    assert.equal(await page.getByText(/CHF 6,90|Solicitar mi tarjeta|Tarjeta de socio/).count(), 0)
+    await page.getByRole('link', { name: 'Registrar mi negocio gratis', exact: true }).waitFor()
+    await page.waitForLoadState('networkidle')
+    businesses = [archivedBusiness, ...businesses.map((item) => item.id === providerId ? { ...item, participating: false } : item)]
+    await page.evaluate((auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)), session())
+    await navigate(origin + '/')
+    const homeBusiness = page.getByRole('link', { name: 'Promocionar mi negocio gratis', exact: true })
+    await homeBusiness.waitFor()
+    await page.waitForLoadState('networkidle')
+    await expect(homeBusiness.locator('.home-business-offer-logo img')).toHaveAttribute('src', offer.business_photo_url)
+    await homeBusiness.getByText('Atrae más clientes', { exact: true }).waitFor()
+    await homeBusiness.getByText('Promociona tu negocio gratis con latido', { exact: true }).waitFor()
+    await homeBusiness.getByText('Empezar', { exact: true }).waitFor()
+    await homeBusiness.screenshot({ path: path.join(output, 'business-phase-home.png') })
+    assert.equal(await page.locator('.home-latido-carousel, .lc-membership-summary').count(), 0)
+    businesses = businesses.map((item) => item.id === provider2 ? { ...item, suspended: true } : item)
+    await navigate(origin + `/card/negocios?negocio=${provider2}`)
+    await page.getByText('Participación suspendida', { exact: true }).waitFor()
+    await page.waitForLoadState('networkidle')
+    assert.equal(dashboardRequests.filter((args) => args.p_provider === provider2).length, 0,
+      'Suspended businesses must not request offer details')
+    assert.equal(await page.getByRole('button', { name: 'Crear oferta', exact: true }).count(), 0)
+    assert.equal(await page.locator('[role="alert"]').count(), 0)
+    await page.getByText(/Latido ha retirado este negocio del programa/).waitFor()
+    await page.screenshot({ path: path.join(output, 'business-phase-suspended.png'), fullPage: true })
+    businesses = businesses.map((item) => item.id === provider2 ? { ...item, suspended: false } : item)
+    const detailsBeforeFirstOffer = rpcCalls.filter((name) => name === 'lc_business_dashboard').length
+    await navigate(origin + '/card/negocios')
+    await page.getByRole('heading', { name: 'Tus ofertas', exact: true }).waitFor()
+    await page.waitForLoadState('networkidle')
+    assert.equal(await page.locator('[role="alert"]').count(), 0, 'No permission warning before publishing the first offer')
+    assert.equal(await page.getByRole('option', { name: archivedBusiness.name, exact: true }).count(), 0)
+    assert.equal(await page.locator('.lc-managed-offer').count(), 0)
+    assert.ok(rpcCalls.filter((name) => name === 'lc_business_dashboard').length > detailsBeforeFirstOffer)
+    await navigate(origin + '/')
+    await homeBusiness.waitFor()
+    await page.waitForLoadState('networkidle')
+    await homeBusiness.click()
+    await page.getByRole('heading', { name: 'Promocionar los negocios hispanohablantes', exact: true }).waitFor()
+    await page.screenshot({ path: path.join(output, 'business-phase-welcome.png'), fullPage: true })
+    await page.getByRole('button', { name: 'Ofrecer mi primer descuento', exact: true }).click()
+    const creation = page.getByRole('dialog', { name: 'Crear oferta', exact: true })
+    await creation.getByText('Paso 1 de 4', { exact: true }).waitFor()
+    for (let step = 0; step < 3; step++) await creation.getByRole('button', { name: 'Siguiente', exact: true }).click()
+    await creation.getByRole('button', { name: 'Publicar oferta', exact: true }).click()
+    const published = page.getByRole('dialog', { name: '¡Oferta publicada!', exact: true })
+    await published.waitFor()
+    assert.equal(savedOffers.at(-1).p_provider, providerId)
+    assert.equal(await published.getByText(/Siguiente paso: pon tu QR|Descargar QR/).count(), 0)
+    await published.getByRole('link', { name: 'Ir a Mi negocio', exact: true }).click()
+    await page.getByRole('heading', { name: 'Tus ofertas', exact: true }).waitFor()
+    await page.waitForLoadState('networkidle')
+    await page.screenshot({ path: path.join(output, 'business-phase-dashboard.png'), fullPage: true })
+    assert.equal(await page.getByRole('heading', { name: 'Resultados', exact: true }).count(), 0)
+    assert.equal(await page.getByText('Material para tu local', { exact: true }).count(), 0)
+    const paused = page.locator('.lc-managed-offer').filter({ hasText: pausedOffer.title })
+    await paused.locator('summary').click()
+    assert.equal(await page.getByRole('button', { name: 'Borrar', exact: true }).count(), 0)
+    await page.getByRole('link', { name: 'Descuentos', exact: true }).click()
+    await page.getByRole('heading', { name: 'Ofertas publicadas', exact: true }).waitFor()
+    await page.locator('.lc-discount-card').first().waitFor()
+    assert.equal(await page.getByRole('button', { name: /^(Activar|Usar ahora|Alertas de descuentos)$/ }).count(), 0)
+    assert.equal(await page.locator('.lc-membership-summary, .lc-card-intro, #lc-card-alerts').count(), 0)
+    await page.getByRole('searchbox', { name: 'Buscar ofertas publicadas', exact: true }).fill('Café')
+    await expect(page.locator('.lc-discount-card')).toHaveCount(1)
+    await page.getByRole('searchbox', { name: 'Buscar ofertas publicadas', exact: true }).fill('')
+    await page.evaluate((id) => sessionStorage.setItem(`lc-access:${id}`, JSON.stringify({ hasBusiness: false, participating: false, businesses: [] })), user.id)
+    await reloadPage()
+    await page.getByRole('heading', { name: 'Ofertas publicadas', exact: true }).waitFor()
+    await page.locator('.lc-discount-card').first().waitFor()
+    for (const width of [320, 390, 1280]) {
+      await page.setViewportSize({ width, height: 844 })
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+      await page.screenshot({ path: path.join(output, `business-preview-${width}.png`), fullPage: true })
+    }
+    const blocked = await page.evaluate(async () => {
+      const { cardRpc } = await import('/src/lib/latidoCard.js')
+      const names = ['lc_use_offer', 'lc_claim_offer', 'lc_delete_offer', 'lc_notification_preferences', 'lc_member_home', 'lc_validation']
+      return Promise.all(names.map(async (name) => {
+        try { await cardRpc(name); return false } catch { return true }
+      }))
+    })
+    assert.ok(blocked.every(Boolean), 'Member actions and deletion are blocked before sending requests')
+    await page.waitForLoadState('networkidle')
+    await navigate(origin + `/card/validacion/disabled`)
+    await page.waitForURL(origin + '/card')
+    await page.getByRole('heading', { name: 'Ofertas publicadas', exact: true }).waitFor()
+    await page.waitForLoadState('networkidle')
+    const currentBusinesses = businesses
+    businesses = [archivedBusiness]
+    await navigate(origin + '/')
+    await page.waitForLoadState('networkidle')
+    assert.equal(await homeBusiness.count(), 0, 'An archived business alone must not show the business invitation')
+    await navigate(origin + `/card/negocios?negocio=${archivedBusiness.id}`)
+    await page.waitForURL(origin + '/')
+    await page.waitForLoadState('networkidle')
+    assert.equal(dashboardRequests.filter((args) => args.p_provider === archivedBusiness.id).length, 0,
+      'Never request private offer management for archived businesses from legacy dashboards')
+    businesses = currentBusinesses
+    ownsBusiness = false
+    await page.evaluate(() => {
+      for (const key of Object.keys(sessionStorage)) if (key.startsWith('lc-access:')) sessionStorage.removeItem(key)
+    })
+    await navigate(origin + '/')
+    await page.waitForLoadState('networkidle')
+    assert.equal(await homeBusiness.count(), 0)
+    await navigate(origin + '/card')
+    await page.waitForURL(origin + '/')
+    await page.waitForLoadState('networkidle')
+    assert.ok(!rpcCalls.some((name) => ['lc_use_offer', 'lc_claim_offer', 'lc_delete_offer', 'lc_notification_preferences', 'lc_member_home', 'lc_validation'].includes(name)))
+    assert.deepEqual(errors, [])
+    console.log(`${useWebkit ? 'WebKit' : 'Chromium'}: business-only entry, landing, creation, management, read-only catalog, inactive member actions and non-owner restrictions passed`)
+  } else {
+  await navigate(origin + '/')
   await page.waitForLoadState('networkidle')
   for (const name of ['Cerrar evento especial', 'Solo necesarias']) {
     const dismiss = page.getByRole('button', { name, exact: true })
@@ -496,7 +659,7 @@ try {
   }
   hasMembership = false
   await page.evaluate((auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)), session())
-  await page.reload()
+  await reloadPage()
   await page.waitForLoadState('networkidle')
   const homeCarousel = page.getByRole('region', { name: 'Ofertas y Tarjeta Latido', exact: true })
   await homeCarousel.waitFor()
@@ -535,7 +698,7 @@ try {
   await expect(homeCarousel.getByRole('button', { name: 'Mostrar Oferta destacada', exact: true })).toHaveAttribute('aria-current', 'true')
   const emptyHomeCatalog = (route) => respond(route, [])
   await page.route('**/rpc/lc_catalog', emptyHomeCatalog)
-  await page.reload()
+  await reloadPage()
   await page.waitForLoadState('networkidle')
   assert.equal(await homeCarousel.count(), 0, 'No empty featured slide when the catalog is empty')
   await page.getByRole('link', { name: 'Conseguir Tarjeta Latido', exact: true }).waitFor()
@@ -544,12 +707,12 @@ try {
   await page.evaluate(() => localStorage.removeItem('sb-127-auth-token'))
   // Business profiles must recover from the old permanent cache, including an
   // empty catalog, and revalidate fresh cache entries when opening a profile.
-  await page.goto(origin + '/')
+  await navigate(origin + '/')
   for (const cachedCatalog of [[], { offers: [], fetchedAt: Date.now() }]) {
     await page.evaluate((value) => {
       sessionStorage.setItem('lc-public-catalog-v1', JSON.stringify(value))
     }, cachedCatalog)
-    await page.goto(origin + `/negocios/${providerId}--restaurante-sabor-latino`)
+    await navigate(origin + `/negocios/${providerId}--restaurante-sabor-latino`)
     await page.getByRole('heading', { name: offer.business_name, level: 1, exact: true }).waitFor()
     await page.locator('.lc-business-card-pill').waitFor()
     await page.locator('.lc-business-benefit-block strong').filter({ hasText: 'Hasta 15 % para socios' }).waitFor()
@@ -561,12 +724,12 @@ try {
   assert.match(await page.locator('.lc-business-benefit-block').innerText(), /1 oferta/)
   await page.screenshot({ path: path.join(output, 'business-profile-refreshed.png'), fullPage: true })
   await page.unroute('**/rpc/lc_catalog', catalogOverride)
-  await page.goto(origin + `/negocios/${emptyBusinessId}--negocio-sin-descuentos`)
+  await navigate(origin + `/negocios/${emptyBusinessId}--negocio-sin-descuentos`)
   await page.getByRole('heading', { name: 'Negocio sin descuentos', level: 1, exact: true }).waitFor()
   assert.equal(await page.locator('.lc-business-card-pill').count(), 0)
   assert.equal(await page.locator('.lc-business-benefit-block').count(), 0)
   // The main landing leads to the new, standalone card landing on mobile.
-  await page.goto(origin + '/')
+  await navigate(origin + '/')
   await page.waitForLoadState('networkidle')
   const promotionClose = page.getByRole('button', { name: 'Cerrar evento especial', exact: true })
   if (await promotionClose.isVisible()) await promotionClose.click()
@@ -642,7 +805,7 @@ try {
       })
       .waitFor()
   }
-  await page.goto(origin + '/tarjeta-latido/')
+  await navigate(origin + '/tarjeta-latido/')
   await page
     .getByRole('heading', {
       name: 'Apoya los negocios de tu comunidad y obt\u00e9n descuentos',
@@ -650,7 +813,7 @@ try {
     })
     .waitFor()
   assert.equal(await page.locator('.bottom-nav').count(), 0)
-  await page.goto(origin + '/tarjeta-latido#registro')
+  await navigate(origin + '/tarjeta-latido#registro')
   await page
     .getByRole('heading', { name: 'Haz que más personas descubran tu negocio', exact: true })
     .waitFor()
@@ -660,7 +823,7 @@ try {
   )
   await page.setViewportSize({ width: 390, height: 844 })
   const businessPath = `/card/negocio/${providerId}?oferta=${offer.id}`
-  await page.goto(origin + businessPath)
+  await navigate(origin + businessPath)
   await page.getByRole('heading', { name: 'Ofertas de este negocio', exact: true }).waitFor()
   await page.getByRole('link', { name: 'Inicia sesión', exact: true }).click()
   await page.waitForURL('**/auth?**')
@@ -752,7 +915,7 @@ try {
       .evaluate((button) => button === document.activeElement),
     true
   )
-  await page.reload()
+  await reloadPage()
   await page.getByRole('button', { name: 'Alertas de descuentos', exact: true }).click()
   await alerts.getByRole('status').filter({ hasText: 'Alertas activadas' }).waitFor()
   await alertsModal.screenshot({ path: path.join(output, 'alerts-enabled-mobile.png') })
@@ -766,7 +929,7 @@ try {
   const backAfterAlerts = await page.locator('.lc-app-header-row button').first().boundingBox()
   assert.ok(backAfterAlerts.x >= 0, 'Closing alerts must not scroll the header out of view')
   await page.screenshot({ path: path.join(output, 'member-tabs-mobile.png'), fullPage: true })
-  await page.goto(origin + '/card')
+  await navigate(origin + '/card')
   const firstAccordion = page.locator('.lc-discount-card').filter({ hasText: offer.title })
   const secondAccordion = page.locator('.lc-discount-card').filter({ hasText: special.title })
   await secondAccordion.waitFor()
@@ -813,7 +976,7 @@ try {
   })
   assert.equal(await page.getByRole('radio', { name: /Clara|Oscura/ }).count(), 0)
   await page.evaluate((id) => localStorage.setItem(`latido-card-appearance:${id}`, 'dark'), user.id)
-  await page.reload()
+  await reloadPage()
   await page.locator('.lc-member-strip-heading').waitFor()
   assert.equal(await membershipCard.getAttribute('data-appearance'), 'light')
   assert.equal(
@@ -824,7 +987,7 @@ try {
   )
   assert.equal(await page.getByRole('button', { name: 'Reclamar', exact: true }).count(), 0)
   const homeCardLink = page.getByRole('link', { name: /^(Ver|Conseguir) Tarjeta Latido$/ })
-  await page.goto(origin + '/')
+  await navigate(origin + '/')
   await homeCardLink
     .locator('.home-latido-card-number')
     .getByText('2481', { exact: true })
@@ -860,7 +1023,7 @@ try {
   await page.waitForURL(origin + '/card')
   await page.getByRole('heading', { name: 'Ofertas disponibles', exact: true }).waitFor()
   membershipActive = false
-  await page.goto(origin + '/')
+  await navigate(origin + '/')
   await homeCardLink.getByText('Membresía inactiva', { exact: true }).waitFor()
   await page.waitForLoadState('networkidle')
   assert.equal(await homeCardLink.getByText(/^Válida hasta /).count(), 0)
@@ -869,7 +1032,7 @@ try {
   const failedHomeMembership = page.waitForResponse(
     (response) => response.url().endsWith('/lc_member_home') && response.status() === 503
   )
-  await page.reload()
+  await reloadPage()
   await failedHomeMembership
   await page.waitForLoadState('networkidle')
   await homeCardLink.getByText('Tarjeta Latido', { exact: true }).waitFor()
@@ -877,7 +1040,7 @@ try {
   await homeCardLink.click()
   await page.waitForURL(origin + '/card')
   await page.locator('.lc-member-strip-heading').waitFor()
-  await page.goto(origin + businessPath)
+  await navigate(origin + businessPath)
   await page.getByRole('heading', { name: offer.business_name, exact: true }).waitFor()
   const refreshFailureText =
     'No se pudieron actualizar tus descuentos. Comprueba tu conexión; volveremos a intentarlo.'
@@ -897,7 +1060,7 @@ try {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
   await page.getByText(refreshFailureText, { exact: true }).waitFor({ state: 'hidden' })
   homeFailures = 10
-  await page.reload()
+  await reloadPage()
   await page.getByRole('alert').filter({ hasText: refreshFailureText }).waitFor()
   await page.getByRole('button', { name: 'Reintentar', exact: true }).waitFor()
   homeFailures = 0
@@ -1083,7 +1246,7 @@ try {
   const expires = receipt.expires_at
   const businessName = receipt.business_name
   receipt.business_name = '[TEST] Peluquería Brisa Latina'
-  await page.reload()
+  await reloadPage()
   await page.getByText('Descuento válido', { exact: true }).waitFor()
   await page.evaluate(() =>
     Promise.all(
@@ -1134,7 +1297,7 @@ try {
   }
   await page.setViewportSize({ width: 390, height: 844 })
   receipt.business_name = businessName
-  await page.reload()
+  await reloadPage()
   await page.getByText('Descuento válido', { exact: true }).waitFor()
   assert.equal(receipt.expires_at, expires)
   assert.equal(useCalls.length, 2)
@@ -1145,7 +1308,7 @@ try {
   await page.evaluate(() => window.dispatchEvent(new Event('online')))
   await page.getByText('Descuento válido', { exact: true }).waitFor()
   await page.evaluate(() => sessionStorage.setItem('lc-test-wake-denied', 'true'))
-  await page.reload()
+  await reloadPage()
   await page.getByText('Descuento válido', { exact: true }).waitFor()
   assert.equal(
     await page.evaluate(() => window.wakeRequests),
@@ -1154,7 +1317,7 @@ try {
   )
   await page.evaluate(() => sessionStorage.removeItem('lc-test-wake-denied'))
   receipt.expires_at = new Date(Date.now() + 10000).toISOString()
-  await page.reload()
+  await reloadPage()
   await page.getByText('Descuento válido', { exact: true }).waitFor()
   assert.equal(await page.locator('.lc-validation--ending').count(), 1)
   assert.equal(
@@ -1262,7 +1425,7 @@ try {
   )
   await page.screenshot({ path: path.join(output, 'member-mobile.png'), fullPage: true })
   const usesBeforeBusinessVisit = useCalls.length
-  await page.goto(origin + `/card/negocio/${providerId}`)
+  await navigate(origin + `/card/negocio/${providerId}`)
   await page.getByRole('heading', { name: 'Ya usaste aquí', exact: true }).waitFor()
   assert.equal(await page.locator('.lc-business-used-offer').count(), 2)
   assert.equal(await page.getByRole('searchbox').count(), 0)
@@ -1495,7 +1658,7 @@ try {
   await pausedCard.waitFor({ state: 'detached' })
   // One optional invitation at app entry; dismissal persists and its CTA opens the right wizard.
   invitationEligible = true
-  await page.goto(origin + '/')
+  await navigate(origin + '/')
   const invitation = page.locator('.lc-business-invitation-dialog')
   await invitation.waitFor()
   await page.waitForLoadState('networkidle')
@@ -1515,7 +1678,7 @@ try {
   })
   await page.keyboard.press('Escape')
   await invitation.waitFor({ state: 'detached' })
-  await page.reload()
+  await reloadPage()
   await page.waitForLoadState('networkidle')
   await page.waitForTimeout(1300)
   assert.equal(
@@ -1530,7 +1693,7 @@ try {
       }
     }
   })
-  await page.reload()
+  await reloadPage()
   await invitation.waitFor()
   await page.waitForLoadState('networkidle')
   await invitation.getByRole('button', { name: '2x1', exact: true }).click()
@@ -1545,7 +1708,7 @@ try {
   await offerModal.getByText('Peluquería Latina', { exact: true }).first().waitFor()
   assert.equal(await page.locator('dialog[open]').count(), 1)
   await offerModal.getByRole('button', { name: 'Cerrar creación de oferta', exact: true }).click()
-  await page.goto(origin + `/?crear-oferta=${provider2}`)
+  await navigate(origin + `/?crear-oferta=${provider2}`)
   await offerModal.waitFor()
   await offerModal.getByRole('heading', { name: '¿Qué quieres ofrecer?', exact: true }).waitFor()
   await page.waitForLoadState('networkidle')
@@ -1554,7 +1717,7 @@ try {
   await page.waitForLoadState('networkidle')
   invitationEligible = false
   // Landing is an option inside promotion. Publication ends with an inline invitation, not an upsell popup.
-  await page.goto(origin + '/registrar-negocio?origen=tarjeta')
+  await navigate(origin + '/registrar-negocio?origen=tarjeta')
   await page.getByRole('button', { name: /Belleza/ }).click()
   await page.getByRole('button', { name: 'Continuar →', exact: true }).click()
   await page.getByPlaceholder('Ej: El Rincón Colombiano').fill('Peluquería Latina')
@@ -1628,7 +1791,7 @@ try {
     (auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)),
     session()
   )
-  await page.goto(origin + '/card/admin')
+  await navigate(origin + '/card/admin')
   await page.getByRole('heading', { name: 'Socios, negocios y descuentos.', exact: true }).waitFor()
   await page.getByLabel('Seleccionar usuario').selectOption(user.id)
   assert.equal(await page.getByLabel('UUID del usuario', { exact: true }).inputValue(), user.id)
@@ -1642,9 +1805,9 @@ try {
     (auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)),
     session()
   )
-  await page.goto(origin + '/card')
+  await navigate(origin + '/card')
   discoveryMode = true
-  await page.reload()
+  await reloadPage()
   await page.getByRole('heading', { name: 'Ofertas disponibles', exact: true }).waitFor()
   const discounts = page.getByRole('region', { name: 'Ofertas disponibles', exact: true })
   await page.getByLabel('Ciudad', { exact: true }).selectOption('Genève')
@@ -1736,7 +1899,7 @@ try {
   })
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.screenshot({ path: path.join(output, 'member-desktop.png'), fullPage: true })
-  await page.goto(origin + '/explorar')
+  await navigate(origin + '/explorar')
   await page.locator('input[aria-label="Buscar en Latido"]:visible').fill('Sabor')
   const offerResult = page
     .locator('button')
@@ -1747,10 +1910,10 @@ try {
   await offerResult.click()
   await page.waitForURL(origin + `/card/negocio/${providerId}?oferta=${offer.id}`)
   await page.getByRole('heading', { name: 'Ofertas de este negocio', exact: true }).waitFor()
-  await page.goto(origin + '/card')
+  await navigate(origin + '/card')
   await page.setViewportSize({ width: 390, height: 844 })
   ownsBusiness = false
-  await page.reload()
+  await reloadPage()
   await page.waitForLoadState('networkidle')
   assert.equal(
     await page.locator('.lc-links').count(),
@@ -1762,7 +1925,7 @@ try {
   assert.ok(firstDiscount.y < 844, 'A discount appears in the first mobile screen')
   await page.screenshot({ path: path.join(output, 'member-mobile.png'), fullPage: true })
   membershipActive = false
-  await page.reload()
+  await reloadPage()
   const renewal = page
     .locator('.lc-membership-renewal')
     .getByRole('link', { name: 'Renovar', exact: true })
@@ -1772,7 +1935,7 @@ try {
   assert.match(mail.searchParams.get('body'), /2481/)
   hasMembership = false
   await page.evaluate(() => localStorage.removeItem('sb-127-auth-token'))
-  await page.goto(origin + '/card')
+  await navigate(origin + '/card')
   await page
     .getByRole('heading', { name: 'Ahorra en los negocios de tu comunidad', exact: true })
     .waitFor()
@@ -1799,19 +1962,19 @@ try {
   await page
     .locator('.lc-intro-presentation')
     .screenshot({ path: path.join(output, 'visitor-card-presentation.png') })
-  await page.goto(origin + `/card/negocio/${providerId}`)
+  await navigate(origin + `/card/negocio/${providerId}`)
   await page.getByRole('link', { name: 'Ver en Latido', exact: true }).waitFor()
   assert.equal(await page.getByRole('searchbox').count(), 0)
   assert.equal(await page.getByRole('tab').count(), 0)
   await page.getByRole('link', { name: 'Cómo llegar', exact: true }).waitFor()
   await page.screenshot({ path: path.join(output, 'business-detail-mobile.png'), fullPage: true })
-  await page.goto(origin + '/colaboraciones')
+  await navigate(origin + '/colaboraciones')
   await page
     .getByRole('heading', { name: 'Haz que más personas descubran tu negocio', exact: true })
     .waitFor()
   assert.equal(
-    await page.getByRole('link', { name: 'Crear oferta gratis', exact: true }).getAttribute('href'),
-    '/card/negocios'
+    await page.getByRole('link', { name: 'Más información', exact: true }).getAttribute('href'),
+    '/tarjeta-latido#negocios'
   )
   const companyPromo = page.getByRole('region', {
     name: 'Haz que más personas descubran tu negocio',
@@ -1846,7 +2009,7 @@ try {
     (auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)),
     session()
   )
-  await page.goto(origin + '/card')
+  await navigate(origin + '/card')
   await page.getByRole('heading', { name: 'Ofertas disponibles', exact: true }).waitFor()
   const completeCatalog = page.getByRole('region', { name: 'Ofertas disponibles', exact: true })
   assert.equal(
@@ -1861,14 +2024,14 @@ try {
   })
   // Tablón receives search results through a parent callback; its idle and search
   // renders must settle, and both kinds of detail route must close normally.
-  await page.goto(origin + `/tablon?openAd=${housingAd.id}`)
+  await navigate(origin + `/tablon?openAd=${housingAd.id}`)
   await page.getByRole('heading', { name: housingAd.title, exact: true, level: 1 }).waitFor()
   await page.getByRole('button', { name: 'Volver', exact: true }).click()
   await page.waitForURL(origin + '/tablon')
   await page
     .getByRole('heading', { name: housingAd.title, exact: true, level: 1 })
     .waitFor({ state: 'hidden' })
-  await page.goto(origin + `/anuncios/${housingAd.id}--habitaciones`)
+  await navigate(origin + `/anuncios/${housingAd.id}--habitaciones`)
   await page.getByRole('heading', { name: housingAd.title, exact: true, level: 1 }).waitFor()
   await page.getByRole('button', { name: 'Volver', exact: true }).click()
   await page.waitForURL(origin + '/tablon')
@@ -1886,6 +2049,7 @@ try {
   console.log(
     `${useWebkit ? 'WebKit iPhone' : 'Chromium Android'}: confirmation and validation unchanged; recovery, multiple offers, QR/PNG/print, prefilled offers, shared filters, membership and visitor flows passed`
   )
+  }
 } catch (error) {
   await page
     ?.screenshot({ path: path.join(output, 'failure-latest.png'), fullPage: true })

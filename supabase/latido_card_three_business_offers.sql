@@ -1,3 +1,5 @@
+-- Ejemplos históricos retirados de producción antes del merge a main.
+-- Solo para una base de pruebas desechable; no incluir en un despliegue.
 -- Ejecutar manualmente en el SQL Editor de Supabase con rol postgres.
 -- No modifica el esquema ni crea negocios nuevos.
 -- Ofertas habituales: 1 uso por socio al mes, sin compra mínima ni caducidad.

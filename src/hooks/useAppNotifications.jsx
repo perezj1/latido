@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 import { createExternalNotificationRows, groupAppNotifications } from '../lib/appNotifications'
 import { useAuth } from './useAuth'
 import { dismissZoneAlert, useZoneAlerts } from './useZoneAlerts'
@@ -220,7 +221,7 @@ export function AppNotificationsProvider({ children }) {
     zoneAlertsState.alertItems,
   ])
   const groups = useMemo(
-    () => groupAppNotifications([...persistedAppNotifications, ...externalNotifications]),
+    () => groupAppNotifications([...persistedAppNotifications, ...externalNotifications].filter(row => CARD_MEMBERS_ENABLED || !String(row.kind || '').startsWith('card_'))),
     [externalNotifications, persistedAppNotifications],
   )
   const value = useMemo(() => ({

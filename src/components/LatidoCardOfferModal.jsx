@@ -13,6 +13,7 @@ import LatidoCardOfferForm from './LatidoCardOfferForm'
 import { useLatidoBusinessDisplay } from '../hooks/useLatidoBusinessDisplay'
 import '../pages/LatidoCard.css'
 import './LatidoCardOfferModal.css'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 
 export default function LatidoCardOfferModal({
   providerId,
@@ -69,7 +70,15 @@ export default function LatidoCardOfferModal({
     let active = true
     setLoading(true)
     setError('')
-    cardRpc('lc_business_dashboard', { p_provider: providerId })
+    cardRpc('lc_business_dashboard')
+      .then(async (initial) => {
+        const owned = initial.businesses.find((item) => item.id === providerId)
+        if (!owned) throw new Error('FORBIDDEN')
+        if (owned.suspended) throw new Error('BUSINESS_SUSPENDED')
+        return owned.participating
+          ? cardRpc('lc_business_dashboard', { p_provider: providerId })
+          : initial
+      })
       .then((data) => {
         const selected = data.businesses.find((item) => item.id === providerId)
         if (!selected) throw new Error('FORBIDDEN')
@@ -148,7 +157,7 @@ export default function LatidoCardOfferModal({
         {success ? (
           <div className="lc-offer-success" role="region" aria-label="Oferta publicada">
             <LatidoOfferPreview offer={success.offer} business={displayBusiness} />
-            {success.first ? (
+            {!CARD_MEMBERS_ENABLED ? <p>Tu oferta ya está publicada. Puedes gestionarla desde Mi negocio.</p> : success.first ? (
               <>
                 <h3>Siguiente paso: pon tu QR en la caja</h3>
                 <LatidoCardBusinessMaterial business={business} />

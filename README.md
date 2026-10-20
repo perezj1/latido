@@ -225,6 +225,10 @@ npm run test:search   # Calidad del buscador global
 
 ## Tarjeta Latido (piloto)
 
+El estado actual es la **captación de negocios**, con la experiencia de socios
+oculta por defecto. Consultar [la fase de lanzamiento](docs/LATIDO_CARD_BUSINESS_LAUNCH.md)
+y [la revisión previa al merge](docs/LATIDO_CARD_PREMERGE_REVIEW.md) antes de desplegar.
+
 Guía vigente, funcionamiento, migración y pruebas: [docs/LATIDO_CARD_MINIMAL.md](docs/LATIDO_CARD_MINIMAL.md).
 
 Todos los descuentos usan **Activar → Usar ahora** al comprar, con confirmación antes de registrar

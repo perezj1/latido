@@ -10,7 +10,7 @@ import { isCreatorProfileRoute, isExploreRoute } from '../lib/sections'
 const PUBLISH_OPTIONS = [
   { emoji:'📣', label:'Anuncio',   sub:'Anuncia todo lo que ofreces, lo que buscas o lo que vendes.', to:'/publicar' },
   { emoji:'💼', label:'Empleo',    sub:'Publica una oferta de trabajo o el empleo que buscas.', to:'/publicar-empleo' },
-  { emoji:'🏪', label:'Negocio',   sub:'Da a conocer tu negocio y crea una oferta gratis para socios', to:'/registrar-negocio' },
+  { emoji:'🏪', label:'Negocio',   sub:'Da a conocer tu negocio y crea una oferta gratis', to:'/registrar-negocio' },
   { emoji:'🎬', label:'Contenido', sub:'Comparte vídeos, da a conocer tus redes sociales y tu contenido.', to:'/publicar-contenido' },
   { emoji:'👥', label:'Grupo',     sub:'Crea un grupo para conectar con otras personas.', to:'/registrar-comunidad' },
   { emoji:'🎉', label:'Evento',    sub:'Publica una actividad e invita a participar.', to:'/publicar-evento' },

@@ -5,8 +5,14 @@ import { membershipMailUrl } from '../lib/latidoCardExperience'
 import { trackCardEvent } from '../lib/analytics'
 import '../components/LatidoOfferCoupon.css'
 import './LatidoCardLanding.css'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
+import LatidoCardBusinessWelcome from './LatidoCardBusinessWelcome'
 
 export default function LatidoCardLanding() {
+  return CARD_MEMBERS_ENABLED ? <MemberLanding /> : <LatidoCardBusinessWelcome />
+}
+
+function MemberLanding() {
   const { user, displayName } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()

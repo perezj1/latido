@@ -10,8 +10,14 @@ import { DiscountBusinessPhoto } from './LatidoDiscountCard'
 import { OfferBenefitBadge } from './LatidoOfferVisual'
 import HorizontalDragScroller from './HorizontalDragScroller'
 import './HomeLatidoCard.css'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
+import HomeBusinessOfferCard from './HomeBusinessOfferCard'
 
 export default function HomeLatidoCard({ businesses = [] }) {
+  return CARD_MEMBERS_ENABLED ? <HomeMemberCard businesses={businesses} /> : <HomeBusinessOfferCard />
+}
+
+function HomeMemberCard({ businesses }) {
   const { user, loading, userCanton } = useAuth()
   const [data, setData] = useState(null)
   const catalog = useCardCatalog()

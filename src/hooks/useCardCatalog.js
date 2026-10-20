@@ -5,10 +5,13 @@ import {
   subscribeCardCatalog
 } from '../lib/latidoCardCatalog'
 
-export default function useCardCatalog() {
-  const [offers, setOffers] = useState(() => getCachedCardCatalog() || [])
+const EMPTY = []
+
+export default function useCardCatalog(enabled = true) {
+  const [offers, setOffers] = useState(() => enabled ? getCachedCardCatalog() || EMPTY : EMPTY)
   const [checkedAt, setCheckedAt] = useState(Date.now)
   useEffect(() => {
+    if (!enabled) return undefined
     let live = true
     const update = (options) =>
       loadCardCatalog(options)
@@ -30,7 +33,7 @@ export default function useCardCatalog() {
       window.removeEventListener('focus', refresh)
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
-  }, [])
+  }, [enabled])
   useEffect(() => {
     const nextExpiry = Math.min(
       ...offers
@@ -47,7 +50,8 @@ export default function useCardCatalog() {
   // GlobalSearch publishes results to its parent. Preserve this reference between
   // real catalog changes so that the callback cannot create a render loop.
   return useMemo(() => {
+    if (!enabled) return EMPTY
     const now = Math.max(checkedAt, Date.now())
     return offers.filter((offer) => offer.ends_at === 'infinity' || Date.parse(offer.ends_at) > now)
-  }, [offers, checkedAt])
+  }, [offers, checkedAt, enabled])
 }

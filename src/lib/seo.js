@@ -11,6 +11,7 @@ import {
   getNegocioTypeMeta,
 } from './constants.js'
 import { getCreatorBySlug } from './creators.js'
+import { CARD_MEMBERS_ENABLED } from './latidoCardLaunch.js'
 import { RESOURCE_PACKAGES, getResourcePackage, getResourcePackagePath } from './resourcePackages.js'
 
 export const SITE_URL = (import.meta.env?.VITE_SITE_URL || 'https://latido.ch').replace(/\/$/, '')
@@ -57,7 +58,7 @@ export const SEARCHABLE_SITE_PAGES = [
 ]
 
 const ROUTE_SEO = [
-  { path:'/tarjeta-latido', title:'Tarjeta Latido | Descuentos y negocios de tu comunidad', description:'Ahorra en negocios hispanohablantes de Suiza con Tarjeta Latido. CHF 6,90 al mes para socios; participar es gratis para negocios.' },
+  { path:'/tarjeta-latido', title:CARD_MEMBERS_ENABLED ? 'Tarjeta Latido | Descuentos y negocios de tu comunidad' : 'Promociona tu negocio gratis | Tarjeta Latido', description:CARD_MEMBERS_ENABLED ? 'Ahorra en negocios hispanohablantes de Suiza con Tarjeta Latido. CHF 6,90 al mes para socios; participar es gratis para negocios.' : 'Publica una oferta y consigue que más personas de la comunidad hispanohablante descubran tu negocio. Participar es gratis.' },
   {
     path:'/',
     title:'Latido.ch — Todo lo que necesitas en Suiza, en español',
@@ -563,8 +564,8 @@ export function getSeoForLocation(location = {}) {
   if (pathname === '/card' || pathname.startsWith('/card/')) {
     return withDefaults({
       path:'/card',
-      title:'Tarjeta Latido | Descuentos en tu comunidad',
-      description:'Descubre los descuentos de los negocios participantes. Úsalos desde tu móvil con Tarjeta Latido.',
+      title:CARD_MEMBERS_ENABLED ? 'Tarjeta Latido | Descuentos en tu comunidad' : 'Ofertas para negocios | Latido',
+      description:CARD_MEMBERS_ENABLED ? 'Descubre los descuentos de los negocios participantes. Úsalos desde tu móvil con Tarjeta Latido.' : 'Publica y consulta las ofertas de los negocios de la comunidad.',
       robots:pathname.startsWith('/card/validacion/') ? 'noindex, nofollow, noarchive' : 'noindex, follow',
     })
   }

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Check, Plus } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import { OfferBenefitBadge, OfferBrandStripe } from '../components/LatidoOfferVisual'
 import './Colaboraciones.css'
 import { PanelPartners } from './Landing'
@@ -109,9 +109,9 @@ export default function Colaboraciones() {
                 </li>
               ))}
             </ul>
-            <Link className="lc-company-promo-action" to="/card/negocios">
-              <Plus size={20} strokeWidth={2.6} aria-hidden="true" />
-              Crear oferta gratis
+            <Link className="lc-company-promo-action" to="/tarjeta-latido#negocios">
+              Más información
+              <ArrowRight size={20} strokeWidth={2.6} aria-hidden="true" />
             </Link>
           </div>
           <OfferBrandStripe />

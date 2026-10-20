@@ -24,6 +24,7 @@ export function refreshCardBusinessAccess(id) {
       cardRpc('lc_business_dashboard')
         .then((data) => {
           const value = {
+            businesses: data.businesses || [],
             hasBusiness: Boolean(data.businesses?.length),
             participating: data.businesses?.some((b) => b.participating) || false
           }
@@ -43,19 +44,31 @@ export default function useCardBusinessAccess() {
   const { user } = useAuth()
   const id = user?.id
   const [state, setState] = useState(() => ({ id, value: read(id) }))
+  const [checked, setChecked] = useState(null)
+  const [failure, setFailure] = useState(null)
   const value = state.id === id ? state.value : read(id)
   useEffect(() => {
     let live = true
     const update = () => {
-      if (live) setState({ id, value: read(id) })
+      if (live) {
+        setState({ id, value: read(id) })
+        setFailure(null)
+      }
     }
     update()
     window.addEventListener(CARD_ACCESS_EVENT, update)
-    refreshCardBusinessAccess(id).catch(() => {})
+    refreshCardBusinessAccess(id)
+      .catch(() => { if (live) setFailure({ id, message: 'No se pudo cargar tu negocio. Inténtalo de nuevo.' }) })
+      .finally(() => { if (live) setChecked(id) })
     return () => {
       live = false
       window.removeEventListener(CARD_ACCESS_EVENT, update)
     }
   }, [id])
-  return { ...value, loading: Boolean(id && !value) }
+  return {
+    ...value,
+    loading: Boolean(id && checked !== id),
+    error: failure && failure.id === id ? failure.message : '',
+    retry: () => refreshCardBusinessAccess(id).catch(() => {})
+  }
 }

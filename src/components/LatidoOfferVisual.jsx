@@ -2,6 +2,7 @@ import { Banknote, Gift, Percent, Repeat2, Sparkles, Store, Tags } from 'lucide-
 import { offerBenefitLabel, offerComboLabel, offerUsageLabel } from '../lib/latidoCardCore'
 import './LatidoOfferVisual.css'
 import './LatidoOfferCoupon.css'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 
 const amount = (value) =>
   Number(value) > 0
@@ -97,7 +98,7 @@ export default function LatidoOfferPreview({ offer, business, example = false })
       <div className="lc-offer-preview-footer lc-coupon-footer">
         <OfferUsageChip offer={offer} />
         <span className="lc-offer-preview-action" aria-hidden="true">
-          Activar
+          {CARD_MEMBERS_ENABLED ? 'Activar' : 'Tu oferta'}
         </span>
       </div>
       <OfferBrandStripe />

@@ -6,6 +6,8 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { supabase } from './lib/supabase'
+import { CARD_MEMBERS_ENABLED } from './lib/latidoCardLaunch'
+import LatidoCardBusinessGate from './components/LatidoCardBusinessGate'
 import { startUserPresence, trackUserPresence } from './lib/presence'
 import {
   getAnalyticsRoute,
@@ -627,7 +629,7 @@ function AppShell() {
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'creadores', label:'Creadores', to:'/creadores' },
       { id:'club', label:'Club', to:'/club' },
-      { id:'tarjeta-latido', label:'Tarjeta Latido', to:'/tarjeta-latido' },
+      ...(CARD_MEMBERS_ENABLED ? [{ id:'tarjeta-latido', label:'Tarjeta Latido', to:'/tarjeta-latido' }] : []),
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
@@ -792,14 +794,14 @@ function AppShell() {
             <Route path="/colaboraciones" element={<Colaboraciones />} />
             <Route path="/club" element={<Club />} />
             <Route path="/tarjeta-latido" element={<LatidoCardLanding />} />
-            <Route path="/card" element={<LatidoCard />} />
-            <Route path="/card/material/:providerId" element={<LatidoCardPrint />} />
-            <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusiness /></ProtectedRoute>} />
-            <Route path="/card/negocio/:providerId" element={<LatidoCard />} />
-            <Route path="/card/validacion/:redemptionId" element={<ProtectedRoute><LatidoCardValidation /></ProtectedRoute>} />
+            <Route path="/card" element={<LatidoCardBusinessGate><LatidoCard /></LatidoCardBusinessGate>} />
+            <Route path="/card/material/:providerId" element={CARD_MEMBERS_ENABLED ? <LatidoCardPrint /> : <Navigate to="/card/negocios" replace />} />
+            <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusinessGate><LatidoCardBusiness /></LatidoCardBusinessGate></ProtectedRoute>} />
+            <Route path="/card/negocio/:providerId" element={<LatidoCardBusinessGate><LatidoCard /></LatidoCardBusinessGate>} />
+            <Route path="/card/validacion/:redemptionId" element={CARD_MEMBERS_ENABLED ? <ProtectedRoute><LatidoCardValidation /></ProtectedRoute> : <Navigate to="/card" replace />} />
             <Route path="/card/scanner/*" element={<Navigate to="/card" replace />} />
-            <Route path="/card/admin" element={<AdminRoute><LatidoCardAdmin /></AdminRoute>} />
-            <Route path="/c/:cardToken" element={<div className="lc-page"><h1>Tarjeta Latido</h1><p>Este QR antiguo ha dejado de utilizarse. Abre tus descuentos y pulsa «Activar» cuando estés en el negocio.</p><Link to="/card">Abrir mis descuentos</Link></div>} />
+            <Route path="/card/admin" element={CARD_MEMBERS_ENABLED ? <AdminRoute><LatidoCardAdmin /></AdminRoute> : <Navigate to="/card/negocios" replace />} />
+            <Route path="/c/:cardToken" element={CARD_MEMBERS_ENABLED ? <div className="lc-page"><h1>Tarjeta Latido</h1><p>Este QR antiguo ha dejado de utilizarse. Abre tus descuentos y pulsa «Activar» cuando estés en el negocio.</p><Link to="/card">Abrir mis descuentos</Link></div> : <Navigate to="/" replace />} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />

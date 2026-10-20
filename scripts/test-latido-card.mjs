@@ -782,6 +782,20 @@ for (const upgrade of [false, true]) {
   assert.ok(
     !(await rpc('lc_business_dashboard')).businesses.some((item) => item.id === ids.business)
   )
+  // Reapplying the older activation module must not put archived businesses
+  // back in the owner list while lc_can_manage correctly rejects them.
+  for (const source of [activation, experience]) {
+    const dashboardSql = source.match(/CREATE OR REPLACE FUNCTION public\.lc_business_dashboard[\s\S]*?END \$\$;/)[0]
+    await db.exec('RESET ROLE')
+    await db.exec(dashboardSql)
+    for (const key of ['owner', 'admin']) {
+      await as(key)
+      assert.ok(!(await rpc('lc_business_dashboard')).businesses.some((item) => item.id === ids.business),
+        'Archived businesses must stay out of the dashboard after module reinstallation')
+      await assert.rejects(() => rpc('lc_business_dashboard', [ids.business]), /FORBIDDEN/)
+    }
+  }
+  await as('owner')
   const retired = (
     await root('SELECT active,deleted_at FROM providers WHERE id=$1', [ids.business])
   ).rows[0]

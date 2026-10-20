@@ -67,6 +67,7 @@ import {
 } from '../lib/latidoAssistantSearch'
 import { getMyListMatchTerms } from '../lib/myList'
 import useCardCatalog from '../hooks/useCardCatalog'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 import LatidoCardBusinessBenefit from './LatidoCardBusinessBenefit'
 
 const BUSINESS_EMOJI = {
@@ -1489,7 +1490,7 @@ export default function GlobalSearch({
   const trackedSearchAttemptsRef = useRef(new Set())
 
   const [datasets, setDatasets] = useState(() => getCachedSearchData(isLoggedIn) || EMPTY_DATASETS)
-  const cardOffers = useCardCatalog()
+  const cardOffers = useCardCatalog(CARD_MEMBERS_ENABLED)
   const [dataReady, setDataReady] = useState(() => !!getCachedSearchData(isLoggedIn))
   const [loadingData, setLoadingData] = useState(false)
   const [creatorDataVersion, setCreatorDataVersion] = useState(0)

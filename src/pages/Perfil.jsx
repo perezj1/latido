@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import useCardBusinessAccess from '../hooks/useCardBusinessAccess'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 import { usePWA } from '../hooks/usePWA'
 import { useFavorites } from '../hooks/useFavorites'
 import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
@@ -739,6 +741,7 @@ function LatidoStarInput({
 
 export default function Perfil() {
   const { isLoggedIn, displayName, userCanton, userInterests, user, signOut, avatarUrl, updateAvatar, isAdmin } = useAuth()
+  const { hasBusiness: hasCardBusiness, participating: cardParticipating } = useCardBusinessAccess()
   const { isPWA, canInstall, promptInstall } = usePWA()
   const navigate = useNavigate()
   const location = useLocation()
@@ -2215,7 +2218,7 @@ export default function Perfil() {
     {
       title: 'Mi actividad',
       items: [
-        { icon:'💳', color:'#EFF6FF', label:'Mi Tarjeta Latido', sub:'Tu tarjeta y descuentos de socio', action:() => navigate('/card') },
+        ...(CARD_MEMBERS_ENABLED ? [{ icon:'💳', color:'#EFF6FF', label:'Mi Tarjeta Latido', sub:'Tu tarjeta y descuentos de socio', action:() => navigate('/card') }] : hasCardBusiness ? [{ icon:'🏪', color:'#EFF6FF', label:'Ofertas de mi negocio', sub:'Promociona tu negocio gratis en Latido', action:() => navigate(cardParticipating ? '/card/negocios' : '/tarjeta-latido#negocios') }] : []),
         { icon:'📣', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
         { icon:'📝', color:'#EFF6FF', label:'Mi lista', sub:'Lo que necesitas y lo que ya has conseguido', action:() => setMyListOpen(true) },
         ...(hasEmploymentRequest ? [{

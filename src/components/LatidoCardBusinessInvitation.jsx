@@ -6,6 +6,7 @@ import { useLatidoBusinessDisplay } from '../hooks/useLatidoBusinessDisplay'
 import LatidoOfferPreview from './LatidoOfferVisual'
 import { CARD_INVITATION_TITLE, CARD_INVITATION_DESCRIPTION } from '../lib/latidoCardInvitation'
 import './LatidoCardBusinessInvitation.css'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 
 export default function LatidoCardBusinessInvitation({
   business,
@@ -45,7 +46,7 @@ export default function LatidoCardBusinessInvitation({
       <div className="lc-invitation-visual">
         <span className="lc-invitation-example-label">
           <Eye size={13} aria-hidden="true" />
-          Así te verán los socios · Ejemplo
+          {CARD_MEMBERS_ENABLED ? 'Así te verán los socios · Ejemplo' : 'Así se verá tu oferta · Ejemplo'}
         </span>
         <LatidoOfferPreview
           business={displayBusiness}
