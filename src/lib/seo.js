@@ -46,7 +46,6 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Paquetes y guías sobre permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
   { id:'creadores', icon:'🎙️', title:'Creadores', section:'Comunidad', desc:'Personas, profesionales y negocios que comparten experiencias, información y proyectos sobre Suiza.', href:'/comunidades?view=creadores' },
   { id:'club', icon:'🛍️', title:'Latido Club', section:'Latido', desc:'Camisetas, sudaderas y bolsas con diseños originales de Latido Club.', href:'/club' },
-  { id:'santiago-cruz', icon:'🎤', title:'Sorteo Santiago Cruz en Zürich', section:'Latido', desc:'Participa gratis y gana una de las 2 entradas dobles para Santiago Cruz en Plaza Zürich.', href:'/santiago-cruz' },
   { id:'servicios-suiza', icon:'🇨🇭', title:'Servicios para vivir en Suiza', section:'Servicios', desc:'Seguro médico, tercer pilar y preparación para llegar a Suiza, con orientación en español.', href:'/servicios-suiza' },
   { id:'servicios-virtus360', icon:'360', title:'Gestoría y finanzas con Virtus360', section:'Servicios', desc:'Trámites, impuestos, seguros, mudanza y contabilidad en colaboración con Virtus360.', href:'/servicios-virtus360' },
   { id:'perfil', icon:'👤', title:'Perfil', section:'Cuenta', desc:'Datos personales, avatar, preferencias y configuración.', href:'/perfil' },

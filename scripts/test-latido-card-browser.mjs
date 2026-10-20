@@ -488,6 +488,60 @@ try {
     if (/Maximum update depth|Too many re-renders/.test(message.text())) errors.push(message.text())
   })
   await mkdir(output, { recursive: true })
+  await page.goto(origin + '/')
+  await page.waitForLoadState('networkidle')
+  for (const name of ['Cerrar evento especial', 'Solo necesarias']) {
+    const dismiss = page.getByRole('button', { name, exact: true })
+    if (await dismiss.isVisible()) await dismiss.click()
+  }
+  hasMembership = false
+  await page.evaluate((auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)), session())
+  await page.reload()
+  await page.waitForLoadState('networkidle')
+  const homeCarousel = page.getByRole('region', { name: 'Ofertas y Tarjeta Latido', exact: true })
+  await homeCarousel.waitFor()
+  await expect(homeCarousel.locator('.home-latido-carousel-slide').first().getByRole('link')).toHaveAccessibleName('Conseguir Tarjeta Latido')
+  await expect(homeCarousel.locator('.home-latido-carousel-dots button')).toHaveCount(2)
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: 844 })
+    const geometry = await homeCarousel.evaluate((element) => {
+      const track = element.querySelector('.home-latido-carousel-track')
+      track.scrollTo({ left: 0, behavior: 'instant' })
+      const bounds = track.getBoundingClientRect()
+      const next = track.children[1].getBoundingClientRect()
+      return { right: bounds.right, next: next.left, height: track.children[0].getBoundingClientRect().height,
+        width: innerWidth, scroll: document.documentElement.scrollWidth }
+    })
+    assert.ok(geometry.scroll <= width, `Home fits ${width}px`)
+    assert.ok(geometry.next < geometry.right, 'The next card peeks into view')
+    assert.ok(geometry.height <= 112, 'The get-card entry keeps its original compact height')
+    await homeCarousel.screenshot({ path: path.join(output, `home-carousel-visitor-${width}.png`) })
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
+  await homeCarousel.getByRole('button', { name: 'Mostrar Oferta destacada', exact: true }).click()
+  await expect(homeCarousel.getByRole('button', { name: 'Mostrar Oferta destacada', exact: true })).toHaveAttribute('aria-current', 'true')
+  const track = homeCarousel.locator('.home-latido-carousel-track')
+  await track.focus()
+  await track.press('ArrowLeft')
+  await expect(homeCarousel.getByRole('button', { name: 'Mostrar Conseguir Tarjeta Latido', exact: true })).toHaveAttribute('aria-current', 'true')
+  const trackBounds = await track.boundingBox()
+  await page.mouse.move(trackBounds.x + trackBounds.width * 0.8, trackBounds.y + trackBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(trackBounds.x + trackBounds.width * 0.1, trackBounds.y + trackBounds.height / 2, { steps: 12 })
+  await page.mouse.up()
+  await expect(homeCarousel.getByRole('button', { name: 'Mostrar Oferta destacada', exact: true })).toHaveAttribute('aria-current', 'true')
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.waitForLoadState('networkidle')
+  await expect(homeCarousel.getByRole('button', { name: 'Mostrar Oferta destacada', exact: true })).toHaveAttribute('aria-current', 'true')
+  const emptyHomeCatalog = (route) => respond(route, [])
+  await page.route('**/rpc/lc_catalog', emptyHomeCatalog)
+  await page.reload()
+  await page.waitForLoadState('networkidle')
+  assert.equal(await homeCarousel.count(), 0, 'No empty featured slide when the catalog is empty')
+  await page.getByRole('link', { name: 'Conseguir Tarjeta Latido', exact: true }).waitFor()
+  await page.unroute('**/rpc/lc_catalog', emptyHomeCatalog)
+  hasMembership = true
+  await page.evaluate(() => localStorage.removeItem('sb-127-auth-token'))
   // Business profiles must recover from the old permanent cache, including an
   // empty catalog, and revalidate fresh cache entries when opening a profile.
   await page.goto(origin + '/')
@@ -777,6 +831,9 @@ try {
     .waitFor()
   await homeCardLink.getByText(/^Válida hasta /).waitFor()
   await page.waitForLoadState('networkidle')
+  await expect(homeCarousel.locator('.home-latido-carousel-slide').first().locator('.home-latido-featured')).toHaveCount(1)
+  await homeCarousel.getByRole('button', { name: 'Mostrar Mi Tarjeta Latido', exact: true }).click()
+  await expect(homeCarousel.getByRole('button', { name: 'Mostrar Mi Tarjeta Latido', exact: true })).toHaveAttribute('aria-current', 'true')
   assert.equal(await homeCardLink.getAttribute('href'), '/card')
   await page.evaluate(() => document.fonts.ready)
   await page
