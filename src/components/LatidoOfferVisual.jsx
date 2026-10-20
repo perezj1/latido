@@ -64,9 +64,9 @@ export function OfferBrandStripe() {
 
 export function OfferUsageChip({ offer }) {
   return (
-    <span className="lc-offer-usage-chip">
+    <span className="lc-offer-usage-chip" aria-label={offerUsageLabel(offer)}>
       <Repeat2 size={13} aria-hidden="true" />
-      {offerUsageLabel(offer)}
+      {offerUsageLabel(offer, { compact: true })}
     </span>
   )
 }

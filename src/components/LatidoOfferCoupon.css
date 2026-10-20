@@ -33,45 +33,6 @@
   background: var(--lc-coupon-surround);
   pointer-events: none;
 }
-.lc-business-benefit-block {
-  margin: 16px 0;
-}
-.lc-business-benefit-block > h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-.lc-business-benefit-block > p {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: #556070;
-}
-.lc-business-benefit-footer {
-  display: flex;
-  justify-content: flex-end;
-}
-.lc-business-benefit-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 20px;
-  border-radius: 12px;
-  background: #2a55df;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 4px 10px #2a55df38;
-}
-.lc-business-benefit-link:hover {
-  background: #1e3fb0;
-}
-.lc-business-benefit-link:focus-visible {
-  outline: 3px solid #4a76ef;
-  outline-offset: 3px;
-}
 .lc-coupon-footer::before {
   left: -9px;
   clip-path: inset(0 0 0 50%);

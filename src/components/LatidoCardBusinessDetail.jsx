@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronDown, ChevronLeft, MapPin, Share2, Tag } from 'lucide-react'
+import { ArrowRight, ChevronDown, ChevronLeft, MapPin, Share2, Tag } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getBusinessPath } from '../lib/seo'
 import { shareCardBusiness } from '../lib/latidoCardShare'
@@ -59,8 +59,14 @@ export default function LatidoCardBusinessDetail({ business, offers = [], count,
             )}
           </div>
         </section>
+        {business && (
+          <Link className="lc-business-detail-profile-link" to={getBusinessPath(business)}>
+            Ver en Latido
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        )}
       </header>
-      {business && (
+      {business && (business.address || business.phone || business.hours) && (
         <section className="lc-business-public-info" aria-label="Información del local">
           {business.address && (
             <p>
@@ -90,8 +96,8 @@ export default function LatidoCardBusinessDetail({ business, offers = [], count,
               ))}
             </dl>
           )}
-          <div className="lc-actions">
-            {business.address && (
+          {business.address && (
+            <div className="lc-actions">
               <a
                 className="lc-text-button"
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([business.address, business.city, 'Suiza'].filter(Boolean).join(', '))}`}
@@ -100,11 +106,8 @@ export default function LatidoCardBusinessDetail({ business, offers = [], count,
               >
                 Cómo llegar
               </a>
-            )}
-            <Link className="lc-text-button" to={getBusinessPath(business)}>
-              Ver ficha en Latido
-            </Link>
-          </div>
+            </div>
+          )}
         </section>
       )}
       {manualLink && (

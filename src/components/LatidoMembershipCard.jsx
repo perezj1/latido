@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { CreditCard } from 'lucide-react'
 import { OfferBrandStripe } from './LatidoOfferVisual'
 import './LatidoMembershipCard.css'
 
@@ -106,7 +105,6 @@ export default function LatidoMembershipCardSummary({ member, holderName, renewU
           <div className="lc-membership-controls">
             <span className="lc-mini-active">Activa</span>
             <span className="lc-text-button" aria-hidden="true">
-              <CreditCard size={14} />
               {cardOpen ? 'Ocultar tarjeta' : 'Ver tarjeta'}
             </span>
           </div>
@@ -128,10 +126,7 @@ export default function LatidoMembershipCardSummary({ member, holderName, renewU
           aria-controls="lc-full-membership"
           onClick={() => setCardOpen((value) => !value)}
         >
-          <>
-            <CreditCard size={14} aria-hidden="true" />
-            {cardOpen ? 'Ocultar tarjeta' : 'Ver tarjeta'}
-          </>
+          {cardOpen ? 'Ocultar tarjeta' : 'Ver tarjeta'}
         </button>
       )}
       <div id="lc-full-membership" hidden={!cardOpen}>

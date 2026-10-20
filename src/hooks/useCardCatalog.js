@@ -10,17 +10,25 @@ export default function useCardCatalog() {
   const [checkedAt, setCheckedAt] = useState(Date.now)
   useEffect(() => {
     let live = true
-    const update = () =>
-      loadCardCatalog()
+    const update = (options) =>
+      loadCardCatalog(options)
         .then((items) => {
           if (live) setOffers(items)
         })
         .catch(() => {})
-    update()
+    const refresh = () => update({ revalidate: true })
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    refresh()
     const unsubscribe = subscribeCardCatalog(update)
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
       live = false
       unsubscribe()
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [])
   useEffect(() => {

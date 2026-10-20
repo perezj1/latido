@@ -135,7 +135,8 @@ const monthlyUsed = offerAvailability(
   { memberActive: true, now: Date.parse('2026-10-16T12:00:00Z') }
 )
 assert.equal(monthlyUsed.unavailable, true)
-assert.match(monthlyUsed.message, /Disponible de nuevo el 1 nov/)
+assert.equal(monthlyUsed.used, true)
+assert.equal(monthlyUsed.message, 'Disponible el 1 de noviembre')
 assert.equal(
   offerAvailability(
     { usage_period: 'unlimited', used_count: 10, available: true },
@@ -145,7 +146,7 @@ assert.equal(
 )
 assert.equal(
   offerAvailability({ requires_claim: true, claim: { status: 'used' }, remaining: 0 }).message,
-  'Ya has utilizado este descuento.'
+  'Ya usado'
 )
 assert.equal(
   offerAvailability({ requires_claim: true, remaining: 0 }).message,

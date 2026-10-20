@@ -12,6 +12,7 @@
     0 10px 28px #0f172a0f;
 }
 .lc-company-promo-visual {
+  container-type: inline-size;
   position: relative;
   height: 124px;
   overflow: hidden;
@@ -182,6 +183,13 @@
   flex-shrink: 0;
 }
 @media (max-width: 359px) {
+  .lc-company-promo-types {
+    right: 12px;
+    transform: scale(0.85);
+    transform-origin: right top;
+  }
+}
+@container (max-width: 320px) {
   .lc-company-promo-types {
     right: 12px;
     transform: scale(0.85);

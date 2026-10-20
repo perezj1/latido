@@ -953,9 +953,10 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
         <div style={{ padding:'18px 20px 14px' }}>
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:14 }}>
             <div style={{ minWidth:0, flex:1 }}>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:10 }}>
                 {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
                 {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
+                <LatidoCardBusinessBenefit providerId={business.id} pill />
               </div>
               <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, lineHeight:1.18, margin:'0 0 8px', ...WRAPPING_TEXT }}>{business.name}</h1>
               <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>

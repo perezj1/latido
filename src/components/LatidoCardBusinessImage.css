@@ -3,9 +3,12 @@
   border: 1px solid #e3e7ef;
   background: #fff;
 }
-.lc-business-image img {
+.lc-discount-photo.lc-business-image img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: center;
+  padding: 6px;
+  box-sizing: border-box;
 }

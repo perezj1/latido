@@ -1,6 +1,10 @@
-export function offerUsageLabel(offer) {
-  if (offer.usage_period === 'unlimited') return 'Sin límite de usos'
+export function offerUsageLabel(offer, { compact = false } = {}) {
+  if (offer.usage_period === 'unlimited') return compact ? 'Sin límite' : 'Sin límite de usos'
   const limit = offer.usage_limit || 1
+  if (compact) {
+    const period = { day: 'día', week: 'semana', month: 'mes', lifetime: 'total' }
+    return `${limit} ${period[offer.usage_period] || 'total'}`
+  }
   const period = {
     day: 'al día',
     week: 'por semana',
@@ -46,9 +50,9 @@ export function offerAvailability(offer, { memberActive = false, now = Date.now(
     const next = Date.parse(offer.next_available_at)
     const message =
       Number.isFinite(next) && next > now
-        ? `Disponible de nuevo el ${new Intl.DateTimeFormat('es-CH', { day: 'numeric', month: 'short', timeZone: 'Europe/Zurich' }).format(new Date(next))}`
-        : 'Ya has utilizado este descuento.'
-    return { unavailable: true, message }
+        ? `Disponible el ${new Intl.DateTimeFormat('es-CH', { day: 'numeric', month: 'long', timeZone: 'Europe/Zurich' }).format(new Date(next))}`
+        : 'Ya usado'
+    return { unavailable: true, used: true, message }
   }
   if (
     offer.requires_claim &&

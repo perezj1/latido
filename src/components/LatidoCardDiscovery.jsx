@@ -60,7 +60,7 @@ export function CardListLimit({ total, expanded, onToggle, controls, noun }) {
   )
 }
 
-export function CardNearbyResults({ nearby, other, city, id, noun, renderList }) {
+export function CardNearbyResults({ nearby, other, id, noun, renderList }) {
   const [expanded, setExpanded] = useState({})
   const businesses = noun === 'negocios'
   return [
@@ -76,18 +76,6 @@ export function CardNearbyResults({ nearby, other, city, id, noun, renderList })
     return (
       <section className="lc-nearby-results" key={key} aria-labelledby={`${listId}-title`}>
         <h3 id={`${listId}-title`}>{title}</h3>
-        {key === 'nearby' && (
-          <p className="lc-muted">
-            Por cercanía a {city} ·{' '}
-            <a
-              href="https://www.swisstopo.admin.ch/en/official-directory-of-towns-and-cities"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              ©swisstopo
-            </a>
-          </p>
-        )}
         {renderList(expanded[key] ? items : items.slice(0, CARD_PREVIEW_LIMIT), listId)}
         <CardListLimit
           total={items.length}
@@ -196,7 +184,6 @@ export default function LatidoCardDiscovery({
           />
           <CardNearbyResults
             key={JSON.stringify([query, city, category])}
-            city={city}
             nearby={nearby}
             other={other}
             id="lc-business-directory"

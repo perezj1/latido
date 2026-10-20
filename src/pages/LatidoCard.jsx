@@ -750,7 +750,6 @@ export default function LatidoCard() {
                   {!providerId && (
                     <CardNearbyResults
                       key={JSON.stringify([query, city, benefitKind])}
-                      city={city}
                       nearby={nearby.filter((offer) => offer.id !== sharedOffer?.id)}
                       other={other.filter((offer) => offer.id !== sharedOffer?.id)}
                       id="lc-offers"
@@ -780,7 +779,6 @@ export default function LatidoCard() {
               </section>
             )}
           </section>
-          {providerId && membership}
           {!providerId && !participating && (
             <Link className="lc-intro-business" to="/card/negocios">
               ¿Tienes un negocio? <strong>Únete gratis →</strong>

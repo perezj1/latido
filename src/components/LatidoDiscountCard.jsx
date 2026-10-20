@@ -30,27 +30,28 @@ const minimum = (offer) =>
     ? `Compra mínima CHF ${Number(offer.minimum_spend)}`
     : 'Sin compra mínima'
 
-export function DiscountBusinessPhoto({ offer, small = false }) {
+export function DiscountBusinessPhoto({ offer, small = false, avatar = false }) {
   const [failed, setFailed] = useState(null)
   const src = offer.business_photo_url
   return (
-    <div
-      className={`lc-discount-photo ${small ? 'lc-discount-photo--small' : ''}`}
+    <span
+      className={`lc-discount-photo ${small ? 'lc-discount-photo--small' : ''} ${avatar ? 'lc-discount-photo--avatar' : ''}`}
+      aria-hidden={avatar || undefined}
       data-benefit={!src || failed === src ? offer.benefit_type : undefined}
     >
       {src && failed !== src ? (
         <img
           src={src}
-          alt={`Imagen de ${offer.business_name}`}
+          alt={avatar ? '' : `Imagen de ${offer.business_name}`}
           loading="lazy"
           onError={() => setFailed(src)}
         />
       ) : (
         <span className="lc-discount-photo-symbol" aria-hidden="true">
-          <OfferBenefitIcon type={offer.benefit_type} size={small ? 24 : 28} />
+          {avatar ? <Store size={12} /> : <OfferBenefitIcon type={offer.benefit_type} size={small ? 24 : 28} />}
         </span>
       )}
-    </div>
+    </span>
   )
 }
 
@@ -89,6 +90,16 @@ export default function LatidoDiscountCard({
                 Inicia sesión
               </Link>
             )
+          ) : availability.used ? (
+            <button
+              type="button"
+              className="lc-discount-primary lc-discount-secondary"
+              disabled={busy}
+              onClick={() => onShare(offer)}
+            >
+              <Share2 size={16} aria-hidden="true" />
+              Compartir
+            </button>
           ) : (
             <button
               className="lc-discount-primary"
@@ -130,8 +141,11 @@ export default function LatidoDiscountCard({
               aria-controls={detailsId}
               onClick={onToggleDetails}
             >
-              {offer.business_name}
-              {offer.city && <span className="lc-discount-city"> · {offer.city}</span>}
+              <DiscountBusinessPhoto offer={offer} avatar />
+              <span className="lc-discount-business-name">
+                {offer.business_name}
+                {offer.city && <span className="lc-discount-city"> · {offer.city}</span>}
+              </span>
             </button>
           )}
         </div>
@@ -146,7 +160,7 @@ export default function LatidoDiscountCard({
       {inBusiness && offer.requires_claim && (
         <p className="lc-business-offer-limit">
           <Clock3 size={13} aria-hidden="true" />
-          Promoción limitada
+          Limitada
           {offer.remaining != null
             ? ` · ${Number(offer.remaining) > 0 ? `Quedan ${offer.remaining}` : 'Agotada'}`
             : ''}
@@ -155,25 +169,27 @@ export default function LatidoDiscountCard({
       <div className="lc-discount-summary lc-coupon-footer">
         <div className="lc-discount-bottom">
           <OfferUsageChip offer={offer} />
-          {action}
+          {!inBusiness && (
+            <div className="lc-discount-tags">
+              {offer.requires_claim && <span>Limitada</span>}
+              {daysLeft > 0 && daysLeft <= 3 && (
+                <span>Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}</span>
+              )}
+              {offer.remaining != null && (
+                <span>{Number(offer.remaining) > 0 ? `Quedan ${offer.remaining}` : 'Agotado'}</span>
+              )}
+            </div>
+          )}
+          {inBusiness && daysLeft > 0 && daysLeft <= 3 && (
+            <p className="lc-discount-availability">
+              Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}
+            </p>
+          )}
+          {availability.message && (
+            <p className="lc-discount-availability">{availability.message}</p>
+          )}
         </div>
-        {!inBusiness && (
-          <div className="lc-discount-tags">
-            {offer.requires_claim && <span>Promoción limitada</span>}
-            {daysLeft > 0 && daysLeft <= 3 && (
-              <span>Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}</span>
-            )}
-            {offer.remaining != null && (
-              <span>{Number(offer.remaining) > 0 ? `Quedan ${offer.remaining}` : 'Agotado'}</span>
-            )}
-          </div>
-        )}
-        {inBusiness && daysLeft > 0 && daysLeft <= 3 && (
-          <p className="lc-discount-availability">
-            Termina {daysLeft === 1 ? 'en menos de 24 h' : `en ${daysLeft} días`}
-          </p>
-        )}
-        {availability.message && <p className="lc-discount-availability">{availability.message}</p>}
+        {action}
       </div>
       <div className="lc-discount-details" id={detailsId} hidden={!expanded}>
         <p>{offer.description || offerBenefitLabel(offer)}</p>
@@ -306,11 +322,8 @@ export function LatidoDiscountConfirmation({ offer, onClose, onConfirm, busy, er
       <div className="lc-confirm-notice">
         <Info size={20} aria-hidden="true" />
         <p>
-          <strong>Actívalo cuando vayas a pagar.</strong> Tendrás hasta <strong>5 minutos</strong>{' '}
-          para enseñarlo en caja.{' '}
-          {offer.usage_period !== 'unlimited' || offer.requires_claim
-            ? 'Al confirmar se consume un uso, aunque pasen los 5 minutos sin enseñarlo.'
-            : 'El uso quedará guardado en tu historial.'}
+          <strong>Actívalo cuando vayas a pagar</strong> y muéstralo al personal para recibir el
+          descuento.
         </p>
       </div>
       {error && (
