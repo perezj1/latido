@@ -68,29 +68,10 @@ export function LatidoMembershipCard({ member, holderName, sample = false, id })
   )
 }
 
-export default function LatidoMembershipCardSummary({
-  member,
-  holderName,
-  renewUrl,
-  historyCount = 0,
-  historyOpen,
-  onHistoryToggle,
-  history
-}) {
+export default function LatidoMembershipCardSummary({ member, holderName, renewUrl, alertAction }) {
   const [cardOpen, setCardOpen] = useState(false)
   const days = Math.ceil((Date.parse(member.valid_until) - Date.now()) / 86400000)
   const card = <LatidoMembershipCard member={member} holderName={holderName} />
-  const historyButton = historyCount > 0 && (
-    <button
-      type="button"
-      className="lc-text-button"
-      aria-expanded={Boolean(historyOpen)}
-      aria-controls="lc-member-history"
-      onClick={onHistoryToggle}
-    >
-      Usados ({historyCount})
-    </button>
-  )
   return (
     <section className="lc-membership-summary" aria-label="Mi Tarjeta Latido">
       {!member.active && renewUrl && (
@@ -124,20 +105,20 @@ export default function LatidoMembershipCardSummary({
           </div>
           <div className="lc-membership-controls">
             <span className="lc-mini-active">Activa</span>
-            <button
-              type="button"
-              className="lc-text-button"
-              aria-expanded={cardOpen}
-              aria-controls="lc-full-membership"
-              onClick={() => setCardOpen((value) => !value)}
-            >
-              <>
-                <CreditCard size={14} aria-hidden="true" />
-                {cardOpen ? 'Ocultar tarjeta' : 'Ver tarjeta'}
-              </>
-            </button>
+            <span className="lc-text-button" aria-hidden="true">
+              <CreditCard size={14} />
+              {cardOpen ? 'Ocultar tarjeta' : 'Ver tarjeta'}
+            </span>
           </div>
           <OfferBrandStripe />
+          <button
+            type="button"
+            className="lc-member-card-toggle"
+            aria-label={cardOpen ? 'Ocultar tarjeta' : 'Ver tarjeta'}
+            aria-expanded={cardOpen}
+            aria-controls="lc-full-membership"
+            onClick={() => setCardOpen((value) => !value)}
+          />
         </div>
       ) : (
         <button
@@ -153,14 +134,10 @@ export default function LatidoMembershipCardSummary({
           </>
         </button>
       )}
-      {member.active && historyButton && (
-        <div className="lc-member-history-shortcut">{historyButton}</div>
-      )}
       <div id="lc-full-membership" hidden={!cardOpen}>
         {card}
       </div>
-      {!member.active && historyButton}
-      {history}
+      {alertAction && <div className="lc-member-alerts-shortcut">{alertAction}</div>}
       {member.active && days >= 0 && Date.parse(member.valid_until) - Date.now() < 7 * 86400000 && (
         <p className="lc-membership-expiry" role="status">
           Tu membresía {days <= 1 ? 'vence en menos de 24 horas' : `vence en ${days} días`}.{' '}

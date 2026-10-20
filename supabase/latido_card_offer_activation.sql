@@ -68,8 +68,6 @@ BEGIN
  UPDATE public.latido_card_businesses SET active=true WHERE provider_id=p_provider AND NOT active;
  PERFORM 1 FROM public.latido_card_businesses WHERE provider_id=p_provider AND active AND NOT suspended FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'BUSINESS_INACTIVE'; END IF;
- IF (SELECT count(*) FROM public.latido_card_offers WHERE provider_id=p_provider AND active AND ends_at>now() AND requires_claim=coalesce((p_offer->>'requires_claim')::boolean,false))
- >= (CASE WHEN coalesce((p_offer->>'requires_claim')::boolean,false) THEN 2 ELSE 1 END) THEN RAISE EXCEPTION 'OFFER_CAPACITY'; END IF;
  INSERT INTO public.latido_card_offers(provider_id,title,description,benefit_type,benefit_value,minimum_spend,requires_claim,stock_total,claim_days,usage_period,usage_limit,ends_at,activation_mode)
  VALUES(p_provider,p_offer->>'title',coalesce(p_offer->>'description',''),p_offer->>'benefit_type',nullif(p_offer->>'benefit_value','')::numeric,
  coalesce(nullif(p_offer->>'minimum_spend','')::numeric,0),coalesce((p_offer->>'requires_claim')::boolean,false),nullif(p_offer->>'stock_total','')::integer,
@@ -87,9 +85,6 @@ BEGIN
  PERFORM 1 FROM public.latido_card_offers WHERE id=p_offer AND deleted_at IS NULL FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'OFFER_UNAVAILABLE'; END IF;
  IF p_active AND NOT EXISTS(SELECT 1 FROM public.latido_card_businesses WHERE provider_id=pid AND active AND NOT suspended) THEN RAISE EXCEPTION 'BUSINESS_INACTIVE'; END IF;
- IF p_active AND EXISTS(SELECT 1 FROM public.latido_card_offers o WHERE o.id=p_offer AND NOT o.active AND o.ends_at>now()) AND
- (SELECT count(*) FROM public.latido_card_offers o WHERE o.provider_id=pid AND o.active AND o.ends_at>now() AND o.requires_claim=(SELECT requires_claim FROM public.latido_card_offers WHERE id=p_offer))
- >= (CASE WHEN (SELECT requires_claim FROM public.latido_card_offers WHERE id=p_offer) THEN 2 ELSE 1 END) THEN RAISE EXCEPTION 'OFFER_CAPACITY'; END IF;
  UPDATE public.latido_card_offers SET active=p_active WHERE id=p_offer;
 END $$;
 

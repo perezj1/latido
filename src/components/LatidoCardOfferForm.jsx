@@ -9,17 +9,17 @@ import {
   zurichEndOfDay,
   offerCombos
 } from '../lib/latidoCardOfferDraft'
-import LatidoOfferPreview from './LatidoOfferVisual'
+import LatidoOfferPreview, { OfferBenefitIcon } from './LatidoOfferVisual'
 import './LatidoCardOfferForm.css'
 
 const types = [
   ['percent', '%', 'Descuento %', 'Ej.: 10 % menos', 'blue'],
   ['fixed', 'CHF', 'Cantidad fija', 'Ej.: 5 CHF menos', 'amber'],
   ['combo', '2x1', '2x1 o similar', 'Ej.: 2x1, 3x2', 'pink'],
-  ['gift', '🎁', 'Regalo', 'Ej.: un café gratis', 'green'],
+  ['gift', <OfferBenefitIcon type="gift" />, 'Regalo', 'Ej.: un café gratis', 'green'],
   [
     'other',
-    '✨',
+    <OfferBenefitIcon type="service" />,
     'Otro beneficio',
     'Lo describes tú: envío gratis, primera consulta gratis…',
     'blue'
@@ -52,8 +52,6 @@ export default function LatidoCardOfferForm({
   business,
   onPublish,
   initialSelection,
-  promotionOnly = false,
-  promotionUnavailable = false,
   onStepChange
 }) {
   const [draft, setDraft] = useState(initialOfferDraft)
@@ -436,8 +434,7 @@ export default function LatidoCardOfferForm({
                   setDraft((previous) => ({
                     ...previous,
                     usage_limit: 1,
-                    requires_claim: promotionOnly,
-                    ...(promotionOnly ? { usage_period: 'lifetime' } : {})
+                    requires_claim: false
                   }))
                 }}
                 icon={<CalendarDays size={20} />}
@@ -455,8 +452,7 @@ export default function LatidoCardOfferForm({
                   setDraft((previous) => ({
                     ...previous,
                     usage_limit: 1,
-                    requires_claim: promotionOnly,
-                    ...(promotionOnly ? { usage_period: 'lifetime' } : {})
+                    requires_claim: false
                   }))
                 }}
                 icon={<Repeat2 size={20} />}
@@ -547,7 +543,6 @@ export default function LatidoCardOfferForm({
                     <input
                       type="checkbox"
                       checked={draft.requires_claim}
-                      disabled={promotionOnly || (promotionUnavailable && !draft.requires_claim)}
                       onChange={(event) => {
                         set('requires_claim', event.target.checked)
                         setDraft((previous) => ({

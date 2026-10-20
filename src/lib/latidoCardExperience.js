@@ -8,13 +8,6 @@ export const liveOffers = (offers = [], now = Date.now()) =>
       (offer.ends_at === 'infinity' || Date.parse(offer.ends_at) > now)
   )
 
-export function offerCapacity(offers, now) {
-  const live = liveOffers(offers, now)
-  const regular = live.filter((offer) => !offer.requires_claim)
-  const promotions = live.filter((offer) => offer.requires_claim)
-  return { regular, promotions, full: regular.length >= 1 && promotions.length >= 2 }
-}
-
 export function businessBenefit(offers = []) {
   const best = Math.max(
     0,

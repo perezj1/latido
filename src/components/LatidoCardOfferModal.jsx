@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { cardRpc } from '../lib/latidoCard'
 import { cardErrorMessage } from '../lib/latidoCardCore'
-import { offerCapacity } from '../lib/latidoCardExperience'
 import { refreshCardBusinessAccess } from '../hooks/useCardBusinessAccess'
 import { useAuth } from '../hooks/useAuth'
 import { trackCardEvent } from '../lib/analytics'
@@ -35,14 +34,7 @@ export default function LatidoCardOfferModal({
     [retry, setRetry] = useState(0)
   const [offers, setOffers] = useState([]),
     [success, setSuccess] = useState(null)
-  const [selection, setSelection] = useState(initialSelection)
-  const [capacityAccepted, setCapacityAccepted] = useState(false)
   const progress = useRef({ step: 1, started: false, published: false })
-  const capacity = offerCapacity(offers)
-  useEffect(() => {
-    setSelection(initialSelection)
-    setCapacityAccepted(false)
-  }, [initialSelection])
   useEffect(() => {
     if (!open) {
       setSuccess(null)
@@ -182,71 +174,12 @@ export default function LatidoCardOfferModal({
             Tu negocio está pendiente de revisión. Cuando esté aprobado podrás crear tu oferta
             gratis aquí.
           </p>
-        ) : business &&
-          !loading &&
-          !error &&
-          !operation &&
-          !capacityAccepted &&
-          (capacity.full || (capacity.regular.length > 0 && !selection?.requires_claim)) ? (
-          <div className="lc-capacity-notice">
-            <h3>
-              {capacity.full
-                ? 'Ya tienes todas las ofertas disponibles'
-                : 'Ya tienes tu descuento habitual activo'}
-            </h3>
-
-            {!capacity.full && (
-              <button
-                className="lc-button"
-                onClick={() => {
-                  setSelection({
-                    ...selection,
-                    requires_claim: true,
-                    usage_period: 'lifetime',
-                    usage_limit: 1
-                  })
-                  setCapacityAccepted(true)
-                }}
-              >
-                Crear una promoción limitada
-              </button>
-            )}
-            <button
-              className="lc-button lc-button--secondary"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true)
-                try {
-                  await cardRpc('lc_set_offer_active', {
-                    p_offer: capacity.regular[0].id,
-                    p_active: false
-                  })
-                  setOffers((items) =>
-                    items.map((o) =>
-                      o.id === capacity.regular[0].id ? { ...o, active: false } : o
-                    )
-                  )
-                  setCapacityAccepted(true)
-                } catch (err) {
-                  setError(cardErrorMessage(err))
-                } finally {
-                  setBusy(false)
-                }
-              }}
-            >
-              Pausar el actual
-            </button>
-          </div>
         ) : (
           business && (
             <div hidden={loading || Boolean(error)}>
               <LatidoCardOfferForm
                 business={displayBusiness}
-                initialSelection={selection}
-                promotionOnly={!operation && capacity.regular.length > 0}
-                promotionUnavailable={
-                  capacity.promotions.length >= 2 && !operation?.offer?.requires_claim
-                }
+                initialSelection={initialSelection}
                 onStepChange={(step) => {
                   progress.current.step = step
                   if (!progress.current.started) {

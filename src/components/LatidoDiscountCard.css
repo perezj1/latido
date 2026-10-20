@@ -7,16 +7,19 @@
   max-width: 440px;
   margin: 0 auto;
 }
-.lc-discount-card.lc-offer-row {
+.lc-discount-card.lc-offer-row.lc-coupon {
   display: block;
-  position: relative;
-  overflow: hidden;
-  padding: 16px 16px 20px;
+  padding: 16px 16px 0;
   border: 1px solid #e3e7ef;
-  border-radius: 18px;
+  border-radius: 20px;
   background: #fff;
-  box-shadow: none;
-  color: #0d1530;
+  box-shadow:
+    0 1px 2px #0f172a0a,
+    0 8px 20px #0f236e0d;
+  color: #0f172a;
+}
+.lc-discount-card:has(.lc-discount-details:not([hidden]), .lc-discount-share-link) {
+  padding-bottom: 20px;
 }
 .lc-discount-card--shared {
   outline: 2px solid #c5d6ff;
@@ -24,9 +27,10 @@
 }
 .lc-discount-main {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 36px;
-  gap: 10px;
-  align-items: flex-start;
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding-right: 36px;
 }
 .lc-discount-main > .lc-discount-photo {
   align-self: center;
@@ -56,7 +60,11 @@
 .lc-discount-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 8px;
+  gap: 4px 12px;
+  line-height: 1.4;
+}
+.lc-discount-tags:empty {
+  display: none;
 }
 .lc-discount-tags > span {
   font-size: 12px;
@@ -86,12 +94,31 @@
   height: 100%;
   object-fit: cover;
 }
+.lc-discount-photo-symbol {
+  display: flex;
+}
 .lc-discount-photo-emoji {
   font-size: 28px;
   line-height: 1;
 }
 .lc-discount-photo--small .lc-discount-photo-emoji {
   font-size: 24px;
+}
+.lc-discount-photo[data-benefit='gift'] {
+  background: #e7f8f1;
+  color: #0b6e53;
+}
+.lc-discount-photo[data-benefit='service'] {
+  background: #f1ecff;
+  color: #5b3cc4;
+}
+.lc-discount-photo[data-benefit='fixed'] {
+  background: #fff3dc;
+  color: #8a5000;
+}
+.lc-discount-photo[data-benefit='two_for_one'] {
+  background: #fde8f0;
+  color: #b8175a;
 }
 .lc-discount-photo--small {
   flex-basis: 48px;
@@ -106,13 +133,13 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #556070;
+  color: #33405a;
   text-decoration: none;
   text-align: left;
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.45;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
   overflow-wrap: anywhere;
   cursor: pointer;
 }
@@ -127,13 +154,15 @@
 }
 .lc-discount-card .lc-discount-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.3;
   overflow-wrap: anywhere;
 }
 .lc-discount-summary {
-  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+  margin: 16px -16px 0;
   font-size: 12px;
   line-height: 1.6;
   color: #5b6478;
@@ -142,23 +171,25 @@
   margin: 0;
 }
 .lc-discount-bottom {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
-  justify-content: space-between;
+  gap: 10px;
 }
 .lc-discount-bottom > .lc-offer-usage-chip {
-  flex: 0 1 auto;
+  justify-self: start;
   min-width: 0;
+  max-width: 100%;
   line-height: 1.4;
 }
 .lc-discount-bottom .lc-discount-actions {
-  margin: 0;
-  width: 100px;
-  min-width: 100px;
+  flex: none;
+  margin: 0 0 0 auto;
+  width: auto;
+  min-width: 0;
 }
 .lc-discount-bottom .lc-discount-actions .lc-discount-buttons {
-  width: 100%;
+  width: auto;
 }
 .lc-discount-card.lc-discount-card--unavailable {
   background: #f7f8fb;
@@ -173,7 +204,8 @@
   color: #667087;
 }
 .lc-discount-summary .lc-discount-availability {
-  margin-top: 6px;
+  margin: 0;
+  line-height: 1.4;
   font-weight: 500;
   color: #5b6478;
 }
@@ -181,6 +213,7 @@
   background: #dce2ed;
   color: #667087;
   opacity: 1;
+  box-shadow: none;
 }
 .lc-discount-share-link {
   display: grid;
@@ -281,27 +314,37 @@
   min-width: 0;
 }
 .lc-discount-share {
-  width: 36px;
-  height: 36px;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  border: 1px solid #e6e9f2;
+  border: 0;
   border-radius: 50%;
-  background: white;
-  color: #2461eb;
+  background: transparent;
+  color: #7a8394;
   cursor: pointer;
+}
+.lc-discount-share:hover {
+  background: #f4f6fa;
+  color: #2a55df;
 }
 .lc-discount-card .lc-discount-primary {
   min-height: 44px;
   min-width: 0;
-  padding: 8px 6px;
-  font-size: 14px;
+  padding: 0 14px;
+  font-size: 15px;
   font-weight: 700;
   border: 1px solid transparent;
+  border-radius: 12px;
+  background: #2a55df;
+  box-shadow: 0 4px 10px #2a55df38;
 }
 .lc-discount-card .lc-discount-primary:hover:not(:disabled) {
-  background: #194dcc;
+  background: #1e3fb0;
 }
 @media (max-width: 360px) {
   .lc-discount-actions {
@@ -342,12 +385,8 @@
   cursor: default;
 }
 .lc-discount-history {
-  padding: 4px 18px;
-  border-radius: 24px;
-  background: white;
-  box-shadow:
-    0 1px 2px rgb(13 21 48 / 5%),
-    0 12px 32px -18px rgb(13 21 48 / 25%);
+  padding: 0;
+  background: transparent;
 }
 .lc-discount-history > summary {
   display: flex;
@@ -397,37 +436,46 @@
   line-height: 1.6;
 }
 .lc-discount-history > ul {
+  display: grid;
+  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .lc-use-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 14px 0;
-  border-top: 1px solid #e6e9f2;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 4px 14px;
+  align-items: center;
 }
-.lc-use-row:first-child {
-  border-top: 0;
+.lc-use-row > .lc-discount-photo {
+  grid-row: 1 / span 2;
+}
+.lc-use-row .lc-use-info {
+  display: contents;
+}
+.lc-use-row .lc-use-info > h3,
+.lc-use-row .lc-use-info > span {
+  grid-column: 2;
 }
 .lc-use-row .lc-use-info h3 {
   margin: 0;
   color: #0d1530;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 .lc-use-info > span {
   font-size: 13px;
   color: #5b6478;
 }
 .lc-use-meta {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 4px;
+  margin: 12px -16px 0;
 }
 .lc-use-meta > time {
   font-size: 12px;

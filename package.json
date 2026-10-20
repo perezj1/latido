@@ -21,6 +21,7 @@
     "test:guides:browser": "node scripts/test-guides-browser.mjs",
     "test:punto-hispano": "node scripts/test-punto-hispano.mjs",
     "test:card": "node scripts/test-latido-card.mjs",
+    "test:card:location": "node scripts/test-latido-card-location.mjs",
     "test:card:share": "node scripts/test-latido-card-share.mjs",
     "test:card:invitations": "node scripts/test-latido-card-invitations.mjs",
     "card:invitations": "node scripts/send-latido-card-invitations.mjs",

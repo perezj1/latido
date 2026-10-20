@@ -74,7 +74,6 @@ export function cardErrorMessage(
     OFFER_UNAVAILABLE: 'Este descuento ya no está disponible. Consulta tus descuentos de nuevo.',
     OFFER_SOLD_OUT: 'No quedan unidades disponibles.',
     OFFER_USED: 'Ya has utilizado esta promoción.',
-    OFFER_CAPACITY: 'Puedes publicar un descuento habitual y dos promociones limitadas vigentes.',
     BUSINESS_SUSPENDED: 'Latido ha retirado este negocio del programa. Contacta con Latido.',
     OFFER_REQUIRED: 'Publica un descuento para participar en Tarjeta Latido.',
     BUSINESS_INACTIVE: 'Este negocio no está participando en Tarjeta Latido.',

@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 import { shareCardOffer } from '../lib/latidoCardShare'
 import { cardRpc } from '../lib/latidoCard'
 import { cardErrorMessage, offerUsageLabel } from '../lib/latidoCardCore'
-import { liveOffers, offerCapacity, offerState } from '../lib/latidoCardExperience'
+import { liveOffers, offerState } from '../lib/latidoCardExperience'
 import { offerToDraft } from '../lib/latidoCardOfferDraft'
 import { trackCardEvent } from '../lib/analytics'
 import { invalidateCardCatalog } from '../lib/latidoCardCatalog'
@@ -87,10 +87,6 @@ export default function LatidoCardBusiness() {
     }
   }
   const business = data.businesses.find((b) => b.id === data.selectedProvider) || data.businesses[0]
-  const capacity = offerCapacity(
-    data.offers,
-    data.server_now ? Date.parse(data.server_now) : undefined
-  )
   return (
     <div className="lc-page lc-member-page lc-business-page lc-app-page">
       <CardHeader />
@@ -200,17 +196,12 @@ export default function LatidoCardBusiness() {
                     {data.offers.filter((offer) => offerState(offer) === 'Activa').length} activas
                   </span>
                 </div>
-                {capacity.full && (
-                  <p role="status">
-                    Ya tienes todas las ofertas disponibles. Pausa una para publicar otra.
-                  </p>
-                )}
                 {!data.offers.length && (
                   <p>Tu primera oferta empieza con un descuento para tu comunidad.</p>
                 )}
                 <div className="lc-managed-offers">
                   {data.offers.map((offer) => (
-                    <article className="lc-managed-offer" key={offer.id}>
+                    <article className="lc-managed-offer lc-coupon" key={offer.id}>
                       <div className="lc-managed-offer-head">
                         <OfferBenefitBadge offer={offer} />
                         <div className="lc-managed-offer-info">
@@ -229,7 +220,7 @@ export default function LatidoCardBusiness() {
                           )}
                         </div>
                       </div>
-                      <div className="lc-managed-offer-meta">
+                      <div className="lc-managed-offer-meta lc-coupon-footer">
                         <button
                           className="lc-text-button"
                           disabled={busy}
@@ -241,7 +232,7 @@ export default function LatidoCardBusiness() {
                           }
                         >
                           <Pencil size={15} aria-hidden="true" />
-                          {offer.has_activity ? 'Crear nueva versión' : 'Editar'}
+                          Editar
                         </button>
                         <button
                           className="lc-text-button"
@@ -428,7 +419,7 @@ export default function LatidoCardBusiness() {
           <button
             className="lc-button"
             aria-haspopup="dialog"
-            disabled={busy || capacity.full}
+            disabled={busy}
             onClick={() => openOffer(business)}
           >
             <span aria-hidden="true">+</span> Crear oferta

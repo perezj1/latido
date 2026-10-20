@@ -99,6 +99,7 @@
   font-weight: 600;
 }
 .lc-invitation-visual .lc-offer-preview {
+  --lc-coupon-surround: #eef3ff;
   position: relative;
   z-index: 1;
   max-width: 350px;

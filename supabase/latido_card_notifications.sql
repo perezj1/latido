@@ -20,19 +20,101 @@ CREATE TABLE IF NOT EXISTS public.latido_card_notification_preferences (
 ALTER TABLE public.latido_card_notification_preferences ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.latido_card_notification_preferences FROM PUBLIC,anon,authenticated;
 GRANT ALL ON public.latido_card_notification_preferences TO service_role;
-CREATE OR REPLACE FUNCTION public.lc_notification_preferences(p_enabled BOOLEAN DEFAULT NULL,p_city TEXT DEFAULT NULL) RETURNS JSONB
+-- Canton codes are stored separately; city is retained for older clients.
+CREATE OR REPLACE FUNCTION public.lc_card_canton(p_value TEXT) RETURNS TEXT
+LANGUAGE plpgsql IMMUTABLE SET search_path=public AS $$
+DECLARE clean TEXT;
+BEGIN
+ clean:=regexp_replace(translate(lower(btrim(coalesce(p_value,''))),
+ 'àáâãäåçèéêëìíîïñòóôõöùúûüýÿ','aaaaaaceeeeiiiinooooouuuuyy'),'[^a-z]','','g');
+ IF upper(clean)=ANY(ARRAY['AG','AI','AR','BE','BL','BS','FR','GE','GL','GR','JU','LU','NE','NW','OW','SG','SH','SO','SZ','TG','TI','UR','VD','VS','ZG','ZH']) THEN RETURN upper(clean); END IF;
+ RETURN CASE clean
+  WHEN 'aargau' THEN 'AG'
+  WHEN 'appenzella' THEN 'AR'
+  WHEN 'appenzellausserrhoden' THEN 'AR'
+  WHEN 'appenzelli' THEN 'AI'
+  WHEN 'appenzellinnerrhoden' THEN 'AI'
+  WHEN 'basel' THEN 'BS'
+  WHEN 'baselland' THEN 'BL'
+  WHEN 'basellandschaft' THEN 'BL'
+  WHEN 'baselstadt' THEN 'BS'
+  WHEN 'bern' THEN 'BE'
+  WHEN 'berna' THEN 'BE'
+  WHEN 'freiburg' THEN 'FR'
+  WHEN 'fribourg' THEN 'FR'
+  WHEN 'geneva' THEN 'GE'
+  WHEN 'geneve' THEN 'GE'
+  WHEN 'genf' THEN 'GE'
+  WHEN 'ginebra' THEN 'GE'
+  WHEN 'glarus' THEN 'GL'
+  WHEN 'graubunden' THEN 'GR'
+  WHEN 'jura' THEN 'JU'
+  WHEN 'lucerna' THEN 'LU'
+  WHEN 'lucerne' THEN 'LU'
+  WHEN 'luzern' THEN 'LU'
+  WHEN 'neuchatel' THEN 'NE'
+  WHEN 'neuenburg' THEN 'NE'
+  WHEN 'nidwalden' THEN 'NW'
+  WHEN 'obwalden' THEN 'OW'
+  WHEN 'schaffhausen' THEN 'SH'
+  WHEN 'schwyz' THEN 'SZ'
+  WHEN 'solothurn' THEN 'SO'
+  WHEN 'stgallen' THEN 'SG'
+  WHEN 'tessin' THEN 'TI'
+  WHEN 'thurgau' THEN 'TG'
+  WHEN 'ticino' THEN 'TI'
+  WHEN 'uri' THEN 'UR'
+  WHEN 'valais' THEN 'VS'
+  WHEN 'vaud' THEN 'VD'
+  WHEN 'waadt' THEN 'VD'
+  WHEN 'wallis' THEN 'VS'
+  WHEN 'zuerich' THEN 'ZH'
+  WHEN 'zug' THEN 'ZG'
+  WHEN 'zurich' THEN 'ZH'
+  ELSE '' END;
+END $$;
+CREATE OR REPLACE FUNCTION public.lc_card_city_canton(p_city TEXT) RETURNS TEXT
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public AS $$
+DECLARE matches INTEGER; code TEXT;
+BEGIN
+ -- Prefer actual business locations, and never guess across ambiguous cantons.
+ SELECT count(DISTINCT mapped.canton),min(mapped.canton) INTO matches,code
+ FROM (SELECT public.lc_card_canton(to_jsonb(p)->>'canton') AS canton FROM public.providers p
+ WHERE lower(btrim(p.city))=lower(btrim(p_city))) mapped WHERE mapped.canton<>'';
+ IF matches>1 THEN RETURN ''; END IF;
+ IF matches=1 THEN RETURN code; END IF;
+ RETURN public.lc_card_canton(p_city);
+END $$;
+ALTER TABLE public.latido_card_notification_preferences ADD COLUMN IF NOT EXISTS canton TEXT NOT NULL DEFAULT ''
+ CONSTRAINT lc_notification_canton CHECK(canton='' OR canton IN ('AG','AI','AR','BE','BL','BS','FR','GE','GL','GR','JU','LU','NE','NW','OW','SG','SH','SO','SZ','TG','TI','UR','VD','VS','ZG','ZH'));
+-- Preserve existing consent when the saved city has an identifiable canton.
+UPDATE public.latido_card_notification_preferences SET canton=public.lc_card_city_canton(city)
+ WHERE canton='' AND city<>'';
+-- Unresolved locations require an explicit choice; disabled preferences stay disabled.
+UPDATE public.latido_card_notification_preferences SET new_offers=false WHERE new_offers AND canton='';
+
+-- Keep p_city as an optional compatibility argument, with the canton as the new preference.
+DROP FUNCTION IF EXISTS public.lc_notification_preferences(BOOLEAN,TEXT);
+CREATE OR REPLACE FUNCTION public.lc_notification_preferences(p_enabled BOOLEAN DEFAULT NULL,p_city TEXT DEFAULT NULL,p_canton TEXT DEFAULT NULL) RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-DECLARE preference public.latido_card_notification_preferences;
+DECLARE preference public.latido_card_notification_preferences; selected_canton TEXT;
 BEGIN
  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'AUTH_REQUIRED'; END IF;
+ SELECT * INTO preference FROM public.latido_card_notification_preferences WHERE user_id=auth.uid();
  IF p_enabled IS NOT NULL THEN
-  IF p_enabled AND nullif(btrim(p_city),'') IS NULL THEN RAISE EXCEPTION 'CITY_REQUIRED'; END IF;
-  INSERT INTO public.latido_card_notification_preferences(user_id,new_offers,city) VALUES(auth.uid(),p_enabled,coalesce(btrim(p_city),''))
-  ON CONFLICT(user_id) DO UPDATE SET new_offers=excluded.new_offers,city=excluded.city,
-  enabled_at=CASE WHEN NOT latido_card_notification_preferences.new_offers AND excluded.new_offers THEN now() ELSE latido_card_notification_preferences.enabled_at END;
+  selected_canton:=CASE WHEN p_canton IS NOT NULL THEN public.lc_card_canton(p_canton)
+   WHEN p_city IS NOT NULL THEN public.lc_card_city_canton(p_city) ELSE coalesce(preference.canton,'') END;
+  IF nullif(btrim(p_canton),'') IS NOT NULL AND selected_canton='' THEN RAISE EXCEPTION 'CANTON_INVALID'; END IF;
+  IF p_enabled AND selected_canton='' THEN RAISE EXCEPTION 'CANTON_REQUIRED'; END IF;
+  INSERT INTO public.latido_card_notification_preferences(user_id,new_offers,canton,city)
+  VALUES(auth.uid(),p_enabled,selected_canton,coalesce(btrim(p_city),''))
+  ON CONFLICT(user_id) DO UPDATE SET new_offers=excluded.new_offers,canton=excluded.canton,
+  city=CASE WHEN p_city IS NOT NULL THEN excluded.city ELSE latido_card_notification_preferences.city END,
+  enabled_at=CASE WHEN (NOT latido_card_notification_preferences.new_offers AND excluded.new_offers)
+   OR latido_card_notification_preferences.canton<>excluded.canton THEN now() ELSE latido_card_notification_preferences.enabled_at END;
  END IF;
  SELECT * INTO preference FROM public.latido_card_notification_preferences WHERE user_id=auth.uid();
- RETURN jsonb_build_object('new_offers',coalesce(preference.new_offers,false),'city',coalesce(preference.city,''));
+ RETURN jsonb_build_object('new_offers',coalesce(preference.new_offers,false),'canton',coalesce(preference.canton,''),'city',coalesce(preference.city,''));
 END $$;
 
 CREATE OR REPLACE FUNCTION public.lc_notify_business_use() RETURNS TRIGGER
@@ -62,7 +144,7 @@ CREATE TRIGGER lc_business_use_notification AFTER INSERT ON public.latido_card_r
 
 CREATE OR REPLACE FUNCTION public.lc_send_scheduled_notifications() RETURNS INTEGER
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-DECLARE sent INTEGER:=0; affected INTEGER; preference public.latido_card_notification_preferences; new_count BIGINT;
+DECLARE sent INTEGER:=0; affected INTEGER; preference public.latido_card_notification_preferences; new_count BIGINT; canton_name TEXT;
  week_start TIMESTAMPTZ:=date_trunc('week',now() AT TIME ZONE 'Europe/Zurich') AT TIME ZONE 'Europe/Zurich';
  today DATE:=(now() AT TIME ZONE 'Europe/Zurich')::date;
 BEGIN
@@ -103,21 +185,23 @@ BEGIN
  FOR UPDATE OF pref LOOP
   SELECT count(*) INTO new_count FROM public.latido_card_offers o JOIN public.providers p ON p.id=o.provider_id
   JOIN public.latido_card_businesses b ON b.provider_id=p.id
-  WHERE p.city=preference.city AND b.active AND NOT b.suspended AND o.active AND o.deleted_at IS NULL
+  WHERE public.lc_card_canton(to_jsonb(p)->>'canton')=preference.canton AND b.active AND NOT b.suspended AND o.active AND o.deleted_at IS NULL
   AND o.starts_at<=now() AND o.ends_at>now() AND o.created_at>greatest(preference.enabled_at,coalesce(preference.last_new_offers_at,preference.enabled_at))
   AND coalesce((to_jsonb(p)->>'active')::boolean,true) AND to_jsonb(p)->>'deleted_at' IS NULL;
   IF new_count>0 THEN
+   canton_name:='{"AG": "Aargau", "AI": "Appenzell I.", "AR": "Appenzell A.", "BE": "Bern", "BL": "Basel-Land", "BS": "Basel-Stadt", "FR": "Fribourg", "GE": "Genève", "GL": "Glarus", "GR": "Graubünden", "JU": "Jura", "LU": "Luzern", "NE": "Neuchâtel", "NW": "Nidwalden", "OW": "Obwalden", "SG": "St. Gallen", "SH": "Schaffhausen", "SO": "Solothurn", "SZ": "Schwyz", "TG": "Thurgau", "TI": "Ticino", "UR": "Uri", "VD": "Vaud", "VS": "Valais", "ZG": "Zug", "ZH": "Zürich"}'::jsonb->>preference.canton;
    INSERT INTO public.app_notifications(recipient_id,kind,source_id,data)
    VALUES(preference.user_id,'card_member','new-offers:'||week_start,
-   jsonb_build_object('title','Descuentos nuevos en '||preference.city,'body',new_count||' nuevas ofertas para descubrir.','href','/card')) ON CONFLICT DO NOTHING;
+   jsonb_build_object('title','Descuentos nuevos en '||canton_name,'body','Descubre '||new_count||CASE WHEN new_count=1 THEN ' nueva oferta' ELSE ' nuevas ofertas' END||' en tu cantón.','canton',preference.canton,'href','/card')) ON CONFLICT DO NOTHING;
    GET DIAGNOSTICS affected=ROW_COUNT; sent:=sent+affected;
    UPDATE public.latido_card_notification_preferences SET last_new_offers_at=now() WHERE user_id=preference.user_id;
   END IF;
  END LOOP;
  RETURN sent;
 END $$;
-REVOKE ALL ON FUNCTION public.lc_notification_preferences(BOOLEAN,TEXT),public.lc_notify_business_use(),public.lc_send_scheduled_notifications() FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.lc_notification_preferences(BOOLEAN,TEXT) TO authenticated;
+REVOKE ALL ON FUNCTION public.lc_card_canton(TEXT),public.lc_card_city_canton(TEXT) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.lc_notification_preferences(BOOLEAN,TEXT,TEXT),public.lc_notify_business_use(),public.lc_send_scheduled_notifications() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.lc_notification_preferences(BOOLEAN,TEXT,TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.lc_send_scheduled_notifications() TO service_role;
 DO $$ BEGIN
  IF EXISTS(SELECT 1 FROM pg_extension WHERE extname='pg_cron') THEN

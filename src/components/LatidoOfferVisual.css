@@ -1,38 +1,42 @@
 .lc-offer-value {
   display: flex;
-  flex: 0 0 56px;
+  flex: 0 0 60px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  width: 56px;
-  height: 62px;
+  width: 60px;
+  height: 60px;
   border-radius: 16px;
-  background: #e7edff;
-  color: #1d44cc;
+  background: #e8eeff;
+  color: #1e3fb0;
+  box-shadow: inset 0 0 0 1px #0f172a0a;
 }
 .lc-offer-value[data-benefit='fixed'] {
   background: #fff3dc;
-  color: #975900;
+  color: #8a5000;
 }
 .lc-offer-value[data-benefit='combo'] {
-  background: #ffe5ef;
-  color: #cc1757;
+  background: #fde8f0;
+  color: #b8175a;
 }
 .lc-offer-value[data-benefit='gift'] {
-  background: #e4f7ee;
-  color: #007e66;
+  background: #e7f8f1;
+  color: #0b6e53;
 }
 .lc-offer-value[data-benefit='service'] {
-  background: #f0eaff;
-  color: #6941cf;
+  background: #f1ecff;
+  color: #5b3cc4;
 }
 .lc-offer-value-number {
-  font-size: 17px;
-  line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
   font-weight: 800;
   white-space: nowrap;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.01em;
 }
 .lc-offer-value[data-long='true'] .lc-offer-value-number {
   font-size: 13px;
@@ -40,8 +44,10 @@
 }
 .lc-offer-value-unit {
   font-size: 10px;
-  font-weight: 600;
-  line-height: 1.1;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
 }
 .lc-offer-brand-stripe {
   position: absolute;
@@ -79,32 +85,25 @@
   align-items: center;
   justify-content: flex-start;
   gap: 5px;
-  padding: 6px 9px;
+  padding: 6px 10px;
   border-radius: 999px;
   background: #f4f6fa;
   color: #556070;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 .lc-offer-usage-chip svg {
   flex-shrink: 0;
 }
 .lc-offer-preview {
-  position: relative;
-  overflow: hidden;
-  padding: 16px 16px 20px;
-  border: 1px solid #e3e7ef;
-  border-radius: 18px;
-  background: #fff;
-  color: #0f172a;
   font-family: 'Poppins', sans-serif;
   text-align: left;
 }
 .lc-offer-preview-head {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 14px;
 }
 .lc-offer-preview-info {
   flex: 1;
@@ -113,38 +112,44 @@
 }
 .lc-offer-preview-info > strong {
   display: block;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 1.3;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
 .lc-offer-preview .lc-offer-preview-info > p {
   margin: 4px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.4;
   color: #556070;
   overflow-wrap: anywhere;
 }
 .lc-offer-preview-info b {
-  color: #2a55df;
+  color: #33405a;
   font-weight: 600;
 }
 .lc-offer-preview-footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  margin-top: 14px;
+}
+.lc-offer-preview-footer > .lc-offer-usage-chip {
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
 }
 .lc-offer-preview-action {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  padding: 0 18px;
+  min-height: 44px;
+  padding: 0 14px;
   border-radius: 12px;
   background: #2a55df;
   color: #fff;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
+  box-shadow: 0 4px 10px #2a55df38;
 }

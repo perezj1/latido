@@ -18,11 +18,7 @@ import {
   offerToDraft,
   zurichEndOfDay
 } from '../src/lib/latidoCardOfferDraft.js'
-import {
-  businessBenefit,
-  membershipMailUrl,
-  offerCapacity
-} from '../src/lib/latidoCardExperience.js'
+import { businessBenefit, membershipMailUrl, liveOffers } from '../src/lib/latidoCardExperience.js'
 import { cardPublicSeo, renderCardShareHtml } from '../src/lib/latidoCardSeo.js'
 
 const draft = initialOfferDraft()
@@ -53,11 +49,8 @@ const mail = new URL(
 assert.match(mail.searchParams.get('body'), /Ana Núñez/)
 assert.match(mail.searchParams.get('body'), /ana\+latido@example.com/)
 assert.match(mail.searchParams.get('body'), /2481/)
-assert.equal(
-  offerCapacity([{ active: true, ends_at: 'infinity', requires_claim: false }]).regular.length,
-  1
-)
-assert.equal(offerCapacity([{ active: true, ends_at: '2020-01-01' }]).regular.length, 0)
+assert.equal(liveOffers([{ active: true, ends_at: 'infinity', requires_claim: false }]).length, 1)
+assert.equal(liveOffers([{ active: true, ends_at: '2020-01-01' }]).length, 0)
 assert.equal(businessBenefit([{ benefit_type: 'percent', benefit_value: 15 }]), 'Hasta −15 %')
 const publicSeo = cardPublicSeo({
   business: { id: 'business', name: 'Café <Latido>', city: 'Zürich', photo_url: '/cafe.jpg' },
@@ -128,7 +121,9 @@ const minimal = await read('latido_card_minimal.sql'),
   participation = await read('latido_card_business_participation.sql'),
   verify = await read('latido_card_verify.sql'),
   experience = await read('latido_card_experience.sql'),
-  notifications = await read('latido_card_notifications.sql')
+  notifications = await read('latido_card_notifications.sql'),
+  cantonAlerts = await read('latido_card_canton_alerts.sql'),
+  multipleOffers = await read('latido_card_multiple_offers.sql')
 assert.equal(offerUsageLabel({ usage_period: 'week', usage_limit: 2 }), '2 usos por semana')
 const monthlyUsed = offerAvailability(
   {
@@ -216,7 +211,7 @@ for (const upgrade of [false, true]) {
     CREATE SCHEMA auth;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
     CREATE TABLE profiles(id uuid PRIMARY KEY,name text,email text);
-    CREATE TABLE providers(id uuid PRIMARY KEY,user_id uuid REFERENCES profiles(id),name text,city text,photo_url text,active boolean DEFAULT true);
+    CREATE TABLE providers(id uuid PRIMARY KEY,user_id uuid REFERENCES profiles(id),name text,city text,photo_url text,active boolean DEFAULT true,canton text);
     CREATE TABLE business_promotion_admins(email text PRIMARY KEY);
     CREATE FUNCTION is_business_promotion_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM business_promotion_admins WHERE email=(nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'email')) $$;
     GRANT USAGE ON SCHEMA public,auth TO anon,authenticated;
@@ -343,9 +338,51 @@ for (const upgrade of [false, true]) {
   )
   await db.exec(experience)
   await db.exec(experience)
+  await db.exec(multipleOffers)
+  await db.exec(multipleOffers)
   await db.exec(
     `CREATE TABLE IF NOT EXISTS app_notifications(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),recipient_id uuid REFERENCES profiles(id),kind text,source_id text,data jsonb,created_at timestamptz DEFAULT now(),CONSTRAINT app_notifications_kind_check CHECK (kind IN ('message')),UNIQUE(recipient_id,kind,source_id));`
   )
+  await db.exec(`CREATE TABLE latido_card_notification_preferences (
+    user_id uuid PRIMARY KEY REFERENCES profiles(id),new_offers boolean NOT NULL DEFAULT false,
+    city text NOT NULL DEFAULT '',enabled_at timestamptz NOT NULL DEFAULT now(),last_new_offers_at timestamptz
+  )`)
+  await db.exec(`CREATE FUNCTION public.lc_notification_preferences(p_enabled BOOLEAN DEFAULT NULL,p_city TEXT DEFAULT NULL)
+    RETURNS JSONB LANGUAGE sql AS $$ SELECT jsonb_build_object('new_offers',false,'city','') $$`)
+  const oldAlertBusiness = randomUUID()
+  await db.query('INSERT INTO providers(id,user_id,name,city,canton) VALUES($1,$2,$3,$4,$5)', [
+    oldAlertBusiness,
+    ids.owner,
+    'Existing alerts location',
+    'Winterthur',
+    'ZH'
+  ])
+  await db.query(
+    "INSERT INTO providers(id,user_id,name,city,canton) VALUES($1,$3,'Ambiguous A','Shared name','BE'),($2,$3,'Ambiguous B','Shared name','ZH')",
+    [randomUUID(), randomUUID(), ids.owner]
+  )
+  await db.query(
+    `INSERT INTO latido_card_notification_preferences(user_id,new_offers,city) VALUES
+    ($1,true,'Winterthur'),($2,true,'Shared name'),($3,false,'Zürich')`,
+    [ids.owner, ids.inactive, ids.other]
+  )
+  await db.exec(cantonAlerts)
+  await db.exec(cantonAlerts)
+  assert.equal(
+    (
+      await db.query(
+        "SELECT count(*)::int AS count FROM pg_proc WHERE proname='lc_notification_preferences'"
+      )
+    ).rows[0].count,
+    1,
+    'The previous RPC must not cause ambiguous default arguments'
+  )
+  const migratedPreferences = (await db.query('SELECT * FROM latido_card_notification_preferences'))
+    .rows
+  assert.equal(migratedPreferences.find((item) => item.user_id === ids.owner).canton, 'ZH')
+  assert.equal(migratedPreferences.find((item) => item.user_id === ids.owner).new_offers, true)
+  assert.equal(migratedPreferences.find((item) => item.user_id === ids.inactive).new_offers, false)
+  assert.equal(migratedPreferences.find((item) => item.user_id === ids.other).new_offers, false)
   await db.exec(notifications)
   await db.exec(notifications)
   const verification = await db.exec(verify)
@@ -500,7 +537,22 @@ for (const upgrade of [false, true]) {
   assert.equal(firstNotices.rows.length, upgrade ? 0 : 1)
   await as('member')
   assert.equal((await rpc('lc_notification_preferences')).new_offers, false)
-  assert.equal((await rpc('lc_notification_preferences', [true, 'Zürich'])).new_offers, true)
+  const cantonPreference = await rpc('lc_notification_preferences', [true, null, 'ZH'])
+  assert.equal(cantonPreference.new_offers, true)
+  assert.equal(cantonPreference.canton, 'ZH')
+  await assert.rejects(
+    () => rpc('lc_notification_preferences', [true, null, 'ZZ']),
+    /CANTON_INVALID/
+  )
+  await assert.rejects(
+    () => rpc('lc_notification_preferences', [true, null, '']),
+    /CANTON_REQUIRED/
+  )
+  assert.equal(
+    (await rpc('lc_notification_preferences', [true, 'Winterthur'])).canton,
+    'ZH',
+    'Older city clients resolve to a canton'
+  )
   await assert.rejects(
     () => db.query('SELECT * FROM latido_card_notification_preferences'),
     /permission denied/
@@ -760,9 +812,9 @@ for (const upgrade of [false, true]) {
   await as('owner')
   await db.query('DELETE FROM providers WHERE id=$1', [unrelated])
   assert.equal((await root('SELECT * FROM providers WHERE id=$1', [unrelated])).rows.length, 0)
-  // Exercise edits/replacements in a separate business, including rollback at capacity.
+  // Exercise edits/replacements in a separate business, including rollback on invalid terms.
   const managedBusiness = randomUUID()
-  await root('INSERT INTO providers(id,user_id,name,city) VALUES($1,$2,$3,$4)', [
+  await root("INSERT INTO providers(id,user_id,name,city,canton) VALUES($1,$2,$3,$4,'ZH')", [
     managedBusiness,
     ids.owner,
     'Experience test',
@@ -871,6 +923,138 @@ for (const upgrade of [false, true]) {
   await as(null, 'anon')
   await assert.rejects(() => rpc('lc_notification_preferences'), /permission denied/)
   await assert.rejects(() => rpc('lc_update_offer', [replacement, noEndOffer]), /permission denied/)
+  // Multiple regular offers and promotions can coexist without pausing other offers.
+  const multiBusiness = randomUUID()
+  await root('INSERT INTO providers(id,user_id,name,city) VALUES($1,$2,$3,$4)', [
+    multiBusiness,
+    ids.owner,
+    'Multiple offers',
+    'Zürich'
+  ])
+  const promotion = createOfferPayload({ ...draft, requires_claim: true, stock_total: '20' })
+  const regularIds = [],
+    promotionIds = []
+  await as('owner')
+  for (let index = 0; index < 3; index++)
+    regularIds.push(await rpc('lc_save_offer', [multiBusiness, noEndOffer]))
+  for (let index = 0; index < 4; index++)
+    promotionIds.push(await rpc('lc_save_offer', [multiBusiness, promotion]))
+  await rpc('lc_update_offer', [regularIds[0], promotion])
+  await rpc('lc_update_offer', [promotionIds[0], noEndOffer])
+  for (const id of [regularIds[1], promotionIds[1]]) {
+    await rpc('lc_set_offer_active', [id, false])
+    await rpc('lc_set_offer_active', [id, true])
+  }
+  const simultaneous = (await rpc('lc_business_dashboard', [multiBusiness])).offers
+  assert.equal(simultaneous.length, 7)
+  assert.ok(simultaneous.every((item) => item.active))
+  assert.equal(simultaneous.filter((item) => item.requires_claim).length, 4)
+  assert.equal(simultaneous.filter((item) => !item.requires_claim).length, 3)
+  await as(null, 'anon')
+  assert.equal((await rpc('lc_business_benefits', [multiBusiness])).offers.length, 7)
+  await assert.rejects(() => rpc('lc_save_offer', [multiBusiness, noEndOffer]), /permission denied/)
+  await assert.rejects(() => rpc('lc_set_offer_active', [regularIds[1], true]), /permission denied/)
+  await as('member')
+  for (const id of [regularIds[1], regularIds[2], promotionIds[1], promotionIds[2]]) {
+    await rpc('lc_use_offer', [id, randomUUID()])
+  }
+  const multiHome = await rpc('lc_member_home')
+  for (const id of [regularIds[1], regularIds[2], promotionIds[1], promotionIds[2]]) {
+    const usedOffer = multiHome.offers.find((item) => item.id === id)
+    assert.equal(usedOffer.used_count, 1, 'Usage limits apply separately to each offer')
+    assert.equal(usedOffer.available, false)
+  }
+  assert.equal(multiHome.offers.find((item) => item.id === promotionIds[3]).remaining, 20)
+  await as('other')
+  await assert.rejects(() => rpc('lc_save_offer', [multiBusiness, noEndOffer]), /FORBIDDEN/)
+  await assert.rejects(() => rpc('lc_update_offer', [regularIds[1], noEndOffer]), /FORBIDDEN/)
+  await assert.rejects(() => rpc('lc_set_offer_active', [regularIds[1], false]), /FORBIDDEN/)
+  await root('UPDATE latido_card_businesses SET suspended=true WHERE provider_id=$1', [
+    multiBusiness
+  ])
+  await as('owner')
+  await assert.rejects(
+    () => rpc('lc_save_offer', [multiBusiness, noEndOffer]),
+    /BUSINESS_SUSPENDED/
+  )
+  await assert.rejects(
+    () => rpc('lc_update_offer', [regularIds[0], noEndOffer]),
+    /BUSINESS_SUSPENDED/
+  )
+  await assert.rejects(() => rpc('lc_set_offer_active', [regularIds[1], true]), /BUSINESS_INACTIVE/)
+  // Canton alerts include another city in the same canton, not just its capital.
+  await as('other')
+  await rpc('lc_notification_preferences', [true, null, 'ZH'])
+  const regionalBusiness = randomUUID(),
+    outsideBusiness = randomUUID()
+  await root(
+    'INSERT INTO providers(id,user_id,name,city,canton) VALUES($1,$3,$4,$5,$6),($2,$3,$7,$5,$8)',
+    [
+      regionalBusiness,
+      outsideBusiness,
+      ids.owner,
+      'In the canton',
+      'Winterthur',
+      'ZH',
+      'Outside the canton',
+      'BE'
+    ]
+  )
+  await as('owner')
+  await rpc('lc_save_offer', [regionalBusiness, noEndOffer])
+  await rpc('lc_save_offer', [outsideBusiness, noEndOffer])
+  await root('SELECT lc_send_scheduled_notifications()')
+  const regionalNotice = (
+    await root(
+      "SELECT * FROM app_notifications WHERE recipient_id=$1 AND source_id LIKE 'new-offers:%'",
+      [ids.other]
+    )
+  ).rows
+  assert.equal(regionalNotice.length, 1)
+  assert.equal(regionalNotice[0].data.canton, 'ZH')
+  assert.equal(regionalNotice[0].data.body, 'Descubre 1 nueva oferta en tu cantón.')
+  assert.match(regionalNotice[0].data.title, /Zürich/)
+  await root('SELECT lc_send_scheduled_notifications()')
+  assert.equal(
+    (
+      await root(
+        "SELECT count(*)::int AS count FROM app_notifications WHERE recipient_id=$1 AND source_id LIKE 'new-offers:%'",
+        [ids.other]
+      )
+    ).rows[0].count,
+    1
+  )
+  await root(
+    "DELETE FROM app_notifications WHERE recipient_id=$1 AND source_id LIKE 'new-offers:%'",
+    [ids.other]
+  )
+  await root('SELECT lc_send_scheduled_notifications()')
+  assert.equal(
+    (
+      await root(
+        "SELECT count(*)::int AS count FROM app_notifications WHERE recipient_id=$1 AND source_id LIKE 'new-offers:%'",
+        [ids.other]
+      )
+    ).rows[0].count,
+    0,
+    'The seven-day limit holds even without a deduplication row'
+  )
+  await as('other')
+  await rpc('lc_notification_preferences', [false, null, 'ZH'])
+  await root(
+    "UPDATE latido_card_notification_preferences SET last_new_offers_at=now()-interval '8 days' WHERE user_id=$1",
+    [ids.other]
+  )
+  await root('SELECT lc_send_scheduled_notifications()')
+  assert.equal(
+    (
+      await root(
+        "SELECT count(*)::int AS count FROM app_notifications WHERE recipient_id=$1 AND source_id LIKE 'new-offers:%'",
+        [ids.other]
+      )
+    ).rows[0].count,
+    0
+  )
   await db.close()
   console.log(`Card minimal: ${upgrade ? 'legacy upgrade + archive' : 'fresh install'} passed`)
 }

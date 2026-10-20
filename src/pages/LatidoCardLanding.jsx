@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { membershipMailUrl } from '../lib/latidoCardExperience'
 import { trackCardEvent } from '../lib/analytics'
+import '../components/LatidoOfferCoupon.css'
 import './LatidoCardLanding.css'
 
 export default function LatidoCardLanding() {
@@ -205,7 +206,7 @@ export default function LatidoCardLanding() {
                     <span></span>
                   </span>
                 </div>
-                <div className="mini-oferta">
+                <div className="mini-oferta lc-coupon">
                   <div className="mini-oferta__cabeza">
                     <span className="mini-oferta__valor">
                       10 %<small>dto.</small>
@@ -215,7 +216,7 @@ export default function LatidoCardLanding() {
                       <span className="mini-oferta__lugar">Peluquería en Luzern</span>
                     </span>
                   </div>
-                  <div className="mini-oferta__pie">
+                  <div className="mini-oferta__pie lc-coupon-footer">
                     <span className="mini-oferta__uso">Sin límite de usos</span>
                     <span className="mini-oferta__boton">Usar ahora</span>
                   </div>
@@ -469,7 +470,7 @@ export default function LatidoCardLanding() {
                     </span>
                   </span>
                 </div>
-                <div className="mini-oferta">
+                <div className="mini-oferta lc-coupon">
                   <div className="mini-oferta__cabeza">
                     <span className="mini-oferta__valor mini-oferta__valor--rosa">
                       2x1<small>oferta</small>
@@ -479,7 +480,7 @@ export default function LatidoCardLanding() {
                       <span className="mini-oferta__lugar">Tu negocio · Tu ciudad</span>
                     </span>
                   </div>
-                  <div className="mini-oferta__pie">
+                  <div className="mini-oferta__pie lc-coupon-footer">
                     <span className="mini-oferta__uso">1 uso al mes</span>
                     <span className="mini-oferta__boton">Usar ahora</span>
                   </div>

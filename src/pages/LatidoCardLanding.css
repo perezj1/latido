@@ -429,12 +429,15 @@ html:has(.lc-landing) {
 }
 
 .lc-landing .mini-oferta {
+  --lc-coupon-padding: 14px;
+  --lc-coupon-radius: 18px;
+  --lc-coupon-surround: var(--azul-suave);
   position: absolute;
   right: 0;
   bottom: 8px;
   width: min(300px, 82%);
   overflow: hidden;
-  padding: 14px 14px 18px;
+  padding: 14px 14px 0;
   background: var(--blanco);
   border: 1px solid var(--borde);
   border-radius: 18px;
@@ -485,7 +488,8 @@ html:has(.lc-landing) {
   color: var(--gris);
 }
 .lc-landing .mini-oferta__pie {
-  margin-top: 12px;
+  margin: 12px -14px 0;
+  padding: 10px 14px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -509,6 +513,7 @@ html:has(.lc-landing) {
   color: var(--blanco);
   font-size: 13px;
   font-weight: 700;
+  box-shadow: 0 4px 10px #2a55df38;
 }
 
 .lc-landing .mini-negocio {

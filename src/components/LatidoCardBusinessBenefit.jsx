@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import useCardCatalog from '../hooks/useCardCatalog'
 import { businessBenefit } from '../lib/latidoCardExperience'
+import { OfferBrandStripe } from './LatidoOfferVisual'
 
 export default function LatidoCardBusinessBenefit({ providerId, block = false }) {
   const catalog = useCardCatalog()
@@ -27,21 +28,18 @@ export default function LatidoCardBusinessBenefit({ providerId, block = false })
       </span>
     )
   return (
-    <section
-      className="lc-business-benefit-block"
-      style={{ background: '#eff6ff', padding: 16, borderRadius: 16, margin: '16px 0' }}
-    >
-      <h2 style={{ fontSize: 16 }}>Oferta para socios de Tarjeta Latido</h2>
+    <section className="lc-business-benefit-block lc-coupon">
+      <h2>Oferta para socios de Tarjeta Latido</h2>
       <p>
         {benefit}
         {offers[0].city ? ` en ${offers[0].city}` : ''}
       </p>
-      <Link
-        to={`/card/negocio/${providerId}`}
-        style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontWeight: 700 }}
-      >
-        Ver ofertas →
-      </Link>
+      <div className="lc-business-benefit-footer lc-coupon-footer">
+        <Link className="lc-business-benefit-link" to={`/card/negocio/${providerId}`}>
+          Ver ofertas →
+        </Link>
+      </div>
+      <OfferBrandStripe />
     </section>
   )
 }

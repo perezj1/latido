@@ -16,11 +16,15 @@ import {
   offerHasEnd,
   offerUsageLabel
 } from '../lib/latidoCardCore'
-import { OfferBenefitBadge, OfferBrandStripe, OfferUsageChip } from './LatidoOfferVisual'
+import {
+  OfferBenefitBadge,
+  OfferBenefitIcon,
+  OfferBrandStripe,
+  OfferUsageChip
+} from './LatidoOfferVisual'
 import './LatidoDiscountCard.css'
 
 const date = (value) => new Date(value).toLocaleDateString('es-CH', { timeZone: 'Europe/Zurich' })
-const offerEmojis = { percent: '🎟️', fixed: '🛍️', gift: '🎁', service: '🤝', two_for_one: '✨' }
 const minimum = (offer) =>
   Number(offer.minimum_spend) > 0
     ? `Compra mínima CHF ${Number(offer.minimum_spend)}`
@@ -30,7 +34,10 @@ export function DiscountBusinessPhoto({ offer, small = false }) {
   const [failed, setFailed] = useState(null)
   const src = offer.business_photo_url
   return (
-    <div className={`lc-discount-photo ${small ? 'lc-discount-photo--small' : ''}`}>
+    <div
+      className={`lc-discount-photo ${small ? 'lc-discount-photo--small' : ''}`}
+      data-benefit={!src || failed === src ? offer.benefit_type : undefined}
+    >
       {src && failed !== src ? (
         <img
           src={src}
@@ -39,8 +46,8 @@ export function DiscountBusinessPhoto({ offer, small = false }) {
           onError={() => setFailed(src)}
         />
       ) : (
-        <span className="lc-discount-photo-emoji" aria-hidden="true">
-          {offerEmojis[offer.benefit_type] || '🏪'}
+        <span className="lc-discount-photo-symbol" aria-hidden="true">
+          <OfferBenefitIcon type={offer.benefit_type} size={small ? 24 : 28} />
         </span>
       )}
     </div>
@@ -97,7 +104,7 @@ export default function LatidoDiscountCard({
   )
   return (
     <article
-      className={`lc-offer-row lc-discount-card ${inBusiness ? 'lc-discount-card--in-business' : ''} ${shared ? 'lc-discount-card--shared' : ''} ${availability.unavailable ? 'lc-discount-card--unavailable' : ''}`}
+      className={`lc-offer-row lc-discount-card lc-coupon ${inBusiness ? 'lc-discount-card--in-business' : ''} ${shared ? 'lc-discount-card--shared' : ''} ${availability.unavailable ? 'lc-discount-card--unavailable' : ''}`}
       onClick={(event) => {
         if (!event.target.closest('button, a, input, label')) onToggleDetails()
       }}
@@ -145,7 +152,7 @@ export default function LatidoDiscountCard({
             : ''}
         </p>
       )}
-      <div className="lc-discount-summary">
+      <div className="lc-discount-summary lc-coupon-footer">
         <div className="lc-discount-bottom">
           <OfferUsageChip offer={offer} />
           {action}
@@ -215,15 +222,16 @@ export function LatidoDiscountHistory({ items, inBusiness = false }) {
       <ul className="lc-business-used-offers">
         {items.map((offer) => (
           <li key={offer.id}>
-            <article className="lc-business-used-offer">
+            <article className="lc-business-used-offer lc-coupon">
               <div>
                 <OfferBenefitBadge offer={offer} />
                 <h3>{offer.title}</h3>
               </div>
-              <span className="lc-business-used-date">
+              <span className="lc-business-used-date lc-coupon-footer">
                 <Check size={13} aria-hidden="true" />
                 Usada el <time dateTime={offer.redeemed_at}>{date(offer.redeemed_at)}</time>
               </span>
+              <OfferBrandStripe />
             </article>
           </li>
         ))}
@@ -233,12 +241,12 @@ export function LatidoDiscountHistory({ items, inBusiness = false }) {
     <div className="lc-discount-history">
       <ul>
         {items.map((offer) => (
-          <li className="lc-use-row" key={offer.redemptionId}>
+          <li className="lc-use-row lc-coupon" key={offer.redemptionId}>
             <DiscountBusinessPhoto offer={offer} small />
             <div className="lc-use-info">
               <h3>{offer.title}</h3>
               <span>{offer.business_name}</span>
-              <div className="lc-use-meta">
+              <div className="lc-use-meta lc-coupon-footer">
                 <time dateTime={offer.redeemed_at}>{date(offer.redeemed_at)}</time>
                 <span className="lc-use-pill">
                   <Check size={12} aria-hidden="true" />
@@ -246,6 +254,7 @@ export function LatidoDiscountHistory({ items, inBusiness = false }) {
                 </span>
               </div>
             </div>
+            <OfferBrandStripe />
           </li>
         ))}
       </ul>

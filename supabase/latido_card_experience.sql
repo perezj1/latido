@@ -59,8 +59,6 @@ BEGIN
  UPDATE public.latido_card_businesses SET active=true WHERE provider_id=p_provider AND NOT active;
  PERFORM 1 FROM public.latido_card_businesses WHERE provider_id=p_provider AND active AND NOT suspended FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'BUSINESS_INACTIVE'; END IF;
- IF (SELECT count(*) FROM public.latido_card_offers WHERE provider_id=p_provider AND active AND deleted_at IS NULL AND ends_at>now() AND requires_claim=coalesce((p_offer->>'requires_claim')::boolean,false))
- >= (CASE WHEN coalesce((p_offer->>'requires_claim')::boolean,false) THEN 2 ELSE 1 END) THEN RAISE EXCEPTION 'OFFER_CAPACITY'; END IF;
  INSERT INTO public.latido_card_offers(provider_id,title,description,benefit_type,benefit_value,minimum_spend,requires_claim,stock_total,claim_days,usage_period,usage_limit,ends_at,activation_mode,original_draft)
  VALUES(p_provider,p_offer->>'title',coalesce(p_offer->>'description',''),p_offer->>'benefit_type',nullif(p_offer->>'benefit_value','')::numeric,
  coalesce(nullif(p_offer->>'minimum_spend','')::numeric,0),coalesce((p_offer->>'requires_claim')::boolean,false),nullif(p_offer->>'stock_total','')::integer,
@@ -119,9 +117,6 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.providers p WHERE p.id=target AND coalesce((to_jsonb(p)->>'active')::boolean,true)) THEN RAISE EXCEPTION 'BUSINESS_INACTIVE'; END IF;
  PERFORM 1 FROM public.latido_card_businesses WHERE provider_id=target AND NOT suspended FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'BUSINESS_SUSPENDED'; END IF;
- IF old_offer.active AND (SELECT count(*) FROM public.latido_card_offers WHERE provider_id=target AND id<>p_offer_id
- AND active AND deleted_at IS NULL AND ends_at>now() AND requires_claim=coalesce((p_offer->>'requires_claim')::boolean,false))
- >= (CASE WHEN coalesce((p_offer->>'requires_claim')::boolean,false) THEN 2 ELSE 1 END) THEN RAISE EXCEPTION 'OFFER_CAPACITY'; END IF;
  UPDATE public.latido_card_offers SET title=p_offer->>'title',description=coalesce(p_offer->>'description',''),
  benefit_type=p_offer->>'benefit_type',benefit_value=nullif(p_offer->>'benefit_value','')::numeric,
  minimum_spend=coalesce((p_offer->>'minimum_spend')::numeric,0),requires_claim=coalesce((p_offer->>'requires_claim')::boolean,false),

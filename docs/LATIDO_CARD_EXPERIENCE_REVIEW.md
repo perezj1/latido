@@ -9,7 +9,7 @@ Trabajo local del 17 de octubre de 2026. Sin despliegue ni ejecución de SQL en 
 | A1 | Un socio con negocio no encontraba cómo participar | Acceso gratuito al final de `/card` para quien no participa, bloque en Para Empresas y texto nuevo en Publicar | Repetir la captación a propietarios que ya participan |
 | A2 | El registro mezclaba planes y salidas duplicadas | Origen `tarjeta` conservado incluso al iniciar sesión; planes opcionales cerrados y desactivados; final centrado en crear oferta | Quitar los planes o prometer aprobación en un plazo inexistente |
 | A3 | Compartir competía con la primera oferta | Invitación con ejemplo, cuatro opciones rápidas, crear y posponer | Compartir antes de tener una oferta |
-| A4 | El límite aparecía después de rellenar todo | Al pulsar Crear oferta: elección entre promoción y pausar habitual; límite completo explicado; protección también al abrir desde invitaciones | Confiar solo en un recuento del navegador; el RPC mantiene la autoridad |
+| A4 | El límite aparecía después de rellenar todo | Actualizado el 20/10: se elimina el límite de ofertas por negocio; Crear oferta abre directamente el formulario, también desde invitaciones | Quitar límites de usos por socio, stock o autorización |
 | A5 | Un descuento CHF no sugería mínimo y pedía hora | Selector de mínimo en el primer paso; fecha de calendario convertida al final del día suizo, con horario de verano; explicación desde el negocio | Mover el mínimo porcentual al primer paso: se mantiene avanzado porque no tiene el riesgo de superar el importe de la compra |
 | A6 | Publicar cerraba la ventana sin siguiente paso | Éxito con vista previa y material para la primera oferta; las siguientes recuerdan que el QR permanece | Imprimir el documento detrás de un `<dialog>`: depende del DOM, recorta contenido y varía entre navegadores |
 | A7 | El QR ocupaba espacio diario y existía sin ofertas | Material plegado, PNG a resolución triple, compartir/copiar, impresión independiente y guía A6 | QR vacío, credenciales privadas, scanner y modo caja |
@@ -28,7 +28,7 @@ Trabajo local del 17 de octubre de 2026. Sin despliegue ni ejecución de SQL en 
 | D4 | Los bots recibían metadatos genéricos de la SPA | Función Vercel sirve el HTML construido con metadatos públicos escapados; conserva la SPA y ofrece fallback si el RPC falla | Solo modificar etiquetas con JavaScript: WhatsApp no obtiene esa respuesta |
 | D5 | Inicio podría comunicar descuentos cercanos | Propuesta visual separada, sin modificar `HomeLatidoCard.jsx` | Aplicarla sin la revisión solicitada |
 | E1 | El negocio no recibía señales de actividad | Avisos dentro de Latido: primer uso, pocas unidades, fin próximo y resumen semanal; claves únicas evitan duplicados | Montar un sistema nuevo de email o solicitar permisos push para avisos internos |
-| E2 | Socios sin recordatorios útiles | Vencimiento a siete días; novedades locales con consentimiento explícito, revocable y máximo una cada siete días | Activar novedades por defecto o confundir el permiso con cookies analíticas |
+| E2 | Socios sin recordatorios útiles | Vencimiento a siete días; novedades de todo el cantón elegido, con consentimiento explícito, revocable y máximo una cada siete días | Activar novedades por defecto o confundir el permiso con cookies analíticas |
 | E3 | Faltaba medir el recorrido | Eventos de visita, solicitud, detalles, uso confirmado, inicio/abandono por paso, publicación, QR y recepción del primer uso; sin identificadores ni textos personales | Medir la página de validación: contradice la exclusión expresa. Se mide la confirmación anterior; la validación sigue completamente excluida |
 
 El resumen y el historial describen pantallas mostradas por socios, no ventas verificadas. Las referencias de socio del negocio se limitan a cuatro dígitos; los agregados no contienen identificadores de clientes.
@@ -84,7 +84,7 @@ Nuevas pantallas: [mínimo CHF](../output/latido-card/chromium/offer-fixed-minim
 
 La instalación nueva y la actualización desde el modelo antiguo se prueban en PostgreSQL embebido, con las migraciones nuevas ejecutadas dos veces. Se comprueban permisos, borrador, bloqueo de términos con actividad, reemplazo y rollback, agregados por encima del límite de historial, referencias enmascaradas, consentimiento y deduplicación de avisos. Las fechas prueban invierno, verano y ambos cambios de horario de Zúrich.
 
-Chromium y WebKit simulan exclusivamente las API de localhost. Cubren el uso idempotente y la pantalla existente, la recuperación de esa misma validación sin un nuevo uso, QR/PNG y página imprimible, capacidad, formulario, invitaciones, registro, administración, buscador, filtros compartidos, navegación y vista de socio/visitante. La función de compartir tiene una prueba separada con `fetch` simulado.
+Chromium y WebKit simulan exclusivamente las API de localhost. Cubren el uso idempotente y la pantalla existente, la recuperación de esa misma validación sin un nuevo uso, QR/PNG y página imprimible, creación de varias ofertas, formulario, invitaciones, registro, administración, buscador, filtros compartidos, navegación y vista de socio/visitante. La función de compartir tiene una prueba separada con `fetch` simulado.
 
 Comandos: `npm run test:card`, `npm run test:card:browser`, `npm run test:card:webkit`, `npm run test:card:invitations`, `npm run test:auth`, `npm run test:notifications`, `npm run test:search`, `npm run lint`, `npm run build`, y, tras construir, `npm run test:card:share`.
 
@@ -103,7 +103,7 @@ Las pruebas de Chromium y WebKit cubren ahora una cuenta con empresa y sin membr
 ## Simplificación visual solicitada en la revisión
 
 - Se retiran los chips de categoría. Se conservan búsqueda, ciudad y Descuentos/Negocios.
-- Crear oferta pasa a una barra fija inferior con margen para el área segura del móvil. No se repite junto al título ni en el estado vacío del gestor. El diálogo existente resuelve el límite al pulsar el CTA; se retiran los recuentos habitual/promociones.
+- Crear oferta pasa a una barra fija inferior con margen para el área segura del móvil. No se repite junto al título ni en el estado vacío del gestor. Desde el 20/10 el diálogo abre directamente el formulario y permite varias ofertas habituales o promociones activas a la vez.
 - Resultados presenta únicamente los descuentos usados este mes en el negocio, calculados por el servidor y sin anulaciones.
 - Material y primera publicación comparten solo Descargar imagen, Compartir imagen y enlace público con Copiar al lado. Compartir usa un archivo PNG; sin soporte Web Share de archivos, descarga la imagen y avisa. Las rutas imprimibles se conservan, sin botones aquí.
 - La ilustración de tarjeta inclinada se sitúa justo debajo del título centrado; siguen las tres ventajas, precio y CTA. Se retiran la tarjeta de socio de ejemplo y el bloque de cálculo de ahorro. Los pasos son una lista numerada de texto: «Elige tu descuento», «Actívalo», «Muéstralo al pagar y ahorra», reutilizada en la ayuda.

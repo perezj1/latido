@@ -9,7 +9,7 @@ La landing pública para socios y negocios está en `/tarjeta-latido`, accesible
 ## 1. Experiencia del socio
 
 1. Entra desde Inicio, Perfil o el menú, o escanea el QR público del negocio con la cámara normal del móvil. Puede consultar las ofertas antes de solicitar su tarjeta. Login conserva la dirección del negocio y la oferta.
-2. El socio ve número y vigencia en una franja compacta. **Ver tarjeta** abre y cierra su tarjeta real, cerrada inicialmente. **Usados** abre el historial personal y la cifra anual, sin acciones para activar usos antiguos.
+2. El socio ve número y vigencia en una franja compacta. **Ver tarjeta** abre y cierra su tarjeta real, cerrada inicialmente. Debajo, **Activar alertas** abre el modal de preferencias y desaparece cuando están activadas; la campana siempre permite gestionarlas. La navegación del catálogo usa pestañas de texto con línea azul: **Descuentos**, **Negocios** y, para socios, **Usados**, con historial personal y cifra anual sin acciones para activar usos antiguos. La transición respeta la preferencia de movimiento reducido.
 3. Un buscador, la ciudad y el tipo de oferta filtran **Descuentos / Negocios** desde un mismo selector, sin chips de categorías. Inicio guarda un **cantón**, no una ciudad: se usa su nombre si coincide con una ciudad del catálogo. Sin coincidencia se muestran todas las ciudades con un aviso. Cada lista conserva su previsualización de diez elementos.
 4. Activar o Usar ahora abre la confirmación existente. Consultar o cancelar no consume nada. Solo confirmar llama a `lc_use_offer` con un UUID idempotente. El servidor comprueba membresía, negocio, condiciones, existencias y límites.
 5. Se abre `/card/validacion/:id` con el ticket existente: negocio, beneficio, condiciones, contador, animación, fecha y hora suizas y referencia de socio enmascarada. Dura como máximo cinco minutos; nunca supera la vigencia de membresía u oferta. La confirmación y la validación no se modifican en esta revisión.
@@ -17,7 +17,7 @@ La landing pública para socios y negocios está en `/tarjeta-latido`, accesible
 7. Si sale mientras la validación sigue vigente, el aviso superior en `/card` y en la página del negocio vuelve a **la misma validación**, sin registrar otro uso. El contador usa `server_now` y tiempo monotónico, no la hora del dispositivo. Desaparece al caducar.
 8. Los descuentos gastados permanecen atenuados con su próxima disponibilidad. El historial conserva ofertas caducadas, pausadas o borradas.
 
-La página pública del negocio muestra ofertas y los datos públicos de local que existan: dirección, teléfono, horario, mapa y enlace a su ficha de Latido. No tiene buscador ni pestañas; puede publicar como máximo tres ofertas simultáneas. Debajo aparece **Ya usaste aquí** con el historial local y su diseño actual.
+La página pública del negocio muestra todas sus ofertas y los datos públicos de local que existan: dirección, teléfono, horario, mapa y enlace a su ficha de Latido. No tiene buscador ni pestañas. Debajo aparece **Ya usaste aquí** con el historial local y su diseño actual.
 
 Los visitantes ven el título centrado y, justo debajo, la ilustración de tarjeta blanca inclinada con franja multicolor y círculos de porcentaje y negocio. Siguen las tres ventajas, precio y solicitud. Se retira por ahora la tarjeta de ejemplo con «0001» y «Tu nombre», además del bloque de cálculo de ahorro. «Cómo funciona» contiene solo una lista numerada: «Elige tu descuento», «Actívalo», «Muéstralo al pagar y ahorra»; también se usa en la ayuda del socio. Las ofertas reales aparecen en el catálogo. Los correos de solicitud y renovación incluyen nombre, email de cuenta y número de socio cuando existe.
 
@@ -29,7 +29,7 @@ Los visitantes ven el título centrado y, justo debajo, la ilustración de tarje
 2. El registro desde Card conserva `?origen=tarjeta`, incluso al iniciar sesión. Los planes opcionales permanecen cerrados y desactivados. La pantalla final se centra en crear oferta, con una sola salida. Si está pendiente de revisión, explica que deberá aprobarse antes: `lc_save_offer` exige `providers.active=true`. No se promete un plazo inexistente.
 3. **Resultados** muestra una sola cifra: descuentos usados este mes en tu negocio, excluyendo anulaciones. Se calcula en el servidor para el mes suizo, no a partir del historial limitado a cien filas.
 4. **Tus ofertas**, siempre visible, conserva la vista previa actual y añade estado, usos mensuales y menú. Los estados son Activa, Pausada, Caducada y Agotada. Solo las pausadas permiten Borrar, con confirmación y conservación del historial.
-5. **Crear oferta** es el CTA fijo inferior, con espacio reservado para no tapar el contenido. Se permite un descuento habitual y dos promociones limitadas activas sin caducar. No se muestran recuentos de ocupación. Solo al crear otra oferta se plantea crear una promoción o pausar el habitual; con todo ocupado se desactiva el CTA y se explica el límite. El servidor mantiene la autoridad y el error `OFFER_CAPACITY`.
+5. **Crear oferta** es el CTA fijo inferior, con espacio reservado para no tapar el contenido. Abre directamente el formulario aunque ya existan ofertas activas. Un negocio puede mantener varias ofertas habituales y promociones limitadas simultáneas, sin aviso de ocupación ni necesidad de pausar otra. Los límites de usos por socio y las unidades de cada promoción se mantienen.
 6. El formulario mantiene cuatro pasos (tres para Otro), título automático y vista previa. Los descuentos CHF preguntan el mínimo al inicio; el mínimo porcentual queda avanzado. La fecha pide solo día y se guarda a las 23:59:59 en `Europe/Zurich`, con horario de verano. Sin fecha se guarda `infinity`. Las promociones explican una unidad por socio.
 7. Las ofertas sin actividad permiten **Editar** con `lc_update_offer`. Reservas, incluso liberadas, y usos bloquean los términos con `OFFER_TERMS_LOCKED`. Con actividad, **Crear nueva versión** usa `lc_replace_offer`: pausa y crea en una transacción. Si falla, revierte también la pausa.
 8. Los borradores nuevos se conservan en `original_draft`, privado. Los combos y beneficios libres no se reconstruyen fielmente desde el título. Las ofertas antiguas conservan el título hasta cambiar los campos que lo generan.
@@ -46,7 +46,7 @@ Las fichas y listados de negocios de Inicio, Explorar y búsqueda muestran el me
 
 `api/card-share.js` sirve el HTML construido con etiquetas sociales específicas, escapadas y obtenidas mediante RPC público. Las reescrituras incluyen `/card` y `/card/negocio/:id`; la función incluye `dist/index.html` y conserva la SPA. Si falla el catálogo se sirve la app con etiquetas generales y sin caché de esa respuesta. Las páginas permanecen en `noindex, follow` hasta decisión del propietario.
 
-Los avisos reutilizan `app_notifications`: primer socio, pocas unidades, oferta próxima a terminar, resumen semanal y membresía próxima a vencer. Las novedades locales requieren consentimiento expreso y revocable y un mínimo de siete días entre entregas. Se entregan dentro de Latido; no se crea otro sistema de email ni se solicitan permisos push.
+Los avisos reutilizan `app_notifications`: primer socio, pocas unidades, oferta próxima a terminar, resumen semanal y membresía próxima a vencer. Las novedades cubren todo el cantón elegido, con un selector de los 26 cantones y el código guardado en `latido_card_notification_preferences.canton`. Se comparan con el cantón del negocio, de modo que una alerta de Zürich incluye, por ejemplo, ofertas de Winterthur. Requieren consentimiento expreso y revocable y un mínimo de siete días entre entregas. Se entregan dentro de Latido; no se crea otro sistema de email ni se solicitan permisos push.
 
 El trabajo pg_cron `latido-card-notifications` ejecuta la función privada cada hora al minuto 15. Las fechas usan `Europe/Zurich`; las claves únicas impiden duplicados. El lunes se resume la semana anterior completa. Si no está instalada la extensión, la migración no la instala ni altera otros trabajos: debe completarse la planificación en desarrollo. El aviso de pocas unidades se emite una vez por promoción al quedar dos o menos.
 
@@ -60,7 +60,9 @@ En una **instalación actual**, después de los módulos de activación, borrado
 
 1. [latido_card_experience.sql](../supabase/latido_card_experience.sql): categoría pública, datos del local, `server_now`, resumen, referencia enmascarada, borrador privado, edición y reemplazo.
 2. [latido_card_notifications.sql](../supabase/latido_card_notifications.sql): preferencias por RPC, avisos y planificación cuando pg_cron existe.
-3. [latido_card_verify.sql](../supabase/latido_card_verify.sql): once comprobaciones deben devolver `ok=true`, además del recuento informativo de tablas.
+3. [latido_card_multiple_offers.sql](../supabase/latido_card_multiple_offers.sql): en instalaciones existentes, retira el límite de ofertas por negocio en creación, edición y reactivación. No modifica ofertas ni historial; conserva permisos, suspensión y bloqueo de términos usados. Los instaladores actuales también incluyen este cambio.
+4. [latido_card_canton_alerts.sql](../supabase/latido_card_canton_alerts.sql): para instalaciones con avisos ya instalados, amplía las alertas de ciudad a cantón y actualiza los RPC. Conserva el consentimiento y la última entrega cuando puede identificar la región mediante los negocios o el nombre del cantón. Una ciudad ambigua o desconocida requiere elegir cantón antes de reactivar. El RPC acepta `p_canton`; conserva `p_city` opcional para clientes anteriores. El instalador actual de avisos ya incluye este cambio.
+5. [latido_card_verify.sql](../supabase/latido_card_verify.sql): once comprobaciones deben devolver `ok=true`, además del recuento informativo de tablas.
 
 Los módulos nuevos usan transacción y pueden repetirse. **No se han ejecutado en Supabase. Nunca ejecutarlos automáticamente en producción.** No volver a instalar módulos antiguos después de los nuevos: restaurarían versiones anteriores de los RPC.
 
@@ -74,7 +76,7 @@ Durante el piloto, el administrador activa un perfil y su vigencia en `/card/adm
 
 ## 5. Contrato técnico y seguridad
 
-Las tablas principales conservadas son `latido_card_memberships`, `latido_card_businesses`, `latido_card_offers`, `latido_card_claims`, `latido_card_redemptions` y `latido_card_admin_audit`. Se añade `latido_card_notification_preferences` para consentimiento, ciudad y última entrega.
+Las tablas principales conservadas son `latido_card_memberships`, `latido_card_businesses`, `latido_card_offers`, `latido_card_claims`, `latido_card_redemptions` y `latido_card_admin_audit`. Se añade `latido_card_notification_preferences` para consentimiento, cantón y última entrega; la ciudad antigua se conserva para compatibilidad.
 
 Todo dato de Card pasa por RPC `SECURITY DEFINER`, con `search_path` fijo y autorización interna. Las tablas tienen RLS y no conceden permisos directos a anon/authenticated. El catálogo solo expone campos públicos. Los agregados no contienen identidades de clientes; el historial del negocio limita la referencia a cuatro dígitos.
 
@@ -84,7 +86,7 @@ Todo dato de Card pasa por RPC `SECURITY DEFINER`, con `search_path` fijo y auto
 - Administración: `lc_admin_overview`, `lc_admin_enroll`, `lc_admin_business`.
 - Servicio: `lc_send_scheduled_notifications`, restringido al propietario de la función y `service_role`.
 
-Publicación y edición bloquean el proveedor para serializar capacidad; el uso bloquea membresía y oferta. Las reservas vigentes se reutilizan sin consumir otra unidad; una vencida necesita disponibilidad. Anular invalida la pantalla y restituye disponibilidad según condiciones.
+Publicación y edición bloquean el proveedor para serializar cambios; el uso bloquea membresía y oferta. Las reservas vigentes se reutilizan sin consumir otra unidad; una vencida necesita disponibilidad. Anular invalida la pantalla y restituye disponibilidad según condiciones.
 
 La confirmación conserva su UUID en `sessionStorage` antes de pedir el uso. Una respuesta perdida se reintenta con ese UUID y devuelve el mismo uso y vencimiento. El servidor reutiliza también una validación abierta de la misma oferta. Los periodos son días suizos, semanas de lunes a domingo y meses naturales, no intervalos fijos.
 

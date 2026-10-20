@@ -25,8 +25,8 @@ SELECT 'Offer draft preserved for editing' AS check_name, EXISTS(SELECT 1 FROM i
 SELECT 'Card notification preferences protected' AS check_name,
  EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='latido_card_notification_preferences' AND c.relrowsecurity
  AND NOT has_table_privilege('authenticated',c.oid,'SELECT,INSERT,UPDATE,DELETE') AND NOT has_table_privilege('anon',c.oid,'SELECT,INSERT,UPDATE,DELETE'))
- AND has_function_privilege('authenticated','public.lc_notification_preferences(boolean,text)','EXECUTE')
- AND NOT has_function_privilege('anon','public.lc_notification_preferences(boolean,text)','EXECUTE') AS ok;
+ AND has_function_privilege('authenticated','public.lc_notification_preferences(boolean,text,text)','EXECUTE')
+ AND NOT has_function_privilege('anon','public.lc_notification_preferences(boolean,text,text)','EXECUTE') AS ok;
 SELECT 'Scheduled Card notifications restricted to service' AS check_name,
  has_function_privilege('service_role','public.lc_send_scheduled_notifications()','EXECUTE')
  AND NOT has_function_privilege('authenticated','public.lc_send_scheduled_notifications()','EXECUTE')

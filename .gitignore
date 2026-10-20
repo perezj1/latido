@@ -6,3 +6,5 @@ dist
 *.log
 supabase/.temp
 output/latido-card/
+output/card-header.txt
+output/latido-landing-source.css

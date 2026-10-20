@@ -12,9 +12,6 @@
 .lc-open-validation { position: sticky; top: 8px; z-index: 10; max-width: 440px; margin: 0 auto 16px; }
 .lc-open-validation a { display: grid; gap: 4px; min-height: 64px; padding: 12px 16px; border: 1px solid #b6d2ff; border-radius: 16px; background: #eff6ff; color: #174ab8; box-shadow: 0 4px 16px #193c6512; text-decoration: none; }
 .lc-open-validation span { font-size: 12px; }
-.lc-company-invitation { max-width: 760px; margin: 0 auto 32px; padding: 24px; background: #eff6ff; }
-.lc-company-invitation h1 { font-size: clamp(22px, 4vw, 30px); line-height: 1.25; }
-.lc-company-invitation ul { padding-left: 20px; line-height: 1.9; }
 .lc-business-page { max-width: 760px; }
 .lc-business-summary { margin-top: 16px; background: #f3f7ff; }
 .lc-business-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -27,7 +24,6 @@
 .lc-action-menu > div { position: absolute; right: 0; top: 100%; z-index: 12; min-width: min(240px, 70vw); display: grid; background: #fff; border: 1px solid #dce5f5; box-shadow: 0 8px 28px #16325222; border-radius: 12px; padding: 6px; }
 .lc-action-menu button { text-align: left; border: 0; background: #fff; border-radius: 8px; color: #174ab8; padding: 8px 12px; min-height: 44px; font: inherit; cursor: pointer; }
 .lc-action-menu button:hover { background: #eff6ff; }
-.lc-capacity-notice { padding: 16px; margin: 12px 0; background: #f0f6ff; border-radius: 16px; }
 .lc-business-material { padding-top: 16px; }
 .lc-business-material .lc-business-sticker { width: 100%; max-width: 340px; margin: 0 auto 16px; background: white; }
 .lc-business-material .lc-actions { flex-wrap: wrap; }

@@ -645,8 +645,10 @@ export function PanelPartners() {
             {PAID_BUSINESS_FEATURES_VISIBLE ? 'Elige la visibilidad que necesitas' : 'Registra tu negocio en Latido'}
           </h3>
           <p style={{ fontFamily: PP, fontSize: 12, color: C.mid, lineHeight: 1.65, maxWidth: 620, margin: '0 auto' }}>
+            Latido es totalmente gratis
+            <br />
             {PAID_BUSINESS_FEATURES_VISIBLE
-              ? 'Todos los precios están en CHF y se muestran como referencia mensual.'
+              ? 'Los precios corresponden a servicios opcionales de promoción y visibilidad para tu negocio.'
               : 'Crea un perfil gratuito para que la comunidad pueda encontrarte y contactarte.'}
           </p>
         </div>

@@ -16,6 +16,7 @@
   isolation: isolate;
   display: block;
   overflow: hidden;
+  overflow: clip;
   margin: 0 -20px 0;
   padding: 16px 20px 56px;
   border: 0;
@@ -202,14 +203,70 @@
 .lc-socio-mini .lc-offer-brand-stripe {
   height: 4px;
 }
-.lc-member-history-shortcut {
+.lc-member-card-toggle {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.lc-member-card-toggle:focus-visible {
+  outline: 2px solid #2a55df;
+  outline-offset: -3px;
+}
+.lc-app-page .lc-discovery > h2 {
+  margin-bottom: 20px;
+}
+.lc-app-page #lc-member-history > p {
+  margin: 0 0 20px;
+}
+.lc-member-alerts-shortcut {
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
 }
-.lc-member-history-shortcut .lc-text-button {
-  min-height: 32px;
-  font-size: 11px;
+.lc-alerts-invite {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #ebedf3;
+  color: #556070;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.lc-alerts-invite-switch {
+  display: flex;
+  align-items: center;
+  flex: 0 0 34px;
+  height: 20px;
+  padding: 3px;
+  border-radius: 20px;
+  background: #cdd3df;
+}
+.lc-alerts-invite-switch::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px #0d153026;
+}
+.lc-alerts-invite:focus-visible {
+  outline: 2px solid #2a55df;
+  outline-offset: 2px;
 }
 .lc-app-page #lc-full-membership {
   margin-top: 16px;
@@ -272,12 +329,109 @@
   border-color: #2a55df;
   color: #fff;
 }
-.lc-app-page .lc-view-selector {
-  font-size: 11px;
+.lc-view-tabs {
+  display: flex;
+  margin: 0 0 18px;
+  border-bottom: 1px solid #dce5f5;
 }
-.lc-app-page .lc-view-selector button {
-  font-size: 11px;
-  min-height: 32px;
+.lc-view-tabs [role='tab'] {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 4px;
+  border: 0;
+  background: transparent;
+  color: #556070;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+.lc-view-tabs [role='tab']::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  inset-inline: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: #2a55df;
+  transform: scaleX(0);
+  transition: transform 180ms ease;
+}
+.lc-view-tabs [aria-selected='true'] {
+  color: #2a55df;
+}
+.lc-view-tabs [aria-selected='true']::after {
+  transform: scaleX(1);
+}
+.lc-view-tabs [role='tab']:focus-visible {
+  outline: 2px solid #2a55df;
+  outline-offset: -4px;
+  border-radius: 4px;
+}
+.lc-view-panel {
+  animation: lc-view-enter 180ms ease-out;
+}
+@keyframes lc-view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-view-panel {
+    animation: none;
+  }
+  .lc-view-tabs [role='tab'],
+  .lc-view-tabs [role='tab']::after {
+    transition: none;
+  }
+}
+.lc-alerts-modal {
+  position: fixed;
+  width: min(420px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  margin: auto;
+  padding: 42px 20px 24px;
+  border: 1px solid #e3e7ef;
+  border-radius: 24px;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 20px 60px #0d153033;
+  font: inherit;
+}
+.lc-alerts-modal::backdrop {
+  background: rgb(13 21 48 / 45%);
+}
+.lc-alerts-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #556070;
+  cursor: pointer;
+}
+.lc-alerts-close:focus-visible {
+  outline: 2px solid #2a55df;
+  outline-offset: -4px;
+}
+.lc-app-page .lc-alerts-modal .lc-notification-preferences {
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 .lc-app-page .lc-notification-preferences {
   margin: 20px 0 0;
@@ -483,16 +637,16 @@
 }
 .lc-app-page .lc-managed-offer {
   position: relative;
-  padding: 16px 16px 8px;
+  padding: 16px 16px 0;
   overflow: visible;
   border: 1px solid #e3e7ef;
-  border-radius: 18px;
+  border-radius: 20px;
   background: #fff;
 }
 .lc-managed-offer-head {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 14px;
 }
 .lc-managed-offer-info {
   flex: 1;
@@ -508,8 +662,8 @@
 .lc-managed-offer-title h3 {
   flex: 1 1 130px;
   margin: 0;
-  font-size: 14px;
-  line-height: 1.35;
+  font-size: 16px;
+  line-height: 1.3;
   overflow-wrap: anywhere;
 }
 .lc-managed-offer-title .lc-badge {
@@ -533,10 +687,10 @@
   font-size: 11px;
 }
 .lc-app-page .lc-managed-offer-meta {
-  margin-top: 12px;
-  padding-top: 4px;
+  margin: 16px -16px 0;
+  padding: 8px 16px 12px;
   gap: 5px;
-  border-top: 1px solid #eef1f5;
+  border-top: 1.5px dashed #dce2ec;
 }
 .lc-managed-offer-meta .lc-text-button {
   display: flex;
@@ -548,7 +702,7 @@
 }
 .lc-app-page .lc-managed-offer > .lc-offer-brand-stripe {
   overflow: hidden;
-  border-radius: 0 0 18px 18px;
+  border-radius: 0 0 20px 20px;
 }
 .lc-professional-benefits {
   display: flex;
@@ -654,6 +808,19 @@
   padding: 2px 1px 10px;
   margin-bottom: 6px;
   scrollbar-width: thin;
+}
+
+.lc-nearby-results {
+  margin-top: 28px;
+}
+.lc-nearby-results > h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  line-height: 1.3;
+}
+.lc-nearby-results > .lc-muted {
+  margin: -4px 0 14px;
+  font-size: 12px;
 }
 .lc-catalog-filters .lc-type-filters {
   display: contents;
