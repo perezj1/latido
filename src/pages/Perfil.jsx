@@ -16,6 +16,7 @@ import BusinessPartnerContactsEditor from '../components/BusinessPartnerContacts
 import { AD_TYPES, CANTONS, COMMUNITY_CATS, EVENTO_TYPES, JOB_INTENTS, JOB_SECTORS, JOB_TYPES, VISIBLE_NEGOCIO_TYPES, formatAdLocation, getAdCategoriesForType, getAdDisplayCat, getAdDisplayEmoji, getAdSubLabel, getAdSubOption, getAdSubOptions, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta, normalizeAdCat, normalizeNegocioType } from '../lib/constants'
 import { normalizeExternalUrl } from '../lib/links'
 import { isBusinessPromotionActive, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
+import { deleteBusinessPublication } from '../lib/businessDeletion'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
 import { canUseWhatsappNumber } from '../lib/businessContact'
 import { getPartnerContactOptionHref, normalizePartnerContactOptions } from '../lib/businessPartnerContacts'
@@ -63,11 +64,6 @@ const PUBLICATION_TABS = [
 ]
 
 const MULTI_PHOTO_AD_CATS = new Set(['vivienda', 'venta'])
-const BLOCKING_BUSINESS_SUBSCRIPTION_STATUSES = new Set([
-  'active',
-  'past_due',
-  'processing',
-])
 
 function isActiveBusinessSubscriptionError(error) {
   if (!error) return false
@@ -1822,69 +1818,17 @@ export default function Perfil() {
 
     try {
       if (item.kind === 'business') {
-        const { data: syncResult, error: syncError } = await supabase.functions
-          .invoke('create_business_promotion_portal', {
-            body:{
-              providerId:item.id,
-              syncOnly:true,
-            },
-          })
-
-        if (syncError) {
-          console.warn('Could not refresh Stripe subscription before deletion:', syncError)
-          throw new Error(
-            'No se pudo comprobar la suscripción en Stripe. Inténtalo de nuevo.',
-          )
-        }
-
-        const { data: deletionStatus, error: deletionStatusError } = await supabase
-          .rpc('get_business_deletion_status', {
-            p_provider_id:item.id,
-          })
-
-        const deletionStatusUnavailable =
-          deletionStatusError?.code === 'PGRST202'
-          || deletionStatusError?.message?.includes('get_business_deletion_status')
-
-        if (deletionStatusError && !deletionStatusUnavailable) {
-          throw deletionStatusError
-        }
-
-        const subscription = deletionStatus?.subscription
-        const deletionBlocked = deletionStatus?.blocked
-          || BLOCKING_BUSINESS_SUBSCRIPTION_STATUSES.has(subscription?.status)
-
-        if (deletionBlocked) {
-          setBusinessDeleteBlock({
-            providerId:item.id,
-            subscription,
-          })
-          return
-        }
-
-        if (syncResult?.blocked === true) {
-          setBusinessDeleteBlock({
-            providerId:item.id,
-            subscription:null,
-          })
-          return
-        }
-
-        setBusinessDeleteBlock(null)
-      }
-
-      const confirmed = window.confirm(`¿Seguro que quieres borrar esta publicación?\n\n${item.title}`)
-      if (!confirmed) return
-
-      const { error } = await supabase.from(table).delete().eq('id', item.id).eq('user_id', user.id)
-      if (isActiveBusinessSubscriptionError(error)) {
-        setBusinessDeleteBlock({
-          providerId:item.id,
-          subscription:null,
+        const deleted = await deleteBusinessPublication(supabase, {
+          providerId:item.id, userId:user.id, title:item.title,
+          confirm:message => window.confirm(message),
         })
-        return
+        if (!deleted) return
+      } else {
+        const confirmed = window.confirm(`¿Seguro que quieres borrar esta publicación?\n\n${item.title}`)
+        if (!confirmed) return
+        const { error } = await supabase.from(table).delete().eq('id', item.id).eq('user_id', user.id)
+        if (error) throw error
       }
-      if (error) throw error
       setPublications(prev => prev.filter(entry => !(entry.kind === item.kind && entry.id === item.id)))
       if (editorItem?.kind === item.kind && editorItem?.id === item.id) closeEditor()
       if (actionItem?.kind === item.kind && actionItem?.id === item.id) setActionItem(null)
@@ -3092,10 +3036,10 @@ export default function Perfil() {
               && businessDeleteBlock?.providerId === actionItem.id && (
               <div style={{ background:'#FFF7ED', border:'1.5px solid #FDBA74', borderRadius:16, padding:'14px 15px', marginBottom:12 }}>
                 <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:'#9A3412', margin:'0 0 5px' }}>
-                  No se puede eliminar este negocio
+                  Tienes una suscripción activa
                 </p>
                 <p style={{ fontFamily:PP, fontSize:11, color:'#9A3412', lineHeight:1.55, margin:'0 0 12px' }}>
-                  Este negocio tiene una suscripción profesional que todavía se renovará. Cancélala primero desde Stripe para poder eliminarlo.
+                  Confirma el borrado para cancelar la renovación de la suscripción y eliminar el negocio.
                 </p>
                 <button
                   onClick={() => openBusinessSubscriptionPortal(actionItem.id)}
@@ -3104,7 +3048,7 @@ export default function Perfil() {
                 >
                   {openingBusinessPortal
                     ? 'Abriendo Stripe...'
-                    : 'Cancelar suscripcion'}
+                    : 'Gestionar suscripción'}
                 </button>
               </div>
             )}
@@ -3118,7 +3062,7 @@ export default function Perfil() {
               {deletingKey === `${actionItem.kind}-${actionItem.id}`
                 ? 'Comprobando...'
                 : businessDeleteBlock?.providerId === actionItem.id
-                ? 'Volver a comprobar y borrar'
+                ? 'Cancelar renovación y eliminar negocio'
                 : '🗑️ Borrar publicación'}
             </button>
             <button

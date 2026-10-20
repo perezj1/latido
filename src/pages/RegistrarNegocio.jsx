@@ -38,11 +38,11 @@ export default function RegistrarNegocio() {
   const fromCard = params.get('origen') === 'tarjeta'
   const authNext = `/auth?next=${encodeURIComponent(fromCard ? '/registrar-negocio?origen=tarjeta' : '/registrar-negocio')}`
   const [step, setStep] = useState(0)
-  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [done, setDone] = useState(false)
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step, done])
   const [publishedBusiness, setPublishedBusiness] = useState(null)
   const [publishedForReview, setPublishedForReview] = useState(false)
   useEffect(() => {

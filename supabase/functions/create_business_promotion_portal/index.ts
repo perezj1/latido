@@ -213,6 +213,7 @@ Deno.serve(async req => {
     const body = await req.json().catch(() => ({}))
     const providerId = body?.providerId
     const syncOnly = body?.syncOnly === true
+    const cancelForDeletion = body?.cancelForDeletion === true
     const returnPlanKey = getPlanKey(body?.planKey)
 
     if (!isUuid(providerId)) {
@@ -248,10 +249,30 @@ Deno.serve(async req => {
       const id = subscription.stripe_subscription_id
       if (typeof id === 'string' && id.length > 0) subscriptionIdSet.add(id)
     }
+    const promotionSubscriptionIds = new Set(subscriptionIdSet)
+    const alertSubscriptionIds = new Set<string>()
+    if (cancelForDeletion) {
+      const { data: alertSubscriptions, error: alertsError } = await serviceClient
+        .from('business_lead_alert_subscriptions')
+        .select('stripe_subscription_id, status')
+        .eq('provider_id', providerId).eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      if (alertsError && !['42P01', 'PGRST205'].includes(alertsError.code)) throw alertsError
+      for (const subscription of alertSubscriptions || []) {
+        if (!['active', 'past_due', 'processing'].includes(subscription.status)) continue
+        const id = subscription.stripe_subscription_id
+        if (typeof id === 'string' && id.length > 0) {
+          subscriptionIdSet.add(id)
+          alertSubscriptionIds.add(id)
+        }
+      }
+    }
     const subscriptionIds = [...subscriptionIdSet]
     const syncedSubscriptions = []
 
     for (const subscriptionId of subscriptionIds) {
+      const isPromotion = promotionSubscriptionIds.has(subscriptionId)
+      const isAlert = alertSubscriptionIds.has(subscriptionId)
       let stripeSubscription: Stripe.Subscription
 
       try {
@@ -259,8 +280,11 @@ Deno.serve(async req => {
       } catch (retrieveError) {
         if (!isMissingStripeResource(retrieveError)) throw retrieveError
 
-        const { error: missingSyncError } = await serviceClient
-          .rpc('sync_featured_promotion_subscription_state', {
+        for (const rpc of [
+          ...(isPromotion ? ['sync_featured_promotion_subscription_state'] : []),
+          ...(isAlert ? ['sync_business_lead_alert_subscription_state'] : []),
+        ]) {
+          const { error: missingSyncError } = await serviceClient.rpc(rpc, {
             p_subscription_id: subscriptionId,
             p_customer_id: null,
             p_status: 'canceled',
@@ -270,7 +294,8 @@ Deno.serve(async req => {
             p_last_error: 'La suscripcion ya no existe en Stripe.',
           })
 
-        if (missingSyncError) throw missingSyncError
+          if (missingSyncError) throw missingSyncError
+        }
         syncedSubscriptions.push({
           id:subscriptionId,
           status:'canceled',
@@ -279,13 +304,24 @@ Deno.serve(async req => {
         continue
       }
 
+      if (cancelForDeletion && !['canceled', 'incomplete_expired'].includes(stripeSubscription.status)
+        && !hasScheduledCancellation(stripeSubscription)) {
+        stripeSubscription = await stripe.subscriptions.update(subscriptionId, {
+          cancel_at_period_end: true,
+          proration_behavior: 'none',
+        })
+        if (!hasScheduledCancellation(stripeSubscription)) {
+          throw new Error('CANCELLATION_NOT_CONFIRMED')
+        }
+      }
+
       const period = getSubscriptionPeriod(stripeSubscription)
       const cancellationScheduled = hasScheduledCancellation(stripeSubscription)
       const metadata = metadataFor(stripeSubscription)
       const planKey = metadata.latido_plan_key || period.planKey
       const isActive = ['active', 'trialing'].includes(stripeSubscription.status)
       const { error: syncError } = await serviceClient
-        .rpc('sync_featured_promotion_subscription_state', {
+        .rpc(isPromotion ? 'sync_featured_promotion_subscription_state' : 'sync_business_lead_alert_subscription_state', {
           p_subscription_id: stripeSubscription.id,
           p_customer_id: getStripeId(stripeSubscription.customer),
           p_status: stripeSubscription.status,
@@ -297,23 +333,25 @@ Deno.serve(async req => {
 
       if (syncError) throw syncError
 
-      const landingEnabled = isActive
-        && metadata.latido_landing_page_enabled === 'true'
-        && subscriptionHasPrice(stripeSubscription, STRIPE_PRICE_LANDING_PAGE)
+      if (isPromotion) {
+        const landingEnabled = isActive
+          && metadata.latido_landing_page_enabled === 'true'
+          && subscriptionHasPrice(stripeSubscription, STRIPE_PRICE_LANDING_PAGE)
 
-      const { error: landingSyncError } = await serviceClient
-        .rpc('sync_business_landing_from_promotion', {
-          p_provider_id: metadata.latido_provider_id || providerId,
-          p_enabled: landingEnabled,
-          p_period_start: landingEnabled ? period.start : null,
-          p_period_end: landingEnabled ? period.end : null,
-        })
+        const { error: landingSyncError } = await serviceClient
+          .rpc('sync_business_landing_from_promotion', {
+            p_provider_id: metadata.latido_provider_id || providerId,
+            p_enabled: landingEnabled,
+            p_period_start: landingEnabled ? period.start : null,
+            p_period_end: landingEnabled ? period.end : null,
+          })
 
-      if (landingSyncError) {
-        console.warn('Business landing portal sync failed:', errorMessage(landingSyncError))
+        if (landingSyncError) {
+          console.warn('Business landing portal sync failed:', errorMessage(landingSyncError))
+        }
       }
 
-      if (planKey === 'premium') {
+      if (isPromotion && (planKey === 'premium' || isAlert)) {
         const { error: alertsSyncError } = await serviceClient
           .rpc('sync_business_lead_alert_subscription_state', {
             p_subscription_id: stripeSubscription.id,
@@ -326,6 +364,7 @@ Deno.serve(async req => {
           })
 
         if (alertsSyncError) {
+          if (cancelForDeletion) throw alertsSyncError
           console.warn('Business lead alert portal sync failed:', errorMessage(alertsSyncError))
         }
       }
@@ -337,9 +376,9 @@ Deno.serve(async req => {
       })
     }
 
-    if (syncOnly) {
+    if (syncOnly || cancelForDeletion) {
       const blockingSubscription = syncedSubscriptions.find(subscription =>
-        ['active', 'past_due', 'processing'].includes(subscription.status)
+        ['active', 'trialing', 'past_due', 'processing', 'incomplete', 'unpaid', 'paused'].includes(subscription.status)
         && !subscription.cancellationScheduled
       )
 
@@ -348,7 +387,7 @@ Deno.serve(async req => {
         synced: true,
         blocked:Boolean(blockingSubscription),
         cancellationScheduled:
-          syncedSubscriptions.length > 0 && !blockingSubscription,
+          (cancelForDeletion || syncedSubscriptions.length > 0) && !blockingSubscription,
       })
     }
 

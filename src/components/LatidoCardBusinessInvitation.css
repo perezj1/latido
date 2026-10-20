@@ -65,7 +65,7 @@
   position: relative;
   overflow: hidden;
   background: #eef3ff;
-  padding: 18px 22px 22px;
+  padding: 8px 8px 12px;
 }
 .lc-invitation-visual::before,
 .lc-invitation-visual::after {
@@ -86,18 +86,6 @@
   bottom: -80px;
   background: #d2f7ed;
 }
-.lc-invitation-example-label {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  margin: 0 0 12px;
-  color: #52627c;
-  font-size: 10px;
-  font-weight: 600;
-}
 .lc-invitation-visual .lc-offer-preview {
   --lc-coupon-surround: #eef3ff;
   position: relative;
@@ -108,40 +96,6 @@
 }
 .lc-invitation-content {
   padding: 22px;
-}
-.lc-invitation-steps {
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 25px;
-  margin: 0 0 20px;
-  padding: 0;
-  font-size: 11px;
-  font-weight: 600;
-  color: #667085;
-}
-.lc-invitation-steps li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.lc-invitation-steps li > span {
-  display: grid;
-  place-items: center;
-  width: 23px;
-  height: 23px;
-  border-radius: 50%;
-  background: #2a55df;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-}
-.lc-invitation-steps li > .lc-invitation-step-done {
-  background: #e4f8ef;
-  color: #12a27a;
-}
-.lc-invitation-steps li[aria-current='step'] {
-  color: #2a55df;
 }
 .lc-business-invitation .lc-invitation-reassurance {
   display: flex;
