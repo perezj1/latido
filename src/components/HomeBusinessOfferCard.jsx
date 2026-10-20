@@ -7,11 +7,11 @@ import { resolveImageUrl } from '../lib/imageVariants'
 import './HomeLatidoCard.css'
 
 export default function HomeBusinessOfferCard() {
-  const { hasBusiness, loading, error, businesses = [] } = useCardBusinessAccess()
+  const { loading, error, ownedPublishedBusinesses = [] } = useCardBusinessAccess()
   const [failedLogo, setFailedLogo] = useState(null)
-  const business = useLatidoBusinessDisplay(businesses[0], { includePhoto: true })
+  const business = useLatidoBusinessDisplay(ownedPublishedBusinesses[0], { includePhoto: true })
   const logo = resolveImageUrl(business?.photo_url)
-  if (loading || error || !hasBusiness) return null
+  if (loading || error || !ownedPublishedBusinesses.length) return null
   return (
     <Link className="home-latido-card home-business-offer" to="/tarjeta-latido#negocios"
       aria-label="Promocionar mi negocio gratis">
@@ -21,8 +21,8 @@ export default function HomeBusinessOfferCard() {
           : <Store size={24} />}
       </span>
       <span className="home-latido-card-info">
-        <strong className="home-latido-card-name">Haz crecer tu negocio</strong>
-        <span>Promociona tu negocio <b>gratis</b> y atrae más clientes con latido.</span>
+        <strong className="home-latido-card-name">Atrae a más clientes</strong>
+        <span>Promociona tu negocio <b>gratis</b> y haz que crezca con latido</span>
       </span>
       <span className="home-latido-card-action">Empezar</span>
       <img className="home-latido-card-watermark" src="/favicon.svg" alt="" aria-hidden="true" />

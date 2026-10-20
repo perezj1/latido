@@ -284,7 +284,9 @@ try {
     if (name === 'providers' && url.searchParams.has('user_id')) return respond(route, [])
     if (name === 'providers' && url.searchParams.get('id')?.startsWith('in.')) {
       assert.equal(url.searchParams.get('deleted_at'), 'is.null')
-      return respond(route, businesses.filter((item) => !item.deleted_at).map(({ id }) => ({ id })))
+      return respond(route, businesses.filter((item) => !item.deleted_at).map((item) => ({
+        id: item.id, user_id: item.owner_id ?? user.id, active: item.published !== false
+      })))
     }
     if (name === 'providers' && url.searchParams.get('id')?.startsWith('eq.')) {
       const id = url.searchParams.get('id').slice(3)
@@ -548,11 +550,32 @@ try {
     await homeBusiness.waitFor()
     await page.waitForLoadState('networkidle')
     await expect(homeBusiness.locator('.home-business-offer-logo img')).toHaveAttribute('src', offer.business_photo_url)
-    await homeBusiness.getByText('Haz crecer tu negocio', { exact: true }).waitFor()
-    await homeBusiness.getByText('Promociona tu negocio gratis y atrae más clientes con latido.', { exact: true }).waitFor()
+    await homeBusiness.getByText('Atrae a más clientes', { exact: true }).waitFor()
+    await homeBusiness.getByText('Promociona tu negocio gratis y haz que crezca con latido', { exact: true }).waitFor()
     await homeBusiness.getByText('Empezar', { exact: true }).waitFor()
     await homeBusiness.screenshot({ path: path.join(output, 'business-phase-home.png') })
     assert.equal(await page.locator('.home-latido-carousel, .lc-membership-summary').count(), 0)
+    const ownBusinesses = businesses
+    const ownerEmail = user.email
+    user.email = 'admin@test.example'
+    businesses = businesses.map((item) => ({ ...item, owner_id: '00000000-0000-4000-8000-000000000888' }))
+    await page.evaluate((auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)), session())
+    await navigate(origin + '/')
+    await page.waitForLoadState('networkidle')
+    assert.equal(await homeBusiness.count(), 0, 'Administrators managing other owners must not see the home invitation')
+    const adminAccess = await page.evaluate((id) => JSON.parse(sessionStorage.getItem(`lc-access:${id}`)), user.id)
+    assert.equal(adminAccess.hasBusiness, true, 'Administrative management access remains available')
+    assert.deepEqual(adminAccess.ownedPublishedBusinesses, [])
+    user.email = ownerEmail
+    businesses = ownBusinesses.map((item) => ({ ...item, published: false }))
+    await page.evaluate((auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)), session())
+    await navigate(origin + '/')
+    await page.waitForLoadState('networkidle')
+    assert.equal(await homeBusiness.count(), 0, 'An owned business pending publication must not show the home invitation')
+    businesses = ownBusinesses
+    await navigate(origin + '/')
+    await homeBusiness.waitFor()
+    await page.waitForLoadState('networkidle')
     businesses = businesses.map((item) => item.id === provider2 ? { ...item, suspended: true } : item)
     await navigate(origin + `/card/negocios?negocio=${provider2}`)
     await page.getByText('Participación suspendida', { exact: true }).waitFor()
