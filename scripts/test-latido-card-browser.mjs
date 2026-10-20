@@ -550,7 +550,7 @@ try {
     await homeBusiness.waitFor()
     await page.waitForLoadState('networkidle')
     await expect(homeBusiness.locator('.home-business-offer-logo img')).toHaveAttribute('src', offer.business_photo_url)
-    await homeBusiness.getByText('Atrae a más clientes', { exact: true }).waitFor()
+    await homeBusiness.getByText('Atrae más clientes', { exact: true }).waitFor()
     await homeBusiness.getByText('Promociona tu negocio gratis y haz que crezca con latido', { exact: true }).waitFor()
     await homeBusiness.getByText('Empezar', { exact: true }).waitFor()
     await homeBusiness.screenshot({ path: path.join(output, 'business-phase-home.png') })
@@ -1685,9 +1685,10 @@ try {
   const invitation = page.locator('.lc-business-invitation-dialog')
   await invitation.waitFor()
   await page.waitForLoadState('networkidle')
-  await invitation.getByRole('heading', { name: 'Haz crecer tu negocio Gratis', exact: true }).waitFor()
-  for (const label of ['10 %', '2x1', 'Regalo', 'Otro'])
-    assert.equal(await invitation.getByRole('button', { name: label, exact: true }).count(), 1)
+  await invitation.getByRole('heading', { name: 'Haz crecer tu negocio', exact: true }).waitFor()
+  await invitation.getByRole('heading', { name: 'Atrae más clientes a tu negocio', exact: true }).waitFor()
+  for (const label of [/^Descuento %/, /^Cantidad fija/, /^2x1 o similar/, /^Regalo/])
+    assert.equal(await invitation.getByRole('button', { name: label }).count(), 1)
   await invitation.locator('.lc-offer-preview').getByText('Zürich', { exact: true }).waitFor()
   assert.equal(
     await invitation.getByRole('button', { name: 'Comparte tu negocio', exact: true }).count(),
@@ -1719,7 +1720,7 @@ try {
   await reloadPage()
   await invitation.waitFor()
   await page.waitForLoadState('networkidle')
-  await invitation.getByRole('button', { name: '2x1', exact: true }).click()
+  await invitation.getByRole('button', { name: /^2x1 o similar/ }).click()
   await offerModal.waitFor()
   assert.equal(
     new URL(page.url()).pathname,
@@ -1774,7 +1775,8 @@ try {
   await page.getByRole('heading', { name: '¡Negocio publicado!', exact: true }).waitFor()
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
   const nextOffer = page.locator('.lc-business-invitation')
-  await nextOffer.getByRole('heading', { name: 'Haz crecer tu negocio Gratis', exact: true }).waitFor()
+  await nextOffer.getByRole('heading', { name: 'Haz crecer tu negocio', exact: true }).waitFor()
+  await nextOffer.getByRole('heading', { name: 'Atrae más clientes a tu negocio', exact: true }).waitFor()
   await nextOffer.getByText('Los negocios con ofertas ganan visibilidad en Latido y tienen más posibilidades de ser elegidos.', { exact: true }).waitFor()
   await nextOffer.getByText('¿Qué quieres ofrecer?', { exact: true }).waitFor()
   assert.equal(await nextOffer.locator('.lc-invitation-example-label').count(), 0)

@@ -21,7 +21,7 @@ export default function HomeBusinessOfferCard() {
           : <Store size={24} />}
       </span>
       <span className="home-latido-card-info">
-        <strong className="home-latido-card-name">Atrae a más clientes</strong>
+        <strong className="home-latido-card-name">Atrae más clientes</strong>
         <span>Promociona tu negocio <b>gratis</b> y haz que crezca con latido</span>
       </span>
       <span className="home-latido-card-action">Empezar</span>
