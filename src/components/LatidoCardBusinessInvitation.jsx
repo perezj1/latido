@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Check } from 'lucide-react'
+import { Check, Gift } from 'lucide-react'
 import { useLatidoCardOffer } from './LatidoCardOfferProvider'
 import { useLatidoBusinessDisplay } from '../hooks/useLatidoBusinessDisplay'
 import LatidoOfferPreview from './LatidoOfferVisual'
@@ -41,8 +41,12 @@ export default function LatidoCardBusinessInvitation({
     if (modal) onDismiss()
   }
   const content = (
+    <div className="lc-business-invitation-wrap">
     <section className="lc-business-invitation" aria-labelledby={titleId}>
       <div className="lc-invitation-visual">
+        <h2 className="lc-invitation-title" id={titleId} ref={titleRef} tabIndex={modal ? -1 : undefined}>
+          {CARD_INVITATION_TITLE}
+        </h2>
         <LatidoOfferPreview
           business={displayBusiness}
           example
@@ -56,22 +60,24 @@ export default function LatidoCardBusinessInvitation({
         />
       </div>
       <div className="lc-invitation-content">
-        <h2 id={titleId} ref={titleRef} tabIndex={modal ? -1 : undefined}>
-          {CARD_INVITATION_TITLE}
-        </h2>
+        <h3>Atrae más clientes a tu negocio</h3>
         <p>{CARD_INVITATION_DESCRIPTION}</p>
         <p className="lc-invitation-choose" id={`${titleId}-choose`}>
           ¿Qué quieres ofrecer?
         </p>
         <div className="lc-invitation-quick" role="group" aria-labelledby={`${titleId}-choose`}>
           {[
-            ['10 %', { type: 'percent', value: '10' }],
-            ['2x1', { type: 'combo' }],
-            ['Regalo', { type: 'gift' }],
-            ['Otro', { type: 'other' }]
-          ].map(([label, selection]) => (
+            ['%', 'Descuento %', 'Ej.: 10 % menos', 'blue', { type: 'percent', value: '10' }],
+            ['CHF', 'Cantidad fija', 'Ej.: 5 CHF menos', 'amber', { type: 'fixed', value: '5' }],
+            ['2x1', '2x1 o similar', 'Ej.: 2x1, 3x2', 'pink', { type: 'combo' }],
+            [<Gift size={20} />, 'Regalo', 'Ej.: un café gratis', 'green', { type: 'gift' }]
+          ].map(([icon, label, description, tone, selection]) => (
             <button key={label} type="button" onClick={() => create(selection)}>
-              {label}
+              <span className={`lc-invitation-option-icon lc-invitation-option-icon--${tone}`} aria-hidden="true">{icon}</span>
+              <span className="lc-invitation-option-copy">
+                <strong>{label}</strong>
+                <span>{description}</span>
+              </span>
             </button>
           ))}
         </div>
@@ -88,13 +94,14 @@ export default function LatidoCardBusinessInvitation({
             Tú pones las condiciones
           </span>
         </p>
-        {onDismiss && (
-          <button type="button" className="lc-business-invitation-later" onClick={onDismiss}>
-            Lo haré más tarde
-          </button>
-        )}
       </div>
     </section>
+    {onDismiss && (
+      <button type="button" className="lc-business-invitation-later" onClick={onDismiss}>
+        Lo haré más tarde
+      </button>
+    )}
+    </div>
   )
   if (!modal) return content
   return createPortal(
