@@ -71,52 +71,52 @@ type ProductConfig = {
 
 const PRODUCT_CONFIG:Record<string, ProductConfig> = {
   '5dd70f64-e112-4cfb-88b1-5cdc18d257c3': {
-    shortName:'Camiseta Café · Negro', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Camiseta Café · Negro', price:24.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'b6b8be91-6cfd-42d2-88f3-bed61406fe2f': {
-    shortName:'Camiseta Café · Blanco', price:36.9, optionLabel:'Talla', purchaseType:'base',
+    shortName:'Camiseta Café · Blanco', price:24.9, optionLabel:'Talla', purchaseType:'base',
   },
   '55a12a31-4d0b-40e1-bed5-b3ea94b69228': {
-    shortName:'Camiseta Atardecer', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Camiseta Atardecer', price:24.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   '4ce36309-eb36-4b08-8d3a-e33e0d71d5b5': {
-    shortName:'Camiseta Improvisar · Negro', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Camiseta Improvisar · Negro', price:24.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'ebcb0c86-9d07-4e2a-8bf7-59fff8ebc97f': {
-    shortName:'Camiseta Improvisar · Blanco', price:36.9, optionLabel:'Talla', purchaseType:'base',
+    shortName:'Camiseta Improvisar · Blanco', price:24.9, optionLabel:'Talla', purchaseType:'base',
   },
   '1759e8a1-03e1-40eb-947b-de41f50490c3': {
-    shortName:'Sudadera Latido Logo · Negra', price:46.9, optionLabel:'Talla', purchaseType:'base',
+    shortName:'Sudadera Latido Logo · Negra', price:34.9, optionLabel:'Talla', purchaseType:'base',
   },
   'e2a521ea-ebab-4709-80c1-12b173b13271': {
-    shortName:'Sudadera Latido Logo · Clara', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Sudadera Latido Logo · Clara', price:34.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'e922400e-27f5-410e-83bd-ef4647215e41': {
-    shortName:'Sudadera Atardecer', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Sudadera Atardecer', price:34.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'd7ed15a0-30bf-49cc-888c-fdd0bc58f3fa': {
-    shortName:'Sudadera Improvisar · Negro', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Sudadera Improvisar · Negro', price:34.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   '23397fd4-1013-4481-9c11-e22932316c7c': {
-    shortName:'Sudadera Improvisar · Blanco', price:46.9, optionLabel:'Talla', purchaseType:'base',
+    shortName:'Sudadera Improvisar · Blanco', price:34.9, optionLabel:'Talla', purchaseType:'base',
   },
   '9b2e0872-ffc6-4bbe-8615-eec669e36da4': {
-    shortName:'Bolsa Latido Logo', price:24.9, optionLabel:'Color', purchaseType:'addon',
+    shortName:'Bolsa Latido Logo', price:17.9, optionLabel:'Color', purchaseType:'base',
   },
   'e23cd355-eb48-4844-862a-98592e7757f7': {
-    shortName:'Camiseta Latido Logo · Negra', price:36.9, optionLabel:'Talla', purchaseType:'base',
+    shortName:'Camiseta Latido Logo · Negra', price:24.9, optionLabel:'Talla', purchaseType:'base',
   },
   '0541177c-34b6-4fb4-bd91-64bd5a087c08': {
-    shortName:'Camiseta Latido Logo · Clara', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Camiseta Latido Logo · Clara', price:24.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'c1b3d3ef-dd71-4d78-8712-4d7fea26880b': {
-    shortName:'Camiseta Latido Club', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Camiseta Latido Club', price:24.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'f3ff3398-9981-496f-b9d3-4602be85b15b': {
-    shortName:'Sudadera Latido Club', price:46.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Sudadera Latido Club', price:34.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'bd807369-b74d-483d-9065-fb994ca7bb38': {
-    shortName:'Bolsa de tela Latido Club', price:24.9, optionLabel:'Color', purchaseType:'addon',
+    shortName:'Bolsa de tela Latido Club', price:17.9, optionLabel:'Color', purchaseType:'base',
   },
   '7e2bab53-6962-4fc7-ab8c-f8009c6f5754': {
     shortName:'Carcasa Hablas Español', price:21.9, optionLabel:'Modelo', purchaseType:'addon',
@@ -315,7 +315,8 @@ Deno.serve(async req => {
         unit_amount:unitAmount,
         quantity,
         line_total:unitAmount * quantity,
-        purchase_type:configured.product.purchaseType === 'addon' ? 'addon' : 'base',
+        purchase_type:PRODUCT_CONFIG[configured.product.id || sku.split(':')[1]]?.purchaseType
+          || (configured.product.purchaseType === 'addon' ? 'addon' : 'base'),
       }
     })
 

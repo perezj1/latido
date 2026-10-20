@@ -6,6 +6,8 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePWA } from './hooks/usePWA'
 import { supabase } from './lib/supabase'
+import { CARD_MEMBERS_ENABLED } from './lib/latidoCardLaunch'
+import LatidoCardBusinessGate from './components/LatidoCardBusinessGate'
 import { startUserPresence, trackUserPresence } from './lib/presence'
 import {
   getAnalyticsRoute,
@@ -31,11 +33,18 @@ import SearchResolutionPrompt from './components/SearchResolutionPrompt'
 import LatidoUsefulnessBanner from './components/LatidoUsefulnessBanner'
 import InAppNotificationAlert from './components/InAppNotificationAlert'
 import ShareCardReminder from './components/ShareCardReminder'
+import LatidoCardOfferProvider from './components/LatidoCardOfferProvider'
 import { AppNotificationsProvider } from './hooks/useAppNotifications'
 import { hasAnalyticsConsent, subscribeCookieConsent } from './lib/cookieConsent'
 
 const Landing = lazy(() => import('./pages/Landing'))
+const LatidoCardLanding = lazy(() => import('./pages/LatidoCardLanding'))
 const Club = lazy(() => import('./pages/Club'))
+const LatidoCard = lazy(() => import('./pages/LatidoCard'))
+const LatidoCardPrint = lazy(() => import('./pages/LatidoCardPrint'))
+const LatidoCardBusiness = lazy(() => import('./pages/LatidoCardBusiness'))
+const LatidoCardValidation = lazy(() => import('./pages/LatidoCardValidation'))
+const LatidoCardAdmin = lazy(() => import('./pages/LatidoCardAdmin'))
 const Home = lazy(() => import('./pages/Home'))
 const ResourcePackage = lazy(() => import('./pages/ResourcePackage'))
 const ResourcePackages = lazy(() => import('./pages/ResourcePackages'))
@@ -173,7 +182,7 @@ function VercelTelemetry() {
   const analyticsConsent = useAnalyticsConsent()
   const location = useLocation()
 
-  if (!analyticsConsent || !isAnalyticsEnabled()) return null
+  if (!analyticsConsent || !isAnalyticsEnabled() || location.pathname.startsWith('/c/') || location.pathname.startsWith('/card/validacion/')) return null
 
   return (
     <>
@@ -341,15 +350,14 @@ function UserPresenceSync() {
     markLastSeen()
     const lastSeenInterval = window.setInterval(markLastSeen, 60_000)
     const presenceInterval = window.setInterval(trackUserPresence, 30_000)
-    const onPageHide = () => { markLastSeen() }
+    // Safari blocks ordinary async fetches started while a document unloads.
+    // Record activity through the existing heartbeat and visibility/focus updates.
     const onVisible = () => {
       if (document.visibilityState && document.visibilityState !== 'visible') return
       markLastSeen()
       trackUserPresence()
     }
 
-    window.addEventListener('pagehide', onPageHide)
-    window.addEventListener('beforeunload', onPageHide)
     window.addEventListener('focus', onVisible)
     document.addEventListener('visibilitychange', onVisible)
 
@@ -359,8 +367,6 @@ function UserPresenceSync() {
       window.clearInterval(presenceInterval)
       stopPresence()
       stopEmailNotificationPresence()
-      window.removeEventListener('pagehide', onPageHide)
-      window.removeEventListener('beforeunload', onPageHide)
       window.removeEventListener('focus', onVisible)
       document.removeEventListener('visibilitychange', onVisible)
     }
@@ -508,7 +514,8 @@ function AppShell() {
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
-  const hideAppNavigation = pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/club' || isPuntoHispanoPublisher
+  const isCardLanding = pathname === '/tarjeta-latido' || pathname === '/tarjeta-latido/'
+  const hideAppNavigation = isCardLanding || pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/club' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -622,6 +629,7 @@ function AppShell() {
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'creadores', label:'Creadores', to:'/creadores' },
       { id:'club', label:'Club', to:'/club' },
+      ...(CARD_MEMBERS_ENABLED ? [{ id:'tarjeta-latido', label:'Tarjeta Latido', to:'/tarjeta-latido' }] : []),
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
@@ -770,7 +778,7 @@ function AppShell() {
       <CookieConsent showBanner={false} />
       <PushRegistrationSync />
       <UserPresenceSync />
-      <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen || hideAppNavigation ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:'hidden', background:'#fff' }}>
+      <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen || hideAppNavigation ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:isCardLanding ? 'visible' : 'hidden', background:'#fff' }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -785,6 +793,15 @@ function AppShell() {
             <Route path="/comunidades" element={<Comunidades />} />
             <Route path="/colaboraciones" element={<Colaboraciones />} />
             <Route path="/club" element={<Club />} />
+            <Route path="/tarjeta-latido" element={<LatidoCardLanding />} />
+            <Route path="/card" element={<LatidoCardBusinessGate><LatidoCard /></LatidoCardBusinessGate>} />
+            <Route path="/card/material/:providerId" element={CARD_MEMBERS_ENABLED ? <LatidoCardPrint /> : <Navigate to="/card/negocios" replace />} />
+            <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusinessGate><LatidoCardBusiness /></LatidoCardBusinessGate></ProtectedRoute>} />
+            <Route path="/card/negocio/:providerId" element={<LatidoCardBusinessGate><LatidoCard /></LatidoCardBusinessGate>} />
+            <Route path="/card/validacion/:redemptionId" element={CARD_MEMBERS_ENABLED ? <ProtectedRoute><LatidoCardValidation /></ProtectedRoute> : <Navigate to="/card" replace />} />
+            <Route path="/card/scanner/*" element={<Navigate to="/card" replace />} />
+            <Route path="/card/admin" element={CARD_MEMBERS_ENABLED ? <AdminRoute><LatidoCardAdmin /></AdminRoute> : <Navigate to="/card/negocios" replace />} />
+            <Route path="/c/:cardToken" element={CARD_MEMBERS_ENABLED ? <div className="lc-page"><h1>Tarjeta Latido</h1><p>Este QR antiguo ha dejado de utilizarse. Abre tus descuentos y pulsa «Activar» cuando estés en el negocio.</p><Link to="/card">Abrir mis descuentos</Link></div> : <Navigate to="/" replace />} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />
@@ -834,17 +851,39 @@ function AppShell() {
   )
 }
 
+function AppCommunityExtras() {
+  const { pathname } = useLocation()
+  // Keep the Card flow focused; directory/share reminders belong to the community app.
+  if (pathname === '/card' || pathname.startsWith('/card/') || pathname.startsWith('/c/')) return null
+  return (
+    <>
+      <CreatorDirectorySync />
+      <ShareCardReminder />
+    </>
+  )
+}
+
+function AppNotificationScope({ children }) {
+  const { pathname } = useLocation()
+  return (
+    <AppNotificationsProvider>
+      <LatidoCardOfferProvider>
+      {!pathname.startsWith('/card/validacion/') && <InAppNotificationAlert />}
+      {children}
+      </LatidoCardOfferProvider>
+    </AppNotificationsProvider>
+  )
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <AppNotificationsProvider>
+        <AppNotificationScope>
           <Seo />
-          <CreatorDirectorySync />
+          <AppCommunityExtras />
           <ScrollToTop />
           <OfflineNotice />
-          <InAppNotificationAlert />
-          <ShareCardReminder />
           <Toaster
             position="top-center"
             toastOptions={{
@@ -857,7 +896,7 @@ export default function App() {
           </Routes>
           <SearchResolutionPrompt />
           <VercelTelemetry />
-        </AppNotificationsProvider>
+        </AppNotificationScope>
       </BrowserRouter>
     </AuthProvider>
   )

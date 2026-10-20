@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
-import { getNegocioTypeMeta } from '../lib/constants'
-import { getBusinessPath } from '../lib/seo'
 import { getCreatorForUser, subscribeCreatorUpdates } from '../lib/creators'
 import {
   getShareCardReminderState,
@@ -14,7 +11,9 @@ import {
   shouldShowShareCardReminder,
 } from '../lib/shareCardReminder'
 import CreatorProfileShareButton from './CreatorProfileShareButton'
-import BusinessProfileShareModal from './BusinessProfileShareModal'
+import LatidoCardBusinessInvitation from './LatidoCardBusinessInvitation'
+import { cardRpc } from '../lib/latidoCard'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 
 const BLOCKED_PATH_PREFIXES = [
   '/auth',
@@ -26,11 +25,13 @@ const BLOCKED_PATH_PREFIXES = [
 ]
 
 function reminderCandidate(kind, item, userId) {
-  if (!item?.id || !shouldShowShareCardReminder(kind, userId, item.id)) return null
+  const contentId = kind === 'benefits' ? 'first-offer' : item?.id
+  if (!item?.id || !shouldShowShareCardReminder(kind, userId, contentId)) return null
   return {
     kind,
     item,
-    lastShownAt:Number(getShareCardReminderState(kind, userId, item.id).lastShownAt || 0),
+    contentId,
+    lastShownAt:Number(getShareCardReminderState(kind, userId, contentId).lastShownAt || 0),
   }
 }
 
@@ -57,15 +58,15 @@ export default function ShareCardReminder() {
   const location = useLocation()
   const shownThisSessionRef = useRef('')
   const [creator, setCreator] = useState(null)
-  const [businesses, setBusinesses] = useState([])
-  const [businessesLoaded, setBusinessesLoaded] = useState(false)
+  const [benefitBusiness, setBenefitBusiness] = useState(null)
+  const [benefitsLoaded, setBenefitsLoaded] = useState(false)
   const [noticeTarget, setNoticeTarget] = useState(null)
   const [shareTarget, setShareTarget] = useState(null)
 
   useEffect(() => {
     setCreator(null)
-    setBusinesses([])
-    setBusinessesLoaded(false)
+    setBenefitBusiness(null)
+    setBenefitsLoaded(false)
     setNoticeTarget(null)
     setShareTarget(null)
     shownThisSessionRef.current = ''
@@ -78,20 +79,10 @@ export default function ShareCardReminder() {
     syncCreator()
     const unsubscribe = subscribeCreatorUpdates(syncCreator)
 
-    supabase
-      .from('providers')
-      .select('id,user_id,category,name,city,canton,description,photo_url,services,active,created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending:false })
-      .then(({ data }) => {
-        if (!active) return
-        setBusinesses((data || []).map(business => ({
-          ...business,
-          type:business.category,
-          desc:business.description,
-        })))
-        setBusinessesLoaded(true)
-      })
+    cardRpc('lc_business_invitation')
+      .then(data => { if (active) setBenefitBusiness(data?.business || null) })
+      .catch(() => { /* Optional invitation must not interrupt entry to Latido. */ })
+      .finally(() => { if (active) setBenefitsLoaded(true) })
 
     return () => {
       active = false
@@ -100,36 +91,35 @@ export default function ShareCardReminder() {
   }, [isLoggedIn, user?.id])
 
   useEffect(() => {
-    if (loading || !isLoggedIn || !user?.id || !businessesLoaded) return undefined
+    if (loading || !isLoggedIn || !user?.id || !benefitsLoaded) return undefined
     if (noticeTarget || shareTarget || shownThisSessionRef.current === String(user.id)) return undefined
     if (BLOCKED_PATH_PREFIXES.some(prefix => location.pathname.startsWith(prefix))) return undefined
 
     const candidates = [
+      CARD_MEMBERS_ENABLED ? reminderCandidate('benefits', benefitBusiness, user.id) : null,
       creator?.active !== false && creator?.status !== 'draft'
         ? reminderCandidate('creator', creator, user.id)
         : null,
-      ...businesses
-        .filter(business => business.active !== false)
-        .map(business => reminderCandidate('business', business, user.id)),
     ]
       .filter(Boolean)
-      .sort((a, b) => a.lastShownAt - b.lastShownAt)
+      .sort((a, b) => Number(b.kind === 'benefits') - Number(a.kind === 'benefits') || a.lastShownAt - b.lastShownAt)
 
     const nextTarget = candidates[0]
     if (!nextTarget) return undefined
 
     const timer = window.setTimeout(() => {
-      markShareCardReminderShown(nextTarget.kind, user.id, nextTarget.item.id)
+      if (document.querySelector('dialog[open], [role="dialog"]')) return
+      markShareCardReminderShown(nextTarget.kind, user.id, nextTarget.contentId)
       shownThisSessionRef.current = String(user.id)
       setNoticeTarget(nextTarget)
     }, 1100)
     return () => window.clearTimeout(timer)
-  }, [businesses, businessesLoaded, creator, isLoggedIn, loading, location.pathname, noticeTarget, shareTarget, user?.id])
+  }, [benefitsLoaded, benefitBusiness, creator, isLoggedIn, loading, location.pathname, noticeTarget, shareTarget, user?.id])
 
   const closeNotice = () => setNoticeTarget(null)
 
   useEffect(() => {
-    if (!noticeTarget) return undefined
+    if (!noticeTarget || noticeTarget.kind === 'benefits') return undefined
     const previousOverflow = document.body.style.overflow
     const handleKeyDown = event => {
       if (event.key === 'Escape') closeNotice()
@@ -154,19 +144,15 @@ export default function ShareCardReminder() {
     setShareTarget(null)
   }
 
-  const isCreatorNotice = noticeTarget?.kind === 'creator'
-  const title = isCreatorNotice
-    ? 'Tu perfil en una tarjeta'
-    : 'Tu negocio en una tarjeta'
-  const description = isCreatorNotice
-    ? {
-        lead:'Elige tu diseño favorito, compártelo o descarga la imagen y ',
-        emphasis:'haz visible tu aportación a la comunidad hispanohablante en Suiza.',
-      }
-    : {
-        lead:'Elige tu diseño favorito, compártelo o descarga la imagen para ',
-        emphasis:'dar visibilidad a tu negocio y mostrar tu aportación a la comunidad hispanohablante en Suiza.',
-      }
+  const title = 'Tu perfil en una tarjeta'
+  const description = {
+    lead:'Elige tu diseño favorito, compártelo o descarga la imagen y ',
+    emphasis:'haz visible tu aportación a la comunidad hispanohablante en Suiza.',
+  }
+
+  if (noticeTarget?.kind === 'benefits') {
+    return <LatidoCardBusinessInvitation business={noticeTarget.item} modal onDismiss={closeNotice} />
+  }
 
   return (
     <>
@@ -240,18 +226,6 @@ export default function ShareCardReminder() {
         />
       )}
 
-      {shareTarget?.kind === 'business' && (
-        <BusinessProfileShareModal
-          business={shareTarget.item}
-          categoryLabel={getNegocioTypeMeta(shareTarget.item.type)?.label || ''}
-          imageUrl={shareTarget.item.photo_url || ''}
-          url={getBusinessPath(shareTarget.item)}
-          isOwner
-          open
-          onClose={closeShareCard}
-          onShared={() => completeShare(shareTarget)}
-        />
-      )}
     </>
   )
 }

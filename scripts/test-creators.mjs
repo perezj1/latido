@@ -28,6 +28,16 @@ const { getTikTokIdFromUrl, resolveTikTokLink } = await import('../api/tiktok-re
 const { default:tiktokMetadataHandler, getTikTokMetadata, getTikTokThumbnail } = await import('../api/tiktok-metadata.js')
 const { getSeoForLocation } = await import('../src/lib/seo.js')
 const { rotateItemsWithRecentFirst } = await import('../src/lib/rotation.js')
+const { resolveImageUrl, getThumbnailImageUrl } = await import('../src/lib/imageVariants.js')
+
+for (const [original, replacement] of [
+  ['https://beauty-rocio.ch/wp-content/uploads/2022/12/Design-ohne-Titel-1.png', '/providers/beauty-rocio/logo.svg'],
+  ['https://www.traducta.ch/sites/traducta.ch/files/agency-image/uebersetzungsbuero-traducta-luzern.jpg', '/providers/traducta/logo.svg'],
+]) {
+  assert.equal(resolveImageUrl(original), replacement)
+  assert.equal(getThumbnailImageUrl(original), replacement)
+}
+assert.equal(resolveImageUrl('https://example.com/custom.jpg'), 'https://example.com/custom.jpg')
 
 assert.equal(formatCreatorHandle('perfilantiguo'), '@perfilantiguo')
 assert.equal(canManageCreator('owner-1', { id:'creator-1', owner_id:'owner-1' }), true)
@@ -265,6 +275,18 @@ try {
 }
 
 const cdnThumbnail = 'https://p16-common-sign.tiktokcdn-eu.com/photo.jpeg?x-expires=123'
+for (const thumbnail of [cdnThumbnail, `/api/tiktok-metadata?thumbnail=1&thumbnail_url=${encodeURIComponent(cdnThumbnail)}`]) {
+  const renewed = getCreatorThumbnailUrl({ url:shortPhotoTikTokUrl, resolved_url:photoTikTokUrl, thumbnail_url:thumbnail })
+  const endpoint = new URL(renewed, 'https://latido.ch')
+  assert.equal(endpoint.pathname, '/api/tiktok-metadata')
+  assert.equal(endpoint.searchParams.get('thumbnail'), '1')
+  assert.equal(endpoint.searchParams.get('url'), photoTikTokUrl, 'Usar el enlace completo guardado, no una firma caducada.')
+  assert.equal(endpoint.searchParams.has('thumbnail_url'), false)
+}
+assert.equal(getCreatorThumbnailUrl({ thumbnail_url:cdnThumbnail }), '', 'No intentar descargar una firma sin un enlace de publicación para renovarla.')
+assert.match(getCreatorThumbnailUrl({ thumbnail_url:cdnThumbnail, video_id:photoId }), /thumbnail=1&url=/)
+assert.equal(getCreatorThumbnailUrl({ url:photoTikTokUrl, thumbnail_url:'https://example.com/custom.jpg', thumbnail_kind:'custom' }), 'https://example.com/custom.jpg')
+assert.equal(getCreatorThumbnailUrl({ thumbnail_url:'https://tiktokcdn.com.example.com/custom.jpg' }), 'https://tiktokcdn.com.example.com/custom.jpg')
 const metadataRequests = []
 const metadataFetch = async (url, options) => {
   const requested = new URL(url)
@@ -335,6 +357,21 @@ try {
   const methodResponse = handlerResponse()
   await tiktokMetadataHandler({ method:'POST', url:'/' }, methodResponse)
   assert.equal(methodResponse.statusCode, 405)
+
+  globalThis.fetch = async () => new Response('Unavailable', { status:403 })
+  const unavailable = handlerResponse()
+  await tiktokMetadataHandler({ method:'GET', url:data.thumbnail_url }, unavailable)
+  assert.equal(unavailable.statusCode, 200, 'Una portada opcional no debe romper la tarjeta si TikTok la bloquea.')
+  assert.match(unavailable.headers['Content-Type'], /^image\/svg\+xml/)
+  assert.equal(unavailable.headers['X-Latido-Thumbnail'], 'unavailable')
+  assert.match(unavailable.headers['Cache-Control'], /max-age=60/)
+  assert.match(unavailable.body, /<svg/)
+  const metadataFailure = handlerResponse()
+  await tiktokMetadataHandler({ method:'GET', url:`/?url=${encodeURIComponent(photoTikTokUrl)}` }, metadataFailure)
+  assert.equal(metadataFailure.statusCode, 502, 'El formulario debe seguir recibiendo los errores de metadatos.')
+  const forbiddenUrl = handlerResponse()
+  await tiktokMetadataHandler({ method:'GET', url:'/?thumbnail=1&url=https://127.0.0.1/private' }, forbiddenUrl)
+  assert.equal(forbiddenUrl.statusCode, 400, 'La imagen de reserva no debe admitir solicitudes a otros dominios.')
 } finally {
   globalThis.fetch = originalFetch
 }

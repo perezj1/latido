@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
 import { VISIBLE_NEGOCIO_TYPES } from '../lib/constants'
-import { Btn, ChevronLeftIcon, ProgressBar, Input, ImageUploadField, Modal, PublicationLegalNotice, StickyFormActions } from '../components/UI'
+import { Btn, ChevronLeftIcon, ProgressBar, Input, ImageUploadField, PublicationLegalNotice, StickyFormActions } from '../components/UI'
 import LocationFields from '../components/LocationFields'
 import { calculateBusinessVerification } from '../lib/businessVerification'
 import { insertWithOptionalColumnsFallback } from '../lib/supabaseCompat'
@@ -13,10 +13,9 @@ import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
 import { trackPublicationCreated } from '../lib/analytics'
 import { addModerationQueueItem } from '../lib/reports'
 import PostPublishPushModal from '../components/PostPublishPushModal'
-import BusinessProfileShareModal from '../components/BusinessProfileShareModal'
 import { getPushStatus } from '../lib/pushNotifications'
-import { getBusinessPath } from '../lib/seo'
-import { markShareCardShared } from '../lib/shareCardReminder'
+import { markShareCardReminderShown } from '../lib/shareCardReminder'
+import LatidoCardBusinessInvitation from '../components/LatidoCardBusinessInvitation'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { canUseWhatsappNumber } from '../lib/businessContact'
 import toast from 'react-hot-toast'
@@ -29,13 +28,15 @@ const STEPS = [
 ]
 
 const NEGOCIO_TYPES_FORM = VISIBLE_NEGOCIO_TYPES.filter(t => t.id !== '')
-const PROFESSIONAL_CONFETTI_EMBED_URL = 'https://lottie.host/embed/6a54f360-7100-4a5c-a6ae-a5f2287488d8/lR9bbFp6Qg.json'
 const PROFESSIONAL_PLAN_OPTIONS = BUSINESS_PROMOTION_PLAN_DETAIL_LIST
 const LANDING_PAGE_MONTHLY_PRICE = 49
 
 export default function RegistrarNegocio() {
   const { isLoggedIn, user } = useAuth()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const fromCard = params.get('origen') === 'tarjeta'
+  const authNext = `/auth?next=${encodeURIComponent(fromCard ? '/registrar-negocio?origen=tarjeta' : '/registrar-negocio')}`
   const [step, setStep] = useState(0)
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step])
   const [loading, setLoading] = useState(false)
@@ -43,10 +44,13 @@ export default function RegistrarNegocio() {
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [done, setDone] = useState(false)
   const [publishedBusiness, setPublishedBusiness] = useState(null)
-  const [shareCardOpen, setShareCardOpen] = useState(false)
   const [publishedForReview, setPublishedForReview] = useState(false)
+  useEffect(() => {
+    if (done && publishedBusiness?.id && !publishedForReview) {
+      markShareCardReminderShown('benefits', user?.id, 'first-offer')
+    }
+  }, [done, publishedBusiness?.id, publishedForReview, user?.id])
   const [pushModalOpen, setPushModalOpen] = useState(false)
-  const [professionalUnlockOpen, setProfessionalUnlockOpen] = useState(false)
   const [professionalOptionsOpen, setProfessionalOptionsOpen] = useState(false)
   const [professionalOptionsActive, setProfessionalOptionsActive] = useState(false)
   const [selectedProfessionalPlan, setSelectedProfessionalPlan] = useState('')
@@ -168,8 +172,8 @@ export default function RegistrarNegocio() {
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, marginBottom:24, lineHeight:1.7 }}>
         Para registrar tu negocio necesitas una cuenta. Es gratis y sin spam.
       </p>
-      <Btn onClick={() => navigate('/auth')}>Crear cuenta gratis</Btn>
-      <button onClick={() => navigate('/auth')} style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.primary, background:'none', border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 0', width:'100%', cursor:'pointer', marginTop:10 }}>
+      <Btn onClick={() => navigate(authNext)}>Crear cuenta gratis</Btn>
+      <button onClick={() => navigate(authNext)} style={{ fontFamily:PP, fontWeight:600, fontSize:13, color:C.primary, background:'none', border:`1.5px solid ${C.primaryMid}`, borderRadius:14, padding:'12px 0', width:'100%', cursor:'pointer', marginTop:10 }}>
         Ya tengo cuenta — iniciar sesión
       </button>
     </div>
@@ -177,80 +181,17 @@ export default function RegistrarNegocio() {
 
   if (done) return (
     <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
-      <Modal
-        show={professionalUnlockOpen}
-        onClose={() => setProfessionalUnlockOpen(false)}
-        title="Profesional desbloqueado"
-        syncHistory={false}
-      >
-        <div style={{ position:'relative', overflow:'hidden', textAlign:'center', padding:'10px 0 2px' }}>
-          <div
-            aria-hidden="true"
-            style={{
-              position:'absolute',
-              top:-34,
-              left:'50%',
-              width:340,
-              height:210,
-              transform:'translateX(-50%)',
-              pointerEvents:'none',
-              opacity:.95,
-              zIndex:0,
-            }}
-          >
-            <iframe
-              title="Confeti profesional"
-              src={PROFESSIONAL_CONFETTI_EMBED_URL}
-              style={{
-                width:'100%',
-                height:'100%',
-                border:0,
-                display:'block',
-                pointerEvents:'none',
-              }}
-            />
-          </div>
-          <div style={{ width:76, height:76, borderRadius:24, background:C.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:38, margin:'8px auto 22px', position:'relative', zIndex:1 }}>
-            ✨
-          </div>
-          <h2 style={{ fontFamily:PP, fontWeight:900, fontSize:21, color:C.text, margin:'0 0 9px', position:'relative', zIndex:1 }}>
-            Enhorabuena
-          </h2>
-          <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.65, margin:'0 0 18px', position:'relative', zIndex:1 }}>
-            Has desbloqueado la sección Profesional. Ahora podrás aprovechar las ventajas profesionales para tu negocio en el perfil.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate('/perfil?seccion=profesional')}
-            style={{ width:'100%', border:'none', borderRadius:14, padding:'12px 16px', background:C.primary, color:'#fff', fontFamily:PP, fontWeight:800, fontSize:13, cursor:'pointer', position:'relative', zIndex:1 }}
-          >
-            Ver ventajas
-          </button>
-        </div>
-      </Modal>
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>🏪</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Negocio enviado a revisión' : '¡Negocio publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
         {publishedForReview
-          ? 'Tu negocio quedó oculto temporalmente hasta que el equipo lo revise.'
+          ? 'El equipo revisará tu negocio antes de hacerlo visible. Cuando esté aprobado, podrás crear tu oferta gratis desde Mi negocio en Tarjeta Latido.'
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
-      <Btn onClick={() => setShareCardOpen(true)} disabled={!publishedBusiness}>Comparte tu negocio</Btn>
-      <button onClick={() => navigate('/')} style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.mid, background:'none', border:'none', cursor:'pointer', width:'100%', marginTop:12, padding:'6px 0' }}>
-        Volver a Latido
-      </button>
-      {publishedBusiness && (
-        <BusinessProfileShareModal
-          business={publishedBusiness}
-          categoryLabel={NEGOCIO_TYPES_FORM.find(type => type.id === publishedBusiness.type)?.label || ''}
-          imageUrl={publishedBusiness.photo_url || ''}
-          url={getBusinessPath(publishedBusiness)}
-          isOwner
-          open={shareCardOpen}
-          onClose={() => setShareCardOpen(false)}
-          onShared={() => markShareCardShared('business', user?.id, publishedBusiness.id)}
-        />
+      {!publishedForReview && publishedBusiness?.id && (
+        <LatidoCardBusinessInvitation business={publishedBusiness} onDismiss={() => navigate('/')} />
       )}
+      {publishedForReview && <button onClick={() => navigate('/card/negocios')} style={{ minHeight:44, background:'none', border:'none', cursor:'pointer', color:C.primary }}>Ir a Mi negocio</button>}
     </div>
   )
 
@@ -384,7 +325,6 @@ export default function RegistrarNegocio() {
           console.error('Business promotion checkout failed:', checkoutError || checkout)
           toast.error('El negocio se publicó, pero no pudimos abrir el pago. Puedes activarlo desde tu perfil.')
           setPublishedForReview(false)
-          setProfessionalUnlockOpen(true)
           setDone(true)
           return
         }
@@ -397,7 +337,6 @@ export default function RegistrarNegocio() {
         toast('El negocio se enviará a revisión antes de poder activar el plan o la landing.', { icon:'ℹ️' })
       }
       setPublishedForReview(needsReview)
-      setProfessionalUnlockOpen(PAID_BUSINESS_FEATURES_VISIBLE)
       setDone(true)
     } catch (error) {
       console.error('Register business failed:', error)
@@ -665,7 +604,7 @@ export default function RegistrarNegocio() {
                     ? `${selectedPlanOption.label}${paidLandingPageSelected ? ' + Landing' : ''} · CHF ${professionalTotal}/mes`
                     : professionalOptionsActive
                       ? 'Elige un plan para activarlo'
-                      : 'Opcional · elige un plan cuando quieras'}
+                      : fromCard ? 'Opcional. Puedes activarlo más tarde' : 'Opcional · elige un plan cuando quieras'}
                 </span>
               </span>
             </span>
@@ -751,6 +690,61 @@ export default function RegistrarNegocio() {
                   )
                 })}
               </div>
+              <div style={{ marginTop:12 }}>
+                <div style={{ width:'100%', padding:'12px 14px 12px 16px', border:`1.5px solid ${landingPageSelected ? C.primary : C.border}`, borderRadius:16, background:landingPageSelected ? C.primaryLight : '#fff', display:'flex', alignItems:'center', gap:12 }}>
+                  <span style={{ width:34, height:34, flex:'0 0 34px', borderRadius:11, background:'#ECFEFF', display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>📣</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+                      <button
+                        type="button"
+                        onClick={toggleLandingPageExtra}
+                        style={{ flex:1, minWidth:0, padding:0, border:'none', background:'transparent', cursor:'pointer', textAlign:'left', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text }}
+                      >
+                        Landing page en Latido
+                      </button>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={landingPageSelected}
+                        aria-label={landingPageSelected ? 'Desactivar landing page en Latido' : 'Activar landing page en Latido'}
+                        onClick={toggleLandingPageExtra}
+                        style={{ width:46, height:28, flex:'0 0 46px', padding:3, border:'none', borderRadius:999, background:landingPageSelected ? C.primary : '#CBD5E1', cursor:'pointer', transition:'background .18s ease' }}
+                      >
+                        <span style={{ width:22, height:22, borderRadius:'50%', background:'#fff', display:'block', transform:landingPageSelected ? 'translateX(18px)' : 'translateX(0)', transition:'transform .18s ease', boxShadow:'0 1px 3px rgba(15,23,42,.2)' }} />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={toggleLandingPageExtra}
+                      style={{ width:'100%', marginTop:4, padding:0, border:'none', background:'transparent', cursor:'pointer', display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:18, textAlign:'left' }}
+                    >
+                      <span style={{ minWidth:0, fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.45 }}>Crea una página dedicada Latido x Negocio con tus servicios, zona y botones de contacto.</span>
+                      <span style={{ flex:'0 0 auto', marginTop:22, marginLeft:8, fontFamily:PP, fontWeight:900, fontSize:12, color:'#0F9F8E', whiteSpace:'nowrap' }}>CHF 49<small style={{ fontSize:9, fontWeight:700 }}> /mes</small></span>
+                    </button>
+                  </div>
+                </div>
+                {hasPaidSelection && (
+                  <div style={{ marginTop:12, borderRadius:12, background:C.bg, padding:'12px', display:'grid', gap:8 }}>
+                    {selectedPlanOption && (
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+                        <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>{selectedPlanOption.label}</span>
+                        <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {selectedPlanOption.monthlyPrice}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
+                      </div>
+                    )}
+                    {paidLandingPageSelected && (
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+                        <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>Landing page en Latido</span>
+                        <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {LANDING_PAGE_MONTHLY_PRICE}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
+                      </div>
+                    )}
+                    <div style={{ height:1, background:C.border, margin:'2px 0' }} />
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+                      <span style={{ fontFamily:PP, fontSize:11, fontWeight:800, color:C.text }}>Total mensual</span>
+                      <span style={{ fontFamily:PP, fontWeight:900, fontSize:16, color:C.text, whiteSpace:'nowrap' }}>CHF {professionalTotal}<small style={{ fontSize:10, color:C.light }}> /mes</small></span>
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => { setProfessionalOptionsActive(false); setSelectedProfessionalPlan(''); setLandingPageSelected(false); setProfessionalOptionsOpen(false) }}
@@ -761,61 +755,6 @@ export default function RegistrarNegocio() {
             </div>
           )}
         </section>
-        <div style={{ marginTop:12 }}>
-          <div style={{ width:'100%', padding:'12px 14px 12px 16px', border:`1.5px solid ${landingPageSelected ? C.primary : C.border}`, borderRadius:16, background:landingPageSelected ? C.primaryLight : '#fff', display:'flex', alignItems:'center', gap:12 }}>
-            <span style={{ width:34, height:34, flex:'0 0 34px', borderRadius:11, background:'#ECFEFF', display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>📣</span>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
-                <button
-                  type="button"
-                  onClick={toggleLandingPageExtra}
-                  style={{ flex:1, minWidth:0, padding:0, border:'none', background:'transparent', cursor:'pointer', textAlign:'left', fontFamily:PP, fontWeight:800, fontSize:13, color:C.text }}
-                >
-                  Landing page en Latido
-                </button>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={landingPageSelected}
-                  aria-label={landingPageSelected ? 'Desactivar landing page en Latido' : 'Activar landing page en Latido'}
-                  onClick={toggleLandingPageExtra}
-                  style={{ width:46, height:28, flex:'0 0 46px', padding:3, border:'none', borderRadius:999, background:landingPageSelected ? C.primary : '#CBD5E1', cursor:'pointer', transition:'background .18s ease' }}
-                >
-                  <span style={{ width:22, height:22, borderRadius:'50%', background:'#fff', display:'block', transform:landingPageSelected ? 'translateX(18px)' : 'translateX(0)', transition:'transform .18s ease', boxShadow:'0 1px 3px rgba(15,23,42,.2)' }} />
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={toggleLandingPageExtra}
-                style={{ width:'100%', marginTop:4, padding:0, border:'none', background:'transparent', cursor:'pointer', display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:18, textAlign:'left' }}
-              >
-                <span style={{ minWidth:0, fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.45 }}>Crea una página dedicada Latido x Negocio con tus servicios, zona y botones de contacto.</span>
-                <span style={{ flex:'0 0 auto', marginTop:22, marginLeft:8, fontFamily:PP, fontWeight:900, fontSize:12, color:'#0F9F8E', whiteSpace:'nowrap' }}>CHF 49<small style={{ fontSize:9, fontWeight:700 }}> /mes</small></span>
-              </button>
-            </div>
-          </div>
-          {hasPaidSelection && (
-            <div style={{ marginTop:12, borderRadius:12, background:C.bg, padding:'12px', display:'grid', gap:8 }}>
-              {selectedPlanOption && (
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-                  <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>{selectedPlanOption.label}</span>
-                  <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {selectedPlanOption.monthlyPrice}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
-                </div>
-              )}
-              {paidLandingPageSelected && (
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-                  <span style={{ fontFamily:PP, fontSize:11, color:C.mid }}>Landing page en Latido</span>
-                  <span style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, whiteSpace:'nowrap' }}>CHF {LANDING_PAGE_MONTHLY_PRICE}<small style={{ fontSize:9, color:C.light }}> /mes</small></span>
-                </div>
-              )}
-              <div style={{ height:1, background:C.border, margin:'2px 0' }} />
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-                <span style={{ fontFamily:PP, fontSize:11, fontWeight:800, color:C.text }}>Total mensual</span>
-                <span style={{ fontFamily:PP, fontWeight:900, fontSize:16, color:C.text, whiteSpace:'nowrap' }}>CHF {professionalTotal}<small style={{ fontSize:10, color:C.light }}> /mes</small></span>
-              </div>
-            </div>
-          )}
-        </div>
         </div>
         )}
         <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:14, padding:'14px 16px', marginTop:14 }}>

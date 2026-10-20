@@ -1,4 +1,5 @@
 import { getNegocioTypeMeta } from '../lib/constants'
+import LatidoCardBusinessBenefit from './LatidoCardBusinessBenefit'
 import { C, PP } from '../lib/theme'
 import { getThumbnailImageUrl, handleThumbnailImageError } from '../lib/imageVariants'
 import { getDirectoryBusinessPlan } from '../lib/businessDirectoryRanking'
@@ -24,6 +25,7 @@ export default function RelatedBusinessCard({ business, photosMap={}, onClick, s
       </div>
       <div style={{ padding:planLabel ? '24px 10px 10px' : 10 }}>
         <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, lineHeight:1.35, margin:'0 0 6px', ...CLAMP_2 }}>{business.name}</p>
+        <LatidoCardBusinessBenefit providerId={business.id} />
         <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:'0 0 4px', ...CLAMP_1 }}>{categoryLabel}</p>
         <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, ...CLAMP_1 }}>{business.city}</p>
         {supportingText && <p title={supportingText} style={{ fontFamily:PP, fontSize:10, color:C.primary, lineHeight:1.4, margin:'7px 0 0', ...CLAMP_2 }}>{supportingText}</p>}

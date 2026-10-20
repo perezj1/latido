@@ -5,6 +5,11 @@ import { hasAnalyticsConsent } from './cookieConsent'
 const SESSION_KEY = 'latido_analytics_session_id'
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 const DYNAMIC_ROUTES = [
+  [/^\/card\/validacion\/[^/]+\/?$/, '/card/validacion/[id]'],
+  [/^\/card\/negocio\/[^/]+\/?$/, '/card/negocio/[id]'],
+  [/^\/card\/material\/[^/]+\/?$/, '/card/material/[id]'],
+  [/^\/c\/[^/]+\/?$/, '/c/[token]'],
+  [/^\/scanner(?:\/.*)?$/, '/scanner'],
   [/^\/publicar\/punto-hispano\/[^/]+\/?$/, '/publicar/punto-hispano/[token]'],
   [/^\/anuncios\/[^/]+\/?$/, '/anuncios/[adSlug]'],
   [/^\/empleos\/[^/]+\/?$/, '/empleos/[jobSlug]'],
@@ -13,6 +18,7 @@ const DYNAMIC_ROUTES = [
   [/^\/guias\/[^/]+\/?$/, '/guias/[guideSlug]'],
 ]
 const VERCEL_EVENT_PROPERTIES = {
+  card_journey: ['action', 'step', 'mode'],
   search: ['scope', 'cat', 'category', 'active_filter'],
   search_result_open: ['result_type'],
   search_solution_action: ['action', 'result_type'],
@@ -34,6 +40,18 @@ const VERCEL_EVENT_PROPERTIES = {
   saved_search_created: ['entity_kind', 'category', 'has_query', 'has_location'],
   saved_search_push_enabled: ['source'],
   saved_search_result_open: ['source'],
+}
+
+// Card events never include account, business, offer or receipt identifiers.
+// Private validation pages remain excluded, including custom events.
+export function trackCardEvent(action, properties = {}) {
+  if (typeof window === 'undefined' || window.location.pathname.startsWith('/card/validacion/')) return
+  const allowed = ['visit', 'request', 'offer_details', 'use_confirmed', 'business_visit',
+    'form_start', 'form_abandon', 'offer_published', 'qr_print', 'qr_download', 'qr_share', 'first_use']
+  if (!allowed.includes(action)) return
+  return trackAnalyticsEvent('card_journey', { path: window.location.pathname.startsWith('/card') ? getAnalyticsRoute(window.location.pathname) : '/latido', search: '',
+    metadata: { action, ...(Number.isInteger(properties.step) ? { step: properties.step } : {}),
+      ...(['create', 'edit', 'replace'].includes(properties.mode) ? { mode: properties.mode } : {}) } })
 }
 let lastEventKey = ''
 let lastEventAt = 0
@@ -59,6 +77,7 @@ export function sanitizeVercelAnalyticsEvent(event) {
 
   try {
     const url = new URL(event.url, window.location.origin)
+    if (url.pathname.startsWith('/c/') || url.pathname.startsWith('/scanner/') || url.pathname.startsWith('/card/validacion/')) return null
     url.pathname = getAnalyticsRoute(url.pathname)
     url.search = ''
     url.hash = ''
@@ -94,6 +113,7 @@ function shouldSkipDuplicate(eventType, payload) {
     search: payload.search,
     query: payload.metadata?.query,
     scope: payload.metadata?.scope,
+    ...(eventType === 'card_journey' ? { action:payload.metadata?.action, step:payload.metadata?.step, mode:payload.metadata?.mode } : {}),
   })
   const now = Date.now()
   if (key === lastEventKey && now - lastEventAt < 1500) return true

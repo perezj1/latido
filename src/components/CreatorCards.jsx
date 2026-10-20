@@ -21,6 +21,7 @@ import { C, PP } from '../lib/theme'
 import { rememberRecentlyViewed } from '../lib/recentlyViewed'
 import { ChevronLeftIcon } from './UI'
 import ReportButton from './ReportButton'
+import CreatorThumbnail from './CreatorThumbnail'
 
 const PLAYABLE_CONTENT_PLATFORMS = new Set(['youtube', 'tiktok', 'instagram', 'spotify'])
 const VIDEO_CAROUSEL_PLATFORMS = new Set(['youtube', 'tiktok', 'instagram'])
@@ -454,7 +455,6 @@ export function CreatorCard({ creator }) {
 export function CreatorContentCard({ content, creator, onContentOpen, compact = false }) {
   const navigate = useNavigate()
   const topic = getCreatorTopic(content.topic)
-  const thumbnailUrl = getCreatorThumbnailUrl(content)
   const helpful = useCreatorInteraction({ action:'helpful', targetType:'content', targetId:content.id, baseCount:content.helpful_count })
   useEffect(() => {
     trackCreatorImpression(creator.id, 'content', content.id)
@@ -479,7 +479,7 @@ export function CreatorContentCard({ content, creator, onContentOpen, compact = 
         aria-label={`Ver ${content.title}`}
       >
         <span className="creator-content-card__emoji">{topic.emoji}</span>
-        {thumbnailUrl && <img className="creator-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
+        <CreatorThumbnail className="creator-content-card__thumbnail" content={content} />
         <span className="creator-content-card__platform"><CreatorPlatformBadge platformId={content.platform} /></span>
       </button>
 
@@ -504,7 +504,6 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
   const navigate = useNavigate()
   const topic = getCreatorTopic(content.topic)
   const platform = getCreatorPlatform(content.platform)
-  const thumbnailUrl = getCreatorThumbnailUrl(content)
   // Play solo en plataformas de video o audio. Una web o un articulo abren su
   // pagina, y ponerles play prometeria una reproduccion que no ocurre.
   const isPlayable = PLAYABLE_CONTENT_PLATFORMS.has(content.platform)
@@ -527,7 +526,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
         <button type="button" className="creator-home-content-card__main" onClick={handleOpen} aria-label={`Ver ${content.title}`}>
           <span className="creator-home-content-card__media" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
             <span className="creator-home-content-card__emoji">{topic.emoji}</span>
-            {thumbnailUrl && <img className="creator-home-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
+            <CreatorThumbnail className="creator-home-content-card__thumbnail" content={content} />
             {isPlayable && <span className="creator-home-content-card__play" aria-hidden="true">▶</span>}
           </span>
           <span className="creator-home-content-card__copy">
@@ -552,7 +551,7 @@ export function CreatorAppContentCard({ content, creator, onContentOpen, discove
       <CreatorContentMenu content={content} creator={creator} className="creator-content-menu--app" />
       <button type="button" className="creator-app-content-card__media" style={{ '--content-color':topic.color, '--content-bg':topic.bg }} onClick={handleOpen} aria-label={`Ver ${content.title}`}>
           <span className="creator-app-content-card__emoji">{topic.emoji}</span>
-          {thumbnailUrl && <img className="creator-app-content-card__thumbnail" src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={event => event.currentTarget.remove()} />}
+          <CreatorThumbnail className="creator-app-content-card__thumbnail" content={content} />
           <span className="creator-app-content-card__platform"><CreatorPlatformBadge platformId={content.platform} /></span>
       </button>
       <div className="creator-app-content-card__body">
@@ -730,7 +729,7 @@ export function CreatorContentModal({ content, creator, playlist=[], onClose }) 
         ) : (
           <div className="creator-preview-modal__visual creator-video-modal__fallback" style={{ '--content-color':topic.color, '--content-bg':topic.bg }}>
             <span>{topic.emoji}</span>
-            {thumbnailUrl && <img className="creator-preview-modal__thumbnail" src={thumbnailUrl} alt="" onError={event => event.currentTarget.remove()} />}
+            <CreatorThumbnail className="creator-preview-modal__thumbnail" content={activeContent} loading="eager" />
             <span className="creator-preview-modal__play">▶</span>
           </div>
         )}
