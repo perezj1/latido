@@ -1,12 +1,11 @@
 import { useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Eye } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useLatidoCardOffer } from './LatidoCardOfferProvider'
 import { useLatidoBusinessDisplay } from '../hooks/useLatidoBusinessDisplay'
 import LatidoOfferPreview from './LatidoOfferVisual'
 import { CARD_INVITATION_TITLE, CARD_INVITATION_DESCRIPTION } from '../lib/latidoCardInvitation'
 import './LatidoCardBusinessInvitation.css'
-import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 
 export default function LatidoCardBusinessInvitation({
   business,
@@ -44,10 +43,6 @@ export default function LatidoCardBusinessInvitation({
   const content = (
     <section className="lc-business-invitation" aria-labelledby={titleId}>
       <div className="lc-invitation-visual">
-        <span className="lc-invitation-example-label">
-          <Eye size={13} aria-hidden="true" />
-          {CARD_MEMBERS_ENABLED ? 'Así te verán los socios · Ejemplo' : 'Así se verá tu oferta · Ejemplo'}
-        </span>
         <LatidoOfferPreview
           business={displayBusiness}
           example
@@ -61,23 +56,12 @@ export default function LatidoCardBusinessInvitation({
         />
       </div>
       <div className="lc-invitation-content">
-        <ol className="lc-invitation-steps" aria-label="Pasos">
-          <li>
-            <span className="lc-invitation-step-done">
-              <Check size={13} aria-hidden="true" />
-            </span>
-            Publicado
-          </li>
-          <li aria-current="step">
-            <span>2</span>Tu oferta
-          </li>
-        </ol>
         <h2 id={titleId} ref={titleRef} tabIndex={modal ? -1 : undefined}>
           {CARD_INVITATION_TITLE}
         </h2>
         <p>{CARD_INVITATION_DESCRIPTION}</p>
         <p className="lc-invitation-choose" id={`${titleId}-choose`}>
-          Elige una oferta para empezar
+          ¿Qué quieres ofrecer?
         </p>
         <div className="lc-invitation-quick" role="group" aria-labelledby={`${titleId}-choose`}>
           {[

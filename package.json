@@ -15,6 +15,7 @@
     "test:creators": "node scripts/test-creators.mjs",
     "test:images": "node scripts/test-image-loading.mjs",
     "test:auth": "node scripts/test-auth-storage.mjs",
+    "test:business:deletion": "node scripts/test-business-deletion.mjs",
     "test:notifications": "node scripts/test-notifications.mjs",
     "test:search": "node scripts/test-search.mjs",
     "test:guides": "node scripts/test-guides.mjs",
