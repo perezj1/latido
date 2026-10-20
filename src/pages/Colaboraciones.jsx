@@ -1,8 +1,15 @@
+import { Link } from 'react-router-dom'
+import { ArrowRight, Check } from 'lucide-react'
+import { OfferBenefitBadge, OfferBrandStripe } from '../components/LatidoOfferVisual'
+import './Colaboraciones.css'
 import { PanelPartners } from './Landing'
 
 export default function Colaboraciones() {
   return (
-    <div className="latido-page-container" style={{ background:'#fff', paddingTop:28, paddingBottom:72 }}>
+    <div
+      className="latido-page-container"
+      style={{ background: '#fff', paddingTop: 28, paddingBottom: 72 }}
+    >
       <style>{`
         .latido-partner-pricing-scroll {
           overflow: visible;
@@ -67,7 +74,48 @@ export default function Colaboraciones() {
           }
         }
       `}</style>
-      <div style={{ maxWidth:860, margin:'0 auto', width:'100%' }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', width: '100%' }}>
+        <section className="lc-company-promo" aria-labelledby="lc-company-promo-title">
+          <div className="lc-company-promo-visual">
+            <span className="lc-company-promo-free">
+              <span aria-hidden="true">
+                <Check size={11} strokeWidth={3.2} />
+              </span>
+              Gratis
+            </span>
+            <div className="lc-company-promo-types" aria-hidden="true">
+              <OfferBenefitBadge offer={{ benefit_type: 'percent', benefit_value: 10 }} />
+              <OfferBenefitBadge offer={{ benefit_type: 'gift' }} />
+              <OfferBenefitBadge offer={{ benefit_type: 'two_for_one' }} />
+            </div>
+          </div>
+          <div className="lc-company-promo-content">
+            <p className="lc-company-promo-brand">
+              <img src="/favicon.svg" alt="" width="20" height="20" />
+              Tarjeta Latido · Para negocios
+            </p>
+            <h1 id="lc-company-promo-title">Haz que más personas descubran tu negocio</h1>
+            <ul className="lc-company-promo-benefits">
+              {[
+                'Tú pones las condiciones',
+                'Más clientes de la comunidad',
+                'Lo gestionas desde la app'
+              ].map((benefit) => (
+                <li key={benefit}>
+                  <span aria-hidden="true">
+                    <Check size={14} strokeWidth={3} />
+                  </span>
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+            <Link className="lc-company-promo-action" to="/tarjeta-latido#negocios">
+              Más información
+              <ArrowRight size={20} strokeWidth={2.6} aria-hidden="true" />
+            </Link>
+          </div>
+          <OfferBrandStripe />
+        </section>
         <PanelPartners />
       </div>
     </div>

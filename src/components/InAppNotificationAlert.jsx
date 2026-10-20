@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppNotifications } from '../hooks/useAppNotifications'
+import { trackCardEvent } from '../lib/analytics'
 
 const ALERT_DURATION_MS = 5000
 const SWIPE_THRESHOLD_PX = 38
@@ -24,6 +25,7 @@ export default function InAppNotificationAlert() {
       if (!freshIds.length) continue
 
       freshIds.forEach(id => shownIdsRef.current.add(id))
+      if (group.kind === 'card_business' && group.notifications.some((row) => freshIds.includes(row.id) && row.data?.action === 'first_use')) trackCardEvent('first_use')
       setQueue(currentQueue => {
         const existingIndex = currentQueue.findIndex(item => item.kind === group.kind)
         if (existingIndex < 0) return [...currentQueue, group]

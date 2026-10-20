@@ -16,6 +16,12 @@ const notification = (overrides = {}) => ({
   created_at:overrides.created_at || '2026-08-10T10:00:00.000Z',
 })
 
+const cardRequestGroup=groupAppNotifications([notification({kind:APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST,data:{reference:'LCP-000123'}})])[0]
+assert.equal(cardRequestGroup.title,'Nueva solicitud de tarjeta física')
+assert.equal(cardRequestGroup.href,'/card/admin')
+const cardStatusGroup=groupAppNotifications([notification({kind:APP_NOTIFICATION_KINDS.CARD_PHYSICAL_STATUS,data:{reference:'LCP-000123'}})])[0]
+assert.equal(cardStatusGroup.href,'/card')
+
 const followerGroups = groupAppNotifications([
   notification({
     id:'follow-older',

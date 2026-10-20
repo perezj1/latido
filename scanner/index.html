@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Tarjeta Latido</title>
+  </head>
+  <body>
+    <h1>Tarjeta Latido</h1>
+    <p>Ahora el cliente muestra su ventaja al personal. Ya no necesitas Scanner.</p>
+    <a href="/card">Abrir Tarjeta Latido</a>
+    <script type="module">
+      import { retireLegacyCardStorage } from '/src/lib/latidoCardLegacy.js'
+      retireLegacyCardStorage()
+      try {
+        const registrations = (await navigator.serviceWorker?.getRegistrations()) || []
+        await Promise.all(
+          registrations
+            .filter((r) => new URL(r.scope).pathname.startsWith('/scanner/'))
+            .map((r) => r.unregister())
+        )
+        const names = await caches.keys()
+        await Promise.all(
+          names.filter((n) => n.startsWith('lc-scanner-')).map((n) => caches.delete(n))
+        )
+      } catch {}
+      window.location.replace('/card')
+    </script>
+  </body>
+</html>

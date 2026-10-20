@@ -223,4 +223,44 @@ npm run test:search   # Calidad del buscador global
 
 ---
 
+## Tarjeta Latido (piloto)
+
+El estado actual es la **captación de negocios**, con la experiencia de socios
+oculta por defecto. Consultar [la fase de lanzamiento](docs/LATIDO_CARD_BUSINESS_LAUNCH.md)
+y [la revisión previa al merge](docs/LATIDO_CARD_PREMERGE_REVIEW.md) antes de desplegar.
+
+Guía vigente, funcionamiento, migración y pruebas: [docs/LATIDO_CARD_MINIMAL.md](docs/LATIDO_CARD_MINIMAL.md).
+
+Todos los descuentos usan **Activar → Usar ahora** al comprar, con confirmación antes de registrar
+el uso y una validación animada de cinco minutos. **Disponibles** conserva los descuentos gastados
+con su próxima disponibilidad; **Usados** es un historial abierto sin acciones de activación.
+Los socios con membresía inactiva ven su tarjeta real y **Renovar**, sin el anuncio de alta.
+Las ofertas pausadas permiten **Borrar**, conservando su historial.
+Cada negocio tiene un QR público estable para sus pegatinas. El personal aplica
+el descuento en su caja, sin Scanner ni cuenta. Los negocios participan gratis.
+Las membresías del piloto se activan manualmente; el cobro automático sigue pendiente.
+
+SQL manual, en orden: `supabase/latido_card_minimal.sql`,
+`supabase/latido_card_cleanup_legacy.sql`, `supabase/latido_card_verify.sql`.
+Los scripts anteriores están archivados en `supabase/legacy/latido_card/` y no deben reinstalarse.
+Si la versión mínima y la activación directa ya están instaladas, el nuevo directorio solo necesita
+`supabase/latido_card_business_directory.sql`. Para activación y borrado, ejecutar después
+`supabase/latido_card_offer_activation.sql` y finalmente `supabase/latido_card_verify.sql`.
+La vista del socio muestra su tarjeta completa siempre abierta, con los emojis de Latido.
+La cabecera de inicio también ofrece este acceso, con número y vigencia reales de la membresía.
+Un solo buscador encuentra descuentos y negocios, con un único selector de ciudad.
+La ayuda abre un modal desde el título; volver de la validación lleva a `/card`. Cada lista muestra diez
+resultados y permite abrirlos todos. En «Negocios participantes» solo aparecen negocios con descuentos activos y vigentes.
+La validación muestra título y condiciones, usa Wake Lock si está disponible y avisa del último minuto.
+Estos cambios de interfaz no requieren SQL nuevo.
+
+La invitación opcional para que los negocios publiquen su primer descuento incluye modal, acceso directo y campaña de email. Su SQL y activación están en [docs/LATIDO_CARD_BUSINESS_INVITATIONS.md](docs/LATIDO_CARD_BUSINESS_INVITATIONS.md).
+
+«Crear oferta» abre un modal desde cualquier invitación. La landing page se elige dentro de «Potenciar tu negocio». Para corregir el borrado de publicaciones vinculadas a Card, aplicar [supabase/latido_card_business_deletion.sql](supabase/latido_card_business_deletion.sql); conserva el historial y retira la publicación, según [esta guía](docs/LATIDO_CARD_BUSINESS_DELETION.md).
+
+El alta del negocio y su primera oferta se guardan juntas. Para actualizar instalaciones existentes y ocultar del directorio los registros sin descuentos vigentes, aplicar después [supabase/latido_card_business_participation.sql](supabase/latido_card_business_participation.sql).
+
+Verificación: `npm run test:card`, `npm run test:card:browser`,
+`npm run test:card:webkit`, `npm run test:auth` y `npm run build`.
+
 *Hecho con 💙 para la comunidad hispanohablante en Suiza*

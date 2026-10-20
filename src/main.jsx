@@ -9,7 +9,9 @@ import '@fontsource/poppins/latin-800.css'
 import '@fontsource/poppins/latin-900.css'
 import App from './App.jsx'
 import './index.css'
+import { retireLegacyCardStorage } from './lib/latidoCardLegacy'
 
+retireLegacyCardStorage()
 // Prevent browser from restoring scroll position on back/forward navigation
 if ('scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual'

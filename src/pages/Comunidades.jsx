@@ -758,6 +758,7 @@ function BusinessCard({ business, onClick, photosMap, reviewsMap, recommendation
           {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{business.name}</h3>
+        <LatidoCardBusinessBenefit providerId={business.id} />
         <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:6, flexWrap:'wrap', minWidth:0 }}>
           {rating !== null ? (
             <Stars rating={rating} size={13} showNumber count={reviews.length} />
@@ -952,9 +953,10 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
         <div style={{ padding:'18px 20px 14px' }}>
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:14 }}>
             <div style={{ minWidth:0, flex:1 }}>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:10 }}>
                 {category && <Tag bg="#DBEAFE" color={C.primaryDark}>{category.label}</Tag>}
                 {business.verified && <Tag bg="#D1FAE5" color="#065F46">✓ Verificada</Tag>}
+                <LatidoCardBusinessBenefit providerId={business.id} pill />
               </div>
               <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:C.text, lineHeight:1.18, margin:'0 0 8px', ...WRAPPING_TEXT }}>{business.name}</h1>
               <Tag bg={C.bg} color={C.mid}>📍 {business.city}</Tag>
@@ -982,6 +984,7 @@ function BusinessDetail({ business, onClose, servicesMap, photosMap, reviewsMap,
         <div style={{ padding:'18px 20px 28px' }}>
           {tab === 'info' && (
             <>
+              <LatidoCardBusinessBenefit providerId={business.id} block />
               <BusinessDescription business={business} />
               {business.website && (
                 <a
@@ -2707,3 +2710,4 @@ export default function Comunidades() {
     </div>
   )
 }
+import LatidoCardBusinessBenefit from '../components/LatidoCardBusinessBenefit'

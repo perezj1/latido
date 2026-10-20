@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import useCardBusinessAccess from '../hooks/useCardBusinessAccess'
+import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
 import { usePWA } from '../hooks/usePWA'
 import { useFavorites } from '../hooks/useFavorites'
 import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
@@ -739,6 +741,7 @@ function LatidoStarInput({
 
 export default function Perfil() {
   const { isLoggedIn, displayName, userCanton, userInterests, user, signOut, avatarUrl, updateAvatar, isAdmin } = useAuth()
+  const { hasBusiness: hasCardBusiness, participating: cardParticipating } = useCardBusinessAccess()
   const { isPWA, canInstall, promptInstall } = usePWA()
   const navigate = useNavigate()
   const location = useLocation()
@@ -1895,7 +1898,11 @@ export default function Perfil() {
         })
         return
       }
-      toast.error(error?.message || 'No se pudo eliminar la publicación')
+      const cardReferenceBlocked = item.kind === 'business' && error?.code === '23503'
+        && /latido_card/.test(error?.message || '')
+      toast.error(cardReferenceBlocked
+        ? 'No se pudo retirar el negocio de Tarjeta Latido. Falta actualizar el borrado de negocios en Supabase.'
+        : error?.message || 'No se pudo eliminar la publicación')
     } finally {
       setDeletingKey('')
     }
@@ -2211,6 +2218,7 @@ export default function Perfil() {
     {
       title: 'Mi actividad',
       items: [
+        ...(CARD_MEMBERS_ENABLED ? [{ icon:'💳', color:'#EFF6FF', label:'Mi Tarjeta Latido', sub:'Tu tarjeta y descuentos de socio', action:() => navigate('/card') }] : hasCardBusiness ? [{ icon:'🏪', color:'#EFF6FF', label:'Ofertas de mi negocio', sub:'Promociona tu negocio gratis en Latido', action:() => navigate(cardParticipating ? '/card/negocios' : '/tarjeta-latido#negocios') }] : []),
         { icon:'📣', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
         { icon:'📝', color:'#EFF6FF', label:'Mi lista', sub:'Lo que necesitas y lo que ya has conseguido', action:() => setMyListOpen(true) },
         ...(hasEmploymentRequest ? [{
@@ -2629,8 +2637,8 @@ export default function Perfil() {
             {businessPublications.map(item => {
               const hasActivePlan = isBusinessPromotionActive(item.raw)
               return (
+                <div key={item.id}>
                 <PublicationManagementCard
-                  key={item.id}
                   item={item}
                   actionLabel={hasActivePlan ? 'Editar' : 'Destacar'}
                   actionAriaLabel={`${hasActivePlan ? 'Editar' : 'Destacar'} ${item.title || 'negocio'}`}
@@ -2643,6 +2651,8 @@ export default function Perfil() {
                       navigate(`/negocios/${item.id}/destacar`)
                     }}
                 />
+                <button type="button" onClick={() => { setProfessionalOpen(false); navigate(`/card/negocios?negocio=${item.id}`) }} style={{ minHeight:44, color:C.primary, background:'none', border:0, fontFamily:PP, fontWeight:700, cursor:'pointer' }}>Ofertas Tarjeta Latido →</button>
+                </div>
               )
             })}
           </div>
@@ -3002,6 +3012,7 @@ export default function Perfil() {
             const adNeedsReview = isAdDueForReview(item, adReviewConfirmations)
             return (
               <div key={deleteKey} style={{ marginBottom:10 }}>
+                {item.kind === 'business' && <button type="button" onClick={() => { setManageOpen(false); navigate(`/card/negocios?negocio=${item.id}`) }} style={{ minHeight:44, color:C.primary, background:'none', border:0, fontFamily:PP, fontWeight:700, cursor:'pointer' }}>Ofertas Tarjeta Latido →</button>}
                 <PublicationManagementCard
                   item={item}
                   expiredEvent={expiredEvent}
@@ -3043,6 +3054,7 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
             </div>
             <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
+            {actionItem.kind === 'business' && <Btn onClick={() => { setActionItem(null); navigate(`/card/negocios?negocio=${actionItem.id}`) }} variant="secondary" style={{ marginBottom:10 }}>Ofertas Tarjeta Latido</Btn>}
             {['ad', 'job'].includes(actionItem.kind) && actionItem.active && !actionItem.expired && (
               <button
                 onClick={() => handlePublicationLifecycle(actionItem, 'resolve')}

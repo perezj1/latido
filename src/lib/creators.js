@@ -361,8 +361,25 @@ function normalizeCreatorThumbnail(value = '') {
 }
 
 export function getCreatorThumbnailUrl(content = {}) {
-  return normalizeCreatorThumbnail(content.thumbnail_url)
-    || getAutomaticCreatorThumbnail(content.url, content.platform)
+  const thumbnail = normalizeCreatorThumbnail(content.thumbnail_url)
+  if (thumbnail) {
+    const parsed = new URL(thumbnail, 'https://latido.ch')
+    const signedTikTokImage = ['tiktokcdn.com', 'tiktokcdn-eu.com', 'tiktokcdn-us.com', 'muscdn.com']
+      .some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`))
+    const legacyProxy = thumbnail.startsWith('/api/tiktok-metadata?')
+      && parsed.searchParams.has('thumbnail_url')
+    if (signedTikTokImage || legacyProxy) {
+      // CDN signatures expire. Ask the existing proxy for a fresh image using
+      // the saved post URL instead of loading the expired image in the browser.
+      const post = [content.resolved_url, content.url].map(value => normalizeCreatorUrl(value))
+        .find(value => value && detectCreatorPlatform(value) === 'tiktok')
+      const id = normalizeTikTokVideoId(content.video_id)
+      const url = post || (id ? `https://www.tiktok.com/@/video/${id}` : '')
+      return url ? `/api/tiktok-metadata?thumbnail=1&url=${encodeURIComponent(url)}` : ''
+    }
+    return thumbnail
+  }
+  return getAutomaticCreatorThumbnail(content.url, content.platform)
 }
 
 export function getCreatorTopic(topicId) {

@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "lint": "eslint src --ext js,jsx",
     "test:creators": "node scripts/test-creators.mjs",
+    "test:images": "node scripts/test-image-loading.mjs",
     "test:auth": "node scripts/test-auth-storage.mjs",
     "test:notifications": "node scripts/test-notifications.mjs",
     "test:search": "node scripts/test-search.mjs",
@@ -20,6 +21,15 @@
     "test:resources": "node scripts/test-related-resources.mjs",
     "test:guides:browser": "node scripts/test-guides-browser.mjs",
     "test:punto-hispano": "node scripts/test-punto-hispano.mjs",
+    "test:card": "node scripts/test-latido-card.mjs",
+    "test:card:location": "node scripts/test-latido-card-location.mjs",
+    "test:card:featured": "node scripts/test-latido-card-featured.mjs",
+    "test:card:preview": "node scripts/test-latido-card-browser.mjs --business-preview",
+    "test:card:share": "node scripts/test-latido-card-share.mjs",
+    "test:card:invitations": "node scripts/test-latido-card-invitations.mjs",
+    "card:invitations": "node scripts/send-latido-card-invitations.mjs",
+    "test:card:browser": "node scripts/test-latido-card-browser.mjs",
+    "test:card:webkit": "node scripts/test-latido-card-browser.mjs --webkit",
     "vapid:keys": "node scripts/generate-vapid-keys.mjs"
   },
   "dependencies": {
@@ -29,6 +39,7 @@
     "@vercel/speed-insights": "^2.0.0",
     "html-to-image": "^1.11.13",
     "lucide-react": "^1.28.0",
+    "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
@@ -36,8 +47,12 @@
     "run": "^1.5.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "@playwright/test": "^1.64.1",
     "@vitejs/plugin-react": "^5.2.0",
     "autoprefixer": "^10.4.16",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
     "vite": "^7.3.6"

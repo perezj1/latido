@@ -1,5 +1,38 @@
 {
+  "functions": { "api/card-share.js": { "includeFiles": "dist/index.html" } },
   "headers": [
+    {
+      "source": "/card/validacion/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+      ]
+    },
+    {
+      "source": "/card/scanner/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+      ]
+    },
+    {
+      "source": "/scanner/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+      ]
+    },
+    {
+      "source": "/c/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+      ]
+    },
     {
       "source": "/sw.js",
       "headers": [
@@ -15,5 +48,12 @@
       ]
     }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/card/negocio/:provider", "destination": "/api/card-share?provider=:provider" },
+    { "source": "/card", "destination": "/api/card-share" },
+    { "source": "/scanner", "destination": "/scanner/index.html" },
+    { "source": "/scanner/", "destination": "/scanner/index.html" },
+    { "source": "/scanner/link/:token", "destination": "/scanner/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

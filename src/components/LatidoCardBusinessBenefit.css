@@ -1,0 +1,87 @@
+.lc-business-card-pill,
+.lc-business-benefit-badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  background: #ffedf1;
+  color: #d12c53;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.lc-business-card-pill {
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f4f6fa;
+  color: #334155;
+}
+.lc-business-card-pill img {
+  flex-shrink: 0;
+  border-radius: 5px;
+  background: #fff;
+}
+.lc-business-benefit-badge {
+  padding: 4px 7px;
+  margin: 4px 0;
+  border-radius: 8px;
+}
+.lc-business-benefit-block {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 74px;
+  margin: 0 0 18px;
+  padding: 14px 14px 18px;
+  border: 1px solid #e3e7ef;
+  border-radius: 18px;
+  background: #f4f6fa;
+  color: #0f172a;
+  font-family: 'Poppins', sans-serif;
+  text-decoration: none;
+  box-shadow:
+    0 1px 2px #0f172a0a,
+    0 8px 20px #0f236e0d;
+}
+.lc-business-benefit-block:hover {
+  background: #eef1f7;
+  text-decoration: none;
+}
+.lc-business-benefit-block:focus-visible {
+  outline: 3px solid #2851ed;
+  outline-offset: 3px;
+}
+.lc-business-benefit-logo {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  height: 40px;
+  border: 1px solid #e3e7ef;
+  border-radius: 12px;
+  background: #fff;
+}
+.lc-business-benefit-copy {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lc-business-benefit-copy strong {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.lc-business-benefit-copy > span {
+  color: #556070;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.lc-business-benefit-block > svg {
+  flex-shrink: 0;
+  color: #2851ed;
+}

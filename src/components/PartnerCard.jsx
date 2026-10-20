@@ -6,6 +6,7 @@ export default function PartnerCard({
   brand,
   title,
   description,
+  benefit,
   services = [],
   cta,
   accent = ['#2563EB', '#C8102E'],
@@ -37,6 +38,7 @@ export default function PartnerCard({
       <div className="partner-card-copy">
         <h3 id={`partner-card-${id}`}>{title}</h3>
         <p>{description}</p>
+        {benefit}
       </div>
 
       <div className="partner-card-services" aria-label={`Servicios de ${brand.partnerName}`}>

@@ -12,6 +12,7 @@ import { useFavorites } from '../hooks/useFavorites'
 import { useAppNotifications } from '../hooks/useAppNotifications'
 import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } from '../lib/pushNotifications'
 import GlobalSearch from '../components/GlobalSearch'
+import HomeLatidoCard from '../components/HomeLatidoCard'
 import ResourcePackagesStrip from '../components/ResourcePackagesStrip'
 import HorizontalDragScroller from '../components/HorizontalDragScroller'
 import PartnersSection from '../components/PartnersSection'
@@ -22,7 +23,6 @@ import EventfrogCalendar from '../components/EventfrogCalendar'
 import HomePersonalizationHeader from '../components/HomePersonalizationHeader'
 import MyListPanel from '../components/MyListPanel'
 import CreatorHomeSection from '../components/CreatorHomeSection'
-import GiveawayHomeBanner from '../components/GiveawayHomeBanner'
 import { CANTONS, MOCK_DOCS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getJobCategoryEmoji, getJobIntentId, getJobIntentMeta, getNegocioTypeMeta } from '../lib/constants'
 import { getBusinessVerificationStatus } from '../lib/businessVerification'
 import { getGuidePath } from '../lib/seo'
@@ -1679,6 +1679,7 @@ export default function Home() {
           </div>
 
           <div className="hero-search-wrap">
+            <HomeLatidoCard businesses={businessHighlights} />
             <GlobalSearch
               key={reopenSavedGlobalSearch ? `saved-search-${routerLocation.key}` : 'home-search'}
               size="lg"
@@ -1871,8 +1872,6 @@ export default function Home() {
           ))}
         </div>
       </Modal>
-
-      <GiveawayHomeBanner />
 
       <section style={{ padding:'24px 0 0' }}>
         <HomePersonalizationHeader
@@ -2093,6 +2092,7 @@ export default function Home() {
                       <p style={{ fontFamily:PP, fontSize:10, color:C.light, margin:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         📍 {business.city}
                       </p>
+                      <LatidoCardBusinessBenefit providerId={business.id} />
                     </div>
                   </div>
                   </Link>
@@ -2320,3 +2320,4 @@ export default function Home() {
     </div>
   )
 }
+import LatidoCardBusinessBenefit from '../components/LatidoCardBusinessBenefit'

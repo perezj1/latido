@@ -205,7 +205,7 @@ async function imageCacheFirst(request) {
 function handleNavigation(event) {
   const url = new URL(event.request.url)
   const cacheKey = new Request(`${url.origin}${url.pathname}`)
-  const isCapabilityUrl = url.pathname.startsWith('/publicar/punto-hispano/')
+  const isCapabilityUrl = url.pathname.startsWith('/publicar/punto-hispano/') || url.pathname.startsWith('/scanner/') || url.pathname.startsWith('/c/') || url.pathname.startsWith('/card/validacion/')
   const network = (async () => {
     // Navigation preload keeps startup fast. The explicit no-store fallback
     // prevents stale HTML when preload is unavailable (notably on older iOS).
