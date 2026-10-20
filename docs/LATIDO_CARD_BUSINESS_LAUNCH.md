@@ -6,7 +6,9 @@ experiencia cuando vale exactamente `true`. No hay un umbral automático de nego
 
 En esta fase:
 
-- Inicio muestra la invitación a promocionar el negocio solo a propietarios.
+- Inicio muestra la invitación solo a propietarios de un negocio publicado
+  (`providers.user_id` coincide con la cuenta, `active=true` y sin `deleted_at`).
+  Poder gestionar negocios ajenos como administrador no activa esta invitación.
 - `/tarjeta-latido` presenta únicamente la información para negocios y abre el
   modal existente para crear ofertas del negocio seleccionado.
 - `/card` y `/card/negocio/:providerId` son catálogos de consulta para propietarios.

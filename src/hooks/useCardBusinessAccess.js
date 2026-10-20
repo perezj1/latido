@@ -25,6 +25,8 @@ export function refreshCardBusinessAccess(id) {
         .then((data) => {
           const value = {
             businesses: data.businesses || [],
+            ownedPublishedBusinesses: (data.businesses || []).filter((business) =>
+              business.owner_id === id && business.published === true),
             hasBusiness: Boolean(data.businesses?.length),
             participating: data.businesses?.some((b) => b.participating) || false
           }
