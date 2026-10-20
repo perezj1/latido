@@ -1685,7 +1685,7 @@ try {
   const invitation = page.locator('.lc-business-invitation-dialog')
   await invitation.waitFor()
   await page.waitForLoadState('networkidle')
-  await invitation.getByRole('heading', { name: 'Dales un motivo para visitarte' }).waitFor()
+  await invitation.getByRole('heading', { name: 'Haz crecer tu negocio Gratis', exact: true }).waitFor()
   for (const label of ['10 %', '2x1', 'Regalo', 'Otro'])
     assert.equal(await invitation.getByRole('button', { name: label, exact: true }).count(), 1)
   await invitation.locator('.lc-offer-preview').getByText('Zürich', { exact: true }).waitFor()
@@ -1764,12 +1764,23 @@ try {
   await page
     .getByRole('button', { name: 'Continuar solo con el perfil gratuito', exact: true })
     .click()
+  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }))
+  assert.ok(await page.evaluate(() => window.scrollY > 0), 'Publish from the bottom of the registration form')
   await page.getByRole('button', { name: '🏪 Registrar negocio', exact: true }).click()
   await page
     .getByRole('dialog', { name: 'No te pierdas nada', exact: true })
     .getByRole('button', { name: 'Ahora no', exact: true })
     .click()
   await page.getByRole('heading', { name: '¡Negocio publicado!', exact: true }).waitFor()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+  const nextOffer = page.locator('.lc-business-invitation')
+  await nextOffer.getByRole('heading', { name: 'Haz crecer tu negocio Gratis', exact: true }).waitFor()
+  await nextOffer.getByText('Los negocios con ofertas ganan visibilidad en Latido y tienen más posibilidades de ser elegidos.', { exact: true }).waitFor()
+  await nextOffer.getByText('¿Qué quieres ofrecer?', { exact: true }).waitFor()
+  assert.equal(await nextOffer.locator('.lc-invitation-example-label').count(), 0)
+  assert.equal(await nextOffer.locator('.lc-invitation-steps').count(), 0)
+  await nextOffer.locator('.lc-offer-preview').getByText('1 vez al mes', { exact: true }).waitFor()
+  await nextOffer.locator('.lc-offer-preview').getByText('Usar ahora', { exact: true }).waitFor()
   assert.equal(await page.getByText('Profesional desbloqueado', { exact: true }).count(), 0)
   await page.screenshot({
     path: path.join(output, 'registration-next-offer-mobile.png'),

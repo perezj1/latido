@@ -1,5 +1,7 @@
 -- Prevent deleting a business while its Stripe subscription is still active.
 -- Safe to run after business_promotion_payments.sql.
+-- Also protects standalone lead-alert subscriptions when that module is installed.
+BEGIN;
 
 CREATE OR REPLACE FUNCTION public.get_business_deletion_status(
   p_provider_id UUID
@@ -11,6 +13,7 @@ SET search_path = public
 AS $$
 DECLARE
   blocking_subscription public.business_promotion_subscriptions%ROWTYPE;
+  alert_subscription JSONB;
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'AUTH_REQUIRED';
@@ -35,10 +38,25 @@ BEGIN
   ORDER BY subscriptions.created_at DESC
   LIMIT 1;
 
+  IF blocking_subscription.id IS NULL
+    AND to_regclass('public.business_lead_alert_subscriptions') IS NOT NULL THEN
+    SELECT jsonb_build_object(
+      'status', subscriptions.status,
+      'currentPeriodEnd', subscriptions.current_period_end,
+      'cancelAtPeriodEnd', subscriptions.cancel_at_period_end
+    ) INTO alert_subscription
+    FROM public.business_lead_alert_subscriptions AS subscriptions
+    WHERE subscriptions.provider_id = p_provider_id
+      AND subscriptions.status IN ('active', 'past_due', 'processing')
+      AND subscriptions.stripe_subscription_id IS NOT NULL
+      AND subscriptions.cancel_at_period_end IS NOT TRUE
+    ORDER BY subscriptions.created_at DESC LIMIT 1;
+  END IF;
+
   RETURN jsonb_build_object(
-    'blocked', blocking_subscription.id IS NOT NULL,
+    'blocked', blocking_subscription.id IS NOT NULL OR alert_subscription IS NOT NULL,
     'subscription', CASE
-      WHEN blocking_subscription.id IS NULL THEN NULL
+      WHEN blocking_subscription.id IS NULL THEN alert_subscription
       ELSE jsonb_build_object(
         'status', blocking_subscription.status,
         'currentPeriodEnd', blocking_subscription.current_period_end,
@@ -71,6 +89,18 @@ BEGIN
     RAISE EXCEPTION 'ACTIVE_BUSINESS_SUBSCRIPTION';
   END IF;
 
+  IF to_regclass('public.business_lead_alert_subscriptions') IS NOT NULL THEN
+    IF EXISTS (
+      SELECT 1 FROM public.business_lead_alert_subscriptions AS subscriptions
+      WHERE subscriptions.provider_id = OLD.id
+        AND subscriptions.status IN ('active', 'past_due', 'processing')
+        AND subscriptions.stripe_subscription_id IS NOT NULL
+        AND subscriptions.cancel_at_period_end IS NOT TRUE
+    ) THEN
+      RAISE EXCEPTION 'ACTIVE_BUSINESS_SUBSCRIPTION';
+    END IF;
+  END IF;
+
   RETURN OLD;
 END;
 $$;
@@ -83,3 +113,4 @@ FOR EACH ROW
 EXECUTE FUNCTION public.prevent_provider_delete_with_active_subscription();
 
 NOTIFY pgrst, 'reload schema';
+COMMIT;

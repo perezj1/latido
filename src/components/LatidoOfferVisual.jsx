@@ -63,11 +63,11 @@ export function OfferBrandStripe() {
   )
 }
 
-export function OfferUsageChip({ offer }) {
+export function OfferUsageChip({ offer, label }) {
   return (
-    <span className="lc-offer-usage-chip" aria-label={offerUsageLabel(offer)}>
+    <span className="lc-offer-usage-chip" aria-label={label || offerUsageLabel(offer)}>
       <Repeat2 size={13} aria-hidden="true" />
-      {offerUsageLabel(offer, { compact: true })}
+      {label || offerUsageLabel(offer, { compact: true })}
     </span>
   )
 }
@@ -76,6 +76,7 @@ export default function LatidoOfferPreview({ offer, business, example = false })
   return (
     <div
       className="lc-offer-preview lc-coupon"
+      data-example={example || undefined}
       aria-label={
         example ? 'Ejemplo de descuento, todavía sin publicar' : 'Vista previa del descuento'
       }
@@ -85,20 +86,18 @@ export default function LatidoOfferPreview({ offer, business, example = false })
         <div className="lc-offer-preview-info">
           <strong>{offer.title || offerBenefitLabel(offer)}</strong>
           <p>
-            <b>{business?.name || 'Tu negocio'}</b>
-            {business?.city && (
-              <>
-                {' '}
-                · <span>{business.city}</span>
-              </>
-            )}
+            {example && <span className="lc-offer-preview-business-icon" aria-hidden="true"><Store size={12} /></span>}
+            <span>
+              <b>{business?.name || (example ? 'Negocio' : 'Tu negocio')}</b>
+              {(business?.city || example) && <> · <span>{business?.city || 'Ciudad'}</span></>}
+            </span>
           </p>
         </div>
       </div>
       <div className="lc-offer-preview-footer lc-coupon-footer">
-        <OfferUsageChip offer={offer} />
+        <OfferUsageChip offer={offer} label={example && offer.usage_period === 'month' && offer.usage_limit === 1 ? '1 vez al mes' : undefined} />
         <span className="lc-offer-preview-action" aria-hidden="true">
-          {CARD_MEMBERS_ENABLED ? 'Activar' : 'Tu oferta'}
+          {example ? 'Usar ahora' : CARD_MEMBERS_ENABLED ? 'Activar' : 'Tu oferta'}
         </span>
       </div>
       <OfferBrandStripe />
