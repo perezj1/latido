@@ -28,6 +28,11 @@ const CART_STORAGE_KEY = 'latido-club-cart-v1'
 // Vaciar este conjunto para volver a mostrar las carcasas; conservamos el catálogo.
 const HIDDEN_CATEGORIES = new Set(['carcasas'])
 const isVisibleProduct = product => !HIDDEN_CATEGORIES.has(product.category)
+// Filtro de presentación reversible: el catálogo y sus variantes se conservan.
+const GARMENT_CATEGORIES = new Set(['camisetas', 'sudaderas'])
+const VISIBLE_GARMENT_COLORS = new Set(['blanco', 'negro', 'white', 'black'])
+const isVisibleColor = (product, color) => !GARMENT_CATEGORIES.has(product.category)
+  || VISIBLE_GARMENT_COLORS.has(String(color || '').trim().toLowerCase())
 
 const COLOR_SWATCHES = {
   blanco: '#ffffff',
@@ -77,7 +82,7 @@ const normalizeKey = value => String(value || '')
   .replace(/[^a-z0-9]+/g, '-')
   .replace(/^-|-$/g, '')
 
-function productColors(product) {
+function allProductColors(product) {
   const colorGroup = product.optionGroups?.find(group => group.name.toLowerCase().includes('color'))
   if (colorGroup?.values?.length) return colorGroup.values
 
@@ -91,6 +96,10 @@ function productColors(product) {
   if (/\bblanca\b/.test(description)) return ['Blanco']
   if (product.category === 'bolsas' || /\bnatural\b/.test(description)) return ['Natural']
   return ['Único']
+}
+
+function productColors(product) {
+  return allProductColors(product).filter(color => isVisibleColor(product, color))
 }
 
 function productDesign(product) {
@@ -383,11 +392,16 @@ function productVariants(product) {
     selections: variant.selections && Object.keys(variant.selections).length
       ? variant.selections
       : { [product.optionLabel || 'Opción']: variant.label },
-  }))
+  })).filter(variant => Object.entries(variant.selections).every(([name, value]) => (
+    !isColorGroup(name) || isVisibleColor(product, value)
+  )))
 }
 
 function imagesForSelection(product, selections) {
-  const all = product.images?.length ? product.images : [{ url: product.image, label: 'Vista del producto' }]
+  const all = (product.images?.length ? product.images : [{ url: product.image, label: 'Vista del producto' }])
+    .filter(image => Object.entries(image.selections || {}).every(([name, value]) => (
+      !isColorGroup(name) || isVisibleColor(product, value)
+    )))
   const matching = all.filter(image => (
     !image.selections
     || Object.entries(image.selections).every(([name, value]) => selections[name] === value)
@@ -746,10 +760,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
             <h3>{productTitle(product)}</h3>
             <div className="club-config__price">
               <strong>{isAddon ? '+' : ''}{money(product.price)}</strong>
-              {Number(product.compareAtPrice) > Number(product.price) && (
-                <del>{money(product.compareAtPrice)}</del>
-              )}
-              <span>{isAddon ? 'Precio de promoción · Complemento para tu camiseta o sudadera' : 'Precio de promoción · IVA y envío a Suiza incluidos'}</span>
+              <span>{isAddon ? 'Oferta de promoción · Complemento para tu camiseta o sudadera' : 'Oferta de promoción · IVA y envío a Suiza incluidos'}</span>
             </div>
             {isAddon && (
               <p className="club-config__addon-note">
@@ -912,7 +923,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
             )}
             <div className="club-config__benefits" aria-label="Ventajas del producto">
               <span><Truck size={15} /><b>Envío incluido</b></span>
-              <span><Clock size={15} /><b>Entrega en 10-15 días</b></span>
+              <span><Clock size={15} /><b>Entrega aprox. 20 días, según el proveedor</b></span>
               <span><ShieldCheck size={15} /><b>Pago seguro con Stripe</b></span>
             </div>
             {catalogStatus === 'loading' && (
@@ -1084,7 +1095,7 @@ function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onB
             </div>
             <div className="club-drawer__summary">
               <div><span>Total</span><strong>{money(subtotal)}</strong></div>
-              <p>IVA y envío a Suiza incluidos · Entrega estimada en 10-15 días.</p>
+              <p>IVA y envío a Suiza incluidos · Entrega aprox. 20 días, según el proveedor.</p>
               {hasOrphanAddon && <p className="club-cart-error">Añade una camiseta o sudadera para poder comprar los complementos.</p>}
               <button type="button" onClick={onCheckout} disabled={hasOrphanAddon}>
                 Continuar con el pedido <ChevronRight size={18} />
@@ -1178,10 +1189,10 @@ function CheckoutModal({ open, cart, onClose }) {
               </li>
               <li>
                 <b>3</b>
-                <span><strong>Lo fabricamos y te lo enviamos</strong>Con el pago confirmado empezamos la producción. Recibirás tu pedido en un plazo estimado de 10 a 15 días.</span>
+                <span><strong>Lo fabricamos y te lo enviamos</strong>Con el pago confirmado empezamos la producción. Recibirás tu pedido en aproximadamente 20 días, dependiendo del proveedor.</span>
               </li>
             </ol>
-            <p className="club-checkout-payment__trust"><ShieldCheck size={16} /> Pago cifrado con Stripe · Envío incluido · Entrega en 10-15 días</p>
+            <p className="club-checkout-payment__trust"><ShieldCheck size={16} /> Pago cifrado con Stripe · Envío incluido · Entrega aprox. 20 días, según el proveedor</p>
           </div>
 
           <aside className="club-order-summary">
@@ -1193,7 +1204,7 @@ function CheckoutModal({ open, cart, onClose }) {
               </div>
             ))}
             <div className="club-order-total"><span>Productos</span><strong>{money(subtotal)}</strong></div>
-            <div className="club-order-line club-order-line--shipping"><span>Envío a Suiza<small>Entrega estimada en 10-15 días</small></span><strong>Incluido</strong></div>
+            <div className="club-order-line club-order-line--shipping"><span>Envío a Suiza<small>Entrega aprox. 20 días, según el proveedor</small></span><strong>Incluido</strong></div>
             <div className="club-grand-total"><span>Total</span><strong>{money(total)}</strong></div>
             {savings > 0 && <p className="club-order-savings">Ahorras {money(savings)} con el precio de lanzamiento.</p>}
 
@@ -1214,7 +1225,9 @@ function CheckoutModal({ open, cart, onClose }) {
 export default function Club() {
   const [cart, setCart] = useState(readCart)
   const [products, setProducts] = useState(FALLBACK_PRODUCTS)
-  const visibleProducts = useMemo(() => products.filter(isVisibleProduct), [products])
+  const visibleProducts = useMemo(() => products.filter(product => (
+    isVisibleProduct(product) && productColors(product).length > 0
+  )), [products])
   const [catalogStatus, setCatalogStatus] = useState('loading')
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
@@ -1355,7 +1368,7 @@ export default function Club() {
               <span>
                 <strong>{paymentReturn.status === 'success' ? 'Estamos confirmando tu pago' : 'Pago cancelado'}</strong>
                 {paymentReturn.status === 'success'
-                  ? `Recibirás la confirmación por email${paymentReturn.reference ? ` del pedido ${paymentReturn.reference}` : ''}. Tu pedido llegará en un plazo estimado de 10 a 15 días.`
+                  ? `Recibirás la confirmación por email${paymentReturn.reference ? ` del pedido ${paymentReturn.reference}` : ''}. Tu pedido llegará en aproximadamente 20 días, dependiendo del proveedor.`
                   : 'No se ha realizado ningún cargo. Tu selección sigue en la bolsa.'}
               </span>
               <button type="button" onClick={() => setPaymentReturn(null)} aria-label="Cerrar aviso"><X size={17} /></button>
@@ -1454,7 +1467,7 @@ export default function Club() {
             <p>Cada pieza se produce solo cuando la pides: menos excedentes y una red de producción que busca fabricar cerca del destino.</p>
             <div className="club-story__points">
               <div><Leaf size={20} /><span><strong>Sin stock innecesario</strong>Producimos una a una.</span></div>
-              <div><Truck size={20} /><span><strong>Producción cercana</strong>Fabricamos lo más cerca posible de ti.</span></div>
+              <div><Truck size={20} /><span><strong>Envío incluido en el precio</strong>Sin gastos de envío adicionales a Suiza.</span></div>
               <div><Heart size={20} /><span><strong>Hecho para conectar</strong>Diseños que hablan de nosotros.</span></div>
             </div>
           </div>
@@ -1468,16 +1481,15 @@ export default function Club() {
           <div className="club-process__steps">
             <div><b>1</b><h3>Eliges</h3><p>Producto, diseño, color, talla o modelo.</p></div>
             <div><b>2</b><h3>Producimos</h3><p>Fabricamos tu pieza bajo demanda.</p></div>
-            <div><b>3</b><h3>Recibes</h3><p>Tu pedido llega en un plazo estimado de 10 a 15 días.</p></div>
+            <div><b>3</b><h3>Recibes</h3><p>Tu pedido llega en aproximadamente 20 días, dependiendo del proveedor.</p></div>
           </div>
         </section>
 
         <section className="club-faq">
           <div><span>Antes de pedir</span><h2>Preguntas frecuentes</h2></div>
           <div className="club-faq__list">
-            <details><summary>¿Cuánto tarda el envío?<Plus size={18} /></summary><p>El plazo de entrega estimado es de 10 a 15 días desde la confirmación del pago, incluyendo la fabricación bajo demanda y el envío a Suiza. Los envíos no incluyen número de seguimiento: si pasados 15 días no has recibido tu pedido, responde al email de confirmación y lo revisamos.</p></details>
+            <details><summary>¿Cuánto tarda el envío?<Plus size={18} /></summary><p>El plazo de entrega estimado es de aproximadamente 20 días desde la confirmación del pago, dependiendo del proveedor e incluyendo la fabricación bajo demanda y el envío a Suiza. Los envíos no incluyen número de seguimiento: si se supera ese plazo y no has recibido tu pedido, responde al email de confirmación y lo revisamos.</p></details>
             <details><summary>¿Dónde introduzco mi dirección?<Plus size={18} /></summary><p>Después de revisar la bolsa pasarás al pago seguro de Stripe. Allí indicarás tu email, teléfono y dirección de entrega una sola vez.</p></details>
-            <details><summary>¿Dónde se fabrica?<Plus size={18} /></summary><p>Nuestro proveedor asigna cada pedido al centro de producción más cercano al destino, siempre que el producto y el color estén disponibles.</p></details>
             <details><summary>¿Puedo comprar una bolsa por separado?<Plus size={18} /></summary><p>Sí. Puedes comprar una bolsa por separado o combinarla con otros productos de la colección. No necesitas añadir una camiseta o sudadera.</p></details>
             <details><summary>¿Puedo cambiar la talla?<Plus size={18} /></summary><p>Las prendas se producen bajo demanda, por eso conviene revisar bien la talla antes de pagar. Si recibes una pieza con un defecto de producción, escríbenos para revisarlo.</p></details>
           </div>
