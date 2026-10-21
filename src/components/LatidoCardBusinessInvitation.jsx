@@ -1,18 +1,20 @@
 import { useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Gift } from 'lucide-react'
+import { Check, Eye, Gift, Sparkles } from 'lucide-react'
 import { useLatidoCardOffer } from './LatidoCardOfferProvider'
 import { useLatidoBusinessDisplay } from '../hooks/useLatidoBusinessDisplay'
 import LatidoOfferPreview from './LatidoOfferVisual'
-import { CARD_INVITATION_TITLE, CARD_INVITATION_DESCRIPTION } from '../lib/latidoCardInvitation'
+import { CARD_INVITATION_DESCRIPTION } from '../lib/latidoCardInvitation'
 import './LatidoCardBusinessInvitation.css'
 
 export default function LatidoCardBusinessInvitation({
   business,
   onCreate,
   onDismiss,
-  modal = false
+  modal = false,
+  headingLevel = 2
 }) {
+  const Heading = `h${headingLevel}`
   const titleId = useId()
   const dialogRef = useRef(null)
   const titleRef = useRef(null)
@@ -34,7 +36,7 @@ export default function LatidoCardBusinessInvitation({
     }
   }, [modal])
   if (!modal && publishedProvider === business.id)
-    return <p role="status">✅ Tu oferta ya está publicada en Tarjeta Latido.</p>
+    return <p role="status">✅ Tu oferta ya está publicada en Latido Club.</p>
   const create = (selection) => {
     if (onCreate) onCreate(displayBusiness, selection)
     else openOffer(displayBusiness, selection)
@@ -44,9 +46,22 @@ export default function LatidoCardBusinessInvitation({
     <div className="lc-business-invitation-wrap">
     <section className="lc-business-invitation" aria-labelledby={titleId}>
       <div className="lc-invitation-visual">
-        <h2 className="lc-invitation-title" id={titleId} ref={titleRef} tabIndex={modal ? -1 : undefined}>
-          {CARD_INVITATION_TITLE}
-        </h2>
+        {business.published !== false && (
+          <p className="lc-invitation-status">
+            <span className="lc-invitation-status-icon" aria-hidden="true">
+              <Check size={11} strokeWidth={3.2} />
+            </span>
+            Tu negocio ya está publicado
+          </p>
+        )}
+        <Heading className="lc-invitation-title" id={titleId} ref={titleRef} tabIndex={modal ? -1 : undefined}>
+          Atrae más clientes
+        </Heading>
+        <p className="lc-invitation-description">{CARD_INVITATION_DESCRIPTION}</p>
+        <p className="lc-invitation-preview-label">
+          <Eye size={14} aria-hidden="true" />
+          Así te verán los socios
+        </p>
         <LatidoOfferPreview
           business={displayBusiness}
           example
@@ -60,19 +75,29 @@ export default function LatidoCardBusinessInvitation({
         />
       </div>
       <div className="lc-invitation-content">
-        <h3>Atrae más clientes a tu negocio</h3>
-        <p>{CARD_INVITATION_DESCRIPTION}</p>
         <p className="lc-invitation-choose" id={`${titleId}-choose`}>
           ¿Qué quieres ofrecer?
         </p>
         <div className="lc-invitation-quick" role="group" aria-labelledby={`${titleId}-choose`}>
           {[
-            ['%', 'Descuento %', 'Ej.: 10 % menos', 'blue', { type: 'percent', value: '10' }],
+            ['%', 'Descuento', 'Ej.: 10 % menos', 'blue', { type: 'percent', value: '10' }],
             ['CHF', 'Cantidad fija', 'Ej.: 5 CHF menos', 'amber', { type: 'fixed', value: '5' }],
             ['2x1', '2x1 o similar', 'Ej.: 2x1, 3x2', 'pink', { type: 'combo' }],
-            [<Gift size={20} />, 'Regalo', 'Ej.: un café gratis', 'green', { type: 'gift' }]
+            [<Gift size={17} />, 'Regalo', 'Ej.: café gratis', 'green', { type: 'gift' }],
+            [
+              <Sparkles size={17} />,
+              'Otro beneficio',
+              'Ej.: primera consulta gratis, primer mes 50 % de descuento',
+              'purple',
+              { type: 'other' }
+            ]
           ].map(([icon, label, description, tone, selection]) => (
-            <button key={label} type="button" onClick={() => create(selection)}>
+            <button
+              key={label}
+              type="button"
+              className={selection.type === 'other' ? 'lc-invitation-option--wide' : undefined}
+              onClick={() => create(selection)}
+            >
               <span className={`lc-invitation-option-icon lc-invitation-option-icon--${tone}`} aria-hidden="true">{icon}</span>
               <span className="lc-invitation-option-copy">
                 <strong>{label}</strong>
@@ -86,11 +111,11 @@ export default function LatidoCardBusinessInvitation({
         </button>
         <p className="lc-invitation-reassurance">
           <span>
-            <Check size={15} aria-hidden="true" />
+            <Check size={15} strokeWidth={2.6} aria-hidden="true" />
             Gratis
           </span>
           <span>
-            <Check size={15} aria-hidden="true" />
+            <Check size={15} strokeWidth={2.6} aria-hidden="true" />
             Tú pones las condiciones
           </span>
         </p>

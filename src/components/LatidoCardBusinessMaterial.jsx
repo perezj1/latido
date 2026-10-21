@@ -8,7 +8,7 @@ import LatidoCardQr from './LatidoCardQr'
 export function LatidoCardBusinessSticker({ business, stickerRef, onLoad }) {
   return (
     <div className="lc-business-sticker" ref={stickerRef} onLoadCapture={onLoad}>
-      <strong>TARJETA LATIDO</strong>
+      <strong>LATIDO CLUB</strong>
       <h3>{business.name}</h3>
       <LatidoCardQr value={businessCardUrl(business.id)} label={`QR público de ${business.name}`} />
       <strong className="lc-business-sticker-caption">Escanea para obtener descuentos</strong>
@@ -19,7 +19,7 @@ export function LatidoCardBusinessSticker({ business, stickerRef, onLoad }) {
 export function LatidoCardStaffGuide() {
   return (
     <article className="lc-staff-guide">
-      <h1>Cómo aplicar un descuento Tarjeta Latido</h1>
+      <h1>Cómo aplicar un descuento de Latido Club</h1>
       <ol>
         <li>El cliente te enseña la pantalla del descuento en su móvil.</li>
         <li>
@@ -47,7 +47,7 @@ export default function LatidoCardBusinessMaterial({ business }) {
     if (!node?.clientWidth || !image) return Promise.reject(new Error('QR pendiente'))
     preparedImage.current = (async () => {
       const blob = await businessStickerImage(node)
-      return new File([blob], `tarjeta-latido-${business.id}.png`, { type: 'image/png' })
+      return new File([blob], `latido-club-${business.id}.png`, { type: 'image/png' })
     })().catch((error) => {
       preparedImage.current = null
       throw error

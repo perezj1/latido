@@ -92,7 +92,7 @@ export default function Colaboraciones() {
           <div className="lc-company-promo-content">
             <p className="lc-company-promo-brand">
               <img src="/favicon.svg" alt="" width="20" height="20" />
-              Tarjeta Latido · Para negocios
+              Latido Club · Para negocios
             </p>
             <h1 id="lc-company-promo-title">Haz que más personas descubran tu negocio</h1>
             <ul className="lc-company-promo-benefits">
@@ -109,7 +109,7 @@ export default function Colaboraciones() {
                 </li>
               ))}
             </ul>
-            <Link className="lc-company-promo-action" to="/tarjeta-latido#negocios">
+            <Link className="lc-company-promo-action" to="/club#negocios">
               Más información
               <ArrowRight size={20} strokeWidth={2.6} aria-hidden="true" />
             </Link>

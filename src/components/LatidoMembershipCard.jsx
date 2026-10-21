@@ -19,7 +19,7 @@ export function LatidoMembershipCard({ member, holderName, sample = false, id })
       tabIndex={id ? -1 : undefined}
       className="lc-membership-card"
       data-appearance="light"
-      aria-label={`Tarjeta Latido de ${holderName}`}
+      aria-label={`Tarjeta de Latido Club de ${holderName}`}
     >
       <img className="lc-membership-card__watermark" src="/favicon.svg" alt="" aria-hidden="true" />
       <div className="lc-membership-card__inner">
@@ -27,7 +27,7 @@ export function LatidoMembershipCard({ member, holderName, sample = false, id })
           <div className="lc-membership-card__brand">
             <img className="lc-membership-card__logo" src="/favicon.svg" alt="" />
             <div>
-              <div className="lc-membership-card__brand-name">Latido</div>
+              <div className="lc-membership-card__brand-name">Latido Club</div>
               <div className="lc-membership-card__subtitle">Tarjeta de socio</div>
             </div>
           </div>
@@ -72,7 +72,7 @@ export default function LatidoMembershipCardSummary({ member, holderName, renewU
   const days = Math.ceil((Date.parse(member.valid_until) - Date.now()) / 86400000)
   const card = <LatidoMembershipCard member={member} holderName={holderName} />
   return (
-    <section className="lc-membership-summary" aria-label="Mi Tarjeta Latido">
+    <section className="lc-membership-summary" aria-label="Mi tarjeta de Latido Club">
       {!member.active && renewUrl && (
         <div className="lc-membership-renewal">
           <div>

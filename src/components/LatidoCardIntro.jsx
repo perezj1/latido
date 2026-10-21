@@ -7,7 +7,7 @@ export default function LatidoCardIntro({ user, accountUrl, requestUrl, loginUrl
   return (
     <section className="lc-card-intro">
       <div className="lc-intro-presentation">
-        <p className="lc-intro-label">Tarjeta Latido</p>
+        <p className="lc-intro-label">Latido Club</p>
         <h1>Ahorra en los negocios de tu comunidad</h1>
         <LatidoCardIllustration />
         <ul className="lc-intro-benefits">

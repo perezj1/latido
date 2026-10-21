@@ -5,8 +5,8 @@ export function cardOfferShareData(offer, origin = window.location.origin) {
   const url = new URL('/card', origin)
   url.searchParams.set('oferta', offer.id)
   return {
-    title: `${offer.title} · Tarjeta Latido`,
-    text: `${offerBenefitLabel(offer)} en ${offer.business_name}. Crea tu cuenta en Latido y hazte socio de Tarjeta Latido por CHF 6,90 al mes.`,
+    title: `${offer.title} · Latido Club`,
+    text: `${offerBenefitLabel(offer)} en ${offer.business_name}. Crea tu cuenta en Latido y hazte socio de Latido Club por CHF 6,90 al mes.`,
     url: url.href
   }
 }
@@ -23,8 +23,8 @@ export function shareCardBusiness(
 ) {
   return shareLatidoLink(
     {
-      title: `${businessName} · Tarjeta Latido`,
-      text: `Descubre tus descuentos de Tarjeta Latido en ${businessName}.`,
+      title: `${businessName} · Latido Club`,
+      text: `Descubre tus descuentos de Latido Club en ${businessName}.`,
       url: new URL(`/card/negocio/${providerId}`, origin).href
     },
     nav

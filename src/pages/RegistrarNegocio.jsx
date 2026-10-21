@@ -16,6 +16,7 @@ import PostPublishPushModal from '../components/PostPublishPushModal'
 import { getPushStatus } from '../lib/pushNotifications'
 import { markShareCardReminderShown } from '../lib/shareCardReminder'
 import LatidoCardBusinessInvitation from '../components/LatidoCardBusinessInvitation'
+import { useLatidoCardOffer } from '../components/LatidoCardOfferProvider'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 import { canUseWhatsappNumber } from '../lib/businessContact'
 import toast from 'react-hot-toast'
@@ -45,6 +46,7 @@ export default function RegistrarNegocio() {
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [step, done])
   const [publishedBusiness, setPublishedBusiness] = useState(null)
   const [publishedForReview, setPublishedForReview] = useState(false)
+  const { publishedProvider } = useLatidoCardOffer()
   useEffect(() => {
     if (done && publishedBusiness?.id && !publishedForReview) {
       markShareCardReminderShown('benefits', user?.id, 'first-offer')
@@ -179,13 +181,20 @@ export default function RegistrarNegocio() {
     </div>
   )
 
+  // Recién publicado: la invitación ocupa toda la página y ya avisa de que el negocio está publicado.
+  if (done && !publishedForReview && publishedBusiness?.id && publishedProvider !== publishedBusiness.id) return (
+    <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:8, paddingBottom:16 }}>
+      <LatidoCardBusinessInvitation business={publishedBusiness} headingLevel={1} onDismiss={() => navigate('/')} />
+    </div>
+  )
+
   if (done) return (
     <div className="latido-page-container latido-page-container--compact" style={{ paddingTop:80, paddingBottom:80, textAlign:'center' }}>
       <div style={{ width:80, height:80, background:C.successLight, borderRadius:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:42, margin:'0 auto 20px' }}>🏪</div>
       <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:24, color:C.text, marginBottom:10 }}>{publishedForReview ? 'Negocio enviado a revisión' : '¡Negocio publicado!'}</h1>
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.7, marginBottom:24 }}>
         {publishedForReview
-          ? 'El equipo revisará tu negocio antes de hacerlo visible. Cuando esté aprobado, podrás crear tu oferta gratis desde Mi negocio en Tarjeta Latido.'
+          ? 'El equipo revisará tu negocio antes de hacerlo visible. Cuando esté aprobado, podrás crear tu oferta gratis desde Mi negocio en Latido Club.'
           : 'Tu negocio ya está visible para la comunidad hispanohablante en Suiza.'}
       </p>
       {!publishedForReview && publishedBusiness?.id && (

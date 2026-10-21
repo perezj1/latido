@@ -141,13 +141,13 @@ function MemberLanding() {
               <div className="portada__texto">
                 <p className="portada__etiqueta">
                   <img src="/favicon.svg" alt="" width="20" height="20" />
-                  Tarjeta Latido · El club de la comunidad
+                  Latido Club · Para socios
                 </p>
                 <h1 className="portada__titulo" id="titulo-socios">
                   Apoya los negocios de tu comunidad y obtén descuentos
                 </h1>
                 <p className="portada__texto-largo">
-                  Con la Tarjeta Latido tienes descuentos, 2x1 y regalos en negocios
+                  Con Latido Club tienes descuentos, 2x1 y regalos en negocios
                   hispanohablantes de Suiza. Tú ahorras y ellos crecen.
                 </p>
                 <div className="botones">
@@ -183,7 +183,7 @@ function MemberLanding() {
                         <img src="/favicon.svg" alt="" />
                       </span>
                       <span>
-                        <span className="tarjeta-socio__nombre">Latido</span>
+                        <span className="tarjeta-socio__nombre">Latido Club</span>
                         <span className="tarjeta-socio__etiqueta">TARJETA DE SOCIO</span>
                       </span>
                     </div>
@@ -250,8 +250,8 @@ function MemberLanding() {
                 Ahorra mientras apoyas lo nuestro
               </h2>
               <p className="entradilla">
-                Tu tarjeta te da ventajas en los negocios de la comunidad hispanohablante. Cada vez
-                que la usas, ayudas a que sigan creciendo.
+                Como socio de Latido Club tienes ventajas en los negocios de la comunidad
+                hispanohablante. Cada vez que usas tu tarjeta, ayudas a que sigan creciendo.
               </p>
               <div className="ventajas">
                 <article className="ventaja">
@@ -260,7 +260,7 @@ function MemberLanding() {
                   </span>
                   <h3 className="ventaja__titulo">Descuentos exclusivos</h3>
                   <p className="ventaja__texto">
-                    Descuentos, 2x1 y regalos que solo tienen los socios de la tarjeta.
+                    Descuentos, 2x1 y regalos que solo tienen los socios del Club.
                   </p>
                 </article>
                 <article className="ventaja">
@@ -307,7 +307,7 @@ function MemberLanding() {
                     </span>
                     <div>
                       <h3 className="paso__titulo">Hazte socio</h3>
-                      <p className="paso__texto">Solicita tu Tarjeta Latido por CHF 6,90 al mes.</p>
+                      <p className="paso__texto">Únete a Latido Club por CHF 6,90 al mes.</p>
                     </div>
                   </li>
                   <li className="paso">
@@ -337,7 +337,7 @@ function MemberLanding() {
               <div className="precio">
                 <p className="precio__nombre">
                   <img src="/favicon.svg" alt="" width="22" height="22" />
-                  Tarjeta Latido
+                  Latido Club
                 </p>
                 <p className="precio__cifra">
                   CHF 6,90 <small>/ mes</small>
@@ -382,7 +382,7 @@ function MemberLanding() {
               </h2>
               <div className="preguntas__lista">
                 <details className="pregunta">
-                  <summary>¿Cuánto cuesta la Tarjeta Latido?</summary>
+                  <summary>¿Cuánto cuesta Latido Club?</summary>
                   <p>CHF 6,90 al mes. Solicitas la activación por email a Latido.</p>
                 </details>
                 <details className="pregunta">
@@ -422,7 +422,7 @@ function MemberLanding() {
               <div className="portada__texto">
                 <p className="portada__etiqueta">
                   <img src="/favicon.svg" alt="" width="20" height="20" />
-                  Tarjeta Latido · Para negocios
+                  Latido Club · Para negocios
                 </p>
                 <h1 className="portada__titulo" id="titulo-negocios">
                   Haz que más personas descubran tu negocio
@@ -612,7 +612,7 @@ function MemberLanding() {
               <div className="precio">
                 <p className="precio__nombre">
                   <img src="/favicon.svg" alt="" width="22" height="22" />
-                  Tarjeta Latido para negocios
+                  Latido Club para negocios
                 </p>
                 <p className="precio__cifra">Gratis</p>
                 <ul className="lista-check">

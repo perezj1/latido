@@ -133,7 +133,7 @@ BEGIN
 
  INSERT INTO public.app_notifications(recipient_id,kind,source_id,data)
  SELECT m.user_id,'card_member','membership:'||m.id||':'||m.valid_until,
- jsonb_build_object('title','Tu Tarjeta Latido caduca en 7 días.','body','Solicita la renovación para seguir usando tus descuentos.','href','/card')
+ jsonb_build_object('title','Tu membresía de Latido Club caduca en 7 días.','body','Solicita la renovación para seguir usando tus descuentos.','href','/card')
  FROM public.latido_card_memberships m WHERE m.status='active' AND m.starts_at<=now()
  AND (m.valid_until AT TIME ZONE 'Europe/Zurich')::date=today+7 ON CONFLICT DO NOTHING;
  GET DIAGNOSTICS affected=ROW_COUNT; sent:=sent+affected;

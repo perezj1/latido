@@ -46,7 +46,7 @@ export const SEARCHABLE_SITE_PAGES = [
   { id:'eventos', icon:'🎉', title:'Eventos latinos', section:'Comunidad', desc:'Conciertos, fiestas, quedadas, networking y planes familiares.', href:'/comunidades?view=eventos' },
   { id:'guias', icon:'📚', title:'Guías', section:'Guías', desc:'Paquetes y guías sobre permisos, trabajo, vivienda, salud, banco e impuestos en español.', href:'/guias' },
   { id:'creadores', icon:'🎙️', title:'Creadores', section:'Comunidad', desc:'Personas, profesionales y negocios que comparten experiencias, información y proyectos sobre Suiza.', href:'/comunidades?view=creadores' },
-  { id:'club', icon:'🛍️', title:'Latido Club', section:'Latido', desc:'Camisetas, sudaderas y bolsas con diseños originales de Latido Club.', href:'/club' },
+  { id:'tienda', icon:'🛍️', title:'Tienda Latido', section:'Latido', desc:'Camisetas, sudaderas y bolsas con diseños originales de Latido.', href:'/tienda' },
   { id:'servicios-suiza', icon:'🇨🇭', title:'Servicios para vivir en Suiza', section:'Servicios', desc:'Seguro médico, tercer pilar y preparación para llegar a Suiza, con orientación en español.', href:'/servicios-suiza' },
   { id:'servicios-virtus360', icon:'360', title:'Gestoría y finanzas con Virtus360', section:'Servicios', desc:'Trámites, impuestos, seguros, mudanza y contabilidad en colaboración con Virtus360.', href:'/servicios-virtus360' },
   { id:'perfil', icon:'👤', title:'Perfil', section:'Cuenta', desc:'Datos personales, avatar, preferencias y configuración.', href:'/perfil' },
@@ -58,7 +58,7 @@ export const SEARCHABLE_SITE_PAGES = [
 ]
 
 const ROUTE_SEO = [
-  { path:'/tarjeta-latido', title:CARD_MEMBERS_ENABLED ? 'Tarjeta Latido | Descuentos y negocios de tu comunidad' : 'Promociona tu negocio gratis | Tarjeta Latido', description:CARD_MEMBERS_ENABLED ? 'Ahorra en negocios hispanohablantes de Suiza con Tarjeta Latido. CHF 6,90 al mes para socios; participar es gratis para negocios.' : 'Publica una oferta y consigue que más personas de la comunidad hispanohablante descubran tu negocio. Participar es gratis.' },
+  { path:'/club', title:CARD_MEMBERS_ENABLED ? 'Latido Club | Descuentos y negocios de tu comunidad' : 'Promociona tu negocio gratis | Latido Club', description:CARD_MEMBERS_ENABLED ? 'Ahorra en negocios hispanohablantes de Suiza con Latido Club. CHF 6,90 al mes para socios; participar es gratis para negocios.' : 'Publica una oferta y consigue que más personas de la comunidad hispanohablante descubran tu negocio. Participar es gratis.' },
   {
     path:'/',
     title:'Latido.ch — Todo lo que necesitas en Suiza, en español',
@@ -86,10 +86,10 @@ const ROUTE_SEO = [
     description:'Descubre personas, profesionales, trabajadores, proyectos y negocios que comparten experiencias e información sobre Suiza en sus redes.',
   },
   {
-    path:'/club',
-    title:'Latido Club — Camisetas, sudaderas y accesorios',
-    description:'Tu estilo también habla español. Descubre camisetas, sudaderas y bolsas de Latido Club producidas bajo demanda.',
-    socialDescription:'Diseños para reconocernos, conectar y llevar tu idioma contigo. Descubre la colección de Latido Club.',
+    path:'/tienda',
+    title:'Tienda Latido — Camisetas, sudaderas y accesorios',
+    description:'Tu estilo también habla español. Descubre camisetas, sudaderas y bolsas de la Tienda Latido producidas bajo demanda.',
+    socialDescription:'Diseños para reconocernos, conectar y llevar tu idioma contigo. Descubre la colección de la Tienda Latido.',
     image:'/club/club-lifestyle-horizonte-v4.webp',
   },
   {
@@ -564,8 +564,8 @@ export function getSeoForLocation(location = {}) {
   if (pathname === '/card' || pathname.startsWith('/card/')) {
     return withDefaults({
       path:'/card',
-      title:CARD_MEMBERS_ENABLED ? 'Tarjeta Latido | Descuentos en tu comunidad' : 'Ofertas para negocios | Latido',
-      description:CARD_MEMBERS_ENABLED ? 'Descubre los descuentos de los negocios participantes. Úsalos desde tu móvil con Tarjeta Latido.' : 'Publica y consulta las ofertas de los negocios de la comunidad.',
+      title:CARD_MEMBERS_ENABLED ? 'Latido Club | Descuentos en tu comunidad' : 'Ofertas para negocios | Latido',
+      description:CARD_MEMBERS_ENABLED ? 'Descubre los descuentos de los negocios participantes. Úsalos desde tu móvil con Latido Club.' : 'Publica y consulta las ofertas de los negocios de la comunidad.',
       robots:pathname.startsWith('/card/validacion/') ? 'noindex, nofollow, noarchive' : 'noindex, follow',
     })
   }
@@ -1089,8 +1089,8 @@ export function getPublicSeoPages() {
     '/guias',
     '/paquetes',
     '/creadores',
+    '/tienda',
     '/club',
-    '/tarjeta-latido',
     '/santiago-cruz',
     '/servicios-suiza',
     '/servicios-virtus360',

@@ -67,7 +67,7 @@ function HomeMemberCard({ businesses }) {
     <Link
       className="home-latido-card"
       to="/card"
-      aria-label={member ? 'Ver Tarjeta Latido' : 'Conseguir Tarjeta Latido'}
+      aria-label={member ? 'Ver mi tarjeta de Latido Club' : 'Unirme a Latido Club'}
       aria-describedby={summaryId}
     >
       <img className="home-latido-card-watermark" src="/favicon.svg" alt="" aria-hidden="true" />
@@ -83,7 +83,7 @@ function HomeMemberCard({ businesses }) {
             </strong>
           </>
         ) : (
-          <strong className="home-latido-card-name">Tarjeta Latido</strong>
+          <strong className="home-latido-card-name">Latido Club</strong>
         )}
         <span>
           {active ? (
@@ -141,8 +141,8 @@ function HomeMemberCard({ businesses }) {
     </Link>
   )
   const slides = active
-    ? [{ id: 'offer', label: 'Oferta destacada', content: featuredCard }, { id: 'card', label: 'Mi Tarjeta Latido', content: membership }]
-    : [{ id: 'card', label: member ? 'Mi Tarjeta Latido' : 'Conseguir Tarjeta Latido', content: membership }, { id: 'offer', label: 'Oferta destacada', content: featuredCard }]
+    ? [{ id: 'offer', label: 'Oferta destacada', content: featuredCard }, { id: 'card', label: 'Mi tarjeta del Club', content: membership }]
+    : [{ id: 'card', label: member ? 'Mi tarjeta del Club' : 'Unirme a Latido Club', content: membership }, { id: 'offer', label: 'Oferta destacada', content: featuredCard }]
   const goTo = (index) => {
     const track = scroller.current
     if (!track) return
@@ -151,7 +151,7 @@ function HomeMemberCard({ businesses }) {
       behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
   }
   return (
-    <section className="home-latido-carousel" aria-label="Ofertas y Tarjeta Latido" aria-roledescription="carrusel">
+    <section className="home-latido-carousel" aria-label="Ofertas y Latido Club" aria-roledescription="carrusel">
       <HorizontalDragScroller
         ref={scroller}
         id={carouselId}

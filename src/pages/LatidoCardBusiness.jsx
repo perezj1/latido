@@ -330,7 +330,7 @@ export default function LatidoCardBusiness() {
                   </div>
                 ) : (
                   <p className="lc-muted">
-                    El resumen estará disponible al actualizar el servicio de Tarjeta Latido.
+                    El resumen estará disponible al actualizar el servicio de Latido Club.
                   </p>
                 )}
               </section>}

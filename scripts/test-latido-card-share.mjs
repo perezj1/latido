@@ -62,7 +62,7 @@ const request = async (query, method = 'GET') => {
 try {
   const business = await request({ provider })
   assert.equal(business.statusCode, 200)
-  assert.match(business.body, /<title>Café &lt;Latido&gt; · Ofertas Tarjeta Latido<\/title>/)
+  assert.match(business.body, /<title>Café &lt;Latido&gt; · Ofertas de Latido Club<\/title>/)
   assert.match(
     business.body,
     /property="og:description" content="Hasta −15 % para socios en Zürich/
@@ -70,7 +70,7 @@ try {
   assert.match(business.body, /property="og:image" content="https:\/\/latido.ch\/cafe.jpg/)
   assert.match(business.body, /<div id="root"><\/div>/, 'The response retains the working SPA')
   const shared = await request({ oferta: offerId })
-  assert.match(shared.body, /15 % de descuento · Café &lt;Latido&gt; · Tarjeta Latido/)
+  assert.match(shared.body, /15 % de descuento · Café &lt;Latido&gt; · Latido Club/)
   const localOffer = await request({ provider, oferta: offerId })
   assert.match(localOffer.body, new RegExp(`oferta=${offerId}`))
   assert.equal((await request({ provider }, 'HEAD')).body, '')

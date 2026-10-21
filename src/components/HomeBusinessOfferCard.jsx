@@ -13,7 +13,7 @@ export default function HomeBusinessOfferCard() {
   const logo = resolveImageUrl(business?.photo_url)
   if (loading || error || !ownedPublishedBusinesses.length) return null
   return (
-    <Link className="home-latido-card home-business-offer" to="/tarjeta-latido#negocios"
+    <Link className="home-latido-card home-business-offer" to="/club#negocios"
       aria-label="Promocionar mi negocio gratis">
       <span className="home-latido-card-logo home-business-offer-logo" aria-hidden="true">
         {logo && failedLogo !== logo

@@ -15,7 +15,7 @@ export default function LatidoCardBusinessBenefit({ providerId, block = false, p
     return (
       <span className="lc-business-card-pill">
         <img src="/favicon.svg" alt="" width="16" height="16" />
-        Tarjeta Latido
+        Latido Club
       </span>
     )
   if (!block)
@@ -24,7 +24,7 @@ export default function LatidoCardBusinessBenefit({ providerId, block = false, p
     <Link
       className="lc-business-benefit-block"
       to={`/card/negocio/${providerId}`}
-      aria-label={`Ver ${offers.length} ${offers.length === 1 ? 'oferta' : 'ofertas'} de Tarjeta Latido`}
+      aria-label={`Ver ${offers.length} ${offers.length === 1 ? 'oferta' : 'ofertas'} de Latido Club`}
     >
       <span className="lc-business-benefit-logo" aria-hidden="true">
         <img src="/favicon.svg" alt="" width="22" height="22" />
@@ -34,7 +34,7 @@ export default function LatidoCardBusinessBenefit({ providerId, block = false, p
           {benefit.startsWith('Hasta ') ? benefit.replace('−', '') : benefit} para socios
         </strong>
         <span>
-          Tarjeta Latido · {offers.length} {offers.length === 1 ? 'oferta' : 'ofertas'}
+          Latido Club · {offers.length} {offers.length === 1 ? 'oferta' : 'ofertas'}
         </span>
       </span>
       <ChevronRight size={20} aria-hidden="true" />

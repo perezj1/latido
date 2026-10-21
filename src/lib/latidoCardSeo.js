@@ -9,8 +9,8 @@ export function cardPublicSeo({ business, offers = [], offer, origin = 'https://
   const url = new URL(`/card/negocio/${providerId}`, origin)
   if (offer) url.searchParams.set('oferta', offer.id)
   return {
-    title: offer ? `${offer.title} · ${name} · Tarjeta Latido` : `${name} · Ofertas Tarjeta Latido`,
-    description: `${businessBenefit(offer ? [offer] : offers)} para socios${city ? ` en ${city}` : ''}. Consulta las ofertas y sus condiciones en Tarjeta Latido.`,
+    title: offer ? `${offer.title} · ${name} · Latido Club` : `${name} · Ofertas de Latido Club`,
+    description: `${businessBenefit(offer ? [offer] : offers)} para socios${city ? ` en ${city}` : ''}. Consulta las ofertas y sus condiciones en Latido Club.`,
     image:
       image && /^https?:$/.test(new URL(image, origin).protocol)
         ? new URL(image, origin).href

@@ -168,7 +168,7 @@ export default function LatidoCardValidation() {
       className={`lc-page lc-validation ${valid ? 'lc-validation--valid' : ''} ${valid && seconds <= 60 ? 'lc-validation--ending' : ''}`}
     >
       <Link className="lc-brand" to="/card">
-        <img src="/favicon.svg" alt="" /> Tarjeta Latido
+        <img src="/favicon.svg" alt="" /> Latido Club
       </Link>
       <div className="lc-proof-frame">
         <section className="lc-proof" aria-labelledby="lc-proof-title" aria-busy={checking}>

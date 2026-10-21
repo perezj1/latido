@@ -68,7 +68,7 @@ export function CardHeader({ alerts = false, onAlertsOpen }) {
         >
           <ArrowLeft size={20} aria-hidden="true" />
         </button>
-        <span className="lc-app-header-title">{CARD_MEMBERS_ENABLED ? 'Tarjeta Latido' : 'Ofertas para negocios'}</span>
+        <span className="lc-app-header-title">{CARD_MEMBERS_ENABLED ? 'Latido Club' : 'Ofertas para negocios'}</span>
         {CARD_MEMBERS_ENABLED && alerts && (
           <button
             className="lc-header-round"
@@ -81,7 +81,7 @@ export function CardHeader({ alerts = false, onAlertsOpen }) {
           </button>
         )}
       </div>
-      <nav className="lc-links" aria-label="Navegación de Tarjeta Latido" aria-busy={loading}>
+      <nav className="lc-links" aria-label="Navegación de Latido Club" aria-busy={loading}>
         <Link to="/card" aria-current={cardSelected ? 'page' : undefined}>
           <span aria-hidden="true">🎟️</span>
           Descuentos
@@ -571,7 +571,7 @@ function LatidoCardMember() {
               <p>
                 {member
                   ? 'Tu membresía está inactiva. Renueva tu tarjeta para usar estas ofertas.'
-                  : 'Consigue estas ofertas con Tarjeta Latido por CHF 6,90 al mes.'}
+                  : 'Consigue estas ofertas con Latido Club por CHF 6,90 al mes.'}
               </p>
               {member ? (
                 <a className="lc-button lc-intro-cta" href={renewUrl}>
