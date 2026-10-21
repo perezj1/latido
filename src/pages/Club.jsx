@@ -136,7 +136,7 @@ const CLUB_DESIGNS = [
     id: 'hablas-espanol',
     name: '¿Tú también hablas español?',
     image: '/club/products/hablas-espanol-granate-trasera.webp',
-    alt: 'Diseño tipográfico granate ¿Tú también hablas español? de Latido Club',
+    alt: 'Diseño tipográfico granate ¿Tú también hablas español? de Latido',
     tone: '#F4F2EE',
   },
   {
@@ -150,28 +150,28 @@ const CLUB_DESIGNS = [
     id: 'cafe',
     name: 'Café en Suiza · Te despierta el precio',
     image: '/club/designs/cafe-trasera-en-suiza-texto-negro.png',
-    alt: 'Diseño Café en Suiza, te despierta el precio, de Latido Club',
+    alt: 'Diseño Café en Suiza, te despierta el precio, de Latido',
     tone: '#E9FAF7',
   },
   {
     id: 'latido-logo-camiseta',
     name: 'Símbolo Latido · Tu estilo también habla español',
     image: '/club/designs/latido-logo-camiseta.webp',
-    alt: 'Símbolo multicolor de Latido Club con el lema Tu estilo también habla español',
+    alt: 'Símbolo multicolor de Latido con el lema Tu estilo también habla español',
     tone: '#ECEEF1',
   },
   {
     id: 'atardecer',
     name: 'Atardecer al mediodía',
     image: '/club/designs/atardecer-al-mediodia.png',
-    alt: 'Diseño Atardecer al mediodía en amarillo y azul de Latido Club',
+    alt: 'Diseño Atardecer al mediodía en amarillo y azul de Latido',
     tone: '#FFF5D6',
   },
   {
     id: 'improvisar',
     name: 'Improvisar · De 16:40 a 17:10',
     image: '/club/products/improvisar-trasera-texto-negro.png',
-    alt: 'Diseño Improvisar con un reloj y el horario de 16:40 a 17:10 de Latido Club',
+    alt: 'Diseño Improvisar con un reloj y el horario de 16:40 a 17:10 de Latido',
     tone: '#F7E7D5',
   },
 ]
@@ -255,7 +255,7 @@ const FALLBACK_PRODUCTS = [
       ...hablasFallbackMockups({ colorLabel: 'Negro', garment: 'negra', selection: 'Negro' }),
     ],
     imageFallback: '/club/products/camiseta-hablas-blanca-frontal.webp',
-    imageAlt: 'Camiseta con diseño granate de Latido Club',
+    imageAlt: 'Camiseta con diseño granate de Latido',
     optionLabel: 'Color / Talla',
     optionGroups: [
       { name: 'Color', values: ['Blanco', 'Natural', 'Ash', 'Negro'] },
@@ -278,7 +278,7 @@ const FALLBACK_PRODUCTS = [
     image: '/club/totebag-hablas-espanol-granate.jpg',
     images: [{ url: '/club/totebag-hablas-espanol-granate.jpg', label: 'Frontal' }],
     imageFallback: '/club/totebag-hablas-espanol-granate.jpg',
-    imageAlt: 'Bolsa de tela natural Hablas Español de Latido Club',
+    imageAlt: 'Bolsa de tela natural Hablas Español de Latido',
     optionLabel: 'Color',
     options: [
       { label: 'Natural', sku: 'gelato:bd807369-b74d-483d-9065-fb994ca7bb38:9bb7a9f9-79c9-4bd6-b4e2-8c110c4dc65c' },
@@ -1056,7 +1056,7 @@ function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onB
         <div className="club-drawer__header">
           <div>
             <span>Tu selección</span>
-            <h2 id="club-cart-title">Bolsa Club</h2>
+            <h2 id="club-cart-title">Tu bolsa</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="Cerrar bolsa"><X size={20} /></button>
         </div>
@@ -1065,7 +1065,7 @@ function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onB
           <div className="club-cart-empty">
             <span><ShoppingBag size={28} /></span>
             <h3>Tu bolsa está esperando</h3>
-            <p>Elige tu prenda favorita de la nueva colección de Latido Club.</p>
+            <p>Elige tu prenda favorita de la nueva colección de la Tienda Latido.</p>
             <button type="button" onClick={onClose}>Ver la colección</button>
           </div>
         ) : (
@@ -1349,8 +1349,8 @@ export default function Club() {
       <header className="club-nav">
         <div className="club-nav__inner">
           <BackButton to="/" />
-          <Link to="/club" className="club-brand" aria-label="Latido Club, inicio">
-            <img src="/brand/latido-horizontal-black.webp" alt="Latido Club" />
+          <Link to="/tienda" className="club-brand" aria-label="Tienda Latido, inicio">
+            <img src="/brand/tienda-latido-horizontal-black.webp" alt="Tienda Latido" />
           </Link>
           <button type="button" className="club-cart-button" onClick={() => setCartOpen(true)} aria-label={`Abrir bolsa, ${itemCount} artículos`}>
             <ShoppingBag size={18} />
@@ -1384,7 +1384,7 @@ export default function Club() {
             <p className="club-hero__copy">Camisetas, sudaderas y accesorios creados para llevar contigo el idioma, el humor y las conexiones que te hacen sentir en casa.</p>
             <a href="#coleccion" className="club-hero__cta">Descubrir la colección <ChevronRight size={18} /></a>
             <div className="club-hero__trust">
-              <span><Leaf size={16} /> Diseñado por Latido Club</span>
+              <span><Leaf size={16} /> Diseñado por Latido</span>
               <span><Truck size={16} /> Producido bajo demanda</span>
             </div>
           </div>
@@ -1395,7 +1395,7 @@ export default function Club() {
           </div>
         </section>
 
-        <section className="club-manifesto" aria-label="El espíritu de Latido Club">
+        <section className="club-manifesto" aria-label="El espíritu de la colección">
           <p>NO ES MERCH.</p>
           <span>Es una forma de reconocernos.</span>
           <Heart fill="currentColor" size={18} />
@@ -1427,7 +1427,7 @@ export default function Club() {
               <h2>Elige cómo<br />llevar tu Latido.</h2>
               <p>Elige el artículo, el diseño y el color. Los precios de las prendas incluyen el envío a Suiza.</p>
             </div>
-            <div className="club-collection-benefits" aria-label="Ventajas de Latido Club">
+            <div className="club-collection-benefits" aria-label="Ventajas de la Tienda Latido">
               <div><Truck size={22} /><span><strong>Envío incluido</strong><small>En camisetas y sudaderas</small></span></div>
               <div><Leaf size={22} /><span><strong>Calidad premium</strong><small>Impresión duradera</small></span></div>
               <div><Sparkles size={22} /><span><strong>Diseños originales</strong><small>Hechos para conectar</small></span></div>
@@ -1463,7 +1463,7 @@ export default function Club() {
           <div className="club-story__copy">
             <span>02 / Por qué existe</span>
             <h2>Una colección con propósito.</h2>
-            <p>Latido Club nace para celebrar esa sensación de encontrar a alguien que comparte tu idioma, aunque estés lejos de casa.</p>
+            <p>Esta colección nace para celebrar esa sensación de encontrar a alguien que comparte tu idioma, aunque estés lejos de casa.</p>
             <p>Cada pieza se produce solo cuando la pides: menos excedentes y una red de producción que busca fabricar cerca del destino.</p>
             <div className="club-story__points">
               <div><Leaf size={20} /><span><strong>Sin stock innecesario</strong>Producimos una a una.</span></div>
@@ -1497,7 +1497,7 @@ export default function Club() {
       </main>
 
       <footer className="club-footer">
-        <div><img src="/brand/latido-horizontal-white.webp" alt="Latido Club" /></div>
+        <div><img src="/brand/tienda-latido-horizontal-white.webp" alt="Tienda Latido" /></div>
         <p>Hecho con corazón para los hispanohablantes en Suiza</p>
         <Link to="/">latido.ch</Link>
       </footer>

@@ -26,9 +26,9 @@ export function businessBenefit(offers = []) {
 }
 
 export function membershipMailUrl({ user, name, member, renew = false }) {
-  const subject = renew ? 'Renovar Tarjeta Latido' : 'Tarjeta Latido - Membresía CHF 6,90 al mes'
+  const subject = renew ? 'Renovar membresía de Latido Club' : 'Latido Club - Membresía CHF 6,90 al mes'
   const body = [
-    renew ? 'Quiero renovar mi Tarjeta Latido' : 'Quiero activar mi Tarjeta Latido',
+    renew ? 'Quiero renovar mi membresía de Latido Club' : 'Quiero hacerme socio de Latido Club',
     '',
     `Nombre: ${name || user?.user_metadata?.name || ''}`,
     `Email de la cuenta: ${user?.email || ''}`,

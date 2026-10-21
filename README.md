@@ -223,7 +223,10 @@ npm run test:search   # Calidad del buscador global
 
 ---
 
-## Tarjeta Latido (piloto)
+## Latido Club (piloto)
+
+La membresía de socios se llama **Latido Club** (`/club`, app en `/card`); la tienda de ropa
+y accesorios es **Tienda Latido** (`/tienda`). `/tarjeta-latido` redirige a `/club`.
 
 El estado actual es la **captación de negocios**, con la experiencia de socios
 oculta por defecto. Consultar [la fase de lanzamiento](docs/LATIDO_CARD_BUSINESS_LAUNCH.md)

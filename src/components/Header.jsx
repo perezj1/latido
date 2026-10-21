@@ -20,8 +20,8 @@ const NAV_GUEST = [
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
   { href:'/creadores', label:'🎙️ Creadores' },
-  { href:'/club', label:'🛍️ Club' },
-  { href:'/card', label:'💳 Tarjeta Latido' },
+  { href:'/tienda', label:'🛍️ Tienda' },
+  { href:'/card', label:'💳 Latido Club' },
   { href:'/colaboraciones', label:'🚀 Para Empresas' },
 ]
 
@@ -31,8 +31,8 @@ const NAV_USER = [
   { href:'/tablon?cat=empleo', label:'💼 Empleo' },
   { href:'/comunidades', label:'🤝 Comunidad' },
   { href:'/comunidades?view=creadores', label:'🎙️ Creadores' },
-  { href:'/club', label:'🛍️ Club' },
-  { href:'/card', label:'💳 Tarjeta Latido' },
+  { href:'/tienda', label:'🛍️ Tienda' },
+  { href:'/card', label:'💳 Latido Club' },
   { href:'/colaboraciones', label:'🚀 Para Empresas' },
   { href:'/mensajes', label:'💬 Mensajes' },
 ]
@@ -48,7 +48,7 @@ export default function Header({ transparent }) {
   const { hasBusiness, participating } = useCardBusinessAccess()
   const NAV = (isLoggedIn ? NAV_USER : NAV_GUEST).flatMap(link => {
     if (link.href !== '/card' || CARD_MEMBERS_ENABLED) return [link]
-    return hasBusiness ? [{ href: participating ? '/card/negocios' : '/tarjeta-latido#negocios', label: '🏪 Ofertas para tu negocio' }] : []
+    return hasBusiness ? [{ href: participating ? '/card/negocios' : '/club#negocios', label: '🏪 Ofertas para tu negocio' }] : []
   })
   const isProfilePage = pathname === '/perfil' || pathname.startsWith('/perfil/')
 

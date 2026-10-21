@@ -1,4 +1,4 @@
--- Tarjeta Latido minimal: installer AND upgrade. Run this file first.
+-- Latido Club minimal: installer AND upgrade. Run this file first.
 -- Prerequisites: existing Latido profiles/providers and is_business_promotion_admin().
 -- Preserves memberships, offers, reservations and all recorded uses. No payments are created.
 BEGIN;
