@@ -530,13 +530,13 @@ try {
   if (businessPreview) {
     await navigate(origin + '/')
     await page.waitForLoadState('networkidle')
-    assert.equal(await page.locator('a[href="/tarjeta-latido"], .home-latido-carousel, .home-business-offer').count(), 0)
+    assert.equal(await page.locator('a[href="/club"], .home-latido-carousel, .home-business-offer').count(), 0)
     await navigate(origin + '/card')
     await page.waitForURL(origin + '/')
     await page.waitForLoadState('networkidle')
     await navigate(origin + '/colaboraciones')
     const more = page.getByRole('link', { name: 'Más información', exact: true })
-    assert.equal(await more.getAttribute('href'), '/tarjeta-latido#negocios')
+    assert.equal(await more.getAttribute('href'), '/club#negocios')
     await more.click()
     await page.getByRole('heading', { name: 'Promocionar los negocios hispanohablantes', exact: true }).waitFor()
     assert.equal(await page.getByRole('button', { name: 'Socios', exact: true }).count(), 0)
@@ -684,9 +684,9 @@ try {
   await page.evaluate((auth) => localStorage.setItem('sb-127-auth-token', JSON.stringify(auth)), session())
   await reloadPage()
   await page.waitForLoadState('networkidle')
-  const homeCarousel = page.getByRole('region', { name: 'Ofertas y Tarjeta Latido', exact: true })
+  const homeCarousel = page.getByRole('region', { name: 'Ofertas y Latido Club', exact: true })
   await homeCarousel.waitFor()
-  await expect(homeCarousel.locator('.home-latido-carousel-slide').first().getByRole('link')).toHaveAccessibleName('Conseguir Tarjeta Latido')
+  await expect(homeCarousel.locator('.home-latido-carousel-slide').first().getByRole('link')).toHaveAccessibleName('Unirme a Latido Club')
   await expect(homeCarousel.locator('.home-latido-carousel-dots button')).toHaveCount(2)
   for (const width of [320, 390, 1280]) {
     await page.setViewportSize({ width, height: 844 })
@@ -709,7 +709,7 @@ try {
   const track = homeCarousel.locator('.home-latido-carousel-track')
   await track.focus()
   await track.press('ArrowLeft')
-  await expect(homeCarousel.getByRole('button', { name: 'Mostrar Conseguir Tarjeta Latido', exact: true })).toHaveAttribute('aria-current', 'true')
+  await expect(homeCarousel.getByRole('button', { name: 'Mostrar Unirme a Latido Club', exact: true })).toHaveAttribute('aria-current', 'true')
   const trackBounds = await track.boundingBox()
   await page.mouse.move(trackBounds.x + trackBounds.width * 0.8, trackBounds.y + trackBounds.height / 2)
   await page.mouse.down()
@@ -724,7 +724,7 @@ try {
   await reloadPage()
   await page.waitForLoadState('networkidle')
   assert.equal(await homeCarousel.count(), 0, 'No empty featured slide when the catalog is empty')
-  await page.getByRole('link', { name: 'Conseguir Tarjeta Latido', exact: true }).waitFor()
+  await page.getByRole('link', { name: 'Unirme a Latido Club', exact: true }).waitFor()
   await page.unroute('**/rpc/lc_catalog', emptyHomeCatalog)
   hasMembership = true
   await page.evaluate(() => localStorage.removeItem('sb-127-auth-token'))
@@ -761,9 +761,9 @@ try {
   await page.getByRole('button', { name: 'Menú', exact: true }).click()
   await page
     .locator('.latido-nav-menu')
-    .getByRole('link', { name: 'Tarjeta Latido', exact: true })
+    .getByRole('link', { name: 'Latido Club', exact: true })
     .click()
-  await page.waitForURL(origin + '/tarjeta-latido')
+  await page.waitForURL(origin + '/club')
   await page
     .getByRole('heading', {
       name: 'Apoya los negocios de tu comunidad y obtén descuentos',
@@ -828,7 +828,7 @@ try {
       })
       .waitFor()
   }
-  await navigate(origin + '/tarjeta-latido/')
+  await navigate(origin + '/club/')
   await page
     .getByRole('heading', {
       name: 'Apoya los negocios de tu comunidad y obt\u00e9n descuentos',
@@ -836,7 +836,7 @@ try {
     })
     .waitFor()
   assert.equal(await page.locator('.bottom-nav').count(), 0)
-  await navigate(origin + '/tarjeta-latido#registro')
+  await navigate(origin + '/club#registro')
   await page
     .getByRole('heading', { name: 'Haz que más personas descubran tu negocio', exact: true })
     .waitFor()
@@ -882,7 +882,7 @@ try {
   await page.waitForURL(origin + '/card')
   await page.locator('.lc-member-strip-heading').waitFor()
   assert.equal(
-    await page.getByRole('link', { name: 'Información de Tarjeta Latido', exact: true }).count(),
+    await page.getByRole('link', { name: 'Información de Latido Club', exact: true }).count(),
     0
   )
   const views = page.getByRole('tablist', { name: 'Ver', exact: true })
@@ -976,7 +976,7 @@ try {
     /🎟️[\s\S]*Descuentos[\s\S]*🏪[\s\S]*Mi negocio/
   )
   assert.ok(
-    (await page.getByRole('navigation', { name: 'Navegación de Tarjeta Latido' }).boundingBox())
+    (await page.getByRole('navigation', { name: 'Navegación de Latido Club' }).boundingBox())
       .height < 65,
     'Card navigation stays compact'
   )
@@ -1009,7 +1009,7 @@ try {
     0
   )
   assert.equal(await page.getByRole('button', { name: 'Reclamar', exact: true }).count(), 0)
-  const homeCardLink = page.getByRole('link', { name: /^(Ver|Conseguir) Tarjeta Latido$/ })
+  const homeCardLink = page.getByRole('link', { name: /^(Ver mi tarjeta de Latido Club|Unirme a Latido Club)$/ })
   await navigate(origin + '/')
   await homeCardLink
     .locator('.home-latido-card-number')
@@ -1018,8 +1018,8 @@ try {
   await homeCardLink.getByText(/^Válida hasta /).waitFor()
   await page.waitForLoadState('networkidle')
   await expect(homeCarousel.locator('.home-latido-carousel-slide').first().locator('.home-latido-featured')).toHaveCount(1)
-  await homeCarousel.getByRole('button', { name: 'Mostrar Mi Tarjeta Latido', exact: true }).click()
-  await expect(homeCarousel.getByRole('button', { name: 'Mostrar Mi Tarjeta Latido', exact: true })).toHaveAttribute('aria-current', 'true')
+  await homeCarousel.getByRole('button', { name: 'Mostrar Mi tarjeta del Club', exact: true }).click()
+  await expect(homeCarousel.getByRole('button', { name: 'Mostrar Mi tarjeta del Club', exact: true })).toHaveAttribute('aria-current', 'true')
   assert.equal(await homeCardLink.getAttribute('href'), '/card')
   await page.evaluate(() => document.fonts.ready)
   await page
@@ -1030,7 +1030,7 @@ try {
   await homeCardLink.locator('.home-latido-card-info').evaluate((element) => {
     const heading = document.createElement('strong'),
       caption = document.createElement('span')
-    heading.textContent = 'Tarjeta Latido'
+    heading.textContent = 'Latido Club'
     caption.textContent = '2 descuentos en Zürich'
     element.replaceChildren(heading, caption)
   })
@@ -1058,7 +1058,7 @@ try {
   await reloadPage()
   await failedHomeMembership
   await page.waitForLoadState('networkidle')
-  await homeCardLink.getByText('Tarjeta Latido', { exact: true }).waitFor()
+  await homeCardLink.getByText('Latido Club', { exact: true }).waitFor()
   homeFailures = 0
   await homeCardLink.click()
   await page.waitForURL(origin + '/card')
@@ -1566,7 +1566,7 @@ try {
   await printable.screenshot({ path: path.join(output, 'business-qr-print.png') })
   await printable.goto(origin + `/card/material/${providerId}?tipo=guia`)
   await printable
-    .getByRole('heading', { name: 'Cómo aplicar un descuento Tarjeta Latido', exact: true })
+    .getByRole('heading', { name: 'Cómo aplicar un descuento de Latido Club', exact: true })
     .waitFor()
   assert.equal(await printable.locator('.lc-staff-guide li').count(), 3)
   await printable.screenshot({ path: path.join(output, 'staff-guide-a6.png') })
@@ -1685,9 +1685,9 @@ try {
   const invitation = page.locator('.lc-business-invitation-dialog')
   await invitation.waitFor()
   await page.waitForLoadState('networkidle')
-  await invitation.getByRole('heading', { name: 'Haz crecer tu negocio', exact: true }).waitFor()
-  await invitation.getByRole('heading', { name: 'Atrae más clientes a tu negocio', exact: true }).waitFor()
-  for (const label of [/^Descuento %/, /^Cantidad fija/, /^2x1 o similar/, /^Regalo/])
+  await invitation.getByRole('heading', { name: 'Atrae más clientes', exact: true }).waitFor()
+  await invitation.getByText('Tu negocio ya está publicado', { exact: true }).waitFor()
+  for (const label of [/^Descuento/, /^Cantidad fija/, /^2x1 o similar/, /^Regalo/, /^Otro beneficio/])
     assert.equal(await invitation.getByRole('button', { name: label }).count(), 1)
   await invitation.locator('.lc-offer-preview').getByText('Zürich', { exact: true }).waitFor()
   assert.equal(
@@ -1772,12 +1772,13 @@ try {
     .getByRole('dialog', { name: 'No te pierdas nada', exact: true })
     .getByRole('button', { name: 'Ahora no', exact: true })
     .click()
-  await page.getByRole('heading', { name: '¡Negocio publicado!', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Atrae más clientes', level: 1, exact: true }).waitFor()
+  assert.equal(await page.getByRole('heading', { name: '¡Negocio publicado!', exact: true }).count(), 0)
+  await page.getByText('Tu negocio ya está publicado', { exact: true }).waitFor()
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
   const nextOffer = page.locator('.lc-business-invitation')
-  await nextOffer.getByRole('heading', { name: 'Haz crecer tu negocio', exact: true }).waitFor()
-  await nextOffer.getByRole('heading', { name: 'Atrae más clientes a tu negocio', exact: true }).waitFor()
-  await nextOffer.getByText('Los negocios con ofertas ganan visibilidad en Latido y tienen más posibilidades de ser elegidos.', { exact: true }).waitFor()
+  await nextOffer.getByRole('heading', { name: 'Atrae más clientes', exact: true }).waitFor()
+  await nextOffer.getByText('Crea ofertas y haz que tu negocio destaque en Latido. Aparece en las secciones principales y consigue que más personas te descubran.', { exact: true }).waitFor()
   await nextOffer.getByText('¿Qué quieres ofrecer?', { exact: true }).waitFor()
   assert.equal(await nextOffer.locator('.lc-invitation-example-label').count(), 0)
   assert.equal(await nextOffer.locator('.lc-invitation-steps').count(), 0)
@@ -2010,7 +2011,7 @@ try {
     .waitFor()
   assert.equal(
     await page.getByRole('link', { name: 'Más información', exact: true }).getAttribute('href'),
-    '/tarjeta-latido#negocios'
+    '/club#negocios'
   )
   const companyPromo = page.getByRole('region', {
     name: 'Haz que más personas descubran tu negocio',

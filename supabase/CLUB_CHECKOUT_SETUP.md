@@ -1,4 +1,4 @@
-# Activar los pedidos de Latido Club
+# Activar los pedidos de la Tienda Latido
 
 El código queda preparado, pero no debe publicarse la web hasta terminar estos
 pasos. El proyecto Supabase enlazado actualmente es `zmievixfjefjppofebbh`.

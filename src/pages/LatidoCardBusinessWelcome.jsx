@@ -17,7 +17,7 @@ export default function LatidoCardBusinessWelcome() {
       <section className="lc-business-welcome-card" aria-labelledby="lc-business-welcome-title">
         <LatidoCardIllustration business />
         <div className="lc-business-welcome-content">
-          <p className="lc-business-welcome-brand">Tarjeta Latido · {business?.name || 'Para negocios'}</p>
+          <p className="lc-business-welcome-brand">Latido Club · {business?.name || 'Para negocios'}</p>
           <h1 id="lc-business-welcome-title">Promocionar los negocios hispanohablantes</h1>
           <p>Ofrece beneficios a la comunidad hispanohablante y consigue que más personas descubran tu negocio gracias a Latido.</p>
           <div className="lc-business-welcome-benefits">

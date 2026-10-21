@@ -1845,7 +1845,7 @@ export default function Perfil() {
       const cardReferenceBlocked = item.kind === 'business' && error?.code === '23503'
         && /latido_card/.test(error?.message || '')
       toast.error(cardReferenceBlocked
-        ? 'No se pudo retirar el negocio de Tarjeta Latido. Falta actualizar el borrado de negocios en Supabase.'
+        ? 'No se pudo retirar el negocio de Latido Club. Falta actualizar el borrado de negocios en Supabase.'
         : error?.message || 'No se pudo eliminar la publicación')
     } finally {
       setDeletingKey('')
@@ -2162,7 +2162,7 @@ export default function Perfil() {
     {
       title: 'Mi actividad',
       items: [
-        ...(CARD_MEMBERS_ENABLED ? [{ icon:'💳', color:'#EFF6FF', label:'Mi Tarjeta Latido', sub:'Tu tarjeta y descuentos de socio', action:() => navigate('/card') }] : hasCardBusiness ? [{ icon:'🏪', color:'#EFF6FF', label:'Ofertas de mi negocio', sub:'Promociona tu negocio gratis en Latido', action:() => navigate(cardParticipating ? '/card/negocios' : '/tarjeta-latido#negocios') }] : []),
+        ...(CARD_MEMBERS_ENABLED ? [{ icon:'💳', color:'#EFF6FF', label:'Latido Club', sub:'Tu tarjeta y descuentos de socio', action:() => navigate('/card') }] : hasCardBusiness ? [{ icon:'🏪', color:'#EFF6FF', label:'Ofertas de mi negocio', sub:'Promociona tu negocio gratis en Latido', action:() => navigate(cardParticipating ? '/card/negocios' : '/club#negocios') }] : []),
         { icon:'📣', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
         { icon:'📝', color:'#EFF6FF', label:'Mi lista', sub:'Lo que necesitas y lo que ya has conseguido', action:() => setMyListOpen(true) },
         ...(hasEmploymentRequest ? [{
@@ -2595,7 +2595,7 @@ export default function Perfil() {
                       navigate(`/negocios/${item.id}/destacar`)
                     }}
                 />
-                <button type="button" onClick={() => { setProfessionalOpen(false); navigate(`/card/negocios?negocio=${item.id}`) }} style={{ minHeight:44, color:C.primary, background:'none', border:0, fontFamily:PP, fontWeight:700, cursor:'pointer' }}>Ofertas Tarjeta Latido →</button>
+                <button type="button" onClick={() => { setProfessionalOpen(false); navigate(`/card/negocios?negocio=${item.id}`) }} style={{ minHeight:44, color:C.primary, background:'none', border:0, fontFamily:PP, fontWeight:700, cursor:'pointer' }}>Ofertas de Latido Club →</button>
                 </div>
               )
             })}
@@ -2956,7 +2956,7 @@ export default function Perfil() {
             const adNeedsReview = isAdDueForReview(item, adReviewConfirmations)
             return (
               <div key={deleteKey} style={{ marginBottom:10 }}>
-                {item.kind === 'business' && <button type="button" onClick={() => { setManageOpen(false); navigate(`/card/negocios?negocio=${item.id}`) }} style={{ minHeight:44, color:C.primary, background:'none', border:0, fontFamily:PP, fontWeight:700, cursor:'pointer' }}>Ofertas Tarjeta Latido →</button>}
+                {item.kind === 'business' && <button type="button" onClick={() => { setManageOpen(false); navigate(`/card/negocios?negocio=${item.id}`) }} style={{ minHeight:44, color:C.primary, background:'none', border:0, fontFamily:PP, fontWeight:700, cursor:'pointer' }}>Ofertas de Latido Club →</button>}
                 <PublicationManagementCard
                   item={item}
                   expiredEvent={expiredEvent}
@@ -2998,7 +2998,7 @@ export default function Perfil() {
               <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{formatDate(actionItem.createdAt)}</p>
             </div>
             <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
-            {actionItem.kind === 'business' && <Btn onClick={() => { setActionItem(null); navigate(`/card/negocios?negocio=${actionItem.id}`) }} variant="secondary" style={{ marginBottom:10 }}>Ofertas Tarjeta Latido</Btn>}
+            {actionItem.kind === 'business' && <Btn onClick={() => { setActionItem(null); navigate(`/card/negocios?negocio=${actionItem.id}`) }} variant="secondary" style={{ marginBottom:10 }}>Ofertas de Latido Club</Btn>}
             {['ad', 'job'].includes(actionItem.kind) && actionItem.active && !actionItem.expired && (
               <button
                 onClick={() => handlePublicationLifecycle(actionItem, 'resolve')}

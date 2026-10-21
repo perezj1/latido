@@ -1,4 +1,4 @@
--- Pedidos de Latido Club pagados con Stripe y preparados manualmente en Gelato.
+-- Pedidos de la Tienda Latido pagados con Stripe y preparados manualmente en Gelato.
 -- Ejecutar una sola vez en Supabase SQL Editor antes de desplegar las funciones.
 
 CREATE SEQUENCE IF NOT EXISTS public.club_order_number_seq START 1001;

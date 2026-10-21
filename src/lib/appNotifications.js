@@ -71,11 +71,11 @@ function describeNotificationGroup(kind, rows) {
   switch (kind) {
     case APP_NOTIFICATION_KINDS.CARD_BUSINESS:
     case APP_NOTIFICATION_KINDS.CARD_MEMBER:
-      return { icon:'💳', title:count === 1 ? data.title || 'Novedades de Tarjeta Latido' : `${count} novedades de Tarjeta Latido`, body:count === 1 ? data.body || '' : 'Consulta tus avisos de Tarjeta Latido.', href:data.href || '/card' }
+      return { icon:'💳', title:count === 1 ? data.title || 'Novedades de Latido Club' : `${count} novedades de Latido Club`, body:count === 1 ? data.body || '' : 'Consulta tus avisos de Latido Club.', href:data.href || '/card' }
     case APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST:
-      return { icon:'💳', title:count===1?'Nueva solicitud de tarjeta física':`${count} solicitudes de tarjeta física`, body:count===1?`${data.reference || 'Solicitud'} · Revisa la entrega y la emisión.`:'Abre la bandeja de Tarjeta Latido para gestionarlas.', href:'/card/admin' }
+      return { icon:'💳', title:count===1?'Nueva solicitud de tarjeta física':`${count} solicitudes de tarjeta física`, body:count===1?`${data.reference || 'Solicitud'} · Revisa la entrega y la emisión.`:'Abre la bandeja de Latido Club para gestionarlas.', href:'/card/admin' }
     case APP_NOTIFICATION_KINDS.CARD_PHYSICAL_STATUS:
-      return { icon:'💳', title:'Novedades de tu tarjeta física', body:count===1?`${data.reference || 'Tu solicitud'} · Consulta su estado en Tarjeta Latido.`:'Consulta la preparación y entrega de tu tarjeta.', href:'/card' }
+      return { icon:'💳', title:'Novedades de tu tarjeta física', body:count===1?`${data.reference || 'Tu solicitud'} · Consulta su estado en Latido Club.`:'Consulta la preparación y entrega de tu tarjeta.', href:'/card' }
     case APP_NOTIFICATION_KINDS.MESSAGE:
       return {
         icon:'💬',

@@ -79,8 +79,8 @@ export function cardErrorMessage(
     OFFER_SOLD_OUT: 'No quedan unidades disponibles.',
     OFFER_USED: 'Ya has utilizado esta promoción.',
     BUSINESS_SUSPENDED: 'Latido ha retirado este negocio del programa. Contacta con Latido.',
-    OFFER_REQUIRED: 'Publica un descuento para participar en Tarjeta Latido.',
-    BUSINESS_INACTIVE: 'Este negocio no está participando en Tarjeta Latido.',
+    OFFER_REQUIRED: 'Publica un descuento para participar en Latido Club.',
+    BUSINESS_INACTIVE: 'Este negocio no está participando en Latido Club.',
     FORBIDDEN: 'No tienes permiso para realizar esta operación.',
     AUTH_REQUIRED: 'Inicia sesión para continuar.',
     OFFER_TERMS_LOCKED: 'Esta oferta ya tiene actividad. Usa «Crear nueva versión» para cambiar sus condiciones.',
@@ -92,6 +92,6 @@ export function cardErrorMessage(
   const code = Object.keys(messages).find((key) => text.includes(key))
   if (code) return messages[code]
   if (error?.code === 'PGRST202' || error?.code === '42P01')
-    return 'Falta instalar la actualización de Tarjeta Latido en este servidor.'
+    return 'Falta instalar la actualización de Latido Club en este servidor.'
   return fallback
 }

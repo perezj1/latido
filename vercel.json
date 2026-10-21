@@ -48,6 +48,9 @@
       ]
     }
   ],
+  "redirects": [
+    { "source": "/tarjeta-latido", "destination": "/club", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/card/negocio/:provider", "destination": "/api/card-share?provider=:provider" },
     { "source": "/card", "destination": "/api/card-share" },

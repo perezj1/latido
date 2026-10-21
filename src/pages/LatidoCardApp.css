@@ -1,4 +1,4 @@
-/* Tarjeta Latido app. Scoped to keep the rest of Latido and validation independent. */
+/* Latido Club app. Scoped to keep the rest of Latido and validation independent. */
 .lc-page.lc-app-page {
   --lc-app-blue: #2a55df;
   max-width: 480px;

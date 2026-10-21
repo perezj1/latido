@@ -35,7 +35,7 @@ function message(name: string, providerId: string, token?: string) {
   const title = 'Juntos hacemos crecer los negocios hispanohablantes en Suiza'
   const lead = 'Demos a nuestra comunidad más razones para visitar nuestros negocios.'
   const description =
-    'Ofrece un descuento especial a los socios de Tarjeta Latido y da a conocer tu negocio entre más hispanohablantes en Suiza.'
+    'Ofrece un descuento especial a los socios de Latido Club y da a conocer tu negocio entre más hispanohablantes en Suiza.'
   const terms = 'Participar es gratis. Tú eliges el descuento, sus condiciones y su duración.'
   return {
     subject: 'Dale a la comunidad una razón más para visitar tu negocio',
@@ -51,7 +51,7 @@ function message(name: string, providerId: string, token?: string) {
       '',
       ...(unsubscribe ? [`No recibir más invitaciones: ${unsubscribe}`] : [])
     ].join('\n'),
-    html: `<!doctype html><html lang="es"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f4f6fc;font-family:Arial,sans-serif;color:#10182d"><table role="presentation" width="100%" style="padding:24px 12px"><tr><td align="center"><table role="presentation" width="100%" style="max-width:540px;background:#fff;border-radius:24px;padding:28px"><tr><td><p style="color:#245ff3;font-weight:bold">🤝 Tarjeta Latido</p><p>Hola ${escape(name)},</p><h1 style="font-size:25px;line-height:1.3">${title}</h1><p style="line-height:1.7">${lead}</p><p style="line-height:1.7">${description}</p><p style="padding:16px;background:#f0f5ff;border-radius:12px;line-height:1.6">✨ ${terms}</p><p style="margin:28px 0"><a href="${escape(url)}" style="display:inline-block;background:#245ff3;color:#fff;text-decoration:none;padding:15px 20px;border-radius:12px;font-weight:bold">Ofrecer mi primer descuento</a></p><p style="font-size:12px;color:#64748b;line-height:1.6">Recibes esta invitación porque has publicado un negocio en Latido.${unsubscribe ? ` <a href="${escape(unsubscribe)}">No recibir más invitaciones</a>.` : ''}</p></td></tr></table></td></tr></table></body></html>`,
+    html: `<!doctype html><html lang="es"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f4f6fc;font-family:Arial,sans-serif;color:#10182d"><table role="presentation" width="100%" style="padding:24px 12px"><tr><td align="center"><table role="presentation" width="100%" style="max-width:540px;background:#fff;border-radius:24px;padding:28px"><tr><td><p style="color:#245ff3;font-weight:bold">🤝 Latido Club</p><p>Hola ${escape(name)},</p><h1 style="font-size:25px;line-height:1.3">${title}</h1><p style="line-height:1.7">${lead}</p><p style="line-height:1.7">${description}</p><p style="padding:16px;background:#f0f5ff;border-radius:12px;line-height:1.6">✨ ${terms}</p><p style="margin:28px 0"><a href="${escape(url)}" style="display:inline-block;background:#245ff3;color:#fff;text-decoration:none;padding:15px 20px;border-radius:12px;font-weight:bold">Ofrecer mi primer descuento</a></p><p style="font-size:12px;color:#64748b;line-height:1.6">Recibes esta invitación porque has publicado un negocio en Latido.${unsubscribe ? ` <a href="${escape(unsubscribe)}">No recibir más invitaciones</a>.` : ''}</p></td></tr></table></td></tr></table></body></html>`,
     ...(unsubscribe
       ? {
           headers: {
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
       if (error) return json({ ok: false }, 500)
     }
     return new Response(
-      `<!doctype html><html lang="es"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invitaciones de Tarjeta Latido</title><body style="font-family:Arial,sans-serif;max-width:480px;margin:60px auto;padding:24px"><h1>Tarjeta Latido</h1>${req.method === 'POST' ? '<p>No recibirás más invitaciones para publicar tu primer descuento.</p>' : '<p>¿Quieres dejar de recibir estas invitaciones?</p><form method="post"><button style="padding:14px">No recibir más invitaciones</button></form>'}</body></html>`,
+      `<!doctype html><html lang="es"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invitaciones de Latido Club</title><body style="font-family:Arial,sans-serif;max-width:480px;margin:60px auto;padding:24px"><h1>Latido Club</h1>${req.method === 'POST' ? '<p>No recibirás más invitaciones para publicar tu primer descuento.</p>' : '<p>¿Quieres dejar de recibir estas invitaciones?</p><form method="post"><button style="padding:14px">No recibir más invitaciones</button></form>'}</body></html>`,
       {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',

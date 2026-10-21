@@ -489,6 +489,18 @@ function AdminRoute({ children }) {
   return children
 }
 
+// /club era la tienda: los retornos de pago antiguos de Stripe (?checkout=) siguen llegando aquí.
+function ClubRoute() {
+  const { search, hash } = useLocation()
+  if (new URLSearchParams(search).has('checkout')) return <Navigate to={{ pathname:'/tienda', search, hash }} replace />
+  return <LatidoCardLanding />
+}
+
+function LegacyCardLandingRedirect() {
+  const { search, hash } = useLocation()
+  return <Navigate to={{ pathname:'/club', search, hash }} replace />
+}
+
 function AppShell() {
   const location = useLocation()
   const navigationType = useNavigationType()
@@ -514,8 +526,8 @@ function AppShell() {
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
-  const isCardLanding = pathname === '/tarjeta-latido' || pathname === '/tarjeta-latido/'
-  const hideAppNavigation = isCardLanding || pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/club' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher
+  const isCardLanding = pathname === '/club' || pathname === '/club/'
+  const hideAppNavigation = isCardLanding || pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/tienda' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -628,8 +640,8 @@ function AppShell() {
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'creadores', label:'Creadores', to:'/creadores' },
-      { id:'club', label:'Latido Club', to:'/club' },
-      ...(CARD_MEMBERS_ENABLED ? [{ id:'tarjeta-latido', label:'Tarjeta Latido', to:'/tarjeta-latido' }] : []),
+      { id:'tienda', label:'Tienda Latido', to:'/tienda' },
+      ...(CARD_MEMBERS_ENABLED ? [{ id:'club', label:'Latido Club', to:'/club' }] : []),
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
     ]
@@ -792,8 +804,9 @@ function AppShell() {
             <Route path="/publicar/punto-hispano/:linkToken" element={<PuntoHispanoPublicar />} />
             <Route path="/comunidades" element={<Comunidades />} />
             <Route path="/colaboraciones" element={<Colaboraciones />} />
-            <Route path="/club" element={<Club />} />
-            <Route path="/tarjeta-latido" element={<LatidoCardLanding />} />
+            <Route path="/tienda" element={<Club />} />
+            <Route path="/club" element={<ClubRoute />} />
+            <Route path="/tarjeta-latido" element={<LegacyCardLandingRedirect />} />
             <Route path="/card" element={<LatidoCardBusinessGate><LatidoCard /></LatidoCardBusinessGate>} />
             <Route path="/card/material/:providerId" element={CARD_MEMBERS_ENABLED ? <LatidoCardPrint /> : <Navigate to="/card/negocios" replace />} />
             <Route path="/card/negocios" element={<ProtectedRoute><LatidoCardBusinessGate><LatidoCardBusiness /></LatidoCardBusinessGate></ProtectedRoute>} />
@@ -801,7 +814,7 @@ function AppShell() {
             <Route path="/card/validacion/:redemptionId" element={CARD_MEMBERS_ENABLED ? <ProtectedRoute><LatidoCardValidation /></ProtectedRoute> : <Navigate to="/card" replace />} />
             <Route path="/card/scanner/*" element={<Navigate to="/card" replace />} />
             <Route path="/card/admin" element={CARD_MEMBERS_ENABLED ? <AdminRoute><LatidoCardAdmin /></AdminRoute> : <Navigate to="/card/negocios" replace />} />
-            <Route path="/c/:cardToken" element={CARD_MEMBERS_ENABLED ? <div className="lc-page"><h1>Tarjeta Latido</h1><p>Este QR antiguo ha dejado de utilizarse. Abre tus descuentos y pulsa «Activar» cuando estés en el negocio.</p><Link to="/card">Abrir mis descuentos</Link></div> : <Navigate to="/" replace />} />
+            <Route path="/c/:cardToken" element={CARD_MEMBERS_ENABLED ? <div className="lc-page"><h1>Latido Club</h1><p>Este QR antiguo ha dejado de utilizarse. Abre tus descuentos y pulsa «Activar» cuando estés en el negocio.</p><Link to="/card">Abrir mis descuentos</Link></div> : <Navigate to="/" replace />} />
             <Route path="/negocios/:providerId/destacar" element={<ProtectedRoute><DestacarNegocio /></ProtectedRoute>} />
             <Route path="/negocios/:providerId/alertas" element={<ProtectedRoute><AlertasClientesPotenciales /></ProtectedRoute>} />
             <Route path="/negocios/:businessSlug" element={<Comunidades />} />

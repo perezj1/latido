@@ -3,13 +3,15 @@
 }
 .lc-business-invitation {
   font-family: 'Poppins', sans-serif;
-  color: #10182d;
+  color: #0f172a;
   background: #fff;
-  border: 1px solid #dbe4ff;
+  border: 1px solid #e3e7ef;
   border-radius: 24px;
   padding: 0;
   overflow: hidden;
-  box-shadow: 0 10px 28px rgb(15 23 42 / 6%);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 4%),
+    0 10px 28px rgb(15 23 42 / 6%);
   text-align: left;
   margin: 0;
 }
@@ -24,24 +26,6 @@
   font-weight: 700;
   margin: 0 0 10px;
 }
-.lc-business-invitation .lc-invitation-title {
-  position: relative;
-  z-index: 1;
-  outline: none;
-  margin: 10px 12px 16px;
-  font-size: 20px;
-  line-height: 1.3;
-  font-weight: 800;
-  text-align: center;
-}
-.lc-business-invitation .lc-invitation-content h3 {
-  outline: none;
-  font-size: 24px;
-  line-height: 1.35;
-  letter-spacing: -0.4px;
-  margin: 0 0 16px;
-  font-weight: 800;
-}
 .lc-business-invitation p {
   font-size: 13px;
   line-height: 1.7;
@@ -55,98 +39,262 @@
   color: #24427b;
   font-weight: 600;
 }
-.lc-business-invitation-cta {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  min-height: 52px;
-  padding: 12px 14px;
-  border: 0;
-  border-radius: 14px;
-  background: #245ff3;
-  color: #fff;
-  font:
-    700 15px/1.5 'Poppins',
-    sans-serif;
-  text-decoration: none;
-  text-align: center;
-  cursor: pointer;
-}
+
+/* Cabecera centrada sobre azul suave, con el ejemplo de oferta */
 .lc-invitation-visual {
   position: relative;
   overflow: hidden;
+  padding: 22px 20px;
   background: #eef3ff;
-  padding: 8px 8px 12px;
+  text-align: center;
 }
 .lc-invitation-visual::before,
 .lc-invitation-visual::after {
   content: '';
   position: absolute;
-  width: 140px;
-  height: 140px;
   border-radius: 50%;
   pointer-events: none;
 }
 .lc-invitation-visual::before {
-  left: -70px;
-  top: -70px;
-  background: #dbe7ff;
+  right: -60px;
+  top: -80px;
+  width: 220px;
+  height: 220px;
+  background: rgb(42 85 223 / 7%);
 }
 .lc-invitation-visual::after {
-  right: -80px;
-  bottom: -80px;
-  background: #d2f7ed;
+  left: -50px;
+  bottom: -90px;
+  width: 180px;
+  height: 180px;
+  background: rgb(42 85 223 / 5%);
+}
+.lc-invitation-visual > * {
+  position: relative;
+  z-index: 1;
+}
+.lc-business-invitation .lc-invitation-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 12px 5px 6px;
+  border-radius: 999px;
+  background: #fff;
+  color: #0b6e53;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 6%),
+    0 4px 12px rgb(15 35 110 / 8%);
+}
+.lc-invitation-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #12b886;
+  color: #fff;
+}
+.lc-business-invitation .lc-invitation-title {
+  outline: none;
+  margin: 14px 0 0;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.lc-business-invitation .lc-invitation-description {
+  max-width: 300px;
+  margin: 8px auto 0;
+  color: #556070;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.lc-business-invitation .lc-invitation-preview-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 18px 0 8px;
+  color: #556070;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 .lc-invitation-visual .lc-offer-preview {
   --lc-coupon-surround: #eef3ff;
-  position: relative;
-  z-index: 1;
-  max-width: 350px;
-  margin: 0 auto;
-  box-shadow: 0 8px 20px #2348a010;
+  text-align: left;
+  box-shadow:
+    0 2px 4px rgb(15 23 42 / 6%),
+    0 12px 26px rgb(15 35 110 / 12%);
 }
+
 .lc-invitation-content {
-  padding: 22px;
+  padding: 20px;
+}
+.lc-invitation-content .lc-invitation-choose {
+  margin: 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* Tipos de oferta: compactos, con el color de cada tipo en el icono */
+.lc-invitation-quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.lc-invitation-quick .lc-invitation-option--wide {
+  grid-column: 1 / -1;
+}
+.lc-invitation-quick button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 8px;
+  border: 1.5px solid #e3e7ef;
+  border-radius: 14px;
+  color: #0f172a;
+  background: #fff;
+  font: 700 13px/1.2 'Poppins', sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.lc-invitation-quick button:hover {
+  border-color: #2a55df;
+}
+.lc-invitation-quick button:focus-visible {
+  outline: 3px solid #ffb020;
+  outline-offset: 2px;
+}
+.lc-invitation-option-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #e8eeff;
+  color: #2a55df;
+  font-size: 13px;
+  font-weight: 800;
+}
+.lc-invitation-option-icon--amber {
+  background: #fff3dc;
+  color: #8a5000;
+  font-size: 10px;
+}
+.lc-invitation-option-icon--pink {
+  background: #fde8f0;
+  color: #b8175a;
+  font-size: 12px;
+}
+.lc-invitation-option-icon--green {
+  background: #e7f8f1;
+  color: #0b6e53;
+}
+.lc-invitation-option-icon--purple {
+  background: #f1ecff;
+  color: #5b3cc4;
+}
+.lc-invitation-option-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.lc-invitation-option-copy strong {
+  font-weight: 700;
+}
+.lc-invitation-option-copy > span {
+  color: #556070;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.lc-business-invitation-cta {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 54px;
+  margin-top: 18px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 16px;
+  background: #2a55df;
+  color: #fff;
+  font:
+    700 16px/1.5 'Poppins',
+    sans-serif;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgb(42 85 223 / 28%);
+  transition: background-color 0.15s ease;
+}
+.lc-business-invitation-cta:hover {
+  background: #1e3fb0;
 }
 .lc-business-invitation .lc-invitation-reassurance {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 5px 12px;
-  margin: 14px 0 0;
+  gap: 6px 14px;
+  margin: 12px 0 0;
   color: #556070;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
+  line-height: 1.4;
 }
 .lc-invitation-reassurance > span {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 .lc-invitation-reassurance svg {
   color: #12a27a;
 }
+
 .lc-business-invitation-later {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  min-height: 40px;
-  margin-top: 7px;
+  min-height: 44px;
+  margin-top: 6px;
   border: 0;
   background: transparent;
-  color: #52627c;
+  color: #556070;
   font:
-    600 12px 'Poppins',
+    600 15px 'Poppins',
     sans-serif;
   text-align: center;
   cursor: pointer;
 }
+.lc-business-invitation-later:hover {
+  color: #0f172a;
+}
 .lc-business-invitation-cta:focus-visible,
 .lc-business-invitation-later:focus-visible {
-  outline: 3px solid #92b6ff;
-  outline-offset: 3px;
+  outline: 3px solid #ffb020;
+  outline-offset: 2px;
 }
 .lc-business-invitation-dialog {
   padding: 0;
@@ -164,95 +312,22 @@
 .lc-business-invitation-dialog .lc-business-invitation-wrap {
   margin: 0;
 }
-.lc-business-invitation-dialog .lc-business-invitation-later {
+.lc-business-invitation-dialog .lc-business-invitation-later,
+.lc-business-invitation-dialog .lc-business-invitation-later:hover {
   color: #fff;
 }
 @media (max-width: 360px) {
-  .lc-business-invitation {
-    padding: 0;
-  }
-  .lc-business-invitation .lc-invitation-content h3 {
-    font-size: 22px;
+  .lc-business-invitation .lc-invitation-title {
+    font-size: 24px;
   }
 }
-.lc-invitation-content .lc-invitation-choose {
-  margin: 22px 0 10px;
-  color: #172033;
-  font-size: 13px;
-  font-weight: 700;
+@media (prefers-reduced-motion: reduce) {
+  .lc-invitation-quick button,
+  .lc-business-invitation-cta {
+    transition: none;
+  }
 }
-.lc-invitation-quick {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.lc-invitation-quick button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: 0;
-  min-height: 112px;
-  padding: 12px;
-  border: 1px solid #dbe1ed;
-  border-radius: 15px;
-  color: #172033;
-  background: #fff;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-.lc-invitation-option-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  background: #e8eeff;
-  color: #2955ee;
-  font-size: 16px;
-  font-weight: 800;
-}
-.lc-invitation-option-icon--amber {
-  background: #fff3dc;
-  color: #8a5000;
-  font-size: 13px;
-}
-.lc-invitation-option-icon--pink {
-  background: #fde8f0;
-  color: #b8175a;
-  font-size: 14px;
-}
-.lc-invitation-option-icon--green {
-  background: #e7f8f1;
-  color: #0b6e53;
-}
-.lc-invitation-option-copy {
-  display: grid;
-  gap: 3px;
-  line-height: 1.35;
-}
-.lc-invitation-option-copy strong {
-  font-size: 13px;
-  font-weight: 800;
-}
-.lc-invitation-option-copy > span {
-  color: #52627c;
-  font-size: 10px;
-  font-weight: 500;
-}
-.lc-invitation-quick button:hover {
-  background: #f3f6ff;
-  border-color: #2955ee;
-}
-.lc-invitation-quick button:focus-visible {
-  outline: 3px solid #ffb020;
-  outline-offset: 2px;
-}
+
 .lc-business-invitation-share {
   display: flex;
   align-items: center;
