@@ -628,6 +628,7 @@ function AppShell() {
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'creadores', label:'Creadores', to:'/creadores' },
+      { id:'club', label:'Latido Club', to:'/club' },
       ...(CARD_MEMBERS_ENABLED ? [{ id:'tarjeta-latido', label:'Tarjeta Latido', to:'/tarjeta-latido' }] : []),
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
