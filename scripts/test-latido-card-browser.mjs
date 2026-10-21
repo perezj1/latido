@@ -1660,7 +1660,7 @@ try {
   const successDownload = page.waitForEvent('download')
   await success.getByRole('button', { name: 'Descargar imagen', exact: true }).click()
   assert.match((await successDownload).suggestedFilename(), /.png$/)
-  await success.getByRole('button', { name: 'Cerrar', exact: true }).click()
+  await success.getByRole('link', { name: 'Ir a Mi negocio', exact: true }).click()
   assert.equal(await page.locator('dialog[open]').count(), 0)
   // Existing offers open prefilled, and used terms create a replacement.
   await page.getByLabel('Negocio que quieres gestionar', { exact: true }).selectOption(providerId)
@@ -1812,7 +1812,7 @@ try {
   await offerModal.getByText('Sin compra mínima · Sin fecha de fin', { exact: true }).waitFor()
   await offerModal.getByRole('button', { name: 'Publicar oferta', exact: true }).click()
   await page.getByRole('dialog', { name: '¡Oferta publicada!', exact: true }).waitFor()
-  await page.getByRole('dialog').getByRole('button', { name: 'Cerrar', exact: true }).click()
+  await page.getByRole('dialog').getByRole('link', { name: 'Ir a Mi negocio', exact: true }).click()
   assert.equal(savedOffers.at(-1).p_provider, provider2)
   assert.equal(savedOffers.at(-1).p_offer.title, 'Oferta para la comunidad')
   assert.equal(savedOffers.at(-1).p_offer.ends_at, 'infinity')
