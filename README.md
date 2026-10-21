@@ -225,6 +225,8 @@ npm run test:search   # Calidad del buscador global
 
 ## Latido Club (piloto)
 
+Métricas de miembros, ofertas, negocios y usos en el admin: [instalación y definiciones](docs/LATIDO_CLUB_ADMIN_METRICS.md).
+
 La membresía de socios se llama **Latido Club** (`/club`, app en `/card`); la tienda de ropa
 y accesorios es **Tienda Latido** (`/tienda`). `/tarjeta-latido` redirige a `/club`.
 
