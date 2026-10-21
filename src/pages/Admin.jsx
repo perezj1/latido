@@ -26,6 +26,7 @@ import { CREATOR_PLATFORMS, CREATOR_TOPICS } from '../lib/creators'
 import { AdminIcon } from '../components/admin/AdminIcon'
 import PuntoHispanoContacts from '../components/admin/PuntoHispanoContacts'
 import PuntoHispanoPublishLinks from '../components/admin/PuntoHispanoPublishLinks'
+import LatidoClubMetrics from '../components/admin/LatidoClubMetrics'
 import '../styles/admin.css'
 
 // ── Lenguaje visual del panel ──────────────────────────────────
@@ -112,6 +113,7 @@ const ADMIN_ANALYTICS_EVENT_TYPES = [
 ]
 const PARTNER_METRICS_EXCLUDED_EMAILS = new Set(['test@g.com'])
 const ADMIN_TAB_DATA_GROUPS = {
+  latidoClub: [], // El informe agregado se carga al abrir su sección.
   users: ['users'],
   analytics: ['users', 'analytics', 'contentMetrics'],
   feedback: ['users', 'feedback'],
@@ -2060,6 +2062,8 @@ export default function Admin() {
   const dataRangeDaysByGroupRef = useRef(new Map())
   const periodRowsCacheRef = useRef(new Map())
   const [tab, setTab] = useState('overview')
+  const [clubRevision, setClubRevision] = useState(0)
+  const [clubStatus, setClubStatus] = useState({ loading: true, error: false, updatedAt: null })
   const [crmMenuOpen, setCrmMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadedDataGroups, setLoadedDataGroups] = useState(new Set())
@@ -4485,6 +4489,7 @@ export default function Admin() {
     !isTabDataReady(tabId) || isTabDataLoading(tabId) ? '...' : value
 
   const NAV_ITEMS = [
+    { id: 'latidoClub', icon: 'latidoClub', label: 'Latido Club', value: 'Miembros, ofertas y negocios', color: '#4F46E5', bg: '#EEF2FF' },
     { id: 'users', icon: 'users', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
     { id: 'creators', icon: 'creators', label: 'Creadores', value: navValue('creators', `${creatorStats.live} activos`), color: '#DB2777', bg: '#FDF2F8', alert: overviewPendingCreators },
     { id: 'analytics', icon: 'analytics', label: 'Uso app', value: navValue('analytics', `${pageViewEvents.length} vistas`), color: '#0284C7', bg: '#E0F2FE' },
@@ -4501,7 +4506,7 @@ export default function Admin() {
   const navById = new Map(NAV_ITEMS.map(item => [item.id, item]))
   const NAV_GROUPS = [
     { label: 'Dirección', hint: 'Estado global y decisiones rápidas', items: ['overview', 'live'] },
-    { label: 'Crecimiento', hint: 'Usuarios, creadores, valoraciones y colaboraciones', items: ['users', 'creators', 'analytics', 'feedback', 'partners'] },
+    { label: 'Crecimiento', hint: 'Usuarios, creadores, Club, valoraciones y colaboraciones', items: ['users', 'creators', 'latidoClub', 'analytics', 'feedback', 'partners'] },
     { label: 'Operación', hint: 'Negocios, publicaciones y seguridad', items: ['businessVerification', 'content', 'reports', 'moderation'] },
   ]
   const BOTTOM_NAV_ITEMS = []
@@ -4514,17 +4519,23 @@ export default function Admin() {
     if (isRangeSensitiveGroup(group)) activeRangeValues.push(dataRangeDaysByGroup.get(group) || 0)
   }
   const activeRangeDays = Math.max(...activeRangeValues, 0)
-  const deltaStatusColor = deltaLoadSummary?.status === 'error'
+  const deltaStatusColor = tab === 'latidoClub'
+    ? clubStatus.error ? '#DC2626' : clubStatus.loading ? '#D97706' : '#059669'
+    : deltaLoadSummary?.status === 'error'
     ? '#DC2626'
     : ['loading', 'partial'].includes(deltaLoadSummary?.status)
       ? '#D97706'
       : '#059669'
-  const deltaStatusBg = deltaLoadSummary?.status === 'error'
+  const deltaStatusBg = tab === 'latidoClub'
+    ? clubStatus.error ? '#FEF2F2' : clubStatus.loading ? '#FFFBEB' : '#ECFDF5'
+    : deltaLoadSummary?.status === 'error'
     ? '#FEF2F2'
     : ['loading', 'partial'].includes(deltaLoadSummary?.status)
       ? '#FFFBEB'
       : '#ECFDF5'
-  const deltaStatusLabel = tab === 'overview' && overviewSummaryUnavailable
+  const deltaStatusLabel = tab === 'latidoClub'
+    ? clubStatus.loading ? 'Cargando Club' : clubStatus.error ? 'Club no disponible' : 'Club actualizado'
+    : tab === 'overview' && overviewSummaryUnavailable
     ? 'Modo compatible'
     : deltaLoadSummary?.status === 'loading'
     ? `Cargando ${deltaLoadSummary.days || getLoadDaysForTab(tab)}d`
@@ -4535,6 +4546,7 @@ export default function Admin() {
         : 'Datos completos'
 
   const SECTION_TITLES = {
+    latidoClub: { icon: 'latidoClub', label: 'Latido Club' },
     overview: { icon: 'overview', label: 'Estado general' },
     live: { icon: 'live', label: 'Live' },
     creators: { icon: 'creators', label: 'Creadores' },
@@ -4550,6 +4562,7 @@ export default function Admin() {
 
   const activeSection = SECTION_TITLES[tab]
   const SECTION_DETAILS = {
+    latidoClub: { description: 'Miembros, negocios participantes, ofertas y actividad de Latido Club. Estado actual e historial separados.', color: '#4F46E5', badge: 'Miembros · Ofertas · Negocios · Usos' },
     overview: { description: `Rapport de ${overviewRangeText} con datos separados de crecimiento, actividad y pendientes.`, color: generalTrendColor, count: generalScoreLabel, badge: `${generalStatus} · ${generalTrendLabel}` },
     live: { description: 'Online ahora se actualiza en directo; actividad diaria y semanal usa la última consulta a Supabase.', color: '#7C3AED', count: onlineUsers.length, badge: `${onlineUsers.length} online` },
     analytics: { description: `Páginas más usadas, búsquedas frecuentes, soluciones confirmadas y comportamiento de navegación en ${analyticsRangeText}.`, color: '#0284C7', count: pageViewEvents.length, badge: `${pageViewEvents.length} vistas · ${searchEvents.length} búsquedas · ${searchResolution.yes} resueltas` },
@@ -5078,23 +5091,27 @@ export default function Admin() {
     )
   }
 
-  const refreshData = () => loadAdminData({ groups: getAdminTabDataGroups(tab), days: getLoadDaysForTab(tab), force: true })
+  const refreshData = () => tab === 'latidoClub'
+    ? setClubRevision(value => value + 1)
+    : loadAdminData({ groups: getAdminTabDataGroups(tab), days: getLoadDaysForTab(tab), force: true })
+  const sectionLoading = tab === 'latidoClub' ? clubStatus.loading : loading
   const refreshButton = (
     <button
       type="button"
       onClick={refreshData}
-      disabled={loading}
+      disabled={sectionLoading}
       className={`adm-refresh${isDesktop ? '' : ' adm-refresh--icon'}`}
-      aria-label={loading ? 'Actualizando' : 'Actualizar'}
-      title={loading ? 'Actualizando' : 'Actualizar'}
+      aria-label={sectionLoading ? 'Actualizando' : 'Actualizar'}
+      title={sectionLoading ? 'Actualizando' : 'Actualizar'}
     >
-      <AdminIcon name="refresh" size={isDesktop ? 14 : 17} className={loading ? 'adm-spin' : undefined} />
-      {isDesktop && (loading ? 'Actualizando' : 'Actualizar')}
+      <AdminIcon name="refresh" size={isDesktop ? 14 : 17} className={sectionLoading ? 'adm-spin' : undefined} />
+      {isDesktop && (sectionLoading ? 'Actualizando' : 'Actualizar')}
     </button>
   )
 
   const activeNavGroup = NAV_GROUPS.find(group => group.items.includes(tab))
-  const lastUpdatedLabel = deltaLoadSummary?.at ? fmtActivity(deltaLoadSummary.at) : ''
+  const updatedAt = tab === 'latidoClub' ? clubStatus.updatedAt : deltaLoadSummary?.at
+  const lastUpdatedLabel = updatedAt ? fmtActivity(updatedAt) : ''
   const sectionColor = activeSectionDetails.color
   const sectionChips = String(activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`))
     .split('·')
@@ -5324,7 +5341,7 @@ export default function Admin() {
       )}
 
       {/* Indicadores clave de la sección */}
-      {isTabDataReady(tab) && (
+      {isTabDataReady(tab) && tab !== 'latidoClub' && (
         <>
           <BlockTitle>Indicadores clave</BlockTitle>
           <KpiGrid count={sectionMetrics.length}>
@@ -5344,6 +5361,7 @@ export default function Admin() {
       )}
 
       {/* Evolución del periodo */}
+      {tab === 'latidoClub' && <LatidoClubMetrics refreshKey={clubRevision} onStatus={setClubStatus} />}
       {isTabDataReady(tab) && !loading && activeChart && tab !== 'partners' && (
         <div style={{ marginBottom: 20 }}>
           <BlockTitle>Evolución</BlockTitle>

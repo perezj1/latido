@@ -28,6 +28,8 @@
     "test:card:preview": "node scripts/test-latido-card-browser.mjs --business-preview",
     "test:card:share": "node scripts/test-latido-card-share.mjs",
     "test:card:invitations": "node scripts/test-latido-card-invitations.mjs",
+    "test:club:admin": "node scripts/test-latido-club-admin.mjs",
+    "test:club:admin:browser": "node scripts/test-latido-club-admin-browser.mjs",
     "card:invitations": "node scripts/send-latido-card-invitations.mjs",
     "test:card:browser": "node scripts/test-latido-card-browser.mjs",
     "test:card:webkit": "node scripts/test-latido-card-browser.mjs --webkit",
