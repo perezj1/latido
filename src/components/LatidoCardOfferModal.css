@@ -76,6 +76,26 @@
 .lc-offer-modal-content {
   padding: 20px;
 }
+.lc-offer-modal .lc-offer-modal-content > .lc-offer-success {
+  overflow-y: auto;
+  padding: 24px 20px 8px;
+  gap: 28px;
+}
+.lc-offer-success-message > p {
+  margin: 0;
+  line-height: 1.65;
+}
+.lc-offer-success-footer {
+  flex-shrink: 0;
+  padding: 24px 20px max(24px, env(safe-area-inset-bottom));
+}
+.lc-offer-success-footer > .lc-button {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  justify-content: center;
+  text-align: center;
+}
 @media print {
   .lc-offer-modal {
     display: none !important;

@@ -127,6 +127,7 @@ export default function LatidoCardOfferModal({
                 : operation?.mode === 'replace'
                   ? 'Crear nueva versión'
                   : 'Crear oferta'}
+            {success && <span aria-hidden="true"> 🎉</span>}
           </h2>
           {business && <p>{business.name}</p>}
         </div>
@@ -157,25 +158,15 @@ export default function LatidoCardOfferModal({
         {success ? (
           <div className="lc-offer-success" role="region" aria-label="Oferta publicada">
             <LatidoOfferPreview offer={success.offer} business={displayBusiness} />
-            {!CARD_MEMBERS_ENABLED ? <p>Tu oferta ya está publicada. Puedes gestionarla desde Mi negocio.</p> : success.first ? (
-              <>
-                <h3>Siguiente paso: pon tu QR en la caja</h3>
-                <LatidoCardBusinessMaterial business={business} />
-              </>
-            ) : (
-              <p>Tu QR no cambia: los clientes ya verán la nueva oferta.</p>
-            )}
-            <div className="lc-actions">
-              <Link
-                className="lc-button"
-                to={`/card/negocios?negocio=${providerId}`}
-                onClick={close}
-              >
-                Ir a Mi negocio
-              </Link>
-              <button className="lc-button lc-button--secondary" onClick={close}>
-                Cerrar
-              </button>
+            <div className="lc-offer-success-message">
+              {!CARD_MEMBERS_ENABLED ? <p>Tu oferta ya está publicada. Puedes gestionarla desde Mi negocio.</p> : success.first ? (
+                <>
+                  <h3>Siguiente paso: pon tu QR en la caja</h3>
+                  <LatidoCardBusinessMaterial business={business} />
+                </>
+              ) : (
+                <p>Tu QR no cambia: los clientes ya verán la nueva oferta.</p>
+              )}
             </div>
           </div>
         ) : business?.published === false ? (
@@ -227,6 +218,17 @@ export default function LatidoCardOfferModal({
           )
         )}
       </div>
+      {success && (
+        <div className="lc-offer-success-footer">
+          <Link
+            className="lc-button"
+            to={`/card/negocios?negocio=${providerId}`}
+            onClick={close}
+          >
+            Ir a Mi negocio
+          </Link>
+        </div>
+      )}
     </dialog>,
     document.body
   )
