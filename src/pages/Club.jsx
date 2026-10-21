@@ -1350,7 +1350,7 @@ export default function Club() {
         <div className="club-nav__inner">
           <BackButton to="/" />
           <Link to="/tienda" className="club-brand" aria-label="Tienda Latido, inicio">
-            <img src="/brand/tienda-latido-horizontal-black.webp" alt="Tienda Latido" />
+            <img src="/brand/tienda-latido-horizontal-black.webp?v=2" alt="Tienda Latido" />
           </Link>
           <button type="button" className="club-cart-button" onClick={() => setCartOpen(true)} aria-label={`Abrir bolsa, ${itemCount} artículos`}>
             <ShoppingBag size={18} />
@@ -1497,7 +1497,7 @@ export default function Club() {
       </main>
 
       <footer className="club-footer">
-        <div><img src="/brand/tienda-latido-horizontal-white.webp" alt="Tienda Latido" /></div>
+        <div><img src="/brand/tienda-latido-horizontal-white.webp?v=2" alt="Tienda Latido" /></div>
         <p>Hecho con corazón para los hispanohablantes en Suiza</p>
         <Link to="/">latido.ch</Link>
       </footer>

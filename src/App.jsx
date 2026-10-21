@@ -640,7 +640,6 @@ function AppShell() {
       { id:'sobre',    label:'Sobre Latido' },
       { id:'faq',      label:'Preguntas frecuentes' },
       { id:'creadores', label:'Creadores', to:'/creadores' },
-      { id:'tienda', label:'Tienda Latido', to:'/tienda' },
       ...(CARD_MEMBERS_ENABLED ? [{ id:'club', label:'Latido Club', to:'/club' }] : []),
       { id:'partners', label:'Para Empresas', to:'/colaboraciones' },
       { id:'contacto', label:'Contacto' },
