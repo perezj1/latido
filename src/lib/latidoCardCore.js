@@ -8,7 +8,7 @@ export function offerUsageLabel(offer, { compact = false } = {}) {
   const period = {
     day: 'al día',
     week: 'por semana',
-    month: 'por mes natural',
+    month: 'al mes',
     lifetime: 'en total'
   }
   return `${limit} ${limit === 1 ? 'uso' : 'usos'} ${period[offer.usage_period] || 'en total'}`
