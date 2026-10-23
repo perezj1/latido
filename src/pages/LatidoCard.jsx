@@ -1,4 +1,5 @@
 import LatidoCardUsageSteps from '../components/LatidoCardUsageSteps'
+import LinkedText from '../components/LinkedText'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Link,
@@ -20,6 +21,7 @@ import {
   offerUsageLabel
 } from '../lib/latidoCardCore'
 import useCardBusinessAccess from '../hooks/useCardBusinessAccess'
+import useOfferReturn from '../hooks/useOfferReturn'
 import LatidoCardOpenValidation from '../components/LatidoCardOpenValidation'
 import LatidoCardNotificationPreferences from '../components/LatidoCardNotificationPreferences'
 import { membershipMailUrl } from '../lib/latidoCardExperience'
@@ -106,7 +108,9 @@ export function CardHeader({ alerts = false, onAlertsOpen }) {
 export function OfferConditions({ offer }) {
   return (
     <>
-      <p>{offer.description || offerBenefitLabel(offer)}</p>
+      <p>
+        <LinkedText>{offer.description || offerBenefitLabel(offer)}</LinkedText>
+      </p>
       <small>
         {Number(offer.minimum_spend) > 0 && <>Compras desde CHF {Number(offer.minimum_spend)} · </>}
         {offerUsageLabel(offer)}
@@ -134,32 +138,45 @@ function LatidoCardMember() {
   const location = useLocation(),
     navigate = useNavigate()
   const [params] = useSearchParams()
+  const [loading, setLoading] = useState(true),
+    [error, setError] = useState('')
+  const { saved, remember } = useOfferReturn(!loading)
   const [data, setData] = useState({ offers: [], history: [], membership: null })
   const [business, setBusiness] = useState(null)
   const [directory, setDirectory] = useState([]),
     [directoryError, setDirectoryError] = useState('')
-  const [city, setCity] = useState('')
-  const [view, setView] = useState('offers')
-  const [benefitKind, setBenefitKind] = useState('')
-  const [cityNotice, setCityNotice] = useState('')
-  const cityInitialized = useRef(false)
+  const [city, setCity] = useState(saved?.city || '')
+  const [view, setView] = useState(saved?.view || 'offers')
+  const [benefitKind, setBenefitKind] = useState(saved?.benefitKind || '')
+  const [cityNotice, setCityNotice] = useState(saved?.cityNotice || '')
+  const cityInitialized = useRef(Boolean(saved))
   const { participating } = useCardBusinessAccess()
-  const [query, setQuery] = useState(''),
-    [showAll, setShowAll] = useState(false)
-  const [loading, setLoading] = useState(true),
-    [error, setError] = useState('')
+  const [query, setQuery] = useState(saved?.query || ''),
+    [showAll, setShowAll] = useState(saved?.showAll || false)
   const [busy, setBusy] = useState(false)
   const [alertsOpen, setAlertsOpen] = useState(false)
   const [alertPreference, setAlertPreference] = useState(null)
   const [confirm, setConfirm] = useState(null)
-  const [expandedOfferId, setExpandedOfferId] = useState(null)
+  const [expandedOfferId, setExpandedOfferId] = useState(saved?.expandedOfferId || null)
+  const [nearbyExpanded, setNearbyExpanded] = useState(saved?.nearbyExpanded || {})
+  const previousExpansionContext = useRef([providerId, user?.id, query, city, view, benefitKind])
+  const previousFilterContext = useRef([providerId, userCanton])
   useEffect(() => {
+    const context = [providerId, user?.id, query, city, view, benefitKind]
+    const unchanged = context.every((value, index) => value === previousExpansionContext.current[index])
+    previousExpansionContext.current = context
+    if (saved && unchanged) return
     setExpandedOfferId(null)
+    setNearbyExpanded({})
   }, [providerId, user?.id, query, city, view, benefitKind])
   useEffect(() => {
     setView(params.get('vista') === 'usadas' ? 'used' : 'offers')
   }, [params])
   useEffect(() => {
+    const context = [providerId, userCanton]
+    const unchanged = context.every((value, index) => value === previousFilterContext.current[index])
+    previousFilterContext.current = context
+    if (saved && unchanged) return
     setQuery('')
     setBenefitKind('')
     setShowAll(false)
@@ -495,6 +512,7 @@ function LatidoCardMember() {
       actionLabel="Usar ahora"
       inBusiness={Boolean(providerId)}
       expanded={expandedOfferId === offer.id}
+      onVisitBusiness={() => remember({ query, city, view, benefitKind, cityNotice, showAll, expandedOfferId, nearbyExpanded })}
       onToggleDetails={() => {
         if (expandedOfferId !== offer.id) trackCardEvent('offer_details')
         setExpandedOfferId((current) => (current === offer.id ? null : offer.id))
@@ -756,6 +774,8 @@ function LatidoCardMember() {
                   {!providerId && (
                     <CardNearbyResults
                       key={JSON.stringify([query, city, benefitKind])}
+                      expanded={nearbyExpanded}
+                      onExpandedChange={setNearbyExpanded}
                       nearby={nearby.filter((offer) => offer.id !== sharedOffer?.id)}
                       other={other.filter((offer) => offer.id !== sharedOffer?.id)}
                       id="lc-offers"

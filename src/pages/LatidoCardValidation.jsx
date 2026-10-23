@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import LinkedText from '../components/LinkedText'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { cardRpc } from '../lib/latidoCard'
@@ -197,7 +198,7 @@ export default function LatidoCardValidation() {
                 tabIndex={0}
                 aria-label="Condiciones del descuento"
               >
-                {offer.description || offerUsageLabel(offer)}
+                <LinkedText>{offer.description || offerUsageLabel(offer)}</LinkedText>
               </p>
               <div className="lc-proof-tear" aria-hidden="true" />
               <div className="lc-proof-seal" aria-hidden="true">

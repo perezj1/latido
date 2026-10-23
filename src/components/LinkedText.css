@@ -1,0 +1,14 @@
+.linked-text-url {
+  color: #2457d6;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.linked-text-url:hover {
+  color: #183fa6;
+}
+.linked-text-url:focus-visible {
+  outline: 2px solid #2457d6;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
