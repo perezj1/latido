@@ -78,6 +78,7 @@ const offer = {
   id: '00000000-0000-4000-8000-000000000001',
   provider_id: providerId,
   title: '15 % desde CHF 50',
+  description: 'Regístrate desde clino.ch/r/LATIDO. Más información en https://example.com/oferta?ref=LATIDO.',
   business_name: 'Restaurante Sabor Latino',
   business_photo_url: '/partners/punto-hispano/logo.webp',
   city: 'Zürich',
@@ -522,6 +523,51 @@ try {
     await page.waitForLoadState('networkidle')
     return page.reload()
   }
+  const checkDescriptionLinks = async (card) => {
+    const beforeUrl = page.url()
+    const beforeUses = useCalls.length
+    const link = card.getByRole('link', { name: 'clino.ch/r/LATIDO', exact: true })
+    await expect(link).toHaveAttribute('href', 'https://clino.ch/r/LATIDO')
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    await expect(card.getByRole('link', { name: 'https://example.com/oferta?ref=LATIDO', exact: true }))
+      .toHaveAttribute('href', 'https://example.com/oferta?ref=LATIDO')
+    await context.route('https://clino.ch/r/LATIDO', route => route.fulfill({ contentType: 'text/html', body: '<h1>Mock destination</h1>' }))
+    const opened = page.waitForEvent('popup')
+    await link.click()
+    const popup = await opened
+    await popup.waitForLoadState('domcontentloaded')
+    assert.equal(popup.url(), 'https://clino.ch/r/LATIDO')
+    await popup.close()
+    assert.equal(page.url(), beforeUrl)
+    assert.equal(useCalls.length, beforeUses, 'Opening a description link never redeems the offer')
+    await expect(card.locator('.lc-discount-details')).toBeVisible()
+  }
+  const checkBusinessReturn = async (card) => {
+    const search = page.getByRole('searchbox', { name: businessPreview ? 'Buscar ofertas publicadas' : 'Buscar descuentos y negocios', exact: true })
+    const previousQuery = await search.inputValue()
+    await search.fill('Sabor')
+    if (!(await card.locator('.lc-discount-details').isVisible()))
+      await card.locator('.lc-discount-open').click()
+    const originalUrl = page.url()
+    for (const browserBack of [false, true]) {
+      const link = card.getByRole('link', { name: 'Ver negocio', exact: true })
+      await link.scrollIntoViewIfNeeded()
+      const originalScroll = await page.evaluate(() => window.scrollY)
+      await link.click()
+      await page.waitForURL(origin + `/negocios/${providerId}--restaurante-sabor-latino`)
+      await page.getByRole('heading', { name: offer.business_name, level: 1, exact: true }).waitFor()
+      if (browserBack) await page.goBack()
+      else await page.locator('.latido-fullpage-enter').getByRole('button', { name: 'Volver', exact: true }).click()
+      await page.waitForURL(originalUrl)
+      await expect(card.locator('.lc-discount-details')).toBeVisible()
+      await expect(search).toHaveValue('Sabor')
+      await expect.poll(async () => Math.abs((await page.evaluate(() => window.scrollY)) - originalScroll)).toBeLessThan(4)
+    }
+    await card.screenshot({ path: path.join(output, 'offer-business-link.png') })
+    await search.fill(previousQuery)
+    if (!(await card.locator('.lc-discount-details').isVisible()))
+      await card.locator('.lc-discount-open').click()
+  }
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => {
     if (/Maximum update depth|Too many re-renders/.test(message.text())) errors.push(message.text())
@@ -623,6 +669,11 @@ try {
     await page.getByRole('heading', { name: 'Ofertas publicadas', exact: true }).waitFor()
     await page.locator('.lc-discount-card').first().waitFor()
     assert.equal(await page.getByRole('button', { name: /^(Activar|Usar ahora|Alertas de descuentos)$/ }).count(), 0)
+    const linkedCard = page.locator('.lc-discount-card').filter({ hasText: offer.title })
+    await linkedCard.locator('.lc-discount-open').click()
+    await checkDescriptionLinks(linkedCard)
+    await checkBusinessReturn(linkedCard)
+    await linkedCard.locator('.lc-discount-open').click()
     assert.equal(await page.locator('.lc-membership-summary, .lc-card-intro, #lc-card-alerts').count(), 0)
     await page.getByRole('searchbox', { name: 'Buscar ofertas publicadas', exact: true }).fill('Café')
     await expect(page.locator('.lc-discount-card')).toHaveCount(1)
@@ -961,6 +1012,8 @@ try {
   await firstAccordion.locator('.lc-discount-business').click()
   assert.equal(page.url(), origin + '/card', 'The business name toggles details without navigating')
   assert.equal(await firstAccordion.locator('.lc-discount-details').isVisible(), true)
+  await checkDescriptionLinks(firstAccordion)
+  await checkBusinessReturn(firstAccordion)
   await secondAccordion.locator('.lc-discount-business').click()
   assert.equal(await firstAccordion.locator('.lc-discount-details').isVisible(), false)
   assert.equal(await secondAccordion.locator('.lc-discount-details').isVisible(), true)

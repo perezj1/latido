@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
+import { getBusinessPath } from '../lib/seo'
 import {
   CalendarDays,
   Check,
@@ -23,6 +24,7 @@ import {
   OfferUsageChip
 } from './LatidoOfferVisual'
 import './LatidoDiscountCard.css'
+import LinkedText from './LinkedText'
 
 const date = (value) => new Date(value).toLocaleDateString('es-CH', { timeZone: 'Europe/Zurich' })
 const minimum = (offer) =>
@@ -72,8 +74,10 @@ export default function LatidoDiscountCard({
   actionLabel = 'Activar',
   inBusiness = false,
   expanded = false,
-  onToggleDetails
+  onToggleDetails,
+  onVisitBusiness
 }) {
+  const location = useLocation()
   const detailsId = useId()
   const availability = offerAvailability(offer, { memberActive })
   const daysLeft = Math.ceil((Date.parse(offer.ends_at) - Date.now()) / 86400000)
@@ -193,7 +197,9 @@ export default function LatidoDiscountCard({
         {!previewOnly && action}
       </div>
       <div className="lc-discount-details" id={detailsId} hidden={!expanded}>
-        <p>{offer.description || offerBenefitLabel(offer)}</p>
+        <p>
+          <LinkedText>{offer.description || offerBenefitLabel(offer)}</LinkedText>
+        </p>
         <ul>
           <li>
             <ReceiptText size={17} aria-hidden="true" />
@@ -221,6 +227,19 @@ export default function LatidoDiscountCard({
             </li>
           )}
         </ul>
+        {offer.provider_id && (
+          <Link
+            className="lc-discount-view-business"
+            to={getBusinessPath({ id: offer.provider_id, name: offer.business_name })}
+            state={{ fromLatidoOffer: true, offerOrigin: `${location.pathname}${location.search}${location.hash}` }}
+            onClick={(event) => {
+              if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey)
+                onVisitBusiness?.()
+            }}
+          >
+            Ver negocio
+          </Link>
+        )}
       </div>
       {manualShareUrl && (
         <label className="lc-discount-share-link">

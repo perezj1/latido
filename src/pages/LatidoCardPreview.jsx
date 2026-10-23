@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import useCardCatalog from '../hooks/useCardCatalog'
+import useOfferReturn from '../hooks/useOfferReturn'
 import { CardHeader } from './LatidoCard'
 import LatidoDiscountCard from '../components/LatidoDiscountCard'
 import { CardSearch, matchesCardSearch } from '../components/LatidoCardDiscovery'
@@ -9,9 +10,10 @@ import { shareCardOffer } from '../lib/latidoCardShare'
 
 export default function LatidoCardPreview() {
   const catalog = useCardCatalog()
+  const { saved, remember } = useOfferReturn(catalog.length > 0)
   const { providerId } = useParams()
-  const [query, setQuery] = useState('')
-  const [expanded, setExpanded] = useState(null)
+  const [query, setQuery] = useState(saved?.query || '')
+  const [expanded, setExpanded] = useState(saved?.expanded || null)
   const [manualShare, setManualShare] = useState(null)
   const offers = catalog.filter((offer) => (!providerId || offer.provider_id === providerId) && matchesCardSearch([offer.title, offer.business_name, offer.city], query))
   const share = async (offer) => {
@@ -32,6 +34,7 @@ export default function LatidoCardPreview() {
           {offers.map((offer) => <LatidoDiscountCard key={offer.id} offer={offer}
             memberActive={false} hideJoinAction previewOnly
             expanded={expanded === offer.id} onToggleDetails={() => setExpanded(expanded === offer.id ? null : offer.id)}
+            onVisitBusiness={() => remember({ query, expanded })}
             onShare={share} manualShareUrl={manualShare?.id === offer.id ? manualShare.url : ''} />)}
           {!offers.length && <p className="lc-empty-state">{query ? 'No encontramos ofertas con esta búsqueda.' : 'Los negocios están preparando sus primeras ofertas.'}</p>}
         </div>

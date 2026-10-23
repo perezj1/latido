@@ -268,6 +268,20 @@
   line-height: 1.55;
   margin: 0;
 }
+.lc-discount-view-business {
+  display: inline-block;
+  margin-top: 16px;
+  color: #2457d6;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lc-discount-view-business:focus-visible {
+  outline: 2px solid #2457d6;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
 .lc-discount-details ul {
   display: flex;
   flex-direction: column;
