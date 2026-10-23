@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.10'
+import { invitationMessage } from './email-message.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -13,6 +14,9 @@ const transport = nodemailer.createTransport({
   host: Deno.env.get('SMTP_HOSTNAME') || 'authsmtp.securemail.pro',
   port: Number(Deno.env.get('SMTP_PORT') || '465'),
   secure: (Deno.env.get('SMTP_SECURE') || 'true') === 'true',
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 20000,
   auth: { user: SMTP_USERNAME, pass: SMTP_PASSWORD }
 })
 type Invitation = { user_id: string; provider_id: string; unsubscribe_token: string }
@@ -21,55 +25,45 @@ const json = (data: unknown, status = 200) =>
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
   })
-const escape = (s: string) =>
-  s.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!
-  )
+// Fail closed unless the operator explicitly enables the real campaign via a secret.
+const INVITATION_TEST_MODE = Deno.env.get('LATIDO_CARD_INVITATION_TEST_MODE') !== 'false'
+const TEST_RECIPIENTS = ['jose13hue@gmail.com', 'play4slim1.2@gmail.com'] as const
+const normalizeEmail = (email: string) => email.trim().toLowerCase()
 
-function message(name: string, providerId: string, token?: string) {
-  const url = `${APP_URL}/?crear-oferta=${encodeURIComponent(providerId)}`
+async function send(to: string, name: string, providerId: string | null, token?: string, test = false) {
+  const recipient = normalizeEmail(to)
+  if ((INVITATION_TEST_MODE || test) && !TEST_RECIPIENTS.some(email => email === recipient))
+    throw new Error('TEST_RECIPIENT_NOT_ALLOWED')
   const unsubscribe = token
-    ? `${SUPABASE_URL}/functions/v1/latido_card_business_invitation_email?unsubscribe=${token}`
+    ? SUPABASE_URL + '/functions/v1/latido_card_business_invitation_email?unsubscribe=' + encodeURIComponent(token)
     : ''
-  const title = 'Juntos hacemos crecer los negocios hispanohablantes en Suiza'
-  const lead = 'Demos a nuestra comunidad más razones para visitar nuestros negocios.'
-  const description =
-    'Ofrece un descuento especial a los socios de Latido Club y da a conocer tu negocio entre más hispanohablantes en Suiza.'
-  const terms = 'Participar es gratis. Tú eliges el descuento, sus condiciones y su duración.'
-  return {
-    subject: 'Dale a la comunidad una razón más para visitar tu negocio',
-    text: [
-      `Hola ${name},`,
-      '',
-      title,
-      lead,
-      description,
-      terms,
-      '',
-      `Ofrecer mi primer descuento: ${url}`,
-      '',
-      ...(unsubscribe ? [`No recibir más invitaciones: ${unsubscribe}`] : [])
-    ].join('\n'),
-    html: `<!doctype html><html lang="es"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f4f6fc;font-family:Arial,sans-serif;color:#10182d"><table role="presentation" width="100%" style="padding:24px 12px"><tr><td align="center"><table role="presentation" width="100%" style="max-width:540px;background:#fff;border-radius:24px;padding:28px"><tr><td><p style="color:#245ff3;font-weight:bold">🤝 Latido Club</p><p>Hola ${escape(name)},</p><h1 style="font-size:25px;line-height:1.3">${title}</h1><p style="line-height:1.7">${lead}</p><p style="line-height:1.7">${description}</p><p style="padding:16px;background:#f0f5ff;border-radius:12px;line-height:1.6">✨ ${terms}</p><p style="margin:28px 0"><a href="${escape(url)}" style="display:inline-block;background:#245ff3;color:#fff;text-decoration:none;padding:15px 20px;border-radius:12px;font-weight:bold">Ofrecer mi primer descuento</a></p><p style="font-size:12px;color:#64748b;line-height:1.6">Recibes esta invitación porque has publicado un negocio en Latido.${unsubscribe ? ` <a href="${escape(unsubscribe)}">No recibir más invitaciones</a>.` : ''}</p></td></tr></table></td></tr></table></body></html>`,
-    ...(unsubscribe
-      ? {
-          headers: {
-            'List-Unsubscribe': `<${unsubscribe}>`,
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
-          }
-        }
-      : {})
-  }
+  const { url, ...content } = invitationMessage({ appUrl: APP_URL, providerId, name, unsubscribe, test: INVITATION_TEST_MODE || test })
+  const result = await new Promise<{ messageId: string }>((resolve, reject) =>
+    transport.sendMail({ from: SMTP_FROM, to: recipient, ...content },
+      (error: Error | null, info: { accepted?: string[]; messageId?: string }) => {
+        if (error) return reject(error)
+        if (!info?.accepted?.some(email => normalizeEmail(email) === recipient))
+          return reject(new Error('SMTP_RECIPIENT_NOT_ACCEPTED'))
+        resolve({ messageId: info.messageId || '' })
+      })
+  )
+  return { url, ...result }
 }
 
-async function send(to: string, name: string, providerId: string, token?: string) {
-  await new Promise<void>((resolve, reject) =>
-    transport.sendMail(
-      { from: SMTP_FROM, to, ...message(name, providerId, token) },
-      (error: Error | null) => (error ? reject(error) : resolve())
-    )
-  )
+async function sendTestRecipient(email: string) {
+  const { data: profile, error: profileError } = await service.from('profiles')
+    .select('id,name').ilike('email', email).maybeSingle()
+  if (profileError) throw profileError
+  let providerId: string | null = null
+  if (profile) {
+    const { data: provider, error } = await service.from('providers')
+      .select('id').eq('user_id', profile.id).eq('active', true).is('deleted_at', null)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle()
+    if (error) throw error
+    providerId = provider?.id || null
+  }
+  const delivery = await send(email, profile?.name || '', providerId, undefined, true)
+  return { email, status: 'sent', provider_id: providerId, ...delivery }
 }
 
 Deno.serve(async (req) => {
@@ -100,25 +94,30 @@ Deno.serve(async (req) => {
     return json({ error: 'UNAUTHORIZED' }, 401)
   try {
     const body = await req.json().catch(() => ({}))
-    if (body.test_email) {
+    if (INVITATION_TEST_MODE || body.test_email || body.action === 'test') {
+      if (['queue', 'run'].includes(body.action)) return json({ ok: false, error: 'TEST_MODE_ONLY' }, 403)
+      if (body.test_email && (typeof body.test_email !== 'string' || !TEST_RECIPIENTS.some(email => email === normalizeEmail(body.test_email))))
+        return json({ ok: false, error: 'TEST_RECIPIENT_NOT_ALLOWED' }, 403)
+      if (!body.test_email && !['send', 'test'].includes(body.action))
+        return json({ ok: true, test_mode: true, recipients: TEST_RECIPIENTS, requires_action: 'send' })
       if (!SMTP_USERNAME || !SMTP_PASSWORD) throw new Error('MISSING_SMTP_CONFIGURATION')
-      const { data, error } = await service
-        .from('lc_business_invitation_targets')
-        .select('provider_id,name')
-        .limit(1)
-        .maybeSingle()
-      if (error) throw error
-      if (!data) return json({ error: 'NO_ELIGIBLE_BUSINESSES' }, 409)
-      await send(String(body.test_email), data.name, data.provider_id)
-      return json({ ok: true, test_sent: true })
+      const recipients = body.test_email ? [normalizeEmail(body.test_email)] : [...TEST_RECIPIENTS]
+      const deliveries = []
+      for (const email of recipients) {
+        try { deliveries.push(await sendTestRecipient(email)) }
+        catch { deliveries.push({ email, status: 'failed', error: 'delivery_requires_manual_review' }) }
+      }
+      return json({ ok: deliveries.every(delivery => delivery.status === 'sent'), test_mode: true,
+        sent: deliveries.filter(delivery => delivery.status === 'sent').length,
+        failed: deliveries.filter(delivery => delivery.status === 'failed').length, deliveries })
     }
-    if (body.action === 'queue') {
+    if (['queue', 'run'].includes(body.action)) {
       const { data, error } = await service.rpc('lc_queue_business_invitations')
       if (error) throw error
-      return json({ ok: true, queued: data })
+      if (body.action === 'queue') return json({ ok: true, queued: data })
     }
     // Preview is the default. Installation and a normal function call send nothing.
-    if (body.action !== 'send') {
+    if (!['send', 'run'].includes(body.action)) {
       const [targets, queue] = await Promise.all([
         service
           .from('lc_business_invitation_targets')
@@ -129,13 +128,17 @@ Deno.serve(async (req) => {
           .eq('status', 'pending')
       ])
       if (targets.error || queue.error) throw targets.error || queue.error
-      return json({ ok: true, eligible_owners: targets.count, pending: queue.count })
+      return json({ ok: true, test_mode: false, reminder_days: 20, eligible_owners: targets.count, pending: queue.count })
     }
     if (!SMTP_USERNAME || !SMTP_PASSWORD) throw new Error('MISSING_SMTP_CONFIGURATION')
-    const { data, error } = await service.rpc('lc_claim_business_invitations', { p_limit: 20 })
-    if (error) throw error
     const result = { sent: 0, suppressed: 0, failed: 0 }
-    for (const invitation of (data || []) as Invitation[]) {
+    const startedAt = Date.now()
+    // Claim just before sending; a slow SMTP server must not strand the rest of a batch.
+    for (let processed = 0; processed < 20 && Date.now() - startedAt < 90000; processed++) {
+      const { data, error } = await service.rpc('lc_claim_business_invitations', { p_limit: 1 })
+      if (error) throw error
+      const invitation = (data as Invitation[] | null)?.[0]
+      if (!invitation) break
       try {
         const [target, preference, auth, current] = await Promise.all([
           service

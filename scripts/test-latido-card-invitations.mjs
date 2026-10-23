@@ -19,6 +19,10 @@ try {
   await db.exec(minimal)
   await db.exec(migration)
   await db.exec(migration)
+  // Same single-statement upgrade used by the CLI Management API, preserving the live view.
+  const upgradeFunctions = [...migration.matchAll(/CREATE OR REPLACE FUNCTION public\.(?:lc_queue_business_invitations|lc_claim_business_invitations)\([\s\S]*?END \$\$;/g)].map(match => match[0])
+  assert.equal(upgradeFunctions.length, 2)
+  await db.exec(`DO $upgrade$ BEGIN ${upgradeFunctions.map((sql, i) => `EXECUTE $definition${i}$${sql}$definition${i}$;`).join('\n')} END $upgrade$;`)
   await db.exec(minimal) // Reinstalling the core must not revoke the new owner API.
   const ids = {}
   for (const name of [
@@ -139,6 +143,33 @@ try {
     0,
     'Sent and opted-out owners stay excluded'
   )
+  await db.query("UPDATE latido_card_business_invitations SET sent_at=now()-interval '19 days' WHERE user_id=$1", [ids.first.user])
+  assert.equal(await rpc('lc_queue_business_invitations'), 0, 'No reminder before 20 days')
+  await db.query("UPDATE latido_card_business_invitations SET sent_at=now()-interval '20 days 1 second' WHERE user_id=$1", [ids.first.user])
+  assert.equal(await rpc('lc_queue_business_invitations'), 1, 'Reminder becomes due after 20 days')
+  assert.equal(await rpc('lc_queue_business_invitations'), 0, 'A queued reminder is not duplicated')
+  const reminder = (await db.query('SELECT * FROM lc_claim_business_invitations(20)')).rows
+  assert.equal(reminder.length, 1)
+  assert.equal(reminder[0].user_id, ids.first.user)
+  assert.equal((await db.query('SELECT * FROM lc_claim_business_invitations(20)')).rows.length, 0)
+  for (const status of ['failed', 'processing']) {
+    await db.query('UPDATE latido_card_business_invitations SET status=$1 WHERE user_id=$2', [status, ids.first.user])
+    assert.equal(await rpc('lc_queue_business_invitations'), 0, `${status} sends are never retried automatically`)
+  }
+  await db.query("UPDATE latido_card_business_invitations SET status='sent' WHERE user_id=$1", [ids.first.user])
+  await db.exec('RESET ROLE')
+  await db.query('INSERT INTO email_notification_preferences VALUES($1,false)', [ids.first.user])
+  await as('service_role')
+  assert.equal(await rpc('lc_queue_business_invitations'), 0, 'Reminders respect changed email preferences')
+  await db.exec('RESET ROLE')
+  await db.query('UPDATE email_notification_preferences SET weekly_digest_enabled=true WHERE user_id=$1', [ids.first.user])
+  // A historical offer on any other business of this owner also ends reminders.
+  const other = (await db.query('SELECT id FROM providers WHERE user_id=$1 AND id<>$2', [ids.first.user, claimed[0].provider_id])).rows[0].id
+  await db.query('INSERT INTO latido_card_businesses(provider_id,active) VALUES($1,true) ON CONFLICT DO NOTHING', [other])
+  await db.query(`INSERT INTO latido_card_offers(provider_id,title,benefit_type,benefit_value,ends_at,active,deleted_at)
+    VALUES($1,'Previous offer','percent',10,now()+interval '1 day',false,now())`, [other])
+  await as('service_role')
+  assert.equal(await rpc('lc_queue_business_invitations'), 0, 'Creating an offer on any owned business stops reminders')
   await db.exec('RESET ROLE')
   await db.query('DELETE FROM providers WHERE id=$1', [claimed[0].provider_id])
   await as('service_role')

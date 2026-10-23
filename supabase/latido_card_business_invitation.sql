@@ -66,7 +66,12 @@ BEGIN
   INSERT INTO public.latido_card_business_invitations(user_id,provider_id)
   SELECT user_id,provider_id FROM public.lc_business_invitation_targets t
   WHERE public.lc_invitation_email_enabled(t.user_id)
-  ON CONFLICT(user_id) DO NOTHING;
+  ON CONFLICT(user_id) DO UPDATE SET
+    provider_id=EXCLUDED.provider_id,
+    status='pending', processing_at=NULL, last_error=NULL
+  WHERE latido_card_business_invitations.status='sent'
+    AND latido_card_business_invitations.opted_out_at IS NULL
+    AND latido_card_business_invitations.sent_at <= now()-interval '20 days';
   GET DIAGNOSTICS queued = ROW_COUNT;
   RETURN queued;
 END $$;
@@ -86,7 +91,8 @@ BEGIN
   );
   RETURN QUERY
   WITH candidates AS (
-    SELECT user_id FROM public.latido_card_business_invitations WHERE status='pending'
+    SELECT user_id FROM public.latido_card_business_invitations
+    WHERE status='pending' AND (sent_at IS NULL OR sent_at <= now()-interval '20 days')
     ORDER BY created_at,user_id LIMIT least(greatest(coalesce(p_limit,20),1),100)
     FOR UPDATE SKIP LOCKED
   )
