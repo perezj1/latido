@@ -1,7 +1,7 @@
 import RelatedBusinessCard from '../components/RelatedBusinessCard'
 import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import PuntoHispanoContactForm from '../components/PuntoHispanoContactForm'
 import { useAuth } from '../hooks/useAuth'
@@ -1414,6 +1414,7 @@ function applyCachedData(snapshot, setters) {
 
 export default function Comunidades() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { businessSlug, eventSlug } = useParams()
   const { isLoggedIn, user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -1760,6 +1761,11 @@ export default function Comunidades() {
   const closeBusinessDetails = () => {
     setSelectedBusiness(null)
     if (isCleanBusinessRoute) {
+      if (location.state?.fromLatidoOffer && /^\/card(?:[/?#]|$)/.test(location.state.offerOrigin || '')) {
+        if (window.history.state?.idx > 0) navigate(-1)
+        else navigate(location.state.offerOrigin, { replace: true })
+        return
+      }
       navigate('/comunidades?view=negocios', { replace:true })
       return
     }

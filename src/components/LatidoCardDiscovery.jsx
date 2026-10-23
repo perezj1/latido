@@ -60,8 +60,10 @@ export function CardListLimit({ total, expanded, onToggle, controls, noun }) {
   )
 }
 
-export function CardNearbyResults({ nearby, other, id, noun, renderList }) {
-  const [expanded, setExpanded] = useState({})
+export function CardNearbyResults({ nearby, other, id, noun, renderList, expanded: controlledExpanded, onExpandedChange }) {
+  const [localExpanded, setLocalExpanded] = useState({})
+  const expanded = controlledExpanded ?? localExpanded
+  const setExpanded = onExpandedChange || setLocalExpanded
   const businesses = noun === 'negocios'
   return [
     {
