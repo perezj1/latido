@@ -206,12 +206,11 @@ function CreatorDirectorySync() {
   return null
 }
 
-function PWAInstallBanner({ canInstall, promptInstall, isPWA, onVisibilityChange }) {
+function PWAInstallBanner({ canInstall, promptInstall, isPWA, isInstalled, installationChecked, onVisibilityChange }) {
   const { isLoggedIn } = useAuth()
   const navigate = useNavigate()
   const bannerRef = useRef(null)
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('latido_pwa_dismissed') === '1')
-  const [installed, setInstalled] = useState(false)
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -226,10 +225,7 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA, onVisibilityChange
   }
 
   const handleInstall = async () => {
-    const accepted = await promptInstall()
-    if (!accepted) return
-
-    setInstalled(true)
+    await promptInstall()
   }
 
   const openIOSInstallGuide = () => {
@@ -238,7 +234,7 @@ function PWAInstallBanner({ canInstall, promptInstall, isPWA, onVisibilityChange
     navigate('/perfil#instalar-ios')
   }
 
-  const shouldShow = isLoggedIn && !isPWA && !dismissed && !installed && (canInstall || isIOS)
+  const shouldShow = isLoggedIn && installationChecked && !isPWA && !isInstalled && !dismissed && (canInstall || isIOS)
 
   useEffect(() => {
     onVisibilityChange?.(shouldShow)
@@ -505,7 +501,7 @@ function AppShell() {
   const location = useLocation()
   const navigationType = useNavigationType()
   const { pathname } = location
-  const { isPWA, canInstall, promptInstall } = usePWA()
+  const { isPWA, isInstalled, installationChecked, canInstall, promptInstall } = usePWA()
   const { isLoggedIn, loading, user, isAdmin } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPage, setMenuPage] = useState(null)
@@ -855,6 +851,8 @@ function AppShell() {
           canInstall={canInstall}
           promptInstall={promptInstall}
           isPWA={isPWA}
+          isInstalled={isInstalled}
+          installationChecked={installationChecked}
           onVisibilityChange={setInstallBannerVisible}
         />
       )}

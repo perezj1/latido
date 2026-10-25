@@ -738,7 +738,7 @@ function LatidoStarInput({
 export default function Perfil() {
   const { isLoggedIn, displayName, userCanton, userInterests, user, signOut, avatarUrl, updateAvatar, isAdmin } = useAuth()
   const { hasBusiness: hasCardBusiness, participating: cardParticipating } = useCardBusinessAccess()
-  const { isPWA, canInstall, promptInstall } = usePWA()
+  const { isPWA, isInstalled, installationChecked, canInstall, promptInstall } = usePWA()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -2348,7 +2348,7 @@ export default function Perfil() {
       ))}
 
       {/* Install app card */}
-      {!isPWA && (
+      {!isPWA && !isInstalled && installationChecked && (
         <div id="instalar-ios" style={{ scrollMarginTop:96, background:`linear-gradient(135deg,${C.primaryDark},${C.primary})`, borderRadius:16, padding:'16px 18px', marginTop:8, marginBottom:8, boxShadow:'0 8px 24px rgba(37,99,235,0.3)' }}>
           <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
             <div style={{ fontSize:28, flexShrink:0 }}>📲</div>

@@ -7,6 +7,7 @@ import HorizontalDragScroller from '../components/HorizontalDragScroller'
 import PublicPartnersSection from '../components/PublicPartnersSection'
 import { BackButton } from '../components/UI'
 import { useAuth } from '../hooks/useAuth'
+import { usePWA } from '../hooks/usePWA'
 import { C, PP } from '../lib/theme'
 import { BUSINESS_PROMOTION_PLAN_DETAIL_LIST, PAID_BUSINESS_FEATURES_VISIBLE } from '../lib/businessPromotion'
 
@@ -833,6 +834,7 @@ const isIOS = typeof navigator !== 'undefined' &&
 const isAndroid = typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent)
 
 export default function Landing({ onInstall, menuPage, setMenuPage }) {
+  const { isInstalled, isPWA, installationChecked } = usePWA()
   const { isLoggedIn } = useAuth()
   const [cols, setCols] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 500 ? 2 : 3))
   const creatorsAppPath = '/comunidades?view=creadores'
@@ -1193,7 +1195,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
       </Reveal>
 
       {/* ── PWA INSTALL BANNER ───────────────────────────────────── */}
-      <section className="latido-page-container" style={{ maxWidth:760, marginTop:72 }}>
+      {!isInstalled && !isPWA && installationChecked && <section className="latido-page-container" style={{ maxWidth:760, marginTop:72 }}>
         {isIOS ? (
           <div style={{ width: '100%', background: `linear-gradient(90deg, ${C.primary}, ${C.primaryDark})`, borderRadius: 16, padding: '16px 20px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -1241,7 +1243,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             <span style={{ fontFamily: PP, fontWeight: 700, fontSize: 12, color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: 10, padding: '7px 14px', flexShrink: 0 }}>Instalar →</span>
           </button>
         )}
-      </section>
+      </section>}
 
       {/* ── FINAL CTA ────────────────────────────────────────────── */}
       <section className="latido-page-container" style={{ maxWidth:720, marginTop:72, paddingBottom:96 }}>

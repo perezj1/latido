@@ -9,6 +9,10 @@
   "handle_links": "preferred",
   "orientation": "portrait",
   "start_url": "/?pwa=1",
+  "id": "/?pwa=1",
+  "related_applications": [
+    { "platform": "webapp", "url": "/manifest.json", "id": "https://www.latido.ch/?pwa=1" }
+  ],
   "scope": "/",
   "lang": "es",
   "icons": [

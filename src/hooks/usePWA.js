@@ -1,54 +1,104 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
-// Module-level store so all usePWA instances share the same prompt
+const INSTALLED_KEY = 'latido_pwa_installed'
+const displayQueries = ['standalone', 'minimal-ui', 'window-controls-overlay']
+  .map(mode => window.matchMedia(`(display-mode: ${mode})`))
+const homeScreenLaunch = new URLSearchParams(window.location.search).get('pwa') === '1'
+const inAppWindow = () => displayQueries.some(query => query.matches) || window.navigator.standalone === true || homeScreenLaunch
+const readInstalled = () => {
+  try { return window.localStorage.getItem(INSTALLED_KEY) === '1' } catch { return false }
+}
+
+// Installation and the current display mode are distinct, shared across hook consumers.
 let _prompt = null
-let _canInstall = false
-let _isPWA =
-  window.matchMedia('(display-mode: standalone)').matches ||
-  window.navigator.standalone === true ||
-  new URLSearchParams(window.location.search).get('pwa') === '1'
+let _isPWA = inAppWindow()
+let _installed = readInstalled()
+let _checked = _installed || typeof navigator.getInstalledRelatedApps !== 'function'
+let _checking = false
 const _subs = new Set()
+const notify = () => _subs.forEach(fn => fn())
 
-function notify() { _subs.forEach(fn => fn()) }
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault()
-  _prompt = e
-  _canInstall = true
-  notify()
-})
-
-window.addEventListener('appinstalled', () => {
+function rememberInstalled() {
+  _installed = true
+  _checked = true
   _prompt = null
-  _canInstall = false
-  _isPWA = true
+  try { window.localStorage.setItem(INSTALLED_KEY, '1') } catch {}
   notify()
-})
+}
 
-window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
-  _isPWA = e.matches
+function isLatidoApp(app) {
+  if (app.platform !== 'webapp') return false
+  try {
+    return (app.url && new URL(app.url, window.location.href).href === new URL('/manifest.json', window.location.href).href) ||
+      (app.id && new URL(app.id, window.location.href).href === new URL('/?pwa=1', window.location.href).href)
+  } catch { return false }
+}
+
+async function refreshInstallation() {
+  _isPWA = inAppWindow()
+  if (_isPWA || readInstalled()) rememberInstalled()
+  else notify()
+  if (_installed || _checking || typeof navigator.getInstalledRelatedApps !== 'function') return
+  _checking = true
+  // A blocked or unavailable browser API must not hold the UI indefinitely.
+  const timeout = setTimeout(() => { _checked = true; notify() }, 1500)
+  try {
+    const apps = await navigator.getInstalledRelatedApps()
+    if (apps.some(isLatidoApp)) rememberInstalled()
+  } catch {
+    // Brave and Safari may restrict this API; remembered launches remain valid.
+  } finally {
+    clearTimeout(timeout)
+    _checking = false
+    _checked = true
+    notify()
+  }
+}
+
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault()
+  if (_installed || inAppWindow()) return
+  _prompt = event
   notify()
 })
+window.addEventListener('appinstalled', rememberInstalled)
+for (const query of displayQueries) {
+  if (query.addEventListener) query.addEventListener('change', refreshInstallation)
+  else query.addListener?.(refreshInstallation)
+}
+window.addEventListener('storage', event => {
+  if (event.key === INSTALLED_KEY && event.newValue === '1') rememberInstalled()
+})
+window.addEventListener('focus', refreshInstallation)
+window.addEventListener('pageshow', refreshInstallation)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') void refreshInstallation()
+})
+void refreshInstallation()
 
 export function usePWA() {
   const [, tick] = useState(0)
-
   useEffect(() => {
-    const unsub = () => { _subs.add(rerender); return () => _subs.delete(rerender) }
-    function rerender() { tick(n => n + 1) }
+    const rerender = () => tick(n => n + 1)
     _subs.add(rerender)
+    rerender()
     return () => _subs.delete(rerender)
   }, [])
 
   const promptInstall = async () => {
-    if (!_prompt) return false
-    _prompt.prompt()
-    const { outcome } = await _prompt.userChoice
+    if (!_prompt || _installed || !_checked) return false
+    const prompt = _prompt
     _prompt = null
-    _canInstall = false
     notify()
-    return outcome === 'accepted'
+    try {
+      await prompt.prompt()
+      const { outcome } = await prompt.userChoice
+      if (outcome !== 'accepted') return false
+      rememberInstalled()
+      return true
+    } catch { return false }
   }
 
-  return { isPWA: _isPWA, canInstall: _canInstall, promptInstall }
+  return { isPWA: _isPWA, isInstalled: _installed, installationChecked: _checked,
+    canInstall: Boolean(_prompt) && _checked && !_installed && !_isPWA, promptInstall }
 }
