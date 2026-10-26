@@ -1,4 +1,5 @@
 import RelatedBusinessCard from '../components/RelatedBusinessCard'
+import LinkedText from '../components/LinkedText'
 import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -631,7 +632,7 @@ function BusinessDescription({ business }) {
     margin:'0 0 10px',
     whiteSpace:'pre-line',
   }
-  return <p style={paragraphStyle}>{visibleDescription}</p>
+  return <p style={paragraphStyle}><LinkedText>{visibleDescription}</LinkedText></p>
 }
 
 function RelatedCommunityCard({ group, onClick }) {
@@ -690,7 +691,7 @@ function CommunityCard({ group, onClick }) {
         </div>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px', lineHeight:1.32, ...CLAMP_2 }}>{group.name}</h3>
         {!isWebCommunity(group.contact) && <p style={{ fontFamily:PP, fontSize:11, color:C.light, lineHeight:1.3, margin:'0 0 5px', ...CLAMP_1 }}>{group.members} miembros</p>}
-        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', ...CLAMP_2 }}>{group.desc}</p>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', ...CLAMP_2 }}><LinkedText>{group.desc}</LinkedText></p>
       </div>
     </Card>
   )
@@ -768,7 +769,7 @@ function BusinessCard({ business, onClick, photosMap, reviewsMap, recommendation
           {recommendationCount > 0 && <span style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.mid, display:'inline-flex', alignItems:'center', gap:3 }}>👍 {recommendationCount}</span>}
           <span style={{ fontFamily:PP, fontSize:10, color:C.light, ...CLAMP_1 }}>{business.city}</span>
         </div>
-        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}>{business.desc}</p>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:0, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden', ...WRAPPING_TEXT }}><LinkedText>{business.desc}</LinkedText></p>
       </div>
 
     </Card>
@@ -1249,7 +1250,7 @@ function CommunityDetail({ community, onClose, relatedCommunities=[], onOpenRela
       </div>
 
       <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>
-        {community.desc || 'Grupo hispanohablante en Suiza.'}
+        <LinkedText>{community.desc || 'Grupo hispanohablante en Suiza.'}</LinkedText>
       </p>
 
       <RelatedRail title="Grupos parecidos" empty={!relatedCommunities.length}>
@@ -1316,7 +1317,7 @@ function EventDetail({ event, onClose, relatedEvents=[], onOpenRelatedEvent }) {
         <Tag bg={C.bg} color={C.mid}>🎟 {event.price}</Tag>
       </div>
       <InfoBanner emoji={event.emoji} title={`${event.day} ${event.month} · ${event.venue}`} text={`Organiza ${event.host}`} bg={C.primaryLight} border={C.primaryMid} color={C.primaryDark} />
-      <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}>{event.desc}</p>
+      <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.8, marginBottom:18, whiteSpace:'pre-line' }}><LinkedText>{event.desc}</LinkedText></p>
       <RelatedRail title="Eventos parecidos" empty={!relatedEvents.length}>
         {relatedEvents.map(item => (
           <RelatedEventCard key={item.id} event={item} onClick={() => onOpenRelatedEvent?.(item)} />
