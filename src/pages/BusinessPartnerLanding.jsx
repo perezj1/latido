@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import { PUNTO_HISPANO_PROVIDER_ID, PUNTO_HISPANO_CONTACT_URL } from '../lib/puntoHispano'
 import { BackButton } from '../components/UI'
+import LinkedText from '../components/LinkedText'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { getNegocioTypeMeta } from '../lib/constants'
@@ -219,7 +220,7 @@ export default function BusinessPartnerLanding() {
             </div>
             <div className="see-hero-label"><span /> Colaborador de Latido</div>
             <h1>{title}</h1>
-            <p>{description}</p>
+            <p><LinkedText>{description}</LinkedText></p>
             <div className="bpl-hero-actions">
               <a className="see-hero-cta" href="#contacto">Contactar →</a>
               {primaryAction && (
@@ -267,7 +268,7 @@ export default function BusinessPartnerLanding() {
                 {index === 0 && <span className="see-service-ribbon">Destacado</span>}
                 <span className="see-service-tag">{category}</span>
                 <h3>{service}</h3>
-                <p className="see-service-description">{index === 0 ? description : `Consulta directamente con ${provider.name} para confirmar disponibilidad, condiciones y próximos pasos.`}</p>
+                <p className="see-service-description"><LinkedText>{index === 0 ? description : `Consulta directamente con ${provider.name} para confirmar disponibilidad, condiciones y próximos pasos.`}</LinkedText></p>
                 <a className="see-service-cta" href="#contacto">Pedir información →</a>
                 <span className="see-service-note">{locationLabel}</span>
               </article>

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { Check, ChevronDown, ChevronRight, ChevronUp, Trash2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { BackButton, Btn, EmptyState, IconButton, ImageUploadField, Input } from '../components/UI'
+import LinkedText from '../components/LinkedText'
 import {
   CreatorAppContentCard,
   CreatorAvatar,
@@ -417,7 +418,7 @@ export default function CreadorPanel() {
             <div className="creator-social-profile__name"><h1>{creator.name}</h1></div>
             <p className="creator-social-profile__location">{formatCreatorHandle(creator.handle)} · 📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</p>
             <strong className="creator-social-profile__tagline">{creator.tagline}</strong>
-            <p className="creator-social-profile__bio">{creator.bio}</p>
+            <p className="creator-social-profile__bio"><LinkedText>{creator.bio}</LinkedText></p>
 
             <div className="creator-editor-block-heading">
               <strong>Temas</strong>
