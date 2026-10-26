@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Ellipsis, Heart, Pencil, Star, Trash2 } from 'lucide-react'
 import { BackButton, EmptyState } from '../components/UI'
+import LinkedText from '../components/LinkedText'
 import { useAuth } from '../hooks/useAuth'
 import {
   CREATOR_FEATURED_CONTENTS,
@@ -327,7 +328,7 @@ export default function CreadorPerfil() {
             </div>
             <p className="creator-social-profile__location">{formatCreatorHandle(creator.handle)} · 📍 {creator.city || creator.reach}{creator.canton ? `, ${creator.canton}` : ''}</p>
             <strong className="creator-social-profile__tagline">{creator.tagline}</strong>
-            <p className="creator-social-profile__bio">{creator.bio}</p>
+            <p className="creator-social-profile__bio"><LinkedText>{creator.bio}</LinkedText></p>
 
             <div className="creator-social-profile__topics">
               {(creator.topics || []).map(topic => <CreatorTopicPill key={topic} topicId={topic} />)}

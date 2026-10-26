@@ -10,6 +10,7 @@ import { C, PP, CAT_COLORS } from '../lib/theme'
 import { MOCK_ADS, MOCK_JOBS, AD_CATS, AD_TYPES, CANTONS, JOB_TYPES, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption, getCategoryIntentMeta, getCategoryIntentViews, getDefaultCategoryIntent, getJobIntentId, getJobIntentMeta, getPublishPathForIntent, normalizeAdCat } from '../lib/constants'
 import { Avatar, Card, EmptyState, FullPageOverlay, ImageLightbox, PhotoGallery, PrivacyTag, ReviewForm, ReviewList, Sheet, SkeletonCard, Stars, Tag } from '../components/UI'
 import FavoriteButton from '../components/FavoriteButton'
+import LinkedText from '../components/LinkedText'
 import DetailActionBar from '../components/DetailActionBar'
 import DetailHeaderActions from '../components/DetailHeaderActions'
 import { buildShareUrl } from '../components/ShareButton'
@@ -415,7 +416,7 @@ function AdCard({ ad, onClick, isFav, onToggleFav, avatarSrc, reviews=[] }) {
       <div style={{ flex:1, minWidth:0, padding:'1px 42px 1px 0', display:'flex', flexDirection:'column' }}>
         <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, lineHeight:1.32, margin:'0 0 4px', ...CLAMP_2 }}>{ad.title}</h3>
         {ad.price && <span style={{ display:'block', maxWidth:'100%', fontFamily:PP, fontSize:14, fontWeight:800, color:C.primary, lineHeight:1.15, marginBottom:5, ...CLAMP_1 }}>{fmtPrice(ad.price)}</span>}
-        {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:'0 0 7px', whiteSpace:'pre-line', ...CLAMP_2 }}>{ad.desc}</p>}
+        {ad.desc && <p style={{ fontFamily:PP, fontSize:12, color:C.mid, lineHeight:1.45, margin:'0 0 7px', whiteSpace:'pre-line', ...CLAMP_2 }}><LinkedText>{ad.desc}</LinkedText></p>}
         {showReviews && (
           <div style={{ display:'flex', alignItems:'center', gap:7, margin:'0 0 7px', flexWrap:'wrap', minWidth:0 }}>
             {rating !== null ? (
@@ -564,7 +565,7 @@ function AdDetail({ ad, user, displayName='', userCanton='', avatarSrc, relatedA
       {ad.desc && (
         <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
           <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 10px' }}>Descripción</h2>
-          <p style={{ fontFamily:PP, fontSize:14, color:C.mid, lineHeight:1.75, margin:0, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>{ad.desc}</p>
+          <p style={{ fontFamily:PP, fontSize:14, color:C.mid, lineHeight:1.75, margin:0, whiteSpace:'pre-line', ...WRAPPING_TEXT }}><LinkedText>{ad.desc}</LinkedText></p>
         </div>
       )}
 
@@ -807,7 +808,7 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
           {!hasProfessionalProfile && job.driving_license != null && <p style={{ fontFamily:PP, fontSize:13, color:C.mid, lineHeight:1.6, margin:'0 0 8px', ...WRAPPING_TEXT }}>Carnet de conducir: {job.driving_license ? 'Sí' : 'No'}</p>}
       {(job.desc || job.description) && (
             <p style={{ fontFamily:PP, fontSize:14, color:C.mid, lineHeight:1.75, margin:0, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>
-          {job.desc || job.description}
+          <LinkedText>{job.desc || job.description}</LinkedText>
         </p>
       )}
         </div>
@@ -850,7 +851,7 @@ function JobDetail({ job, user, avatarSrc, authorName, relatedJobs=[], onOpenRel
 /* ── Portal card ─────────────────────────────────────────── */
 function PortalCard({ portal, defaultEmoji = '🏠', onClick }) {
   return (
-    <button onClick={onClick} style={{ ...LIST_CARD_STYLE, minHeight:106, borderRadius:14 }}>
+    <Card onClick={onClick} aria-label={`Ver portal: ${portal.name}`} variant="outlined" padding="none" style={{ ...LIST_CARD_STYLE, minHeight:106, borderRadius:14 }}>
       <div style={{ ...LIST_THUMB_STYLE, background:C.primaryLight, fontSize:24 }}>
         {portal.photo_url
           ? <img src={getThumbnailImageUrl(portal.photo_url)} alt={portal.name} loading="lazy" decoding="async" style={LIST_MEDIA_STYLE} />
@@ -861,10 +862,10 @@ function PortalCard({ portal, defaultEmoji = '🏠', onClick }) {
           <h3 style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{portal.name}</h3>
         </div>
         {portal.city && <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:'0 0 2px' }}>📍 {portal.city}</p>}
-        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{portal.description}</p>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><LinkedText>{portal.description}</LinkedText></p>
       </div>
       <span style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.primary, flexShrink:0 }}>Ver →</span>
-    </button>
+    </Card>
   )
 }
 
@@ -888,7 +889,7 @@ function PortalDetail({ portal, defaultEmoji = '🏠' }) {
       {portal.description && (
         <div style={{ padding:'20px', borderBottom:`1px solid ${C.border}` }}>
           <h2 style={{ fontFamily:PP, fontWeight:800, fontSize:18, color:C.text, margin:'0 0 10px' }}>Descripción</h2>
-          <p style={{ fontFamily:PP, fontSize:14, color:C.mid, margin:0, lineHeight:1.75, whiteSpace:'pre-line', ...WRAPPING_TEXT }}>{portal.description}</p>
+          <p style={{ fontFamily:PP, fontSize:14, color:C.mid, margin:0, lineHeight:1.75, whiteSpace:'pre-line', ...WRAPPING_TEXT }}><LinkedText>{portal.description}</LinkedText></p>
         </div>
       )}
       {portal.website && (
