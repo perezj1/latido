@@ -12,6 +12,7 @@ type DeliveryContext = {
   display_name: string | null;
   unread_count: number;
   latest_conversation_id: string | null;
+  // The existing RPC field means that the recipient is active right now.
   app_opened_since_first_unread: boolean;
   email_enabled: boolean;
 };
@@ -162,6 +163,54 @@ async function retryLater(notification: ClaimedNotification, error: unknown) {
   });
 }
 
+async function deferWhileActive(userId: string) {
+  await updateState(userId, {
+    status: "pending",
+    due_at: new Date(Date.now() + 30 * 60_000).toISOString(),
+    processing_started_at: null,
+    last_error: "app_active_deferred",
+  });
+}
+
+async function resolveRecipient(accountId: string, context: DeliveryContext) {
+  const { data: cooperator, error: routingError } = await supabase
+    .from("account_cooperators")
+    .select("user_id")
+    .eq("account_id", accountId)
+    .eq("active", true)
+    .eq("receives_message_emails", true)
+    .maybeSingle();
+  if (routingError) throw routingError;
+
+  const { data: authResult, error: authError } = await supabase.auth.admin
+    .getUserById(cooperator?.user_id || accountId);
+  if (authError) throw authError;
+
+  if (!cooperator) {
+    return {
+      email: authResult.user?.email || context.profile_email,
+      name: context.display_name || authResult.user?.user_metadata?.name || "Usuario",
+      active: context.app_opened_since_first_unread,
+    };
+  }
+
+  // A configured delegate must have a verified email. Never send to the owner
+  // as a fallback when the delegate's address is missing or unverified.
+  const { data: presence, error: presenceError } = await supabase
+    .from("app_presence_sessions")
+    .select("user_id")
+    .eq("user_id", cooperator.user_id)
+    .gt("active_until", new Date().toISOString())
+    .limit(1)
+    .maybeSingle();
+  if (presenceError) throw presenceError;
+  return {
+    email: authResult.user?.email_confirmed_at ? authResult.user.email : null,
+    name: context.display_name || "Usuario",
+    active: Boolean(presence),
+  };
+}
+
 async function processNotification(notification: ClaimedNotification) {
   const { data: context, error: contextError } = await supabase
     .rpc("message_email_delivery_context", { p_user_id: notification.user_id })
@@ -183,24 +232,20 @@ async function processNotification(notification: ClaimedNotification) {
     return "email_disabled";
   }
 
-  if (context.app_opened_since_first_unread) {
-    await suppress(notification.user_id, "app_opened");
-    return "app_opened";
-  }
-
-  const { data: authResult, error: authError } = await supabase.auth.admin
-    .getUserById(notification.user_id);
-  if (authError) throw authError;
-
-  const recipientEmail = authResult.user?.email || context.profile_email;
-  if (!recipientEmail) {
+  const recipient = await resolveRecipient(notification.user_id, context);
+  if (!recipient.email) {
     await suppress(notification.user_id, "missing_email");
     return "missing_email";
   }
 
+  if (recipient.active) {
+    await deferWhileActive(notification.user_id);
+    return "deferred";
+  }
+
   await sendMail(
-    recipientEmail,
-    context.display_name || authResult.user?.user_metadata?.name || "Usuario",
+    recipient.email,
+    recipient.name,
     context.latest_conversation_id,
   );
 
@@ -247,6 +292,7 @@ Deno.serve(async (req) => {
       claimed: claimed.length,
       sent: 0,
       suppressed: 0,
+      deferred: 0,
       retried: 0,
     };
 
@@ -254,6 +300,7 @@ Deno.serve(async (req) => {
       try {
         const outcome = await processNotification(notification);
         if (outcome === "sent") results.sent += 1;
+        else if (outcome === "deferred") results.deferred += 1;
         else results.suppressed += 1;
       } catch (error) {
         console.error("message_email_delivery_failed", {
