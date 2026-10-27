@@ -12,3 +12,10 @@
   outline-offset: 2px;
   border-radius: 2px;
 }
+.linked-text-url--inherit,
+.linked-text-url--inherit:hover {
+  color: inherit;
+}
+.linked-text-url--inherit:focus-visible {
+  outline-color: currentColor;
+}
