@@ -665,7 +665,7 @@ try {
     const paused = page.locator('.lc-managed-offer').filter({ hasText: pausedOffer.title })
     await paused.locator('summary').click()
     assert.equal(await page.getByRole('button', { name: 'Borrar', exact: true }).count(), 0)
-    await page.getByRole('link', { name: 'Descuentos', exact: true }).click()
+    await page.getByRole('link', { name: 'Ofertas', exact: true }).click()
     await page.getByRole('heading', { name: 'Ofertas publicadas', exact: true }).waitFor()
     await page.locator('.lc-discount-card').first().waitFor()
     assert.equal(await page.getByRole('button', { name: /^(Activar|Usar ahora|Alertas de descuentos)$/ }).count(), 0)
@@ -1026,7 +1026,7 @@ try {
   await page.getByRole('link', { name: 'Mi negocio', exact: true }).waitFor()
   assert.match(
     await page.locator('.lc-links').innerText(),
-    /🎟️[\s\S]*Descuentos[\s\S]*🏪[\s\S]*Mi negocio/
+    /🎟️[\s\S]*Ofertas[\s\S]*🏪[\s\S]*Mi negocio/
   )
   assert.ok(
     (await page.getByRole('navigation', { name: 'Navegación de Latido Club' }).boundingBox())
