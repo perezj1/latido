@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, createContext, useContext } f
 import { supabase } from '../lib/supabase'
 import { isAdminUser } from '../lib/admin'
 import { normalizeInterestIds } from '../lib/interests'
+import { getAccountUser, requiresCooperatorAccess } from '../lib/accountAccess'
 
 const AuthContext = createContext(null)
 
@@ -23,7 +24,14 @@ function getLocalUser() {
 
 export function AuthProvider({ children }) {
   const localUser = getLocalUser()
-  const [user, setUser] = useState(localUser)
+  const [authUser, setAuthUser] = useState(localUser)
+  const [accountAccess, setAccountAccess] = useState(null)
+  const resolvedAccess = accountAccess?.userId === authUser?.id ? accountAccess : null
+  const restrictedLogin = requiresCooperatorAccess(authUser)
+  const isCooperator = restrictedLogin || resolvedAccess?.data?.role === 'cooperator'
+  const user = isCooperator && (!resolvedAccess || resolvedAccess.error || resolvedAccess.data?.role !== 'cooperator')
+    ? null
+    : getAccountUser(authUser, resolvedAccess?.data)
   // Only show loading spinner if we have no cached user to show immediately
   const [loading, setLoading] = useState(!localUser)
   const [avatarUrl, setAvatarUrl] = useState(null)
@@ -33,9 +41,25 @@ export function AuthProvider({ children }) {
 
   const applySession = useCallback(session => {
     authRevisionRef.current += 1
-    setUser(session?.user ?? null)
+    setAuthUser(session?.user ?? null)
     setLoading(false)
   }, [])
+
+  useEffect(() => {
+    if (!authUser?.id) {
+      setAccountAccess(null)
+      return undefined
+    }
+    let cancelled = false
+    // Keep this outside onAuthStateChange to avoid awaiting Supabase work inside its auth lock.
+    supabase.rpc('get_my_account_access').then(({ data, error }) => {
+      if (cancelled) return
+      setAccountAccess({ userId:authUser.id, data:error ? null : data, error:error?.message || '' })
+    }).catch(error => {
+      if (!cancelled) setAccountAccess({ userId:authUser.id, data:null, error:error.message })
+    })
+    return () => { cancelled = true }
+  }, [authUser?.id])
 
   useEffect(() => {
     if (!user?.id) {
@@ -179,7 +203,11 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
-    loading,
+    loading:loading || Boolean(restrictedLogin && !resolvedAccess),
+    authUser,
+    isCooperator,
+    canDelete:!isCooperator,
+    accountAccessError:isCooperator ? resolvedAccess?.error || '' : '',
     isLoggedIn: !!user,
     displayName: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario',
     userCanton: user?.user_metadata?.canton || '',
@@ -193,7 +221,7 @@ export function AuthProvider({ children }) {
     isBanned: profileMeta.banned,
     bannedReason: profileMeta.bannedReason,
     bannedAt: profileMeta.bannedAt,
-    isAdmin: isAdminUser(user),
+    isAdmin: isAdminUser(authUser),
     updateAvatar,
     signUp, signIn, signInWithGoogle, signInWithApple, signInWithGoogleIdToken, signOut,
   }
@@ -205,4 +233,9 @@ export const useAuth = () => {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')
   return ctx
+}
+
+export const useAccountPermissions = () => {
+  const ctx = useContext(AuthContext)
+  return { canDelete:ctx?.canDelete ?? true, isCooperator:ctx?.isCooperator ?? false }
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useMyList } from '../hooks/useMyList'
+import { useAccountPermissions } from '../hooks/useAuth'
 import { getMyListTitle } from '../lib/myList'
 import './MyListPanel.css'
 
@@ -22,6 +23,7 @@ function ResultRow({ result, onOpen }) {
 }
 
 export default function MyListPanel({ active=true, onSummaryChange, surface=true }) {
+  const { canDelete } = useAccountPermissions()
   const navigate = useNavigate()
   const {
     activeItems,
@@ -160,6 +162,7 @@ export default function MyListPanel({ active=true, onSummaryChange, surface=true
   }
 
   async function deleteItem(item) {
+    if (!canDelete) return
     if (!window.confirm(`¿Eliminar “${getMyListTitle(item)}” de Mi lista?`)) return
     try {
       await remove(item)
@@ -297,6 +300,7 @@ export default function MyListPanel({ active=true, onSummaryChange, surface=true
                             role="menuitem"
                             className="is-danger"
                             onClick={() => { setOpenMenuId(''); void deleteItem(item) }}
+                            hidden={!canDelete}
                           >Eliminar</button>
                         </div>
                       )}
@@ -358,7 +362,7 @@ export default function MyListPanel({ active=true, onSummaryChange, surface=true
                   </div>
                   <div className="my-list-completed__actions">
                     <button type="button" onClick={() => restore(item)}>Volver a buscar</button>
-                    <button type="button" onClick={() => deleteItem(item)} aria-label="Eliminar definitivamente">Eliminar</button>
+                    <button hidden={!canDelete} type="button" onClick={() => deleteItem(item)} aria-label="Eliminar definitivamente">Eliminar</button>
                   </div>
                 </div>
               ))}

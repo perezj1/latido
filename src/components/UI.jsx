@@ -6,6 +6,7 @@ import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDispla
 import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { getThumbnailImageUrl } from '../lib/imageVariants'
 import LinkedText from './LinkedText'
+import { useAccountPermissions } from '../hooks/useAuth'
 
 export function ChevronLeftIcon({ size=22, style }) {
   return (
@@ -374,6 +375,7 @@ export function ImageUploadField({
   onReplaceAt,
   compact=false,
 }) {
+  const { canDelete } = useAccountPermissions()
   const deviceId = useId()
   const cameraId = useId()
   const previews = previewUrls.length ? previewUrls : (previewUrl ? [previewUrl] : [])
@@ -405,7 +407,7 @@ export function ImageUploadField({
             return (
               <div key={`${url}-${index}`} style={{ position:'relative', borderRadius:14, overflow:'visible', border:`1px solid ${C.border}`, background:'#fff', minHeight:multiple ? 88 : compact ? 108 : 180, display:'flex', alignItems:'center', justifyContent:'center', padding:multiple ? 4 : compact ? 5 : 8, boxSizing:'border-box' }}>
                 <img src={url} alt="Vista previa" style={{ width:'100%', height:'auto', maxHeight:multiple ? 160 : compact ? 160 : 280, objectFit:'contain', display:'block' }} />
-                {(multiple ? onRemoveAt : onRemove) && (
+                {canDelete && (multiple ? onRemoveAt : onRemove) && (
                   <button
                     type="button"
                     onClick={() => multiple ? onRemoveAt?.(index) : onRemove?.()}
@@ -414,7 +416,7 @@ export function ImageUploadField({
                     X
                   </button>
                 )}
-                {onReplaceAt && (
+                {canDelete && onReplaceAt && (
                   <>
                     <label htmlFor={replaceId} style={{ position:'absolute', left:8, bottom:8, right:8, fontFamily:PP, fontWeight:700, fontSize:10, background:'rgba(255,255,255,0.92)', color:C.primary, border:`1px solid ${C.primaryMid}`, borderRadius:10, padding:'6px 8px', textAlign:'center', cursor:uploading ? 'not-allowed' : 'pointer', opacity:uploading ? 0.6 : 1 }}>
                       Cambiar

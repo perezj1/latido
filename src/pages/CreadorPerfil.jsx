@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import { Ellipsis, Heart, Pencil, Star, Trash2 } from 'lucide-react'
 import { BackButton, EmptyState } from '../components/UI'
 import LinkedText from '../components/LinkedText'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useAccountPermissions } from '../hooks/useAuth'
 import {
   CREATOR_FEATURED_CONTENTS,
   canManageCreator,
@@ -53,6 +53,7 @@ function CreatorOwnerContentControls({
   onToggleFeatured,
   onRemove,
 }) {
+  const { canDelete } = useAccountPermissions()
   const menuRef = useRef(null)
   const [open, setOpen] = useState(false)
 
@@ -115,7 +116,7 @@ function CreatorOwnerContentControls({
             <span>{featured ? 'Quitar de destacados' : 'Destacar'}</span>
           </button>
           <span className="creator-content-menu__divider" role="separator" />
-          <button type="button" role="menuitem" className="is-danger" onClick={() => runAction(onRemove)}>
+          <button hidden={!canDelete} type="button" role="menuitem" className="is-danger" onClick={() => canDelete && runAction(onRemove)}>
             <span><Trash2 size={15} strokeWidth={2.2} aria-hidden="true" /></span>
             <span>Borrar</span>
           </button>

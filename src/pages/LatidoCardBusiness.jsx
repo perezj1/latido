@@ -16,6 +16,7 @@ import { OfferBenefitBadge, OfferBrandStripe } from '../components/LatidoOfferVi
 import { CardHeader } from './LatidoCard'
 import './LatidoCard.css'
 import { CARD_MEMBERS_ENABLED } from '../lib/latidoCardLaunch'
+import { useAccountPermissions } from '../hooks/useAuth'
 
 const activityDate = (value) =>
   new Date(value).toLocaleString('es-CH', {
@@ -25,6 +26,7 @@ const activityDate = (value) =>
   })
 
 export default function LatidoCardBusiness() {
+  const { canDelete } = useAccountPermissions()
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const { openOffer, revision } = useLatidoCardOffer()
@@ -280,7 +282,7 @@ export default function LatidoCardBusiness() {
                           <summary aria-label={`Acciones de ${offer.title}`}>⋯</summary>
                           <div>
                             <button
-                              disabled={busy}
+                              disabled={busy || (!canDelete && offer.active)}
                               onClick={() =>
                                 run(() =>
                                   cardRpc('lc_set_offer_active', {
@@ -292,7 +294,7 @@ export default function LatidoCardBusiness() {
                             >
                               {offer.active ? 'Pausar' : 'Reactivar'}
                             </button>
-                            {CARD_MEMBERS_ENABLED && !offer.active && (
+                            {canDelete && CARD_MEMBERS_ENABLED && !offer.active && (
                               <button
                                 disabled={busy}
                                 onClick={() => {
@@ -346,7 +348,7 @@ export default function LatidoCardBusiness() {
                         {activityDate(item.redeemed_at)} · {item.member_reference || '••••'}
                       </small>
                       <small>{item.reversed_at ? 'Anulado' : 'Registrado'}</small>
-                      {!item.reversed_at && (
+                      {canDelete && !item.reversed_at && (
                         <details className="lc-action-menu">
                           <summary aria-label={`Acciones del uso de ${item.title}`}>⋯</summary>
                           <div>
