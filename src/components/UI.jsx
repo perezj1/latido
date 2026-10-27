@@ -910,7 +910,7 @@ export function ReviewCard({ review, googleReviewsUrl = '' }) {
         </div>
         <Stars rating={review.stars} size={12} />
       </div>
-      <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:12, color:'#475569', lineHeight:1.65, margin:0 }}>{review.text}</p>
+      <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:12, color:'#475569', lineHeight:1.65, margin:0 }}><LinkedText>{review.text}</LinkedText></p>
       {isGoogleReview && (
         <a
           href={googleReviewsUrl}
