@@ -128,6 +128,10 @@ BEGIN
     IF TG_OP='DELETE' THEN RETURN OLD; END IF;
     RETURN NEW;
   END IF;
+  -- Reading a message clears its internal email delivery queue, never the message itself.
+  -- Only a nested server trigger may perform that cleanup; direct requests remain blocked.
+  IF TG_OP='DELETE' AND TG_TABLE_SCHEMA='public' AND TG_TABLE_NAME='message_email_notification_state'
+    AND pg_trigger_depth()>1 THEN RETURN OLD; END IF;
   IF TG_OP='DELETE' THEN RAISE EXCEPTION 'COOPERATOR_CANNOT_DELETE' USING ERRCODE='42501'; END IF;
   previous := to_jsonb(OLD); updated := to_jsonb(NEW);
   IF TG_TABLE_SCHEMA <> 'public' OR TG_TABLE_NAME='account_cooperators' THEN
