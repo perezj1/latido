@@ -151,7 +151,7 @@ async function fetchProfileNamesByIds(ids) {
 }
 
 export default function Mensajes() {
-  const { user, isLoggedIn, displayName, isBanned, bannedReason } = useAuth()
+  const { user, isLoggedIn, displayName, isBanned, bannedReason, canDelete } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const adId  = searchParams.get('adId')
@@ -921,9 +921,11 @@ export default function Mensajes() {
   }
 
   async function hideConversation(conv, successMessage = 'Conversación archivada') {
+    if (!canDelete) { toast.error('Tu acceso de cooperador no permite eliminar conversaciones.'); return }
     const isSender = conv.sender_id === user.id
     const updateField = isSender ? { deleted_by_sender: true } : { deleted_by_owner: true }
-    await supabase.from('conversations').update(updateField).eq('id', conv.id)
+    const { error } = await supabase.from('conversations').update(updateField).eq('id', conv.id)
+    if (error) { toast.error('No se pudo eliminar la conversación'); return }
     unreadStore.remove(conv.id)
     restorePendingConversation(conv.id)
     inboxConvIdsRef.current.delete(conv.id)
@@ -940,6 +942,7 @@ export default function Mensajes() {
 
   async function deleteConversation(e, conv) {
     e.stopPropagation()
+    if (!canDelete) return
     if (!window.confirm('¿Eliminar esta conversación?')) return
     await hideConversation(conv, 'Conversación eliminada')
   }
@@ -1125,11 +1128,11 @@ export default function Mensajes() {
                       </div>
                       <span style={{ fontFamily: PP, fontSize: 10, color: isUnread ? C.primary : C.light, fontWeight: isUnread ? 700 : 400, flexShrink: 0 }}>{formatTime(lastMsgAt.get(conv.id) || conv.created_at)}</span>
                     </button>
-                    <button onClick={e => deleteConversation(e, conv)}
+                    {canDelete && <button onClick={e => deleteConversation(e, conv)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 14px 0 4px', color: C.danger, fontSize: 16, flexShrink: 0, opacity: 0.75 }}
                       title="Eliminar conversación">
                       🗑
-                    </button>
+                    </button>}
                   </div>
                   )
                 })}

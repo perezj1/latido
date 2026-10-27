@@ -736,7 +736,7 @@ function LatidoStarInput({
 }
 
 export default function Perfil() {
-  const { isLoggedIn, displayName, userCanton, userInterests, user, signOut, avatarUrl, updateAvatar, isAdmin } = useAuth()
+  const { isLoggedIn, displayName, userCanton, userInterests, user, signOut, avatarUrl, updateAvatar, isAdmin, canDelete, isCooperator } = useAuth()
   const { hasBusiness: hasCardBusiness, participating: cardParticipating } = useCardBusinessAccess()
   const { isPWA, isInstalled, installationChecked, canInstall, promptInstall } = usePWA()
   const navigate = useNavigate()
@@ -1417,6 +1417,7 @@ export default function Perfil() {
   }
 
   const openConfig = () => {
+    if (isCooperator) { toast('La configuración de la cuenta corresponde al titular.'); return }
     setConfigForm({ name: displayName, canton: userCanton, interests:userInterests.slice(0, 3), newPassword:'', confirmPassword:'' })
     setShowConfigNewPassword(false)
     setShowConfigConfirmPassword(false)
@@ -1812,6 +1813,7 @@ export default function Perfil() {
   }
 
   const handleDeletePublication = async item => {
+    if (!canDelete) { toast.error('Tu acceso de cooperador no permite eliminar publicaciones.'); return }
     const table = KIND_META[item.kind].table
     const deleteKey = `${item.kind}-${item.id}`
     setDeletingKey(deleteKey)
@@ -1853,6 +1855,7 @@ export default function Perfil() {
   }
 
   const handlePublicationLifecycle = async (item, action) => {
+    if (!canDelete && action !== 'renew') return
     if (!item || !['ad', 'job'].includes(item.kind)) return
     const table = KIND_META[item.kind].table
     const key = `${item.kind}-${item.id}-${action}`
@@ -2163,7 +2166,7 @@ export default function Perfil() {
       title: 'Mi actividad',
       items: [
         ...(CARD_MEMBERS_ENABLED ? [{ icon:'💳', color:'#EFF6FF', label:'Latido Club', sub:'Tu tarjeta y descuentos de socio', action:() => navigate('/card') }] : hasCardBusiness ? [{ icon:'🏪', color:'#EFF6FF', label:'Ofertas de mi negocio', sub:'Promociona tu negocio gratis en Latido', action:() => navigate(cardParticipating ? '/card/negocios' : '/club#negocios') }] : []),
-        { icon:'📣', color:'#F1F5F9', label:'Mis publicaciones', sub:'Editar o borrar lo que ya has publicado', action:() => { setManageOpen(true); loadPublications() } },
+        { icon:'📣', color:'#F1F5F9', label:'Mis publicaciones', sub:canDelete ? 'Editar o borrar lo que ya has publicado' : 'Gestionar tus publicaciones', action:() => { setManageOpen(true); loadPublications() } },
         { icon:'📝', color:'#EFF6FF', label:'Mi lista', sub:'Lo que necesitas y lo que ya has conseguido', action:() => setMyListOpen(true) },
         ...(hasEmploymentRequest ? [{
           icon:'💼',
@@ -2211,7 +2214,7 @@ export default function Perfil() {
     {
       title: 'Ajustes',
       items: [
-        { icon:'⚙️', color:'#F1F5F9', label:'Configuración', sub:'Nombre, cantón, intereses y contraseña', action:openConfig },
+        ...(!isCooperator ? [{ icon:'⚙️', color:'#F1F5F9', label:'Configuración', sub:'Nombre, cantón, intereses y contraseña', action:openConfig }] : []),
         {
           icon:'⭐',
           color:'#FFFBEB',
@@ -2257,7 +2260,7 @@ export default function Perfil() {
         {/* Avatar with camera overlay */}
         <div
           style={{ position:'relative', display:'inline-block', marginBottom:12, cursor:'pointer' }}
-          onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+          onClick={() => !isCooperator && !uploadingAvatar && avatarInputRef.current?.click()}
         >
           <Avatar name={displayName} size={80} src={avatarUrl} />
           <div style={{ position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:'50%', background:'#fff', border:'2px solid #2563EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13 }}>
@@ -2269,6 +2272,7 @@ export default function Perfil() {
         {/* Name & info */}
         <h1 style={{ fontFamily:PP, fontWeight:800, fontSize:22, color:'#fff', margin:'0 0 4px', letterSpacing:-0.3 }}>{displayName}</h1>
         <p style={{ fontFamily:PP, fontSize:12, color:'rgba(255,255,255,0.65)', margin:'0 0 8px' }}>{user?.email}</p>
+        {isCooperator && <p style={{ fontFamily:PP, fontSize:12, color:'#fff', margin:'0 0 8px' }}>Cooperador · puedes gestionar y responder, sin eliminar contenido.</p>}
         {(userCanton || (hasEmploymentRequest && employmentProfileLevel)) && (
           <div style={{ display:'flex', justifyContent:'center', alignItems:'center', flexWrap:'wrap', gap:7 }}>
             {userCanton && (
@@ -2828,6 +2832,7 @@ export default function Perfil() {
                 </button>
                 <button
                   onClick={deleteAdReminder}
+                  hidden={!canDelete}
                   style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, color:'#B91C1C', background:C.dangerLight, border:'1.5px solid #FECACA', borderRadius:14, padding:'12px 10px', cursor:'pointer' }}
                 >
                   🗑️ Eliminar
@@ -2939,7 +2944,7 @@ export default function Perfil() {
         </div>
         <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:'10px 12px', marginBottom:14 }}>
           <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color:C.text, margin:'0 0 3px' }}>{activeFilter?.label || 'Todo'}</p>
-          <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Abre el menú `⋯` de cada tarjeta para editar o borrar sin recargar el panel.</p>
+          <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>{canDelete ? 'Abre el menú ⋯ de cada tarjeta para editar o borrar sin recargar el panel.' : 'Abre el menú ⋯ de cada tarjeta para editar. Tu acceso no permite eliminar publicaciones.'}</p>
         </div>
 
         {loadingPublications ? (
@@ -2999,7 +3004,7 @@ export default function Perfil() {
             </div>
             <Btn onClick={() => handleEditPublication(actionItem)} style={{ marginBottom:10 }}>✏️ Editar publicación</Btn>
             {actionItem.kind === 'business' && <Btn onClick={() => { setActionItem(null); navigate(`/card/negocios?negocio=${actionItem.id}`) }} variant="secondary" style={{ marginBottom:10 }}>Ofertas de Latido Club</Btn>}
-            {['ad', 'job'].includes(actionItem.kind) && actionItem.active && !actionItem.expired && (
+            {canDelete && ['ad', 'job'].includes(actionItem.kind) && actionItem.active && !actionItem.expired && (
               <button
                 onClick={() => handlePublicationLifecycle(actionItem, 'resolve')}
                 disabled={lifecycleSavingKey === `${actionItem.kind}-${actionItem.id}-resolve`}
@@ -3054,6 +3059,7 @@ export default function Perfil() {
             )}
             <button
               onClick={() => handleDeletePublication(actionItem)}
+              hidden={!canDelete}
               disabled={
                 deletingKey === `${actionItem.kind}-${actionItem.id}`
               }
