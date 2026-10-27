@@ -29,6 +29,10 @@ try {
     CREATE TABLE providers(id uuid PRIMARY KEY,user_id uuid,name text,active boolean DEFAULT true,deleted_at timestamptz,photo_url text,photo_urls jsonb);
     CREATE TABLE listings(LIKE providers INCLUDING ALL);
     CREATE TABLE creator_metrics(creator_id text,metric text,count int);
+    CREATE TABLE message_email_notification_state(user_id uuid PRIMARY KEY);
+    CREATE FUNCTION message_read_cleanup() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+      BEGIN IF NEW.read THEN DELETE FROM public.message_email_notification_state WHERE user_id='${owner}'; END IF; RETURN NEW; END $$;
+    CREATE TRIGGER message_read_cleanup AFTER UPDATE OF read ON messages FOR EACH ROW EXECUTE FUNCTION message_read_cleanup();
     CREATE TABLE storage.objects(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),bucket_id text,name text);
     CREATE FUNCTION storage.foldername(text) RETURNS text[] LANGUAGE sql IMMUTABLE AS $$ SELECT string_to_array($1,'/') $$;
     GRANT USAGE ON SCHEMA public,auth,storage TO anon,authenticated,service_role;
@@ -56,6 +60,7 @@ try {
     INSERT INTO providers(id,user_id,name,photo_url,photo_urls) VALUES('${provider}','${owner}','Punto Hispano','https://example.com/a.jpg','["a.jpg"]');
     INSERT INTO providers(id,user_id,name) VALUES(gen_random_uuid(),'${stranger}','Other business');
     INSERT INTO storage.objects(bucket_id,name) VALUES('publication-images','${operator}/old.jpg');
+    INSERT INTO message_email_notification_state VALUES('${owner}');
   `)
   const migration = await readFile(new URL('../supabase/account_cooperators.sql', import.meta.url), 'utf8')
   await db.exec(migration)
@@ -70,6 +75,7 @@ try {
   assert.equal(await scalar('SELECT count(*)::int FROM providers'), 1)
   await db.query('INSERT INTO messages(conversation_id,sender_id,body) VALUES($1,$2,$3)', [conversation,owner,'Respuesta del cooperador'])
   assert.equal(await scalar(`SELECT mark_conversation_messages_read('${conversation}')`), 1)
+  assert.equal(await scalar('SELECT count(*)::int FROM message_email_notification_state'), 0, 'Read receipts must retain their internal notification cleanup')
   assert.equal(await scalar(`SELECT body FROM messages WHERE id='${message}'`), 'Original')
   await db.query('UPDATE providers SET name=$1 WHERE id=$2', ['Punto Hispano editado',provider])
   assert.equal(await scalar(`SELECT name FROM providers WHERE id='${provider}'`), 'Punto Hispano editado')
