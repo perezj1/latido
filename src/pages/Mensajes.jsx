@@ -7,6 +7,7 @@ import { unreadStore } from '../lib/unreadStore'
 import { C, PP } from '../lib/theme'
 import { BackButton, Avatar, SkeletonCard } from '../components/UI'
 import ReportButton from '../components/ReportButton'
+import LinkedText from '../components/LinkedText'
 import { fetchAvatarsByIds, fetchLastSeenByIds } from '../lib/profiles'
 import { subscribeToOnlineUsers } from '../lib/presence'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
@@ -1198,7 +1199,7 @@ export default function Mensajes() {
                   return (
                     <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
                       <div style={{ maxWidth: mobileChatOpen ? '84%' : '78%', background: mine ? C.primary : '#fff', color: mine ? '#fff' : C.text, borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: mobileChatOpen ? '8px 10px 6px' : '10px 14px', boxShadow: mobileChatOpen ? '0 1px 2px rgba(15,23,42,0.10)' : '0 1px 3px rgba(0,0,0,0.07)' }}>
-                        <p style={{ fontFamily: PP, fontSize: mobileChatOpen ? 14 : 13, margin: 0, lineHeight: 1.45, whiteSpace:'pre-wrap', overflowWrap:'anywhere' }}>{msg.body}</p>
+                        <p style={{ fontFamily: PP, fontSize: mobileChatOpen ? 14 : 13, margin: 0, lineHeight: 1.45, whiteSpace:'pre-wrap', overflowWrap:'anywhere' }}><LinkedText inheritLinkColor={mine}>{msg.body}</LinkedText></p>
                         <p style={{ fontFamily: PP, fontSize: 10, color: mine ? 'rgba(255,255,255,0.68)' : C.light, margin: '3px 0 0', textAlign: 'right' }}>
                           {formatTime(msg.created_at)}
                           {mine && (

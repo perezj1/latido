@@ -1484,6 +1484,7 @@
         "npm:eslint-plugin-react-hooks@^7.1.1",
         "npm:eslint@^10.13.0",
         "npm:html-to-image@^1.11.13",
+        "npm:libphonenumber-js@^1.13.15",
         "npm:lucide-react@^1.28.0",
         "npm:postcss@^8.4.32",
         "npm:qrcode@^1.5.4",
