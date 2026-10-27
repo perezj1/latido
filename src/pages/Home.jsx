@@ -1190,7 +1190,7 @@ export default function Home() {
       if (eventsRes.error) console.error('Error loading events:', eventsRes.error)
       if (!promotionPlansRes.error) setBusinessPromotionPlans(promotionPlansRes.data || [])
 
-      const adsNorm = ((adsRes.error ? [] : adsRes.data) || []).filter(isPublicationOpen).map((row) => {
+      const adsNorm = ((adsRes.error ? [] : adsRes.data) || []).filter(row => isPublicationOpen(row)).map((row) => {
         const category = getAdCategoryId(row) || 'servicios'
         return {
           id: row.id,
@@ -1213,7 +1213,7 @@ export default function Home() {
         }
       })
 
-      const jobsNorm = ((jobsRes.error ? [] : jobsRes.data) || []).filter(isPublicationOpen).map((row) => {
+      const jobsNorm = ((jobsRes.error ? [] : jobsRes.data) || []).filter(row => isPublicationOpen(row)).map((row) => {
         const intent = getJobIntentMeta(row)
         return {
           id: `job_${row.id}`,

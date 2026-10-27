@@ -63,6 +63,11 @@ Para dirigir los avisos de mensajes a un cooperador, aplica también
 `supabase/message_email_cooperators.sql` y activa desde el servidor
 `receives_message_emails` en su relación. Solo puede haber un destinatario activo
 por cuenta; se utiliza su email verificado y su propia presencia en la app.
+Para limitar la visibilidad de anuncios y empleos por cuenta, aplica
+`supabase/user_publication_lifetimes.sql` y `supabase/user_publication_lifetimes_cron.sql`.
+Configura cada cuenta desde el servidor mediante `set_user_publication_lifetime(user_id, horas)`.
+La fecha inicial no se reinicia al editar; las publicaciones caducadas se ocultan al público
+y se conservan para el titular y administración. Verifica con `npm run test:publication-lifetimes`.
 
 ### 3. Crear `.env.local` en la raíz
 
