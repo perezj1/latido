@@ -59,6 +59,10 @@ Las restricciones se aplican a RLS y a las RPC mediante triggers, e incluyen el
 borrado lógico de conversaciones y publicaciones. Al añadir tablas nuevas,
 vuelve a aplicar la migración para incluirlas en el bloqueo de eliminaciones.
 Comprueba los permisos con `npm run test:cooperators`.
+Para dirigir los avisos de mensajes a un cooperador, aplica también
+`supabase/message_email_cooperators.sql` y activa desde el servidor
+`receives_message_emails` en su relación. Solo puede haber un destinatario activo
+por cuenta; se utiliza su email verificado y su propia presencia en la app.
 
 ### 3. Crear `.env.local` en la raíz
 

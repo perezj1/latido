@@ -65,7 +65,12 @@ try {
   const migration = await readFile(new URL('../supabase/account_cooperators.sql', import.meta.url), 'utf8')
   await db.exec(migration)
   await db.exec(migration)
+  const emailMigration = await readFile(new URL('../supabase/message_email_cooperators.sql', import.meta.url), 'utf8')
+  await db.exec(emailMigration)
+  await db.exec(emailMigration)
   await db.query('INSERT INTO account_cooperators(user_id,account_id) VALUES($1,$2)', [operator,owner])
+  await db.query('UPDATE account_cooperators SET receives_message_emails=true WHERE user_id=$1',[operator])
+  await assert.rejects(db.query('INSERT INTO account_cooperators(user_id,account_id,receives_message_emails) VALUES($1,$2,true)',[stranger,owner]),/duplicate key/)
 
   await asUser(operator)
   assert.equal(await scalar('SELECT latido_account_id()'), owner)
@@ -89,6 +94,7 @@ try {
 
   for (const sql of [
     'DELETE FROM account_cooperators RETURNING user_id',
+    'UPDATE account_cooperators SET receives_message_emails=false',
     `SELECT unsafe_delete_message('${message}')`,
     `SELECT unsafe_delete_account('${owner}')`,
     `SELECT unsafe_delete_account('${operator}')`,
