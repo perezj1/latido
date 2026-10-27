@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "lint": "eslint src --ext js,jsx",
     "test:linked-text": "node scripts/test-linked-text.mjs",
+    "test:cooperators": "node scripts/test-account-cooperators.mjs",
     "test:creators": "node scripts/test-creators.mjs",
     "test:images": "node scripts/test-image-loading.mjs",
     "test:auth": "node scripts/test-auth-storage.mjs",

@@ -75,7 +75,7 @@ function focusFirstError(errors) {
 }
 
 export default function CreadorPanel() {
-  const { user } = useAuth()
+  const { user, canDelete } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [creator, setCreator] = useState(() => getCreatorForUser(user?.id))
@@ -370,7 +370,7 @@ export default function CreadorPanel() {
         <button type="button" onClick={() => startEditContent(content)} aria-label="Editar contenido" title="Editar">
           <span aria-hidden="true">✎</span>
         </button>
-        <button type="button" className="is-danger" onClick={() => removeContent(content)} aria-label="Eliminar contenido" title="Eliminar">
+        <button hidden={!canDelete} type="button" className="is-danger" onClick={() => canDelete && removeContent(content)} aria-label="Eliminar contenido" title="Eliminar">
           <Trash2 size={16} strokeWidth={2.4} aria-hidden="true" />
         </button>
       </div>

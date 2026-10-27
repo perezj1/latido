@@ -577,7 +577,7 @@ function makeAttentionItem(kind, row, overrides={}) {
 
 export default function Home() {
   const routerLocation = useLocation()
-  const { displayName, isLoggedIn, user, userCanton, userInterests, profileMetaLoaded } = useAuth()
+  const { displayName, isLoggedIn, user, userCanton, userInterests, profileMetaLoaded, canDelete } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { unreadConvIds, hasUnread } = useUnreadMessages()
@@ -1119,6 +1119,7 @@ export default function Home() {
   }, [navigate])
 
   const deleteAttentionItem = useCallback(async (taskId, item) => {
+    if (!canDelete) return
     if (!user?.id) return
     const confirmed = window.confirm(`¿Seguro que quieres eliminar?\n\n${item.title}`)
     if (!confirmed) return
@@ -1137,7 +1138,7 @@ export default function Home() {
     } catch (error) {
       toast.error(error?.message || 'No se pudo eliminar')
     }
-  }, [removeAttentionItem, user?.id])
+  }, [canDelete, removeAttentionItem, user?.id])
 
   const applySnapshot = useCallback((snapshot) => {
     setRecentAds(snapshot.recentAds || [])
@@ -1510,7 +1511,7 @@ export default function Home() {
                           onClick={clearAllNotifications}
                           style={{ border:'none', background:'none', padding:0, fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, cursor:'pointer' }}
                         >
-                          Borrar todas
+                          {canDelete ? 'Borrar todas' : 'Marcar todas como leídas'}
                         </button>
                       ) : showAttentionSection ? (
                         <span style={{ fontFamily:PP, fontSize:11, fontWeight:700, color:C.primary }}>
@@ -1788,7 +1789,7 @@ export default function Home() {
                               <button onClick={() => imageTask ? keepAttentionItem(task.id, item) : editAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:imageTask ? '#065F46' : C.primaryDark, background:imageTask ? '#D1FAE5' : C.primaryLight, border:`1px solid ${imageTask ? '#A7F3D0' : C.primaryMid}`, borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
                                 {imageTask ? 'Mantener' : 'Editar'}
                               </button>
-                              <button onClick={() => deleteAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:'#B91C1C', background:C.dangerLight, border:'1px solid #FECACA', borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
+                              <button hidden={!canDelete} onClick={() => deleteAttentionItem(task.id, item)} style={{ fontFamily:PP, fontWeight:800, fontSize:10, color:'#B91C1C', background:C.dangerLight, border:'1px solid #FECACA', borderRadius:10, padding:'8px 4px', cursor:'pointer', whiteSpace:'nowrap', minWidth:0 }}>
                                 Borrar
                               </button>
                             </div>

@@ -47,6 +47,19 @@ en instalaciones que ya usaban búsquedas guardadas, ejecuta después
 `supabase/my_list.sql`. Esta migración conserva las búsquedas existentes,
 añade el estado «Conseguido» y desactiva el envío gratuito por email.
 
+Para habilitar accesos de **cooperadores sin permisos de eliminación**, ejecuta
+`supabase/account_cooperators.sql`. El servidor debe crear el usuario con
+`app_metadata.latido_account_role = 'cooperator'` y añadir su relación con el
+titular en `account_cooperators`. No cambies las credenciales del titular ni
+guardes contraseñas en SQL o en el repositorio. Los clientes no pueden crear ni
+modificar estas relaciones. Desactivar la relación revoca el acceso compartido.
+El inicio de sesión resuelve la identidad del titular mediante
+`get_my_account_access`; la sesión autenticada sigue perteneciendo al cooperador.
+Las restricciones se aplican a RLS y a las RPC mediante triggers, e incluyen el
+borrado lógico de conversaciones y publicaciones. Al añadir tablas nuevas,
+vuelve a aplicar la migración para incluirlas en el bloqueo de eliminaciones.
+Comprueba los permisos con `npm run test:cooperators`.
+
 ### 3. Crear `.env.local` en la raíz
 
 ```env
