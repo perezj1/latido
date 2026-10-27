@@ -86,7 +86,7 @@ export function CardHeader({ alerts = false, onAlertsOpen }) {
       <nav className="lc-links" aria-label="Navegación de Latido Club" aria-busy={loading}>
         <Link to="/card" aria-current={cardSelected ? 'page' : undefined}>
           <span aria-hidden="true">🎟️</span>
-          Descuentos
+          Ofertas
         </Link>
         {(hasBusiness || isAdmin || pathname === '/card/negocios') && (
           <NavLink to="/card/negocios">
