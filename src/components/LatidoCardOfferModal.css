@@ -109,3 +109,8 @@
     border-bottom: 0;
   }
 }
+@media (min-width: 768px) {
+  .lc-offer-modal.lc-page {
+    width: min(600px, calc(100% - 48px));
+  }
+}

@@ -3,6 +3,8 @@ import { spawn } from 'node:child_process'
 import { chromium, webkit, devices, expect } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 
 const businessPreview = process.argv.includes('--business-preview')
 const useWebkit = process.argv.includes('--webkit'),
@@ -647,6 +649,12 @@ try {
     await homeBusiness.click()
     await page.getByRole('heading', { name: 'Promocionar los negocios hispanohablantes', exact: true }).waitFor()
     await page.screenshot({ path: path.join(output, 'business-phase-welcome.png'), fullPage: true })
+    for (const width of [390, 768, 1280]) {
+      await page.setViewportSize({ width, height:900 })
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Business welcome fits ${width}px`)
+      await page.screenshot({ path:path.join(output, `business-welcome-responsive-${width}.png`), fullPage:true })
+    }
+    await page.setViewportSize({ width:390, height:844 })
     await page.getByRole('button', { name: 'Ofrecer mi primer descuento', exact: true }).click()
     const creation = page.getByRole('dialog', { name: 'Crear oferta', exact: true })
     await creation.getByText('Paso 1 de 4', { exact: true }).waitFor()
@@ -660,6 +668,40 @@ try {
     await page.getByRole('heading', { name: 'Tus ofertas', exact: true }).waitFor()
     await page.waitForLoadState('networkidle')
     await page.screenshot({ path: path.join(output, 'business-phase-dashboard.png'), fullPage: true })
+    for (const width of [320, 390, 768, 1024, 1440, 1920]) {
+      await page.setViewportSize({ width, height: width === 320 ? 568 : 900 })
+      const geometry = await page.locator('.lc-business-page').evaluate((el) => {
+        const rect = el.getBoundingClientRect()
+        const profile = el.querySelector('.lc-business-current').getBoundingClientRect()
+        const content = el.querySelector('.lc-business-content').getBoundingClientRect()
+        return { width:rect.width, scroll:el.scrollWidth, client:el.clientWidth,
+          separate:profile.right <= content.left, profileTop:profile.top, contentTop:content.top }
+      })
+      assert.ok(geometry.scroll <= geometry.client + 1, `Business content fits ${width}px`)
+      assert.ok(Math.abs(geometry.width - Math.min(width, 1200)) <= 1, `Business page uses the app width at ${width}px`)
+      if (width >= 768) assert.ok(geometry.separate, 'Business details and offer management use separate columns')
+      else assert.ok(geometry.contentTop > geometry.profileTop, 'Mobile business management stays in one column')
+      if (width >= 1024) {
+        const header = await page.locator('.lc-app-header').evaluate(el => {
+          const title = el.querySelector('.lc-app-header-row').getBoundingClientRect()
+          const nav = el.querySelector('.lc-links').getBoundingClientRect()
+          return { navHeight:nav.height, aligned:Math.abs((title.top + title.height / 2) - (nav.top + nav.height / 2)) < 1 }
+        })
+        assert.ok(header.aligned && header.navHeight < 80, 'Desktop header keeps the title and navigation on one compact row')
+      }
+      const create = await page.getByRole('button', { name:'Crear oferta', exact:true }).boundingBox()
+      assert.ok(create.x >= 0 && create.x + create.width <= width, 'Create offer stays inside the page')
+      assert.ok(create.y >= 0 && create.y + create.height <= page.viewportSize().height, 'Create offer stays visible')
+      await page.screenshot({ path:path.join(output, `business-responsive-${width}.png`), fullPage:true })
+    }
+    await page.getByRole('button', { name:'Crear oferta', exact:true }).click()
+    const responsiveForm = page.getByRole('dialog', { name:'Crear oferta', exact:true })
+    await responsiveForm.waitFor()
+    const formBounds = await responsiveForm.boundingBox()
+    assert.ok(formBounds.width >= 560 && formBounds.width <= 600, 'Desktop offer creation uses a readable wider dialog')
+    await responsiveForm.screenshot({ path:path.join(output, 'offer-form-responsive-desktop.png') })
+    await responsiveForm.locator('.lc-offer-modal-close').click()
+    await page.setViewportSize({ width:390, height:844 })
     assert.equal(await page.getByRole('heading', { name: 'Resultados', exact: true }).count(), 0)
     assert.equal(await page.getByText('Material para tu local', { exact: true }).count(), 0)
     const paused = page.locator('.lc-managed-offer').filter({ hasText: pausedOffer.title })
@@ -679,14 +721,76 @@ try {
     await expect(page.locator('.lc-discount-card')).toHaveCount(1)
     await page.getByRole('searchbox', { name: 'Buscar ofertas publicadas', exact: true }).fill('')
     await page.evaluate((id) => sessionStorage.setItem(`lc-access:${id}`, JSON.stringify({ hasBusiness: false, participating: false, businesses: [] })), user.id)
+    const longTitleOffer = {
+      ...offer, id:'00000000-0000-4000-8000-000000000901',
+      title:'Un mes de regalo adicional para disfrutar de todos los servicios de la comunidad durante todo el verano',
+      business_name:'Un negocio con un nombre muy largo que debe ocupar varias lineas incluso en una pantalla grande',
+    }
+    const uniformOffers = [offer, special, longTitleOffer, {
+      ...special, id:'00000000-0000-4000-8000-000000000902',
+      title:'Regalo especial', remaining:0,
+      ends_at:new Date(Date.now() + 86400000).toISOString(),
+    }, { ...offer, id:'00000000-0000-4000-8000-000000000903', title:'10 %', usage_period:'unlimited' }]
+    const guideOffer = {
+      ...offer, id:'00000000-0000-4000-8000-000000000904', benefit_type:'gift', benefit_value:null,
+      title:'La guía de alemán que te salva en tu primer trabajo en Suiza',
+      usage_period:'unlimited', download_path:'/downloads/aleman-con-n/guia-primer-trabajo-suiza.pdf',
+    }
+    uniformOffers.push(guideOffer)
+    const uniformCatalog = route => respond(route, uniformOffers)
+    await page.route('**/rpc/lc_catalog', uniformCatalog)
     await reloadPage()
     await page.getByRole('heading', { name: 'Ofertas publicadas', exact: true }).waitFor()
-    await page.locator('.lc-discount-card').first().waitFor()
-    for (const width of [320, 390, 1280]) {
+    await page.getByRole('searchbox', { name:'Buscar ofertas publicadas', exact:true }).fill('')
+    await expect(page.locator('.lc-discount-card')).toHaveCount(uniformOffers.length)
+    for (const open of await page.locator('.lc-discount-open[aria-expanded="true"]').all()) await open.click()
+    for (const width of [320, 390, 768, 1024, 1440, 1920]) {
       await page.setViewportSize({ width, height: 844 })
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+      const layout = await page.locator('.lc-offer-list').evaluate(el => ({
+        columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,
+        width:el.getBoundingClientRect().width,
+        scroll:el.scrollWidth,
+        client:el.clientWidth,
+      }))
+      assert.ok(layout.scroll <= layout.client + 1, `Offer grid fits ${width}px`)
+      assert.equal(layout.columns,width >= 1180 ? 3 : width >= 768 ? 2 : 1)
+      if (width >= 768) assert.ok(layout.width > 600, 'Catalog uses the space available on larger screens')
+      const cards = await page.locator('.lc-discount-card').evaluateAll(elements => elements.map(el => {
+        const rect = el.getBoundingClientRect()
+        const title = el.querySelector('.lc-discount-open')
+        return { width:rect.width, height:rect.height, titleHeight:title.getBoundingClientRect().height,
+          lineHeight:parseFloat(getComputedStyle(title).lineHeight) }
+      }))
+      assert.ok(Math.max(...cards.map(card => card.height)) - Math.min(...cards.map(card => card.height)) < 1,
+        `All collapsed offers have the same height at ${width}px, including different rows and availability states`)
+      assert.ok(Math.max(...cards.map(card => card.width)) - Math.min(...cards.map(card => card.width)) < 1,
+        `All offer widths match at ${width}px`)
+      assert.ok(cards.every(card => card.titleHeight <= card.lineHeight * 2 + 1), `Titles use at most two lines at ${width}px`)
       await page.screenshot({ path: path.join(output, `business-preview-${width}.png`), fullPage: true })
     }
+    const longCard = page.locator('.lc-discount-card').filter({ hasText:longTitleOffer.title })
+    await longCard.locator('.lc-discount-open').click()
+    await expect(longCard.locator('.lc-discount-details .lc-discount-full-title')).toHaveText(longTitleOffer.title)
+    await expect(longCard.locator('.lc-discount-details')).toBeVisible()
+    await longCard.locator('.lc-discount-open').click()
+    const guideCard = page.locator('.lc-discount-card').filter({ has:page.getByRole('button', { name:guideOffer.title, exact:true }) })
+    for (const width of [320, 1440]) {
+      await page.setViewportSize({ width, height:844 })
+      const link = guideCard.getByRole('link', { name:`Descargar ${guideOffer.title}`, exact:true })
+      await expect(link).toHaveAttribute('href', guideOffer.download_path)
+      await expect(link).toHaveAttribute('download', 'guia-primer-trabajo-suiza.pdf')
+      const activationCount = useCalls.length
+      const downloadEvent = page.waitForEvent('download')
+      await link.click()
+      const file = await downloadEvent
+      assert.equal(await file.failure(), null)
+      const downloadedBytes = await readFile(await file.path())
+      const originalBytes = await readFile(path.resolve('public' + guideOffer.download_path))
+      assert.equal(createHash('sha256').update(downloadedBytes).digest('hex'), createHash('sha256').update(originalBytes).digest('hex'))
+      assert.equal(useCalls.length, activationCount, 'A download never consumes or claims the offer')
+    }
+    await page.unroute('**/rpc/lc_catalog', uniformCatalog)
     const blocked = await page.evaluate(async () => {
       const { cardRpc } = await import('/src/lib/latidoCard.js')
       const names = ['lc_use_offer', 'lc_claim_offer', 'lc_delete_offer', 'lc_notification_preferences', 'lc_member_home', 'lc_validation']

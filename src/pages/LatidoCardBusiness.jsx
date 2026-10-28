@@ -138,7 +138,7 @@ export default function LatidoCardBusiness() {
           </Link>
         </section>
       ) : (
-        <>
+        <div className="lc-business-workspace">
           <section className="lc-panel lc-business-current">
             <div className="lc-business-profile-row">
               <LatidoCardBusinessImage
@@ -196,236 +196,238 @@ export default function LatidoCardBusiness() {
               </label>
             </div>
           </section>
-          {business.suspended ? (
-            <p className="lc-alert">
-              Latido ha retirado este negocio del programa. Contacta con Latido para revisar su
-              participación.
-            </p>
-          ) : business.published === false ? (
-            <p className="lc-panel">
-              Tu negocio está pendiente de revisión. Cuando esté aprobado, podrás publicar tu
-              primera oferta gratis aquí.
-            </p>
-          ) : (
-            <>
-              <section
-                className="lc-panel lc-spaced"
-                id="lc-published-offers"
-                aria-labelledby="lc-published-offers-title"
-              >
-                <div className="lc-business-section-heading">
-                  <h2 id="lc-published-offers-title">Tus ofertas</h2>
-                  <span className="lc-muted">
-                    {data.offers.filter((offer) => offerState(offer) === 'Activa').length} activas
-                  </span>
-                </div>
-                {!data.offers.length && (
-                  <p>Tu primera oferta empieza con un descuento para tu comunidad.</p>
-                )}
-                <div className="lc-managed-offers">
-                  {data.offers.map((offer) => (
-                    <article className="lc-managed-offer lc-coupon" key={offer.id}>
-                      <div className="lc-managed-offer-head">
-                        <OfferBenefitBadge offer={offer} />
-                        <div className="lc-managed-offer-info">
-                          <div className="lc-managed-offer-title">
-                            <h3>{offer.title}</h3>
-                            <span className="lc-badge" data-state={offerState(offer)}>
-                              {offerState(offer)}
-                            </span>
-                          </div>
-                          <p>{offerUsageLabel(offer)}</p>
-                          {offer.requires_claim && (
-                            <p className="lc-managed-offer-limit">
-                              Promoción limitada
-                              {offer.remaining != null ? ' · Quedan ' + offer.remaining : ''}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="lc-managed-offer-meta lc-coupon-footer">
-                        <button
-                          className="lc-text-button"
-                          disabled={busy}
-                          onClick={() =>
-                            openOffer(business, offerToDraft(offer), {
-                              mode: offer.has_activity ? 'replace' : 'edit',
-                              offer
-                            })
-                          }
-                        >
-                          <Pencil size={15} aria-hidden="true" />
-                          Editar
-                        </button>
-                        <button
-                          className="lc-text-button"
-                          onClick={async () => {
-                            try {
-                              const result = await shareCardOffer({
-                                ...offer,
-                                provider_id: business.id,
-                                business_name: business.name
-                              })
-                              if (result.status === 'copied')
-                                toast.success('Enlace de la oferta copiado.')
-                              if (result.status === 'manual')
-                                setNotice('Enlace público de la oferta: ' + result.url)
-                            } catch {
-                              toast.error('No se pudo compartir la oferta. Vuelve a intentarlo.')
-                            }
-                          }}
-                        >
-                          <Share2 size={15} aria-hidden="true" />
-                          Compartir
-                        </button>
-                        <details className="lc-action-menu">
-                          <summary aria-label={`Acciones de ${offer.title}`}>⋯</summary>
-                          <div>
-                            <button
-                              disabled={busy || (!canDelete && offer.active)}
-                              onClick={() =>
-                                run(() =>
-                                  cardRpc('lc_set_offer_active', {
-                                    p_offer: offer.id,
-                                    p_active: !offer.active
-                                  })
-                                )
-                              }
-                            >
-                              {offer.active ? 'Pausar' : 'Reactivar'}
-                            </button>
-                            {canDelete && CARD_MEMBERS_ENABLED && !offer.active && (
-                              <button
-                                disabled={busy}
-                                onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      '¿Borrar este descuento? Sus usos anteriores se conservarán en el historial.'
-                                    )
-                                  )
-                                    run(async () => {
-                                      await cardRpc('lc_delete_offer', { p_offer: offer.id })
-                                      setNotice('Descuento borrado. El historial se conserva.')
-                                    })
-                                }}
-                              >
-                                Borrar
-                              </button>
+          <div className="lc-business-content">
+            {business.suspended ? (
+              <p className="lc-alert">
+                Latido ha retirado este negocio del programa. Contacta con Latido para revisar su
+                participación.
+              </p>
+            ) : business.published === false ? (
+              <p className="lc-panel">
+                Tu negocio está pendiente de revisión. Cuando esté aprobado, podrás publicar tu
+                primera oferta gratis aquí.
+              </p>
+            ) : (
+              <>
+                <section
+                  className="lc-panel lc-spaced"
+                  id="lc-published-offers"
+                  aria-labelledby="lc-published-offers-title"
+                >
+                  <div className="lc-business-section-heading">
+                    <h2 id="lc-published-offers-title">Tus ofertas</h2>
+                    <span className="lc-muted">
+                      {data.offers.filter((offer) => offerState(offer) === 'Activa').length} activas
+                    </span>
+                  </div>
+                  {!data.offers.length && (
+                    <p>Tu primera oferta empieza con un descuento para tu comunidad.</p>
+                  )}
+                  <div className="lc-managed-offers">
+                    {data.offers.map((offer) => (
+                      <article className="lc-managed-offer lc-coupon" key={offer.id}>
+                        <div className="lc-managed-offer-head">
+                          <OfferBenefitBadge offer={offer} />
+                          <div className="lc-managed-offer-info">
+                            <div className="lc-managed-offer-title">
+                              <h3>{offer.title}</h3>
+                              <span className="lc-badge" data-state={offerState(offer)}>
+                                {offerState(offer)}
+                              </span>
+                            </div>
+                            <p>{offerUsageLabel(offer)}</p>
+                            {offer.requires_claim && (
+                              <p className="lc-managed-offer-limit">
+                                Promoción limitada
+                                {offer.remaining != null ? ' · Quedan ' + offer.remaining : ''}
+                              </p>
                             )}
                           </div>
-                        </details>
-                      </div>
-                      <OfferBrandStripe />
-                    </article>
-                  ))}
-                </div>
-              </section>
-              {CARD_MEMBERS_ENABLED && <section
-                className="lc-business-summary lc-panel"
-                aria-label="Resultados de tu negocio"
-              >
-                <h2>Resultados</h2>
-                {data.summary ? (
-                  <div className="lc-business-month-result">
-                    <p>Descuentos usados este mes en tu negocio</p>
-                    <strong>{data.summary.month_uses}</strong>
+                        </div>
+                        <div className="lc-managed-offer-meta lc-coupon-footer">
+                          <button
+                            className="lc-text-button"
+                            disabled={busy}
+                            onClick={() =>
+                              openOffer(business, offerToDraft(offer), {
+                                mode: offer.has_activity ? 'replace' : 'edit',
+                                offer
+                              })
+                            }
+                          >
+                            <Pencil size={15} aria-hidden="true" />
+                            Editar
+                          </button>
+                          <button
+                            className="lc-text-button"
+                            onClick={async () => {
+                              try {
+                                const result = await shareCardOffer({
+                                  ...offer,
+                                  provider_id: business.id,
+                                  business_name: business.name
+                                })
+                                if (result.status === 'copied')
+                                  toast.success('Enlace de la oferta copiado.')
+                                if (result.status === 'manual')
+                                  setNotice('Enlace público de la oferta: ' + result.url)
+                              } catch {
+                                toast.error('No se pudo compartir la oferta. Vuelve a intentarlo.')
+                              }
+                            }}
+                          >
+                            <Share2 size={15} aria-hidden="true" />
+                            Compartir
+                          </button>
+                          <details className="lc-action-menu">
+                            <summary aria-label={`Acciones de ${offer.title}`}>⋯</summary>
+                            <div>
+                              <button
+                                disabled={busy || (!canDelete && offer.active)}
+                                onClick={() =>
+                                  run(() =>
+                                    cardRpc('lc_set_offer_active', {
+                                      p_offer: offer.id,
+                                      p_active: !offer.active
+                                    })
+                                  )
+                                }
+                              >
+                                {offer.active ? 'Pausar' : 'Reactivar'}
+                              </button>
+                              {canDelete && CARD_MEMBERS_ENABLED && !offer.active && (
+                                <button
+                                  disabled={busy}
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        '¿Borrar este descuento? Sus usos anteriores se conservarán en el historial.'
+                                      )
+                                    )
+                                      run(async () => {
+                                        await cardRpc('lc_delete_offer', { p_offer: offer.id })
+                                        setNotice('Descuento borrado. El historial se conserva.')
+                                      })
+                                  }}
+                                >
+                                  Borrar
+                                </button>
+                              )}
+                            </div>
+                          </details>
+                        </div>
+                        <OfferBrandStripe />
+                      </article>
+                    ))}
                   </div>
-                ) : (
-                  <p className="lc-muted">
-                    El resumen estará disponible al actualizar el servicio de Latido Club.
-                  </p>
-                )}
-              </section>}
-              {CARD_MEMBERS_ENABLED && <section className="lc-panel lc-spaced" aria-labelledby="lc-activity-title">
-                <h2 id="lc-activity-title">Actividad</h2>
-                <p className="lc-muted">Usos que los socios han mostrado en tu negocio.</p>
-                {!data.history.length && <p>Aquí verás los primeros usos de tus ofertas.</p>}
-                <ul className="lc-history">
-                  {data.history.slice(0, historyLimit).map((item) => (
-                    <li key={item.id}>
-                      <strong>{item.title}</strong>
-                      <small>
-                        {activityDate(item.redeemed_at)} · {item.member_reference || '••••'}
-                      </small>
-                      <small>{item.reversed_at ? 'Anulado' : 'Registrado'}</small>
-                      {canDelete && !item.reversed_at && (
-                        <details className="lc-action-menu">
-                          <summary aria-label={`Acciones del uso de ${item.title}`}>⋯</summary>
-                          <div>
-                            <button
-                              onClick={() => {
-                                setReversal(item.id)
-                                setReason('')
-                              }}
-                            >
-                              Anular uso
-                            </button>
-                          </div>
-                        </details>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                {data.history.length > historyLimit && (
-                  <button
-                    className="lc-button lc-button--secondary"
-                    onClick={() => setHistoryLimit((n) => n + 20)}
-                  >
-                    Ver más
-                  </button>
-                )}
-                {reversal && (
-                  <form
-                    className="lc-form"
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      run(async () => {
-                        await cardRpc('lc_reverse_redemption', {
-                          p_redemption: reversal,
-                          p_reason: reason
-                        })
-                        setReversal(null)
-                        setNotice('Uso anulado.')
-                      })
-                    }}
-                  >
-                    <label>
-                      Motivo de la anulación
-                      <input
-                        autoFocus
-                        required
-                        minLength={3}
-                        maxLength={500}
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                      />
-                    </label>
-                    <div className="lc-actions">
-                      <button className="lc-button lc-button--danger" disabled={busy}>
-                        Confirmar anulación
-                      </button>
-                      <button
-                        type="button"
-                        className="lc-button lc-button--secondary"
-                        onClick={() => setReversal(null)}
-                      >
-                        Cancelar
-                      </button>
+                </section>
+                {CARD_MEMBERS_ENABLED && <section
+                  className="lc-business-summary lc-panel"
+                  aria-label="Resultados de tu negocio"
+                >
+                  <h2>Resultados</h2>
+                  {data.summary ? (
+                    <div className="lc-business-month-result">
+                      <p>Descuentos usados este mes en tu negocio</p>
+                      <strong>{data.summary.month_uses}</strong>
                     </div>
-                  </form>
-                )}
-              </section>}
-              {CARD_MEMBERS_ENABLED && <details className="lc-panel lc-spaced">
-                <summary>Material para tu local</summary>
-                {liveOffers(data.offers).length ? (
-                  <LatidoCardBusinessMaterial key={business.id} business={business} />
-                ) : (
-                  <p>Publica tu primera oferta para obtener tu QR.</p>
-                )}
-              </details>}
-            </>
-          )}
-        </>
+                  ) : (
+                    <p className="lc-muted">
+                      El resumen estará disponible al actualizar el servicio de Latido Club.
+                    </p>
+                  )}
+                </section>}
+                {CARD_MEMBERS_ENABLED && <section className="lc-panel lc-spaced" aria-labelledby="lc-activity-title">
+                  <h2 id="lc-activity-title">Actividad</h2>
+                  <p className="lc-muted">Usos que los socios han mostrado en tu negocio.</p>
+                  {!data.history.length && <p>Aquí verás los primeros usos de tus ofertas.</p>}
+                  <ul className="lc-history">
+                    {data.history.slice(0, historyLimit).map((item) => (
+                      <li key={item.id}>
+                        <strong>{item.title}</strong>
+                        <small>
+                          {activityDate(item.redeemed_at)} · {item.member_reference || '••••'}
+                        </small>
+                        <small>{item.reversed_at ? 'Anulado' : 'Registrado'}</small>
+                        {canDelete && !item.reversed_at && (
+                          <details className="lc-action-menu">
+                            <summary aria-label={`Acciones del uso de ${item.title}`}>⋯</summary>
+                            <div>
+                              <button
+                                onClick={() => {
+                                  setReversal(item.id)
+                                  setReason('')
+                                }}
+                              >
+                                Anular uso
+                              </button>
+                            </div>
+                          </details>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {data.history.length > historyLimit && (
+                    <button
+                      className="lc-button lc-button--secondary"
+                      onClick={() => setHistoryLimit((n) => n + 20)}
+                    >
+                      Ver más
+                    </button>
+                  )}
+                  {reversal && (
+                    <form
+                      className="lc-form"
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        run(async () => {
+                          await cardRpc('lc_reverse_redemption', {
+                            p_redemption: reversal,
+                            p_reason: reason
+                          })
+                          setReversal(null)
+                          setNotice('Uso anulado.')
+                        })
+                      }}
+                    >
+                      <label>
+                        Motivo de la anulación
+                        <input
+                          autoFocus
+                          required
+                          minLength={3}
+                          maxLength={500}
+                          value={reason}
+                          onChange={(e) => setReason(e.target.value)}
+                        />
+                      </label>
+                      <div className="lc-actions">
+                        <button className="lc-button lc-button--danger" disabled={busy}>
+                          Confirmar anulación
+                        </button>
+                        <button
+                          type="button"
+                          className="lc-button lc-button--secondary"
+                          onClick={() => setReversal(null)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </section>}
+                {CARD_MEMBERS_ENABLED && <details className="lc-panel lc-spaced">
+                  <summary>Material para tu local</summary>
+                  {liveOffers(data.offers).length ? (
+                    <LatidoCardBusinessMaterial key={business.id} business={business} />
+                  ) : (
+                    <p>Publica tu primera oferta para obtener tu QR.</p>
+                  )}
+                </details>}
+              </>
+            )}
+          </div>
+        </div>
       )}
       {!loading && business && !business.suspended && business.published !== false && (
         <div className="lc-business-create-bar">
