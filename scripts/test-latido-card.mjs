@@ -20,6 +20,17 @@ import {
 } from '../src/lib/latidoCardOfferDraft.js'
 import { businessBenefit, membershipMailUrl, liveOffers } from '../src/lib/latidoCardExperience.js'
 import { cardPublicSeo, renderCardShareHtml } from '../src/lib/latidoCardSeo.js'
+import { offerDownload } from '../src/lib/latidoCardDownloads.js'
+
+const guidePath = '/downloads/aleman-con-n/guia-primer-trabajo-suiza.pdf'
+assert.deepEqual(offerDownload({ download_path:guidePath }), {
+  url:guidePath, filename:'guia-primer-trabajo-suiza.pdf'
+})
+for (const path of [null, 1, '', 'javascript:alert(1)', '//example.com/guide.pdf',
+  'https://example.com/guide.pdf', '/downloads/../private.pdf', '/downloads/a.pdf?token=secret',
+  '/downloads/a.pdf#fragment', '/downloads/a.pdf\n', '/downloads/a.html']) {
+  assert.equal(offerDownload({ download_path:path }), null)
+}
 
 const draft = initialOfferDraft()
 assert.equal(zurichEndOfDay('2027-01-10'), '2027-01-10T22:59:59.000Z')
@@ -123,7 +134,8 @@ const minimal = await read('latido_card_minimal.sql'),
   experience = await read('latido_card_experience.sql'),
   notifications = await read('latido_card_notifications.sql'),
   cantonAlerts = await read('latido_card_canton_alerts.sql'),
-  multipleOffers = await read('latido_card_multiple_offers.sql')
+  multipleOffers = await read('latido_card_multiple_offers.sql'),
+  downloads = await read('latido_card_downloads.sql')
 assert.equal(offerUsageLabel({ usage_period: 'week', usage_limit: 2 }), '2 usos por semana')
 const monthlyUsed = offerAvailability(
   {
@@ -1070,6 +1082,24 @@ for (const upgrade of [false, true]) {
     ).rows[0].count,
     0
   )
+  await db.exec('RESET ROLE')
+  await db.exec(downloads)
+  await db.exec(downloads)
+  const guideProvider = randomUUID()
+  await root("INSERT INTO providers(id,user_id,name,city) VALUES($1,$2,'Guide business','Zürich')", [guideProvider, ids.owner])
+  await root('INSERT INTO latido_card_businesses(provider_id,active) VALUES($1,true)', [guideProvider])
+  const guideId = (await root(`INSERT INTO latido_card_offers(provider_id,title,benefit_type,usage_period,ends_at,download_path)
+    VALUES($1,'Free German guide','gift','unlimited','infinity',$2) RETURNING id`, [guideProvider, guidePath])).rows[0].id
+  await as('owner')
+  await rpc('lc_update_offer', [guideId, { ...createOfferPayload({ ...initialOfferDraft(), type:'gift', gift:'una guía' }),
+    title:'Updated German guide', usage_period:'unlimited' }])
+  const guideCatalog = await rpc('lc_catalog')
+  assert.equal(guideCatalog.find(item => item.id === guideId).download_path, guidePath, 'Normal offer editing preserves the PDF')
+  for (const path of ['https://example.com/guide.pdf', '/downloads/../private.pdf', '/downloads/guide.html']) {
+    await assert.rejects(root('UPDATE latido_card_offers SET download_path=$1 WHERE id=$2', [path, guideId]), /lc_offer_download_path/)
+  }
+  await root('UPDATE latido_card_offers SET active=false WHERE id=$1', [guideId])
+  assert.ok(!(await rpc('lc_catalog')).some(item => item.id === guideId), 'Paused guides are removed from the catalog')
   await db.close()
   console.log(`Card minimal: ${upgrade ? 'legacy upgrade + archive' : 'fresh install'} passed`)
 }

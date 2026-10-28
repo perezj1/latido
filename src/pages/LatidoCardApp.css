@@ -1,14 +1,17 @@
 /* Latido Club app. Scoped to keep the rest of Latido and validation independent. */
 .lc-page.lc-app-page {
   --lc-app-blue: #2a55df;
-  max-width: 480px;
-  min-height: 100vh;
-  padding: 0 20px calc(48px + env(safe-area-inset-bottom));
+  --lc-app-gutter: var(--latido-page-gutter, 20px);
+  --lc-app-max-width: var(--latido-page-max-wide, 1200px);
+  width: 100%;
+  max-width: var(--lc-app-max-width);
+  min-height: 100dvh;
+  padding: 0 var(--lc-app-gutter) calc(48px + env(safe-area-inset-bottom));
   background: #f4f6fa;
   color: #0f172a;
 }
 .lc-page.lc-app-page.lc-business-page {
-  max-width: 480px;
+  max-width: var(--lc-app-max-width);
   padding-bottom: calc(112px + env(safe-area-inset-bottom));
 }
 .lc-app-page .lc-app-header {
@@ -17,8 +20,8 @@
   display: block;
   overflow: hidden;
   overflow: clip;
-  margin: 0 -20px 0;
-  padding: 16px 20px 56px;
+  margin: 0 calc(-1 * var(--lc-app-gutter)) 0;
+  padding: 16px var(--lc-app-gutter) 56px;
   border: 0;
   border-radius: 0 0 32px 32px;
   background: linear-gradient(160deg, #2a55df, #3b7cf4);
@@ -53,6 +56,8 @@
 }
 .lc-app-header-title {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 20px;
   line-height: 1.2;
   font-weight: 800;
@@ -97,6 +102,8 @@
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 .lc-app-header .lc-links a[aria-current='page'] {
   background: #fff;
@@ -579,6 +586,7 @@
   font-size: 17px;
   line-height: 1.25;
   letter-spacing: -0.2px;
+  overflow-wrap: anywhere;
 }
 .lc-business-profile-meta {
   display: flex;
@@ -618,6 +626,15 @@
 .lc-business-current .lc-form {
   margin-top: 14px;
 }
+.lc-business-current .lc-form select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.lc-business-workspace,
+.lc-business-content {
+  min-width: 0;
+}
 .lc-business-current .lc-form label {
   font-size: 11px;
 }
@@ -637,9 +654,12 @@
   font-size: 18px;
 }
 .lc-app-page .lc-managed-offers {
+  grid-auto-rows: 1fr;
   gap: 14px;
 }
 .lc-app-page .lc-managed-offer {
+  display: flex;
+  flex-direction: column;
   position: relative;
   padding: 16px 16px 0;
   overflow: visible;
@@ -648,6 +668,7 @@
   background: #fff;
 }
 .lc-managed-offer-head {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -664,6 +685,12 @@
   gap: 5px;
 }
 .lc-managed-offer-title h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  max-height: 2.6em;
   flex: 1 1 130px;
   margin: 0;
   font-size: 16px;
@@ -751,7 +778,7 @@
 .lc-app-page .lc-business-create-bar {
   z-index: 30;
   left: auto;
-  right: max(20px, calc((100% - 440px) / 2));
+  right: max(var(--lc-app-gutter), calc((100% - var(--lc-app-max-width)) / 2 + var(--lc-app-gutter)));
   bottom: calc(24px + env(safe-area-inset-bottom));
   transform: none;
   width: auto;
@@ -857,4 +884,107 @@
 }
 .lc-catalog-filters::-webkit-scrollbar {
   display: none;
+}
+.lc-page.lc-app-page.lc-business-detail-page {
+  max-width: var(--lc-app-max-width);
+  padding-inline: var(--lc-app-gutter);
+}
+.lc-app-page .lc-business-detail-header {
+  margin-inline: calc(-1 * var(--lc-app-gutter));
+  padding-inline: var(--lc-app-gutter);
+}
+
+/* Match the app's page width while keeping individual cards easy to scan. */
+@media (min-width: 768px) {
+  .lc-app-page .lc-app-header-title {
+    font-size: 24px;
+  }
+  .lc-app-page .lc-benefits .lc-offer-list,
+  .lc-app-page .lc-loading {
+    max-width: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 20px;
+  }
+  .lc-app-page .lc-offer-list > .lc-empty-state {
+    grid-column: 1 / -1;
+  }
+  .lc-app-page .lc-benefits .lc-offer-list {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .lc-app-page .lc-discovery,
+  .lc-app-page .lc-discovery-search {
+    max-width: none;
+  }
+  .lc-app-page .lc-catalog-filters {
+    flex-wrap: wrap;
+  }
+  .lc-app-page .lc-discovery-businesses:not(:empty) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+  .lc-app-page .lc-discovery-businesses li {
+    min-width: 0;
+    border: 1px solid #dce5f5;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .lc-business-workspace {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+    align-items: start;
+    gap: 24px;
+    margin-top: -36px;
+  }
+  .lc-app-page .lc-business-workspace > .lc-business-current {
+    position: sticky;
+    top: 24px;
+    margin: 0;
+  }
+  .lc-business-content {
+    min-height: 240px;
+    padding: 20px;
+    border: 1px solid #e3e7ef;
+    border-radius: 20px;
+    background: #fff;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lc-app-page .lc-app-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-top: 24px;
+  }
+  .lc-app-header-row {
+    flex: 1;
+    min-width: 0;
+  }
+  .lc-app-header .lc-links {
+    flex: 0 1 460px;
+    margin-top: 0;
+  }
+  .lc-app-page .lc-managed-offers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1180px) {
+  .lc-app-page .lc-benefits .lc-offer-list,
+  .lc-app-page .lc-discovery-businesses:not(:empty),
+  .lc-app-page .lc-loading {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

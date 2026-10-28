@@ -7,8 +7,13 @@
   max-width: 440px;
   margin: 0 auto;
 }
+.lc-benefits .lc-offer-list:not(:has(.lc-discount-details:not([hidden]), .lc-discount-share-link)) {
+  grid-auto-rows: 1fr;
+}
 .lc-discount-card.lc-offer-row.lc-coupon {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
   padding: 16px 16px 0;
   border: 1px solid #e3e7ef;
   border-radius: 20px;
@@ -51,6 +56,15 @@
   text-align: left;
   cursor: pointer;
   min-height: 24px;
+}
+.lc-discount-card .lc-discount-title .lc-discount-open {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  height: 2.6em;
+  min-height: 0;
 }
 .lc-discount-open:focus-visible {
   outline: 3px solid #4a76ef;
@@ -162,6 +176,12 @@
 }
 .lc-discount-business-name {
   min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  height: 2.8em;
 }
 .lc-discount-business:focus-visible {
   outline: 3px solid #4a76ef;
@@ -180,9 +200,11 @@
   overflow-wrap: anywhere;
 }
 .lc-discount-summary {
+  flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  align-content: start;
   gap: 10px;
   margin: 16px -16px 0;
   font-size: 12px;
@@ -267,6 +289,12 @@
   font-size: 14px;
   line-height: 1.55;
   margin: 0;
+}
+.lc-discount-details .lc-discount-full-title {
+  margin-bottom: 8px;
+  font-size: 16px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 .lc-discount-view-business {
   display: inline-block;
@@ -383,6 +411,11 @@
 }
 .lc-discount-card .lc-discount-primary:hover:not(:disabled) {
   background: #1e3fb0;
+}
+.lc-discount-card .lc-discount-download {
+  gap: 6px;
+  padding-inline: 10px;
+  font-size: 13px;
 }
 .lc-discount-card .lc-discount-primary.lc-discount-secondary {
   background: #fff;

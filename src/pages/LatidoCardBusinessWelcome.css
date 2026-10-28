@@ -75,3 +75,14 @@
 .lc-business-welcome-select { display: grid; gap: 5px; margin-bottom: 16px; }
 .lc-business-welcome-select select { width: 100%; padding: 10px; border: 1px solid #dce2ed; border-radius: 10px; background: #fff; font: inherit; }
 .lc-business-welcome a:focus-visible, .lc-business-welcome button:focus-visible { outline: 3px solid #ffb020; outline-offset: 3px; }
+@media (min-width: 768px) {
+  .lc-business-welcome { padding: 40px var(--latido-page-gutter); }
+  .lc-business-welcome-back { max-width: 960px; }
+  .lc-business-welcome-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    max-width: 960px;
+  }
+  .lc-business-welcome-content { min-width: 0; padding: 32px; }
+}

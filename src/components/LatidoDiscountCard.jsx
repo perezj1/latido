@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Check,
   Clock3,
+  Download,
   Info,
   ReceiptText,
   Repeat2,
@@ -25,6 +26,7 @@ import {
 } from './LatidoOfferVisual'
 import './LatidoDiscountCard.css'
 import LinkedText from './LinkedText'
+import { offerDownload } from '../lib/latidoCardDownloads'
 
 const date = (value) => new Date(value).toLocaleDateString('es-CH', { timeZone: 'Europe/Zurich' })
 const minimum = (offer) =>
@@ -80,10 +82,19 @@ export default function LatidoDiscountCard({
   const location = useLocation()
   const detailsId = useId()
   const availability = offerAvailability(offer, { memberActive })
+  const download = offerDownload(offer)
   const daysLeft = Math.ceil((Date.parse(offer.ends_at) - Date.now()) / 86400000)
   const action = (
     <div className="lc-discount-actions">
-      {(!hideJoinAction || memberActive) && (
+      {download ? (
+        <div className="lc-discount-buttons">
+          <a className="lc-discount-primary lc-discount-download" href={download.url}
+            download={download.filename} aria-label={`Descargar ${offer.title}`}>
+            <Download size={16} aria-hidden="true" />
+            Descargar
+          </a>
+        </div>
+      ) : (!hideJoinAction || memberActive) && (
         <div className="lc-discount-buttons">
           {!memberActive ? (
             user ? (
@@ -131,6 +142,7 @@ export default function LatidoDiscountCard({
           <h3 className="lc-discount-title">
             <button
               className="lc-discount-open"
+              title={offer.title}
               aria-expanded={expanded}
               aria-controls={detailsId}
               onClick={onToggleDetails}
@@ -142,6 +154,7 @@ export default function LatidoDiscountCard({
             <button
               type="button"
               className="lc-discount-business"
+              title={[offer.business_name, offer.city].filter(Boolean).join(' · ')}
               aria-expanded={expanded}
               aria-controls={detailsId}
               onClick={onToggleDetails}
@@ -194,9 +207,10 @@ export default function LatidoDiscountCard({
             <p className="lc-discount-availability">{availability.message}</p>
           )}
         </div>
-        {!previewOnly && action}
+        {(!previewOnly || download) && action}
       </div>
       <div className="lc-discount-details" id={detailsId} hidden={!expanded}>
+        <p className="lc-discount-full-title"><strong>{offer.title}</strong></p>
         <p>
           <LinkedText>{offer.description || offerBenefitLabel(offer)}</LinkedText>
         </p>
