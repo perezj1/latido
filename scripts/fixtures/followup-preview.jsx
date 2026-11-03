@@ -27,6 +27,13 @@ function StatesPreview() {
     {[['1 · Pregunta', 'pending', false], ['2 · Sí', 'yes', false], ['3 · En proceso', 'not_yet', false], ['4 · No: motivo opcional', 'no', false], ['5 · No: cerrado', 'no', true]].map(([title, outcome, answered]) => <section key={title} style={{ marginBottom: 26 }}><h2 style={{ fontSize: 13, fontWeight: 600, color: '#475e7d', margin: 0 }}>{title}</h2><StateExample outcome={outcome} reasonAnswered={answered} /></section>)}
   </div></main>
 }
+function EmailResultPreview({ variant }) {
+  const [previewApi] = useState(() => {
+    const followup = { id: 'email-design-preview', conversation_id: '33333333-3333-4333-8333-333333333333', round: 2, contact_name: 'Sara Arranz', title: 'Curso de alemán', outcome: variant === 'closed' ? 'no' : variant, reason_answered: variant === 'closed', edit_token: 'b'.repeat(64), due_at: new Date(Date.now() + 7 * 86400000).toISOString() }
+    return { email: async () => followup, emailChange: async (_token, _round, _action, value) => ({ ...followup, reason_answered: true, no_reason: value }) }
+  })
+  return <ConversationFollowUpAnswer api={previewApi} initialLink={{ token: 'a'.repeat(64), answer: variant === 'closed' ? 'no' : variant }} />
+}
 function Preview() {
   const [revision, setRevision] = useState(0)
   const [state, setState] = useState(null)
@@ -39,7 +46,7 @@ function Preview() {
     finally { setBusy(false) }
   }
   return <main style={{ fontFamily: 'Poppins,sans-serif', background: '#f1f5f9', minHeight: '100vh', padding: '24px 16px', boxSizing: 'border-box', color: '#0f172a' }}>
-    <div style={{ maxWidth: 1040, margin: 'auto' }}><h1 style={{ fontSize: 23 }}>Prueba local del seguimiento</h1><p style={{ fontSize: 13 }}>Datos ficticios en una base de datos local. No se envían correos ni notificaciones reales.</p><p><a href="?estados=1">Ver los cinco estados del diseño</a></p>
+    <div style={{ maxWidth: 1040, margin: 'auto' }}><h1 style={{ fontSize: 23 }}>Prueba local del seguimiento</h1><p style={{ fontSize: 13 }}>Datos ficticios en una base de datos local. No se envían correos ni notificaciones reales.</p><p><a href="?estados=1">Ver los cinco estados del chat</a></p><p style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>{[['yes', 'Correo: Sí'], ['not_yet', 'Correo: En proceso'], ['no', 'Correo: No'], ['closed', 'Correo: cerrado']].map(([value, label]) => <a key={value} href={`?respuesta=${value}`} target="_blank" rel="noreferrer">{label}</a>)}</p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>{[['reset', 'Reiniciar caso'], ['day_one', 'Simular primer día'], ['advance', 'Avanzar 7 días'], ['notify', 'Generar aviso y correo de prueba']].map(([action, label]) => <button key={action} disabled={busy} onClick={() => run(action)} style={{ background: 'white', border: '1px solid #cbd5e1', borderRadius: 9, padding: '11px', cursor: 'pointer', font: 'inherit', fontSize: 12 }}>{label}</button>)}</div>
       {error && <p role="alert">{error}</p>}
       <section style={{ maxWidth: 720, border: '1px solid #dbeafe', borderRadius: 18, overflow: 'hidden', background: '#eff6ff' }} aria-label="Conversación de prueba">
@@ -54,4 +61,5 @@ function Preview() {
     </div>
   </main>
 }
-createRoot(document.getElementById('root')).render(<React.StrictMode><BrowserRouter>{window.location.pathname === '/seguimiento' ? <ConversationFollowUpAnswer api={api} /> : window.location.pathname === '/perfil' ? <PreferencePreview /> : new URLSearchParams(window.location.search).has('estados') ? <StatesPreview /> : <Preview />}</BrowserRouter></React.StrictMode>)
+const resultVariant = new URLSearchParams(window.location.search).get('respuesta')
+createRoot(document.getElementById('root')).render(<React.StrictMode><BrowserRouter>{window.location.pathname === '/seguimiento' ? <ConversationFollowUpAnswer api={api} /> : window.location.pathname === '/perfil' ? <PreferencePreview /> : ['yes', 'not_yet', 'no', 'closed'].includes(resultVariant) ? <EmailResultPreview variant={resultVariant} /> : new URLSearchParams(window.location.search).has('estados') ? <StatesPreview /> : <Preview />}</BrowserRouter></React.StrictMode>)

@@ -3,23 +3,21 @@ import { Check, Clock3, Share, X } from 'lucide-react'
 import { FOLLOWUP_REASONS, followupApi, followupDate, followupQuestion } from '../lib/conversationFollowups'
 import './ConversationFollowUp.css'
 
-export function ConversationFollowUpCard({ followup, onAnswer, onFeedback, onEdit, contactName, publicationTitle = '', saving = false, error = '', cardRef }) {
-  const [editing, setEditing] = useState(false)
+export function ConversationFollowUpCard({ followup, onAnswer, onFeedback, contactName, publicationTitle = '', saving = false, error = '', cardRef }) {
   const [shareStatus, setShareStatus] = useState('')
-  useEffect(() => { setEditing(false); setShareStatus('') }, [followup?.id, followup?.round])
-  if (!followup || (followup.dismissed && !editing)) return null
+  useEffect(() => { setShareStatus('') }, [followup?.id, followup?.round])
+  if (!followup || followup.dismissed) return null
   const name = contactName || followup.contact_name || 'este contacto'
   const subject = String(publicationTitle || '').trim()
   const done = followup.outcome === 'yes'
   const closed = followup.outcome === 'no'
   const waiting = followup.outcome === 'not_yet' && !followup.due
-  const asking = editing || (!done && !closed && !waiting)
-  const reason = closed && !followup.reason_answered && !editing
+  const asking = !done && !closed && !waiting
+  const reason = closed && !followup.reason_answered
   const tone = asking || reason ? 'question' : done ? 'success' : waiting ? 'progress' : 'closed'
-  const change = onAnswer && <button type="button" className="conversation-followup__text-button" disabled={saving} onClick={() => onEdit ? onEdit() : setEditing(true)}>Cambiar respuesta</button>
   const dismiss = onFeedback && <button type="button" className="conversation-followup__dismiss" disabled={saving} onClick={() => onFeedback('dismiss')} aria-label="Cerrar seguimiento"><X size={16} /></button>
   async function choose(value) {
-    if ((await onAnswer?.(value)) !== false) setEditing(false)
+    await onAnswer?.(value)
   }
   async function share() {
     const data = { title: 'Latido', text: 'Encuentra lo que necesitas y conecta con la comunidad hispanohablante en Suiza.', url: 'https://latido.ch' }
@@ -36,13 +34,13 @@ export function ConversationFollowUpCard({ followup, onAnswer, onFeedback, onEdi
         {asking ? <><h3>{followupQuestion(name)}</h3>{subject && <p className="conversation-followup__subject">Le escribiste por “{subject}”</p>}</>
           : done ? <><h3>¡Genial, lo conseguiste!</h3><p>Recomienda Latido para ayudar a alguien más.</p></>
           : waiting ? <p className="conversation-followup__message"><strong>Perfecto.</strong> Te volveremos a preguntar el {followupDate(followup.due_at)}.</p>
-          : reason ? <><h3>Lo sentimos. ¿Qué pasó?</h3><p>Opcional · {change}</p></>
+          : reason ? <><h3>Lo sentimos. ¿Qué pasó?</h3><p>Opcional</p></>
           : <p className="conversation-followup__message"><strong>Gracias por contárnoslo.</strong> Cerramos el seguimiento con {name}.</p>}
       </div>
     </div>
     {asking ? <div className="conversation-followup__answers"><button type="button" disabled={saving} onClick={() => choose('yes')}><Check size={17} />Sí</button><button type="button" disabled={saving} onClick={() => choose('not_yet')}><Clock3 size={16} />En proceso</button><button type="button" disabled={saving} onClick={() => choose('no')}><X size={16} />No</button></div>
       : reason ? <div className="conversation-followup__reasons">{Object.entries(FOLLOWUP_REASONS).map(([id, label]) => <button type="button" key={id} disabled={saving || !onFeedback} onClick={() => onFeedback('reason', id)}>{label}</button>)}<button type="button" className="conversation-followup__skip" disabled={saving || !onFeedback} onClick={() => onFeedback('reason', null)}>Omitir</button></div>
-      : <div className="conversation-followup__footer">{done ? <button type="button" className="conversation-followup__share" onClick={share}><Share size={16} />Compartir Latido</button> : change}{dismiss}</div>}
+      : <div className="conversation-followup__footer">{done && <button type="button" className="conversation-followup__share" onClick={share}><Share size={16} />Compartir Latido</button>}{dismiss}</div>}
     {shareStatus && <p role="status" className="conversation-followup__status">{shareStatus}</p>}
     {saving && <p role="status">Guardando tu respuesta…</p>}
     {error && <p className="conversation-followup__error" role="alert">{error}</p>}

@@ -63,20 +63,24 @@ En el chat, «Sí» ofrece compartir Latido; «En proceso» muestra la fecha de 
 próxima pregunta. «No» cierra el seguimiento inmediatamente y permite elegir
 opcionalmente «No me respondió», «No era lo que buscaba», «No hubo acuerdo» u
 «Otro motivo», o pulsar «Omitir». El motivo queda registrado en el admin.
-«Cambiar respuesta» permite corregir el resultado; elegir «En proceso» reactiva
-el recordatorio. La X solo oculta la tarjeta de confirmación: una consulta en
+No se ofrece «Cambiar respuesta» en el chat ni en las pantallas del correo.
+La X solo oculta la tarjeta de confirmación: una consulta en
 proceso volverá a mostrar la pregunta cuando llegue su fecha.
 
 Un clic en los botones del correo abre la página y guarda automáticamente la
 respuesta mediante POST, sin iniciar sesión ni mostrar una confirmación adicional.
-La página conserva la estructura del correo y sustituye las opciones por la
-tarjeta del resultado. Los enlaces usan tokens
+La página muestra el resultado con la franja de marca, cabecera de Latido,
+tarjeta central y pie de agradecimiento. «Sí» permite compartir Latido;
+«En proceso» muestra la próxima fecha y el acceso al chat. «No» permite elegir
+un motivo opcional y enviarlo; «Volver a Latido» permite salir sin elegir motivo.
+Tras enviar el motivo se muestra el cierre del seguimiento. No hay una opción
+para cambiar la respuesta. Los enlaces usan tokens
 aleatorios por conversación y ronda en el fragmento de la URL, caducan, se invalidan
 al responder y no contienen emails ni datos del usuario. El endpoint rechaza GET;
 la respuesta la envía el navegador al cargar la página con una opción válida.
 No se interpretan respuestas de texto enviadas al buzón remitente.
 Tras responder desde el correo se concede una continuación privada de 30 minutos
-para indicar el motivo, cambiar la respuesta o cerrar la tarjeta sin iniciar sesión.
+para indicar el motivo opcional sin iniciar sesión.
 Los cambios quedan en el historial y no reutilizan el enlace original del correo.
 
 El correo utiliza el HTML facilitado por el usuario en `email-template.ts`, con
