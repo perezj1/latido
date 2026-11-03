@@ -8,7 +8,7 @@ const APP_URL = (Deno.env.get('LATIDO_APP_URL') || 'https://www.latido.ch').repl
 const PUSH_SECRET = Deno.env.get('PUSH_WEBHOOK_SECRET') || ''
 const service = createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:false}})
 const transport = nodemailer.createTransport({host:Deno.env.get('SMTP_HOSTNAME')||'authsmtp.securemail.pro',port:Number(Deno.env.get('SMTP_PORT')||465),secure:Deno.env.get('SMTP_SECURE')!=='false',auth:{user:Deno.env.get('SMTP_USERNAME'),pass:Deno.env.get('SMTP_PASSWORD')},connectionTimeout:10000,greetingTimeout:10000,socketTimeout:15000})
-type Claim = {id:string;user_id:string;conversation_id:string;title:string;round:number;token:string;attempts:number;email_enabled:boolean;email_sent_at:string|null;push_sent_at:string|null}
+type Claim = {id:string;user_id:string;conversation_id:string;title:string;round:number;token:string;attempts:number;email_enabled:boolean;email_sent_at:string|null;push_sent_at:string|null;email_only?:boolean}
 async function update(row:Claim,values:Record<string,unknown>) {
   const {error} = await service.from('conversation_followups').update(values).eq('id',row.id).eq('round',row.round).eq('delivery_status','processing')
   if(error) throw error
@@ -52,7 +52,7 @@ Deno.serve(async req=>{
         }
         if(current.round!==row.round || ['yes','no'].includes(current.outcome)) continue
         const failures:string[]=[]
-        if(!row.push_sent_at) {
+        if(!row.email_only && !row.push_sent_at) {
           try {
             if(!PUSH_SECRET) throw new Error('PUSH_NOT_CONFIGURED')
             const response=await fetch(`${URL}/functions/v1/latido_push_notification`,{method:'POST',headers:{'Content-Type':'application/json','x-latido-webhook-secret':PUSH_SECRET},body:JSON.stringify({type:'INSERT',table:'conversation_followups',record:{id:row.id,round:row.round}}),signal:AbortSignal.timeout(12000)})

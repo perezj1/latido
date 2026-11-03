@@ -67,7 +67,7 @@ try {
   await control('Generar aviso y correo de prueba')
   await expect(page.getByText('Avisos generados: 1.', { exact: false })).toBeVisible()
   const frame = page.frameLocator('iframe[title="Correo de seguimiento"]')
-  await expect(frame.getByRole('heading', { name: '¿Cómo te ha ido?' })).toBeVisible()
+  await expect(frame.getByRole('heading', { name: '¿Pudiste llegar a un acuerdo con Negocio?' })).toBeVisible()
   await expect(frame.getByText('Negocio de prueba', { exact: true })).toBeVisible()
   await expect(frame.getByRole('img', { name: 'Latido', exact: true })).toBeVisible()
   await expect(frame.getByRole('link', { name: /Ajustar avisos de correo/ })).toHaveCount(0)

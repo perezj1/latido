@@ -8,10 +8,10 @@ const workerSource = (await readFile(new URL('index.ts', directory), 'utf8'))
   .replace(/^import \{ createClient \} .*$/m, 'const createClient=globalThis.mockCreateClient;')
   .replace(/^import nodemailer .*$/m, 'const nodemailer=globalThis.mockNodemailer;')
 const bundle = await build({ stdin: { contents: workerSource, loader: 'ts', resolveDir: fileURLToPath(directory) }, bundle: true, write: false, platform: 'node', format: 'iife', target: 'es2022' })
-async function run({ authorized = true, enabled = true, emailEnabled = true, confirmed = true, smtpFailure = false, pushFailure = false, emailAlreadySent = false, pushAlreadySent = false, unavailable = false, body, testAccount = false } = {}) {
+async function run({ authorized = true, enabled = true, emailEnabled = true, emailOnly = false, confirmed = true, smtpFailure = false, pushFailure = false, emailAlreadySent = false, pushAlreadySent = false, unavailable = false, body, testAccount = false } = {}) {
   let handler, claims = 0
   const mails = [], updates = [], pushes = []
-  const row = { id: 'followup', user_id: 'customer', conversation_id: 'conversation', title: '<img src=x onerror=alert(1)>', round: 2, token: 'a'.repeat(64), attempts: 1, email_enabled: emailEnabled, email_sent_at: emailAlreadySent ? 'today' : null, push_sent_at: pushAlreadySent ? 'today' : null }
+  const row = { id: 'followup', user_id: 'customer', conversation_id: 'conversation', title: '<img src=x onerror=alert(1)>', round: 2, token: 'a'.repeat(64), attempts: 1, email_enabled: emailEnabled, email_only: emailOnly, email_sent_at: emailAlreadySent ? 'today' : null, push_sent_at: pushAlreadySent ? 'today' : null }
   const service = {
     async rpc(name) {
       if (name === 'cf_email_context') return unavailable ? { error: { message: 'LINK_UNAVAILABLE' } } : { data: { round: 2, outcome: 'not_yet', contact_name: 'Marta & Co.' } }
@@ -51,6 +51,14 @@ assert.equal(/\{\{[a-z_]+\}\}/.test(r.mails[0].html), false, 'The supplied templ
 assert.ok(r.mails[0].html.includes('src="https://latido.test/icon-192.png"'))
 assert.ok(!r.mails[0].html.includes('Ajustar avisos de correo'))
 assert.equal(r.pushes[0].body.table, 'conversation_followups')
+assert.match(r.mails[0].html, /<h1[^>]*>¿Pudiste llegar a un acuerdo con Marta\?<\/h1>/)
+assert.match(r.mails[0].html, /<h2[^>]*>Responde en un clic<\/h2>/)
+assert.equal(r.mails[0].html.includes('¡Hola!'), false)
+assert.equal((r.mails[0].html.match(/Responde en un clic/g) || []).length, 1)
+r = await run({ emailOnly: true }); assert.equal(r.mails.length, 1); assert.equal(r.pushes.length, 0); assert.equal(r.body.sent, 1)
+r = await run({ emailOnly: true, emailEnabled: false }); assert.equal(r.mails.length, 0); assert.equal(r.pushes.length, 0); assert.equal(r.body.skipped, 1)
+r = await run({ emailOnly: true, emailAlreadySent: true }); assert.equal(r.mails.length, 0); assert.equal(r.pushes.length, 0)
+r = await run({ emailOnly: true, smtpFailure: true }); assert.equal(r.body.retried, 1); assert.equal(r.pushes.length, 0)
 r = await run({ authorized: false }); assert.equal(r.status, 401); assert.equal(r.claims, 0)
 r = await run({ enabled: false }); assert.equal(r.body.disabled, true); assert.equal(r.claims, 0)
 const testBody = { test_email: 'latidoch@gmail.com', conversation_id: '11111111-1111-4111-8111-111111111111', test_app_url: 'http://127.0.0.1:5244' }

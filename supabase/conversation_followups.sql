@@ -1,7 +1,8 @@
 -- Requires messages, conversations, profiles,
 -- app_notifications, email_notification_preferences and account_cooperators.sql.
 -- Installing this file does not run a bulk backfill or enable cron. Older
--- eligible chats are also enrolled on demand by cf_get, without sending alerts.
+-- eligible chats are enrolled by cf_get and the delivery worker. Their first
+-- historical notification is email only; subsequent reminders use normal delivery.
 BEGIN;
 CREATE TABLE IF NOT EXISTS public.conversation_followups (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,6 +33,7 @@ ALTER TABLE public.conversation_followups ADD COLUMN IF NOT EXISTS reason_answer
 ALTER TABLE public.conversation_followups ADD COLUMN IF NOT EXISTS dismissed_round integer;
 ALTER TABLE public.conversation_followups ADD COLUMN IF NOT EXISTS edit_expires_at timestamptz;
 ALTER TABLE public.conversation_followups ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;
+ALTER TABLE public.conversation_followups ADD COLUMN IF NOT EXISTS email_only boolean NOT NULL DEFAULT false;
 DROP INDEX IF EXISTS public.conversation_followups_due_idx;
 CREATE INDEX conversation_followups_due_idx ON public.conversation_followups(due_at)
   WHERE outcome IN ('pending','not_yet');
@@ -81,7 +83,7 @@ BEGIN
   SELECT * INTO c FROM public.conversations WHERE id=NEW.conversation_id;
   IF c.sender_id IS NULL OR c.sender_id=c.owner_id OR NEW.sender_id<>c.sender_id
     OR coalesce(c.deleted_by_sender,false) OR nullif(trim(c.title),'') IS NULL THEN RETURN NEW; END IF;
-  -- A message in an old thread must not launch an unsolicited historical campaign.
+  -- Historical enrollment uses the original first message, via cf_enroll_history.
   IF EXISTS(SELECT 1 FROM public.messages m WHERE m.conversation_id=c.id AND m.id<>NEW.id AND m.sender_id=c.sender_id) THEN RETURN NEW; END IF;
   INSERT INTO public.conversation_followups(conversation_id,user_id,title,first_message_at,due_at,token_expires_at)
   VALUES(c.id,c.sender_id,c.title,NEW.created_at,NEW.created_at+interval '7 days',NEW.created_at+interval '37 days')
@@ -99,11 +101,11 @@ DECLARE f public.conversation_followups;
 BEGIN
   IF auth.uid() IS NULL THEN RAISE EXCEPTION 'AUTH_REQUIRED' USING ERRCODE='42501'; END IF;
   -- Older threads may predate the trigger. Enroll only the caller's own contact,
-  -- once seven days have elapsed, and keep its first question inside the chat.
+  -- once seven days have elapsed, and queue its first email as well.
   IF NOT EXISTS(SELECT 1 FROM public.conversation_followups WHERE conversation_id=p_conversation) THEN
-    INSERT INTO public.conversation_followups(conversation_id,user_id,title,first_message_at,due_at,token_expires_at,delivery_status)
+    INSERT INTO public.conversation_followups(conversation_id,user_id,title,first_message_at,due_at,token_expires_at,delivery_status,email_only)
     SELECT c.id,c.sender_id,coalesce(nullif(trim(c.title),''),'Consulta en Latido'),min(m.created_at),
-      min(m.created_at)+interval '7 days',now()+interval '37 days','skipped'
+      min(m.created_at)+interval '7 days',now()+interval '37 days','pending',true
     FROM public.conversations c JOIN public.messages m ON m.conversation_id=c.id AND m.sender_id=c.sender_id
     JOIN public.profiles p ON p.id=c.sender_id
     WHERE c.id=p_conversation AND c.sender_id=public.latido_account_id()
@@ -137,7 +139,7 @@ BEGIN
     round=round+1, email_token=replace(gen_random_uuid()::text||gen_random_uuid()::text,'-',''),token_expires_at=now()+interval '37 days',
     delivery_status=CASE WHEN p_answer IN ('yes','no') THEN 'skipped' ELSE 'pending' END,
     processing_at=NULL,retry_at=NULL,attempts=0,email_sent_at=NULL,push_sent_at=NULL,last_error=NULL
-    ,no_reason=NULL,reason_answered=false,dismissed_round=NULL,edit_expires_at=now()+interval '30 minutes'
+    ,no_reason=NULL,reason_answered=false,dismissed_round=NULL,edit_expires_at=now()+interval '30 minutes',email_only=false
   WHERE id=f.id RETURNING * INTO f;
   RETURN public.cf_safe_state(f);
 END $$;
@@ -221,10 +223,46 @@ BEGIN
   RETURN result||jsonb_build_object('edit_token',f.email_token);
 END $$;
 
+-- Enroll historical chats even when nobody reopens them. The update also opts in
+-- untouched chat-only rows created by the previous historical backfill.
+CREATE OR REPLACE FUNCTION public.cf_enroll_history() RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE added integer; queued integer;
+BEGIN
+  WITH eligible AS (
+    SELECT c.id,c.sender_id,coalesce(nullif(trim(c.title),''),'Consulta en Latido') AS title,min(m.created_at) AS first_message_at
+    FROM public.conversations c
+    JOIN public.messages m ON m.conversation_id=c.id AND m.sender_id=c.sender_id
+    JOIN public.profiles p ON p.id=c.sender_id
+    WHERE c.sender_id IS NOT NULL AND c.owner_id IS DISTINCT FROM c.sender_id
+      AND NOT coalesce(c.deleted_by_sender,false) AND NOT coalesce(p.banned,false)
+    GROUP BY c.id,c.sender_id,c.title HAVING min(m.created_at)<=now()-interval '7 days'
+  )
+  INSERT INTO public.conversation_followups(conversation_id,user_id,title,first_message_at,due_at,token_expires_at,delivery_status,email_only)
+  SELECT id,sender_id,title,first_message_at,first_message_at+interval '7 days',now()+interval '37 days','pending',true
+  FROM eligible ON CONFLICT(conversation_id) DO NOTHING;
+  GET DIAGNOSTICS added = ROW_COUNT;
+
+  UPDATE public.conversation_followups f
+  SET delivery_status='pending',email_only=true,token_expires_at=greatest(f.token_expires_at,now()+interval '37 days')
+  FROM public.conversations c JOIN public.profiles p ON p.id=c.sender_id
+  WHERE c.id=f.conversation_id AND c.sender_id=f.user_id AND c.owner_id IS DISTINCT FROM c.sender_id
+    AND NOT coalesce(c.deleted_by_sender,false) AND NOT coalesce(p.banned,false)
+    AND NOT f.is_test AND f.outcome='pending' AND f.round=1 AND f.answered_at IS NULL
+    AND f.delivery_status='skipped' AND f.attempts=0 AND f.notified_round=0
+    AND f.email_sent_at IS NULL AND f.push_sent_at IS NULL AND f.first_message_at<=now()-interval '7 days'
+    AND NOT EXISTS(SELECT 1 FROM public.conversation_followup_answers a WHERE a.followup_id=f.id);
+  GET DIAGNOSTICS queued = ROW_COUNT;
+  RETURN jsonb_build_object('conversations_added',added,'historical_emails_queued',queued);
+END $$;
+REVOKE ALL ON FUNCTION public.cf_enroll_history() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.cf_enroll_history() TO service_role;
+
 CREATE OR REPLACE FUNCTION public.cf_claim_due(p_limit integer DEFAULT 25) RETURNS SETOF jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE f public.conversation_followups; c public.conversations; email_enabled boolean;
 BEGIN
+  PERFORM public.cf_enroll_history();
   FOR f IN SELECT q.* FROM public.conversation_followups q JOIN public.conversations conv ON conv.id=q.conversation_id
     WHERE NOT q.is_test AND q.outcome IN ('pending','not_yet') AND q.due_at<=now() AND q.token_expires_at>now()
     AND (q.delivery_status='pending' OR (q.delivery_status='processing' AND q.processing_at<now()-interval '10 minutes'))
@@ -232,16 +270,18 @@ BEGIN
     AND conv.sender_id=q.user_id AND NOT EXISTS(SELECT 1 FROM public.profiles p WHERE p.id=q.user_id AND p.banned)
     ORDER BY q.due_at,q.id LIMIT greatest(1,least(coalesce(p_limit,25),100)) FOR UPDATE OF q SKIP LOCKED
   LOOP
+    IF NOT f.email_only THEN
     INSERT INTO public.app_notifications(recipient_id,kind,source_id,data)
     VALUES(f.user_id,'conversation_followup',f.id::text||':'||f.round::text,
       jsonb_build_object('conversation_id',f.conversation_id,'title',f.title,'href','/mensajes?conv='||f.conversation_id::text))
     ON CONFLICT(recipient_id,kind,source_id) DO NOTHING;
+    END IF;
     UPDATE public.conversation_followups SET delivery_status='processing',processing_at=now(),attempts=attempts+1,notified_round=round
     WHERE id=f.id RETURNING * INTO f;
     SELECT coalesce(p.message_emails_enabled,true) INTO email_enabled FROM public.email_notification_preferences p WHERE p.user_id=f.user_id;
     RETURN NEXT jsonb_build_object('id',f.id,'user_id',f.user_id,'conversation_id',f.conversation_id,'title',f.title,
       'round',f.round,'token',f.email_token,'attempts',f.attempts,'email_enabled',coalesce(email_enabled,true),
-      'email_sent_at',f.email_sent_at,'push_sent_at',f.push_sent_at);
+      'email_sent_at',f.email_sent_at,'push_sent_at',f.push_sent_at,'email_only',f.email_only);
   END LOOP;
 END $$;
 
