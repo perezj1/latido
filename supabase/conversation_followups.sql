@@ -1,6 +1,7 @@
 -- Requires messages, conversations, profiles,
 -- app_notifications, email_notification_preferences and account_cooperators.sql.
--- No historical backfill and no cron is enabled by installing this file.
+-- Installing this file does not run a bulk backfill or enable cron. Older
+-- eligible chats are also enrolled on demand by cf_get, without sending alerts.
 BEGIN;
 CREATE TABLE IF NOT EXISTS public.conversation_followups (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -97,6 +98,19 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE f public.conversation_followups;
 BEGIN
   IF auth.uid() IS NULL THEN RAISE EXCEPTION 'AUTH_REQUIRED' USING ERRCODE='42501'; END IF;
+  -- Older threads may predate the trigger. Enroll only the caller's own contact,
+  -- once seven days have elapsed, and keep its first question inside the chat.
+  IF NOT EXISTS(SELECT 1 FROM public.conversation_followups WHERE conversation_id=p_conversation) THEN
+    INSERT INTO public.conversation_followups(conversation_id,user_id,title,first_message_at,due_at,token_expires_at,delivery_status)
+    SELECT c.id,c.sender_id,coalesce(nullif(trim(c.title),''),'Consulta en Latido'),min(m.created_at),
+      min(m.created_at)+interval '7 days',now()+interval '37 days','skipped'
+    FROM public.conversations c JOIN public.messages m ON m.conversation_id=c.id AND m.sender_id=c.sender_id
+    JOIN public.profiles p ON p.id=c.sender_id
+    WHERE c.id=p_conversation AND c.sender_id=public.latido_account_id()
+      AND c.owner_id IS DISTINCT FROM c.sender_id AND NOT coalesce(c.deleted_by_sender,false) AND NOT coalesce(p.banned,false)
+    GROUP BY c.id,c.sender_id,c.title HAVING min(m.created_at)<=now()-interval '7 days'
+    ON CONFLICT(conversation_id) DO NOTHING;
+  END IF;
   SELECT q.* INTO f FROM public.conversation_followups q JOIN public.conversations c ON c.id=q.conversation_id
   WHERE q.conversation_id=p_conversation AND q.user_id=public.latido_account_id()
     AND c.sender_id=q.user_id AND NOT coalesce(c.deleted_by_sender,false)

@@ -91,8 +91,20 @@ guarda en `email_notification_preferences` y se respeta al seleccionar los enví
 
 Cada conversación nueva con título genera un seguimiento para la persona que
 inició el contacto, a partir de su primer mensaje. Los siguientes mensajes no
-reinician el plazo. No se generan seguimientos retrospectivos al instalar SQL.
+reinician el plazo. La instalación del esquema no ejecuta una incorporación
+masiva de conversaciones anteriores.
 No se pregunta a la persona que publicó el anuncio ni se inventan mensajes suyos.
+
+Las conversaciones anteriores también muestran la pregunta cuando el primer
+mensaje del iniciador tiene al menos siete días. `cf_get` incorpora el chat al
+abrirlo si todavía no tiene seguimiento. El script idempotente
+`supabase/conversation_followups_backfill.sql` incorpora además todos los chats
+antiguos que ya cumplen el plazo, para que aparezcan en el admin desde ese momento.
+La primera ronda histórica tiene `delivery_status='skipped'`: se ve en el chat y
+no genera correos, push ni avisos retrospectivos. Si la persona elige «En proceso»,
+se programa el siguiente recordatorio dentro de siete días como en los chats nuevos.
+Los chats eliminados por el iniciador y las cuentas bloqueadas quedan excluidos.
+Los resultados existentes se conservan al volver a ejecutar el script.
 
 La tarjeta aparece al final del chat. El aviso persistente en Latido y el push
 dicen «¿Cómo fue tu consulta?» y abren esa conversación. El correo utiliza SMTP

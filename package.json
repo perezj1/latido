@@ -18,7 +18,7 @@
     "test:linked-text": "node scripts/test-linked-text.mjs",
     "test:cooperators": "node scripts/test-account-cooperators.mjs",
     "test:message-email": "node scripts/test-message-email.mjs",
-    "test:followups": "node scripts/test-conversation-followups.mjs",
+    "test:followups": "node scripts/test-conversation-followups.mjs && node scripts/test-conversation-followups-backfill.mjs",
     "test:followups:email": "node scripts/test-conversation-followup-email.mjs",
     "test:followups:browser": "node scripts/test-conversation-followups-browser.mjs",
     "preview:followups": "node scripts/preview-conversation-followups.mjs",
