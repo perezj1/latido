@@ -1,4 +1,5 @@
 export const APP_NOTIFICATION_KINDS = Object.freeze({
+  STORE_ORDER:'store_order',
   CARD_BUSINESS:'card_business',
   CARD_MEMBER:'card_member',
   MESSAGE:'message',
@@ -17,6 +18,7 @@ export const APP_NOTIFICATION_KINDS = Object.freeze({
 })
 
 const KIND_ORDER = [
+  APP_NOTIFICATION_KINDS.STORE_ORDER,
   APP_NOTIFICATION_KINDS.CARD_BUSINESS,
   APP_NOTIFICATION_KINDS.CARD_MEMBER,
   APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST,
@@ -69,6 +71,8 @@ function describeNotificationGroup(kind, rows) {
   const targetTitle = String(data.target_title || '').trim()
 
   switch (kind) {
+    case APP_NOTIFICATION_KINDS.STORE_ORDER:
+      return { icon:'🛍️', title:count === 1 ? `Nuevo pedido pagado ${data.reference || ''}`.trim() : `${count} nuevos pedidos pagados`, body:'Revisa los productos y la dirección de envío para preparar el pedido.', href:'/admin-latido?section=storeOrders' }
     case APP_NOTIFICATION_KINDS.CARD_BUSINESS:
     case APP_NOTIFICATION_KINDS.CARD_MEMBER:
       return { icon:'💳', title:count === 1 ? data.title || 'Novedades de Latido Club' : `${count} novedades de Latido Club`, body:count === 1 ? data.body || '' : 'Consulta tus avisos de Latido Club.', href:data.href || '/card' }

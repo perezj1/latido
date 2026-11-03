@@ -26,6 +26,9 @@ const transport = nodemailer.createTransport({
   port:SMTP_PORT,
   secure:SMTP_SECURE,
   auth:{ user:SMTP_USERNAME, pass:SMTP_PASSWORD },
+  connectionTimeout:10000,
+  greetingTimeout:10000,
+  socketTimeout:15000,
 })
 
 type ClubItem = {
@@ -54,6 +57,7 @@ type ClubOrder = {
   shipping_address:Record<string, string> | null
   admin_email_sent_at:string | null
   customer_email_sent_at:string | null
+  payment_status:string
 }
 
 function json(body:Record<string, unknown>, status = 200) {
@@ -107,7 +111,7 @@ function adminMessage(order:ClubOrder) {
   ])
   const address = addressLines(order.shipping_address)
   const text = [
-    `NUEVO PEDIDO LATIDO CLUB ${order.reference}`, '',
+    `NUEVO PEDIDO TIENDA LATIDO ${order.reference}`, '',
     ...lines, '',
     'CLIENTE',
     order.customer_name || '',
@@ -119,6 +123,7 @@ function adminMessage(order:ClubOrder) {
     `Productos: ${money(order.subtotal_amount, order.currency)}`,
     `Envío: ${order.shipping_amount > 0 ? money(order.shipping_amount, order.currency) : 'incluido'}`, '',
     'Abre Gelato > Pedidos > Nuevo pedido > Añadir producto > Seleccionar un producto de mis tiendas > Latido Club.',
+    'Gestiona el pedido: https://www.latido.ch/admin-latido?section=storeOrders',
   ].join('\n')
   const itemsHtml = order.items.map(item => `<tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><strong>${item.quantity} × ${escapeHtml(item.product_name)}</strong><br><span style="color:#64748b">${escapeHtml(item.option_label)}: ${escapeHtml(item.option)}</span><br><small style="color:#94a3b8">Producto ${escapeHtml(item.gelato_product_id)}<br>Variante ${escapeHtml(item.gelato_variant_id)}</small></td><td style="padding:10px 0;border-bottom:1px solid #e5e7eb;text-align:right">${escapeHtml(money(item.line_total, order.currency))}</td></tr>`).join('')
   const shippingLabel = order.shipping_amount > 0 ? money(order.shipping_amount, order.currency) : 'incluido'
@@ -148,37 +153,45 @@ async function paidOrder(session:Stripe.Checkout.Session) {
     state:shipping.address.state || '',
     country:shipping.address.country || '',
   } : null
-  const { error:updateError } = await service.from('club_orders').update({
-    status:'paid',
-    payment_status:'paid',
-    customer_email:email,
-    customer_name:name,
-    customer_phone:phone,
-    shipping_address:address,
-    stripe_checkout_url:null,
-    stripe_payment_intent_id:stripeId(session.payment_intent),
-    stripe_customer_id:stripeId(session.customer),
-    total_amount:session.amount_total || undefined,
-    paid_at:new Date().toISOString(),
-    notification_last_error:null,
-  }).eq('id', orderId)
-  if (updateError) throw updateError
-
-  const { data, error } = await service.from('club_orders').select('*').eq('id', orderId).single()
+  const { data, error } = await service.rpc('club_settle_payment', {
+    p_id:orderId,
+    p_session:session.id,
+    p_amount:session.amount_total,
+    p_currency:session.currency,
+    p_details:{
+      customer_email:email,
+      customer_name:name,
+      customer_phone:phone,
+      shipping_address:address,
+      stripe_payment_intent_id:stripeId(session.payment_intent),
+      stripe_customer_id:stripeId(session.customer),
+    },
+  })
   if (error || !data) throw error || new Error('ORDER_NOT_FOUND')
   const order = data as ClubOrder
+  if (order.payment_status !== 'paid') return order.id
+  // Persist the payment before sending mail. Try both recipients independently;
+  // a failed notification makes Stripe retry without resetting shipping status.
+  const failures:string[] = []
   if (!order.admin_email_sent_at) {
-    const message = adminMessage(order)
-    await sendMail({ to:ORDER_EMAIL, replyTo:order.customer_email || undefined, ...message })
-    const { error:markError } = await service.from('club_orders').update({ admin_email_sent_at:new Date().toISOString() }).eq('id', order.id).is('admin_email_sent_at', null)
-    if (markError) throw markError
+    try {
+      const message = adminMessage(order)
+      await sendMail({ to:ORDER_EMAIL, replyTo:order.customer_email || undefined, ...message })
+      const { error:markError } = await service.from('club_orders').update({ admin_email_sent_at:new Date().toISOString() }).eq('id', order.id).is('admin_email_sent_at', null)
+      if (markError) throw markError
+    } catch { failures.push('ADMIN_EMAIL_FAILED') }
   }
   if (order.customer_email && !order.customer_email_sent_at) {
-    const message = customerMessage(order)
-    await sendMail({ to:order.customer_email, replyTo:ORDER_EMAIL || undefined, ...message })
-    const { error:markError } = await service.from('club_orders').update({ customer_email_sent_at:new Date().toISOString() }).eq('id', order.id).is('customer_email_sent_at', null)
-    if (markError) throw markError
+    try {
+      const message = customerMessage(order)
+      await sendMail({ to:order.customer_email, replyTo:ORDER_EMAIL || undefined, ...message })
+      const { error:markError } = await service.from('club_orders').update({ customer_email_sent_at:new Date().toISOString() }).eq('id', order.id).is('customer_email_sent_at', null)
+      if (markError) throw markError
+    } catch { failures.push('CUSTOMER_EMAIL_FAILED') }
   }
+  if (failures.length) throw new Error(failures.join(' | '))
+  const { error:clearError } = await service.from('club_orders').update({ notification_last_error:null }).eq('id', order.id)
+  if (clearError) throw clearError
   return order.id
 }
 
@@ -186,28 +199,35 @@ Deno.serve(async req => {
   if (req.method !== 'POST') return json({ ok:false, error:'METHOD_NOT_ALLOWED' }, 405)
   let orderId:string | null = null
   try {
-    if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET || !SMTP_USERNAME || !SMTP_PASSWORD || !SMTP_FROM) {
+    if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
       throw new Error('WEBHOOK_NOT_CONFIGURED')
     }
     const signature = req.headers.get('stripe-signature')
     if (!signature) return json({ ok:false, error:'SIGNATURE_MISSING' }, 400)
-    const event = await stripe.webhooks.constructEventAsync(
-      await req.text(), signature, STRIPE_WEBHOOK_SECRET, undefined, Stripe.createSubtleCryptoProvider(),
-    )
-    const { data:seen } = await service.from('club_stripe_events').select('event_id').eq('event_id', event.id).maybeSingle()
+    let event:Stripe.Event
+    try {
+      event = await stripe.webhooks.constructEventAsync(
+        await req.text(), signature, STRIPE_WEBHOOK_SECRET, undefined, Stripe.createSubtleCryptoProvider(),
+      )
+    } catch { return json({ ok:false, error:'SIGNATURE_INVALID' }, 400) }
+    const { data:seen, error:seenError } = await service.from('club_stripe_events').select('event_id').eq('event_id', event.id).maybeSingle()
+    if (seenError) throw seenError
     if (seen) return json({ ok:true, duplicate:true })
 
     const session = event.data.object as Stripe.Checkout.Session
     if (session.metadata?.latido_product === 'club_order') {
       orderId = session.metadata.latido_order_id || session.client_reference_id
-      if ((event.type === 'checkout.session.completed' && session.payment_status === 'paid') || event.type === 'checkout.session.async_payment_succeeded') {
+      if (['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type) && session.payment_status === 'paid') {
         orderId = await paidOrder(session)
       } else if (event.type === 'checkout.session.completed') {
-        await service.from('club_orders').update({ status:'payment_processing', payment_status:'processing' }).eq('id', orderId)
+        const { error } = await service.from('club_orders').update({ status:'payment_processing', payment_status:'processing' }).eq('id', orderId).eq('stripe_checkout_session_id', session.id).eq('payment_status', 'unpaid')
+        if (error) throw error
       } else if (event.type === 'checkout.session.async_payment_failed') {
-        await service.from('club_orders').update({ status:'payment_failed', payment_status:'failed' }).eq('id', orderId)
+        const { error } = await service.from('club_orders').update({ status:'payment_failed', payment_status:'failed' }).eq('id', orderId).eq('stripe_checkout_session_id', session.id).in('payment_status', ['unpaid', 'processing'])
+        if (error) throw error
       } else if (event.type === 'checkout.session.expired') {
-        await service.from('club_orders').update({ status:'expired', stripe_checkout_url:null }).eq('id', orderId).eq('payment_status', 'unpaid')
+        const { error } = await service.from('club_orders').update({ status:'expired', stripe_checkout_url:null }).eq('id', orderId).eq('stripe_checkout_session_id', session.id).eq('payment_status', 'unpaid')
+        if (error) throw error
       }
     }
 

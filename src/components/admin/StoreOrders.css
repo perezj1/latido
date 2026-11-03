@@ -1,0 +1,25 @@
+.store-orders { display: grid; gap: 18px; color: #0f172a; font-size: 13px; }
+.store-orders__filters { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; }
+.store-orders label { display: grid; gap: 6px; font-weight: 600; }
+.store-orders input, .store-orders select, .store-orders textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; background: white; color: #0f172a; }
+.store-orders textarea { min-height: 76px; resize: vertical; }
+.store-orders button { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font: inherit; font-weight: 600; cursor: pointer; background: white; color: #0f172a; }
+.store-orders button:disabled { opacity: .5; cursor: wait; }
+.store-order { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; min-width: 0; }
+.store-order header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
+.store-order h3 { margin: 0 0 4px; font-size: 18px; }
+.store-order h4 { margin: 16px 0 10px; font-size: 14px; }
+.store-order__status { background: #eef2ff; color: #3730a3; padding: 7px 12px; border-radius: 30px; font-weight: 700; }
+.store-order__status[data-state=delivered] { background: #dcfce7; color: #166534; }
+.store-order__details { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 24px; }
+.store-order__details > div { min-width: 0; overflow-wrap: anywhere; }
+.store-order__details a, .store-order__details small { display: block; }
+.store-order__details small { color: #64748b; line-height: 1.6; }
+.store-order address { margin: 12px 0; font-style: normal; line-height: 1.6; }
+.store-order__item { display: grid; gap: 6px; margin-bottom: 16px; }
+.store-order__details label { margin: 12px 0; }
+.store-order__warning { color: #b45309; }
+.store-order__actions, .store-orders__pagination { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.store-orders .store-order__primary { background: #1757e8; border-color: #1757e8; color: white; }
+@media (max-width: 1000px) { .store-order__details { grid-template-columns: 1fr 1fr; } .store-order__details > div:last-child { grid-column: 1 / -1; } }
+@media (max-width: 580px) { .store-order__details { grid-template-columns: 1fr; gap: 4px; } .store-orders__filters > label { width: 100%; } .store-order { padding: 16px; } }
