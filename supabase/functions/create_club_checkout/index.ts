@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@22.6.0'
 import { createClient } from 'npm:@supabase/supabase-js@2.101.1'
+import { clubVariantAttributes } from '../_shared/clubVariants.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -59,6 +60,8 @@ type ClubCheckoutItem = {
   quantity:number
   line_total:number
   purchase_type:PurchaseType
+  size:string | null
+  color:string | null
 }
 
 type PurchaseType = 'base' | 'addon'
@@ -296,7 +299,7 @@ Deno.serve(async req => {
 
     const normalizedItems:ClubCheckoutItem[] = body.items.map((input:Record<string, unknown>) => {
       const sku = typeof input?.sku === 'string' ? input.sku.slice(0, 180) : ''
-      const quantity = Number.parseInt(String(input?.quantity || ''), 10)
+      const quantity = Number(input?.quantity)
       const configured = variants.get(sku)
       if (!configured || configured.product.orderable === false || configured.variant.available === false) {
         throw new Error('PRODUCT_NOT_AVAILABLE')
@@ -304,14 +307,17 @@ Deno.serve(async req => {
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY) throw new Error('INVALID_QUANTITY')
       const unitAmount = Math.round(Number(configured.product.price) * 100)
       if (!Number.isInteger(unitAmount) || unitAmount < 100 || unitAmount > 100000) throw new Error('INVALID_PRODUCT_PRICE')
+      const attributes = clubVariantAttributes(configured.variant.label || '', configured.product.optionLabel || '')
+      const attributeLabels = [attributes.color && 'Color', attributes.size && 'Talla'].filter(Boolean)
       return {
         sku,
         gelato_product_id:configured.product.id || sku.split(':')[1] || '',
         gelato_variant_id:sku.split(':')[2] || '',
         product_name:configured.product.shortName || configured.product.name || 'Producto Latido Club',
         product_title:configured.product.name || configured.product.shortName || 'Producto Latido Club',
-        option_label:configured.product.optionLabel || 'Opción',
-        option:configured.variant.label || 'Única',
+        option_label:attributeLabels.join(' / ') || configured.product.optionLabel || 'Opción',
+        option:attributeLabels.length ? [attributes.color, attributes.size].filter(Boolean).join(' / ') : configured.variant.label || 'Única',
+        ...attributes,
         unit_amount:unitAmount,
         quantity,
         line_total:unitAmount * quantity,
@@ -373,7 +379,7 @@ Deno.serve(async req => {
         },
       },
     }))
-    const expiresAt = Math.floor(Date.now() / 1000) + 30 * 60
+    const expiresAt = Math.floor(Date.now() / 1000) + 35 * 60
     const session = await stripe.checkout.sessions.create({
       mode:'payment',
       line_items:lineItems,

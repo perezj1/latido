@@ -317,7 +317,9 @@ function readCheckoutReturn() {
   const rawReference = params.get('order') || ''
   return {
     status,
-    reference:/^LC-\d{6}$/.test(rawReference) ? rawReference : '',
+    reference:/^LC-\d{6,}$/.test(rawReference) ? rawReference : '',
+    sessionId:params.get('session_id') || '',
+    verification:'pending',
   }
 }
 
@@ -1112,6 +1114,7 @@ function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onB
 function CheckoutModal({ open, cart, onClose }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const requestRef = useRef(null)
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const total = subtotal
   const savings = cart.reduce((sum, item) => (
@@ -1143,11 +1146,14 @@ function CheckoutModal({ open, cart, onClose }) {
     setLoading(true)
     setError('')
     try {
+      const cartKey = JSON.stringify(items)
+      if (requestRef.current?.cartKey !== cartKey) requestRef.current = { cartKey, id: crypto.randomUUID() }
       const { data, error:invokeError } = await supabase.functions.invoke('create_club_checkout', {
-        body:{ items, checkoutRequestId:crypto.randomUUID(), website:'' },
+        body:{ items, checkoutRequestId:requestRef.current.id, website:'' },
       })
       if (invokeError || !data?.url) {
         const code = await functionErrorCode(invokeError, data)
+        if (code === 'CHECKOUT_ALREADY_USED') requestRef.current = null
         const messages = {
           PRODUCT_NOT_AVAILABLE:'Una variante de tu bolsa ya no está disponible. Actualiza la página y vuelve a elegirla.',
           ADDON_REQUIRES_GARMENT:'Los complementos solo pueden comprarse junto con una camiseta o sudadera.',
@@ -1268,13 +1274,33 @@ export default function Club() {
 
   useEffect(() => {
     if (!paymentReturn) return
-    if (paymentReturn.status === 'success') setCart([])
     const url = new URL(window.location.href)
     url.searchParams.delete('checkout')
     url.searchParams.delete('order')
     url.searchParams.delete('session_id')
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
   }, [paymentReturn])
+
+  useEffect(() => {
+    if (paymentReturn?.status !== 'success' || !paymentReturn.sessionId || !paymentReturn.reference) return undefined
+    let active = true
+    let timer
+    let attempts = 0
+    async function verify() {
+      const { data } = await supabase.functions.invoke('club_order_status', { body: { sessionId: paymentReturn.sessionId, reference: paymentReturn.reference } })
+      if (!active) return
+      if (data?.payment_status === 'paid') {
+        setCart([])
+        setPaymentReturn(current => current ? { ...current, verification: 'paid' } : current)
+      } else if (['failed', 'refunded'].includes(data?.payment_status)) {
+        setPaymentReturn(current => current ? { ...current, verification: data.payment_status } : current)
+      } else if (++attempts < 15) {
+        timer = setTimeout(verify, 3000)
+      }
+    }
+    verify()
+    return () => { active = false; clearTimeout(timer) }
+  }, [paymentReturn?.status, paymentReturn?.sessionId, paymentReturn?.reference])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -1366,9 +1392,9 @@ export default function Club() {
             <div>
               {paymentReturn.status === 'success' ? <Check size={20} /> : <ArrowLeft size={20} />}
               <span>
-                <strong>{paymentReturn.status === 'success' ? 'Estamos confirmando tu pago' : 'Pago cancelado'}</strong>
+                <strong>{paymentReturn.status === 'success' ? paymentReturn.verification === 'paid' ? 'Pago confirmado · Pedido recibido' : paymentReturn.verification === 'failed' ? 'El pago no se ha completado' : paymentReturn.verification === 'refunded' ? 'Pago reembolsado' : 'Estamos confirmando tu pago' : 'Pago cancelado'}</strong>
                 {paymentReturn.status === 'success'
-                  ? `Recibirás la confirmación por email${paymentReturn.reference ? ` del pedido ${paymentReturn.reference}` : ''}. Tu pedido llegará en aproximadamente 20 días, dependiendo del proveedor.`
+                  ? paymentReturn.verification === 'paid' ? `Tu pedido ${paymentReturn.reference} está guardado. Recibirás la confirmación por email. Entrega estimada: aproximadamente 20 días, dependiendo del proveedor.` : `Referencia: ${paymentReturn.reference || 'pendiente'}. Espera la confirmación por email antes de volver a pagar. Si tarda, contacta con info@latido.ch indicando esta referencia.`
                   : 'No se ha realizado ningún cargo. Tu selección sigue en la bolsa.'}
               </span>
               <button type="button" onClick={() => setPaymentReturn(null)} aria-label="Cerrar aviso"><X size={17} /></button>

@@ -13,6 +13,9 @@ verify_jwt = false
 [functions.club_stripe_webhook]
 verify_jwt = false
 
+[functions.club_order_status]
+verify_jwt = false
+
 [functions.latido_business_lead_alert_email]
 verify_jwt = false
 
