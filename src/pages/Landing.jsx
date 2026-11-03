@@ -22,6 +22,8 @@ const STATS = [
   { value: 'Fácil',    label: 'Publica en 1 minuto' },
 ]
 
+const SHOW_STORE_PROMO = false
+
 const FEATURES = [
   { icon: '📣', color: '#DBEAFE', title: 'Anuncios claros',  desc: 'Vivienda, cuidados, servicios, trámites y compraventa. Todo en tu cantón, en tu idioma.' },
   { icon: '👥', color: '#D1FAE5', title: 'Grupos',              desc: 'Grupos de venezolanos en Zúrich, colombianos en Ginebra, familias en Berna. Encuentra a los tuyos donde vives.' },
@@ -1185,7 +1187,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
         </Reveal>
       </section>
 
-      <section className="latido-page-container" style={{ maxWidth: 900, paddingTop: 52 }} aria-labelledby="landing-store-title">
+      {SHOW_STORE_PROMO && <section className="latido-page-container" style={{ maxWidth: 900, paddingTop: 52 }} aria-labelledby="landing-store-title">
         <Reveal>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 28, background: '#F7F3EB', borderRadius: 24, padding: 'clamp(22px, 4vw, 38px)' }}>
             <div style={{ flex: '1 1 300px' }}>
@@ -1197,7 +1199,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             <Link to="/tienda" aria-label="Ver la colección de Tienda Latido" style={{ flex: '1 1 220px', maxWidth: 300, margin: '0 auto' }}><img src="/club/products/sudadera-logo-negra-frontal.png" alt="Sudadera negra de la colección Latido" loading="lazy" style={{ display: 'block', width: '100%', borderRadius: 18 }} /></Link>
           </div>
         </Reveal>
-      </section>
+      </section>}
 
       <Reveal className="public-partner-reveal">
         <PublicPartnersSection placement="public_landing" />

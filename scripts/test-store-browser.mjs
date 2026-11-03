@@ -83,7 +83,7 @@ try {
   await other.context.close()
   const buyer = await contextFor(null)
   await buyer.page.goto(`${origin}/`)
-  await expect(buyer.page.getByRole('link', { name: 'Descubrir Tienda Latido →' })).toBeVisible()
+  await expect(buyer.page.locator('[aria-labelledby="landing-store-title"]')).toHaveCount(0)
   await buyer.page.locator('nav').getByRole('link', { name: 'Tienda Latido', exact: true }).click()
   await expect(buyer.page).toHaveURL(`${origin}/tienda`)
   await buyer.page.setViewportSize({ width: 390, height: 844 })
