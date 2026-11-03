@@ -8,6 +8,7 @@ import { C, PP } from '../lib/theme'
 import { BackButton, Avatar, SkeletonCard } from '../components/UI'
 import ReportButton from '../components/ReportButton'
 import LinkedText from '../components/LinkedText'
+import ConversationFollowUp from '../components/ConversationFollowUp'
 import { fetchAvatarsByIds, fetchLastSeenByIds } from '../lib/profiles'
 import { subscribeToOnlineUsers } from '../lib/presence'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
@@ -1226,6 +1227,7 @@ export default function Mensajes() {
                     </div>
                   )
                 })}
+                {selectedConv?.sender_id === user.id && <ConversationFollowUp key={selectedConv.id} conversationId={selectedConv.id} userId={user.id} contactName={otherName(selectedConv)} avatarUrl={convAvatars.get(selectedConv.owner_id)} />}
                 <div ref={messagesEndRef} />
               </div>
 

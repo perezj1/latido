@@ -30,6 +30,7 @@ import { getLifecycleLabel, getPublicationExpiresAt, isPublicationExpired } from
 import EmploymentProfileForm, { EmploymentLevelBadge } from '../components/EmploymentProfileForm'
 import InterestOptionGrid from '../components/InterestOptionGrid'
 import MyListPanel from '../components/MyListPanel'
+import EmailNotificationPreference from '../components/EmailNotificationPreference'
 import { CreatorAvatar, CreatorProfileTabs, CreatorTopicPill } from '../components/CreatorCards'
 import {
   getAllCreators,
@@ -2612,6 +2613,7 @@ export default function Perfil() {
       </Modal>
 
       <Modal show={alertsOpen} onClose={() => setAlertsOpen(false)} title="🔔 Notificaciones">
+        <EmailNotificationPreference userId={user?.id} active={alertsOpen} />
         <p style={{ fontFamily:PP, fontSize:12, color:C.mid, marginBottom:16, lineHeight:1.6 }}>
           Gestiona los avisos de mensajes y las novedades generales de Latido.
         </p>

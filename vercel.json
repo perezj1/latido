@@ -2,6 +2,14 @@
   "functions": { "api/card-share.js": { "includeFiles": "dist/index.html" } },
   "headers": [
     {
+      "source": "/seguimiento",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+      ]
+    },
+    {
       "source": "/downloads/aleman-con-n/guia-primer-trabajo-suiza.pdf",
       "headers": [
         { "key": "Content-Type", "value": "application/pdf" },

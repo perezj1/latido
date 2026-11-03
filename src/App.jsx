@@ -69,6 +69,7 @@ const PublicarEmpleo = lazy(() => import('./pages/PublicarEmpleo'))
 const PublicarContenido = lazy(() => import('./pages/PublicarContenido'))
 const Legal = lazy(() => import('./pages/Legal'))
 const Mensajes = lazy(() => import('./pages/Mensajes'))
+const ConversationFollowUpAnswer = lazy(() => import('./pages/ConversationFollowUpAnswer'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Admin = lazy(() => import('./pages/Admin'))
 const PartnerContact = lazy(() => import('./pages/PartnerContact'))
@@ -596,6 +597,10 @@ function AppShell() {
     window.addEventListener('latido:messages-chat-open', sync)
     return () => window.removeEventListener('latido:messages-chat-open', sync)
   }, [pathname])
+
+  if (pathname === '/seguimiento') {
+    return <Suspense fallback={<AppLoading />}><ConversationFollowUpAnswer /></Suspense>
+  }
 
   if (isLoggedIn && !isAdmin && needsProfileOnboarding && pathname !== '/auth/onboarding' && !isPuntoHispanoPublisher) {
     const nextPath = pathname === '/auth'

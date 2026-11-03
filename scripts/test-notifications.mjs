@@ -17,6 +17,11 @@ const notification = (overrides = {}) => ({
 })
 
 const cardRequestGroup=groupAppNotifications([notification({kind:APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST,data:{reference:'LCP-000123'}})])[0]
+const followupGroup = groupAppNotifications([notification({ kind: APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP, data: { href: '/mensajes?conv=consulta-1' } })])[0]
+assert.equal(followupGroup.title, '¿Cómo fue tu consulta?')
+assert.equal(followupGroup.href, '/mensajes?conv=consulta-1')
+const severalFollowups = groupAppNotifications([notification({ kind: APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP }), notification({ kind: APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP })])[0]
+assert.equal(severalFollowups.href, '/mensajes')
 assert.equal(cardRequestGroup.title,'Nueva solicitud de tarjeta física')
 assert.equal(cardRequestGroup.href,'/card/admin')
 const cardStatusGroup=groupAppNotifications([notification({kind:APP_NOTIFICATION_KINDS.CARD_PHYSICAL_STATUS,data:{reference:'LCP-000123'}})])[0]

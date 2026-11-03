@@ -1,4 +1,5 @@
 export const APP_NOTIFICATION_KINDS = Object.freeze({
+  CONVERSATION_FOLLOWUP:'conversation_followup',
   STORE_ORDER:'store_order',
   CARD_BUSINESS:'card_business',
   CARD_MEMBER:'card_member',
@@ -18,6 +19,7 @@ export const APP_NOTIFICATION_KINDS = Object.freeze({
 })
 
 const KIND_ORDER = [
+  APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP,
   APP_NOTIFICATION_KINDS.STORE_ORDER,
   APP_NOTIFICATION_KINDS.CARD_BUSINESS,
   APP_NOTIFICATION_KINDS.CARD_MEMBER,
@@ -71,6 +73,8 @@ function describeNotificationGroup(kind, rows) {
   const targetTitle = String(data.target_title || '').trim()
 
   switch (kind) {
+    case APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP:
+      return { icon:'💬', title:count === 1 ? '¿Cómo fue tu consulta?' : `¿Cómo fueron tus ${count} consultas?`, body:'Cuéntanos si conseguiste lo que buscabas.', href:count === 1 ? data.href || '/mensajes' : '/mensajes' }
     case APP_NOTIFICATION_KINDS.STORE_ORDER:
       return { icon:'🛍️', title:count === 1 ? `Nuevo pedido pagado ${data.reference || ''}`.trim() : `${count} nuevos pedidos pagados`, body:'Revisa los productos y la dirección de envío para preparar el pedido.', href:'/admin-latido?section=storeOrders' }
     case APP_NOTIFICATION_KINDS.CARD_BUSINESS:

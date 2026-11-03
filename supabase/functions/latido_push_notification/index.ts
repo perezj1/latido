@@ -1082,7 +1082,22 @@ async function handleMessage(req: Request, record: Record<string, unknown>) {
   return json(req, { ok: true, kind: 'message', conversationId, recipientId, ...result })
 }
 
-async function enrichPublicationRecord(table: string, record: Record<string, unknown>) {
+async function handleConversationFollowup(req: Request, record: Record<string, unknown>) {
+  const {data:f,error}=await supabase.from('conversation_followups').select('id,user_id,conversation_id,round,outcome,due_at').eq('id',text(record.id)).maybeSingle()
+  if(error)throw error
+  if(!f || f.round!==record.round || ['yes','no'].includes(f.outcome) || new Date(f.due_at).getTime()>Date.now()) return json(req,{ok:true,skipped:'not_due'})
+  const {data:c,error:conversationError}=await supabase.from('conversations').select('sender_id,deleted_by_sender').eq('id',f.conversation_id).maybeSingle()
+  if(conversationError)throw conversationError
+  if(!c || c.sender_id!==f.user_id || c.deleted_by_sender)return json(req,{ok:true,skipped:'unavailable'})
+  const {data:preference,error:preferenceError}=await supabase.from('push_notification_preferences').select('messages_enabled').eq('user_id',f.user_id).maybeSingle()
+  if(preferenceError)throw preferenceError
+  if(preference?.messages_enabled===false)return json(req,{ok:true,skipped:'messages_disabled'})
+  const subscriptions=await fetchActiveSubscriptions([f.user_id])
+  const result=await notifySubscriptions(subscriptions,{title:'¿Cómo fue tu consulta?',body:'Cuéntanos si conseguiste lo que buscabas.',url:`/mensajes?conv=${encodeURIComponent(f.conversation_id)}`,tag:`followup:${f.id}:${f.round}`,data:{kind:'conversation_followup',conversationId:f.conversation_id}})
+  return json(req,{ok:true,...result})
+}
+
+async function enrichPublicationRecord(table: string, record: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (table !== 'creator_contents' || !record.creator_id) return record
 
   const { data: creator, error } = await supabase
@@ -1203,6 +1218,7 @@ Deno.serve(async req => {
     if (table === 'test') return handleTest(req, record)
     if (table === 'saved_search_digest') return handleSavedSearchDigest(req)
     if (table === 'messages' && payload.type === 'INSERT') return handleMessage(req, record)
+    if (table === 'conversation_followups' && payload.type === 'INSERT') return handleConversationFollowup(req, record)
     if (['listings', 'ads', 'jobs', 'providers', 'events', 'communities', 'creator_profiles', 'creator_contents'].includes(table)) {
       return handlePublication(req, table, payload)
     }

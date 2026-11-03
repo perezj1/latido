@@ -4,6 +4,12 @@ verify_jwt = false
 [functions.latido_message_email]
 verify_jwt = false
 
+[functions.conversation_followup_email]
+verify_jwt = false
+
+[functions.conversation_followup_answer]
+verify_jwt = false
+
 [functions.create_business_lead_alert_stripe_webhook]
 verify_jwt = false
 

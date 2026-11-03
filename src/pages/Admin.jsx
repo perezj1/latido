@@ -28,6 +28,7 @@ import PuntoHispanoContacts from '../components/admin/PuntoHispanoContacts'
 import PuntoHispanoPublishLinks from '../components/admin/PuntoHispanoPublishLinks'
 import LatidoClubMetrics from '../components/admin/LatidoClubMetrics'
 import StoreOrders from '../components/admin/StoreOrders'
+import ConversationFollowUpReport from '../components/admin/ConversationFollowUpReport'
 import '../styles/admin.css'
 
 // ── Lenguaje visual del panel ──────────────────────────────────
@@ -114,6 +115,7 @@ const ADMIN_ANALYTICS_EVENT_TYPES = [
 ]
 const PARTNER_METRICS_EXCLUDED_EMAILS = new Set(['test@g.com'])
 const ADMIN_TAB_DATA_GROUPS = {
+  followups: [],
   storeOrders: [],
   latidoClub: [], // El informe agregado se carga al abrir su sección.
   users: ['users'],
@@ -2063,7 +2065,9 @@ export default function Admin() {
   const loadingDataGroupsRef = useRef(new Set())
   const dataRangeDaysByGroupRef = useRef(new Map())
   const periodRowsCacheRef = useRef(new Map())
-  const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get('section') === 'storeOrders' ? 'storeOrders' : 'overview')
+  const [tab, setTab] = useState(() => { const section = new URLSearchParams(window.location.search).get('section'); return ['storeOrders', 'followups'].includes(section) ? section : 'overview' })
+  const [followupRevision, setFollowupRevision] = useState(0)
+  const [followupStatus, setFollowupStatus] = useState({ loading: true, error: false, updatedAt: null })
   const [ordersRevision, setOrdersRevision] = useState(0)
   const [ordersStatus, setOrdersStatus] = useState({ loading: true, error: false, updatedAt: null })
   const [clubRevision, setClubRevision] = useState(0)
@@ -4493,6 +4497,7 @@ export default function Admin() {
     !isTabDataReady(tabId) || isTabDataLoading(tabId) ? '...' : value
 
   const NAV_ITEMS = [
+    { id: 'followups', icon: 'messages', label: 'Seguimiento de consultas', short: 'Seguimiento', value: 'Respuestas y resultados', color: '#2563EB', bg: '#EFF6FF' },
     { id: 'storeOrders', icon: 'storeOrders', label: 'Tienda · Pedidos', value: 'Pagos y envíos', color: '#047857', bg: '#ECFDF5' },
     { id: 'latidoClub', icon: 'latidoClub', label: 'Latido Club', value: 'Miembros, ofertas y negocios', color: '#4F46E5', bg: '#EEF2FF' },
     { id: 'users', icon: 'users', label: 'Usuarios', value: navValue('users', `${stats.users} total`), color: C.primary, bg: C.primaryLight },
@@ -4512,7 +4517,7 @@ export default function Admin() {
   const NAV_GROUPS = [
     { label: 'Dirección', hint: 'Estado global y decisiones rápidas', items: ['overview', 'live'] },
     { label: 'Crecimiento', hint: 'Usuarios, creadores, Club, valoraciones y colaboraciones', items: ['users', 'creators', 'latidoClub', 'analytics', 'feedback', 'partners'] },
-    { label: 'Operación', hint: 'Pedidos, negocios, publicaciones y seguridad', items: ['storeOrders', 'businessVerification', 'content', 'reports', 'moderation'] },
+    { label: 'Operación', hint: 'Seguimientos, pedidos, negocios, publicaciones y seguridad', items: ['followups', 'storeOrders', 'businessVerification', 'content', 'reports', 'moderation'] },
   ]
   const BOTTOM_NAV_ITEMS = []
   for (const id of ['overview', 'users', 'creators', 'analytics']) {
@@ -4528,6 +4533,8 @@ export default function Admin() {
     ? ordersStatus.error ? '#DC2626' : ordersStatus.loading ? '#D97706' : '#059669'
     : tab === 'latidoClub'
     ? clubStatus.error ? '#DC2626' : clubStatus.loading ? '#D97706' : '#059669'
+    : tab === 'followups'
+    ? followupStatus.error ? '#DC2626' : followupStatus.loading ? '#D97706' : '#059669'
     : deltaLoadSummary?.status === 'error'
     ? '#DC2626'
     : ['loading', 'partial'].includes(deltaLoadSummary?.status)
@@ -4537,6 +4544,8 @@ export default function Admin() {
     ? ordersStatus.error ? '#FEF2F2' : ordersStatus.loading ? '#FFFBEB' : '#ECFDF5'
     : tab === 'latidoClub'
     ? clubStatus.error ? '#FEF2F2' : clubStatus.loading ? '#FFFBEB' : '#ECFDF5'
+    : tab === 'followups'
+    ? followupStatus.error ? '#FEF2F2' : followupStatus.loading ? '#FFFBEB' : '#ECFDF5'
     : deltaLoadSummary?.status === 'error'
     ? '#FEF2F2'
     : ['loading', 'partial'].includes(deltaLoadSummary?.status)
@@ -4546,6 +4555,8 @@ export default function Admin() {
     ? ordersStatus.loading ? 'Cargando pedidos' : ordersStatus.error ? 'Pedidos no disponibles' : 'Pedidos actualizados'
     : tab === 'latidoClub'
     ? clubStatus.loading ? 'Cargando Club' : clubStatus.error ? 'Club no disponible' : 'Club actualizado'
+    : tab === 'followups'
+    ? followupStatus.loading ? 'Cargando seguimientos' : followupStatus.error ? 'Seguimientos no disponibles' : 'Seguimientos actualizados'
     : tab === 'overview' && overviewSummaryUnavailable
     ? 'Modo compatible'
     : deltaLoadSummary?.status === 'loading'
@@ -4557,6 +4568,7 @@ export default function Admin() {
         : 'Datos completos'
 
   const SECTION_TITLES = {
+    followups: { icon: 'messages', label: 'Seguimiento de consultas' },
     storeOrders: { icon: 'storeOrders', label: 'Tienda Latido · Pedidos' },
     latidoClub: { icon: 'latidoClub', label: 'Latido Club' },
     overview: { icon: 'overview', label: 'Estado general' },
@@ -4574,6 +4586,7 @@ export default function Admin() {
 
   const activeSection = SECTION_TITLES[tab]
   const SECTION_DETAILS = {
+    followups: { description: 'Resultados confirmados por las personas que contactaron por el chat: respuestas, motivos e historial de cada seguimiento.', color: '#2563EB', badge: 'Consultas · Respuestas · Próximas preguntas' },
     storeOrders: { description: 'Pedidos, pagos confirmados, datos de envío y preparación. Marca cada pedido en proceso, enviado y entregado.', color: '#047857', badge: 'Pagos · Preparación · Envíos' },
     latidoClub: { description: 'Miembros, negocios participantes, ofertas y actividad de Latido Club. Estado actual e historial separados.', color: '#4F46E5', badge: 'Miembros · Ofertas · Negocios · Usos' },
     overview: { description: `Rapport de ${overviewRangeText} con datos separados de crecimiento, actividad y pendientes.`, color: generalTrendColor, count: generalScoreLabel, badge: `${generalStatus} · ${generalTrendLabel}` },
@@ -5108,8 +5121,10 @@ export default function Admin() {
     ? setOrdersRevision(value => value + 1)
     : tab === 'latidoClub'
     ? setClubRevision(value => value + 1)
+    : tab === 'followups'
+    ? setFollowupRevision(value => value + 1)
     : loadAdminData({ groups: getAdminTabDataGroups(tab), days: getLoadDaysForTab(tab), force: true })
-  const sectionLoading = tab === 'storeOrders' ? ordersStatus.loading : tab === 'latidoClub' ? clubStatus.loading : loading
+  const sectionLoading = tab === 'storeOrders' ? ordersStatus.loading : tab === 'latidoClub' ? clubStatus.loading : tab === 'followups' ? followupStatus.loading : loading
   const refreshButton = (
     <button
       type="button"
@@ -5125,7 +5140,7 @@ export default function Admin() {
   )
 
   const activeNavGroup = NAV_GROUPS.find(group => group.items.includes(tab))
-  const updatedAt = tab === 'storeOrders' ? ordersStatus.updatedAt : tab === 'latidoClub' ? clubStatus.updatedAt : deltaLoadSummary?.at
+  const updatedAt = tab === 'storeOrders' ? ordersStatus.updatedAt : tab === 'latidoClub' ? clubStatus.updatedAt : tab === 'followups' ? followupStatus.updatedAt : deltaLoadSummary?.at
   const lastUpdatedLabel = updatedAt ? fmtActivity(updatedAt) : ''
   const sectionColor = activeSectionDetails.color
   const sectionChips = String(activeSectionDetails.badge || (tab === 'live' ? `${activeSectionDetails.count} online` : `${activeSectionDetails.count} items`))
@@ -5356,7 +5371,7 @@ export default function Admin() {
       )}
 
       {/* Indicadores clave de la sección */}
-      {isTabDataReady(tab) && !['latidoClub', 'storeOrders'].includes(tab) && (
+      {isTabDataReady(tab) && !['latidoClub', 'storeOrders', 'followups'].includes(tab) && (
         <>
           <BlockTitle>Indicadores clave</BlockTitle>
           <KpiGrid count={sectionMetrics.length}>
@@ -5378,6 +5393,7 @@ export default function Admin() {
       {/* Evolución del periodo */}
       {tab === 'latidoClub' && <LatidoClubMetrics refreshKey={clubRevision} onStatus={setClubStatus} />}
       {tab === 'storeOrders' && <StoreOrders refreshKey={ordersRevision} onStatus={setOrdersStatus} />}
+      {tab === 'followups' && <ConversationFollowUpReport initiallyOpen refreshKey={followupRevision} onStatus={setFollowupStatus} />}
       {isTabDataReady(tab) && !loading && activeChart && tab !== 'partners' && (
         <div style={{ marginBottom: 20 }}>
           <BlockTitle>Evolución</BlockTitle>
