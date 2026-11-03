@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, Clock3, Share, X } from 'lucide-react'
-import { FOLLOWUP_REASONS, followupApi, followupDate } from '../lib/conversationFollowups'
+import { FOLLOWUP_REASONS, followupApi, followupDate, followupQuestion } from '../lib/conversationFollowups'
 import './ConversationFollowUp.css'
 
-export function ConversationFollowUpCard({ followup, onAnswer, onFeedback, onEdit, contactName, avatarUrl, avatarInitials, saving = false, error = '', cardRef }) {
+export function ConversationFollowUpCard({ followup, onAnswer, onFeedback, onEdit, contactName, publicationTitle = '', saving = false, error = '', cardRef }) {
   const [editing, setEditing] = useState(false)
   const [shareStatus, setShareStatus] = useState('')
   useEffect(() => { setEditing(false); setShareStatus('') }, [followup?.id, followup?.round])
   if (!followup || (followup.dismissed && !editing)) return null
   const name = contactName || followup.contact_name || 'este contacto'
+  const subject = String(publicationTitle || '').trim()
   const done = followup.outcome === 'yes'
   const closed = followup.outcome === 'no'
   const waiting = followup.outcome === 'not_yet' && !followup.due
@@ -28,11 +29,11 @@ export function ConversationFollowUpCard({ followup, onAnswer, onFeedback, onEdi
     } catch (error) { if (error.name !== 'AbortError') setShareStatus('No se pudo compartir. Puedes copiar https://latido.ch.') }
   }
   return <aside ref={cardRef} className={`conversation-followup conversation-followup--${tone}`} aria-label="Seguimiento de Latido">
+    <div className="conversation-followup__brand"><img src="/favicon.svg" width="10" height="10" alt="" /><span>Latido</span><span className="conversation-followup__privacy">· Solo tú ves esto</span></div>
     <div className="conversation-followup__row">
-      {asking ? <span className="conversation-followup__avatar" aria-hidden="true">{avatarUrl ? <img className="conversation-followup__photo" src={avatarUrl} alt="" /> : avatarInitials || name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}<img className="conversation-followup__badge" src="/favicon.svg" alt="" /></span>
-        : <span className="conversation-followup__icon" aria-hidden="true">{waiting ? <Clock3 size={17} /> : done || (closed && !reason) ? <Check size={18} /> : <X size={17} />}</span>}
+      {!asking && <span className="conversation-followup__icon" aria-hidden="true">{waiting ? <Clock3 size={17} /> : done || (closed && !reason) ? <Check size={18} /> : <X size={17} />}</span>}
       <div className="conversation-followup__copy">
-        {asking ? <><h3>¿Conseguiste lo que buscabas con {name}?</h3><p>Opcional · Si sigue en proceso, te preguntamos en 7 días</p></>
+        {asking ? <><h3>{followupQuestion(name)}</h3>{subject && <p className="conversation-followup__subject">Le escribiste por “{subject}”</p>}</>
           : done ? <><h3>¡Genial, lo conseguiste!</h3><p>Recomienda Latido para ayudar a alguien más.</p></>
           : waiting ? <p className="conversation-followup__message"><strong>Perfecto.</strong> Te volveremos a preguntar el {followupDate(followup.due_at)}.</p>
           : reason ? <><h3>Lo sentimos. ¿Qué pasó?</h3><p>Opcional · {change}</p></>
@@ -48,7 +49,7 @@ export function ConversationFollowUpCard({ followup, onAnswer, onFeedback, onEdi
   </aside>
 }
 
-export default function ConversationFollowUp({ conversationId, userId, contactName, avatarUrl, api = followupApi }) {
+export default function ConversationFollowUp({ conversationId, userId, contactName, publicationTitle, api = followupApi }) {
   const [state, setState] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -83,5 +84,5 @@ export default function ConversationFollowUp({ conversationId, userId, contactNa
     catch { setError('No se ha guardado el cambio. Comprueba la conexión y vuelve a intentarlo.') }
     finally { setSaving(false) }
   }
-  return <ConversationFollowUpCard cardRef={cardRef} followup={followup} onAnswer={answer} onFeedback={feedback} contactName={contactName} avatarUrl={avatarUrl} saving={saving} error={error} />
+  return <ConversationFollowUpCard cardRef={cardRef} followup={followup} onAnswer={answer} onFeedback={feedback} contactName={contactName} publicationTitle={publicationTitle} saving={saving} error={error} />
 }

@@ -19,8 +19,8 @@ const api = { get: () => request('get'), answer: (_id, round, answer) => request
 const preferenceApi = { read: () => request('email_preferences'), save: (_id, enabled) => request('email_preferences', { enabled }) }
 function PreferencePreview() { return <main style={{ maxWidth: 520, margin: '40px auto', padding: 20, fontFamily: 'Poppins,sans-serif' }}><h1 style={{ fontSize: 22 }}>Avisos de correo</h1><p style={{ fontSize: 12 }}>Ajustes de prueba locales.</p><EmailNotificationPreference userId="11111111-1111-4111-8111-111111111111" api={preferenceApi} /><a href="/scripts/fixtures/followup-preview.html">Volver a la prueba</a></main> }
 function StateExample({ outcome = 'pending', reasonAnswered = false }) {
-  const [followup, setFollowup] = useState({ id: `example-${outcome}-${reasonAnswered}`, round: 1, outcome, due: outcome === 'pending', contact_name: 'Marta', due_at: new Date(Date.now() + 7 * 86400000).toISOString(), reason_answered: reasonAnswered })
-  return <ConversationFollowUpCard followup={followup} avatarInitials="MR" onAnswer={value => setFollowup(current => ({ ...current, round: current.round + 1, outcome: value, due: false, reason_answered: false, dismissed: false }))} onFeedback={(action, value) => setFollowup(current => action === 'dismiss' ? { ...current, dismissed: true } : { ...current, reason_answered: true, no_reason: value })} />
+  const [followup, setFollowup] = useState({ id: `example-${outcome}-${reasonAnswered}`, round: 1, outcome, due: outcome === 'pending', contact_name: 'Ramón Pérez', due_at: new Date(Date.now() + 7 * 86400000).toISOString(), reason_answered: reasonAnswered })
+  return <ConversationFollowUpCard followup={followup} publicationTitle="Vendo bicicleta de montaña" onAnswer={value => setFollowup(current => ({ ...current, round: current.round + 1, outcome: value, due: false, reason_answered: false, dismissed: false }))} onFeedback={(action, value) => setFollowup(current => action === 'dismiss' ? { ...current, dismissed: true } : { ...current, reason_answered: true, no_reason: value })} />
 }
 function StatesPreview() {
   return <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: '18px', background: '#edf3ff', fontFamily: 'Poppins,sans-serif' }}><div style={{ maxWidth: 378, margin: 'auto' }}>
@@ -45,7 +45,7 @@ function Preview() {
       <section style={{ maxWidth: 720, border: '1px solid #dbeafe', borderRadius: 18, overflow: 'hidden', background: '#eff6ff' }} aria-label="Conversación de prueba">
         <header style={{ padding: 18, background: 'white' }}><strong>Negocio de prueba</strong><p style={{ fontSize: 12, marginBottom: 0 }}>Curso de alemán · consulta de prueba</p></header>
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}><p style={{ background: '#2563eb', color: 'white', borderRadius: 16, padding: 16, margin: 0, alignSelf: 'end', maxWidth: 380 }}>Hola, ¿sigue disponible el curso de los lunes?</p><p style={{ background: 'white', borderRadius: 16, padding: 16, margin: 0, maxWidth: 380 }}>¡Hola! Sí, puedes contactarnos para consultar las plazas.</p>
-          <ConversationFollowUp key={revision} conversationId="33333333-3333-4333-8333-333333333333" userId="11111111-1111-4111-8111-111111111111" api={api} />
+          <ConversationFollowUp key={revision} conversationId="33333333-3333-4333-8333-333333333333" userId="11111111-1111-4111-8111-111111111111" publicationTitle="Curso de alemán" api={api} />
         </div>
       </section>
       <h2 style={{ fontSize: 18, marginTop: 30 }}>Avisos de prueba</h2><p style={{ fontSize: 12 }}>Avisos generados: {state?.notifications ?? 0}. Usa «Generar aviso» para simular el trabajo programado.</p>

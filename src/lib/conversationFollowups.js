@@ -1,7 +1,11 @@
 import { supabase } from './supabase'
-export const FOLLOWUP_QUESTION = '¿Conseguiste lo que buscabas con este contacto?'
+export function followupQuestion(contactName) {
+  const name = String(contactName || '').trim()
+  const contact = name && !/^(?:este contacto|usuario)$/i.test(name) ? name.split(/\s+/)[0] : 'este contacto'
+  return `¿Pudiste llegar a un acuerdo con ${contact}?`
+}
 export const FOLLOWUP_REASONS = { not_replied: 'No me respondió', not_match: 'No era lo que buscaba', no_agreement: 'No hubo acuerdo', other: 'Otro motivo' }
-export const followupDate = value => value ? new Date(value).toLocaleDateString('es-ES', { timeZone: 'Europe/Zurich', weekday: 'long', day: 'numeric', month: 'long' }) : ''
+export const followupDate = value => value ? new Date(value).toLocaleDateString('es-ES', { timeZone: 'Europe/Zurich', day: 'numeric', month: 'long', year: 'numeric' }) : ''
 export const followupApi = {
   async get(conversationId) {
     const { data, error } = await supabase.rpc('cf_get', { p_conversation: conversationId })

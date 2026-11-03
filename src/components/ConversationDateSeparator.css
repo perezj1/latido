@@ -1,0 +1,4 @@
+.conversation-message-day { display: flex; flex-direction: column; gap: var(--conversation-message-gap, 8px); flex-shrink: 0; min-width: 0; }
+.conversation-date-separator { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; width: 100%; margin: 8px 0 4px; padding: 4px 0; flex-shrink: 0; background: var(--conversation-message-background, #eff4fc); color: #475e7d; font: 400 10px/1.5 'Poppins', sans-serif; text-align: center; }
+.conversation-date-separator::before, .conversation-date-separator::after { content: ''; flex: 1; height: 1px; background: #dbe5f5; }
+.conversation-date-separator time { max-width: 80%; }

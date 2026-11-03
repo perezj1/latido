@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FOLLOWUP_QUESTION, followupApi } from '../lib/conversationFollowups'
+import { followupQuestion, followupApi } from '../lib/conversationFollowups'
 import { ConversationFollowUpCard } from '../components/ConversationFollowUp'
 import './ConversationFollowUpAnswer.css'
 
@@ -65,7 +65,7 @@ export default function ConversationFollowUpAnswer({ api = followupApi, initialL
             <Link className="followup-email-chat-link" to={followup ? `/mensajes?conv=${encodeURIComponent(followup.conversation_id)}` : '/mensajes'}>{followup ? 'Abrir la conversación' : 'Abrir mis conversaciones'} <span aria-hidden="true">→</span></Link>
           </section>
           <section className="followup-email-response" aria-label="Tu respuesta" aria-busy={loading || saving}>
-            <h2>{FOLLOWUP_QUESTION}</h2>
+            <h2>{followupQuestion(followup?.contact_name)}</h2>
             <div className="followup-email-response-body">
               {loading ? <p role="status">{['yes','not_yet','no'].includes(link.answer) ? 'Guardando tu respuesta…' : 'Comprobando el enlace…'}</p>
                 : showChoices ? <><div className="followup-email-choices">{emailChoices.map(({ value, label, icon }) => <button key={value} type="button" className={`followup-email-choice followup-email-choice--${value}`} disabled={saving} onClick={() => answer(value)}><span aria-hidden="true">{icon}</span>{label}</button>)}</div><p className="followup-email-hint">Responde en un clic</p></>

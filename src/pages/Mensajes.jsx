@@ -9,6 +9,8 @@ import { BackButton, Avatar, SkeletonCard } from '../components/UI'
 import ReportButton from '../components/ReportButton'
 import LinkedText from '../components/LinkedText'
 import ConversationFollowUp from '../components/ConversationFollowUp'
+import ConversationDateSeparator from '../components/ConversationDateSeparator'
+import { messageDay, messageTime } from '../lib/conversationPresentation'
 import { fetchAvatarsByIds, fetchLastSeenByIds } from '../lib/profiles'
 import { subscribeToOnlineUsers } from '../lib/presence'
 import { analyzeContent, getContentFilterMessage } from '../lib/contentFilter'
@@ -1006,6 +1008,13 @@ export default function Mensajes() {
   const showListPanel = !activeThread || showList
   const showChatPanel = !!activeThread && (!isMobile || !showList)
   const mobileChatOpen = isMobile && !!activeThread && !showList
+  const messageGroups = []
+  for (const message of messages) {
+    const day = messageDay(message.created_at)
+    const previous = messageGroups[messageGroups.length - 1]
+    if (previous?.day === day) previous.messages.push(message)
+    else messageGroups.push({ day, date: message.created_at, key: `${day}-${message.id}`, messages: [message] })
+  }
   const sortedConversations = [...conversations].sort((a, b) => {
     const ta = lastMsgAt.get(a.id) || a.created_at || ''
     const tb = lastMsgAt.get(b.id) || b.created_at || ''
@@ -1191,21 +1200,23 @@ export default function Mensajes() {
                 </div>
               </div>
 
-              <div style={{ flex: 1, minHeight:0, overflowY: 'auto', padding: mobileChatOpen ? '12px 9px 10px' : '16px', display: 'flex', flexDirection: 'column', gap: mobileChatOpen ? 6 : 8, background: mobileChatOpen ? '#E9EEF7' : C.bg }}>
+              <div style={{ flex: 1, minHeight:0, overflowY: 'auto', padding: mobileChatOpen ? '0 9px 10px' : '0 16px 16px', display: 'flex', flexDirection: 'column', gap: mobileChatOpen ? 6 : 8, background: mobileChatOpen ? '#E9EEF7' : C.bg, '--conversation-message-gap': mobileChatOpen ? '6px' : '8px', '--conversation-message-background': mobileChatOpen ? '#E9EEF7' : C.bg }}>
                 {messages.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                     <p style={{ fontFamily: PP, fontSize: 13, color: C.light }}>Empieza la conversación 👋</p>
                   </div>
                 )}
-                {messages.map(msg => {
+                {messageGroups.map(group => <div key={group.key} className="conversation-message-day">
+                <ConversationDateSeparator date={group.date} />
+                {group.messages.map(msg => {
                   const mine = msg.sender_id === user.id
                   const statusLabel = mine ? getMessageStatusLabel(msg, activeThread) : ''
                   return (
-                    <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
+                    <div key={msg.id} data-message-date={msg.created_at} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
                       <div style={{ maxWidth: mobileChatOpen ? '84%' : '78%', background: mine ? C.primary : '#fff', color: mine ? '#fff' : C.text, borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: mobileChatOpen ? '8px 10px 6px' : '10px 14px', boxShadow: mobileChatOpen ? '0 1px 2px rgba(15,23,42,0.10)' : '0 1px 3px rgba(0,0,0,0.07)' }}>
                         <p style={{ fontFamily: PP, fontSize: mobileChatOpen ? 14 : 13, margin: 0, lineHeight: 1.45, whiteSpace:'pre-wrap', overflowWrap:'anywhere' }}><LinkedText inheritLinkColor={mine}>{msg.body}</LinkedText></p>
                         <p style={{ fontFamily: PP, fontSize: 10, color: mine ? 'rgba(255,255,255,0.68)' : C.light, margin: '3px 0 0', textAlign: 'right' }}>
-                          {formatTime(msg.created_at)}
+                          <time dateTime={msg.created_at}>{messageTime(msg.created_at)}</time>
                           {mine && (
                             <span style={{ marginLeft: 6, color: msg.read ? '#D1FAE5' : 'rgba(255,255,255,0.78)', fontWeight: msg.read ? 800 : 600 }}>
                               {statusLabel}
@@ -1226,8 +1237,8 @@ export default function Mensajes() {
                       )}
                     </div>
                   )
-                })}
-                {selectedConv?.sender_id === user.id && <ConversationFollowUp key={selectedConv.id} conversationId={selectedConv.id} userId={user.id} contactName={otherName(selectedConv)} avatarUrl={convAvatars.get(selectedConv.owner_id)} />}
+                })}</div>)}
+                {selectedConv?.sender_id === user.id && <ConversationFollowUp key={selectedConv.id} conversationId={selectedConv.id} userId={user.id} contactName={otherName(selectedConv)} publicationTitle={selectedConv.ad_id ? selectedConv.title : ''} />}
                 <div ref={messagesEndRef} />
               </div>
 
