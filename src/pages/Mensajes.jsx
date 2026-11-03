@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useUnreadMessages, markConvRead } from '../hooks/useUnreadMessages'
+import { useOverlayHistory } from '../hooks/useOverlayHistory'
 import { unreadStore } from '../lib/unreadStore'
 import { C, PP } from '../lib/theme'
 import { BackButton, Avatar, SkeletonCard } from '../components/UI'
@@ -197,6 +198,20 @@ export default function Mensajes() {
   const selfNameRef = useRef(pickParticipantName(displayName, user?.email?.split('@')[0]) || 'Usuario')
   const selfNameLoadedRef = useRef(false)
   const [selfName, setSelfName] = useState(selfNameRef.current)
+
+  useOverlayHistory(Boolean((selectedConv || pendingTarget) && !showList), closeConversation)
+
+  function closeConversation() {
+    setShowList(true)
+    setSelectedConv(null)
+    selectedConvRef.current = null
+    setPendingTarget(null)
+    setMessages([])
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current)
+      channelRef.current = null
+    }
+  }
 
   useEffect(() => {
     if (!user?.id) {
@@ -1157,7 +1172,7 @@ export default function Mensajes() {
             <div style={{ flex: 1, minHeight:0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: mobileChatOpen ? '#E9EEF7' : '#fff' }}>
               <div style={{ padding: mobileChatOpen ? '8px 10px' : '12px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: mobileChatOpen ? 9 : 12, background:'#fff', boxShadow: mobileChatOpen ? '0 2px 10px rgba(15,23,42,0.06)' : 'none', zIndex:1 }}>
                 {isMobile && (
-                  <BackButton onClick={() => setShowList(true)} aria-label="Volver a las conversaciones" />
+                  <BackButton onClick={closeConversation} aria-label="Volver a las conversaciones" />
                 )}
                 <span style={{ position:'relative', flexShrink:0 }}>
                   <Avatar name={activeOtherName} size={mobileChatOpen ? 38 : 36} src={activeOtherAvatar} />
