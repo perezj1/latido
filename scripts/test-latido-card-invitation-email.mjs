@@ -21,6 +21,12 @@ async function endpoint({ smtpFailure = false, accepted = true, testMode = true,
     async rpc(name) {
       if (testMode) throw new Error(`Mass campaign RPC must never run: ${name}`)
       calls.push({ rpc: name })
+      if (name === 'lc_queue_contact_invitations') return { data: 1, error: null }
+      if (name === 'lc_claim_contact_invitations') {
+        const data = claimed ? [] : [{ email: 'contact@example.com', provider_id: 'directory-business', unsubscribe_token: '22222222-2222-4222-8222-222222222222' }]
+        claimed = true
+        return { data, error: null }
+      }
       if (name === 'lc_queue_business_invitations') return { data: 1, error: null }
       if (name === 'lc_claim_business_invitations') {
         const data = claimed ? [] : [{ user_id: 'real-owner', provider_id: 'real-business', unsubscribe_token: '11111111-1111-4111-8111-111111111111' }]
@@ -43,6 +49,7 @@ async function endpoint({ smtpFailure = false, accepted = true, testMode = true,
         async single() { return { data: { status }, error: null } },
         then(resolve, reject) { return Promise.resolve({ data: null, error: null, count: 1 }).then(resolve, reject) },
         async maybeSingle() {
+          if (table === 'lc_contact_invitation_targets') return { data: eligible ? { name: 'Directory business' } : null, error: null }
           if (table === 'lc_business_invitation_targets') return { data: eligible ? { provider_id: 'real-business', name: 'Real business' } : null, error: null }
           if (table === 'profiles') return { data: profiles[filters.email] || null, error: null }
           if (table === 'providers') {
@@ -72,7 +79,8 @@ async function endpoint({ smtpFailure = false, accepted = true, testMode = true,
     }))
     return { status: result.status, data: await result.json() }
   }
-  return { request, mails, calls }
+  const unsubscribe = (method) => handler(new Request('https://mock.supabase.co/functions/v1/latido_card_business_invitation_email?unsubscribe=22222222-2222-4222-8222-222222222222', { method }))
+  return { request, unsubscribe, mails, calls }
 }
 const app = await endpoint()
 assert.equal((await app.request({ action: 'send' }, 'wrong')).status, 401)
@@ -137,4 +145,27 @@ const uncertain = await endpoint({ testMode: false, smtpFailure: true })
 assert.equal((await uncertain.request({ action: 'run' })).data.failed, 1)
 assert.ok(uncertain.calls.find(call => call.update?.status === 'failed'))
 assert.equal(uncertain.mails.length, 1)
+const contactQueue = await endpoint({ testMode: false, contact: true })
+assert.equal((await contactQueue.request({ action: 'queue_contacts' })).data.queued, 1)
+assert.equal(contactQueue.mails.length, 0)
+assert.equal((await contactQueue.request({ action: 'send_contacts' })).data.sent, 1)
+assert.equal(contactQueue.mails[0].to, 'contact@example.com')
+assert.match(contactQueue.mails[0].html, /registrar-negocio\?origen=tarjeta/)
+assert.match(contactQueue.mails[0].headers['List-Unsubscribe'], /22222222-2222-4222-8222-222222222222/)
+for (const options of [{ eligible: false }, { status: 'suppressed' }]) {
+  const app = await endpoint({ testMode: false, contact: true, ...options })
+  assert.equal((await app.request({ action: 'send_contacts' })).data.suppressed, 1)
+  assert.equal(app.mails.length, 0)
+}
+const failedContact = await endpoint({ testMode: false, contact: true, smtpFailure: true })
+assert.equal((await failedContact.request({ action: 'send_contacts' })).data.failed, 1)
+assert.ok(failedContact.calls.find(call => call.table === 'latido_card_contact_invitations' && call.update?.status === 'failed'))
+const blockedContacts = await endpoint()
+assert.equal((await blockedContacts.request({ action: 'send_contacts' })).status, 403)
+assert.equal(blockedContacts.mails.length, 0)
+const optoutContact = await endpoint({ testMode: false })
+assert.equal((await optoutContact.unsubscribe('GET')).status, 200)
+assert.equal(optoutContact.calls.length, 0, 'Email scanners cannot unsubscribe a contact')
+assert.equal((await optoutContact.unsubscribe('POST')).status, 200)
+assert.ok(optoutContact.calls.find(call => call.table === 'latido_card_contact_invitations' && call.update?.status === 'suppressed'))
 console.log('Invitation email: preview, test allowlist, campaign, preferences, opt-out, personal links, CID images and SMTP failures passed; no real mail sent')

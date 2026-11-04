@@ -30,14 +30,14 @@ const INVITATION_TEST_MODE = Deno.env.get('LATIDO_CARD_INVITATION_TEST_MODE') !=
 const TEST_RECIPIENTS = ['jose13hue@gmail.com', 'play4slim1.2@gmail.com'] as const
 const normalizeEmail = (email: string) => email.trim().toLowerCase()
 
-async function send(to: string, name: string, providerId: string | null, token?: string, test = false) {
+async function send(to: string, name: string, providerId: string | null, token?: string, test = false, register = false) {
   const recipient = normalizeEmail(to)
   if ((INVITATION_TEST_MODE || test) && !TEST_RECIPIENTS.some(email => email === recipient))
     throw new Error('TEST_RECIPIENT_NOT_ALLOWED')
   const unsubscribe = token
     ? SUPABASE_URL + '/functions/v1/latido_card_business_invitation_email?unsubscribe=' + encodeURIComponent(token)
     : ''
-  const { url, ...content } = invitationMessage({ appUrl: APP_URL, providerId, name, unsubscribe, test: INVITATION_TEST_MODE || test })
+  const { url, ...content } = invitationMessage({ appUrl: APP_URL, providerId, name, unsubscribe, test: INVITATION_TEST_MODE || test, register })
   const result = await new Promise<{ messageId: string }>((resolve, reject) =>
     transport.sendMail({ from: SMTP_FROM, to: recipient, ...content },
       (error: Error | null, info: { accepted?: string[]; messageId?: string }) => {
@@ -77,6 +77,11 @@ Deno.serve(async (req) => {
         .update({ opted_out_at: new Date().toISOString(), status: 'suppressed' })
         .eq('unsubscribe_token', token)
       if (error) return json({ ok: false }, 500)
+      const { error: contactError } = await service
+        .from('latido_card_contact_invitations')
+        .update({ opted_out_at: new Date().toISOString(), status: 'suppressed' })
+        .eq('unsubscribe_token', token)
+      if (contactError) return json({ ok: false }, 500)
     }
     return new Response(
       `<!doctype html><html lang="es"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invitaciones de Latido Club</title><body style="font-family:Arial,sans-serif;max-width:480px;margin:60px auto;padding:24px"><h1>Latido Club</h1>${req.method === 'POST' ? '<p>No recibirás más invitaciones para publicar tu primer descuento.</p>' : '<p>¿Quieres dejar de recibir estas invitaciones?</p><form method="post"><button style="padding:14px">No recibir más invitaciones</button></form>'}</body></html>`,
@@ -95,7 +100,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}))
     if (INVITATION_TEST_MODE || body.test_email || body.action === 'test') {
-      if (['queue', 'run'].includes(body.action)) return json({ ok: false, error: 'TEST_MODE_ONLY' }, 403)
+      if (['queue', 'run', 'queue_contacts', 'send_contacts'].includes(body.action)) return json({ ok: false, error: 'TEST_MODE_ONLY' }, 403)
       if (body.test_email && (typeof body.test_email !== 'string' || !TEST_RECIPIENTS.some(email => email === normalizeEmail(body.test_email))))
         return json({ ok: false, error: 'TEST_RECIPIENT_NOT_ALLOWED' }, 403)
       if (!body.test_email && !['send', 'test'].includes(body.action))
@@ -110,6 +115,57 @@ Deno.serve(async (req) => {
       return json({ ok: deliveries.every(delivery => delivery.status === 'sent'), test_mode: true,
         sent: deliveries.filter(delivery => delivery.status === 'sent').length,
         failed: deliveries.filter(delivery => delivery.status === 'failed').length, deliveries })
+    }
+    if (body.action === 'queue_contacts') {
+      const { data, error } = await service.rpc('lc_queue_contact_invitations')
+      if (error) throw error
+      return json({ ok: true, queued: data })
+    }
+    if (body.action === 'send_contacts') {
+      if (!SMTP_USERNAME || !SMTP_PASSWORD) throw new Error('MISSING_SMTP_CONFIGURATION')
+      const result = { sent: 0, suppressed: 0, failed: 0, quota_blocked: false }
+      const startedAt = Date.now()
+      for (let processed = 0; processed < 10 && Date.now() - startedAt < 60000; processed++) {
+        const { data, error } = await service.rpc('lc_claim_contact_invitations', { p_limit: 1 })
+        if (error) throw error
+        const invitation = data?.[0]
+        if (!invitation) break
+        try {
+          const [target, current] = await Promise.all([
+            service.from('lc_contact_invitation_targets').select('name').eq('email', invitation.email)
+              .eq('provider_id', invitation.provider_id).maybeSingle(),
+            service.from('latido_card_contact_invitations').select('status').eq('email', invitation.email).single()
+          ])
+          if (target.error || current.error) throw target.error || current.error
+          if (!target.data || current.data.status !== 'processing') {
+            const { error } = await service.from('latido_card_contact_invitations')
+              .update({ status: 'suppressed', last_error: 'no_longer_eligible' })
+              .eq('email', invitation.email).eq('status', 'processing')
+            if (error) throw error
+            result.suppressed++
+            continue
+          }
+          const delivery = await send(invitation.email, target.data.name, null, invitation.unsubscribe_token, false, true)
+          const { error } = await service.from('latido_card_contact_invitations')
+            .update({ status: 'sent', sent_at: new Date().toISOString(), message_id: delivery.messageId })
+            .eq('email', invitation.email).eq('status', 'processing')
+          if (error) throw error
+          result.sent++
+        } catch (error) {
+          // An uncertain SMTP outcome must never trigger a duplicate automatic send.
+          const smtp = error as { code?: string; responseCode?: number; response?: string }
+          const response = String(smtp.response || '').replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/g, '[email]').slice(0, 300)
+          await service.from('latido_card_contact_invitations')
+            .update({ status: 'failed', last_error: JSON.stringify({ error: 'delivery_requires_manual_review', code: smtp.code, responseCode: smtp.responseCode, response }) })
+            .eq('email', invitation.email).eq('status', 'processing')
+          result.failed++
+          if (/daily|quota|limit|sending prohibited/i.test(response)) {
+            result.quota_blocked = true
+            break
+          }
+        }
+      }
+      return json({ ok: true, ...result })
     }
     if (['queue', 'run'].includes(body.action)) {
       const { data, error } = await service.rpc('lc_queue_business_invitations')
