@@ -1,6 +1,7 @@
 import Stripe from 'npm:stripe@22.6.0'
 import { createClient } from 'npm:@supabase/supabase-js@2.101.1'
 import { clubVariantAttributes } from '../_shared/clubVariants.ts'
+import { CLUB_SHIPPING_AMOUNT as SHIPPING_AMOUNT } from '../_shared/clubShipping.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -10,7 +11,6 @@ const GELATO_STORE_ID = Deno.env.get('GELATO_STORE_ID') || ''
 const APP_URL = (Deno.env.get('LATIDO_APP_URL') || 'https://www.latido.ch').replace(/\/+$/, '')
 const CATALOG_URL = Deno.env.get('CLUB_CATALOG_URL') || `${APP_URL}/api/gelato?action=products`
 const GELATO_STORES_URL = 'https://ecommerce.gelatoapis.com/v1/stores'
-const SHIPPING_AMOUNT = 0
 const MAX_ITEMS = 20
 const MAX_QUANTITY = 10
 
@@ -89,19 +89,19 @@ const PRODUCT_CONFIG:Record<string, ProductConfig> = {
     shortName:'Camiseta Improvisar · Blanco', price:24.9, optionLabel:'Talla', purchaseType:'base',
   },
   '1759e8a1-03e1-40eb-947b-de41f50490c3': {
-    shortName:'Sudadera Latido Logo · Negra', price:34.9, optionLabel:'Talla', purchaseType:'base',
+    shortName:'Sudadera Latido Logo · Negra', price:36.9, optionLabel:'Talla', purchaseType:'base',
   },
   'e2a521ea-ebab-4709-80c1-12b173b13271': {
-    shortName:'Sudadera Latido Logo · Clara', price:34.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Sudadera Latido Logo · Clara', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'e922400e-27f5-410e-83bd-ef4647215e41': {
-    shortName:'Sudadera Atardecer', price:34.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Sudadera Atardecer', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'd7ed15a0-30bf-49cc-888c-fdd0bc58f3fa': {
-    shortName:'Sudadera Improvisar · Negro', price:34.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Sudadera Improvisar · Negro', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   '23397fd4-1013-4481-9c11-e22932316c7c': {
-    shortName:'Sudadera Improvisar · Blanco', price:34.9, optionLabel:'Talla', purchaseType:'base',
+    shortName:'Sudadera Improvisar · Blanco', price:36.9, optionLabel:'Talla', purchaseType:'base',
   },
   '9b2e0872-ffc6-4bbe-8615-eec669e36da4': {
     shortName:'Bolsa Latido Logo', price:17.9, optionLabel:'Color', purchaseType:'base',
@@ -116,7 +116,7 @@ const PRODUCT_CONFIG:Record<string, ProductConfig> = {
     shortName:'Camiseta Latido Club', price:24.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'f3ff3398-9981-496f-b9d3-4602be85b15b': {
-    shortName:'Sudadera Latido Club', price:34.9, optionLabel:'Color / Talla', purchaseType:'base',
+    shortName:'Sudadera Latido Club', price:36.9, optionLabel:'Color / Talla', purchaseType:'base',
   },
   'bd807369-b74d-483d-9065-fb994ca7bb38': {
     shortName:'Bolsa de tela Latido Club', price:17.9, optionLabel:'Color', purchaseType:'base',
@@ -281,10 +281,10 @@ Deno.serve(async req => {
 
     const { data: existing } = await service
       .from('club_orders')
-      .select('reference,stripe_checkout_url,status')
+      .select('reference,stripe_checkout_url,status,shipping_amount')
       .eq('checkout_request_id', body.checkoutRequestId)
       .maybeSingle()
-    if (existing?.stripe_checkout_url && existing.status === 'checkout_open') {
+    if (existing?.stripe_checkout_url && existing.status === 'checkout_open' && existing.shipping_amount === SHIPPING_AMOUNT) {
       return json(req, { ok:true, url:existing.stripe_checkout_url, reference:existing.reference })
     }
     if (existing) return json(req, { ok:false, error:'CHECKOUT_ALREADY_USED' }, 409)
@@ -386,6 +386,13 @@ Deno.serve(async req => {
       client_reference_id:order.id,
       customer_creation:'always',
       shipping_address_collection:{ allowed_countries:['CH'] },
+      shipping_options:[{
+        shipping_rate_data:{
+          type:'fixed_amount',
+          fixed_amount:{ amount:SHIPPING_AMOUNT, currency:'chf' },
+          display_name:'Envío a Suiza',
+        },
+      }],
       phone_number_collection:{ enabled:true },
       locale:'es',
       success_url:`${APP_URL}/tienda?checkout=success&order=${encodeURIComponent(order.reference)}&session_id={CHECKOUT_SESSION_ID}`,

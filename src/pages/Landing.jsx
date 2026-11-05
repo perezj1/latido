@@ -1193,7 +1193,7 @@ export default function Landing({ onInstall, menuPage, setMenuPage }) {
             <div style={{ flex: '1 1 300px' }}>
               <img src="/brand/tienda-latido-horizontal-black.webp?v=2" alt="Tienda Latido" loading="lazy" style={{ width: 190, maxWidth: '100%', marginBottom: 18 }} />
               <h2 id="landing-store-title" style={{ fontFamily: PP, color: C.text, fontSize: 'clamp(24px, 4vw, 32px)', lineHeight: 1.2, margin: '0 0 12px' }}>Lleva un pedacito de Latido contigo</h2>
-              <p style={{ fontFamily: PP, color: C.mid, lineHeight: 1.7, fontSize: 14 }}>Camisetas, sudaderas y accesorios con nuestra esencia. Cada compra ayuda a mantener Latido. Envío incluido a Suiza y producción bajo demanda.</p>
+              <p style={{ fontFamily: PP, color: C.mid, lineHeight: 1.7, fontSize: 14 }}>Camisetas, sudaderas y accesorios con nuestra esencia. Cada compra ayuda a mantener Latido. Envío a Suiza: 9 CHF por pedido y producción bajo demanda.</p>
               <Link to="/tienda" style={{ display: 'inline-flex', background: C.primary, color: '#fff', fontFamily: PP, fontWeight: 700, textDecoration: 'none', padding: '13px 22px', borderRadius: 12 }}>Descubrir Tienda Latido →</Link>
             </div>
             <Link to="/tienda" aria-label="Ver la colección de Tienda Latido" style={{ flex: '1 1 220px', maxWidth: 300, margin: '0 auto' }}><img src="/club/products/sudadera-logo-negra-frontal.png" alt="Sudadera negra de la colección Latido" loading="lazy" style={{ display: 'block', width: '100%', borderRadius: 18 }} /></Link>

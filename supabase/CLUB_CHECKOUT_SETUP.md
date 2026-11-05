@@ -16,8 +16,10 @@ En Stripe, empieza en modo de prueba. Crea una clave restringida para Latido
 Club con el permiso mínimo necesario para crear, leer y caducar Checkout
 Sessions. No sustituyas la clave usada por otras funciones de Latido.
 
-Guarda las claves de Stripe y Gelato en Supabase. Los precios del catálogo ya
-incluyen el envío a Suiza:
+Guarda las claves de Stripe y Gelato en Supabase. Los precios del catálogo se
+mantienen; se añaden 9 CHF de envío a Suiza una sola vez por pedido. La tarifa
+se comparte entre la web y el servidor en `_shared/clubShipping.ts` y se cobra
+en Stripe como un gasto de envío independiente:
 
 ```powershell
 supabase secrets set --project-ref zmievixfjefjppofebbh STRIPE_CLUB_SECRET_KEY="rk_test_..." GELATO_API_KEY="..." CLUB_ORDER_EMAIL="latidoch@gmail.com"

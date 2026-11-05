@@ -376,6 +376,7 @@
 .club-quantity span { min-width: 20px; text-align: center; font-size: 10px; font-weight: 800; }
 .club-drawer__summary { padding: 22px 24px calc(24px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(16,32,74,.1); background: #fff; }
 .club-drawer__summary > div { display: flex; align-items: center; justify-content: space-between; font-size: 15px; }
+.club-drawer__summary > div + div { margin-top: 10px; }
 .club-drawer__summary > p { margin: 6px 0 18px; color: #768097; font-size: 10px; }
 .club-drawer__summary > button, .club-quote-button, .club-order-button, .club-checkout--success > button { display: flex; width: 100%; min-height: 49px; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 13px; color: #fff; background: var(--club-blue); font-size: 12px; font-weight: 800; cursor: pointer; }
 .club-drawer__summary > button:disabled { color: #73809a; background: #e8ebf0; cursor: not-allowed; }

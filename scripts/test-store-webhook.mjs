@@ -7,11 +7,12 @@ const source = await readFile(new URL('../supabase/functions/club_stripe_webhook
 const { code } = await transformWithEsbuild(source.replace(/^import .*$/gm, ''), 'webhook.ts', { loader: 'ts' })
 let handler, event, duplicate, dbFailure, paymentFailure, adminMailFailure, settled, seenEvents
 const messages = [], writes = []
-const order = { id: 'order-1', reference: 'LC-001001', payment_status: 'paid', status: 'paid', currency: 'chf', total_amount: 2490, subtotal_amount: 2490, shipping_amount: 0, items: [{ product_name: 'Camiseta', quantity: 1, option_label: 'Color / Talla', option: 'Negro / M', line_total: 2490 }], customer_email: 'buyer@latido.test', customer_name: 'Cliente', shipping_address: { line1: 'Calle 1', postal_code: '8000', city: 'Zürich', country: 'CH' } }
+const order = { id: 'order-1', reference: 'LC-001001', payment_status: 'paid', status: 'paid', currency: 'chf', total_amount: 3390, subtotal_amount: 2490, shipping_amount: 900, items: [{ product_name: 'Camiseta', quantity: 1, option_label: 'Color / Talla', option: 'Negro / M', line_total: 2490 }], customer_email: 'buyer@latido.test', customer_name: 'Cliente', shipping_address: { line1: 'Calle 1', postal_code: '8000', city: 'Zürich', country: 'CH' } }
 const service = {
   async rpc(name, args) {
     assert.equal(name, 'club_settle_payment')
     assert.equal(args.p_session, 'cs_verified')
+    assert.equal(args.p_amount,order.total_amount)
     assert.equal(args.p_details.shipping_address.country, 'CH')
     settled++
     return paymentFailure ? { error: new Error('ORDER_AMOUNT_MISMATCH') } : { data: { ...order } }
@@ -50,7 +51,7 @@ function reset(type = 'checkout.session.completed', payment = 'paid') {
   settled = seenEvents = 0
   messages.length = writes.length = 0
   order.admin_email_sent_at = order.customer_email_sent_at = null
-  event = { id: 'evt_1', type, data: { object: { id: 'cs_verified', payment_status: payment, metadata: { latido_product: 'club_order', latido_order_id: order.id }, amount_total: 2490, currency: 'chf', customer_details: { email: order.customer_email, name: order.customer_name }, collected_information: { shipping_details: { name: order.customer_name, address: order.shipping_address } } } } }
+  event = { id: 'evt_1', type, data: { object: { id: 'cs_verified', payment_status: payment, metadata: { latido_product: 'club_order', latido_order_id: order.id }, amount_total: order.total_amount, currency: 'chf', customer_details: { email: order.customer_email, name: order.customer_name }, collected_information: { shipping_details: { name: order.customer_name, address: order.shipping_address } } } } }
 }
 const call = signature => handler(new Request('https://test/webhook', { method: 'POST', headers: signature ? { 'stripe-signature': signature } : {}, body: '{}' }))
 reset()
@@ -64,6 +65,12 @@ assert.equal(messages.length, 2)
 assert.ok(messages[0].text.includes('LC-001001'))
 assert.ok(messages[0].text.includes('8000 Zürich'))
 assert.ok(messages[0].text.includes('Negro / M'))
+for(const message of messages){
+  assert.match(message.text,/Envío:.*9\.00/)
+  assert.match(message.text,/33\.90/)
+  assert.ok(!message.text.includes('Envío: incluido'))
+  assert.match(message.html,/Envío.*9\.00/)
+}
 reset()
 adminMailFailure = true
 assert.equal((await call('valid')).status, 500)

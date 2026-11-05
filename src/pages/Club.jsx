@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
+import { CLUB_SHIPPING_CHF } from '../../supabase/functions/_shared/clubShipping.ts'
 import './Club.css'
 
 const CART_STORAGE_KEY = 'latido-club-cart-v1'
@@ -762,7 +763,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
             <h3>{productTitle(product)}</h3>
             <div className="club-config__price">
               <strong>{isAddon ? '+' : ''}{money(product.price)}</strong>
-              <span>{isAddon ? 'Oferta de promoción · Complemento para tu camiseta o sudadera' : 'Oferta de promoción · IVA y envío a Suiza incluidos'}</span>
+              <span>{isAddon ? 'Oferta de promoción · Complemento para tu camiseta o sudadera' : 'Oferta de promoción · IVA incluido · Envío a Suiza: 9 CHF por pedido'}</span>
             </div>
             {isAddon && (
               <p className="club-config__addon-note">
@@ -924,7 +925,7 @@ function ClubConfigurator({ products, catalogStatus, hasGarment, selectionReques
               </button>
             )}
             <div className="club-config__benefits" aria-label="Ventajas del producto">
-              <span><Truck size={15} /><b>Envío incluido</b></span>
+              <span><Truck size={15} /><b>Envío: 9 CHF por pedido</b></span>
               <span><Clock size={15} /><b>Entrega aprox. 20 días, según el proveedor</b></span>
               <span><ShieldCheck size={15} /><b>Pago seguro con Stripe</b></span>
             </div>
@@ -1096,8 +1097,10 @@ function CartDrawer({ open, cart, products, onClose, onQuantity, onCheckout, onB
               </div>
             </div>
             <div className="club-drawer__summary">
-              <div><span>Total</span><strong>{money(subtotal)}</strong></div>
-              <p>IVA y envío a Suiza incluidos · Entrega aprox. 20 días, según el proveedor.</p>
+              <div><span>Productos</span><strong>{money(subtotal)}</strong></div>
+              <div><span>Envío a Suiza</span><strong>{money(CLUB_SHIPPING_CHF)}</strong></div>
+              <div><span>Total</span><strong>{money(subtotal + CLUB_SHIPPING_CHF)}</strong></div>
+              <p>IVA incluido · Envío: 9 CHF por pedido · Entrega aprox. 20 días, según el proveedor.</p>
               {hasOrphanAddon && <p className="club-cart-error">Añade una camiseta o sudadera para poder comprar los complementos.</p>}
               <button type="button" onClick={onCheckout} disabled={hasOrphanAddon}>
                 Continuar con el pedido <ChevronRight size={18} />
@@ -1116,7 +1119,7 @@ function CheckoutModal({ open, cart, onClose }) {
   const [error, setError] = useState('')
   const requestRef = useRef(null)
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const total = subtotal
+  const total = subtotal + CLUB_SHIPPING_CHF
   const savings = cart.reduce((sum, item) => (
     Number(item.compareAtPrice) > Number(item.price)
       ? sum + (item.compareAtPrice - item.price) * item.quantity
@@ -1198,7 +1201,7 @@ function CheckoutModal({ open, cart, onClose }) {
                 <span><strong>Lo fabricamos y te lo enviamos</strong>Con el pago confirmado empezamos la producción. Recibirás tu pedido en aproximadamente 20 días, dependiendo del proveedor.</span>
               </li>
             </ol>
-            <p className="club-checkout-payment__trust"><ShieldCheck size={16} /> Pago cifrado con Stripe · Envío incluido · Entrega aprox. 20 días, según el proveedor</p>
+            <p className="club-checkout-payment__trust"><ShieldCheck size={16} /> Pago cifrado con Stripe · Envío: 9 CHF por pedido · Entrega aprox. 20 días, según el proveedor</p>
           </div>
 
           <aside className="club-order-summary">
@@ -1210,7 +1213,7 @@ function CheckoutModal({ open, cart, onClose }) {
               </div>
             ))}
             <div className="club-order-total"><span>Productos</span><strong>{money(subtotal)}</strong></div>
-            <div className="club-order-line club-order-line--shipping"><span>Envío a Suiza<small>Entrega aprox. 20 días, según el proveedor</small></span><strong>Incluido</strong></div>
+            <div className="club-order-line club-order-line--shipping"><span>Envío a Suiza<small>9 CHF por pedido · Entrega aprox. 20 días, según el proveedor</small></span><strong>{money(CLUB_SHIPPING_CHF)}</strong></div>
             <div className="club-grand-total"><span>Total</span><strong>{money(total)}</strong></div>
             {savings > 0 && <p className="club-order-savings">Ahorras {money(savings)} con el precio de lanzamiento.</p>}
 
@@ -1451,10 +1454,10 @@ export default function Club() {
             <div>
               <span>01 / La colección</span>
               <h2>Elige cómo<br />llevar tu Latido.</h2>
-              <p>Elige el artículo, el diseño y el color. Los precios de las prendas incluyen el envío a Suiza.</p>
+              <p>Elige el artículo, el diseño y el color. Añadimos 9 CHF de envío a Suiza por pedido.</p>
             </div>
             <div className="club-collection-benefits" aria-label="Ventajas de la Tienda Latido">
-              <div><Truck size={22} /><span><strong>Envío incluido</strong><small>En camisetas y sudaderas</small></span></div>
+              <div><Truck size={22} /><span><strong>Envío a Suiza: 9 CHF</strong><small>Un único coste por pedido</small></span></div>
               <div><Leaf size={22} /><span><strong>Calidad premium</strong><small>Impresión duradera</small></span></div>
               <div><Sparkles size={22} /><span><strong>Diseños originales</strong><small>Hechos para conectar</small></span></div>
             </div>
@@ -1493,7 +1496,7 @@ export default function Club() {
             <p>Cada pieza se produce solo cuando la pides: menos excedentes y una red de producción que busca fabricar cerca del destino.</p>
             <div className="club-story__points">
               <div><Leaf size={20} /><span><strong>Sin stock innecesario</strong>Producimos una a una.</span></div>
-              <div><Truck size={20} /><span><strong>Envío incluido en el precio</strong>Sin gastos de envío adicionales a Suiza.</span></div>
+              <div><Truck size={20} /><span><strong>Envío a Suiza: 9 CHF por pedido</strong>El coste se añade al total al pagar.</span></div>
               <div><Heart size={20} /><span><strong>Hecho para conectar</strong>Diseños que hablan de nosotros.</span></div>
             </div>
           </div>

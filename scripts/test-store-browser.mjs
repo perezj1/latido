@@ -92,6 +92,26 @@ try {
   await buyer.page.locator('.latido-nav-menu').getByRole('link', { name: 'Tienda Latido', exact: true }).click()
   await expect(buyer.page).toHaveURL(`${origin}/tienda`)
   await expect(buyer.page.locator('.latido-nav-menu')).toHaveCount(0)
+  await buyer.page.evaluate(() => localStorage.setItem('latido-club-cart-v1', JSON.stringify([
+    { sku:'shipping-test', productId:'shipping-product', category:'camisetas', name:'Camiseta Latido', shortName:'Camiseta Latido', optionLabel:'Color / Talla', option:'Negro / M', price:24.9, purchaseType:'base', quantity:2 }
+  ])))
+  await buyer.page.reload()
+  await buyer.page.getByRole('button', { name:'Abrir bolsa, 2 artículos', exact:true }).click()
+  const cart = buyer.page.getByRole('dialog', { name:'Tu bolsa' })
+  await expect(cart.locator('.club-drawer__summary')).toContainText(/58[.,]80/)
+  await expect(cart.locator('.club-drawer__summary')).toContainText('Envío a Suiza')
+  await expect(cart.locator('.club-drawer__summary')).toContainText('9 CHF por pedido')
+  await cart.getByRole('button', { name:'Continuar con el pedido' }).click()
+  const checkout = buyer.page.getByRole('dialog', { name:'Revisa tu pedido' })
+  await expect(checkout.locator('.club-order-line--shipping')).toContainText(/9[.,]00/)
+  await expect(checkout.locator('.club-grand-total')).toContainText(/58[.,]80/)
+  await expect(checkout).not.toContainText(/envío incluido/i)
+  for(const width of [390,320]) {
+    await buyer.page.setViewportSize({width,height:844})
+    assert.ok(await buyer.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth), `Checkout fits at ${width}px`)
+    await buyer.page.screenshot({path:`${output}/shipping-checkout-${width}.png`,animations:'disabled'})
+  }
+  await checkout.getByRole('button', { name:'Cerrar pedido' }).click()
   await buyer.page.goto(`${origin}/tienda?checkout=success&order=LC-001001&session_id=cs_test_abcdefghijklmnopqrstuvwxyz`)
   await expect(buyer.page.getByText('Estamos confirmando tu pago')).toBeVisible()
   paymentStatus = 'paid'
