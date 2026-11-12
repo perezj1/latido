@@ -168,11 +168,8 @@ async function prepareLoadedImageForUpload(file, image, {
   const height = image.naturalHeight || image.height
   if (!width || !height) throw new Error('No se pudo leer la imagen')
 
-  const shouldKeepOriginal = OUTPUT_FORMATS.some(format => format.type === file.type)
-    && file.size <= maxOutputBytes
-    && Math.max(width, height) <= maxDimension
-  if (shouldKeepOriginal) return file
-
+  // Always encode raster photos, including small ones: returning the original
+  // can publish EXIF GPS, camera identifiers and other private metadata.
   const blob = await renderOptimizedImage(image, {
     maxOutputBytes,
     maxDimension,

@@ -1,22 +1,12 @@
 import { track as trackVercelEvent } from '@vercel/analytics'
 import { supabase } from './supabase'
 import { hasAnalyticsConsent } from './cookieConsent'
+import { getAnalyticsRoute, isPrivateAnalyticsRoute, sanitizeAnalyticsMetadata } from './analyticsPrivacy.js'
+
+export { getAnalyticsRoute } from './analyticsPrivacy.js'
 
 const SESSION_KEY = 'latido_analytics_session_id'
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
-const DYNAMIC_ROUTES = [
-  [/^\/card\/validacion\/[^/]+\/?$/, '/card/validacion/[id]'],
-  [/^\/card\/negocio\/[^/]+\/?$/, '/card/negocio/[id]'],
-  [/^\/card\/material\/[^/]+\/?$/, '/card/material/[id]'],
-  [/^\/c\/[^/]+\/?$/, '/c/[token]'],
-  [/^\/scanner(?:\/.*)?$/, '/scanner'],
-  [/^\/publicar\/punto-hispano\/[^/]+\/?$/, '/publicar/punto-hispano/[token]'],
-  [/^\/anuncios\/[^/]+\/?$/, '/anuncios/[adSlug]'],
-  [/^\/empleos\/[^/]+\/?$/, '/empleos/[jobSlug]'],
-  [/^\/negocios\/[^/]+\/?$/, '/negocios/[businessSlug]'],
-  [/^\/eventos\/[^/]+\/?$/, '/eventos/[eventSlug]'],
-  [/^\/guias\/[^/]+\/?$/, '/guias/[guideSlug]'],
-]
 const VERCEL_EVENT_PROPERTIES = {
   card_journey: ['action', 'step', 'mode'],
   search: ['scope', 'cat', 'category', 'active_filter'],
@@ -66,24 +56,19 @@ export function isAnalyticsEnabled() {
     !hostname.endsWith('.localhost')
 }
 
-export function getAnalyticsRoute(pathname = '/') {
-  const route = pathname || '/'
-  return DYNAMIC_ROUTES.find(([pattern]) => pattern.test(route))?.[1] || route
-}
-
 export function sanitizeVercelAnalyticsEvent(event) {
   if (!hasAnalyticsConsent()) return null
   if (!event?.url || typeof window === 'undefined') return event
 
   try {
     const url = new URL(event.url, window.location.origin)
-    if (url.pathname.startsWith('/c/') || url.pathname.startsWith('/scanner/') || url.pathname.startsWith('/card/validacion/')) return null
+    if (isPrivateAnalyticsRoute(url.pathname)) return null
     url.pathname = getAnalyticsRoute(url.pathname)
     url.search = ''
     url.hash = ''
     return { ...event, url: url.toString() }
   } catch {
-    return event
+    return null
   }
 }
 
@@ -111,7 +96,7 @@ function shouldSkipDuplicate(eventType, payload) {
     eventType,
     path: payload.path,
     search: payload.search,
-    query: payload.metadata?.query,
+    search_attempt_id: payload.metadata?.search_attempt_id,
     scope: payload.metadata?.scope,
     ...(eventType === 'card_journey' ? { action:payload.metadata?.action, step:payload.metadata?.step, mode:payload.metadata?.mode } : {}),
   })
@@ -148,9 +133,10 @@ function sendVercelCustomEvent(eventType, metadata) {
 export async function trackAnalyticsEvent(eventType, payload = {}) {
   if (!eventType || !isAnalyticsEnabled()) return
 
-  const path = payload.path || window.location.pathname
-  const search = payload.search ?? window.location.search
-  const metadata = payload.metadata || {}
+  if (isPrivateAnalyticsRoute(window.location.pathname) || isPrivateAnalyticsRoute(payload.path)) return
+  const path = getAnalyticsRoute(payload.path || window.location.pathname)
+  const search = ''
+  const metadata = sanitizeAnalyticsMetadata(payload.metadata)
 
   if (shouldSkipDuplicate(eventType, { path, search, metadata })) return
   sendVercelCustomEvent(eventType, metadata)

@@ -2,6 +2,12 @@
   "functions": { "api/card-share.js": { "includeFiles": "dist/index.html" } },
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
       "source": "/seguimiento",
       "headers": [
         { "key": "Cache-Control", "value": "no-store" },

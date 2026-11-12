@@ -133,7 +133,7 @@ function Privacidad() {
   return (
     <>
       <P style={{ fontStyle:'italic', fontSize:12, color:C.light }}>
-        Última actualización: agosto de 2026 · Conforme a la nDSG (nueva Ley federal suiza de
+        Última actualización: noviembre de 2026 · Conforme a la nDSG (nueva Ley federal suiza de
         protección de datos, en vigor desde el 1 de septiembre de 2023).
       </P>
 
@@ -147,17 +147,21 @@ function Privacidad() {
       <Section title="2. Datos que recopilamos">
         <P><strong>Al crear una cuenta:</strong></P>
         <Ul items={[
-          'Nombre o apodo, dirección de email y contraseña (almacenada cifrada).',
+          'Nombre o apodo, dirección de email y credenciales gestionadas por Supabase Auth; la contraseña no se almacena en texto claro.',
           'Cantón de residencia e idiomas (opcionales, para personalizar la experiencia).',
         ]} />
         <P><strong>Al usar la plataforma:</strong></P>
         <Ul items={[
-          'Contenidos que publicas (anuncios, reseñas, perfiles de creador, enlaces a redes y datos de contacto que decides incluir).',
-          'Datos de uso: páginas visitadas, interacciones con la app (almacenados de forma anonimizada).',
-          'Dirección IP y agente de usuario (browser), retenidos brevemente por razones de seguridad.',
+          'Contenidos que publicas (anuncios, reseñas, perfiles de creador, enlaces a redes y datos de contacto que decides incluir), mensajes y respuestas a seguimientos.',
+          'Con tu consentimiento para analítica: rutas generales, interacciones y contadores. La analítica propia puede asociarse a tu identificador de cuenta y a un identificador de sesión; es seudónima, no anónima. Los nuevos eventos no incluyen el texto de las búsquedas ni los parámetros de las URL.',
+          'Datos técnicos, como dirección IP y agente de usuario (navegador), tratados por la infraestructura para prestar el servicio y prevenir abusos.',
         ]} />
-        <P><strong>No recopilamos:</strong> datos de pago, documentos de identidad ni datos sensibles
-        en el sentido del art. 5 lit. c nDSG salvo los que el propio usuario decida publicar.</P>
+        <P><strong>Al comprar en la tienda o contratar un plan:</strong> tratamos la referencia,
+        los productos, el importe y el estado del pago. En pedidos con envío también recibimos
+        nombre, email, teléfono cuando se facilita y dirección de entrega. Stripe procesa el pago;
+        Latido no almacena el número completo de tu tarjeta ni su código de seguridad.</P>
+        <P>No solicitamos documentos de identidad ni datos sensibles para usar las funciones
+        generales de la plataforma. Evita incluirlos en publicaciones, mensajes o archivos.</P>
       </Section>
 
       <Section title="3. Datos visibles públicamente">
@@ -186,10 +190,12 @@ function Privacidad() {
 
       <Section title="5. Plazo de conservación">
         <Ul items={[
-          'Datos de cuenta: mientras la cuenta esté activa. Tras la eliminación de la cuenta, 30 días de retención por seguridad y luego eliminación definitiva.',
-          'Anuncios y publicaciones: se eliminan cuando el usuario los borra o cuando se elimina la cuenta.',
+          'Datos de cuenta: mientras la cuenta esté activa. Puedes solicitar su supresión; revisaremos también los datos relacionados y las necesidades de conservación antes de confirmar su alcance.',
+          'Anuncios y publicaciones: puedes borrarlos desde la aplicación. Los archivos asociados, copias de seguridad y cachés pueden requerir una retirada adicional; borrar una publicación no garantiza la desaparición inmediata de todas sus copias.',
+          'Pedidos y suscripciones: se conservan para gestionar pagos, entrega, incidencias y las obligaciones de conservación aplicables.',
+          'Analítica: retirar el consentimiento detiene nuevos eventos, pero no borra automáticamente los ya registrados. Puedes solicitar su supresión por email.',
           'Denuncias, cola de moderación y registros de actuación: mientras sean necesarios para seguridad, prevención de abusos, defensa de derechos o cumplimiento legal.',
-          'Datos de acceso (logs IP): máximo 30 días.',
+          'Datos técnicos y registros de acceso: su conservación depende de la configuración y los servicios de infraestructura utilizados; puedes solicitar información sobre los datos que te conciernen.',
         ]} />
       </Section>
 
@@ -199,6 +205,9 @@ function Privacidad() {
         <Ul items={[
           'Supabase Inc. — proveedor de base de datos y autenticación (servidores UE, con garantías adecuadas conforme a la nDSG).',
           'Vercel Inc. — proveedor de alojamiento de la aplicación (servidores UE).',
+          'Stripe — procesamiento de pagos y gestión de suscripciones cuando compras o contratas un plan.',
+          'Gelato — catálogo, producción y entrega de los pedidos de la tienda; recibe los datos necesarios para preparar y enviar el pedido.',
+          'Proveedores de correo configurados para enviar avisos de servicio, seguimientos y confirmaciones. Los avisos de pedidos dirigidos al operador pueden contener los datos de contacto y entrega necesarios para gestionarlos.',
           'YouTube/Google, Instagram/Meta y TikTok — solo cuando autorizas y cargas sus reproductores externos integrados.',
           'Autoridades suizas, cuando exista obligación legal.',
         ]} />
@@ -292,7 +301,7 @@ function Cookies() {
       name:'Preferencias latido_*',
       provider:'Latido.ch',
       purpose:'Recuerda funciones solicitadas como favoritos, alertas, notificaciones, mensajes leídos y avisos ya revisados.',
-      duration:'Hasta desactivar la función, cerrar la cuenta o borrar los datos del navegador.',
+      duration:'Hasta desactivar la función o borrar los datos del navegador.',
     },
     {
       name:'latido_pwa_dismissed y sesión técnica',
@@ -312,8 +321,8 @@ function Cookies() {
     {
       name:'latido_analytics_session_id',
       provider:'Latido.ch / Supabase',
-      purpose:'Distingue de forma seudónima las interacciones de una misma sesión para medir páginas, búsquedas y clics.',
-      duration:'Hasta cerrar la pestaña o el navegador. Los eventos analíticos se conservan como máximo 12 meses.',
+      purpose:'Distingue de forma seudónima las interacciones de una misma sesión para medir páginas, contadores de búsquedas y clics. Los eventos propios pueden incluir el identificador de cuenta.',
+      duration:'El identificador dura hasta cerrar la pestaña o el navegador. Retirar el consentimiento detiene nuevos eventos; para solicitar la supresión de los anteriores, escribe a info@latido.ch.',
     },
     {
       name:'Vercel Web Analytics',
@@ -330,8 +339,8 @@ function Cookies() {
     {
       name:'Atribución de colaboradores',
       provider:'Latido.ch / Supabase',
-      purpose:'Mide, con consentimiento, interacciones con servicios colaboradores y la campaña de origen.',
-      duration:'Hasta retirar el consentimiento o borrar los datos del navegador; eventos, máximo 12 meses.',
+      purpose:'Mide, con consentimiento, impresiones y clics en servicios colaboradores y su ubicación dentro de la aplicación.',
+      duration:'El almacenamiento local permanece hasta retirarlo o borrar los datos del navegador. Retirar el consentimiento detiene nuevos eventos; puedes solicitar la supresión de los anteriores.',
     },
     {
       name:'Estadísticas de Creadores',
@@ -353,7 +362,7 @@ function Cookies() {
   return (
     <>
       <P style={{ fontStyle:'italic', fontSize:12, color:C.light }}>
-        Última actualización: 8 de agosto de 2026 · Versión de consentimiento: 2026-08-08.
+        Última actualización: 12 de noviembre de 2026 · Versión de consentimiento: 2026-08-08.
       </P>
 
       <Section title="1. Alcance">

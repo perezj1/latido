@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { C, PP } from '../lib/theme'
+import { csvCell } from '../lib/csv.js'
 import { Btn, EmptyState, Tag } from '../components/UI'
 import { REPORT_REASONS } from '../lib/reports'
 import { BUSINESS_VERIFICATION_STATUSES, calculateBusinessVerification, getBusinessVerificationStatus } from '../lib/businessVerification'
@@ -541,11 +542,6 @@ function ratePerItem(value, total, decimals = 1) {
   return Number(((Number(value) || 0) / base).toFixed(decimals))
 }
 
-function csvCell(value) {
-  const text = value === null || value === undefined ? '' : String(value)
-  return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
-}
-
 // Excel in Spanish locales expects `;` as the separator and a BOM for accents.
 function downloadCsv(filename, columns, rows) {
   const lines = [columns.map(column => csvCell(column.label)).join(';')]
@@ -886,7 +882,7 @@ function topAnalyticsRows(items, labelFn, limit = 8, subFn) {
 
 function analyticsQuery(event) {
   const metadata = readMetadata(event.metadata)
-  return String(metadata.query || '').trim()
+  return String(metadata.query || '').trim() || (metadata.has_query ? 'Búsqueda privada' : '')
 }
 
 function analyticsSearchAttemptKey(event) {

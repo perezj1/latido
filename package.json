@@ -27,6 +27,8 @@
     "test:publication-lifetimes": "node scripts/test-publication-lifetimes.mjs",
     "test:creators": "node scripts/test-creators.mjs",
     "test:images": "node scripts/test-image-loading.mjs",
+    "test:security": "node scripts/test-security-hardening.mjs",
+    "test:security:uploads": "node scripts/test-upload-privacy.mjs",
     "test:auth": "node scripts/test-auth-storage.mjs",
     "test:pwa": "node scripts/test-pwa.mjs",
     "test:business:deletion": "node scripts/test-business-deletion.mjs",
