@@ -1,4 +1,5 @@
 import { EDITORIAL_PREMIUM_PARTNERS, getEditorialPremiumPartner } from '../lib/editorialBusinessPartners'
+import {SuizamenteMark} from './suizamente/SuizamenteVisuals'
 import { PUNTO_HISPANO_PROVIDER_ID } from '../lib/puntoHispano'
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -3276,7 +3277,7 @@ export default function GlobalSearch({
                             navigate(extra.to)
                           }}
                         >
-                          <span className="explore-extra__mark" aria-hidden="true">{extra.emoji}</span>
+                          <span className="explore-extra__mark" aria-hidden="true">{extra.id==='suizamente'?<SuizamenteMark small/>:extra.emoji}</span>
                           <span className="explore-extra__text">
                             <span className="explore-extra__label">{extra.label}</span>
                             <span className="explore-extra__desc">{extra.desc}</span>

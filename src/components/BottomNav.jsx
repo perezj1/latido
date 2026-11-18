@@ -5,7 +5,7 @@ import { useUnreadMessages } from '../hooks/useUnreadMessages'
 import { usePushActivation } from '../hooks/usePushActivation'
 import { Avatar } from './UI'
 import { C, PP } from '../lib/theme'
-import { isCreatorProfileRoute, isExploreRoute } from '../lib/sections'
+import { isCreatorProfileRoute, isExploreRoute,isSuizamenteRoute } from '../lib/sections'
 
 const PUBLISH_OPTIONS = [
   { emoji:'📣', label:'Anuncio',   sub:'Anuncia todo lo que ofreces, lo que buscas o lo que vendes.', to:'/publicar' },
@@ -82,7 +82,7 @@ export default function BottomNav() {
   const isAdminPage = pathname === '/admin-latido' || pathname.startsWith('/admin-latido/')
   const isPublishFlow = PUBLISH_FLOW_PATHS.some(path => pathname === path || pathname.startsWith(`${path}/`))
   const isCreatorProfileArea = isCreatorProfileRoute(pathname)
-  const hideNav = isAdminPage || isPublishFlow || (pathname.startsWith('/mensajes') && messagesChatOpen)
+  const hideNav = isAdminPage || isPublishFlow || isSuizamenteRoute(pathname) || (pathname.startsWith('/mensajes') && messagesChatOpen)
   const isTabActive = tab => {
     if (tab.action) return false
     if (tab.id === 'inicio') return pathname === '/'

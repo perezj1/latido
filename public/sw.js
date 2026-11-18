@@ -12,7 +12,7 @@ const SUPABASE_STORAGE_RENDER_SEGMENT = '/storage/v1/render/image/public/'
 const RASTER_IMAGE_EXTENSIONS = new Set(['avif', 'jpeg', 'jpg', 'png', 'webp'])
 const DEFAULT_OPTIMIZED_IMAGE_WIDTH = 960
 const DEFAULT_OPTIMIZED_IMAGE_QUALITY = 72
-const LOCAL_DEVELOPMENT = self.location.hostname === 'localhost'
+const LOCAL_DEVELOPMENT = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(self.location.hostname)
 const PUBLIC_TABLES = new Set([
   'business_promotion_plans',
   'communities',
@@ -269,7 +269,8 @@ self.addEventListener('activate', event => {
     await Promise.all(deletions)
 
     if (self.registration.navigationPreload) {
-      await self.registration.navigationPreload.enable()
+      if (LOCAL_DEVELOPMENT) await self.registration.navigationPreload.disable()
+      else await self.registration.navigationPreload.enable()
     }
 
     await self.clients.claim()
@@ -281,12 +282,10 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return
   if (request.cache === 'only-if-cached' && request.mode !== 'same-origin') return
 
-  // En localhost el service worker se usa para probar push, pero Vite debe
-  // seguir sirviendo siempre los módulos y el HMR directamente desde red.
-  if (LOCAL_DEVELOPMENT) {
-    event.respondWith(fetch(request))
-    return
-  }
+  // Keep local push testing, but let the browser and Vite handle navigation,
+  // source modules and HMR directly. Wrapping local fetches in respondWith()
+  // turns a temporary dev-server failure into a rejected worker response.
+  if (LOCAL_DEVELOPMENT) return
 
   if (request.headers.has('range') || request.destination === 'video' || request.destination === 'audio') {
     return
