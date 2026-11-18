@@ -44,7 +44,7 @@ try{
   // Existing installations need only the incremental update, repeatable without
   // rerunning seeds. Check that it recreates exactly the canonical definitions.
   const functions=['write_question','admin_action','game_start']
-  const defs=async()=> (await db.query("SELECT proname,pg_get_functiondef(p.oid) definition FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='suizamente_private' AND proname=ANY($1::text[]) ORDER BY proname",[functions])).rows
+  const defs=async()=> (await db.query("SELECT proname,pg_get_functiondef(p.oid) definition FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='suizamente_private' AND proname=ANY($1::text[]) ORDER BY proname",[functions])).rows.map(row=>({...row,definition:row.definition.replaceAll('\r\n','\n')}))
   const before=await defs(),delta=await readFile('supabase/suizamente_actualizacion_jugabilidad.sql','utf8')
   await db.exec(delta);await db.exec(delta)
   // Simulate an installation that already applied the first 350 questions,
@@ -61,7 +61,10 @@ try{
   const tenthUpgrade=await readFile('supabase/suizamente_actualizacion_ilustraciones_10.sql','utf8')
   const eleventhUpgrade=await readFile('supabase/suizamente_actualizacion_ilustraciones_11.sql','utf8')
   // The latest update also supports installations that skipped intermediate updates.
-  await db.exec(eleventhUpgrade)
+  const triviaUpgrade=await readFile('supabase/suizamente_actualizacion_trivial_13.sql','utf8')
+  const reviewSchema=(await readFile('supabase/suizamente_revision_completa.sql','utf8')).split('-- END_REVIEW_SCHEMA')[0]+'\nCOMMIT;'
+  await db.exec(triviaUpgrade)
+  await db.exec(reviewSchema)
   assert.deepEqual(await defs(),before,'Latest illustration upgrade also applies directly after the first release')
   await db.exec(delta)
   const upgrade=await readFile('supabase/suizamente_actualizacion_ilustraciones_02.sql','utf8')
@@ -137,7 +140,9 @@ try{
   await db.exec(tenthBatch)
   assert.equal((await db.query('SELECT count(*)::integer n FROM suizamente_private.versions')).rows[0].n,tenthVersions,'Release 10 never duplicates versions')
   await db.exec(eleventhUpgrade);await db.exec(eleventhUpgrade)
-  assert.deepEqual(await defs(),before,'Release 11 matches the canonical schema and is repeatable')
+  await db.exec(triviaUpgrade);await db.exec(triviaUpgrade)
+  await db.exec(reviewSchema);await db.exec(reviewSchema)
+  assert.deepEqual(await defs(),before,'The consolidated schema matches canonical definitions after historical releases')
   const eleventhBatch=await readFile('supabase/suizamente_expansion_ne_ju_20261117.sql','utf8')
   await db.exec(eleventhBatch)
   const eleventhVersions=(await db.query('SELECT count(*)::integer n FROM suizamente_private.versions')).rows[0].n

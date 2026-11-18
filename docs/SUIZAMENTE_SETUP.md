@@ -1,28 +1,36 @@
 # Suizamente: activar el modo juego
 
+**Actualización vigente 14:** [revisión completa del banco e instalación en cuatro SQL](SUIZAMENTE_REVISION_COMPLETA.md). Sustituye las instrucciones de los parches anteriores.
+
 Implementado dentro de Latido, sin commit, push, despliegue ni escrituras en el Supabase remoto.
 
 **Actualización de diseño del 13/11/2026:** se ha contrastado la interfaz con el paquete `Suizamente-para-programador` y sus capturas. Estos ajustes de interfaz no cambian el esquema ni requieren SQL adicional si ya ejecutaste los tres archivos de esta versión. Detalle en [Referencias de diseño](suizamente-design-references.md).
 
 ## Acciones manuales necesarias
 
-En **Supabase → SQL Editor → New query**, ejecuta los archivos completos, en este orden:
+En **Supabase → SQL Editor → New query**, ejecuta completos estos cuatro archivos,
+uno por uno y en este orden:
 
-1. [`supabase/suizamente.sql`](../supabase/suizamente.sql): API, permisos, validación de formatos y compatibilidad con partidas anteriores.
-2. [`supabase/suizamente_game.sql`](../supabase/suizamente_game.sql): etapas, mochila, racha, tests de cima y corrección en el servidor.
-3. [`supabase/suizamente_seed.sql`](../supabase/suizamente_seed.sql): banco ampliado a **276 preguntas**.
+1. [suizamente_revision_completa_01.sql](../supabase/suizamente_revision_completa_01.sql).
+2. [suizamente_revision_completa_02.sql](../supabase/suizamente_revision_completa_02.sql).
+3. [suizamente_revision_completa_03.sql](../supabase/suizamente_revision_completa_03.sql).
+4. [suizamente_revision_completa_04.sql](../supabase/suizamente_revision_completa_04.sql).
 
-Ejecuta los tres también si ya tenías la versión anterior. Son transaccionales y se pueden repetir: conservan cuentas, XP, niveles, partidas y ediciones del banco. La carga solo añade identificadores nuevos. No ejecutes `schema.sql`, no restablezcas tablas y no borres progreso.
+Incluyen API, modo juego, RLS y **1.619 preguntas publicadas**, más 26 retiradas.
+Cada archivo es transaccional y repetible; conserva cuentas, XP, niveles, partidas y ediciones
+propias del banco. Se aplica también sobre instalaciones anteriores sin repetir
+los SQL históricos. [Detalle y registro editorial](SUIZAMENTE_REVISION_COMPLETA.md).
 
 **Los scripts activan RLS**. No hay que activar un interruptor adicional ni crear políticas públicas. `suizamente_private` debe permanecer fuera de los esquemas expuestos de la API. No hacen falta claves nuevas, Edge Functions, tareas cron, buckets ni Realtime: se usa la conexión de Supabase existente.
 
-Después, recarga Latido. Si conservas una instalación PWA abierta, ciérrala y vuelve a abrirla para cargar la versión nueva.
+Después de ejecutar la cuarta parte, recarga Latido. Si conservas una instalación PWA abierta, ciérrala y vuelve a abrirla para cargar la versión nueva.
 
 Comprobación opcional en SQL Editor:
 
 ```sql
 select count(*) as preguntas from suizamente_private.questions;
--- Primera instalación: 276; puede haber más si has creado preguntas propias.
+-- Revisión 14: 1.645 identificadores, incluidos los 26 retirados.
+-- Puede haber más si has creado preguntas propias.
 
 select public.suizamente('summary', '{}'::jsonb)->>'game_version';
 -- 4. Sin sesión de jugador no devuelve respuestas ni crea un jugador.
@@ -84,6 +92,8 @@ Debe mantener también el acceso administrativo habitual de Latido. La escuela d
 Cobertura y fuentes: [revisión del banco](suizamente-content-sources.md). Los 26 cantones cuentan con el banco inicial y la ampliación de 50 entradas por cantón; la variedad concreta depende de tema y dificultad. Las futuras cumbres, senderos cantonales e invierno se presentan como ideas aún no disponibles.
 
 ## Arrancar y probar
+
+La corrección de todos los verdaderos/falsos del 18 de noviembre funciona al recargar la app, incluso con el servidor anterior; no requiere SQL. La actualización `supabase/suizamente_actualizacion_experiencia_12.sql` sigue disponible para la presentación del servidor y las soluciones estructuradas de parejas. No repetir semillas ni activar RLS de nuevo. Detalles y compatibilidad en [SUIZAMENTE_EXPERIENCIA.md](SUIZAMENTE_EXPERIENCIA.md).
 
 ```bash
 npm run dev

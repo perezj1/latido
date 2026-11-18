@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile,writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
+import {isStatement} from '../src/lib/suizamenteQuestionText.js'
 
 const source=new URL('../supabase/seed-data/suizamente-questions.json',import.meta.url)
 const questions=JSON.parse(await readFile(source,'utf8'))
@@ -9,6 +10,7 @@ for(const q of questions){
   assert.match(q.id,/^[a-z0-9][a-z0-9_-]{2,100}$/)
   assert.ok(!ids.has(q.id),`Duplicate ID ${q.id}`);ids.add(q.id)
   assert.ok(categories.includes(q.category),q.id)
+  if(q.game_type==='tf')assert.ok(isStatement(q.prompt),`${q.id}: true/false needs a statement`)
   assert.ok(Number.isInteger(q.difficulty)&&q.difficulty>=1&&q.difficulty<=5,q.id)
   assert.ok(q.game_type==='tf'?q.options.length===2:q.game_type==='multi'?q.options.length>=2&&q.options.length<=5:q.options.length===4,q.id)
   assert.equal(new Set(q.options.map(o=>o.trim().toLowerCase())).size,q.options.length,q.id)

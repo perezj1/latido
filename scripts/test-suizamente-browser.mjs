@@ -14,7 +14,8 @@ await mkdir(output,{recursive:true})
 const server=spawn(process.execPath,['scripts/lib/suizamente-browser-server.mjs',String(port)],{
   env:{...process.env,VITE_SUPABASE_URL:`${origin}/suizamente-test-api`,VITE_SUPABASE_ANON_KEY:'test-key',VITE_ADMIN_EMAILS:'admin@latido.test'},stdio:'pipe',windowsHide:true,
 })
-let logs='',db,browser,failNextAnswer=false
+let logs='',db,browser,failNextAnswer=false,legacyPairFeedback=false,legacyTrueFalse=false
+const legacyStatements=JSON.parse(await readFile('supabase/seed-data/suizamente-presentation.json','utf8')).entries
 server.stdout.on('data',d=>{logs+=d});server.stderr.on('data',d=>{logs+=d})
 const errors=[]
 try {
@@ -39,7 +40,15 @@ try {
         if(url.pathname.endsWith('/rpc/suizamente')){
           const body=req.postDataJSON()
           if(failNextAnswer&&body.p_action==='answer'){failNextAnswer=false;return send({message:'Temporary test connection failure',code:'TEST_NETWORK'},503)}
-          try{return send(await szRpc(db,actor,body.p_action,body.p_args))}catch(e){return send({message:e.message,code:e.code||'P0001'},400)}
+          try{
+            const result=await szRpc(db,actor,body.p_action,body.p_args)
+            if(legacyPairFeedback&&result.answer)delete result.answer.correct_pairs
+            if(legacyTrueFalse&&result.question?.type==='tf'){
+              const old=legacyStatements.find(entry=>entry.id===result.question.id)
+              if(old)result.question={...result.question,id:'remote-legacy-tf',prompt:old.original_prompt}
+            }
+            return send(result)
+          }catch(e){return send({message:e.message,code:e.code||'P0001'},400)}
         }
         if(url.pathname.endsWith('/rpc/get_my_account_access'))return send({role:cooperator?'cooperator':'owner',account_id:cooperator?SZ_ALICE:actor,name:'Titular delegado',can_delete:!cooperator})
         if(url.pathname.endsWith('/rpc/admin_dashboard_summary_v1'))return send({users:{},businesses:{},content:{},reports:{},moderation:{},creators:{},period:{days:7}})
@@ -66,7 +75,13 @@ try {
     const id=new URL(page.url()).pathname.split('/').pop(),s=await szRpc(db,actor,'session',{id})
     if(!s.answer){
       const row=(await db.query('SELECT option_orders FROM suizamente_private.sessions WHERE id=$1',[id])).rows[0],q=(await db.query('SELECT payload FROM suizamente_private.versions WHERE id=$1',[s.question.version_id])).rows[0].payload,order=row.option_orders[s.question.version_id]
-      if(q.game_type==='match'){
+      if(q.game_type==='order'){
+        for(const i of q.correct_order)await page.locator('.sg-order-bank').getByRole('button',{name:q.options[i],exact:true}).click()
+        await page.getByRole('button',{name:'Comprobar',exact:true}).click()
+      }else if(q.game_type==='short'){
+        await page.getByRole('textbox',{name:'Tu respuesta',exact:true}).fill(q.accepted_answers[0])
+        await page.getByRole('button',{name:'Comprobar',exact:true}).click()
+      }else if(q.game_type==='match'){
         for(let i=0;i<4;i++){await page.locator('.sg-pair-column').first().getByRole('button').nth(i).click();await page.locator('.sg-pair-column').last().getByRole('button').nth(order.indexOf(i)).click();await expect(page.locator('.sg-pair-column').first().getByRole('button').nth(i)).toBeDisabled()}
       }else if(q.game_type==='multi'){
         for(const i of q.correct_indices)await page.getByRole('checkbox').nth(order.indexOf(i)).click()
@@ -96,9 +111,44 @@ try {
     }
     await page.locator('.sg-map').waitFor()
   }
+  if(process.argv.includes('--trivia-only')||process.argv.includes('--review-only')){
+    const {loadContentPack,publicationSql}=await import('./lib/suizamente-content-pack.mjs')
+    const {finishGame}=await import('./test-suizamente-game.mjs')
+    const pack=await loadContentPack()
+    if(process.argv.includes('--review-only'))await db.exec(await readFile('supabase/suizamente_revision_completa.sql','utf8'))
+    else{
+      await db.exec(publicationSql(pack.questions,pack.legacy))
+      await db.exec(await readFile('supabase/suizamente_actualizacion_trivial_13.sql','utf8'))
+      await db.exec(await readFile('supabase/suizamente_trivia_preguntas_13.sql','utf8'))
+    }
+    await finishGame(db,SZ_ALICE,await szRpc(db,SZ_ALICE,'game_start'))
+    let session=await szRpc(db,SZ_ALICE,'game_start',{node:0})
+    assert.equal(session.question.type,'image')
+    if(process.argv.includes('--review-only')){
+      const code=(await db.query("SELECT v.id FROM suizamente_private.questions q JOIN suizamente_private.versions v ON v.question_id=q.id AND v.version=q.current_version WHERE q.id='szr-canton-code-zh'")).rows[0]
+      await db.query("UPDATE suizamente_private.sessions SET version_ids[1]=$2::bigint,option_orders=option_orders||jsonb_build_object($2::text,'[2,0,3,1]'::jsonb) WHERE id=$1",[session.id,code.id])
+      session=await szRpc(db,SZ_ALICE,'session',{id:session.id})
+    }
+    const player=await contextFor(SZ_ALICE),page=player.page
+    await visit(page,'/suizamente')
+    await expect(page.getByRole('heading',{name:'Rigi: Suiza te sorprende'})).toBeVisible()
+    await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-trivia-trail.png`})
+    await visit(page,`/suizamente/partida/${session.id}`)
+    await expect(page.locator('.sg-question-heading')).toBeVisible()
+    await expect(page.locator('.sg-topic-label')).not.toHaveText(/Trámites|Trabajo|Salud y seguros/)
+    for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});await fits(page,`real trivia ${width}`)}
+    await page.setViewportSize({width:390,height:844})
+    await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-trivia-real-image.png`})
+    if(process.argv.includes('--review-only'))await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-review-code-card.png`})
+    await finishCurrent(page,SZ_ALICE)
+    await expect(page.locator('.sg-result-heading')).toBeVisible()
+    await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-trivia-real-result.png`})
+    await player.close()
+    console.log('Browser: real cultural selector, image first, short headings, six-question round, feedback and result passed.')
+  }else{
   if(!process.argv.includes('--admin-only')&&!process.argv.includes('--formats-only')){
   const guest=await contextFor(null),g=guest.page
-  await visit(g,'/suizamente');await expect(g.getByRole('heading',{name:'Uetliberg: Conceptos esenciales'})).toBeVisible()
+  await visit(g,'/suizamente');await expect(g.getByRole('heading',{name:'Uetliberg: Empieza a descubrir'})).toBeVisible()
   await expect(g.getByRole('navigation',{name:'Navegación de Suizamente'}).getByRole('link')).toHaveCount(4)
   await expect(g.getByRole('navigation',{name:'Navegación principal'})).toHaveCount(0)
   for(const width of [320,390,1280]){
@@ -135,10 +185,9 @@ try {
   assert.equal(await g.locator('.sg-question-heading').evaluate(el=>getComputedStyle(el).textAlign),'center')
   await expect(g.locator('.sg-question-bubble')).toHaveCount(0)
   await expect(g.locator('.sg-question-context>.sz-mark')).toBeVisible()
-  await g.locator('.sg-options .sg-word').filter({hasText:'Gemeinde'}).click()
-  await expect(g.getByRole('dialog',{name:'Gemeinde',exact:true})).toBeVisible()
-  await g.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-glossary.png`})
-  await g.getByRole('button',{name:'Entendido',exact:true}).click();await expect(g.locator('.sg-feedback')).toHaveCount(0)
+  await expect(g.locator('.sg-question-heading')).toHaveText('¿Dónde está el Rigi?')
+  await expect(g.locator('.sg-topic-label')).toContainText('Lugares')
+  await g.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-trivia-rigi.png`})
   await g.keyboard.press('2');await expect(g.getByRole('heading',{name:'Incorrecto',exact:true})).toBeVisible()
   await g.reload();await expect(g.locator('.sg-game-footer.wrong')).toBeVisible()
   await g.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-question-feedback.png`})
@@ -212,11 +261,11 @@ try {
   const invalidArt=await g.evaluate(art=>art.filter(([key,svg])=>{const doc=new DOMParser().parseFromString(svg,'image/svg+xml');return doc.querySelector('parsererror')||!doc.documentElement.getAttribute('aria-label')||doc.querySelector('script,foreignObject')}),Object.entries(IMG).map(([key,render])=>[key,render(`test-${key}`)]))
   assert.deepEqual(invalidArt,[],'All question illustrations must be valid, described SVG without scripts')
   await guest.close()
-  console.log('Browser: supplied trail layout at 320/390/1280, all six question types, immediate answers, glossary and guest persistence passed.')
+  console.log('Browser: supplied trail layout at 320/390/1280, all six question types, immediate answers and guest persistence passed.')
 
   const alice=await contextFor(SZ_ALICE),page=alice.page
   await visit(page,'/suizamente')
-  await expect(page.getByRole('heading',{name:'Rigi: Situaciones sencillas'})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Rigi: Suiza te sorprende'})).toBeVisible()
   await page.getByRole('button',{name:/Preguntas: Suiza general y Zürich/}).click()
   const sources=page.getByRole('dialog',{name:'¿De dónde quieres preguntas?',exact:true}),general=sources.getByRole('switch',{name:'Preguntas de Suiza general',exact:true}),local=sources.getByRole('switch',{name:'Preguntas de un cantón',exact:true})
   await expect(general).toHaveAttribute('aria-checked','true');await expect(local).toHaveAttribute('aria-checked','true')
@@ -232,7 +281,7 @@ try {
   await page.waitForFunction(()=>!window.history.state?.__latidoOverlay)
   await expect(page.getByRole('button',{name:/Preguntas: Suiza general y Zürich/})).toBeVisible()
   await page.getByRole('button',{name:/Llegada a Rigi, tu siguiente/}).click();await page.getByRole('button',{name:'Empezar',exact:true}).click();await finishCurrent(page,SZ_ALICE);await backToMap(page)
-  await page.getByRole('button',{name:/Etapa 1: Trámites básicos, tu siguiente/}).click();await page.getByRole('button',{name:'Empezar',exact:true}).click()
+  await page.getByRole('button',{name:/Etapa 1: Por los cantones, tu siguiente/}).click();await page.getByRole('button',{name:'Empezar',exact:true}).click()
   failNextAnswer=true
   await page.getByRole('button',{name:'No lo sé',exact:true}).click();await expect(page.getByRole('alert')).toContainText('No se ha podido completar')
   await page.getByRole('button',{name:'Recuperar mi partida',exact:true}).click();await page.locator('.sg-question-heading').waitFor()
@@ -240,7 +289,7 @@ try {
   const sid=new URL(page.url()).pathname.split('/').pop()
   await page.getByRole('button',{name:'Salir de la partida',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible()
   await page.keyboard.press('Tab');assert.ok(await page.getByRole('dialog').evaluate(el=>el.contains(document.activeElement)))
-  await page.getByRole('button',{name:'Salir y continuar después',exact:true}).click();await page.getByRole('button',{name:/Etapa 1: Trámites básicos, tu siguiente/}).click();await page.getByRole('button',{name:'Continuar mi etapa',exact:true}).click()
+  await page.getByRole('button',{name:'Salir y continuar después',exact:true}).click();await page.getByRole('button',{name:/Etapa 1: Por los cantones, tu siguiente/}).click();await page.getByRole('button',{name:'Continuar mi etapa',exact:true}).click()
   await expect(page).toHaveURL(new RegExp(`/suizamente/partida/${sid}$`));await expect(page.locator('.sg-game-footer.skipped')).toBeVisible()
   await finishCurrent(page,SZ_ALICE);await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-stage-result.png`});await backToMap(page)
   await page.getByRole('link',{name:'Progreso',exact:true}).click();await expect(page.getByRole('heading',{name:'Tu Suizómetro'})).toBeVisible();await expect(page.getByText('7 / 51',{exact:true})).toBeVisible()
@@ -259,7 +308,7 @@ try {
   await expect(page.getByRole('region',{name:'Suizamente',exact:true})).toBeVisible({timeout:20000});await expect(page.getByRole('navigation',{name:'Navegación de Suizamente'})).toHaveCount(0)
   await expect(page.locator('.bottom-nav')).toHaveCount(1)
   await page.getByRole('button',{name:'Jugar la etapa de hoy',exact:true}).count().then(async n=>{if(!n)await expect(page.getByRole('button',{name:'Seguir subiendo',exact:true})).toBeVisible()})
-  await page.getByRole('link',{name:'Ver mi camino →',exact:true}).click();await page.getByRole('button',{name:'Matterhorn, aún bloqueada',exact:true}).click();await expect(page.getByRole('heading',{name:'Matterhorn: Combinar conocimientos'})).toBeVisible()
+  await page.getByRole('link',{name:'Ver mi camino →',exact:true}).click();await page.getByRole('button',{name:'Matterhorn, aún bloqueada',exact:true}).click();await expect(page.getByRole('heading',{name:'Matterhorn: El gran trivial suizo'})).toBeVisible()
   await fits(page,'locked mountain preview');await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-matterhorn.png`})
   await alice.close()
   const bob=await contextFor(SZ_BOB,{cooperator:true});await visit(bob.page,'/suizamente');await bob.page.getByRole('button',{name:/Preguntas: Suiza general y Bern/}).click();await expect(bob.page.getByRole('combobox',{name:'Cantón',exact:true})).toHaveValue('BE');await bob.page.keyboard.press('Escape')
@@ -290,7 +339,7 @@ try {
   await expect(bob.page.locator('.sg-new-mountain')).toContainText('10 etapas')
   await bob.page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-summit-passed.png`})
   await bob.page.locator('.sg-result-actions').getByRole('button',{name:'Ver el sendero de Pilatus',exact:true}).click()
-  await expect(bob.page.getByRole('heading',{name:'Pilatus: Comparar opciones',exact:true})).toBeVisible()
+  await expect(bob.page.getByRole('heading',{name:'Pilatus: Afina la mirada',exact:true})).toBeVisible()
   await bob.close()
   }
   if(!process.argv.includes('--admin-only')){
@@ -375,8 +424,82 @@ try {
     }
     console.log('Browser: order/short editor fields, solution previews and save validation passed.')
   }
+  await editorPage.getByPlaceholder('Buscar pregunta o identificador').fill('game-tf-2-4')
+  await editorPage.getByRole('button',{name:/^Editar:/}).click()
+  const statementDialog=editorPage.getByRole('dialog')
+  await expect(statementDialog.getByRole('textbox',{name:'Afirmación',exact:true})).toHaveValue('Liechtenstein comparte frontera con Suiza.')
+  await statementDialog.getByRole('textbox',{name:'Afirmación',exact:true}).fill('¿Suiza tiene 26 cantones?')
+  await statementDialog.getByRole('button',{name:'Guardar pregunta',exact:true}).click()
+  await expect(statementDialog.getByText('Escribe una afirmación para verdadero o falso, sin pregunta ni respuesta propuesta.',{exact:true})).toBeVisible()
+  await editorPage.keyboard.press('Escape');await expect(statementDialog).toHaveCount(0)
   await admin.close()
+  // The two reported cases: direct true/false wording and long housing pairs.
+  const editorial=JSON.parse(await readFile('supabase/seed-data/suizamente-expansion/questions.json','utf8'))
+  const housing=editorial.find(q=>q.game_type==='match'&&q.options.includes('Arrendador'))
+  await db.query('SELECT suizamente_private.write_question($1::jsonb)',[JSON.stringify({...housing,status:'published'})])
+  const pinned=await szRpc(db,SZ_ADMIN,'game_start')
+  const versions=(await db.query('SELECT id,question_id FROM suizamente_private.versions WHERE question_id=ANY($1::text[]) ORDER BY id',[['game-tf-2-4',housing.id,'game-tf-3-4']])).rows
+  const tfVersion=versions.find(v=>v.question_id==='game-tf-2-4').id,pairVersion=versions.find(v=>v.question_id===housing.id).id,lastVersion=versions.find(v=>v.question_id==='game-tf-3-4').id,pairOrder=[2,0,3,1]
+  await db.query(`UPDATE suizamente_private.sessions SET version_ids=$2::bigint[],position=0,status='active',completed_at=NULL,option_orders=$3::jsonb,rules=rules||'{"node":-2,"practice":true,"gift":null,"gift_at":-1}'::jsonb WHERE id=$1`,[pinned.id,[tfVersion,pairVersion,lastVersion],JSON.stringify({[tfVersion]:[1,0],[pairVersion]:pairOrder,[lastVersion]:[1,0]})])
+  const experience=await contextFor(SZ_ADMIN),xp=experience.page
+  legacyTrueFalse=true
+  await visit(xp,`/suizamente/partida/${pinned.id}`)
+  await expect(xp.locator('.sg-question-heading')).toHaveText('Liechtenstein comparte frontera con Suiza.')
+  await expect(xp.locator('.sg-topic-label')).toContainText('Suiza y cultura')
+  await expect(xp.getByText('Respuesta propuesta',{exact:false})).toHaveCount(0)
+  await xp.reload()
+  await expect(xp.locator('.sg-question-heading')).toHaveText('Liechtenstein comparte frontera con Suiza.')
+  await xp.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-legacy-true-false-statement.png`})
+  await xp.getByRole('radio',{name:'Verdadero',exact:true}).click()
+  await expect(xp.getByRole('heading',{name:'¡Correcto!',exact:true})).toBeVisible()
+  await xp.getByRole('button',{name:'Continuar',exact:true}).click()
+  await expect(xp.locator('.sg-pair-grid')).toBeVisible()
+  for(const width of [320,390,1280]){
+    await xp.setViewportSize({width,height:640})
+    await xp.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))
+    const rows=await xp.locator('.sg-pair-column').evaluateAll(columns=>Array.from({length:4},(_,i)=>columns.map(col=>{const r=col.children[i].getBoundingClientRect();return {top:r.top,bottom:r.bottom}})))
+    assert.ok(rows.every(([left,right])=>Math.abs(left.top-right.top)<1&&Math.abs(left.bottom-right.bottom)<1),'Long pairs remain aligned in both columns')
+    await fits(xp,`trivia housing ${width}`)
+  }
+  for(const right of [0,2]){
+    await xp.locator('.sg-pair-column').first().getByRole('button').first().click()
+    await xp.locator('.sg-pair-column').last().getByRole('button').nth(right).click()
+    await expect(xp.getByText('No encajan. Prueba otra pareja.',{exact:true})).toBeVisible()
+    await expect(xp.locator('.sg-pair-grid .sg-option.wrong')).toHaveCount(0)
+  }
+  for(let i=0;i<4;i++){
+    await xp.locator('.sg-pair-column').first().getByRole('button').nth(i).click()
+    await xp.locator('.sg-pair-column').last().getByRole('button').nth(pairOrder.indexOf(i)).click()
+    await expect(xp.locator('.sg-pair-column').first().getByRole('button').nth(i)).toBeDisabled()
+  }
+  await expect(xp.getByRole('heading',{name:'Vamos a repasarlas',exact:true})).toBeVisible()
+  await expect(xp.locator('.sg-pair-recap')).toContainText('2 fallos')
+  await expect(xp.locator('.sg-pair-focus .sg-answer-pairs>div')).toHaveCount(1)
+  await expect(xp.locator('.sg-pair-focus dt')).toHaveText('Arrendador')
+  for(let i=0;i<4;i++)await expect(xp.locator('.sg-pair-column').last().getByRole('button').nth(i)).toHaveText(housing.pairs[i])
+  await xp.locator('.sg-pair-solution summary').click()
+  await expect(xp.locator('.sg-pair-solution .sg-answer-pairs>div')).toHaveCount(4)
+  for(let i=0;i<4;i++){
+    await expect(xp.locator('.sg-pair-solution .sg-answer-pairs dt').nth(i)).toHaveText(housing.options[i])
+    await expect(xp.locator('.sg-pair-solution .sg-answer-pairs dd').nth(i)).toContainText(housing.pairs[i])
+  }
+  for(const width of [320,390,1280]){
+    await xp.setViewportSize({width,height:640})
+    const action=xp.locator('.sg-game-footer').getByRole('button',{name:'Entendido',exact:true}),box=await action.boundingBox()
+    assert.ok(box.y>=0&&box.y+box.height<=640,'Continue action stays visible with expanded pair corrections')
+    await fits(xp,`pair correction ${width}`)
+  }
+  await xp.setViewportSize({width:390,height:844})
+  await xp.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-pair-correction-cards.png`})
+  legacyPairFeedback=true
+  await xp.reload();await xp.locator('.sg-pair-solution summary').click()
+  await expect(xp.locator('.sg-pair-solution .sg-answer-pairs>div')).toHaveCount(4)
+  legacyPairFeedback=false
+  legacyTrueFalse=false
+  await experience.close()
+  console.log('Browser: raw legacy true/false payloads and resumed sessions render direct statements without SQL; editor rejects interrogative prompts. Pairing corrections and continue action passed.')
   console.log('Browser: mixed-question editor, multiple-correct preview and immutable editorial versioning passed.')
+  }
   assert.deepEqual(errors,[],'No uncaught browser errors')
   console.log(`Suizamente arcade: ${useWebkit?'WebKit':'Chromium'} browser checks passed.`)
 }catch(error){

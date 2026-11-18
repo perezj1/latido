@@ -2,14 +2,15 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { useAuth } from '../hooks/useAuth'
 import {CANTONS} from './constants'
+import {sessionQuestionText} from './suizamenteQuestionText'
 
 export const SZ_EVENT = 'latido:suizamente-updated'
 export const SZ_LEVELS = [
-  { id:1, name:'Uetliberg', color:'#10b981', soft:'#d1fae5', ink:'#047857', description:'Conceptos esenciales' },
-  { id:2, name:'Rigi', color:'#06b6d4', soft:'#cffafe', ink:'#0e7490', description:'Aplicar en situaciones sencillas' },
-  { id:3, name:'Pilatus', color:'#2563eb', soft:'#dbeafe', ink:'#1d4ed8', description:'Comprender y comparar opciones' },
-  { id:4, name:'Eiger', color:'#f59e0b', soft:'#fef3c7', ink:'#b45309', description:'Resolver casos con varias condiciones' },
-  { id:5, name:'Matterhorn', color:'#ef4444', soft:'#fee2e2', ink:'#b91c1c', description:'Combinar lo que has aprendido' },
+  { id:1, name:'Uetliberg', color:'#10b981', soft:'#d1fae5', ink:'#047857', description:'Empieza a descubrir' },
+  { id:2, name:'Rigi', color:'#06b6d4', soft:'#cffafe', ink:'#0e7490', description:'Suiza te sorprende' },
+  { id:3, name:'Pilatus', color:'#2563eb', soft:'#dbeafe', ink:'#1d4ed8', description:'Afina la mirada' },
+  { id:4, name:'Eiger', color:'#f59e0b', soft:'#fef3c7', ink:'#b45309', description:'Todo un descubrimiento' },
+  { id:5, name:'Matterhorn', color:'#ef4444', soft:'#fee2e2', ink:'#b91c1c', description:'El gran trivial suizo' },
 ]
 export const SZ_CATEGORIES = [
   { id:'administracion', name:'Trámites y autoridades', short:'trámites', emoji:'🏛️' },
@@ -63,7 +64,7 @@ export async function suizamenteCall(action,args={}) {
     failure.code=code; failure.notConfigured=missing
     throw failure
   }
-  return data
+  return sessionQuestionText(data)
 }
 export function invalidateSuizamente() {
   cacheGeneration++

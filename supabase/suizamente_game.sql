@@ -24,15 +24,16 @@ ALTER TABLE suizamente_private.trail_nodes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE suizamente_private.trail_days ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON suizamente_private.trail_nodes,suizamente_private.trail_days FROM PUBLIC,anon,authenticated;
 
+CREATE TABLE IF NOT EXISTS suizamente_private.trivia_catalog(
+  question_id text PRIMARY KEY, topic text NOT NULL CHECK(topic IN ('lugares','simbolos','sabores','tradiciones','naturaleza','curiosidades')),
+  national boolean NOT NULL DEFAULT false, original_prompt text NOT NULL, prompt text NOT NULL
+);
+ALTER TABLE suizamente_private.trivia_catalog ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON suizamente_private.trivia_catalog FROM PUBLIC,anon,authenticated;
+
 CREATE OR REPLACE FUNCTION suizamente_private.mountain(lv integer) RETURNS jsonb
 LANGUAGE sql IMMUTABLE SET search_path='' AS $$
- SELECT ('[
- {"name":"Uetliberg","q":5,"test":10,"pass":8,"stages":[["Primeros pasos","👋","administracion"],["Emergencias","🩺","salud"],["Transporte","🚆","sociedad"],["Reto con premio","🎁","freeze"],["Repaso","🔁","review"],["Salud básica","💊","salud"]]},
- {"name":"Rigi","q":6,"test":12,"pass":9,"stages":[["Trámites básicos","🏛️","administracion"],["Vivienda","🏠","vivienda"],["Vivienda y trabajo","💼","trabajo"],["Reto con premio","🎁","life"],["Transporte y ciudad","🚆","sociedad"],["Salud","🩺","salud"],["Repaso","🔁","review"],["Reto con premio","🎁","freeze"]]},
- {"name":"Pilatus","q":7,"test":15,"pass":11,"stages":[["Seguros","🛡️","salud"],["Impuestos","🧾","trabajo"],["Reto con premio","🎁","x2"],["Escuela","🎒","sociedad"],["Trabajo","💼","trabajo"],["Repaso","🔁","review"],["Votaciones","🗳️","administracion"],["Reto con premio","🎁","life"],["Medio ambiente","♻️","sociedad"],["Repaso","🔁","review"]]},
- {"name":"Eiger","q":8,"test":18,"pass":14,"stages":[["Permisos","🪪","administracion"],["Pensiones","🏦","trabajo"],["Reto con premio","🎁","x2"],["Alquiler","🏠","vivienda"],["Sanidad","🏥","salud"],["Repaso","🔁","review"],["Familia","👪","sociedad"],["Reto con premio","🎁","life"],["Política cantonal","🏛️","administracion"],["Fiscalidad","🧮","trabajo"],["Repaso","🔁","review"],["Reto con premio","🎁","freeze"]]},
- {"name":"Matterhorn","q":10,"test":20,"pass":16,"stages":[["Naturalización","📜","administracion"],["Derecho laboral","⚖️","trabajo"],["Reto con premio","🎁","x2"],["Fiscalidad","🧮","trabajo"],["Historia","🏰","sociedad"],["Repaso","🔁","review"],["Federalismo","🗺️","administracion"],["Democracia directa","🗳️","administracion"],["Reto con premio","🎁","life"],["Seguridad social","🛡️","salud"],["Medios y cultura","📰","sociedad"],["Repaso","🔁","review"],["Geografía","🧭","sociedad"],["Reto con premio","🎁","freeze"],["Gran repaso","🔁","review"]]}
- ]'::jsonb)->(lv-1)
+ SELECT ('[{"name":"Uetliberg","q":5,"test":10,"pass":8,"stages":[["Primera partida","🇨🇭","administracion"],["Sabores y sorpresas","🧀","salud"],["Postales suizas","🏞️","sociedad"],["Reto con premio","🎁","freeze"],["Otra oportunidad","🔁","review"],["Adivina Suiza","🔎","salud"]]},{"name":"Rigi","q":6,"test":12,"pass":9,"stages":[["Por los cantones","🇨🇭","administracion"],["A la mesa","🧀","vivienda"],["Lugares con historia","🏞️","trabajo"],["Reto con premio","🎁","life"],["De viaje","🧭","sociedad"],["¿Lo sabías?","🔎","salud"],["Otra oportunidad","🔁","review"],["Reto con premio","🎁","freeze"]]},{"name":"Pilatus","q":7,"test":15,"pass":11,"stages":[["Símbolos suizos","🇨🇭","salud"],["Sabores locales","🧀","trabajo"],["Reto con premio","🎁","x2"],["Fiestas y leyendas","🎉","sociedad"],["Suiza sorprende","🧭","trabajo"],["Otra oportunidad","🔁","review"],["De aquí y de allá","🇨🇭","administracion"],["Reto con premio","🎁","life"],["Naturaleza suiza","🏞️","sociedad"],["Otra oportunidad","🔁","review"]]},{"name":"Eiger","q":8,"test":18,"pass":14,"stages":[["Rincones secretos","🇨🇭","administracion"],["Costumbres curiosas","🧀","trabajo"],["Reto con premio","🎁","x2"],["Sabores por descubrir","🎉","vivienda"],["Postales difíciles","🧭","salud"],["Otra oportunidad","🔁","review"],["Historias de Suiza","🇨🇭","sociedad"],["Reto con premio","🎁","life"],["De cantón en cantón","🏞️","administracion"],["El detalle oculto","🎉","trabajo"],["Otra oportunidad","🔁","review"],["Reto con premio","🎁","freeze"]]},{"name":"Matterhorn","q":10,"test":20,"pass":16,"stages":[["La gran vuelta","🇨🇭","administracion"],["Curiosidades expertas","🧀","trabajo"],["Reto con premio","🎁","x2"],["Sabores expertos","🎉","trabajo"],["Historias y leyendas","🧭","sociedad"],["Otra oportunidad","🔁","review"],["Suiza al detalle","🇨🇭","administracion"],["¿Verdad o mito?","🧀","administracion"],["Reto con premio","🎁","life"],["Paisajes de altura","🎉","salud"],["Arte y cultura","🧭","sociedad"],["Otra oportunidad","🔁","review"],["El gran mapa","🇨🇭","sociedad"],["Reto con premio","🎁","freeze"],["La última ronda","🔁","review"]]}]'::jsonb)->(lv-1)
 $$;
 
 CREATE OR REPLACE FUNCTION suizamente_private.game_summary() RETURNS jsonb
@@ -66,7 +67,8 @@ DECLARE actor uuid:=suizamente_private.require_user(); pl suizamente_private.pla
   lv integer; node integer; cur integer:=-1; m jsonb; st jsonb; kind text; ids bigint[]:='{}'; chosen bigint; orders jsonb; sid uuid;
   day date:=(now() AT TIME ZONE 'Europe/Zurich')::date; total integer; target text; local_wanted integer; local_found integer; fallback boolean:=false;
   practice boolean:=false; gift text; gift_at integer:=-1; doubled boolean:=false; life boolean:=false; n integer; need_local boolean; attempt_level integer;
-  desired_kind text; previous_kind text;
+  desired_kind text; previous_kind text; previous_topic text;
+  has_trivia boolean:=EXISTS(SELECT 1 FROM suizamente_private.trivia_catalog); want_trivia boolean; general_versions bigint[]:='{}';
 BEGIN
   PERFORM suizamente_private.ensure_player(actor);
   SELECT * INTO pl FROM suizamente_private.players WHERE user_id=actor FOR UPDATE;
@@ -102,30 +104,40 @@ BEGIN
     need_local:=floor(n*local_wanted::numeric/total)>floor((n-1)*local_wanted::numeric/total);
     -- Rotate the starting format between stages. Typing stays exceptional; it is
     -- never required in arrivals, bonus challenges or summit tests.
-    desired_kind:=CASE WHEN kind='stage' AND node%5=4 AND n=total THEN 'short'
-      ELSE (ARRAY['choice','image','tf','match','multi','order','false'])[1+(n-1+greatest(node,0)+lv-1)%7] END;
+    want_trivia:=n%4<>0;
+    desired_kind:=CASE WHEN has_trivia AND n=1 THEN 'image' WHEN NOT has_trivia AND kind='stage' AND node%5=4 AND n=total THEN 'short'
+      ELSE (CASE WHEN has_trivia THEN ARRAY['image','choice','tf','match','multi','order','false'] ELSE ARRAY['choice','image','tf','match','multi','order','false'] END)[1+(n-1+greatest(node,0)+lv-1)%7] END;
+    IF has_trivia AND n>1 AND desired_kind='image' THEN desired_kind:='choice'; END IF;
     SELECT v.id INTO chosen FROM suizamente_private.questions q JOIN suizamente_private.versions v ON v.question_id=q.id AND v.version=q.current_version
+      LEFT JOIN suizamente_private.trivia_catalog tc ON tc.question_id=q.id AND tc.original_prompt=v.payload->>'prompt'
       LEFT JOIN suizamente_private.progress g ON g.user_id=actor AND g.question_id=q.id
       WHERE v.payload->>'status'='published' AND NOT v.annulled AND NOT v.id=ANY(ids)
         AND v.payload->>'category'<>'idioma'
         AND (coalesce(v.payload->>'game_type','choice')<>'short' OR desired_kind='short')
         AND (CASE WHEN kind='arrival' THEN v.payload->>'arrival_level'=lv::text ELSE NOT v.payload ? 'arrival_level' END)
-        AND (v.payload->>'scope'='CH' OR pl.include_canton AND v.payload->>'canton'=pl.canton)
-        AND (kind='arrival' OR (v.payload->>'difficulty')::integer<=lv AND (kind<>'summit' OR v.payload->>'scope'='CH'))
-        AND (kind='arrival' OR v.payload->>'scope'='CH' OR (v.payload->>'difficulty')::integer>=greatest(1,lv-1))
-      ORDER BY CASE WHEN (v.payload->>'scope'='canton')=need_local THEN 0 ELSE 1 END,
+        AND (v.payload->>'scope'='CH' OR pl.include_canton AND v.payload->>'canton'=pl.canton OR tc.national AND (pl.include_general OR kind='summit'))
+        AND (kind='arrival' OR (v.payload->>'difficulty')::integer<=lv AND (kind<>'summit' OR v.payload->>'scope'='CH' OR tc.national))
+        AND (kind='arrival' OR v.payload->>'scope'='CH' OR tc.question_id IS NOT NULL OR (v.payload->>'difficulty')::integer>=greatest(1,lv-1))
+      ORDER BY CASE WHEN need_local THEN CASE WHEN v.payload->>'scope'='canton' AND v.payload->>'canton'=pl.canton THEN 0 ELSE 1 END ELSE CASE WHEN v.payload->>'scope'='CH' OR tc.national THEN 0 ELSE 1 END END,
         CASE WHEN kind='trail_review' AND g.last_correct IS FALSE THEN 0 WHEN g.question_id IS NULL THEN 1 WHEN g.last_correct IS FALSE THEN 2 ELSE 3 END,
-        CASE WHEN target IS NOT NULL AND n%2=1 AND v.payload->>'category'=target THEN 0 ELSE 1 END,
-        abs((v.payload->>'difficulty')::integer-lv),
+        CASE WHEN has_trivia THEN CASE WHEN (tc.question_id IS NOT NULL)=want_trivia THEN 0 ELSE 1 END WHEN target IS NOT NULL AND n%2=1 AND v.payload->>'category'=target THEN 0 ELSE 1 END,
+        CASE WHEN NOT has_trivia THEN abs((v.payload->>'difficulty')::integer-lv) ELSE 0 END,
         CASE WHEN coalesce(v.payload->>'game_type','choice')=desired_kind THEN 0 WHEN coalesce(v.payload->>'game_type','choice') IS DISTINCT FROM previous_kind THEN 1 ELSE 2 END,
-        CASE WHEN target IS NOT NULL AND v.payload->>'category'=target THEN 0 ELSE 1 END,
+        CASE WHEN has_trivia AND tc.topic IS NOT DISTINCT FROM previous_topic THEN 1 ELSE 0 END,
+        abs((v.payload->>'difficulty')::integer-lv),
+        CASE WHEN NOT has_trivia AND target IS NOT NULL AND v.payload->>'category'=target THEN 0 ELSE 1 END,
         coalesce(g.seen_count,0),g.last_at NULLS FIRST,
         md5(q.id||actor::text||clock_timestamp()::text) LIMIT 1;
     IF chosen IS NULL THEN RAISE EXCEPTION 'SZ_NOT_ENOUGH_QUESTIONS'; END IF;
     ids:=array_append(ids,chosen);
+    SELECT tc.topic INTO previous_topic FROM suizamente_private.versions v JOIN suizamente_private.trivia_catalog tc ON tc.question_id=v.question_id WHERE v.id=chosen;
+    IF EXISTS(SELECT 1 FROM suizamente_private.versions v JOIN suizamente_private.trivia_catalog tc ON tc.question_id=v.question_id AND tc.original_prompt=v.payload->>'prompt'
+      WHERE v.id=chosen AND tc.national AND v.payload->>'scope'='canton' AND (NOT need_local OR v.payload->>'canton' IS DISTINCT FROM pl.canton)) THEN
+      general_versions:=array_append(general_versions,chosen);
+    END IF;
     SELECT coalesce(payload->>'game_type','choice') INTO previous_kind FROM suizamente_private.versions WHERE id=chosen;
   END LOOP;
-  SELECT count(*) INTO local_found FROM suizamente_private.versions WHERE id=ANY(ids) AND payload->>'scope'='canton';
+  SELECT count(*) INTO local_found FROM suizamente_private.versions WHERE id=ANY(ids) AND payload->>'scope'='canton' AND NOT id=ANY(general_versions);
   fallback:=local_found<local_wanted;
   SELECT jsonb_object_agg(v.id::text,(SELECT coalesce(jsonb_agg(i ORDER BY random()),'[]'::jsonb) FROM generate_series(0,jsonb_array_length(v.payload->'options')-1) i)) INTO orders FROM suizamente_private.versions v WHERE id=ANY(ids);
   IF kind='bonus' THEN gift:=st->>2;
@@ -138,11 +150,58 @@ BEGIN
   END IF;
   INSERT INTO suizamente_private.sessions(user_id,mode,day_key,week_key,level,canton,category,version_ids,option_orders,rules,fallback)
     VALUES(actor,kind,day,date_trunc('week',day)::date,lv,pl.canton,target,ids,orders,
-      jsonb_build_object('game_version',4,'node',node,'title',CASE WHEN node=-1 THEN 'Llegada a '||(m->>'name') WHEN node=jsonb_array_length(m->'stages') THEN 'Test de cima' ELSE st->>0 END,
+      jsonb_build_object('game_version',4,'general_versions',to_jsonb(general_versions),'node',node,'title',CASE WHEN node=-1 THEN 'Llegada a '||(m->>'name') WHEN node=jsonb_array_length(m->'stages') THEN 'Test de cima' ELSE st->>0 END,
         'practice',practice,'summit_practice',practice AND node=jsonb_array_length(m->'stages'),'gift',gift,'gift_at',gift_at,'x2',doubled,'life',life,'pass',greatest(0,(m->>'pass')::integer-CASE WHEN life THEN 1 ELSE 0 END),
         'include_general',pl.include_general,'include_canton',pl.include_canton,'xp_weights',cfg.xp_weights,'gifts','[]'::jsonb),fallback) RETURNING id INTO sid;
   RETURN suizamente_private.game_view(sid);
 END $$;
+
+-- Editorial wording only: never infer a true/false statement from arbitrary text.
+CREATE OR REPLACE FUNCTION suizamente_private.game_prompt(p jsonb) RETURNS text
+LANGUAGE sql STABLE SET search_path='' AS $$
+  SELECT coalesce((SELECT tc.prompt FROM suizamente_private.trivia_catalog tc WHERE tc.question_id=p->>'id' AND tc.original_prompt=p->>'prompt'),(SELECT e.statement FROM (VALUES
+    ('game-tf-2-0','¿Qué caracteriza a los cantones suizos?
+Respuesta propuesta: «Tienen instituciones y competencias propias». ¿Es correcta?','Los cantones suizos tienen instituciones y competencias propias.'),
+    ('game-tf-2-1','Antes de usar un sótano o plaza adicional, ¿qué conviene revisar?
+Respuesta propuesta: «Si otro vecino tiene un coche». ¿Es correcta?','Antes de usar un sótano o una plaza adicional, basta con comprobar si otro vecino tiene coche.'),
+    ('game-tf-2-2','¿Qué conjunto de datos debe quedar claro antes de empezar un trabajo?
+Respuesta propuesta: «Función, salario y jornada acordada». ¿Es correcta?','Antes de empezar un trabajo, deben quedar claras la función, el salario y la jornada acordada.'),
+    ('game-tf-2-3','¿Qué describe la franquicia del seguro de salud?
+Respuesta propuesta: «Una oficina de la aseguradora dentro del hospital». ¿Es correcta?','La franquicia es una oficina de la aseguradora dentro del hospital.'),
+    ('game-tf-2-4','¿Qué país comparte frontera con Suiza?
+Respuesta propuesta: «Liechtenstein». ¿Es correcta?','Liechtenstein comparte frontera con Suiza.'),
+    ('game-tf-3-0','¿Qué cámaras forman el Parlamento federal?
+Respuesta propuesta: «Consejo Nacional y Consejo de los Estados». ¿Es correcta?','El Parlamento federal está formado por el Consejo Nacional y el Consejo de los Estados.'),
+    ('game-tf-3-1','Varias personas figuran como inquilinas en el mismo contrato. ¿Qué deben entender sobre la renta?
+Respuesta propuesta: «Que solo paga quien llega primero». ¿Es correcta?','En un contrato de alquiler conjunto, solo paga quien llega primero.'),
+    ('game-tf-3-2','¿Qué idea describe correctamente un contrato de trabajo?
+Respuesta propuesta: «Establece obligaciones tanto para la empresa como para la persona empleada». ¿Es correcta?','Un contrato de trabajo establece obligaciones para la empresa y para la persona empleada.'),
+    ('game-tf-3-3','¿Qué ocurre generalmente con la prima al elegir una franquicia opcional más alta?
+Respuesta propuesta: «Desaparece todo gasto sanitario posible». ¿Es correcta?','Una franquicia más alta elimina cualquier gasto sanitario que puedas tener.'),
+    ('game-tf-3-4','¿Qué conviene saber sobre el alemán en la Suiza germanófona?
+Respuesta propuesta: «Se usan dialectos suizos en el habla cotidiana y alemán estándar en muchos textos». ¿Es correcta?','En la Suiza germanófona se hablan dialectos suizos y se usa alemán estándar en muchos textos.'),
+    ('game-tf-4-0','¿Quién elige a los miembros del Consejo Federal?
+Respuesta propuesta: «La Asamblea Federal reunida». ¿Es correcta?','La Asamblea Federal reunida elige a los miembros del Consejo Federal.'),
+    ('game-tf-4-1','¿Qué información conviene dejar claramente documentada en un subalquiler?
+Respuesta propuesta: «Solo el plazo: las demás condiciones se acuerdan después de ocupar la vivienda». ¿Es correcta?','En un subalquiler, basta con acordar el plazo: las demás condiciones se pueden dejar para después de entrar.'),
+    ('game-tf-4-2','¿Cómo se relacionan la jornada pactada y las normas de protección laboral?
+Respuesta propuesta: «La jornada pactada debe respetar los límites legales aplicables». ¿Es correcta?','La jornada pactada debe respetar los límites legales aplicables.'),
+    ('game-tf-4-3','Para una solicitud de seguro básico sujeta a la obligación de asegurarse, ¿qué distingue la admisión frente a un complementario?
+Respuesta propuesta: «Ambos pueden rechazar cualquier solicitud por una enfermedad previa en las mismas condiciones». ¿Es correcta?','El seguro básico obligatorio y el complementario pueden rechazar una solicitud por enfermedad previa en las mismas condiciones.'),
+    ('game-tf-4-4','Tu abono cubre muchos trayectos y quieres subir a una línea de montaña. ¿Qué debes comprobar?
+Respuesta propuesta: «Su inclusión o descuento en el mapa de validez del abono». ¿Es correcta?','Antes de usar tu abono en una línea de montaña, conviene comprobar su mapa de validez y los descuentos.'),
+    ('game-tf-5-0','Debes informarte sobre escuela local y sobre una norma federal. ¿Qué enfoque es correcto?
+Respuesta propuesta: «Identificar la autoridad competente para cada asunto». ¿Es correcta?','Para una duda escolar y una norma federal, conviene consultar la autoridad competente de cada asunto.'),
+    ('game-tf-5-1','Vais a compartir piso y todos firmaréis. ¿Qué combinación de comprobaciones es adecuada?
+Respuesta propuesta: «Repartir la renta entre compañeros y dar por hecho que cada uno responde solo de su parte». ¿Es correcta?','Si todos firmáis el contrato del piso, basta con repartir la renta para que cada uno responda solo de su parte.'),
+    ('game-tf-5-2','Dos ofertas tienen el mismo salario anunciado. ¿Qué comparación es más completa?
+Respuesta propuesta: «Jornada, vacaciones y condiciones contractuales junto con el salario». ¿Es correcta?','Para comparar dos empleos, conviene mirar también la jornada, las vacaciones y las condiciones del contrato.'),
+    ('game-tf-5-3','Una prima baja te atrae, pero apenas tienes ahorro para gastos imprevistos. ¿Qué debes comparar antes de elegir?
+Respuesta propuesta: «Solo la cuota mensual: una franquicia más alta reduce siempre cualquier coste total posible». ¿Es correcta?','Al elegir seguro, basta con comparar la prima: una franquicia más alta reduce siempre cualquier coste total.'),
+    ('game-tf-5-4','Un abono tiene cobertura en Suiza y planeas seguir hacia el extranjero. ¿Qué comprobación necesitas?
+Respuesta propuesta: «Dónde termina su validez y qué título cubre la continuación». ¿Es correcta?','Antes de seguir al extranjero con un abono suizo, conviene comprobar hasta dónde cubre y cómo continuar.')
+  ) AS e(id,original,statement) WHERE btrim(regexp_replace(e.original,'[[:space:]]+',' ','g'))=btrim(regexp_replace(p->>'prompt','[[:space:]]+',' ','g')) AND p->>'game_type'='tf'),p->>'prompt')
+$$;
 
 CREATE OR REPLACE FUNCTION suizamente_private.game_order_solution(p jsonb) RETURNS text
 LANGUAGE sql IMMUTABLE SET search_path='' AS $$
@@ -172,23 +231,28 @@ BEGIN
       'correct_option',correct_opts->0,'correct_options',correct_opts,'selected_options',(SELECT jsonb_agg(n.ordinality::integer-1) FROM jsonb_array_elements(s.option_orders->v.id::text) WITH ORDINALITY n WHERE kind='multi' AND a.response @> jsonb_build_array(n.value::text::integer)), 'correct_answer',CASE WHEN kind='match' THEN (SELECT string_agg(l.value||' → '||(v.payload->'pairs'->> (l.ordinality::integer-1)), '; ' ORDER BY l.ordinality) FROM jsonb_array_elements_text(v.payload->'options') WITH ORDINALITY l) WHEN kind='multi' THEN (SELECT string_agg(v.payload->'options'->> x::integer,'; ') FROM jsonb_array_elements_text(v.payload->'correct_indices') x) ELSE v.payload->'options'->>((v.payload->>'correct_index')::integer) END,
       'explanation',v.payload->>'explanation','source_url',v.payload->>'source_url','source_title',v.payload->>'source_title','guide_path',v.payload->>'guide_path');
   END IF;
+  -- Solutions are disclosed only after this question has an immutable answer.
+  IF a.session_id IS NOT NULL AND kind='match' THEN
+    feedback:=feedback||jsonb_build_object('correct_pairs',(SELECT jsonb_agg(jsonb_build_object('left',l.value,'right',v.payload->'pairs'->>(l.ordinality::integer-1)) ORDER BY l.ordinality) FROM jsonb_array_elements_text(v.payload->'options') WITH ORDINALITY l));
+  END IF;
   IF a.session_id IS NOT NULL AND kind IN ('order','short') THEN
     feedback:=feedback||jsonb_build_object('correct_answer',suizamente_private.game_order_solution(v.payload),'correct_option',NULL,'correct_options','[]'::jsonb);
   END IF;
   SELECT coalesce(jsonb_agg(ans.correct AND NOT av.annulled ORDER BY ans.position),'[]'::jsonb),coalesce(jsonb_agg(CASE WHEN av.annulled THEN 'annulled' WHEN ans.skipped THEN 'skipped' WHEN ans.correct THEN 'correct' ELSE 'wrong' END ORDER BY ans.position),'[]'::jsonb),count(*) FILTER(WHERE ans.correct AND NOT av.annulled),count(*) FILTER(WHERE av.annulled)
     INTO history,states,ncorrect,annulled FROM suizamente_private.answers ans JOIN suizamente_private.versions av ON av.id=ans.version_id WHERE ans.session_id=s.id;
   IF s.status='completed' THEN
-    SELECT coalesce(jsonb_agg(jsonb_build_object('position',ans.position,'prompt',av.payload->>'prompt','category',av.payload->>'category','correct',ans.correct AND NOT av.annulled,'skipped',ans.skipped,'annulled',av.annulled,'xp',ans.xp_received,
+    SELECT coalesce(jsonb_agg(jsonb_build_object('position',ans.position,'prompt',suizamente_private.game_prompt(av.payload),'category',av.payload->>'category','correct',ans.correct AND NOT av.annulled,'skipped',ans.skipped,'annulled',av.annulled,'xp',ans.xp_received,
       'chosen_answer',CASE WHEN ans.skipped THEN NULL WHEN av.payload->>'game_type'='short' THEN ans.response#>>'{}' WHEN av.payload->>'game_type'='order' THEN (SELECT string_agg(av.payload->'options'->>x.value::integer,' ' ORDER BY x.ordinality) FROM jsonb_array_elements_text(ans.response) WITH ORDINALITY x) WHEN av.payload->>'game_type'='match' THEN 'Parejas completadas · '||(ans.response->>'errors')||' errores' WHEN av.payload->>'game_type'='multi' THEN (SELECT string_agg(av.payload->'options'->>x::integer,'; ') FROM jsonb_array_elements_text(ans.response) x) ELSE av.payload->'options'->>((s.option_orders->av.id::text->>ans.choice)::integer) END,
       'correct_answer',CASE WHEN av.payload->>'game_type' IN ('order','short') THEN suizamente_private.game_order_solution(av.payload) WHEN av.payload->>'game_type'='multi' THEN (SELECT string_agg(av.payload->'options'->> x::integer,'; ') FROM jsonb_array_elements_text(av.payload->'correct_indices') x) WHEN av.payload->>'game_type'='match' THEN (SELECT string_agg(l.value||' → '||(av.payload->'pairs'->>(l.ordinality::integer-1)),'; ' ORDER BY l.ordinality) FROM jsonb_array_elements_text(av.payload->'options') WITH ORDINALITY l) ELSE av.payload->'options'->>((av.payload->>'correct_index')::integer) END,
+      'correct_pairs',CASE WHEN av.payload->>'game_type'='match' THEN (SELECT jsonb_agg(jsonb_build_object('left',l.value,'right',av.payload->'pairs'->>(l.ordinality::integer-1)) ORDER BY l.ordinality) FROM jsonb_array_elements_text(av.payload->'options') WITH ORDINALITY l) ELSE NULL END,
       'explanation',av.payload->>'explanation','source_url',av.payload->>'source_url','source_title',av.payload->>'source_title') ORDER BY ans.position),'[]'::jsonb) INTO reviews
       FROM suizamente_private.answers ans JOIN suizamente_private.versions av ON av.id=ans.version_id WHERE ans.session_id=s.id;
   END IF;
   RETURN jsonb_build_object('id',s.id,'mode',s.mode,'status',s.status,'game_version',4,'position',s.position,'total',cardinality(s.version_ids),'valid_total',cardinality(s.version_ids)-annulled_total,'level',s.level,'canton',s.canton,'category',s.category,'fallback',s.fallback,
     'xp_gained',s.xp_gained,'ascent_passed',s.ascent_passed,'history',history,'states',states,'review_answers',reviews,'correct_count',ncorrect,'annulled_count',annulled,
     'day',s.day_key,'week',s.week_key,'created_at',s.created_at,'completed_at',s.completed_at,
-    'trail',(s.rules-'xp_weights'-'pairs')||jsonb_build_object('pass',greatest(1,coalesce((s.rules->>'pass')::integer,1)-annulled_total)),'pair_state',coalesce(s.rules->'pairs'->s.position::text,'{"matched":[],"errors":0}'::jsonb)||jsonb_build_object('matched_right',coalesce((SELECT jsonb_agg(n.ordinality::integer-1) FROM jsonb_array_elements(s.option_orders->v.id::text) WITH ORDINALITY n WHERE coalesce(s.rules->'pairs'->s.position::text->'matched','[]') @> jsonb_build_array(n.value::text::integer)),'[]'::jsonb)),
-    'question',jsonb_build_object('version_id',v.id,'id',v.question_id,'type',kind,'image_key',v.payload->>'image_key','category',v.payload->>'category','difficulty',(v.payload->>'difficulty')::integer,'scope',v.payload->>'scope','canton',v.payload->>'canton','language',v.payload->>'language','prompt',v.payload->>'prompt','options',opts,'pairs',pairs,'max_length',coalesce((v.payload->>'max_length')::integer,80)),'answer',feedback);
+    'trail',(s.rules-'xp_weights'-'pairs'-'general_versions')||jsonb_build_object('pass',greatest(1,coalesce((s.rules->>'pass')::integer,1)-annulled_total)),'pair_state',coalesce(s.rules->'pairs'->s.position::text,'{"matched":[],"errors":0}'::jsonb)||jsonb_build_object('matched_right',coalesce((SELECT jsonb_agg(n.ordinality::integer-1) FROM jsonb_array_elements(s.option_orders->v.id::text) WITH ORDINALITY n WHERE coalesce(s.rules->'pairs'->s.position::text->'matched','[]') @> jsonb_build_array(n.value::text::integer)),'[]'::jsonb)),
+    'question',jsonb_build_object('version_id',v.id,'id',v.question_id,'type',kind,'image_key',v.payload->>'image_key','category',v.payload->>'category','difficulty',(v.payload->>'difficulty')::integer,'scope',CASE WHEN s.rules->'general_versions' @> jsonb_build_array(v.id) THEN 'CH' ELSE v.payload->>'scope' END,'canton',CASE WHEN s.rules->'general_versions' @> jsonb_build_array(v.id) THEN NULL ELSE v.payload->>'canton' END,'trivia_topic',(SELECT tc.topic FROM suizamente_private.trivia_catalog tc WHERE tc.question_id=v.question_id AND tc.original_prompt=v.payload->>'prompt'),'language',v.payload->>'language','prompt',suizamente_private.game_prompt(v.payload),'options',opts,'pairs',pairs,'max_length',coalesce((v.payload->>'max_length')::integer,80)),'answer',feedback);
 END $$;
 
 CREATE OR REPLACE FUNCTION suizamente_private.game_review(p jsonb) RETURNS jsonb

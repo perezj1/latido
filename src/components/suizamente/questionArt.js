@@ -8,7 +8,11 @@ import {GLARUS_ZUG_IMG,GLARUS_ZUG_ART_LABELS} from './glarusZugQuestionArt.js'
 import {SOLOTHURN_SCHAFFHAUSEN_IMG,SOLOTHURN_SCHAFFHAUSEN_ART_LABELS} from './solothurnSchaffhausenQuestionArt.js'
 import {AARGAU_THURGAU_IMG,AARGAU_THURGAU_ART_LABELS} from './aargauThurgauQuestionArt.js'
 import {NEUCHATEL_JURA_IMG,NEUCHATEL_JURA_ART_LABELS} from './neuchatelJuraQuestionArt.js'
+import {TRIVIA_IMG,TRIVIA_ART_LABELS} from './triviaQuestionArt.js'
+import {CANTON_CODE_IMG,CANTON_CODE_LABELS} from './cantonCodeArt.js'
   const IMG={
+    ...TRIVIA_IMG,
+    ...CANTON_CODE_IMG,
     ...REGIONAL_IMG,
     ...EASTERN_IMG,
     ...APPENZELL_IMG,
@@ -82,4 +86,6 @@ Object.assign(ART_LABELS,GLARUS_ZUG_ART_LABELS)
 Object.assign(ART_LABELS,SOLOTHURN_SCHAFFHAUSEN_ART_LABELS)
 Object.assign(ART_LABELS,AARGAU_THURGAU_ART_LABELS)
 Object.assign(ART_LABELS,NEUCHATEL_JURA_ART_LABELS)
+Object.assign(ART_LABELS,TRIVIA_ART_LABELS)
+Object.assign(ART_LABELS,CANTON_CODE_LABELS)
 export {IMG,ART_LABELS};

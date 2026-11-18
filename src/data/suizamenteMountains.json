@@ -4,7 +4,7 @@
     "top": "Uto Kulm",
     "alt": "870 m",
     "way": "w",
-    "sub": "Conceptos esenciales",
+    "sub": "Empieza a descubrir",
     "q": 5,
     "test": 10,
     "pass": 8,
@@ -19,16 +19,16 @@
     "lcd": "#0b8a60",
     "st": [
       [
-        "Primeros pasos",
-        "👋"
+        "Primera partida",
+        "🇨🇭"
       ],
       [
-        "Emergencias",
-        "🩺"
+        "Sabores y sorpresas",
+        "🧀"
       ],
       [
-        "Transporte",
-        "🚆"
+        "Postales suizas",
+        "🏞️"
       ],
       [
         "Reto con premio",
@@ -36,12 +36,12 @@
         "freeze"
       ],
       [
-        "Repaso",
+        "Otra oportunidad",
         "rep"
       ],
       [
-        "Salud básica",
-        "💊"
+        "Adivina Suiza",
+        "🔎"
       ]
     ]
   },
@@ -50,7 +50,7 @@
     "top": "Rigi Kulm",
     "alt": "1798 m",
     "way": "w",
-    "sub": "Situaciones sencillas",
+    "sub": "Suiza te sorprende",
     "q": 6,
     "test": 12,
     "pass": 9,
@@ -65,16 +65,16 @@
     "lcd": "#0b8ba3",
     "st": [
       [
-        "Trámites básicos",
-        "🏛️"
+        "Por los cantones",
+        "🇨🇭"
       ],
       [
-        "Vivienda",
-        "🏠"
+        "A la mesa",
+        "🧀"
       ],
       [
-        "Vivienda y trabajo",
-        "💼"
+        "Lugares con historia",
+        "🏞️"
       ],
       [
         "Reto con premio",
@@ -82,15 +82,15 @@
         "life"
       ],
       [
-        "Transporte y ciudad",
-        "🚆"
+        "De viaje",
+        "🧭"
       ],
       [
-        "Salud",
-        "🩺"
+        "¿Lo sabías?",
+        "🔎"
       ],
       [
-        "Repaso",
+        "Otra oportunidad",
         "rep"
       ],
       [
@@ -105,7 +105,7 @@
     "top": "Pilatus Kulm",
     "alt": "2128 m",
     "way": "b",
-    "sub": "Comparar opciones",
+    "sub": "Afina la mirada",
     "q": 7,
     "test": 15,
     "pass": 11,
@@ -120,12 +120,12 @@
     "lcd": "#1a49c2",
     "st": [
       [
-        "Seguros",
-        "🛡️"
+        "Símbolos suizos",
+        "🇨🇭"
       ],
       [
-        "Impuestos",
-        "🧾"
+        "Sabores locales",
+        "🧀"
       ],
       [
         "Reto con premio",
@@ -133,20 +133,20 @@
         "x2"
       ],
       [
-        "Escuela",
-        "🎒"
+        "Fiestas y leyendas",
+        "🎉"
       ],
       [
-        "Trabajo",
-        "💼"
+        "Suiza sorprende",
+        "🧭"
       ],
       [
-        "Repaso",
+        "Otra oportunidad",
         "rep"
       ],
       [
-        "Votaciones",
-        "🗳️"
+        "De aquí y de allá",
+        "🇨🇭"
       ],
       [
         "Reto con premio",
@@ -154,11 +154,11 @@
         "life"
       ],
       [
-        "Medio ambiente",
-        "♻️"
+        "Naturaleza suiza",
+        "🏞️"
       ],
       [
-        "Repaso",
+        "Otra oportunidad",
         "rep"
       ]
     ]
@@ -168,7 +168,7 @@
     "top": "Eiger",
     "alt": "3967 m",
     "way": "b",
-    "sub": "Casos con varias condiciones",
+    "sub": "Todo un descubrimiento",
     "q": 8,
     "test": 18,
     "pass": 14,
@@ -183,12 +183,12 @@
     "lcd": "#c77c06",
     "st": [
       [
-        "Permisos",
-        "🪪"
+        "Rincones secretos",
+        "🇨🇭"
       ],
       [
-        "Pensiones",
-        "🏦"
+        "Costumbres curiosas",
+        "🧀"
       ],
       [
         "Reto con premio",
@@ -196,20 +196,20 @@
         "x2"
       ],
       [
-        "Alquiler",
-        "🏠"
+        "Sabores por descubrir",
+        "🎉"
       ],
       [
-        "Sanidad",
-        "🏥"
+        "Postales difíciles",
+        "🧭"
       ],
       [
-        "Repaso",
+        "Otra oportunidad",
         "rep"
       ],
       [
-        "Familia",
-        "👪"
+        "Historias de Suiza",
+        "🇨🇭"
       ],
       [
         "Reto con premio",
@@ -217,15 +217,15 @@
         "life"
       ],
       [
-        "Política cantonal",
-        "🏛️"
+        "De cantón en cantón",
+        "🏞️"
       ],
       [
-        "Fiscalidad",
-        "🧮"
+        "El detalle oculto",
+        "🎉"
       ],
       [
-        "Repaso",
+        "Otra oportunidad",
         "rep"
       ],
       [
@@ -240,7 +240,7 @@
     "top": "Matterhorn",
     "alt": "4478 m",
     "way": "a",
-    "sub": "Combinar conocimientos",
+    "sub": "El gran trivial suizo",
     "q": 10,
     "test": 20,
     "pass": 16,
@@ -255,12 +255,12 @@
     "lcd": "#c42b2b",
     "st": [
       [
-        "Naturalización",
-        "📜"
+        "La gran vuelta",
+        "🇨🇭"
       ],
       [
-        "Derecho laboral",
-        "⚖️"
+        "Curiosidades expertas",
+        "🧀"
       ],
       [
         "Reto con premio",
@@ -268,24 +268,24 @@
         "x2"
       ],
       [
-        "Fiscalidad",
-        "🧮"
+        "Sabores expertos",
+        "🎉"
       ],
       [
-        "Historia",
-        "🏰"
+        "Historias y leyendas",
+        "🧭"
       ],
       [
-        "Repaso",
+        "Otra oportunidad",
         "rep"
       ],
       [
-        "Federalismo",
-        "🗺️"
+        "Suiza al detalle",
+        "🇨🇭"
       ],
       [
-        "Democracia directa",
-        "🗳️"
+        "¿Verdad o mito?",
+        "🧀"
       ],
       [
         "Reto con premio",
@@ -293,20 +293,20 @@
         "life"
       ],
       [
-        "Seguridad social",
-        "🛡️"
+        "Paisajes de altura",
+        "🎉"
       ],
       [
-        "Medios y cultura",
-        "📰"
+        "Arte y cultura",
+        "🧭"
       ],
       [
-        "Repaso",
+        "Otra oportunidad",
         "rep"
       ],
       [
-        "Geografía",
-        "🧭"
+        "El gran mapa",
+        "🇨🇭"
       ],
       [
         "Reto con premio",
@@ -314,7 +314,7 @@
         "freeze"
       ],
       [
-        "Gran repaso",
+        "La última ronda",
         "rep"
       ]
     ]

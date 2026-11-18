@@ -5694,7 +5694,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Qué caracteriza a los cantones suizos?\nRespuesta propuesta: «Tienen instituciones y competencias propias». ¿Es correcta?",
+    "prompt": "Los cantones suizos tienen instituciones y competencias propias.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5716,7 +5716,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "Antes de usar un sótano o plaza adicional, ¿qué conviene revisar?\nRespuesta propuesta: «Si otro vecino tiene un coche». ¿Es correcta?",
+    "prompt": "Antes de usar un sótano o una plaza adicional, basta con comprobar si otro vecino tiene coche.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5738,7 +5738,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Qué conjunto de datos debe quedar claro antes de empezar un trabajo?\nRespuesta propuesta: «Función, salario y jornada acordada». ¿Es correcta?",
+    "prompt": "Antes de empezar un trabajo, deben quedar claras la función, el salario y la jornada acordada.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5760,7 +5760,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Qué describe la franquicia del seguro de salud?\nRespuesta propuesta: «Una oficina de la aseguradora dentro del hospital». ¿Es correcta?",
+    "prompt": "La franquicia es una oficina de la aseguradora dentro del hospital.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5782,7 +5782,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Qué país comparte frontera con Suiza?\nRespuesta propuesta: «Liechtenstein». ¿Es correcta?",
+    "prompt": "Liechtenstein comparte frontera con Suiza.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5804,7 +5804,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Qué cámaras forman el Parlamento federal?\nRespuesta propuesta: «Consejo Nacional y Consejo de los Estados». ¿Es correcta?",
+    "prompt": "El Parlamento federal está formado por el Consejo Nacional y el Consejo de los Estados.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5826,7 +5826,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "Varias personas figuran como inquilinas en el mismo contrato. ¿Qué deben entender sobre la renta?\nRespuesta propuesta: «Que solo paga quien llega primero». ¿Es correcta?",
+    "prompt": "En un contrato de alquiler conjunto, solo paga quien llega primero.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5848,7 +5848,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Qué idea describe correctamente un contrato de trabajo?\nRespuesta propuesta: «Establece obligaciones tanto para la empresa como para la persona empleada». ¿Es correcta?",
+    "prompt": "Un contrato de trabajo establece obligaciones para la empresa y para la persona empleada.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5870,7 +5870,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Qué ocurre generalmente con la prima al elegir una franquicia opcional más alta?\nRespuesta propuesta: «Desaparece todo gasto sanitario posible». ¿Es correcta?",
+    "prompt": "Una franquicia más alta elimina cualquier gasto sanitario que puedas tener.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5892,7 +5892,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Qué conviene saber sobre el alemán en la Suiza germanófona?\nRespuesta propuesta: «Se usan dialectos suizos en el habla cotidiana y alemán estándar en muchos textos». ¿Es correcta?",
+    "prompt": "En la Suiza germanófona se hablan dialectos suizos y se usa alemán estándar en muchos textos.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5914,7 +5914,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Quién elige a los miembros del Consejo Federal?\nRespuesta propuesta: «La Asamblea Federal reunida». ¿Es correcta?",
+    "prompt": "La Asamblea Federal reunida elige a los miembros del Consejo Federal.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5936,7 +5936,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Qué información conviene dejar claramente documentada en un subalquiler?\nRespuesta propuesta: «Solo el plazo: las demás condiciones se acuerdan después de ocupar la vivienda». ¿Es correcta?",
+    "prompt": "En un subalquiler, basta con acordar el plazo: las demás condiciones se pueden dejar para después de entrar.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5958,7 +5958,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "¿Cómo se relacionan la jornada pactada y las normas de protección laboral?\nRespuesta propuesta: «La jornada pactada debe respetar los límites legales aplicables». ¿Es correcta?",
+    "prompt": "La jornada pactada debe respetar los límites legales aplicables.",
     "options": [
       "Verdadero",
       "Falso"
@@ -5980,7 +5980,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "Para una solicitud de seguro básico sujeta a la obligación de asegurarse, ¿qué distingue la admisión frente a un complementario?\nRespuesta propuesta: «Ambos pueden rechazar cualquier solicitud por una enfermedad previa en las mismas condiciones». ¿Es correcta?",
+    "prompt": "El seguro básico obligatorio y el complementario pueden rechazar una solicitud por enfermedad previa en las mismas condiciones.",
     "options": [
       "Verdadero",
       "Falso"
@@ -6002,7 +6002,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "Tu abono cubre muchos trayectos y quieres subir a una línea de montaña. ¿Qué debes comprobar?\nRespuesta propuesta: «Su inclusión o descuento en el mapa de validez del abono». ¿Es correcta?",
+    "prompt": "Antes de usar tu abono en una línea de montaña, conviene comprobar su mapa de validez y los descuentos.",
     "options": [
       "Verdadero",
       "Falso"
@@ -6024,7 +6024,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "Debes informarte sobre escuela local y sobre una norma federal. ¿Qué enfoque es correcto?\nRespuesta propuesta: «Identificar la autoridad competente para cada asunto». ¿Es correcta?",
+    "prompt": "Para una duda escolar y una norma federal, conviene consultar la autoridad competente de cada asunto.",
     "options": [
       "Verdadero",
       "Falso"
@@ -6046,7 +6046,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "Vais a compartir piso y todos firmaréis. ¿Qué combinación de comprobaciones es adecuada?\nRespuesta propuesta: «Repartir la renta entre compañeros y dar por hecho que cada uno responde solo de su parte». ¿Es correcta?",
+    "prompt": "Si todos firmáis el contrato del piso, basta con repartir la renta para que cada uno responda solo de su parte.",
     "options": [
       "Verdadero",
       "Falso"
@@ -6068,7 +6068,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "Dos ofertas tienen el mismo salario anunciado. ¿Qué comparación es más completa?\nRespuesta propuesta: «Jornada, vacaciones y condiciones contractuales junto con el salario». ¿Es correcta?",
+    "prompt": "Para comparar dos empleos, conviene mirar también la jornada, las vacaciones y las condiciones del contrato.",
     "options": [
       "Verdadero",
       "Falso"
@@ -6090,7 +6090,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "Una prima baja te atrae, pero apenas tienes ahorro para gastos imprevistos. ¿Qué debes comparar antes de elegir?\nRespuesta propuesta: «Solo la cuota mensual: una franquicia más alta reduce siempre cualquier coste total posible». ¿Es correcta?",
+    "prompt": "Al elegir seguro, basta con comparar la prima: una franquicia más alta reduce siempre cualquier coste total.",
     "options": [
       "Verdadero",
       "Falso"
@@ -6112,7 +6112,7 @@
     "scope": "CH",
     "canton": null,
     "language": "es",
-    "prompt": "Un abono tiene cobertura en Suiza y planeas seguir hacia el extranjero. ¿Qué comprobación necesitas?\nRespuesta propuesta: «Dónde termina su validez y qué título cubre la continuación». ¿Es correcta?",
+    "prompt": "Antes de seguir al extranjero con un abono suizo, conviene comprobar hasta dónde cubre y cómo continuar.",
     "options": [
       "Verdadero",
       "Falso"

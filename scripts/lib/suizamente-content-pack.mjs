@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import {IMG} from '../../src/components/suizamente/questionArt.js'
+import {isStatement} from '../../src/lib/suizamenteQuestionText.js'
 
 const base=new URL('../../supabase/seed-data/suizamente-expansion/',import.meta.url)
 const normalize=s=>s.normalize('NFKC').trim().replace(/\s+/gu,' ').toLocaleLowerCase('es')
@@ -34,7 +35,7 @@ export function validateContentPack({manifest,questions,sources,legacy},{today=z
       require(new Set(q.options.map(normalize)).size===size,'duplicate options')
       require(q.options.every(s=>typeof s==='string'&&s.trim()&&s.length<=500),'invalid option')
       if(['choice','multi','image'].includes(q.game_type))require(size===4,'selection/image must have four options')
-      if(q.game_type==='tf')require(size===2,'true/false requires two options')
+      if(q.game_type==='tf'){require(size===2,'true/false requires two options');require(isStatement(q.prompt),'true/false requires a declarative statement')}
       if(q.game_type==='multi')require(Array.isArray(q.correct_indices)&&q.correct_indices.length>=1&&q.correct_indices.length<=4&&new Set(q.correct_indices).size===q.correct_indices.length&&q.correct_indices.every(i=>Number.isInteger(i)&&i>=0&&i<size),'invalid correct choices')
       else if(q.game_type==='match')require(size===4&&q.pairs?.length===4&&q.pairs.every(s=>typeof s==='string'&&s.trim())&&new Set(q.pairs.map(normalize)).size===4,'invalid matching pairs')
       else if(q.game_type==='order')require(size>=3&&size<=8&&q.correct_order?.length===size&&new Set(q.correct_order).size===size&&q.correct_order.every(i=>Number.isInteger(i)&&i>=0&&i<size),'order must be a full permutation')

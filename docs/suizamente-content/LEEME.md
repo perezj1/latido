@@ -1,5 +1,7 @@
 # Ampliación de preguntas de Suizamente
 
+**Actualización vigente 14:** [revisión completa de las 1.619 preguntas y cuatro SQL para ejecutarla](../SUIZAMENTE_REVISION_COMPLETA.md). Los listados y entregas anteriores de esta carpeta son históricos. El banco actual con soluciones y fuentes es `supabase/seed-data/suizamente-reviewed.json` y cada decisión figura en `suizamente-review-audit.json`.
+
 Objetivo acordado completado localmente: **1.350 preguntas: 50 de Suiza general y 50 de cada uno de los 26 cantones**, con fuentes, soluciones y explicación. Fecha de contraste: **17 de noviembre de 2026**. No quedan territorios pendientes de esta ampliación.
 
 Se conserva el banco anterior de 276 preguntas. Veintiún identificadores se reutilizan: una instalación limpia con ambos bancos contiene **1.605 preguntas distintas**. Las versiones de partidas anteriores conservan sus respuestas asignadas.
@@ -11,6 +13,8 @@ Se conserva el banco anterior de 276 preguntas. Veintiún identificadores se reu
 - Reutilización de identificadores: `supabase/seed-data/suizamente-expansion/reused-questions.json`.
 
 No importar esos JSON ni listados con soluciones desde React. Las ilustraciones del catálogo público no contienen el banco privado de respuestas.
+
+La mejora de experiencia del 18 de noviembre añade afirmaciones directas para veinte verdaderos/falsos antiguos y correcciones de parejas en tarjetas. Los 296 verdaderos/falsos ya son afirmaciones en origen y la app corrige versiones antiguas al mostrarlas, sin necesitar SQL. `supabase/suizamente_actualizacion_experiencia_12.sql` sigue disponible para el servidor y las soluciones estructuradas de parejas, sin reimportar preguntas ni alterar su puntuación. Es independiente del lote NE/JU: [detalle de la actualización 12](../SUIZAMENTE_EXPERIENCIA.md).
 
 ## Undécima entrega: Neuchâtel y Jura — cierre de la ampliación
 
