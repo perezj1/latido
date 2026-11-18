@@ -84,6 +84,13 @@ for(const [code,name]of Object.entries(names)){
   const capital=reviewed.find(q=>q.id===`${lower}-canton-capital`)
   catalog.set(capital.id,{id:capital.id,topic:'lugares',national:true,original_prompt:capital.prompt,prompt:capital.prompt})
 }
+const languageAdditions=await json('supabase/seed-data/suizamente-language-exercises.json')
+for(const addition of languageAdditions){
+  assert.ok(!reviewed.some(q=>q.id===addition.id),addition.id)
+  const q=normalize(addition)
+  reviewed.push(q);known.push(q)
+  decisions.push({id:q.id,decision:'added',reasons:['Ejercicio original de vocabulario cotidiano con fuente léxica contrastada'],source_url:q.source_url})
+}
 for(const q of reviewed){
   assert.ok(q.prompt.length>=8&&q.prompt.length<=700,q.id)
   assert.ok(q.explanation.length>=8&&q.explanation.length<=2500,q.id)
@@ -108,7 +115,7 @@ try{
 const targets=reviewed.map(question=>({question,known:[...(fingerprints[question.id]||[])]}))
 const schema=(await Promise.all(['supabase/suizamente.sql','supabase/suizamente_game.sql'].map(read))).map(s=>s.replaceAll('\r\n','\n').replace(/^BEGIN;\s*$/m,'').replace(/^COMMIT;\s*$/m,'')).join('\n')
 const literal=(x,tag)=>{const s=JSON.stringify(x);assert.ok(!s.includes(`$${tag}$`));return `$${tag}$${s}$${tag}$::jsonb`}
-const active=reviewed.filter(q=>q.status==='published'),counts=Object.fromEntries(['improved','retained','replaced','replacement'].map(s=>[s,decisions.filter(q=>q.decision===s).length]))
+const active=reviewed.filter(q=>q.status==='published'),counts=Object.fromEntries(['improved','retained','replaced','replacement','added'].map(s=>[s,decisions.filter(q=>q.decision===s).length]))
 const stats={original:originals.size,published:active.length,total:reviewed.length,...counts,formats:Object.fromEntries([...new Set(active.map(q=>q.game_type||'choice'))].sort().map(t=>[t,active.filter(q=>(q.game_type||'choice')===t).length]))}
 const catalogRows=[...catalog.values()].filter(x=>active.some(q=>q.id===x.id))
 function reviewSql(partTargets,partCatalog,schemaSql,title){return `-- Suizamente: REVISIÓN COMPLETA 14. ${title}

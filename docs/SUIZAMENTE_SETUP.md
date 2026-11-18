@@ -1,5 +1,9 @@
 # Suizamente: activar el modo juego
 
+**Ampliación actual 16:** si ya instalaste la revisión 14, ejecuta solo el
+[SQL de 64 ejercicios nuevos e idiomas en etapas y cimas](SUIZAMENTE_EJERCICIOS_IDIOMA.md).
+Incluye la actualización 15.
+
 **Actualización vigente 14:** [revisión completa del banco e instalación en cuatro SQL](SUIZAMENTE_REVISION_COMPLETA.md). Sustituye las instrucciones de los parches anteriores.
 
 Implementado dentro de Latido, sin commit, push, despliegue ni escrituras en el Supabase remoto.
@@ -16,7 +20,7 @@ uno por uno y en este orden:
 3. [suizamente_revision_completa_03.sql](../supabase/suizamente_revision_completa_03.sql).
 4. [suizamente_revision_completa_04.sql](../supabase/suizamente_revision_completa_04.sql).
 
-Incluyen API, modo juego, RLS y **1.619 preguntas publicadas**, más 26 retiradas.
+Incluyen API, modo juego, RLS y **1.683 preguntas publicadas**, más 26 retiradas.
 Cada archivo es transaccional y repetible; conserva cuentas, XP, niveles, partidas y ediciones
 propias del banco. Se aplica también sobre instalaciones anteriores sin repetir
 los SQL históricos. [Detalle y registro editorial](SUIZAMENTE_REVISION_COMPLETA.md).
@@ -29,7 +33,7 @@ Comprobación opcional en SQL Editor:
 
 ```sql
 select count(*) as preguntas from suizamente_private.questions;
--- Revisión 14: 1.645 identificadores, incluidos los 26 retirados.
+-- Banco vigente: 1.709 identificadores, incluidos los 26 retirados.
 -- Puede haber más si has creado preguntas propias.
 
 select public.suizamente('summary', '{}'::jsonb)->>'game_version';

@@ -1,0 +1,2914 @@
+[
+  {
+    "id": "szl16-de-schluessel-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:schluessel",
+    "learning_concepts": [
+      "language:de:schluessel"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+    "source_title": "PONS · Schlüssel",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+        "title": "PONS · Schlüssel",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Schlüssel: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «la llave» en alemán.",
+    "options": [
+      "der Schlüssel",
+      "der Briefkasten",
+      "der Abfall",
+      "der Lohn"
+    ],
+    "explanation": "der Schlüssel: la llave."
+  },
+  {
+    "id": "szl16-de-schluessel-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:schluessel",
+    "learning_concepts": [
+      "language:de:schluessel"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+    "source_title": "PONS · Schlüssel",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+        "title": "PONS · Schlüssel",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Schlüssel: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «der Schlüssel»?",
+    "options": [
+      "la llave",
+      "el buzón de correo",
+      "la basura",
+      "el salario"
+    ],
+    "explanation": "der Schlüssel: la llave."
+  },
+  {
+    "id": "szl16-de-schluessel-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:schluessel",
+    "learning_concepts": [
+      "language:de:schluessel"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+    "source_title": "PONS · Schlüssel",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+        "title": "PONS · Schlüssel",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Schlüssel: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Wo ist mein ___?» para decir: «¿Dónde está mi llave?»",
+    "options": [
+      "Schlüssel",
+      "Briefkasten",
+      "Abfall",
+      "Lohn"
+    ],
+    "explanation": "Wo ist mein Schlüssel? ¿Dónde está mi llave?"
+  },
+  {
+    "id": "szl16-de-schluessel-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:schluessel",
+    "learning_concepts": [
+      "language:de:schluessel"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+    "source_title": "PONS · Schlüssel",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+        "title": "PONS · Schlüssel",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Schlüssel: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «¿Dónde está mi llave?». Empieza por «Wo».",
+    "options": [
+      "ist",
+      "mein Schlüssel?",
+      "Wo"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Wo ist mein Schlüssel? ¿Dónde está mi llave?"
+  },
+  {
+    "id": "szl16-de-haltestelle-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:haltestelle",
+    "learning_concepts": [
+      "language:de:haltestelle"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+    "source_title": "PONS · Haltestelle",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+        "title": "PONS · Haltestelle",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Haltestelle: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «la parada de transporte» en alemán.",
+    "options": [
+      "die Haltestelle",
+      "die Öffnungszeiten",
+      "die Bewerbung",
+      "die Quittung"
+    ],
+    "explanation": "die Haltestelle: la parada de transporte."
+  },
+  {
+    "id": "szl16-de-haltestelle-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:haltestelle",
+    "learning_concepts": [
+      "language:de:haltestelle"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+    "source_title": "PONS · Haltestelle",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+        "title": "PONS · Haltestelle",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Haltestelle: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «die Haltestelle»?",
+    "options": [
+      "la parada de transporte",
+      "el horario de apertura",
+      "la solicitud de empleo",
+      "el recibo de pago"
+    ],
+    "explanation": "die Haltestelle: la parada de transporte."
+  },
+  {
+    "id": "szl16-de-haltestelle-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:haltestelle",
+    "learning_concepts": [
+      "language:de:haltestelle"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+    "source_title": "PONS · Haltestelle",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+        "title": "PONS · Haltestelle",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Haltestelle: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Wo ist die ___?» para decir: «¿Dónde está la parada?»",
+    "options": [
+      "Haltestelle",
+      "Öffnungszeiten",
+      "Bewerbung",
+      "Quittung"
+    ],
+    "explanation": "Wo ist die Haltestelle? ¿Dónde está la parada?"
+  },
+  {
+    "id": "szl16-de-haltestelle-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:haltestelle",
+    "learning_concepts": [
+      "language:de:haltestelle"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+    "source_title": "PONS · Haltestelle",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+        "title": "PONS · Haltestelle",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Haltestelle: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «¿Dónde está la parada?». Empieza por «Wo».",
+    "options": [
+      "ist",
+      "die Haltestelle?",
+      "Wo"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Wo ist die Haltestelle? ¿Dónde está la parada?"
+  },
+  {
+    "id": "szl16-de-unterschrift-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:unterschrift",
+    "learning_concepts": [
+      "language:de:unterschrift"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+    "source_title": "PONS · Unterschrift",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+        "title": "PONS · Unterschrift",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Unterschrift: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «la firma» en alemán.",
+    "options": [
+      "die Unterschrift",
+      "die Bewerbung",
+      "die Quittung",
+      "die Haltestelle"
+    ],
+    "explanation": "die Unterschrift: la firma."
+  },
+  {
+    "id": "szl16-de-unterschrift-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:unterschrift",
+    "learning_concepts": [
+      "language:de:unterschrift"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+    "source_title": "PONS · Unterschrift",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+        "title": "PONS · Unterschrift",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Unterschrift: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «die Unterschrift»?",
+    "options": [
+      "la firma",
+      "la solicitud de empleo",
+      "el recibo de pago",
+      "la parada de transporte"
+    ],
+    "explanation": "die Unterschrift: la firma."
+  },
+  {
+    "id": "szl16-de-unterschrift-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:unterschrift",
+    "learning_concepts": [
+      "language:de:unterschrift"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+    "source_title": "PONS · Unterschrift",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+        "title": "PONS · Unterschrift",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Unterschrift: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Hier fehlt Ihre ___.» para decir: «Aquí falta su firma.»",
+    "options": [
+      "Unterschrift",
+      "Bewerbung",
+      "Quittung",
+      "Haltestelle"
+    ],
+    "explanation": "Hier fehlt Ihre Unterschrift. Aquí falta su firma."
+  },
+  {
+    "id": "szl16-de-unterschrift-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:unterschrift",
+    "learning_concepts": [
+      "language:de:unterschrift"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+    "source_title": "PONS · Unterschrift",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+        "title": "PONS · Unterschrift",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Unterschrift: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «Esta es mi firma.». Empieza por «Das».",
+    "options": [
+      "ist",
+      "meine Unterschrift.",
+      "Das"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Das ist meine Unterschrift. Esta es mi firma."
+  },
+  {
+    "id": "szl16-de-oeffnungszeiten-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:oeffnungszeiten",
+    "learning_concepts": [
+      "language:de:oeffnungszeiten"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/spanisch-deutsch/horario",
+    "source_title": "Langenscheidt · horario",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/spanisch-deutsch/horario",
+        "title": "Langenscheidt · horario",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Öffnungszeiten: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «el horario de apertura» en alemán.",
+    "options": [
+      "die Öffnungszeiten",
+      "die Haltestelle",
+      "die Quittung",
+      "die Bewerbung"
+    ],
+    "explanation": "die Öffnungszeiten: el horario de apertura."
+  },
+  {
+    "id": "szl16-de-oeffnungszeiten-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:oeffnungszeiten",
+    "learning_concepts": [
+      "language:de:oeffnungszeiten"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/spanisch-deutsch/horario",
+    "source_title": "Langenscheidt · horario",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/spanisch-deutsch/horario",
+        "title": "Langenscheidt · horario",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Öffnungszeiten: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «die Öffnungszeiten»?",
+    "options": [
+      "el horario de apertura",
+      "la parada de transporte",
+      "el recibo de pago",
+      "la solicitud de empleo"
+    ],
+    "explanation": "die Öffnungszeiten: el horario de apertura."
+  },
+  {
+    "id": "szl16-de-oeffnungszeiten-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:oeffnungszeiten",
+    "learning_concepts": [
+      "language:de:oeffnungszeiten"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/spanisch-deutsch/horario",
+    "source_title": "Langenscheidt · horario",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/spanisch-deutsch/horario",
+        "title": "Langenscheidt · horario",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Öffnungszeiten: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Wie sind die ___?» para decir: «¿Cuál es el horario de apertura?»",
+    "options": [
+      "Öffnungszeiten",
+      "Haltestelle",
+      "Quittung",
+      "Bewerbung"
+    ],
+    "explanation": "Wie sind die Öffnungszeiten? ¿Cuál es el horario de apertura?"
+  },
+  {
+    "id": "szl16-de-oeffnungszeiten-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:oeffnungszeiten",
+    "learning_concepts": [
+      "language:de:oeffnungszeiten"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/spanisch-deutsch/horario",
+    "source_title": "Langenscheidt · horario",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/spanisch-deutsch/horario",
+        "title": "Langenscheidt · horario",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Öffnungszeiten: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «¿Cuál es el horario de apertura?». Empieza por «Wie».",
+    "options": [
+      "sind",
+      "die Öffnungszeiten?",
+      "Wie"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Wie sind die Öffnungszeiten? ¿Cuál es el horario de apertura?"
+  },
+  {
+    "id": "szl16-de-fahrkarte-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:fahrkarte",
+    "learning_concepts": [
+      "language:de:fahrkarte"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein",
+    "source_title": "PONS · Fahrschein / Fahrkarte",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein",
+        "title": "PONS · Fahrschein / Fahrkarte",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Fahrkarte: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «el billete de transporte» en alemán.",
+    "options": [
+      "die Fahrkarte",
+      "die Quittung",
+      "die Bewerbung",
+      "die Unterschrift"
+    ],
+    "explanation": "die Fahrkarte: el billete de transporte."
+  },
+  {
+    "id": "szl16-de-fahrkarte-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:fahrkarte",
+    "learning_concepts": [
+      "language:de:fahrkarte"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein",
+    "source_title": "PONS · Fahrschein / Fahrkarte",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein",
+        "title": "PONS · Fahrschein / Fahrkarte",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Fahrkarte: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «die Fahrkarte»?",
+    "options": [
+      "el billete de transporte",
+      "el recibo de pago",
+      "la solicitud de empleo",
+      "la firma"
+    ],
+    "explanation": "die Fahrkarte: el billete de transporte."
+  },
+  {
+    "id": "szl16-de-fahrkarte-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:fahrkarte",
+    "learning_concepts": [
+      "language:de:fahrkarte"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein",
+    "source_title": "PONS · Fahrschein / Fahrkarte",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein",
+        "title": "PONS · Fahrschein / Fahrkarte",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Fahrkarte: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Ich brauche eine ___.» para decir: «Necesito un billete de transporte.»",
+    "options": [
+      "Fahrkarte",
+      "Quittung",
+      "Bewerbung",
+      "Unterschrift"
+    ],
+    "explanation": "Ich brauche eine Fahrkarte. Necesito un billete de transporte."
+  },
+  {
+    "id": "szl16-de-fahrkarte-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:fahrkarte",
+    "learning_concepts": [
+      "language:de:fahrkarte"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein",
+    "source_title": "PONS · Fahrschein / Fahrkarte",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein",
+        "title": "PONS · Fahrschein / Fahrkarte",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Fahrkarte: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «Necesito un billete de transporte.». Empieza por «Ich».",
+    "options": [
+      "brauche",
+      "eine Fahrkarte.",
+      "Ich"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Ich brauche eine Fahrkarte. Necesito un billete de transporte."
+  },
+  {
+    "id": "szl16-de-quittung-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:quittung",
+    "learning_concepts": [
+      "language:de:quittung"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf",
+    "source_title": "PONS · Vocabulario de compras",
+    "sources": [
+      {
+        "url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf",
+        "title": "PONS · Vocabulario de compras",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Quittung: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «el recibo de pago» en alemán.",
+    "options": [
+      "die Quittung",
+      "die Fahrkarte",
+      "die Bewerbung",
+      "die Unterschrift"
+    ],
+    "explanation": "die Quittung: el recibo de pago."
+  },
+  {
+    "id": "szl16-de-quittung-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:quittung",
+    "learning_concepts": [
+      "language:de:quittung"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf",
+    "source_title": "PONS · Vocabulario de compras",
+    "sources": [
+      {
+        "url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf",
+        "title": "PONS · Vocabulario de compras",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Quittung: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «die Quittung»?",
+    "options": [
+      "el recibo de pago",
+      "el billete de transporte",
+      "la solicitud de empleo",
+      "la firma"
+    ],
+    "explanation": "die Quittung: el recibo de pago."
+  },
+  {
+    "id": "szl16-de-quittung-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:quittung",
+    "learning_concepts": [
+      "language:de:quittung"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf",
+    "source_title": "PONS · Vocabulario de compras",
+    "sources": [
+      {
+        "url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf",
+        "title": "PONS · Vocabulario de compras",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Quittung: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Ich hätte gern eine ___.» para decir: «Quisiera un recibo de pago.»",
+    "options": [
+      "Quittung",
+      "Fahrkarte",
+      "Bewerbung",
+      "Unterschrift"
+    ],
+    "explanation": "Ich hätte gern eine Quittung. Quisiera un recibo de pago."
+  },
+  {
+    "id": "szl16-de-quittung-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:quittung",
+    "learning_concepts": [
+      "language:de:quittung"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf",
+    "source_title": "PONS · Vocabulario de compras",
+    "sources": [
+      {
+        "url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf",
+        "title": "PONS · Vocabulario de compras",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Quittung: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «Por favor, deme un recibo de pago.». Empieza por «Bitte».",
+    "options": [
+      "geben Sie",
+      "mir",
+      "eine Quittung.",
+      "Bitte"
+    ],
+    "correct_order": [
+      3,
+      0,
+      1,
+      2
+    ],
+    "explanation": "Bitte geben Sie mir eine Quittung. Por favor, deme un recibo de pago."
+  },
+  {
+    "id": "szl16-de-ausweis-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:ausweis",
+    "learning_concepts": [
+      "language:de:ausweis"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis",
+    "source_title": "Langenscheidt · Ausweis",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis",
+        "title": "Langenscheidt · Ausweis",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Ausweis: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «el documento de identidad» en alemán.",
+    "options": [
+      "der Ausweis",
+      "der Briefkasten",
+      "der Lohn",
+      "der Schlüssel"
+    ],
+    "explanation": "der Ausweis: el documento de identidad."
+  },
+  {
+    "id": "szl16-de-ausweis-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:ausweis",
+    "learning_concepts": [
+      "language:de:ausweis"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis",
+    "source_title": "Langenscheidt · Ausweis",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis",
+        "title": "Langenscheidt · Ausweis",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Ausweis: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «der Ausweis»?",
+    "options": [
+      "el documento de identidad",
+      "el buzón de correo",
+      "el salario",
+      "la llave"
+    ],
+    "explanation": "der Ausweis: el documento de identidad."
+  },
+  {
+    "id": "szl16-de-ausweis-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:ausweis",
+    "learning_concepts": [
+      "language:de:ausweis"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis",
+    "source_title": "Langenscheidt · Ausweis",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis",
+        "title": "Langenscheidt · Ausweis",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Ausweis: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Zeigen Sie bitte Ihren ___.» para decir: «Muestre su documento de identidad, por favor.»",
+    "options": [
+      "Ausweis",
+      "Briefkasten",
+      "Lohn",
+      "Schlüssel"
+    ],
+    "explanation": "Zeigen Sie bitte Ihren Ausweis. Muestre su documento de identidad, por favor."
+  },
+  {
+    "id": "szl16-de-ausweis-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:ausweis",
+    "learning_concepts": [
+      "language:de:ausweis"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis",
+    "source_title": "Langenscheidt · Ausweis",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis",
+        "title": "Langenscheidt · Ausweis",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Ausweis: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «Mi documento de identidad está aquí.». Empieza por «Mein Ausweis».",
+    "options": [
+      "ist",
+      "hier.",
+      "Mein Ausweis"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Mein Ausweis ist hier. Mi documento de identidad está aquí."
+  },
+  {
+    "id": "szl16-de-bewerbung-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:bewerbung",
+    "learning_concepts": [
+      "language:de:bewerbung"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html",
+    "source_title": "dict.cc · Bewerbung",
+    "sources": [
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html",
+        "title": "dict.cc · Bewerbung",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Bewerbung: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «la solicitud de empleo» en alemán.",
+    "options": [
+      "die Bewerbung",
+      "die Unterschrift",
+      "die Quittung",
+      "die Fahrkarte"
+    ],
+    "explanation": "die Bewerbung: la solicitud de empleo."
+  },
+  {
+    "id": "szl16-de-bewerbung-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:bewerbung",
+    "learning_concepts": [
+      "language:de:bewerbung"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html",
+    "source_title": "dict.cc · Bewerbung",
+    "sources": [
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html",
+        "title": "dict.cc · Bewerbung",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Bewerbung: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «die Bewerbung»?",
+    "options": [
+      "la solicitud de empleo",
+      "la firma",
+      "el recibo de pago",
+      "el billete de transporte"
+    ],
+    "explanation": "die Bewerbung: la solicitud de empleo."
+  },
+  {
+    "id": "szl16-de-bewerbung-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:bewerbung",
+    "learning_concepts": [
+      "language:de:bewerbung"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html",
+    "source_title": "dict.cc · Bewerbung",
+    "sources": [
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html",
+        "title": "dict.cc · Bewerbung",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Bewerbung: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Ich schicke meine ___.» para decir: «Envío mi solicitud de empleo.»",
+    "options": [
+      "Bewerbung",
+      "Unterschrift",
+      "Quittung",
+      "Fahrkarte"
+    ],
+    "explanation": "Ich schicke meine Bewerbung. Envío mi solicitud de empleo."
+  },
+  {
+    "id": "szl16-de-bewerbung-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:bewerbung",
+    "learning_concepts": [
+      "language:de:bewerbung"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html",
+    "source_title": "dict.cc · Bewerbung",
+    "sources": [
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html",
+        "title": "dict.cc · Bewerbung",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Bewerbung: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «Envío mi solicitud de empleo.». Empieza por «Ich».",
+    "options": [
+      "schicke",
+      "meine Bewerbung.",
+      "Ich"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Ich schicke meine Bewerbung. Envío mi solicitud de empleo."
+  },
+  {
+    "id": "szl16-de-briefkasten-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:briefkasten",
+    "learning_concepts": [
+      "language:de:briefkasten"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html",
+    "source_title": "dict.cc · Briefkasten",
+    "sources": [
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html",
+        "title": "dict.cc · Briefkasten",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Briefkasten: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «el buzón de correo» en alemán.",
+    "options": [
+      "der Briefkasten",
+      "der Schlüssel",
+      "der Lohn",
+      "der Abfall"
+    ],
+    "explanation": "der Briefkasten: el buzón de correo."
+  },
+  {
+    "id": "szl16-de-briefkasten-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:briefkasten",
+    "learning_concepts": [
+      "language:de:briefkasten"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html",
+    "source_title": "dict.cc · Briefkasten",
+    "sources": [
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html",
+        "title": "dict.cc · Briefkasten",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Briefkasten: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «der Briefkasten»?",
+    "options": [
+      "el buzón de correo",
+      "la llave",
+      "el salario",
+      "la basura"
+    ],
+    "explanation": "der Briefkasten: el buzón de correo."
+  },
+  {
+    "id": "szl16-de-briefkasten-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:briefkasten",
+    "learning_concepts": [
+      "language:de:briefkasten"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html",
+    "source_title": "dict.cc · Briefkasten",
+    "sources": [
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html",
+        "title": "dict.cc · Briefkasten",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Briefkasten: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Wo ist der ___?» para decir: «¿Dónde está el buzón de correo?»",
+    "options": [
+      "Briefkasten",
+      "Schlüssel",
+      "Lohn",
+      "Abfall"
+    ],
+    "explanation": "Wo ist der Briefkasten? ¿Dónde está el buzón de correo?"
+  },
+  {
+    "id": "szl16-de-briefkasten-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:briefkasten",
+    "learning_concepts": [
+      "language:de:briefkasten"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html",
+    "source_title": "dict.cc · Briefkasten",
+    "sources": [
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html",
+        "title": "dict.cc · Briefkasten",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Briefkasten: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «El buzón de correo está allí.». Empieza por «Der Briefkasten».",
+    "options": [
+      "ist",
+      "dort.",
+      "Der Briefkasten"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Der Briefkasten ist dort. El buzón de correo está allí."
+  },
+  {
+    "id": "szl16-de-abfall-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:abfall",
+    "learning_concepts": [
+      "language:de:abfall"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/abfall",
+    "source_title": "Langenscheidt · Abfall",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/abfall",
+        "title": "Langenscheidt · Abfall",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Abfall: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «la basura» en alemán.",
+    "options": [
+      "der Abfall",
+      "der Schlüssel",
+      "der Briefkasten",
+      "der Lohn"
+    ],
+    "explanation": "der Abfall: la basura."
+  },
+  {
+    "id": "szl16-de-abfall-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:abfall",
+    "learning_concepts": [
+      "language:de:abfall"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/abfall",
+    "source_title": "Langenscheidt · Abfall",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/abfall",
+        "title": "Langenscheidt · Abfall",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Abfall: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «der Abfall»?",
+    "options": [
+      "la basura",
+      "la llave",
+      "el buzón de correo",
+      "el salario"
+    ],
+    "explanation": "der Abfall: la basura."
+  },
+  {
+    "id": "szl16-de-abfall-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:abfall",
+    "learning_concepts": [
+      "language:de:abfall"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/abfall",
+    "source_title": "Langenscheidt · Abfall",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/abfall",
+        "title": "Langenscheidt · Abfall",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Abfall: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Hier sammeln wir ___.» para decir: «Aquí recogemos basura.»",
+    "options": [
+      "Abfall",
+      "Schlüssel",
+      "Briefkasten",
+      "Lohn"
+    ],
+    "explanation": "Hier sammeln wir Abfall. Aquí recogemos basura."
+  },
+  {
+    "id": "szl16-de-abfall-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:abfall",
+    "learning_concepts": [
+      "language:de:abfall"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/abfall",
+    "source_title": "Langenscheidt · Abfall",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/abfall",
+        "title": "Langenscheidt · Abfall",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Abfall: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «Desechamos la basura.». Empieza por «Wir».",
+    "options": [
+      "entsorgen",
+      "den Abfall.",
+      "Wir"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Wir entsorgen den Abfall. Desechamos la basura."
+  },
+  {
+    "id": "szl16-de-lohn-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:lohn",
+    "learning_concepts": [
+      "language:de:lohn"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/lohn",
+    "source_title": "Langenscheidt · Lohn",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/lohn",
+        "title": "Langenscheidt · Lohn",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Lohn: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «el salario» en alemán.",
+    "options": [
+      "der Lohn",
+      "der Schlüssel",
+      "der Briefkasten",
+      "der Ausweis"
+    ],
+    "explanation": "der Lohn: el salario."
+  },
+  {
+    "id": "szl16-de-lohn-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:lohn",
+    "learning_concepts": [
+      "language:de:lohn"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/lohn",
+    "source_title": "Langenscheidt · Lohn",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/lohn",
+        "title": "Langenscheidt · Lohn",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Lohn: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «der Lohn»?",
+    "options": [
+      "el salario",
+      "la llave",
+      "el buzón de correo",
+      "el documento de identidad"
+    ],
+    "explanation": "der Lohn: el salario."
+  },
+  {
+    "id": "szl16-de-lohn-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:lohn",
+    "learning_concepts": [
+      "language:de:lohn"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/lohn",
+    "source_title": "Langenscheidt · Lohn",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/lohn",
+        "title": "Langenscheidt · Lohn",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Lohn: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Wann bekomme ich meinen ___?» para decir: «¿Cuándo recibo mi salario?»",
+    "options": [
+      "Lohn",
+      "Schlüssel",
+      "Briefkasten",
+      "Ausweis"
+    ],
+    "explanation": "Wann bekomme ich meinen Lohn? ¿Cuándo recibo mi salario?"
+  },
+  {
+    "id": "szl16-de-lohn-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 3,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:lohn",
+    "learning_concepts": [
+      "language:de:lohn"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/lohn",
+    "source_title": "Langenscheidt · Lohn",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/lohn",
+        "title": "Langenscheidt · Lohn",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Lohn: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «¿Cuándo recibo mi salario?». Empieza por «Wann».",
+    "options": [
+      "bekomme",
+      "ich",
+      "meinen Lohn?",
+      "Wann"
+    ],
+    "correct_order": [
+      3,
+      0,
+      1,
+      2
+    ],
+    "explanation": "Wann bekomme ich meinen Lohn? ¿Cuándo recibo mi salario?"
+  },
+  {
+    "id": "szl16-de-hilfe-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:hilfe",
+    "learning_concepts": [
+      "language:de:hilfe"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf",
+    "source_title": "Goethe-Institut · Vocabulario A1",
+    "sources": [
+      {
+        "url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf",
+        "title": "Goethe-Institut · Vocabulario A1",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Hilfe: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «la ayuda» en alemán.",
+    "options": [
+      "die Hilfe",
+      "die Unterschrift",
+      "die Quittung",
+      "die Bewerbung"
+    ],
+    "explanation": "die Hilfe: la ayuda."
+  },
+  {
+    "id": "szl16-de-hilfe-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:hilfe",
+    "learning_concepts": [
+      "language:de:hilfe"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf",
+    "source_title": "Goethe-Institut · Vocabulario A1",
+    "sources": [
+      {
+        "url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf",
+        "title": "Goethe-Institut · Vocabulario A1",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Hilfe: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «die Hilfe»?",
+    "options": [
+      "la ayuda",
+      "la firma",
+      "el recibo de pago",
+      "la solicitud de empleo"
+    ],
+    "explanation": "die Hilfe: la ayuda."
+  },
+  {
+    "id": "szl16-de-hilfe-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:hilfe",
+    "learning_concepts": [
+      "language:de:hilfe"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf",
+    "source_title": "Goethe-Institut · Vocabulario A1",
+    "sources": [
+      {
+        "url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf",
+        "title": "Goethe-Institut · Vocabulario A1",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Hilfe: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Ich brauche ___.» para decir: «Necesito ayuda.»",
+    "options": [
+      "Hilfe",
+      "Unterschrift",
+      "Quittung",
+      "Bewerbung"
+    ],
+    "explanation": "Ich brauche Hilfe. Necesito ayuda."
+  },
+  {
+    "id": "szl16-de-hilfe-order_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "order_sentence",
+    "concept_id": "language:de:hilfe",
+    "learning_concepts": [
+      "language:de:hilfe"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf",
+    "source_title": "Goethe-Institut · Vocabulario A1",
+    "sources": [
+      {
+        "url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf",
+        "title": "Goethe-Institut · Vocabulario A1",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Hilfe: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "order",
+    "prompt": "Ordena «Necesito ayuda hoy.». Empieza por «Ich brauche».",
+    "options": [
+      "heute",
+      "Hilfe.",
+      "Ich brauche"
+    ],
+    "correct_order": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Ich brauche heute Hilfe. Necesito ayuda hoy."
+  },
+  {
+    "id": "szl16-de-obst-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:obst",
+    "learning_concepts": [
+      "language:de:obst"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf",
+    "source_title": "PONS · Obst – Fruta",
+    "sources": [
+      {
+        "url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf",
+        "title": "PONS · Obst – Fruta",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Obst: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «la fruta» en alemán.",
+    "options": [
+      "das Obst",
+      "das Brot",
+      "die Milch",
+      "das Wasser"
+    ],
+    "explanation": "das Obst: la fruta."
+  },
+  {
+    "id": "szl16-de-obst-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:obst",
+    "learning_concepts": [
+      "language:de:obst"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf",
+    "source_title": "PONS · Obst – Fruta",
+    "sources": [
+      {
+        "url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf",
+        "title": "PONS · Obst – Fruta",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Obst: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «das Obst»?",
+    "options": [
+      "la fruta",
+      "el pan",
+      "la leche",
+      "el agua"
+    ],
+    "explanation": "das Obst: la fruta."
+  },
+  {
+    "id": "szl16-de-obst-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:obst",
+    "learning_concepts": [
+      "language:de:obst"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf",
+    "source_title": "PONS · Obst – Fruta",
+    "sources": [
+      {
+        "url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf",
+        "title": "PONS · Obst – Fruta",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Obst: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Ich esse gern ___.» para decir: «Me gusta comer fruta.»",
+    "options": [
+      "Obst",
+      "Brot",
+      "Milch",
+      "Wasser"
+    ],
+    "explanation": "Ich esse gern Obst. Me gusta comer fruta."
+  },
+  {
+    "id": "szl16-de-brot-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:brot",
+    "learning_concepts": [
+      "language:de:brot"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://en.langenscheidt.com/german-spanish/brot",
+    "source_title": "Langenscheidt · Brot",
+    "sources": [
+      {
+        "url": "https://en.langenscheidt.com/german-spanish/brot",
+        "title": "Langenscheidt · Brot",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Brot: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «el pan» en alemán.",
+    "options": [
+      "das Brot",
+      "das Obst",
+      "die Milch",
+      "das Wasser"
+    ],
+    "explanation": "das Brot: el pan."
+  },
+  {
+    "id": "szl16-de-brot-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:brot",
+    "learning_concepts": [
+      "language:de:brot"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://en.langenscheidt.com/german-spanish/brot",
+    "source_title": "Langenscheidt · Brot",
+    "sources": [
+      {
+        "url": "https://en.langenscheidt.com/german-spanish/brot",
+        "title": "Langenscheidt · Brot",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Brot: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «das Brot»?",
+    "options": [
+      "el pan",
+      "la fruta",
+      "la leche",
+      "el agua"
+    ],
+    "explanation": "das Brot: el pan."
+  },
+  {
+    "id": "szl16-de-brot-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:brot",
+    "learning_concepts": [
+      "language:de:brot"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://en.langenscheidt.com/german-spanish/brot",
+    "source_title": "Langenscheidt · Brot",
+    "sources": [
+      {
+        "url": "https://en.langenscheidt.com/german-spanish/brot",
+        "title": "Langenscheidt · Brot",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Brot: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Ich kaufe ___.» para decir: «Compro pan.»",
+    "options": [
+      "Brot",
+      "Obst",
+      "Milch",
+      "Wasser"
+    ],
+    "explanation": "Ich kaufe Brot. Compro pan."
+  },
+  {
+    "id": "szl16-de-milch-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:milch",
+    "learning_concepts": [
+      "language:de:milch"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/milch",
+    "source_title": "Langenscheidt · Milch",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/milch",
+        "title": "Langenscheidt · Milch",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Milch: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «la leche» en alemán.",
+    "options": [
+      "die Milch",
+      "das Wasser",
+      "das Obst",
+      "das Brot"
+    ],
+    "explanation": "die Milch: la leche."
+  },
+  {
+    "id": "szl16-de-milch-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:milch",
+    "learning_concepts": [
+      "language:de:milch"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/milch",
+    "source_title": "Langenscheidt · Milch",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/milch",
+        "title": "Langenscheidt · Milch",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Milch: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «die Milch»?",
+    "options": [
+      "la leche",
+      "el agua",
+      "la fruta",
+      "el pan"
+    ],
+    "explanation": "die Milch: la leche."
+  },
+  {
+    "id": "szl16-de-milch-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:milch",
+    "learning_concepts": [
+      "language:de:milch"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.langenscheidt.com/deutsch-spanisch/milch",
+    "source_title": "Langenscheidt · Milch",
+    "sources": [
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/milch",
+        "title": "Langenscheidt · Milch",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Milch: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Ich trinke ___.» para decir: «Bebo leche.»",
+    "options": [
+      "Milch",
+      "Wasser",
+      "Obst",
+      "Brot"
+    ],
+    "explanation": "Ich trinke Milch. Bebo leche."
+  },
+  {
+    "id": "szl16-de-wasser-choose_word",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "choose_word",
+    "concept_id": "language:de:wasser",
+    "learning_concepts": [
+      "language:de:wasser"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser",
+    "source_title": "PONS · Wasser",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser",
+        "title": "PONS · Wasser",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Wasser: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Elige «el agua» en alemán.",
+    "options": [
+      "das Wasser",
+      "die Milch",
+      "das Obst",
+      "das Brot"
+    ],
+    "explanation": "das Wasser: el agua."
+  },
+  {
+    "id": "szl16-de-wasser-meaning",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 1,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "meaning",
+    "concept_id": "language:de:wasser",
+    "learning_concepts": [
+      "language:de:wasser"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser",
+    "source_title": "PONS · Wasser",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser",
+        "title": "PONS · Wasser",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Wasser: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "¿Qué significa «das Wasser»?",
+    "options": [
+      "el agua",
+      "la leche",
+      "la fruta",
+      "el pan"
+    ],
+    "explanation": "das Wasser: el agua."
+  },
+  {
+    "id": "szl16-de-wasser-complete_sentence",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "complete_sentence",
+    "concept_id": "language:de:wasser",
+    "learning_concepts": [
+      "language:de:wasser"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser",
+    "source_title": "PONS · Wasser",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser",
+        "title": "PONS · Wasser",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Wasser: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "choice",
+    "prompt": "Completa «Ich möchte ___.» para decir: «Quisiera agua.»",
+    "options": [
+      "Wasser",
+      "Milch",
+      "Obst",
+      "Brot"
+    ],
+    "explanation": "Ich möchte Wasser. Quisiera agua."
+  },
+  {
+    "id": "szl16-de-parejas-1",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "match_words",
+    "concept_id": "language:de:review-1",
+    "learning_concepts": [
+      "language:de:schluessel",
+      "language:de:briefkasten",
+      "language:de:abfall",
+      "language:de:hilfe"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+    "source_title": "PONS · Schlüssel",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel",
+        "title": "PONS · Schlüssel",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Schlüssel: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html",
+        "title": "dict.cc · Briefkasten",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Briefkasten: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/abfall",
+        "title": "Langenscheidt · Abfall",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Abfall: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf",
+        "title": "Goethe-Institut · Vocabulario A1",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Hilfe: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "match",
+    "prompt": "Une palabras alemanas de casa y ayuda.",
+    "options": [
+      "der Schlüssel",
+      "der Briefkasten",
+      "der Abfall",
+      "die Hilfe"
+    ],
+    "pairs": [
+      "la llave",
+      "el buzón de correo",
+      "la basura",
+      "la ayuda"
+    ],
+    "explanation": "der Schlüssel: la llave; der Briefkasten: el buzón de correo; der Abfall: la basura; die Hilfe: la ayuda."
+  },
+  {
+    "id": "szl16-de-parejas-2",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "match_words",
+    "concept_id": "language:de:review-2",
+    "learning_concepts": [
+      "language:de:haltestelle",
+      "language:de:oeffnungszeiten",
+      "language:de:fahrkarte",
+      "language:de:ausweis"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+    "source_title": "PONS · Haltestelle",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle",
+        "title": "PONS · Haltestelle",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Haltestelle: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://de.langenscheidt.com/spanisch-deutsch/horario",
+        "title": "Langenscheidt · horario",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Öffnungszeiten: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein",
+        "title": "PONS · Fahrschein / Fahrkarte",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Fahrkarte: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis",
+        "title": "Langenscheidt · Ausweis",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Ausweis: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "match",
+    "prompt": "Une palabras de un viaje en transporte público.",
+    "options": [
+      "die Haltestelle",
+      "die Öffnungszeiten",
+      "die Fahrkarte",
+      "der Ausweis"
+    ],
+    "pairs": [
+      "la parada de transporte",
+      "el horario de apertura",
+      "el billete de transporte",
+      "el documento de identidad"
+    ],
+    "explanation": "die Haltestelle: la parada de transporte; die Öffnungszeiten: el horario de apertura; die Fahrkarte: el billete de transporte; der Ausweis: el documento de identidad."
+  },
+  {
+    "id": "szl16-de-parejas-3",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "match_words",
+    "concept_id": "language:de:review-3",
+    "learning_concepts": [
+      "language:de:unterschrift",
+      "language:de:quittung",
+      "language:de:bewerbung",
+      "language:de:lohn"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+    "source_title": "PONS · Unterschrift",
+    "sources": [
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift",
+        "title": "PONS · Unterschrift",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Unterschrift: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf",
+        "title": "PONS · Vocabulario de compras",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Quittung: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html",
+        "title": "dict.cc · Bewerbung",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Bewerbung: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/lohn",
+        "title": "Langenscheidt · Lohn",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Lohn: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "match",
+    "prompt": "Une palabras de documentos, compras y trabajo.",
+    "options": [
+      "die Unterschrift",
+      "die Quittung",
+      "die Bewerbung",
+      "der Lohn"
+    ],
+    "pairs": [
+      "la firma",
+      "el recibo de pago",
+      "la solicitud de empleo",
+      "el salario"
+    ],
+    "explanation": "die Unterschrift: la firma; die Quittung: el recibo de pago; die Bewerbung: la solicitud de empleo; der Lohn: el salario."
+  },
+  {
+    "id": "szl16-de-parejas-4",
+    "collection": "suizamente-language-exercises-16",
+    "territory": "CH",
+    "scope": "CH",
+    "canton": null,
+    "topic": "idioma",
+    "category": "idioma",
+    "difficulty": 2,
+    "language": "es",
+    "learning_language": "de",
+    "language_task": "match_words",
+    "concept_id": "language:de:review-4",
+    "learning_concepts": [
+      "language:de:obst",
+      "language:de:brot",
+      "language:de:milch",
+      "language:de:wasser"
+    ],
+    "status": "published",
+    "game_only": true,
+    "correct_index": 0,
+    "source_url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf",
+    "source_title": "PONS · Obst – Fruta",
+    "sources": [
+      {
+        "url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf",
+        "title": "PONS · Obst – Fruta",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Obst: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://en.langenscheidt.com/german-spanish/brot",
+        "title": "Langenscheidt · Brot",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Brot: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://de.langenscheidt.com/deutsch-spanisch/milch",
+        "title": "Langenscheidt · Milch",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Milch: género, significado y uso cotidiano"
+      },
+      {
+        "url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser",
+        "title": "PONS · Wasser",
+        "checked_at": "2026-11-18",
+        "locator": "Entrada Wasser: género, significado y uso cotidiano"
+      }
+    ],
+    "reviewed_at": "2026-11-18",
+    "verified_at": "2026-11-18",
+    "validation_status": "verified",
+    "next_review_at": "2027-11-18",
+    "game_type": "match",
+    "prompt": "Une estas palabras de la lista de la compra.",
+    "options": [
+      "das Obst",
+      "das Brot",
+      "die Milch",
+      "das Wasser"
+    ],
+    "pairs": [
+      "la fruta",
+      "el pan",
+      "la leche",
+      "el agua"
+    ],
+    "explanation": "das Obst: la fruta; das Brot: el pan; die Milch: la leche; das Wasser: el agua."
+  }
+]

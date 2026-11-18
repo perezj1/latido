@@ -111,7 +111,57 @@ try {
     }
     await page.locator('.sg-map').waitFor()
   }
-  if(process.argv.includes('--trivia-only')||process.argv.includes('--review-only')){
+  if(process.argv.includes('--language-exercises-only')){
+    await db.exec(await readFile('supabase/suizamente_revision_completa.sql','utf8'))
+    const bank=JSON.parse(await readFile('supabase/seed-data/suizamente-language-exercises.json','utf8'))
+    const player=await contextFor(SZ_ALICE),page=player.page
+    for(const task of ['choose_word','meaning','complete_sentence','order_sentence','match_words']){
+      const q=bank.find(q=>q.language_task===task)
+      const session=await szRpc(db,SZ_ALICE,'start',{mode:'practice',category:'idioma'})
+      const v=(await db.query('SELECT v.id FROM suizamente_private.questions q JOIN suizamente_private.versions v ON v.question_id=q.id AND v.version=q.current_version WHERE q.id=$1',[q.id])).rows[0]
+      await db.query("UPDATE suizamente_private.sessions SET version_ids=ARRAY[$2::bigint],position=0,option_orders=jsonb_build_object($2::text,$3::jsonb) WHERE id=$1",[session.id,v.id,JSON.stringify(q.options.map((_,i)=>q.options.length-1-i))])
+      await visit(page,`/suizamente/partida/${session.id}`)
+      await expect(page.locator('.sg-question-heading')).toHaveText(q.prompt)
+      await expect(page.getByRole('textbox',{name:'Tu respuesta',exact:true})).toHaveCount(0)
+      for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});await fits(page,`language exercise ${task} ${width}`)}
+      await page.setViewportSize({width:390,height:844})
+      await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-exercise-${task}.png`})
+      await finishCurrent(page,SZ_ALICE)
+    }
+    await player.close()
+    console.log('Browser: five new language task families, 320/390/1280 layouts, shuffled answers, zero typing, feedback and results passed.')
+  }else if(process.argv.includes('--languages-only')||process.argv.includes('--summit-languages-only')){
+    const {finishGame}=await import('./test-suizamente-game.mjs')
+    await db.exec(await readFile('supabase/suizamente_revision_completa.sql','utf8'))
+    await finishGame(db,SZ_ALICE,await szRpc(db,SZ_ALICE,'game_start'))
+    const summitLanguage=process.argv.includes('--summit-languages-only')
+    if(summitLanguage){
+      const mountains=JSON.parse(await readFile('src/data/suizamenteMountains.json','utf8'))
+      for(let node=0;node<mountains[2].st.length;node++)await finishGame(db,SZ_ALICE,await szRpc(db,SZ_ALICE,'game_start',{node}))
+    }
+    let session=await szRpc(db,SZ_ALICE,'game_start',{node:summitLanguage?8:0})
+    const player=await contextFor(SZ_ALICE),page=player.page
+    await visit(page,`/suizamente/partida/${session.id}`)
+    while(session.question.category!=='idioma'){
+      await answerCurrent(page,SZ_ALICE)
+      await page.locator('.sg-game-footer').getByRole('button',{name:/^(Continuar|Entendido)$/}).click()
+      await expect(page.locator('.sg-question-heading')).not.toHaveText(session.question.prompt)
+      session=await szRpc(db,SZ_ALICE,'session',{id:session.id})
+    }
+    await expect(page.locator('.sg-topic-label')).toHaveText(/Idiomas/)
+    await expect(page.getByRole('textbox',{name:'Tu respuesta',exact:true})).toHaveCount(0)
+    for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});await fits(page,`language ${width}`)}
+    await page.setViewportSize({width:390,height:844})
+    await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-language-${summitLanguage?'summit':'stage'}.png`})
+    if(summitLanguage){
+      await answerCurrent(page,SZ_ALICE)
+      await expect(page.locator('.sg-feedback-xp')).toHaveText('Acierto del test · sin XP adicional')
+    }
+    await finishCurrent(page,SZ_ALICE)
+    await expect(page.locator('.sg-result-heading')).toBeVisible()
+    await player.close()
+    console.log('Browser: real in-stage language exercise, responsive layout, no typing, grading, feedback and result passed.')
+  }else if(process.argv.includes('--trivia-only')||process.argv.includes('--review-only')){
     const {loadContentPack,publicationSql}=await import('./lib/suizamente-content-pack.mjs')
     const {finishGame}=await import('./test-suizamente-game.mjs')
     const pack=await loadContentPack()

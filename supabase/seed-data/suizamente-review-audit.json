@@ -3,19 +3,20 @@
   "date": "2026-11-18",
   "stats": {
     "original": 1619,
-    "published": 1619,
-    "total": 1645,
+    "published": 1683,
+    "total": 1709,
     "improved": 1027,
     "retained": 566,
     "replaced": 26,
     "replacement": 26,
+    "added": 64,
     "formats": {
-      "choice": 665,
+      "choice": 713,
       "false": 1,
       "image": 162,
-      "match": 217,
+      "match": 221,
       "multi": 67,
-      "order": 189,
+      "order": 201,
       "short": 20,
       "tf": 298
     }
@@ -47311,6 +47312,518 @@
       "decision": "replacement",
       "replaces": "zh-canton-portal",
       "source_url": "https://ws-old.parlament.ch/cantons"
+    },
+    {
+      "id": "szl16-de-schluessel-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel"
+    },
+    {
+      "id": "szl16-de-schluessel-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel"
+    },
+    {
+      "id": "szl16-de-schluessel-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel"
+    },
+    {
+      "id": "szl16-de-schluessel-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel"
+    },
+    {
+      "id": "szl16-de-haltestelle-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle"
+    },
+    {
+      "id": "szl16-de-haltestelle-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle"
+    },
+    {
+      "id": "szl16-de-haltestelle-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle"
+    },
+    {
+      "id": "szl16-de-haltestelle-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle"
+    },
+    {
+      "id": "szl16-de-unterschrift-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift"
+    },
+    {
+      "id": "szl16-de-unterschrift-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift"
+    },
+    {
+      "id": "szl16-de-unterschrift-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift"
+    },
+    {
+      "id": "szl16-de-unterschrift-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift"
+    },
+    {
+      "id": "szl16-de-oeffnungszeiten-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/spanisch-deutsch/horario"
+    },
+    {
+      "id": "szl16-de-oeffnungszeiten-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/spanisch-deutsch/horario"
+    },
+    {
+      "id": "szl16-de-oeffnungszeiten-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/spanisch-deutsch/horario"
+    },
+    {
+      "id": "szl16-de-oeffnungszeiten-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/spanisch-deutsch/horario"
+    },
+    {
+      "id": "szl16-de-fahrkarte-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein"
+    },
+    {
+      "id": "szl16-de-fahrkarte-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein"
+    },
+    {
+      "id": "szl16-de-fahrkarte-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein"
+    },
+    {
+      "id": "szl16-de-fahrkarte-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Fahrschein"
+    },
+    {
+      "id": "szl16-de-quittung-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf"
+    },
+    {
+      "id": "szl16-de-quittung-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf"
+    },
+    {
+      "id": "szl16-de-quittung-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf"
+    },
+    {
+      "id": "szl16-de-quittung-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://pons-langenscheidt-zusatzmaterial.de/audio-daten/DaF/Deutsch-Test%20f%C3%BCr%20Zuwanderer%20-%20wordlist%20DE-ES_final.pdf"
+    },
+    {
+      "id": "szl16-de-ausweis-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis"
+    },
+    {
+      "id": "szl16-de-ausweis-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis"
+    },
+    {
+      "id": "szl16-de-ausweis-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis"
+    },
+    {
+      "id": "szl16-de-ausweis-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/ausweis"
+    },
+    {
+      "id": "szl16-de-bewerbung-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html"
+    },
+    {
+      "id": "szl16-de-bewerbung-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html"
+    },
+    {
+      "id": "szl16-de-bewerbung-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html"
+    },
+    {
+      "id": "szl16-de-bewerbung-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://m.dict.cc/deutsch-spanisch/bewerbung.html"
+    },
+    {
+      "id": "szl16-de-briefkasten-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html"
+    },
+    {
+      "id": "szl16-de-briefkasten-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html"
+    },
+    {
+      "id": "szl16-de-briefkasten-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html"
+    },
+    {
+      "id": "szl16-de-briefkasten-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://m.dict.cc/deutsch-spanisch/Briefkasten.html"
+    },
+    {
+      "id": "szl16-de-abfall-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/abfall"
+    },
+    {
+      "id": "szl16-de-abfall-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/abfall"
+    },
+    {
+      "id": "szl16-de-abfall-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/abfall"
+    },
+    {
+      "id": "szl16-de-abfall-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/abfall"
+    },
+    {
+      "id": "szl16-de-lohn-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/lohn"
+    },
+    {
+      "id": "szl16-de-lohn-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/lohn"
+    },
+    {
+      "id": "szl16-de-lohn-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/lohn"
+    },
+    {
+      "id": "szl16-de-lohn-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/lohn"
+    },
+    {
+      "id": "szl16-de-hilfe-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf"
+    },
+    {
+      "id": "szl16-de-hilfe-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf"
+    },
+    {
+      "id": "szl16-de-hilfe-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf"
+    },
+    {
+      "id": "szl16-de-hilfe-order_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://www.goethe.de/pro/relaunch/prf/de/A1_SD1_Wortliste_02.pdf"
+    },
+    {
+      "id": "szl16-de-obst-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf"
+    },
+    {
+      "id": "szl16-de-obst-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf"
+    },
+    {
+      "id": "szl16-de-obst-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf"
+    },
+    {
+      "id": "szl16-de-brot-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://en.langenscheidt.com/german-spanish/brot"
+    },
+    {
+      "id": "szl16-de-brot-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://en.langenscheidt.com/german-spanish/brot"
+    },
+    {
+      "id": "szl16-de-brot-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://en.langenscheidt.com/german-spanish/brot"
+    },
+    {
+      "id": "szl16-de-milch-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/milch"
+    },
+    {
+      "id": "szl16-de-milch-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/milch"
+    },
+    {
+      "id": "szl16-de-milch-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.langenscheidt.com/deutsch-spanisch/milch"
+    },
+    {
+      "id": "szl16-de-wasser-choose_word",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser"
+    },
+    {
+      "id": "szl16-de-wasser-meaning",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser"
+    },
+    {
+      "id": "szl16-de-wasser-complete_sentence",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Wasser"
+    },
+    {
+      "id": "szl16-de-parejas-1",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Schl%C3%BCssel"
+    },
+    {
+      "id": "szl16-de-parejas-2",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Haltestelle"
+    },
+    {
+      "id": "szl16-de-parejas-3",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://de.pons.com/%C3%BCbersetzung/deutsch-spanisch/Unterschrift"
+    },
+    {
+      "id": "szl16-de-parejas-4",
+      "decision": "added",
+      "reasons": [
+        "Ejercicio original de vocabulario cotidiano con fuente léxica contrastada"
+      ],
+      "source_url": "https://pons-langenscheidt-zusatzmaterial.de/shop-daten/landingpages/bildwoerterbuch/PONS_Bildwoerterbuch_Deutsch-Spanisch_nach_Kapitel.pdf"
     }
   ]
 }

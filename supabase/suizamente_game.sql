@@ -60,6 +60,13 @@ BEGIN
     'inventory',coalesce(pl.inventory,'{"x2":0,"life":0,"freeze":0}'::jsonb),'active',active,'day',today));
 END $$;
 
+CREATE OR REPLACE FUNCTION suizamente_private.is_language_exercise(p jsonb) RETURNS boolean
+LANGUAGE sql IMMUTABLE SET search_path='' AS $$
+  SELECT coalesce(p->>'category'='idioma' AND (
+    p->>'game_type' IN ('match','order','image') OR p->>'id' IN ('de-word-bahnhof','de-word-termin','de-word-wohnung','de-word-rechnung','de-word-apotheke','de-word-ankunft','de-word-abfahrt','de-word-gleis','de-word-eingang','de-word-ausgang','de-phrase-termin-vereinbaren','de-phrase-wiederholen','de-word-geschlossen','de-word-umsteigen','de-phrase-wie-viel','de-phrase-karte-bezahlen','de-phrase-bitte-langsamer','de-phrase-unterlagen-mitbringen','de-phrase-besichtigung','de-message-termin-verschoben','de-message-rechnung-bezahlen','de-message-termin-absagen','de-message-anschluss-verpasst','de-message-schriftlich-bestaetigen','szx-vd-frase-politesse','szx-bs-larve-dialecto','szx-vs-siguiente-parada-vs','szx-gr-allegra','szx-sg-aviso-entendido','szx-ar-schuppel','szx-ar-traduccion-solicitud','szx-ai-bumeranze','szx-ai-mektig','szx-ai-backnasli-moneda','szx-sz-aviso-silencio','szx-sz-obras-desvio','szx-ur-ryys-boor','szx-ur-cambiar-cita','szx-ur-zuckerboona','szx-ow-exposicion-horario','szx-gl-curso-anuncio','szx-zg-chriesi-palabra','szx-so-once-traduccion-so','szl16-de-schluessel-choose_word','szl16-de-schluessel-meaning','szl16-de-schluessel-complete_sentence','szl16-de-haltestelle-choose_word','szl16-de-haltestelle-meaning','szl16-de-haltestelle-complete_sentence','szl16-de-unterschrift-choose_word','szl16-de-unterschrift-meaning','szl16-de-unterschrift-complete_sentence','szl16-de-oeffnungszeiten-choose_word','szl16-de-oeffnungszeiten-meaning','szl16-de-oeffnungszeiten-complete_sentence','szl16-de-fahrkarte-choose_word','szl16-de-fahrkarte-meaning','szl16-de-fahrkarte-complete_sentence','szl16-de-quittung-choose_word','szl16-de-quittung-meaning','szl16-de-quittung-complete_sentence','szl16-de-ausweis-choose_word','szl16-de-ausweis-meaning','szl16-de-ausweis-complete_sentence','szl16-de-bewerbung-choose_word','szl16-de-bewerbung-meaning','szl16-de-bewerbung-complete_sentence','szl16-de-briefkasten-choose_word','szl16-de-briefkasten-meaning','szl16-de-briefkasten-complete_sentence','szl16-de-abfall-choose_word','szl16-de-abfall-meaning','szl16-de-abfall-complete_sentence','szl16-de-lohn-choose_word','szl16-de-lohn-meaning','szl16-de-lohn-complete_sentence','szl16-de-hilfe-choose_word','szl16-de-hilfe-meaning','szl16-de-hilfe-complete_sentence','szl16-de-obst-choose_word','szl16-de-obst-meaning','szl16-de-obst-complete_sentence','szl16-de-brot-choose_word','szl16-de-brot-meaning','szl16-de-brot-complete_sentence','szl16-de-milch-choose_word','szl16-de-milch-meaning','szl16-de-milch-complete_sentence','szl16-de-wasser-choose_word','szl16-de-wasser-meaning','szl16-de-wasser-complete_sentence')
+  ),false)
+$$;
+
 CREATE OR REPLACE FUNCTION suizamente_private.game_start(p jsonb) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 #variable_conflict use_variable
@@ -67,7 +74,7 @@ DECLARE actor uuid:=suizamente_private.require_user(); pl suizamente_private.pla
   lv integer; node integer; cur integer:=-1; m jsonb; st jsonb; kind text; ids bigint[]:='{}'; chosen bigint; orders jsonb; sid uuid;
   day date:=(now() AT TIME ZONE 'Europe/Zurich')::date; total integer; target text; local_wanted integer; local_found integer; fallback boolean:=false;
   practice boolean:=false; gift text; gift_at integer:=-1; doubled boolean:=false; life boolean:=false; n integer; need_local boolean; attempt_level integer;
-  desired_kind text; previous_kind text; previous_topic text;
+  desired_kind text; previous_kind text; previous_topic text; language_slot integer; language_slots integer[]:='{}'; language_total integer; k integer; want_language boolean;
   has_trivia boolean:=EXISTS(SELECT 1 FROM suizamente_private.trivia_catalog); want_trivia boolean; general_versions bigint[]:='{}';
 BEGIN
   PERFORM suizamente_private.ensure_player(actor);
@@ -99,28 +106,50 @@ BEGIN
   total:=CASE WHEN node=-1 THEN 3 WHEN node=jsonb_array_length(m->'stages') THEN (m->>'test')::integer WHEN kind='bonus' THEN 3 ELSE (m->>'q')::integer END;
   target:=CASE WHEN kind='stage' THEN st->>2 ELSE NULL END;
   local_wanted:=CASE WHEN kind='arrival' OR kind='summit' OR NOT pl.include_canton OR pl.canton IS NULL THEN 0 WHEN pl.include_general THEN greatest(1,total*2/5) ELSE total END;
+  -- Language is part of summit knowledge: about one fifth of each test,
+  -- spaced through the round. Old-summit practice uses the same distribution.
+  IF node=jsonb_array_length(m->'stages') THEN
+    language_total:=greatest(1,total/5);
+    FOR k IN 1..language_total LOOP
+      language_slots:=array_append(language_slots,2+(k-1)*(total-2)/language_total);
+    END LOOP;
+  ELSIF kind='stage' THEN
+    -- Ordinary stages retain one optional exercise, away from the opening
+    -- picture and the existing prize question.
+    language_slot:=2+(node+lv-1)%(total-1);
+    IF language_slot=least(4,total-2)+1 THEN language_slot:=2+(language_slot-1)%(total-1); END IF;
+    language_slots:=ARRAY[language_slot];
+  END IF;
   FOR n IN 1..total LOOP
     -- Distribute canton questions through the stage rather than grouping them at the end.
     need_local:=floor(n*local_wanted::numeric/total)>floor((n-1)*local_wanted::numeric/total);
     -- Rotate the starting format between stages. Typing stays exceptional; it is
     -- never required in arrivals, bonus challenges or summit tests.
     want_trivia:=n%4<>0;
+    want_language:=n=ANY(language_slots);
     desired_kind:=CASE WHEN has_trivia AND n=1 THEN 'image' WHEN NOT has_trivia AND kind='stage' AND node%5=4 AND n=total THEN 'short'
       ELSE (CASE WHEN has_trivia THEN ARRAY['image','choice','tf','match','multi','order','false'] ELSE ARRAY['choice','image','tf','match','multi','order','false'] END)[1+(n-1+greatest(node,0)+lv-1)%7] END;
     IF has_trivia AND n>1 AND desired_kind='image' THEN desired_kind:='choice'; END IF;
+    IF want_language THEN desired_kind:=(ARRAY['choice','match','order','image'])[1+(node+lv+array_position(language_slots,n)-2)%4]; END IF;
     SELECT v.id INTO chosen FROM suizamente_private.questions q JOIN suizamente_private.versions v ON v.question_id=q.id AND v.version=q.current_version
       LEFT JOIN suizamente_private.trivia_catalog tc ON tc.question_id=q.id AND tc.original_prompt=v.payload->>'prompt'
       LEFT JOIN suizamente_private.progress g ON g.user_id=actor AND g.question_id=q.id
       WHERE v.payload->>'status'='published' AND NOT v.annulled AND NOT v.id=ANY(ids)
-        AND v.payload->>'category'<>'idioma'
+        AND (v.payload->>'category'<>'idioma' OR want_language AND suizamente_private.is_language_exercise(v.payload))
+        AND (NOT want_language OR NOT EXISTS(SELECT 1 FROM suizamente_private.versions previous WHERE previous.id=ANY(ids)
+          AND (nullif(previous.payload->>'concept_id','')=nullif(v.payload->>'concept_id','')
+            OR previous.payload->'learning_concepts' ?| ARRAY(SELECT jsonb_array_elements_text(v.payload->'learning_concepts')))))
         AND (coalesce(v.payload->>'game_type','choice')<>'short' OR desired_kind='short')
         AND (CASE WHEN kind='arrival' THEN v.payload->>'arrival_level'=lv::text ELSE NOT v.payload ? 'arrival_level' END)
-        AND (v.payload->>'scope'='CH' OR pl.include_canton AND v.payload->>'canton'=pl.canton OR tc.national AND (pl.include_general OR kind='summit'))
-        AND (kind='arrival' OR (v.payload->>'difficulty')::integer<=lv AND (kind<>'summit' OR v.payload->>'scope'='CH' OR tc.national))
-        AND (kind='arrival' OR v.payload->>'scope'='CH' OR tc.question_id IS NOT NULL OR (v.payload->>'difficulty')::integer>=greatest(1,lv-1))
-      ORDER BY CASE WHEN need_local THEN CASE WHEN v.payload->>'scope'='canton' AND v.payload->>'canton'=pl.canton THEN 0 ELSE 1 END ELSE CASE WHEN v.payload->>'scope'='CH' OR tc.national THEN 0 ELSE 1 END END,
+        AND (v.payload->>'scope'='CH' OR pl.include_canton AND v.payload->>'canton'=pl.canton OR (tc.national OR want_language AND suizamente_private.is_language_exercise(v.payload)) AND (pl.include_general OR kind='summit'))
+        AND (kind='arrival' OR (v.payload->>'difficulty')::integer<=lv AND (kind<>'summit' OR v.payload->>'scope'='CH' OR tc.national OR want_language AND suizamente_private.is_language_exercise(v.payload)))
+        AND (kind='arrival' OR v.payload->>'scope'='CH' OR tc.question_id IS NOT NULL OR want_language AND v.payload->>'category'='idioma' OR (v.payload->>'difficulty')::integer>=greatest(1,lv-1))
+      ORDER BY CASE WHEN want_language AND v.payload->>'category'='idioma' THEN 0 WHEN want_language THEN 1 ELSE 0 END,
+        CASE WHEN want_language THEN CASE WHEN g.question_id IS NULL THEN 0 WHEN g.last_correct IS FALSE THEN 1 ELSE 2 END ELSE 0 END,
+        CASE WHEN want_language AND pl.include_canton THEN CASE WHEN v.payload->>'canton'=pl.canton THEN 0 ELSE 1 END ELSE 0 END,
+        CASE WHEN need_local THEN CASE WHEN v.payload->>'scope'='canton' AND v.payload->>'canton'=pl.canton THEN 0 ELSE 1 END ELSE CASE WHEN v.payload->>'scope'='CH' OR tc.national THEN 0 ELSE 1 END END,
         CASE WHEN kind='trail_review' AND g.last_correct IS FALSE THEN 0 WHEN g.question_id IS NULL THEN 1 WHEN g.last_correct IS FALSE THEN 2 ELSE 3 END,
-        CASE WHEN has_trivia THEN CASE WHEN (tc.question_id IS NOT NULL)=want_trivia THEN 0 ELSE 1 END WHEN target IS NOT NULL AND n%2=1 AND v.payload->>'category'=target THEN 0 ELSE 1 END,
+        CASE WHEN has_trivia AND NOT want_language THEN CASE WHEN (tc.question_id IS NOT NULL)=want_trivia THEN 0 ELSE 1 END WHEN target IS NOT NULL AND n%2=1 AND v.payload->>'category'=target THEN 0 ELSE 1 END,
         CASE WHEN NOT has_trivia THEN abs((v.payload->>'difficulty')::integer-lv) ELSE 0 END,
         CASE WHEN coalesce(v.payload->>'game_type','choice')=desired_kind THEN 0 WHEN coalesce(v.payload->>'game_type','choice') IS DISTINCT FROM previous_kind THEN 1 ELSE 2 END,
         CASE WHEN has_trivia AND tc.topic IS NOT DISTINCT FROM previous_topic THEN 1 ELSE 0 END,
@@ -131,8 +160,8 @@ BEGIN
     IF chosen IS NULL THEN RAISE EXCEPTION 'SZ_NOT_ENOUGH_QUESTIONS'; END IF;
     ids:=array_append(ids,chosen);
     SELECT tc.topic INTO previous_topic FROM suizamente_private.versions v JOIN suizamente_private.trivia_catalog tc ON tc.question_id=v.question_id WHERE v.id=chosen;
-    IF EXISTS(SELECT 1 FROM suizamente_private.versions v JOIN suizamente_private.trivia_catalog tc ON tc.question_id=v.question_id AND tc.original_prompt=v.payload->>'prompt'
-      WHERE v.id=chosen AND tc.national AND v.payload->>'scope'='canton' AND (NOT need_local OR v.payload->>'canton' IS DISTINCT FROM pl.canton)) THEN
+    IF EXISTS(SELECT 1 FROM suizamente_private.versions v LEFT JOIN suizamente_private.trivia_catalog tc ON tc.question_id=v.question_id AND tc.original_prompt=v.payload->>'prompt'
+      WHERE v.id=chosen AND (tc.national OR want_language AND suizamente_private.is_language_exercise(v.payload)) AND v.payload->>'scope'='canton' AND (NOT need_local OR v.payload->>'canton' IS DISTINCT FROM pl.canton)) THEN
       general_versions:=array_append(general_versions,chosen);
     END IF;
     SELECT coalesce(payload->>'game_type','choice') INTO previous_kind FROM suizamente_private.versions WHERE id=chosen;
@@ -298,11 +327,16 @@ BEGIN
   FOR n IN 1..5 LOOP
     SELECT v.id INTO chosen FROM suizamente_private.questions q JOIN suizamente_private.versions v ON v.question_id=q.id AND v.version=q.current_version LEFT JOIN suizamente_private.progress g ON g.user_id=actor AND g.question_id=q.id
       WHERE v.payload->>'status'='published' AND NOT v.annulled AND NOT v.id=ANY(ids) AND NOT v.payload ? 'arrival_level'
-        AND (topic IS NULL AND v.payload->>'category'<>'idioma' OR v.payload->>'category'=topic)
+        AND (topic IS NULL AND (v.payload->>'category'<>'idioma' OR n=3 AND suizamente_private.is_language_exercise(v.payload)) OR v.payload->>'category'=topic)
+        AND NOT EXISTS(SELECT 1 FROM suizamente_private.versions previous WHERE previous.id=ANY(ids)
+          AND (nullif(previous.payload->>'concept_id','')=nullif(v.payload->>'concept_id','')
+            OR previous.payload->'learning_concepts' ?| ARRAY(SELECT jsonb_array_elements_text(v.payload->'learning_concepts'))))
         AND (v.payload->>'scope'='CH' OR pl.include_canton AND v.payload->>'canton'=pl.canton)
         AND (v.payload->>'difficulty')::integer<=pl.level
-        AND (v.payload->>'scope'='CH' OR (v.payload->>'difficulty')::integer>=greatest(1,pl.level-1))
-      ORDER BY CASE WHEN (v.payload->>'scope'='canton')=(n>5-desired_local) THEN 0 ELSE 1 END,
+        AND (v.payload->>'scope'='CH' OR v.payload->>'category'='idioma' OR (v.payload->>'difficulty')::integer>=greatest(1,pl.level-1))
+      ORDER BY CASE WHEN topic IS NULL AND n=3 AND v.payload->>'category'='idioma' THEN 0 WHEN topic IS NULL AND n=3 THEN 1 ELSE 0 END,
+        CASE WHEN topic IS NULL AND n=3 AND pl.include_canton THEN CASE WHEN v.payload->>'canton'=pl.canton THEN 0 ELSE 1 END ELSE 0 END,
+        CASE WHEN (v.payload->>'scope'='canton')=(n>5-desired_local) THEN 0 ELSE 1 END,
         CASE WHEN g.last_correct IS FALSE THEN 0 WHEN g.question_id IS NULL THEN 1 ELSE 2 END,
         abs((v.payload->>'difficulty')::integer-pl.level),random() LIMIT 1;
     IF chosen IS NULL THEN RAISE EXCEPTION 'SZ_NOT_ENOUGH_QUESTIONS'; END IF;

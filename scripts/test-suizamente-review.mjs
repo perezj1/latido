@@ -10,7 +10,7 @@ const bank=await json('supabase/seed-data/suizamente-reviewed.json'),audit=await
 const sql=await read('supabase/suizamente_revision_completa.sql'),pack=await loadContentPack()
 const baseline=await json('supabase/seed-data/suizamente-questions.json'),trivia=await json('supabase/seed-data/suizamente-trivia.json')
 const original=new Map([...baseline,...pack.questions,...trivia.questions,...trivia.refinements].map(q=>[q.id,q]))
-assert.equal(original.size,1619);assert.equal(bank.filter(q=>q.status==='published').length,1619)
+assert.equal(original.size,1619);assert.equal(bank.filter(q=>q.status==='published').length,audit.stats.published)
 assert.equal(new Set(audit.decisions.map(d=>d.id)).size,bank.length)
 for(const id of original.keys())assert.ok(audit.decisions.some(d=>d.id===id),`Review decision: ${id}`)
 for(const q of bank){
@@ -40,7 +40,7 @@ async function fullRoutes(db){
   const mt=await json('src/data/suizamenteMountains.json')
   for(const [actor,general,local]of [[SZ_ALICE,true,true],[SZ_BOB,true,false],[SZ_ADMIN,false,true]]){
     await szRpc(db,actor,'preferences',{canton:'ZH',alias:`Review-${actor.slice(0,2)}`,include_general:general,include_canton:local,leaderboard_opt_in:false})
-    const formats=new Set();let count=0,fun=0
+    const formats=new Set();let count=0,fun=0,languages=0
     for(let level=1;level<=5;level++){
       await finishGame(db,actor,await szRpc(db,actor,'game_start'))
       for(let node=0;node<mt[level].st.length;node++){
@@ -53,7 +53,7 @@ async function fullRoutes(db){
           assert.ok(!q.id.endsWith('-canton-portal'),'Retired portals are never selected')
           if(!local)assert.equal(q.scope,'CH')
           if(!general)assert.ok(q.scope==='CH'||q.canton==='ZH')
-          formats.add(q.type);count++;if(q.trivia_topic)fun++
+          formats.add(q.type);count++;if(q.trivia_topic)fun++;if(q.category==='idioma')languages++
           session=await gameAnswer(db,actor,session)
           if(session.status==='active')session=await szRpc(db,actor,'session',{id:session.id,advance:true})
         }
@@ -64,7 +64,7 @@ async function fullRoutes(db){
       await db.query("UPDATE suizamente_private.sessions SET day_key=day_key-($2::integer*10) WHERE user_id=$1 AND mode='summit' AND level=$2::integer",[actor,level])
       await db.query("UPDATE suizamente_private.sessions SET created_at=now()-interval '2 hours' WHERE user_id=$1",[actor])
     }
-    assert.ok(fun/count>.68,`${fun}/${count} cultural`)
+    assert.ok((fun+languages)/count>.68&&fun/count>.55,`${fun} cultural + ${languages} language / ${count}`)
     console.log(`Reviewed route ${general?'CH':''}/${local?'ZH':''}: five summits, ${fun}/${count} cultural, ${formats.size} formats; no injected XP.`)
   }
 }

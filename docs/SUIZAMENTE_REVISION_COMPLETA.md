@@ -1,5 +1,11 @@
 # Suizamente: revisión completa del banco · 14
 
+**Banco vigente ampliado:** [64 ejercicios nuevos de alemán y SQL 16](SUIZAMENTE_EJERCICIOS_IDIOMA.md).
+Los instaladores completos actuales incluyen 1.683 preguntas publicadas y 26 retiradas.
+
+Si ya ejecutaste las cuatro partes, aplica solo el SQL 16 indicado arriba.
+Incluye el selector de idioma de la actualización 15 y las preguntas nuevas.
+
 Revisión editorial de las **1.619 preguntas únicas** disponibles, considerando el
 banco inicial, los 27 territorios y las correcciones publicadas hasta el trivial 13.
 Se han revisado enunciados, opciones, soluciones, explicaciones y adecuación del
@@ -12,10 +18,10 @@ respuestas y fuentes; es contenido privado del servidor.
 En **Supabase → SQL Editor → New query**, ejecuta los siguientes **cuatro archivos
 completos, uno por uno y en este orden**:
 
-1. [suizamente_revision_completa_01.sql](../supabase/suizamente_revision_completa_01.sql): esquema, RLS y primeras preguntas; 584 KiB.
-2. [suizamente_revision_completa_02.sql](../supabase/suizamente_revision_completa_02.sql): continuación; 584 KiB.
-3. [suizamente_revision_completa_03.sql](../supabase/suizamente_revision_completa_03.sql): continuación; 584 KiB.
-4. [suizamente_revision_completa_04.sql](../supabase/suizamente_revision_completa_04.sql): resto del banco y catálogo; 587 KiB.
+1. [suizamente_revision_completa_01.sql](../supabase/suizamente_revision_completa_01.sql): esquema, RLS y primeras preguntas; aproximadamente 604 KiB.
+2. [suizamente_revision_completa_02.sql](../supabase/suizamente_revision_completa_02.sql): continuación; aproximadamente 604 KiB.
+3. [suizamente_revision_completa_03.sql](../supabase/suizamente_revision_completa_03.sql): continuación; aproximadamente 604 KiB.
+4. [suizamente_revision_completa_04.sql](../supabase/suizamente_revision_completa_04.sql): resto del banco y catálogo; aproximadamente 606 KiB.
 
 Cada parte incluye su transacción y las entradas de catálogo de sus preguntas.
 Puedes usar una consulta nueva para cada archivo; no es necesario mantener la
@@ -67,7 +73,8 @@ Las 26 sustituidas preguntaban por direcciones web cantonales. Se retiran de la
 selección de partidas nuevas y se añaden 26 tarjetas visuales de siglas cantonales,
 con cuatro nombres de cantón para elegir. Las versiones anteriores siguen
 disponibles para las partidas que las tenían asignadas. Por eso el archivo contiene
-1.645 identificadores: **1.619 publicados y 26 retirados**.
+1.645 identificadores: **1.619 publicados y 26 retirados**, antes de los 64 añadidos
+en la ampliación 16. El total vigente es 1.709 identificadores, 1.683 publicados.
 
 Los cambios incluyen:
 
@@ -95,10 +102,10 @@ mantienen asociados a su identificador.
 
 | Formato publicado | Preguntas |
 |---|---:|
-| Respuesta única | 665 |
+| Respuesta única | 713 |
 | Verdadero/falso | 298 |
-| Parejas | 217 |
-| Ordenar | 189 |
+| Parejas | 221 |
+| Ordenar | 201 |
 | Imagen con cuatro opciones | 162 |
 | Selección múltiple | 67 |
 | Respuesta escrita breve | 20 |
