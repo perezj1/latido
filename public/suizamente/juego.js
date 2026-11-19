@@ -20,19 +20,18 @@ const pregunta = id => PREG.find(x => x.id === id);
 /* Logo oficial que ya utiliza Latido en la portada. */
 function logo() { return '<img class="logo beat" src="/favicon.svg" width="112" height="112" alt="Latido">'; }
 
-function datoPregunta(q) {
-  const partes = q.opciones.map(op => {
+function datosPorOpcion(q, elegida) {
+  const partes = q.opciones.map((op, indice) => {
     const titulo = `${op.e} ${op.t}:`;
-    return { op, titulo, inicio:q.dato.indexOf(titulo) };
+    return { indice, titulo, inicio:q.dato.indexOf(titulo) };
   }).filter(p => p.inicio >= 0).sort((a, b) => a.inicio - b.inicio);
   if (!partes.length || partes[0].inicio !== 0) {
-    return `<div class="fact"><span class="fe" aria-hidden="true">💡</span><p><b>¿Sabías que…?</b>${esc(q.dato)}</p></div>`;
+    return { [q.tipo === 'real' ? q.correcta : elegida]:q.dato };
   }
-  const entradas = partes.map((p, i) => {
+  return Object.fromEntries(partes.map((p, i) => {
     const descripcion = q.dato.slice(p.inicio + p.titulo.length, partes[i + 1]?.inicio ?? q.dato.length).trim();
-    return `<div class="fact-entry"><div class="fact-entry-heading"><span aria-hidden="true">${esc(p.op.e)}</span><b>${esc(p.op.t)}:</b></div><p>${esc(descripcion)}</p></div>`;
-  }).join('');
-  return `<div class="fact fact-list"><b>💡 ¿Sabías que…?</b>${entradas}</div>`;
+    return [p.indice, descripcion];
+  }));
 }
 
 /* ---------- respuestas propias (en este dispositivo) ---------- */
@@ -182,11 +181,8 @@ function abrirResultado(q, o, punto, repetida) {
       </div>
       <div class="panel rise" style="animation-delay:.15s">
         <h3>Lo que eligió la comunidad</h3>
-        <div id="reparto" style="display:flex;flex-direction:column;gap:14px"></div>
+        <div id="reparto" style="display:flex;flex-direction:column;gap:20px"></div>
         <p class="votes" id="votos"></p>
-      </div>
-      <div class="panel rise" style="animation-delay:.3s">
-        ${datoPregunta(q)}
       </div>
       <div class="row2">
         <button class="btn light" id="sig" type="button">${ultima ? 'Ver resumen' : 'Siguiente'} →</button>
@@ -218,10 +214,13 @@ function refrescarResultado(primera = false) {
   if (repetida) sub.textContent += ' (Ya la habías respondido: cuenta tu primer voto.)';
   const orden = ronda ? ronda.orden[q.id] : q.opciones.map((_, i) => i);
   const anima = primera && !RM;
+  const datos = datosPorOpcion(q, o);
   $('#reparto').innerHTML = orden.map((oi, k) => {
-    const tags = [oi === o ? '<span class="tag mine">Tu elección</span>' : '', real && oi === q.correcta ? '<span class="tag true">✓ La verdadera</span>' : ''].join('');
-    return `<div class="res o${k + 1}"><div class="res-top"><span class="res-t">${q.opciones[oi].e} ${esc(q.opciones[oi].t)}</span><span class="res-p" data-p="${hayDatos ? rep.pct[oi] : ''}">${hayDatos ? (anima ? 0 : rep.pct[oi]) + '%' : '—'}</span></div>
-      <div class="res-bar"><i style="width:${anima ? 0 : (hayDatos ? rep.pct[oi] : 0)}%" data-w="${hayDatos ? rep.pct[oi] : 0}"></i></div>${tags ? `<div class="tags">${tags}</div>` : ''}</div>`;
+    const elegida = oi === o;
+    const verdadera = real && oi === q.correcta ? '<div class="tags"><span class="tag true">✓ La verdadera</span></div>' : '';
+    const dato = datos[oi] ? `<div class="answer-fact"><b><span aria-hidden="true">💡</span> ¿Sabías que…?</b><p>${esc(datos[oi])}</p></div>` : '';
+    return `<div class="res o${k + 1}${elegida ? ' is-picked' : ''}">${elegida ? '<span class="tag mine">Tu elección</span>' : ''}<div class="res-top"><span class="res-t">${q.opciones[oi].e} ${esc(q.opciones[oi].t)}</span><span class="res-p" data-p="${hayDatos ? rep.pct[oi] : ''}">${hayDatos ? (anima ? 0 : rep.pct[oi]) + '%' : '—'}</span></div>
+      <div class="res-bar"><i style="width:${anima ? 0 : (hayDatos ? rep.pct[oi] : 0)}%" data-w="${hayDatos ? rep.pct[oi] : 0}"></i></div>${verdadera}${dato}</div>`;
   }).join('');
   $('#votos').textContent = hayDatos ? `${rep.total.toLocaleString('es-ES')} ${rep.total === 1 ? 'voto' : 'votos'}` : textoNota();
   if (anima) setTimeout(() => {

@@ -152,7 +152,7 @@ try {
   online = true
   await page.evaluate(() => window.dispatchEvent(new Event('online')))
   await expect(page.locator('#votos')).toHaveText('3 votos')
-  await expect(page.locator('.tag.mine').locator('..').locator('..').locator('.res-p')).toHaveText('67%')
+  await expect(page.locator('.res').filter({ has:page.locator('.tag.mine') }).locator('.res-p')).toHaveText('67%')
   await page.locator('#sig').click()
   await page.locator('#otra').click()
   const beforeRepeat = postCount
