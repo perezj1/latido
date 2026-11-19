@@ -54,7 +54,8 @@
     "vapid:keys": "node scripts/generate-vapid-keys.mjs",
     "suizamente:validar": "node scripts/validar-suizamente.cjs",
     "test:suizamente:votos": "node scripts/test-suizamente-votos.mjs",
-    "test:suizamente:referencia": "node scripts/test-suizamente-referencia.mjs"
+    "test:suizamente:referencia": "node scripts/test-suizamente-referencia.mjs",
+    "test:suizamente:produccion": "node scripts/test-suizamente-produccion.mjs"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.2.7",

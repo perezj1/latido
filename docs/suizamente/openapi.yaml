@@ -9,7 +9,21 @@ info:
     Los índices de opción son los del archivo data/preguntas.json (0, 1, 2), nunca la posición en pantalla.
 servers:
   - url: /api/suizamente
+    description: Adaptador local de Vite o servidor Vercel configurado
+  - url: https://{proyecto}.supabase.co/functions/v1/suizamente-votos
+    description: API de producción en Supabase
+    variables:
+      proyecto:
+        default: zmievixfjefjppofebbh
+security:
+  - LatidoSession: []
+  - {}
 components:
+  securitySchemes:
+    LatidoSession:
+      type: http
+      scheme: bearer
+      description: Token de acceso de la sesión de Supabase de Latido; tiene prioridad sobre X-Jugador-Id.
   parameters:
     JugadorId:
       name: X-Jugador-Id

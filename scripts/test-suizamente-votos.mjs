@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 import { createSuizamenteHandler } from '../api/suizamente.js'
+import { createSuizamenteHttp, suizamenteAllowedOrigin } from '../supabase/functions/_shared/suizamenteHttp.js'
 
 const db = new PGlite()
 const alice = '11111111-1111-4111-8111-111111111111'
@@ -61,6 +62,23 @@ try {
   assert.equal((await request('missing')).status, 404)
   assert.equal((await request('votos', { method:'DELETE' })).status, 405)
   assert.equal((await request('votos', { method:'POST', body:'{broken' })).status, 400)
+  assert.equal((await request('votos', { method:'POST', body:'x'.repeat(4097) })).status, 413)
+  const catalog = JSON.parse(await readFile('supabase/functions/_shared/suizamenteCatalogo.json', 'utf8'))
+  assert.deepEqual(catalog, Object.fromEntries(questions.map(q => [q.id, q.opciones.length])))
+  const edge = createSuizamenteHttp({
+    getClient:() => ({ auth:{ getUser:async () => ({ error:new Error('Invalid') }) }, rpc:(_name, args) => rpc(args) }),
+    questions:new Map(Object.entries(catalog)), getSecret:() => 'edge-test', allowedOrigin:suizamenteAllowedOrigin,
+  })
+  for (const origin of ['https://latido.ch','https://www.latido.ch','https://latidoch-git-suizamente-team.vercel.app','http://localhost:8080']) {
+    const preflight = await edge({ method:'OPTIONS', url:'https://project.supabase.co/functions/v1/suizamente-votos/votos', headers:{ origin } })
+    assert.equal(preflight.status, 204)
+    assert.equal(preflight.headers['Access-Control-Allow-Origin'], origin)
+  }
+  assert.equal((await edge({ method:'OPTIONS', url:'https://project.supabase.co/suizamente-votos/votos', headers:{ origin:'https://unrelated.test' } })).status, 403)
+  const edgeResult = await edge({ method:'GET', url:'https://project.supabase.co/functions/v1/suizamente-votos/votos/resumen?actual=1', headers:{ origin:'https://www.latido.ch' }, address:'edge-client' })
+  assert.equal(edgeResult.status, 200)
+  assert.deepEqual(edgeResult.body.conteos[two.id], [1,1,0])
+  assert.equal(edgeResult.headers['Cache-Control'], 'no-store')
   // Database enforces option bounds even if called without the HTTP validator.
   const invalid = await rpc({ accion:'votar', jugador:`anon:${alice}`, pregunta:two.id, eleccion:2, direccion:'sql-test' })
   assert.equal(invalid.error.code, 'PT400')

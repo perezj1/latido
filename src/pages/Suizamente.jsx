@@ -15,6 +15,9 @@ export default function Suizamente() {
       event.source.postMessage({
         type:'suizamente:session', requestId:event.data.requestId,
         token:data.session?.access_token || null, userId:data.session?.user?.id || null,
+        api:import.meta.env.PROD && import.meta.env.VITE_SUPABASE_URL
+          ? import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, '') + '/functions/v1/suizamente-votos'
+          : '/api/suizamente',
       }, window.location.origin)
     }
     window.addEventListener('message', identify)

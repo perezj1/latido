@@ -5,6 +5,7 @@ const app = $('#app'), layer = $('#layer');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const CONFIG = Object.assign({ api: '/api/suizamente', jugadorId: null, datos: '/suizamente/data/preguntas.json', ronda: 10 }, window.SUIZAMENTE_CONFIG || {});
 const identidad = await identidadLatido();
+if (identidad.api && !window.SUIZAMENTE_CONFIG?.api) CONFIG.api = identidad.api;
 const CLAVE = identidad.userId ? 'suizamente:v1:' + identidad.userId : 'suizamente:v1';
 const TEMAS = ['t-red', 't-blue', 't-orange', 't-sea', 't-sky', 't-mint'];
 const MODOS = {

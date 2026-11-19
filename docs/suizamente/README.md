@@ -13,7 +13,11 @@ portada de Latido. Los accesos de Inicio, Perfil y Explorar llevan al nuevo jueg
 - `public/suizamente/data/preguntas.json`: las 100 preguntas originales, con los
   mismos identificadores e índices de opciones; no modificar su orden.
 - `src/pages/Suizamente.jsx`: ruta React y puente de sesión del mismo origen.
-- `api/suizamente.js`: los tres endpoints HTTP. En Vite también se sirven localmente.
+- `api/suizamente.js`: adaptador de los tres endpoints HTTP para Vite/Vercel.
+- `supabase/functions/suizamente-votos/index.ts`: API de producción desplegada
+  en Supabase. El navegador la usa directamente en la compilación de producción.
+- `supabase/functions/_shared/suizamenteHttp.js`: contrato HTTP, identidad,
+  validación y privacidad compartidos por ambos adaptadores.
 - `supabase/suizamente_votos.sql`: tablas, catálogo de opciones, RPC restringida
   al servidor y límites persistentes por jugador/IP.
 - `openapi.yaml`: contrato entregado por Latido. La sesión de esta integración
@@ -38,19 +42,42 @@ en ese caso muestra el aviso de conexión, sin porcentajes. Reintenta al volver
 la conexión, al recargar o cada minuto mientras la página está visible.
 No se incluyen votos simulados en producción.
 
-Para habilitar los votos reales:
+## Producción
 
-1. Ejecutar **solo** `supabase/suizamente_votos.sql` completo en Supabase SQL Editor.
-   La instalación es aditiva e idempotente, independiente del juego anterior.
-2. Configurar `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` como variables de
-   servidor en Vercel; localmente pueden ir en `.env.local`. Se acepta
-   `VITE_SUPABASE_URL` como alternativa para la URL. La clave secreta nunca debe
-   tener el prefijo `VITE_` ni incorporarse al navegador.
-3. Desplegar por el flujo habitual del repositorio. `vercel.json` enruta
-   `/api/suizamente/votos`, `/votos/resumen` y `/votos/mios` a la función.
+La compilación de producción conecta a
+`${VITE_SUPABASE_URL}/functions/v1/suizamente-votos`. Reutiliza la URL pública
+que ya utiliza Latido: **no requiere añadir una clave secreta a Vercel**.
+Supabase proporciona `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` dentro de la
+Edge Function. La clave permanece en el servidor.
 
-No se ha ejecutado la migración ni desplegado contra servicios remotos. En el
-entorno local encontrado solo estaba configurada la clave pública de Supabase.
+La función permite jugadores anónimos por UUID y valida con Supabase cada token
+de sesión recibido. Su configuración `verify_jwt = false` permite ese acceso
+anónimo; el código valida la identidad de las personas con sesión. CORS admite
+`latido.ch`, `www.latido.ch`, los previews de `latidoch` y localhost.
+
+Instalación en otro proyecto o restauración:
+
+1. Ejecutar `supabase/suizamente_votos.sql` completo en Supabase SQL Editor.
+2. Desplegar únicamente la función nueva:
+
+   ```powershell
+   supabase functions deploy suizamente-votos --project-ref <referencia> --no-verify-jwt --use-api
+   ```
+
+3. Desplegar la web por el flujo habitual de la rama Git.
+
+El 19 de noviembre de 2026 se verificaron la instalación SQL, las 100 preguntas,
+los permisos y RLS en el proyecto Supabase de Latido; se desplegó la función y
+se comprobaron los endpoints reales. No se insertaron votos ficticios.
+`supabase/suizamente_verificar_produccion.sql` permite repetir las comprobaciones
+de base de datos sin modificar datos. Si pasan, no hace falta ejecutar otra migración.
+
+En desarrollo la ruta `/api/suizamente` utiliza `SUPABASE_URL` y
+`SUPABASE_SERVICE_ROLE_KEY` de `.env.local`, que está excluido de Git. Se acepta
+`VITE_SUPABASE_URL` como alternativa para la URL. La clave secreta nunca debe
+tener el prefijo `VITE_`. Los entornos locales usados durante la integración
+ya están configurados. La URL directa `/suizamente/juego.html` usa este adaptador;
+la entrada de producción es `/suizamente`.
 
 ## Identidad y privacidad
 
@@ -70,6 +97,7 @@ npm run suizamente:validar
 npm run test:suizamente:votos
 npm run test:suizamente:referencia
 npm run build
+npm run test:suizamente:produccion
 ```
 
 El test de votos ejecuta la SQL real en PostgreSQL con PGlite y comprueba el
@@ -79,6 +107,8 @@ El test visual usa Chromium instalado con Playwright, recorre los tres modos y
 guarda capturas en `output/suizamente-referencia/`. Comprueba móvil de 320/390 px,
 escritorio, tema claro/oscuro, teclado, foco, copia, persistencia, preguntas nuevas
 primero, ausencia de porcentajes sin API y recuperación del voto al reconectar.
+El test de producción abre el resultado de `npm run build` y consulta la Edge
+Function real: verifica CORS, conexión y los tres modos sin enviar votos.
 
 Las comprobaciones `test:suizamente:votos` y `test:suizamente:referencia` son
 las del juego integrado en esta rama.

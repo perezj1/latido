@@ -1,6 +1,10 @@
 [functions.latido_push_notification]
 verify_jwt = false
 
+[functions.suizamente-votos]
+# Anonymous UUID players are allowed; signed-in tokens are verified in the handler.
+verify_jwt = false
+
 [functions.latido_message_email]
 verify_jwt = false
 
