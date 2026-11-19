@@ -9,9 +9,9 @@ if (identidad.api && !window.SUIZAMENTE_CONFIG?.api) CONFIG.api = identidad.api;
 const CLAVE = identidad.userId ? 'suizamente:v1:' + identidad.userId : 'suizamente:v1';
 const TEMAS = ['t-red', 't-blue', 't-orange', 't-sea', 't-sky', 't-mint'];
 const MODOS = {
-  dilemas:   { nombre: '¿Qué prefieres?',        emoji: '🤔', desc: 'Dilemas suizos sin respuesta mala.', filtro: q => q.tipo === 'dilema' },
+  dilemas:   { nombre: '¿Qué prefieres?',        emoji: '🤔', desc: 'Dilemas suizos sin respuesta mala.', filtro: q => q.tipo === 'dilema' && q.opciones.length === 2 },
   preguntas: { nombre: 'Preguntas y respuestas', emoji: '🕵️', desc: 'Solo una respuesta es verdad.', filtro: q => q.tipo === 'real' },
-  mix:       { nombre: 'Mix',                    emoji: '🎲', desc: 'Dilemas y preguntas mezclados.', filtro: () => true }
+  mix:       { nombre: 'Mix',                    emoji: '🎲', desc: 'Dilemas y preguntas mezclados.', filtro: q => MODOS.dilemas.filtro(q) || MODOS.preguntas.filtro(q) }
 };
 let PREG = [];
 const tema = q => TEMAS[[...q.id].reduce((a, c) => a + c.charCodeAt(0), 0) % TEMAS.length];
@@ -69,8 +69,18 @@ const mezcla = a => { const copy = a.slice(); for (let i = copy.length - 1; i > 
 function nuevaRonda(modo = modoActual) {
   modoActual = modo;
   const pool = PREG.filter(MODOS[modo].filtro);
-  const sin = pool.filter(q => !local.resp[q.id]), con = pool.filter(q => local.resp[q.id]);
-  const ids = [...mezcla(sin), ...mezcla(con)].slice(0, CONFIG.ronda).map(q => q.id);
+  const priorizar = preguntas => [...mezcla(preguntas.filter(q => !local.resp[q.id])), ...mezcla(preguntas.filter(q => local.resp[q.id]))];
+  let elegidas;
+  if (modo === 'mix') {
+    const colas = [priorizar(pool.filter(MODOS.dilemas.filtro)), priorizar(pool.filter(MODOS.preguntas.filtro))];
+    elegidas = [];
+    for (let i = 0; i < Math.min(CONFIG.ronda, pool.length); i++) {
+      const cola = colas[i % 2].length ? colas[i % 2] : colas[(i + 1) % 2];
+      elegidas.push(cola.shift());
+    }
+    elegidas = priorizar(elegidas);
+  } else elegidas = priorizar(pool).slice(0, CONFIG.ronda);
+  const ids = elegidas.map(q => q.id);
   const orden = {}; for (const id of ids) orden[id] = mezcla(pregunta(id).opciones.map((_, i) => i));
   ronda = { modo, ids, i: 0, orden, marcas: [], res: [] };
   pintarPregunta();
@@ -80,6 +90,7 @@ function nuevaRonda(modo = modoActual) {
 function pintarInicio() {
   app.classList.remove('playing');
   ronda = null; cerrarResultado();
+  const jugables = PREG.filter(MODOS.mix.filtro);
   const reales = PREG.filter(q => q.tipo === 'real' && local.resp[q.id]);
   const ok = reales.filter(q => local.resp[q.id].o === q.correcta).length;
   const tarjeta = m => `<button class="mode m-${m}" type="button" data-modo="${m}">
@@ -95,7 +106,7 @@ function pintarInicio() {
     </div>
     <div class="modes" role="group" aria-label="Modos de juego">${tarjeta('dilemas')}${tarjeta('preguntas')}${tarjeta('mix')}</div>
     <div class="stats-row">
-      <div class="stat"><b>${Object.keys(local.resp).filter(pregunta).length}</b><span>de ${PREG.length}</span></div>
+      <div class="stat"><b>${jugables.filter(q => local.resp[q.id]).length}</b><span>de ${jugables.length}</span></div>
       <div class="stat"><b>${reales.length ? Math.round(ok / reales.length * 100) : 0}%</b><span>Aciertos</span></div>
       <div class="stat"><b>${ok}</b><span>Verdades</span></div>
     </div>

@@ -59,7 +59,7 @@ export const SEARCHABLE_SITE_PAGES = [
 ]
 
 const ROUTE_SEO = [
-  { path:'/suizamente',title:'Suizamente: un juego de Latido | Latido.ch',description:'Elige, mira qué eligió la comunidad y aprende algo de Suiza en cada pregunta. 100 preguntas, dilemas suizos y tres modos de juego.' },
+  { path:'/suizamente',title:'Suizamente: un juego de Latido | Latido.ch',description:'Elige, mira qué eligió la comunidad y aprende algo de Suiza en cada pregunta. Dilemas suizos, preguntas y respuestas y tres modos de juego.' },
   { path:'/club', title:CARD_MEMBERS_ENABLED ? 'Latido Club | Descuentos y negocios de tu comunidad' : 'Promociona tu negocio gratis | Latido Club', description:CARD_MEMBERS_ENABLED ? 'Ahorra en negocios hispanohablantes de Suiza con Latido Club. CHF 6,90 al mes para socios; participar es gratis para negocios.' : 'Publica una oferta y consigue que más personas de la comunidad hispanohablante descubran tu negocio. Participar es gratis.' },
   {
     path:'/',

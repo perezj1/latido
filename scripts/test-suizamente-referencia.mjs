@@ -66,6 +66,7 @@ try {
     for (const [mode, type] of [['dilemas','dilema'], ['preguntas','real'], ['mix',null]]) {
       await game.locator(`[data-modo="${mode}"]`).click()
       const seen = []
+      const types = []
       for (let n=0; n<10; n++) {
         await expect(game.getByRole('dialog')).toHaveCount(0)
         await expect(game.locator('.prog')).toHaveAttribute('aria-label', `Pregunta ${n+1} de 10`)
@@ -74,6 +75,8 @@ try {
         const q = data.preguntas.find(q => q.pregunta === prompt && q.opciones.every(o => labels.includes(o.t)))
         assert.ok(q)
         if (type) assert.equal(q.tipo, type)
+        if (q.tipo === 'dilema') assert.equal(labels.length, 2)
+        types.push(q.tipo)
         assert.ok(!seen.includes(q.id))
         seen.push(q.id)
         await expect(game.locator('.prog')).toHaveAttribute('aria-label', `Pregunta ${n+1} de 10`)
@@ -102,6 +105,10 @@ try {
         await page.keyboard.press('Escape')
       }
       await expect(game.locator('.done')).toBeVisible()
+      if (mode === 'mix') {
+        assert.equal(types.filter(t => t === 'dilema').length, 5)
+        assert.equal(types.filter(t => t === 'real').length, 5)
+      }
       assert.equal(await game.locator('.squares').textContent(), mode === 'dilemas' ? '🟦'.repeat(10) : await game.locator('.squares').textContent())
       await game.locator('#comp').click()
       await expect(game.locator('#copymsg')).toContainText('Copiado.')

@@ -10,7 +10,7 @@ export default function SuizamenteEntry({ surface='home' }) {
       </div>
     </Link>
     <p style={{ margin:'16px 0', fontSize:16, lineHeight:1.5, color:'#5A6577' }}>Elige, mira qué eligió la comunidad y aprende algo de Suiza en cada pregunta.</p>
-    <p style={{ margin:'0 0 16px', fontSize:14, color:'#5A6577' }}>100 preguntas · ¿Qué prefieres? · Preguntas y respuestas · Mix</p>
+    <p style={{ margin:'0 0 16px', fontSize:14, color:'#5A6577' }}>¿Qué prefieres? · Preguntas y respuestas · Mix</p>
     <Link to="/suizamente" style={{ display:'flex', justifyContent:'center', padding:'14px 20px', borderRadius:999, background:'#FA2F35', color:'#fff', fontWeight:800, fontSize:17, textDecoration:'none' }}>Jugar a Suizamente</Link>
   </section>
 }

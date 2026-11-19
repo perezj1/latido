@@ -5,6 +5,12 @@ iframe del mismo origen para conservar su aspecto, Poppins, modo oscuro y revela
 a pantalla completa. Usa el logo oficial `/favicon.svg`, también utilizado por la
 portada de Latido. Los accesos de Inicio, Perfil y Explorar llevan al nuevo juego.
 
+«¿Qué prefieres?» usa solo dilemas de dos opciones (46). «Preguntas y respuestas»
+usa solo preguntas de tipo `real` (50). Mix combina cinco de cada tipo por ronda
+de diez, en orden aleatorio. Se priorizan las no respondidas dentro de cada tipo.
+Los cuatro dilemas originales de tres opciones se conservan sin modificar en el
+JSON y en la base de datos, pero no se incluyen en las rondas. Hay 96 preguntas jugables.
+
 ## Archivos
 
 - `public/suizamente/juego.html`: estilos y estructura originales.
